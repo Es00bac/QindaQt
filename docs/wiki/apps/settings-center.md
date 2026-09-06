@@ -126,13 +126,19 @@ Unknown component keys and unavailable descriptors select one explicit
 ## Responsive interaction
 
 At widths of 540 logical pixels or greater, a two-column view presents a
-200-pixel navigation sidebar and the active route. Below 540 pixels, a compact
-single-column PageTabList appears above the active route. Both variants use
+224-pixel navigation sidebar and the active route. The sidebar groups the
+unchanged route registry into General, Personalization, and Hardware headings;
+this is a presentation sort only and does not alter route IDs, history, or
+shortcuts. Below 540 pixels, a compact single-column, horizontally scrollable
+PageTabList appears above the active route. Both variants use
 only QST-1 semantic roles and QindaQt.Controls presentation. The selected
 route tab uses the default foreground on its raised-surface background; the
 accent foreground is reserved for text placed on the accent surface. This
 keeps selected navigation readable when the theme changes live between light,
 dark, and high-contrast palettes.
+
+The ordinary starting window is 960×680 logical pixels. Its 420×320 minimum
+remains supported for compact/offscreen interaction coverage.
 
 The interaction contract is:
 
@@ -144,8 +150,8 @@ The interaction contract is:
   free reply lane, the host Escape shortcut yields to the route's own Escape
   shortcut so the prompt receives its cancel reply — two enabled identical
   window-context shortcuts would be ambiguous and neither would activate;
-- Ctrl+1, Ctrl+2, Ctrl+3, and Ctrl+4 select Notifications, Appearance,
-  Display, and Network respectively; Ctrl+6 selects Audio in its appended
+- Ctrl+1, Ctrl+2, Ctrl+3, Ctrl+4, and Ctrl+5 select Notifications, Appearance,
+  Display, Network, and Customize respectively; Ctrl+6 selects Audio in its appended
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
   position; Ctrl+8 selects Power in its appended eighth position, and Ctrl+9
   selects Clipboard in its appended ninth position; Ctrl+0 selects Color in

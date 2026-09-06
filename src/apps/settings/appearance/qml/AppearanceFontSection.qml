@@ -2,18 +2,21 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Font preferences are stored intent. Discovery and live font application
-// belong to later platform consumers, never this presentation component.
+// Font preferences remain a shared draft here; the session bootstrap and
+// running QindaQt applications consume the confirmed value after Apply.
 ColumnLayout {
     id: root
 
     required property var appearanceSettings
     required property bool editorBusy
     readonly property var draftValues: appearanceSettings.draft
+    readonly property Item firstFocusTarget: fontFamilyField
+    readonly property var availableFamilies: Qt.fontFamilies()
 
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
@@ -26,31 +29,77 @@ ColumnLayout {
         root.appearanceSettings.setDraftValue(key, value)
     }
 
+    // Qt's platform ComboBox can render a bright native field inside this
+    // token-driven page. Keep the closed selector on the Settings surface;
+    // the shared control palette still determines every visual color.
+    component SettingsChoiceSelector: T.ComboBox {
+        id: control
+        leftPadding: Tokens.space["2"]
+        rightPadding: Tokens.space["5"]
+
+        contentItem: Text {
+            leftPadding: control.leftPadding
+            rightPadding: control.rightPadding
+            text: control.displayText
+            color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            font: control.font
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+        indicator: Text {
+            x: control.width - width - Tokens.space["2"]
+            anchors.verticalCenter: parent.verticalCenter
+            text: "⌄"
+            color: control.enabled ? Tokens.fg.muted : Tokens.fg.disabled
+            font.pointSize: Tokens.type.body
+        }
+        background: Rectangle {
+            radius: Tokens.radius.s
+            color: control.enabled ? Tokens.bg.raised : Tokens.bg.base
+            border.width: 1
+            border.color: control.activeFocus ? Tokens.accent.default
+                                              : Tokens.outline.strong
+        }
+    }
+
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Fonts")
-        description: qsTr("Interface font preference for first-party applications")
+        description: qsTr("Interface font preference for QindaQt applications")
     }
 
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Font family")
-        description: qsTr("Font family name for interface text")
+        description: qsTr("Choose an installed font for interface text")
         errorMessage: root.appearanceSettings.fieldErrors["fonts.family"] ?? ""
         editor: fontFamilyField
 
-        TextField {
+        SettingsChoiceSelector {
             id: fontFamilyField
             objectName: "appearanceFontFamilyField"
             width: 260
+            editable: true
             enabled: root.appearanceSettings.canEdit && !root.editorBusy
-            text: root.draftValue("fonts.family")
-            error: root.appearanceSettings.fieldErrors["fonts.family"]
-                   !== undefined
-            accessibleName: qsTr("Font family")
-            // TextInput::textEdited() has no signal argument in Qt 6.
-            onTextEdited: root.setDraft("fonts.family", fontFamilyField.text)
+            model: root.availableFamilies
+            currentIndex: root.availableFamilies.indexOf(String(root.draftValue("fonts.family")))
+            editText: String(root.draftValue("fonts.family"))
+            Accessible.role: Accessible.ComboBox
+            Accessible.name: qsTr("Font family")
+            Accessible.description: qsTr("Installed font families; type a family name to search")
+            onActivated: index => root.setDraft("fonts.family", currentText)
+            onAccepted: root.setDraft("fonts.family", editText)
         }
+    }
+
+    Label {
+        objectName: "appearanceFontPreview"
+        Layout.fillWidth: true
+        text: qsTr("The quick brown fox jumps over the lazy dog")
+        font.family: String(root.draftValue("fonts.family"))
+        font.pointSize: Number(root.draftValue("fonts.pointSize"))
+        wrapMode: Text.Wrap
+        Accessible.name: qsTr("Font preview using %1").arg(font.family)
     }
 
     FormRow {
@@ -130,22 +179,28 @@ ColumnLayout {
         Layout.fillWidth: true
         label: qsTr("Subpixel order")
         description: qsTr("Subpixel arrangement used for text rendering")
-        editor: subpixelButtons
+        editor: subpixelSelector
 
-        SegmentedChoiceRow {
-            id: subpixelButtons
-            objectName: "appearanceSubpixelButton"
-            choices: [
-                { token: "none", label: qsTr("None") },
-                { token: "rgb", label: qsTr("RGB") },
-                { token: "bgr", label: qsTr("BGR") },
-                { token: "vrgb", label: qsTr("V-RGB") },
-                { token: "vbgr", label: qsTr("V-BGR") }
+        // A selector keeps five technical values readable in a narrow form;
+        // an equal-width button row overflows before the value is understood.
+        SettingsChoiceSelector {
+            id: subpixelSelector
+            objectName: "appearanceSubpixelSelector"
+            width: 220
+            enabled: root.appearanceSettings.canEdit && !root.editorBusy
+            model: [
+                { value: "none", label: qsTr("None") },
+                { value: "rgb", label: qsTr("RGB") },
+                { value: "bgr", label: qsTr("BGR") },
+                { value: "vrgb", label: qsTr("Vertical RGB") },
+                { value: "vbgr", label: qsTr("Vertical BGR") }
             ]
-            currentValue: root.draftValue("fonts.subpixelOrder")
-            editable: root.appearanceSettings.canEdit && !root.editorBusy
-            descriptionPrefix: qsTr("Subpixel order")
-            onChoicePicked: token => root.setDraft("fonts.subpixelOrder", token)
+            textRole: "label"
+            currentIndex: model.findIndex(choice => choice.value === root.draftValue("fonts.subpixelOrder"))
+            Accessible.role: Accessible.ComboBox
+            Accessible.name: qsTr("Subpixel order")
+            Accessible.description: qsTr("Choose the subpixel arrangement used for text rendering")
+            onActivated: index => root.setDraft("fonts.subpixelOrder", model[index].value)
         }
     }
 }

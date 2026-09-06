@@ -1,10 +1,10 @@
 # Settings Customize route
 
 The installed `qindaqt-settings --page customize` route is QindaQt's direct
-layout editor. It renders the selected schema-v1 profile as panels and applet
-chips on a scaled 1920×1080 representative output. An audited manifest palette,
-keyboard outline, and contextual property panes surround the canvas in both
-wide and compact layouts.
+layout editor. It presents a short workflow: select a layout profile, arrange
+applets on a scaled 1920×1080 representative output, then apply the named
+unsaved changes. An audited manifest palette, keyboard outline, and contextual
+property panes surround the canvas in both wide and compact layouts.
 
 The route is a presentation and composition boundary. It depends only on the
 public `shell_customization_editor`, `shell_customization`, `profiles`, applet

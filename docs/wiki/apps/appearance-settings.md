@@ -8,8 +8,9 @@ preview projection, and the Settings1-backed route model; the executable owns
 only the additive route seam. The durable composition decisions are recorded
 in [ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md).
 The route keeps its transaction state machine separate from preview projection
-and divides presentation into Theme, Font, and Desktop-preference QML sections;
-none of those sections imports persistence or platform APIs.
+and divides presentation into dedicated Themes, Wallpaper, and Fonts
+destinations. The destinations share one route-level draft and Apply/Revert
+boundary; none imports persistence or platform APIs.
 
 ## What the route offers
 
@@ -17,10 +18,13 @@ One page covers the appearance preference set stored through Settings1:
 
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
-| Theme | Installed-theme cards with live QST previews, dark/light/system scheme preference | `appearance.theme`, `appearance.colorScheme` |
-| Fonts | Family text field, size slider (6–36 pt), antialiasing switch, hinting and subpixel segmented choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
-| Wallpaper | Installed QindaQt wallpaper choices, custom path field (empty = none), scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
-| Display scale | Logical UI scale slider (0.5–3.0) | `appearance.uiScale` |
+| Themes | Installed-theme previews and dark/light/system scheme preference | `appearance.theme`, `appearance.colorScheme` |
+| Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
+| Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
+
+Display scale belongs to the separate **Display** route, which owns the live
+output configuration. Appearance offers a direct route action rather than a
+second, stored-only scale control.
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
@@ -40,7 +44,7 @@ truth as the DND controller, extended to a draft workflow:
   NUL). Invalid fields expose per-key error text and disable Apply; they never
   reach Settings1.
 - **Preview** — the draft drives one complete published QST generation, so
-  the page chrome and every theme card preview stay consistent. When the
+  the page chrome, theme previews, and font sample stay consistent. When the
   configured theme id is not installed, the page shows which theme the
   scheme preference would select instead; it never silently renames the
   stored preference.
@@ -109,9 +113,10 @@ page receives only its own model even though both models share the process.
 
 ## Deliberate non-goals for this slice
 
-- The Settings window never mutates compositor or shell surfaces directly. After Apply publishes a confirmed Settings1 snapshot, the production shell background controller adopts the installed or custom wallpaper on every output. UI scale application remains with the Display1/Settings consumers.
-- No font discovery: the family field is validated text, not a host font
-  catalog.
+- The Settings window never mutates compositor or shell surfaces directly. After Apply publishes a confirmed Settings1 snapshot, the production shell background controller adopts the installed or custom wallpaper on every output.
+- Font families are listed from the local Qt font database for selection. The
+  persisted value remains validated text because first-party session bootstrap
+  remains the consumer that applies it before application construction.
 - No multi-key atomic transactions: the public client exposes single-key
   writes only; see ADR-0028 for the batch follow-up boundary.
 - No accessibility-domain coupling: text scale, reduced motion, and reduced
@@ -140,10 +145,10 @@ ctest --test-dir build/dev \
   diagnostic retention, fail-closed snapshot decode, answerable Conflict
   Revert, clean/partially dirty authority rebase, exact outbound keys, strict
   enum metatypes, and later-key partial-failure results.
-- `qindaqt.appearance-page` — offscreen Controls scene: theme-card
-  click selection/gating, zero-argument toggle and real text-entry wiring,
-  action-row and per-key result wiring, status/error/fallback truth and
-  accessible roles, plus full visible forward/reverse compact traversal.
+- `qindaqt.appearance-page` — offscreen Controls scene: focused-destination
+  navigation, theme click selection/gating, installed-font and wallpaper
+  selection wiring, one shared action row, per-key result truth, and
+  accessible roles.
 
 Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md).
 

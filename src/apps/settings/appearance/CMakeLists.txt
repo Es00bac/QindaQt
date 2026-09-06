@@ -53,10 +53,10 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_APPEARANCE_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_appearance.qmltypes
     QML_FILES
-        qml/AppearanceDesktopSection.qml
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
         qml/AppearanceThemeSection.qml
+        qml/AppearanceWallpaperSection.qml
         qml/SegmentedChoiceRow.qml
 )
 target_link_libraries(
@@ -95,10 +95,10 @@ install(
 )
 install(
     FILES
-        qml/AppearanceDesktopSection.qml
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
         qml/AppearanceThemeSection.qml
+        qml/AppearanceWallpaperSection.qml
         qml/SegmentedChoiceRow.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
     COMPONENT SettingsAppearanceRuntime

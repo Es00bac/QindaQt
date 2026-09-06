@@ -43,9 +43,17 @@ ColumnLayout {
             onClicked: root.customizeSettings.redo()
         }
         Item { Layout.fillWidth: true }
+        Label {
+            objectName: "customizeDraftSummary"
+            text: root.customizeSettings.dirty
+                  ? qsTr("Changes have not been applied")
+                  : qsTr("Layout is up to date")
+            muted: !root.customizeSettings.dirty
+            Accessible.name: text
+        }
         Button {
             objectName: "customizeDiscardButton"
-            text: qsTr("Discard")
+            text: qsTr("Discard changes")
             emphasized: false
             available: root.customizeSettings.canEdit
                        && root.customizeSettings.dirty
@@ -53,17 +61,10 @@ ColumnLayout {
         }
         Button {
             objectName: "customizeApplyButton"
-            text: qsTr("Apply")
+            text: qsTr("Apply layout")
             available: root.customizeSettings.applyAvailable
             busy: root.customizeSettings.saving
             onClicked: root.customizeSettings.apply()
-        }
-        Button {
-            objectName: "customizeCloseButton"
-            text: qsTr("Close")
-            emphasized: false
-            available: !root.customizeSettings.saving
-            onClicked: root.requestClose()
         }
     }
 

@@ -1,27 +1,31 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as T
 import QtQuick.Layouts
+import QindaQt.Controls 1.0
+import QindaQt.Tokens 1.0
 
-Page {
+T.Page {
     id: root
     required property var quietingSettings
-    signal closeRequested()
     readonly property Item firstFocusTarget: doNotDisturbSwitch
     title: qsTr("Notifications")
+
+    background: Rectangle { color: Tokens.bg.base }
 
     Component.onCompleted: doNotDisturbSwitch.forceActiveFocus(Qt.TabFocusReason)
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 16
+        anchors.margins: Tokens.space["5"]
+        spacing: Tokens.space["3"]
 
         Label {
             objectName: "notificationsPageHeading"
             text: qsTr("Notifications")
-            font.pixelSize: 24
-            font.bold: true
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.title
+            font.weight: Font.DemiBold
             textFormat: Text.PlainText
             Accessible.role: Accessible.Heading
             Accessible.name: text
@@ -36,8 +40,10 @@ Page {
             focusPolicy: Qt.StrongFocus
             KeyNavigation.tab: conflictAction.visible
                                ? conflictAction
-                               : retryAction.visible ? retryAction : closeButton
-            KeyNavigation.backtab: closeButton
+                               : retryAction.visible ? retryAction : doNotDisturbSwitch
+            KeyNavigation.backtab: retryAction.visible
+                                   ? retryAction
+                                   : conflictAction.visible ? conflictAction : doNotDisturbSwitch
             Accessible.role: Accessible.CheckBox
             Accessible.name: qsTr("Do Not Disturb")
             Accessible.description: qsTr(
@@ -83,8 +89,8 @@ Page {
                 visible: root.quietingSettings.conflict
                 text: qsTr("Apply my choice")
                 focusPolicy: Qt.StrongFocus
-                KeyNavigation.tab: closeButton
-                KeyNavigation.backtab: doNotDisturbSwitch
+            KeyNavigation.backtab: doNotDisturbSwitch
+            KeyNavigation.tab: doNotDisturbSwitch
                 onClicked: root.quietingSettings.applyMyChoice()
             }
 
@@ -94,22 +100,11 @@ Page {
                 visible: root.quietingSettings.unavailable
                 text: qsTr("Retry")
                 focusPolicy: Qt.StrongFocus
-                KeyNavigation.tab: closeButton
-                KeyNavigation.backtab: doNotDisturbSwitch
+            KeyNavigation.backtab: doNotDisturbSwitch
+            KeyNavigation.tab: doNotDisturbSwitch
                 onClicked: root.quietingSettings.retry()
             }
 
-            Button {
-                id: closeButton
-                objectName: "settingsCloseButton"
-                text: qsTr("Close")
-                focusPolicy: Qt.StrongFocus
-                KeyNavigation.tab: doNotDisturbSwitch
-                KeyNavigation.backtab: conflictAction.visible
-                                       ? conflictAction
-                                       : retryAction.visible ? retryAction : doNotDisturbSwitch
-                onClicked: root.closeRequested()
-            }
         }
     }
 }
