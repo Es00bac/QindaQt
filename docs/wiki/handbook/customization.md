@@ -1,55 +1,105 @@
-# Customization and visual design
+# Making it yours
 
-Three kinds of data cooperate: a **profile** describes workflow and panel layout,
-a **theme** supplies appearance inputs, and **settings** hold confirmed user
-preferences. Keeping these separate lets a person use the same workflow with a
-different palette or the same palette with a different panel arrangement.
+Three things shape how QindaQt looks and behaves, and they are kept separate
+on purpose:
 
-## Profiles
+- a **profile** describes the layout — which bars exist, where they sit, and
+  which applets they carry;
+- a **theme** describes the look — colors, corner rounding, motion, icons;
+- your **saved choices** — theme, wallpaper, fonts, and other preferences —
+  are stored individually, so you can change the palette without disturbing
+  the layout and vice versa.
 
-The ten built-in profiles span QindaQt, minimal, GNOME-, Unity-, MATE-, XFCE-,
-NeXTSTEP-, macOS-, and classic/modern Windows-inspired arrangements. These are
-workflow inspirations, not implementations of those other desktops. Exact IDs,
-panels, applets, and output selectors appear in the
-[packaged assets catalog](catalog/assets.md).
+Everything below happens in System Settings; no file editing required.
 
-Profiles are declarative JSON. The loader rejects malformed types, duplicates,
-unsupported schema majors, excessive nesting, and identities that cannot round
-trip. Applet instance IDs are unique across the profile: moving preserves an ID,
-while duplicating creates another. Built-ins remain immutable; edits produce
-user profiles. Accepted product concepts may be broader than schema v1, so only
-fields in the [profile schema](../reference/profile-schema-v1.md) are persistable.
+## Themes, wallpaper, and fonts
 
-The layout planner uses desktop-logical coordinates. Qt handles conversion to
-output buffers once; the planner must not scale panel dimensions a second time.
-Multi-output expansion, stacking, collisions, and exclusive work areas are
-validated as a whole before publication.
+Open **System Settings → Appearance**. The page has three tabs across the
+top, and everything you try is previewed live on the page before you save.
 
-## Editing
+### Themes
 
-Direct customization uses preview, commit/cancel, revision fencing, and undo/redo.
-The editor domain owns gesture and keyboard intent; persistence adapters own
-atomic profile storage; Settings1 owns confirmed profile selection. Pending,
-failed, or conflicting saves cannot become confirmed UI state merely because
-a preview rendered successfully. See [editor domain](../shell/customization-editor.md)
-and [Customize Settings](../apps/customize-settings.md) for current canvas scope,
-rollback, gesture behavior, and package boundaries.
+Five themes ship with QindaQt:
 
-## Themes, typography, and accessibility
+| Theme | Character |
+| --- | --- |
+| QindaPunk Nightfall | The dark default: ink and neon, calm surfaces |
+| QindaPunk Porcelain | The light counterpart: pale ceramic and apricot |
+| QindaPunk Dusk | Between the two, for late evenings |
+| Qinda High Contrast | Maximum separation for readability |
+| Qinda macOS | A mist-and-sage take on the familiar Mac look |
 
-Five shipped themes cover light, dusk, dark, high contrast, and the mist-and-sage
-Qinda macOS palette. Theme schema v1 contains colors, typography inputs, icon
-theme, corner radius, motion duration, and blur preference. A field being
-accepted does not establish that every compositor effect is implemented.
+Pick a card to preview it. A separate light/dark/follow-system choice decides
+how the theme colors respond to the time of day. When you **Apply**, the
+whole desktop follows — panels, controls, window frames, and container chrome
+— without a restart. **Revert** puts everything back to your saved choices.
 
-QST-1 converts validated themes and accessibility inputs into immutable semantic
-tokens. Consumers ask for the meaning of a color or spacing value, rather than
-hard-coding theme IDs or deriving their own palette. The QML facade is read-only
-and GUI-thread bound. Controls renders token-driven states, focus, and accessible
-semantics. Font discovery is confined to its provider; confirmed preferences
-reach supported first-party composition through documented startup boundaries.
+### Wallpaper
 
-See [design tokens](../architecture/design-tokens.md), [Controls](../shell/controls.md),
-[fonts](../architecture/font-preferences.md), [icons](../shell/iconography.md),
-and [theme schema](../reference/theme-schema-v1.md). The [privacy guide](privacy.md)
-explains preference persistence; the [handbook index](index.md) links all topics.
+Choose from the five bundled wallpapers — Jade Fold, Porcelain Dawn, Ink
+Tide, Qinda Punk, and Compile Club — or pick **any image on your disk**. A
+picture mode of scaled, centered, or tiled decides how the image fills the
+screen. After **Apply**, the wallpaper appears on every screen.
+
+### Fonts
+
+Pick any font family installed on the machine; a live sample shows your text
+in each candidate. A slider sets the size (6–36 pt), and finer controls
+cover anti-aliasing, hinting, and subpixel ordering. First-party
+applications pick the choice up when they start.
+
+One thing deliberately lives elsewhere: **screen scaling** belongs to
+**System Settings → Display**, which owns the live screen configuration.
+Appearance offers a direct jump there rather than a second copy of the
+setting.
+
+## Changing the layout
+
+Open **System Settings → Customize**. You start from a preset — the default
+QindaQt layout, a minimal one, or layouts inspired by GNOME, Unity, MATE,
+XFCE, NeXTSTEP, macOS, and classic or modern Windows. These are
+starting-points in the spirit of those desktops, not recreations of them.
+
+From there the canvas lets you rework the layout directly:
+
+- **Move things.** Drag an applet between panels or between the start,
+  middle, and end zones of a panel; a live preview shows the result before
+  you let go.
+- **Add and remove.** Add applets from the palette, duplicate a selected
+  applet (`Ctrl+D`), or remove it (`Delete`).
+- **Reshape a panel.** Select it to change its screen edge, alignment,
+  thickness, length, and visibility behavior.
+- **Stay safe.** Every gesture is one **Undo** step; **Redo** walks forward
+  again. `Ctrl+Return` applies the draft, `Ctrl+Shift+Return` throws it away,
+  and closing the window with unsaved changes asks first. A cancelled drag
+  never leaves a half-finished layout behind.
+
+Keyboard editing works too: select an applet and press `Space` to start a
+move, `Ctrl+Left`/`Ctrl+Right` to step along the panel, `Alt+Left`/
+`Alt+Right` to change zone, and `Ctrl+Shift+Left`/`Ctrl+Shift+Right` to
+change panel; `Space` commits.
+
+Your edits are saved as **your own copy**. The built-in presets stay
+untouched, so you can always go back and start fresh from one.
+
+A selected applet shows its own settings for inspection; editing those values
+from this page is not part of the current version.
+
+## What each part is
+
+- The bars at the top and bottom are **panels**; the things living on them
+  (clock, launcher, task list, volume, …) are **applets**.
+- The full inventory of shipped profiles, themes, and applets is in the
+  [packaged assets catalog](catalog/assets.md).
+- Exact preference names and defaults are enumerated in the
+  [settings catalog](catalog/settings.md).
+
+For the engineering behind the editor — preview commits, atomic saves,
+conflict handling — read [the customization
+editor](../shell/customization-editor.md) and [the Customize
+route](../apps/customize-settings.md). Theme and profile file formats are
+specified in the [theme schema](../reference/theme-schema-v1.md) and
+[profile schema](../reference/profile-schema-v1.md); fonts are covered under
+[font preferences](../architecture/font-preferences.md). Continue with
+[using the desktop](desktop.md), [applications](applications.md), or the
+[handbook index](index.md).

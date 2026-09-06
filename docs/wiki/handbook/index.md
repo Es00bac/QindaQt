@@ -1,59 +1,84 @@
 # QindaQt handbook
 
-This is the organized entry point for understanding QindaQt: its purpose, design
-philosophy, desktop features, applications, internals, configuration, development,
-and delivery status. QindaQt is pronounced **“kinda cute.”**
+QindaQt is a desktop built on Qt and Wayland — the screen you see after
+logging in, the bars at the top and bottom, the apps that come with it, and
+the way windows group together. It is pronounced **“kinda cute.”**
+
+These guides explain what you can do with QindaQt and what happens when you
+do it. They describe the software as it actually behaves; anything still
+being rolled out or verified is called out where it applies.
+
+## Your first ten minutes
+
+1. **Look around.** A slim bar runs across the top of the screen and a shelf
+   sits at the bottom. The top bar's left button opens the system menu
+   (settings, lock, log out, restart, shut down); next to it, the menu of the
+   app you're working in appears automatically.
+2. **Open an app.** Click the launcher in the bottom shelf, type a name or
+   browse the categories, and open something. Running apps appear in the
+   shelf as well.
+3. **Try the signature move.** Hold **Meta+Shift** and drag one window onto
+   another: drop it in the middle to stack the two as tabs, or near an edge
+   to place them side by side. One frame now holds both, and the shelf shows
+   them as a single entry. Drag a window's own title strip back out to make
+   it independent again.
+4. **Change how it looks.** Open **System Settings → Appearance** and try a
+   theme, a wallpaper, or a different font. The page previews every change;
+   **Apply** saves it.
+5. **Lost?** Press **Meta+F1**. A small card on the desktop lists the default
+   shortcuts for combining and arranging windows, and the **Got it** button
+   puts it away until you need it again.
+
+From here, [Using the desktop](desktop.md) covers windows, menus, and
+notifications; [Making it yours](customization.md) covers themes, wallpapers,
+fonts, and layouts; [Applications](applications.md) covers the programs that
+ship with QindaQt.
 
 ## Choose a reading path
 
 | Your question | Start here |
 | --- | --- |
-| What is this project and why does it exist? | [Project and philosophy](project.md) |
-| What does the desktop let me do? | [Desktop experience](desktop.md) |
-| What applications are included? | [Applications](applications.md) |
-| How do themes, layouts, and preferences fit together? | [Customization](customization.md) |
+| How do I use the desktop day to day? | [Using the desktop](desktop.md) |
+| How do I change the look and layout? | [Making it yours](customization.md) |
+| Which applications are included, and what do they do? | [Applications](applications.md) |
+| What does a term mean? | [Glossary](glossary.md) |
+| Why does this project exist? | [Project and philosophy](project.md) |
 | How does it work internally? | [Architecture](architecture.md) |
 | What services and integrations exist? | [Platform services](platform.md) |
 | What is saved, protected, or recovered after failure? | [Privacy and persistence](privacy.md) |
 | How do I build, run, and diagnose it? | [Development and operation](development.md) |
 | How are quality and progress established? | [Quality and contribution](quality.md) |
-| What does the terminology mean? | [Glossary](glossary.md) |
 | What is every tracked feature's exact status? | [Feature catalog](catalog/features.md) |
 | What are all the preferences? | [Settings catalog](catalog/settings.md) |
 | Which profiles, themes, and applets ship? | [Packaged assets](catalog/assets.md) |
 | Where is the code and supporting tooling? | [Repository catalog](catalog/repository.md) |
 | Where are all detailed specifications and decisions? | [Documentation catalog](catalog/reading.md) |
 
-## Scope and source of truth
+The first four pages are written for someone using the desktop. The rest are
+reference and contributor material, kept separate so neither bloats the
+other.
 
-This handbook was assembled against repository commit
-`9728612046940b55d69f85c3811eb38a08a0963b` on 2026-09-05. Catalogs describe
-that snapshot; they are not fresh hardware or runtime qualification results.
-The feature catalog enumerates the complete outcome ledger, including unfinished
-work. The documentation catalog indexes all existing canonical wiki pages and
-ADRs; the configuration catalog enumerates shipped data rather than guessing
-support from a UI mockup. The repository catalog provides the implementation
-and test entry points for deeper inspection.
+## About these guides
 
-The existing [project wiki](../index.md) remains the normative contract source.
-This directory adds explanations and a categorized reference layer, without
-forking protocol definitions or copying every source file into prose. Internal
-symbols and individual historical worker messages remain in their owning source
-and delivery records; the handbook explains where and how to inspect them.
+The user-facing pages follow a few rules, kept here so future pages stay
+consistent:
 
-Some older overview paragraphs describe earlier slices. For present delivery
-status, consult the exact stopping points in `ops/team/features.json`, then the
-latest `docs/HANDOFF.md` and `docs/TASK_LIST.md` entries and focused module pages.
-Historical qualification against KWin 6.6.5 is not the current build pin: the
-snapshot's `compositor/upstream/kwin.json` pins **6.6.6**. A disagreement should
-be resolved with integrated evidence, not by silently promoting a feature.
+- Write to a person. Say **you** and the name of the thing on screen, explain
+  what happens next, and prefer one concrete instruction over a paragraph of
+  nouns.
+- Only describe controls and shortcuts that really exist, with the labels
+  they actually carry. Never invent a button, gesture, or key.
+- Say what a feature does *for* the person, and be honest about anything not
+  finished yet — an unfinished feature is named as such, not advertised.
+- Keep engineering detail out of the flow. When a reader needs the full
+  contract, link to the page that owns it instead of summarizing it inline.
 
-## Keeping this library complete
+Guides describe the current build. Exact, per-feature maturity — including
+what is integrated, what is deployed, and what is still being verified — is
+tracked in the [feature catalog](catalog/features.md); the delivery boundary
+is recorded in `docs/HANDOFF.md`. A guide and reality disagreeing
+is a defect in the guide.
 
-When behavior changes, update the canonical owner page and the relevant guide
-or catalog here together. Add new features to the ledger before describing
-maturity; retain caveats and evidence references. Reconcile package inventories
-with `data/`, module inventories with `src/`, and document inventories with the
-wiki. Register new pages in `mkdocs.yml`, keep links reciprocal, and run the
-[documentation checks](quality.md). No roadmap milestone is advanced by adding
-this handbook.
+When behavior changes, update the page that owns the behavior and the
+relevant guide here in the same change, and register any new page in
+`mkdocs.yml`. Adding a page does not by itself make a feature real.
