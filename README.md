@@ -2,56 +2,38 @@
 
 > **Pronounced “kinda cute”** (`KYNE-duh kyoot`, /ˈkaɪndə kjuːt/).
 
-QindaQt is a modular Qt desktop environment centered on hybrid window
-containers: ordinary application windows can be combined into a movable,
-tabbed, recursively split container and separated again without changing the
-applications themselves.
+QindaQt is a Qt desktop environment where ordinary application windows can
+share a window container. Hold **Meta+Shift** while dragging to combine windows,
+arrange them in tiles or tabs, and move the container as one window. Use the
+container controls to rearrange its members or return a window to the desktop.
 
-This repository currently contains the executable foundation for the desktop:
+The desktop includes a panel and dock, application menus, notifications,
+Settings, and a growing set of first-party applications. Settings has dedicated
+pages for displays, audio, Bluetooth, networking, power, clipboard, appearance,
+and color. Desktop profiles change the panel and window-control layout;
+QindaPunk-inspired themes bring the wallpaper's ink-blue and amber colors into
+the interface.
 
-- a qualified KWin-based compositor and hybrid window-container runtime;
-- a tested container-layout domain model;
-- versioned desktop-profile and theme formats;
-- five built-in palettes, including the mist-and-sage Qinda macOS decoration
-  theme;
-- a Qt Quick shell preview and a production LayerShellQt panel process with
-  owner-bound compositor visibility and safe-visible recovery;
-- manifest- and capability-policy-gated production applet resolution, with a
-  live locale-aware clock and capability-empty notification-center entry as the
-  first two audited built-in implementations;
-- transactional panel/applet editing, window-aware visibility policy, and an
-  installable freedesktop notification host with an owner-bound asynchronous
-  shell client and descriptor-only session authentication;
-- bounded production notification popups plus an active/recent center on the
-  primary output, with plain-text rendering, logical-DPI size clamping, a
-  dedicated entry in every stock profile, a shell-owned `Meta+N` action, and
-  session-volatile Do Not Disturb that immediately suppresses low/normal
-  banners while preserving critical banners and Active/Recent state, with all
-  notification presentation fail-closed behind authenticated KWin lock state;
-- an essential-process supervisor that starts the notification host and shell,
-  couples their lifetimes, keeps its generated token out of argv and env, and
-  provisions the shell with a parent-death-witnessed direct KWin PID;
-- isolated nested-session and resolution-scenario tooling;
-- an agent-oriented, versioned project wiki.
+Start with the [handbook](docs/wiki/handbook/index.md) for everyday use. The
+[project wiki](docs/wiki/index.md) also covers architecture, configuration,
+building, and testing.
 
-The compositor, hybrid interaction milestone, and initial real panel surfaces
-are implemented. QindaQt is still under construction as a daily-use desktop:
-the remaining live applets, global menu, settings-center presentation, platform
-services, packaging, and physical-hardware qualification remain roadmap work.
-Do Not Disturb settings persistence and scheduling, persistent history,
-activation tokens, multi-output placement, multi-seat and alternative-locker
-support, and live/nested surface, shortcut, focus, lock-transition, and Do Not
-Disturb interaction qualification are also unfinished.
+## Development status
 
-For a categorized guide to the entire project, start with the
-[QindaQt handbook](docs/wiki/handbook/index.md). It includes feature maturity,
-philosophy, applications, configuration inventories, and detailed reference links.
+QindaQt is under active development. The compositor, window containers, shell,
+Settings, and platform services are implemented, but the desktop still has
+interaction and hardware issues being worked through. A passing unit test does
+not mean a feature has passed its real-session checks.
+
+The [task list](docs/TASK_LIST.md) records the current desktop-completion work.
+The [integration handoff](docs/HANDOFF.md) distinguishes reviewed source,
+verified runtime behavior, and changes installed in the live session.
 
 ## Build
 
-The `dev` and `release` presets build both the binary KWin integration and the
-production LayerShellQt shell. Their dependency contract is deliberately
-strict:
+The `dev` and `release` presets build both the binary KWin integration and
+the production LayerShellQt shell. The dependency contract is strict on
+purpose:
 
 | Dependency | CMake requirement | Qualified Manjaro package set |
 | --- | --- | --- |
@@ -65,12 +47,12 @@ strict:
 | XDG desktop portal runtime | 1.20 or newer; QindaQt supplies only Settings | `xdg-desktop-portal` plus at least one of `xdg-desktop-portal-kde`, `xdg-desktop-portal-gtk`, or `xdg-desktop-portal-lxqt` for explicitly routed fallback families |
 | fontconfig | 2.x development headers, used only by the font discovery provider ([ADR-0067](docs/wiki/adr/0067-confine-fontconfig-behind-font-discovery.md)) | `fontconfig 2.17.1-1` |
 
-CMake 3.25 or newer, Ninja, Python 3 for tests, and a C++20 compiler are also
-required. The KWin and Plasma Activities entries are exact because QindaQt
-ships a native KWin plugin; a newer patch or minor release is not assumed to be
-binary compatible.
+You'll also need CMake 3.25 or newer, Ninja, Python 3 for the tests, and a
+C++20 compiler. KWin and Plasma Activities are pinned to exact versions
+because QindaQt ships a native KWin plugin — a newer patch or minor release
+is not assumed to be binary compatible.
 
-On an Arch-derived system, the corresponding package names are:
+On an Arch-derived system:
 
 ```sh
 sudo pacman -S --needed \
@@ -81,11 +63,11 @@ sudo pacman -S --needed \
   fontconfig xorg-xdpyinfo xorg-xwayland
 ```
 
-Rolling repositories may already have moved beyond KWin 6.6.6. In that case,
-the default presets must use a coherent 6.6.6 package snapshot/cache; do not
-force CMake past its exact ABI check. A current rolling stack can still build
-and test the production panel client without the native plugin through an
-explicit bridge-only configuration:
+Rolling repositories may already have moved past KWin 6.6.6. If so, the
+default presets need a coherent 6.6.6 package snapshot or cache — don't
+force CMake past its exact ABI check. You can still build and test the
+production panel client on a current rolling stack without the native
+plugin, using an explicit bridge-only configuration:
 
 ```sh
 cmake -S . -B build/shell -G Ninja \
@@ -101,9 +83,9 @@ ctest --test-dir build/shell \
 ```
 
 That bridge-only matrix proves QindaQt's public layer-shell client behavior
-against the installed KWin runtime. It does not qualify the native KWin plugin
-ABI; the default presets and complete compositor matrix remain the authority
-for that boundary.
+against the installed KWin runtime. It does not qualify the native KWin
+plugin ABI — the default presets and the complete compositor matrix remain
+the authority for that boundary.
 
 ```sh
 cmake --preset dev
