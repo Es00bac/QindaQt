@@ -105,7 +105,7 @@ T.Control {
             Layout.fillWidth: true
             visible: control.errorMessage.length > 0
             text: control.errorMessage
-            color: Tokens.danger.default
+            color: Tokens.fg.default
             font.family: Tokens.type.fontFamily
             font.pointSize: Tokens.type.caption
             wrapMode: Text.Wrap

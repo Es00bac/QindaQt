@@ -69,7 +69,7 @@ ColumnLayout {
                         Layout.fillWidth: true
                         text: supplyRow.modelData.warningText
                         color: supplyRow.modelData.warningSeverity >= 4
-                               ? Tokens.danger.default
+                               ? Tokens.fg.default
                                : supplyRow.modelData.warningSeverity >= 3
                                  ? Tokens.fg.default
                                  : Tokens.fg.muted
