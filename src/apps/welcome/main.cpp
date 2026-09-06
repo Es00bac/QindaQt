@@ -62,7 +62,13 @@ int verifyUiContract(QQmlApplicationEngine &engine, bool exerciseOptOut,
         return 5;
     }
     if (exerciseOptOut) {
-        checkbox->setProperty("checked", false);
+        // Activate the real QindaQt CheckBox path. Assigning `checked` would
+        // bypass AbstractButton::toggled and make the persistence assertion a
+        // false test of QML's user-action handler.
+        if (!QMetaObject::invokeMethod(checkbox, "click", Qt::DirectConnection)) {
+            std::fprintf(stderr, "qindaqt-welcome: checkbox could not be activated\n");
+            return 5;
+        }
         QCoreApplication::processEvents();
         if (preferences.showAtNextLaunch()) {
             std::fprintf(stderr, "qindaqt-welcome: checkbox did not persist opt-out\n");
