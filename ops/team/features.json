@@ -217,9 +217,14 @@
               "kind": "commit",
               "reference": "42191636",
               "summary": "First-party menu export for Terminal and Text Editor integrated: exact accepted product bfe6009950187901e4f42902aa211ab3378419aa (Jennifer Doudna, OpenAI Codex, over Andrea Ghez's e8e5170b/ba88f0b1/9becfb1e; Elizabeth Blackburn rejected three rounds 0/1/0/0 each), reviewed ACCEPT 0/0/0/0 by Nettie Stevens (Moonshot Kimi). Merged tree: focused 190/190 in Debug and Release, static gates, broad safe Debug 630/630, serialized nested boot, panel-visibility and interactive rows 5/5 on the system KWin 6.6.6 roots."
+            },
+            {
+              "kind": "commit",
+              "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
+              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File \u2192 New action succeed."
             }
           ],
-          "caveat": "Third-party (KDE platform exporter) applications and the nested global-menu interaction matrix remain. Panel presentation is icon-first since 6a2019aa."
+          "caveat": "Native popup positioning repair and physical-session deployment remain open; Sloom exporter selection is integrated with real panel consumption pending."
         },
         {
           "id": "QQ-004.07",
@@ -336,7 +341,7 @@
             {
               "kind": "commit",
               "reference": "f3abd4ab",
-              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by R\u00f3zsa P\u00e9ter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             },
             {
               "kind": "commit",
@@ -821,9 +826,14 @@
               "kind": "commit",
               "reference": "c33b4908f99cb1dfac04287383441d028ab8f25b",
               "summary": "Portal P1 (ADR-0059) is integrated; Gertrude Blanch (OpenAI Codex, different worker) accepted it at 0/0/0/0 with the real-frontend selector 9/9 in Debug and Release; the merged tree repeats 9/9."
+            },
+            {
+              "kind": "commit",
+              "reference": "3ad28017a08cd8803db24b22e7d2e4ab78b88238",
+              "summary": "GlobalShortcuts routes to the installed backend that actually advertises it; focused portal checks pass."
             }
           ],
-          "caveat": "P1 proves selection and Qt toolkit reaction against the installed frontend on a private bus only; GTK/Flatpak reaction, installed-session qualification, and every non-Settings portal family implementation remain later outcomes."
+          "caveat": "Gabbee real text delivery and user-approved RemoteDesktop input are active qualification work; mock-portal results do not claim physical input success."
         }
       ],
       "stoppingPoint": {
@@ -1010,9 +1020,14 @@
               "kind": "test",
               "reference": "docs/wiki/apps/settings-center.md",
               "summary": "The owning page records route-registry, navigation, responsive QML, failure, accessibility, package-isolation, and explicit later-route boundaries."
+            },
+            {
+              "kind": "commit",
+              "reference": "327fbb096de5086804d8bde7dea4121a87aa6d63",
+              "summary": "Focused Appearance tabs, readable status hierarchy, and compact recovery guidance pass integrated checks and ten-route private visual capture."
             }
           ],
-          "caveat": "Settings S1 provides the center shell and route boundary; most platform-service pages, drag-from-configuration customization, cross-app visual matrices, and live assistive-technology qualification remain."
+          "caveat": "Final installed checkpoint and broader cross-profile qualification remain separate."
         },
         {
           "id": "QQ-006.05",
