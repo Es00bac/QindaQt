@@ -43,6 +43,8 @@ HybridChromePlanOptions chromeOptions()
 {
     HybridChromePlanOptions result;
     result.devicePixelRatio = 2.0;
+    result.containerFocused = true;
+    result.focusedMemberId = QStringLiteral("left");
     result.style = HybridChrome::ChromeStyle::qindaMacOS({});
     return result;
 }
@@ -100,6 +102,9 @@ void HybridChromePlanBuilderTest::buildsQindaMacPlanInStableTopologyOrder()
     QVERIFY(plan->tabs[0].rect.left() > plan->tabs[1].rect.left());
     QCOMPARE(plan->members.size(), 2);
     QCOMPARE(plan->members[0].memberId, QStringLiteral("left"));
+    QVERIFY(plan->containerFocused);
+    QVERIFY(plan->members[0].focused);
+    QVERIFY(!plan->members[1].focused);
     QCOMPARE(plan->members[1].memberId, QStringLiteral("right"));
     QCOMPARE(plan->dividers.size(), 1);
     QCOMPARE(plan->dividers[0].dividerId, QStringLiteral("main-divider"));

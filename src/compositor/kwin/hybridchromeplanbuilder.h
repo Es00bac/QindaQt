@@ -17,6 +17,10 @@ struct HybridChromePlanOptions final
 {
     qreal devicePixelRatio = 1.0;
     bool maximized = false;
+    // KWin's active native window snapshot. The builder remains pure; the
+    // session supplies ownership after sampling Workspace::activeWindow().
+    bool containerFocused = false;
+    QString focusedMemberId;
     HybridChrome::ChromeMetrics metrics;
     HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::qindaMacOS({});
 };

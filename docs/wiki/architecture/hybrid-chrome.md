@@ -30,6 +30,15 @@ readable without adding a focusable surface or changing native member-frame
 ownership. It is the same accent token used by dividers and shared controls, so
 light and dark theme changes remain coherent.
 
+Focus cues are a separate snapshot from tab selection. The KWin session samples
+the workspace active native window and passes ownership into the immutable plan:
+the focused container gets an accent rule on the shared top edge, and the
+focused tiled member gets an accent ring only on the paintable side of its
+native frame. The ring is intersected with the renderer's transparent-member
+clip, so it remains visible when native titles are compact or hidden without
+painting client content. An unfocused container keeps the neutral outer frame
+even when one of its pages remains selected.
+
 The pure hit tester orders window control, outer resize edge, tab, divider,
 member title, outer title, then client content. A hit returns a typed action plus
 stable ID or logical tab index; it never performs the action. At the production

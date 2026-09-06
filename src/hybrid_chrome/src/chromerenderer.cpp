@@ -153,8 +153,39 @@ void ChromeRenderer::paint(QPainter &painter,
         painter.drawRect(divider.visualRect);
     }
     painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(plan.style.palette.border, plan.borderHairline));
+    const qreal frameThickness = plan.containerFocused
+        ? std::max(plan.borderHairline * 2.0, 2.0)
+        : plan.borderHairline;
+    painter.setPen(QPen(plan.style.palette.border, frameThickness));
     painter.drawPath(framePath);
+
+    // AGENT-CONTRACT: A focused container is marked on its shared top edge;
+    // the complete neutral frame remains visible so a focused member's ring
+    // can distinguish the left/right or top/bottom sibling boundary.
+    if (plan.containerFocused) {
+        const qreal radius = plan.metrics.cornerRadius;
+        painter.setPen(QPen(plan.style.palette.accent, frameThickness));
+        painter.drawLine(QPointF(plan.outerFrame.left() + radius, plan.outerFrame.top()),
+                         QPointF(plan.outerFrame.right() - radius, plan.outerFrame.top()));
+    }
+
+    // AGENT-CONTRACT: A focused member cue is clipped to the paintable side
+    // of its native frame. This keeps client content and KDecoration pixels
+    // transparent while still identifying one tiled member when titles are
+    // hidden or visually compressed.
+    for (const auto &member : plan.members) {
+        if (!member.focused) {
+            continue;
+        }
+        const qreal ring = std::max(plan.borderHairline * 2.0, 2.0);
+        QPainterPath ringPath;
+        ringPath.addRect(member.windowRect.adjusted(-ring, -ring, ring, ring));
+        QPainterPath nativeFrame;
+        nativeFrame.addRect(member.windowRect);
+        painter.setPen(Qt::NoPen);
+        painter.fillPath(ringPath.subtracted(nativeFrame).intersected(paintClip),
+                         plan.style.palette.accent);
+    }
     painter.restore();
 }
 
