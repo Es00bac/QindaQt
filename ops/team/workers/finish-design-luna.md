@@ -1,4 +1,4 @@
-- Status: working — repairing editable ComboBox text input and blur persistence for the Appearance font route
+- Status: working — repairing two integrated shell/theme gate regressions in runtime token and startup preference tests
 
 ## Updates
 
@@ -15,3 +15,5 @@
 - 2026-09-06T10:19:01-06:00 — Repair verified: controls behavior, source-policy, and installed-import pass 3/3; the pointer popup test passes in three repeated runs; docs validation and strict mkdocs pass. Preparing one exact commit for customize/root consumption.
 - 2026-09-06T10:20:09-06:00 — Exact repair handoff delivered to root/customize; monitoring the consumer rerun while preserving the shared control boundary.
 - 2026-09-06T10:22:55-06:00 — Root/customize reproduced the remaining contract gap: the tokenized ComboBox still exposes a Text content item, so editable consumers cannot receive real key input. The bounded repair keeps the root delegate/popup fix and replaces only the content item with a tokenized TextField when editable, with a key-input/blur regression next.
+- 2026-09-06T10:34:32-06:00 — Claimed isolated `fix/finish-shell-theme-gates` at base `3de6ac9f`; scope is limited to `tests/shell/tst_shellruntime_tokens.cpp`, `tests/shell/tst_shellstartuppreferences.cpp`, and focused helper/docs only. The two integrated failures are stale theme swatches and ambient D-Bus activation defeating the absent-service fallback scenario.
+- 2026-09-06T10:42:36-06:00 — Material repair verified: runtime token expectations now match QindaPunk Nightfall `#111e2c` and Porcelain `#dde7e8`; absent-service startup uses an explicit no-activation private D-Bus config on a short socket path with scope-guard cleanup. The two repaired gates and four neighboring token/preference gates pass 6/6; preparing exact handoff.

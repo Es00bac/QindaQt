@@ -172,7 +172,7 @@ void ShellRuntimeTokenTests::productionPublisherPrecedesHostedApplet()
     QVERIFY(publisher.facade()->ready());
     QCOMPARE(publisher.facade()->sourceThemeId(), QStringLiteral("qinda-dark"));
     QCOMPARE(publisher.facade()->bg().value(QStringLiteral("base")).value<QColor>(),
-             QColor(QStringLiteral("#171a18")));
+             QColor(QStringLiteral("#111e2c")));
 
     QQmlComponent component(&engine);
     component.setData(HostedAppletSource,
@@ -184,7 +184,7 @@ void ShellRuntimeTokenTests::productionPublisherPrecedesHostedApplet()
     QVERIFY(root != nullptr);
     QCOMPARE(root->property("tokenReady").toBool(), true);
     QCOMPARE(root->property("backgroundBase").value<QColor>(),
-             QColor(QStringLiteral("#171a18")));
+             QColor(QStringLiteral("#111e2c")));
 
     auto *hostedApplet = itemNamed(root, QStringLiteral("taskListApplet"));
     auto *loadingLabel = itemNamed(root, QStringLiteral("taskListLoadingLabel"));
@@ -199,7 +199,7 @@ void ShellRuntimeTokenTests::productionPublisherPrecedesHostedApplet()
     QVERIFY(themes.selectById(QStringLiteral("qinda-light")));
     QCOMPARE(publisher.facade()->generation(), priorGeneration + 1);
     QCOMPARE(root->property("backgroundBase").value<QColor>(),
-             QColor(QStringLiteral("#e9e8e4")));
+             QColor(QStringLiteral("#dde7e8")));
 }
 
 void ShellRuntimeTokenTests::accessibilityInputsRepublishTokens()
