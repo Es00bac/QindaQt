@@ -49,3 +49,13 @@ These assignments do not advance product milestones. Gentoo is the host package
 manager boundary; an actual missing dependency requires a native authentication
 dialog, never a password in worker prompts or logs. Existing dependencies cover
 the current work.
+
+## Active user-reported completion repair — 2026-09-06T09:12:59-06:00
+
+| Outcome | Owner | Base / isolated worktree | Reviewer | Next gate | Collision/help | Observed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Stable global menu | finish-menu-kimi | `8958c38f` / `.cache/finish-menu / fix/finish-menu` | unclaimed until immutable candidate | Reproduce and repair flashing focus/menu refresh; regression and runtime tests | Shared Settings navigation owned by finish-customize; session activation by finish-services; nested slot and build/sys-dev by manager | 2026-09-06T09:12:59-06:00; live execution observed, no integrated progress claimed |
+
+- 2026-09-06T09:51:01-06:00 — Integration head97745214: Display/Clipboard recovery and service activation integrated; build passed, service broad98/100 with bounded Bluetooth fixture repair assigned. Customize b3548cd6 and theme5d1cab13 in exact GLM review. Kimi global-menu final package build active. Controls/default wallpaper and ICC completion remain active, no completion credit yet.
+
+- 2026-09-06T10:15:52-06:00 — Integrateddf090f0f closes Bluetooth fixture regressions: affected rebuild and full service100/100pass; live NetworkReady/Full. Menua02e rejected by independent reviewer; exact first-layout rejection repair running in same Kimi lane. ICC884a independently reviewed; theme15baseline repair delegated GLM, shared ComboBox popup repair Luna, Settings followup/review active. Claude scope includes Meta+Arrow/native geometry conflicts as well as docking. All remaining candidates await acceptance and real nested proof.

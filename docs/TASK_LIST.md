@@ -7,6 +7,39 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Complete the installed desktop experience (2026-09-06)
+
+The physical-session report supersedes the earlier visual-polish deferral.
+These are concurrent requirements; later reports add to this list rather than
+replace earlier work:
+
+- Restore usable Display, Audio, Power, Bluetooth, Network, and Clipboard
+  service states, including cold startup and recovery. Display/Clipboard
+  activation and Audio/Power/Network/Bluetooth recovery code are integrated;
+  the repaired Bluetooth fixtures and the full 100-test service selection pass.
+- Finish existing Color profile application and explain actual hardware
+  capabilities without protocol jargon or nonfunctional controls.
+- Make Settings and the wider desktop human-friendly: focused Appearance
+  destinations, clear selection and apply behavior, usable customization,
+  consistent controls, compact navigation, and real visual verification.
+- Develop the QindaPunk-inspired theme with original, reference-informed art
+  direction. Use image generation across the design process where useful;
+  preserve explicit wallpaper/theme choices. Candidate palettes and shared
+  controls remain under review, not complete.
+- Eliminate global-menu flashing and inconsistent presentation. A tested
+  candidate awaits independent review and integrated runtime verification.
+- Make Meta+Shift left-drag consistently combine windows into QindaQt
+  containers without competing KWin custom/thirds tiling. The input-order and
+  modifier-timing conflict is being repaired and needs nested interaction proof.
+  Meta+Arrow and other native KWin move/resize/maximize/tile paths must also
+  respect grouped-member ownership: no member may move relative to the desktop
+  while still bound to the container layout.
+
+Claude, GLM through Kimi, Kimi, and Codex workers contribute isolated candidates
+and independent reviews. Product completion requires integrated evidence;
+worker activity alone does not advance the milestone. See [Handoff](HANDOFF.md)
+for the current installed and integrated boundaries.
+
 ### Consistent appearance and first-launch tutorial (2026-09-05)
 
 Correct light/dark and contrast across shell, popups, Settings, and first-party

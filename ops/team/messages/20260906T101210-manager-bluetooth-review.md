@@ -1,0 +1,3 @@
+# Independent Bluetooth fixture review
+
+Candidate `8f1dd2435e60b611040b93c0709f5f701a97951c`: accepted by the manager as a different reviewer from the Kimi implementer. Inspected exact three-path diff, truthful absent-upstream projection, private fake activation environment and unchanged boundary poison checker. Independently ran six focused activation/adapter/operations/pairing/boundary/poison rows in the clean candidate worktree:6/6, exit0. Integrated as `df090f0f`. Corrected adjacent existing documentation that incorrectly said BlueZ was never activated; the adapter requests bus activation without supervising the system daemon. Integrated build and service gate rerun follow.
