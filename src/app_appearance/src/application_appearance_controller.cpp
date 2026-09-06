@@ -127,7 +127,7 @@ void ApplicationAppearanceController::applySnapshot() {
   const Qt::ColorScheme platformScheme =
       QGuiApplication::styleHints()
           ? QGuiApplication::styleHints()->colorScheme()
-          : Qt::ColorScheme::Light;
+          : Qt::ColorScheme::Unknown;
   const auto resolved = resolveAppearanceTheme(
       m_installedThemes, {.themeId = requested, .colorScheme = *scheme},
       platformScheme);
