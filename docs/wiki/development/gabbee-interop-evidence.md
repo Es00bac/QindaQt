@@ -100,12 +100,12 @@ explicitly acknowledged host-uinput lane this evidence must never enable.
 ## Host AT-SPI bridge prerequisite
 
 Live AT-SPI is unavailable when Qt Gui was built without its AT-SPI bridge. On
-Gentoo, the first private Gabbee or screen-reader run therefore requires one
-coherent matching-version rebuild: `qtbase[accessibility]`,
-`qtdeclarative[accessibility]`, `kwin[accessibility]`, and
-`kwin-x11[accessibility]`; Portage adds `libqaccessibilityclient`. KWin
-depends on Qtbase with the same USE value, so rebuilding Qtbase alone is not a
-valid transaction. `at-spi2-core` and
+the qualification host, Qt lacked that bridge. Enabling it required a coherent
+matching-version rebuild of the installed package set:
+`qtbase[accessibility]`, `qtdeclarative[accessibility]`, `kwin[accessibility]`,
+and `kwin-x11[accessibility]`; Portage adds `libqaccessibilityclient`. The
+installed KWin variants depend on Qtbase with the same USE value, so rebuilding
+Qtbase alone is not a valid transaction. `at-spi2-core` and
 `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` cannot provide a bridge that was omitted
 from Qt at build time.
 
