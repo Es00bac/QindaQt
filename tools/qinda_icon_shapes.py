@@ -13,8 +13,19 @@ solid icon color instead of vanishing. See docs/wiki/shell/icon-theme.md.
 """
 from dataclasses import dataclass
 
-INK = "#172528"
-PORCELAIN = "#F3EFE5"
+# AGENT-CONTRACT: INK, PORCELAIN, and AMBER are the icon-side spellings of the
+# accepted QindaPunk identity table in docs/wiki/shell/visual-identity.md (ink
+# night, porcelain, amber) and match the packaged qinda-dark/qinda-light
+# accent roles. First-party application identity (launcher, Settings, File
+# Manager, Terminal, Text Editor, Welcome, shell built-ins in the apps group)
+# is drawn as a BLUE body with a single AMBER accent. JADE is reserved for
+# semantic success/positive state (battery charge, emblem-ok, security-high,
+# transfer/update arrows) and APRICOT for warning/off/secondary warmth (slash
+# overlays, dialog-warning, place folders); neither is a brand accent, so do
+# not re-point a first-party icon back to JADE or blanket-replace either.
+INK = "#111E2C"
+PORCELAIN = "#F5F7F3"
+AMBER = "#D98A32"
 JADE = "#70BFA5"
 BLUE = "#739EBB"
 VIOLET = "#A69AC5"

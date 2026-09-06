@@ -45,7 +45,7 @@ def main() -> None:
         for group in GROUPS
     )
     (ROOT / "index.theme").write_text(
-        "[Icon Theme]\nName=QindaQt\nComment=Soft mineral geometry for QindaQt\n"
+        "[Icon Theme]\nName=QindaQt\nComment=Rounded QindaPunk geometry for QindaQt\n"
         "Inherits=hicolor\nDirectories=" + ",".join(directories) + "\n\n" + sections + "\n",
         encoding="utf-8",
     )

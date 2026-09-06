@@ -1,6 +1,6 @@
 [Icon Theme]
 Name=QindaQt
-Comment=Soft mineral geometry for QindaQt
+Comment=Rounded QindaPunk geometry for QindaQt
 Inherits=hicolor
 Directories=scalable/apps,scalable/actions,scalable/devices,scalable/places,scalable/mimetypes,scalable/categories,scalable/status
 

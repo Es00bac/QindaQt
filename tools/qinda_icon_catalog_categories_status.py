@@ -93,7 +93,7 @@ CANON = {
     ),
     "notification-new": Icon(
         STATUS_GROUP, stroke(BELL_D, width=5) + stroke(BELL_CLAPPER_D, width=5) + dot(46, 14, 4),
-        filled(BELL_D, fill=JADE) + stroke(BELL_CLAPPER_D, color=INK, width=4) + dot(46, 14, 4, APRICOT),
+        filled(BELL_D, fill=BLUE) + stroke(BELL_CLAPPER_D, color=INK, width=4) + dot(46, 14, 4, APRICOT),
     ),
 }
 
