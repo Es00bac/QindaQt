@@ -199,9 +199,12 @@ Startup selects exactly one state root in this order: explicit `--state-root`,
 systemd's single `STATE_DIRECTORY`, `XDG_STATE_HOME/qindaqt`, then
 `HOME/.local/state/qindaqt`. A selected value must be absolute, clean, bounded,
 and not `/`; D5 then proves existing-directory ownership, permissions, and
-symlink safety. The systemd user unit supplies `StateDirectory=qindaqt` with
-mode `0700`. Missing, ambiguous, unsafe, or rejected state truth terminates
-startup before the Wayland writer opens.
+symlink safety. The systemd user unit supplies the dedicated
+`StateDirectory=qindaqt-display` with mode `0700`. The distinct directory name
+avoids a legacy QindaQt profile compatibility symlink at
+`XDG_STATE_HOME/qindaqt`, which the journal boundary correctly refuses to
+follow. Missing, ambiguous, unsafe, or rejected state truth terminates startup
+before the Wayland writer opens.
 
 After a valid absent/loaded result, D4 opens its private Wayland connection and
 derives a positive compositor PID with Linux `SO_PEERCRED`. D6 gives only that
