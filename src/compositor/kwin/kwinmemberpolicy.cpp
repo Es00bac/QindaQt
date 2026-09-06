@@ -442,19 +442,34 @@ void KWinMemberPolicyManager::reconnectGroupedWindows(
                     if (eventsAreSuppressed()) {
                         return;
                     }
-                    const auto edge = pureQuickTileEdge(window->requestedQuickTileMode());
-                    if (!edge) {
+                    const auto mode = window->requestedQuickTileMode();
+                    if (mode == KWin::QuickTileMode(KWin::QuickTileFlag::None)) {
+                        // AGENT-GUARD: recursion stop. The clear below
+                        // re-enters this same handler through a nested
+                        // requestTile(nullptr); it must see None here and
+                        // return, or every clear would recurse forever.
                         return;
                     }
                     // AGENT-GUARD: requestedTileChanged fires synchronously
                     // inside Window::requestTile() for both X11 and Wayland
                     // windows (unlike quickTileModeChanged, which is
-                    // asynchronous for xdg-shell clients), so this revert
-                    // lands before any frame can present the native tile. A
-                    // grouped member's frame is owned by its container; the
-                    // native quick-tile default must never win it.
+                    // asynchronous for xdg-shell clients), and Q_EMIT is the
+                    // last statement in that function, so this nested clear
+                    // completes before the outer request returns with no
+                    // double-apply race. A grouped member's frame is owned by
+                    // its container: every non-None request is cleared here,
+                    // corner combos and Custom included, not only the pure
+                    // single-edge modes that additionally redirect below.
                     window->setQuickTileMode(KWin::QuickTileFlag::None,
                                              window->frameGeometry().center());
+                    const auto edge = pureQuickTileEdge(mode);
+                    if (!edge) {
+                        // Corner combos and Custom have no typed container-
+                        // topology equivalent yet. The native mode is already
+                        // cleared above, so the member stays where it is
+                        // instead of tiling outside its container.
+                        return;
+                    }
                     QString error;
                     if (m_quickTileRequest
                         && !m_quickTileRequest(containerId, id, *edge, &error)) {
