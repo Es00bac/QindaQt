@@ -202,10 +202,11 @@ void PowerPageTest::screenLockControlsRespectAutomaticLock() {
   auto [guard, page] = createPage(QSize(900, 700));
   QVERIFY(page != nullptr);
   auto *toggle = findItem(page, QStringLiteral("powerAutomaticScreenLock"));
-  auto *increase = findItem(page, QStringLiteral("powerScreenLockTimeoutIncrease"));
+  auto *selector = findItem(page, QStringLiteral("powerScreenLockTimeoutSelector"));
   QVERIFY(toggle != nullptr);
-  QVERIFY(increase != nullptr);
-  QVERIFY(!increase->isEnabled());
+  QVERIFY(selector != nullptr);
+  QVERIFY(!selector->isEnabled());
+  QCOMPARE(m_screenLock->timeoutCalls, 0);
   // Qt 6 emits toggled() only for interactive toggles, so drive the Switch
   // with a real click instead of the programmatic toggle() method.
   const QPoint toggleCenter = toggle->mapToScene(
@@ -213,7 +214,22 @@ void PowerPageTest::screenLockControlsRespectAutomaticLock() {
   QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, toggleCenter);
   QTRY_COMPARE(m_screenLock->automaticLockCalls, 1);
   QVERIFY(m_screenLock->automaticLock);
-  QTRY_VERIFY(increase->isEnabled());
+  QTRY_VERIFY(selector->isEnabled());
+
+  // A real keyboard selection, rather than a programmatic currentIndex
+  // update, is the only path that writes the chosen timeout.
+  selector->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), selector);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_screenLock->timeoutCalls, 1);
+  QCOMPARE(m_screenLock->timeoutMinutes, 10);
+
+  m_screenLock->timeoutMinutes = 17;
+  Q_EMIT m_screenLock->changed();
+  QTRY_COMPARE(selector->property("currentText").toString(), QStringLiteral("17 minutes"));
+  QCOMPARE(m_screenLock->timeoutCalls, 1);
 }
 
 QTEST_MAIN(PowerPageTest)
