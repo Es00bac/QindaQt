@@ -24,6 +24,22 @@ set_tests_properties(
         LABELS "integration;install;session;display"
 )
 
+add_test(
+    NAME desktop.virtual.window-switcher-stage
+    COMMAND
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_switcher_stage.py"
+        --stage-root "${_qindaqt_desktop_stage}"
+)
+set_tests_properties(
+    desktop.virtual.window-switcher-stage
+    PROPERTIES
+        TIMEOUT 10
+        RUN_SERIAL TRUE
+        FIXTURES_REQUIRED desktop_virtual_stage
+        LABELS "integration;install;session;display;package"
+)
+
 set(_qindaqt_desktop_system_library_arguments)
 foreach(_system_directory IN LISTS CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)
     if(IS_ABSOLUTE "${_system_directory}" AND EXISTS "${_system_directory}")

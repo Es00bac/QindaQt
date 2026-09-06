@@ -12,6 +12,13 @@ class PackagePayloadError(RuntimeError):
     """The staged first-party Settings import closure is incomplete or unsafe."""
 
 
+WINDOW_SWITCHER_FILES = (
+    "metadata.json",
+    "contents/ui/main.qml",
+    "contents/ui/QindaQtSwitcherFrame.qml",
+    "contents/ui/QindaQtSwitcherRow.qml",
+)
+
 NETWORK_QML_FILES = (
     "qml/NetworkAccessPointSection.qml",
     "qml/NetworkDeviceSection.qml",
@@ -36,18 +43,49 @@ def _relative_path(value: str, label: str) -> Path:
     return Path(*path.parts)
 
 
-def _regular_file(root: Path, relative: Path, label: str) -> Path:
+def _regular_file(
+    root: Path,
+    relative: Path,
+    label: str,
+    *,
+    package_name: str = "Network package",
+) -> Path:
     candidate = root / relative
     try:
         info = candidate.lstat()
     except OSError as error:
-        raise PackagePayloadError(f"Network package omitted {label}") from error
+        raise PackagePayloadError(f"{package_name} omitted {label}") from error
     if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
-        raise PackagePayloadError(f"Network package {label} is not a regular file")
+        raise PackagePayloadError(f"{package_name} {label} is not a regular file")
     resolved = candidate.resolve(strict=True)
     if root not in resolved.parents:
-        raise PackagePayloadError(f"Network package {label} escapes its module")
+        raise PackagePayloadError(f"{package_name} {label} escapes its package")
     return resolved
+
+
+def authenticate_window_switcher_package(stage_root: Path) -> tuple[Path, ...]:
+    """Authenticate the exact production KWin TabBox payload in a stage."""
+
+    stage = stage_root.resolve(strict=True)
+    package = stage / "share/kwin/tabbox/qindaqt"
+    try:
+        info = package.lstat()
+    except OSError as error:
+        raise PackagePayloadError("Window switcher package directory is missing") from error
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+        raise PackagePayloadError("Window switcher package is not a regular directory")
+    package = package.resolve(strict=True)
+    if stage not in package.parents:
+        raise PackagePayloadError("Window switcher package escapes the stage")
+    return tuple(
+        _regular_file(
+            package,
+            Path(relative),
+            relative,
+            package_name="Window switcher package",
+        )
+        for relative in WINDOW_SWITCHER_FILES
+    )
 
 
 def authenticate_network_qml_package(
