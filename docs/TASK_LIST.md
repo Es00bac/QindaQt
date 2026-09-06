@@ -67,11 +67,11 @@ replace earlier work:
   working CI dependencies, isolated worker branches, and ignored build/session
   output. `origin/main` was pushed and independently read back at `ce63d1bb`.
 - Make Meta+Shift left-drag consistently combine windows into QindaQt
-  containers without competing KWin custom/thirds tiling. The input-order and
-  modifier-timing conflict is being repaired and needs nested interaction proof.
-  Meta+Arrow and other native KWin move/resize/maximize/tile paths must also
-  respect grouped-member ownership: no member may move relative to the desktop
-  while still bound to the container layout.
+  containers without competing KWin custom/thirds tiling. Normal and late-Shift
+  grouping pass private runs `7bf2271d708648ee99e1afd80493ef40` and
+  `d90a2e7ddd8747a38dea9e06dc106bb9`, including actual member-frame convergence
+  and container-local Meta+Arrow. Standalone Welcome still tiles independently.
+  Deploy these verified repairs with the final compositor refresh.
 - Show each window container as one dock/task-list entry, suppress its member
   entries, and route activation/minimize/restoration through the container.
   Detaching restores a standalone task; verify transfers, member exit, and
@@ -105,6 +105,11 @@ replace earlier work:
   ordinary applications and terminals, including correct grouped-window focus.
 - Qualify fullscreen video and games: fullscreen entry/exit and restoration,
   input focus, panel visibility, and pointer capture/confinement behavior.
+  Controlled native fullscreen run `0aca8a74926c44f98def9b87b2a83328` passes
+  competing-peer rejection, outside Alt-Tab, and exact grouped restoration while
+  retaining outside focus. Pointer lock/confinement/relative-motion run
+  `d8f380054b0c44fe8b176692063e6e11` also passes. Both clean up completely;
+  these representative clients do not establish compatibility with every game.
 
 Claude, GLM through Kimi, Kimi, and Codex workers contribute isolated candidates
 and independent reviews. Product completion requires integrated evidence;
