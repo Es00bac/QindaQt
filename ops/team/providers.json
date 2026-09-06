@@ -4,9 +4,9 @@
       "id": "openai",
       "name": "OpenAI / Codex",
       "status": "available",
-      "updatedAt": "2026-09-02T20:42:51-06:00",
+      "updatedAt": "2026-09-06T17:12:51.635951-06:00",
       "estimatedReturnAt": "",
-      "evidence": "Direct probe: `codex exec -m gpt-5.6-sol` answered; two Codex lanes (Bluetooth B1 repair, Global Menu G1) are live."
+      "evidence": "Current Codex manager and three bounded workers are actively reviewing/qualifying the existing checkpoint."
     },
     {
       "id": "gemini",
@@ -19,28 +19,26 @@
     {
       "id": "glm",
       "name": "Z.AI GLM",
-      "status": "unavailable",
-      "updatedAt": "2026-09-03T04:28:43-06:00",
-      "estimatedReturnAt": "2026-09-03T20:25:42-06:00",
-      "evidence": "Direct probe at 01:25 MDT: `kimi -m zai-coding-plan/glm-5.3-flash` answered after the 5-hour window reset; the display-color lane is relaunched on GLM flash with polling watchers.",
-      "note": "429 \"Usage limit reached for 5 hour ... reset at 2026-09-03 20:25:42\" observed on two lanes around 02:45; partial work preserved as WIP commits and reassigned to Kimi"
+      "status": "available",
+      "updatedAt": "2026-09-06T17:12:51.635951-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "Kimi CLI Z.AI route is returning assistant/tool events for bounded network diagnosis; requested alias zai-coding-plan/glm-5.3-flash. Exact server model identity is not separately attested."
     },
     {
       "id": "claude",
       "name": "Anthropic Claude",
-      "status": "available",
-      "updatedAt": "2026-09-02T20:42:51-06:00",
-      "estimatedReturnAt": "",
-      "evidence": "Claude Code `claude-fable-5-1` is the Program Manager process."
+      "status": "unavailable",
+      "updatedAt": "2026-09-06T17:12:51.635951-06:00",
+      "estimatedReturnAt": "2026-09-06T19:00:00-06:00",
+      "evidence": "Direct Claude CLI response: API429 session limit, resets7pm America/Denver. Zero model usage; requested review was rerouted to Codex."
     },
     {
       "id": "kimi",
       "name": "Moonshot Kimi",
       "status": "available",
-      "updatedAt": "2026-09-03T09:26:11-06:00",
+      "updatedAt": "2026-09-06T17:12:51.635951-06:00",
       "estimatedReturnAt": "",
-      "evidence": "Direct probes at 01:46, 02:02, and 02:12 MDT still returned the 403 5-hour usage limit; next probe on the 02:20 reminder and again at 02:45. Paused Kimi lanes keep their preserved WIP.",
-      "note": "Second 5-hour window reset confirmed by a k3 probe at 09:28; one Kimi lane running (Color Settings route)"
+      "evidence": "Kimi CLI is actively completing preserved screen-lock Settings work; requested alias kimi-code/k3-256k. Independent user file-manager worker retains separate ownership."
     }
   ]
 }
