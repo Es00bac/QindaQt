@@ -83,7 +83,7 @@ Item {
                 visible: root.lanes.length === 0
                 name: "preferences-plugin"
                 size: root.iconExtent
-                color: Tokens.fg.disabled
+                color: Tokens.fg.muted
                 symbolic: true
                 fallbackText: qsTr("Status")
                 Accessible.ignored: true

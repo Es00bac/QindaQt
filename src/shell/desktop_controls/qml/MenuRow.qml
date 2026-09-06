@@ -45,7 +45,7 @@ T.Button {
             visible: row.iconName.length > 0 || row.text.length > 0
             name: row.iconName
             size: 18
-            color: row.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            color: row.enabled ? Tokens.fg.default : Tokens.fg.muted
             symbolic: true
             fallbackText: row.text
             Accessible.ignored: true

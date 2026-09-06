@@ -52,7 +52,7 @@ T.ToolButton {
             Layout.alignment: Qt.AlignVCenter
             name: control.iconName
             size: control.iconExtent
-            color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            color: control.enabled ? Tokens.fg.default : Tokens.fg.muted
             symbolic: true
             fallbackText: control.fallbackText
             Accessible.ignored: true

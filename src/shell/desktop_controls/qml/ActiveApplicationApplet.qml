@@ -59,7 +59,7 @@ Item {
                 objectName: "activeApplicationIcon"
                 name: root.hasWindow ? String(root.access.iconName) : "preferences-system-windows"
                 size: Math.max(0, Math.min(18, root.height - Tokens.space["2"]))
-                color: root.hasWindow ? Tokens.fg.default : Tokens.fg.disabled
+                color: root.hasWindow ? Tokens.fg.default : Tokens.fg.muted
                 symbolic: !root.hasWindow
                 fallbackText: root.hasWindow ? root.applicationName : qsTr("Desktop")
                 Accessible.ignored: true
