@@ -89,11 +89,13 @@ void ColorPageTest::rendersWideTruthAndAccessibleControls() {
   auto *output = findItem(page, QStringLiteral("colorOutput_edid:dp1"));
   auto *profile = findItem(page, QStringLiteral("colorProfile_vendor-srgb"));
   auto *import = findItem(page, QStringLiteral("colorImportButton"));
+  auto *embeddedClose = findItem(page, QStringLiteral("colorCloseButton"));
   auto *summary = findItem(page, QStringLiteral("colorCatalogSummary"));
   QVERIFY(purpose != nullptr);
   QVERIFY(output != nullptr);
   QVERIFY(profile != nullptr);
   QVERIFY(import != nullptr);
+  QVERIFY(embeddedClose == nullptr);
   QVERIFY(summary != nullptr);
   QVERIFY(output->isEnabled());
   QVERIFY(profile->isEnabled());
@@ -154,14 +156,21 @@ void ColorPageTest::compactAndUnavailableFocusRemainAdmitted() {
   retry->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), retry);
 
+  // If retry is not admitted, the page stays keyboard-enterable through its
+  // existing local import action. Closing remains available on the window.
+  m_model->retryAvailable = false;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  auto *import = findItem(page, QStringLiteral("colorImportButton"));
+  QVERIFY(import != nullptr);
+  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), import);
+
   // Ready truth without any domain rows falls back to the always-admitted
   // Import button.
   m_model->ready = true;
   m_model->unavailable = false;
   Q_EMIT m_model->viewChanged();
   QCoreApplication::processEvents();
-  auto *import = findItem(page, QStringLiteral("colorImportButton"));
-  QVERIFY(import != nullptr);
   QVERIFY(import->isEnabled());
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), import);
   import->forceActiveFocus(Qt::TabFocusReason);

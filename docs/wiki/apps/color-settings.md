@@ -118,8 +118,10 @@ unavailable, degraded, stale, error, and authority states are visible text.
 
 The page computes its host-entry target from current admission truth: the
 first enabled profile or unassign action, then the first enabled display
-selection, then the always-admitted Import button, then Retry, then the
-always-enabled Close action. A fenced domain action is never nominated.
+selection, then the always-admitted Import button. Service-unavailable truth
+prefers Retry and falls back to Import when retry is not admitted. A fenced
+domain action is never nominated. The page has no embedded Close button;
+window closing stays with the Settings shell and desktop window controls.
 Escape returns focus to the active Color PageTab in both layouts, and Ctrl+0
 selects the appended tenth route.
 
