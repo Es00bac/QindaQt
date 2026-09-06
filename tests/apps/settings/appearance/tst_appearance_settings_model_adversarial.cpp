@@ -146,7 +146,7 @@ private:
     [[nodiscard]] AppearanceSettingsModel *makeModel()
     {
         auto *model = new AppearanceSettingsModel(
-            m_client, fixtureThemes(), Qt::ColorScheme::Light, nullptr, this);
+            m_client, fixtureThemes(), QVariantList {}, Qt::ColorScheme::Light, nullptr, this);
         if (!m_client.start()) {
             delete model;
             return nullptr;

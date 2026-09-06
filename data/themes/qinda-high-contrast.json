@@ -3,7 +3,7 @@
   "id": "qinda-high-contrast",
   "name": "Qinda High Contrast",
   "variant": "high-contrast",
-  "iconTheme": "breeze-dark",
+  "iconTheme": "QindaQt",
   "fontFamily": "Noto Sans",
   "monoFontFamily": "Noto Sans Mono",
   "cornerRadius": 4,

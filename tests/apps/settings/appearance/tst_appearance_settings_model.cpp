@@ -175,7 +175,7 @@ private:
     [[nodiscard]] AppearanceSettingsModel *makeModel(Qt::ColorScheme scheme)
     {
         auto *model = new AppearanceSettingsModel(
-            m_client, loadFixtureThemes(), scheme, nullptr, this);
+            m_client, loadFixtureThemes(), QVariantList {}, scheme, nullptr, this);
         if (!m_client.start()) {
             delete model;
             return nullptr;

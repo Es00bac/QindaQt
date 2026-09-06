@@ -23,6 +23,11 @@ QVariantList AppearanceSettingsModel::installedThemes() const
     return entries;
 }
 
+QVariantList AppearanceSettingsModel::bundledWallpapers() const
+{
+    return m_bundledWallpapers;
+}
+
 QString AppearanceSettingsModel::resolvedThemeId() const
 {
     if (m_resolution.themeIndex < 0

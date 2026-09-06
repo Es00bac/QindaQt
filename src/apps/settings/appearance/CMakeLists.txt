@@ -16,6 +16,7 @@ target_sources(
         appearance_settings_model_preview.cpp
         appearance_settings_model_results.cpp
         appearance_theme_catalog.cpp
+        wallpaper_catalog.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -25,6 +26,7 @@ target_sources(
             include/qindaqt/apps/settings_appearance/appearance_qml_composition.h
             include/qindaqt/apps/settings_appearance/appearance_settings_model.h
             include/qindaqt/apps/settings_appearance/appearance_theme_catalog.h
+            include/qindaqt/apps/settings_appearance/wallpaper_catalog.h
 )
 target_link_libraries(
     qindaqt_settings_appearance
@@ -100,4 +102,18 @@ install(
         qml/SegmentedChoiceRow.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
     COMPONENT SettingsAppearanceRuntime
+)
+
+# Public artwork layout shared by Appearance Settings and installed sessions.
+install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/data/wallpapers/"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/wallpapers"
+    COMPONENT SettingsAppearanceRuntime
+    OPTIONAL
+)
+install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/data/icons/QindaQt"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/icons"
+    COMPONENT SettingsAppearanceRuntime
+    OPTIONAL
 )

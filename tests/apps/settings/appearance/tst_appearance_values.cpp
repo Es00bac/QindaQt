@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
+#include "qindaqt/apps/settings_appearance/wallpaper_catalog.h"
 #include "qindaqt/settings/settings_schema.h"
 
 #include <QtTest>
@@ -26,6 +27,7 @@ private slots:
     void decodeRejectsWrongTypesAndUnknownTokens();
     void validationRequiresInstalledThemesAndBounds();
     void scopedKeysMatchSchemaKeys();
+    void bundledWallpaperCatalogIsOrderedAndDeduplicated();
 };
 
 void AppearanceValuesTests::tokenRoundTripsCoverEveryEnumeratedValue()
@@ -207,6 +209,34 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     QVERIFY(uiScale->maximum.has_value());
     QCOMPARE(*uiScale->minimum, 0.5);
     QCOMPARE(*uiScale->maximum, 3.0);
+}
+
+
+void AppearanceValuesTests::bundledWallpaperCatalogIsOrderedAndDeduplicated()
+{
+    QTemporaryDir first;
+    QTemporaryDir second;
+    QVERIFY(first.isValid());
+    QVERIFY(second.isValid());
+    auto touch = [](const QString &path) {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write("png"), 3);
+    };
+    touch(first.filePath(QStringLiteral("jade-fold.png")));
+    touch(first.filePath(QStringLiteral("not-an-image.jpg")));
+    touch(second.filePath(QStringLiteral("jade-fold.png")));
+    touch(second.filePath(QStringLiteral("ink-tide.png")));
+
+    const QVariantList entries = discoverBundledWallpapers(
+        {first.path(), second.path(), QStringLiteral("/missing")});
+    QCOMPARE(entries.size(), 2);
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Jade fold"));
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("path")).toString(),
+             first.filePath(QStringLiteral("jade-fold.png")));
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Ink tide"));
 }
 
 QTEST_GUILESS_MAIN(AppearanceValuesTests)
