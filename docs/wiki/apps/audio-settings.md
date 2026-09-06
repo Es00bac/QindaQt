@@ -89,10 +89,10 @@ output rows before input rows before stream rows — as the Settings host entry
 target, recomputed whenever the projection changes, so a control the
 snapshot disabled (for example a default output with `canSetVolume == false`)
 is never targeted while another admitted action exists. When no admitted
-control exists the page falls back to Retry or Close, and forward Tab from
-Close wraps to the entry target while reverse Tab returns to the preceding
-enabled control (Retry when visible, otherwise the last admitted control in
-the route), keeping the cycle inside the route.
+control exists the page falls back to Retry, then the route surface itself.
+Closing Settings remains a single window-level action; the page does not add a
+second Close button. Forward and reverse Tab stay within the route and use the
+route surface when no admitted domain action is available.
 
 Device and stream rows expose accessible names, descriptions, and current
 state. Sliders announce the target and the known percent level; switches
@@ -121,8 +121,7 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   compact focus reveal, and keyboard cycling — including the negative
   control where a valid snapshot leaves the default output with no admitted
   control and host entry must fall through to the first admitted action
-  elsewhere, and reverse Tab from Close reaching the preceding enabled
-  control with Retry visible and hidden; and
+  elsewhere, and safe focus fallback when Retry is visible and hidden; and
 - the Settings Center navigation row additionally proves Ctrl+6 selection,
   the Audio route tab's accessible name/role, and Tab entry plus Escape
   return in both the wide (720×520) and compact (440×360) host layouts.

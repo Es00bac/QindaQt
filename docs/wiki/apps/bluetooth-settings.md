@@ -96,10 +96,10 @@ roles, and checked/disabled state. Device actions announce class, pairing,
 connection, and signal truth. Busy, unavailable, degraded, error, and authority
 states are visible text rather than color-only cues.
 
-The declared host-entry focus target is the Close action. It is always enabled
-and admitted, including empty, unavailable, degraded, and busy states, so Tab
-from the active route tab never lands on a disabled domain action. Escape
-rejects the exact active prompt when its reply lane is free; otherwise it
+The route surface is the safe host-entry focus target when no adapter action is
+admitted. Closing Settings remains a single window-level action, so this route
+does not add a duplicate Close button. Escape rejects the exact active prompt
+when its reply lane is free; otherwise it
 returns focus to the active wide or compact Bluetooth tab. Exactly one enabled
 window-context Escape shortcut exists in the real Settings host: Settings
 Center's window shortcut yields — is disabled — while this route shows an

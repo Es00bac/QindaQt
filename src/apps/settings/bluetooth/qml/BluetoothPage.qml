@@ -13,10 +13,9 @@ T.Page {
     required property var bluetoothSettings
     signal closeRequested()
 
-    // AGENT-GUARD: Settings navigation enters the route through this target.
-    // Close is always admitted and enabled, including empty, unavailable, and
-    // busy states; the host must never focus a disabled domain action.
-    readonly property Item firstFocusTarget: closeButton
+    // The page itself is the safe host focus target while no adapter action is
+    // admitted. Page-level Close actions duplicate the window affordance.
+    readonly property Item firstFocusTarget: root
 
     title: qsTr("Bluetooth")
     background: Rectangle { color: Tokens.bg.base }
@@ -124,7 +123,7 @@ T.Page {
 
             function revealActiveFocus() {
                 if (root.Window.window !== null
-                        && root.Window.window.activeFocusItem !== closeButton) {
+                        && root.Window.window.activeFocusItem !== root) {
                     revealItem(root.Window.window.activeFocusItem)
                 }
             }
@@ -171,16 +170,6 @@ T.Page {
                 Accessible.name: text
             }
 
-            Button {
-                id: closeButton
-                objectName: "bluetoothCloseButton"
-                available: true
-                busy: false
-                emphasized: false
-                text: qsTr("Close")
-                accessibleDescription: qsTr("Close Settings and stop searching for devices")
-                onClicked: root.closeRequested()
-            }
         }
     }
 }

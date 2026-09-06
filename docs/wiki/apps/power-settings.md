@@ -84,8 +84,9 @@ state. Brightness sliders expose slider role, target name, normalized value,
 and exact raw value in both visible and accessible descriptions.
 
 The page computes its host-entry target from current admission truth: the first
-enabled profile action, then the first enabled keyboard slider, then Retry, then
-the always-enabled Close action. A disabled internal slider or fenced domain
+enabled profile action, then the first enabled keyboard slider, then Retry,
+then the route surface. Closing Settings remains a single window-level action;
+the page does not duplicate it. A disabled internal slider or fenced domain
 action is never nominated. Escape returns focus to the active Power PageTab in
 both layouts, and Ctrl+8 selects the appended eighth route.
 

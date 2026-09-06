@@ -83,12 +83,13 @@ and [Network secret agent](../architecture/network-secret-agent.md).
 The page uses only QST-1 semantic roles and QindaQt.Controls. At compact sizes,
 the same ordered content remains vertically scrollable. Page Up/Page Down and
 Ctrl+Home/Ctrl+End move through it, and changing keyboard focus reveals the
-focused control. The page declares its first eligible action—Scan, Reload, or
-Close—as the Settings host entry target and keeps forward and reverse Tab
-navigation within the route.
+focused control. The page declares its first eligible action—Scan or Reload—as
+the Settings host entry target and keeps forward and reverse Tab navigation
+within the route. Closing Settings remains a single window-level action; the
+route does not duplicate it with a page button.
 
 Inventory cards expose accessible names, descriptions, roles, current state,
-and disabled state. Scan, reload, connect, disconnect, and close have explicit
+and disabled state. Scan, reload, connect, and disconnect have explicit
 accessible action names. Stale, unavailable, pending, and error notices use
 truthful visible text rather than color alone.
 

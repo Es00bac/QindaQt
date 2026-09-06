@@ -192,19 +192,12 @@ void BluetoothPageTest::rendersAccessibleInlinePairingPrompt() {
 void BluetoothPageTest::keepsCompactFallbackFocusEnabled() {
   auto [guard, page] = createPage(QSize(420, 320));
   QVERIFY(page != nullptr);
-  auto *close = findItem(page, QStringLiteral("bluetoothCloseButton"));
   auto *adapterLayout = findItem(
       page, QStringLiteral("bluetoothAdapterLayout_adapter-61-400"));
-  QVERIFY(close != nullptr);
-  QVERIFY(close->isEnabled());
+  QVERIFY(findItem(page, QStringLiteral("bluetoothCloseButton")) == nullptr);
   QVERIFY(adapterLayout != nullptr);
   QCOMPARE(adapterLayout->property("columns").toInt(), 1);
-  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), close);
-  close->forceActiveFocus(Qt::TabFocusReason);
-  QTRY_COMPARE(m_view->activeFocusItem(), close);
-  auto *closeAccessible = QAccessible::queryAccessibleInterface(close);
-  QVERIFY(closeAccessible != nullptr);
-  QCOMPARE(closeAccessible->role(), QAccessible::Button);
+  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), page);
 }
 
 void BluetoothPageTest::presentsUnavailableAndBusyTruth() {
@@ -219,11 +212,9 @@ void BluetoothPageTest::presentsUnavailableAndBusyTruth() {
   Q_EMIT m_model->viewChanged();
   QCoreApplication::processEvents();
   auto *state = findItem(page, QStringLiteral("bluetoothServiceState"));
-  auto *close = findItem(page, QStringLiteral("bluetoothCloseButton"));
   QVERIFY(state != nullptr);
   QCOMPARE(state->property("status").toInt(), 3); // StateCard.Error
-  QVERIFY(close != nullptr);
-  QVERIFY(close->isEnabled());
+  QVERIFY(findItem(page, QStringLiteral("bluetoothCloseButton")) == nullptr);
 }
 
 QTEST_MAIN(BluetoothPageTest)
