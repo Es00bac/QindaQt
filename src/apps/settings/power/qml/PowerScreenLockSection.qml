@@ -11,6 +11,17 @@ ColumnLayout {
 
     required property var screenLockSettings
     readonly property Item firstActionTarget: automaticLock.enabled ? automaticLock : null
+    readonly property var timeoutOptions: {
+        const minutes = [1, 2, 5, 10, 15, 30, 60, 120, 240]
+        const current = root.screenLockSettings.timeoutMinutes
+        if (minutes.indexOf(current) < 0) {
+            minutes.push(current)
+            minutes.sort(function(left, right) { return left - right })
+        }
+        return minutes.map(function(value) {
+            return { "value": value, "label": qsTr("%1 minutes").arg(value) }
+        })
+    }
 
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
@@ -41,7 +52,7 @@ ColumnLayout {
                 enabled: !root.screenLockSettings.busy
                 accessibleDescription: checked
                     ? qsTr("The screen locks after the selected idle time")
-                    : qsTr("The screen stays unlocked until you lock it yourself")
+                    : qsTr("Automatic idle locking is off")
                 onToggled: root.screenLockSettings.setAutomaticLock(checked)
             }
 
@@ -52,28 +63,30 @@ ColumnLayout {
                 spacing: Tokens.space["2"]
 
                 Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Lock after %1 minutes").arg(root.screenLockSettings.timeoutMinutes)
+                    text: qsTr("Lock after")
                     Accessible.name: text
                     muted: !parent.enabled
                 }
-                Button {
-                    objectName: "powerScreenLockTimeoutDecrease"
-                    text: qsTr("Less")
-                    available: parent.enabled
-                               && root.screenLockSettings.timeoutMinutes > 1
-                    accessibleDescription: qsTr("Reduce automatic lock timeout by one minute")
-                    onClicked: root.screenLockSettings.setTimeoutMinutes(
-                                   root.screenLockSettings.timeoutMinutes - 1)
-                }
-                Button {
-                    objectName: "powerScreenLockTimeoutIncrease"
-                    text: qsTr("More")
-                    available: parent.enabled
-                               && root.screenLockSettings.timeoutMinutes < 240
-                    accessibleDescription: qsTr("Increase automatic lock timeout by one minute")
-                    onClicked: root.screenLockSettings.setTimeoutMinutes(
-                                   root.screenLockSettings.timeoutMinutes + 1)
+                ComboBox {
+                    id: timeoutSelector
+                    objectName: "powerScreenLockTimeoutSelector"
+                    Layout.fillWidth: true
+                    enabled: parent.enabled
+                    model: root.timeoutOptions
+                    textRole: "label"
+                    valueRole: "value"
+                    currentIndex: root.timeoutOptions.findIndex(function(option) {
+                        return option.value === root.screenLockSettings.timeoutMinutes
+                    })
+                    accessibleDescription: qsTr("Choose the automatic idle-lock timeout")
+                    // currentIndex follows the persisted model value. Only an
+                    // interactive activation changes the setting, so a reload
+                    // or live-configure completion cannot write it again.
+                    onActivated: index => {
+                        if (index >= 0 && index < root.timeoutOptions.length)
+                            root.screenLockSettings.setTimeoutMinutes(
+                                root.timeoutOptions[index].value)
+                    }
                 }
             }
 

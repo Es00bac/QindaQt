@@ -47,8 +47,9 @@ silently rolls back or claims live adoption. Retry re-runs the step that
 actually failed — reload, save, or live reload — and only a persisted change
 may reach the `configure` request, so a reported success never describes an
 unsaved change. The current timeout stays stored while automatic
-locking is off, and the page disables its adjustment controls until it is
-turned on again.
+locking is off, and the page disables its duration selector until it is
+turned on again. The selector offers common idle durations and retains a
+previous valid custom duration so opening the page never silently changes it.
 
 ## Exact admission and operation lifetime
 
