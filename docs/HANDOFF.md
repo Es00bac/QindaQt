@@ -30,7 +30,10 @@ applications menu: without it KApplicationTrader returned zero portal entries
 despite the installed desktop file; with it, the exact executable and declared
 Wayland interfaces resolve. No permission checks were bypassed. Approval-control
 accessibility and actual helper text delivery remain open; the run cleaned up
-all private processes.
+all private processes. Run `d7900d12f34b48a0aa167e76d9609573` still finds no Qt
+AT-SPI applications. Host Qt headers confirm `QT_FEATURE_accessibility_atspi_bridge`
+is disabled; the installed Gentoo qtbase USE flags agree. A coherent exact-version
+accessibility rebuild is being planned with its Qt/KWin consumers.
 Gabbee probe repairs are integrated at `088a4a4b`, with 24/24 unit tests and
 strict post-delivery AT-SPI proof. Actual app/terminal insertion remains open.
 
@@ -57,8 +60,10 @@ windows already expose one task/switcher representative per container.
 
 Native client fullscreen entry works in run
 `94570123fbd24f96a57a83163d311ae2`: the grouped owner fills 1920 × 1080.
-A competing peer request then steals activation; Terra owns that real
-regression. The earlier Alt+F11 probe was invalid because the private KWin
+A competing peer request then steals activation. Terra's repair `511ac79b`
+has passed independent source review and integrated policy/package gates (2/2);
+the production compositor builds successfully. Actual peer/outside-focus and
+restoration verification is running against the repaired stage. The earlier Alt+F11 probe was invalid because the private KWin
 configuration leaves that action unbound. Documentation now distinguishes
 accepted development input from configured shortcuts. Outside-window focus,
 peer rejection, and owner-exit restoration remain the strict closing gate.
