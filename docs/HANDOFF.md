@@ -14,44 +14,63 @@ Native pointer lock, confinement, and relative motion pass in private run
 completed its lock/confinement lifecycle; no private processes survived.
 This qualifies the representative protocol client, not every game.
 
-Native menu placement and File → New now pass in actual run
-`e338dd4684cd4a2cb8dbe492d8868686` after `e5955ea8`: the popup appears below
-File and clicking New creates a second editor tab. Switching an open Edit menu
-to File still closes the popup without opening File; Kimi owns that reproduction.
+Native menu placement and File → New pass in actual run
+`e338dd4684cd4a2cb8dbe492d8868686` after `e5955ea8`. The later switching repair
+through `de74a9d1` passes 39/39 integrated menu checks, but actual run
+`7e660a7d33c14f94a683629975678cb6` still closes Edit without opening File.
+Sol is replacing the custom menu-bar event handling with Qt's native MenuBar/
+Menu behavior while preserving the public facade and action-generation checks.
 
-The input helper is installed on the host as `qindaqt-agent-input`
-(`80ec2818`), with installed import/help smoke passing. Backend-only KDE
-compatibility `89c3644b` is independently reviewed and passes integrated
-portal/package gates 5/5. Its drop-in is installed, portal services restarted,
-and the live frontend now reports `AvailableDeviceTypes=7` instead of zero.
-Actual approved input remains a runtime gate: run
-`42d5b27093b64dadb069ff91ef331db7` could not discover the private approval
-controls through AT-SPI. Luna owns the hook diagnosis. Gabbee's probe lifecycle
-and fixture repairs are being reviewed; clipboard-only fallback cannot count as
-text insertion. The repeated Gabbee runtime loop was stopped and the private
-lane returned to root for bounded interactive checks.
+The installed input helper and backend-only KDE compatibility are deployed;
+the live RemoteDesktop frontend reports device mask 7. Private input remains
+unqualified. Exact-owner startup now avoids an auto-activation race, and the
+latest logs establish that the isolated compositor has no PipeWire connection:
+its screencast plugin fails, so the KDE backend cannot open a remote-desktop
+session. Luna owns the private-server prerequisite and helper diagnostics.
+Gabbee probe repairs are integrated at `088a4a4b`, with 24/24 unit tests and
+strict post-delivery AT-SPI proof. Actual app/terminal insertion remains open.
 
-The connected DP-1 projector is enabled beside the unchanged HDMI-A-1 main
-display. The disabled-output inventory and enabled-output ordering repair is
-integrated through `358eff0e`, with fixture correction `0cbde61f`; the integrated
-Display selection passes 51/51. Fable's visual arrangement work is preserved;
-Claude reached its provider limit and Terra is completing the candidate.
+The physical DP-1 projector is enabled beside HDMI-A-1. Disabled-display
+inventory and output ordering are integrated through `358eff0e`, with fixture
+correction `0cbde61f`; 51/51 Display checks pass. Fable's visual arrangement
+canvas, completed by Terra and independently reviewed by Sol, is integrated
+through `86342441`. It provides logical-size display tiles, drag/snap, keyboard
+placement, and per-display scaling through existing reversible transactions.
+The combined Display-page/arrangement and switcher/defaults gates pass 5/5.
+Physical multi-monitor Settings qualification follows the session refresh.
 
-Dock work-area reflow is integrated at `0788ae86`. Actual run
-`0f764f7960e740dca0797c6b183f5111` maximized the container but the dock remained
-visible; Sol is checking visibility policy and the open notification-center
-precondition. No private processes survived any of these three runs.
+Dock maximize and restore now pass the original native reproduction after
+`04954961`: run `0c4d7868b85b44469417c4d28da7398a` verifies expansion when the
+72-pixel dock reservation disappears, contraction when it returns, a second
+expansion, and exact original actual/target frames for both restored members.
+No private processes survived. Focused integrated placement/reconciliation
+checks pass 3/3.
 
-The latest corner/task-switcher report is retained in the task list. Sol owns
-absent-key edge-tiling defaults and a QindaQt native-model TabBox presentation;
-explicit user settings must survive. Live grouped windows already expose exactly
-one task/switcher representative.
+The QindaQt TabBox presentation and absent-key edge/corner defaults are
+integrated through `daf86268`; explicit user choices remain intact. Native
+Alt-Tab visual and activation qualification is in progress. Live grouped
+windows already expose one task/switcher representative per container.
+
+Native client fullscreen entry works in run
+`94570123fbd24f96a57a83163d311ae2`: the grouped owner fills 1920 × 1080.
+A competing peer request then steals activation; Terra owns that real
+regression. The earlier Alt+F11 probe was invalid because the private KWin
+configuration leaves that action unbound. Documentation now distinguishes
+accepted development input from configured shortcuts. Outside-window focus,
+peer rejection, and owner-exit restoration remain the strict closing gate.
+
+The user's separate Kimi K3 Max worker owns file-manager work, including SMB
+browsing and filesystem mounting. Shared coordination is in
+`ops/team/messages/file-manager-kimi-k3-max/`; this team does not infer that
+worker's liveness or completion from the user's ownership notice.
 
 The broad integrated selection at `5400320e` passes **640/640** in 97 seconds.
 It excludes installed/private-desktop rows and the already identified Gabbee
 fixture repair; those gates are handled separately. Source-shape validation
 passes across 2,803 files. Later menu/display/assets candidates require their
 focused integrated checks before deployment.
+
+## Earlier source checkpoints (historical)
 
 Reviewed layer-shell exclusion and development keys are integrated through
 `57b01211`; focused admission/parser/note checks pass 3/3, and the input-device

@@ -22,9 +22,12 @@ replace earlier work:
   per-monitor scaling, mixed-resolution layouts, and understandable Apply/Keep/
   Revert behavior; raw coordinates alone are not the main arrangement workflow.
   The physical DP-1 projector is enabled beside HDMI-A-1; inventory and
-  arrangement presentation repairs are in progress.
+  arrangement presentation repairs are integrated through `86342441`; physical
+  Settings qualification after session refresh remains open.
 - Make maximized containers follow the available work area when the dock hides
-  or changes its reservation, preserving their normal restore size.
+  or changes its reservation, preserving their normal restore size. Integrated
+  `04954961` passes actual hidden/revealed/hidden and exact restored-member
+  geometry in run `0c4d7868b85b44469417c4d28da7398a`.
 - Finish existing Color profile application and explain actual hardware
   capabilities without protocol jargon or nonfunctional controls. ICC application
   is integrated through `deb48cd3`; 13 focused checks pass. Physical color-profile
