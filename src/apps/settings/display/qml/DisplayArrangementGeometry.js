@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 .pragma library
 
-// Pure arrangement geometry for the Display route. Every function takes plain
-// values and returns new plain objects; nothing here touches the model.
+// Pure arrangement geometry for the Display route; it never touches the model.
 //
-// AGENT-CONTRACT: The rules below mirror display_topology validation so the
-// arrangement the user sees is the arrangement the draft admits:
-//   - logical size is pixel size / scale, transposed for 90/270 rotations,
-//     rounded half-up exactly like DisplayTopology::logicalSizeForMode;
+// AGENT-CONTRACT: These rules mirror display_topology validation: logical size
+// is pixel size / scale, transposed for 90/270 rotations, and rounded half-up
+// exactly like DisplayTopology::logicalSizeForMode.
 //   - two enabled displays may share an edge but must never overlap
 //     (positiveOverlap), and edge contact is what keeps the desktop connected
 //     (touchesEdge) so a gap only warns;
@@ -456,8 +454,7 @@ function resizedInPlace(previousRects, nextRects) {
     return found
 }
 
-// Screen mapping for the canvas: fit the union of all displays, centred, at a
-// uniform scale capped so a lone display does not fill the whole canvas.
+// Map the centred display union at a capped uniform scale.
 function fitLayout(rects, width, height, padding, maxFit) {
     var box = boundingBox(rects)
     if (box === null) {
