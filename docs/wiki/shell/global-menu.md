@@ -455,15 +455,18 @@ must capture the observed window/epoch/revision at request time and run
 `InvocationGuard` on that captured lineage before executing anything;
 looking up a "current" tree by id at execution time would recreate the
 request/content race the guard exists to close.
-`GlobalMenuApplet.qml` renders entries as focusable `AbstractButton`
-delegates that carry the provider-owned checked state in the accessible
-attributes: the button itself never toggles locally, so interactive
-activation (pointer, keyboard, or assistive-technology press through the
-attached accessible signal) requests the action and the provider republishes
-new truth instead of presentation inverting state on its own. Entries lay
-out in a `Row` or a real `Column` for vertical panels. Overflow follows a
+`GlobalMenuApplet.qml` projects top-level submenus into a Qt Quick Controls
+`MenuBar`; `GlobalMenuNativeMenu` recursively projects the facade's immutable
+tree into `Menu`, `MenuItem`, and `MenuSeparator` objects. Rare top-level
+actions remain focusable buttons in the same measured layout because a
+`MenuBar` accepts menus only. Those buttons activate on the accepted press
+edge, matching `MenuBarItem` and remaining usable while another native popup
+owns the release grab. Both paths carry provider-owned checked state in their
+accessible attributes and never toggle it locally: activation requests the
+action and the provider republishes new truth. The single layout maps the same
+entry sequence horizontally or vertically. Overflow follows a
 measured geometry contract: the fit loops consume strict upper bounds built
-from real font metrics (`TextMetrics` plus a fixed safety margin) of the
+from real `FontMetrics` measurements plus fixed control padding for the
 labels and the "+N" indicator, iterate against the assigned width
 (horizontal) or height (vertical), and reserve the indicator inside the
 extent — so no real label or affordance can ever be clipped by the limit.
@@ -487,91 +490,47 @@ activation — a retained menu is never actionable for a new focus.
 withdrawals do not enter the loading phase at all: the transport coordinator
 revokes execution authority at the ownership selector without touching the
 facade, so an open popup and armed delegates survive same-provider churn.
-Only genuinely empty state collapses to zero extent.
+Only genuinely empty state collapses to zero extent. Provider loss dismisses
+every open native menu and disables the retained tree. Re-publication replaces
+the top-level menu objects, so their dynamically projected descendants cannot
+retain an obsolete generation.
 
-An enabled submenu opens one `GlobalMenuPopup`. The popup keeps a stack of at
-most six menu levels, skips disabled entries and separators during Up/Down
-navigation, enters with Right, returns with Left, activates once with
-Return/Enter/Space, and closes on Escape, outside press, or focus loss. It
-exposes `PopupMenu`/`MenuItem` roles, names, descriptions, focusability, and
-provider-owned checked state. Reaching the depth cap fails closed. Popup
-activation calls the facade exactly once; the existing invocation guard and
-no-replay dbusmenu client remain the execution lineage. Every projected item
-also carries a facade publication generation. QML must pass that generation
-with activation; the facade rejects stale rendered actions before emitting a
-request. Every accepted publication, including unchanged labels with a new
-provider epoch, refreshes the generation and closes the open popup. Up/Down
-wrap around enabled entries, including disabled or separator tails.
+Each projected `Menu` uses `Popup.Window`. The production layer-shell panel
+retains `Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the
+native transient is the independently focusable keyboard surface. Qt Quick
+Controls owns popup placement, focus, open/close state, parent/submenu
+lifetime, Up/Down traversal, Right/Left submenu traversal, Escape dismissal,
+outside-press dismissal, hover switching, and checkable presentation. QindaQt
+only supplies the immutable content tree, styling, the six-level cap, and the
+one leaf-action callback. Reaching the cap leaves the excess submenu disabled.
+Every leaf callback passes the facade publication generation; the facade then
+applies the existing invocation guard and no-replay dbusmenu rule.
 
-`GlobalMenuPopup` is a `Popup.Window`, not the default item-backed popup. The
-production layer-shell panel deliberately retains
-`Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the opened
-transient is an independently focusable keyboard surface. The registered
-offscreen production-composition path hosts the real `PanelAppletRow` →
-`AppletChip` → `BuiltinAppletContent` chain: **Tab** reaches the first menu-bar
-entry, **Down** opens its popup, **Down** selects the nested submenu,
-**Right** enters it, and **Space** activates exactly once and closes; **Escape**
-closes without activation. That row runs with `QT_FATAL_WARNINGS=1` and also
-requires the popup's effective type to remain `Popup.Window`.
+The native controller is also the Wayland switching contract. KWin's popup
+input filter admits a press on another surface owned by the popup application,
+so a press can reach the layer-shell panel while its menu is open. Qt's
+`MenuBarItem` emits `triggered` from that press, and `MenuBar` closes the old
+menu, highlights the new item, and opens its menu before release. QindaQt does
+not mirror that state or defer a competing focus-loss close. This preserves
+the popup anchor and platform-specific constraint adjustment supplied by Qt
+and removes the former private `_q_waylandPopupAnchor*` bridge.
 
-Popup placement is anchored to the selected menu-bar entry. The anchor's
-`x`/`y` live in the entries layout's coordinate frame, while `Popup` `x`/`y`
-are interpreted in the popup's parent frame and mapped across the popup
-window boundary, so the popup computes placement in scene (panel window)
-coordinates via `mapToItem`/`mapFromItem` rather than reading the anchor's
-parent-frame `x`/`y` directly; otherwise the popup window lands displaced by
-the layout offset whenever the entries layout does not sit at the applet
-origin. The popup prefers the anchor's bottom-left, clamps horizontally into
-the panel window width, and flips above the anchor when the menu would cross
-the screen's bottom edge (a thin panel surface is deliberately crossed; the
-screen edge is not). That `x`/`y` path is the client-side placement used
-offscreen and on X11.
+The offscreen production-composition path hosts the real `PanelAppletRow` →
+`AppletChip` → `BuiltinAppletContent` chain: **Tab** reaches the native menu
+bar, **Down** opens the first popup and selects its first item, **Down** selects
+the nested submenu, **Right** enters it, and **Space** activates exactly once
+and closes; **Escape** closes without activation. The small Down-key adapter
+selects the first public `Menu.itemAt(0)` after opening because a panel menu bar
+is part of Tab traversal, while all popup state remains native. That row runs
+with `QT_FATAL_WARNINGS=1` and requires `Popup.Window`.
 
-On Wayland the popup window position is server-side: Qt's popup positioner
-returns early on the `wayland` platform and the compositor places the
-`xdg_popup` from the popup window's `_q_waylandPopupAnchor*` properties,
-which QtWayland reads when creating the positioner. Those must be real
-QObject dynamic properties — assigning an unknown property name on a
-C++-created `QObject` from QML only creates a JavaScript expando on the
-wrapper, invisible to QtWayland. The module's `NativePopupPlacement`
-singleton is the bridge: `configurePopupWindow()` performs
-`QObject::setProperty` for `_q_waylandPopupAnchorRect` (the clicked entry's
-rectangle in panel window coordinates), Menu-style dropdown edges
-(`anchor_bottom_left`, `gravity_bottom_right`), and
-`slide_x|slide_y|flip_y` constraint adjustment, so the compositor slides the
-menu on screen horizontally and flips it above the anchor at the screen's
-bottom edge. `GlobalMenuPopup` invokes the bridge in `openMenu()` and again
-from `onPopupWindowChanged`; the Window attachment change fires while the
-popup item is reparented into the popup window, before the platform surface
-(and its positioner) is created.
-
-Top-level menu switching follows menu-bar convention: with one entry's menu
-open, hovering another enabled submenu entry switches the popup to it, and
-clicking another entry switches too. Clicking an enabled submenu entry always
-leaves its menu open — clicking the open entry re-asserts it rather than
-toggling closed, so no legitimate click is ever dropped regardless of
-platform delivery order or whether the native `xdg_popup` grab swallowed the
-switching press (hover is then the reliable native switching path). Closing
-belongs to the popup's own paths: Escape, outside press, focus loss, choosing
-an item, or provider churn. A deferred focus-loss close scheduled before a
-switch is disarmed by an open-generation counter, so it cannot close the
-freshly switched menu. Switching anchors while open re-anchors the LIVE popup
-window: after the anchor contract is rewritten, a popup window geometry poke
-makes QtWayland rebuild the positioner from the new anchor rect and send
-`xdg_popup.reposition` (`QWaylandXdgSurface::setWindowGeometry`), since popup
-`x`/`y` never reach the compositor on Wayland.
-
-The `global-menu-popup-placement-qml-offscreen` row
-asserts the popup window lands on the anchor's mapped bottom-left under
-nested offsets, anchors each entry under itself, pins the clamp/flip
-boundary decisions, and pins the anchor rectangle handed to the native
-bridge. The `global-menu-native-popup-placement` row pins the exact
-`_q_waylandPopupAnchor*` values as real QObject dynamic properties, read
-back through `QObject::property()` the way QtWayland reads them. The
-`global-menu-applet-switch-qml-offscreen` row pins the switch contract:
-click-switch, hover-switch while open, no hover-open while closed, and that
-clicking the open entry — including right after a hover switch — leaves its
-menu open.
+The `global-menu-native-switch-qml-offscreen` row exercises the production
+failure order directly: open Edit, press File, verify File has replaced Edit
+before release, then verify release leaves File open. It also proves hover
+switching only occurs while a menu is open and File/New calls the facade once.
+The `global-menu-native-submenu-qml-offscreen` row pins recursive tree
+projection, separators, disabled and checked state, the depth cap, provider
+loss, keyboard traversal, and single activation.
 
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows
@@ -640,10 +599,9 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.editor-global-menu-registrar-absent-private-bus`,
 `qindaqt.editor-global-menu-hostile-registrar-private-bus`,
 `qindaqt.global-menu-runtime-boundary-poison`,
-`qindaqt.global-menu-applet-submenu-qml-offscreen` under
+`qindaqt.global-menu-native-switch-qml-offscreen` and
+`qindaqt.global-menu-native-submenu-qml-offscreen` under
 `QT_FATAL_WARNINGS=1`,
-`qindaqt.global-menu-popup-placement-qml-offscreen` (anchor-mapped popup
-window placement, right-edge clamp, and bottom-edge flip),
 `qindaqt.global-menu-production-panel-keyboard-qml-offscreen` through the real
 panel dispatcher, `qindaqt.global-menu-installed-package`, and the shared
 `qindaqt.shell-runtime-component-closure`. The first-party application rows
