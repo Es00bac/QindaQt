@@ -50,13 +50,15 @@ Rectangle {
         Text {
             objectName: "settingsSidebarTitle"
             text: qsTr("Settings")
-            color: Tokens.fg.default
+            // This labels the navigation region. Route pages own the single
+            // prominent title, so the sidebar label stays a quiet app cue.
+            color: Tokens.fg.muted
             font.family: Tokens.type.fontFamily
-            font.pointSize: Tokens.type.title
-            font.weight: Font.Bold
+            font.pointSize: Tokens.type.subtitle
+            font.weight: Font.DemiBold
             Layout.fillWidth: true
-            Layout.topMargin: Tokens.space["2"]
-            Layout.bottomMargin: Tokens.space["2"]
+            Layout.topMargin: Tokens.space["1"]
+            Layout.bottomMargin: Tokens.space["1"]
             Accessible.role: Accessible.Heading
             Accessible.name: text
         }

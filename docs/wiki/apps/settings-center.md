@@ -129,7 +129,8 @@ At widths of 540 logical pixels or greater, a two-column view presents a
 224-pixel navigation sidebar and the active route. The sidebar groups the
 unchanged route registry into General, Personalization, and Hardware headings;
 this is a presentation sort only and does not alter route IDs, history, or
-shortcuts. Below 540 pixels, a compact single-column, horizontally scrollable
+shortcuts. Its muted Settings label identifies the navigation region while the
+active route keeps the one prominent page title. Below 540 pixels, a compact single-column, horizontally scrollable
 PageTabList appears above the active route. Both variants use
 only QST-1 semantic roles and QindaQt.Controls presentation. The selected
 route tab uses the default foreground on its raised-surface background; the

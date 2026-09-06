@@ -27,10 +27,11 @@ T.Control {
     readonly property var semanticPair: status === StateCard.Success ? Tokens.status.success
                                         : status === StateCard.Warning ? Tokens.status.warning
                                         : Tokens.status.info
-    readonly property color semanticBackground: error ? Tokens.danger.default
-                                                      : semanticPair.background
-    readonly property color semanticForeground: error ? Tokens.danger.fg
-                                                      : semanticPair.foreground
+    // AGENT-GUARD: A StateCard can sit beside the primary Apply action. Keep
+    // its surface neutral and confine state color to this rule so a status
+    // never competes with the action hierarchy or reads as a second button.
+    readonly property color semanticRuleColor: error ? Tokens.danger.default
+                                                     : semanticPair.background
     readonly property real textContentWidth: Math.max(
         0, availableWidth - (action.visible ? action.implicitWidth + Tokens.space["4"] : 0))
 
@@ -125,7 +126,7 @@ T.Control {
                 objectName: "stateCardTitle"
                 width: parent.width
                 text: control.busy ? qsTr("%1, busy").arg(control.title) : control.title
-                color: control.semanticForeground
+                color: Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.body
                 font.weight: Font.DemiBold
@@ -137,7 +138,7 @@ T.Control {
                 objectName: "stateCardMessage"
                 width: parent.width
                 text: control.message
-                color: control.semanticForeground
+                color: Tokens.fg.muted
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.body
                 wrapMode: Text.Wrap
@@ -161,8 +162,19 @@ T.Control {
 
     background: Rectangle {
         radius: Tokens.radius.l
-        color: control.semanticBackground
+        color: Tokens.bg.raised
         border.width: Tokens.space["1"] / 2
-        border.color: control.error ? Tokens.danger.default : Tokens.outline.strong
+        border.color: Tokens.outline.strong
+
+        Rectangle {
+            objectName: "stateCardSemanticRule"
+            width: 3
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            radius: width / 2
+            color: control.semanticRuleColor
+            Accessible.ignored: true
+        }
     }
 }
