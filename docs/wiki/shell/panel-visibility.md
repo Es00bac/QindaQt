@@ -61,7 +61,10 @@ shell controller. KWin recomputes its maximize area after each committed strut
 change. Native maximized windows follow that area through KWin, and QindaQt's
 whole-container maximize re-resolves the same public area after rearrangement,
 so ordinary and grouped windows gain the released space while a panel is
-hidden and yield it again when the panel reserves it.
+hidden and yield it again when the panel reserves it. KWin then constrains
+ordinary clients against the new work area one by one; the Hybrid compositor's
+queued reconciliation restores only owned members to their container-planned
+frames, preserving the complete floating group when maximize is restored.
 
 ## Production integration
 

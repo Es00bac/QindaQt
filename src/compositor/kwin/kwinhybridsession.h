@@ -32,6 +32,7 @@ struct ChromePointerDecision;
 class ContainerClosePrompt;
 enum class ContainerCloseDecision;
 class HybridContainerPlacementController;
+class HybridGroupedGeometryReconciler;
 class HybridInteractionRuntime;
 class HybridShortcutManager;
 enum class HybridSemanticCommand;
@@ -104,7 +105,8 @@ private:
     void dispatchChromePointerDecision(const ChromePointerDecision &decision);
     void handleChromeDrag(const QString &containerId,
                           const HybridChrome::ChromeDragEvent &event);
-    void refreshMaximizedContainers();
+    void initializeGroupedGeometryReconciliation();
+    void reconcileWorkAreaGeometry();
     void handleWindowAction(const QString &containerId,
                             HybridChrome::WindowAction action);
     void handleContainerControl(const QString &containerId,
@@ -203,6 +205,7 @@ private:
     std::unique_ptr<KWinInteractionTargetResolver> m_targetResolver;
     std::unique_ptr<HybridChromeDragTranslator> m_dragTranslator;
     std::unique_ptr<HybridContainerPlacementController> m_placement;
+    std::unique_ptr<HybridGroupedGeometryReconciler> m_groupedGeometryReconciler;
     std::unique_ptr<HybridInput::InteractionController> m_interactionController;
     std::unique_ptr<HybridChromePointerRouter> m_chromePointerRouter;
     std::unique_ptr<KWinDockPreview> m_dockPreview;

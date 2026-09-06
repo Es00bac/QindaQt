@@ -295,6 +295,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridchromeplanbuilder.h
             kwin/hybridcontainerplacement.cpp
             kwin/hybridcontainerplacement.h
+            kwin/hybridgroupedgeometryreconciler.cpp
+            kwin/hybridgroupedgeometryreconciler.h
             kwin/hybridmemberpolicy.cpp
             kwin/hybridmemberpolicy.h
             kwin/hybridsemanticcommand.cpp
