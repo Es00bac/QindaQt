@@ -181,15 +181,6 @@ void GlobalMenuAppletAccess::beginTransition()
     setPhase(QStringLiteral("loading"), {});
 }
 
-void GlobalMenuAppletAccess::endTransition()
-{
-    if (m_topLevelProjection.isEmpty() || m_phase != QStringLiteral("loading")) {
-        return;
-    }
-    setAvailable(true);
-    setPhase(QStringLiteral("ready"), {});
-}
-
 void GlobalMenuAppletAccess::setAvailable(bool available)
 {
     if (m_available == available) {
