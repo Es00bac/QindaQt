@@ -81,6 +81,7 @@ Item {
             for (let index = 0; index < bar.count; ++index) {
                 const label = bar.itemAt(index).contentItem
                 compare(label.text, fakeAccess.items[index].text)
+                compare(bar.itemAt(index).width, bar.itemAt(index).implicitWidth)
                 verify(!label.truncated)
             }
         }
