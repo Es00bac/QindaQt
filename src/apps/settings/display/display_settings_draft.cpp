@@ -5,8 +5,45 @@
 
 #include <QtCore/QCoreApplication>
 #include <algorithm>
+#include <limits>
 
 namespace QindaQt::Apps::SettingsDisplay {
+
+namespace {
+
+QPoint positionForNewlyEnabledOutput(const QList<OutputDraft> &outputs)
+{
+  qint64 rightEdge = 0;
+  for (const OutputDraft &output : outputs) {
+    if (!output.enabled || !output.replicationSourceStableId.isEmpty()) {
+      continue;
+    }
+    rightEdge = std::max(rightEdge,
+                         static_cast<qint64>(output.position.x())
+                             + output.logicalSize.width());
+  }
+  // A disabled Display1 output has a canonical origin. Put it immediately to
+  // the right of the existing desktop so Enable produces a valid draft rather
+  // than an overlapping, unappliable configuration.
+  return QPoint(rightEdge > std::numeric_limits<int>::max()
+                    ? std::numeric_limits<int>::max()
+                    : static_cast<int>(rightEdge),
+                0);
+}
+
+void normalizeEnabledPriorities(QList<OutputDraft> &outputs)
+{
+  quint32 next = 1;
+  for (OutputDraft &output : outputs) {
+    if (output.enabled) {
+      output.priority = next++;
+    } else {
+      output.priority = 0;
+    }
+  }
+}
+
+} // namespace
 
 bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enabled) {
   if (!canEdit()) {
@@ -27,6 +64,9 @@ bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enable
       }
     }
   } else if (enabled) {
+    if (out->position.isNull()) {
+      out->position = positionForNewlyEnabledOutput(m_draftOutputs);
+    }
     bool hasPrimary = false;
     for (const auto &other : m_draftOutputs) {
       if (other.enabled && other.primary) {
@@ -38,6 +78,11 @@ bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enable
       out->primary = true;
     }
   }
+
+  // Display1 priorities must be contiguous among enabled outputs. A primary
+  // handoff after disabling the first output otherwise leaves the remaining
+  // display at priority two and makes an ordinary toggle impossible to apply.
+  normalizeEnabledPriorities(m_draftOutputs);
 
   validateDraft();
   Q_EMIT outputsChanged();
@@ -54,6 +99,12 @@ bool DisplaySettingsModel::setOutputPrimary(const QString &stableId) {
   auto *out = findDraftOutput(stableId);
   if (out == nullptr) {
     return false;
+  }
+  if (!out->enabled) {
+    if (!setOutputEnabled(stableId, true)) {
+      return false;
+    }
+    out = findDraftOutput(stableId);
   }
 
   for (auto &other : m_draftOutputs) {

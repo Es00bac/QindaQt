@@ -181,10 +181,25 @@ public:
   }
 
   Q_INVOKABLE bool setOutputEnabled(const QString &stableId, bool enabled) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("enabled")] = enabled;
+    if (!outputsMap.contains(stableId)) {
+      return false;
+    }
+    auto output = outputsMap.value(stableId);
+    output[QStringLiteral("enabled")] = enabled;
+    outputsMap[stableId] = output;
+    for (qsizetype index = 0; index < outputs.size(); ++index) {
+      if (outputs.at(index).toMap().value(QStringLiteral("stableId")).toString()
+          == stableId) {
+        outputs[index] = output;
+        break;
+      }
+    }
+    if (selectedOutputId == stableId) {
+      selectedOutput = output;
+    }
     draftDirty = true;
     applyAvailable = true;
+    Q_EMIT outputsChanged();
     Q_EMIT selectedOutputChanged();
     Q_EMIT draftChanged();
     Q_EMIT stateChanged();

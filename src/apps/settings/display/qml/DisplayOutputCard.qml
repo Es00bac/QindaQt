@@ -33,7 +33,7 @@ T.AbstractButton {
     Accessible.description: root.outputData.enabled
                             ? qsTr("Enabled, %1×%2").arg(root.outputData.logicalWidth)
                                                    .arg(root.outputData.logicalHeight)
-                            : qsTr("Disabled")
+                            : qsTr("Disabled. Select it, then turn on Enable display.")
     Accessible.checkable: true
     Accessible.checked: root.selected
     Accessible.onPressAction: root.click()
@@ -102,7 +102,7 @@ T.AbstractButton {
                   ? qsTr("%1×%2 @ %3x").arg(root.outputData.logicalWidth)
                                        .arg(root.outputData.logicalHeight)
                                        .arg(root.outputData.scale)
-                  : qsTr("Disabled")
+                  : qsTr("Disabled — select to enable")
             font.family: Tokens.type.fontFamily
             font.pointSize: Tokens.type.caption
             color: root.outputData.enabled ? Tokens.fg.default : Tokens.fg.disabled

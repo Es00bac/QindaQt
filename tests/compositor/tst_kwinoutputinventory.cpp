@@ -62,6 +62,7 @@ void KWinOutputInventoryTest::publishesStableCompleteProjection()
              qint64(std::numeric_limits<quint32>::max()));
     QCOMPARE(item.value(QStringLiteral("manufacturer")).toString(),
              QStringLiteral("Example"));
+    QVERIFY(item.value(QStringLiteral("enabled")).toBool());
     QCOMPARE(store.publish(candidate, &error), OutputInventoryPublishResult::Unchanged);
     QCOMPARE(store.generation(), quint64(1));
     QCOMPARE(store.responseJson(), first);
@@ -74,6 +75,14 @@ void KWinOutputInventoryTest::publishesStableCompleteProjection()
     changed[0].visibilityGeometry.translate(1, 0);
     QCOMPARE(store.publish(changed, &error), OutputInventoryPublishResult::Published);
     QCOMPARE(store.generation(), quint64(3));
+
+    // A connected projector can be disabled without disappearing from the
+    // inventory. Its state change must advance the public generation.
+    changed[0].enabled = false;
+    QCOMPARE(store.publish(changed, &error), OutputInventoryPublishResult::Published);
+    QCOMPARE(store.generation(), quint64(4));
+    QVERIFY(!json(store.responseJson()).value(QStringLiteral("outputs")).toArray()
+                  .at(0).toObject().value(QStringLiteral("enabled")).toBool());
 }
 
 void KWinOutputInventoryTest::rejectsAmbiguityAndPreservesPriorGeneration()

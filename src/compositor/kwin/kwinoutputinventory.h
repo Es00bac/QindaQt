@@ -25,6 +25,10 @@ struct OutputInventoryEntry final
     qreal scale = 1.0;
     quint32 refreshRateMilliHz = 0;
     QString transform;
+    // BackendOutput owns the live enabled state. Keep it in the immutable
+    // inventory so a connected but disabled connector can be enabled through
+    // Display1 instead of being presented as an active screen.
+    bool enabled = true;
     bool internal = false;
     QString uuid;
     quint32 priority = 0;

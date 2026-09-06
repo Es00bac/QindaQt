@@ -93,6 +93,7 @@ InventoryProjectionResult projectInventory(const InventoryFrame &frame,
                                .transactions = {},
                                .wireValid = true};
     snapshot.outputs.reserve(frame.outputs.size());
+    quint32 enabledPriority = 0;
     for (qsizetype index = 0; index < frame.outputs.size(); ++index) {
         const InventoryOutput &input = frame.outputs.at(index);
         const DisplayIdentity::ResolvedOutput &identity = identities.outputs.at(index);
@@ -111,6 +112,9 @@ InventoryProjectionResult projectInventory(const InventoryFrame &frame,
             return failure(InventoryError::ProjectionFailure,
                            QStringLiteral("current-mode-geometry-mismatch"));
         }
+        if (input.enabled) {
+            ++enabledPriority;
+        }
         snapshot.outputs.push_back(
             {.stableId = identity.stableId,
              .connectorName = identity.connectorName,
@@ -122,14 +126,16 @@ InventoryProjectionResult projectInventory(const InventoryFrame &frame,
              .hasSerial = identity.hasSerial,
              .internal = identity.internal,
              .ambiguousIdentity = identity.ambiguous,
-             .enabled = true,
-             .primary = index == 0,
+             .enabled = input.enabled,
+             .primary = input.enabled && enabledPriority == 1,
              .modeId = mode.id,
-             .position = input.geometry.topLeft(),
+             // Display1 canonicalizes disabled positions. The retained mode,
+             // scale, and transform still let Settings build an enable draft.
+             .position = input.enabled ? input.geometry.topLeft() : QPoint{},
              .logicalSize = input.geometry.size(),
              .scale = input.scale,
              .transform = input.transform,
-             .priority = static_cast<quint32>(index + 1),
+             .priority = input.enabled ? enabledPriority : 0,
              .replicationSourceStableId = {},
              .modes = {mode},
              .wireValid = true});

@@ -80,6 +80,16 @@ QindaQt::Display::Snapshot createTwoOutputSnapshot(const QString &epoch = QStrin
   };
 }
 
+QindaQt::Display::Snapshot createConnectedDisabledProjectorSnapshot() {
+  auto snapshot = createTwoOutputSnapshot();
+  auto &projector = snapshot.outputs[1];
+  projector.enabled = false;
+  projector.primary = false;
+  projector.priority = 0;
+  projector.position = QPoint();
+  return snapshot;
+}
+
 } // namespace
 
 class DisplaySettingsModelTest final : public QObject {
@@ -90,6 +100,7 @@ private Q_SLOTS:
   void testDraftModeSelection();
   void testDraftScaleAndTransform();
   void testDraftPositionAndPrimary();
+  void testEnableConnectedProjectorCreatesRevertibleDraft();
   void testCancelDraftRestoresSnapshot();
   void testFullTransactionFlowConfirm();
   void testFullTransactionFlowRevert();
@@ -206,6 +217,43 @@ void DisplaySettingsModelTest::testDraftPositionAndPrimary() {
   QVERIFY(model.setOutputPosition(QStringLiteral("edid:dp1"), 0, 1080));
   QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(),
            1080);
+}
+
+void DisplaySettingsModelTest::testEnableConnectedProjectorCreatesRevertibleDraft() {
+  FakeDisplayTransport transport;
+  Client client(&transport);
+  Coordinator coordinator(&client);
+  DisplaySettingsModel model(client, coordinator);
+
+  client.start();
+  transport.publishOwner(QStringLiteral(":1.50"));
+  transport.replySnapshot(transport.fetches.first(),
+                          createConnectedDisabledProjectorSnapshot());
+
+  model.setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+  const auto disabledProjector = model.selectedOutput();
+  QCOMPARE(disabledProjector.value(QStringLiteral("enabled")).toBool(), false);
+  QCOMPARE(disabledProjector.value(QStringLiteral("modeId")).toString(),
+           QStringLiteral("1920x1080@60"));
+
+  QVERIFY(model.setOutputEnabled(QStringLiteral("edid:hdmi1"), true));
+  QVERIFY(model.draftDirty());
+  QVERIFY2(model.draftValid(), qPrintable(model.draftErrorMessage()));
+  const auto enabledProjector = model.selectedOutput();
+  QCOMPARE(enabledProjector.value(QStringLiteral("enabled")).toBool(), true);
+  QCOMPARE(enabledProjector.value(QStringLiteral("priority")).toUInt(), quint32(2));
+  QCOMPARE(enabledProjector.value(QStringLiteral("positionX")).toInt(), 1920);
+  QCOMPARE(enabledProjector.value(QStringLiteral("positionY")).toInt(), 0);
+  QCOMPARE(enabledProjector.value(QStringLiteral("modeId")).toString(),
+           QStringLiteral("1920x1080@60"));
+
+  QVERIFY(model.cancelDraft());
+  QVERIFY(!model.draftDirty());
+  const auto revertedProjector = model.selectedOutput();
+  QCOMPARE(revertedProjector.value(QStringLiteral("enabled")).toBool(), false);
+  QCOMPARE(revertedProjector.value(QStringLiteral("priority")).toUInt(), quint32(0));
+  QCOMPARE(revertedProjector.value(QStringLiteral("positionX")).toInt(), 0);
+  QCOMPARE(revertedProjector.value(QStringLiteral("positionY")).toInt(), 0);
 }
 
 void DisplaySettingsModelTest::testCancelDraftRestoresSnapshot() {

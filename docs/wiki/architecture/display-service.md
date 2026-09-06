@@ -105,15 +105,18 @@ change first removes the old snapshot/machine, then establishes a fresh epoch;
 explicit transport loss also makes `GetSnapshot` and mutations unavailable.
 Revisions are never ordered across owners.
 
-D0 exposes only enabled outputs and the observed current mode. Projection
-therefore publishes one deterministic `current:WIDTHxHEIGHT@MILLIHERTZ` mode
-per output, canonical first-output primary and contiguous priority, and no
-invented disabled modes or replication relation. D0 supplies no EDID or MST
-material, so D1 connector fallback is the only stable-ID authority in this
-adapter. Runtime compositor UUID remains descriptive adapter metadata and is
-never hashed or copied into the stable ID. The projector accepts only a
-complete `validateSnapshot` value whose `liveFingerprint` is the D1 canonical
-projection fingerprint.
+D0 exposes every connected `BackendOutput`, including a required `enabled`
+boolean and its observed or retained current mode. A disabled D0 output projects
+to the canonical D1 disabled fields (`primary=false`, `priority=0`, and
+`position=(0,0)`), while retaining its mode, scale, and transform so Settings
+can form an explicit enable draft. Enabled outputs receive contiguous priority
+in D0 semantic order and the first enabled output is primary. Projection never
+invents a disabled mode or replication relation; a missing `enabled` field
+rejects the frame. D0 supplies no EDID or MST material, so D1 connector fallback
+is the only stable-ID authority in this adapter. Runtime compositor UUID remains
+descriptive adapter metadata and is never hashed or copied into the stable ID.
+The projector accepts only a complete `validateSnapshot` value whose
+`liveFingerprint` is the D1 canonical projection fingerprint.
 
 The service model owns routing into the D1 state machine. An active output-set
 change uses `topologyChanged`; a same-set change while `Staged` uses

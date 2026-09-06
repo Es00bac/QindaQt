@@ -155,6 +155,7 @@ bool decodeOutput(const QJsonValue &value, InventoryOutput &output)
                           Display::kMaxRefreshMilliHertz, refresh)
         || !stringMember(object, QStringLiteral("transform"), transformName)
         || !transformValue(transformName, output.transform)
+        || !boolMember(object, QStringLiteral("enabled"), output.enabled)
         || !boolMember(object, QStringLiteral("internal"), output.internal)
         || !stringMember(object, QStringLiteral("uuid"),
                          output.runtimeCompositorUuid)
