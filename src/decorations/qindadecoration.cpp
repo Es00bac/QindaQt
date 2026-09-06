@@ -2,12 +2,14 @@
 #include "qindadecoration.h"
 
 #include "qindabutton.h"
+#include "qindadecorationvisuals.h"
 
 #include <KDecoration3/DecoratedWindow>
 #include <KDecoration3/DecorationButtonGroup>
 #include <KDecoration3/DecorationSettings>
 #include <KPluginFactory>
 
+#include <QDynamicPropertyChangeEvent>
 #include <QFontMetricsF>
 #include <QPainter>
 #include <QPainterPath>
@@ -41,6 +43,7 @@ bool QindaDecoration::memberFocusMaximized() const
 bool QindaDecoration::init()
 {
     createButtons();
+    m_initialized = true;
     updateGeometry();
 
     connect(window(), &KDecoration3::DecoratedWindow::widthChanged,
@@ -50,12 +53,24 @@ bool QindaDecoration::init()
     connect(window(), &KDecoration3::DecoratedWindow::captionChanged,
             this, qOverload<>(&QindaDecoration::update));
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged,
-            this, qOverload<>(&QindaDecoration::update));
+            this, &QindaDecoration::updateVisualStyle);
     connect(window(), &KDecoration3::DecoratedWindow::paletteChanged,
-            this, qOverload<>(&QindaDecoration::update));
+            this, &QindaDecoration::updateVisualStyle);
     connect(window(), &KDecoration3::DecoratedWindow::scaleChanged,
             this, &QindaDecoration::updateGeometry);
     return true;
+}
+
+bool QindaDecoration::event(QEvent *event)
+{
+    const bool handled = KDecoration3::Decoration::event(event);
+    if (m_initialized && event->type() == QEvent::DynamicPropertyChange) {
+        const auto *change = static_cast<QDynamicPropertyChangeEvent *>(event);
+        if (change->propertyName() == QByteArrayLiteral("qindaqtChromePalette")) {
+            updateVisualStyle();
+        }
+    }
+    return handled;
 }
 
 void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
@@ -81,6 +96,12 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
                          0.75));
     painter->drawLine(QPointF(0.0, borderTop() - 0.5),
                       QPointF(size().width(), borderTop() - 0.5));
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    paintDecorationFrame(
+        *painter, rect(),
+        decorationVisualStyle(paletteColor("border", QPalette::Mid, group),
+                              paletteColor("surface", QPalette::Window, group),
+                              window()->isMaximized()));
 
     if (m_leftButtons) {
         m_leftButtons->paint(painter, repaintArea);
@@ -153,6 +174,17 @@ void QindaDecoration::updateGeometry()
         }
         m_leftButtons->setPos(QPointF(12.0, 5.0));
     }
+    updateVisualStyle();
+}
+
+void QindaDecoration::updateVisualStyle()
+{
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    const auto style = decorationVisualStyle(
+        paletteColor("border", QPalette::Mid, group),
+        paletteColor("surface", QPalette::Window, group),
+        window()->isMaximized());
+    setShadow(createDecorationShadow(style));
     update();
 }
 

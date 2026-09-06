@@ -3198,6 +3198,12 @@ Hybrid-chrome renderer test independently move hover state into and out of the
 traffic-light cluster and verify glyph visibility. Neither is a screenshot of
 the live KDecoration or KWin scene item.
 
+`hybrid.decoration-visuals` renders the native frame offscreen and checks all
+four straight edges while leaving the interior transparent. It also inspects
+the public KDecoration shadow image, padding, center stretch cell, falloff, and
+the maximized no-shadow result. The nested desktop screenshot remains the gate
+for compositor placement and edge separation against the wallpaper.
+
 ## Determinism and acceptance
 
 Scenario data can declare output geometry/scale/rotation/refresh, profile,

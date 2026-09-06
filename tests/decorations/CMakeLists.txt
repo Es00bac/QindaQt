@@ -9,3 +9,14 @@ target_compile_definitions(
 add_dependencies(qindaqt_decoration_plugin_tests qindaqt_decoration)
 qindaqt_enable_warnings(qindaqt_decoration_plugin_tests)
 add_test(NAME hybrid.decoration-plugin-load COMMAND qindaqt_decoration_plugin_tests)
+
+qt_add_executable(qindaqt_decoration_visual_tests tst_decorationvisuals.cpp)
+target_link_libraries(
+    qindaqt_decoration_visual_tests
+    PRIVATE
+        Qt6::Gui
+        Qt6::Test
+        qindaqt_decoration_visuals
+)
+qindaqt_enable_warnings(qindaqt_decoration_visual_tests)
+add_test(NAME hybrid.decoration-visuals COMMAND qindaqt_decoration_visual_tests)

@@ -4,6 +4,26 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS Gui)
 find_package(KDecoration3 6.6 REQUIRED CONFIG)
 find_package(KF6CoreAddons 6.0 REQUIRED CONFIG)
 
+add_library(qindaqt_decoration_visuals STATIC
+    qindadecorationvisuals.cpp
+    qindadecorationvisuals.h
+)
+target_compile_features(qindaqt_decoration_visuals PUBLIC cxx_std_20)
+target_include_directories(qindaqt_decoration_visuals PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_decoration_visuals
+    PUBLIC
+        Qt6::Gui
+        KDecoration3::KDecoration
+)
+set_target_properties(qindaqt_decoration_visuals PROPERTIES
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+)
+qindaqt_enable_warnings(qindaqt_decoration_visuals)
+
 add_library(qindaqt_decoration MODULE
     qindabutton.cpp
     qindabutton.h
@@ -18,6 +38,7 @@ target_link_libraries(
         Qt6::Gui
         KF6::CoreAddons
         KDecoration3::KDecoration
+        qindaqt_decoration_visuals
 )
 set_target_properties(
     qindaqt_decoration
