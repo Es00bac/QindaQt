@@ -23,8 +23,14 @@ Item {
         property bool available: true
         property var items: []
         property int activateCalls: 0
+        property int rejectedCalls: 0
         property string lastId: ""
-        function activate(id) {
+        property string currentGeneration: "generation-1"
+        function activate(id, generation) {
+            if (String(generation) !== currentGeneration) {
+                ++rejectedCalls
+                return
+            }
             ++activateCalls
             lastId = String(id)
         }
@@ -44,17 +50,22 @@ Item {
         name: "GlobalMenuNativeSubmenu"
         when: windowShown
 
-        function menuItems() {
+        function menuItems(generation, fileText, openText) {
+            generation = generation ?? "generation-1"
+            fileText = fileText ?? "File"
+            openText = openText ?? "Open"
             return [{
-                "id": "file", "kind": "submenu", "text": "File",
+                "id": "file", "kind": "submenu", "text": fileText,
                 "enabled": true, "children": [{
-                    "id": "open", "kind": "action", "text": "Open",
-                    "enabled": true, "shortcutText": "Ctrl+O"
+                    "id": "open", "kind": "action", "text": openText,
+                    "enabled": true, "shortcutText": "Ctrl+O",
+                    "generation": generation
                 }, {
                     "id": "recent", "kind": "submenu", "text": "Recent",
                     "enabled": true, "children": [{
                         "id": "alpha", "kind": "action", "text": "Alpha",
-                        "enabled": true, "checkable": true, "checked": true
+                        "enabled": true, "checkable": true, "checked": true,
+                        "generation": generation
                     }]
                 }, {
                     "id": "separator", "kind": "separator", "enabled": false
@@ -67,8 +78,10 @@ Item {
 
         function init() {
             fakeAccess.available = true
+            fakeAccess.currentGeneration = "generation-1"
             fakeAccess.items = menuItems()
             fakeAccess.activateCalls = 0
+            fakeAccess.rejectedCalls = 0
             fakeAccess.lastId = ""
         }
 
@@ -144,6 +157,39 @@ Item {
             verify(!tree.file.itemAt(0).enabled)
             tree.file.itemAt(0).triggered()
             compare(fakeAccess.activateCalls, 0)
+        }
+
+        function test_sameShapePublicationDismissesAndRebuildsBeforeQueuedGesture() {
+            const applet = createTemporaryObject(appletComponent, root)
+            const oldTree = nativeTree(applet)
+            mouseClick(oldTree.bar.itemAt(0))
+            tryCompare(oldTree.file, "opened", true)
+            const staleAction = oldTree.file.itemAt(0)
+            compare(staleAction.text, "Open")
+
+            const replacement = menuItems("generation-2", "Project",
+                                          "Different operation")
+            fakeAccess.currentGeneration = "generation-2"
+            fakeAccess.items = replacement
+
+            // This models a gesture that was already queued against the
+            // retired delegate. Removing the projection makes it inert before
+            // it can reach the facade; the facade generation gate remains the
+            // independent process-boundary fallback.
+            staleAction.triggered()
+            compare(fakeAccess.activateCalls, 0)
+            compare(fakeAccess.rejectedCalls, 0)
+            tryCompare(oldTree.file, "opened", false)
+
+            const currentMenu = oldTree.bar.menuAt(0)
+            compare(currentMenu.title, "Project")
+            compare(currentMenu.itemAt(0).text, "Different operation")
+            mouseClick(oldTree.bar.itemAt(0))
+            tryCompare(currentMenu, "opened", true)
+            currentMenu.itemAt(0).triggered()
+            compare(fakeAccess.activateCalls, 1)
+            compare(fakeAccess.rejectedCalls, 0)
+            compare(fakeAccess.lastId, "open")
         }
 
         function test_depthCapLeavesExcessSubmenuInert() {
