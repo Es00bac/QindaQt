@@ -106,7 +106,7 @@ void ShellPreferenceValuesTests::rejectsBlankStrings()
 void ShellPreferenceValuesTests::scopedKeysCoverEveryDecodedKey()
 {
     const QStringList keys = ShellPreferenceValues::scopedKeys();
-    QCOMPARE(keys.size(), 8);
+    QCOMPARE(keys.size(), 10);
     for (const QString &key : validSnapshotValues().keys()) {
         QVERIFY2(keys.contains(key), qPrintable(key));
     }

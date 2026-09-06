@@ -41,10 +41,9 @@ ColumnLayout {
             objectName: "noWallpaperButton"
             width: 88
             height: 94
-            text: qsTr("None")
+            text: qsTr("No wallpaper")
             emphasized: root.draftValue("appearance.wallpaper") === ""
             available: root.appearanceSettings.canEdit && !root.editorBusy
-            accessibleName: qsTr("Use no wallpaper")
             onClicked: root.setDraft("appearance.wallpaper", "")
         }
 
@@ -59,7 +58,7 @@ ColumnLayout {
                 text: modelData.name
                 emphasized: root.draftValue("appearance.wallpaper") === modelData.value
                 available: root.appearanceSettings.canEdit && !root.editorBusy
-                accessibleName: qsTr("Use %1 wallpaper").arg(modelData.name)
+                accessibleDescription: qsTr("Select this bundled wallpaper")
                 onClicked: root.setDraft("appearance.wallpaper", modelData.value)
 
                 contentItem: ColumnLayout {
