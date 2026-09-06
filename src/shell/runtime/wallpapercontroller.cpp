@@ -85,12 +85,7 @@ Window {
     return;
   }
   raw->setScreen(screen);
-  // AGENT-GUARD: KWin's task/visibility publishers classify client roles from
-  // the Qt window type. A Background layer alone is not desktop identity on
-  // every supported KWin build; Qt::Desktop keeps this shell-owned surface
-  // out of ordinary window and task facts.
-  raw->setFlags(Qt::Desktop | Qt::FramelessWindowHint |
-                Qt::WindowDoesNotAcceptFocus);
+  raw->setFlags(Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
   auto *layer = LayerShellQt::Window::get(raw);
   if (!layer) {
     delete raw;
@@ -98,7 +93,10 @@ Window {
   }
   layer->setWantsToBeOnActiveScreen(false);
   layer->setScreen(screen);
-  layer->setScope(QStringLiteral("wallpaper"));
+  // AGENT-CONTRACT: KWin LayerShellV1Window maps the exact `desktop` scope to
+  // WindowType::Desktop. Any other scope becomes Normal and contaminates
+  // task-list, active-window, and shell-visibility facts.
+  layer->setScope(QStringLiteral("desktop"));
   LayerShellQt::Window::Anchors anchors = LayerShellQt::Window::AnchorTop;
   anchors |= LayerShellQt::Window::AnchorBottom;
   anchors |= LayerShellQt::Window::AnchorLeft;
