@@ -21,11 +21,18 @@ public:
         QString *error = nullptr) override;
 
 private:
+    struct RestoreTaskIdentity final
+    {
+        bool skipTaskbar = false;
+        bool skipSwitcher = false;
+    };
+
     [[nodiscard]] QRectF outerFrame(const Core::WindowContainer &before,
                                     const Core::WindowContainer &after) const;
 
     ManagedWindowRegistry &m_registry;
     QHash<QString, QRectF> m_restoreFrames;
+    QHash<QString, RestoreTaskIdentity> m_restoreTaskIdentity;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

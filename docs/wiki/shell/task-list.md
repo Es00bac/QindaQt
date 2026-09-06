@@ -33,6 +33,24 @@ standalone window id colliding with a container id, or any bound violation
 batch never replaces the retained generation; shell presentation keeps showing
 the last coherent task list.
 
+## Native task identity qualification
+
+The compositor's development workflow checks the native boundary as well as
+the shell projection. After a two-window dock, the authenticated development
+`Windows()` observation must expose one member with both `skipTaskbar` and
+`skipSwitcher` clear; every other member of the container, including inactive
+pages, has both flags set. The same assertion is made after page activation,
+page detachment, singleton unwrapping, and a second dock. Releasing a
+container restores every detached member's original native task identity and
+geometry before the container disappears.
+
+This is an executable private-session proof: run the registered development
+compositor workflow through `qindaqt-session-probe` and inspect its JSON
+result. It uses the authenticated compositor `Windows()` surface, so it does
+not scrape a panel or depend on host desktop state. A physical panel should
+therefore show one group row while the group exists, and one standalone row
+per member after detach or release.
+
 ## Grouping and ordering
 
 Entries are the module's canonical projection:
