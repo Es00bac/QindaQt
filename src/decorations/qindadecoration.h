@@ -2,6 +2,7 @@
 #pragma once
 
 #include <KDecoration3/Decoration>
+#include <KDecoration3/DecorationButton>
 
 #include <QPalette>
 #include <QVariantList>
