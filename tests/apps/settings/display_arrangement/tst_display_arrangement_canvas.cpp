@@ -288,6 +288,24 @@ void DisplayArrangementCanvasTest::testDisabledOutputIsSelectableButNotDraggable
   QTRY_COMPARE(canvas->property("tileCount").toInt(), 1);
   QVERIFY(findItemByObjectName(page.page, QStringLiteral("displayArrangementTile_") + kSide) == nullptr);
 
+  // A lone enabled display has no relative placement. Dragging or nudging it
+  // must remain visibly inert, matching topology's required origin.
+  auto *mainTile = findItemByObjectName(page.page, QStringLiteral("displayArrangementTile_") + kMain);
+  QVERIFY(mainTile != nullptr);
+  Support::dragBy(*m_view, mainTile, QPoint(120, 80));
+  QCOMPARE(rig.positionOf(kMain), QPoint(0, 0));
+  mainTile->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), mainTile);
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QCOMPARE(rig.positionOf(kMain), QPoint(0, 0));
+  QVERIFY(!rig.model.draftDirty());
+  auto *apply = findItemByObjectName(page.page, QStringLiteral("displayApplyButton"));
+  QVERIFY(apply != nullptr);
+  QVERIFY(!apply->property("available").toBool());
+  auto *singleReadout = findItemByObjectName(page.page, QStringLiteral("displayArrangementReadout"));
+  QVERIFY(singleReadout != nullptr);
+  QVERIFY(singleReadout->property("text").toString().contains(QStringLiteral("at 0, 0")));
+
   auto *inactiveTile = findItemByObjectName(page.page, QStringLiteral("displayArrangementInactiveTile_") + kSide);
   QVERIFY(inactiveTile != nullptr);
   QVERIFY(inactiveTile->isVisible());
