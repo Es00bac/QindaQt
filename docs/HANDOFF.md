@@ -26,9 +26,17 @@ Bluetooth's system daemon still lacks an active service/activation alias on
 this host; noninteractive system-service startup was denied. No working
 physical Bluetooth adapter is claimed.
 
-Settings navigation/presentation, QindaPunk themes and controls, actual ICC
-application, global-menu stability, and deterministic Meta+Shift docking are
-still candidate work. Their final boundary requires exact independent review,
+QindaPunk palettes, shared editable controls, selected-only segmented actions,
+and the default companion wallpaper are integrated through `3de6ac9f`. The full
+Debug build passes, the 26 reviewed Controls visual comparisons pass, and the
+integrated theme/control selection passes 42/44. The remaining two failures are
+a stale shell palette expectation and an absent-service fixture that discovers
+the installed Settings service; isolated fixture repairs are in progress.
+
+Settings navigation/presentation, actual ICC application, global-menu stability,
+and deterministic Meta+Shift docking remain candidate work. Meta+Arrow and all
+other native geometry actions must respect container ownership; the directional
+redirect candidate has not yet passed independent review or nested interaction. Their final boundary requires exact independent review,
 integrated regression gates, and real nested desktop screenshots/interactions.
 Generated design concepts and shell-preview demos are not production visual
 acceptance evidence.

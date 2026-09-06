@@ -11,7 +11,10 @@ Settings1 already persists `appearance.wallpaper` and `appearance.wallpaperMode`
 
 The production shell owns one noninteractive layer-shell Background window per `QScreen`, using the exact `desktop` scope that KWin maps to its Desktop window type. A focused controller reconciles that set and consumes only confirmed values from the shell's existing scoped Settings1 client. `scaled`, `centered`, and `tiled` map to crop, pad, and tile rendering. Invalid, unreadable, or unavailable sources render the mineral ink fallback color.
 
-Bundled values use `qindaqt:<name>` identities and resolve only beneath standard generic-data roots at `qindaqt/wallpapers/<name>.png`; absolute paths remain supported for explicit user choices. The default layer selects `qindaqt:qinda-punk` to accompany QindaPunk Nightfall and Porcelain. User-layer values continue to outrank it, including the empty string, so startup never rewrites a saved choice.
+Bundled values use `qindaqt:<name>` identities and resolve only beneath standard generic-data roots at `qindaqt/wallpapers/<name>.png`; absolute paths remain supported for explicit user choices. The initial default layer selected `qindaqt:jade-fold`. The 2026-09-06
+[visual identity](../shell/visual-identity.md) update changes only that packaged
+artwork choice to `qindaqt:qinda-punk`, accompanying Nightfall and Porcelain;
+the ownership and preference-precedence decision in this ADR is unchanged. User-layer values continue to outrank it, including the empty string, so startup never rewrites a saved choice.
 
 The private `WallpaperController` is the sole shell-runtime exception for direct LayerShellQt use. It owns only background windows and their image presentation; it must not take over panel or notification surface planning from `shell_surface`. Reusing the existing dependency for this small background adapter avoids expanding the panel-planning public API with unrelated image policy. Settings UI and QML continue to have no platform-surface access.
 

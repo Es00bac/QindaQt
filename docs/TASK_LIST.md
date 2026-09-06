@@ -24,8 +24,9 @@ replace earlier work:
   consistent controls, compact navigation, and real visual verification.
 - Develop the QindaPunk-inspired theme with original, reference-informed art
   direction. Use image generation across the design process where useful;
-  preserve explicit wallpaper/theme choices. Candidate palettes and shared
-  controls remain under review, not complete.
+  preserve explicit wallpaper/theme choices. Palettes, shared editable controls,
+  and reviewed Controls baselines are integrated through `3de6ac9f`; final
+  Settings consumer review and real desktop visual acceptance remain open.
 - Eliminate global-menu flashing and inconsistent presentation. A tested
   candidate awaits independent review and integrated runtime verification.
 - Make Meta+Shift left-drag consistently combine windows into QindaQt
