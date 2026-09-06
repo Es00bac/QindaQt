@@ -45,21 +45,24 @@ inline void verifyClipboardRouteInHost(
         ? QStringLiteral("settingsCompactTab_clipboard")
         : QStringLiteral("settingsNavButton_clipboard");
     auto *tab = findClipboardSceneItem(window.contentItem(), tabName);
-    auto *close = findClipboardSceneItem(
-        window.contentItem(), QStringLiteral("clipboardCloseButton"));
+    auto *history = findClipboardSceneItem(
+        window.contentItem(), QStringLiteral("clipboardHistorySwitch"));
     QVERIFY(tab != nullptr);
-    QVERIFY(close != nullptr);
-    QVERIFY(close->isEnabled());
+    QVERIFY(history != nullptr);
+    QVERIFY(history->isEnabled());
     auto *accessible = QAccessible::queryAccessibleInterface(tab);
     QVERIFY(accessible != nullptr);
     QCOMPARE(accessible->role(), QAccessible::PageTab);
     QCOMPARE(accessible->text(QAccessible::Name), QStringLiteral("Clipboard"));
     QVERIFY(accessible->state().selected);
+    auto *historyAccessible = QAccessible::queryAccessibleInterface(history);
+    QVERIFY(historyAccessible != nullptr);
+    QCOMPARE(historyAccessible->role(), QAccessible::CheckBox);
 
     QTest::keyClick(&window, Qt::Key_Escape);
     QTRY_COMPARE(window.activeFocusItem(), tab);
     QTest::keyClick(&window, Qt::Key_Tab);
-    QTRY_COMPARE(window.activeFocusItem(), close);
+    QTRY_COMPARE(window.activeFocusItem(), history);
 }
 
 } // namespace QindaQt::Apps::SettingsClipboard::TestSupport
