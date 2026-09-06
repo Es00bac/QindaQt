@@ -61,7 +61,9 @@ Item {
     }
 
     function measuredEntryWidth(item) {
-        return measuredTextWidth(String(item.text ?? "")) + 14
+        // Text can retain a fractional glyph advance after FontMetrics has
+        // rounded its corresponding bound. Reserve one pixel for that edge.
+        return measuredTextWidth(String(item.text ?? "")) + 16
     }
 
     function measuredIndicatorWidth() {
@@ -252,6 +254,11 @@ Item {
                                  : Math.round((nativeMenuBar.height - height) / 2)
                 enabled: itemEnabled && root.available
                 hoverEnabled: true
+                // Keep text padding equal to the measured fifteen-pixel
+                // budget; ambient Basic defaults reserve twenty-eight pixels.
+                padding: 0
+                leftPadding: 7
+                rightPadding: 8
                 implicitWidth: root.measuredEntryWidth(entryData)
                 implicitHeight: 24
                 focusPolicy: Qt.TabFocus
@@ -274,7 +281,7 @@ Item {
                     color: menuEntry.itemEnabled
                         ? (root.colors.text ?? "white")
                         : (root.colors.textMuted ?? "#a9afa9")
-                    font.pixelSize: 12
+                    font: entryMetrics.font
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -356,7 +363,7 @@ Item {
                     color: actionEntry.itemEnabled
                         ? (root.colors.text ?? "white")
                         : (root.colors.textMuted ?? "#a9afa9")
-                    font.pixelSize: 12
+                    font: entryMetrics.font
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -372,7 +379,7 @@ Item {
         text: qsTr("+%1").arg(root.overflowCount)
         textFormat: Text.PlainText
         color: root.colors.textMuted ?? "#a9afa9"
-        font.pixelSize: 12
+        font: entryMetrics.font
         Accessible.role: Accessible.StaticText
         Accessible.name: qsTr("%1 more menu entries").arg(root.overflowCount)
         x: root.vertical ? Math.round((root.width - width) / 2)
