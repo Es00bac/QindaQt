@@ -62,6 +62,11 @@ item, not a native overlay window.
 
 - Move, minimize, maximize, pin, workspace assignment, and output movement on
   the outer title bar affect the whole container.
+- A maximized container tracks KWin's current maximize area. A mapped,
+  work-area-reserving panel reduces the group frame; releasing that reservation
+  for an auto-hidden panel expands the group to the usable output. Revealing or
+  changing the panel mode re-resolves the area again without replacing the
+  container's independent restore frame.
 - Closing a member removes only that client. Outer close offers **Close All**,
   **Ungroup**, or **Cancel**.
 - A member maximize action temporarily focuses that tile without destroying the

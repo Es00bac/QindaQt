@@ -30,7 +30,6 @@
 #include "qindaqt/hybrid_chrome/chromelayoutengine.h"
 #include "qindaqt/hybrid_input/interactioncontroller.h"
 
-#include <core/output.h>
 #include <compositor.h>
 #include <input.h>
 #include <window.h>
@@ -67,21 +66,6 @@ HybridChromePlanOptions chromePlanOptions(const HybridChrome::ChromePalette &pal
     options.metrics = chromeMetrics();
     options.style = HybridChrome::ChromeStyle::qindaMacOS(palette);
     return options;
-}
-
-QString firstWindowId(const Core::LayoutNode &root)
-{
-    const auto *node = &root;
-    while (node->isSplit()) {
-        node = node->firstChild();
-    }
-    return node->windowId();
-}
-
-QString activeRepresentative(const Core::WindowContainer &container)
-{
-    const auto *page = container.page(container.activePageId());
-    return page ? firstWindowId(page->root()) : QString{};
 }
 
 } // namespace
@@ -183,6 +167,11 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             synchronizeChrome();
             Q_EMIT shellVisibilityStateChanged();
         });
+    // KWin exposes the start of work-area rearrangement. Queue the Hybrid
+    // refresh so MaximizeArea includes the newly committed layer-shell struts.
+    connect(workspace, &KWin::Workspace::aboutToRearrange, this,
+            &KWinHybridSession::refreshMaximizedContainers,
+            Qt::QueuedConnection);
     m_interactionController = std::make_unique<HybridInput::InteractionController>(
         *m_targetResolver);
     m_chromePointerRouter = std::make_unique<HybridChromePointerRouter>(
@@ -342,27 +331,6 @@ void KWinHybridSession::shutdown() noexcept
     m_placement.reset();
     m_runtime.reset();
     m_sceneFactory.reset();
-}
-
-qreal KWinHybridSession::containerScale(const QString &containerId) const
-{
-    const auto *container = m_runtime->topology().container(containerId);
-    auto *window = container
-        ? m_registry.window(activeRepresentative(*container)) : nullptr;
-    return window && window->output() ? window->output()->scale() : 1.0;
-}
-
-QRect KWinHybridSession::workArea(const QString &containerId) const
-{
-    const auto *container = m_runtime->topology().container(containerId);
-    auto *window = container
-        ? m_registry.window(activeRepresentative(*container)) : nullptr;
-    if (!window) {
-        return {};
-    }
-    const auto area = KWin::workspace()->clientArea(KWin::MaximizeArea, window)
-                          .toAlignedRect();
-    return static_cast<QRect>(area);
 }
 
 QStringList KWinHybridSession::containerStackingOrder() const

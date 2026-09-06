@@ -10,6 +10,7 @@
 #include <QHash>
 #include <QRect>
 #include <QString>
+#include <QStringList>
 
 #include <functional>
 #include <optional>
@@ -51,6 +52,10 @@ public:
 
     [[nodiscard]] bool maximize(const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool restore(const QString &containerId, QString *error = nullptr);
+    // Re-resolves KWin's current maximize area for every maximized container.
+    // Successful refreshes preserve the independent restore frame; failures
+    // remain maximized so a later work-area transition can retry them.
+    [[nodiscard]] QStringList refreshMaximizedAreas();
     [[nodiscard]] bool isMaximized(const QString &containerId) const noexcept;
     void forgetContainer(const QString &containerId) noexcept;
     void cancelAll() noexcept;

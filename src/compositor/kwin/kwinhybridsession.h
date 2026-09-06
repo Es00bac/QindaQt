@@ -104,6 +104,7 @@ private:
     void dispatchChromePointerDecision(const ChromePointerDecision &decision);
     void handleChromeDrag(const QString &containerId,
                           const HybridChrome::ChromeDragEvent &event);
+    void refreshMaximizedContainers();
     void handleWindowAction(const QString &containerId,
                             HybridChrome::WindowAction action);
     void handleContainerControl(const QString &containerId,
