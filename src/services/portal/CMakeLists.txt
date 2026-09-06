@@ -109,6 +109,11 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATADIR}/xdg-desktop-portal"
     COMPONENT QindaQtPortalP0
 )
+install(
+    FILES data/plasma-xdg-desktop-portal-kde.service.d/20-qindaqt-remotedesktop.conf
+    DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}/plasma-xdg-desktop-portal-kde.service.d"
+    COMPONENT QindaQtPortalP0
+)
 # The resident executable derives the standard accent value from installed QST
 # themes. Keep that runtime payload in the same narrow package component so a
 # Settings-only backend cannot activate with an empty policy catalog.

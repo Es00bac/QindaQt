@@ -21,6 +21,9 @@ The installed KDE portal backend (`xdg-desktop-portal-kde`, confirmed on this
 host by reading `/usr/share/xdg-desktop-portal/portals/kde.portal`) advertises
 `org.freedesktop.impl.portal.RemoteDesktop`. The QindaQt portal selector already
 routes `org.freedesktop.impl.portal.RemoteDesktop=kde;gtk;lxqt` (ADR-0059).
+For QindaQt sessions, the portal package supplies the backend-only KDE service
+environment described in [ADR-0088](0088-enable-kde-remote-desktop-for-qindaqt.md);
+the frontend remains QindaQt and the QindaQt backend remains Settings-only.
 The standard `org.freedesktop.portal.RemoteDesktop` frontend API provides:
 
 - `CreateSession` / `SelectDevices` / `Start` — one native approval dialog per

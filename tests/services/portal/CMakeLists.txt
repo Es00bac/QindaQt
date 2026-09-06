@@ -10,6 +10,9 @@ find_program(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE
 find_file(QINDAQT_KDE_PORTAL_METADATA
           NAMES kde.portal
           PATHS /usr/share/xdg-desktop-portal/portals)
+find_file(QINDAQT_KDE_PORTAL_DBUS_SERVICE
+          NAMES org.freedesktop.impl.portal.desktop.kde.service
+          PATHS /usr/share/dbus-1/services)
 
 qt_add_executable(qindaqt_portal_appearance_policy_tests
                   tst_appearance_policy.cpp)
@@ -174,6 +177,7 @@ add_test(
         "-DQINDAQT_INSTALL_DBUSSERVICEDIR=${KDE_INSTALL_DBUSSERVICEDIR}"
         "-DQINDAQT_INSTALL_SYSTEMDUSERUNITDIR=${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
         "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+        "-DQINDAQT_KDE_PORTAL_DBUS_SERVICE=${QINDAQT_KDE_PORTAL_DBUS_SERVICE}"
         "-DQINDAQT_EXPECTED_PORTAL_EXECUTABLE=${KDE_INSTALL_FULL_LIBEXECDIR}/xdg-desktop-portal-qindaqt"
         "-DQINDAQT_EXPECTED_SETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings-service>"
         "-DQINDAQT_EXPECTED_SCHEMA_DIR=${PROJECT_SOURCE_DIR}/data/settings"
@@ -184,6 +188,17 @@ add_test(
         "-DQINDAQT_CONFIGURATION=$<CONFIG>"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_staged_package.cmake"
 )
+if(QINDAQT_KDE_PORTAL_METADATA AND QINDAQT_KDE_PORTAL_DBUS_SERVICE)
+    add_test(
+        NAME qindaqt.portal-kde-compat
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DDROPIN_FILE=${PROJECT_SOURCE_DIR}/src/services/portal/data/plasma-xdg-desktop-portal-kde.service.d/20-qindaqt-remotedesktop.conf"
+            "-DKDE_DBUS_SERVICE=${QINDAQT_KDE_PORTAL_DBUS_SERVICE}"
+            "-DKDE_PORTAL_METADATA=${QINDAQT_KDE_PORTAL_METADATA}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_kde_portal_compat.cmake"
+    )
+endif()
 
 set_tests_properties(
     qindaqt.portal-appearance-policy qindaqt.portal-settings1-source
@@ -212,6 +227,12 @@ set_tests_properties(
         RUN_SERIAL TRUE
         DEPENDS "qindaqt.portal-process-lifecycle"
 )
+if(TEST qindaqt.portal-kde-compat)
+    set_tests_properties(
+        qindaqt.portal-kde-compat
+        PROPERTIES LABELS "service;portal;activation;compat" TIMEOUT 20
+    )
+endif()
 if(TEST qindaqt.portal-frontend-selection)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-selection;qindaqt.portal-frontend-toolkit")

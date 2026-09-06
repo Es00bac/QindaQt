@@ -111,6 +111,16 @@ has no backend selector. The exact table is part of the
 [Settings backend v1 reference](../reference/portal-settings-backend-v1.md),
 following upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
 
+On QindaQt sessions the package also installs a narrow systemd user drop-in for
+`plasma-xdg-desktop-portal-kde.service`. It sets `XDG_CURRENT_DESKTOP=KDE`
+inside that KDE backend process because the installed KDE portal gates its
+RemoteDesktop, InputCapture, and KWin Wayland adaptors on that process-local
+identity. The frontend remains `QindaQt`, so its selector and QindaQt Settings
+backend do not change. The KDE D-Bus activation descriptor delegates to the
+same systemd unit, covering both normal D-Bus activation and explicit unit
+starts. See [ADR-0088](../adr/0088-enable-kde-remote-desktop-for-qindaqt.md)
+for the compatibility boundary and its removal conditions.
+
 The executable and its injected Settings1 source are thread-confined to the
 constructing Qt event loop. Startup registers the object, acquires the exact
 name, then starts the source. Any failure rolls the earlier steps back. Stop
