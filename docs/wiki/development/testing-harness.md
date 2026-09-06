@@ -1838,8 +1838,12 @@ The focused suites cover:
   target frames, and copied committed layout;
 - exact native-title baseline restoration across detach, group moves, rejected
   writes, new membership, and shutdown; nonblocking Close All/Ungroup/Cancel
-  policy; the outer-title group context menu with Arrange, Detach active, and
-  Ungroup entry actions; normal-chain development input parsing/injection, compositor scene
+  policy; group-context routing from the outer title, page tabs, and grouped
+  native titles with Arrange, Detach active, Ungroup, and whole-group Minimize
+  entry actions; the ordinary-window QindaQt menu's capability-dependent
+  maximize, shade, workspace, layer-above/layer-below, and close actions with
+  deferred dispatch;
+  normal-chain development input parsing/injection, compositor scene
   lifecycle, and production pre-parse input rejection; and
 - KDecoration factory/metadata loading plus first-run default seeding that
   preserves an existing user choice.

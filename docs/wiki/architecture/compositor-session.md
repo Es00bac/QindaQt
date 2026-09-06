@@ -246,9 +246,10 @@ to output, workspaces, activities, Keep Above, or Keep Below queues one canonica
 source per container. The rollback-safe scene transaction maps the complete
 outer frame between output placement areas when needed, re-solves every page,
 and applies the final context to every member without changing their independent
-restore snapshots. The outer-title right-click menu exposes the same layer,
-pin/workspace, activity, and Move to Output operations by mutating one live
-representative and using that queued whole-group path. Failed adoption restores
+restore snapshots. The group-chrome right-click menu exposes the same layer,
+pin/workspace, activity, and Move to Output operations from the outer title,
+page tabs, and grouped native member titles by mutating one live representative
+and using that queued whole-group path. Failed adoption restores
 every member and focus, then releases the group if it cannot remain coherent.
 Scene commands also preserve an untouched active, non-minimized independent
 window across add/forget, group replan, and multi-group release.

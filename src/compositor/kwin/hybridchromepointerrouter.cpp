@@ -104,9 +104,12 @@ bool HybridChromePointerRouter::isDragTarget(
 bool HybridChromePointerRouter::ownsContextMenuInput(
     const HybridChrome::ChromeHitTarget &target) noexcept
 {
-    // AGENT-CONTRACT: Only the synthetic outer title gets QindaQt's group
-    // menu. Native member titles keep KWin's standard per-window menu.
-    return target.kind == HybridChrome::HitKind::OuterTitleDrag;
+    // AGENT-CONTRACT: The container-aware menu owns right click on both
+    // synthetic and native group headers. Left click on native member titles
+    // still passes through to KDecoration for ordinary move behavior.
+    return target.kind == HybridChrome::HitKind::OuterTitleDrag
+        || target.kind == HybridChrome::HitKind::MemberTitleDrag
+        || target.kind == HybridChrome::HitKind::Tab;
 }
 
 bool HybridChromePointerRouter::isActivationTarget(

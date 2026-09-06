@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Gui)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Gui Widgets)
 find_package(KDecoration3 6.6 REQUIRED CONFIG)
 find_package(KF6CoreAddons 6.0 REQUIRED CONFIG)
 
@@ -24,6 +24,21 @@ set_target_properties(qindaqt_decoration_visuals PROPERTIES
 )
 qindaqt_enable_warnings(qindaqt_decoration_visuals)
 
+add_library(qindaqt_decoration_context_menu STATIC
+    qindawindowcontextmenu.cpp
+    qindawindowcontextmenu.h
+)
+target_compile_features(qindaqt_decoration_context_menu PUBLIC cxx_std_20)
+target_include_directories(qindaqt_decoration_context_menu PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(qindaqt_decoration_context_menu PUBLIC Qt6::Widgets)
+set_target_properties(qindaqt_decoration_context_menu PROPERTIES
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+)
+qindaqt_enable_warnings(qindaqt_decoration_context_menu)
+
 add_library(qindaqt_decoration MODULE
     qindabutton.cpp
     qindabutton.h
@@ -38,6 +53,7 @@ target_link_libraries(
         Qt6::Gui
         KF6::CoreAddons
         KDecoration3::KDecoration
+        qindaqt_decoration_context_menu
         qindaqt_decoration_visuals
 )
 set_target_properties(

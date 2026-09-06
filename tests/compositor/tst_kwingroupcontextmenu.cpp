@@ -85,16 +85,21 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
         menu, QStringLiteral("qindaqt-context-detach-active"));
     auto *const ungroup = actionNamed(
         menu, QStringLiteral("qindaqt-context-ungroup"));
+    auto *const minimizeGroup = actionNamed(
+        menu, QStringLiteral("qindaqt-context-minimize-group"));
     auto *const workspace = actionNamed(
         menu, QStringLiteral("qindaqt-context-workspace-two"));
     auto *const activity = actionNamed(
         menu, QStringLiteral("qindaqt-context-activity-play"));
     auto *const output = actionNamed(
         menu, QStringLiteral("qindaqt-context-output-right"));
-    QVERIFY(arrange && detach && ungroup && above && workspace && activity && output);
+    QVERIFY(arrange && detach && ungroup && minimizeGroup && above
+            && workspace && activity && output);
     QCOMPARE(arrange->text(), QStringLiteral("Arrange windows"));
     QCOMPARE(detach->text(), QStringLiteral("Detach active window"));
     QCOMPARE(ungroup->text(), QStringLiteral("Ungroup"));
+    QCOMPARE(minimizeGroup->text(), QStringLiteral("Minimize group"));
+    QVERIFY(minimizeGroup->isEnabled());
     QVERIFY(above->isChecked());
     QVERIFY(!workspace->isChecked());
 
@@ -103,6 +108,7 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     arrange->trigger();
     detach->trigger();
     ungroup->trigger();
+    minimizeGroup->trigger();
     above->trigger();
     workspace->trigger();
     activity->trigger();
@@ -110,7 +116,7 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     QVERIFY(commands.isEmpty());
     menu.hide();
     QVERIFY(!menu.isVisible());
-    QTRY_COMPARE(commands.size(), 7);
+    QTRY_COMPARE(commands.size(), 8);
     const GroupContextMenuCommand expectedArrange{
         GroupContextMenuCommandKind::ArrangeWindows,
         QStringLiteral("member-active"), true};
@@ -119,6 +125,8 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
         QStringLiteral("member-active"), true};
     const GroupContextMenuCommand expectedUngroup{
         GroupContextMenuCommandKind::Ungroup, {}, true};
+    const GroupContextMenuCommand expectedMinimize{
+        GroupContextMenuCommandKind::MinimizeGroup, {}, true};
     const std::pair<QString, GroupContextMenuCommand> expectedAbove{
         QStringLiteral("group-a"),
         {GroupContextMenuCommandKind::SetKeepAbove, {}, false}};
@@ -134,13 +142,14 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     QCOMPARE(commands[0].second, expectedArrange);
     QCOMPARE(commands[1].second, expectedDetach);
     QCOMPARE(commands[2].second, expectedUngroup);
-    QCOMPARE(commands[3], expectedAbove);
-    QCOMPARE(commands[4].second, expectedWorkspace);
-    QCOMPARE(commands[5].second, expectedActivity);
-    QCOMPARE(commands[6].second, expectedOutput);
+    QCOMPARE(commands[3].second, expectedMinimize);
+    QCOMPARE(commands[4], expectedAbove);
+    QCOMPARE(commands[5].second, expectedWorkspace);
+    QCOMPARE(commands[6].second, expectedActivity);
+    QCOMPARE(commands[7].second, expectedOutput);
 
     QCoreApplication::processEvents();
-    QCOMPARE(commands.size(), 7);
+    QCOMPARE(commands.size(), 8);
 }
 
 void KWinGroupContextMenuTest::defersDispatchWithStableContainerIdentity()
@@ -230,6 +239,21 @@ void KWinGroupContextMenuTest::rejectsStaleOrMalformedState()
         });
     QVERIFY(!duplicate.prepare(QStringLiteral("group-a"), &error));
     QVERIFY(error.contains(QStringLiteral("output")));
+
+    auto cannotMinimize = populatedState();
+    cannotMinimize.canMinimize = false;
+    KWinGroupContextMenu disabledMinimize(
+        [cannotMinimize](const QString &, QString *) {
+            return std::optional(cannotMinimize);
+        },
+        [](const QString &, const GroupContextMenuCommand &, QString *) {
+            return true;
+        });
+    QVERIFY(disabledMinimize.prepare(QStringLiteral("group-a"), &error));
+    auto *const minimize = actionNamed(
+        disabledMinimize, QStringLiteral("qindaqt-context-minimize-group"));
+    QVERIFY(minimize);
+    QVERIFY(!minimize->isEnabled());
 }
 
 QTEST_MAIN(KWinGroupContextMenuTest)
