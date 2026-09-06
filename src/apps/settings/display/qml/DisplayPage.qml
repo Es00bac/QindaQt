@@ -70,7 +70,7 @@ T.Page {
         Label {
             objectName: "displayPagePurpose"
             Layout.fillWidth: true
-            text: qsTr("Arrange displays and choose their resolution, scale, and orientation.")
+            text: qsTr("Drag displays into place, then choose each one's resolution, scale, and orientation.")
             wrapMode: Text.Wrap
             muted: true
             Accessible.name: text
