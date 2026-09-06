@@ -4,6 +4,7 @@
 #include "portal_frontend_test_support.h"
 
 #include <QCoreApplication>
+#include <QDBusAbstractAdaptor>
 #include <QDBusArgument>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -12,6 +13,7 @@
 #include <QDBusReply>
 #include <QDBusVariant>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QMap>
 #include <QProcess>
 #include <QProcessEnvironment>
@@ -68,21 +70,65 @@ private:
     QString m_lastTitle;
 };
 
-bool registerInjectedServices(QDBusConnection &bus, FakeFileChooser &fallback,
-                              QString *error)
+class FakeGlobalShortcuts final : public QDBusAbstractAdaptor {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.impl.portal.GlobalShortcuts")
+    Q_PROPERTY(quint32 version READ version CONSTANT SCRIPTABLE true)
+public:
+    explicit FakeGlobalShortcuts(QObject *parent) : QDBusAbstractAdaptor(parent) {}
+    [[nodiscard]] quint32 version() const noexcept { return 1; }
+    [[nodiscard]] int calls() const noexcept { return m_calls; }
+
+public Q_SLOTS:
+    Q_SCRIPTABLE quint32 CreateSession(const QDBusObjectPath &, const QDBusObjectPath &,
+                                       const QString &, const QVariantMap &,
+                                       QVariantMap &results)
+    {
+        ++m_calls;
+        results.clear();
+        return 0;
+    }
+
+private:
+    int m_calls = 0;
+};
+
+bool kdePortalAdvertisesGlobalShortcuts(QString *error)
+{
+    QFile metadata(QString::fromUtf8(QINDAQT_FALLBACK_PORTAL));
+    if (!metadata.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        *error = QStringLiteral("cannot read installed KDE portal metadata %1")
+                     .arg(metadata.fileName());
+        return false;
+    }
+    if (!metadata.readAll().contains("org.freedesktop.impl.portal.GlobalShortcuts")) {
+        *error = QStringLiteral(
+            "installed KDE portal backend %1 no longer advertises GlobalShortcuts; "
+            "the qindaqt-portals.conf fallback entry needs re-review")
+                     .arg(metadata.fileName());
+        return false;
+    }
+    return true;
+}
+
+FakeGlobalShortcuts *registerInjectedServices(QDBusConnection &bus,
+                                              FakeFileChooser &fallback,
+                                              QString *error)
 {
     // AGENT-GUARD: Owning these names before the frontend starts prevents the
     // private bus from activating installed host helpers during this proof.
+    auto *shortcuts = new FakeGlobalShortcuts(&fallback);
     if (!bus.registerObject(QString::fromLatin1(kPortalObjectPath), &fallback,
                             QDBusConnection::ExportScriptableSlots
-                                | QDBusConnection::ExportScriptableProperties)
+                                | QDBusConnection::ExportScriptableProperties
+                                | QDBusConnection::ExportAdaptors)
         || !bus.registerService(QString::fromLatin1(FallbackService))
         || !bus.registerService(QString::fromLatin1(DocumentsService))
         || !bus.registerService(QString::fromLatin1(PermissionStoreService))) {
         *error = QStringLiteral("cannot register injected private-bus portal services");
-        return false;
+        return nullptr;
     }
-    return true;
+    return shortcuts;
 }
 
 QDBusMessage call(const QString &interfaceName, const QString &member,
@@ -189,13 +235,17 @@ bool verifyFrontendValues(QString *error)
 
 bool runSelection(QString *error)
 {
+    if (!kdePortalAdvertisesGlobalShortcuts(error)) {
+        return false;
+    }
     auto runtime = stageRuntime(error);
     if (!runtime.has_value()) {
         return false;
     }
     QDBusConnection bus = QDBusConnection::sessionBus();
     FakeFileChooser fallback;
-    if (!registerInjectedServices(bus, fallback, error)) {
+    FakeGlobalShortcuts *shortcuts = registerInjectedServices(bus, fallback, error);
+    if (shortcuts == nullptr) {
         return false;
     }
     ChildProcesses children;
@@ -237,6 +287,23 @@ bool runSelection(QString *error)
     }
     Q_UNUSED(pending)
 
+    QDBusMessage globalShortcuts = QDBusMessage::createMethodCall(
+        QString::fromLatin1(FrontendService), QString::fromLatin1(kPortalObjectPath),
+        QStringLiteral("org.freedesktop.portal.GlobalShortcuts"),
+        QStringLiteral("CreateSession"));
+    globalShortcuts << QVariantMap{
+        {QStringLiteral("handle_token"),
+         QStringLiteral("qindaqt_globalshortcuts_proof")},
+        {QStringLiteral("session_handle_token"),
+         QStringLiteral("qindaqt_globalshortcuts_proof_session")}};
+    QDBusPendingCall shortcutsPending = bus.asyncCall(globalShortcuts, 5'000);
+    if (!waitUntil([&] { return shortcuts->calls() == 1; }, 5'000)) {
+        *error = QStringLiteral(
+            "GlobalShortcuts did not resolve to the declared KDE fallback");
+        return false;
+    }
+    Q_UNUSED(shortcutsPending)
+
     const QDBusMessage background = call(
         QStringLiteral("org.freedesktop.portal.Background"),
         QStringLiteral("GetAppState"));
@@ -274,7 +341,7 @@ bool runToolkit(QString *error)
     }
     QDBusConnection bus = QDBusConnection::sessionBus();
     FakeFileChooser fallback;
-    if (!registerInjectedServices(bus, fallback, error)) {
+    if (registerInjectedServices(bus, fallback, error) == nullptr) {
         return false;
     }
     ChildProcesses children;

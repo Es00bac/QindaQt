@@ -80,6 +80,11 @@ expect_rejection(
     "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Settings=qindaqt"
     "exact Settings/fallback routing policy"
 )
+expect_rejection(
+    "data/qindaqt-portals.conf"
+    "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Access=kde;gtk;lxqt\norg.freedesktop.impl.portal.AppChooser=kde;gtk;lxqt\norg.freedesktop.impl.portal.FileChooser=kde;gtk;lxqt\norg.freedesktop.impl.portal.Email=kde;gtk;lxqt\norg.freedesktop.impl.portal.Inhibit=kde;gtk;lxqt\norg.freedesktop.impl.portal.Notification=kde;gtk;lxqt\norg.freedesktop.impl.portal.Print=kde;gtk;lxqt\norg.freedesktop.impl.portal.Screenshot=kde;gtk;lxqt\norg.freedesktop.impl.portal.ScreenCast=kde;gtk;lxqt\norg.freedesktop.impl.portal.RemoteDesktop=kde;gtk;lxqt\norg.freedesktop.impl.portal.GlobalShortcuts=kde;gtk;lxqt\norg.freedesktop.impl.portal.Background=none"
+    "exact Settings/fallback routing policy"
+)
 
 file(REMOVE_RECURSE "${poison_root}")
 message(STATUS "Portal source boundary checker rejected all injected poisons")
