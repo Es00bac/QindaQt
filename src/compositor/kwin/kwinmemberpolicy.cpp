@@ -181,24 +181,27 @@ public:
 
     bool restoreRejectedPresentation(const MemberGroupBaseline &baseline,
                                      const QString &windowId,
+                                     const QString &focusOwnerWindowId,
                                      MemberFocusMode mode,
                                      QString *error) override
     {
         const auto *member = baseline.member(windowId);
         auto *window = m_registry.window(windowId);
-        if (!member || !window) {
+        auto *focusOwner = m_registry.window(focusOwnerWindowId);
+        if (!member || !window || !baseline.member(focusOwnerWindowId) || !focusOwner) {
             if (error) {
                 *error = QStringLiteral(
-                    "rejected focus member is absent from the committed group");
+                    "rejected focus member or accepted owner is absent from the committed group");
             }
             return false;
         }
 
-        // AGENT-GUARD: This is a rejected peer request while another member
-        // owns focus presentation. Do not use restoreGroup(), change hidden
-        // state, or activate any window: each would reveal or unfocus the
-        // accepted owner. HybridMemberPolicy keeps its applying guard active
-        // while these KWin setters synchronously emit their state signals.
+        // AGENT-GUARD: A native peer fullscreen request can activate the peer
+        // before KWin emits fullScreenChanged. Undo only that request and
+        // immediately restore the accepted owner; do not install an
+        // active-window observer, because Alt-Tab and outside focus must stay
+        // free once this correction completes. HybridMemberPolicy keeps its
+        // applying guard active while these KWin setters emit state signals.
         if (mode == MemberFocusMode::Fullscreen && window->isFullScreen()) {
             window->setFullScreen(false);
         }
@@ -213,6 +216,9 @@ public:
                                      member->frame.center());
         }
         window->moveResize(member->frame);
+        if (focusOwner != window) {
+            KWin::workspace()->activateWindow(focusOwner);
+        }
         return true;
     }
 

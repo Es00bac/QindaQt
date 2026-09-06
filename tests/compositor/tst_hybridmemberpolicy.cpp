@@ -21,6 +21,7 @@ struct PlatformCall final
     CallKind kind = CallKind::Detach;
     MemberGroupBaseline baseline;
     QString windowId;
+    QString focusOwnerWindowId;
     std::optional<MemberFocusMode> mode;
     QSet<QString> missing;
     MemberRestoreActivation activation = MemberRestoreActivation::RestoreBaseline;
@@ -38,7 +39,7 @@ public:
         identity.containerId = containerId;
         calls.append({CallKind::Detach,
                       focusBaseline ? *focusBaseline : identity,
-                      windowId, {}, {}});
+                      windowId, {}, {}, {}});
         if (!accept(error)) {
             return false;
         }
@@ -60,16 +61,17 @@ public:
                     MemberFocusMode mode,
                     QString *error) override
     {
-        calls.append({CallKind::Enter, baseline, windowId, mode, {}});
+        calls.append({CallKind::Enter, baseline, windowId, {}, mode, {}});
         return accept(error);
     }
 
     bool restoreRejectedPresentation(const MemberGroupBaseline &baseline,
                                      const QString &windowId,
+                                     const QString &focusOwnerWindowId,
                                      MemberFocusMode mode,
                                      QString *error) override
     {
-        calls.append({CallKind::Reject, baseline, windowId, mode, {}});
+        calls.append({CallKind::Reject, baseline, windowId, focusOwnerWindowId, mode, {}});
         if (onReject) {
             onReject();
         }
@@ -82,7 +84,7 @@ public:
                       MemberRestoreActivation activation,
                       QString *error) override
     {
-        calls.append({CallKind::Restore, baseline, minimizeWindowId, {},
+        calls.append({CallKind::Restore, baseline, minimizeWindowId, {}, {},
                       missingWindowIds, activation});
         return accept(error);
     }
@@ -318,6 +320,7 @@ void HybridMemberPolicyTest::rejectedCompetingPresentationRollsBackWithoutChangi
         QCOMPARE(platform.calls.constLast().kind, CallKind::Reject);
         QCOMPARE(platform.calls.constLast().baseline, original);
         QCOMPARE(platform.calls.constLast().windowId, QStringLiteral("right"));
+        QCOMPARE(platform.calls.constLast().focusOwnerWindowId, QStringLiteral("left"));
         QCOMPARE(platform.calls.constLast().mode, std::optional(mode));
         QVERIFY(rollbackSignalsSuppressed);
         QCOMPARE(policy.focusState(),

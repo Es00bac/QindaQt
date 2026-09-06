@@ -210,7 +210,7 @@ bool HybridMemberPolicy::restoreRejectedPresentation(
     m_applying = true;
     const auto guard = qScopeGuard([this] { m_applying = false; });
     return m_platform.restoreRejectedPresentation(
-        *m_focusBaseline, windowId, mode, error);
+        *m_focusBaseline, windowId, m_focus->windowId, mode, error);
 }
 
 bool HybridMemberPolicy::restore(const QString &minimizeWindowId,
