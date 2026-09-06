@@ -92,3 +92,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0083: Apply saved color profiles through public output management](0083-apply-saved-color-profiles-through-public-output-management.md)
 
 - [ADR-0084: Own the desktop shortcut note on wallpaper surfaces](0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md)
+
+- [ADR-0085: Pre-empt KWin's native custom-tile from an early, narrow input filter](0085-early-late-shift-takeover-filter.md)

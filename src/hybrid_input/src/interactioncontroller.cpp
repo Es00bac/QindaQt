@@ -167,6 +167,45 @@ InteractionDecision InteractionController::pointerRelease(const PointerEvent &ev
     return decision;
 }
 
+InteractionDecision InteractionController::adoptDrag(const QPointF &position)
+{
+    if (m_state != State::Idle) {
+        return {};
+    }
+
+    const auto source = m_resolver.hitTest(position);
+    const auto kind = kindForHit(source.kind);
+    m_state = State::PointerActive;
+    m_kind = source.isValid() ? kind : InteractionKind::None;
+    m_source = source;
+    m_pressPosition = position;
+    m_lastPosition = position;
+    m_displacement = {};
+
+    InteractionDecision decision{.consumed = true, .intents = {}};
+    if (m_kind == InteractionKind::None) {
+        // Swallowed no-target adoption: stay consumed exactly like a
+        // no-target pointerPress does, so whatever native gesture this
+        // pre-empted never resumes mid-drag.
+        return decision;
+    }
+    decision.intents.append(intent(IntentPhase::Begin, position));
+    if (m_kind == InteractionKind::MemberDock) {
+        m_previewTarget = m_resolver.pointerDockTarget(m_source, position);
+        auto update = intent(IntentPhase::Update, position);
+        update.target = m_previewTarget;
+        decision.intents.append(update);
+    } else {
+        decision.intents.append(intent(IntentPhase::Update, position));
+    }
+    return decision;
+}
+
+Qt::KeyboardModifiers InteractionController::pointerModifiers() const
+{
+    return m_bindings.pointerModifiers;
+}
+
 InteractionDecision InteractionController::keyEvent(const KeyEvent &event)
 {
     if (!event.pressed || m_state == State::Idle) {

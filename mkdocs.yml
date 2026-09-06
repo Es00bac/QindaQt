@@ -201,3 +201,4 @@ nav:
       - "ADR-0082: Session activation environment": adr/0082-publish-session-activation-environment.md
       - "ADR-0083: Compositor ICC application": adr/0083-apply-saved-color-profiles-through-public-output-management.md
       - "ADR-0084: Desktop shortcut note": adr/0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md
+      - "ADR-0085: Early late-Shift takeover filter": adr/0085-early-late-shift-takeover-filter.md

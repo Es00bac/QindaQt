@@ -26,3 +26,17 @@ add_test(
     NAME hybrid.input-keyboard-geometry
     COMMAND qindaqt_hybrid_input_keyboard_geometry_tests
 )
+
+qt_add_executable(
+    qindaqt_hybrid_input_late_shift_takeover_tests
+    tst_lateshifttakeoverdetector.cpp
+)
+target_link_libraries(
+    qindaqt_hybrid_input_late_shift_takeover_tests
+    PRIVATE QindaQt::HybridInput Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_hybrid_input_late_shift_takeover_tests)
+add_test(
+    NAME hybrid.late-shift-takeover-detector
+    COMMAND qindaqt_hybrid_input_late_shift_takeover_tests
+)
