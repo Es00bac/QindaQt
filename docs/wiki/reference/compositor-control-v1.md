@@ -311,11 +311,16 @@ XWayland uses KWin's XRes `LOCAL_CLIENT_PID` result for the X client id.
 `appMenuWindowId` is that exact nonzero X11 client window id for XWayland and is
 `null` for native Wayland; the KDE Wayland appmenu protocol identifies its menu
 by the paired service/path instead of inventing a registrar number. The service
-and object path are both strings or both `null`, reflecting only a valid pair
+and object path are both strings or both `null`, reflecting a valid pair
 already announced through the KDE appmenu protocol or the corresponding
 `_KDE_NET_WM_APPMENU_SERVICE_NAME` and
-`_KDE_NET_WM_APPMENU_OBJECT_PATH` properties. No value is inferred from the
-AppMenu registrar.
+`_KDE_NET_WM_APPMENU_OBJECT_PATH` properties. The only compatibility projection
+is Sloom Studio's packaged native-Wayland exporter: if no KDE address exists
+and KWin identifies the focused app as Sloom Studio, it projects
+`org.signalloom.PanelMenu` with `/org/signalloom/menus/active`. A normal or
+partial KDE announcement blocks that fallback, and the shell separately proves
+the endpoint's current unique owner has the active window PID. No value is
+inferred from the AppMenu registrar.
 
 Before the first valid publication or after a sampling defect, `status` is
 `unavailable` with retained `epoch`/`revision` and a typed `failure`; no facts
