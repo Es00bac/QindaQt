@@ -12,6 +12,7 @@
 
 #include <QPointer>
 
+#include <optional>
 #include <utility>
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -47,6 +48,28 @@ void setFocusProperty(KWin::Window *window, MemberFocusMode mode, bool enabled)
     // the temporary group presentation cannot acquire independent geometry.
     decoration->setProperty(MemberFocusProperty, value);
     decoration->update();
+}
+
+std::optional<NativeQuickTileEdge> pureQuickTileEdge(KWin::QuickTileMode mode)
+{
+    // AGENT-GUARD: Only a bare single-edge request maps to "movement within
+    // the container". A corner combo, Maximize, or Custom quick-tile has no
+    // single-direction equivalent among the existing dock zones and is left
+    // alone here; Maximize already routes through member focus mode via
+    // maximizedChanged.
+    if (mode == KWin::QuickTileMode(KWin::QuickTileFlag::Left)) {
+        return NativeQuickTileEdge::Left;
+    }
+    if (mode == KWin::QuickTileMode(KWin::QuickTileFlag::Right)) {
+        return NativeQuickTileEdge::Right;
+    }
+    if (mode == KWin::QuickTileMode(KWin::QuickTileFlag::Top)) {
+        return NativeQuickTileEdge::Top;
+    }
+    if (mode == KWin::QuickTileMode(KWin::QuickTileFlag::Bottom)) {
+        return NativeQuickTileEdge::Bottom;
+    }
+    return std::nullopt;
 }
 
 bool preflight(const ManagedWindowRegistry &registry,
@@ -220,6 +243,7 @@ KWinMemberPolicyManager::KWinMemberPolicyManager(
     KWinChromeManager &chrome,
     NativeMemberDetach detach,
     MemberEventSuppression eventsSuppressed,
+    NativeMemberQuickTile quickTileRequest,
     QObject *parent)
     : QObject(parent)
     , m_registry(registry)
@@ -227,6 +251,7 @@ KWinMemberPolicyManager::KWinMemberPolicyManager(
     , m_platform(std::make_unique<Platform>(registry, chrome, std::move(detach)))
     , m_policy(std::make_unique<HybridMemberPolicy>(*m_platform))
     , m_eventsSuppressed(std::move(eventsSuppressed))
+    , m_quickTileRequest(std::move(quickTileRequest))
 {
     connect(&m_registry, &ManagedWindowRegistry::managedWindowClosed,
             this, [this](const QString &windowId, const QString &) {
@@ -411,6 +436,31 @@ void KWinMemberPolicyManager::reconnectGroupedWindows(
                 continue;
             }
             auto &connections = m_windowConnections[member.windowId];
+            connections.append(connect(
+                window, &KWin::Window::requestedTileChanged, this,
+                [this, id = member.windowId, containerId = group.containerId, window] {
+                    if (eventsAreSuppressed()) {
+                        return;
+                    }
+                    const auto edge = pureQuickTileEdge(window->requestedQuickTileMode());
+                    if (!edge) {
+                        return;
+                    }
+                    // AGENT-GUARD: requestedTileChanged fires synchronously
+                    // inside Window::requestTile() for both X11 and Wayland
+                    // windows (unlike quickTileModeChanged, which is
+                    // asynchronous for xdg-shell clients), so this revert
+                    // lands before any frame can present the native tile. A
+                    // grouped member's frame is owned by its container; the
+                    // native quick-tile default must never win it.
+                    window->setQuickTileMode(KWin::QuickTileFlag::None,
+                                             window->frameGeometry().center());
+                    QString error;
+                    if (m_quickTileRequest
+                        && !m_quickTileRequest(containerId, id, *edge, &error)) {
+                        warnFailure(QLatin1StringView("quick-tile redirect"), id, error);
+                    }
+                }));
             connections.append(connect(
                 window, &KWin::Window::interactiveMoveResizeStarted, this,
                 [this, id = member.windowId, window] {

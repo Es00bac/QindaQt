@@ -9,6 +9,7 @@
 #include "kwinhybridscene.h"
 #include "kwinhybridgroupstacking.h"
 #include "kwininteractionfilter.h"
+#include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
 
@@ -27,6 +28,21 @@ void warnActionFailure(QLatin1StringView operation,
         qWarning("QindaQt Hybrid %s failed: %s",
                  qPrintable(QString(operation)), qPrintable(result.message));
     }
+}
+
+HybridInput::DockZone dockZoneForQuickTileEdge(NativeQuickTileEdge edge)
+{
+    switch (edge) {
+    case NativeQuickTileEdge::Left:
+        return HybridInput::DockZone::Left;
+    case NativeQuickTileEdge::Right:
+        return HybridInput::DockZone::Right;
+    case NativeQuickTileEdge::Top:
+        return HybridInput::DockZone::Top;
+    case NativeQuickTileEdge::Bottom:
+        return HybridInput::DockZone::Bottom;
+    }
+    return HybridInput::DockZone::None;
 }
 
 void collectPageWindowIds(const Core::LayoutNode &node, QStringList *windowIds)
@@ -462,6 +478,47 @@ bool KWinHybridSession::detachNativeMember(const QString &containerId,
         m_minimizedContainers.remove(containerId);
     }
     synchronizeChrome();
+    return true;
+}
+
+bool KWinHybridSession::handleNativeMemberQuickTile(
+    const QString &containerId, const QString &windowId,
+    NativeQuickTileEdge edge, QString *error)
+{
+    if (!ready() || m_registry.owner(windowId) != containerId) {
+        if (error) {
+            *error = QStringLiteral("native quick-tile source is not a grouped member");
+        }
+        return false;
+    }
+    // AGENT-CONTRACT: the caller already reverted KWin's own native quick-tile
+    // mutation before dispatching here. Resolve the nearest same-container
+    // sibling and reuse the existing within-container dock commit; an
+    // unresolved direction (no sibling that way) is a deterministic no-op,
+    // not a failure — the member simply stays where it is.
+    const auto zone = dockZoneForQuickTileEdge(edge);
+    const auto target = m_targetResolver->containerDirectionalTarget(
+        containerId, windowId, zone);
+    if (!target.isValid()) {
+        return true;
+    }
+    HybridInput::InteractionIntent intent;
+    intent.kind = HybridInput::InteractionKind::MemberDock;
+    intent.phase = HybridInput::IntentPhase::Commit;
+    intent.source = {HybridInput::HitKind::MemberTitle, containerId, windowId, {}};
+    intent.target = target;
+    const auto result = m_runtime->handleIntent(intent);
+    if (result.status == HybridRuntimeStatus::Rejected) {
+        if (error) {
+            *error = result.message.isEmpty()
+                ? QStringLiteral("native quick-tile redirect was rejected")
+                : result.message;
+        }
+        return false;
+    }
+    if (result.topologyChanged()) {
+        synchronizeChrome();
+    }
     return true;
 }
 

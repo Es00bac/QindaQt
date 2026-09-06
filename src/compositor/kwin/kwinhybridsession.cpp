@@ -137,6 +137,10 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
         [this] {
             return m_shutdown
                 || (m_sceneFactory && m_sceneFactory->applyingWindowStates());
+        },
+        [this](const QString &containerId, const QString &windowId,
+               NativeQuickTileEdge edge, QString *error) {
+            return handleNativeMemberQuickTile(containerId, windowId, edge, error);
         });
     m_transientManager = std::make_unique<KWinTransientManager>(registry);
     m_chromeSyncScheduler = std::make_unique<HybridChromeSyncScheduler>(

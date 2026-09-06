@@ -44,6 +44,16 @@ public:
     [[nodiscard]] HybridInput::DockTarget keyboardDockTarget(
         const HybridInput::HitTarget &source,
         HybridInput::DockZone zone) const override;
+    // Reactive enforcement seam: resolves the nearest *same-container* sibling
+    // in a direction, for routing a native per-member geometry action (e.g. a
+    // bare Meta+Arrow quick-tile request intercepted before it lands) through
+    // the existing within-container dock commands instead of native KWin
+    // geometry. Deliberately narrower than keyboardDockTarget, which may cross
+    // container/independent-window boundaries.
+    [[nodiscard]] HybridInput::DockTarget containerDirectionalTarget(
+        const QString &containerId,
+        const QString &sourceWindowId,
+        HybridInput::DockZone zone) const;
 
 private:
     [[nodiscard]] KWin::Window *topmostInputOwnerAt(
@@ -53,7 +63,8 @@ private:
         const QPointF &position,
         const QString &excludedWindowId = {}) const;
     [[nodiscard]] KWin::Window *directionalWindow(
-        KWin::Window *source, HybridInput::DockZone zone) const;
+        KWin::Window *source, HybridInput::DockZone zone,
+        const QString &restrictToContainerId = {}) const;
     [[nodiscard]] HybridInput::DockTarget targetFor(
         KWin::Window *window, HybridInput::DockZone zone) const;
     [[nodiscard]] static HybridInput::DockZone zoneAt(

@@ -46,6 +46,7 @@ class KWinHybridGroupStacking;
 class KWinInteractionFilter;
 class KWinInteractionTargetResolver;
 class KWinMemberPolicyManager;
+enum class NativeQuickTileEdge;
 class KWinTaskIdentityManager;
 class KWinTransientManager;
 class ManagedWindowRegistry;
@@ -146,6 +147,15 @@ private:
     [[nodiscard]] bool detachNativeMember(const QString &containerId,
                                           const QString &windowId,
                                           QString *error = nullptr);
+    // Reactive enforcement seam: a grouped member's native quick-tile request
+    // (bare Meta+Arrow) was already reverted by the caller before this runs.
+    // Redirects the requested direction through the existing within-container
+    // dock commands instead, or is a deterministic no-op when no same-
+    // container sibling exists in that direction.
+    [[nodiscard]] bool handleNativeMemberQuickTile(const QString &containerId,
+                                                   const QString &windowId,
+                                                   NativeQuickTileEdge edge,
+                                                   QString *error = nullptr);
     void handleCloseDecision(const QString &containerId,
                              ContainerCloseDecision decision);
 
