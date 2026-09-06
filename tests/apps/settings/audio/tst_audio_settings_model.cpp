@@ -117,7 +117,7 @@ void AudioSettingsModelTest::dispatchesOnlyAdmittedIntents() {
   fixture.transport.finish(setDefault, completion);
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
   QTRY_VERIFY_WITH_TIMEOUT(fixture.model.operationStatusText().contains(
-                               QStringLiteral("being refreshed")),
+                               QStringLiteral("Refreshing audio information")),
                            1'000);
   // The client schedules its own authoritative refetch after a result.
   QTRY_VERIFY_WITH_TIMEOUT(fixture.transport.fetches.size() >= 2, 1'000);
@@ -308,7 +308,8 @@ void AudioSettingsModelTest::uncertainOutcomesAreVisibleAndNeverReplayed() {
   QTRY_VERIFY_WITH_TIMEOUT(fixture.model.errorText().contains(
                                QStringLiteral("could not be confirmed")),
                            1'000);
-  QVERIFY(fixture.model.errorText().contains(QStringLiteral("not retried")));
+  QVERIFY(fixture.model.errorText().contains(
+      QStringLiteral("before you try again")));
   // The timed-out mutation is never replayed by the route.
   QCOMPARE(fixture.transport.operations.size(), 1);
   QVERIFY(fixture.transport.fetches.size() >= 2);
