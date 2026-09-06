@@ -73,6 +73,10 @@ private Q_SLOTS:
     void activateOnSubmenuEmitsNothing();
     void activateOnHiddenActionEmitsNothing();
     void rendererLeasesAreReferenceCounted();
+    void transitionRetainsProjectionButFencesActivation();
+    void endTransitionRestoresRetainedProjection();
+    void transitionOnEmptyProjectionIsUnavailable();
+    void publishTreeDuringTransitionReplacesProjection();
 };
 
 void GlobalMenuAppletAccessTests::rendererLeasesAreReferenceCounted()
@@ -314,6 +318,85 @@ void GlobalMenuAppletAccessTests::activateOnHiddenActionEmitsNothing()
     QSignalSpy spy(&access, &GlobalMenuAppletAccess::activationRequested);
     access.activate(QStringLiteral("fileHiddenAction"));
     QCOMPARE(spy.count(), 0);
+}
+
+void GlobalMenuAppletAccessTests::transitionRetainsProjectionButFencesActivation()
+{
+    GlobalMenuAppletAccess access;
+    access.publishTree(fixtureTree());
+    const QVariantList retained = access.items();
+    const QString generation =
+        retained.first().toMap().value(QStringLiteral("generation")).toString();
+    QSignalSpy activations(&access, &GlobalMenuAppletAccess::activationRequested);
+    QSignalSpy publications(&access, &GlobalMenuAppletAccess::itemsChanged);
+
+    access.beginTransition();
+    QVERIFY(!access.available());
+    QCOMPARE(access.phase(), QStringLiteral("loading"));
+    // The projection is retained verbatim so the panel slot and delegates
+    // survive the provider swap...
+    QCOMPARE(access.items(), retained);
+    QCOMPARE(publications.count(), 0);
+    // ...but nothing in it is actionable, even with the current generation.
+    access.activate(QStringLiteral("fileNewAction"), generation);
+    access.activate(QStringLiteral("fileNewAction"));
+    QCOMPARE(activations.count(), 0);
+}
+
+void GlobalMenuAppletAccessTests::endTransitionRestoresRetainedProjection()
+{
+    GlobalMenuAppletAccess access;
+    access.publishTree(fixtureTree());
+    const QVariantList retained = access.items();
+    const QString generation =
+        retained.first().toMap().value(QStringLiteral("generation")).toString();
+    QSignalSpy publications(&access, &GlobalMenuAppletAccess::itemsChanged);
+    QSignalSpy activations(&access, &GlobalMenuAppletAccess::activationRequested);
+
+    access.beginTransition();
+    access.endTransition();
+    QVERIFY(access.available());
+    QCOMPARE(access.phase(), QStringLiteral("ready"));
+    QCOMPARE(access.items(), retained);
+    QCOMPARE(publications.count(), 0);
+    access.activate(QStringLiteral("fileNewAction"), generation);
+    QCOMPARE(activations.count(), 1);
+
+    // A mismatched publisher still ends the retained placeholder truthfully.
+    access.beginTransition();
+    access.publishUnavailable();
+    QVERIFY(!access.available());
+    QVERIFY(access.items().isEmpty());
+    access.endTransition();
+    QVERIFY(!access.available());
+}
+
+void GlobalMenuAppletAccessTests::transitionOnEmptyProjectionIsUnavailable()
+{
+    GlobalMenuAppletAccess access;
+    access.beginTransition();
+    QVERIFY(!access.available());
+    QVERIFY(access.items().isEmpty());
+    QCOMPARE(access.phase(), QStringLiteral("unavailable"));
+    access.endTransition();
+    QVERIFY(!access.available());
+}
+
+void GlobalMenuAppletAccessTests::publishTreeDuringTransitionReplacesProjection()
+{
+    GlobalMenuAppletAccess access;
+    access.publishTree(fixtureTree());
+    access.beginTransition();
+    QVERIFY(!access.available());
+
+    MenuTree replacement = fixtureTree();
+    replacement.epoch = QUuid::createUuid();
+    replacement.items.first().text = QStringLiteral("Edit");
+    access.publishTree(replacement);
+    QVERIFY(access.available());
+    QCOMPARE(access.phase(), QStringLiteral("ready"));
+    QCOMPARE(access.items().first().toMap().value(QStringLiteral("text")).toString(),
+             QStringLiteral("Edit"));
 }
 
 QTEST_APPLESS_MAIN(GlobalMenuAppletAccessTests)

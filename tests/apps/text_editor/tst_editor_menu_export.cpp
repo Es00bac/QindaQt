@@ -292,7 +292,9 @@ void EditorMenuExportTest::shellFencesRealEditorIdentity() {
   } else {
     QTest::qWait(1'000);
     QVERIFY(!composition.access()->available());
-    QVERIFY(composition.access()->items().isEmpty());
+    // The retained placeholder clears after the bounded presentation grace once
+  // no provider re-proves the endpoint.
+  QTRY_VERIFY_WITH_TIMEOUT(composition.access()->items().isEmpty(), 5'000);
     composition.access()->activate(QStringLiteral("1"));
     QTest::qWait(250);
     QCOMPARE(activationCount(standardOutput, kActivateId), qsizetype{0});
@@ -305,7 +307,9 @@ void EditorMenuExportTest::shellFencesRealEditorIdentity() {
     processCleanup.dismiss();
   }
   QTRY_VERIFY_WITH_TIMEOUT(!composition.access()->available(), 5'000);
-  QVERIFY(composition.access()->items().isEmpty());
+  // The retained placeholder clears after the bounded presentation grace once
+  // no provider re-proves the endpoint.
+  QTRY_VERIFY_WITH_TIMEOUT(composition.access()->items().isEmpty(), 5'000);
   standardOutput.append(editor.readAllStandardOutput());
   standardError.append(editor.readAllStandardError());
   QVERIFY2(unexpectedStderr(standardError).isEmpty(),
@@ -366,7 +370,9 @@ void EditorMenuExportTest::staysFailClosedUntilRegistrarArrives() {
   requestQuitThroughShellMenu(composition, editor);
   processCleanup.dismiss();
   QTRY_VERIFY_WITH_TIMEOUT(!composition.access()->available(), 5'000);
-  QVERIFY(composition.access()->items().isEmpty());
+  // The retained placeholder clears after the bounded presentation grace once
+  // no provider re-proves the endpoint.
+  QTRY_VERIFY_WITH_TIMEOUT(composition.access()->items().isEmpty(), 5'000);
   standardOutput.append(editor.readAllStandardOutput());
   standardError.append(editor.readAllStandardError());
   QVERIFY2(unexpectedStderr(standardError).isEmpty(),
@@ -440,7 +446,9 @@ void EditorMenuExportTest::failsClosedUnderHostileRegistrar() {
   requestQuitThroughShellMenu(composition, editor);
   processCleanup.dismiss();
   QTRY_VERIFY_WITH_TIMEOUT(!composition.access()->available(), 5'000);
-  QVERIFY(composition.access()->items().isEmpty());
+  // The retained placeholder clears after the bounded presentation grace once
+  // no provider re-proves the endpoint.
+  QTRY_VERIFY_WITH_TIMEOUT(composition.access()->items().isEmpty(), 5'000);
   standardOutput.append(editor.readAllStandardOutput());
   standardError.append(editor.readAllStandardError());
   QVERIFY2(unexpectedStderr(standardError).isEmpty(),

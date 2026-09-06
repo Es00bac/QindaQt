@@ -198,7 +198,9 @@ void FileManagerMenuExportTest::shellFencesRealFileManagerIdentity() {
   } else {
     QTest::qWait(1'000);
     QVERIFY(!composition.access()->available());
-    QVERIFY(composition.access()->items().isEmpty());
+    // The retained placeholder clears after the bounded presentation grace
+    // once no provider re-proves the endpoint.
+    QTRY_VERIFY_WITH_TIMEOUT(composition.access()->items().isEmpty(), 5'000);
     composition.access()->activate(QStringLiteral("1"));
     QTest::qWait(250);
     QCOMPARE(activationCount(standardOutput), qsizetype{0});
@@ -212,7 +214,9 @@ void FileManagerMenuExportTest::shellFencesRealFileManagerIdentity() {
   }
   processCleanup.dismiss();
   QTRY_VERIFY_WITH_TIMEOUT(!composition.access()->available(), 5'000);
-  QVERIFY(composition.access()->items().isEmpty());
+  // The retained placeholder clears after the bounded presentation grace once
+  // the exited application cannot re-prove its endpoint.
+  QTRY_VERIFY_WITH_TIMEOUT(composition.access()->items().isEmpty(), 5'000);
   standardOutput.append(fileManager.readAllStandardOutput());
   standardError.append(fileManager.readAllStandardError());
   QVERIFY2(standardError.isEmpty(), standardError.constData());

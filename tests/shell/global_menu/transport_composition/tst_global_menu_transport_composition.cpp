@@ -82,6 +82,9 @@ class GlobalMenuTransportCompositionTest final : public QObject
 private Q_SLOTS:
     void focusedRegistrationPublishesAndActivatesExactlyOnce();
     void announcedNativeAddressUsesExactOwnerAndClearsOnLoss();
+    void transientIdentityWithdrawalRetainsPresentation();
+    void unansweredWithdrawalClearsPresentationAfterGrace();
+    void sameWindowGenerationMoveRenewsWithoutRepublish();
 };
 
 void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivatesExactlyOnce()
@@ -187,10 +190,17 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
     const qsizetype hostedBeforeFocusRetirement = hosted.size();
     active.observation.reset();
     coordinator.refreshFocus();
+    // Authority is revoked synchronously: nothing is activatable while no
+    // authenticated focus exists.
     QVERIFY(!applet.available());
     // Ordinary focus retirement retains the proven endpoint so the inactive
     // application's content height does not jump.
     QCOMPARE(hosted.size(), hostedBeforeFocusRetirement);
+    // The last presentation is retained as an inert placeholder through the
+    // bounded grace window instead of collapsing the panel slot.
+    QVERIFY(!applet.items().isEmpty());
+    const QString retainedGeneration =
+        applet.items().first().toMap().value(QStringLiteral("generation")).toString();
     applet.activate(QStringLiteral("1"));
     QTest::qWait(100);
     QCOMPARE(exporter.eventCount(), 1);
@@ -202,10 +212,21 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
         .focusGeneration = 7};
     coordinator.refreshFocus();
     QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
-    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), hostedBeforeFocusRetirement + 1, 5'000);
+    // The same provider re-proved itself within the grace window: the retained
+    // acknowledgment and projection continue; nothing is re-announced or
+    // rebuilt.
+    QCOMPARE(hosted.size(), hostedBeforeFocusRetirement);
+    QCOMPARE(applet.items().first().toMap().value(QStringLiteral("text")).toString(),
+             QStringLiteral("View"));
+    QCOMPARE(applet.items().first().toMap().value(QStringLiteral("generation")).toString(),
+             retainedGeneration);
     QDBusConnection::disconnectFromBus(providerName);
     providerBus = QDBusConnection(QStringLiteral("qindaqt-retired-global-menu-provider"));
     QTRY_VERIFY_WITH_TIMEOUT(!applet.available(), 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(applet.items().isEmpty(), 5'000);
+    // Provider loss withdraws the acknowledgment exactly once per observer
+    // path that notices it (registrar owner loss and the client's owner-loss
+    // signal race; the registrar deduplicates the wire signal).
     QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), hostedBeforeFocusRetirement + 2, 5'000);
     QCOMPARE(hosted.constLast().at(0).toString(),
              hosted.constFirst().at(0).toString());
@@ -277,7 +298,10 @@ announcedNativeAddressUsesExactOwnerAndClearsOnLoss()
     QDBusConnection::disconnectFromBus(providerName);
     providerBus = QDBusConnection(QStringLiteral("qindaqt-retired-native-provider"));
     QTRY_VERIFY_WITH_TIMEOUT(!applet.available(), 5'000);
-    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), 2, 5'000);
+    // Both the announced-service owner change and the client's owner loss
+    // observe the same teardown and each withdraws the bound endpoint; the
+    // registrar deduplicates the wire signal, so the application sees one.
+    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), 3, 5'000);
     QCOMPARE(hosted.constLast().at(0).toString(),
              hosted.constFirst().at(0).toString());
     QCOMPARE(hosted.constLast().at(1).toString(), QStringLiteral("/NativeMenu"));
@@ -288,6 +312,194 @@ announcedNativeAddressUsesExactOwnerAndClearsOnLoss()
     QDBusConnection::disconnectFromBus(shellName);
 }
 
-QTEST_GUILESS_MAIN(GlobalMenuTransportCompositionTest)
+namespace
+{
 
+// Shared private-bus binding for the flicker-regression rows: one registrar,
+// one fake provider owning window 77's menu at /Menu, one focused observation.
+struct BoundFixture {
+    QString registrarName;
+    QString providerName;
+    QString shellName;
+    // QDBusConnection has no default constructor; a named-but-unconnected
+    // placeholder is overwritten by connectToBus in bindFixture.
+    QDBusConnection registrarBus = QDBusConnection(QStringLiteral("placeholder-r"));
+    QDBusConnection providerBus = QDBusConnection(QStringLiteral("placeholder-p"));
+    QDBusConnection shellBus = QDBusConnection(QStringLiteral("placeholder-s"));
+    std::unique_ptr<Test::FakeDbusMenuExporter> exporter;
+    std::unique_ptr<Registrar::AppMenuRegistrar> registrar;
+    QUuid windowId;
+    FakeActiveWindowSource active;
+    FakeRegistrarWindowIdSource resolver;
+    quint64 generation = 5;
+};
+
+bool bindFixture(BoundFixture &fixture, const QString &tag)
+{
+    DbusMenu::registerDbusMenuWireTypes();
+    Registrar::registerRegistrarWireTypes();
+    fixture.registrarName = QStringLiteral("qindaqt-flicker-registrar-%1").arg(tag);
+    fixture.providerName = QStringLiteral("qindaqt-flicker-provider-%1").arg(tag);
+    fixture.shellName = QStringLiteral("qindaqt-flicker-shell-%1").arg(tag);
+    fixture.registrarBus =
+        QDBusConnection::connectToBus(QDBusConnection::SessionBus, fixture.registrarName);
+    fixture.providerBus =
+        QDBusConnection::connectToBus(QDBusConnection::SessionBus, fixture.providerName);
+    fixture.shellBus =
+        QDBusConnection::connectToBus(QDBusConnection::SessionBus, fixture.shellName);
+    if (!fixture.registrarBus.isConnected() || !fixture.providerBus.isConnected()
+        || !fixture.shellBus.isConnected()) {
+        return false;
+    }
+    fixture.exporter = std::make_unique<Test::FakeDbusMenuExporter>();
+    fixture.exporter->setLayout(1, Test::menuLayout());
+    if (!fixture.providerBus.registerObject(
+            QStringLiteral("/Menu"), fixture.exporter.get(),
+            QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
+                | QDBusConnection::ExportScriptableProperties)) {
+        return false;
+    }
+    fixture.registrar = std::make_unique<Registrar::AppMenuRegistrar>(fixture.registrarBus);
+    if (fixture.registrar->start() != Registrar::RegistrarStartStatus::Started) {
+        return false;
+    }
+    if (registrarCall(fixture.providerBus, QStringLiteral("RegisterWindow"),
+                      {QVariant::fromValue(quint32{77}),
+                       QVariant::fromValue(QDBusObjectPath(QStringLiteral("/Menu")))})
+            .type()
+        != QDBusMessage::ReplyMessage) {
+        return false;
+    }
+    fixture.windowId = QUuid::createUuid();
+    fixture.active.observation = Ownership::ActiveWindowObservation{
+        .window = Ownership::WindowIdentity{
+            .windowId = fixture.windowId,
+            .processId = static_cast<qint64>(QCoreApplication::applicationPid())},
+        .focusGeneration = fixture.generation};
+    fixture.resolver.expectedWindow = fixture.windowId;
+    fixture.resolver.registrarId = 77;
+    return true;
+}
+
+void teardownFixture(BoundFixture &fixture)
+{
+    fixture.registrar->stop();
+    QDBusConnection::disconnectFromBus(fixture.providerName);
+    QDBusConnection::disconnectFromBus(fixture.shellName);
+    QDBusConnection::disconnectFromBus(fixture.registrarName);
+}
+
+} // namespace
+
+void GlobalMenuTransportCompositionTest::transientIdentityWithdrawalRetainsPresentation()
+{
+    BoundFixture fixture;
+    QVERIFY(bindFixture(fixture, QStringLiteral("transient")));
+    GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        fixture.shellBus, fixture.active, fixture.resolver, *fixture.registrar->registry(),
+        applet);
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    const QString generation =
+        applet.items().first().toMap().value(QStringLiteral("generation")).toString();
+    QSignalSpy republished(&applet, &GlobalMenuAppletAccess::itemsChanged);
+
+    // The compositor identity channel invalidates and republishes on
+    // visibility changes that are not focus moves; between withdrawal and
+    // reread the source observes no identity at all.
+    fixture.active.observation.reset();
+    coordinator.refreshFocus();
+    QVERIFY(!applet.available());
+    QVERIFY(!applet.items().isEmpty());
+    applet.activate(QStringLiteral("1"));
+    QTest::qWait(100);
+    QCOMPARE(fixture.exporter->eventCount(), 0);
+
+    fixture.generation = 6;
+    fixture.active.observation = Ownership::ActiveWindowObservation{
+        .window = Ownership::WindowIdentity{
+            .windowId = fixture.windowId,
+            .processId = static_cast<qint64>(QCoreApplication::applicationPid())},
+        .focusGeneration = fixture.generation};
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    // The placeholder resumed in place: no projection replacement means the
+    // panel keeps its extent and every delegate survives the cycle.
+    QCOMPARE(republished.size(), 0);
+    QCOMPARE(applet.items().first().toMap().value(QStringLiteral("generation")).toString(),
+             generation);
+    applet.activate(QStringLiteral("1"));
+    QTRY_COMPARE_WITH_TIMEOUT(fixture.exporter->eventCount(), 1, 5'000);
+
+    coordinator.stop();
+    teardownFixture(fixture);
+}
+
+void GlobalMenuTransportCompositionTest::unansweredWithdrawalClearsPresentationAfterGrace()
+{
+    BoundFixture fixture;
+    QVERIFY(bindFixture(fixture, QStringLiteral("grace")));
+    GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        fixture.shellBus, fixture.active, fixture.resolver, *fixture.registrar->registry(),
+        applet);
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+
+    fixture.active.observation.reset();
+    coordinator.refreshFocus();
+    QVERIFY(!applet.available());
+    QVERIFY(!applet.items().isEmpty());
+    // No reread re-proves the provider: after the bounded grace the retained
+    // placeholder must give way to the truthful unavailable state.
+    QTRY_VERIFY_WITH_TIMEOUT(applet.items().isEmpty(), 5'000);
+    QVERIFY(!applet.available());
+
+    coordinator.stop();
+    teardownFixture(fixture);
+}
+
+void GlobalMenuTransportCompositionTest::sameWindowGenerationMoveRenewsWithoutRepublish()
+{
+    BoundFixture fixture;
+    QVERIFY(bindFixture(fixture, QStringLiteral("renewal")));
+    GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        fixture.shellBus, fixture.active, fixture.resolver, *fixture.registrar->registry(),
+        applet);
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QVERIFY(coordinator.publishedTree().has_value());
+    const QUuid initialEpoch = coordinator.publishedTree()->epoch;
+    const QString generation =
+        applet.items().first().toMap().value(QStringLiteral("generation")).toString();
+    QSignalSpy republished(&applet, &GlobalMenuAppletAccess::itemsChanged);
+
+    // A visibility revision move with the same focused window is not a focus
+    // change: lineage renews in place with no presentation churn at all.
+    fixture.generation = 6;
+    fixture.active.observation = Ownership::ActiveWindowObservation{
+        .window = Ownership::WindowIdentity{
+            .windowId = fixture.windowId,
+            .processId = static_cast<qint64>(QCoreApplication::applicationPid())},
+        .focusGeneration = fixture.generation};
+    coordinator.refreshFocus();
+    QVERIFY(applet.available());
+    QCOMPARE(republished.size(), 0);
+    QCOMPARE(applet.items().first().toMap().value(QStringLiteral("generation")).toString(),
+             generation);
+    QVERIFY(coordinator.publishedTree().has_value());
+    QCOMPARE(coordinator.publishedTree()->epoch, initialEpoch);
+    applet.activate(QStringLiteral("1"));
+    QTRY_COMPARE_WITH_TIMEOUT(fixture.exporter->eventCount(), 1, 5'000);
+
+    coordinator.stop();
+    teardownFixture(fixture);
+}
+
+QTEST_GUILESS_MAIN(GlobalMenuTransportCompositionTest)
 #include "tst_global_menu_transport_composition.moc"

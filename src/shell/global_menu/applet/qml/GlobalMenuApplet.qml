@@ -19,7 +19,12 @@ Item {
     readonly property var colors: theme.colors ?? ({
     })
     readonly property bool available: access !== null && Boolean(access.available)
-    readonly property var topLevelItems: available ? (access.items ?? []) : []
+    // Presentation is decoupled from activation authority: while the shell
+    // proves the next provider (phase "loading") the retained entries stay
+    // painted, dimmed and disabled, so the panel slot never collapses and
+    // reflows mid-swap. Only genuinely empty state collapses to zero extent.
+    readonly property var topLevelItems: access !== null ? (access.items ?? []) : []
+    readonly property bool hasContent: topLevelItems.length > 0
     readonly property int effectiveLimit: Math.min(clampedEntryLimit, vertical ? verticalLimitFor(height) : horizontalLimitFor(width))
     readonly property var visibleEntries: topLevelItems.slice(0, effectiveLimit)
     readonly property int overflowCount: topLevelItems.length - visibleEntries.length
@@ -140,8 +145,8 @@ Item {
     objectName: "globalMenuApplet"
     // AGENT-GUARD: natural size must not depend on width-limited delegates.
     // Otherwise a host using implicitWidth permanently collapses to +N.
-    implicitWidth: available ? (vertical ? 40 : naturalHorizontalExtent()) : 0
-    implicitHeight: available ? (vertical ? naturalVerticalExtent() : 28) : 0
+    implicitWidth: hasContent ? (vertical ? 40 : naturalHorizontalExtent()) : 0
+    implicitHeight: hasContent ? (vertical ? naturalVerticalExtent() : 28) : 0
 
     function naturalHorizontalExtent() {
         const count = Math.min(topLevelItems.length, clampedEntryLimit)
@@ -159,7 +164,7 @@ Item {
     }
     clip: true
     Accessible.role: Accessible.MenuBar
-    Accessible.name: available ? qsTr("Application menu") : qsTr("Menu unavailable")
+    Accessible.name: available ? qsTr("Application menu") : (hasContent ? qsTr("Application menu updating") : qsTr("Menu unavailable"))
 
     // Measured, deterministic geometry contract. AGENT-GUARD: the limit
     // loops must consume strict UPPER bounds of the real rendered sizes
@@ -197,7 +202,7 @@ Item {
 
         objectName: "globalMenuHorizontalLayout"
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.available && !root.vertical
+        visible: root.hasContent && !root.vertical
         spacing: root.spacing
 
         Repeater {
@@ -215,7 +220,7 @@ Item {
 
         objectName: "globalMenuVerticalLayout"
         anchors.horizontalCenter: parent.horizontalCenter
-        visible: root.available && root.vertical
+        visible: root.hasContent && root.vertical
         spacing: 4
 
         Repeater {
@@ -235,7 +240,7 @@ Item {
         // AGENT-GUARD: below the documented host minimum the indicator hides
         // itself rather than painting partially inside the clipped geometry;
         // the limit loops reserve its measured size whenever it is shown.
-        visible: root.available && root.overflowCount > 0 && root.indicatorFits
+        visible: root.hasContent && root.overflowCount > 0 && root.indicatorFits
         text: qsTr("+%1").arg(root.overflowCount)
         textFormat: Text.PlainText
         color: root.colors.textMuted ?? "#a9afa9"
@@ -276,7 +281,10 @@ Item {
 
         objectName: "globalMenuTopLevelItem"
         focusPolicy: Qt.TabFocus
-        enabled: itemEnabled
+        // Retained entries painted during a provider swap (phase "loading")
+        // are inert: disabled buttons ignore pointer/keyboard activation and
+        // are skipped by focus, so a stale menu can never act for a new focus.
+        enabled: itemEnabled && root.available
         implicitWidth: label.implicitWidth + 12
         implicitHeight: 24
         // AGENT-CONTRACT: presentation never owns toggle state. The button

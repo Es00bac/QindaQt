@@ -14,6 +14,18 @@
 namespace QindaQt::Shell::GlobalMenu::Composition
 {
 
+namespace
+{
+
+// Bounded window in which a withdrawn authority may re-prove itself before the
+// retained placeholder presentation is cleared. Must comfortably exceed one
+// compositor invalidation -> identity reread D-Bus round trip so transient
+// churn never collapses the panel; short enough that a genuinely menu-less
+// focus still clears the old menu promptly.
+constexpr int kPresentationGraceMilliseconds = 500;
+
+} // namespace
+
 GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
     QDBusConnection connection, const Ownership::ActiveWindowSource &activeWindowSource,
     const RegistrarWindowIdSource &windowIdSource, Registrar::RegistrarRegistry &registry,
@@ -62,6 +74,10 @@ GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
             &GlobalMenuTransportCoordinator::activate);
     connect(&m_applet, &GlobalMenuAppletAccess::rendererPresentChanged, this,
             &GlobalMenuTransportCoordinator::refreshHostedMenu);
+    m_presentationGraceTimer.setSingleShot(true);
+    m_presentationGraceTimer.setInterval(kPresentationGraceMilliseconds);
+    connect(&m_presentationGraceTimer, &QTimer::timeout, this,
+            &GlobalMenuTransportCoordinator::expirePresentationGrace);
 }
 
 GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
@@ -86,19 +102,35 @@ void GlobalMenuTransportCoordinator::refreshFocus()
     const std::optional<Ownership::ActiveWindowObservation> focus =
         m_activeWindowSource.activeWindow();
     if (!focus || !focus->window.isValid()) {
-        clearAuthority();
+        // No authenticated observation: revoke invocation authority at once,
+        // but give the identity reread one grace window to re-prove the same
+        // provider before the retained presentation is cleared.
+        suspendAuthority();
         return;
     }
-    m_selector.applyFocusGeneration(focus->focusGeneration);
     const std::optional<ProviderEndpoint> endpoint = endpointFor(*focus);
     if (!endpoint) {
-        clearAuthority();
+        suspendAuthority();
         return;
     }
-    if (m_client && m_boundEndpoint == *endpoint
+    const bool sameProvider = m_client && m_boundWindow == focus->window
+        && m_boundEndpoint == *endpoint;
+    if (sameProvider && !m_authoritySuspended
         && m_focusGeneration == focus->focusGeneration && m_selector.current()) {
         return;
     }
+    if (sameProvider) {
+        // The same window and endpoint still own focus; only the observation
+        // generation moved (a visibility change that is not a focus move, or a
+        // transient invalidation/reread cycle). Renew lineage in place instead
+        // of tearing the binding down and flashing the panel. The selector's
+        // focus-generation fence is deliberately not applied on this path:
+        // renewal re-authenticates against the moved generation before
+        // adopting, so the same window keeps its epoch.
+        renewBoundProvider(*focus);
+        return;
+    }
+    m_selector.applyFocusGeneration(focus->focusGeneration);
     bindRegistration(*focus, *endpoint);
 }
 
@@ -166,6 +198,8 @@ void GlobalMenuTransportCoordinator::bindRegistration(
     const Ownership::ActiveWindowObservation &focus,
     const ProviderEndpoint &endpoint)
 {
+    m_presentationGraceTimer.stop();
+    m_authoritySuspended = false;
     // A focus switch does not revoke an endpoint that this live renderer has
     // already proved it can serve. Keeping that acknowledgment prevents the
     // inactive window's content geometry from jumping as focus moves.
@@ -196,9 +230,16 @@ void GlobalMenuTransportCoordinator::bindRegistration(
     }
     m_exporter.reset();
     m_client.reset();
-    m_applet.publishUnavailable();
+    // AGENT-GUARD: the previous provider's projection stays painted as an
+    // inert placeholder until the replacement's first tree arrives. Publishing
+    // unavailable here would collapse the panel slot to zero extent and
+    // reflow the panel row on every focus switch — the visible flash. The
+    // facade drops `available` during the transition, so retained entries are
+    // never actionable for the new focus.
+    m_applet.beginTransition();
     m_selector.adopt(*authentication.proof);
     m_boundEndpoint = endpoint;
+    m_boundWindow = focus.window;
     m_focusGeneration = focus.focusGeneration;
     m_client = std::make_unique<DbusMenu::DbusMenuClient>(
         m_connection, endpoint.uniqueOwner, QDBusObjectPath(endpoint.objectPath),
@@ -229,13 +270,21 @@ void GlobalMenuTransportCoordinator::publishClientTree()
     if (!m_client || !m_exporter) {
         return;
     }
+    if (m_authoritySuspended) {
+        // A treeChanged during suspension means the kept client's fetch
+        // completed; route through the focus logic so a matching observation
+        // resumes and publishes it instead of dropping the event.
+        refreshFocus();
+        return;
+    }
     const std::optional<Ownership::ActiveWindowObservation> focus =
         m_activeWindowSource.activeWindow();
     const std::optional<ProviderEndpoint> endpoint = focus
         ? endpointFor(*focus) : std::nullopt;
     if (!focus || !endpoint || *endpoint != m_boundEndpoint
+        || focus->window != m_boundWindow
         || focus->focusGeneration != m_focusGeneration) {
-        clearAuthority();
+        suspendAuthority();
         return;
     }
     const Ownership::AuthenticationResult authentication = m_authenticator.authenticate(
@@ -252,13 +301,18 @@ void GlobalMenuTransportCoordinator::publishClientTree()
     // it. The untrusted remote revision never becomes invocation authority.
     m_selector.adopt(*authentication.proof);
     const Exporter::ExportResult exported = m_exporter->refresh();
-    if (exported.outcome == Exporter::ExportOutcome::Published
-        || exported.outcome == Exporter::ExportOutcome::Unchanged) {
+    if (exported.outcome == Exporter::ExportOutcome::Published) {
         const std::optional<Protocol::MenuTree> tree = m_exporter->lastAccepted();
         if (tree) {
             m_applet.publishTree(*tree);
             refreshHostedMenu();
         }
+    } else if (exported.outcome == Exporter::ExportOutcome::Unchanged) {
+        // Content-identical restamp: the facade already projects exactly this
+        // tree. Republishing would bump the publication generation and rebuild
+        // every delegate for no visible change; the selector/exporter lineage
+        // advance above is sufficient for invocation coherence.
+        refreshHostedMenu();
     } else {
         withdrawHostedMenu(m_boundEndpoint);
         clearAuthority();
@@ -301,6 +355,8 @@ void GlobalMenuTransportCoordinator::activate(const QString &actionId)
 
 void GlobalMenuTransportCoordinator::clearAuthority()
 {
+    m_presentationGraceTimer.stop();
+    m_authoritySuspended = false;
     m_hosted = false;
     ++m_clientGeneration;
     if (m_client) {
@@ -310,8 +366,107 @@ void GlobalMenuTransportCoordinator::clearAuthority()
     m_client.reset();
     m_selector.clear();
     m_boundEndpoint = {};
+    m_boundWindow = {};
     m_focusGeneration = 0;
     m_applet.publishUnavailable();
+}
+
+void GlobalMenuTransportCoordinator::suspendAuthority()
+{
+    if (m_authoritySuspended) {
+        // Keep the original grace deadline; repeated invalidations must not
+        // extend the retained placeholder indefinitely.
+        return;
+    }
+    if (m_applet.items().isEmpty()) {
+        // No presentation is retained, so there is nothing to grace: this is
+        // the ordinary unavailable transition.
+        clearAuthority();
+        return;
+    }
+    // Invocation authority dies now: with the selector cleared the facade
+    // rejects activation and the invocation guard can never match. The client
+    // and exporter stay alive so a prompt reread of the same window resumes
+    // without a GetLayout round trip or a delegate rebuild.
+    m_authoritySuspended = true;
+    m_selector.clear();
+    m_focusGeneration = 0;
+    m_applet.beginTransition();
+    m_presentationGraceTimer.start();
+}
+
+void GlobalMenuTransportCoordinator::expirePresentationGrace()
+{
+    if (!m_authoritySuspended) {
+        return;
+    }
+    // No provider re-proved the retained presentation within the grace window:
+    // the focus genuinely has no usable menu. Retire the kept transport and
+    // publish the truthful unavailable state. The hosted acknowledgment stays
+    // retained per endpoint while the renderer lives, exactly as
+    // clearAuthority() leaves it, so the inactive application's window
+    // geometry does not jump.
+    m_authoritySuspended = false;
+    m_hosted = false;
+    ++m_clientGeneration;
+    if (m_client) {
+        m_client->stop();
+    }
+    m_exporter.reset();
+    m_client.reset();
+    m_boundEndpoint = {};
+    m_boundWindow = {};
+    m_applet.publishUnavailable();
+}
+
+void GlobalMenuTransportCoordinator::renewBoundProvider(
+    const Ownership::ActiveWindowObservation &focus)
+{
+    m_presentationGraceTimer.stop();
+    const bool wasSuspended = m_authoritySuspended;
+    m_authoritySuspended = false;
+    const Ownership::MenuProviderRegistration claim{
+        .windowId = focus.window.windowId,
+        .providerUniqueName = m_boundEndpoint.uniqueOwner,
+        .claimedProcessId = focus.window.processId};
+    const Ownership::AuthenticationResult authentication =
+        m_authenticator.authenticate(claim);
+    if (!authentication.accepted || !authentication.proof) {
+        // The retained placeholder belonged to a provider that can no longer
+        // prove itself against the current focus; this is a hard revocation,
+        // not a transient gap, so the presentation clears immediately.
+        withdrawHostedMenu(m_boundEndpoint);
+        clearAuthority();
+        return;
+    }
+    m_selector.adopt(*authentication.proof);
+    m_focusGeneration = focus.focusGeneration;
+    if (!m_exporter || !m_exporter->lastAccepted().has_value()) {
+        // The first layout fetch is still in flight; the client's treeChanged
+        // completes publication through publishClientTree(). Keep the original
+        // grace deadline armed so a fetch that never completes cannot hold the
+        // placeholder open indefinitely.
+        if (wasSuspended) {
+            m_presentationGraceTimer.start();
+        }
+        return;
+    }
+    const Exporter::ExportResult exported = m_exporter->refresh();
+    if (exported.outcome == Exporter::ExportOutcome::Published) {
+        m_applet.publishTree(*m_exporter->lastAccepted());
+        refreshHostedMenu();
+    } else if (exported.outcome == Exporter::ExportOutcome::Unchanged) {
+        if (wasSuspended) {
+            // Same provider, same content: restore the retained projection
+            // without touching delegate identity or the publication
+            // generation.
+            m_applet.endTransition();
+        }
+        refreshHostedMenu();
+    } else {
+        withdrawHostedMenu(m_boundEndpoint);
+        clearAuthority();
+    }
 }
 
 void GlobalMenuTransportCoordinator::refreshHostedMenu()
