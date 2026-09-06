@@ -5,6 +5,7 @@ qt_add_executable(
     qindaqt-panel-visibility-control-channel-tests
     "${CMAKE_CURRENT_SOURCE_DIR}/tst_panelvisibilitycontrolchannel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycontrolchannel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityprobearguments.cpp"
 )
 target_link_libraries(
     qindaqt-panel-visibility-control-channel-tests PRIVATE Qt6::Core Qt6::Test
@@ -94,6 +95,7 @@ if(
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityphasewaiter.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionwindowproof.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycontrolchannel.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityprobearguments.cpp"
     )
     target_link_libraries(
         qindaqt-panel-visibility-session-probe

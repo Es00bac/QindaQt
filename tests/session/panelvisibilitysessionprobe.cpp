@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "panelvisibilitycaptureprocess.h"
 #include "panelvisibilitycontrolchannel.h"
+#include "panelvisibilityprobearguments.h"
 #include "panelvisibilityphasewaiter.h"
 #include "panelvisibilitysessionwindowproof.h"
 
@@ -42,9 +43,9 @@ constexpr auto Interface = "org.qindaqt.Compositor1";
 
 class PaintedWindow final : public QWindow {
 public:
-    PaintedWindow() : m_store(this)
+    explicit PaintedWindow(QString title) : m_store(this)
     {
-        setTitle(QStringLiteral("QindaQt panel visibility proof client"));
+        setTitle(std::move(title));
         setFlags(Qt::Window);
         resize(720, 480);
     }
@@ -331,10 +332,11 @@ int main(int argc, char **argv)
 
     QGuiApplication application(argc, argv);
     application.setQuitOnLastWindowClosed(false);
-    const QStringList arguments = application.arguments();
-    const bool hasControlFile = arguments.size() == 5
-        && arguments.at(3) == QStringLiteral("--control-file");
-    if ((!hasControlFile && arguments.size() != 3) || application.screens().size() != 1) {
+    PanelVisibilityProbe::Arguments probeArguments;
+    QString argumentError;
+    if (!PanelVisibilityProbe::parseArguments(application.arguments(), &probeArguments,
+                                              &argumentError)
+        || application.screens().size() != 1) {
         return 2;
     }
     auto *const bus = QDBusConnection::sessionBus().interface();
@@ -359,16 +361,19 @@ int main(int argc, char **argv)
     if (!waitFor(endpoint, topVisible, outputSize, &observed, 15'000)) {
         return 4;
     }
-    PaintedWindow client;
+    // A unique title is opt-in for the private fullscreen qualifier, which
+    // needs two independently addressable client-control endpoints. The
+    // ordinary panel-visibility scenario retains its stable default title.
+    PaintedWindow client(probeArguments.title);
     client.showFullScreen();
     client.requestActivate();
     const auto overlapHidden = [&](const QJsonArray &items) {
         return topVisible(items)
             && !mappedPanel(items, QStringLiteral("left"), 40, outputSize);
     };
-    const QString captureTool = arguments.at(1);
-    const QString captureLibraryPath = arguments.at(2);
-    const QString controlFile = hasControlFile ? arguments.at(4) : QString{};
+    const QString captureTool = probeArguments.captureTool;
+    const QString captureLibraryPath = probeArguments.captureLibraryPath;
+    const QString controlFile = probeArguments.controlFile;
     if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
                       captureLibraryPath,
                       QStringLiteral("window-overlap-hidden"), &phases)) {

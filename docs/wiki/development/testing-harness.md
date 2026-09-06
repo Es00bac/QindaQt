@@ -2821,10 +2821,13 @@ client fullscreen state. The wait is bounded to 45 seconds and records
 
 This is a test-client control boundary only. The runner maps the file through
 the existing per-run writable evidence directory, uses unique increasing
-sequences, and still proves compositor state through public snapshots. The
-probe does not activate its window while processing fullscreen commands, so the
-runner's real drag and focus transitions retain ownership. The default panel
-row passes no control file and therefore preserves its original phase flow.
+sequences, and still proves compositor state through public snapshots. A
+controlled row may additionally pass `--title <unique title>` after its control
+file so two probes are independently addressable through public window
+snapshots; omitting it retains the stable default title. The probe does not
+activate its window while processing fullscreen commands, so the runner's real
+drag and focus transitions retain ownership. The default panel row passes no
+control file and therefore preserves its original phase flow.
 
 System-KWin rows keep the private Weston prefix out of the sandbox-global
 `LD_LIBRARY_PATH`; this is what prevents `/usr/bin/kwin_wayland` from borrowing
