@@ -8,7 +8,9 @@
 
 #include <QDBusConnection>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QProcess>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -112,15 +114,51 @@ void ShellStartupPreferencesTests::savedPreferencesSurviveIntoAFreshStartupRead(
 
 void ShellStartupPreferencesTests::absentServiceFallsBackWithinDeadline()
 {
+    QTemporaryDir busDirectory(QStringLiteral("/tmp/qindaqt-bus-XXXXXX"));
+    QVERIFY(busDirectory.isValid());
+    QFile config(busDirectory.filePath(QStringLiteral("dbus.conf")));
+    QVERIFY(config.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    const QByteArray configContents = R"xml(<!DOCTYPE busconfig PUBLIC
+        "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+        "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:tmpdir=)xml"
+                         + busDirectory.path().toUtf8()
+                         + R"xml(</listen>
+  <policy context="default">
+    <allow user="*"/>
+    <allow own="*"/>
+    <allow send_destination="*"/>
+    <allow send_interface="*"/>
+    <allow receive_sender="*"/>
+  </policy>
+</busconfig>
+)xml";
+    QVERIFY(config.write(configContents) == configContents.size());
+    config.close();
+
     QProcess daemon;
+    const auto connection = QStringLiteral("startup-orphan-")
+        + QString::number(QCoreApplication::applicationPid());
+    const auto cleanup = qScopeGuard([&] {
+        QDBusConnection::disconnectFromBus(connection);
+        if (daemon.state() != QProcess::NotRunning) {
+            daemon.kill();
+        }
+        daemon.waitForFinished();
+    });
     daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
-                 {QStringLiteral("--session"), QStringLiteral("--nofork"),
+                 {QStringLiteral("--config-file"), config.fileName(),
+                  QStringLiteral("--nofork"),
                   QStringLiteral("--print-address=1")});
     QVERIFY(daemon.waitForStarted());
-    QVERIFY(daemon.waitForReadyRead());
+    const bool addressReady = daemon.waitForReadyRead();
+    if (!addressReady) {
+        qWarning().noquote() << daemon.readAllStandardError();
+    }
+    QVERIFY(addressReady);
     const QString address = QString::fromUtf8(daemon.readLine()).trimmed();
-    const QString connection = QStringLiteral("startup-orphan-")
-        + QString::number(QCoreApplication::applicationPid());
     auto bus = QDBusConnection::connectToBus(address, connection);
     QVERIFY(bus.isConnected());
 
@@ -132,10 +170,6 @@ void ShellStartupPreferencesTests::absentServiceFallsBackWithinDeadline()
     QVERIFY(!values.has_value());
     QVERIFY(!error.isEmpty());
     QVERIFY(elapsed.elapsed() < 5'000);
-
-    QDBusConnection::disconnectFromBus(connection);
-    daemon.kill();
-    QVERIFY(daemon.waitForFinished());
 }
 
 QTEST_GUILESS_MAIN(ShellStartupPreferencesTests)
