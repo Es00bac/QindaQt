@@ -3,6 +3,7 @@
 
 #include "kwinshellvisibilitypublisher.h"
 #include "shellvisibilitywindowadmission.h"
+#include "sloommenuendpointselector.h"
 
 #include <config-kwin.h>
 #include <window.h>
@@ -179,6 +180,14 @@ KWinShellWindowIdentityPublisher::sample(QString *error)
     if (!serviceName.isEmpty() && !objectPath.isEmpty()) {
         facts.appMenuServiceName = serviceName;
         facts.appMenuObjectPath = objectPath;
+    } else if (const auto sloomEndpoint = selectSloomMenuEndpoint(
+                   active->desktopFileName(), active->resourceClass(),
+                   serviceName, objectPath)) {
+        // Sloom's Electron exporter cannot announce through KWin's native
+        // appmenu protocol. Its packaged contract is a standard dbusmenu twin;
+        // the shell resolves and PID-authenticates the selected service later.
+        facts.appMenuServiceName = sloomEndpoint->serviceName;
+        facts.appMenuObjectPath = sloomEndpoint->objectPath;
     }
     candidate.activeWindow = std::move(facts);
     if (error) error->clear();

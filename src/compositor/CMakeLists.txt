@@ -259,6 +259,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinshellvisibilitypublisher.h
             kwin/kwinshellwindowidentity.cpp
             kwin/kwinshellwindowidentity.h
+            kwin/sloommenuendpointselector.cpp
+            kwin/sloommenuendpointselector.h
             kwin/kwinshelltaskfacts.cpp
             kwin/kwinshelltaskfacts.h
             kwin/kwinshellwindowactions.cpp

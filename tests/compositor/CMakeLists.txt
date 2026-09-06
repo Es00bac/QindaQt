@@ -69,6 +69,22 @@ target_include_directories(
 target_link_libraries(qindaqt_layout_geometry_tests PRIVATE QindaQt::Core Qt6::Test)
 add_test(NAME compositor.layout-geometry COMMAND qindaqt_layout_geometry_tests)
 
+qt_add_executable(
+    qindaqt_sloom_menu_endpoint_selector_tests
+    tst_sloommenuendpointselector.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/sloommenuendpointselector.cpp"
+)
+target_include_directories(
+    qindaqt_sloom_menu_endpoint_selector_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+)
+target_link_libraries(qindaqt_sloom_menu_endpoint_selector_tests PRIVATE Qt6::Core Qt6::Test)
+target_compile_features(qindaqt_sloom_menu_endpoint_selector_tests PRIVATE cxx_std_20)
+add_test(
+    NAME compositor.sloom-menu-endpoint-selector
+    COMMAND qindaqt_sloom_menu_endpoint_selector_tests
+)
+
 set(_qindaqt_kwin_abi_test_arguments
     -DQINDAQT_KWIN_ABI_MODULE=${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/cmake/QindaQtKWinAbi.cmake
     -DQINDAQT_KWIN_MANIFEST=${CMAKE_CURRENT_LIST_DIR}/../../compositor/upstream/kwin.json

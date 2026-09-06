@@ -212,9 +212,15 @@ the compositor-projected `appMenuWindowId`, then requires the registrar entry's
 exact unique owner to have the compositor-projected PID. For native Wayland,
 the numeric id is deliberately `null`; composition uses only the paired
 service name/object path announced on that credentials-owned surface, resolves
-the name to one exact unique bus owner, and applies the same PID check. A null
-PID, missing X11 id, half/malformed Wayland address, owner replacement, PID
-mismatch, revision movement, or action-fence mismatch publishes unavailable.
+the name to one exact unique bus owner, and applies the same PID check. Sloom
+Studio is the narrow packaged compatibility case: when KWin has no appmenu
+address and identifies the focused window as Sloom Studio, its identity
+publisher projects the documented `org.signalloom.PanelMenu` /
+`/org/signalloom/menus/active` standard dbusmenu endpoint. A normal KDE
+announcement, including a partial one, always takes priority or fails closed;
+the shell still requires the endpoint owner PID to equal the active window PID.
+A null PID, missing X11 id, half/malformed Wayland address, owner replacement,
+PID mismatch, revision movement, or action-fence mismatch publishes unavailable.
 Registrar contents never fill a missing compositor fact.
 
 The client also rejects the complete identity reply unless its epoch and
