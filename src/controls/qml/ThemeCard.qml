@@ -162,7 +162,7 @@ T.AbstractButton {
             Text {
                 visible: control.checked
                 text: "✓"
-                color: Tokens.accent.default
+                color: Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.title
                 font.bold: true

@@ -52,8 +52,12 @@ void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
                         tokens.foreground().defaultColor, tokens.background().raised, 4.5);
         requireContrast(id, QStringLiteral("fg.default/bg.highest"),
                         tokens.foreground().defaultColor, tokens.background().highest, 4.5);
-        requireContrast(id, QStringLiteral("fg.muted/bg.raised-large-text"),
-                        tokens.foreground().muted, tokens.background().raised, 3.0);
+        requireContrast(id, QStringLiteral("fg.muted/bg.raised"),
+                        tokens.foreground().muted, tokens.background().raised, 4.5);
+        requireContrast(id, QStringLiteral("fg.muted/bg.base-ui"),
+                        tokens.foreground().muted, tokens.background().base, 4.5);
+        requireContrast(id, QStringLiteral("fg.muted/bg.highest-ui"),
+                        tokens.foreground().muted, tokens.background().highest, 4.5);
         requireContrast(id, QStringLiteral("accent.fg/accent.default"),
                         tokens.accent().foreground, tokens.accent().defaultColor, 4.5);
         requireContrast(id, QStringLiteral("danger.fg/danger.default"),

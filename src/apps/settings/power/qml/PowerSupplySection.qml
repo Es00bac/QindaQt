@@ -71,7 +71,7 @@ ColumnLayout {
                         color: supplyRow.modelData.warningSeverity >= 4
                                ? Tokens.danger.default
                                : supplyRow.modelData.warningSeverity >= 3
-                                 ? Tokens.status.warning.foreground
+                                 ? Tokens.fg.default
                                  : Tokens.fg.muted
                         Accessible.role: Accessible.StaticText
                         Accessible.name: text

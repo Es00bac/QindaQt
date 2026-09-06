@@ -167,15 +167,15 @@ and macOS. QST-1 uses the WCAG 2.2 contrast algorithm and requires:
 | Foreground/background pair | Minimum |
 | --- | --- |
 | `fg.default` on each `bg` level | 4.5:1 |
-| `fg.muted` on `bg.raised`, restricted to large/helper text | 3:1 |
+| `fg.muted` on each `bg` level | 4.5:1 |
 | `accent.fg` on `accent.default` | 4.5:1 |
 | `danger.fg` on `danger.default` | 4.5:1 |
 | Every status foreground/background pair | 4.5:1 |
 | `focus.ring` and `outline.strong` on `bg.raised` | 3:1 |
 | High Contrast `fg.default` on `bg.raised` | 7:1 |
 
-`fg.muted` is not a normal body-text token; controls must use `fg.default` for
-small readable text. Disabled colors are exempt inactive UI, alpha state roles
+`fg.muted` remains visibly secondary but is safe for text and essential state
+glyphs on every standard surface. Disabled colors are exempt inactive UI, alpha state roles
 are overlays rather than standalone content, and `divider` is decorative. A
 later control may introduce another semantic pairing only with its own
 computational contrast gate.

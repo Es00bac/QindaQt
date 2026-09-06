@@ -85,7 +85,7 @@ T.Page {
             text: root.appearanceSettings.errorText
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
-            color: Tokens.status.warning.foreground
+            color: Tokens.fg.default
             Accessible.role: Accessible.AlertMessage
             Accessible.name: text
         }
@@ -98,7 +98,7 @@ T.Page {
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
             color: root.appearanceSettings.saveResultsHaveFailure
-                   ? Tokens.status.warning.foreground : Tokens.fg.muted
+                   ? Tokens.fg.default : Tokens.fg.muted
             Accessible.role: root.appearanceSettings.saveResultsHaveFailure
                              ? Accessible.AlertMessage : Accessible.StaticText
             Accessible.name: text

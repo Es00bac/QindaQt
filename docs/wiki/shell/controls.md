@@ -42,7 +42,7 @@ with the consuming view model.
 
 | Component | Responsibility and notable contract |
 | --- | --- |
-| `Button` | Primary, secondary, destructive, error, disabled, and busy actions. `available` is the caller-owned capability/enabled input; effective inherited `enabled` is `available && !busy`, so busy always suppresses pointer, keyboard, and accessible activation without losing caller intent. |
+| `Button` | Primary, secondary, destructive, error, disabled, and busy actions. `available` is the caller-owned capability/enabled input; effective inherited `enabled` is `available && !busy`, so busy always suppresses pointer, keyboard, and accessible activation without losing caller intent. Disabled buttons use the muted foreground on the raised surface instead of retaining an accent or danger fill whose foreground pairing no longer applies. |
 | `Label` | Body text with normal/muted and enabled/disabled semantic foregrounds. |
 | `TextField` | Editable text with semantic selection, placeholder, focus, disabled, and error presentation. |
 | `CheckBox` | Native check behavior with token-rendered indicator and full Space-key semantics. |

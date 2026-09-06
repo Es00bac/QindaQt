@@ -178,7 +178,7 @@ Item {
                 anchors.fill: parent
                 name: "dialog-warning"
                 size: 18
-                color: Tokens.status.warning.foreground
+                color: Tokens.fg.default
                 symbolic: true
                 fallbackText: qsTr("Warning")
                 Accessible.ignored: true

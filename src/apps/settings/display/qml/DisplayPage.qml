@@ -84,7 +84,7 @@ T.Page {
             text: root.displaySettings.errorText
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
-            color: Tokens.status.warning.foreground
+            color: Tokens.fg.default
             Accessible.role: Accessible.AlertMessage
             Accessible.name: text
         }
@@ -98,7 +98,7 @@ T.Page {
                 text: modelData
                 wrapMode: Text.Wrap
                 textFormat: Text.PlainText
-                color: Tokens.status.warning.foreground
+                color: Tokens.fg.default
                 Accessible.role: Accessible.AlertMessage
                 Accessible.name: text
             }
