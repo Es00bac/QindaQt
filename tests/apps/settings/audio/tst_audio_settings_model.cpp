@@ -117,7 +117,7 @@ void AudioSettingsModelTest::dispatchesOnlyAdmittedIntents() {
   fixture.transport.finish(setDefault, completion);
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
   QTRY_VERIFY_WITH_TIMEOUT(fixture.model.operationStatusText().contains(
-                               QStringLiteral("Refreshing audio information")),
+                               QStringLiteral("refreshing audio information")),
                            1'000);
   // The client schedules its own authoritative refetch after a result.
   QTRY_VERIFY_WITH_TIMEOUT(fixture.transport.fetches.size() >= 2, 1'000);
