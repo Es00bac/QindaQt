@@ -21,7 +21,7 @@ T.ComboBox {
     bottomPadding: Tokens.space["2"]
 
     Accessible.role: Accessible.ComboBox
-    Accessible.name: control.displayText
+    Accessible.name: control.editable ? control.editText : control.displayText
     Accessible.description: accessibleDescription
 
     // ComboBox owns the delegate model consumed by the popup ListView. The
@@ -45,13 +45,31 @@ T.ComboBox {
         }
     }
 
-    contentItem: Text {
-        text: control.displayText
+    // AGENT-CONTRACT: Editable consumers (including the Appearance font route)
+    // depend on this content item forwarding real text input into editText.
+    // Keep one content item for both selector and search use. A Text item looks
+    // correct while closed but cannot receive editText/key input when a font
+    // picker opts into ComboBox.editable.
+    contentItem: T.TextField {
+        text: control.editable ? control.editText : control.displayText
+        enabled: control.enabled && control.editable
+        readOnly: !control.editable
+        selectByMouse: control.editable
         color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+        selectionColor: Tokens.accent.default
+        selectedTextColor: Tokens.accent.fg
         font.family: Tokens.type.fontFamily
         font.pointSize: Tokens.type.body
+        leftPadding: 0
+        rightPadding: 0
+        topPadding: 0
+        bottomPadding: 0
         verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
+        background: null
+        validator: control.validator
+        inputMethodHints: control.inputMethodHints
+        onTextEdited: control.editText = text
+        onAccepted: control.accepted()
     }
 
     indicator: Text {

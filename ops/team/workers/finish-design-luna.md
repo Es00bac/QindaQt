@@ -1,4 +1,4 @@
-- Status: working — exact ComboBox popup/delegate repair handed off; monitoring Appearance consumer verification
+- Status: working — repairing editable ComboBox text input and blur persistence for the Appearance font route
 
 ## Updates
 
@@ -14,3 +14,4 @@
 - 2026-09-06T10:17:05-06:00 — ComboBox source now owns its delegate on `T.ComboBox.delegate`, keeps the popup ListView on `delegateModel`, and adds an AsNeeded scrollbar; pointer popup regression is being stabilized before handoff.
 - 2026-09-06T10:19:01-06:00 — Repair verified: controls behavior, source-policy, and installed-import pass 3/3; the pointer popup test passes in three repeated runs; docs validation and strict mkdocs pass. Preparing one exact commit for customize/root consumption.
 - 2026-09-06T10:20:09-06:00 — Exact repair handoff delivered to root/customize; monitoring the consumer rerun while preserving the shared control boundary.
+- 2026-09-06T10:22:55-06:00 — Root/customize reproduced the remaining contract gap: the tokenized ComboBox still exposes a Text content item, so editable consumers cannot receive real key input. The bounded repair keeps the root delegate/popup fix and replaces only the content item with a tokenized TextField when editable, with a key-input/blur regression next.
