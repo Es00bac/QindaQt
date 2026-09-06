@@ -37,7 +37,8 @@ foreach(required_path IN ITEMS
         "${qml}/libqindaqt_global_menu_qmlplugin.so"
         "${qml}/qmldir"
         "${qml}/GlobalMenuApplet.qml"
-        "${qml}/GlobalMenuPopup.qml"
+        "${qml}/GlobalMenuNativeMenu.qml"
+        "${qml}/GlobalMenuNativeMenuItem.qml"
         "${data}/applets/global-menu.json"
         "${data}/profiles/qindaqt.json"
         "${data}/themes/qinda-dark.json"
@@ -68,9 +69,9 @@ if(NOT resolved_global_menu STREQUAL expected_global_menu)
 endif()
 
 file(STRINGS "${qml}/libqindaqt_global_menu_qml.so" compiled_qml
-     REGEX "(QindaQt\\.Shell\\.GlobalMenu|GlobalMenuPopup\\.qml)")
+     REGEX "(QindaQt\\.Shell\\.GlobalMenu|GlobalMenuNativeMenu\\.qml)")
 if(NOT compiled_qml)
-    message(FATAL_ERROR "Installed Global Menu library has no compiled popup QML")
+    message(FATAL_ERROR "Installed Global Menu library has no compiled native menu QML")
 endif()
 
 set(poison "${stage}/source-poison")

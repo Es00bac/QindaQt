@@ -51,26 +51,14 @@ set_tests_properties(
 )
 
 add_test(
-    NAME qindaqt.global-menu-popup-placement-qml-offscreen
+    NAME qindaqt.global-menu-native-switch-qml-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>
         -import "${CMAKE_BINARY_DIR}/qml"
-        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuPopupPlacement.qml"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuNativeSwitch.qml"
 )
 set_tests_properties(
-    qindaqt.global-menu-popup-placement-qml-offscreen
-    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
-)
-
-add_test(
-    NAME qindaqt.global-menu-applet-switch-qml-offscreen
-    COMMAND
-        $<TARGET_FILE:Qt6::qmltestrunner>
-        -import "${CMAKE_BINARY_DIR}/qml"
-        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuAppletSwitch.qml"
-)
-set_tests_properties(
-    qindaqt.global-menu-applet-switch-qml-offscreen
+    qindaqt.global-menu-native-switch-qml-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 
@@ -87,14 +75,14 @@ set_tests_properties(
 )
 
 add_test(
-    NAME qindaqt.global-menu-applet-submenu-qml-offscreen
+    NAME qindaqt.global-menu-native-submenu-qml-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>
         -import "${CMAKE_BINARY_DIR}/qml"
-        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuAppletSubmenu.qml"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuNativeSubmenu.qml"
 )
 set_tests_properties(
-    qindaqt.global-menu-applet-submenu-qml-offscreen
+    qindaqt.global-menu-native-submenu-qml-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 

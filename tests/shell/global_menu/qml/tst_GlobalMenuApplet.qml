@@ -136,8 +136,11 @@ Item {
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
             const applet = createTemporaryObject(appletComponent, testRoot);
-            const submenuEntry = findChild(applet, "globalMenuTopLevelItem");
-            verify(submenuEntry !== null);
+            const entries = [];
+            collectEntries(applet, entries);
+            const submenuEntry = entries.find(
+                entry => entry.Accessible.name === "File");
+            verify(submenuEntry !== undefined);
             // Submenus are presented honestly: visible, disabled, not a
             // clickable fake when no popup children were published.
             verify(submenuEntry.visible);
@@ -207,6 +210,7 @@ Item {
             keyClick(Qt.Key_Space);
             compare(fakeAccess.activateCalls, 1);
             compare(fakeAccess.lastActivatedId, "aboutAction");
+            entry.forceActiveFocus(Qt.TabFocusReason);
             keyClick(Qt.Key_Return);
             compare(fakeAccess.activateCalls, 2);
         }
@@ -268,9 +272,9 @@ Item {
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
             const applet = createTemporaryObject(appletComponent, testRoot);
-            const layout = findChild(applet, "globalMenuVerticalLayout");
+            const layout = findChild(applet, "globalMenuHorizontalLayout");
             verify(layout !== null);
-            verify(!layout.visible);
+            verify(layout.visible);
             // Entries sit on one baseline in the horizontal layout.
             const entries = [];
             collectEntries(applet, entries);

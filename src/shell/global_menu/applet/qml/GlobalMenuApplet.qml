@@ -1,38 +1,45 @@
-// AGENT-NOTE: consumes only GlobalMenuAppletAccess's public Q_PROPERTY/
-// Q_INVOKABLE surface (see applet/include/.../globalmenuappletaccess.h).
-
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls
 
+// AGENT-NOTE: consumes only GlobalMenuAppletAccess's public Q_PROPERTY/
+// Q_INVOKABLE surface (see applet/include/.../globalmenuappletaccess.h).
 Item {
     id: root
 
     required property var access
     required property var theme
     property bool vertical: false
-    // Hard cap on presented entries. Values below 1 are clamped so a negative
-    // count can never turn slice()'s negative-index semantics into "show
-    // everything".
     property int maximumVisibleEntries: 8
     readonly property int clampedEntryLimit: Math.max(1, Math.floor(maximumVisibleEntries))
-    readonly property var colors: theme.colors ?? ({
-    })
+    readonly property var colors: theme.colors ?? ({})
     readonly property bool available: access !== null && Boolean(access.available)
-    // Presentation is decoupled from activation authority: while the shell
-    // proves the next provider (phase "loading") the retained entries stay
-    // painted, dimmed and disabled, so the panel slot never collapses and
-    // reflows mid-swap. Only genuinely empty state collapses to zero extent.
     readonly property var topLevelItems: access !== null ? (access.items ?? []) : []
     readonly property bool hasContent: topLevelItems.length > 0
-    readonly property int effectiveLimit: Math.min(clampedEntryLimit, vertical ? verticalLimitFor(height) : horizontalLimitFor(width))
+    readonly property int effectiveLimit: Math.min(clampedEntryLimit,
+        vertical ? verticalLimitFor(height) : horizontalLimitFor(width))
     readonly property var visibleEntries: topLevelItems.slice(0, effectiveLimit)
+    readonly property var visibleSubmenus: submenuProjection()
     readonly property int overflowCount: topLevelItems.length - visibleEntries.length
-    // The indicator must fit its own measured size including margins; otherwise it
-    // is hidden rather than painted partially inside the clipped geometry.
-    readonly property bool indicatorFits: vertical ? height >= (measuredIndicatorHeight() + 4) : width >= (measuredIndicatorWidth() + spacing)
+    readonly property bool indicatorFits: vertical
+        ? height >= measuredIndicatorHeight() + 4
+        : width >= measuredIndicatorWidth() + spacing
     readonly property real spacing: 12
+    readonly property real entryGap: vertical ? 4 : spacing
+    readonly property real entriesExtent: extentFor(visibleEntries.length)
+    // Exposes the native controller for host-level keyboard integration and
+    // focused contract tests; callers must not mutate its menu list.
+    readonly property alias menuBar: nativeMenuBar
     property var rendererLeaseAccess: null
+
+    objectName: "globalMenuApplet"
+    implicitWidth: hasContent ? (vertical ? 40 : naturalHorizontalExtent()) : 0
+    implicitHeight: hasContent ? (vertical ? naturalVerticalExtent() : 28) : 0
+    clip: true
+    Accessible.role: Accessible.MenuBar
+    Accessible.name: available ? qsTr("Application menu")
+                               : (hasContent ? qsTr("Application menu updating")
+                                             : qsTr("Menu unavailable"))
 
     function updateRendererLease() {
         if (rendererLeaseAccess === access)
@@ -45,108 +52,73 @@ Item {
                 && typeof rendererLeaseAccess.attachRenderer === "function")
             rendererLeaseAccess.attachRenderer()
     }
-    onAccessChanged: updateRendererLease()
-    Component.onCompleted: updateRendererLease()
-    Component.onDestruction: {
-        if (rendererLeaseAccess !== null
-                && typeof rendererLeaseAccess.detachRenderer === "function")
-            rendererLeaseAccess.detachRenderer()
-        rendererLeaseAccess = null
-    }
-
-    onAvailableChanged: {
-        if (!available)
-            submenuPopup.close()
-    }
 
     function measuredTextWidth(text) {
-        const str = String(text ?? "");
-        return Math.ceil(Math.max(entryMetrics.advanceWidth(str), entryMetrics.boundingRect(str).width));
+        const value = String(text ?? "")
+        return Math.ceil(Math.max(entryMetrics.advanceWidth(value),
+                                  entryMetrics.boundingRect(value).width))
     }
 
     function measuredEntryWidth(item) {
-        // Upper bound of label.implicitWidth (actual painted advance) plus
-        // the 12 px entry padding plus a 2 px safety margin.
-        return measuredTextWidth(String(item.text ?? "")) + 14;
+        return measuredTextWidth(String(item.text ?? "")) + 14
     }
 
     function measuredIndicatorWidth() {
-        // Worst case: the rendered localized overflow label grows with item count.
-        const worstCaseCount = Math.max(1, topLevelItems.length);
-        const localizedText = qsTr("+%1").arg(worstCaseCount);
-        return measuredTextWidth(localizedText) + 2;
+        return measuredTextWidth(qsTr("+%1").arg(Math.max(1, topLevelItems.length))) + 2
     }
 
     function measuredIndicatorHeight() {
-        const worstCaseCount = Math.max(1, topLevelItems.length);
-        const localizedText = qsTr("+%1").arg(worstCaseCount);
-        return Math.ceil(Math.max(entryMetrics.height, entryMetrics.boundingRect(localizedText).height)) + 2;
+        const value = qsTr("+%1").arg(Math.max(1, topLevelItems.length))
+        return Math.ceil(Math.max(entryMetrics.height,
+                                  entryMetrics.boundingRect(value).height)) + 2
     }
 
-    // Iteratively fit entries (24 px tall, root.spacing apart) while keeping
-    // the indicator block inside the assigned axis. Returns 0 when the host
-    // is below the documented minimum: the applet then degrades to
-    // indicator-only rather than clipping a partial label.
     function horizontalLimitFor(assignedWidth) {
         if (topLevelItems.length === 0)
-            return 0;
-
-        let allUsed = 0;
-        for (let i = 0; i < topLevelItems.length; ++i) {
-            allUsed += measuredEntryWidth(topLevelItems[i]) + (i > 0 ? root.spacing : 0);
-        }
+            return 0
+        let allUsed = 0
+        for (let i = 0; i < topLevelItems.length; ++i)
+            allUsed += measuredEntryWidth(topLevelItems[i]) + (i > 0 ? spacing : 0)
         if (topLevelItems.length <= clampedEntryLimit && allUsed <= assignedWidth)
-            return topLevelItems.length;
-
-        const indicatorBlock = measuredIndicatorWidth() + root.spacing;
+            return topLevelItems.length
+        const indicatorBlock = measuredIndicatorWidth() + spacing
         if (assignedWidth < indicatorBlock)
-            return 0;
-
-        const budget = assignedWidth - indicatorBlock;
-        let used = 0;
-        let count = 0;
+            return 0
+        const budget = assignedWidth - indicatorBlock
+        let used = 0
+        let count = 0
         for (let i = 0; i < topLevelItems.length; ++i) {
-            const need = measuredEntryWidth(topLevelItems[i]) + (count > 0 ? root.spacing : 0);
+            const need = measuredEntryWidth(topLevelItems[i]) + (count > 0 ? spacing : 0)
             if (used + need > budget)
-                break;
-
-            used += need;
-            ++count;
+                break
+            used += need
+            ++count
         }
-        return count;
+        return count
     }
 
     function verticalLimitFor(assignedHeight) {
         if (topLevelItems.length === 0)
-            return 0;
-
-        const allUsed = topLevelItems.length * 24 + (topLevelItems.length > 0 ? (topLevelItems.length - 1) * 4 : 0);
+            return 0
+        const allUsed = topLevelItems.length * 24
+            + Math.max(0, topLevelItems.length - 1) * 4
         if (topLevelItems.length <= clampedEntryLimit && allUsed <= assignedHeight)
-            return topLevelItems.length;
-
-        const indicatorBlock = measuredIndicatorHeight() + 4;
+            return topLevelItems.length
+        const indicatorBlock = measuredIndicatorHeight() + 4
         if (assignedHeight < indicatorBlock)
-            return 0;
-
-        const budget = assignedHeight - indicatorBlock;
-        let used = 0;
-        let count = 0;
+            return 0
+        const budget = assignedHeight - indicatorBlock
+        let used = 0
+        let count = 0
         for (let i = 0; i < topLevelItems.length; ++i) {
-            const need = 24 + (count > 0 ? 4 : 0);
+            const need = 24 + (count > 0 ? 4 : 0)
             if (used + need > budget)
-                break;
-
-            used += need;
-            ++count;
+                break
+            used += need
+            ++count
         }
-        return count;
+        return count
     }
-
-    objectName: "globalMenuApplet"
-    // AGENT-GUARD: natural size must not depend on width-limited delegates.
-    // Otherwise a host using implicitWidth permanently collapses to +N.
-    implicitWidth: hasContent ? (vertical ? 40 : naturalHorizontalExtent()) : 0
-    implicitHeight: hasContent ? (vertical ? naturalVerticalExtent() : 28) : 0
 
     function naturalHorizontalExtent() {
         const count = Math.min(topLevelItems.length, clampedEntryLimit)
@@ -160,86 +132,232 @@ Item {
     function naturalVerticalExtent() {
         const count = Math.min(topLevelItems.length, clampedEntryLimit)
         return count * 24 + Math.max(0, count - 1) * 4
-                + (topLevelItems.length > count ? measuredIndicatorHeight() + 4 : 0)
+            + (topLevelItems.length > count ? measuredIndicatorHeight() + 4 : 0)
     }
-    clip: true
-    Accessible.role: Accessible.MenuBar
-    Accessible.name: available ? qsTr("Application menu") : (hasContent ? qsTr("Application menu updating") : qsTr("Menu unavailable"))
 
-    // Measured, deterministic geometry contract. AGENT-GUARD: the limit
-    // loops must consume strict UPPER bounds of the real rendered sizes
-    // (pure FontMetrics measurement plus safety margin), so a retained delegate
-    // can never be wider/taller than its budget and the +N indicator is
-    // always reserved inside the assigned extent — wide glyphs or exotic
-    // fonts cost accuracy, never correctness. Hosts below the documented
-    // minimum degrade to indicator-only instead of clipping partial labels.
+    function entryOffset(index) {
+        let result = 0
+        for (let i = 0; i < index; ++i)
+            result += (vertical ? 24 : measuredEntryWidth(visibleEntries[i])) + entryGap
+        return result
+    }
+
+    function extentFor(count) {
+        if (count <= 0)
+            return 0
+        const last = count - 1
+        return entryOffset(last)
+            + (vertical ? 24 : measuredEntryWidth(visibleEntries[last]))
+    }
+
+    function submenuProjection() {
+        const result = []
+        for (let i = 0; i < visibleEntries.length; ++i) {
+            if (String(visibleEntries[i].kind ?? "action") === "submenu")
+                result.push({"entry": visibleEntries[i], "sourceIndex": i})
+        }
+        return result
+    }
+
+    function dismissMenus() {
+        for (let i = 0; i < nativeMenuBar.count; ++i) {
+            const menu = nativeMenuBar.menuAt(i)
+            if (menu !== null)
+                menu.dismiss()
+        }
+    }
+
+    function focusFirstMenuItem(menu) {
+        Qt.callLater(function() {
+            if (menu !== null && menu.opened && menu.count > 0) {
+                menu.currentIndex = 0
+                menu.itemAt(0).forceActiveFocus(Qt.PopupFocusReason)
+            }
+        })
+    }
+
+    onAccessChanged: updateRendererLease()
+    onAvailableChanged: {
+        if (!available)
+            dismissMenus()
+    }
+    Component.onCompleted: updateRendererLease()
+    Component.onDestruction: {
+        if (rendererLeaseAccess !== null
+                && typeof rendererLeaseAccess.detachRenderer === "function")
+            rendererLeaseAccess.detachRenderer()
+        rendererLeaseAccess = null
+    }
+
     FontMetrics {
         id: entryMetrics
-
         font.pixelSize: 12
     }
 
-    Text {
-        id: placeholder
+    Item {
+        id: nativeLayout
+        objectName: root.vertical ? "globalMenuVerticalLayout"
+                                  : "globalMenuHorizontalLayout"
+        anchors.fill: parent
+        visible: root.hasContent
 
-        anchors.centerIn: parent
-        visible: false
-        text: ""
-        textFormat: Text.PlainText
-        color: root.colors.textMuted ?? "#a9afa9"
-        font.pixelSize: 12
-    }
+        // AGENT-CONTRACT: Qt Quick Controls owns menu-open state, switching,
+        // popup lifetime, and keyboard traversal. MenuBarItem switches on the
+        // pointer press, before an existing popup grab can consume the later
+        // release. Do not layer a second open/close controller on this MenuBar.
+        MenuBar {
+            id: nativeMenuBar
+            objectName: "globalMenuNativeMenuBar"
+            anchors.fill: parent
+            focusPolicy: Qt.TabFocus
+            padding: 0
+            spacing: 0
+            background: Item {}
+            contentItem: Item {}
+            Keys.onDownPressed: event => {
+                if (count > 0) {
+                    itemAt(0).triggered()
+                    root.focusFirstMenuItem(menuAt(0))
+                    event.accepted = true
+                }
+            }
 
-    GlobalMenuPopup {
-        id: submenuPopup
-        access: root.access
-        theme: root.theme
-        maximumDepth: 6
-    }
+            delegate: MenuBarItem {
+                id: menuEntry
+                objectName: "globalMenuTopLevelItem"
+                readonly property var entryData: menu !== null ? menu.menuData : ({})
+                readonly property int sourceIndex: menu !== null ? menu.sourceIndex : -1
+                readonly property bool itemEnabled: Boolean(entryData.enabled)
+                    && (entryData.children ?? []).length > 0
 
-    Row {
-        id: row
+                function pressAction() {
+                    if (enabled)
+                        triggered()
+                }
 
-        objectName: "globalMenuHorizontalLayout"
-        anchors.verticalCenter: parent.verticalCenter
-        visible: root.hasContent && !root.vertical
-        spacing: root.spacing
+                x: root.vertical
+                    ? Math.round((nativeMenuBar.width - width) / 2)
+                    : root.entryOffset(sourceIndex)
+                y: root.vertical ? root.entryOffset(sourceIndex)
+                                 : Math.round((nativeMenuBar.height - height) / 2)
+                enabled: itemEnabled && root.available
+                hoverEnabled: true
+                implicitWidth: root.measuredEntryWidth(entryData)
+                implicitHeight: 24
+                focusPolicy: Qt.TabFocus
+                Accessible.role: Accessible.MenuItem
+                Accessible.focusable: enabled
+                Accessible.name: String(entryData.text ?? "")
+                Accessible.description: qsTr("Opens submenu")
+                Accessible.onPressAction: pressAction()
+                Keys.onDownPressed: event => {
+                    pressAction()
+                    root.focusFirstMenuItem(menu)
+                    event.accepted = true
+                }
+
+                contentItem: Text {
+                    text: String(menuEntry.entryData.text ?? "")
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    color: menuEntry.itemEnabled
+                        ? (root.colors.text ?? "white")
+                        : (root.colors.textMuted ?? "#a9afa9")
+                    font.pixelSize: 12
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                background: Rectangle {
+                    color: menuEntry.highlighted
+                        ? (root.colors.surfaceRaised ?? "#2c312e") : "transparent"
+                    radius: 4
+                }
+            }
+
+            Instantiator {
+                model: root.visibleSubmenus
+                delegate: GlobalMenuNativeMenu {
+                    required property var modelData
+                    menuData: modelData.entry
+                    sourceIndex: Number(modelData.sourceIndex)
+                    access: root.access
+                    theme: root.theme
+                    interactive: root.available
+                    maximumDepth: 6
+                }
+                onObjectAdded: (index, object) => nativeMenuBar.insertMenu(index, object)
+                onObjectRemoved: (index, object) => nativeMenuBar.removeMenu(object)
+            }
+        }
 
         Repeater {
             model: root.visibleEntries
 
-            delegate: MenuEntry {
+            delegate: AbstractButton {
+                id: actionEntry
+                required property var modelData
+                required property int index
+                readonly property bool isAction:
+                    String(modelData.kind ?? "action") === "action"
+                readonly property bool itemEnabled: Boolean(modelData.enabled)
+
+                function pressAction() {
+                    if (enabled)
+                        root.access.activate(String(modelData.id ?? ""),
+                                             String(modelData.generation ?? ""))
+                }
+
+                objectName: "globalMenuTopLevelItem"
+                visible: isAction
+                x: root.vertical ? Math.round((nativeLayout.width - width) / 2)
+                                 : root.entryOffset(index)
+                y: root.vertical ? root.entryOffset(index)
+                                 : Math.round((nativeLayout.height - height) / 2)
+                enabled: visible && itemEnabled && root.available
+                implicitWidth: root.measuredEntryWidth(modelData)
+                implicitHeight: 24
+                focusPolicy: Qt.TabFocus
+                checkable: false
+                checked: Boolean(modelData.checked ?? false)
+                Accessible.role: Accessible.MenuItem
+                Accessible.focusable: enabled
+                Accessible.name: String(modelData.text ?? "")
+                Accessible.checkable: Boolean(modelData.checkable ?? false)
+                Accessible.checked: Boolean(modelData.checked ?? false)
+                // Press activation is intentional: an already-open native
+                // popup may consume the corresponding release at its grab
+                // boundary. The pressed edge occurs exactly once for pointer
+                // and keyboard gestures, matching MenuBarItem itself.
+                onPressedChanged: {
+                    if (pressed)
+                        pressAction()
+                }
+                Accessible.onPressAction: pressAction()
+                Keys.onReturnPressed: pressAction()
+                Keys.onEnterPressed: pressAction()
+
+                contentItem: Text {
+                    text: String(actionEntry.modelData.text ?? "")
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    color: actionEntry.itemEnabled
+                        ? (root.colors.text ?? "white")
+                        : (root.colors.textMuted ?? "#a9afa9")
+                    font.pixelSize: 12
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Item {}
             }
-
         }
-
-    }
-
-    Column {
-        id: verticalLayout
-
-        objectName: "globalMenuVerticalLayout"
-        anchors.horizontalCenter: parent.horizontalCenter
-        visible: root.hasContent && root.vertical
-        spacing: 4
-
-        Repeater {
-            model: root.visibleEntries
-
-            delegate: MenuEntry {
-            }
-
-        }
-
     }
 
     Text {
         id: overflowIndicator
-
         objectName: "globalMenuOverflowIndicator"
-        // AGENT-GUARD: below the documented host minimum the indicator hides
-        // itself rather than painting partially inside the clipped geometry;
-        // the limit loops reserve its measured size whenever it is shown.
         visible: root.hasContent && root.overflowCount > 0 && root.indicatorFits
         text: qsTr("+%1").arg(root.overflowCount)
         textFormat: Text.PlainText
@@ -247,101 +365,9 @@ Item {
         font.pixelSize: 12
         Accessible.role: Accessible.StaticText
         Accessible.name: qsTr("%1 more menu entries").arg(root.overflowCount)
-        anchors.left: root.vertical ? undefined : row.right
-        anchors.leftMargin: root.spacing
-        anchors.verticalCenter: root.vertical ? undefined : row.verticalCenter
-        anchors.top: root.vertical ? verticalLayout.bottom : undefined
-        anchors.topMargin: 4
-        anchors.horizontalCenter: root.vertical ? verticalLayout.horizontalCenter : undefined
+        x: root.vertical ? Math.round((root.width - width) / 2)
+                         : root.entriesExtent + root.spacing
+        y: root.vertical ? root.entriesExtent + 4
+                         : Math.round((root.height - height) / 2)
     }
-
-    component MenuEntry: AbstractButton {
-        id: entry
-
-        required property var modelData
-        readonly property bool isAction: String(modelData.kind ?? "action") === "action"
-        readonly property bool isSubmenu: String(modelData.kind ?? "") === "submenu"
-        readonly property bool itemEnabled: Boolean(modelData.enabled)
-            && (isAction || (isSubmenu && (modelData.children ?? []).length > 0))
-
-        // AGENT-GUARD: one named activation path is shared by pointer click,
-        // keyboard activation, and assistive-technology press. AbstractButton
-        // suppresses clicked() and keyboard activation while disabled, but an
-        // AT press has no such gate; the explicit enabled check keeps
-        // non-activating entries (disabled actions and empty submenus) honest.
-        // Menu-bar switch contract: a click on an enabled submenu entry ALWAYS
-        // leaves its menu open — clicking another entry switches the popup to
-        // it, clicking the open entry re-asserts it (never toggles closed, so
-        // no legitimate click is ever dropped regardless of platform delivery
-        // order or whether the native popup grab swallowed the press). Closing
-        // belongs to the popup's own paths: Escape, outside press, focus loss,
-        // choosing an item, or provider churn.
-        function pressAction() {
-            if (!entry.enabled)
-                return
-            if (entry.isSubmenu)
-                submenuPopup.openMenu(entry.modelData, entry)
-            else
-                root.access.activate(entry.modelData.id, String(entry.modelData.generation ?? ""))
-        }
-
-        objectName: "globalMenuTopLevelItem"
-        focusPolicy: Qt.TabFocus
-        // Retained entries painted during a provider swap (phase "loading")
-        // are inert: disabled buttons ignore pointer/keyboard activation and
-        // are skipped by focus, so a stale menu can never act for a new focus.
-        enabled: itemEnabled && root.available
-        implicitWidth: label.implicitWidth + 12
-        implicitHeight: 24
-        // AGENT-CONTRACT: presentation never owns toggle state. The button
-        // stays non-toggleable so Space/click cannot locally invert `checked`;
-        // the provider-owned value is bound into the accessible state, and an
-        // activation request lets the provider republish new truth.
-        checkable: false
-        checked: Boolean(modelData.checked ?? false)
-        Accessible.role: Accessible.MenuItem
-        Accessible.focusable: entry.enabled
-        Accessible.checkable: Boolean(modelData.checkable ?? false)
-        Accessible.checked: Boolean(modelData.checked ?? false)
-        Accessible.name: String(modelData.text ?? "")
-        Accessible.description: isSubmenu ? qsTr("Opens submenu") : ""
-        onClicked: entry.pressAction()
-        // Classic menu-bar behavior: with a menu open, hovering another
-        // entry switches the popup to it. This is also the native switching
-        // mechanism when the popup's xdg_popup grab swallows the switching
-        // click before it reaches the panel.
-        hoverEnabled: true
-        onHoveredChanged: {
-            if (entry.hovered && entry.enabled && entry.isSubmenu
-                    && submenuPopup.opened && submenuPopup.anchorItem !== entry)
-                submenuPopup.openMenu(entry.modelData, entry)
-        }
-        Accessible.onPressAction: entry.pressAction()
-        Keys.onReturnPressed: entry.pressAction()
-        Keys.onEnterPressed: entry.pressAction()
-        Keys.onDownPressed: event => {
-            if (entry.isSubmenu) {
-                entry.pressAction()
-                event.accepted = true
-            }
-        }
-
-        contentItem: Text {
-            id: label
-
-            text: String(entry.modelData.text ?? "")
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
-            maximumLineCount: 1
-            color: entry.itemEnabled ? (root.colors.text ?? "white") : (root.colors.textMuted ?? "#a9afa9")
-            font.pixelSize: 12
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-
-        background: Item {
-        }
-
-    }
-
 }
