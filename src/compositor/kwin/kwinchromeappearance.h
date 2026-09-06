@@ -5,7 +5,9 @@
 
 #include <QDBusConnection>
 #include <QObject>
+#include <QPalette>
 #include <QSet>
+#include <QVariantMap>
 #include <memory>
 
 namespace QindaQt::AppAppearance {
@@ -24,6 +26,7 @@ class ManagedWindowRegistry;
 // republishes its validated palette to grouped and native chrome.
 class KWinChromeAppearance final : public QObject {
   Q_OBJECT
+  Q_PROPERTY(QVariantMap qmlPalette READ qmlPalette NOTIFY qmlPaletteChanged)
 public:
   explicit KWinChromeAppearance(ManagedWindowRegistry &registry,
                                 QDBusConnection bus, QObject *parent = nullptr);
@@ -32,9 +35,13 @@ public:
   [[nodiscard]] HybridChrome::ChromePalette palette() const {
     return m_palette;
   }
+  [[nodiscard]] QPalette nativePalette() const { return m_nativePalette; }
+  [[nodiscard]] QVariantMap qmlPalette() const { return m_qmlPalette; }
 
 Q_SIGNALS:
   void paletteChanged(const QindaQt::HybridChrome::ChromePalette &palette);
+  void nativePaletteChanged(const QPalette &palette);
+  void qmlPaletteChanged();
 
 private:
   void publish();
@@ -46,6 +53,8 @@ private:
   std::unique_ptr<Services::SettingsClient::SettingsClient> m_settings;
   std::unique_ptr<AppAppearance::ApplicationAppearanceController> m_appearance;
   HybridChrome::ChromePalette m_palette;
+  QPalette m_nativePalette;
+  QVariantMap m_qmlPalette;
   QSet<QString> m_observedWindows;
 };
 

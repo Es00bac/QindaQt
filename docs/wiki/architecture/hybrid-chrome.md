@@ -80,6 +80,14 @@ therefore update shared chrome and the Qinda KDecoration handoff together; the
 pure factory still accepts the resolved palette without owning theme
 persistence.
 
+That projection also derives a scoped `QPalette` for QindaQt-owned native menus
+and a read-only semantic color map for the bundled KWin switcher. It never
+changes KWin's application palette, so third-party decorations, switchers, and
+menus retain their selected platform theme. The switcher uses Kirigami colors
+when the optional bridge cannot load or before the first confirmed map, and
+follows later confirmed changes through the bridge's retained binding. See
+[ADR-0092](../adr/0092-project-confirmed-palette-into-compositor-ui.md).
+
 ## DPI and output coordinates
 
 Every metric and input rectangle is expressed in device-independent logical

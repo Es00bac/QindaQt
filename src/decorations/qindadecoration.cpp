@@ -230,6 +230,26 @@ void QindaDecoration::showContextMenu(const QPointF &position)
     if (!m_contextMenu) {
         return;
     }
+    QPalette menuPalette = m_contextMenu->palette();
+    menuPalette.setColor(QPalette::Window,
+                         paletteColor("surface", QPalette::Window, QPalette::Active));
+    menuPalette.setColor(QPalette::Base,
+                         paletteColor("surfaceRaised", QPalette::Base, QPalette::Active));
+    menuPalette.setColor(QPalette::Text,
+                         paletteColor("text", QPalette::Text, QPalette::Active));
+    menuPalette.setColor(QPalette::WindowText,
+                         paletteColor("text", QPalette::WindowText, QPalette::Active));
+    menuPalette.setColor(QPalette::ButtonText,
+                         paletteColor("text", QPalette::ButtonText, QPalette::Active));
+    menuPalette.setColor(QPalette::PlaceholderText,
+                         paletteColor("textMuted", QPalette::PlaceholderText,
+                                      QPalette::Active));
+    menuPalette.setColor(QPalette::Highlight,
+                         paletteColor("accent", QPalette::Highlight, QPalette::Active));
+    menuPalette.setColor(QPalette::HighlightedText,
+                         paletteColor("accentText", QPalette::HighlightedText,
+                                      QPalette::Active));
+    m_contextMenu->setPalette(menuPalette);
     m_contextMenu->prepare({
         .canMinimize = window()->isMinimizeable(),
         .canMaximize = window()->isMaximizeable(),

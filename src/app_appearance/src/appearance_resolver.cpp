@@ -46,6 +46,11 @@ std::optional<Themes::ThemeSpec>
 resolveAppearanceTheme(const QVector<Themes::ThemeSpec> &installed,
                        const AppearancePreference &preference,
                        Qt::ColorScheme platformScheme) {
+  if (preference.colorScheme == ColorSchemePreference::System) {
+    for (const auto &theme : installed)
+      if (theme.id == preference.themeId)
+        return theme;
+  }
   const bool dark = wantsDark(preference.colorScheme, platformScheme);
   for (const auto &theme : installed) {
     if (theme.id == preference.themeId && compatible(theme, dark))

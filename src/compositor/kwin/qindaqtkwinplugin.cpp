@@ -80,8 +80,11 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
         *m_registry, m_bus, this);
     m_hybridSession = std::make_unique<KWinHybridSession>(*m_registry, this);
     m_hybridSession->setChromePalette(m_chromeAppearance->palette());
+    m_hybridSession->setNativePalette(m_chromeAppearance->nativePalette());
     connect(m_chromeAppearance.get(), &KWinChromeAppearance::paletteChanged,
             m_hybridSession.get(), &KWinHybridSession::setChromePalette);
+    connect(m_chromeAppearance.get(), &KWinChromeAppearance::nativePaletteChanged,
+            m_hybridSession.get(), &KWinHybridSession::setNativePalette);
     m_shellCredentials = std::make_unique<QtBusShellCredentialSource>(m_bus);
     m_shellPanelOwner = std::make_unique<KWinShellPanelOwnerSource>();
     m_shellIdentity = std::make_unique<KWinShellWindowIdentityPublisher>(

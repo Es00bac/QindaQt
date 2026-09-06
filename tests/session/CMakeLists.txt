@@ -92,6 +92,28 @@ set_tests_properties(
     PROPERTIES LABELS "unit;session;package;qml"
 )
 
+set(optional_appearance_test_dir
+    "${CMAKE_CURRENT_BINARY_DIR}/optional-appearance-bridge")
+file(MAKE_DIRECTORY "${optional_appearance_test_dir}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_OptionalAppearanceBridge.qml"
+    "${optional_appearance_test_dir}/tst_OptionalAppearanceBridge.qml"
+    COPYONLY)
+configure_file(
+    "${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt/contents/ui/QindaQtAppearanceBridge.qml"
+    "${optional_appearance_test_dir}/QindaQtAppearanceBridge.qml"
+    COPYONLY)
+add_test(
+    NAME session.window-switcher-optional-appearance
+    COMMAND Qt6::qmltestrunner -input "${optional_appearance_test_dir}"
+)
+set_tests_properties(
+    session.window-switcher-optional-appearance
+    PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        LABELS "unit;session;qml"
+)
+
 qt_add_executable(
     qindaqt_shell_runtime_options_tests
     tst_runtimeoptions.cpp

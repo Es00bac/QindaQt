@@ -208,3 +208,4 @@ nav:
       - "ADR-0088: KDE portal compatibility identity": adr/0088-enable-kde-remote-desktop-for-qindaqt.md
       - "ADR-0089: KWin native-model task switching": adr/0089-present-task-switching-through-kwins-native-model.md
       - "ADR-0091: KScreenLocker preferences adapter": adr/0091-configure-kscreenlocker-preferences-through-settings.md
+      - "ADR-0092: Compositor UI palette projection": adr/0092-project-confirmed-palette-into-compositor-ui.md
