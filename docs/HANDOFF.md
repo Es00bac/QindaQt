@@ -2,6 +2,22 @@
 
 ## Installed-session completion in progress — 2026-09-06
 
+Latest integration update: GitHub `Es00bac/QindaQt` now contains the tested
+`ce63d1bb` checkpoint; `git ls-remote` independently confirmed that exact remote
+SHA after a non-forced push. The menu repair passed 35/35 focused checks. Private
+run `89259c6045c7468db7a3e3b36a2f142f` verifies a File → New click creates a second
+editor tab, with no private survivors. The physical shell still runs the earlier
+refresh; the new menu implementation is not yet deployed.
+
+Reviewed Settings hierarchy/recovery refinements are integrated through
+`327fbb09`. Reviewed focus cues, member chrome, group controls, native context
+menus and fullscreen restoration are integrated through `d920cdc3`; the reviewed
+late-Shift repair follows at `d1bd494e`. Their combined build and runtime gates
+are in progress. These integration facts supersede the candidate-only wording
+in the earlier observations below, without claiming physical-session acceptance.
+Sloom Studio default menu support and the reported ChatGPT launch crash are now
+tracked alongside the original completion scope.
+
 The user's first physical session exposed unfinished service recovery,
 Settings usability, menu stability, and container-docking behavior. These
 reports reopen the earlier deferred polish work; the full concurrent scope is
