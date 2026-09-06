@@ -24,6 +24,22 @@ using NativeMemberDetach = std::function<bool(
     const QString &containerId, const QString &windowId, QString *error)>;
 using MemberEventSuppression = std::function<bool()>;
 
+// A pure single-direction native quick-tile request observed on a grouped
+// member. Combined corner modes and Maximize/Custom are deliberately outside
+// this enum: only the plain four-direction keyboard shortcut is redirected
+// through the topology; anything else is left for the existing focus-mode
+// (maximize) or native-detach (drag) policy to handle.
+enum class NativeQuickTileEdge {
+    Left,
+    Right,
+    Top,
+    Bottom,
+};
+
+using NativeMemberQuickTile = std::function<bool(
+    const QString &containerId, const QString &windowId,
+    NativeQuickTileEdge edge, QString *error)>;
+
 // Owns native KWin signal observation and delegates policy decisions to the
 // toolkit-neutral controller. All objects and callbacks are borrowed and must
 // outlive this compositor-thread manager.
@@ -34,6 +50,7 @@ public:
                             KWinChromeManager &chrome,
                             NativeMemberDetach detach,
                             MemberEventSuppression eventsSuppressed = {},
+                            NativeMemberQuickTile quickTileRequest = {},
                             QObject *parent = nullptr);
     ~KWinMemberPolicyManager() override;
 
@@ -74,6 +91,7 @@ private:
     std::unique_ptr<Platform> m_platform;
     std::unique_ptr<HybridMemberPolicy> m_policy;
     MemberEventSuppression m_eventsSuppressed;
+    NativeMemberQuickTile m_quickTileRequest;
     QHash<QString, QVector<QMetaObject::Connection>> m_windowConnections;
     bool m_shutdownPresentationRestored = false;
     bool m_shutdown = false;

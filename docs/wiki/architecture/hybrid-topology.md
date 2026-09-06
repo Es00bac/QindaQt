@@ -123,10 +123,11 @@ Pointer input reaches Hybrid policy through three deliberately separate paths:
   policy atomically detaches that member; KWin then continues the same move with
   the restored independent size and pointer anchor through the final drop.
 - Exact `Meta+Shift+Left` acquires the compositor input grab after an
-  eight-logical-pixel threshold. It can start from an independent title as well
-  as grouped member or shared chrome and supplies the explicit docking and
-  rearrangement path. Merely containing those modifiers is insufficient, so
-  unrelated chords and ordinary client input pass through.
+  eight-logical-pixel threshold. It can start anywhere on an independent or
+  grouped window's own input surface — title or client area alike, not only a
+  narrow title strip — as well as shared chrome, and supplies the explicit
+  docking and rearrangement path. Merely containing those modifiers is
+  insufficient, so unrelated chords and ordinary client input pass through.
   The grab is claimed on the initial press even when the pressed point does
   not yet resolve to a valid Hybrid target: KWin's own Decoration and
   WindowAction filters sit immediately after this one in the input chain, and
@@ -196,6 +197,40 @@ the tab target; otherwise the nearest edge wins. Keyboard edge selection ranks
 directional manageable windows by forward distance and perpendicular distance.
 Stale source ownership or a target that vanished before commit rejects without
 advancing the topology revision.
+
+## Native per-window geometry actions on grouped members
+
+A container member remains a real KWin window, so KWin's own per-window
+geometry shortcuts still address it directly by default. Two are
+deliberately redirected because a member's frame is owned by its container,
+not by the individual window:
+
+- Native maximize/fullscreen already route through member focus mode
+  (`maximizedChanged`/`fullscreenChanged` in `KWinMemberPolicyManager`): the
+  member temporarily presents alone within the container's outer frame
+  without leaving the group. This is unaffected by the following.
+- The plain four-direction quick-tile shortcut (`Meta+Left`/`Right`/`Up`/`Down`
+  by default) has no such existing translation, so a grouped member accepted
+  it as ordinary native geometry: KWin's own tile snapped the member's frame
+  independently of its container, and only the next unrelated reflow (for
+  example moving the parent container) visibly snapped it back. `Window`
+  exposes this request through the synchronous `requestedTileChanged` signal
+  on both X11 and Wayland backends, unlike the committed `quickTileModeChanged`
+  signal, which is asynchronous for Wayland (`xdg-shell`) clients and would
+  let one native-tiled frame reach the screen first.
+  `KWinMemberPolicyManager` therefore also observes `requestedTileChanged` for
+  every grouped member; on a pure single-edge request it reverts the native
+  quick-tile synchronously (`setQuickTileMode(QuickTileFlag::None, …)`, before
+  any frame can present it) and redirects the requested direction to the
+  nearest same-container sibling through the existing within-container dock
+  commit (`ReparentMember`/`ReorderMembers`/`MoveMemberToPage`, the same path
+  `Meta+Shift+D` already uses once a target is chosen) — deterministic
+  movement/reordering inside the container instead of independent native
+  tiling. A direction with no same-container sibling is a silent no-op: the
+  member simply stays where it is, with the native request already reverted.
+  Combined corner quick-tile modes, `Maximize`, and `Custom` are left alone by
+  this narrow interception; only the plain four-direction request is
+  redirected.
 
 ## Candidate and scene transaction
 

@@ -61,15 +61,15 @@ HybridInput::HitTarget KWinInteractionTargetResolver::hitTest(
     }
     if (window) {
         const auto id = m_registry.windowId(window);
-        const auto frame = window->frameGeometry();
-        const auto client = window->clientGeometry();
-        auto titleHeight = client.top() - frame.top();
-        if (titleHeight < 8.0 || titleHeight > 96.0) {
-            // CSD clients expose no server title metric. The explicit modifier
-            // keeps this conservative fallback from stealing ordinary clicks.
-            titleHeight = 30.0;
-        }
-        if (position.y() <= frame.top() + titleHeight && !id.isEmpty()) {
+        // AGENT-GUARD: hitTest() backs only the exact Meta+Shift+Left grab
+        // (InteractionController::pointerPress); the modifier chord already
+        // disambiguates intent from an ordinary click, so any point over a
+        // manageable window's own input region is a valid drag source, not
+        // just its title strip. A narrower title-only strip left ordinary
+        // client-area presses of the exact chord unconsumed, which fell
+        // through to KWin's own decoration move and its Shift-drag
+        // custom-tile default.
+        if (!id.isEmpty()) {
             nativeTitle = {HybridInput::HitKind::MemberTitle,
                            m_registry.owner(id), id, {}};
         }
@@ -117,6 +117,17 @@ HybridInput::DockTarget KWinInteractionTargetResolver::keyboardDockTarget(
     return targetFor(directionalWindow(sourceWindow, zone), zone);
 }
 
+HybridInput::DockTarget KWinInteractionTargetResolver::containerDirectionalTarget(
+    const QString &containerId, const QString &sourceWindowId,
+    HybridInput::DockZone zone) const
+{
+    auto *sourceWindow = m_registry.window(sourceWindowId);
+    if (!sourceWindow || containerId.isEmpty() || zone == HybridInput::DockZone::None) {
+        return {};
+    }
+    return targetFor(directionalWindow(sourceWindow, zone, containerId), zone);
+}
+
 KWin::Window *KWinInteractionTargetResolver::topmostInputOwnerAt(
     const QPointF &position, const QString &excludedWindowId) const
 {
@@ -151,7 +162,8 @@ bool KWinInteractionTargetResolver::chromeExposed(
 }
 
 KWin::Window *KWinInteractionTargetResolver::directionalWindow(
-    KWin::Window *source, HybridInput::DockZone zone) const
+    KWin::Window *source, HybridInput::DockZone zone,
+    const QString &restrictToContainerId) const
 {
     const auto sourceCenter = source->frameGeometry().center();
     KWin::Window *best = nullptr;
@@ -161,6 +173,10 @@ KWin::Window *KWinInteractionTargetResolver::directionalWindow(
             || !candidate->isOnCurrentActivity()
             || !candidate->isOnCurrentDesktop() || candidate == source
             || m_registry.windowId(candidate).isEmpty()) {
+            continue;
+        }
+        if (!restrictToContainerId.isEmpty()
+            && m_registry.owner(m_registry.windowId(candidate)) != restrictToContainerId) {
             continue;
         }
         const auto delta = candidate->frameGeometry().center() - sourceCenter;
