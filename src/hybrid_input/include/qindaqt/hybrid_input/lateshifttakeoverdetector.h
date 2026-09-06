@@ -25,9 +25,12 @@ public:
     // a brand-new drag whose observed modifiers start unsatisfied, matching
     // a native move's own modifiers resetting to empty at its start.
     //
-    // Returns true on exactly the one call where `requiredModifiers` is
-    // newly fully satisfied for the *same* still-active drag that did not
-    // satisfy it a moment ago.
+    // Returns true on exactly the one call where the observed modifiers
+    // newly become exactly equal to `requiredModifiers` (not merely a
+    // superset of it) for the *same* still-active drag that did not match
+    // exactly a moment ago. Exact equality mirrors
+    // InteractionController::pointerBindingMatches, so an unrelated extra
+    // modifier held alongside the required chord never arms a takeover.
     [[nodiscard]] bool observe(const void *activeDrag, Qt::KeyboardModifiers modifiers);
 
 private:

@@ -18,8 +18,13 @@ bool LateShiftTakeoverDetector::observe(const void *activeDrag, Qt::KeyboardModi
         return false;
     }
 
-    const bool wasSatisfied = (m_lastModifiers & m_requiredModifiers) == m_requiredModifiers;
-    const bool nowSatisfied = (modifiers & m_requiredModifiers) == m_requiredModifiers;
+    // Exact equality, matching InteractionController::pointerBindingMatches:
+    // a subset test would let an unrelated extra modifier (e.g. a native
+    // Meta-drag with Ctrl+Shift added on top of the required chord) wrongly
+    // arm the takeover even though the completed chord does not exactly
+    // match what a fresh press would need to claim it.
+    const bool wasSatisfied = m_lastModifiers == m_requiredModifiers;
+    const bool nowSatisfied = modifiers == m_requiredModifiers;
     m_lastModifiers = modifiers;
     return !wasSatisfied && nowSatisfied;
 }
