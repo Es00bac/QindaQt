@@ -6,12 +6,18 @@
 #include "qindaqt/hybrid_chrome/chromewidget.h"
 
 #include <QImage>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QSignalSpy>
 #include <QtTest>
 
+#include <algorithm>
 #include <cmath>
+#include <optional>
 
 using namespace QindaQt::HybridChrome;
 using namespace QindaQt::HybridChrome::TestFixtures;
@@ -36,6 +42,48 @@ QPoint physicalPoint(const QPointF &logical, qreal devicePixelRatio)
             qRound(logical.y() * devicePixelRatio)};
 }
 
+std::optional<ChromePalette> paletteFromTheme(const QString &themeId)
+{
+    QFile file(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/%1.json").arg(themeId));
+    if (!file.open(QIODevice::ReadOnly)) {
+        return std::nullopt;
+    }
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        return std::nullopt;
+    }
+    const auto colors = document.object().value(QStringLiteral("colors")).toObject();
+    ChromePalette palette;
+    const auto color = [&colors](const QString &name) {
+        return QColor(colors.value(name).toString());
+    };
+    palette.surface = color(QStringLiteral("surface"));
+    palette.surfaceRaised = color(QStringLiteral("surfaceRaised"));
+    palette.border = color(QStringLiteral("border"));
+    palette.text = color(QStringLiteral("text"));
+    palette.textMuted = color(QStringLiteral("textMuted"));
+    palette.accent = color(QStringLiteral("accent"));
+    palette.close = color(QStringLiteral("danger"));
+    palette.minimize = palette.accent;
+    palette.maximize = palette.accent;
+    QString error;
+    if (!palette.isValid(&error)) {
+        return std::nullopt;
+    }
+    return palette;
+}
+
+void saveEvidence(const QImage &image, const QString &name)
+{
+    const auto directory = qEnvironmentVariable("QINDAQT_ACTIVE_FRAME_EVIDENCE_DIR");
+    if (directory.isEmpty()) {
+        return;
+    }
+    QVERIFY(QDir().mkpath(directory));
+    QVERIFY(image.save(QDir(directory).filePath(name), "PNG"));
+}
+
 void sendMouse(ChromeWidget &widget,
                QEvent::Type type,
                const QPointF &localPosition,
@@ -55,6 +103,7 @@ class ChromeRendererTests final : public QObject
 
 private Q_SLOTS:
     void trafficLightGlyphsAppearOnControlHover();
+    void activeTabGetsThemeAccentCue();
     void rendersAtDevicePixelRatioWithoutChangingLogicalPlan();
     void leavesCompleteMemberFramesTransparent();
     void clearsPixelsThatBecomeMemberFramesAfterReflow();
@@ -75,6 +124,34 @@ void ChromeRendererTests::trafficLightGlyphsAppearOnControlHover()
     QCOMPARE(idle.pixelColor(center), plan->style.palette.close);
     QVERIFY(active.pixelColor(center) != idle.pixelColor(center));
     QVERIFY(active != idle);
+}
+
+void ChromeRendererTests::activeTabGetsThemeAccentCue()
+{
+    for (const auto &themeId : {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light")}) {
+        const auto palette = paletteFromTheme(themeId);
+        QVERIFY2(palette.has_value(), qPrintable(themeId));
+        auto request = baseRequest();
+        request.style.palette = *palette;
+        const auto plan = ChromeLayoutEngine::build(request);
+        QVERIFY(plan);
+        const auto image = render(*plan);
+        const auto activeTab = std::find_if(plan->tabs.cbegin(), plan->tabs.cend(),
+                                            [](const auto &tab) { return tab.active; });
+        QVERIFY(activeTab != plan->tabs.cend());
+        const auto inactiveTab = std::find_if(plan->tabs.cbegin(), plan->tabs.cend(),
+                                              [](const auto &tab) { return !tab.active; });
+        QVERIFY(inactiveTab != plan->tabs.cend());
+        const auto activeCue = physicalPoint(
+            QPointF(activeTab->rect.center().x(), activeTab->rect.bottom() - 1.0),
+            plan->devicePixelRatio);
+        const auto inactiveCue = physicalPoint(
+            QPointF(inactiveTab->rect.center().x(), inactiveTab->rect.bottom() - 1.0),
+            plan->devicePixelRatio);
+        QCOMPARE(image.pixelColor(activeCue), plan->style.palette.accent);
+        QVERIFY(image.pixelColor(inactiveCue) != plan->style.palette.accent);
+        saveEvidence(image, themeId + QStringLiteral("-active-tab.png"));
+    }
 }
 
 void ChromeRendererTests::rendersAtDevicePixelRatioWithoutChangingLogicalPlan()

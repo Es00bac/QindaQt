@@ -32,6 +32,12 @@ foreach(test_name IN ITEMS layout hittest renderer)
     if(COMMAND qindaqt_enable_warnings)
         qindaqt_enable_warnings(qindaqt_hybrid_chrome_${test_name}_tests)
     endif()
+    if(test_name STREQUAL "renderer")
+        target_compile_definitions(
+            qindaqt_hybrid_chrome_renderer_tests
+            PRIVATE QINDAQT_SOURCE_DIR="${CMAKE_CURRENT_LIST_DIR}/../.."
+        )
+    endif()
     add_test(
         NAME hybrid-chrome.${test_name}
         COMMAND qindaqt_hybrid_chrome_${test_name}_tests
