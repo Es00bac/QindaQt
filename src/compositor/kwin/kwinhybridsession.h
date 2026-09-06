@@ -7,6 +7,7 @@
 #include "hybridtaskidentitypolicy.h"
 
 #include <QObject>
+#include <QPalette>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QPointF>
@@ -83,6 +84,7 @@ public:
         ShellWindowAction action,
         QString *error = nullptr);
     void setChromePalette(const HybridChrome::ChromePalette &palette);
+    void setNativePalette(const QPalette &palette);
 
     // Idempotent. Restores every Hybrid-owned client before destroying scene,
     // chrome, input, and shortcut collaborators.
@@ -197,6 +199,7 @@ private:
     std::unique_ptr<KWinHybridGroupStacking> m_groupStacking;
     std::unique_ptr<KWinGroupContextManager> m_groupContext;
     std::unique_ptr<KWinGroupContextMenu> m_groupContextMenu;
+    QPalette m_nativePalette;
     std::unique_ptr<HybridChromeSyncScheduler> m_chromeSyncScheduler;
     std::unique_ptr<KWinMemberPolicyManager> m_memberPolicy;
     std::unique_ptr<KWinTaskIdentityManager> m_taskIdentity;

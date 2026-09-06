@@ -252,6 +252,7 @@ void KWinHybridSession::initializeGroupContextMenu()
             // workspace, activity, and layer as one scene transaction.
             return applyContextCommand(*representative, command, error);
         });
+    m_groupContextMenu->setPalette(m_nativePalette);
 }
 
 void KWinHybridSession::showGroupContextMenu(

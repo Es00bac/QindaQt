@@ -11,22 +11,20 @@
 using namespace QindaQt::Compositor::KWinIntegration;
 
 namespace {
-double luminance(const QColor &color)
-{
-    const auto linear = [](double channel) {
-        channel /= 255.0;
-        return channel <= 0.04045 ? channel / 12.92
-                                  : std::pow((channel + 0.055) / 1.055, 2.4);
-    };
-    return 0.2126 * linear(color.red()) + 0.7152 * linear(color.green())
-        + 0.0722 * linear(color.blue());
+double luminance(const QColor &color) {
+  const auto linear = [](double channel) {
+    channel /= 255.0;
+    return channel <= 0.04045 ? channel / 12.92
+                              : std::pow((channel + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(color.red()) + 0.7152 * linear(color.green()) +
+         0.0722 * linear(color.blue());
 }
 
-double contrast(const QColor &left, const QColor &right)
-{
-    const auto light = std::max(luminance(left), luminance(right));
-    const auto dark = std::min(luminance(left), luminance(right));
-    return (light + 0.05) / (dark + 0.05);
+double contrast(const QColor &left, const QColor &right) {
+  const auto light = std::max(luminance(left), luminance(right));
+  const auto dark = std::min(luminance(left), luminance(right));
+  return (light + 0.05) / (dark + 0.05);
 }
 } // namespace
 
@@ -55,13 +53,28 @@ void ChromeAppearancePaletteTest::mapsThemeColors() {
   QVERIFY2(palette.isValid(&error), qPrintable(error));
   QCOMPARE(palette.surface,
            loaded.theme.colors.value(QStringLiteral("surface")));
-    QCOMPARE(palette.text, loaded.theme.colors.value(QStringLiteral("text")));
-    QVERIFY(contrast(palette.text, palette.surfaceRaised) >= 4.5);
-    QVERIFY(contrast(palette.textMuted, palette.surface) >= 4.5);
+  QCOMPARE(palette.text, loaded.theme.colors.value(QStringLiteral("text")));
+  QVERIFY(contrast(palette.text, palette.surfaceRaised) >= 4.5);
+  QVERIFY(contrast(palette.textMuted, palette.surface) >= 4.5);
   QCOMPARE(decorationPaletteProperties(palette)
                .value(QStringLiteral("text"))
                .value<QColor>(),
            palette.text);
+  const auto native = nativePaletteForTheme(loaded.theme);
+  QCOMPARE(native.color(QPalette::Window),
+           loaded.theme.colors.value(QStringLiteral("surface")));
+  QCOMPARE(native.color(QPalette::Base),
+           loaded.theme.colors.value(QStringLiteral("surfaceRaised")));
+  QCOMPARE(native.color(QPalette::Text),
+           loaded.theme.colors.value(QStringLiteral("text")));
+  QCOMPARE(native.color(QPalette::Highlight),
+           loaded.theme.colors.value(QStringLiteral("accent")));
+  QCOMPARE(native.color(QPalette::HighlightedText),
+           loaded.theme.colors.value(QStringLiteral("accentText")));
+  QVERIFY(contrast(native.color(QPalette::Text),
+                   native.color(QPalette::Base)) >= 4.5);
+  QVERIFY(contrast(native.color(QPalette::HighlightedText),
+                   native.color(QPalette::Highlight)) >= 4.5);
 }
 
 QTEST_MAIN(ChromeAppearancePaletteTest)

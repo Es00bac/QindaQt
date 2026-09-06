@@ -15,6 +15,7 @@ class PackagePayloadError(RuntimeError):
 WINDOW_SWITCHER_FILES = (
     "metadata.json",
     "contents/ui/main.qml",
+    "contents/ui/QindaQtAppearanceBridge.qml",
     "contents/ui/QindaQtSwitcherFrame.qml",
     "contents/ui/QindaQtSwitcherRow.qml",
 )

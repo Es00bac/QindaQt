@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "kwingroupcontextmenu.h"
 #include "kwinhybridsession.h"
 
 #include "hybridinteractionruntime.h"
@@ -84,6 +85,14 @@ void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &pale
 {
     m_chromePalette = palette;
     synchronizeChrome();
+}
+
+void KWinHybridSession::setNativePalette(const QPalette &palette)
+{
+    m_nativePalette = palette;
+    if (m_groupContextMenu) {
+        m_groupContextMenu->setPalette(m_nativePalette);
+    }
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

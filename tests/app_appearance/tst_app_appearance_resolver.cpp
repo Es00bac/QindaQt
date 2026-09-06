@@ -39,6 +39,11 @@ void AppAppearanceResolverTest::schemeControlsEffectiveTheme() {
                themes, {"qinda-light", ColorSchemePreference::System},
                Qt::ColorScheme::Dark)
                ->id,
+           "qinda-light");
+  QCOMPARE(resolveAppearanceTheme(themes,
+                                  {"qinda-dark", ColorSchemePreference::System},
+                                  Qt::ColorScheme::Light)
+               ->id,
            "qinda-dark");
 }
 

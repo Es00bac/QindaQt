@@ -14,6 +14,15 @@ KWin.TabBoxSwitcher {
 
     currentIndex: switcherFrame.currentIndex
 
+    // Keep the package loadable when the optional compositor plugin is absent.
+    // A successful bridge retains live bindings to confirmed palette changes.
+    Loader {
+        id: appearanceBridge
+        active: true
+        asynchronous: false
+        source: "QindaQtAppearanceBridge.qml"
+    }
+
     Timer {
         id: activationTimer
 
@@ -53,6 +62,12 @@ KWin.TabBoxSwitcher {
 
             nativeModel: tabBox.model
             screenGeometry: tabBox.screenGeometry
+            // qmllint disable missing-property
+            // Loader.item is statically QObject; the isolated bridge owns the
+            // typed palette property when and only when its import succeeds.
+            appearancePalette: appearanceBridge.status === Loader.Ready
+                               ? appearanceBridge.item.palette : ({})
+            // qmllint enable missing-property
             onActivateRequested: index => {
                 activationTimer.selectedIndex = index
                 activationTimer.restart()

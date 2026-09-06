@@ -8,6 +8,7 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 
 #include <KDecoration3/Decoration>
+#include <QtQml/qqml.h>
 #include <window.h>
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -18,6 +19,8 @@ constexpr auto PaletteProperty = "qindaqtChromePalette";
 KWinChromeAppearance::KWinChromeAppearance(ManagedWindowRegistry &registry,
                                            QDBusConnection bus, QObject *parent)
     : QObject(parent), m_registry(registry) {
+  qmlRegisterSingletonInstance("QindaQt.Compositor.Appearance", 1, 0,
+                               "Appearance", this);
   m_transport =
       std::make_unique<Services::SettingsClient::QtSettingsTransport>(bus);
   m_settings = std::make_unique<Services::SettingsClient::SettingsClient>(
@@ -45,9 +48,17 @@ KWinChromeAppearance::~KWinChromeAppearance() = default;
 
 void KWinChromeAppearance::publish() {
   m_palette = chromePaletteForTheme(m_appearance->theme());
+  m_nativePalette = nativePaletteForTheme(m_appearance->theme());
+  m_qmlPalette = decorationPaletteProperties(m_palette);
+  m_qmlPalette.insert(QStringLiteral("accent"),
+                      m_nativePalette.color(QPalette::Highlight));
+  m_qmlPalette.insert(QStringLiteral("accentText"),
+                      m_nativePalette.color(QPalette::HighlightedText));
   for (const auto &id : m_registry.windowIds())
     publishWindow(id);
   Q_EMIT paletteChanged(m_palette);
+  Q_EMIT nativePaletteChanged(m_nativePalette);
+  Q_EMIT qmlPaletteChanged();
 }
 
 void KWinChromeAppearance::observeWindow(const QString &windowId) {
@@ -67,8 +78,7 @@ void KWinChromeAppearance::publishWindow(const QString &windowId) {
   if (auto *decoration = window->decoration()) {
     // AGENT-CONTRACT: QindaDecoration consumes this process-local map;
     // foreign decorations continue to use their KDecoration palette.
-    decoration->setProperty(PaletteProperty,
-                            decorationPaletteProperties(m_palette));
+    decoration->setProperty(PaletteProperty, m_qmlPalette);
     decoration->update();
   }
 }

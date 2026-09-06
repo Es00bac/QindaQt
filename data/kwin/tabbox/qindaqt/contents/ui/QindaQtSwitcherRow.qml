@@ -13,13 +13,14 @@ Rectangle {
     required property var icon
     required property bool minimized
     required property bool selected
+    required property var appearancePalette
     signal triggered
 
     radius: Kirigami.Units.cornerRadius
-    color: selected ? Kirigami.Theme.highlightColor
-                    : Kirigami.Theme.backgroundColor
+    color: selected ? (appearancePalette.accent ?? Kirigami.Theme.highlightColor)
+                    : (appearancePalette.surface ?? Kirigami.Theme.backgroundColor)
     border.width: selected ? 2 : 0
-    border.color: Kirigami.Theme.focusColor
+    border.color: appearancePalette.accent ?? Kirigami.Theme.focusColor
 
     Accessible.role: Accessible.ListItem
     Accessible.name: selected ? qsTr("%1, selected").arg(caption) : caption
@@ -46,8 +47,9 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 text: row.caption
-                color: row.selected ? Kirigami.Theme.highlightedTextColor
-                                    : Kirigami.Theme.textColor
+                color: row.selected
+                    ? (row.appearancePalette.accentText ?? Kirigami.Theme.highlightedTextColor)
+                    : (row.appearancePalette.text ?? Kirigami.Theme.textColor)
                 font.family: Kirigami.Theme.defaultFont.family
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 font.weight: row.selected ? Font.DemiBold : Font.Normal
@@ -59,8 +61,9 @@ Rectangle {
                 Layout.fillWidth: true
                 visible: row.minimized
                 text: qsTr("Minimized")
-                color: row.selected ? Kirigami.Theme.highlightedTextColor
-                                    : Kirigami.Theme.disabledTextColor
+                color: row.selected
+                    ? (row.appearancePalette.accentText ?? Kirigami.Theme.highlightedTextColor)
+                    : (row.appearancePalette.textMuted ?? Kirigami.Theme.disabledTextColor)
                 font.family: Kirigami.Theme.smallFont.family
                 font.pointSize: Kirigami.Theme.smallFont.pointSize
                 elide: Text.ElideRight
@@ -71,7 +74,8 @@ Rectangle {
         Text {
             visible: row.selected
             text: qsTr("Selected")
-            color: Kirigami.Theme.highlightedTextColor
+            color: row.appearancePalette.accentText
+                   ?? Kirigami.Theme.highlightedTextColor
             font.family: Kirigami.Theme.smallFont.family
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             font.weight: Font.DemiBold

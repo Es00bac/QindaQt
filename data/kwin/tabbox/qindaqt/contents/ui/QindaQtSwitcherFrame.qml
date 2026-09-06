@@ -10,6 +10,7 @@ Rectangle {
 
     required property var nativeModel
     required property rect screenGeometry
+    required property var appearancePalette
     property alias currentIndex: windowList.currentIndex
     signal activateRequested(int index)
 
@@ -25,9 +26,9 @@ Rectangle {
     height: heading.implicitHeight + windowList.height
             + Kirigami.Units.largeSpacing * 3
     radius: Kirigami.Units.cornerRadius
-    color: Kirigami.Theme.backgroundColor
+    color: appearancePalette.surface ?? Kirigami.Theme.backgroundColor
     border.width: 1
-    border.color: Kirigami.Theme.disabledTextColor
+    border.color: appearancePalette.border ?? Kirigami.Theme.disabledTextColor
 
     Accessible.role: Accessible.Dialog
     Accessible.name: qsTr("Switch windows and groups")
@@ -42,7 +43,7 @@ Rectangle {
 
             Layout.fillWidth: true
             text: qsTr("Switch windows and groups")
-            color: Kirigami.Theme.textColor
+            color: frame.appearancePalette.text ?? Kirigami.Theme.textColor
             font.family: Kirigami.Theme.defaultFont.family
             font.weight: Font.DemiBold
             font.pointSize: Kirigami.Theme.defaultFont.pointSize + 1
@@ -67,6 +68,7 @@ Rectangle {
                 width: windowList.width
                 height: frame.rowHeight
                 selected: index === windowList.currentIndex
+                appearancePalette: frame.appearancePalette
                 onTriggered: {
                     windowList.currentIndex = index
                     frame.activateRequested(index)
@@ -77,7 +79,8 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: windowList.count === 0
                 text: qsTr("No open windows")
-                color: Kirigami.Theme.disabledTextColor
+                color: frame.appearancePalette.textMuted
+                       ?? Kirigami.Theme.disabledTextColor
                 font.family: Kirigami.Theme.defaultFont.family
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 textFormat: Text.PlainText

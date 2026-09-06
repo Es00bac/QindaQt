@@ -71,6 +71,11 @@ factory and the notification window controller update their cached map for
 future windows and push the new map onto every live window's plain `theme`
 property in the same step.
 
+`appearance.colorScheme=system` preserves an installed requested theme exactly.
+Only explicit `light` or `dark` preferences select a compatible variant. This
+keeps a user's valid Qinda theme authoritative when the host Qt palette differs
+from the Qinda session palette.
+
 ### Threading and errors
 
 Pure derivation is thread-neutral and has no ambient state. A loader-valid
