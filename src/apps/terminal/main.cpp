@@ -172,7 +172,7 @@ makeBackendFactory(const QStringList &themeDirectories,
 
 class TerminalAppearanceBinding final {
 public:
-  TerminalAppearanceBinding(QApplication &application, TerminalWindow &window,
+  TerminalAppearanceBinding(QApplication &app, TerminalWindow &terminalWindow,
                             const QStringList &directories,
                             const QString &explicitTheme)
       : transport(QDBusConnection::sessionBus()),
@@ -180,11 +180,11 @@ public:
                            QStringLiteral("appearance.colorScheme")}),
         controller(client, directories, QStringLiteral("qinda-dark"),
                    explicitTheme),
-        application(application), window(window) {
+        application(app), window(terminalWindow) {
     QObject::connect(&controller,
                      &QindaQt::AppAppearance::ApplicationAppearanceController::
                          appearanceChanged,
-                     &window, [this] { apply(); });
+                     &terminalWindow, [this] { apply(); });
     apply();
     QString error;
     if (!client.start(&error))
