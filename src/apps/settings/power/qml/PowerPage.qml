@@ -95,7 +95,7 @@ T.Page {
             Layout.fillWidth: true
             visible: text.length > 0
             text: root.powerSettings.errorText
-            color: Tokens.status.warning.foreground
+            color: Tokens.fg.default
             Accessible.role: Accessible.AlertMessage
             Accessible.name: text
         }

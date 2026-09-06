@@ -98,8 +98,12 @@ Item {
                     objectName: "systemStatusLaneIcon"
                     name: String(modelData.iconName)
                     size: root.iconExtent
-                    color: Boolean(modelData.attention) ? Tokens.status.warning.foreground
-                         : Boolean(modelData.available) ? Tokens.fg.default : Tokens.fg.disabled
+                    // These glyphs sit directly on the panel surface. Warning
+                    // foreground is paired with warning background and can be
+                    // almost invisible here; unavailable status remains muted
+                    // but must still be discernible.
+                    color: Boolean(modelData.attention) ? Tokens.fg.default
+                         : Boolean(modelData.available) ? Tokens.fg.default : Tokens.fg.muted
                     symbolic: true
                     fallbackText: String(modelData.label)
                     Accessible.ignored: true

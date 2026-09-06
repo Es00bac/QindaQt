@@ -68,7 +68,7 @@ T.Popup {
             Layout.fillWidth: true
             visible: popup.feedback.length > 0
             text: popup.feedback
-            color: Tokens.status.warning.foreground
+            color: Tokens.fg.default
             maximumLineCount: 3
             elide: Text.ElideRight
             Accessible.role: Accessible.AlertMessage

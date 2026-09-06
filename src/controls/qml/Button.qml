@@ -36,7 +36,7 @@ T.Button {
 
     contentItem: Text {
         text: control.busy ? qsTr("Working…") : control.text
-        color: !control.enabled ? Tokens.fg.disabled
+        color: !control.enabled ? Tokens.fg.muted
               : control.destructive ? Tokens.danger.fg
               : control.emphasized ? Tokens.accent.fg : Tokens.fg.default
         font.family: Tokens.type.fontFamily
@@ -49,7 +49,11 @@ T.Button {
 
     background: Rectangle {
         radius: Tokens.radius.m
-        color: control.destructive ? Tokens.danger.default
+        // A disabled button uses one surface-safe pair regardless of its
+        // enabled emphasis role. Keeping an accent/danger fill with the
+        // generic disabled foreground can make the label disappear.
+        color: !control.enabled ? Tokens.bg.raised
+             : control.destructive ? Tokens.danger.default
              : control.emphasized ? Tokens.accent.default : Tokens.bg.raised
         border.width: Tokens.space["1"] / 2
         border.color: control.error ? Tokens.danger.default : Tokens.outline.strong
@@ -57,7 +61,8 @@ T.Button {
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
-            color: control.down ? Tokens.state.pressed
+            color: !control.enabled ? "transparent"
+                 : control.down ? Tokens.state.pressed
                  : control.hovered ? Tokens.state.hover : "transparent"
             Accessible.ignored: true
 

@@ -115,7 +115,7 @@ T.ToolButton {
                 objectName: "taskListEntryUrgentBadge"
                 visible: button.entry.urgent
                 text: "!"
-                color: Tokens.status.warning.foreground
+                color: Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
                 font.bold: true

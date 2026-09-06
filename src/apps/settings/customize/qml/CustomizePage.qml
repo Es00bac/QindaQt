@@ -139,7 +139,7 @@ T.Page {
             text: root.customizeSettings.statusText
             wrapMode: Text.Wrap
             color: root.customizeSettings.conflict
-                   ? Tokens.status.warning.foreground : Tokens.fg.muted
+                   ? Tokens.fg.default : Tokens.fg.muted
             Accessible.role: root.customizeSettings.conflict
                              || root.customizeSettings.unavailable
                              ? Accessible.AlertMessage : Accessible.StaticText
@@ -152,7 +152,7 @@ T.Page {
             visible: text.length > 0
             text: root.customizeSettings.errorText
             wrapMode: Text.Wrap
-            color: Tokens.status.warning.foreground
+            color: Tokens.fg.default
             Accessible.role: Accessible.AlertMessage
             Accessible.name: text
         }
