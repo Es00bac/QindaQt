@@ -1,94 +1,94 @@
-# First-party applications
+# Applications
 
-First-party applications are ordinary desktop clients. They use public services
-and shared design contracts rather than reaching into the shell's private state.
-The shared AppShell boundary provides lifecycle, actions, menus, injected
-integration, focus, and accessibility contracts; it is not a universal owner of
-application documents or platform policy.
+QindaQt ships a small, focused set of first-party applications — enough for
+everyday text, files, and terminal work, each doing its job well rather than
+a suite doing everything. They are ordinary desktop applications: they follow
+your theme and fonts, share the same controls, and behave the same whether or
+not their menus appear in the top bar.
 
 ## Welcome guide
 
-Welcome is the first-run introduction and remains available from the launcher.
-Its seven short chapters explain ordinary desktop use, intentional window
-arrangement, groups and pages, safe detach and movement, customization, and
-appearance before offering buttons that open the real Settings, Text Editor,
-and File Manager applications. The guide follows the confirmed desktop
-appearance and uses the shared QST-1/Controls language.
+The first time the session starts, the Welcome guide opens by itself: seven
+short chapters on the desktop, the launcher and shelf, grouping windows with
+`Meta+Shift` drag, pages and splits, detaching and the group menu,
+customization, and appearance. Buttons in the guide open the real Settings,
+Text Editor, and File Manager so you can try things as you read.
 
-Its **Show at next launch** choice is application-local and defaults on. Turning
-it off prevents later automatic opening without removing the manual launcher
-entry. See [Welcome to QindaQt](../apps/welcome.md) for the exact process and
-persistence boundary.
+Its **Show at next launch** checkbox is on by default; turn it off and it
+won't open automatically again — you can always reopen it from the launcher.
 
-## Settings Center
+## System Settings
 
-The Settings Center owns bounded route registration, wide/compact navigation,
-route lifetime, keyboard navigation, and accessible presentation. Individual
-routes own their drafts and service-client interactions. A route's existence
-must not be confused with complete platform capability.
+Open System Settings from the system menu (the left button of the top bar)
+or from the launcher. A sidebar groups the pages:
 
-| Route | What it controls or presents |
-| --- | --- |
-| Notifications | Confirmed interruption preferences through Settings1. |
-| Appearance | Validated appearance drafts, QST preview, and per-key commits. |
-| Display | Output/mode/scale drafts and reversible preview/confirmation through Display1. |
-| Network | Secret-free inventory and bounded connection controls; interactive credentials belong to a separate agent. |
-| Customize | Direct profile canvas, keyboard-equivalent edits, user-profile persistence, and confirmed selection. |
-| Audio | Devices, streams, defaults, volume, and mute through Audio1. |
-| Bluetooth | Adapter/device inventory, discovery, and controls with BlueZ-owned pairing authority. |
-| Power | Supply, profile/hold, and brightness state, with session actions behind separate authenticated boundaries. |
-| Clipboard | Default-off history preference, content-free counts/state, and confirmed clearing. |
-| Color | ICC catalog/import and per-display assignment intent; compositor color application is a separate boundary. |
+- **General**
+  - *Notifications* — banner behavior and Do Not Disturb.
+- **Personalization**
+  - *Appearance* — themes, wallpaper, and fonts; see
+    [Making it yours](customization.md).
+  - *Customize* — bars, applets, and layout presets; see
+    [Making it yours](customization.md).
+  - *Clipboard* — turn clipboard history on or off, see how full it is, and
+    clear it.
+- **Hardware**
+  - *Display* — screens, resolution, refresh rate, and scaling, with a live
+    preview you confirm or cancel before anything changes.
+  - *Network* — see available networks, connect, and manage known
+    connections; password entry happens in its own secure prompt.
+  - *Audio* — output and input devices, per-stream volume, mute, and default
+    device.
+  - *Bluetooth* — turn the adapter on, discover devices, pair (confirming
+    the standard passkey prompt), connect or disconnect, trust, or forget.
+  - *Power* — battery and supply state, power profile, and screen and
+    keyboard brightness.
+  - *Color* — color-profile management per screen.
 
-See [Settings Center](../apps/settings-center.md) and the route pages in the
-[documentation catalog](catalog/reading.md). Preference keys and defaults
-are enumerated in the [configuration catalog](catalog/settings.md).
+Keyboard shortcuts: `Ctrl+1` through `Ctrl+0` jump straight to the pages in
+order, the arrow keys move through them, and `Alt+Left` returns to the
+previous page. When a service is missing or not running, its page says so
+plainly instead of showing dead controls.
 
 ## Text Editor
 
-The editor handles bounded local UTF-8 text, with up to 32 independently owned
-document tabs. It preserves the opened newline/BOM policy, validates content,
-and saves atomically. Each tab tracks external changes; a conflicting save
-retains local text and offers explicit recovery instead of silently overwriting.
-Find/replace supports bounded literal and restricted regular-expression searches,
-with Replace All undoable as one operation.
-
-Optional restore persists paths only, not unsaved contents. CLI paths override
-restore on launch. Missing files and unsafe restore storage are handled through
-the documented admission policy. Local menus remain authoritative when global
-menu export is unavailable. See [Text Editor](../apps/text-editor.md) for exact
-size limits, supported regex syntax, shortcuts, consent, and deferrals.
+A plain-text editor for local files, handling up to 32 documents in tabs. It
+keeps each file's existing line endings and encoding intact, saves
+atomically, and warns you if a file changes on disk underneath you — a
+conflict never silently overwrites your work. Find and replace covers plain
+text and regular expressions, with Replace All undoable as one step. If you
+close with files open, the editor offers to remember *which* files to reopen
+next time (never unsaved contents).
 
 ## File Manager
 
-The File Manager provides local directory navigation, breadcrumbs/history,
-bounded file launching, and identity-checked local mutation and recovery.
-Its S1 boundary includes a documented home Trash contract. Filesystem operations
-must validate the actual local target rather than treating a stale visible row
-as authority. It is not evidence of a general remote filesystem, privileged
-file-management, or arbitrary protocol-handler implementation. Consult
-[File Manager](../apps/file-manager.md) for supported operations and explicit
-S1 deferrals before assuming parity with another file manager.
+Browse folders with a path bar and back/forward history, open files with
+their proper applications, and organize with rename, copy, move, and the
+Trash. It works on local files; remote filesystems are not part of the
+current version.
 
 ## Terminal
 
-The Terminal owns child processes and PTYs and confines qtermwidget behind a
-rendering adapter. It supports up to eight sessions/tabs, profiles and Settings1
-persistence, bounded per-session scrollback search, and confirmed opening of
-visible links. Launch policy separates an executable and argv; rendering does
-not own process lifecycle. Closing and failure recovery must preserve accurate
-exit state and bounded teardown. See [Terminal](../apps/terminal.md) for commands,
-search/link restrictions, focus, and keyboard behavior.
+A real terminal for your shell, with up to eight sessions in tabs, saved
+profiles, searchable scrollback, and clickable links that open only after
+you confirm them. Closing a tab keeps the exit status honest — a crashed
+command reports the crash rather than vanishing.
 
-## Shared visual language and future scope
+## Menus in the top bar
 
-QST-1 derives semantic appearance values; Controls supplies reusable compiled
-QML primitives; Widgets consumers adapt public tokens without inventing a second
-palette authority. Cross-app keyboard, accessibility, DPI, and visual evidence
-is tracked independently from individual feature tests.
+The Text Editor, Terminal, and File Manager put their menus in the command
+bar while they are focused, so the window spends its space on your work.
+Applications without that integration simply keep their own menu. See
+[Using the desktop](desktop.md#the-application-menu).
 
-Viewer, archive, monitor, software, and other long-range application workflows
-in architecture descriptions are product scope, not proof of shipped executables.
-Use the [feature catalog](catalog/features.md) and [repository catalog](catalog/repository.md)
-to distinguish implementations from future scope. Return to the
-[handbook index](index.md).
+## Not included (yet)
+
+An image viewer, archive manager, system monitor, and software center appear
+in the project's long-term plans. They are not shipped applications today —
+use ordinary Linux applications for those needs. The honest per-feature
+ledger is the [feature catalog](catalog/features.md).
+
+Each application's full contract — limits, shortcuts, recovery behavior — is
+documented on its own page: [Welcome](../apps/welcome.md), [Settings
+Center](../apps/settings-center.md) and each route page, [Text
+Editor](../apps/text-editor.md), [File Manager](../apps/file-manager.md),
+and [Terminal](../apps/terminal.md). Return to the [handbook index](index.md).
