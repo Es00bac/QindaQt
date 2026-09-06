@@ -28,7 +28,7 @@ ColumnLayout {
             Text {
                 Layout.fillWidth: true
                 text: page.eyebrow.toUpperCase()
-                color: Tokens.accent.default
+                color: Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
                 font.weight: Font.Bold

@@ -47,9 +47,9 @@ T.ApplicationWindow {
             diagram: "dock", hero: "",
             shortcuts: [qsTr("Meta + Shift + left drag"), qsTr("Escape to cancel")],
             cards: [
-                { marker: "↔", title: qsTr("Drop on an edge for a split"), body: qsTr("An edge target places the dragged window beside the target. Splits can be horizontal or vertical, and a later split can sit inside an existing one.") },
+                { marker: "↔", title: qsTr("Drop on an edge for a split"), body: qsTr("An edge target places the dragged window beside the target. Splits can be horizontal or vertical, and a later split can sit inside an existing one. Drag the divider between windows to give either side more room.") },
                 { marker: "＋", title: qsTr("Drop in the center or tab strip for a page"), body: qsTr("The dragged window becomes another top-level desktop tab page in the group. This is a page of windows, which is different from document tabs inside an app.") },
-                { marker: "Esc", title: qsTr("Change your mind safely"), body: qsTr("Press Escape during the arrangement, or drop an independent window outside every valid target, to leave it independent.") }
+                { marker: "Esc", title: qsTr("Change your mind safely"), body: qsTr("Press Escape during the arrangement to cancel it. Drop an independent window outside every valid target to leave it independent; a grouped member dropped there leaves its group and becomes independent.") }
             ]
         },
         {
@@ -72,7 +72,7 @@ T.ApplicationWindow {
             shortcuts: [qsTr("Enter to commit a keyboard move"), qsTr("Escape to cancel")],
             cards: [
                 { marker: "▣", title: qsTr("Move the complete group"), body: qsTr("Drag the outer title to move every page and split together. Its menu also contains group-level choices such as workspace, activity, layer, pinning, and output.") },
-                { marker: "□", title: qsTr("Detach one member"), body: qsTr("Plain-drag a grouped member's own title bar. It detaches atomically and continues as an ordinary KWin move. A modified Meta+Shift drag can dock it somewhere else.") },
+                { marker: "□", title: qsTr("Detach one member"), body: qsTr("Plain-drag a grouped member's own title bar. It leaves the group and follows your pointer as an independent window. A Meta+Shift drag can arrange it somewhere else.") },
                 { marker: "↕", title: qsTr("Reorder or move a page"), body: qsTr("Drag top-level tabs to reorder them, move a page to another container, or detach it. Edge tab drops are not a split shortcut; use a window arrangement gesture for a split.") }
             ]
         },
@@ -84,8 +84,8 @@ T.ApplicationWindow {
             shortcuts: [qsTr("Ctrl + Return — Apply"), qsTr("Ctrl + Shift + Return — Discard"), qsTr("Ctrl + Z — Undo")],
             cards: [
                 { marker: "1", title: qsTr("Pick a useful starting point"), body: qsTr("Choose the QindaQt layout or a familiar workflow preset. Appearance and workflow are separate, so changing a layout does not force a new color theme.") },
-                { marker: "2", title: qsTr("Edit in Customize"), body: qsTr("Drag applet chips and panel items. A drag is one undoable change. Keyboard move mode starts with Space; arrow combinations move within a panel, across zones, or to another panel.") },
-                { marker: "3", title: qsTr("Apply or discard the draft"), body: qsTr("Apply saves the draft as your active layout. Discard, Escape, or an outside release rolls the unfinished gesture back so experimentation stays reversible.") }
+                { marker: "2", title: qsTr("Edit in Customize"), body: qsTr("Drag applet chips and panel items. Each completed drag is one undoable change. Press Escape or release outside a valid target to cancel only the move in progress. Press Space for keyboard move mode, then use Ctrl or Alt with the arrow keys to choose a position.") },
+                { marker: "3", title: qsTr("Apply or discard the draft"), body: qsTr("Apply saves all of your draft changes as the active layout. Discard restores the last applied layout. You can also use Undo to step back through completed changes before deciding.") }
             ],
             actions: [{ label: qsTr("Open Customize"), description: qsTr("Open the Customize page in QindaQt Settings"), action: "customize", emphasized: true }]
         },
@@ -96,7 +96,7 @@ T.ApplicationWindow {
             diagram: "appearance", hero: "",
             cards: [
                 { marker: "◐", title: qsTr("Choose light, dark, or system"), body: qsTr("Pick a color scheme and theme that remain comfortable over a long session. This guide follows the same live appearance source, including high-contrast colors.") },
-                { marker: "▧", title: qsTr("Choose a wallpaper and fit"), body: qsTr("Select a bundled or local wallpaper, then choose how it is scaled, centered, or tiled. The preview shows the result before you commit it.") },
+                { marker: "▧", title: qsTr("Choose a wallpaper and fit"), body: qsTr("Select a bundled or local wallpaper, then choose how it is scaled, centered, or tiled. Bundled choices show image previews; Apply makes the selected wallpaper and fit active.") },
                 { marker: "A", title: qsTr("Tune accessibility"), body: qsTr("Adjust interface scale and fonts, reduce motion, reduce transparency, or use higher contrast. Controls keep keyboard focus visible and expose meaningful accessible names.") },
                 { marker: "?", title: qsTr("Come back any time"), body: qsTr("Open “Welcome to QindaQt” from the launcher whenever you want this guide again. Unchecking Show at next launch only stops automatic opening.") }
             ],

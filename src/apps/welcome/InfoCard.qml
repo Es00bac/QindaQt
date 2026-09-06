@@ -36,7 +36,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: card.marker
-                color: Tokens.accent.default
+                color: Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.body
                 font.weight: Font.DemiBold
