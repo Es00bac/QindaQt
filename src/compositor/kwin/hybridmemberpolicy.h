@@ -77,10 +77,14 @@ public:
     // KWin emits maximize/fullscreen notifications after applying a native
     // request. When another member already owns temporary focus presentation,
     // the adapter must unwind only that rejected member's native state against
-    // this committed baseline. It must not activate a window or reveal peers.
+    // this committed baseline and return focus to `focusOwnerWindowId`.
+    // AGENT-CONTRACT: This is a single rejected-request correction, not an
+    // active-window observer: ordinary Alt-Tab and outside-window focus remain
+    // compositor-owned after the correction completes.
     [[nodiscard]] virtual bool restoreRejectedPresentation(
         const MemberGroupBaseline &baseline,
         const QString &windowId,
+        const QString &focusOwnerWindowId,
         MemberFocusMode mode,
         QString *error = nullptr) = 0;
     [[nodiscard]] virtual bool restoreGroup(const MemberGroupBaseline &baseline,

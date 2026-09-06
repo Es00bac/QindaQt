@@ -82,8 +82,11 @@ item, not a native overlay window.
   native fullscreen remains active; leaving fullscreen preserves that outside
   focus. If KWin reports a competing member maximize/fullscreen request while
   one member already owns temporary focus presentation, the compositor rejects
-  that request and restores only the requesting member's committed frame/state,
-  keeping the current focus owner, hidden peers, and shared chrome unchanged.
+  that request and restores only the requesting member's committed frame/state.
+  That one rejection also reactivates the accepted owner, because KWin may have
+  activated the requester before reporting its native state change. This is not
+  a focus lock: later Alt-Tab, panel, and outside-window focus remain unchanged;
+  leaving fullscreen preserves that outside focus.
 - Dialogs and other transients float above their owning member and follow the
   container. A crashed member is removed without destabilizing peers.
 - Minimum and maximum client sizes constrain divider movement. If the available
