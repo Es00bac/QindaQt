@@ -260,6 +260,12 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
       sceneItem(window->contentItem(), QStringLiteral("settingsSidebar"));
   QVERIFY(sidebar != nullptr);
   QVERIFY(sidebar->isVisible());
+  QVERIFY(sceneItem(window->contentItem(),
+                    QStringLiteral("settingsSidebarCategory_General")) != nullptr);
+  QVERIFY(sceneItem(window->contentItem(),
+                    QStringLiteral("settingsSidebarCategory_Personalization")) != nullptr);
+  QVERIFY(sceneItem(window->contentItem(),
+                    QStringLiteral("settingsSidebarCategory_Hardware")) != nullptr);
 
   // Notifications route is initially active
   auto *notifLoader =
@@ -514,6 +520,13 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
   // Shortcut Alt+Left returns to the immediately previous route.
   QTest::keyClick(window, Qt::Key_Left, Qt::AltModifier);
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("notifications"));
+
+  // Ctrl+5 reaches the dedicated panel and applet editor route.
+  QTest::keyClick(window, Qt::Key_5, Qt::ControlModifier);
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("customize"));
+  QVERIFY(sceneObject(window->contentItem(),
+                       QStringLiteral("wideSettingsRouteCustomizeLoader"))
+          ->property("active").toBool());
 
   // Ctrl+6 selects the Audio route; Escape returns to its route tab and Tab
   // enters the page's declared first focus target, the default output's

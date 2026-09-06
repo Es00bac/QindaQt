@@ -252,6 +252,7 @@ private slots:
     void statusFallbackAndAccessibilityTruth();
     void saveResultSummaryIsAccessibleAndTruthful();
     void focusedDestinationNavigationKeepsDraftAndControlsReachable();
+    void fontTypingWallpaperPreviewAndKeyboardScrollingStayUsable();
 
 private:
     static void makeReady(StubAppearanceModel &model, bool dirty)
@@ -387,6 +388,13 @@ void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
     auto *fontFamily = item(scene.root, "appearanceFontFamilyField");
     QVERIFY(fontFamily != nullptr);
 
+    fontFamily->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(fontFamily->hasActiveFocus());
+    fontFamily->setProperty("editText", QStringLiteral("Noto Serif"));
+    QTRY_COMPARE(scene.model->draftKeys.constLast(), QStringLiteral("fonts.family"));
+    QCOMPARE(scene.model->draftValues.constLast().toString(),
+             QStringLiteral("Noto Serif"));
+
     QVERIFY(QMetaObject::invokeMethod(fontFamily, "accepted"));
     QTRY_VERIFY(!scene.model->draftKeys.isEmpty());
     QCOMPARE(scene.model->draftKeys.constLast(), QStringLiteral("fonts.family"));
@@ -400,6 +408,50 @@ void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
     QTRY_COMPARE(scene.model->draftKeys.constLast(),
                  QStringLiteral("appearance.wallpaper"));
     QCOMPARE(scene.model->draftValues.constLast().toString(), QStringLiteral("/"));
+}
+
+void AppearancePageTests::fontTypingWallpaperPreviewAndKeyboardScrollingStayUsable()
+{
+    const QUrl bundledPreview = QUrl::fromLocalFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/wallpapers/qinda-punk.png"));
+    const auto scene = createScene([&](StubAppearanceModel &model) {
+        model.installedThemes = QVariantList{};
+        model.bundledWallpapers = QVariantList{QVariantMap{
+            {QStringLiteral("name"), QStringLiteral("Qinda Punk")},
+            {QStringLiteral("value"), QStringLiteral("qindaqt:qinda-punk")},
+            {QStringLiteral("previewUrl"), bundledPreview},
+        }};
+        model.draft = defaultDraftMap();
+        makeReady(model, false);
+    });
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+
+    QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
+    auto *bundled = item(scene.root, "bundledWallpaperButton");
+    auto *preview = item(scene.root, "appearanceWallpaperPreview");
+    QVERIFY(bundled != nullptr && preview != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(bundled, "click"));
+    QTRY_COMPARE(scene.model->draftValues.constLast().toString(),
+                 QStringLiteral("qindaqt:qinda-punk"));
+    QTRY_COMPARE(preview->property("source").toUrl(), bundledPreview);
+
+    scene.view->resize(640, 320);
+    QVERIFY(activateDestination(scene, QStringLiteral("fonts")) != nullptr);
+    auto *appearancePage = item(scene.root, "appearancePage");
+    auto *viewport = item(scene.root, "appearanceFormViewport");
+    auto *subpixel = item(scene.root, "appearanceSubpixelSelector");
+    QVERIFY(appearancePage != nullptr && viewport != nullptr && subpixel != nullptr);
+    appearancePage->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(appearancePage->hasActiveFocus());
+    QTest::keyClick(scene.view.get(), Qt::Key_PageDown);
+    QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
+    appearancePage->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(appearancePage->hasActiveFocus());
+    QTest::keyClick(scene.view.get(), Qt::Key_Home, Qt::ControlModifier);
+    QTRY_COMPARE(viewport->property("contentY").toReal(), 0.0);
+    subpixel->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(scene.view->activeFocusItem(), subpixel);
+    QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
 }
 
 void AppearancePageTests::actionRowWiresApplyRevertRetryClose()

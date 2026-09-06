@@ -80,6 +80,7 @@ Rectangle {
                     spacing: Tokens.space["1"]
 
                     Text {
+                        objectName: "settingsSidebarCategory_" + modelData.category
                         Layout.fillWidth: true
                         visible: index === 0
                                  || modelData.category !== sidebar.orderedRoutes[index - 1].category
