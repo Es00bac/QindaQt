@@ -1832,7 +1832,9 @@ The focused suites cover:
 - fake-platform KWin transactions for full-state restore, focus, inactive-page
   minimization, dead members, overflow, cross-container one-step ownership,
   direct reflow, maximize/restore, independent-focus preservation, member
-  maximize/fullscreen focus mode, focus-safe minimize/close/native detach,
+  maximize/fullscreen focus mode, competing-member rollback under re-entrant
+  native state signals, outside-focus preservation on fullscreen exit,
+  focus-safe minimize/close/native detach,
   transient admission/following, atomic output/workspace/activity/layer
   propagation, collapsed task identity, and rollback/recovery of state, focus,
   target frames, and copied committed layout;
