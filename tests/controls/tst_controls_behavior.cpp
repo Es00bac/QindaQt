@@ -8,6 +8,7 @@
 #include <QAccessibleInterface>
 #include <QColor>
 #include <QCoreApplication>
+#include <QFont>
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickView>
@@ -155,6 +156,14 @@ void ControlsBehaviorTests::exposesStaticComponentContractsAndFocusRing()
              QStringLiteral("Accessible controls"));
     QVERIFY(accessible(header)->text(QAccessible::Description)
                 .contains(QStringLiteral("keyboard")));
+    auto *headerTitle = item(header, "sectionHeaderTitle");
+    auto *headerDescription = item(header, "sectionHeaderDescription");
+    QVERIFY(headerTitle != nullptr);
+    QVERIFY(headerDescription != nullptr);
+    QCOMPARE(headerTitle->property("font").value<QFont>().pointSizeF(),
+             facade->type().value(QStringLiteral("subtitle")).toDouble());
+    QCOMPARE(objectColor(headerDescription),
+             facade->fg().value(QStringLiteral("muted")).value<QColor>());
 
     auto *surface = item(scene.root, "formSurface");
     QCOMPARE(accessible(surface)->role(), QAccessible::Grouping);
@@ -188,6 +197,15 @@ void ControlsBehaviorTests::exposesStaticComponentContractsAndFocusRing()
     QCOMPARE(accessible(combo)->text(QAccessible::Name), QStringLiteral("Nightfall"));
     QCOMPARE(objectColor(controlBackground(combo)),
              facade->bg().value(QStringLiteral("highest")).value<QColor>());
+
+    auto *state = item(scene.root, "stateCard");
+    auto *stateRule = item(state, "stateCardSemanticRule");
+    QVERIFY(stateRule != nullptr);
+    QCOMPARE(stateRule->width(), 3.0);
+    QCOMPARE(objectColor(controlBackground(state)),
+             facade->bg().value(QStringLiteral("raised")).value<QColor>());
+    QCOMPARE(objectColor(item(state, "stateCardTitle")),
+             facade->fg().value(QStringLiteral("default")).value<QColor>());
 
     QObject *popup = combo->property("popup").value<QObject *>();
     QVERIFY(popup != nullptr);

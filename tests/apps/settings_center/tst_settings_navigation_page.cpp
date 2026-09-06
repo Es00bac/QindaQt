@@ -22,6 +22,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QFont>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
@@ -260,6 +261,14 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
       sceneItem(window->contentItem(), QStringLiteral("settingsSidebar"));
   QVERIFY(sidebar != nullptr);
   QVERIFY(sidebar->isVisible());
+  auto *sidebarTitle =
+      sceneItem(window->contentItem(), QStringLiteral("settingsSidebarTitle"));
+  QVERIFY(sidebarTitle != nullptr);
+  auto *facade = m_engine->singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
+      "QindaQt.Tokens", "Tokens");
+  QVERIFY(facade != nullptr);
+  QCOMPARE(sidebarTitle->property("font").value<QFont>().pointSizeF(),
+           facade->type().value(QStringLiteral("subtitle")).toDouble());
   QVERIFY(sceneItem(window->contentItem(),
                     QStringLiteral("settingsSidebarCategory_General")) != nullptr);
   QVERIFY(sceneItem(window->contentItem(),
