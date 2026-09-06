@@ -51,6 +51,7 @@ ColumnLayout {
             model: root.appearanceSettings.bundledWallpapers ?? []
 
             Button {
+                id: wallpaperButton
                 required property var modelData
                 objectName: "bundledWallpaperButton"
                 width: 144
@@ -74,6 +75,9 @@ ColumnLayout {
                     Label {
                         Layout.fillWidth: true
                         text: modelData.name
+                        color: !wallpaperButton.enabled ? Tokens.fg.muted
+                             : wallpaperButton.emphasized ? Tokens.accent.fg
+                                                          : Tokens.fg.default
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                         Accessible.ignored: true

@@ -49,7 +49,7 @@ Item {
         anchors.centerIn: parent
         name: "virtual-desktops"
         size: 18
-        color: strip.phase === "loading" ? Tokens.fg.muted : Tokens.fg.disabled
+        color: Tokens.fg.muted
         symbolic: true
         fallbackText: qsTr("Workspaces")
         Accessible.ignored: true

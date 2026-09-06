@@ -103,8 +103,7 @@ Item {
             name: root.phase === "loading" ? "view-refresh-symbolic"
                                              : "preferences-system-windows"
             size: 20
-            color: root.phase === "loading" ? Tokens.fg.muted
-                                             : Tokens.fg.disabled
+            color: Tokens.fg.muted
             symbolic: true
             fallbackText: qsTr("Task list")
             Accessible.ignored: true

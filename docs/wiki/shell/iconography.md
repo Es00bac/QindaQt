@@ -98,7 +98,11 @@ only with `symbolic=1` and only in the documented opaque `#rrggbb` form —
 an alpha-carrying color (serialized `#aarrggbb`) is refused and the symbolic
 icon keeps its own pixels: the symbolic SVG renders, then every painted
 pixel's RGB is replaced by the token color while its alpha shape is
-preserved. An id over 1,024 UTF-8 bytes is refused before parsing and before
+preserved. Shell consumers use opaque foreground roles for symbolic icons:
+`fg.default` for normal state and contrast-gated `fg.muted` for an unavailable
+state that must remain recognizable. The alpha-based `fg.disabled` role is
+reserved for inactive presentation that does not depend on symbolic
+recoloring. An id over 1,024 UTF-8 bytes is refused before parsing and before
 any cache access, and the 64-entry image LRU is keyed on the parsed, bounded
 request tuple rather than the raw id, so hostile spellings cannot grow shell
 memory. An unresolved, refused, or undecodable name returns a deterministic

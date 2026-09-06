@@ -46,7 +46,7 @@ ColumnLayout {
             objectName: "statusLaneIcon"
             name: String(lane.laneRow.iconName)
             size: 18
-            color: lane.available ? Tokens.fg.default : Tokens.fg.disabled
+            color: lane.available ? Tokens.fg.default : Tokens.fg.muted
             symbolic: true
             fallbackText: String(lane.laneRow.label)
             Accessible.ignored: true

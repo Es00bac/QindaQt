@@ -40,7 +40,7 @@ Item {
         anchors.centerIn: parent
         name: "applications-other"
         size: 18
-        color: Tokens.fg.disabled
+        color: Tokens.fg.muted
         symbolic: true
         fallbackText: qsTr("Applications")
         Accessible.ignored: true
