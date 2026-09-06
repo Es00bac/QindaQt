@@ -53,7 +53,7 @@ private Q_SLOTS:
   void rendersInventoryAccessibly();
   void routesDefaultVolumeMuteAndRetryIntents();
   void showsStaleTruthLabeledAndOwnerLossEmpty();
-  void keepsCompactFocusVisibleAndClosesTheCycle();
+  void keepsCompactFocusVisibleWithoutAPageCloseAction();
   void disabledDefaultFallsThroughToFirstAdmittedAction();
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
@@ -239,17 +239,16 @@ void AudioPageTest::showsStaleTruthLabeledAndOwnerLossEmpty() {
   QVERIFY(findItem(page, QStringLiteral("audioStreamVolume_30")) == nullptr);
 }
 
-void AudioPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
+void AudioPageTest::keepsCompactFocusVisibleWithoutAPageCloseAction() {
   auto [guard, page] = createPage(QSize(420, 320));
   QVERIFY(page != nullptr);
   auto *entry = findItem(page, QStringLiteral("audioOutputVolume_10"));
   auto *setDefault =
       findItem(page, QStringLiteral("audioOutputDefault_12"));
-  auto *close = findItem(page, QStringLiteral("audioCloseButton"));
   auto *viewport = findItem(page, QStringLiteral("audioFormViewport"));
   QVERIFY(entry != nullptr);
   QVERIFY(setDefault != nullptr);
-  QVERIFY(close != nullptr);
+  QVERIFY(findItem(page, QStringLiteral("audioCloseButton")) == nullptr);
   QVERIFY(viewport != nullptr);
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), entry);
 
@@ -258,23 +257,10 @@ void AudioPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
   setDefault->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), setDefault);
   QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
-  close->forceActiveFocus(Qt::TabFocusReason);
-  QTRY_COMPARE(m_view->activeFocusItem(), close);
-  QTest::keyClick(m_view.get(), Qt::Key_Tab);
-  QTRY_COMPARE(m_view->activeFocusItem(), entry);
-
-  // Reverse Tab from Close must reach the preceding enabled, admitted
-  // control (the last stream row's volume) instead of looping on Close.
   auto *lastStreamVolume =
       findItem(page, QStringLiteral("audioStreamVolume_40"));
   QVERIFY(lastStreamVolume != nullptr);
   QVERIFY(lastStreamVolume->isEnabled());
-  close->forceActiveFocus(Qt::TabFocusReason);
-  QTRY_COMPARE(m_view->activeFocusItem(), close);
-  QTest::keyClick(m_view.get(), Qt::Key_Backtab);
-  QTRY_COMPARE(m_view->activeFocusItem(), lastStreamVolume);
-
-  // With Retry visible, reverse Tab from Close moves to Retry.
   m_model->ready = false;
   m_model->unavailable = true;
   m_model->statusText = QStringLiteral("The audio service is unavailable.");
@@ -283,10 +269,6 @@ void AudioPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
   auto *retry = findItem(page, QStringLiteral("audioRetryButton"));
   QVERIFY(retry != nullptr);
   QVERIFY(retry->isVisible());
-  close->forceActiveFocus(Qt::TabFocusReason);
-  QTRY_COMPARE(m_view->activeFocusItem(), close);
-  QTest::keyClick(m_view.get(), Qt::Key_Backtab);
-  QTRY_COMPARE(m_view->activeFocusItem(), retry);
 }
 
 void AudioPageTest::disabledDefaultFallsThroughToFirstAdmittedAction() {

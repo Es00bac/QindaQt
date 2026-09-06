@@ -15,7 +15,7 @@ T.Page {
 
     readonly property Item firstFocusTarget: scanButton.enabled ? scanButton
                                                   : reloadButton.enabled ? reloadButton
-                                                  : closeButton
+                                                  : root
 
     title: qsTr("Network")
 
@@ -217,18 +217,6 @@ T.Page {
                 Accessible.name: text
             }
 
-            Button {
-                id: closeButton
-                objectName: "networkCloseButton"
-                available: !root.networkSettings.busy
-                emphasized: false
-                text: qsTr("Close")
-                KeyNavigation.tab: root.firstFocusTarget
-                KeyNavigation.backtab: scanButton.enabled ? scanButton
-                                       : reloadButton.enabled ? reloadButton
-                                       : closeButton
-                onClicked: root.closeRequested()
-            }
         }
     }
 }

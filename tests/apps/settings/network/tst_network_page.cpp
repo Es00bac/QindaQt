@@ -53,7 +53,7 @@ private Q_SLOTS:
   void rendersTruthAndSecretBoundaryAccessibly();
   void routesScanConnectDisconnectAndReloadIntents();
   void showsStaleTruthReadOnlyAndOwnerLossEmpty();
-  void keepsCompactFocusVisibleAndClosesTheCycle();
+  void keepsCompactFocusVisibleWithoutAPageCloseAction();
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
 
@@ -220,17 +220,16 @@ void NetworkPageTest::showsStaleTruthReadOnlyAndOwnerLossEmpty() {
           == nullptr);
 }
 
-void NetworkPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
+void NetworkPageTest::keepsCompactFocusVisibleWithoutAPageCloseAction() {
   auto [guard, page] = createPage(QSize(420, 320));
   QVERIFY(page != nullptr);
   auto *scan = findItem(page, QStringLiteral("networkScanButton"));
   auto *connect = findItem(
       page, QStringLiteral("networkConnect_") + QString(64, u'b'));
-  auto *close = findItem(page, QStringLiteral("networkCloseButton"));
   auto *viewport = findItem(page, QStringLiteral("networkFormViewport"));
   QVERIFY(scan != nullptr);
   QVERIFY(connect != nullptr);
-  QVERIFY(close != nullptr);
+  QVERIFY(findItem(page, QStringLiteral("networkCloseButton")) == nullptr);
   QVERIFY(viewport != nullptr);
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), scan);
 
@@ -239,10 +238,6 @@ void NetworkPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
   connect->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), connect);
   QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
-  close->forceActiveFocus(Qt::TabFocusReason);
-  QTRY_COMPARE(m_view->activeFocusItem(), close);
-  QTest::keyClick(m_view.get(), Qt::Key_Tab);
-  QTRY_COMPARE(m_view->activeFocusItem(), scan);
 }
 
 void NetworkPageTest::supportsDocumentPagingKeys() {

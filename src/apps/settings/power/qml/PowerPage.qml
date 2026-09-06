@@ -14,11 +14,11 @@ T.Page {
     signal closeRequested()
 
     // AGENT-GUARD: Host entry must never nominate a disabled action. Domain
-    // controls come from admission truth; Retry and Close are safe fallbacks.
+    // controls come from admission truth; Retry is the only action fallback.
     readonly property Item firstFocusTarget:
         root.powerSettings.loading || root.powerSettings.unavailable
             || root.powerSettings.stale
-        ? (retryButton.visible && retryButton.enabled ? retryButton : closeButton)
+        ? (retryButton.visible && retryButton.enabled ? retryButton : root)
         : profileSection.firstActionTarget !== null
         ? profileSection.firstActionTarget
         : brightnessSection.firstActionTarget !== null
@@ -26,7 +26,7 @@ T.Page {
           : sessionSection.firstActionTarget !== null
             ? sessionSection.firstActionTarget
           : retryButton.visible && retryButton.enabled ? retryButton
-          : closeButton
+          : root
 
     title: qsTr("Power")
     background: Rectangle { color: Tokens.bg.base }
@@ -186,16 +186,6 @@ T.Page {
                        : ""
                 muted: true
                 Accessible.name: text
-            }
-            Button {
-                id: closeButton
-                objectName: "powerCloseButton"
-                available: true
-                busy: false
-                emphasized: false
-                text: qsTr("Close")
-                KeyNavigation.tab: root.firstFocusTarget
-                onClicked: root.closeRequested()
             }
         }
     }

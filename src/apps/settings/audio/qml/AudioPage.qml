@@ -15,7 +15,7 @@ T.Page {
 
     // Focus entry follows visual traversal order: the first enabled,
     // admitted control of the output, input, then stream sections, then
-    // Retry, then Close. Sections recompute their target from the live
+    // Retry. Sections recompute their target from the live
     // projection, so a control the snapshot disabled is never nominated
     // (AGENT-GUARD: the Settings host forceActiveFocus()es this target).
     readonly property Item firstFocusTarget:
@@ -23,10 +23,9 @@ T.Page {
         : inputSection.firstActionTarget !== null ? inputSection.firstActionTarget
         : streamSection.firstActionTarget !== null ? streamSection.firstActionTarget
         : retryButton.visible ? retryButton
-        : closeButton
+        : root
 
-    // Reverse-Tab exit from Close: the last enabled, admitted control in
-    // traversal order (streams, then input, then output sections).
+    // The last domain action follows the visible traversal order.
     readonly property Item lastActionTarget:
         streamSection.lastActionTarget !== null ? streamSection.lastActionTarget
         : inputSection.lastActionTarget !== null ? inputSection.lastActionTarget
@@ -253,18 +252,6 @@ T.Page {
                 Accessible.name: text
             }
 
-            Button {
-                id: closeButton
-                objectName: "audioCloseButton"
-                available: !root.audioSettings.busy
-                emphasized: false
-                text: qsTr("Close")
-                KeyNavigation.tab: root.firstFocusTarget
-                KeyNavigation.backtab: retryButton.visible ? retryButton
-                    : root.lastActionTarget !== null ? root.lastActionTarget
-                    : closeButton
-                onClicked: root.closeRequested()
-            }
         }
     }
 }

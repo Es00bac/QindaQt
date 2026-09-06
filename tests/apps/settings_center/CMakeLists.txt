@@ -51,6 +51,7 @@ qt_add_executable(
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/power/stub_power_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/clipboard/stub_clipboard_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/customize/stub_customize_settings_model.h
 )
 target_include_directories(qindaqt_settings_navigation_page_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
