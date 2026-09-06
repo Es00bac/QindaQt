@@ -85,7 +85,12 @@ Window {
     return;
   }
   raw->setScreen(screen);
-  raw->setFlag(Qt::FramelessWindowHint, true);
+  // AGENT-GUARD: KWin's task/visibility publishers classify client roles from
+  // the Qt window type. A Background layer alone is not desktop identity on
+  // every supported KWin build; Qt::Desktop keeps this shell-owned surface
+  // out of ordinary window and task facts.
+  raw->setFlags(Qt::Desktop | Qt::FramelessWindowHint |
+                Qt::WindowDoesNotAcceptFocus);
   auto *layer = LayerShellQt::Window::get(raw);
   if (!layer) {
     delete raw;
