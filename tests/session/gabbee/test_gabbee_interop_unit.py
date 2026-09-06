@@ -264,6 +264,52 @@ class PortalChainTests(unittest.TestCase):
             self.assertTrue(phases["backend-journal"]["ok"])
 
 
+class OuterCliTests(unittest.TestCase):
+    """Regression for the review blocker: the documented nested-lane command
+    (which omits --source-root) must parse before any external-runtime
+    preflight, and the no-lane acknowledgement behavior must stay exit 77."""
+
+    DOCUMENTED_ARGV = [
+        "--build-root", "/tmp/qindaqt-build",
+        "--kwin-wayland", "/usr/bin/kwin_wayland",
+        "--plugin-relative", "lib/kwin/plugins/libqindaqt_compositor.so",
+        "--decoration-relative", "lib/plugins/libqindaqt_decoration.so",
+        "--gabbee-root", "/home/cabewse/gabbee",
+    ]
+
+    def test_documented_invocation_parses_with_source_root_default(self) -> None:
+        from run_gabbee_interop_nested import _outer_parser
+
+        arguments = _outer_parser().parse_args(self.DOCUMENTED_ARGV)
+        self.assertEqual(arguments.source_root, HERE.parents[2])
+        self.assertTrue(
+            (arguments.source_root / "src/services/portal/data/qindaqt-portals.conf").is_file(),
+            "source-root default must be the repository root",
+        )
+
+    def test_source_root_is_not_a_required_flag(self) -> None:
+        from run_gabbee_interop_nested import _outer_parser
+
+        for action in _outer_parser()._actions:  # noqa: SLF001 (contract check)
+            if "--source-root" in action.option_strings:
+                self.assertFalse(
+                    action.required, "--source-root must default, not require"
+                )
+
+    def test_missing_lane_acknowledgement_exits_77(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, str(HERE / "run_gabbee_interop_nested.py")]
+            + self.DOCUMENTED_ARGV,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={key: value for key, value in os.environ.items()
+                 if key != "QINDAQT_PRIVATE_RUNTIME_LANE"},
+        )
+        self.assertEqual(completed.returncode, 77, completed.stderr)
+        self.assertIn("QINDAQT_PRIVATE_RUNTIME_LANE", completed.stderr)
+
+
 if __name__ == "__main__":
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])

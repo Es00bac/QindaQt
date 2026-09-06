@@ -43,18 +43,17 @@ Exec=/usr/libexec/at-spi-bus-launcher --launch-immediately
 """
 
 
-def _outer() -> int:
-    if os.environ.get(LANE_ENVIRONMENT) != LANE_VALUE:
-        print(
-            f"skip: set {LANE_ENVIRONMENT}={LANE_VALUE} after the manager allocates "
-            "the private-runtime lane",
-            file=sys.stderr,
-        )
-        return 77
+def _outer_parser() -> argparse.ArgumentParser:
+    """Outer CLI surface; the documented wiki invocation must parse as-is."""
 
     parser = argparse.ArgumentParser(description="outer Gabbee interop lane driver")
     parser.add_argument("--build-root", type=Path, required=True)
-    parser.add_argument("--source-root", type=Path, required=HERE.parents[3])
+    # AGENT-GUARD: this is the invocation DEFAULT, never a required flag — the
+    # documented root command omits --source-root and must parse before any
+    # external-runtime preflight (regression: OuterCliTests).  HERE is the
+    # tests/session/gabbee DIRECTORY, so the repository root is parents[2]
+    # (a file path like run_gabbee_portal_chain.py would need parents[3]).
+    parser.add_argument("--source-root", type=Path, default=HERE.parents[2])
     parser.add_argument("--bwrap", default=shutil.which("bwrap"))
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--dbus-daemon", default=shutil.which("dbus-daemon"))
@@ -71,7 +70,19 @@ def _outer() -> int:
     parser.add_argument("--settings-service-directory", default="share/dbus-1/services")
     parser.add_argument("--audio-service-directory", default="share/dbus-1/services")
     parser.add_argument("--result-root", type=Path, default=None)
-    arguments = parser.parse_args()
+    return parser
+
+
+def _outer() -> int:
+    if os.environ.get(LANE_ENVIRONMENT) != LANE_VALUE:
+        print(
+            f"skip: set {LANE_ENVIRONMENT}={LANE_VALUE} after the manager allocates "
+            "the private-runtime lane",
+            file=sys.stderr,
+        )
+        return 77
+
+    arguments = _outer_parser().parse_args()
 
     sys.path.insert(0, str(HERE.parent))
     from desktop_session_sandbox import (
@@ -261,126 +272,9 @@ def _inner() -> int:
     state = RuntimeState()
     exit_code = 1
     try:
-        runtime = Path(environment["XDG_RUNTIME_DIR"])
-        service_dir = runtime / "bus-services"
-        service_dir.mkdir(parents=True, exist_ok=True)
-        bus_config = runtime / "bus.conf"
-        from gabbee_probe_support import BUS_CONFIG_TEMPLATE
-
-        bus_config.write_text(
-            BUS_CONFIG_TEMPLATE.format(
-                address=f"unix:path={runtime / 'bus'}", service_dir=service_dir
-            ),
-            encoding="utf-8",
-        )
-        environment["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={runtime / 'bus'}"
-        (service_dir / "org.a11y.Bus.service").write_text(AT_SPI_SERVICE, encoding="utf-8")
-        write_fake_backend_service(
-            service_dir,
-            venv_python=Path(environment["GABBEE_VENV_PYTHON"]),
-            fake_script=Path("/opt/qindaqt-source/tests/session/gabbee/gabbee_portal_fake.py"),
-        )
-        bus = spawn_logged_process(
-            "dbus-daemon",
-            [arguments.dbus_daemon, "--config-file", str(bus_config), "--nofork", "--nopidfile"],
-            environment,
-        )
-        state.track(bus, [arguments.dbus_daemon])
-        wait_for_path(runtime / "bus", state, 10)
-
-        for role in ("settings-service", "audio-service"):
-            child = spawn_logged_process(role, [str(stage.executables[role])], environment)
-            state.track(child, [stage.executables[role]])
-
-        socket_name = _configure_private_session(environment, None)
-        virtual = _virtual_spec(None)
-        compositor_environment = dict(environment)
-        compositor_environment["QT_FORCE_STDERR_LOGGING"] = "1"
-        compositor = spawn_logged_process(
-            "compositor",
-            [
-                str(stage.executables["launcher"]),
-                "--plugin-root", str(stage.compositor_plugin.parents[2]),
-                "--kwin", arguments.kwin_wayland, "--virtual",
-                "--width", str(virtual.logical_width),
-                "--height", str(virtual.logical_height),
-                "--scale", str(virtual.scale), "--output-count", str(virtual.output_count),
-                "--socket", socket_name,
-                "--test-scenario", "/opt/qindaqt-source/tests/scenarios/single-1080p.json",
-                "--session", str(stage.executables["session"]),
-            ],
-            compositor_environment,
-        )
-        state.track(compositor, [stage.executables["launcher"], arguments.kwin_wayland])
-        wait_for_path(runtime / socket_name, state, 20)
-
-        app_environment = dict(environment)
-        app_environment["WAYLAND_DISPLAY"] = socket_name
-        app_environment["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
-        for role, executable in (
-            ("editor-app", stage.executables["editor-app"]),
-            ("terminal-app", Path("/opt/qindaqt-terminal") / arguments.bin_directory / "qindaqt-terminal"),
-        ):
-            child = spawn_logged_process(role, [str(executable)], app_environment)
-            state.track(child, [executable])
-
-        stage_portals_configuration(
-            Path("/opt/qindaqt-source/src/services/portal/data/qindaqt-portals.conf"),
-            Path(environment["XDG_CONFIG_HOME"]) / "xdg-desktop-portal/portals.conf",
-        )
-
-        probe_environment = dict(app_environment)
-        probe_environment.update(
-            gabbee_probe_python_environment(
-                source_root=arguments.gabbee_root,
-                venv_python=Path(environment["GABBEE_VENV_PYTHON"]),
-                system_site_packages=Path("/usr/lib/python3.14/site-packages"),
-            )
-        )
-        chain_environment = dict(environment)
-        chain_environment.pop("WAYLAND_DISPLAY", None)
-        evidence_root = Path("/var/lib/qindaqt-evidence")
-        evidence_root.mkdir(parents=True, exist_ok=True)
-
-        def run_step(name: str, command: list[str], env: dict[str, str]) -> int:
-            try:
-                step = subprocess.run(
-                    command, env=env, capture_output=True, text=True, timeout=300
-                )
-                output, code = step.stdout + step.stderr, step.returncode
-            except subprocess.TimeoutExpired as expired:
-                output = f"TIMEOUT after 300s: {expired}"
-                code = 1
-            (evidence_root / f"{name}-stdout.log").write_text(output, encoding="utf-8")
-            return code
-
-        chain_code = run_step(
-            "portal-chain",
-            [
-                sys.executable,
-                "/opt/qindaqt-source/tests/session/gabbee/run_gabbee_portal_chain.py",
-                "--run-root", str(runtime / "portal-chain"),
-                "--existing-bus-address", environment["DBUS_SESSION_BUS_ADDRESS"],
-                "--gabbee-root", str(arguments.gabbee_root),
-                "--gabbee-venv-python", environment["GABBEE_VENV_PYTHON"],
-                "--source-root", "/opt/qindaqt-source",
-                "--result-path", str(evidence_root / "gabbee-portal-chain.json"),
-            ],
-            chain_environment,
-        )
-
-        time.sleep(5)  # let editor/terminal windows map before probing
-        probe_code = run_step(
-            "probe",
-            [
-                environment["GABBEE_VENV_PYTHON"],
-                "/opt/qindaqt-source/tests/session/gabbee/gabbee_interop_probe.py",
-                "--result-path", str(arguments.result_path),
-                "--run-id", environment.get("QINDAQT_SESSION_RUN_ID", "nested"),
-            ],
-            probe_environment,
-        )
-        exit_code = 0 if chain_code == 0 and probe_code == 0 else 1
+        runtime = _start_session_bus(arguments, stage, environment, state)
+        socket_name = _start_nested_desktop(arguments, stage, environment, state, runtime)
+        exit_code = _run_evidence_steps(arguments, environment, runtime, socket_name)
     finally:
         for process in reversed(state.processes):
             process.terminate()
@@ -390,6 +284,146 @@ def _inner() -> int:
             except subprocess.TimeoutExpired:
                 process.kill()
     return exit_code
+
+
+def _start_session_bus(arguments: argparse.Namespace, stage, environment: dict, state) -> Path:
+    """Own THE session bus of the nested desktop: probe-private service dir only."""
+
+    runtime = Path(environment["XDG_RUNTIME_DIR"])
+    service_dir = runtime / "bus-services"
+    service_dir.mkdir(parents=True, exist_ok=True)
+    bus_config = runtime / "bus.conf"
+    from gabbee_probe_support import BUS_CONFIG_TEMPLATE
+
+    bus_config.write_text(
+        BUS_CONFIG_TEMPLATE.format(
+            address=f"unix:path={runtime / 'bus'}", service_dir=service_dir
+        ),
+        encoding="utf-8",
+    )
+    environment["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={runtime / 'bus'}"
+    (service_dir / "org.a11y.Bus.service").write_text(AT_SPI_SERVICE, encoding="utf-8")
+    write_fake_backend_service(
+        service_dir,
+        venv_python=Path(environment["GABBEE_VENV_PYTHON"]),
+        fake_script=Path("/opt/qindaqt-source/tests/session/gabbee/gabbee_portal_fake.py"),
+    )
+    bus = spawn_logged_process(
+        "dbus-daemon",
+        [arguments.dbus_daemon, "--config-file", str(bus_config), "--nofork", "--nopidfile"],
+        environment,
+    )
+    state.track(bus, [arguments.dbus_daemon])
+    wait_for_path(runtime / "bus", state, 10)
+
+    for role in ("settings-service", "audio-service"):
+        executable = stage.executables[role]
+        child = spawn_logged_process(role, [str(executable)], environment)
+        state.track(child, [executable])
+    return runtime
+
+
+def _start_nested_desktop(
+    arguments: argparse.Namespace, stage, environment: dict, state, runtime: Path
+) -> str:
+    """Boot compositor + session + target apps; return the child socket name."""
+
+    socket_name = _configure_private_session(environment, None)
+    virtual = _virtual_spec(None)
+    compositor_environment = dict(environment)
+    compositor_environment["QT_FORCE_STDERR_LOGGING"] = "1"
+    compositor = spawn_logged_process(
+        "compositor",
+        [
+            str(stage.executables["launcher"]),
+            "--plugin-root", str(stage.compositor_plugin.parents[2]),
+            "--kwin", arguments.kwin_wayland, "--virtual",
+            "--width", str(virtual.logical_width),
+            "--height", str(virtual.logical_height),
+            "--scale", str(virtual.scale), "--output-count", str(virtual.output_count),
+            "--socket", socket_name,
+            "--test-scenario", "/opt/qindaqt-source/tests/scenarios/single-1080p.json",
+            "--session", str(stage.executables["session"]),
+        ],
+        compositor_environment,
+    )
+    state.track(compositor, [stage.executables["launcher"], arguments.kwin_wayland])
+    wait_for_path(runtime / socket_name, state, 20)
+
+    app_environment = dict(environment)
+    app_environment["WAYLAND_DISPLAY"] = socket_name
+    app_environment["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
+    for role, executable in (
+        ("editor-app", stage.executables["editor-app"]),
+        ("terminal-app", Path("/opt/qindaqt-terminal") / arguments.bin_directory / "qindaqt-terminal"),
+    ):
+        child = spawn_logged_process(role, [str(executable)], app_environment)
+        state.track(child, [executable])
+
+    stage_portals_configuration(
+        Path("/opt/qindaqt-source/src/services/portal/data/qindaqt-portals.conf"),
+        Path(environment["XDG_CONFIG_HOME"]) / "xdg-desktop-portal/portals.conf",
+    )
+    return socket_name
+
+
+def _run_evidence_steps(
+    arguments: argparse.Namespace, environment: dict, runtime: Path, socket_name: str
+) -> int:
+    probe_environment = dict(environment)
+    probe_environment["WAYLAND_DISPLAY"] = socket_name
+    probe_environment["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
+    probe_environment.update(
+        gabbee_probe_python_environment(
+            source_root=arguments.gabbee_root,
+            venv_python=Path(environment["GABBEE_VENV_PYTHON"]),
+            system_site_packages=Path("/usr/lib/python3.14/site-packages"),
+        )
+    )
+    chain_environment = dict(environment)
+    chain_environment.pop("WAYLAND_DISPLAY", None)
+    evidence_root = Path("/var/lib/qindaqt-evidence")
+    evidence_root.mkdir(parents=True, exist_ok=True)
+
+    def run_step(name: str, command: list[str], env: dict[str, str]) -> int:
+        try:
+            step = subprocess.run(
+                command, env=env, capture_output=True, text=True, timeout=300
+            )
+            output, code = step.stdout + step.stderr, step.returncode
+        except subprocess.TimeoutExpired as expired:
+            output = f"TIMEOUT after 300s: {expired}"
+            code = 1
+        (evidence_root / f"{name}-stdout.log").write_text(output, encoding="utf-8")
+        return code
+
+    chain_code = run_step(
+        "portal-chain",
+        [
+            sys.executable,
+            "/opt/qindaqt-source/tests/session/gabbee/run_gabbee_portal_chain.py",
+            "--run-root", str(runtime / "portal-chain"),
+            "--existing-bus-address", environment["DBUS_SESSION_BUS_ADDRESS"],
+            "--gabbee-root", str(arguments.gabbee_root),
+            "--gabbee-venv-python", environment["GABBEE_VENV_PYTHON"],
+            "--source-root", "/opt/qindaqt-source",
+            "--result-path", str(evidence_root / "gabbee-portal-chain.json"),
+        ],
+        chain_environment,
+    )
+
+    time.sleep(5)  # let editor/terminal windows map before probing
+    probe_code = run_step(
+        "probe",
+        [
+            environment["GABBEE_VENV_PYTHON"],
+            "/opt/qindaqt-source/tests/session/gabbee/gabbee_interop_probe.py",
+            "--result-path", str(arguments.result_path),
+            "--run-id", environment.get("QINDAQT_SESSION_RUN_ID", "nested"),
+        ],
+        probe_environment,
+    )
+    return 0 if chain_code == 0 and probe_code == 0 else 1
 
 
 def main() -> int:
