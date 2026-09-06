@@ -30,7 +30,7 @@ ColumnLayout {
         Layout.fillWidth: true
         title: qsTr("Wallpaper")
         description: qsTr(
-            "Stored wallpaper preference; this window does not change the running session")
+            "Choose a background for your desktop. Apply to update it.")
     }
 
     Flow {
