@@ -1,5 +1,28 @@
 # Integration handoff
 
+## Current integration and runtime ownership — 2026-09-06 17:34 MDT
+
+The original goal thread is the sole integration, shared-stage, runtime, and
+host-deployment manager again. The parallel completion thread retains its
+existing isolated implementers; no overlapping worker may edit their paths.
+
+Gabbee harness candidates `6a402810` and `444b4829` were independently reviewed
+and integrated as `e5b3e342` and `bff5f3fd`; the integrated unit suite passes
+26/26. Actual approved Unicode insertion and complete Gabbee app/terminal/group
+qualification remain open. The latest approved-input failure was a GI text
+readback call error, despite helper READY and exit 0; those are not insertion proof.
+
+Menu runtime `3177910e6a73461c8c58af2cd5ccd030` is **not accepted**. Its hook
+reported success from injection replies, but inspected held-menu screenshots
+show no popup and clipped panel labels. The existing native-menu owner is
+repairing that concrete behavior and strengthening semantic runtime assertions.
+
+Display writer repair `976ae25d` is integrated. The original DesktopVirtual
+stage omitted the Display service and activation entry, so it could activate
+the older host executable. The current private attempt stages the rebuilt
+service plus an explicit `/opt/qindaqt/bin` activation entry. Actual Apply/Revert
+must pass against that binary before Display acceptance is recorded.
+
 ## Completion restart after connectivity report — 2026-09-06
 
 The user returned to KDE and requested completion of already-started work,
