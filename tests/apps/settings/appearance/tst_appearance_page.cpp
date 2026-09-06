@@ -517,7 +517,16 @@ void AppearancePageTests::focusedDestinationNavigationKeepsDraftAndControlsReach
              QStringLiteral("wallpaper"));
 
     QVERIFY(activateDestination(scene, QStringLiteral("fonts")) != nullptr);
-    QVERIFY(item(scene.root, "appearanceFontFamilyField") != nullptr);
+    auto *fontFamily = item(scene.root, "appearanceFontFamilyField");
+    auto *subpixel = item(scene.root, "appearanceSubpixelSelector");
+    QVERIFY(fontFamily != nullptr);
+    QVERIFY(subpixel != nullptr);
+    // The shared token selector exposes this presentation contract. It keeps
+    // both closed fields out of the platform's bright native ComboBox style.
+    QVERIFY(fontFamily->property("transitionDuration").isValid());
+    QVERIFY(subpixel->property("transitionDuration").isValid());
+    QVERIFY(fontFamily->implicitHeight() >= 40.0);
+    QVERIFY(subpixel->implicitHeight() >= 40.0);
     QVERIFY(item(scene.root, "appearanceAntialiasingSwitch") != nullptr);
 
     // Destination changes only choose presentation. The page keeps the one

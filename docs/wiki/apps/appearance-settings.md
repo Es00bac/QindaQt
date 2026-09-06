@@ -147,8 +147,8 @@ ctest --test-dir build/dev \
   enum metatypes, and later-key partial-failure results.
 - `qindaqt.appearance-page` — offscreen Controls scene: focused-destination
   navigation, theme click selection/gating, installed-font and wallpaper
-  selection wiring, one shared action row, per-key result truth, and
-  accessible roles.
+  selection wiring, tokenized font selectors and checked-only hinting emphasis,
+  one shared action row, per-key result truth, and accessible roles.
 
 Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md).
 
