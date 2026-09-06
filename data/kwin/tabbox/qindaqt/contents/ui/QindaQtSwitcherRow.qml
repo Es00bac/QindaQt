@@ -23,8 +23,7 @@ Rectangle {
 
     Accessible.role: Accessible.ListItem
     Accessible.name: selected ? qsTr("%1, selected").arg(caption) : caption
-    Accessible.description: minimized ? qsTr("Minimized window or group")
-                                      : qsTr("Window or group")
+    Accessible.description: minimized ? qsTr("Minimized") : ""
     Accessible.focused: selected
 
     RowLayout {
@@ -58,8 +57,8 @@ Rectangle {
 
             Text {
                 Layout.fillWidth: true
-                text: row.minimized ? qsTr("Minimized window or group")
-                                    : qsTr("Window or group")
+                visible: row.minimized
+                text: qsTr("Minimized")
                 color: row.selected ? Kirigami.Theme.highlightedTextColor
                                     : Kirigami.Theme.disabledTextColor
                 font.family: Kirigami.Theme.smallFont.family
