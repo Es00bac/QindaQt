@@ -26,6 +26,11 @@ public:
               const QVariantList &) override {}
   void requestActivation() override {}
   void announce(const QString &owner) { emit ownerChanged(owner); }
+  void invalidate(quint64 revision) {
+    emit settingsChanged(lastOwner, QStringLiteral("epoch"), revision,
+                         {QStringLiteral("appearance.theme"),
+                          QStringLiteral("appearance.colorScheme")});
+  }
   void reply(QString theme, QString scheme, quint64 revision = 1) {
     const QVariantMap values{
         {QStringLiteral("appearance.theme"), theme},
@@ -77,16 +82,28 @@ void ApplicationAppearanceControllerTest::
                      &ApplicationAppearanceController::appearanceChanged);
   QVERIFY(client.start());
   transport.announce(QStringLiteral(":1.20"));
+  QTRY_VERIFY(transport.lastToken != 0);
   transport.reply(QStringLiteral("qinda-dark"), QStringLiteral("system"));
+  QTRY_COMPARE(client.state(), ClientState::Ready);
+  QVERIFY(client.snapshot().has_value());
   Q_EMIT hints->colorSchemeChanged(Qt::ColorScheme::Light);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
   QCOMPARE(changes.count(), 1);
+  const quint64 baselineToken = transport.lastToken;
+  transport.invalidate(2);
+  QTRY_VERIFY(transport.lastToken != baselineToken);
   transport.reply(QStringLiteral("qinda-dark"), QStringLiteral("system"), 2);
   QCOMPARE(changes.count(), 1);
   Q_EMIT hints->colorSchemeChanged(Qt::ColorScheme::Dark);
   QTRY_COMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
+  const quint64 duplicateToken = transport.lastToken;
+  transport.invalidate(3);
+  QTRY_VERIFY(transport.lastToken != duplicateToken);
   transport.reply(QStringLiteral("missing"), QStringLiteral("dark"), 3);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
+  const quint64 missingToken = transport.lastToken;
+  transport.invalidate(4);
+  QTRY_VERIFY(transport.lastToken != missingToken);
   transport.reply(QStringLiteral("qinda-light"), QStringLiteral("sepia"), 4);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
   QCOMPARE(changes.count(), 2);
@@ -103,7 +120,9 @@ void ApplicationAppearanceControllerTest::explicitOverrideIgnoresSettings() {
                      &ApplicationAppearanceController::appearanceChanged);
   QVERIFY(client.start());
   transport.announce(QStringLiteral(":1.21"));
+  QTRY_VERIFY(transport.lastToken != 0);
   transport.reply(QStringLiteral("qinda-light"), QStringLiteral("light"));
+  QTRY_COMPARE(client.state(), ClientState::Ready);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-dusk"));
   QCOMPARE(changes.count(), 0);
 }

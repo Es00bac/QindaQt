@@ -5,6 +5,8 @@
 #include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/themes/theme_spec.h"
 
+#include <algorithm>
+
 namespace QindaQt::Apps::SettingsAppearance {
 AppearancePreview::AppearancePreview(QVector<Themes::ThemeSpec> installedThemes)
     : m_themes(std::move(installedThemes)) {
@@ -31,12 +33,14 @@ AppearancePreview::resolve(const AppearanceValues &values,
   if (!resolved)
     return resolution;
   const QString fallback = resolved->id;
+  resolution.configuredInstalled = std::any_of(
+      m_themes.cbegin(), m_themes.cend(),
+      [&values](const auto &theme) { return theme.id == values.themeId; });
+  if (fallback != values.themeId)
+    resolution.fallbackThemeId = fallback;
   for (int index = 0; index < m_themes.size(); ++index) {
     if (m_themes.at(index).id == fallback) {
       resolution.themeIndex = index;
-      resolution.configuredInstalled = fallback == values.themeId;
-      if (!resolution.configuredInstalled)
-        resolution.fallbackThemeId = fallback;
       return resolution;
     }
   }
