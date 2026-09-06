@@ -92,27 +92,17 @@ void QindaButton::paint(QPainter *painter, const QRectF &repaintArea)
 QColor QindaButton::fillColor() const
 {
     const bool active = decoration() && decoration()->window()->isActive();
-    QColor color;
-    switch (type()) {
-    case DecorationButtonType::Close:
-        color = QColor(QStringLiteral("#ff5f57"));
-        break;
-    case DecorationButtonType::Minimize:
-        color = QColor(QStringLiteral("#febc2e"));
-        break;
-    case DecorationButtonType::Maximize:
-        color = QColor(QStringLiteral("#28c840"));
-        break;
-    default:
-        color = QColor(QStringLiteral("#8da19a"));
-        break;
-    }
+    const auto *qinda = qobject_cast<const QindaDecoration *>(decoration());
+    QColor color = qinda ? qinda->buttonColor(type())
+                         : QColor(QStringLiteral("#8da19a"));
     return active ? color : color.darker(112);
 }
 
 void QindaButton::paintGlyph(QPainter &painter, const QRectF &circle) const
 {
-    QPen pen(QColor(QStringLiteral("#26312d")));
+    const auto *qinda = qobject_cast<const QindaDecoration *>(decoration());
+    QPen pen(qinda ? qinda->buttonGlyphColor(type())
+                   : QColor(QStringLiteral("#26312d")));
     pen.setWidthF(1.15);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
@@ -120,7 +110,6 @@ void QindaButton::paintGlyph(QPainter &painter, const QRectF &circle) const
     painter.setBrush(Qt::NoBrush);
     const auto center = circle.center();
     const qreal radius = circle.width() * 0.20;
-    const auto *qinda = qobject_cast<const QindaDecoration *>(decoration());
     switch (type()) {
     case DecorationButtonType::Close:
         painter.drawLine(center + QPointF(-radius, -radius),

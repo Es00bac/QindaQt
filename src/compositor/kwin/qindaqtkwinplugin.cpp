@@ -2,6 +2,7 @@
 #include "qindaqtkwinplugin.h"
 
 #include "kwincontrolendpoint.h"
+#include "kwinchromeappearance.h"
 #include "kwindevelopmentinputinjector.h"
 #include "kwindevelopmentoutputseam.h"
 #include "kwininputadapter.h"
@@ -75,7 +76,12 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
           m_mutationsEnabled, m_developmentVirtualOutputsEnabled,
           m_developmentInputInjector.get(), m_developmentOutputSeam.get()))
 {
+    m_chromeAppearance = std::make_unique<KWinChromeAppearance>(
+        *m_registry, m_bus, this);
     m_hybridSession = std::make_unique<KWinHybridSession>(*m_registry, this);
+    m_hybridSession->setChromePalette(m_chromeAppearance->palette());
+    connect(m_chromeAppearance.get(), &KWinChromeAppearance::paletteChanged,
+            m_hybridSession.get(), &KWinHybridSession::setChromePalette);
     m_shellCredentials = std::make_unique<QtBusShellCredentialSource>(m_bus);
     m_shellPanelOwner = std::make_unique<KWinShellPanelOwnerSource>();
     m_shellIdentity = std::make_unique<KWinShellWindowIdentityPublisher>(

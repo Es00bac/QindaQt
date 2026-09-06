@@ -197,3 +197,4 @@ nav:
       - "ADR-0078: Shell-owned wallpaper surfaces": adr/0078-own-wallpaper-surfaces-in-the-shell.md
       - "ADR-0079: Welcome preference and supervision": adr/0079-own-welcome-presentation-preference-locally.md
       - "ADR-0080: First-party appearance resolution": adr/0080-resolve-first-party-appearance-from-settings.md
+      - "ADR-0081: Window chrome appearance": adr/0081-project-confirmed-appearance-into-window-chrome.md
