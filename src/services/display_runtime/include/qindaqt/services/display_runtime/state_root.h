@@ -37,4 +37,11 @@ struct StateRootSelection {
 // symlink rejection, and canonical journal truth.
 [[nodiscard]] StateRootSelection selectStateRoot(const StateRootInputs &inputs);
 
+// Resolve the exact directory systemd provisioned before handing it to the
+// journal boundary. StateDirectory may legitimately retain a compatibility
+// symlink across upgrades; only this systemd-selected source is resolved.
+// Explicit and XDG-selected roots retain the journal store's no-symlink rule.
+[[nodiscard]] StateRootSelection
+resolveProvisionedStateRoot(const StateRootSelection &selection);
+
 } // namespace QindaQt::DisplayRuntime

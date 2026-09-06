@@ -63,6 +63,13 @@ foreach(configured IN ITEMS staged_activation staged_unit)
         message(FATAL_ERROR "Staged ${${configured}} contains an @...@ placeholder")
     endif()
 endforeach()
+file(READ "${staged_unit}" unit_content)
+if(NOT unit_content MATCHES "ProtectHome=read-only")
+    message(FATAL_ERROR "Clipboard1 unit must retain access to /run/user sockets")
+endif()
+if(unit_content MATCHES "ProtectHome=true")
+    message(FATAL_ERROR "Clipboard1 unit hides its required /run/user sockets")
+endif()
 
 set(consumer_build "${install_prefix}/consumer-build")
 execute_process(

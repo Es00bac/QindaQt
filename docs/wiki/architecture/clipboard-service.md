@@ -239,6 +239,11 @@ admitting a fresh identity evicts the oldest retained result. Losing a caller's
 unique name drops only that caller's cache, and a 65th simultaneous caller is
 refused without allocating another cache.
 
+The unit uses `ProtectHome=read-only`: systemd's stronger `true` setting also
+hides `/run/user`, which would prevent the service from connecting to its
+session-bus and Wayland sockets. The remaining sandbox and read-only filesystem
+policy stay in force.
+
 ## Clipboard1 and client fencing
 
 Clipboard1 snapshots carry `(epoch, generation, revision)` plus C0's canonical
