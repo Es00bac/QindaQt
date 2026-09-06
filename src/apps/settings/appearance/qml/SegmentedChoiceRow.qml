@@ -32,6 +32,10 @@ Row {
             checkable: true
             autoExclusive: true
             available: root.editable
+            // AGENT-GUARD: Only the selected option receives the semantic
+            // accent fill. Leaving Button's primary default here makes every
+            // radio choice look selected and hides the draft value.
+            emphasized: checked
             text: choiceButton.modelData.label
             checked: root.currentValue === choiceButton.modelData.token
             Accessible.role: Accessible.RadioButton

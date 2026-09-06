@@ -33,6 +33,14 @@ Item {
         }
     }
     Component {
+        id: comboFactory
+        C.ComboBox {
+            model: ["Nightfall", "Porcelain"]
+            currentIndex: 0
+            accessibleDescription: "Installed theme choice"
+        }
+    }
+    Component {
         id: stateFactory
         C.StateCard {
             status: C.StateCard.Warning
@@ -58,6 +66,7 @@ Item {
         function test_publicTypesResolveFromInstalledModule() {
             compare(buttonFactory.status, Component.Ready)
             compare(formFactory.status, Component.Ready)
+            compare(comboFactory.status, Component.Ready)
             compare(stateFactory.status, Component.Ready)
             compare(themeFactory.status, Component.Ready)
         }

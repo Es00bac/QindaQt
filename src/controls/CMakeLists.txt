@@ -14,6 +14,7 @@ qt_add_qml_module(
     QML_FILES
         qml/Button.qml
         qml/CheckBox.qml
+        qml/ComboBox.qml
         qml/DegradedNotice.qml
         qml/FocusRing.qml
         qml/FormRow.qml

@@ -180,6 +180,12 @@ void ControlsBehaviorTests::exposesStaticComponentContractsAndFocusRing()
     QCOMPARE(swatch->property("value").value<QColor>(),
              facade->accent().value(QStringLiteral("default")).value<QColor>());
 
+    auto *combo = item(scene.root, "comboBox");
+    QCOMPARE(accessible(combo)->role(), QAccessible::ComboBox);
+    QCOMPARE(accessible(combo)->text(QAccessible::Name), QStringLiteral("Nightfall"));
+    QCOMPARE(objectColor(controlBackground(combo)),
+             facade->bg().value(QStringLiteral("highest")).value<QColor>());
+
     auto *primary = item(scene.root, "primaryButton");
     auto *focusRing = item(primary, "focusRing");
     item(scene.root, "textField")->forceActiveFocus();

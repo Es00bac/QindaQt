@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+import QtQuick
+import QtQuick.Controls as T
+import QindaQt.Tokens 1.0
+
+// Tokenized closed-state selector for first-party forms. The native popup and
+// keyboard/type-ahead behavior remain owned by Qt Quick Controls; this wrapper
+// owns only the semantic surface, text, focus, and indicator presentation.
+T.ComboBox {
+    id: control
+
+    property string accessibleDescription: ""
+    readonly property int transitionDuration: Tokens.motion.short
+
+    hoverEnabled: true
+    focusPolicy: Qt.StrongFocus
+    implicitHeight: Math.max(40, implicitContentHeight + topPadding + bottomPadding)
+    leftPadding: Tokens.space["3"]
+    rightPadding: indicator.width + Tokens.space["3"]
+    topPadding: Tokens.space["2"]
+    bottomPadding: Tokens.space["2"]
+
+    Accessible.role: Accessible.ComboBox
+    Accessible.name: control.displayText
+    Accessible.description: accessibleDescription
+
+    contentItem: Text {
+        text: control.displayText
+        color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+        font.family: Tokens.type.fontFamily
+        font.pointSize: Tokens.type.body
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
+    }
+
+    indicator: Text {
+        x: control.mirrored ? Tokens.space["3"] : control.width - width - Tokens.space["3"]
+        y: (control.height - height) / 2
+        text: "⌄"
+        color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+        font.family: Tokens.type.fontFamily
+        font.pointSize: Tokens.type.body
+        verticalAlignment: Text.AlignVCenter
+        Accessible.ignored: true
+    }
+
+    background: Rectangle {
+        radius: Tokens.radius.m
+        color: Tokens.bg.highest
+        border.width: control.activeFocus ? Tokens.space["1"] : Tokens.space["1"] / 2
+        border.color: control.activeFocus ? Tokens.focus.ring : Tokens.outline.strong
+
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: control.hovered && control.enabled ? Tokens.state.hover : "transparent"
+            Accessible.ignored: true
+        }
+    }
+
+    popup: T.Popup {
+        y: control.height - 1
+        width: control.width
+        padding: Tokens.space["1"]
+        implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 320)
+
+        contentItem: ListView {
+            clip: true
+            implicitHeight: contentHeight
+            model: control.popup.visible ? control.delegateModel : null
+            currentIndex: control.highlightedIndex
+
+            delegate: T.ItemDelegate {
+                required property int index
+                width: ListView.view.width
+                highlighted: control.highlightedIndex === index
+                contentItem: Text {
+                    text: control.textAt(index)
+                    color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+                    font.family: Tokens.type.fontFamily
+                    font.pointSize: Tokens.type.body
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+                background: Rectangle {
+                    radius: Tokens.radius.s
+                    color: parent.highlighted ? Tokens.state.hover : "transparent"
+                }
+            }
+        }
+
+        background: Rectangle {
+            radius: Tokens.radius.m
+            color: Tokens.bg.raised
+            border.width: Tokens.space["1"] / 2
+            border.color: Tokens.outline.strong
+        }
+    }
+}
