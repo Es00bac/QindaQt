@@ -105,6 +105,14 @@ void DisplayClientPublicationTest::
   QTest::qWait(30);
   QCOMPARE(transport.fetches.size(), fetchesBefore + 1);
   QCOMPARE(transport.activationRequests, 1);
+
+  transport.finishActivation(false, QStringLiteral("activation-failed"));
+  QCOMPARE(client.state(), ClientState::Unavailable);
+  client.refresh();
+  QCOMPARE(client.state(), ClientState::Starting);
+  QCOMPARE(client.reasonCode(), QStringLiteral("activating-service"));
+  QCOMPARE(transport.activationRequests, 2);
+  QCOMPARE(transport.fetches.size(), fetchesBefore + 1);
 }
 
 void DisplayClientPublicationTest::hostilePayloadsNeverPublish_data() {

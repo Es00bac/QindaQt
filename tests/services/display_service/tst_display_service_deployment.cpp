@@ -37,7 +37,8 @@ void DisplayServiceDeploymentTest::descriptorsAndXmlStayAligned()
     QVERIFY(unitBytes.contains("BusName=org.qindaqt.Display1\n"));
     QVERIFY(unitBytes.contains("PrivateDevices=true\n"));
     QVERIFY(unitBytes.contains("ProtectSystem=strict\n"));
-    QVERIFY(unitBytes.contains("StateDirectory=qindaqt\n"));
+    QVERIFY(unitBytes.contains("StateDirectory=qindaqt-display\n"));
+    QVERIFY(!unitBytes.contains("StateDirectory=qindaqt\n"));
     QVERIFY(unitBytes.contains("StateDirectoryMode=0700\n"));
 
     QFile xml(QStringLiteral(QINDAQT_DISPLAY_DBUS_XML));

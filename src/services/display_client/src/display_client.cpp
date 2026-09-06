@@ -103,6 +103,20 @@ void Client::refresh() {
   if (m_state == ClientState::Stopped) {
     return;
   }
+  if (m_owner.isEmpty()) {
+    // AGENT-CONTRACT: Display and Color expose Retry as an immediate user
+    // action. Once a prior activation reply has completed, retry must ask the
+    // bus to activate Display1 again instead of issuing an ownerless snapshot
+    // fetch that the client silently discards.
+    if (!m_activationInFlight) {
+      m_retryTimer.stop();
+      m_activationInFlight = true;
+      publishState(ClientState::Starting,
+                   QStringLiteral("activating-service"));
+      m_transport->requestActivation();
+    }
+    return;
+  }
   requestSnapshot();
 }
 
