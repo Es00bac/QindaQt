@@ -7,8 +7,11 @@
 #include <QDBusConnection>
 #include <QDBusContext>
 #include <QDBusMessage>
+#include <QFile>
 #include <QProcess>
+#include <QScopeGuard>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTimer>
 #include <QtTest>
 
@@ -125,17 +128,58 @@ private Q_SLOTS:
 void QtSettingsTransportAdversarialTests::
     serializesActivationBoundsRepliesAndFencesSubscriptionGeneration()
 {
-    QProcess daemon;
-    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
-                 {QStringLiteral("--session"), QStringLiteral("--nofork"),
-                  QStringLiteral("--print-address=1")});
-    QVERIFY(daemon.waitForStarted());
-    QVERIFY(daemon.waitForReadyRead());
-    const QString address = QString::fromUtf8(daemon.readLine()).trimmed();
+    // AGENT-GUARD: the bus config must stay free of <servicedir> and
+    // <standard_session_servicedirs/> elements. A bare `--session` daemon
+    // resolves the host's installed activation files (for example
+    // /usr/share/dbus-1/services/org.qindaqt.Settings1.service), so the
+    // activation rows would race a real settings service instead of observing
+    // the transport's serialized activation-failure semantics.
+    QTemporaryDir busDirectory(QStringLiteral("/tmp/qindaqt-bus-XXXXXX"));
+    QVERIFY(busDirectory.isValid());
+    QFile config(busDirectory.filePath(QStringLiteral("dbus.conf")));
+    QVERIFY(config.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    const QByteArray configContents = R"xml(<!DOCTYPE busconfig PUBLIC
+        "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+        "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:tmpdir=)xml"
+                         + busDirectory.path().toUtf8()
+                         + R"xml(</listen>
+  <policy context="default">
+    <allow user="*"/>
+    <allow own="*"/>
+    <allow send_destination="*"/>
+    <allow send_interface="*"/>
+    <allow receive_sender="*"/>
+  </policy>
+</busconfig>
+)xml";
+    QVERIFY(config.write(configContents) == configContents.size());
+    config.close();
+
     const QString suffix = QString::number(QCoreApplication::applicationPid());
     const QString firstName = QStringLiteral("settings-hostile-first-") + suffix;
     const QString secondName = QStringLiteral("settings-hostile-second-") + suffix;
     const QString clientName = QStringLiteral("settings-hostile-client-") + suffix;
+
+    QProcess daemon;
+    const auto cleanup = qScopeGuard([&] {
+        QDBusConnection::disconnectFromBus(firstName);
+        QDBusConnection::disconnectFromBus(secondName);
+        QDBusConnection::disconnectFromBus(clientName);
+        if (daemon.state() != QProcess::NotRunning) {
+            daemon.kill();
+        }
+        daemon.waitForFinished();
+    });
+    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
+                 {QStringLiteral("--config-file"), config.fileName(),
+                  QStringLiteral("--nofork"),
+                  QStringLiteral("--print-address=1")});
+    QVERIFY(daemon.waitForStarted());
+    QVERIFY(daemon.waitForReadyRead());
+    const QString address = QString::fromUtf8(daemon.readLine()).trimmed();
     auto firstBus = QDBusConnection::connectToBus(address, firstName);
     auto secondBus = QDBusConnection::connectToBus(address, secondName);
     auto clientBus = QDBusConnection::connectToBus(address, clientName);

@@ -17,6 +17,7 @@
 #include <QDBusMessage>
 #include <QDBusVirtualObject>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QFont>
 #include <QGuiApplication>
 #include <QProcess>
@@ -158,9 +159,45 @@ class PrivateBus final {
 public:
     bool start()
     {
+        // AGENT-GUARD: this config must stay free of <servicedir> and
+        // <standard_session_servicedirs/> elements. A bare `--session` daemon
+        // still resolves the host's installed activation files (for example
+        // /usr/share/dbus-1/services/org.qindaqt.Settings1.service), which
+        // activates the host settings service during the absent-service rows
+        // and silently inverts their fail-closed expectations. Plain
+        // (non-raw) literals: moc follows this header and its parser
+        // mis-scopes raw string literals.
+        const QString configPath =
+            m_configDirectory.filePath(QStringLiteral("dbus.conf"));
+        QFile file(configPath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            return false;
+        }
+        const QByteArray config =
+            QByteArrayLiteral("<!DOCTYPE busconfig PUBLIC "
+                              "\"-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN\" "
+                              "\"http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd\">\n"
+                              "<busconfig>\n"
+                              "  <type>session</type>\n"
+                              "  <listen>unix:tmpdir=")
+            + m_configDirectory.path().toUtf8()
+            + QByteArrayLiteral("</listen>\n"
+                                "  <policy context=\"default\">\n"
+                                "    <allow user=\"*\"/>\n"
+                                "    <allow own=\"*\"/>\n"
+                                "    <allow send_destination=\"*\"/>\n"
+                                "    <allow send_interface=\"*\"/>\n"
+                                "    <allow receive_sender=\"*\"/>\n"
+                                "  </policy>\n"
+                                "</busconfig>\n");
+        if (file.write(config) != config.size()) {
+            return false;
+        }
+        file.close();
+
         m_process.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
-        m_process.setArguments({QStringLiteral("--session"), QStringLiteral("--nofork"),
-                                QStringLiteral("--nopidfile"),
+        m_process.setArguments({QStringLiteral("--config-file"), configPath,
+                                QStringLiteral("--nofork"),
                                 QStringLiteral("--print-address=1")});
         m_process.start();
         if (!m_process.waitForStarted(5'000) || !m_process.waitForReadyRead(5'000)) {
@@ -189,6 +226,9 @@ public:
     [[nodiscard]] const QDBusConnection &connection() const noexcept { return m_connection; }
 
 private:
+    // Forced /tmp template: a TMPDIR inside a deep worktree would push the
+    // listen socket past the unix sun_path limit ("Socket name too long").
+    QTemporaryDir m_configDirectory{QStringLiteral("/tmp/qindaqt-font-bus-XXXXXX")};
     QProcess m_process;
     QString m_address;
     QString m_name;

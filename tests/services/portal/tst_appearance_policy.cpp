@@ -56,9 +56,11 @@ void AppearancePolicyTests::projectsStandardValuesFromSettingsAndQst()
     QVERIFY2(dark.ok(), qPrintable(dark.diagnostic));
     QCOMPARE(dark.policy->colorScheme, PortalColorScheme::NoPreference);
     QCOMPARE(dark.policy->contrast, PortalContrast::NoPreference);
-    QVERIFY(qAbs(dark.policy->accentColor.red - (143.0 / 255.0)) < 0.00001);
-    QVERIFY(qAbs(dark.policy->accentColor.green - (200.0 / 255.0)) < 0.00001);
-    QVERIFY(qAbs(dark.policy->accentColor.blue - (183.0 / 255.0)) < 0.00001);
+    // QindaPunk Nightfall accent #D98A32 from data/themes/qinda-dark.json;
+    // the QST projection keeps an opaque theme accent verbatim.
+    QVERIFY(qAbs(dark.policy->accentColor.red - (217.0 / 255.0)) < 0.00001);
+    QVERIFY(qAbs(dark.policy->accentColor.green - (138.0 / 255.0)) < 0.00001);
+    QVERIFY(qAbs(dark.policy->accentColor.blue - (50.0 / 255.0)) < 0.00001);
 
     const auto light = projector.project(validSettings(
         QStringLiteral("qinda-light"), QStringLiteral("light"), true));
