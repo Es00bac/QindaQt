@@ -398,16 +398,17 @@ def _run_evidence_steps(
     evidence_root.mkdir(parents=True, exist_ok=True)
 
     def run_step(name: str, command: list[str], env: dict[str, str]) -> int:
-        try:
-            step = subprocess.run(
-                command, env=env, capture_output=True, text=True, timeout=300
-            )
-            output, code = step.stdout + step.stderr, step.returncode
-        except subprocess.TimeoutExpired as expired:
-            output = f"TIMEOUT after 300s: {expired}"
-            code = 1
-        (evidence_root / f"{name}-stdout.log").write_text(output, encoding="utf-8")
-        return code
+        # Gabbee's clipboard fallback forks wl-copy. A pipe inherited by that
+        # compositor-owned child holds communicate() open after the probe exits.
+        # File-backed logs let subprocess completion reflect the probe lifetime.
+        with (evidence_root / f"{name}-stdout.log").open("w", encoding="utf-8") as output:
+            try:
+                step = subprocess.run(command, env=env, stdout=output,
+                                      stderr=subprocess.STDOUT, text=True, timeout=120)
+                return step.returncode
+            except subprocess.TimeoutExpired as expired:
+                output.write(f"TIMEOUT after 120s: {expired}\n")
+                return 1
 
     chain_code = run_step(
         "portal-chain",

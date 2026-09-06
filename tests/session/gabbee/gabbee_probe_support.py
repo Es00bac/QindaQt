@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import struct
 import wave
 from dataclasses import dataclass, field
@@ -87,6 +88,16 @@ def synthetic_transcript() -> str:
     """
 
     return f"[mock transcript from {SYNTHETIC_RECORDING_NAME}]"
+
+
+def decode_compositor_reply(reply) -> dict[str, Any]:
+    """Decode Compositor1 ay from bytes or dbus-python Array[Byte]."""
+    return json.loads(bytes(reply).decode("utf-8")) if reply else {}
+
+
+def valid_controller_mock_transcript(raw: str) -> bool:
+    """The controller chooses numbered recording files for its mock STT."""
+    return bool(re.fullmatch(r"\[mock transcript from recording-\d+\.wav\]", raw))
 
 
 def readback_proves_insertion(before: str, after: str, transcript: str) -> bool:

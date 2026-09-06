@@ -416,6 +416,25 @@ class OuterCliTests(unittest.TestCase):
         self.assertIn("QINDAQT_PRIVATE_RUNTIME_LANE", completed.stderr)
 
 
+class RuntimeReplyTests(unittest.TestCase):
+    def test_compositor_array_of_bytes_decodes_wire_json(self):
+        from gabbee_probe_support import decode_compositor_reply
+        wire = b'{"status":"docked","revision":"1"}'
+        expected = {"status": "docked", "revision": "1"}
+        self.assertEqual(decode_compositor_reply(list(wire)), expected)
+        self.assertEqual(decode_compositor_reply(wire), expected)
+        with self.assertRaises(ValueError):
+            decode_compositor_reply(b"not JSON")
+
+    def test_actual_controller_mock_text_preserves_readback_contract(self):
+        from gabbee_probe_support import valid_controller_mock_transcript
+        self.assertTrue(valid_controller_mock_transcript("[mock transcript from recording-1.wav]"))
+        self.assertFalse(valid_controller_mock_transcript("arbitrary transcript"))
+        delivered = "[Mock transcript from recording-1.wav]"
+        self.assertTrue(readback_proves_insertion("", delivered, delivered))
+        self.assertFalse(readback_proves_insertion(delivered, delivered, delivered))
+
+
 if __name__ == "__main__":
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
