@@ -43,11 +43,32 @@ ColumnLayout {
             Button {
                 required property var modelData
                 objectName: "bundledWallpaperButton"
+                width: 144
+                height: 94
                 text: modelData.name
                 emphasized: root.draftValue("appearance.wallpaper") === modelData.value
                 available: root.appearanceSettings.canEdit && !root.editorBusy
                 accessibleName: qsTr("Use %1 wallpaper").arg(modelData.name)
                 onClicked: root.setDraft("appearance.wallpaper", modelData.value)
+
+                contentItem: ColumnLayout {
+                    spacing: Tokens.space["1"]
+                    Image {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        source: modelData.path
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        Accessible.ignored: true
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: modelData.name
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                        Accessible.ignored: true
+                    }
+                }
             }
         }
     }
