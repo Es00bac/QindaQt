@@ -12,6 +12,7 @@ Menu {
     property int depth: 0
     property int maximumDepth: 6
     property bool interactive: true
+    property bool projectionReady: false
     readonly property var colors: theme.colors ?? ({})
 
     objectName: "globalMenuNativeMenu"
@@ -76,7 +77,33 @@ Menu {
         }
     }
 
-    Component.onCompleted: populate()
+    function clearProjection() {
+        while (count > 0) {
+            const submenu = menuAt(0)
+            if (submenu !== null)
+                removeMenu(submenu)
+            else
+                removeItem(itemAt(0))
+        }
+    }
+
+    function rebuildProjection() {
+        if (!projectionReady)
+            return
+        // AGENT-GUARD: Instantiator may reuse a top-level Menu delegate when
+        // a new facade publication has the same shape. Dismiss before
+        // replacing descendants so no queued gesture can invoke the prior
+        // publication generation, then rebuild synchronously from new truth.
+        dismiss()
+        clearProjection()
+        populate()
+    }
+
+    onMenuDataChanged: rebuildProjection()
+    Component.onCompleted: {
+        projectionReady = true
+        populate()
+    }
 
     delegate: GlobalMenuNativeMenuItem {
         entryData: subMenu !== null ? subMenu.menuData : ({})

@@ -491,9 +491,12 @@ withdrawals do not enter the loading phase at all: the transport coordinator
 revokes execution authority at the ownership selector without touching the
 facade, so an open popup and armed delegates survive same-provider churn.
 Only genuinely empty state collapses to zero extent. Provider loss dismisses
-every open native menu and disables the retained tree. Re-publication replaces
-the top-level menu objects, so their dynamically projected descendants cannot
-retain an obsolete generation.
+every open native menu and disables the retained tree. Re-publication may reuse
+a same-index top-level `Menu` delegate, so a changed `menuData` value first
+dismisses that menu, removes its dynamic descendants, and synchronously
+rebuilds them from the new snapshot. A queued gesture against a retired item is
+therefore inert, while the facade generation check remains the cross-boundary
+fallback against stale invocation.
 
 Each projected `Menu` uses `Popup.Window`. The production layer-shell panel
 retains `Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the
