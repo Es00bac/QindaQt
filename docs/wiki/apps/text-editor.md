@@ -72,6 +72,8 @@ menus. Live enabled and checked state is projected back to AppShell. The window
 routes close consent through AppShell's exact quit lineage. Open and Save As
 use the injected `FileSelectionAdapter`; production uses the native chooser,
 while missing test composition fails closed without touching a host chooser.
+Visible catalog labels preserve their UTF-8 punctuation, including the
+ellipsis in `Open…`, `Find…`, and `Save As…`, through the AppShell snapshot.
 
 After the window is shown, the executable composes the first-party global-menu
 export through the shared
