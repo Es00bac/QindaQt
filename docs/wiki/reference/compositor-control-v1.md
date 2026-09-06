@@ -482,16 +482,21 @@ of these shapes:
 {"type":"key","key":"tab","pressed":true}
 {"type":"key","key":"escape","pressed":true}
 {"type":"key","key":"space","pressed":true}
+{"type":"key","key":"up","pressed":true}
 {"type":"key","key":"down","pressed":true}
+{"type":"key","key":"left","pressed":true}
+{"type":"key","key":"right","pressed":true}
 {"type":"key","key":"enter","pressed":true}
 {"type":"button","button":"left","pressed":true}
 ```
 
 Coordinates must be finite logical values between -1,000,000 and 1,000,000.
 The complete key allowlist is left Meta, left Shift, N, Tab, Escape, Space,
-Down, and Enter. The notification live-session rows need the additional
+Up, Down, Left, Right, and Enter. The notification live-session rows need the
 non-text keys to exercise the production global shortcut, focus traversal,
-activation, dismissal, and lock-screen user-activity paths without host input.
+activation, dismissal, and lock-screen user-activity paths without host
+input; the arrow keys additionally drive the Hybrid keyboard-geometry modes
+and the exact-modifier docking preview.
 No other key, button, relative movement, text, delay, or device selector is
 accepted. Success returns `status: "injected"`, the event count, and the fixed
 device ID. Held keys and buttons are released before the device is removed.

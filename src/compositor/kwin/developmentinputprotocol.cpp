@@ -99,8 +99,14 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
             event.key = DevelopmentInputKey::Escape;
         } else if (key == QStringLiteral("space")) {
             event.key = DevelopmentInputKey::Space;
+        } else if (key == QStringLiteral("up")) {
+            event.key = DevelopmentInputKey::Up;
         } else if (key == QStringLiteral("down")) {
             event.key = DevelopmentInputKey::Down;
+        } else if (key == QStringLiteral("left")) {
+            event.key = DevelopmentInputKey::Left;
+        } else if (key == QStringLiteral("right")) {
+            event.key = DevelopmentInputKey::Right;
         } else if (key == QStringLiteral("enter")) {
             event.key = DevelopmentInputKey::Enter;
         } else {
