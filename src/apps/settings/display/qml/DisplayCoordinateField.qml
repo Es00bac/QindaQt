@@ -4,8 +4,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QindaQt.Controls 1.0
 
-// One coordinate editor whose uncommitted text never becomes display truth by
-// accident. Return/Enter is the explicit commit boundary; focus loss discards.
+// One coordinate editor whose valid typed value becomes part of the pending
+// arrangement on Return/Enter or focus loss.
 TextField {
     id: control
 
@@ -43,9 +43,9 @@ TextField {
                 && candidate >= -2147483648
                 && candidate <= 2147483647
 
-        // AGENT-CONTRACT: Only explicit Return/Enter from a still-current edit
-        // session may cross into DisplaySettingsModel. Blur, output changes,
-        // invalid text, and externally refreshed truth are discard paths.
+        // AGENT-CONTRACT: A valid edit from the still-current output may cross
+        // into DisplaySettingsModel on Return/Enter or focus loss. Output
+        // changes, invalid text, and externally refreshed truth discard it.
         userDirty = false
         if (!dirty || !validInteger || origin.length === 0
                 || origin !== outputId) {
@@ -65,13 +65,6 @@ TextField {
     accessibleName: coordinateName
     inputMethodHints: Qt.ImhFormattedNumbersOnly
 
-    Binding {
-        target: control
-        property: "text"
-        value: control.authoritativeValue.toString()
-        when: !control.activeFocus
-    }
-
     onActiveFocusChanged: {
         if (activeFocus) {
             beginSession()
@@ -83,7 +76,7 @@ TextField {
         }
         userDirty = true
     }
-    onEditingFinished: resynchronize()
+    onEditingFinished: commitUserEdit()
     Keys.onReturnPressed: event => {
         commitUserEdit()
         event.accepted = true

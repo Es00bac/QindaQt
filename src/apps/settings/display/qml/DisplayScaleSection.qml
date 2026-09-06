@@ -29,15 +29,9 @@ ColumnLayout {
 
     spacing: Tokens.space["3"]
 
-    SectionHeader {
-        Layout.fillWidth: true
-        title: qsTr("Scale & Layout")
-        description: qsTr("Adjust size of text, icons, and interface elements")
-    }
-
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("UI Scale")
+        label: qsTr("Scale")
         description: qsTr("Current scale: %1%").arg(Math.round(root.currentScale * 100))
         editor: scaleChoiceRow
 

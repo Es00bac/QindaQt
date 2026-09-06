@@ -120,6 +120,9 @@ T.Page {
                             message: root.clipboardSettings.preferenceStatusText.length > 0
                                 ? root.clipboardSettings.preferenceStatusText
                                 : qsTr("The saved preference is current.")
+                            actionText: root.clipboardSettings.preferenceUnavailable
+                                        ? qsTr("Try again") : ""
+                            onActionTriggered: root.clipboardSettings.retryPreference()
                         }
 
                         StateCard {
@@ -157,54 +160,19 @@ T.Page {
                             checked: root.clipboardSettings.draftHistoryEnabled
                             enabled: root.clipboardSettings.canEditPreference
                             accessibleDescription: qsTr("History is off by default. When on, recent text and image selections are held in memory.")
-                            onToggled: root.clipboardSettings.setDraftHistoryEnabled(checked)
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Tokens.space["2"]
-
-                        Button {
-                            objectName: "clipboardApplyButton"
-                            text: root.clipboardSettings.preferenceConflict
-                                  ? qsTr("Apply my choice") : qsTr("Apply")
-                            available: root.clipboardSettings.applyAvailable
-                                       || root.clipboardSettings.preferenceConflict
-                            busy: root.clipboardSettings.preferenceSaving
-                            onClicked: root.clipboardSettings.preferenceConflict
-                                       ? root.clipboardSettings.applyMyChoice()
-                                       : root.clipboardSettings.applyPreference()
-                        }
-
-                        Button {
-                            objectName: "clipboardCancelDraftButton"
-                            text: qsTr("Undo draft")
-                            emphasized: false
-                            available: root.clipboardSettings.canEditPreference
-                                       && root.clipboardSettings.preferenceDirty
-                            onClicked: root.clipboardSettings.cancelPreferenceDraft()
-                        }
-
-                        Button {
-                            objectName: "clipboardPreferenceRetryButton"
-                            visible: root.clipboardSettings.preferenceUnavailable
-                            text: qsTr("Retry Settings")
-                            emphasized: false
-                            available: !root.clipboardSettings.preferenceSaving
-                            onClicked: root.clipboardSettings.retryPreference()
+                            onToggled: {
+                                if (root.clipboardSettings.setDraftHistoryEnabled(checked))
+                                    root.clipboardSettings.applyPreference()
+                            }
                         }
                     }
 
                     SectionHeader {
                         Layout.fillWidth: true
                         title: qsTr("Live history state")
-                        description: qsTr("%1 of %2 metadata-only slots currently used · epoch %3 · generation %4 · revision %5")
+                        description: qsTr("%1 of %2 history slots currently used")
                             .arg(root.clipboardSettings.entryCount)
                             .arg(root.clipboardSettings.capacity)
-                            .arg(root.clipboardSettings.serviceEpoch)
-                            .arg(root.clipboardSettings.serviceGeneration)
-                            .arg(root.clipboardSettings.serviceRevision)
                     }
 
                     Label {
@@ -256,7 +224,7 @@ T.Page {
                 Layout.fillWidth: true
                 muted: true
                 text: root.clipboardSettings.preferenceDirty
-                      ? qsTr("An unapplied preference draft is preserved.") : ""
+                      ? qsTr("Saving clipboard history preference…") : ""
                 Accessible.name: text
             }
 

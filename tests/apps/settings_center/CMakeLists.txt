@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-find_package(Qt6 REQUIRED COMPONENTS QuickTest Test)
+find_package(Qt6 REQUIRED COMPONENTS QuickTest Test WaylandClient)
+find_package(Wayland REQUIRED COMPONENTS Client)
 
 # 1. Route Registry unit test
 qt_add_executable(

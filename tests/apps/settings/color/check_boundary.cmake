@@ -21,11 +21,12 @@ set(allowed_public_include_prefixes
     "qindaqt/services/display_color_model/"
     "qindaqt/services/display_color_discovery/"
     "qindaqt/services/display_color_assignment/"
+    "qindaqt/services/display_writer/"
     "qindaqt/services/settings_client/")
 
 foreach(source IN LISTS route_files)
     file(READ "${source}" contents)
-    if(contents MATCHES "KWin|kwin|org\\.kde|colord|display_(service|writer|journal|runtime|topology|transaction|identity)/")
+    if(contents MATCHES "KWin|kwin|org\\.kde|colord|display_(service|journal|runtime|topology|transaction|identity)/")
         message(FATAL_ERROR "Color Settings crossed its public-client-only boundary in ${source}")
     endif()
     if((contents MATCHES "QtDBus|QDBus") AND
@@ -89,6 +90,7 @@ if(DEFINED SOURCE_ROOT)
     file(READ "${route_root}/CMakeLists.txt" cmake_contents)
     foreach(required IN ITEMS "QindaQt::DisplayClient" "QindaQt::DisplayColorDiscovery"
             "QindaQt::DisplayColorAssignment" "qindaqt_settings_color_qml"
+            "QindaQt::DisplayWriter"
             "ColorPage.qml" "COMPONENT SettingsAppearanceRuntime")
         if(NOT cmake_contents MATCHES "${required}")
             message(FATAL_ERROR "Color Settings package registry is incomplete: ${required}")

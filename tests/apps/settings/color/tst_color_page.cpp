@@ -85,12 +85,12 @@ ColorPageTest::createPage(const QSize size) {
 void ColorPageTest::rendersWideTruthAndAccessibleControls() {
   auto [guard, page] = createPage(QSize(900, 700));
   QVERIFY(page != nullptr);
-  auto *boundary = findItem(page, QStringLiteral("colorAuthorityBoundary"));
+  auto *purpose = findItem(page, QStringLiteral("colorPagePurpose"));
   auto *output = findItem(page, QStringLiteral("colorOutput_edid:dp1"));
   auto *profile = findItem(page, QStringLiteral("colorProfile_vendor-srgb"));
   auto *import = findItem(page, QStringLiteral("colorImportButton"));
   auto *summary = findItem(page, QStringLiteral("colorCatalogSummary"));
-  QVERIFY(boundary != nullptr);
+  QVERIFY(purpose != nullptr);
   QVERIFY(output != nullptr);
   QVERIFY(profile != nullptr);
   QVERIFY(import != nullptr);
@@ -108,10 +108,10 @@ void ColorPageTest::rendersWideTruthAndAccessibleControls() {
   QVERIFY(profileAccessible != nullptr);
   QVERIFY(profileAccessible->text(QAccessible::Description)
               .contains(QStringLiteral("Assign vendor-srgb")));
-  auto *boundaryAccessible = QAccessible::queryAccessibleInterface(boundary);
-  QVERIFY(boundaryAccessible != nullptr);
-  QVERIFY(boundaryAccessible->text(QAccessible::Description)
-              .contains(QStringLiteral("does not apply profiles")));
+  auto *purposeAccessible = QAccessible::queryAccessibleInterface(purpose);
+  QVERIFY(purposeAccessible != nullptr);
+  QVERIFY(purposeAccessible->text(QAccessible::Name)
+              .contains(QStringLiteral("apply an ICC color profile")));
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), profile);
 }
 

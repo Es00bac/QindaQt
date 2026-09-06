@@ -128,15 +128,12 @@ void ClipboardPageTest::wiresPreferenceAndConfirmationActions()
     auto [guard, page] = createPage(QSize(900, 700));
     QVERIFY(page != nullptr);
     auto *history = findItem(page, QStringLiteral("clipboardHistorySwitch"));
-    auto *apply = findItem(page, QStringLiteral("clipboardApplyButton"));
     auto *clear = findItem(page, QStringLiteral("clipboardClearButton"));
     QVERIFY(history != nullptr);
-    QVERIFY(apply != nullptr);
     QVERIFY(clear != nullptr);
     history->setProperty("checked", true);
     QVERIFY(QMetaObject::invokeMethod(history, "toggled"));
     QCOMPARE(m_model->draftRequests, 1);
-    QVERIFY(QMetaObject::invokeMethod(apply, "clicked"));
     QCOMPARE(m_model->applyRequests, 1);
     QVERIFY(QMetaObject::invokeMethod(clear, "clicked"));
     QCOMPARE(m_model->clearRequests, 1);

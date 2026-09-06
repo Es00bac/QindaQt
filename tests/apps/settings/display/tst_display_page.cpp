@@ -163,7 +163,7 @@ void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() 
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
   QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
 
-  // 2. A valid position crosses into the model only at Return/Enter.
+  // 2. A valid position crosses into the model at Return/Enter.
   m_model->positionSetCount = 0;
   posXField->forceActiveFocus(Qt::OtherFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), posXField);
@@ -184,18 +184,28 @@ void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() 
   m_model->setSelectedOutputId(QStringLiteral("edid:dp1"));
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("500"));
 
-  // 5. Cancel / revert draft - restores baseline position (0, 0)
+  // 5. A valid edit also commits when the user moves to the next field.
+  posXField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posXField);
+  PageSupport::replaceFocusedText(*m_view, QStringLiteral("640"));
+  posYField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posYField);
+  QTRY_COMPARE(m_model->positionSetCount, 2);
+  QCOMPARE(m_model->outputsMap.value(QStringLiteral("edid:dp1"))
+               .value(QStringLiteral("positionX")).toInt(), 640);
+
+  // 6. Cancel / revert draft - restores baseline position (0, 0)
   m_model->cancelDraft();
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
   QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
 
-  // 6. Return is deliberate, but malformed text still cannot cross the model boundary.
+  // 7. Malformed text still cannot cross the model boundary.
   posXField->forceActiveFocus(Qt::OtherFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), posXField);
   PageSupport::replaceFocusedText(*m_view, QStringLiteral("-"));
   QTest::keyClick(m_view.get(), Qt::Key_Return);
   QCoreApplication::processEvents();
-  QCOMPARE(m_model->positionSetCount, 1);
+  QCOMPARE(m_model->positionSetCount, 2);
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
 }
 
@@ -351,11 +361,7 @@ void DisplayPageTest::testUnavailableNoticeAndRetry() {
   QVERIFY(notice != nullptr);
   QVERIFY(notice->isVisible());
 
-  auto *retryBtn = findItemByObjectName(pageItem, QStringLiteral("displayRetryButton"));
-  QVERIFY(retryBtn != nullptr);
-  QVERIFY(retryBtn->isVisible());
-
-  QMetaObject::invokeMethod(retryBtn, "clicked");
+  QVERIFY(QMetaObject::invokeMethod(notice, "retryRequested"));
   QCOMPARE(m_model->retriedCount, 1);
 }
 

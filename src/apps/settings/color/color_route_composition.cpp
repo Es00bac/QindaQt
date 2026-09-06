@@ -4,14 +4,15 @@
 
 #include <qindaqt/apps/settings_color/color_settings_model.h>
 #include <qindaqt/services/display_client/qt_display_transport.h>
+#include <qindaqt/services/display_writer/production_output_management_port.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 
-#include <QtDBus/QDBusConnection>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QLoggingCategory>
 #include <QtCore/QStandardPaths>
+#include <QtDBus/QDBusConnection>
 
 namespace QindaQt::Apps::SettingsColor {
 namespace {
@@ -27,11 +28,11 @@ Q_LOGGING_CATEGORY(lcColorComposition, "qindaqt.settings.color.composition",
 // root; every remaining standard data location contributes a System root.
 // Tests redirect the XDG locations, so no host profile directory is read.
 QList<DiscoveryRoot> productionDiscoveryRoots() {
-  const QString writable = QStandardPaths::writableLocation(
-      QStandardPaths::GenericDataLocation);
+  const QString writable =
+      QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
   QList<DiscoveryRoot> roots;
-  for (const QString &location : QStandardPaths::standardLocations(
-           QStandardPaths::GenericDataLocation)) {
+  for (const QString &location :
+       QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
     roots.append({location + QStringLiteral("/color/icc"),
                   location == writable ? DiscoveryOrigin::UserImported
                                        : DiscoveryOrigin::System});
@@ -82,10 +83,13 @@ public:
         settingsTransport(QDBusConnection::sessionBus()),
         settingsClient(
             settingsTransport,
-            {QLatin1String(QindaQt::DisplayColor::ColorAssignmentsSettingsKey)}),
+            {QLatin1String(
+                QindaQt::DisplayColor::ColorAssignmentsSettingsKey)}),
         store(settingsClient), discovery(productionDiscoveryRoots()),
         model(displayClient, settingsClient, store, discovery) {
     provisionUserImportRoot(discovery.roots());
+    model.installColorApplicationPort(
+        QindaQt::DisplayWriter::makeProductionOutputManagementPort());
     displayClient.start();
     QString error;
     if (!settingsClient.start(&error)) {

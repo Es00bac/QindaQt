@@ -6,6 +6,8 @@
 
 #include <QtCore/QVariantMap>
 
+#include <algorithm>
+
 namespace QindaQt::Apps::SettingsColor {
 namespace {
 
@@ -26,12 +28,12 @@ ColorSettingsModel::ColorSettingsModel(
     QindaQt::DisplayColor::SettingsAssignmentStore &store,
     QindaQt::DisplayColor::ProfileDiscovery &discovery, QObject *parent)
     : QObject(parent), m_displayClient(displayClient),
-      m_settingsClient(settingsClient), m_store(store),
-      m_discovery(discovery) {
+      m_settingsClient(settingsClient), m_store(store), m_discovery(discovery) {
   connect(&m_displayClient, &QindaQt::DisplayClient::Client::stateChanged, this,
           [this](ClientState, const QString &) { synchronizeAuthority(); });
   connect(&m_displayClient, &QindaQt::DisplayClient::Client::snapshotChanged,
           this, [this](const QindaQt::Display::Snapshot &) {
+            m_reconciliationNeeded = true;
             synchronizeAuthority();
           });
   connect(&m_settingsClient,
@@ -40,10 +42,15 @@ ColorSettingsModel::ColorSettingsModel(
   connect(&m_settingsClient,
           &QindaQt::Services::SettingsClient::SettingsClient::snapshotChanged,
           this, [this] { synchronizeAuthority(); });
-  connect(&m_store, &QindaQt::DisplayColor::SettingsAssignmentStore::documentChanged,
-          this, [this] { synchronizeAuthority(); });
-  connect(&m_store, &QindaQt::DisplayColor::SettingsAssignmentStore::applyFinished,
-          this, &ColorSettingsModel::handleApplyFinished);
+  connect(&m_store,
+          &QindaQt::DisplayColor::SettingsAssignmentStore::documentChanged,
+          this, [this] {
+            m_reconciliationNeeded = true;
+            synchronizeAuthority();
+          });
+  connect(&m_store,
+          &QindaQt::DisplayColor::SettingsAssignmentStore::applyFinished, this,
+          &ColorSettingsModel::handleApplyFinished);
 }
 
 bool ColorSettingsModel::hasDisplaySnapshot() const noexcept {
@@ -52,15 +59,16 @@ bool ColorSettingsModel::hasDisplaySnapshot() const noexcept {
   // AGENT-CONTRACT: the public client publishes only validated snapshots, so
   // exact lineage fencing here is owner + epoch + revision.
   const auto snapshot = m_displayClient.snapshot();
-  return snapshot.has_value() && snapshot->revision != 0
-      && !snapshot->serviceEpoch.isEmpty();
+  return snapshot.has_value() && snapshot->revision != 0 &&
+         !snapshot->serviceEpoch.isEmpty();
 }
 
 bool ColorSettingsModel::usableDisplayLineage() const noexcept {
-  if (!hasDisplaySnapshot()) return false;
+  if (!hasDisplaySnapshot())
+    return false;
   const auto state = m_displayClient.state();
-  return state == ClientState::Ready || state == ClientState::Degraded
-      || state == ClientState::Busy;
+  return state == ClientState::Ready || state == ClientState::Degraded ||
+         state == ClientState::Busy;
 }
 
 bool ColorSettingsModel::loading() const noexcept {
@@ -68,17 +76,20 @@ bool ColorSettingsModel::loading() const noexcept {
   // any truth exists (a display snapshot, a confirmed or retained document),
   // the page reports that state instead; a stale retained document outranks
   // the settings client's reconnect retries.
-  if (m_displayClient.state() == ClientState::Starting) return true;
-  return m_settingsClient.state()
-             == QindaQt::Services::SettingsClient::ClientState::Authenticating
-      && m_store.document().availability == DocumentAvailability::Unavailable
-      && !stale();
+  if (m_displayClient.state() == ClientState::Starting)
+    return true;
+  return m_settingsClient.state() ==
+             QindaQt::Services::SettingsClient::ClientState::Authenticating &&
+         m_store.document().availability == DocumentAvailability::Unavailable &&
+         !stale();
 }
 
 bool ColorSettingsModel::ready() const noexcept {
-  return usableDisplayLineage() && m_displayClient.state() == ClientState::Ready
-      && m_store.document().availability == DocumentAvailability::Ready
-      && m_catalogScanned && m_catalog.complete;
+  return usableDisplayLineage() &&
+         m_displayClient.state() == ClientState::Ready &&
+         m_store.document().availability == DocumentAvailability::Ready &&
+         m_catalogScanned && m_catalog.complete &&
+         (m_colorPort == nullptr || m_colorPortAvailable);
 }
 
 bool ColorSettingsModel::stale() const noexcept {
@@ -86,24 +97,28 @@ bool ColorSettingsModel::stale() const noexcept {
   // authority loss (the store keeps it but reports Unavailable). Displayed
   // assignments from that retained document are stale presentation truth,
   // never live authority: controls stay closed until Ready returns.
-  return m_store.document().availability == DocumentAvailability::Unavailable
-      && !m_store.document().document.records.isEmpty();
+  return m_store.document().availability == DocumentAvailability::Unavailable &&
+         !m_store.document().document.records.isEmpty();
 }
 
 bool ColorSettingsModel::degraded() const noexcept {
-  if (loading() || ready() || stale()) return false;
+  if (loading() || ready() || stale())
+    return false;
   // Degraded requires live or confirmed service truth with a bounded
   // limitation; the local catalog alone never lifts the page out of
   // unavailable.
   const auto availability = m_store.document().availability;
-  return usableDisplayLineage() || availability != DocumentAvailability::Unavailable;
+  return usableDisplayLineage() ||
+         availability != DocumentAvailability::Unavailable;
 }
 
 bool ColorSettingsModel::unavailable() const noexcept {
   return !loading() && !ready() && !degraded() && !stale();
 }
 
-bool ColorSettingsModel::busy() const noexcept { return m_store.writeInFlight(); }
+bool ColorSettingsModel::busy() const noexcept {
+  return m_store.writeInFlight() || m_colorApplyInFlight;
+}
 
 bool ColorSettingsModel::retryAvailable() const noexcept { return !busy(); }
 
@@ -116,32 +131,43 @@ bool ColorSettingsModel::unassignAvailable() const {
 }
 
 QString ColorSettingsModel::statusText() const {
-  if (loading()) return tr("Connecting to the display and settings services…");
+  if (loading())
+    return tr("Connecting to display color settings…");
   if (stale())
-    return tr("Color assignment storage is stale while the settings service recovers. Controls are unavailable.");
-  if (ready()) return tr("Authoritative display color state is shown.");
+    return tr("Color assignment storage is stale while the settings service "
+              "recovers. Controls are unavailable.");
+  if (ready())
+    return tr("Color profiles are ready to apply to your displays.");
   if (degraded()) {
-    if (m_store.document().availability == DocumentAvailability::UnusableDocument)
-      return tr("The stored color assignments cannot be read safely; assignment controls are disabled.");
+    if (m_store.document().availability ==
+        DocumentAvailability::UnusableDocument)
+      return tr("The stored color assignments cannot be read safely; "
+                "assignment controls are disabled.");
     if (m_store.document().availability != DocumentAvailability::Ready)
-      return tr("Color assignment storage is unavailable; only the inventory is shown.");
+      return tr("Color assignment storage is unavailable; only the inventory "
+                "is shown.");
     if (!m_catalogScanned || !m_catalog.complete)
-      return tr("The profile catalog is incomplete; only currently admitted controls are enabled.");
-    return tr("Display color information is limited; only currently admitted controls are enabled.");
+      return tr("The profile catalog is incomplete; only currently admitted "
+                "controls are enabled.");
+    if (m_colorPort != nullptr && !m_colorPortAvailable)
+      return tr("Displays and profiles are available, but profiles cannot be "
+                "applied right now.");
+    return tr("Some display color information is unavailable.");
   }
-  return tr("The display and settings services are unavailable.");
+  return tr("Display color settings are unavailable.");
 }
 
 QString ColorSettingsModel::catalogSummaryText() const {
   if (!m_catalogScanned)
     return tr("The profile catalog has not been scanned yet.");
-  QString text = tr("%1 color profiles discovered.").arg(m_catalog.profiles.size());
+  QString text =
+      tr("%1 color profiles discovered.").arg(m_catalog.profiles.size());
   if (!m_catalog.complete)
-    text += QLatin1Char(' ')
-        + tr("The scan reached a bound; some profiles may be missing.");
+    text += QLatin1Char(' ') +
+            tr("The scan reached a bound; some profiles may be missing.");
   if (!m_catalog.diagnostics.isEmpty())
-    text += QLatin1Char(' ')
-        + tr("%1 files were skipped.").arg(m_catalog.diagnostics.size());
+    text += QLatin1Char(' ') +
+            tr("%1 files were skipped.").arg(m_catalog.diagnostics.size());
   return text;
 }
 
@@ -156,11 +182,13 @@ qulonglong ColorSettingsModel::displayRevision() const {
 
 qulonglong ColorSettingsModel::settingsRevision() const {
   const auto view = m_store.document();
-  return view.availability == DocumentAvailability::Unavailable ? 0 : view.revision;
+  return view.availability == DocumentAvailability::Unavailable ? 0
+                                                                : view.revision;
 }
 
 QString ColorSettingsModel::selectedOutputName() const {
-  if (!hasDisplaySnapshot() || m_selectedOutputId.isEmpty()) return {};
+  if (!hasDisplaySnapshot() || m_selectedOutputId.isEmpty())
+    return {};
   // AGENT-GUARD: Copy the snapshot before iterating; ranging over
   // snapshot()->outputs would bind references to a temporary.
   const auto snapshot = m_displayClient.snapshot();
@@ -172,26 +200,35 @@ QString ColorSettingsModel::selectedOutputName() const {
 
 QString ColorSettingsModel::assignedProfileFor(const QString &stableId) const {
   for (const auto &record : m_store.document().document.records)
-    if (record.outputStableId == stableId) return record.profileId;
+    if (record.outputStableId == stableId)
+      return record.profileId;
   return {};
 }
 
 const IccProfileDescriptor *
 ColorSettingsModel::findProfile(const QString &profileId) const {
+  const auto *profile = findDiscoveredProfile(profileId);
+  return profile == nullptr ? nullptr : &profile->descriptor;
+}
+
+const QindaQt::DisplayColor::DiscoveredProfile *
+ColorSettingsModel::findDiscoveredProfile(const QString &profileId) const {
   for (const auto &profile : m_catalog.profiles)
-    if (profile.descriptor.profileId == profileId) return &profile.descriptor;
+    if (profile.descriptor.profileId == profileId)
+      return &profile;
   return nullptr;
 }
 
 QVariantList ColorSettingsModel::outputRows() const {
-  if (!hasDisplaySnapshot()) return {};
-  QVariantList rows = Projection::outputs(*m_displayClient.snapshot(),
-                                          m_store.document().document,
-                                          m_catalog);
+  if (!hasDisplaySnapshot())
+    return {};
+  QVariantList rows = Projection::outputs(
+      *m_displayClient.snapshot(), m_store.document().document, m_catalog);
   for (QVariant &value : rows) {
     QVariantMap row = value.toMap();
     row.insert(QStringLiteral("selected"),
-               row.value(QStringLiteral("id")).toString() == m_selectedOutputId);
+               row.value(QStringLiteral("id")).toString() ==
+                   m_selectedOutputId);
     value = row;
   }
   return rows;
@@ -199,49 +236,61 @@ QVariantList ColorSettingsModel::outputRows() const {
 
 QVariantList ColorSettingsModel::profileRows() const {
   QVariantList rows;
-  if (!m_catalogScanned || m_selectedOutputId.isEmpty()) return rows;
-  rows = Projection::profiles(m_catalog, assignedProfileFor(m_selectedOutputId));
+  if (!m_catalogScanned || m_selectedOutputId.isEmpty())
+    return rows;
+  rows =
+      Projection::profiles(m_catalog, assignedProfileFor(m_selectedOutputId));
   for (QVariant &value : rows) {
     QVariantMap row = value.toMap();
-    row.insert(QStringLiteral("available"),
-               assignAdmission(row.value(QStringLiteral("id")).toString())
-                   .isEmpty());
+    row.insert(
+        QStringLiteral("available"),
+        assignAdmission(row.value(QStringLiteral("id")).toString()).isEmpty());
     value = row;
   }
   return rows;
 }
 
 QVariantList ColorSettingsModel::inactiveAssignmentRows() const {
-  if (!hasDisplaySnapshot()) return {};
-  return Projection::inactiveAssignments(*m_displayClient.snapshot(),
-                                         m_store.document().document,
-                                         m_catalog);
+  if (!hasDisplaySnapshot())
+    return {};
+  return Projection::inactiveAssignments(
+      *m_displayClient.snapshot(), m_store.document().document, m_catalog);
 }
 
 QString ColorSettingsModel::assignmentAdmissionBase() const {
-  if (m_store.writeInFlight()) return QStringLiteral("write-in-flight");
+  if (busy())
+    return QStringLiteral("write-in-flight");
   const auto displayState = m_displayClient.state();
-  if (!usableDisplayLineage()
-      || (displayState != ClientState::Ready && displayState != ClientState::Degraded))
+  if (!usableDisplayLineage() || (displayState != ClientState::Ready &&
+                                  displayState != ClientState::Degraded))
     return QStringLiteral("display-unavailable");
   const auto availability = m_store.document().availability;
   if (availability == DocumentAvailability::UnusableDocument)
     return QStringLiteral("document-unusable");
   if (availability != DocumentAvailability::Ready)
     return QStringLiteral("settings-unavailable");
+  if (m_colorPort != nullptr && !m_colorPortAvailable)
+    return QStringLiteral("compositor-unavailable");
+  if (displayChangeInProgress())
+    return QStringLiteral("display-change-in-progress");
   return {};
 }
 
 QString ColorSettingsModel::assignAdmission(const QString &profileId) const {
   const QString base = assignmentAdmissionBase();
-  if (!base.isEmpty()) return base;
-  if (m_selectedOutputId.isEmpty()) return QStringLiteral("no-output-selected");
+  if (!base.isEmpty())
+    return base;
+  if (m_selectedOutputId.isEmpty())
+    return QStringLiteral("no-output-selected");
   bool outputKnown = false;
   const auto snapshot = m_displayClient.snapshot();
   for (const QindaQt::Display::Output &output : snapshot->outputs)
-    if (output.stableId == m_selectedOutputId) outputKnown = true;
-  if (!outputKnown) return QStringLiteral("unknown-output");
-  if (findProfile(profileId) == nullptr) return QStringLiteral("unknown-profile");
+    if (output.stableId == m_selectedOutputId)
+      outputKnown = true;
+  if (!outputKnown)
+    return QStringLiteral("unknown-output");
+  if (findProfile(profileId) == nullptr)
+    return QStringLiteral("unknown-profile");
   if (assignedProfileFor(m_selectedOutputId) == profileId)
     return QStringLiteral("already-assigned");
   return {};
@@ -249,8 +298,10 @@ QString ColorSettingsModel::assignAdmission(const QString &profileId) const {
 
 QString ColorSettingsModel::unassignAdmission() const {
   const QString base = assignmentAdmissionBase();
-  if (!base.isEmpty()) return base;
-  if (m_selectedOutputId.isEmpty()) return QStringLiteral("no-output-selected");
+  if (!base.isEmpty())
+    return base;
+  if (m_selectedOutputId.isEmpty())
+    return QStringLiteral("no-output-selected");
   if (assignedProfileFor(m_selectedOutputId).isEmpty())
     return QStringLiteral("not-assigned");
   return {};
@@ -294,7 +345,7 @@ bool ColorSettingsModel::assignProfile(const QString &profileId) {
     reject(reason);
     return false;
   }
-  const IccProfileDescriptor *profile = findProfile(profileId);
+  const auto *profile = findDiscoveredProfile(profileId);
   // AGENT-GUARD: admission already proved catalog membership; the lineage
   // fingerprint is the import digest when one exists, empty otherwise.
   if (profile == nullptr) {
@@ -304,9 +355,22 @@ bool ColorSettingsModel::assignProfile(const QString &profileId) {
   ColorAssignmentDraft draft;
   draft.entries.append({m_selectedOutputId, profileId,
                         m_importLineageByProfileId.value(
-                            profileId, profile->checksumSha256),
+                            profileId, profile->descriptor.checksumSha256),
                         false});
-  return submitDraft(draft, tr("Saving the color assignment…"));
+  const auto snapshot = m_displayClient.snapshot();
+  const auto output =
+      std::find_if(snapshot->outputs.cbegin(), snapshot->outputs.cend(),
+                   [this](const auto &candidate) {
+                     return candidate.stableId == m_selectedOutputId;
+                   });
+  m_pendingColorApplication =
+      PendingColorApplication{.connectorName = output->connectorName,
+                              .profilePath = profile->sourcePath};
+  if (!submitDraft(draft, tr("Saving the color assignment…"))) {
+    m_pendingColorApplication.reset();
+    return false;
+  }
+  return true;
 }
 
 bool ColorSettingsModel::unassignSelected() {
@@ -317,32 +381,19 @@ bool ColorSettingsModel::unassignSelected() {
   }
   ColorAssignmentDraft draft;
   draft.entries.append({m_selectedOutputId, QString{}, QByteArray{}, true});
-  return submitDraft(draft, tr("Removing the color assignment…"));
-}
-
-void ColorSettingsModel::handleApplyFinished(
-    const AssignmentApplyOutcome &outcome) {
-  m_operationStatusText.clear();
-  switch (outcome.status) {
-  case ApplyStatus::Applied:
-    m_errorText.clear();
-    m_operationStatusText = tr("The color assignment was saved.");
-    break;
-  case ApplyStatus::AppliedNoOp:
-    m_errorText.clear();
-    m_operationStatusText = tr("The color assignment was already up to date.");
-    break;
-  case ApplyStatus::Conflict:
-    m_errorText = tr("Color settings changed elsewhere. The latest authoritative state is shown; the change was not replayed.");
-    break;
-  case ApplyStatus::Uncertain:
-    m_errorText = tr("The color assignment could not be confirmed. It was not replayed.");
-    break;
-  case ApplyStatus::Failed:
-    m_errorText = tr("The color assignment failed (%1).").arg(outcome.reasonCode);
-    break;
+  const auto snapshot = m_displayClient.snapshot();
+  const auto output =
+      std::find_if(snapshot->outputs.cbegin(), snapshot->outputs.cend(),
+                   [this](const auto &candidate) {
+                     return candidate.stableId == m_selectedOutputId;
+                   });
+  m_pendingColorApplication = PendingColorApplication{
+      .connectorName = output->connectorName, .profilePath = {}};
+  if (!submitDraft(draft, tr("Removing the color assignment…"))) {
+    m_pendingColorApplication.reset();
+    return false;
   }
-  Q_EMIT viewChanged();
+  return true;
 }
 
 bool ColorSettingsModel::importProfile(const QUrl &source) {
@@ -363,7 +414,8 @@ bool ColorSettingsModel::importProfile(const QUrl &source) {
     m_importLineageByProfileId.insert(result.profile.descriptor.profileId,
                                       result.profile.descriptor.checksumSha256);
     refreshCatalog();
-    m_importStatusText = result.status == ImportStatus::AlreadyPresent
+    m_importStatusText =
+        result.status == ImportStatus::AlreadyPresent
         ? tr("The profile %1 was already imported.").arg(name)
         : tr("Imported the profile %1.").arg(name);
     Q_EMIT viewChanged();
@@ -377,13 +429,15 @@ bool ColorSettingsModel::importProfile(const QUrl &source) {
     m_importStatusText = tr("That file could not be read.");
     break;
   case ImportStatus::SourceOversized:
-    m_importStatusText = tr("That file is larger than the 4 MiB profile limit.");
+    m_importStatusText =
+        tr("That file is larger than the 4 MiB profile limit.");
     break;
   case ImportStatus::SourceIsSymlink:
     m_importStatusText = tr("Symbolic links cannot be imported.");
     break;
   case ImportStatus::SourceNameUnsafe:
-    m_importStatusText = tr("That file name is not safe to store as a profile.");
+    m_importStatusText =
+        tr("That file name is not safe to store as a profile.");
     break;
   case ImportStatus::InvalidUserRoot:
     m_importStatusText = tr("The user profile directory is not usable.");
@@ -395,7 +449,8 @@ bool ColorSettingsModel::importProfile(const QUrl &source) {
     m_importStatusText = tr("The profile could not be stored.");
     break;
   case ImportStatus::DurabilityUncertain:
-    m_importStatusText = tr("The profile was copied, but its durability could not be confirmed.");
+    m_importStatusText = tr(
+        "The profile was copied, but its durability could not be confirmed.");
     break;
   case ImportStatus::Imported:
   case ImportStatus::AlreadyPresent:
@@ -411,11 +466,18 @@ bool ColorSettingsModel::retry() {
     return false;
   }
   m_retrying = true;
+  m_reconciliationNeeded = true;
   m_displayClient.refresh();
   m_settingsClient.refresh();
+  if (m_colorPort != nullptr && !m_colorPortAvailable) {
+    m_colorPort->stop();
+    m_colorPort->setObserver(this);
+    static_cast<void>(m_colorPort->start());
+  }
   refreshCatalog();
   m_errorText.clear();
   m_operationStatusText = tr("Refreshing display color state…");
+  reconcileSavedProfiles();
   Q_EMIT viewChanged();
   return true;
 }
@@ -424,13 +486,18 @@ void ColorSettingsModel::setRouteActive(const bool active) {
   m_routeActive = active;
   // AGENT-NOTE: Discovery is bounded and synchronous over injected roots, so
   // each activation rescans; imported or removed profiles appear on return.
-  if (active) refreshCatalog();
+  if (active) {
+    m_reconciliationNeeded = true;
+    refreshCatalog();
+    reconcileSavedProfiles();
+  }
   Q_EMIT viewChanged();
 }
 
 void ColorSettingsModel::refreshCatalog() {
   m_catalog = m_discovery.discoverCatalog();
   m_catalogScanned = true;
+  m_reconciliationNeeded = true;
   Q_EMIT viewChanged();
 }
 
@@ -444,10 +511,13 @@ void ColorSettingsModel::synchronizeAuthority() {
     if (hasDisplaySnapshot()) {
       const auto snapshot = m_displayClient.snapshot();
       for (const QindaQt::Display::Output &output : snapshot->outputs)
-        if (output.stableId == m_selectedOutputId) stillPresent = true;
+        if (output.stableId == m_selectedOutputId)
+          stillPresent = true;
     }
-    if (!stillPresent) m_selectedOutputId.clear();
+    if (!stillPresent)
+      m_selectedOutputId.clear();
   }
+  reconcileSavedProfiles();
   Q_EMIT viewChanged();
 }
 
@@ -463,13 +533,13 @@ QString ColorSettingsModel::failureText(const QString &reason) const {
     return tr("Another color change is still being saved.");
   if (reason == QStringLiteral("display-unavailable"))
     return tr("The display inventory is unavailable.");
-  if (reason == QStringLiteral("settings-unavailable")
-      || reason == QStringLiteral("unavailable"))
-    return stale()
-        ? tr("Color assignment storage is stale while the settings service recovers.")
+  if (reason == QStringLiteral("settings-unavailable") ||
+      reason == QStringLiteral("unavailable"))
+    return stale() ? tr("Color assignment storage is stale while the settings "
+                        "service recovers.")
         : tr("The settings service is unavailable.");
-  if (reason == QStringLiteral("document-unusable")
-      || reason.startsWith(QStringLiteral("document-unusable/")))
+  if (reason == QStringLiteral("document-unusable") ||
+      reason.startsWith(QStringLiteral("document-unusable/")))
     return tr("The stored color assignments cannot be read safely.");
   if (reason == QStringLiteral("no-output-selected"))
     return tr("Select a display first.");
@@ -481,6 +551,11 @@ QString ColorSettingsModel::failureText(const QString &reason) const {
     return tr("That profile is already assigned to this display.");
   if (reason == QStringLiteral("not-assigned"))
     return tr("This display has no assigned profile.");
+  if (reason == QStringLiteral("compositor-unavailable"))
+    return tr("Color profiles cannot be applied to displays right now.");
+  if (reason == QStringLiteral("display-change-in-progress"))
+    return tr("Finish or revert the pending display change before applying a "
+              "color profile.");
   if (reason.startsWith(QStringLiteral("invalid-draft")))
     return tr("That color assignment is not valid.");
   return reason.isEmpty() ? tr("The color request was rejected.")

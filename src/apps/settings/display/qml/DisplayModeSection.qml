@@ -22,8 +22,8 @@ ColumnLayout {
 
     SectionHeader {
         Layout.fillWidth: true
-        title: qsTr("Resolution & Refresh Rate")
-        description: qsTr("Choose from supported display modes reported by the compositor")
+        title: qsTr("Resolution & scale")
+        description: qsTr("Choose the display detail, refresh rate, and size of interface elements")
     }
 
     FormRow {

@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+find_package(Qt6 6.11 REQUIRED COMPONENTS WaylandClient)
+find_package(Wayland REQUIRED COMPONENTS Client)
+
 qt_add_executable(
     qindaqt_settings_customize_model_tests
     tst_customize_settings_model.cpp

@@ -26,7 +26,7 @@ endfunction()
 file(REMOVE_RECURSE "${POISON_ROOT}")
 file(MAKE_DIRECTORY "${POISON_ROOT}")
 file(WRITE "${POISON_ROOT}/allowed.cpp"
-    "#include <qindaqt/services/display_client/client.h>\n#include <qindaqt/services/display_color_assignment/assignment_store.h>\n#include <qindaqt/services/display_color_discovery/profile_discovery.h>\n#include <QtCore/QObject>\n")
+    "#include <qindaqt/services/display_client/client.h>\n#include <qindaqt/services/display_color_assignment/assignment_store.h>\n#include <qindaqt/services/display_color_discovery/profile_discovery.h>\n#include <qindaqt/services/display_writer/output_management_port.h>\n#include <QtCore/QObject>\n")
 execute_process(COMMAND "${CMAKE_COMMAND}" "-DSCAN_ROOT=${POISON_ROOT}"
     -P "${CHECK_SCRIPT}" RESULT_VARIABLE allowed_status
     OUTPUT_VARIABLE allowed_output ERROR_VARIABLE allowed_error)
