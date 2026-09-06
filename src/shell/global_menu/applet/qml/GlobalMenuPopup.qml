@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Window
 
 Popup {
     id: popup
@@ -95,6 +96,43 @@ Popup {
         })
     }
 
+    // AGENT-GUARD: anchorItem.x/y live in the anchor's parent frame (the
+    // applet's entries Row/Column), while popup x/y are interpreted in the
+    // popup's own parent frame and mapped across the popup Window boundary.
+    // Compute placement in scene coordinates and convert back, or the popup
+    // window lands displaced by the layout offset whenever the entries layout
+    // does not sit at the applet origin. placementOriginFor is the pure,
+    // unit-tested boundary decision: prefer the anchor's bottom-left, clamp
+    // horizontally into the containing width, flip above the anchor when the
+    // popup would cross availableBelow (screen bottom in window coordinates —
+    // a thin panel surface is deliberately crossed, the screen edge is not).
+    function placementOriginFor(topLeft, anchorHeight, popupWidth, popupHeight,
+                                boundsWidth, availableBelow) {
+        let px = topLeft.x
+        if (boundsWidth > 0)
+            px = Math.max(0, Math.min(px, Math.max(0, boundsWidth - popupWidth)))
+        let py = topLeft.y + anchorHeight
+        if (availableBelow > 0 && py + popupHeight > availableBelow) {
+            const above = topLeft.y - popupHeight
+            if (above >= 0)
+                py = above
+        }
+        return Qt.point(px, py)
+    }
+
+    function placementOrigin() {
+        if (anchorItem === null || parent === null)
+            return Qt.point(0, 0)
+        const win = parent.Window.window
+        const scene = placementOriginFor(
+            anchorItem.mapToItem(null, 0, 0), anchorItem.height, width, height,
+            win !== null ? win.width : 0,
+            // AGENT-NOTE: QWindow.screen is not exposed to QML (undefined,
+            // not null); the Screen attached object is the supported route.
+            win !== null ? Screen.height - win.y : 0)
+        return parent.mapFromItem(null, scene.x, scene.y)
+    }
+
     objectName: "globalMenuPopup"
     // AGENT-GUARD: The production layer-shell panel deliberately rejects
     // keyboard focus. Keep this as an independent popup window so opening a
@@ -106,8 +144,8 @@ Popup {
     padding: 4
     width: 240
     height: Math.min(360, Math.max(28, popupList.contentHeight + 8))
-    x: anchorItem !== null ? anchorItem.x : 0
-    y: anchorItem !== null ? anchorItem.y + anchorItem.height : 0
+    x: placementOrigin().x
+    y: placementOrigin().y
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
                  | Popup.CloseOnPressOutsideParent
 

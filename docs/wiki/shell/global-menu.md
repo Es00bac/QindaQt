@@ -514,6 +514,21 @@ entry, **Down** opens its popup, **Down** selects the nested submenu,
 closes without activation. That row runs with `QT_FATAL_WARNINGS=1` and also
 requires the popup's effective type to remain `Popup.Window`.
 
+Popup placement is anchored to the selected menu-bar entry. The anchor's
+`x`/`y` live in the entries layout's coordinate frame, while `Popup` `x`/`y`
+are interpreted in the popup's parent frame and mapped across the popup
+window boundary, so the popup computes placement in scene (panel window)
+coordinates via `mapToItem`/`mapFromItem` rather than reading the anchor's
+parent-frame `x`/`y` directly; otherwise the popup window lands displaced by
+the layout offset whenever the entries layout does not sit at the applet
+origin. The popup prefers the anchor's bottom-left, clamps horizontally into
+the panel window width, and flips above the anchor when the menu would cross
+the screen's bottom edge (a thin panel surface is deliberately crossed; the
+screen edge is not). The `global-menu-popup-placement-qml-offscreen` row
+asserts the popup window lands on the anchor's mapped bottom-left under
+nested offsets, anchors each entry under itself, and pins the clamp/flip
+boundary decisions.
+
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows
 never receive a bus object or transport.
@@ -582,6 +597,8 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-runtime-boundary-poison`,
 `qindaqt.global-menu-applet-submenu-qml-offscreen` under
 `QT_FATAL_WARNINGS=1`,
+`qindaqt.global-menu-popup-placement-qml-offscreen` (anchor-mapped popup
+window placement, right-edge clamp, and bottom-edge flip),
 `qindaqt.global-menu-production-panel-keyboard-qml-offscreen` through the real
 panel dispatcher, `qindaqt.global-menu-installed-package`, and the shared
 `qindaqt.shell-runtime-component-closure`. The first-party application rows
