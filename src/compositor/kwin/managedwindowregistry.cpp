@@ -4,7 +4,8 @@
 #include "hybridwindowadmission.h"
 
 #include <core/output.h>
-#include <layershellv1window.h>
+#include <wayland/layershell_v1.h>
+#include <wayland/surface.h>
 #include <window.h>
 #include <workspace.h>
 
@@ -34,6 +35,16 @@ bool fail(QString *error, QString message)
         *error = std::move(message);
     }
     return false;
+}
+
+bool isLayerShellSurface(const KWin::Window *window)
+{
+    const KWin::SurfaceInterface *const surface = window ? window->surface() : nullptr;
+    // AGENT-GUARD: LayerShellV1Window is an internal KWin class whose RTTI is
+    // not exported to plugins. Classify through the public Wayland surface
+    // role so this external plugin remains loadable.
+    return surface
+        && surface->role() == KWin::LayerSurfaceV1Interface::role();
 }
 
 } // namespace
@@ -69,8 +80,7 @@ bool ManagedWindowRegistry::isManageable(const KWin::Window *window)
         .exists = window != nullptr,
         .deleted = window && window->isDeleted(),
         .internal = window && window->isInternal(),
-        .layerShell =
-            dynamic_cast<const KWin::LayerShellV1Window *>(window) != nullptr,
+        .layerShell = isLayerShellSurface(window),
         .popup = window && window->isPopupWindow(),
         .normal = window && window->isNormalWindow(),
         .transient = window && window->isTransient(),
