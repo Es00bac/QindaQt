@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Welcome to QindaQt
+Comment=Learn the QindaQt desktop
+Exec=qindaqt-welcome
+Icon=help-about
+Terminal=false
+Categories=Qt;Utility;
+StartupNotify=true
+StartupWMClass=org.qindaqt.Welcome

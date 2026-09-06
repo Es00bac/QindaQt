@@ -10,14 +10,18 @@
 #include <QtTypes>
 
 #include <optional>
+#include <memory>
 
 namespace QindaQt::SessionSupervisor {
+
+class FirstLaunchWelcome;
 
 struct SessionProcessOptions final {
     QString notificationHostExecutable = QStringLiteral("qindaqt-notification-host");
     QString shellExecutable = QStringLiteral("qindaqt-shell");
     QString networkSecretAgentExecutable =
         QStringLiteral("qindaqt-network-secret-agent");
+    QString welcomeExecutable = QStringLiteral("qindaqt-welcome");
     QString profileId;
     QString themeId;
     qint64 compositorProcessId = 0;
@@ -28,12 +32,14 @@ struct SessionProcessOptions final {
 [[nodiscard]] std::optional<QStringList> shellProcessArguments(
     const SessionProcessOptions &options, QString *error = nullptr);
 
-// Owns the essential notification host and shell plus an optional installed
-// network secret agent. The host is session-resident; one unexpected shell
-// exit consumes its bounded recovery budget and starts a replacement with a
-// fresh token descriptor. The optional agent has an independent one-restart
-// budget and never participates in readiness. Host exit, replacement failure,
-// or a second shell exit ends the compositor session.
+// Owns the essential notification host and shell plus optional installed
+// network-secret-agent and first-launch Welcome children. The host is
+// session-resident; one unexpected shell exit consumes its bounded recovery
+// budget and starts a replacement with a fresh token descriptor. The optional
+// agent has an independent one-restart budget and never participates in
+// readiness. Welcome starts once after the shell, never restarts, and cannot
+// end the session. Host exit, replacement failure, or a second shell exit ends
+// the compositor session.
 class SessionProcessSupervisor final : public QObject {
     Q_OBJECT
 
@@ -55,6 +61,7 @@ public:
     [[nodiscard]] int shellRestartCount() const noexcept;
     [[nodiscard]] qint64 networkSecretAgentProcessId() const noexcept;
     [[nodiscard]] int networkSecretAgentRestartCount() const noexcept;
+    [[nodiscard]] qint64 welcomeProcessId() const noexcept;
 
 Q_SIGNALS:
     void shellRestarted(qint64 previousProcessId, qint64 processId);
@@ -73,6 +80,7 @@ private:
     [[nodiscard]] bool startShell(QString *error,
                                   qint64 predecessorProcessId = 0);
     void startNetworkSecretAgent();
+    void startWelcome();
     void networkSecretAgentEnded();
     void childFinished(ChildRole role, int exitCode,
                        QProcess::ExitStatus exitStatus);
@@ -85,6 +93,7 @@ private:
     QProcess m_host;
     QProcess m_shell;
     QProcess m_networkSecretAgent;
+    std::unique_ptr<FirstLaunchWelcome> m_welcome;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_token;
     qint64 m_hostProcessId = 0;

@@ -25,6 +25,7 @@ FIRST_PARTY_DESKTOP_ICONS = {
     "org.qindaqt.TextEditor.desktop": "accessories-text-editor",
     "org.qindaqt.Terminal.desktop": "utilities-terminal",
     "org.qindaqt.FileManager.desktop": "system-file-manager",
+    "org.qindaqt.Welcome.desktop": "help-about",
 }
 
 
