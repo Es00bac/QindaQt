@@ -23,7 +23,7 @@ using ThemePreviewTokenMaps = std::vector<QVariantMap>;
 // Where a draft's configured theme resolves inside the installed catalog.
 struct AppearanceResolution final {
     int themeIndex = -1;
-    bool configuredInstalled = false; // Installed and scheme-compatible.
+    bool configuredInstalled = false;
     // Non-empty when a missing or scheme-incompatible configured theme was
     // resolved through the shared appearance policy.
     QString fallbackThemeId;

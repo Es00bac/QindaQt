@@ -44,7 +44,7 @@ bool AppearanceSettingsModel::configuredThemeInstalled() const
 
 QString AppearanceSettingsModel::fallbackNotice() const
 {
-    if (m_resolution.configuredInstalled || m_resolution.themeIndex < 0) {
+    if (m_resolution.fallbackThemeId.isEmpty() || m_resolution.themeIndex < 0) {
         return {};
     }
     return QStringLiteral(
