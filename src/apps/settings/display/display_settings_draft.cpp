@@ -11,11 +11,13 @@ namespace QindaQt::Apps::SettingsDisplay {
 
 namespace {
 
-QPoint positionForNewlyEnabledOutput(const QList<OutputDraft> &outputs)
+QPoint positionForNewlyEnabledOutput(const QList<OutputDraft> &outputs,
+                                     const QString &excludedStableId)
 {
   qint64 rightEdge = 0;
   for (const OutputDraft &output : outputs) {
-    if (!output.enabled || !output.replicationSourceStableId.isEmpty()) {
+    if (output.stableId == excludedStableId || !output.enabled
+        || !output.replicationSourceStableId.isEmpty()) {
       continue;
     }
     rightEdge = std::max(rightEdge,
@@ -54,6 +56,11 @@ bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enable
     return false;
   }
 
+  const bool baselineWasDisabled = std::any_of(
+      m_snapshot->outputs.cbegin(), m_snapshot->outputs.cend(),
+      [&stableId](const Display::Output &baseline) {
+        return baseline.stableId == stableId && !baseline.enabled;
+      });
   out->enabled = enabled;
   if (!enabled && out->primary) {
     out->primary = false;
@@ -64,8 +71,8 @@ bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enable
       }
     }
   } else if (enabled) {
-    if (out->position.isNull()) {
-      out->position = positionForNewlyEnabledOutput(m_draftOutputs);
+    if (baselineWasDisabled) {
+      out->position = positionForNewlyEnabledOutput(m_draftOutputs, stableId);
     }
     bool hasPrimary = false;
     for (const auto &other : m_draftOutputs) {
