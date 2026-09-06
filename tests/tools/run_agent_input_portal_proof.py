@@ -54,6 +54,9 @@ def _proof_basic() -> int:
     portal = _serve()
     loop = GLib.MainLoop()
 
+    # Real UTF-8 bytes for U+4E16 on stdin: proves the reader/JSON/keysym
+    # path end-to-end, not just the StdinReader split-decode unit row.
+    unicode_event = '{"action":"text","text":"世"}\n'.encode("utf-8")
     events = (
         b'{"action":"move","dx":5.0,"dy":-3.0}\n'
         b'{"action":"press","button":"left"}\n'
@@ -62,7 +65,8 @@ def _proof_basic() -> int:
         b'{"action":"key_press","keysym":65}\n'
         b'{"action":"key_release","keysym":65}\n'
         b'{"action":"text","text":"hi"}\n'
-        b'{"action":"close"}\n'
+        + unicode_event
+        + b'{"action":"close"}\n'
     )
     proc = start_tool()
 
@@ -92,6 +96,9 @@ def _proof_basic() -> int:
         "NotifyKeyboardKeysym(65,0)",
         "NotifyKeyboardKeysym(104,1)", "NotifyKeyboardKeysym(104,0)",
         "NotifyKeyboardKeysym(105,1)", "NotifyKeyboardKeysym(105,0)",
+        # U+4E16 maps to keysym 0x01004E16 (0x01000000 | codepoint).
+        f"NotifyKeyboardKeysym({0x01004E16},1)",
+        f"NotifyKeyboardKeysym({0x01004E16},0)",
     ]
     if portal.calls[3:] != expected_notify:
         return _fail(f"notify mismatch\n  expected: {expected_notify}\n"
