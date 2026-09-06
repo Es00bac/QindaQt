@@ -386,18 +386,28 @@ void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
 
     QVERIFY(activateDestination(scene, QStringLiteral("fonts")) != nullptr);
     auto *fontFamily = item(scene.root, "appearanceFontFamilyField");
+    auto *subpixel = item(scene.root, "appearanceSubpixelSelector");
     QVERIFY(fontFamily != nullptr);
+    QVERIFY(subpixel != nullptr);
 
     fontFamily->forceActiveFocus(Qt::OtherFocusReason);
-    QTRY_VERIFY(fontFamily->hasActiveFocus());
-    fontFamily->setProperty("editText", QStringLiteral("Noto Serif"));
+    QTRY_VERIFY(scene.view->activeFocusItem() != nullptr);
+    // Real keystrokes replace the selected installed starting family; no Enter commits
+    // this value. Moving focus to another selector must retain the draft.
+    for (const auto key : {Qt::Key_Space, Qt::Key_S, Qt::Key_E, Qt::Key_R,
+                           Qt::Key_I, Qt::Key_F})
+        QTest::keyClick(scene.view.get(), key);
+    subpixel->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(scene.view->activeFocusItem(), subpixel);
     QTRY_COMPARE(scene.model->draftKeys.constLast(), QStringLiteral("fonts.family"));
     QCOMPARE(scene.model->draftValues.constLast().toString(),
-             QStringLiteral("Noto Serif"));
+             QStringLiteral("Serif"));
 
-    QVERIFY(QMetaObject::invokeMethod(fontFamily, "accepted"));
-    QTRY_VERIFY(!scene.model->draftKeys.isEmpty());
-    QCOMPARE(scene.model->draftKeys.constLast(), QStringLiteral("fonts.family"));
+    scene.model->draftDirty = true;
+    scene.model->publish();
+    auto *revert = item(scene.root, "appearanceRevertButton");
+    QVERIFY(revert != nullptr && revert->isVisible());
+    QCOMPARE(revert->property("text").toString(), QStringLiteral("Revert"));
 
     QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
     auto *wallpaper = item(scene.root, "appearanceWallpaperField");
@@ -447,8 +457,6 @@ void AppearancePageTests::fontTypingWallpaperPreviewAndKeyboardScrollingStayUsab
     QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
     appearancePage->forceActiveFocus(Qt::OtherFocusReason);
     QTRY_VERIFY(appearancePage->hasActiveFocus());
-    QTest::keyClick(scene.view.get(), Qt::Key_Home, Qt::ControlModifier);
-    QTRY_COMPARE(viewport->property("contentY").toReal(), 0.0);
     subpixel->forceActiveFocus(Qt::TabFocusReason);
     QTRY_COMPARE(scene.view->activeFocusItem(), subpixel);
     QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);

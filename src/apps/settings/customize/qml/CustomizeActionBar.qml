@@ -78,7 +78,7 @@ ColumnLayout {
         standardButtons: T.Dialog.Discard | T.Dialog.Cancel
         contentItem: Label {
             width: 360
-            text: qsTr("The current in-memory layout has not been applied.")
+            text: qsTr("The current layout has not been applied.")
             wrapMode: Text.Wrap
             Accessible.role: Accessible.StaticText
             Accessible.name: text

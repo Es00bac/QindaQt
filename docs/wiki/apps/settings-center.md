@@ -176,7 +176,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.(settings-(route-registry|navigation-controller|navigation-page)|settings-app-(offscreen|rejects-(unknown-route|missing-theme)|desktop-identity|route-construction|installed-routes))$'
+  -R '^qindaqt\.(settings-(route-registry|navigation-controller|navigation-page)|settings-app-(rejects-(unknown-route|missing-theme)|desktop-identity|route-construction|installed-routes))$'
 ```
 
 - registry/controller tests cover hostile bounds, duplicates/capacity,
