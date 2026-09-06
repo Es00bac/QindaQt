@@ -12,9 +12,14 @@ completion. Architectural detail and long-range milestone state remain in the
 Correct light/dark and contrast across shell, popups, Settings, and first-party
 applications. Add a detailed, attractive, human-readable startup tutorial with
 a persistent **Show at next launch** checkbox and a launcher entry for reopening.
-The contrast repair is integrated; shared live appearance and the tutorial are
-under implementation. Actual startup, preference persistence, theme changes,
-and readable tutorial screenshots are required before acceptance.
+Contrast, shared live appearance, themed window chrome, and the seven-chapter
+tutorial are integrated. The full build, eleven focused appearance/tutorial
+checks, and installed desktop startup pass. Actual first-launch, compact layout,
+live light/dark switching, tiling/tab interaction, and the display matrix are
+verified. Notification control contrast is repaired and visually rechecked.
+The next bounded outcome is host installation and first physical login; this
+nested acceptance does not claim full hardware daily-driver qualification.
+See [Handoff](HANDOFF.md) for exact evidence and the remaining visual follow-up.
 
 ### QindaQt visual identity (2026-09-05)
 
