@@ -410,7 +410,7 @@ int main(int argc, char **argv)
                       QStringLiteral("window-moved-away"), &phases)) {
         return 6;
     }
-    if (hasControlFile) {
+    if (!controlFile.isEmpty()) {
         return runFullscreenControl(client, controlFile) ? 0 : 18;
     }
     client.showFullScreen();
