@@ -14,26 +14,38 @@ Native pointer lock, confinement, and relative motion pass in private run
 completed its lock/confinement lifecycle; no private processes survived.
 This qualifies the representative protocol client, not every game.
 
-Popup placement remains open despite offscreen acceptance of `ef0941e4`.
-Integrated native run `3166df7426ea4945aa321ab22712e46f` still places File at
-the end of the menu bar. The real New action has prior evidence at that
-misplaced location; the expected correctly anchored click does not activate it.
-Kimi is repairing the exact native reproduction.
+Native menu placement and File → New now pass in actual run
+`e338dd4684cd4a2cb8dbe492d8868686` after `e5955ea8`: the popup appears below
+File and clicking New creates a second editor tab. Switching an open Edit menu
+to File still closes the popup without opening File; Kimi owns that reproduction.
 
 The input helper is installed on the host as `qindaqt-agent-input`
 (`80ec2818`), with installed import/help smoke passing. Backend-only KDE
 compatibility `89c3644b` is independently reviewed and passes integrated
 portal/package gates 5/5. Its drop-in is installed, portal services restarted,
 and the live frontend now reports `AvailableDeviceTypes=7` instead of zero.
-Actual approved input remains a runtime gate. Gabbee's integrated unit fixture needs updating for
-already-present KDE portal routing, and the documented nested runner exposed
-an invalid run ID before boot; these are being repaired by Claude Sonnet.
+Actual approved input remains a runtime gate: run
+`42d5b27093b64dadb069ff91ef331db7` could not discover the private approval
+controls through AT-SPI. Luna owns the hook diagnosis. Gabbee's probe lifecycle
+and fixture repairs are being reviewed; clipboard-only fallback cannot count as
+text insertion. The repeated Gabbee runtime loop was stopped and the private
+lane returned to root for bounded interactive checks.
 
-The connected DP-1 projector was disabled in KWin. Root enabled it beside the
-unchanged HDMI-A-1 main display. Terra is repairing the inventory that hid its
-disabled state from Settings. Dock work-area reflow is integrated at `0788ae86`:
-focused tests pass and preserve the normal restore frame; actual dock hide/reveal
-qualification remains open.
+The connected DP-1 projector is enabled beside the unchanged HDMI-A-1 main
+display. The disabled-output inventory and enabled-output ordering repair is
+integrated through `358eff0e`, with fixture correction `0cbde61f`; the integrated
+Display selection passes 51/51. Fable's visual arrangement work is preserved;
+Claude reached its provider limit and Terra is completing the candidate.
+
+Dock work-area reflow is integrated at `0788ae86`. Actual run
+`0f764f7960e740dca0797c6b183f5111` maximized the container but the dock remained
+visible; Sol is checking visibility policy and the open notification-center
+precondition. No private processes survived any of these three runs.
+
+The latest corner/task-switcher report is retained in the task list. Sol owns
+absent-key edge-tiling defaults and a QindaQt native-model TabBox presentation;
+explicit user settings must survive. Live grouped windows already expose exactly
+one task/switcher representative.
 
 The broad integrated selection at `5400320e` passes **640/640** in 97 seconds.
 It excludes installed/private-desktop rows and the already identified Gabbee
