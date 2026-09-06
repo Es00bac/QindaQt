@@ -471,7 +471,9 @@ and eight-pixel right control padding used by the menu-bar label, plus one
 measurement safety pixel, for the labels and the "+N" indicator; both labels
 and indicator bind the exact same font used by the metrics. The safety pixel
 covers a fractional glyph advance that `Text` can retain after `FontMetrics`
-rounds its bound. Fit loops iterate against the assigned width
+rounds its bound. The manually positioned native items bind their actual width
+to that measured implicit width so the control's internal layout cannot narrow
+the final label. Fit loops iterate against the assigned width
 (horizontal) or height (vertical), and reserve the indicator inside the
 extent — so no real label or affordance can ever be clipped by the limit.
 Hosts below the documented minimum extent degrade to indicator-only (and

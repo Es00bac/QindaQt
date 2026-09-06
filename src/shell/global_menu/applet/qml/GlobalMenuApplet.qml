@@ -261,6 +261,10 @@ Item {
                 rightPadding: 8
                 implicitWidth: root.measuredEntryWidth(entryData)
                 implicitHeight: 24
+                // MenuBar's internal content layout may assign a narrower
+                // width even though this applet positions entries itself.
+                width: implicitWidth
+                height: implicitHeight
                 focusPolicy: Qt.TabFocus
                 Accessible.role: Accessible.MenuItem
                 Accessible.focusable: enabled
