@@ -22,4 +22,9 @@ The private `WallpaperController` is the sole shell-runtime exception for direct
 
 Output and Settings changes update backgrounds without restarting the shell. The controller owns no persistence and reserves no work area or input. Desktop scope keeps these surfaces outside ordinary window, task-list, and visibility facts. Packaging must install wallpapers in both the shell and Appearance Settings runtime components.
 
+[ADR-0084](0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md) lends
+these same background surfaces one dismissible shortcut-note card per output
+(primary output only) through a small attach hook; the wallpaper controller's
+surface planning and ADR-0078 scope are otherwise unchanged.
+
 This supersedes ADR-0074's deferral of wallpaper application; its Settings ownership and fail-closed snapshot rules remain unchanged.

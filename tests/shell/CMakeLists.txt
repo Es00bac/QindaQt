@@ -417,6 +417,62 @@ if(TARGET qindaqt-shell)
         PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     )
 
+    find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
+
+    qt_add_executable(
+        qindaqt_shortcut_note_tests
+        tst_shortcutnote.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.h"
+    )
+    target_include_directories(
+        qindaqt_shortcut_note_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_shortcut_note_tests
+        PRIVATE
+            QindaQt::SettingsClient
+            QindaQt::SettingsService
+            KF6::GlobalAccel
+            Qt6::Core
+            Qt6::DBus
+            Qt6::Gui
+            Qt6::Qml
+            Qt6::Quick
+            Qt6::Test
+    )
+    target_compile_definitions(
+        qindaqt_shortcut_note_tests
+        PRIVATE
+            QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+            QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+    )
+    qindaqt_enable_warnings(qindaqt_shortcut_note_tests)
+    add_test(
+        NAME qindaqt.shortcut-note
+        COMMAND qindaqt_shortcut_note_tests
+    )
+    set_tests_properties(
+        qindaqt.shortcut-note
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
+
+    add_test(
+        NAME qindaqt.shortcut-note-card-offscreen
+        COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_shortcutnotecard.qml"
+    )
+    set_tests_properties(
+        qindaqt.shortcut-note-card-offscreen
+        PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    )
+
     add_test(
         NAME qindaqt.shell-runtime-catalog
         COMMAND $<TARGET_FILE:qindaqt-shell> --list

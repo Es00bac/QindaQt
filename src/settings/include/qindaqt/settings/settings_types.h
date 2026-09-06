@@ -24,6 +24,7 @@ enum class SettingDomain {
     WindowManagement,
     Accessibility,
     Services,
+    Shell,
 };
 
 enum class SettingValueType {

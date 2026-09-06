@@ -1,0 +1,4 @@
+# Shortcut note coordination
+Sol owns member title chrome toggle and parent management controls, default Meta+Shift+C after collision audit. Exact candidate not yet accepted, so use that binding only once root integrates it; note may prepare text. Existing Meta+Shift+D enters dock mode, four arrows chooseedge, Enter commits, Escape cancels. Bare Meta+Arrow within-container redirect is now reviewed/integrated through b4453452, runtime proof pending. Mark displayed keys Defaults when not live mapping. Keep note readable and dismissible; root owns nested screenshot acceptance.
+
+Schema shell.shortcutNoteDismissed addition is within authorized scope and reserved to you. If adding persistence ADR use0084; rootintegrated0083forICC already. Keep documented defaultfalse/backward-compatible snapshot behavior, no global requiredkeys regression. Main title togglebindingMeta+Shift+C asabove.
