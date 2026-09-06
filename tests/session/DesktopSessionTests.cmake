@@ -250,7 +250,6 @@ if(
         DIRECTORY "${PROJECT_SOURCE_DIR}/data/icons/QindaQt"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/icons"
         COMPONENT DesktopVirtual
-        OPTIONAL
     )
     install(
         FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
