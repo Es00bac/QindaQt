@@ -97,6 +97,24 @@ production recovery chain therefore proves the AT-SPI EditableText and
 clipboard paths there; typed insertion into a live terminal would require the
 explicitly acknowledged host-uinput lane this evidence must never enable.
 
+## Host AT-SPI bridge prerequisite
+
+Live AT-SPI is unavailable when Qt Gui was built without its AT-SPI bridge. On
+Gentoo, the first private Gabbee or screen-reader run therefore requires one
+coherent matching-version rebuild: `qtbase[accessibility]`,
+`qtdeclarative[accessibility]`, `kwin[accessibility]`, and
+`kwin-x11[accessibility]`; Portage adds `libqaccessibilityclient`. KWin
+depends on Qtbase with the same USE value, so rebuilding Qtbase alone is not a
+valid transaction. `at-spi2-core` and
+`QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` cannot provide a bridge that was omitted
+from Qt at build time.
+
+Package mutation and session restart are host operations, not QindaQt source
+evidence. After the matching rebuild and a fresh session, confirm the enabled
+Qt bridge and AT-SPI broker, then run the manager-owned nested Gabbee proof
+that requires an `EditableText` node. Library presence or clipboard fallback
+alone never qualifies live accessibility.
+
 ## Exact invocation (root, with the private-runtime lane allocated)
 
 ```sh
