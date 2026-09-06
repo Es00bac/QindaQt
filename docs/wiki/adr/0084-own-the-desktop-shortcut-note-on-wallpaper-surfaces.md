@@ -24,8 +24,11 @@ positioned below and beside the profile's top- and right-edge panel bands.
 No new layer-shell surface, window, or compositor role is created, and the
 hosting surfaces stay keyboard-inactive; every interactive element in the card
 uses `Qt::NoFocus`, so dismissal is clickable and can never capture keyboard
-focus. The private `ShortcutNoteController` owns note state only: it never
-grows the wallpaper controller beyond a lending attach hook.
+focus. The card's parent-dependent anchors and size remain dormant while the
+controller hands it to a wallpaper content item and while that item is torn
+down, so those normal lifecycle transitions cannot produce QML binding errors.
+The private `ShortcutNoteController` owns note state only: it never grows the
+wallpaper controller beyond a lending attach hook.
 
 Visibility persists through Settings1 as one schema-v2 boolean,
 `shell.shortcutNoteDismissed` (default `false`, so the note is visible
@@ -52,8 +55,10 @@ no compositor or panel-planning responsibility. Settings schema v2 gains the
 `shell` domain's first key, coordinated with the Settings owners. Tests cover
 visibility/dismiss/reopen round trips over a real schema-backed service,
 shortcut override tracking through the seam, and no-focus card interaction.
-When the chrome toggle's binding lands, its exact shortcut may be added to the
-card in the same default-labeled form.
+The card test also covers parentless creation, attachment, detachment, and
+destruction without binding diagnostics. When the chrome toggle's binding
+lands, its exact shortcut may be added to the card in the same default-labeled
+form.
 
 ## Revisit when
 
