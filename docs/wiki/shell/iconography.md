@@ -178,3 +178,6 @@ host bus, display, compositor, network, or hardware.
 This module does not render pixmap-payload icons (the status-notifier
 renderer keeps that wire concern), and makes no nested-session or physical
 display claims.
+
+The custom artwork follows the [Mineral Light visual identity](visual-identity.md);
+lookup and rendering contracts remain independent of its palette.

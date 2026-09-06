@@ -158,3 +158,5 @@ requires exactly one page Loader to remain active.
 `qindaqt.settings-app-installed-routes` installs the bounded Appearance runtime
 component into a clean prefix and launches both routes with host display,
 Wayland, QML-import, and library-path overrides removed.
+
+The bundled artwork follows QindaQt's [Mineral Light visual identity](../shell/visual-identity.md).
