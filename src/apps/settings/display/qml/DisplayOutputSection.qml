@@ -21,7 +21,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Displays")
-        description: qsTr("Select a display to configure its resolution, scaling, and orientation")
+        description: qsTr("Select a display to configure it. Its number marks it in the arrangement below.")
     }
 
     Flow {
@@ -36,7 +36,9 @@ ColumnLayout {
             delegate: DisplayOutputCard {
                 id: card
                 required property var modelData
+                required property int index
                 outputData: card.modelData
+                ordinal: card.index + 1
                 selected: root.displaySettings.selectedOutputId === card.modelData.stableId
                 canEdit: root.displaySettings.canEdit && !root.editorBusy
                 onSelectedRequested: root.displaySettings.setSelectedOutputId(card.modelData.stableId)
@@ -45,9 +47,12 @@ ColumnLayout {
     }
 
     FormRow {
+        objectName: "displayEnableFormRow"
         Layout.fillWidth: true
         label: qsTr("Enable display")
-        description: qsTr("Enable this connected display before configuring it")
+        description: (root.displaySettings.selectedOutput.enabled ?? false)
+                     ? qsTr("This display is ready to configure.")
+                     : qsTr("Turn on this connected display before configuring it.")
         editor: enableSwitch
 
         Switch {

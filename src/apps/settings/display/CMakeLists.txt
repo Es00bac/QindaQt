@@ -49,6 +49,10 @@ qt_add_qml_module(
         qml/DisplayPreviewBanner.qml
         qml/DisplayScaleSection.qml
         qml/DisplayTransformSection.qml
+        qml/DisplayArrangementCanvas.qml
+        qml/DisplayArrangementGeometry.js
+        qml/DisplayArrangementTile.qml
+        qml/DisplayPlacementControls.qml
 )
 target_link_libraries(
     qindaqt_settings_display_qml
@@ -90,6 +94,10 @@ install(
         qml/DisplayPreviewBanner.qml
         qml/DisplayScaleSection.qml
         qml/DisplayTransformSection.qml
+        qml/DisplayArrangementCanvas.qml
+        qml/DisplayArrangementGeometry.js
+        qml/DisplayArrangementTile.qml
+        qml/DisplayPlacementControls.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
     COMPONENT SettingsAppearanceRuntime
 )
