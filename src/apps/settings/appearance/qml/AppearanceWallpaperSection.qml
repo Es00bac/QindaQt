@@ -15,7 +15,8 @@ ColumnLayout {
     required property var appearanceSettings
     required property bool editorBusy
     readonly property var draftValues: appearanceSettings.draft
-    property Item firstFocusTarget: null
+    readonly property Item firstFocusTarget: wallpaperChoices.children.length > 0
+                                           ? wallpaperChoices.children[0] : null
     readonly property string selectedWallpaper: String(root.draftValue("appearance.wallpaper"))
 
     Layout.fillWidth: true
@@ -61,6 +62,7 @@ ColumnLayout {
     }
 
     Flow {
+        id: wallpaperChoices
         Layout.fillWidth: true
         spacing: Tokens.space["2"]
 
