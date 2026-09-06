@@ -39,9 +39,15 @@ replace earlier work:
 - Support Sloom Studio by default through its existing Electron/custom-KDE
   global-menu integration. Its standard dbusmenu twin is exported at
   `/org/signalloom/menus/active` by `org.signalloom.PanelMenu`; preserve that
-  existing contract and qualify real menu actions.
+  existing contract and qualify real menu actions. The reviewed selector is
+  integrated at `d2be019f`; focused Sloom/editor checks pass 2/2. Real installed
+  Sloom exports the expected service from its Electron main process; panel
+  consumption after compositor refresh remains the acceptance gate.
 - Diagnose the reported ChatGPT launch segmentation fault and repair any
   established desktop/runtime integration defect without resetting user data.
+  Resolved launch regression: isolated X11 launch reproduced SIGSEGV; native
+  Wayland remained running. The user launcher now selects Wayland in a Wayland
+  session, with the original preserved and a normal-launch survival check.
 - Maintain the project on the user’s GitHub with reviewed integration commits,
   working CI dependencies, isolated worker branches, and ignored build/session
   output. `origin/main` was pushed and independently read back at `ce63d1bb`.

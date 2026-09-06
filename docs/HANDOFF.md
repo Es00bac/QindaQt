@@ -2,6 +2,30 @@
 
 ## Installed-session completion in progress — 2026-09-06
 
+Current source checkpoint `d2be019f` builds successfully after independently
+reviewed aggregate-fixture repair `a4d552b2`. Integrated Settings/Controls gates
+pass 33/33; menu/chrome selection passes 31/31; portal/fixture selection passes
+5/5; Sloom/editor selection passes 2/2. Strict MkDocs and 181-document validation
+pass. Private Settings run `11cadca49f1f4f5f81f78b065db19ad6` captures ten routes;
+Network guidance is compact and top-aligned, with the accepted quieter status
+surface and distinct headings. Gesture runs stopped during probe preparation,
+so grouped interaction runtime acceptance remains open.
+
+Sloom selector `d2be019f` preserves native KDE address priority and uses the
+existing standard exporter only for exact Sloom identities. A normal installed
+Sloom launch exposes `org.signalloom.PanelMenu` from Electron main PID1225025;
+KWin identifies the window as `signal-loom`. The authorized panel's existing PID
+proof and real action behavior still need qualification after refresh. Gabbee
+GlobalShortcuts backend routing is integrated at `3ad28017`, including the
+reviewed ADR-0086 rename. Synthetic insertion qualification remains open.
+
+ChatGPT's reported crash reproduced on its X11 backend with an isolated profile
+(status139/new core). Native Wayland survived the bounded 12-second comparison.
+The reversible user launcher now selects Wayland when both the Wayland session
+and display are present; normal repaired launch survived with no new core.
+This is an app-backend workaround, not evidence of a compositor-wide defect.
+The original launcher is preserved in ignored crash-diagnostic artifacts.
+
 Latest integration update: GitHub `Es00bac/QindaQt` now contains the tested
 `ce63d1bb` checkpoint; `git ls-remote` independently confirmed that exact remote
 SHA after a non-forced push. The menu repair passed 35/35 focused checks. Private
