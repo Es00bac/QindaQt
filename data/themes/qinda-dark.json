@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "qinda-dark",
-  "name": "Qinda Dark",
+  "name": "QindaPunk Nightfall",
   "variant": "dark",
   "iconTheme": "QindaQt",
   "fontFamily": "Inter",
@@ -10,14 +10,14 @@
   "motionDuration": 160,
   "blurEnabled": false,
   "colors": {
-    "canvas": "#171a18",
-    "surface": "#222624",
-    "surfaceRaised": "#2c312e",
-    "border": "#3c433f",
-    "text": "#f2f1eb",
-    "textMuted": "#a9afa9",
-    "accent": "#8fc8b7",
-    "accentText": "#10201b",
-    "danger": "#f07c76"
+    "canvas": "#111E2C",
+    "surface": "#192939",
+    "surfaceRaised": "#273746",
+    "border": "#526170",
+    "text": "#F2EFE8",
+    "textMuted": "#B0B6B7",
+    "accent": "#D98A32",
+    "accentText": "#1B1309",
+    "danger": "#E86F62"
   }
 }
