@@ -179,6 +179,43 @@ public:
         return true;
     }
 
+    bool restoreRejectedPresentation(const MemberGroupBaseline &baseline,
+                                     const QString &windowId,
+                                     MemberFocusMode mode,
+                                     QString *error) override
+    {
+        const auto *member = baseline.member(windowId);
+        auto *window = m_registry.window(windowId);
+        if (!member || !window) {
+            if (error) {
+                *error = QStringLiteral(
+                    "rejected focus member is absent from the committed group");
+            }
+            return false;
+        }
+
+        // AGENT-GUARD: This is a rejected peer request while another member
+        // owns focus presentation. Do not use restoreGroup(), change hidden
+        // state, or activate any window: each would reveal or unfocus the
+        // accepted owner. HybridMemberPolicy keeps its applying guard active
+        // while these KWin setters synchronously emit their state signals.
+        if (mode == MemberFocusMode::Fullscreen && window->isFullScreen()) {
+            window->setFullScreen(false);
+        }
+        if (window->maximizeMode() != KWin::MaximizeRestore) {
+            window->maximize(KWin::MaximizeRestore);
+        }
+        if (window->requestedQuickTileMode()
+                != KWin::QuickTileMode(KWin::QuickTileFlag::None)
+            || window->quickTileMode()
+                != KWin::QuickTileMode(KWin::QuickTileFlag::None)) {
+            window->setQuickTileMode(KWin::QuickTileFlag::None,
+                                     member->frame.center());
+        }
+        window->moveResize(member->frame);
+        return true;
+    }
+
     bool restoreGroup(const MemberGroupBaseline &baseline,
                       const QString &minimizeWindowId,
                       const QSet<QString> &missingWindowIds,

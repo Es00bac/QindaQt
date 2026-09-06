@@ -235,11 +235,16 @@ without changing the page tree: other group members and shared chrome hide,
 and the selected member occupies the group outer frame or KWin fullscreen. The
 real maximize bit is cleared for maximize focus; `QindaDecoration` receives a
 process-local property so its button shows restore, and a second maximize or a
-fullscreen exit restores the exact group baseline. A competing member focus
-request is rejected. Minimizing the focused member restores the group then
-leaves that member minimized; closing it restores surviving members; native
-drag commits the topology detach before clearing temporary focus presentation;
-shutdown restores focus state before release-all.
+fullscreen exit restores the exact group baseline. Fullscreen exit preserves a
+current outside-window focus chosen through Alt-Tab or a panel. A competing
+member focus request is rejected after the KWin adapter clears only that
+requesting member's native fullscreen, maximize, and quick-tile state and
+restores its committed frame. It never reveals a hidden peer, shared chrome, or
+changes activation while the accepted focus owner remains active. Minimizing
+the focused member restores the group then leaves that member minimized;
+closing it restores surviving members; native drag commits the topology detach
+before clearing temporary focus presentation; shutdown restores focus state
+before release-all.
 
 Non-popup dialogs/transients associated with grouped owners remain floating,
 never become topology leaves, and follow stable owner-relative geometry,

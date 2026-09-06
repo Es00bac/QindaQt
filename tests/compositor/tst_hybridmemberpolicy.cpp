@@ -70,6 +70,9 @@ public:
                                      QString *error) override
     {
         calls.append({CallKind::Reject, baseline, windowId, mode, {}});
+        if (onReject) {
+            onReject();
+        }
         return accept(error);
     }
 
@@ -98,6 +101,7 @@ public:
 
     QVector<PlatformCall> calls;
     std::function<void()> onDetach;
+    std::function<void()> onReject;
     QString postDetachContainerId;
     std::optional<MemberGroupBaseline> postDetachFocusBaseline;
     bool failNext = false;
@@ -295,6 +299,13 @@ void HybridMemberPolicyTest::rejectedCompetingPresentationRollsBackWithoutChangi
         HybridMemberPolicy policy(platform);
         QVERIFY(policy.synchronize({original}));
 
+        bool rollbackSignalsSuppressed = false;
+        platform.onReject = [&] {
+            rollbackSignalsSuppressed = policy.ownsTransition()
+                && !policy.maximizedChanged(QStringLiteral("right"), true)
+                && !policy.fullscreenChanged(QStringLiteral("right"), true);
+        };
+
         if (mode == MemberFocusMode::Maximized) {
             QVERIFY(policy.maximizedChanged(QStringLiteral("left"), true));
             QVERIFY(!policy.maximizedChanged(QStringLiteral("right"), true));
@@ -308,6 +319,7 @@ void HybridMemberPolicyTest::rejectedCompetingPresentationRollsBackWithoutChangi
         QCOMPARE(platform.calls.constLast().baseline, original);
         QCOMPARE(platform.calls.constLast().windowId, QStringLiteral("right"));
         QCOMPARE(platform.calls.constLast().mode, std::optional(mode));
+        QVERIFY(rollbackSignalsSuppressed);
         QCOMPARE(policy.focusState(),
                  std::optional<MemberFocusState>({QStringLiteral("group"),
                                                   QStringLiteral("left"), mode}));
