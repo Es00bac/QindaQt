@@ -75,7 +75,7 @@ ColumnLayout {
 
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("Wallpaper image path")
+        label: qsTr("Custom wallpaper path")
         description: qsTr("Choose a bundled image above or enter a custom path; leave empty for none")
         errorMessage: root.appearanceSettings.fieldErrors[
                           "appearance.wallpaper"] ?? ""
@@ -86,10 +86,11 @@ ColumnLayout {
             objectName: "appearanceWallpaperField"
             width: 320
             enabled: root.appearanceSettings.canEdit && !root.editorBusy
-            text: root.draftValue("appearance.wallpaper")
+            text: String(root.draftValue("appearance.wallpaper")).startsWith("qindaqt:")
+                  ? "" : root.draftValue("appearance.wallpaper")
             error: root.appearanceSettings.fieldErrors[
                        "appearance.wallpaper"] !== undefined
-            accessibleName: qsTr("Wallpaper image path")
+            accessibleName: qsTr("Custom wallpaper path")
             // TextInput::textEdited() has no signal argument in Qt 6.
             onTextEdited: root.setDraft("appearance.wallpaper",
                                         wallpaperField.text)
