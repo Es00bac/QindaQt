@@ -208,7 +208,7 @@ not by the individual window:
 - Native maximize/fullscreen already route through member focus mode
   (`maximizedChanged`/`fullscreenChanged` in `KWinMemberPolicyManager`): the
   member temporarily presents alone within the container's outer frame
-  without leaving the group. This is unaffected by the following.
+  without leaving the group.
 - The plain four-direction quick-tile shortcut (`Meta+Left`/`Right`/`Up`/`Down`
   by default) has no such existing translation, so a grouped member accepted
   it as ordinary native geometry: KWin's own tile snapped the member's frame
@@ -219,18 +219,26 @@ not by the individual window:
   signal, which is asynchronous for Wayland (`xdg-shell`) clients and would
   let one native-tiled frame reach the screen first.
   `KWinMemberPolicyManager` therefore also observes `requestedTileChanged` for
-  every grouped member; on a pure single-edge request it reverts the native
-  quick-tile synchronously (`setQuickTileMode(QuickTileFlag::None, …)`, before
-  any frame can present it) and redirects the requested direction to the
-  nearest same-container sibling through the existing within-container dock
-  commit (`ReparentMember`/`ReorderMembers`/`MoveMemberToPage`, the same path
+  every grouped member and reverts *every* non-`None` requested mode
+  synchronously (`setQuickTileMode(QuickTileFlag::None, …)`, before any frame
+  can present it) — corner combos and `Custom` included, not only the plain
+  four-direction request. `None` itself is the recursion stop: the revert's
+  own nested `requestTile(nullptr)` re-enters this same handler, which must
+  see `None` and return rather than clearing forever. `Q_EMIT
+  requestedTileChanged()` is confirmed the last statement in
+  `Window::requestTile()`, so the nested clear completes before the outer
+  request returns with no double-apply race. Only a pure single-edge request
+  additionally redirects the requested direction to the nearest
+  same-container sibling through the existing within-container dock commit
+  (`ReparentMember`/`ReorderMembers`/`MoveMemberToPage`, the same path
   `Meta+Shift+D` already uses once a target is chosen) — deterministic
   movement/reordering inside the container instead of independent native
   tiling. A direction with no same-container sibling is a silent no-op: the
   member simply stays where it is, with the native request already reverted.
-  Combined corner quick-tile modes, `Maximize`, and `Custom` are left alone by
-  this narrow interception; only the plain four-direction request is
-  redirected.
+  Corner combos and `Custom` have no typed container-topology equivalent yet,
+  so they stop after the revert: the member stays where it is instead of
+  tiling outside its container, but nothing repositions it within the
+  container either.
 
 ## Candidate and scene transaction
 
