@@ -1,0 +1,10 @@
+# Reviewed completion integration
+
+- Settings chain through `da6948d7` accepted by GLM at `d98f7963`, plus manager independent review and rerun of subsequent actual-typing/Revert tests. Root reproduced 1/1 final Appearance gate; integrated Settings/Appearance/customization selection passes 10/10. The direct-JavaScript editText reviewer probe removes its own binding; actual key input restores both editText and rendered TextField text. No speculative product change was introduced for that probe.
+- Container chain through `4d0395f9` accepted by same reviewer Sol after repairing corner/Custom geometry leakage; integrated through `b4453452`, plugin rebuild and focused7/7 pass. Real private interaction evidence remains required; initial proposed hook checked target geometry tautologically and is being repaired to check actual committed frames and real focus.
+- ICC `884a0ca2` and Color close followup `1806d0d1` accepted by Claude after withdrawing impossible notready-sibling sequencing claim, independently executing11/11 focused rows. Integrated `6db0923c` and `deb48cd3`; integrated build/gates next.
+- Global menu repair `26909353` accepted by same reviewer Sol after exact first-GetLayout failure reproduction, transport8/8 and client3/3. Integration queued behind current build.
+- Broad main `747108d2` gate631/639; settingsnavigation failure addressed by reviewed Settings integration; five palette/privatebus fixtures assigned GLM, two shelllaunch fixtures assigned Kimi, exact log `.cache/finish-broad-747108d2.log`. No overall completion claim.
+- Private Settings screenshot run95b53463 used stale DesktopVirtual stage (rendered old720px navigation; a raw binaryhash alone is insufficient because install rewrites RPATH). Rejected as final visualevidence; stage must be refreshed and authenticated before rerun. No livehostsession restart occurred.
+
+- Refreshed DesktopVirtual package gate passes; current staged Settings and build Settings both carry ELF Build ID fc96e7f2b94320825649629af0b7d5b9441344f1, despite expected installed RPATH byte differences. Second privatecapture now checks960px integratedwindow.

@@ -18,7 +18,9 @@ replace earlier work:
   activation and Audio/Power/Network/Bluetooth recovery code are integrated;
   the repaired Bluetooth fixtures and the full 100-test service selection pass.
 - Finish existing Color profile application and explain actual hardware
-  capabilities without protocol jargon or nonfunctional controls.
+  capabilities without protocol jargon or nonfunctional controls. ICC application
+  is integrated through `deb48cd3`; 13 focused checks pass. Physical color-profile
+  qualification and unavailable-state visual cleanup remain open.
 - Make Settings and the wider desktop human-friendly: focused Appearance
   destinations, clear selection and apply behavior, usable customization,
   consistent controls, compact navigation, and real visual verification.
@@ -27,8 +29,11 @@ replace earlier work:
   preserve explicit wallpaper/theme choices. Palettes, shared editable controls,
   and reviewed Controls baselines are integrated through `3de6ac9f`; final
   Settings consumer review and real desktop visual acceptance remain open.
-- Eliminate global-menu flashing and inconsistent presentation. A tested
-  candidate awaits independent review and integrated runtime verification.
+- Eliminate global-menu flashing and inconsistent presentation. Reviewed fixes
+  are integrated through `90bca1c6`; 43 focused menu/AppShell gates pass. After the
+  live shell refresh the user confirms flicker stopped, but clicking menu items
+  is nonfunctional. This is the immediate active regression; stable painting
+  alone is not completion.
 - Make Meta+Shift left-drag consistently combine windows into QindaQt
   containers without competing KWin custom/thirds tiling. The input-order and
   modifier-timing conflict is being repaired and needs nested interaction proof.
@@ -38,17 +43,40 @@ replace earlier work:
 - Add a keyboard toggle for grouped-member title chrome, keeping container
   ownership and a visible focus cue in both clean-tile and title-visible modes.
 - Provide a dismissible desktop shortcut note with an obvious way to reopen it;
-  its actions must match the completed window-management behavior.
+  its actions must match the completed window-management behavior. Integrated
+  `8ce25f98` provides persisted dismissal and Meta+F1; eight focused checks pass,
+  with actual desktop acceptance and deployment pending.
 - Add QindaQt-specific parent-frame controls for member-title visibility and
   a compact management menu using the existing arrange, detach, and ungroup
   actions, without obscuring normal window controls.
 - Make the active container and active member unmistakable through stronger
   theme-consistent frame cues, including when member titles are hidden.
+- Replace stock KWin chrome context menus with QindaQt group/member-aware
+  controls, exposing the same completed actions as the parent frame.
+- Add whole-group roll-up/shade or iconify behavior appropriate to the selected
+  interface, with parent controls and reliable member/focus restoration.
+- Qualify Gabbee dictation, its global shortcuts, and text insertion into
+  ordinary applications and terminals, including correct grouped-window focus.
+- Qualify fullscreen video and games: fullscreen entry/exit and restoration,
+  input focus, panel visibility, and pointer capture/confinement behavior.
 
 Claude, GLM through Kimi, Kimi, and Codex workers contribute isolated candidates
 and independent reviews. Product completion requires integrated evidence;
 worker activity alone does not advance the milestone. See [Handoff](HANDOFF.md)
 for the current installed and integrated boundaries.
+
+### Explicit checkpoint stopping rule (2026-09-06)
+
+The user explicitly requested a goal with a finite stopping point. Finish the
+reported desktop-experience list above as one usable deployed checkpoint:
+independently reviewed integration, focused checks, one closing broad suite,
+and a bounded actual-desktop pass for Settings, menu actions, grouping/chrome,
+shortcuts, and fullscreen. Verify Gabbee with synthetic insertion and document
+hardware-dependent evidence precisely. Refresh the tested shell/services and
+perform the compositor session restart when its accepted changes are ready.
+Stop when those outcomes pass; do not expand the checkpoint into unrelated
+features or open-ended aesthetic polishing. A task is not complete merely
+because its worker handed off code or a screenshot looks improved.
 
 ### Consistent appearance and first-launch tutorial (2026-09-05)
 

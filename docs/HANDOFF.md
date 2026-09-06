@@ -34,15 +34,74 @@ reviewed fixture repairs `fd739656` and `bc87c7c9`. These update stale palette
 expectations and isolate the absent-service D-Bus scenario from installed
 activation directories. No theme-related failures remain in that selection.
 
-Settings navigation/presentation, actual ICC application, global-menu stability,
-and deterministic Meta+Shift docking remain candidate work. Meta+Arrow and all
-other native geometry actions must respect container ownership; the directional
-redirect candidate has not yet passed independent review or nested interaction. Their final boundary requires exact independent review,
-integrated regression gates, and real nested desktop screenshots/interactions.
-Generated design concepts and shell-preview demos are not production visual
-acceptance evidence. The additional user-requested member-title shortcut,
-parent-frame management controls, dismissible desktop shortcut note, and
-stronger active-frame cues are assigned isolated work; none is yet integrated.
+Settings navigation and focused Appearance destinations are integrated through
+`fa606016`; the ten focused Settings/Appearance/Customize gates pass, including
+real font typing and visible-text restoration after Revert. ICC application is
+integrated through `deb48cd3`, with 13 focused Display writer/Color/Clipboard
+checks passing. The saved profile is applied through the compositor's public
+output-management protocol and reported active only after compositor acceptance.
+Global-menu identity churn and replacement-provider failure handling are
+integrated through `90bca1c6`; the 43 focused menu/AppShell gates pass.
+
+Grouped-member Meta+Arrow and native quick-tile cancellation are integrated
+through `b4453452`, with the plugin build and seven focused input/policy gates
+passing. Late Shift added during an already-started native drag remains open.
+The private gesture probe failed during window arrangement before reaching its
+behavior assertions; no successful nested qualification is claimed for this
+change yet.
+
+Actual private desktop run `4c6f5c162db04a23adbe5a785af8b300` captured all ten
+Settings routes from the refreshed stage. It exposed clipped Customize panels,
+weak Appearance layout, duplicate route controls and confusing unavailable-state
+copy. These are active repairs, not accepted final visual design. Astra and
+Fable 5.1 independently reviewed the actual renders; Fable was invoked through
+the Claude CLI and its returned model identity was observed directly. Generated
+concepts do not substitute for production screenshots.
+
+The first visual route repair is independently accepted and integrated at
+`1250b909`: Appearance uses horizontal tabs, Customize separates its preview
+from supporting tools, and Display/Clipboard/Network unavailable presentation
+is clarified. The desktop shortcut note is independently accepted and integrated
+at `8ce25f98`; its eight integrated focused checks pass. Meta+F1 toggles it and
+dismissal persists through Settings. Actual combined screenshot acceptance is
+pending; shared typography/status-card refinements remain a follow-up.
+
+Member-title visibility, parent-frame management controls, stronger focus cues,
+Gabbee global-shortcut routing, and fullscreen policy remain isolated candidate
+or implementation work. The broader suite's seven remaining fixture repairs
+were independently reviewed and integrated at `1a68edf7` and `5fd6fb82`; that
+checkpoint passed 638/638 broad checks and 3/3 installed Settings routes. The
+combined route-plus-note broad run is in progress.
+
+The requested refresh is installed: 1,054 files were verified after atomic
+replacement. The shell reloaded from PID719783 to1130466 while compositor719654
+and the user's applications remained running. Settings was restarted and the
+new Appearance page opened. Display/Network temporary binary overrides were
+retired in favor of the new system installation. Audio, Power, Bluetooth and
+Network report Ready; Network reports Full connectivity, Bluetooth has one
+adapter, Display has one output, and Clipboard history/privacy report healthy.
+BlueZ's system service is now active. These are direct physical-session reads.
+
+Private integrated run `e19980545004468a9e86e192f5886c1a` captures all ten Settings
+routes and the shortcut note, with byte-exact harness restoration and no private
+survivors. Appearance/footer and Customize layout are accepted as an incremental
+refresh. Shared status-card/typography and ordinary-window edge refinements
+remain open. Compositor candidates have not been loaded into the physical
+session; a deliberate restart follows their interaction qualification.
+
+After the refresh the user confirms that global-menu flicker stopped, but menu
+clicks are nonfunctional. This is the immediate active defect; the global menu
+is not complete. A new isolated Kimi implementation and a production private
+click probe are in progress. The source supervisor permits only one unexpected
+shell recovery, which this reload consumed: do not send a second shell SIGTERM
+and inadvertently terminate the user's compositor session.
+
+The route-plus-note broad run passed638/640, then the two stale Audio/Clipboard
+consumer expectations were repaired at `bb5cb9c1`/`8218e5b5` and passed3/3.
+The repeat broad run passed639/640; enabling real BlueZ exposed a fixture that
+implicitly expected the host system bus to lack Bluetooth. Its private-system-
+bus repair is integrated at `ec960670` and passes the integrated focused gate1/1.
+No product regression is inferred from that host-dependent test assumption.
 
 ## Host installation completed — 2026-09-05
 
