@@ -97,6 +97,11 @@ void HybridGroupedGeometryReconcilerTest::preservesTemporaryNativePresentation()
          .requestedFrame = QRectF(0, 0, 100, 100),
          .targetFrame = QRectF(19, 394, 479, 675),
          .nativeFrameOverride = true},
+        {.windowId = QStringLiteral("whole-group-maximized-member"),
+         .containerId = QStringLiteral("maximized-group"),
+         .requestedFrame = QRectF(0, 30, 960, 978),
+         .targetFrame = QRectF(0, 30, 960, 906),
+         .nativeFrameOverride = true},
     };
 
     QVERIFY(fixture.reconciler.reconcile().isEmpty());
