@@ -76,6 +76,12 @@ and structurally malformed/unsupported values map to a deterministic rejected
 result. Concrete protocol objects belonging to an invalidated global set are
 released so a later owner is not permanently held behind a stale busy slot.
 
+Registry and device callbacks flush the requests they enqueue before returning
+to the Qt event loop. In particular, a quiet compositor receives registry binds
+without an unrelated operation or extra event; discovery can therefore reach
+available on its own. The existing nonblocking flush handles socket backpressure
+through the write notifier and preserves transport-loss fencing on errors.
+
 The production port publishes availability edges to D6 and exposes a positive
 peer PID only while its exact private Wayland connection is live. On Linux that
 identity comes from `SO_PEERCRED` on the Wayland socket; no environment value or
@@ -112,7 +118,11 @@ The mapper row covers accepted complete/surviving values and fail-closed
 identity, mode, topology, scale, and transform mutations. The port row covers
 exactly-once completion, hostile synchronous callback, owner replacement,
 lineage change, late reply, timeout, concurrent request, stop, and journal seam
-behavior. Boundary and poison rows pin the XML and prove platform/private
+behavior. The Wayland startup row runs the production adapter against a private
+in-process protocol server, proving initial discovery and newly advertised-device
+binds reach availability without submission or unrelated server traffic. This
+fixture uses the existing test-only Wayland server dependency and no host socket.
+Boundary and poison rows pin the XML and prove platform/private
 dependencies cannot escape the installed header surface.
 
 These are deterministic and compile-time D4/D6 evidence. They do **not** prove a

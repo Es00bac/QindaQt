@@ -412,7 +412,12 @@ private:
         }
         if (wl_display_dispatch(m_display) < 0) {
             transportLost();
+            return;
         }
+        // AGENT-GUARD: Registry callbacks enqueue binds. Dispatch flushes
+        // before reading, not after callbacks; without this flush a quiet
+        // compositor never receives those binds and mutation stays unavailable.
+        flush();
     }
 
     void flush()

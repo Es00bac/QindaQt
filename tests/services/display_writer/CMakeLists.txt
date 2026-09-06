@@ -24,6 +24,29 @@ qindaqt_add_display_writer_test(
     qindaqt.display-writer-port
 )
 
+# Reuse the test-only Wayland server dependency already used by clipboard.
+find_package(Wayland REQUIRED COMPONENTS Server)
+find_package(WaylandScanner REQUIRED)
+enable_language(C)
+qt_add_executable(qindaqt_display_writer_wayland_startup_tests
+    tst_display_writer_wayland_startup.cpp)
+foreach(protocol IN ITEMS kde-output-device-v2 kde-output-management-v2)
+    ecm_add_wayland_server_protocol(qindaqt_display_writer_wayland_startup_tests
+        PROTOCOL "${CMAKE_SOURCE_DIR}/src/services/display_writer/protocol/${protocol}.xml"
+        BASENAME "${protocol}" PRIVATE_CODE)
+    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/wayland-${protocol}-protocol.c"
+        PROPERTIES COMPILE_OPTIONS "-Wno-conversion;-Wno-sign-conversion;-Wno-shadow")
+endforeach()
+target_include_directories(qindaqt_display_writer_wayland_startup_tests
+    PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(qindaqt_display_writer_wayland_startup_tests
+    PRIVATE QindaQt::DisplayWriter Wayland::Server Qt6::Test)
+qindaqt_enable_warnings(qindaqt_display_writer_wayland_startup_tests)
+add_test(NAME qindaqt.display-writer-wayland-startup
+    COMMAND qindaqt_display_writer_wayland_startup_tests)
+set_tests_properties(qindaqt.display-writer-wayland-startup
+    PROPERTIES LABELS "service;display;writer;wayland" TIMEOUT 15)
+
 add_test(
     NAME qindaqt.display-writer-boundary
     COMMAND
