@@ -78,7 +78,6 @@ add_test(
     NAME qindaqt.global-menu-production-panel-keyboard-qml-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>
-        -import "${PROJECT_SOURCE_DIR}/tests/shell/qml/imports"
         -import "${CMAKE_BINARY_DIR}/qml"
         -import "${global_menu_panel_imports}"
         -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuProductionPanelKeyboard.qml"

@@ -73,6 +73,7 @@ jobs:
             python \
             qt6-base \
             qt6-declarative \
+            qt6-svg \
             qt6-wayland \
             qtermwidget
 
@@ -81,7 +82,7 @@ jobs:
       - name: Record dependency versions
         run: >-
           pacman -Q cmake extra-cmake-modules kdecoration qtermwidget
-          qt6-base qt6-declarative qt6-wayland
+          qt6-base qt6-declarative qt6-svg qt6-wayland
 
       - name: Configure
         run: >-
@@ -129,6 +130,7 @@ jobs:
             python \
             qt6-base \
             qt6-declarative \
+            qt6-svg \
             qt6-wayland \
             qtermwidget \
             xorg-xdpyinfo \
@@ -163,7 +165,7 @@ jobs:
         run: >-
           pacman -Q dbus extra-cmake-modules kdecoration kwin
           kglobalaccel layer-shell-qt libcap qtermwidget qt6-base
-          qt6-declarative qt6-wayland xorg-xwayland
+          qt6-declarative qt6-svg qt6-wayland xorg-xwayland
 
       - name: Configure production shell without the binary KWin plugin
         run: >-

@@ -55,7 +55,7 @@ strict:
 
 | Dependency | CMake requirement | Qualified Manjaro package set |
 | --- | --- | --- |
-| Qt | 6.11 or newer, including Core, DBus, Gui, QML, Quick, Quick Controls, Test, and Widgets | `qt6-base 6.11.1-1`, `qt6-declarative 6.11.1-3`, `qt6-wayland 6.11.1-1` |
+| Qt | 6.11 or newer, including Core, DBus, Gui, QML, Quick, Quick Controls, SVG, Test, and Widgets | `qt6-base 6.11.1-1`, `qt6-declarative 6.11.1-3`, `qt6-svg 6.11.1-1`, `qt6-wayland 6.11.1-1` |
 | Extra CMake Modules | 6.0 or newer | `extra-cmake-modules 6.27.0-1` |
 | KWin | **6.6.6 exactly** | `kwin 6.6.6` (Gentoo `kde-plasma/kwin-6.6.6`) |
 | Plasma Activities | **6.6.6 exactly** | `plasma-activities 6.6.6` |
@@ -75,7 +75,7 @@ On an Arch-derived system, the corresponding package names are:
 ```sh
 sudo pacman -S --needed \
   base-devel cmake ninja python extra-cmake-modules \
-  qt6-base qt6-declarative qt6-wayland \
+  qt6-base qt6-declarative qt6-svg qt6-wayland \
   kcoreaddons kglobalaccel kdecoration kwin plasma-activities \
   layer-shell-qt dbus xdg-desktop-portal xdg-desktop-portal-kde \
   fontconfig xorg-xdpyinfo xorg-xwayland
