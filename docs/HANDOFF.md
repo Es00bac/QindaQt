@@ -23,10 +23,14 @@ Menu behavior while preserving the public facade and action-generation checks.
 
 The installed input helper and backend-only KDE compatibility are deployed;
 the live RemoteDesktop frontend reports device mask 7. Private input remains
-unqualified. Exact-owner startup now avoids an auto-activation race, and the
-latest logs establish that the isolated compositor has no PipeWire connection:
-its screencast plugin fails, so the KDE backend cannot open a remote-desktop
-session. Luna owns the private-server prerequisite and helper diagnostics.
+unqualified. Exact-owner startup avoids an auto-activation race. Private run
+`0dcf0eef1d564c8cbb5a200951f2dea8` proves a healthy isolated PipeWire core and
+an actual Remote Control approval window. The fixture also needed an XDG
+applications menu: without it KApplicationTrader returned zero portal entries
+despite the installed desktop file; with it, the exact executable and declared
+Wayland interfaces resolve. No permission checks were bypassed. Approval-control
+accessibility and actual helper text delivery remain open; the run cleaned up
+all private processes.
 Gabbee probe repairs are integrated at `088a4a4b`, with 24/24 unit tests and
 strict post-delivery AT-SPI proof. Actual app/terminal insertion remains open.
 
