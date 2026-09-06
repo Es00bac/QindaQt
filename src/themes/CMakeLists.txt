@@ -19,6 +19,7 @@ target_sources(
 
 target_link_libraries(qindaqt_themes PUBLIC Qt6::Core Qt6::Gui)
 target_compile_features(qindaqt_themes PUBLIC cxx_std_20)
+set_target_properties(qindaqt_themes PROPERTIES POSITION_INDEPENDENT_CODE ON)
 qindaqt_enable_warnings(qindaqt_themes)
 
 install(
