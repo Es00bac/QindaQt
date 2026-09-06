@@ -205,7 +205,8 @@ function snapPosition(moving, others, desired, alignThreshold) {
         yEdges.push(other.y, other.y + other.height - height)
     }
     if (rivals.length === 0) {
-        return { x: desiredX, y: desiredY, attached: false }
+        // A lone display has no relative arrangement; retain the topology origin.
+        return { x: moving.x, y: moving.y, attached: false }
     }
     var best = null
     var bestDistance = Infinity
@@ -224,7 +225,8 @@ function snapPosition(moving, others, desired, alignThreshold) {
             { x: sideX, y: rival.y - height }
         ]
         for (var c = 0; c < candidates.length; ++c) {
-            var candidate = candidates[c]
+            var candidate = { x: clampCoordinate(candidates[c].x),
+                              y: clampCoordinate(candidates[c].y) }
             var rect = { x: candidate.x, y: candidate.y, width: width, height: height }
             if (overlapsAny(rect, rivals, moving.stableId)) {
                 continue
@@ -244,8 +246,7 @@ function snapPosition(moving, others, desired, alignThreshold) {
     return { x: best.x, y: best.y, attached: true }
 }
 
-// Ideal origin for placing "moving" directly beside "reference" with their
-// leading edges aligned; snapPosition resolves collisions with third displays.
+// Place beside the reference; snapPosition resolves third-display collisions.
 function placeBeside(moving, reference, side, others) {
     var desired
     if (side === "left") {
@@ -363,8 +364,7 @@ function reattachAfterResize(previousRects, nextRects, changedId) {
     return resolveMoves(nextRects, deltas)
 }
 
-// A display attached to the far side of a moved neighbour translates by the
-// same amount, so a whole row or column keeps its spacing.
+// Carry an attached neighbour's translation through its row or column.
 function propagateAlongRows(nextRects, previousById, deltas, changedId) {
     var progressed = true
     var guard = nextRects.length + 1
