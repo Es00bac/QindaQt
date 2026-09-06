@@ -51,8 +51,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   isolated-runtime qualification.
 - [Power and brightness](architecture/power-service.md) records the accepted
   Power1, shell-action, fail-closed backlight, and session-bound activation
-  architecture; the PB-1 Wayland-free resident service/client and activation
-  package are implemented while live upstream adapters remain pending.
+  architecture, including the resident service, live upstream adapters,
+  public client, and activation package.
 - [Network service](architecture/network-service.md) records the resident
   Network1 N1 boundary: the unchanged pure N0 values/model/client, exact-owner
   activating Qt transport, fixed-wire service, confined libnm adapter, and
@@ -69,8 +69,7 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   transport-free composition boundary.
 - [Clipboard service](architecture/clipboard-service.md) records the volatile
   bounded history model, canonical media policy, privacy/generation fencing,
-  metadata search, and codec seam; the live Wayland adapter remains a later
-  milestone.
+  metadata search, codec seam, and live Wayland clipboard host.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, deterministic transaction model, and
   the packaged authenticated D2/D4/D5 runtime composition; nested convergence
@@ -84,7 +83,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Display color model](architecture/display-color-model.md) records the pure
   Display Color C0 values, validated ICC descriptor metadata, deterministic
   catalog and assignment-intent evaluation, and fail-closed snapshot lineage;
-  profile import, transport, and application are later milestones.
+  profile discovery, import, and compositor application are described in the
+  linked client and Settings references.
 - [Notification presentation](shell/notification-presentation.md) records the
   bounded production popup/center behavior, Settings1-fed interruption policy,
   authenticated lock-state privacy gate, and unqualified boundaries.
@@ -106,9 +106,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   hiding, reveal/hold priority, and reservation intent without platform side
   effects.
 - [Global application menu](shell/global-menu.md) records the bounded
-  canonical menu/action model, authenticated active-window ownership, and
-  fail-closed export foundation; transport and live wiring remain future
-  milestones.
+  menu/action model, active-window ownership, live transport, action
+  dispatch, and popup presentation.
 - [Applet runtime](shell/applet-runtime.md) defines manifest, host, policy, and
   compiled-implementation gates and records which built-ins are genuinely live.
 - [Bluetooth applet](shell/bluetooth-applet.md) records the production

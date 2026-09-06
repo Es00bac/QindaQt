@@ -18,8 +18,11 @@ replace earlier work:
   activation and Audio/Power/Network/Bluetooth recovery code are integrated;
   the repaired Bluetooth fixtures and the full 100-test service selection pass.
 - Detect connected displays, including disabled projectors, and offer usable
-  enable/layout controls in Settings. The physical DP-1 projector is enabled
-  beside HDMI-A-1; the disabled-output inventory repair is under review.
+  enable/layout controls in Settings. Include visual monitor positioning,
+  per-monitor scaling, mixed-resolution layouts, and understandable Apply/Keep/
+  Revert behavior; raw coordinates alone are not the main arrangement workflow.
+  The physical DP-1 projector is enabled beside HDMI-A-1; inventory and
+  arrangement presentation repairs are in progress.
 - Make maximized containers follow the available work area when the dock hides
   or changes its reservation, preserving their normal restore size.
 - Finish existing Color profile application and explain actual hardware

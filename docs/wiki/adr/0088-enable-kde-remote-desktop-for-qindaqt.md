@@ -1,6 +1,6 @@
 # ADR-0088: Scope the KDE portal compatibility identity to its backend process
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-06
 - **Owners:** Portal platform services
 - **Supersedes:** None

@@ -20,9 +20,12 @@ the end of the menu bar. The real New action has prior evidence at that
 misplaced location; the expected correctly anchored click does not activate it.
 Kimi is repairing the exact native reproduction.
 
-The input helper is installed by the normal package as `qindaqt-agent-input`
-(`80ec2818`), with installed import/help smoke passing. Actual approved input
-remains a runtime gate. Gabbee's integrated unit fixture needs updating for
+The input helper is installed on the host as `qindaqt-agent-input`
+(`80ec2818`), with installed import/help smoke passing. Backend-only KDE
+compatibility `89c3644b` is independently reviewed and passes integrated
+portal/package gates 5/5. Its drop-in is installed, portal services restarted,
+and the live frontend now reports `AvailableDeviceTypes=7` instead of zero.
+Actual approved input remains a runtime gate. Gabbee's integrated unit fixture needs updating for
 already-present KDE portal routing, and the documented nested runner exposed
 an invalid run ID before boot; these are being repaired by Claude Sonnet.
 
@@ -31,6 +34,12 @@ unchanged HDMI-A-1 main display. Terra is repairing the inventory that hid its
 disabled state from Settings. Dock work-area reflow is integrated at `0788ae86`:
 focused tests pass and preserve the normal restore frame; actual dock hide/reveal
 qualification remains open.
+
+The broad integrated selection at `5400320e` passes **640/640** in 97 seconds.
+It excludes installed/private-desktop rows and the already identified Gabbee
+fixture repair; those gates are handled separately. Source-shape validation
+passes across 2,803 files. Later menu/display/assets candidates require their
+focused integrated checks before deployment.
 
 Reviewed layer-shell exclusion and development keys are integrated through
 `57b01211`; focused admission/parser/note checks pass 3/3, and the input-device
@@ -49,12 +58,13 @@ surface and distinct headings. Gesture runs stopped during probe preparation,
 so grouped interaction runtime acceptance remains open.
 
 Sloom selector `d2be019f` preserves native KDE address priority and uses the
-existing standard exporter only for exact Sloom identities. A normal installed
-Sloom launch exposes `org.signalloom.PanelMenu` from Electron main PID1225025;
-KWin identifies the window as `signal-loom`. The authorized panel's existing PID
-proof and real action behavior still need qualification after refresh. Gabbee
-GlobalShortcuts backend routing is integrated at `3ad28017`, including the
-reviewed ADR-0086 rename. Synthetic insertion qualification remains open.
+existing standard exporter only for exact Sloom identities. A fresh live launch
+on September 6 produced a KWin `signal-loom` window with PID `1371076` and
+`org.signalloom.PanelMenu` owner PID `1371076`, an exact match obtained through
+Gabbee's real KWin script bridge and the public D-Bus PID query. The bridge also
+successfully discovered this live QindaQt window. Panel action qualification
+still follows the compositor refresh. Gabbee GlobalShortcuts routing is
+integrated at `3ad28017`; synthetic insertion qualification remains open.
 
 ChatGPT's reported crash reproduced on its X11 backend with an isolated profile
 (status139/new core). Native Wayland survived the bounded 12-second comparison.
