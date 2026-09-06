@@ -20,7 +20,7 @@ produces one fixed harmless transcript,
 | STT | Gabbee's `gabbee.stt.mock.MockSpeechToText` (fixed transcript) |
 | Recorder | Probe `SyntheticRecorder` writes a fixed silent WAV; never opens an audio device |
 | Focus capture/activation | Gabbee's `KWinWindowBackend`/`KWinQtScriptBridge` against the QindaQt compositor's stock `org.kde.KWin` Scripting service |
-| Insertion | Gabbee's `TextDeliveryRouter` recovery chain: direct typing fails closed (no tool), IBus/AT-SPI are attempted, clipboard mirror lands via `wl-copy` |
+| Insertion | Gabbee's `TextDeliveryRouter` reaches AT-SPI `EditableText`; the probe requires a new post-delivery AT-SPI occurrence. Clipboard output is recorded as fallback evidence and can never make insertion pass |
 | Global shortcuts | Gabbee's `PortalPushToTalkBinding` against a real `xdg-desktop-portal` frontend |
 | Portal backend | Fake KDE backend claiming the reviewed selector's bus name, implementing the installed `org.freedesktop.impl.portal.GlobalShortcuts` contract |
 
@@ -76,11 +76,19 @@ then runs:
 1. the same GlobalShortcuts portal chain against the nested session bus;
 2. `gabbee_interop_probe.py`: Gabbee captures and activates the focused
    Text Editor window, dictates the synthetic transcript, and the delivery
-   result plus AT-SPI/clipboard readback are recorded; the same for the
-   Terminal window;
+   result plus pre/post AT-SPI and clipboard readback are recorded; the phase
+   passes only when Gabbee reports `at-spi` delivery and the post snapshot has
+   a new transcript occurrence. The same check runs for the Terminal window;
 3. the compositor's `DockWindows` development API groups editor + terminal
    into one window container; Gabbee must capture exactly the focused member
    (distinct `window_id`s) and deliver per member.
+
+The inner session sets `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` and installs the
+standard `org.a11y.Bus` activation entry on its private session bus. A
+preflight row records the private bus path, AT-SPI library availability, and
+broker introspection result. If the Qt AT-SPI bridge is missing or the focused
+control does not expose `EditableText`, the phase remains red and reports that
+fact; clipboard contents do not mask it.
 
 Typed-character insertion inside the contained lane is deliberately absent:
 the compositor's development input injector has a closed key enum (no

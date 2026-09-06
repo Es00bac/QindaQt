@@ -31,6 +31,7 @@ from gabbee_probe_support import (  # noqa: E402
     SyntheticRecorder,
     PhaseResult,
     gabbee_source_root,
+    readback_proves_insertion,
     stage_portals_configuration,
     synthetic_transcript,
     validate_synthetic_wav,
@@ -72,9 +73,9 @@ class SyntheticRecorderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "utterance-01" / "gabbee-synthetic.wav"
             recorder.start(path, None)
-            self.assertTrue(recorder.is_recording())
+            self.assertTrue(recorder.is_recording)
             self.assertEqual(recorder.stop(), path)
-            self.assertFalse(recorder.is_recording())
+            self.assertFalse(recorder.is_recording)
             facts = validate_synthetic_wav(path)
             self.assertEqual(facts["frameRate"], 16_000)
             self.assertEqual(facts["frames"], recorder.fixed_pcm_frames)
@@ -98,6 +99,14 @@ class SyntheticRecorderTests(unittest.TestCase):
             with self.assertRaises(ProbeContractError):
                 recorder.start(Path(temporary) / "b.wav", None)
 
+    def test_is_recording_is_a_property_not_a_method(self) -> None:
+        recorder = SyntheticRecorder()
+        # GabbeeController accesses recorder.is_recording WITHOUT parentheses
+        # (it is used as a property, not called as a method).  If is_recording
+        # were a plain method, recorder.is_recording would be a truthy bound
+        # method object and the controller would never start/stop recording.
+        self.assertIsInstance(recorder.is_recording, bool)
+
 
 class TranscriptTests(unittest.TestCase):
     def test_transcript_is_fixed_and_harmless(self) -> None:
@@ -105,6 +114,15 @@ class TranscriptTests(unittest.TestCase):
         self.assertEqual(transcript, "[mock transcript from gabbee-synthetic.wav]")
         self.assertTrue(transcript.isascii())
         self.assertNotIn("\n", transcript)
+
+    def test_readback_requires_new_post_delivery_occurrence(self) -> None:
+        transcript = synthetic_transcript()
+        self.assertTrue(readback_proves_insertion("", transcript, transcript))
+        self.assertFalse(readback_proves_insertion(transcript, transcript, transcript))
+        self.assertTrue(
+            readback_proves_insertion(transcript, transcript + transcript, transcript)
+        )
+        self.assertFalse(readback_proves_insertion("", "unrelated", transcript))
 
     def test_matches_real_gabbee_mock_provider(self) -> None:
         try:
@@ -137,12 +155,26 @@ class TranscriptTests(unittest.TestCase):
 class PortalConfigurationStagingTests(unittest.TestCase):
     def test_appends_reviewed_kde_routing(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "source.conf"
+            source.write_text(
+                "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\n",
+                encoding="utf-8",
+            )
             destination = Path(temporary) / "portals.conf"
-            facts = stage_portals_configuration(PRODUCTION_CONF, destination)
+            facts = stage_portals_configuration(source, destination)
             self.assertEqual(facts["mode"], "append-kde")
             staged = destination.read_text(encoding="utf-8")
             self.assertIn(PORTAL_INTERFACE_LINE + "\n", staged)
             self.assertIn("default=none", staged)
+            self.assertEqual(staged.count("GlobalShortcuts"), 1)
+
+    def test_production_conf_stages_valid(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "portals.conf"
+            facts = stage_portals_configuration(PRODUCTION_CONF, destination)
+            self.assertIn(facts["mode"], ("append-kde", "passthrough"))
+            staged = destination.read_text(encoding="utf-8")
+            self.assertIn(PORTAL_INTERFACE_LINE + "\n", staged)
             self.assertEqual(staged.count("GlobalShortcuts"), 1)
 
     def test_passthrough_when_already_integrated(self) -> None:
@@ -262,6 +294,80 @@ class PortalChainTests(unittest.TestCase):
             self.assertTrue(driver["activatedRoutedPressed"])
             self.assertTrue(driver["deactivatedRoutedReleased"])
             self.assertTrue(phases["backend-journal"]["ok"])
+
+
+class OuterPreflightTests(unittest.TestCase):
+    """Executable outer preflight — exercises actual run-root creation.
+
+    These are not parser tests; they call into desktop_session_sandbox to prove
+    the run-id formula and create_run_root/remove_run_root lifecycle work before
+    any nested execution.  Regression: run_id f"gabbee{uuid4().hex[:20]}" was
+    26 chars; the sandbox contract requires exactly 32 lowercase hex digits.
+    """
+
+    def test_run_id_conforms_to_sandbox_pattern(self) -> None:
+        import uuid
+
+        from desktop_session_sandbox import RUN_ID_PATTERN
+
+        run_id = uuid.uuid4().hex
+        self.assertIsNotNone(
+            RUN_ID_PATTERN.fullmatch(run_id),
+            f"run_id {run_id!r} does not satisfy the 32-hex sandbox contract",
+        )
+        self.assertEqual(len(run_id), 32)
+
+    def test_create_run_root_lifecycle(self) -> None:
+        import uuid
+
+        from desktop_session_sandbox import create_run_root, remove_run_root
+
+        with tempfile.TemporaryDirectory() as temporary:
+            build_root = Path(temporary)
+            run_id = uuid.uuid4().hex
+            paths = create_run_root(build_root, run_id)
+            self.assertTrue(paths.root.is_dir(), "run root directory must exist")
+            self.assertTrue(paths.sentinel.is_file(), "sentinel must be written")
+            self.assertTrue(paths.artifacts.is_dir(), "artifacts dir must exist")
+            self.assertTrue(paths.runtime.is_dir(), "runtime dir must exist")
+            remove_run_root(paths, build_root, run_id)
+            self.assertFalse(paths.root.exists(), "run root must be cleaned up")
+
+    def test_system_path_entries_are_strings_for_sandbox_environment(self) -> None:
+        """Catch PurePosixPath/str mismatch: sandbox_environment requires str entries.
+
+        Regression: _outer_spec built system_path as sorted({posix(e).parent ...})
+        which yields list[PurePosixPath]; sandbox_environment called entry.startswith()
+        which is a str-only method, crashing before boot.  The corrected formula is
+        sorted({str(posix(e).parent) ...}).  This test exercises that exact path.
+        """
+        import uuid
+        from pathlib import PurePosixPath
+
+        from desktop_session_host_tools import sandbox_path_for, system_mounts
+        from desktop_session_sandbox import sandbox_environment
+
+        def posix(value: str) -> PurePosixPath:
+            return PurePosixPath(value)
+
+        dbus = shutil.which("dbus-daemon")
+        if not dbus:
+            self.skipTest("dbus-daemon not available")
+        tools = [Path(sys.executable), Path(dbus)]
+        mounts = tuple(system_mounts(tools))
+        entries = [sandbox_path_for(t.resolve(strict=True), mounts) for t in tools]
+        system_path = sorted({str(posix(e).parent) for e in entries})
+        for entry in system_path:
+            self.assertIsInstance(entry, str, "system_path entries must be str, not PurePosixPath")
+        run_id = uuid.uuid4().hex
+        env = sandbox_environment(
+            run_id=run_id,
+            uid=os.getuid(),
+            stage_bin="/opt/qindaqt/bin",
+            system_path=system_path,
+        )
+        self.assertIn("PATH", env)
+        self.assertIn("/opt/qindaqt/bin", env["PATH"])
 
 
 class OuterCliTests(unittest.TestCase):

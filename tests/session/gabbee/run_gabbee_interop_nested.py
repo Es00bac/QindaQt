@@ -105,7 +105,7 @@ def _outer() -> int:
 
     result_root = (arguments.result_root or arguments.build_root / "tests/session/gabbee-results").resolve()
     result_root.mkdir(parents=True, exist_ok=True)
-    run_id = f"gabbee{uuid.uuid4().hex[:20]}"
+    run_id = uuid.uuid4().hex
     run_dir = result_root / run_id
     run_dir.mkdir()
     terminal_stage = run_dir / "terminal-stage"
@@ -171,7 +171,7 @@ def _outer_spec(
     python = sandbox_path_for(tools[0], tuple(mounts))
     dbus_daemon = sandbox_path_for(tools[1], tuple(mounts))
     kwin_wayland = sandbox_path_for(tools[2], tuple(mounts))
-    system_path = sorted({posix(entry).parent for entry in (python, dbus_daemon, kwin_wayland)})
+    system_path = sorted({str(posix(entry).parent) for entry in (python, dbus_daemon, kwin_wayland)})
     library_path, qt_plugin_path, qml_import_path = library_search_roots(tools)
     environment = sandbox_environment(
         run_id=run_id,
@@ -293,7 +293,8 @@ def _start_session_bus(arguments: argparse.Namespace, stage, environment: dict, 
     service_dir = runtime / "bus-services"
     service_dir.mkdir(parents=True, exist_ok=True)
     bus_config = runtime / "bus.conf"
-    from gabbee_probe_support import BUS_CONFIG_TEMPLATE
+    from desktop_session_process import spawn_logged_process, wait_for_path
+    from gabbee_probe_support import BUS_CONFIG_TEMPLATE, write_fake_backend_service
 
     bus_config.write_text(
         BUS_CONFIG_TEMPLATE.format(
@@ -328,6 +329,10 @@ def _start_nested_desktop(
 ) -> str:
     """Boot compositor + session + target apps; return the child socket name."""
 
+    from desktop_session_launch import _configure_private_session, _virtual_spec
+    from desktop_session_process import spawn_logged_process, wait_for_path
+    from gabbee_probe_support import stage_portals_configuration
+
     socket_name = _configure_private_session(environment, None)
     virtual = _virtual_spec(None)
     compositor_environment = dict(environment)
@@ -353,6 +358,11 @@ def _start_nested_desktop(
     app_environment = dict(environment)
     app_environment["WAYLAND_DISPLAY"] = socket_name
     app_environment["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
+    # The bwrap sandbox uses --clearenv and has no /bin -> usr/bin symlink.
+    # qtermwidget falls back to /bin/sh when SHELL is unset; supply /usr/bin/bash
+    # so the terminal can launch its shell inside the restricted root.
+    if "SHELL" not in app_environment:
+        app_environment["SHELL"] = "/usr/bin/bash"
     for role, executable in (
         ("editor-app", stage.executables["editor-app"]),
         ("terminal-app", Path("/opt/qindaqt-terminal") / arguments.bin_directory / "qindaqt-terminal"),
@@ -370,6 +380,8 @@ def _start_nested_desktop(
 def _run_evidence_steps(
     arguments: argparse.Namespace, environment: dict, runtime: Path, socket_name: str
 ) -> int:
+    from gabbee_probe_support import gabbee_probe_python_environment
+
     probe_environment = dict(environment)
     probe_environment["WAYLAND_DISPLAY"] = socket_name
     probe_environment["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
@@ -412,6 +424,16 @@ def _run_evidence_steps(
         chain_environment,
     )
 
+    # certifi (via gabbee.stt.elevenlabs → requests) calls where() at import time and
+    # raises FileNotFoundError when /etc/ssl is absent.  Bootstrap a CA bundle at the
+    # first path certifi checks so the import succeeds inside the sandbox.
+    _ca_src = Path("/usr/lib/python3.14/site-packages/certifi/cacert.pem")
+    _ca_dst = Path("/etc/ssl/certs/ca-certificates.crt")
+    if _ca_src.is_file() and not _ca_dst.exists():
+        _ca_dst.parent.mkdir(parents=True, exist_ok=True)
+        import shutil as _shutil
+        _shutil.copy2(_ca_src, _ca_dst)
+
     time.sleep(5)  # let editor/terminal windows map before probing
     probe_code = run_step(
         "probe",
@@ -423,6 +445,14 @@ def _run_evidence_steps(
         ],
         probe_environment,
     )
+    # Copy process logs to evidence so the outer runner can inspect crashes.
+    log_src = Path("/var/log/qindaqt-desktop")
+    if log_src.is_dir():
+        for log_file in log_src.iterdir():
+            if log_file.is_file() and log_file.stat().st_size < 256 * 1024:
+                (evidence_root / f"process-log-{log_file.name}").write_bytes(
+                    log_file.read_bytes()
+                )
     return 0 if chain_code == 0 and probe_code == 0 else 1
 
 
