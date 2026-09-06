@@ -88,7 +88,7 @@ without discarding confirmed state:
    the appearance model and a separate client to notification quieting; each
    client owns an independent `QtSettingsTransport` so their local request
    tokens cannot collide on one signal source;
-3. discover bundled PNG wallpapers from `$XDG_DATA_DIRS/qindaqt/wallpapers` and the installed prefix, with earlier roots winning duplicate file names; choosing one writes its absolute installed path while a saved custom path or empty choice remains unchanged until the user edits and applies it;
+3. discover bundled PNG wallpapers from `$XDG_DATA_DIRS/qindaqt/wallpapers` and the installed prefix, with earlier roots winning duplicate file names; choosing one writes its portable `qindaqt:<basename>` identity while a saved custom path or empty choice remains unchanged until the user edits and applies it;
 4. merge every theme directory from the same search contract as the text
    editor (`$XDG_DATA_DIRS/qindaqt/themes`, then beside the installed
    executable; `--theme-directory` prepends a developer path). Earlier

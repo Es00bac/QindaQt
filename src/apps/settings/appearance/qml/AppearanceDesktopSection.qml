@@ -6,8 +6,8 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Wallpaper and scale values are stored intent only. This component never
-// reaches compositor/display APIs or mutates the running desktop.
+// This component stores wallpaper intent through its injected model. The shell
+// applies only the later confirmed Settings1 snapshot; QML reaches no surface API.
 ColumnLayout {
     id: root
 
