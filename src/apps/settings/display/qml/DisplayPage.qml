@@ -17,7 +17,9 @@ T.Page {
 
     readonly property bool editorBusy: displaySettings.busy
                                      || displaySettings.loading
-    readonly property Item firstFocusTarget: outputSection.firstFocusTarget
+    readonly property Item firstFocusTarget: root.displaySettings.unavailable
+                                             ? unavailableNotice
+                                             : outputSection.firstFocusTarget
 
     title: qsTr("Display")
 
@@ -77,7 +79,7 @@ T.Page {
         Label {
             objectName: "displayStatus"
             Layout.fillWidth: true
-            visible: text.length > 0
+            visible: text.length > 0 && !root.displaySettings.unavailable
             text: root.displaySettings.statusText
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
@@ -120,16 +122,23 @@ T.Page {
             displaySettings: root.displaySettings
         }
 
-        DegradedNotice {
-            id: unavailableNotice
-            objectName: "displayUnavailableNotice"
+        Item {
             Layout.fillWidth: true
+            Layout.preferredHeight: root.displaySettings.unavailable
+                                  ? unavailableNotice.implicitHeight : 0
             visible: root.displaySettings.unavailable
-            reason: root.displaySettings.statusText.length > 0
-                    ? root.displaySettings.statusText
-                    : qsTr("Display management service is unavailable.")
-            retryText: qsTr("Retry Connection")
-            onRetryRequested: root.displaySettings.retry()
+
+            DegradedNotice {
+                id: unavailableNotice
+                objectName: "displayUnavailableNotice"
+                anchors.top: parent.top
+                width: parent.width
+                reason: root.displaySettings.statusText.length > 0
+                        ? root.displaySettings.statusText
+                        : qsTr("Display management is temporarily unavailable.")
+                retryText: qsTr("Try again")
+                onRetryRequested: root.displaySettings.retry()
+            }
         }
 
         Flickable {
@@ -238,6 +247,7 @@ T.Page {
 
         RowLayout {
             Layout.fillWidth: true
+            visible: !root.displaySettings.unavailable
             spacing: Tokens.space["2"]
 
             Item { Layout.fillWidth: true }
@@ -262,17 +272,6 @@ T.Page {
                 onClicked: root.displaySettings.applyDraft()
             }
 
-            Button {
-                id: closeButton
-                objectName: "displayCloseButton"
-                available: !root.editorBusy
-                text: qsTr("Close")
-                KeyNavigation.tab: root.firstFocusTarget !== null ? root.firstFocusTarget : closeButton
-                KeyNavigation.backtab: applyButton.visible ? applyButton
-                                       : revertButton.visible ? revertButton
-                                       : applyButton
-                onClicked: root.closeRequested()
-            }
         }
     }
 }

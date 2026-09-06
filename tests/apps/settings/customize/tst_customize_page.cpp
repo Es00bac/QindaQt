@@ -122,6 +122,35 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     QVERIFY(qAbs(discardDialog->property("x").toReal() - expectedX) < 1.0);
     QVERIFY(qAbs(discardDialog->property("y").toReal() - expectedY) < 1.0);
     QVERIFY(QMetaObject::invokeMethod(discardDialog, "reject"));
+
+    // A 960px Settings window gives the route a medium-width work area after
+    // the Settings Center sidebar. Its primary Arrange task must therefore
+    // keep the representative desktop and all scaled applet markers contained.
+    view.resize(960, 680);
+    QTest::qWait(50);
+    QVERIFY(compact->isVisible());
+    auto *canvas = item(view.rootObject(), "customizeOutputCanvas");
+    auto *panel = item(view.rootObject(), "customizeCanvasPanel_bar");
+    auto *chip = item(view.rootObject(), "customizeChip_clock-instance");
+    QVERIFY(canvas != nullptr);
+    QVERIFY(panel != nullptr);
+    QVERIFY(chip != nullptr);
+    const QRectF chipBounds = chip->mapRectToItem(panel, chip->boundingRect());
+    QVERIFY(chipBounds.left() >= 0.0);
+    QVERIFY(chipBounds.top() >= 0.0);
+    QVERIFY(chipBounds.right() <= panel->width());
+    QVERIFY(chipBounds.bottom() <= panel->height());
+
+    auto *outlineTab = item(view.rootObject(), "customizeCompactTab_1");
+    auto *detailsTab = item(view.rootObject(), "customizeCompactTab_2");
+    QVERIFY(outlineTab != nullptr);
+    QVERIFY(detailsTab != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(outlineTab, "click"));
+    QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 1);
+    QTRY_VERIFY(item(compact, "customizeOutlinePanel_bar")->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(detailsTab, "click"));
+    QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 2);
+    QTRY_VERIFY(item(compact, "customizeProperties")->isVisible());
 }
 
 QTEST_MAIN(CustomizePageTests)

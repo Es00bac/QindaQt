@@ -26,7 +26,7 @@ bool NetworkSettingsModel::reload() {
     return false;
   }
   m_localError.clear();
-  m_operationStatusText = tr("Refreshing authoritative network information…");
+  m_operationStatusText = tr("Refreshing network information…");
   m_client.refresh();
   Q_EMIT viewChanged();
   return true;
@@ -109,7 +109,7 @@ void NetworkSettingsModel::handleOperationFinished(
       break;
     case OperationKind::ConnectVisibleNetwork:
       m_operationStatusText =
-          tr("New profile requested; awaiting authoritative state.");
+          tr("Connecting; waiting for the network to confirm.");
       break;
     case OperationKind::DisconnectActive:
       m_operationStatusText =
@@ -129,8 +129,8 @@ void NetworkSettingsModel::handleOperationFinished(
 void NetworkSettingsModel::handleOperationUncertain(const QString &message) {
   Q_UNUSED(message);
   m_operationStatusText.clear();
-  m_localError = tr("The network operation outcome is uncertain. It was not "
-                    "replayed; reload authoritative state before trying again.");
+  m_localError = tr("The network could not confirm that change. Its outcome "
+                    "is uncertain; refresh the network list before trying again.");
   Q_EMIT viewChanged();
 }
 

@@ -35,7 +35,7 @@ T.Control {
 
             Text {
                 anchors.centerIn: parent
-                text: qsTr("Representative output · 1920 × 1080")
+                text: qsTr("Desktop preview · 1920 × 1080")
                 color: Tokens.fg.muted
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
@@ -111,6 +111,7 @@ T.Control {
                                 anchors.fill: parent
                                 anchors.margins: Tokens.space["1"]
                                 spacing: Tokens.space["1"]
+                                clip: true
 
                                 Repeater {
                                     model: zone.zoneApplets
@@ -119,28 +120,21 @@ T.Control {
                                         id: chip
                                         required property var modelData
 
-                                        width: Math.min(implicitWidth,
-                                                        Math.max(16, zone.width))
-                                        height: Math.min(28,
-                                                         Math.max(12, zone.height))
-                                        implicitWidth: chipLabel.implicitWidth
-                                                       + Tokens.space["2"]
+                                        // A representative panel is scaled from a real
+                                        // 1920px output. Full applet labels do not fit in
+                                        // its thin strips and used to leak over the preview.
+                                        // Markers preserve panel flow while the palette and
+                                        // outline carry the readable names.
+                                        width: Math.max(4, Math.min(12, zone.width - 2))
+                                        height: Math.max(3, Math.min(8, zone.height - 2))
                                         color: Tokens.accent.subtle
                                         border.width: Tokens.space["1"] / 2
                                         border.color: Tokens.outline.strong
-                                        radius: Tokens.radius.s
-
-                                        Text {
-                                            id: chipLabel
-                                            anchors.centerIn: parent
-                                            width: Math.max(0, parent.width
-                                                                 - Tokens.space["2"])
-                                            text: chip.modelData.name
-                                            color: Tokens.fg.default
-                                            font.family: Tokens.type.fontFamily
-                                            font.pointSize: Tokens.type.caption
-                                            elide: Text.ElideRight
-                                        }
+                                        radius: Math.min(width, height) / 2
+                                        Accessible.role: Accessible.ListItem
+                                        Accessible.name: qsTr("%1 applet").arg(chip.modelData.name)
+                                        Accessible.description: qsTr("Shown in the %1 zone")
+                                                                    .arg(zone.modelData)
 
                                         TapHandler {
                                             onTapped: root.customizeSettings.selectApplet(

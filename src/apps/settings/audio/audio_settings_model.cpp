@@ -318,13 +318,13 @@ void AudioSettingsModel::handleOperationCompleted(
   if (result.status == OperationStatus::Succeeded) {
     m_localError.clear();
     m_operationStatusText = translateAudio(
-        "Change applied; authoritative audio state is being refreshed.");
+        "Change applied; refreshing audio information.");
   } else {
     m_operationStatusText.clear();
     if (result.status == OperationStatus::Uncertain) {
       m_localError = translateAudio(
-          "The audio change could not be confirmed. It was not retried; "
-          "authoritative state is being refreshed.");
+          "The audio change could not be confirmed. Refreshing audio "
+          "information before you try again.");
     } else {
       m_localError = actionFailureText(result.reasonCode);
     }

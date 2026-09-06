@@ -67,7 +67,7 @@ ColumnLayout {
 
                 objectName: "appearanceThemeCard_" + themeCard.modelData.id
                 themeName: themeCard.modelData.name
-                description: qsTr("Theme %1").arg(themeCard.modelData.name)
+                description: ""
                 previewTokens: themeCard.modelData.previewTokens
                 available: root.appearanceSettings.canEdit && !root.editorBusy
                 checked: root.draftValue("appearance.theme")

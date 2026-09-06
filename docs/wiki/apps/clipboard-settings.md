@@ -82,11 +82,11 @@ expose accessible roles, names, descriptions, checked/busy/disabled truth, and
 visible status text rather than color-only state. Clear requires an explicit
 modal confirmation with Cancel/Clear buttons and Escape dismissal.
 
-The declared first-focus target is Close. It is enabled under loading,
-degraded, privacy-denied, conflict, pending, failure, and uncertainty, so both
-wide and compact Settings hosts always have an admitted Tab target. Escape
-returns focus to the active route tab. `Ctrl+9` selects Clipboard, leaving the
-reserved `Ctrl+8` slot for Power.
+The declared first-focus target is the admitted history switch, then Clear
+history when the switch is unavailable. Closing belongs to the Settings window
+chrome, so the page does not repeat that action. Escape returns focus to the
+active route tab. `Ctrl+9` selects Clipboard, leaving the reserved `Ctrl+8`
+slot for Power.
 
 The `SettingsAppearanceRuntime` install component carries the Clipboard QML
 module and the statically composed Settings executable. Relocation tests run

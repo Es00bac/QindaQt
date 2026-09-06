@@ -91,7 +91,9 @@ route does not duplicate it with a page button.
 Inventory cards expose accessible names, descriptions, roles, current state,
 and disabled state. Scan, reload, connect, and disconnect have explicit
 accessible action names. Stale, unavailable, pending, and error notices use
-truthful visible text rather than color alone.
+truthful visible text rather than color alone. When the service is unavailable,
+the route hides stale inventory, password-prompt guidance, and scan controls;
+one Network unavailable notice and its **Try again** recovery action remain.
 
 ## Composition and package boundary
 

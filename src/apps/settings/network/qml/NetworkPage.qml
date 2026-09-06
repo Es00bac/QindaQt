@@ -13,7 +13,9 @@ T.Page {
     required property var networkSettings
     signal closeRequested()
 
-    readonly property Item firstFocusTarget: scanButton.enabled ? scanButton
+    readonly property Item firstFocusTarget: root.networkSettings.unavailable
+                                                  ? reloadButton
+                                                  : scanButton.enabled ? scanButton
                                                   : reloadButton.enabled ? reloadButton
                                                   : root
 
@@ -66,14 +68,16 @@ T.Page {
                     : root.networkSettings.ready ? StateCard.Success
                     : root.networkSettings.stale ? StateCard.Warning
                     : StateCard.Error
-            title: root.networkSettings.connectivityText
+            title: root.networkSettings.unavailable
+                   ? qsTr("Network unavailable")
+                   : root.networkSettings.connectivityText
             message: root.networkSettings.statusText
         }
 
         Label {
             objectName: "networkOperationStatus"
             Layout.fillWidth: true
-            visible: text.length > 0
+            visible: text.length > 0 && !root.networkSettings.unavailable
             text: root.networkSettings.operationStatusText
             Accessible.role: Accessible.StaticText
             Accessible.name: text
@@ -82,7 +86,7 @@ T.Page {
         Label {
             objectName: "networkError"
             Layout.fillWidth: true
-            visible: text.length > 0
+            visible: text.length > 0 && !root.networkSettings.unavailable
             text: root.networkSettings.errorText
             color: Tokens.fg.default
             Accessible.role: Accessible.AlertMessage
@@ -92,6 +96,7 @@ T.Page {
         StateCard {
             objectName: "networkCredentialBoundary"
             visible: !root.networkSettings.secretAgentRegistered
+                     && !root.networkSettings.unavailable
             Layout.fillWidth: true
             status: root.networkSettings.secretAgentRegistered
                     ? StateCard.Success : StateCard.Warning
@@ -106,6 +111,7 @@ T.Page {
             objectName: "networkFormViewport"
             Layout.fillWidth: true
             Layout.fillHeight: true
+            visible: !root.networkSettings.unavailable
             clip: true
             contentHeight: formSurface.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
@@ -194,15 +200,19 @@ T.Page {
                 objectName: "networkReloadButton"
                 available: root.networkSettings.reloadAvailable
                 busy: root.networkSettings.loading
-                emphasized: false
-                text: qsTr("Reload")
-                accessibleDescription: qsTr("Refresh network connections")
+                emphasized: root.networkSettings.unavailable
+                text: root.networkSettings.unavailable ? qsTr("Try again")
+                                                         : qsTr("Reload")
+                accessibleDescription: root.networkSettings.unavailable
+                                       ? qsTr("Reconnect the network service")
+                                       : qsTr("Refresh network connections")
                 onClicked: root.networkSettings.reload()
             }
 
             Button {
                 id: scanButton
                 objectName: "networkScanButton"
+                visible: !root.networkSettings.unavailable
                 available: root.networkSettings.scanAvailable
                 busy: root.networkSettings.busy
                 text: qsTr("Scan")
@@ -212,6 +222,7 @@ T.Page {
 
             Label {
                 Layout.fillWidth: true
+                visible: !root.networkSettings.unavailable
                 text: root.networkSettings.scanStatusText
                 muted: true
                 Accessible.name: text

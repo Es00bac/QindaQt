@@ -262,6 +262,9 @@ QString NetworkSettingsModel::connectivityText() const {
 
 QString NetworkSettingsModel::scanStatusText() const {
   const ModelState state = m_client.projection();
+  if (!m_client.operationAdmissionReady()) {
+    return tr("Scanning is unavailable until the network service reconnects.");
+  }
   if (state.scanPhase == ScanPhase::Scanning) {
     return tr("Scanning for networks…");
   }
