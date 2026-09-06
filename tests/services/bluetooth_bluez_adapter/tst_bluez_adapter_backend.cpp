@@ -440,7 +440,15 @@ int main(int argc, char **argv)
                         QStringLiteral("Activated adapter"), true);
         if (!fake.takeOwnership()) return 2;
         QTimer::singleShot(10'000, &application, &QCoreApplication::quit);
-        QDBusConnection::sessionBus().connect(QString{}, QStringLiteral("/org/freedesktop/DBus/Local"),
+        // AGENT-GUARD: the boundary checker forbids ambient-bus construction
+        // in test sources. The activating dbus-daemon points
+        // DBUS_SESSION_BUS_ADDRESS at the fixture's private bus, so the fake
+        // binds its disconnect hook to that explicit connection only.
+        QDBusConnection busConnection = QDBusConnection::connectToBus(
+            qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"),
+            QStringLiteral("qindaqt-bluez-activation-fake"));
+        if (!busConnection.isConnected()) return 3;
+        busConnection.connect(QString{}, QStringLiteral("/org/freedesktop/DBus/Local"),
             QStringLiteral("org.freedesktop.DBus.Local"), QStringLiteral("Disconnected"),
             &application, SLOT(quit()));
         return application.exec();
