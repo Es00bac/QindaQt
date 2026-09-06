@@ -66,7 +66,12 @@ item, not a native overlay window.
   **Ungroup**, or **Cancel**.
 - A member maximize action temporarily focuses that tile without destroying the
   split tree. Member fullscreen temporarily occupies its output, then restores
-  the container exactly.
+  the container exactly. Alt-Tab or an outside panel may take focus while that
+  native fullscreen remains active; leaving fullscreen preserves that outside
+  focus. If KWin reports a competing member maximize/fullscreen request while
+  one member already owns temporary focus presentation, the compositor rejects
+  that request and restores only the requesting member's committed frame/state,
+  keeping the current focus owner, hidden peers, and shared chrome unchanged.
 - Dialogs and other transients float above their owning member and follow the
   container. A crashed member is removed without destabilizing peers.
 - Minimum and maximum client sizes constrain divider movement. If the available

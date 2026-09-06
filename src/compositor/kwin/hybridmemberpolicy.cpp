@@ -196,6 +196,23 @@ bool HybridMemberPolicy::enter(const MemberLocation &location,
     return true;
 }
 
+bool HybridMemberPolicy::restoreRejectedPresentation(
+    const QString &windowId, MemberFocusMode mode, QString *error)
+{
+    if (!m_focus || !m_focusBaseline) {
+        return fail(error, QStringLiteral(
+                               "rejected member presentation has no focus baseline"));
+    }
+    if (!m_focusBaseline->member(windowId)) {
+        return fail(error, QStringLiteral(
+                               "rejected member is not in the focus baseline"));
+    }
+    m_applying = true;
+    const auto guard = qScopeGuard([this] { m_applying = false; });
+    return m_platform.restoreRejectedPresentation(
+        *m_focusBaseline, windowId, mode, error);
+}
+
 bool HybridMemberPolicy::restore(const QString &minimizeWindowId,
                                  QSet<QString> missingWindowIds,
                                  MemberRestoreActivation activation,
@@ -236,8 +253,14 @@ bool HybridMemberPolicy::maximizedChanged(const QString &windowId,
         // while policy state supplies the decoration's restore glyph.
         return restore({}, {}, MemberRestoreActivation::RestoreBaseline, error);
     }
+    if (m_focus && m_focus->windowId != windowId) {
+        if (!restoreRejectedPresentation(windowId, MemberFocusMode::Maximized, error)) {
+            return false;
+        }
+        return false;
+    }
     if (m_focus) {
-        return fail(error, QStringLiteral("another member already owns focus mode"));
+        return fail(error, QStringLiteral("member focus mode conflicts with existing owner"));
     }
     return enter(location, MemberFocusMode::Maximized, error);
 }
@@ -255,15 +278,21 @@ bool HybridMemberPolicy::fullscreenChanged(const QString &windowId,
     if (!fullscreen) {
         return m_focus && m_focus->windowId == windowId
                 && m_focus->mode == MemberFocusMode::Fullscreen
-            ? restore({}, {}, MemberRestoreActivation::RestoreBaseline, error)
+            ? restore({}, {}, MemberRestoreActivation::PreserveCurrent, error)
             : false;
     }
     const auto location = locate(windowId);
     if (!location.isValid()) {
         return false;
     }
+    if (m_focus && m_focus->windowId != windowId) {
+        if (!restoreRejectedPresentation(windowId, MemberFocusMode::Fullscreen, error)) {
+            return false;
+        }
+        return false;
+    }
     if (m_focus) {
-        return fail(error, QStringLiteral("another member already owns focus mode"));
+        return fail(error, QStringLiteral("member focus mode conflicts with existing owner"));
     }
     return enter(location, MemberFocusMode::Fullscreen, error);
 }
