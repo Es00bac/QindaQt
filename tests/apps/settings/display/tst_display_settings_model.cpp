@@ -217,6 +217,14 @@ void DisplaySettingsModelTest::testDraftPositionAndPrimary() {
   QVERIFY(model.setOutputPosition(QStringLiteral("edid:dp1"), 0, 1080));
   QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(),
            1080);
+
+  // A temporarily disabled primary retains its draft position. Its canonical
+  // origin is not evidence that it is a newly connected projector.
+  QVERIFY(model.setOutputEnabled(QStringLiteral("edid:dp1"), false));
+  QVERIFY(model.setOutputEnabled(QStringLiteral("edid:dp1"), true));
+  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionX")).toInt(), 0);
+  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(),
+           1080);
 }
 
 void DisplaySettingsModelTest::testEnableConnectedProjectorCreatesRevertibleDraft() {

@@ -3,6 +3,7 @@
 
 #include <core/backendoutput.h>
 #include <core/output.h>
+#include <core/outputbackend.h>
 #include <workspace.h>
 
 #include <QJsonArray>
@@ -269,6 +270,15 @@ KWinOutputInventory::KWinOutputInventory(QObject *parent)
             });
     connect(compositorWorkspace, &KWin::Workspace::outputOrderChanged,
             this, &KWinOutputInventory::scheduleRefresh);
+    auto *const backend = KWin::kwinApp()->outputBackend();
+    connect(backend, &KWin::OutputBackend::outputAdded, this, [this] {
+        rebuildOutputConnections();
+        scheduleRefresh();
+    });
+    connect(backend, &KWin::OutputBackend::outputRemoved, this, [this] {
+        rebuildOutputConnections();
+        scheduleRefresh();
+    });
     rebuildOutputConnections();
     // The D-Bus object is registered only after plugin construction, so the
     // first generation can be sampled synchronously without racing clients.
@@ -301,32 +311,24 @@ void KWinOutputInventory::rebuildOutputConnections()
         disconnect(connection);
     }
     m_outputConnections.clear();
-    for (auto *output : KWin::workspace()->outputOrder()) {
-        if (!output) {
+    for (auto *backendOutput : KWin::kwinApp()->outputBackend()->outputs()) {
+        if (!backendOutput) {
             continue;
         }
         const auto changed = [this] { scheduleRefresh(); };
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::changed,
-                                           this, changed));
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::geometryChanged,
-                                           this, changed));
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::scaleChanged,
-                                           this, changed));
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::transformChanged,
-                                           this, changed));
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::currentModeChanged,
-                                           this, changed));
-        if (auto *backendOutput = output->backendOutput()) {
-            m_outputConnections.append(connect(backendOutput,
-                                               &KWin::BackendOutput::enabledChanged,
-                                               this, changed));
-            m_outputConnections.append(connect(backendOutput,
-                                               &KWin::BackendOutput::priorityChanged,
-                                               this, changed));
-            m_outputConnections.append(connect(backendOutput,
-                                               &KWin::BackendOutput::uuidChanged,
+        if (auto *output = KWin::workspace()->findOutput(backendOutput)) {
+            m_outputConnections.append(connect(output, &KWin::LogicalOutput::changed,
                                                this, changed));
         }
+        m_outputConnections.append(connect(backendOutput,
+                                           &KWin::BackendOutput::enabledChanged,
+                                           this, changed));
+        m_outputConnections.append(connect(backendOutput,
+                                           &KWin::BackendOutput::priorityChanged,
+                                           this, changed));
+        m_outputConnections.append(connect(backendOutput,
+                                           &KWin::BackendOutput::uuidChanged,
+                                           this, changed));
     }
 }
 
@@ -364,33 +366,41 @@ void KWinOutputInventory::refresh()
 QVector<OutputInventoryEntry> KWinOutputInventory::sample(QString *error) const
 {
     QVector<OutputInventoryEntry> result;
-    const auto outputs = KWin::workspace()->outputOrder();
+    const auto outputs = KWin::kwinApp()->outputBackend()->outputs();
     result.reserve(outputs.size());
-    for (const auto *output : outputs) {
-        if (!output || !output->backendOutput()) {
+    for (const auto *backendOutput : outputs) {
+        if (!backendOutput) {
             fail(error, QStringLiteral("KWin output inventory contains a null output"));
             return {};
         }
-        QSize physicalSize = output->physicalSize();
+        const auto *output = KWin::workspace()->findOutput(backendOutput);
+        QSize physicalSize = backendOutput->physicalSize();
         if (!physicalSize.isValid() || physicalSize.isEmpty()) {
             // KWin uses an invalid QSize for unavailable EDID size. The wire's
             // non-negative 0x0 value explicitly means unknown, not measured.
             physicalSize = QSize(0, 0);
         }
+        const QSize logicalSize = output ? output->geometry().size()
+            : QSize(qRound(backendOutput->orientateSize(backendOutput->modeSize()).width()
+                           / backendOutput->scale()),
+                    qRound(backendOutput->orientateSize(backendOutput->modeSize()).height()
+                           / backendOutput->scale()));
+        const QRect geometry = output ? output->geometry()
+                                      : QRect(backendOutput->position(), logicalSize);
         result.append({
-            .name = output->name(),
-            .geometry = output->geometryF(),
-            .visibilityGeometry = static_cast<QRect>(output->geometry()),
-            .scale = output->scale(),
-            .refreshRateMilliHz = output->refreshRate(),
-            .transform = transformName(output->transform().kind()),
-            .enabled = output->backendOutput()->isEnabled(),
-            .internal = output->isInternal(),
-            .uuid = output->uuid(),
-            .priority = output->backendOutput()->priority(),
+            .name = backendOutput->name(),
+            .geometry = geometry,
+            .visibilityGeometry = geometry,
+            .scale = backendOutput->scale(),
+            .refreshRateMilliHz = backendOutput->refreshRate(),
+            .transform = transformName(backendOutput->transform().kind()),
+            .enabled = backendOutput->isEnabled(),
+            .internal = backendOutput->isInternal(),
+            .uuid = backendOutput->uuid(),
+            .priority = backendOutput->priority(),
             .physicalSizeMillimeters = physicalSize,
-            .manufacturer = output->manufacturer(),
-            .model = output->model(),
+            .manufacturer = backendOutput->manufacturer(),
+            .model = backendOutput->model(),
         });
     }
     if (error) {
