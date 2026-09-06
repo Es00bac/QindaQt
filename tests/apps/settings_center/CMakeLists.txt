@@ -42,11 +42,11 @@ set_tests_properties(
     LABELS "settings;navigation"
 )
 
-# 3. Offscreen Navigation Page test
-qt_add_executable(
-    qindaqt_settings_navigation_page_test
+# 3. Offscreen Settings host rows, split by layout and interaction behavior.
+qt_add_executable(qindaqt_settings_navigation_layout_test
+    tst_settings_navigation_layout.cpp
     settings_navigation_page_test_support.h
-    tst_settings_navigation_page.cpp
+    settings_navigation_page_fixture.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/network/stub_network_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h
@@ -54,31 +54,17 @@ qt_add_executable(
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/clipboard/stub_clipboard_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/customize/stub_customize_settings_model.h
 )
-target_include_directories(qindaqt_settings_navigation_page_test PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(
-    qindaqt_settings_navigation_page_test PRIVATE
-    QindaQt::SettingsNavigation
-    qindaqt_settings_appearance
-    qindaqt_settings_display
-    qindaqt_settings_network
-    qindaqt_settings_customize_qml
-    qindaqt_settings_customize_qmlplugin
-    qindaqt_settings_bluetooth
-    qindaqt_settings_power
-    qindaqt_settings_power_backend_qml
-    qindaqt_settings_power_backend_qmlplugin
-    qindaqt_settings_clipboard_qml
-    qindaqt_settings_clipboard_qmlplugin
-    qindaqt_settings_color_backend_qml
-    qindaqt_settings_color_backend_qmlplugin
-    qindaqt_design_tokens
-    qindaqt_tokens_qml
-    qindaqt_controls_qml
-    qindaqt_themes
-    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
+target_include_directories(qindaqt_settings_navigation_layout_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_settings_navigation_layout_test PRIVATE
+    QindaQt::SettingsNavigation qindaqt_settings_appearance qindaqt_settings_display
+    qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
+    qindaqt_settings_power_backend_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml
+    qindaqt_settings_color_backend_qmlplugin qindaqt_design_tokens qindaqt_tokens_qml
+    qindaqt_controls_qml qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
 )
-target_compile_definitions(
-    qindaqt_settings_navigation_page_test PRIVATE
+target_compile_definitions(qindaqt_settings_navigation_layout_test PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     QINDAQT_BUILD_ROOT="${CMAKE_BINARY_DIR}"
     QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
@@ -86,37 +72,66 @@ target_compile_definitions(
     QINDAQT_INSTALL_QML_RELATIVE_PATH="../${QT6_INSTALL_QML}"
     QINDAQT_INSTALL_THEME_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
 )
-add_dependencies(
-    qindaqt_settings_navigation_page_test
-    qindaqt-settings
-    qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
-    qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin
-    qindaqt_settings_network_qml qindaqt_settings_network_qmlplugin
-    qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
-    qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin
-    qindaqt_settings_bluetooth_qml qindaqt_settings_bluetooth_qmlplugin
-    qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
-    qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin
-    qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
-    qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
-    qindaqt_settings_color_qml qindaqt_settings_color_qmlplugin
-    qindaqt_controls_qml qindaqt_controls_qmlplugin
-    qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+add_dependencies(qindaqt_settings_navigation_layout_test
+    qindaqt-settings qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
+    qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin qindaqt_settings_network_qml
+    qindaqt_settings_network_qmlplugin qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin qindaqt_settings_bluetooth_qml
+    qindaqt_settings_bluetooth_qmlplugin qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
+    qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_controls_qml qindaqt_controls_qmlplugin qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
-qindaqt_enable_warnings(qindaqt_settings_navigation_page_test)
-add_test(
-    NAME qindaqt.settings-navigation-page
-    COMMAND qindaqt_settings_navigation_page_test
+qindaqt_enable_warnings(qindaqt_settings_navigation_layout_test)
+add_test(NAME qindaqt.settings-navigation-layout COMMAND qindaqt_settings_navigation_layout_test)
+set_tests_properties(qindaqt.settings-navigation-layout PROPERTIES
+    LABELS "offscreen;settings;navigation"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
-# AGENT-GUARD: The navigation-page row constructs Main.qml in-process under
-# QT_FATAL_WARNINGS=1, so any QML warning in the Settings Center host or a
-# route page aborts the row instead of passing silently. Child-process rows
-# (route construction, installed routes) deliberately tolerate absent-bus
-# qWarning diagnostics in main() and must not be registered as fatal.
-# Both D-Bus addresses are pinned to nonexistent sockets so the row proves
-# host-bus-free behavior on any host instead of inheriting a live session bus.
-set_tests_properties(
-    qindaqt.settings-navigation-page PROPERTIES
+
+# 3. Offscreen Settings host rows, split by layout and interaction behavior.
+qt_add_executable(qindaqt_settings_navigation_interaction_test
+    tst_settings_navigation_interaction.cpp
+    settings_navigation_page_test_support.h
+    settings_navigation_page_fixture.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/network/stub_network_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/power/stub_power_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/clipboard/stub_clipboard_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/customize/stub_customize_settings_model.h
+)
+target_include_directories(qindaqt_settings_navigation_interaction_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_settings_navigation_interaction_test PRIVATE
+    QindaQt::SettingsNavigation qindaqt_settings_appearance qindaqt_settings_display
+    qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
+    qindaqt_settings_power_backend_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml
+    qindaqt_settings_color_backend_qmlplugin qindaqt_design_tokens qindaqt_tokens_qml
+    qindaqt_controls_qml qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
+)
+target_compile_definitions(qindaqt_settings_navigation_interaction_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_BUILD_ROOT="${CMAKE_BINARY_DIR}"
+    QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_SETTINGS_SOURCE_DIR="${PROJECT_SOURCE_DIR}/src/apps/settings_center"
+    QINDAQT_INSTALL_QML_RELATIVE_PATH="../${QT6_INSTALL_QML}"
+    QINDAQT_INSTALL_THEME_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+)
+add_dependencies(qindaqt_settings_navigation_interaction_test
+    qindaqt-settings qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
+    qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin qindaqt_settings_network_qml
+    qindaqt_settings_network_qmlplugin qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin qindaqt_settings_bluetooth_qml
+    qindaqt_settings_bluetooth_qmlplugin qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
+    qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_controls_qml qindaqt_controls_qmlplugin qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_navigation_interaction_test)
+add_test(NAME qindaqt.settings-navigation-interaction COMMAND qindaqt_settings_navigation_interaction_test)
+set_tests_properties(qindaqt.settings-navigation-interaction PROPERTIES
     LABELS "offscreen;settings;navigation"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
