@@ -37,13 +37,21 @@ Rectangle {
     objectName: "shortcutNoteCard"
     visible: note !== null && note.noteVisible
              && screenName === note.primaryScreenName
-    anchors.top: parent.top
-    anchors.right: parent.right
+    // ShortcutNoteController creates the card before assigning its visual
+    // parent, and wallpaper teardown can clear that parent before QObject
+    // ownership destroys the card. Keep every parent read valid across both
+    // transitions so routine lifecycle changes do not emit binding errors.
+    anchors.top: parent ? parent.top : undefined
+    anchors.right: parent ? parent.right : undefined
     anchors.topMargin: (note !== null ? note.topInset : 0) + 16
     anchors.rightMargin: (note !== null ? note.rightInset : 0) + 16
-    width: Math.min(320, parent.width - anchors.rightMargin - 16)
-    implicitHeight: Math.min(content.implicitHeight + 24,
-                             parent.height - anchors.topMargin - 16)
+    width: parent
+           ? Math.min(320, parent.width - anchors.rightMargin - 16)
+           : 0
+    implicitHeight: parent
+                    ? Math.min(content.implicitHeight + 24,
+                               parent.height - anchors.topMargin - 16)
+                    : 0
     radius: Math.min(theme.cornerRadius ?? 10, 14)
     color: colors.surface ?? "#192939"
     border.width: 1

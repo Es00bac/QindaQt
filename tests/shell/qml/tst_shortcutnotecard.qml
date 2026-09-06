@@ -73,6 +73,32 @@ Item {
             compare(card.anchors.topMargin, 88);
         }
 
+        function test_parentlessControllerLifecycleHasNoBindingErrors() {
+            failOnWarning(/TypeError: Cannot read property/);
+
+            // ShortcutNoteController creates the card before lending it to a
+            // wallpaper content item, and screen teardown can remove that
+            // visual parent before QObject ownership destroys the card.
+            const card = cardComponent.createObject(null,
+                                                    { "screenName": "primary" });
+            verify(card !== null);
+            compare(card.width, 0);
+            compare(card.implicitHeight, 0);
+
+            card.parent = testRoot;
+            wait(0);
+            verify(card.visible);
+            compare(card.width, 320);
+            verify(card.implicitHeight > 0);
+
+            card.parent = null;
+            wait(0);
+            compare(card.width, 0);
+            compare(card.implicitHeight, 0);
+            card.destroy();
+            wait(0);
+        }
+
         function test_dismissButtonIsClickableWithoutFocusCapture() {
             const card = createTemporaryObject(cardComponent, testRoot,
                                                { "screenName": "primary" });
