@@ -58,6 +58,7 @@ private:
   QString m_explicitThemeOverride;
   Themes::ThemeSpec m_theme;
   QString m_lastError;
+  Qt::ColorScheme m_platformScheme = Qt::ColorScheme::Unknown;
 };
 
 [[nodiscard]] QStringList
