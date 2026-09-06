@@ -419,6 +419,11 @@ void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
     scene.model->publish();
     QTRY_COMPARE(fontFamily->property("editText").toString(),
                  QStringLiteral("Noto Sans"));
+    auto *fontText = qobject_cast<QObject *>(
+        fontFamily->property("contentItem").value<QObject *>());
+    QVERIFY(fontText != nullptr);
+    QTRY_COMPARE(fontText->property("text").toString(),
+                 QStringLiteral("Noto Sans"));
 
     QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
     auto *wallpaper = item(scene.root, "appearanceWallpaperField");
