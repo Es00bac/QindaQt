@@ -39,7 +39,7 @@ ColumnLayout {
 
         Button {
             objectName: "noWallpaperButton"
-            width: 88
+            width: 144
             height: 94
             text: qsTr("No wallpaper")
             emphasized: root.draftValue("appearance.wallpaper") === ""
