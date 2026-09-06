@@ -6,6 +6,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 bool admitsHybridTopologyWindow(const HybridWindowAdmission &window) noexcept
 {
     return window.exists && !window.deleted && !window.internal
+        && !window.layerShell
         && !window.popup && window.normal && !window.transient
         && !window.dialog;
 }

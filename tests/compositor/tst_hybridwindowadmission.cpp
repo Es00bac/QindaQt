@@ -11,6 +11,7 @@ class HybridWindowAdmissionTest final : public QObject
 
 private Q_SLOTS:
     void acceptsOnlyIndependentNormalClients();
+    void rejectsLayerShellSurfacesEvenWhenNormal();
     void rejectsNormalTypeTransientsAndDialogs();
     void rejectsNonClientAndDeadWindows();
 };
@@ -21,6 +22,16 @@ void HybridWindowAdmissionTest::acceptsOnlyIndependentNormalClients()
     window.exists = true;
     window.normal = true;
     QVERIFY(admitsHybridTopologyWindow(window));
+}
+
+void HybridWindowAdmissionTest::rejectsLayerShellSurfacesEvenWhenNormal()
+{
+    HybridWindowAdmission window;
+    window.exists = true;
+    window.normal = true;
+    window.layerShell = true;
+
+    QVERIFY(!admitsHybridTopologyWindow(window));
 }
 
 void HybridWindowAdmissionTest::rejectsNormalTypeTransientsAndDialogs()

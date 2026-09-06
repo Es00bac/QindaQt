@@ -11,6 +11,9 @@ struct HybridWindowAdmission final
     bool exists = false;
     bool deleted = false;
     bool internal = false;
+    // Desktop-shell surfaces may report a normal window type, but their
+    // placement remains owned by the layer-shell protocol rather than Hybrid.
+    bool layerShell = false;
     bool popup = false;
     bool normal = false;
     bool transient = false;

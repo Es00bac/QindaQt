@@ -4,6 +4,7 @@
 #include "hybridwindowadmission.h"
 
 #include <core/output.h>
+#include <layershellv1window.h>
 #include <window.h>
 #include <workspace.h>
 
@@ -68,6 +69,8 @@ bool ManagedWindowRegistry::isManageable(const KWin::Window *window)
         .exists = window != nullptr,
         .deleted = window && window->isDeleted(),
         .internal = window && window->isInternal(),
+        .layerShell =
+            dynamic_cast<const KWin::LayerShellV1Window *>(window) != nullptr,
         .popup = window && window->isPopupWindow(),
         .normal = window && window->isNormalWindow(),
         .transient = window && window->isTransient(),
