@@ -199,7 +199,8 @@ That row independently installs default `QindaQt`, `AudioAppletRuntime`,
 into build-local stages. It requires the staged shell to resolve each directly
 linked applet backing library and Controls from its own install library
 directory and Tokens from Controls' baked sibling RUNPATH, then launches
-`--help` with ambient loader, display, Wayland, and session-bus variables
+`--help` on the explicit offscreen platform with ambient loader, display,
+Wayland, and session-bus variables
 cleared. It contacts no compositor, host bus, service, or hardware.
 
 The production Power applet slice is selected with:
