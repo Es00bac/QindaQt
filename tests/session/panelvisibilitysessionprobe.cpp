@@ -332,9 +332,9 @@ int main(int argc, char **argv)
 
     QGuiApplication application(argc, argv);
     application.setQuitOnLastWindowClosed(false);
-    PanelVisibilityProbe::Arguments probeArguments;
+    QindaQt::Test::PanelVisibilityProbe::Arguments probeArguments;
     QString argumentError;
-    if (!PanelVisibilityProbe::parseArguments(application.arguments(), &probeArguments,
+    if (!QindaQt::Test::PanelVisibilityProbe::parseArguments(application.arguments(), &probeArguments,
                                               &argumentError)
         || application.screens().size() != 1) {
         return 2;
