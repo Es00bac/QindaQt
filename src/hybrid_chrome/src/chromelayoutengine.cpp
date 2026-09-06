@@ -122,6 +122,7 @@ bool validateRequest(const ChromeLayoutRequest &request, QString *error)
         return false;
     }
     QSet<QString> memberIds;
+    qsizetype focusedMembers = 0;
     for (const auto &member : request.members) {
         if (!uniqueId(member.memberId, &memberIds, error, QStringLiteral("member"))
             || !finiteRect(member.windowRect) || !member.windowRect.isValid()) {
@@ -131,6 +132,19 @@ bool validateRequest(const ChromeLayoutRequest &request, QString *error)
             }
             return false;
         }
+        focusedMembers += member.focused ? 1 : 0;
+    }
+    if (focusedMembers > 1) {
+        if (error) {
+            *error = QStringLiteral("at most one member may be focused");
+        }
+        return false;
+    }
+    if (!request.containerFocused && focusedMembers != 0) {
+        if (error) {
+            *error = QStringLiteral("an unfocused container cannot focus a member");
+        }
+        return false;
     }
     QSet<QString> dividerIds;
     for (const auto &divider : request.dividers) {
@@ -164,6 +178,7 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     plan.devicePixelRatio = request.devicePixelRatio;
     plan.borderHairline = request.metrics.physicalHairline(request.devicePixelRatio);
     plan.maximized = request.maximized;
+    plan.containerFocused = request.containerFocused;
     plan.metrics = request.metrics;
     plan.style = request.style;
     plan.outerFrame = request.outerRect;
@@ -265,7 +280,8 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
         const qreal titleHeight = std::min(member.windowRect.height(), metrics.memberTitleHeight);
         plan.members.append({member.memberId, member.title, member.windowRect,
                              {member.windowRect.left(), member.windowRect.top(),
-                              member.windowRect.width(), titleHeight}});
+                              member.windowRect.width(), titleHeight},
+                             member.focused});
     }
 
     for (const auto &divider : request.dividers) {

@@ -136,6 +136,10 @@ struct ChromeMemberSpec final
     // never its gap-filling tileFrame. Native KDecoration owns every pixel in
     // the member title bar, including fixed/max-size centering slack.
     QRectF windowRect;
+    // Focus is sampled from KWin's active native member, not from the
+    // selected page. The shared renderer may use this for a paint-only cue
+    // outside the transparent member frame.
+    bool focused = false;
 };
 
 struct ChromeDividerSpec final
@@ -155,6 +159,10 @@ struct ChromeLayoutRequest final
     QRectF outerRect;
     qreal devicePixelRatio = 1.0;
     bool maximized = false;
+    // AGENT-CONTRACT: These values are a snapshot of KWin focus ownership.
+    // A container can retain an active page while another window owns focus.
+    bool containerFocused = false;
+    QString focusedMemberId;
     ChromeMetrics metrics;
     ChromeStyle style;
     QVector<ChromeTabSpec> tabs;
@@ -189,6 +197,7 @@ struct MemberGeometry final
     // for modified-pointer target resolution, but must neither paint nor mask
     // this region into the overlay.
     QRectF titleDragRect;
+    bool focused = false;
 };
 
 struct DividerGeometry final
@@ -205,6 +214,7 @@ struct ChromeRenderPlan final
     qreal devicePixelRatio = 1.0;
     qreal borderHairline = 1.0;
     bool maximized = false;
+    bool containerFocused = false;
     ChromeMetrics metrics;
     ChromeStyle style;
     QRectF outerFrame;

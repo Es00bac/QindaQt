@@ -159,6 +159,8 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         .outerRect = QRectF(solution.outerFrame),
         .devicePixelRatio = options.devicePixelRatio,
         .maximized = options.maximized,
+        .containerFocused = options.containerFocused,
+        .focusedMemberId = options.focusedMemberId,
         .metrics = options.metrics,
         .style = options.style,
         .tabs = {},
@@ -176,8 +178,19 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
     }
     QString geometryError;
     if (!appendNodeGeometry(activePage->root(), solution, titleLookup,
-                            &request.members, &request.dividers, &geometryError)) {
+                             &request.members, &request.dividers, &geometryError)) {
         return reject(error, std::move(geometryError));
+    }
+    bool foundFocusedMember = options.focusedMemberId.isEmpty();
+    for (auto &member : request.members) {
+        member.focused = options.containerFocused
+            && member.memberId == options.focusedMemberId;
+        foundFocusedMember = foundFocusedMember || member.focused;
+    }
+    if (options.containerFocused && !foundFocusedMember) {
+        return reject(error,
+                      QStringLiteral("focused member '%1' is not in the active page")
+                          .arg(options.focusedMemberId));
     }
     if (request.members.size() != solution.members.size()
         || request.dividers.size() != solution.splits.size()) {

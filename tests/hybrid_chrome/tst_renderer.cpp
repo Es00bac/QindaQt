@@ -104,6 +104,7 @@ class ChromeRendererTests final : public QObject
 private Q_SLOTS:
     void trafficLightGlyphsAppearOnControlHover();
     void activeTabGetsThemeAccentCue();
+    void focusedContainerAndMemberGetThemeAccentCues();
     void rendersAtDevicePixelRatioWithoutChangingLogicalPlan();
     void leavesCompleteMemberFramesTransparent();
     void clearsPixelsThatBecomeMemberFramesAfterReflow();
@@ -151,6 +152,58 @@ void ChromeRendererTests::activeTabGetsThemeAccentCue()
         QCOMPARE(image.pixelColor(activeCue), plan->style.palette.accent);
         QVERIFY(image.pixelColor(inactiveCue) != plan->style.palette.accent);
         saveEvidence(image, themeId + QStringLiteral("-active-tab.png"));
+    }
+}
+
+void ChromeRendererTests::focusedContainerAndMemberGetThemeAccentCues()
+{
+    for (const auto &themeId : {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light")}) {
+        const auto palette = paletteFromTheme(themeId);
+        QVERIFY2(palette.has_value(), qPrintable(themeId));
+
+        auto unfocusedRequest = baseRequest();
+        unfocusedRequest.style.palette = *palette;
+        const auto unfocusedPlan = ChromeLayoutEngine::build(unfocusedRequest);
+        QVERIFY(unfocusedPlan);
+        const auto unfocusedImage = render(*unfocusedPlan);
+
+        auto focusedRequest = unfocusedRequest;
+        focusedRequest.containerFocused = true;
+        focusedRequest.focusedMemberId = QStringLiteral("member-a");
+        focusedRequest.members[0].focused = true;
+        const auto focusedPlan = ChromeLayoutEngine::build(focusedRequest);
+        QVERIFY(focusedPlan);
+        const auto focusedImage = render(*focusedPlan);
+
+        const auto outerFrameSample = physicalPoint(QPointF(500.0, 0.0),
+                                                    focusedPlan->devicePixelRatio);
+        QCOMPARE(focusedImage.pixelColor(outerFrameSample), focusedPlan->style.palette.accent);
+        QVERIFY(unfocusedImage.pixelColor(outerFrameSample)
+                != unfocusedPlan->style.palette.accent);
+
+        const auto focusedMemberEdge = physicalPoint(QPointF(0.0, 350.0),
+                                                     focusedPlan->devicePixelRatio);
+        const auto siblingEdge = physicalPoint(QPointF(999.0, 350.0),
+                                               focusedPlan->devicePixelRatio);
+        QCOMPARE(focusedImage.pixelColor(focusedMemberEdge), focusedPlan->style.palette.accent);
+        QVERIFY(focusedImage.pixelColor(siblingEdge) != focusedPlan->style.palette.accent);
+        QCOMPARE(focusedImage.pixelColor(physicalPoint(focusedPlan->members[0].windowRect.center(),
+                                                        focusedPlan->devicePixelRatio)),
+                 QColor(Qt::transparent));
+
+        auto siblingFocusedRequest = focusedRequest;
+        siblingFocusedRequest.focusedMemberId = QStringLiteral("member-b");
+        siblingFocusedRequest.members[0].focused = false;
+        siblingFocusedRequest.members[1].focused = true;
+        const auto siblingFocusedPlan = ChromeLayoutEngine::build(siblingFocusedRequest);
+        QVERIFY(siblingFocusedPlan);
+        const auto siblingFocusedImage = render(*siblingFocusedPlan);
+        QCOMPARE(siblingFocusedImage.pixelColor(siblingEdge),
+                 siblingFocusedPlan->style.palette.accent);
+        QVERIFY(siblingFocusedImage.pixelColor(focusedMemberEdge)
+                != siblingFocusedPlan->style.palette.accent);
+        saveEvidence(focusedImage, themeId + QStringLiteral("-focused-frame.png"));
+        saveEvidence(unfocusedImage, themeId + QStringLiteral("-unfocused-frame.png"));
     }
 }
 
