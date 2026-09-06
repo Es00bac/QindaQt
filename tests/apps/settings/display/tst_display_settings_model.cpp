@@ -213,18 +213,12 @@ void DisplaySettingsModelTest::testDraftPositionAndPrimary() {
   QCOMPARE(model.selectedOutput().value(QStringLiteral("primary")).toBool(),
            false);
 
-  // Move DP-1 position
-  QVERIFY(model.setOutputPosition(QStringLiteral("edid:dp1"), 0, 1080));
-  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(),
-           1080);
-
-  // A temporarily disabled primary retains its draft position. Its canonical
-  // origin is not evidence that it is a newly connected projector.
+  // A temporarily disabled origin display retains its actual (0, 0) draft
+  // position. QPoint::isNull cannot identify a newly connected output here.
   QVERIFY(model.setOutputEnabled(QStringLiteral("edid:dp1"), false));
   QVERIFY(model.setOutputEnabled(QStringLiteral("edid:dp1"), true));
   QCOMPARE(model.selectedOutput().value(QStringLiteral("positionX")).toInt(), 0);
-  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(),
-           1080);
+  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(), 0);
 }
 
 void DisplaySettingsModelTest::testEnableConnectedProjectorCreatesRevertibleDraft() {
@@ -254,6 +248,15 @@ void DisplaySettingsModelTest::testEnableConnectedProjectorCreatesRevertibleDraf
   QCOMPARE(enabledProjector.value(QStringLiteral("positionY")).toInt(), 0);
   QCOMPARE(enabledProjector.value(QStringLiteral("modeId")).toString(),
            QStringLiteral("1920x1080@60"));
+
+  // Once arranged, an initially disabled connector has a deliberate draft
+  // position. A later toggle must retain it rather than treat it as new again.
+  QVERIFY(model.setOutputPosition(QStringLiteral("edid:hdmi1"), 2112, 96));
+  QVERIFY(model.setOutputEnabled(QStringLiteral("edid:hdmi1"), false));
+  QVERIFY(model.setOutputEnabled(QStringLiteral("edid:hdmi1"), true));
+  const auto reenabledProjector = model.selectedOutput();
+  QCOMPARE(reenabledProjector.value(QStringLiteral("positionX")).toInt(), 2112);
+  QCOMPARE(reenabledProjector.value(QStringLiteral("positionY")).toInt(), 96);
 
   QVERIFY(model.cancelDraft());
   QVERIFY(!model.draftDirty());
