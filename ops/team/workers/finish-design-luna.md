@@ -1,4 +1,4 @@
-- Status: working — exact shell/theme gate repair handed off; awaiting independent review
+- Status: working — isolating Bluetooth activation fixture from ambient host system bus
 
 ## Updates
 
@@ -20,3 +20,5 @@
 - 2026-09-06T10:43:09-06:00 — Exact candidate `bcf2fbc52337c0a80a620d3d68c4ffd964e98cfe` handed off with focused evidence and no product-logic changes. Requested next action is independent review and integration.
 - 2026-09-06T10:43:56-06:00 — Root assigned one additional stale theme fixture from the broad run: portal frontend dark startup projects the integrated QindaPunk Nightfall accent `#D98A32` (217/138/50), replacing the old jade RGB 143/200/183 expectation. Only `tests/services/portal/tst_portal_frontend_integration.cpp` is added to this candidate.
 - 2026-09-06T10:45:24-06:00 — Portal frontend selection and toolkit rows pass 2/2 after the fixture correction; the expected accent now matches `data/themes/qinda-dark.json` and the real QST projection path. Preparing the superseding exact candidate handoff.
+- 2026-09-06T11:55:58-06:00 — Claimed exact base 8218e5b5 in isolated finish-bluetooth-activation-fixture worktree. Reproduced qindaqt.bluetooth-activation failure: host BlueZ makes expected unavailable snapshot report Ready.
+- 2026-09-06T11:59:23-06:00 — Material repair verified: the fixture now starts a separate empty private system bus and injects its address into activated Bluetooth service children; activation and neighboring client/Qt transport rows pass.

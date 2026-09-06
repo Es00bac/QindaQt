@@ -32,6 +32,25 @@ bool isExactServiceProcess(const pid_t pid)
         == expected;
 }
 
+bool startBareBus(QProcess &daemon,
+                  QString *address,
+                  const QProcessEnvironment &environment = {})
+{
+    if (!environment.isEmpty()) {
+        daemon.setProcessEnvironment(environment);
+    }
+    daemon.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
+    daemon.setArguments({QStringLiteral("--session"), QStringLiteral("--nofork"),
+                         QStringLiteral("--nopidfile"),
+                         QStringLiteral("--print-address=1")});
+    daemon.start();
+    if (!daemon.waitForStarted() || !daemon.waitForReadyRead(5000)) {
+        return false;
+    }
+    *address = QString::fromUtf8(daemon.readLine()).trimmed();
+    return !address->isEmpty();
+}
+
 void terminateExactServiceProcess(const pid_t pid)
 {
     if (!isExactServiceProcess(pid)) {
@@ -71,20 +90,21 @@ public:
         descriptor.write("\n");
         descriptor.close();
 
+        if (!startBareBus(systemDaemon, &systemAddress)) {
+            return false;
+        }
         QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
         environment.insert(QStringLiteral("XDG_DATA_DIRS"),
                            root.filePath(QStringLiteral("share")));
         environment.insert(QStringLiteral("XDG_RUNTIME_DIR"), runtimeDir);
-        daemon.setProcessEnvironment(environment);
-        daemon.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
-        daemon.setArguments({QStringLiteral("--session"), QStringLiteral("--nofork"),
-                             QStringLiteral("--nopidfile"),
-                             QStringLiteral("--print-address=1")});
-        daemon.start();
-        if (!daemon.waitForStarted() || !daemon.waitForReadyRead(5000)) {
+        // AGENT-GUARD: The activated production service resolves BlueZ through
+        // QDBusConnection::systemBus(). Pin that bus in the child environment
+        // so this fixture can never observe or mutate the host BlueZ daemon.
+        environment.insert(QStringLiteral("DBUS_SYSTEM_BUS_ADDRESS"),
+                           systemAddress);
+        if (!startBareBus(daemon, &address, environment)) {
             return false;
         }
-        address = QString::fromUtf8(daemon.readLine()).trimmed();
         connectionName = QStringLiteral("qindaqt-bluetooth-activation-%1")
                              .arg(QUuid::createUuid().toString(QUuid::Id128));
         connection = QDBusConnection::connectToBus(address, connectionName);
@@ -116,6 +136,7 @@ public:
             QDBusConnection::disconnectFromBus(peerConnectionName);
         }
         stopDaemon();
+        stopSystemDaemon();
     }
 
     void stopDaemon()
@@ -127,6 +148,18 @@ public:
         if (!daemon.waitForFinished(2000)) {
             daemon.kill();
             daemon.waitForFinished();
+        }
+    }
+
+    void stopSystemDaemon()
+    {
+        if (systemDaemon.state() == QProcess::NotRunning) {
+            return;
+        }
+        systemDaemon.terminate();
+        if (!systemDaemon.waitForFinished(2000)) {
+            systemDaemon.kill();
+            systemDaemon.waitForFinished();
         }
     }
 
@@ -151,7 +184,9 @@ public:
 
     QTemporaryDir root{QDir(QCoreApplication::applicationDirPath())
                            .filePath(QStringLiteral("activation-runtime-XXXXXX"))};
+    QProcess systemDaemon;
     QProcess daemon;
+    QString systemAddress;
     QString address;
     QString connectionName;
     QString peerConnectionName;
