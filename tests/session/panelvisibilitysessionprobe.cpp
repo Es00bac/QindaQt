@@ -353,6 +353,21 @@ int main(int argc, char **argv)
                             QString::fromLatin1(Interface));
     const QRect output = application.primaryScreen()->geometry();
     const QSize outputSize = output.size();
+    const QString controlFile = probeArguments.controlFile;
+    // A unique title is opt-in for the private fullscreen qualifier, which
+    // needs two independently addressable client-control endpoints. The
+    // ordinary panel-visibility scenario retains its stable default title.
+    PaintedWindow client(probeArguments.title);
+    if (!controlFile.isEmpty()) {
+        // AGENT-GUARD: Controlled probes are inert clients for a separate
+        // fullscreen workflow. They must publish readiness after mapping, not
+        // run the ordinary capture sequence: two concurrent normal probes
+        // race for the shared screenshot directory and never reach control.
+        client.showNormal();
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+        return runFullscreenControl(client, controlFile) ? 0 : 18;
+    }
+
     QJsonArray observed;
     QJsonArray phases;
     const auto topVisible = [&](const QJsonArray &items) {
@@ -361,10 +376,6 @@ int main(int argc, char **argv)
     if (!waitFor(endpoint, topVisible, outputSize, &observed, 15'000)) {
         return 4;
     }
-    // A unique title is opt-in for the private fullscreen qualifier, which
-    // needs two independently addressable client-control endpoints. The
-    // ordinary panel-visibility scenario retains its stable default title.
-    PaintedWindow client(probeArguments.title);
     client.showFullScreen();
     client.requestActivate();
     const auto overlapHidden = [&](const QJsonArray &items) {
@@ -373,7 +384,6 @@ int main(int argc, char **argv)
     };
     const QString captureTool = probeArguments.captureTool;
     const QString captureLibraryPath = probeArguments.captureLibraryPath;
-    const QString controlFile = probeArguments.controlFile;
     if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
                       captureLibraryPath,
                       QStringLiteral("window-overlap-hidden"), &phases)) {
@@ -409,9 +419,6 @@ int main(int argc, char **argv)
                       captureLibraryPath,
                       QStringLiteral("window-moved-away"), &phases)) {
         return 6;
-    }
-    if (!controlFile.isEmpty()) {
-        return runFullscreenControl(client, controlFile) ? 0 : 18;
     }
     client.showFullScreen();
     client.requestActivate();
