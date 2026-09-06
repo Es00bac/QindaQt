@@ -114,6 +114,12 @@ indicator. The separate lock-state privacy gate below cannot be weakened by
 this preference. Scheduling, application exceptions, and inhibition remain
 future work. See [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 
+Notification center, popup, and card actions use the active theme's surface,
+border, text, muted, and accent pairs directly. Checked controls use accent
+with accent text; disabled controls return to raised surface with muted text.
+This keeps header glyphs and action labels readable without inheriting a host
+Qt Quick Controls palette that may belong to the opposite color scheme.
+
 Owner or transport loss overrides a pending Saving/Conflict projection and
 shows Unavailable/Retry while retaining the last confirmed policy value. A
 conflict action reappears only after a fresh baseline proves the original

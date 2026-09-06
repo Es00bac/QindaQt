@@ -26,13 +26,14 @@ Window {
             anchors.top: parent.top
             height: 38
 
-            Button {
+            NotificationButton {
                 id: historyButton
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 width: 90
                 height: 32
                 text: qsTr("History")
+                theme: root.theme
                 focusPolicy: Qt.TabFocus
                 Accessible.name: qsTr("Open notification center")
                 onClicked: root.presentation.centerOpen = true

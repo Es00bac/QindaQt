@@ -174,6 +174,28 @@ Item {
             compare(fakePresentation.centerOpen, false);
         }
 
+        function test_centerHeaderUsesThemeContrastPairs() {
+            const center = createTemporaryObject(centerComponent, testRoot);
+            verify(center !== null);
+            const dnd = findChild(center, "notificationDoNotDisturbButton");
+            const clear = findChild(center, "notificationClearHistoryButton");
+            const close = findChild(center, "notificationCenterCloseButton");
+            verify(dnd !== null);
+            verify(clear !== null);
+            verify(close !== null);
+            compare(dnd.contentItem.color.toString(), "#f2f1eb");
+            compare(close.contentItem.color.toString(), "#f2f1eb");
+            compare(clear.contentItem.color.toString(), "#a9afa9");
+            fakeQuieting.enabled = true;
+            tryCompare(dnd, "checked", true);
+            compare(dnd.contentItem.color.toString(), "#10201b");
+            compare(dnd.background.color.toString(), "#8fc8b7");
+            fakeQuieting.canToggle = false;
+            tryCompare(dnd, "enabled", false);
+            compare(dnd.contentItem.color.toString(), "#a9afa9");
+            compare(dnd.background.color.toString(), "#2c312e");
+        }
+
         function test_componentsInstantiateOffscreen() {
             const card = createTemporaryObject(cardComponent, testRoot);
             verify(card !== null);

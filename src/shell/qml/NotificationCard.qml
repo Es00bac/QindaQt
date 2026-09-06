@@ -74,7 +74,7 @@ Rectangle {
         textFormat: Text.PlainText
     }
 
-    ToolButton {
+    NotificationToolButton {
         id: closeButton
         anchors.right: parent.right
         anchors.top: parent.top
@@ -83,6 +83,7 @@ Rectangle {
         height: 34
         visible: root.popup
         text: "×"
+        theme: root.theme
         focusPolicy: Qt.TabFocus
         Accessible.name: qsTr("Hide notification popup")
         onClicked: root.presentation.closePopup(root.notificationId)
@@ -137,7 +138,7 @@ Rectangle {
         Repeater {
             model: root.primaryActionCount
 
-            Button {
+            NotificationButton {
                 id: primaryActionButton
                 objectName: "notificationPrimaryAction"
                 required property int index
@@ -152,17 +153,10 @@ Rectangle {
                          && !Boolean(root.presentation.operationBusy)
                 text: hasNotificationAction
                       ? String(notificationAction.label ?? "") : ""
+                theme: root.theme
                 focusPolicy: Qt.TabFocus
                 Accessible.role: Accessible.Button
                 Accessible.name: text
-                contentItem: Text {
-                    text: primaryActionButton.text
-                    color: primaryActionButton.palette.buttonText
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                    textFormat: Text.PlainText
-                }
                 onClicked: {
                     if (hasNotificationAction)
                         root.presentation.invokeAction(
@@ -172,7 +166,7 @@ Rectangle {
             }
         }
 
-        Button {
+        NotificationButton {
             id: moreButton
             objectName: "notificationMoreActions"
             height: 30
@@ -180,6 +174,7 @@ Rectangle {
             visible: root.actionCount > root.primaryActionCount
             enabled: !Boolean(root.presentation.operationBusy)
             text: qsTr("More")
+            theme: root.theme
             focusPolicy: Qt.TabFocus
             Accessible.role: Accessible.Button
             Accessible.name: qsTr("More notification actions")
@@ -224,13 +219,14 @@ Rectangle {
             }
         }
 
-        Button {
+        NotificationButton {
             objectName: "notificationDismiss"
             height: 30
             width: 84
             visible: root.active
             enabled: !Boolean(root.presentation.operationBusy)
             text: qsTr("Dismiss")
+            theme: root.theme
             focusPolicy: Qt.TabFocus
             Accessible.role: Accessible.Button
             Accessible.name: qsTr("Dismiss notification")

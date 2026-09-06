@@ -59,7 +59,7 @@ Window {
             textFormat: Text.PlainText
         }
 
-        ToolButton {
+        NotificationToolButton {
             id: doNotDisturbButton
             objectName: "notificationDoNotDisturbButton"
             anchors.right: clearButton.left
@@ -67,6 +67,7 @@ Window {
             anchors.verticalCenter: titleText.verticalCenter
             width: 40
             height: 32
+            theme: root.theme
             text: "☾"
             checkable: true
             checked: root.quietingSettings.enabled
@@ -85,13 +86,14 @@ Window {
                            !root.quietingSettings.enabled)
         }
 
-        Button {
+        NotificationButton {
             id: clearButton
             objectName: "notificationClearHistoryButton"
             anchors.right: closeButton.left
             anchors.rightMargin: 6
             anchors.verticalCenter: titleText.verticalCenter
             text: qsTr("Clear history")
+            theme: root.theme
             enabled: historySection.count > 0
             focusPolicy: Qt.TabFocus
             Accessible.role: Accessible.Button
@@ -108,7 +110,7 @@ Window {
             theme: root.theme
         }
 
-        ToolButton {
+        NotificationToolButton {
             id: closeButton
             objectName: "notificationCenterCloseButton"
             anchors.right: parent.right
@@ -116,6 +118,7 @@ Window {
             anchors.margins: 8
             width: 36
             height: 36
+            theme: root.theme
             text: "×"
             focusPolicy: Qt.TabFocus
             // AGENT-GUARD: Keep traversal on Qt Quick's complete natural tab
@@ -187,13 +190,14 @@ Window {
             anchors.margins: 12
             spacing: 8
 
-            Button {
+            NotificationButton {
                 id: stateAction
                 objectName: "notificationQuietingStateAction"
                 visible: root.quietingSettings.conflict
                          || root.quietingSettings.unavailable
                 text: root.quietingSettings.conflict
                       ? qsTr("Apply my choice") : qsTr("Retry")
+                theme: root.theme
                 focusPolicy: Qt.TabFocus
                 onClicked: {
                     if (root.quietingSettings.conflict)
@@ -203,10 +207,11 @@ Window {
                 }
             }
 
-            Button {
+            NotificationButton {
                 id: settingsButton
                 objectName: "notificationSettingsRouteButton"
                 text: qsTr("Notification settings…")
+                theme: root.theme
                 focusPolicy: Qt.TabFocus
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Notification settings")
