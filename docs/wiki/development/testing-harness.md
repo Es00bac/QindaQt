@@ -279,11 +279,11 @@ private-bus, compositor, BlueZ, host-radio, or hardware claim.
 The production shell token boundary adds
 `qindaqt.shell-runtime-token-publication`: with display and bus endpoints
 absent and `QT_FATAL_WARNINGS=1`, it runs the production publisher before a
-real hosted Task List applet, asserts `Tokens.ready`, the Qinda Dark
+real hosted Task List applet, asserts `Tokens.ready`, the QindaPunk Nightfall
 `bg.base`, a Controls label's concrete muted foreground, and atomic republish
-to Qinda Light. `qindaqt.shell-capture-matrix` now treats every QML warning as
-fatal across the complete preview dispatcher and writes temporary captures
-only beneath its build executable directory. The nested
+to QindaPunk Porcelain. `qindaqt.shell-capture-matrix` now treats every QML
+warning as fatal across the complete preview dispatcher and writes temporary
+captures only beneath its build executable directory. The nested
 `desktop.virtual.notification-shell-readiness-unit` requires the matching
 live `ShellDevelopment1.tokens` fact shape and the exact `taskList` object
 (`ready`, positive generation, at least one window); boot rows consume that
