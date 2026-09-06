@@ -62,10 +62,30 @@ reads the installed `kde.portal` metadata at test time and fails loudly if
 ### Fake-portal lifecycle proof
 
 `tests/tools/run_agent_input_portal_proof.py` runs inside `dbus-run-session`
-with a fake `org.freedesktop.portal.Desktop` service. It proves the full
-`CreateSession → SelectDevices → Start` handshake and every `Notify*` method
-dispatch without connecting to the real session bus or triggering a live
-approval dialog.
+with a fake `org.freedesktop.portal.Desktop` service, without connecting to
+the real session bus or triggering a live approval dialog. Its modes are:
+
+- `basic` — full `CreateSession → SelectDevices → Start` handshake, every
+  `Notify*` method dispatched with exact arguments, stdin EOF after the last
+  event retained.
+- `denial` — denied `Start`: the tool sends `Session.Close`, exits with
+  status 1, and delivers no `Notify*`.
+- `no_events_before_start` — events written before the `Start` response never
+  reach `Notify*`; the stdin source is attached only after approval.
+- `notify_failure` — a `Notify*` D-Bus error closes the session and exits 1.
+- `revoke` — an external `Session::Closed` signal ends the tool cleanly even
+  with stdin still open.
+
+### Session lifecycle contract
+
+Input delivery is gated on explicit approval only: the internal approved flag
+is set exclusively by a zero `Start` response whose granted device set covers
+the request, and every `Notify*` call checks it. Every terminal failure and
+external `Session::Closed` revocation clears the flag and closes the portal
+session; denial and transport errors exit nonzero. Absolute pointer motion is
+not offered because `NotifyPointerMotionAbsolute` requires a PipeWire
+screencast stream node this tool deliberately does not open; use relative
+`move` events instead.
 
 ## Consequences
 

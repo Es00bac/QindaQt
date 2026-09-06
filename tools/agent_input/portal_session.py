@@ -230,8 +230,14 @@ class ApprovedInputSession:
             self._on_ready()
 
     def _on_session_closed_signal(self, details: dict) -> None:
-        """Portal revoked the session externally (e.g. user revoked in KDE settings)."""
+        """Portal revoked the session externally (e.g. user revoked in KDE settings).
+
+        AGENT-GUARD: Clearing _approved here preserves invariant 1 after
+        revocation; without it a queued stdin dispatch could still call
+        Notify* against a dead session handle before the loop exits.
+        """
         self._session = None
+        self._approved = False
         if self._on_closed:
             self._on_closed()
         self._loop.quit()

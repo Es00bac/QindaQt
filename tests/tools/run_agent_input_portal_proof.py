@@ -6,6 +6,8 @@ Run inside dbus-run-session with one mode argument:
   basic                   full lifecycle, verifies all Notify* calls
   denial                  Start denied; verifies Close sent, exit code 1
   no_events_before_start  write stdin before Start response; verify no Notify
+  notify_failure          Notify* D-Bus error; verifies Close sent, exit code 1
+  revoke                  portal emits Session Closed; verifies clean exit 0
 
 AGENT-GUARD: This script must run on a private bus only. It registers the
 real org.freedesktop.portal.Desktop service name; running on the host bus
@@ -13,176 +15,43 @@ would shadow the installed portal for all applications in that session.
 """
 from __future__ import annotations
 
-import os
-import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
-from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import dbus
 import dbus.mainloop.glib
-import dbus.service
 from gi.repository import GLib
 
-TOOLS_DIR = Path(__file__).resolve().parents[2] / "tools"
-PORTAL_SERVICE = "org.freedesktop.portal.Desktop"
-PORTAL_PATH = "/org/freedesktop/portal/desktop"
-_RD_IFACE = "org.freedesktop.portal.RemoteDesktop"
-_SESS_IFACE = "org.freedesktop.portal.Session"
-_REQ_SIG = "ua{sv}"
+from agent_input_fake_portal import (
+    PORTAL_SERVICE,
+    FakeRemoteDesktop,
+    FailingNotifyPortal,
+    start_tool,
+    wait_for_ready,
+    watch_tool,
+)
 
 
-# ---------------------------------------------------------------------------
-# Fake service objects
-# ---------------------------------------------------------------------------
-
-class FakeRequest(dbus.service.Object):
-    @dbus.service.signal("org.freedesktop.portal.Request", signature=_REQ_SIG)
-    def Response(self, code: int, results: dict) -> None:
-        pass
+def _serve(portal_cls=FakeRemoteDesktop, **kwargs) -> FakeRemoteDesktop:
+    """Own the portal name on the private bus and return the fake service."""
+    bus = dbus.SessionBus()
+    bus.request_name(PORTAL_SERVICE)
+    return portal_cls(bus, **kwargs)
 
 
-class FakeSession(dbus.service.Object):
-    def __init__(self, bus: dbus.SessionBus, path: str) -> None:
-        dbus.service.Object.__init__(self, bus, path)
-        self.close_called = False
+def _fail(msg: str) -> int:
+    print(f"FAIL: {msg}", file=sys.stderr)
+    return 1
 
-    @dbus.service.method(_SESS_IFACE)
-    def Close(self) -> None:
-        self.close_called = True
-
-    @dbus.service.signal(_SESS_IFACE, signature="a{sv}")
-    def Closed(self, details: dict) -> None:
-        pass
-
-
-class FakeRemoteDesktop(dbus.service.Object):
-    """Minimal RemoteDesktop portal implementation for lifecycle proofs.
-
-    Behaviour is set by subclasses or by the deny_start flag.
-    """
-
-    def __init__(self, bus: dbus.SessionBus, deny_start: bool = False,
-                 start_delay_ms: int = 0) -> None:
-        dbus.service.Object.__init__(self, bus, PORTAL_PATH)
-        self._bus = bus
-        self._deny_start = deny_start
-        self._start_delay_ms = start_delay_ms
-        self.calls: list[str] = []
-        self.session: FakeSession | None = None
-
-    def _make_req(self, sender: str, token: str, code: int,
-                  results: dict, delay_ms: int = 0) -> dbus.ObjectPath:
-        safe = sender[1:].replace(".", "_") if sender.startswith(":") else sender
-        req_path = f"{PORTAL_PATH}/request/{safe}/{token}"
-        req = FakeRequest(self._bus, req_path)
-
-        def emit() -> bool:
-            req.Response(dbus.UInt32(code), results)
-            return False
-
-        if delay_ms > 0:
-            GLib.timeout_add(delay_ms, emit)
-        else:
-            GLib.idle_add(emit)
-        return dbus.ObjectPath(req_path)
-
-    @dbus.service.method(_RD_IFACE, in_signature="a{sv}", out_signature="o",
-                         sender_keyword="sender")
-    def CreateSession(self, options: dict, sender: str = "") -> dbus.ObjectPath:
-        self.calls.append("CreateSession")
-        safe = sender[1:].replace(".", "_") if sender.startswith(":") else sender
-        sess_token = str(options.get("session_handle_token", "s"))
-        sess_path = f"{PORTAL_PATH}/session/{safe}/{sess_token}"
-        self.session = FakeSession(self._bus, sess_path)
-        return self._make_req(
-            sender, str(options.get("handle_token", "h")), 0,
-            {"session_handle": dbus.ObjectPath(sess_path, variant_level=1)},
-        )
-
-    @dbus.service.method(_RD_IFACE, in_signature="oa{sv}", out_signature="o",
-                         sender_keyword="sender")
-    def SelectDevices(self, session_handle: Any, options: dict,
-                      sender: str = "") -> dbus.ObjectPath:
-        self.calls.append("SelectDevices")
-        return self._make_req(sender, str(options.get("handle_token", "h")), 0, {})
-
-    @dbus.service.method(_RD_IFACE, in_signature="osa{sv}", out_signature="o",
-                         sender_keyword="sender")
-    def Start(self, session_handle: Any, parent_window: str, options: dict,
-              sender: str = "") -> dbus.ObjectPath:
-        self.calls.append("Start")
-        code = 1 if self._deny_start else 0
-        results: dict = {} if code else {"devices": dbus.UInt32(3, variant_level=1)}
-        return self._make_req(sender, str(options.get("handle_token", "h")),
-                              code, results, self._start_delay_ms)
-
-    @dbus.service.method(_RD_IFACE, in_signature="oa{sv}dd")
-    def NotifyPointerMotion(self, session: Any, options: Any,
-                            dx: float, dy: float) -> None:
-        self.calls.append(f"NotifyPointerMotion({float(dx)},{float(dy)})")
-
-    @dbus.service.method(_RD_IFACE, in_signature="oa{sv}iu")
-    def NotifyPointerButton(self, session: Any, options: Any,
-                            button: int, state: int) -> None:
-        self.calls.append(f"NotifyPointerButton({int(button)},{int(state)})")
-
-    @dbus.service.method(_RD_IFACE, in_signature="oa{sv}dd")
-    def NotifyPointerAxis(self, session: Any, options: Any,
-                          dx: float, dy: float) -> None:
-        self.calls.append(f"NotifyPointerAxis({float(dx)},{float(dy)})")
-
-    @dbus.service.method(_RD_IFACE, in_signature="oa{sv}iu")
-    def NotifyKeyboardKeysym(self, session: Any, options: Any,
-                             keysym: int, state: int) -> None:
-        self.calls.append(f"NotifyKeyboardKeysym({int(keysym)},{int(state)})")
-
-
-# ---------------------------------------------------------------------------
-# Process helper
-# ---------------------------------------------------------------------------
-
-def _start_tool(extra_env: dict | None = None) -> subprocess.Popen:
-    env = dict(os.environ)
-    env["PYTHONPATH"] = str(TOOLS_DIR)
-    if extra_env:
-        env.update(extra_env)
-    return subprocess.Popen(
-        [sys.executable, str(TOOLS_DIR / "agent-input")],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        env=env,
-    )
-
-
-def _wait_for_ready(proc: subprocess.Popen, timeout: float = 10.0) -> bool:
-    """Read stderr lines until READY appears or EOF. Returns True on READY."""
-    import select
-    deadline = __import__("time").time() + timeout
-    buf = b""
-    while __import__("time").time() < deadline:
-        remaining = deadline - __import__("time").time()
-        r, _, _ = select.select([proc.stderr], [], [], min(remaining, 0.5))
-        if r:
-            chunk = os.read(proc.stderr.fileno(), 4096)
-            if not chunk:
-                return False
-            buf += chunk
-            if b"READY" in buf:
-                return True
-    return False
-
-
-# ---------------------------------------------------------------------------
-# Proof modes
-# ---------------------------------------------------------------------------
 
 def _proof_basic() -> int:
     """Full lifecycle: handshake + all Notify* calls match."""
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    bus = dbus.SessionBus()
-    bus.request_name(PORTAL_SERVICE)
-    portal = FakeRemoteDesktop(bus)
+    portal = _serve()
     loop = GLib.MainLoop()
 
     events = (
@@ -195,10 +64,12 @@ def _proof_basic() -> int:
         b'{"action":"text","text":"hi"}\n'
         b'{"action":"close"}\n'
     )
-    proc = _start_tool()
+    proc = start_tool()
 
     def _runner() -> None:
-        if _wait_for_ready(proc):
+        if wait_for_ready(proc):
+            # Write everything, then close stdin: the final chunk must still
+            # be delivered (EOF/HUP data retention).
             proc.stdin.write(events)
             proc.stdin.close()
         proc.wait(timeout=10)
@@ -210,10 +81,8 @@ def _proof_basic() -> int:
     loop.run()
     t.join(timeout=2)
 
-    expected_handshake = ["CreateSession", "SelectDevices", "Start"]
-    if portal.calls[:3] != expected_handshake:
-        print(f"FAIL: handshake wrong: {portal.calls[:3]}", file=sys.stderr)
-        return 1
+    if portal.calls[:3] != ["CreateSession", "SelectDevices", "Start"]:
+        return _fail(f"handshake wrong: {portal.calls[:3]}")
     expected_notify = [
         "NotifyPointerMotion(5.0,-3.0)",
         "NotifyPointerButton(272,1)",
@@ -224,11 +93,9 @@ def _proof_basic() -> int:
         "NotifyKeyboardKeysym(104,1)", "NotifyKeyboardKeysym(104,0)",
         "NotifyKeyboardKeysym(105,1)", "NotifyKeyboardKeysym(105,0)",
     ]
-    actual_notify = portal.calls[3:]
-    if actual_notify != expected_notify:
-        print(f"FAIL: notify mismatch\n  expected: {expected_notify}\n"
-              f"  actual:   {actual_notify}", file=sys.stderr)
-        return 1
+    if portal.calls[3:] != expected_notify:
+        return _fail(f"notify mismatch\n  expected: {expected_notify}\n"
+                     f"  actual:   {portal.calls[3:]}")
     print("OK: basic lifecycle passed", file=sys.stderr)
     return 0
 
@@ -236,11 +103,9 @@ def _proof_basic() -> int:
 def _proof_denial() -> int:
     """Start denied: tool must close session, exit code 1, no Notify*."""
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    bus = dbus.SessionBus()
-    bus.request_name(PORTAL_SERVICE)
-    portal = FakeRemoteDesktop(bus, deny_start=True)
+    portal = _serve(deny_start=True)
     loop = GLib.MainLoop()
-    proc = _start_tool()
+    proc = start_tool()
 
     def _runner() -> None:
         proc.wait(timeout=10)
@@ -254,15 +119,11 @@ def _proof_denial() -> int:
 
     notify_calls = [c for c in portal.calls if c.startswith("Notify")]
     if notify_calls:
-        print(f"FAIL: Notify* reached portal despite denial: {notify_calls}",
-              file=sys.stderr)
-        return 1
+        return _fail(f"Notify* reached portal despite denial: {notify_calls}")
     if portal.session is None or not portal.session.close_called:
-        print("FAIL: Session.Close not called after denial", file=sys.stderr)
-        return 1
+        return _fail("Session.Close not called after denial")
     if proc.returncode != 1:
-        print(f"FAIL: expected exit code 1, got {proc.returncode}", file=sys.stderr)
-        return 1
+        return _fail(f"expected exit code 1, got {proc.returncode}")
     print("OK: denial cleaned up correctly", file=sys.stderr)
     return 0
 
@@ -270,26 +131,17 @@ def _proof_denial() -> int:
 def _proof_no_events_before_start() -> int:
     """Events written before Start completes must not reach Notify*."""
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    bus = dbus.SessionBus()
-    bus.request_name(PORTAL_SERVICE)
     # Delay Start response 300ms to leave a window for pre-approval writes.
-    portal = FakeRemoteDesktop(bus, start_delay_ms=300)
+    portal = _serve(start_delay_ms=300)
     loop = GLib.MainLoop()
-    proc = _start_tool()
-
-    pre_start_events = b'{"action":"move","dx":1.0,"dy":0.0}\n'
-    post_start_events = b'{"action":"close"}\n'
-
-    notify_at_start: list[int] = []
+    proc = start_tool()
 
     def _runner() -> None:
         # Write a move event before Start fires (immediately, no READY wait).
-        proc.stdin.write(pre_start_events)
+        proc.stdin.write(b'{"action":"move","dx":1.0,"dy":0.0}\n')
         proc.stdin.flush()
-        # Wait for READY (Start approved, delayed 300ms).
-        if _wait_for_ready(proc, timeout=5):
-            notify_at_start.append(len(portal.calls))
-        proc.stdin.write(post_start_events)
+        wait_for_ready(proc, timeout=5)
+        proc.stdin.write(b'{"action":"close"}\n')
         proc.stdin.close()
         proc.wait(timeout=10)
         GLib.idle_add(loop.quit)
@@ -306,24 +158,92 @@ def _proof_no_events_before_start() -> int:
     first_notify_idx = (portal.calls.index(notify_calls[0])
                         if notify_calls else len(portal.calls))
     if start_idx < 0:
-        print("FAIL: Start never reached portal", file=sys.stderr)
-        return 1
+        return _fail("Start never reached portal")
     if first_notify_idx <= start_idx:
-        print(f"FAIL: Notify* at index {first_notify_idx} precedes Start at "
-              f"{start_idx} in {portal.calls}", file=sys.stderr)
-        return 1
+        return _fail(f"Notify* at index {first_notify_idx} precedes Start at "
+                     f"{start_idx} in {portal.calls}")
     print("OK: no Notify* reached portal before Start succeeded", file=sys.stderr)
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+def _proof_notify_failure() -> int:
+    """A Notify* D-Bus error must close the session and exit nonzero."""
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    portal = _serve(FailingNotifyPortal)
+    loop = GLib.MainLoop()
+    proc = start_tool()
+
+    def _interact() -> None:
+        # stdin stays OPEN so only the failure path can end the process.
+        if wait_for_ready(proc, timeout=5):
+            proc.stdin.write(b'{"action":"move","dx":1.0,"dy":2.0}\n')
+            proc.stdin.flush()
+
+    threading.Thread(target=_interact, daemon=True).start()
+    watch_tool(proc, loop)
+    GLib.timeout_add(15_000, lambda: (loop.quit(), False)[1])
+    loop.run()
+
+    attempts = [c for c in portal.calls if c.startswith("Notify")]
+    if attempts != ["NotifyPointerMotion(FAILED)"]:
+        return _fail(f"expected exactly one failing Notify, got {attempts}")
+    if portal.session is None or not portal.session.close_called:
+        return _fail("Session.Close not called after notify failure")
+    if proc.returncode != 1:
+        return _fail(f"expected exit code 1, got {proc.returncode}")
+    stderr_tail = proc.stderr.read()
+    if b"ERROR:" not in stderr_tail:
+        return _fail(f"no ERROR report on stderr: {stderr_tail!r}")
+    print("OK: notify failure closed session and exited nonzero", file=sys.stderr)
+    return 0
+
+
+def _proof_revoke() -> int:
+    """External Session Closed must end the tool cleanly without stdin EOF."""
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    portal = _serve()
+    loop = GLib.MainLoop()
+    proc = start_tool()
+
+    def _interact() -> None:
+        delivered = False
+        if wait_for_ready(proc, timeout=5):
+            proc.stdin.write(b'{"action":"move","dx":7.0,"dy":0.0}\n')
+            proc.stdin.flush()
+            deadline = time.time() + 5
+            while time.time() < deadline:
+                if any(c.startswith("NotifyPointerMotion(") for c in portal.calls):
+                    delivered = True
+                    break
+                time.sleep(0.05)
+        if delivered:
+            def _emit_closed() -> bool:
+                portal.session.Closed({})
+                return False
+            GLib.idle_add(_emit_closed)
+
+    threading.Thread(target=_interact, daemon=True).start()
+    watch_tool(proc, loop)
+    GLib.timeout_add(15_000, lambda: (loop.quit(), False)[1])
+    loop.run()
+
+    if not any(c.startswith("NotifyPointerMotion(") for c in portal.calls):
+        return _fail("session was not live (no Notify) before revocation")
+    if proc.returncode != 0:
+        return _fail(f"revoked tool should exit 0, got {proc.returncode}")
+    stderr_tail = proc.stderr.read()
+    if b"ERROR:" in stderr_tail:
+        return _fail(f"revocation produced an error: {stderr_tail!r}")
+    print("OK: external Session Closed ended the tool cleanly", file=sys.stderr)
+    return 0
+
 
 _MODES = {
     "basic": _proof_basic,
     "denial": _proof_denial,
     "no_events_before_start": _proof_no_events_before_start,
+    "notify_failure": _proof_notify_failure,
+    "revoke": _proof_revoke,
 }
 
 if __name__ == "__main__":
