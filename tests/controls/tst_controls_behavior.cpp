@@ -78,6 +78,7 @@ private slots:
     void exposesSemanticStatesAndAccessibleRoles();
     void exposesStaticComponentContractsAndFocusRing();
     void opensAndSelectsTokenizedComboPopup();
+    void editsTokenizedComboWithRealTextInput();
     void activatesOrdinaryControlsFromKeyboard();
     void traversesOrdinaryControlsWithTab();
     void activatesCardActionsFromKeyboard();
@@ -250,6 +251,39 @@ void ControlsBehaviorTests::opensAndSelectsTokenizedComboPopup()
                       secondItem.toPoint());
     QTRY_COMPARE(combo->property("currentIndex").toInt(), 1);
     QTRY_VERIFY(!popup->property("visible").toBool());
+    QCOMPARE(combo->property("displayText").toString(),
+             QStringLiteral("Porcelain"));
+}
+
+void ControlsBehaviorTests::editsTokenizedComboWithRealTextInput()
+{
+    auto scene = createScene(QStringLiteral("qinda-dark.json"));
+    auto *combo = item(scene.root, "comboBox");
+    QVERIFY(combo != nullptr);
+    combo->setProperty("editable", true);
+    combo->setProperty("editText", QString());
+
+    auto *editor = qobject_cast<QQuickItem *>(
+        combo->property("contentItem").value<QObject *>());
+    QVERIFY(editor != nullptr);
+    editor->forceActiveFocus();
+    QTRY_VERIFY(editor->hasActiveFocus());
+
+    QTest::keyClick(scene.view.get(), Qt::Key_A, Qt::ControlModifier);
+    for (const QChar character : QStringLiteral("Porcelain"))
+        QTest::keyClick(scene.view.get(), character.toLatin1());
+    QTRY_COMPARE(combo->property("editText").toString(),
+                 QStringLiteral("Porcelain"));
+
+    // Accept the matching model value, then move focus away. The editable
+    // draft must survive the focus transition used by Settings forms.
+    QTest::keyClick(scene.view.get(), Qt::Key_Return);
+    QTRY_COMPARE(combo->property("currentIndex").toInt(), 1);
+    auto *field = item(scene.root, "textField");
+    field->forceActiveFocus();
+    QTRY_VERIFY(field->hasActiveFocus());
+    QCOMPARE(combo->property("editText").toString(),
+             QStringLiteral("Porcelain"));
     QCOMPARE(combo->property("displayText").toString(),
              QStringLiteral("Porcelain"));
 }
