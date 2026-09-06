@@ -64,7 +64,9 @@ void TerminalWidgetAdapterTest::blankGridDoesNotPublishCopyAvailability() {
 void TerminalWidgetAdapterTest::
     customSchemePaintsRequestedTerminalBackground() {
   const TerminalViewAppearance appearance = darkAppearance();
-  QCOMPARE(appearance.terminalBackground, QColor(QStringLiteral("#171a18")));
+  // QindaPunk Nightfall canvas from data/themes/qinda-dark.json, projected
+  // through TerminalAppearanceAdapter::fromTheme.
+  QCOMPARE(appearance.terminalBackground, QColor(QStringLiteral("#111e2c")));
 
   // The adapter owns and deletes its widget. Declare the host first so the
   // adapter is destroyed first and QLayout never becomes a competing owner.

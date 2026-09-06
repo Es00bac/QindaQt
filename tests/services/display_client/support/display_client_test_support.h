@@ -26,6 +26,10 @@ public:
       *error = QStringLiteral("could not create disposable private root");
       return false;
     }
+    if (!m_socketDirectory.isValid()) {
+      *error = QStringLiteral("could not create disposable socket root");
+      return false;
+    }
     const QString runtime = m_root.filePath(QStringLiteral("runtime"));
     const QString home = m_root.filePath(QStringLiteral("home"));
     const QString config = m_root.filePath(QStringLiteral("config"));
@@ -59,13 +63,48 @@ public:
     environment.insert(QStringLiteral("XDG_CACHE_HOME"), cache);
     environment.insert(QStringLiteral("XDG_STATE_HOME"), state);
 
+    // AGENT-GUARD: this config must stay free of <servicedir> and
+    // <standard_session_servicedirs/> elements. A bare `--session` daemon
+    // still resolves the host's installed activation files (for example
+    // /usr/share/dbus-1/services/org.qindaqt.Display1.service), so the
+    // absent-owner rows would activate the host display service and surface
+    // activation noise instead of a clean owner-unavailable reason code.
+    // Plain (non-raw) literals: moc follows this header and its parser
+    // mis-scopes raw string literals.
+    const QString configPath = m_root.filePath(QStringLiteral("dbus.conf"));
+    QFile configFile(configPath);
+    if (!configFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+      *error = QStringLiteral("could not write the private bus config");
+      return false;
+    }
+    const QByteArray configContents =
+        QByteArrayLiteral("<!DOCTYPE busconfig PUBLIC "
+                          "\"-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN\" "
+                          "\"http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd\">\n"
+                          "<busconfig>\n"
+                          "  <type>session</type>\n"
+                          "  <listen>unix:path=")
+        + m_socketDirectory.filePath(QStringLiteral("bus")).toUtf8()
+        + QByteArrayLiteral("</listen>\n"
+                            "  <policy context=\"default\">\n"
+                            "    <allow user=\"*\"/>\n"
+                            "    <allow own=\"*\"/>\n"
+                            "    <allow send_destination=\"*\"/>\n"
+                            "    <allow send_interface=\"*\"/>\n"
+                            "    <allow receive_sender=\"*\"/>\n"
+                            "  </policy>\n"
+                            "</busconfig>\n");
+    if (configFile.write(configContents) != configContents.size()) {
+      *error = QStringLiteral("could not write the private bus config");
+      return false;
+    }
+    configFile.close();
+
     m_process.setProcessEnvironment(environment);
     m_process.setWorkingDirectory(m_root.path());
     m_process.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
-                    {QStringLiteral("--session"), QStringLiteral("--nofork"),
-                     QStringLiteral("--nopidfile"),
-                     QStringLiteral("--address=unix:path=%1")
-                         .arg(m_root.filePath(QStringLiteral("bus"))),
+                    {QStringLiteral("--config-file"), configPath,
+                     QStringLiteral("--nofork"), QStringLiteral("--nopidfile"),
                      QStringLiteral("--print-address=1")});
     if (!m_process.waitForStarted(5'000) ||
         !m_process.waitForReadyRead(5'000)) {
@@ -98,6 +137,10 @@ public:
 
 private:
   QTemporaryDir m_root;
+  // Forced /tmp template: a TMPDIR inside a deep worktree would push the
+  // listen socket past the unix sun_path limit ("Socket name too long").
+  QTemporaryDir m_socketDirectory{
+      QStringLiteral("/tmp/qindaqt-display-bus-XXXXXX")};
   QProcess m_process;
   QString m_address;
 };
