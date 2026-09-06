@@ -194,11 +194,12 @@ void BluetoothActivationTests::daemonLossExitsAndReplacementStartsFresh()
     QVERIFY(firstOwner.startsWith(QLatin1Char(':')));
     QVERIFY(firstEpoch > 0);
     QVERIFY(firstPid > 0);
-    // AGENT-CONTRACT under test: without the BluezQt lane the activated B0
-    // process truthfully reports an empty adapter inventory, never fabricated
-    // devices.
+    // AGENT-CONTRACT under test: the activated B0 process runs on a private
+    // bus with no org.bluez owner, so it truthfully publishes an absent
+    // upstream (bluez-unavailable) with an empty inventory, never fabricated
+    // devices. no-adapter is reserved for a present upstream with no adapters.
     QCOMPARE(firstClient.snapshot().availability, Availability::Unavailable);
-    QCOMPARE(firstClient.snapshot().reasonCode, QStringLiteral("no-adapter"));
+    QCOMPARE(firstClient.snapshot().reasonCode, QStringLiteral("bluez-unavailable"));
     QVERIFY(firstClient.snapshot().adapters.isEmpty());
 
     firstBus.stopDaemon();
