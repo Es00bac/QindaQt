@@ -53,8 +53,16 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
     switch (key) {
     case DevelopmentInputKey::LeftMeta:
         return KEY_LEFTMETA;
+    case DevelopmentInputKey::LeftAlt:
+        return KEY_LEFTALT;
     case DevelopmentInputKey::LeftShift:
         return KEY_LEFTSHIFT;
+    case DevelopmentInputKey::F1:
+        return KEY_F1;
+    case DevelopmentInputKey::F11:
+        return KEY_F11;
+    case DevelopmentInputKey::C:
+        return KEY_C;
     case DevelopmentInputKey::N:
         return KEY_N;
     case DevelopmentInputKey::Tab:
@@ -73,6 +81,8 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
         return KEY_RIGHT;
     case DevelopmentInputKey::Enter:
         return KEY_ENTER;
+    case DevelopmentInputKey::V:
+        return KEY_V;
     }
     Q_UNREACHABLE_RETURN(0);
 }
@@ -149,7 +159,11 @@ public:
         // releases in KWin 6.6.5. Clear held test state first or an interrupted
         // scenario can leave compositor modifiers/buttons logically stuck.
         for (const auto key : {DevelopmentInputKey::LeftMeta,
+                               DevelopmentInputKey::LeftAlt,
                                DevelopmentInputKey::LeftShift,
+                               DevelopmentInputKey::F1,
+                               DevelopmentInputKey::F11,
+                               DevelopmentInputKey::C,
                                DevelopmentInputKey::N,
                                DevelopmentInputKey::Tab,
                                DevelopmentInputKey::Escape,
@@ -158,7 +172,8 @@ public:
                                DevelopmentInputKey::Down,
                                DevelopmentInputKey::Left,
                                DevelopmentInputKey::Right,
-                               DevelopmentInputKey::Enter}) {
+                               DevelopmentInputKey::Enter,
+                               DevelopmentInputKey::V}) {
             if (m_pressedKeys.contains(key)) {
                 dispatch({.type = DevelopmentInputEventType::Key,
                           .position = {},

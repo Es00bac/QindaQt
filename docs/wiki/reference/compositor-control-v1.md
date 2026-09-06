@@ -482,7 +482,11 @@ of these shapes:
 ```json
 {"type":"pointer-absolute","x":640.0,"y":350.0}
 {"type":"key","key":"left-meta","pressed":true}
+{"type":"key","key":"left-alt","pressed":true}
 {"type":"key","key":"left-shift","pressed":true}
+{"type":"key","key":"f1","pressed":true}
+{"type":"key","key":"f11","pressed":true}
+{"type":"key","key":"c","pressed":true}
 {"type":"key","key":"n","pressed":true}
 {"type":"key","key":"tab","pressed":true}
 {"type":"key","key":"escape","pressed":true}
@@ -492,16 +496,20 @@ of these shapes:
 {"type":"key","key":"left","pressed":true}
 {"type":"key","key":"right","pressed":true}
 {"type":"key","key":"enter","pressed":true}
+{"type":"key","key":"v","pressed":true}
 {"type":"button","button":"left","pressed":true}
 ```
 
 Coordinates must be finite logical values between -1,000,000 and 1,000,000.
-The complete key allowlist is left Meta, left Shift, N, Tab, Escape, Space,
-Up, Down, Left, Right, and Enter. The notification live-session rows need the
-non-text keys to exercise the production global shortcut, focus traversal,
-activation, dismissal, and lock-screen user-activity paths without host
-input; the arrow keys additionally drive the Hybrid keyboard-geometry modes
-and the exact-modifier docking preview.
+The complete key allowlist is left Meta, left Alt, left Shift, F1, F11, C,
+N, Tab, Escape, Space, Up, Down, Left, Right, Enter, and V. Left Alt plus Tab
+qualifies ordinary window switching, while Alt+F11 lets a real client make its
+native fullscreen request. F1/C/V cover the bounded shell and client probe
+paths that need those real keyboard events. The notification live-session rows
+need the remaining non-text keys to exercise the production global shortcut,
+focus traversal, activation, dismissal, and lock-screen user-activity paths
+without host input; the arrow keys additionally drive the Hybrid
+keyboard-geometry modes and the exact-modifier docking preview.
 No other key, button, relative movement, text, delay, or device selector is
 accepted. Success returns `status: "injected"`, the event count, and the fixed
 device ID. Held keys and buttons are released before the device is removed.

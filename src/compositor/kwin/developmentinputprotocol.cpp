@@ -89,8 +89,16 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
         const auto key = object.value(QStringLiteral("key")).toString();
         if (key == QStringLiteral("left-meta")) {
             event.key = DevelopmentInputKey::LeftMeta;
+        } else if (key == QStringLiteral("left-alt")) {
+            event.key = DevelopmentInputKey::LeftAlt;
         } else if (key == QStringLiteral("left-shift")) {
             event.key = DevelopmentInputKey::LeftShift;
+        } else if (key == QStringLiteral("f1")) {
+            event.key = DevelopmentInputKey::F1;
+        } else if (key == QStringLiteral("f11")) {
+            event.key = DevelopmentInputKey::F11;
+        } else if (key == QStringLiteral("c")) {
+            event.key = DevelopmentInputKey::C;
         } else if (key == QStringLiteral("n")) {
             event.key = DevelopmentInputKey::N;
         } else if (key == QStringLiteral("tab")) {
@@ -109,6 +117,8 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
             event.key = DevelopmentInputKey::Right;
         } else if (key == QStringLiteral("enter")) {
             event.key = DevelopmentInputKey::Enter;
+        } else if (key == QStringLiteral("v")) {
+            event.key = DevelopmentInputKey::V;
         } else {
             return std::nullopt;
         }
