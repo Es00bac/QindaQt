@@ -4,12 +4,12 @@ QindaQt ships a small, focused set of first-party applications — enough for
 everyday text, files, and terminal work, each doing its job well rather than
 a suite doing everything. They are ordinary desktop applications: they follow
 your theme and fonts, share the same controls, and behave the same whether or
-not their menus appear in the top bar.
+not their menus appear in the top panel.
 
 ## Welcome guide
 
 The first time the session starts, the Welcome guide opens by itself: seven
-short chapters on the desktop, the launcher and shelf, grouping windows with
+short chapters on the desktop, the launcher and dock, grouping windows with
 `Meta+Shift` drag, pages and splits, detaching and the group menu,
 customization, and appearance. Buttons in the guide open the real Settings,
 Text Editor, and File Manager so you can try things as you read.
@@ -19,7 +19,7 @@ won't open automatically again — you can always reopen it from the launcher.
 
 ## System Settings
 
-Open System Settings from the system menu (the left button of the top bar)
+Open System Settings from the system menu (the left button of the top panel)
 or from the launcher. A sidebar groups the pages:
 
 - **General**
@@ -27,7 +27,7 @@ or from the launcher. A sidebar groups the pages:
 - **Personalization**
   - *Appearance* — themes, wallpaper, and fonts; see
     [Making it yours](customization.md).
-  - *Customize* — bars, applets, and layout presets; see
+  - *Customize* — panels, applets, and layout presets; see
     [Making it yours](customization.md).
   - *Clipboard* — turn clipboard history on or off, see how full it is, and
     clear it.
@@ -73,10 +73,10 @@ profiles, searchable scrollback, and clickable links that open only after
 you confirm them. Closing a tab keeps the exit status honest — a crashed
 command reports the crash rather than vanishing.
 
-## Menus in the top bar
+## Menus in the top panel
 
-The Text Editor, Terminal, and File Manager put their menus in the command
-bar while they are focused, so the window spends its space on your work.
+The Text Editor, Terminal, and File Manager put their menus in the top
+panel while they are focused, so the window spends its space on your work.
 Applications without that integration simply keep their own menu. See
 [Using the desktop](desktop.md#the-application-menu).
 

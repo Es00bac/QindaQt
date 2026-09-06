@@ -6,18 +6,18 @@ and which keys do what. Nothing here requires touching a configuration file.
 
 ## The screen at a glance
 
-The default layout has two bars:
+The default layout has two panels:
 
-- **The command bar** across the top. Its left button opens the **system
-  menu** — About QindaQt, System Settings, Lock, Log out, Suspend, Restart,
-  and Shut Down (the destructive ones ask for confirmation). Next to it sits
-  the menu of the application you are working in; more on that under
+- **The top panel** at the top. Its left button opens the **system menu** —
+  About QindaQt, System Settings, Lock, Log out, Suspend, Restart, and Shut
+  Down (the destructive ones ask for confirmation). Next to it sits the menu
+  of the application you are working in; more on that under
   [The application menu](#the-application-menu). The middle shows your
   workspaces, and the right side collects status: clock, notifications,
   system tray, audio volume, power, Bluetooth, and clipboard.
-- **The smart shelf** at the bottom. The launcher lives here (click it, type
-  a name or browse categories, open the app), along with pinned apps and one
-  entry per running window or group. The shelf steps aside when a window
+- **The dock** at the bottom. The launcher lives here (click it, type a name
+  or browse categories, open the app), along with pinned apps and one entry
+  per running window or window container. The dock steps aside when a window
   needs its space and comes back when there is room.
 
 Other looks are available — see [Making it yours](customization.md).
@@ -50,13 +50,13 @@ Prefer the keyboard? **Meta+Shift+D** starts docking mode on the active
 window: the **arrow keys** choose an edge, **T** chooses the tab target,
 **D** detaches a grouped member, **Enter** confirms, and **Esc** cancels.
 
-### One shelf entry per container
+### One dock entry per container
 
-A container appears as a **single entry** in the smart shelf, not one per
+Each window container appears as **one entry** in the dock, not one per
 window. Clicking the entry brings the container back with its current page in
 front; if one of the hidden windows needs attention, the entry shows that
 urgency. The container's minimize button (or **Minimize group** in its menu)
-collapses the whole group at once, and clicking the shelf entry restores it —
+collapses the whole group at once, and clicking the dock entry restores it —
 again with only the active page revealed.
 
 ### The shared bar and the group menu
@@ -64,7 +64,10 @@ again with only the active page revealed.
 A container's shared row carries, left to right in the default style: the
 close, minimize, and maximize buttons for the **whole container** (their
 symbols appear when you hover), the title, and the page tabs. The buttons on
-the far side toggle the member title strips and open the **group menu**.
+the far side toggle the member title strips and open the **group menu**. The
+title toggle affects only the slim member title strips that QindaQt draws; an
+application that paints its own title bar keeps it, and that bar stays under
+the application's control.
 
 The group menu is also one right-click away — on the shared title, on a tab,
 or on a member's title strip. It offers:
@@ -99,10 +102,18 @@ stay readable in light and dark themes and when member titles are hidden.
 
 ### One member at full size
 
-Maximizing or full-screening a member presents it alone within the
-container's frame — the other members and the shared chrome step out of the
-way, but the window stays in the group. Maximize it again (or leave
-fullscreen) and the exact previous layout comes back.
+Two different things can happen when one member wants more room, and both
+leave the group intact:
+
+- **Maximize a member** (its own maximize button) and it fills the
+  container's outer frame by itself — the other members and the shared row
+  step out of the way, but nothing leaves the group and the page layout is
+  kept. The member's button now shows *restore*; click it (or maximize again)
+  and the exact previous layout comes back.
+- **Full screen a member** (an application's own full-screen command, such as
+  a video player's) and it uses the ordinary full-screen presentation, filling
+  the whole screen the way any full-screen window does. Leave full screen and
+  the group returns exactly as it was.
 
 ### Moving and resizing
 
@@ -132,24 +143,19 @@ confirms and **Esc** cancels.
 | `Meta+Ctrl+Shift+N` | Minimize the whole group |
 | `Meta+Ctrl+Shift+X` / `Meta+Ctrl+Shift+U` | Maximize / restore the whole group |
 | `Meta+Ctrl+Shift+Q` | The group's Close All / Ungroup / Cancel choice |
-| `Meta+Shift+C` | Show or hide member title strips (for this session) |
+| `Meta+Shift+C` | Show or hide the member title strips QindaQt draws (for this session) |
 | `Meta+F1` | Show or hide the desktop shortcut note |
 | `Meta+N` | Open the notification center |
 
 One rule worth knowing: while a window is grouped, its frame belongs to the
 container. Native per-window tiling shortcuts are redirected so a member
-cannot slide out of its page on its own; maximize and fullscreen become the
-solo presentation described above.
-
-> **Rollout note.** The container controls described here are part of the
-> current QindaQt build. On an already-running installed desktop the newest
-> of them appear after the next compositor restart, which is deliberately
-> scheduled while their interaction checks finish. The exact per-feature
-> status is in the [feature catalog](catalog/features.md).
+cannot slide out of its page on its own; maximizing a member fills the
+container's frame and full screen uses the whole screen, as described above,
+and both put the previous layout back when they end.
 
 ## The application menu
 
-The menu of the window you are working in appears in the command bar, next to
+The menu of the window you are working in appears in the top panel, next to
 the system menu — like on a Mac, so the app's window doesn't spend its height
 on a menu row. Click an entry and its submenu opens right there; choosing an
 item performs the application's own action.
@@ -157,15 +163,19 @@ item performs the application's own action.
 The first-party Text Editor, Terminal, and File Manager export their menus
 this way, and Sloom Studio's native menu wiring is supported — its
 real-world use on the installed desktop is still being qualified.
-Applications keep their in-window menu until the bar is actually displaying
-their menu — if a profile has no menu bar, or the app has no export, nothing
-is hidden and the bar simply leaves the space clear.
+Applications keep their in-window menu until the top panel is actually
+displaying their menu — if the layout has no application menu on its panel, or
+the app has no export, nothing is hidden and the panel simply leaves the space
+clear.
 
 ## The desktop shortcut note
 
 The first time the desktop starts, a small **Desktop shortcuts** card sits on
-the wallpaper listing the default combining and docking keys (the same list
-as in the table above). **Got it** dismisses it, and the choice is remembered
+the wallpaper with a short list of defaults — six rows, not the whole
+keyboard reference above: **Meta+F1** to show or hide the note, **Meta+Shift**
++ drag to combine windows, **Meta+Shift+D** to enter docking mode, the
+**arrow keys** to choose a docking edge, **Esc** to cancel, and **Enter** to
+confirm. **Got it** dismisses it, and the choice is remembered
 for later sessions. **Meta+F1** hides or shows the card whenever you want it
 back. The card is part of the wallpaper layer: it never appears in the task
 list, never takes keyboard focus, and always labels its list as defaults.
