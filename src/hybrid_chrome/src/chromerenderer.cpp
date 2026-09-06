@@ -105,6 +105,23 @@ void ChromeRenderer::paint(QPainter &painter,
         painter.drawRoundedRect(tab.rect.adjusted(0.0, 2.0, 0.0, -2.0), 6.0, 6.0);
         paintLabel(painter, tab.rect, tab.title,
                    tab.active ? plan.style.palette.text : plan.style.palette.textMuted);
+        // AGENT-CONTRACT: The active page cue is resolved from the same theme
+        // accent as dividers and controls. Keep it inside the tab geometry so
+        // native member frames remain transparent and KWin owns focus/input.
+        if (tab.active) {
+            const qreal inset = std::min(4.0, tab.rect.width() / 4.0);
+            const qreal thickness = std::min(2.0, tab.rect.height());
+            if (tab.rect.width() > inset * 2.0 && thickness > 0.0) {
+                painter.save();
+                painter.setRenderHint(QPainter::Antialiasing, false);
+                painter.setBrush(plan.style.palette.accent);
+                painter.drawRect(QRectF(tab.rect.left() + inset,
+                                       tab.rect.bottom() - thickness,
+                                       tab.rect.width() - inset * 2.0,
+                                       thickness));
+                painter.restore();
+            }
+        }
     }
 
     // AGENT-GUARD: Member title bars are painted by KDecoration. Drawing the

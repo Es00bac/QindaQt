@@ -23,6 +23,13 @@ and is GUI-thread-only; it exists for settings previews and toolkit-focused
 tests, not as the production group surface. `ChromeRenderer` paints the same
 plan into the compositor-owned scene image.
 
+The active tab receives a short accent rule inside its tab rectangle. The rule
+is painted from the resolved theme accent, while inactive tabs keep the neutral
+surface treatment. Keeping this cue inside the shared row makes the active page
+readable without adding a focusable surface or changing native member-frame
+ownership. It is the same accent token used by dividers and shared controls, so
+light and dark theme changes remain coherent.
+
 The pure hit tester orders window control, outer resize edge, tab, divider,
 member title, outer title, then client content. A hit returns a typed action plus
 stable ID or logical tab index; it never performs the action. At the production
@@ -56,10 +63,10 @@ controls, tabs, and outer resize. The constraint solver reserves the shared row
 once; the chrome plan and scene content frame therefore keep identical bounds.
 
 The production Hybrid session currently selects this Qinda macOS style with
-the built-in Qinda palette. The pure factory accepts a resolved palette, but
-wiring live theme changes into shared chrome and the KDecoration plugin belongs
-to the Shell/customization theme integration; the current member decoration
-uses the same checked-in colors directly.
+the palette resolved by the live AppAppearance projection. Theme changes
+therefore update shared chrome and the Qinda KDecoration handoff together; the
+pure factory still accepts the resolved palette without owning theme
+persistence.
 
 ## DPI and output coordinates
 
