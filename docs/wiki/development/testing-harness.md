@@ -2543,7 +2543,12 @@ and the QML/data roots confined to the stage. Finally it copies the stage twice,
 removes Global Menu's shell-linked library in one copy and the Settings Power
 `qmldir` in the other, and requires each closure check to fail for that exact
 omission. This is a package/loadability guard, not nested-session or
-rendered-applet evidence.
+rendered-applet evidence. The same `DesktopVirtual` stage also carries the
+four-file production KWin `qindaqt` WindowSwitcher package under
+`share/kwin/tabbox/qindaqt`; `desktop.virtual.window-switcher-stage` checks the
+metadata and three QML files in that staged XDG data path. The normal `QindaQt`
+install component continues to own the identical source package, so the stage
+rule does not create a copied fixture or change ordinary install ownership.
 
 The registered live row is `desktop.virtual.boot.1080p`. It is intentionally
 inaccessible to an ordinary CTest invocation: the manager must allocate the

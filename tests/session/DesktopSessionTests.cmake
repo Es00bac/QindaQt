@@ -281,6 +281,17 @@ if(
         --audio-service-directory "${KDE_INSTALL_DBUSSERVICEDIR}"
     )
 
+    # The first-run TabBox layout is production data owned by src/session.
+    # Stage the same source directory into DesktopVirtual so the contained
+    # qualification session discovers the selected KWin package through its
+    # normal XDG data path; the normal QindaQt component remains declared by
+    # src/session/CMakeLists.txt.
+    install(
+        DIRECTORY "${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt/"
+        DESTINATION "${KDE_INSTALL_DATADIR}/kwin/tabbox/qindaqt"
+        COMPONENT DesktopVirtual
+    )
+
     include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopPackageTests.cmake")
 
     add_test(

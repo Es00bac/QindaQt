@@ -8,11 +8,13 @@ import unittest
 from pathlib import Path
 
 from desktop_session_package_contract import (
+    WINDOW_SWITCHER_FILES,
     NETWORK_QML_FILES,
     PackagePayloadError,
     FIRST_PARTY_DESKTOP_ICONS,
     authenticate_first_party_desktop_entries,
     authenticate_network_qml_package,
+    authenticate_window_switcher_package,
 )
 
 
@@ -57,6 +59,23 @@ class PackageContractTests(unittest.TestCase):
             (applications / "org.qindaqt.Settings.desktop").unlink()
             with self.assertRaisesRegex(PackagePayloadError, "Settings.desktop"):
                 authenticate_first_party_desktop_entries(stage)
+
+    def test_exact_window_switcher_payload_passes_and_missing_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory) / "stage"
+            package = stage / "share/kwin/tabbox/qindaqt"
+            package.mkdir(parents=True)
+            for relative in WINDOW_SWITCHER_FILES:
+                path = package / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture\n", encoding="utf-8")
+            self.assertEqual(
+                len(authenticate_window_switcher_package(stage)),
+                len(WINDOW_SWITCHER_FILES),
+            )
+            (package / WINDOW_SWITCHER_FILES[-1]).unlink()
+            with self.assertRaisesRegex(PackagePayloadError, "omitted"):
+                authenticate_window_switcher_package(stage)
 
     def test_exact_network_qml_closure_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
