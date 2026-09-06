@@ -89,6 +89,19 @@ def synthetic_transcript() -> str:
     return f"[mock transcript from {SYNTHETIC_RECORDING_NAME}]"
 
 
+def readback_proves_insertion(before: str, after: str, transcript: str) -> bool:
+    """Require a new occurrence in the post-delivery accessibility snapshot.
+
+    A transcript already present before delivery is not evidence that Gabbee
+    inserted anything. Counting occurrences also accepts a legitimate repeat
+    insertion while rejecting an unchanged preloaded target.
+    """
+
+    if not transcript or transcript not in after:
+        return False
+    return after.count(transcript) > before.count(transcript)
+
+
 class SyntheticRecorder:
     """Drop-in replacement for Gabbee's PipeWireRecorder.
 
@@ -112,6 +125,7 @@ class SyntheticRecorder:
     def fixed_pcm_frames(self) -> int:
         return max(1, int(self._sample_rate * self._seconds))
 
+    @property
     def is_recording(self) -> bool:
         return self._recording
 

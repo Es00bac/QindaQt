@@ -28,6 +28,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -39,6 +40,7 @@ from gabbee_probe_support import (  # noqa: E402
     PhaseResult,
     ResultDocument,
     SyntheticRecorder,
+    readback_proves_insertion,
     synthetic_transcript,
 )
 
@@ -164,10 +166,13 @@ class Probe:
         import dbus
 
         bus = dbus.SessionBus()
+        if not bus.name_has_owner(COMPOSITOR_SERVICE):
+            return {"error": f"{COMPOSITOR_SERVICE} not registered on session bus"}
         endpoint = bus.get_object(COMPOSITOR_SERVICE, COMPOSITOR_PATH)
         interface = dbus.Interface(endpoint, "org.qindaqt.Compositor1")
         reply = interface.DockWindows(
-            target_id, incoming_id, "horizontal", "second", dbus.Double(0.5)
+            target_id, incoming_id, "horizontal", "second", dbus.Double(0.5),
+            timeout=10,
         )
         if isinstance(reply, (bytes, bytearray)):
             reply = reply.decode("utf-8", "replace")
@@ -176,22 +181,55 @@ class Probe:
     # -- phases ----------------------------------------------------------
 
     def preflight(self) -> PhaseResult:
+        atspi = self._atspi_backend()
         facts: dict[str, object] = {
             "transcript": TRANSCRIPT,
             "typingToolsFoundAndRemoved": _strip_typing_tools(),
             "waylandDisplay": bool(os.environ.get("WAYLAND_DISPLAY")),
+            "qtAccessibilityAlwaysOn": os.environ.get("QT_LINUX_ACCESSIBILITY_ALWAYS_ON") == "1",
+            "sessionBusPrivatePath": os.environ.get("DBUS_SESSION_BUS_ADDRESS", "").startswith(
+                "unix:path=" + os.environ.get("XDG_RUNTIME_DIR", "")
+            ),
         }
+        # Verify qdbus6 and org.kde.KWin registration independently before
+        # attempting the bridge, so a None bridge can be disambiguated.
+        qdbus = shutil.which("qdbus6") or shutil.which("qdbus")
+        facts["qdbusAvailable"] = bool(qdbus)
+        if qdbus:
+            try:
+                probe = subprocess.run(
+                    [qdbus, "org.kde.KWin", "/Scripting",
+                     "org.kde.kwin.Scripting.isScriptLoaded", "probe"],
+                    capture_output=True, text=True, timeout=3,
+                )
+                facts["kwinServiceReachable"] = probe.returncode == 0
+                facts["kwinServiceOutput"] = probe.stdout.strip() or probe.stderr.strip()
+            except Exception as exc:
+                facts["kwinServiceReachable"] = False
+                facts["kwinServiceOutput"] = str(exc)
+        else:
+            facts["kwinServiceReachable"] = False
         backend = self._backend()
         facts["kwinScriptingBridge"] = backend.bridge is not None
-        facts["atSpiAvailable"] = self._atspi_backend().available
+        facts["atSpiAvailable"] = atspi.available
+        facts["atSpiBrokerReachable"] = self._atspi_broker_reachable()
         facts["wlCopyAvailable"] = bool(shutil.which("wl-copy"))
         ok = bool(facts["kwinScriptingBridge"] and facts["waylandDisplay"])
+        bridge_status = "alive" if facts["kwinScriptingBridge"] else "unavailable"
         return PhaseResult(
             "preflight",
             ok,
-            "Gabbee KWin-scripting bridge available; typing tools stripped from PATH",
+            f"KWin-scripting bridge {bridge_status}; typing tools stripped from PATH",
             facts,
         )
+
+    def _atspi_broker_reachable(self) -> bool:
+        result = subprocess.run(
+            ["gdbus", "introspect", "--session", "--dest", "org.a11y.Bus",
+             "--object-path", "/org/a11y/bus"],
+            capture_output=True, text=True, timeout=3,
+        )
+        return result.returncode == 0
 
     def windows(self) -> PhaseResult:
         backend = self._backend()
@@ -216,10 +254,16 @@ class Probe:
                 break
             time.sleep(0.5)
         ok = self.editor_context is not None and self.terminal_context is not None
+        found = sum([self.editor_context is not None, self.terminal_context is not None])
+        summary = (
+            "Gabbee enumerated both target windows through KWin scripting"
+            if ok
+            else f"window-inventory incomplete: found {found}/2 target windows"
+        )
         return PhaseResult(
             "window-inventory",
             ok,
-            "Gabbee enumerated both target windows through KWin scripting",
+            summary,
             {"windows": windows},
         )
 
@@ -237,23 +281,38 @@ class Probe:
             if context_after
             else ""
         )
-        inserted_via_atspi = TRANSCRIPT in surrounding_after or TRANSCRIPT in str(
-            focused["surrounding"] or ""
+        inserted_via_atspi = readback_proves_insertion(
+            str(focused["surrounding"] or ""), surrounding_after, TRANSCRIPT
         )
-        clipboard_mirror = clipboard == TRANSCRIPT
-        ok = focused["windowId"] == target.window_id and (
-            inserted_via_atspi or clipboard_mirror
-        )
+        # AT-SPI surrounding text readback is the only acceptable proof of insertion
+        # on Wayland — clipboard delivery is a fallback path that cannot confirm the
+        # text reached the focused widget.  Report clipboard evidence separately but
+        # never let it make the phase green.
+        last_delivered = delivery.get("lastText", "")
+        clipboard_fallback = bool(last_delivered) and clipboard == last_delivered
+        delivery_method = str(delivery.get("deliveryMethod") or "")
+        atspi_delivery = delivery_method == "at-spi"
+        ok = focused["windowId"] == target.window_id and atspi_delivery and inserted_via_atspi
+        if ok:
+            summary = f"synthetic dictation captured focused {label} member and delivered via Gabbee"
+        elif clipboard_fallback:
+            summary = (
+                f"dictation-{label}: focus captured, clipboard fallback only "
+                f"(AT-SPI surrounding readback empty — Wayland insertion unconfirmed)"
+            )
+        else:
+            summary = f"dictation-{label}: delivery incomplete or focus mismatch"
         return PhaseResult(
             f"dictation-{label}",
             ok,
-            f"synthetic dictation captured focused {label} member and delivered via Gabbee",
+            summary,
             {
                 "capturedFocus": focused,
                 "delivery": delivery,
                 "clipboardAfter": clipboard,
                 "insertedViaAtSpi": inserted_via_atspi,
-                "clipboardMirror": clipboard_mirror,
+                "atSpiDelivery": atspi_delivery,
+                "clipboardFallback": clipboard_fallback,
             },
         )
 
@@ -263,10 +322,11 @@ class Probe:
         )
         docked = dock.get("status") == "docked"
         if not docked:
+            reason = dock.get("error", "compositor returned non-docked status")
             return PhaseResult(
                 "grouped-member-focus",
                 False,
-                "compositor DockWindows did not report success",
+                f"compositor DockWindows unavailable: {reason}",
                 {"dockResponse": dock},
             )
         editor_result = self.dictation_into(self.editor_context, "group-member-editor")
@@ -292,17 +352,18 @@ class Probe:
         )
 
     def run(self) -> int:
-        phases = [self.preflight(), self.windows()]
-        for phase in phases:
-            self.document.add(phase)
-        if not all(phase.ok for phase in phases):
+        try:
+            phases = [self.preflight(), self.windows()]
+            for phase in phases:
+                self.document.add(phase)
+            if not all(phase.ok for phase in phases):
+                return 1
+            self.document.add(self.dictation_into(self.editor_context, "editor"))
+            self.document.add(self.dictation_into(self.terminal_context, "terminal"))
+            self.document.add(self.grouped_member())
+            return 0 if self.document.outcome() else 1
+        finally:
             self._finish()
-            return 1
-        self.document.add(self.dictation_into(self.editor_context, "editor"))
-        self.document.add(self.dictation_into(self.terminal_context, "terminal"))
-        self.document.add(self.grouped_member())
-        self._finish()
-        return 0 if self.document.outcome() else 1
 
     def _finish(self) -> None:
         self.document.write(Path(self.arguments.result_path))
@@ -315,6 +376,17 @@ def main() -> int:
     parser.add_argument("--editor-desktop-id", default="org.qindaqt.TextEditor")
     parser.add_argument("--terminal-desktop-id", default="org.qindaqt.Terminal")
     arguments = parser.parse_args()
+    # KWinQtScriptBridge.try_create() returns None when QCoreApplication.instance()
+    # is None — it uses QDBusConnection.sessionBus() and a nested QEventLoop to
+    # receive KWin script callbacks.  Create the app before the Probe runs so the
+    # bridge is reachable.  QCoreApplication (not QApplication) is correct here:
+    # no display or GUI platform is needed for D-Bus + scripting.
+    try:
+        from PyQt6.QtCore import QCoreApplication
+        _qt_app = QCoreApplication.instance() or QCoreApplication(sys.argv)
+    except Exception as exc:
+        print(f"warning: QCoreApplication unavailable: {exc}", file=sys.stderr)
+        _qt_app = None
     return Probe(arguments).run()
 
 
