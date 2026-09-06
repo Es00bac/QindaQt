@@ -1,5 +1,78 @@
 # Integration handoff
 
+## First-launch tutorial and consistent appearance — 2026-09-05
+
+The installed session starts **Welcome to QindaQt**, a seven-chapter illustrated
+guide to ordinary windows, arranging splits, desktop tab pages, moving and
+detaching members, customization, and appearance. Its **Show at next launch**
+checkbox defaults to checked and saves immediately; clearing it suppresses
+automatic opening while the launcher entry still opens the guide manually.
+The normal 900 × 640 window also supports compact navigation and a fixed footer
+at its smaller size. Instructions distinguish desktop pages from application
+document tabs, explain divider resizing, and separate canceling a gesture from
+discarding a customization draft. See [Welcome](wiki/apps/welcome.md).
+
+One shared appearance policy resolves Light, Dark, System, and an explicitly
+selected high-contrast theme. Confirmed changes update the shell and first-party
+applications; explicit command-line theme overrides remain authoritative.
+Native decoration and grouped-window chrome consume the confirmed palette,
+preserving their compact geometry and existing tiling/tab behavior.
+[ADR-0080](wiki/adr/0080-resolve-first-party-appearance-from-settings.md) records
+the application boundary; [ADR-0081](wiki/adr/0081-project-confirmed-appearance-into-window-chrome.md)
+records its process-local chrome adapter.
+
+Ordinary-surface status icons and warning text now use readable semantic
+foreground colors. All five built-in themes have checked normal/muted text
+contrast, and the 25 changed Controls reference images were independently
+reviewed; all 26 ordinary comparison rows pass without relaxed tolerances.
+
+Integrated verification: full Debug build passes on Gentoo; appearance/tutorial
+11/11, Hybrid/chrome 21/21, and installed DesktopVirtual/1080p 2/2 pass. The broad
+suite passed 651/652; the remaining font-bootstrap structural check rejected
+formatter whitespace, was repaired without changing runtime initialization,
+and then passed 1/1. Documentation validates 176 pages and builds strictly.
+The final profile/display matrix passes 6/6.
+
+Private run `b84c47f82962435081751c6e7ffe23c5` verifies automatic opening,
+pointer opt-out, manual launcher reopening, chapter navigation, scrolling,
+compact resizing, and use of the compact footer. Its attempted light capture
+was rejected because it remained dark. The dedicated follow-up
+`74bf6f71dc2641409b5b46680beeef20` asserts Settings activation and the Appearance
+route, applies Light, confirms `qinda-light/light` at settings revision 2, and
+captures the still-open guide, shell, native Editor, and title bars in Light.
+It then applies and confirms `qinda-dark/dark` at revision 4. Both runs exit
+successfully, restore their private harness files byte-for-byte, and leave zero
+private survivors. Screenshots remain in ignored evidence directories.
+
+Private run `ec1df32e1479300fad55bb845de67c09` passes real pointer splitting,
+member detachment, tab grouping and switching, outer resizing, and tab
+detachment against the new chrome, with preserved geometry assertions,
+screenshots, byte-exact harness restoration, and zero private survivors.
+Its visual inspection exposed default-palette controls in Notification Center.
+The repaired center, popup, and card buttons now use themed foreground/background
+pairs, including checked and disabled states. Focused QML checks pass 4/4;
+the rebuilt installed dark 1080p and light WUXGA checks pass 3/3 including the
+package fixture. Both actual captures were reviewed for readable header controls.
+
+### Stopping point and first real login
+
+The user requested a bounded stopping point for moving development into the
+desktop, not an overnight polishing run. This is a verified nested-desktop
+checkpoint; it is not physical DRM/KMS daily-driver qualification. The next
+bounded step is installing/registering the existing **QindaQt (Wayland)** login
+entry, then exercising the first actual hardware session. Its entry launches
+`qindaqt-wm --drm`; starting `qindaqt-shell` alone does not start a complete
+desktop. No QindaQt entry was found in the host's `/usr/share/wayland-sessions`
+or `/usr/local/share/wayland-sessions` during this handoff, and the current host
+session was not replaced. Use the user's requested native sudo password window
+for any privileged installation, rather than collecting a password in chat.
+
+Keep physical output/input, suspend/resume, device integration, and the first
+hardware login as explicit acceptance work. One known visual follow-up is the
+legacy Notifications Settings page, which remains light inside the dark Settings
+frame; its text remains readable. Further aesthetic work and memory optimization
+are deferred. No background worker or scheduled continuation is required.
+
 ## Visual identity and live wallpaper selection — 2026-09-05
 
 QindaQt now ships its own Mineral Light icon theme: 131 canonical designs and
