@@ -408,6 +408,17 @@ void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
     auto *revert = item(scene.root, "appearanceRevertButton");
     QVERIFY(revert != nullptr && revert->isVisible());
     QCOMPARE(revert->property("text").toString(), QStringLiteral("Revert"));
+    QVERIFY(QMetaObject::invokeMethod(revert, "click"));
+    QTRY_COMPARE(scene.model->cancels, 1);
+
+    // The real route publishes its confirmed draft after cancel succeeds. The
+    // presentation fixture mirrors that publication and proves the editable
+    // field releases its stale typed text rather than retaining it locally.
+    scene.model->draft = defaultDraftMap();
+    scene.model->draftDirty = false;
+    scene.model->publish();
+    QTRY_COMPARE(fontFamily->property("editText").toString(),
+                 QStringLiteral("Noto Sans"));
 
     QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
     auto *wallpaper = item(scene.root, "appearanceWallpaperField");
