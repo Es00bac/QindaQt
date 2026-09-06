@@ -3,7 +3,7 @@
   "id": "qinda-macos",
   "name": "Qinda macOS",
   "variant": "light",
-  "iconTheme": "breeze",
+  "iconTheme": "QindaQt",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 12,

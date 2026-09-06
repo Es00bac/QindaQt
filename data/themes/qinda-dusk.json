@@ -3,7 +3,7 @@
   "id": "qinda-dusk",
   "name": "Qinda Dusk",
   "variant": "dusk",
-  "iconTheme": "breeze-dark",
+  "iconTheme": "QindaQt",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 10,

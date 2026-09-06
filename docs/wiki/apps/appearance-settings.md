@@ -19,7 +19,7 @@ One page covers the appearance preference set stored through Settings1:
 | --- | --- | --- |
 | Theme | Installed-theme cards with live QST previews, dark/light/system scheme preference | `appearance.theme`, `appearance.colorScheme` |
 | Fonts | Family text field, size slider (6–36 pt), antialiasing switch, hinting and subpixel segmented choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
-| Wallpaper | Path field (empty = none), scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
+| Wallpaper | Installed QindaQt wallpaper choices, custom path field (empty = none), scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Display scale | Logical UI scale slider (0.5–3.0) | `appearance.uiScale` |
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
@@ -88,13 +88,14 @@ without discarding confirmed state:
    the appearance model and a separate client to notification quieting; each
    client owns an independent `QtSettingsTransport` so their local request
    tokens cannot collide on one signal source;
-3. merge every theme directory from the same search contract as the text
+3. discover bundled PNG wallpapers from `$XDG_DATA_DIRS/qindaqt/wallpapers` and the installed prefix, with earlier roots winning duplicate file names; choosing one writes its absolute installed path while a saved custom path or empty choice remains unchanged until the user edits and applies it;
+4. merge every theme directory from the same search contract as the text
    editor (`$XDG_DATA_DIRS/qindaqt/themes`, then beside the installed
    executable; `--theme-directory` prepends a developer path). Earlier
    directories win duplicate IDs, while unique built-ins remain present; an
    invalid theme fails closed and no themes exits 3 instead of rendering
    token-less controls;
-4. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,
+5. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,
    and only then load `Main.qml`; one presentation-active route host
    instantiates exactly one route component with its required model property,
    while both bounded domain models remain alive. The executable adds
@@ -108,9 +109,7 @@ page receives only its own model even though both models share the process.
 
 ## Deliberate non-goals for this slice
 
-- No compositor, display, session, font, or wallpaper mutation. The UI scale
-  and wallpaper fields are stored intent; application remains with public
-  Display1/Settings consumers in later slices.
+- No compositor, display, session, font, or wallpaper mutation. The picker stores an installed or custom wallpaper intent; a future production background-surface consumer must apply it through the public Settings boundary. UI scale application likewise remains with the Display1/Settings consumers.
 - No font discovery: the family field is validated text, not a host font
   catalog.
 - No multi-key atomic transactions: the public client exposes single-key
@@ -128,7 +127,7 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.appearance-' --output-on-failure
 ```
 
-- `qindaqt.appearance-values` — token round trips, canonical decode, typed
+- `qindaqt.appearance-values` — bundled-wallpaper discovery precedence, token round trips, canonical decode, typed
   rejections including empty non-empty-schema strings, draft validation, and
   exact shipped-schema key/default/constraint contracts.
 - `qindaqt.appearance-preview` — configured-theme precedence, scheme and

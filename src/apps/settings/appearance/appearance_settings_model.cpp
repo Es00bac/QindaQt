@@ -25,12 +25,13 @@ constexpr int MaximumDiagnosticLength = 512;
 
 AppearanceSettingsModel::AppearanceSettingsModel(
     SettingsClient &client, QVector<Themes::ThemeSpec> installedThemes,
-    Qt::ColorScheme platformScheme, DesignTokens::TokenFacade *previewFacade,
+    QVariantList bundledWallpapers, Qt::ColorScheme platformScheme, DesignTokens::TokenFacade *previewFacade,
     QObject *parent)
     : QObject(parent),
       m_client(client),
       m_preview(std::move(installedThemes)),
       m_platformScheme(platformScheme),
+      m_bundledWallpapers(std::move(bundledWallpapers)),
       m_previewFacade(previewFacade)
 {
     Q_ASSERT(m_client.thread() == thread());

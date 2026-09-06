@@ -49,6 +49,7 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(QVariantMap draft MEMBER draft NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors MEMBER fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes MEMBER installedThemes CONSTANT)
+    Q_PROPERTY(QVariantList bundledWallpapers MEMBER bundledWallpapers CONSTANT)
     Q_PROPERTY(QString resolvedThemeId MEMBER resolvedThemeId NOTIFY draftChanged)
     Q_PROPERTY(bool configuredThemeInstalled MEMBER configuredThemeInstalled
                    NOTIFY draftChanged)
@@ -103,6 +104,7 @@ public:
     QVariantMap draft;
     QVariantMap fieldErrors;
     QVariantList installedThemes;
+    QVariantList bundledWallpapers;
     QStringList draftKeys;
     QVariantList draftValues;
     int applies = 0;

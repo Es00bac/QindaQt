@@ -51,6 +51,7 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(QVariantMap draft READ draft NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors READ fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes READ installedThemes CONSTANT)
+    Q_PROPERTY(QVariantList bundledWallpapers READ bundledWallpapers CONSTANT)
     Q_PROPERTY(QString resolvedThemeId READ resolvedThemeId NOTIFY previewChanged)
     Q_PROPERTY(bool configuredThemeInstalled READ configuredThemeInstalled
                    NOTIFY previewChanged)
@@ -68,7 +69,7 @@ public:
     explicit AppearanceSettingsModel(
         QindaQt::Services::SettingsClient::SettingsClient &client,
         QVector<Themes::ThemeSpec> installedThemes,
-        Qt::ColorScheme platformScheme,
+        QVariantList bundledWallpapers, Qt::ColorScheme platformScheme,
         DesignTokens::TokenFacade *previewFacade = nullptr,
         QObject *parent = nullptr);
 
@@ -89,6 +90,7 @@ public:
     [[nodiscard]] QVariantMap draft() const;
     [[nodiscard]] QVariantMap fieldErrors() const;
     [[nodiscard]] QVariantList installedThemes() const;
+    [[nodiscard]] QVariantList bundledWallpapers() const;
     [[nodiscard]] QString resolvedThemeId() const;
     [[nodiscard]] bool configuredThemeInstalled() const;
     [[nodiscard]] QString fallbackNotice() const;
@@ -157,6 +159,7 @@ private:
     QindaQt::Services::SettingsClient::SettingsClient &m_client;
     AppearancePreview m_preview;
     Qt::ColorScheme m_platformScheme;
+    QVariantList m_bundledWallpapers;
     QPointer<DesignTokens::TokenFacade> m_previewFacade;
 
     State m_state = State::Loading;

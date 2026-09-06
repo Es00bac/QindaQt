@@ -33,10 +33,29 @@ ColumnLayout {
             "Stored wallpaper preference; this window does not change the running session")
     }
 
+    Flow {
+        Layout.fillWidth: true
+        spacing: Tokens.space["2"]
+
+        Repeater {
+            model: root.appearanceSettings.bundledWallpapers ?? []
+
+            Button {
+                required property var modelData
+                objectName: "bundledWallpaperButton"
+                text: modelData.name
+                emphasized: root.draftValue("appearance.wallpaper") === modelData.path
+                available: root.appearanceSettings.canEdit && !root.editorBusy
+                accessibleName: qsTr("Use %1 wallpaper").arg(modelData.name)
+                onClicked: root.setDraft("appearance.wallpaper", modelData.path)
+            }
+        }
+    }
+
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Wallpaper image path")
-        description: qsTr("Leave empty for no wallpaper preference")
+        description: qsTr("Choose a bundled image above or enter a custom path; leave empty for none")
         errorMessage: root.appearanceSettings.fieldErrors[
                           "appearance.wallpaper"] ?? ""
         editor: wallpaperField
