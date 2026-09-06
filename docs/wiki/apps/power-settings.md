@@ -4,8 +4,10 @@
 brightness and session-control surface. The route model receives an injected
 `PowerClient` and purpose-built `SessionActionsClient`; a narrow
 process-lifetime QML composition owns both clients and their injected Qt bus
-connections. UPower, power-profiles-daemon, login1, ScreenSaver, sysfs, the
-resident Power service, and the supervisor never cross into the model or page.
+connections. The same composition separately owns the bounded KScreenLocker
+preference adapter described in [ADR-0091](../adr/0091-configure-kscreenlocker-preferences-through-settings.md).
+UPower, power-profiles-daemon, login1, ScreenSaver, sysfs, the resident Power
+service, and the supervisor never cross into the Power model or page.
 
 The wire values and bounds are fixed by the [Power1 reference](../reference/power1-v1.md),
 and the platform authority remains owned by the
@@ -22,12 +24,31 @@ The route presents only validated, bounded public snapshot copies:
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
 | Internal brightness | Normalized 0–10000 position and exact observed raw value/maximum | Read-only disabled slider because Power1 version 1 has no internal-display mutation |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
+| Screen lock | Saved automatic-idle-lock preference and timeout | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled |
 | Session | Typed availability for Lock, Log out, Suspend, Restart, and Shut down | Lock and Suspend dispatch directly; Log out, Restart, and Shut down require confirmation |
 
 Every state and warning has visible text; meaning is not carried by color
 alone. Unknown values are labeled unknown instead of manufacturing a number or
 estimate. The route shows loading, ready, degraded, stale, unavailable, queued,
 pending, convergence-wait, failed, and uncertain states separately.
+
+## Screen-lock preference boundary
+
+The Screen lock section is separate from Session actions. It reads and writes
+only KScreenLocker's documented `kscreenlockerrc` `[Daemon]` `Autolock` and
+`Timeout` keys, retaining `LockOnResume`, `RequirePassword`, and every other
+locker preference. Each mutation first re-reads the stored pair and applies
+only the intended key, so an external edit to the untouched key survives the
+save; a failed reload rejects the change instead of overwriting a config the
+page cannot read. A successful save is followed by the standard KDE screen
+locker's `configure` request. The section reports a saved-but-not-reloaded
+result when that request fails and offers one explicit retry; it never
+silently rolls back or claims live adoption. Retry re-runs the step that
+actually failed — reload, save, or live reload — and only a persisted change
+may reach the `configure` request, so a reported success never describes an
+unsaved change. The current timeout stays stored while automatic
+locking is off, and the page disables its adjustment controls until it is
+turned on again.
 
 ## Exact admission and operation lifetime
 
@@ -83,8 +104,9 @@ names and descriptions. Profile buttons expose radio-button role and checked
 state. Brightness sliders expose slider role, target name, normalized value,
 and exact raw value in both visible and accessible descriptions.
 
-The page computes its host-entry target from current admission truth: the first
-enabled profile action, then the first enabled keyboard slider, then Retry,
+The page computes its host-entry target from current admission truth: the
+automatic screen-lock toggle when enabled, then the first enabled profile
+action, then the first enabled keyboard slider, then Retry,
 then the route surface. Closing Settings remains a single window-level action;
 the page does not duplicate it. A disabled internal slider or fenced domain
 action is never nominated. Escape returns focus to the active Power PageTab in
@@ -121,7 +143,11 @@ profile admission, exact lineage, retained-stale presentation/admission
 closure, convergence, retry-status recovery, owner replacement, and opaque
 session-client injection without model authority. The slider row proves burst coalescing, normalized-to-raw
 conversion, normalized and raw-equivalent no-ops, invalid/stale rejection, and
-no dispatch after authority change.
+no dispatch after authority change. The screen-lock model row covers INI
+round-trip preserving unrelated keys, merge-latest saves that keep external
+edits to the untouched key in both directions, retry that re-runs a failed
+load/save before any live configure is requested or claimed, saved-versus-live
+failure truth, and clamped one-to-240-minute timeout bounds.
 The warning-fatal page row renders wide and compact software scenes, verifies
 Power and session action wiring, destructive confirmation, accessible
 roles/descriptions, disabled internal truth, and an
@@ -131,10 +157,12 @@ cover eighth-route order, Ctrl+8, PageTab semantics, Escape/Tab entry, and
 exclusive wide/compact loaders.
 
 No row contacts a host session/system bus, UPower, power-profiles-daemon,
-login1, ScreenSaver, sysfs, Wayland, or hardware. This slice does not claim
-live host action success, internal-display mutation, hold acquisition/release,
-charge thresholds, persistence, live AT-SPI, physical brightness keys, or
-nested-session visuals.
+login1, ScreenSaver, sysfs, Wayland, or hardware. Screen-lock rows use
+temporary `kscreenlockerrc` copies and a fake live-configure client. This
+slice does not claim live host action success, live screen-locker preference
+adoption, internal-display mutation, hold acquisition/release,
+charge thresholds, persistence beyond the bounded screen-lock preference
+file, live AT-SPI, physical brightness keys, or nested-session visuals.
 
 ## Recovery presentation
 

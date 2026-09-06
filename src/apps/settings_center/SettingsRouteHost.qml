@@ -14,6 +14,7 @@ Item {
     property var audioSettings: null
     property var bluetoothSettings: null
     property var powerSettings: null
+    property var screenLockSettings: null
     property var clipboardSettings: null
     property var colorSettings: null
     required property Component notificationsComponent

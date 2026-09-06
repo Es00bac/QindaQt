@@ -40,6 +40,34 @@ Q_SIGNALS:
   void feedbackChanged();
 };
 
+class StubScreenLockSettings final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool automaticLock MEMBER automaticLock NOTIFY changed)
+  Q_PROPERTY(int timeoutMinutes MEMBER timeoutMinutes NOTIFY changed)
+  Q_PROPERTY(bool busy MEMBER busy NOTIFY changed)
+  Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
+public:
+  using QObject::QObject;
+  bool automaticLock = false;
+  int timeoutMinutes = 5;
+  bool busy = false;
+  QString statusText = QStringLiteral("Automatic screen locking is off.");
+  QString errorText;
+  int automaticLockCalls = 0;
+  int timeoutCalls = 0;
+  int retryCalls = 0;
+  Q_INVOKABLE bool setAutomaticLock(bool enabled) {
+    ++automaticLockCalls; automaticLock = enabled; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool setTimeoutMinutes(int minutes) {
+    ++timeoutCalls; timeoutMinutes = minutes; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool retryLiveApply() { ++retryCalls; return true; }
+Q_SIGNALS:
+  void changed();
+};
+
 class StubPowerSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading MEMBER loading NOTIFY viewChanged)

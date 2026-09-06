@@ -11,6 +11,7 @@ T.Page {
     id: root
 
     required property var powerSettings
+    required property var screenLockSettings
     signal closeRequested()
 
     // AGENT-GUARD: Host entry must never nominate a disabled action. Domain
@@ -19,6 +20,8 @@ T.Page {
         root.powerSettings.loading || root.powerSettings.unavailable
             || root.powerSettings.stale
         ? (retryButton.visible && retryButton.enabled ? retryButton : root)
+        : screenLockSection.firstActionTarget !== null
+        ? screenLockSection.firstActionTarget
         : profileSection.firstActionTarget !== null
         ? profileSection.firstActionTarget
         : brightnessSection.firstActionTarget !== null
@@ -140,6 +143,10 @@ T.Page {
                 ColumnLayout {
                     width: parent.width
                     spacing: Tokens.space["4"]
+                    PowerScreenLockSection {
+                        id: screenLockSection
+                        screenLockSettings: root.screenLockSettings
+                    }
                     PowerSupplySection { powerSettings: root.powerSettings }
                     PowerProfileSection {
                         id: profileSection
