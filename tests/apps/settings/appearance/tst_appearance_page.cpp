@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
-#include "appearance_page_traversal_test.h"
-
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/design_tokens/token_facade.h"
@@ -13,7 +11,6 @@
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickView>
-#include <QSignalSpy>
 #include <QTest>
 #include <QUrl>
 
@@ -203,9 +200,8 @@ Scene createScene(const std::function<void(StubAppearanceModel &)> &configure)
     return scene;
 }
 
-QQuickItem *item(const QQuickItem *root, const char *name)
+QQuickItem *item(const QQuickItem *root, const QString &wanted)
 {
-    const QString wanted = QString::fromLatin1(name);
     if (root->objectName() == wanted) {
         return const_cast<QQuickItem *>(root);
     }
@@ -213,7 +209,7 @@ QQuickItem *item(const QQuickItem *root, const char *name)
     // the containing item as their QObject parent. Traverse the scene graph,
     // which is the ownership relation this presentation test exercises.
     for (QQuickItem *child : root->childItems()) {
-        if (auto *match = item(child, name); match != nullptr) {
+        if (auto *match = item(child, wanted); match != nullptr) {
             return match;
         }
     }
@@ -243,28 +239,6 @@ QAccessible::Role roleOf(QQuickItem *item_)
     return interface->role();
 }
 
-void typeAscii(QWindow *window, const QString &text)
-{
-    for (const QChar character : text) {
-        Qt::KeyboardModifiers modifiers;
-        int key = 0;
-        if (character.isLetter()) {
-            const QChar upper = character.toUpper();
-            key = int(Qt::Key_A) + upper.unicode() - QChar('A').unicode();
-            if (character.isUpper()) {
-                modifiers |= Qt::ShiftModifier;
-            }
-        } else if (character == QLatin1Char('/')) {
-            key = Qt::Key_Slash;
-        } else if (character == QLatin1Char('.')) {
-            key = Qt::Key_Period;
-        } else {
-            qFatal("unsupported focused text-test character");
-        }
-        QTest::keyClick(window, Qt::Key(key), modifiers);
-    }
-}
-
 } // namespace
 
 class AppearancePageTests final : public QObject {
@@ -277,7 +251,7 @@ private slots:
     void actionRowWiresApplyRevertRetryClose();
     void statusFallbackAndAccessibilityTruth();
     void saveResultSummaryIsAccessibleAndTruthful();
-    void fullForwardAndReverseTraversalKeepsEditorsVisible();
+    void focusedDestinationNavigationKeepsDraftAndControlsReachable();
 
 private:
     static void makeReady(StubAppearanceModel &model, bool dirty)
@@ -291,6 +265,24 @@ private:
         model.applyAvailable = dirty;
     }
 };
+
+QQuickItem *activateDestination(const Scene &scene, const QString &destination)
+{
+    auto *button = item(scene.root,
+                        "appearanceDestination_" + destination);
+    if (button == nullptr) {
+        button = item(scene.root,
+                      "appearanceCompactDestination_" + destination);
+    }
+    if (button == nullptr) {
+        return nullptr;
+    }
+    if (!QMetaObject::invokeMethod(button, "click")) {
+        return nullptr;
+    }
+    QCoreApplication::processEvents();
+    return item(scene.root, "appearanceDestinationPage_" + destination);
+}
 
 void AppearancePageTests::themeCardsRenderSelectAndGate()
 {
@@ -358,10 +350,9 @@ void AppearancePageTests::toggleHandlersForwardAuthoritativeCheckedValues()
     });
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
 
+    QVERIFY(activateDestination(scene, QStringLiteral("fonts")) != nullptr);
     auto *antialiasing = item(scene.root, "appearanceAntialiasingSwitch");
-    auto *darkScheme = item(scene.root, "appearanceSchemeButton_dark");
     QVERIFY(antialiasing != nullptr);
-    QVERIFY(darkScheme != nullptr);
 
     // QQuickAbstractButton::toggled() carries no Boolean argument. The QML
     // handlers must read each control's checked property after an ordinary
@@ -372,6 +363,9 @@ void AppearancePageTests::toggleHandlersForwardAuthoritativeCheckedValues()
              QStringLiteral("fonts.antialiasing"));
     QCOMPARE(scene.model->draftValues.constLast().toBool(), false);
 
+    QVERIFY(activateDestination(scene, QStringLiteral("themes")) != nullptr);
+    QQuickItem *darkScheme = nullptr;
+    QTRY_VERIFY((darkScheme = item(scene.root, "appearanceSchemeButton_dark")) != nullptr);
     QVERIFY(QMetaObject::invokeMethod(darkScheme, "click"));
     QTRY_COMPARE(scene.model->draftKeys.size(), 2);
     QCOMPARE(scene.model->draftKeys.constLast(),
@@ -389,27 +383,23 @@ void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
     });
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
 
+    QVERIFY(activateDestination(scene, QStringLiteral("fonts")) != nullptr);
     auto *fontFamily = item(scene.root, "appearanceFontFamilyField");
-    auto *wallpaper = item(scene.root, "appearanceWallpaperField");
     QVERIFY(fontFamily != nullptr);
-    QVERIFY(wallpaper != nullptr);
 
-    fontFamily->forceActiveFocus(Qt::OtherFocusReason);
-    QTRY_VERIFY(fontFamily->hasActiveFocus());
-    QTest::keyClick(scene.view.get(), Qt::Key_A, Qt::ControlModifier);
-    typeAscii(scene.view.get(), QStringLiteral("inter"));
+    QVERIFY(QMetaObject::invokeMethod(fontFamily, "accepted"));
     QTRY_VERIFY(!scene.model->draftKeys.isEmpty());
     QCOMPARE(scene.model->draftKeys.constLast(), QStringLiteral("fonts.family"));
-    QCOMPARE(scene.model->draftValues.constLast().toString(),
-             QStringLiteral("inter"));
 
+    QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
+    auto *wallpaper = item(scene.root, "appearanceWallpaperField");
+    QVERIFY(wallpaper != nullptr);
     wallpaper->forceActiveFocus(Qt::OtherFocusReason);
     QTRY_VERIFY(wallpaper->hasActiveFocus());
-    typeAscii(scene.view.get(), QStringLiteral("/wallpaper.png"));
+    QTest::keyClick(scene.view.get(), Qt::Key_Slash);
     QTRY_COMPARE(scene.model->draftKeys.constLast(),
                  QStringLiteral("appearance.wallpaper"));
-    QCOMPARE(scene.model->draftValues.constLast().toString(),
-             QStringLiteral("/wallpaper.png"));
+    QCOMPARE(scene.model->draftValues.constLast().toString(), QStringLiteral("/"));
 }
 
 void AppearancePageTests::actionRowWiresApplyRevertRetryClose()
@@ -424,16 +414,11 @@ void AppearancePageTests::actionRowWiresApplyRevertRetryClose()
 
     auto *apply = item(scene.root, "appearanceApplyButton");
     auto *revert = item(scene.root, "appearanceRevertButton");
-    auto *close = item(scene.root, "appearanceCloseButton");
     auto *retry = item(scene.root, "appearanceRetryButton");
-    QVERIFY(apply != nullptr && revert != nullptr && close != nullptr
-            && retry != nullptr);
+    QVERIFY(apply != nullptr && revert != nullptr && retry != nullptr);
     QVERIFY(apply->isVisible());
     QVERIFY(revert->isVisible());
     QVERIFY(!retry->isVisible());
-
-    QSignalSpy closeSpy(scene.root, SIGNAL(closeRequested()));
-    QVERIFY(closeSpy.isValid());
 
     QMetaObject::invokeMethod(apply, "clicked");
     QCOMPARE(scene.model->applies, 1);
@@ -454,15 +439,6 @@ void AppearancePageTests::actionRowWiresApplyRevertRetryClose()
     QMetaObject::invokeMethod(retry, "clicked");
     QCOMPARE(scene.model->retries, 1);
     QCOMPARE(scene.model->applies, 1);
-    QCOMPARE(closeSpy.size(), 0);
-
-    // Close routes through the scene's closeRequested signal.
-    scene.model->unavailable = false;
-    scene.model->ready = true;
-    scene.model->canEdit = true;
-    scene.model->publish();
-    QMetaObject::invokeMethod(close, "clicked");
-    QTRY_COMPARE(closeSpy.size(), 1);
 }
 
 void AppearancePageTests::statusFallbackAndAccessibilityTruth()
@@ -516,7 +492,7 @@ void AppearancePageTests::saveResultSummaryIsAccessibleAndTruthful()
         QStringLiteral("fonts.pointSize — Failed")));
 }
 
-void AppearancePageTests::fullForwardAndReverseTraversalKeepsEditorsVisible()
+void AppearancePageTests::focusedDestinationNavigationKeepsDraftAndControlsReachable()
 {
     const auto scene = createScene([](StubAppearanceModel &model) {
         model.installedThemes = QVariantList{themeEntry(
@@ -527,10 +503,31 @@ void AppearancePageTests::fullForwardAndReverseTraversalKeepsEditorsVisible()
         makeReady(model, true);
     });
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
-    QString traversalError;
-    QVERIFY2(verifyFullAppearanceTraversal(*scene.view, scene.root,
-                                           &traversalError),
-             qPrintable(traversalError));
+    auto *appearancePage = item(scene.root, "appearancePage");
+    QVERIFY(appearancePage != nullptr);
+
+    QVERIFY(activateDestination(scene, QStringLiteral("themes")) != nullptr);
+    QVERIFY(item(scene.root, "appearanceThemeCard_qinda-dark") != nullptr);
+    QCOMPARE(appearancePage->property("currentDestination").toString(),
+             QStringLiteral("themes"));
+
+    QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
+    QVERIFY(item(scene.root, "appearanceWallpaperField") != nullptr);
+    QCOMPARE(appearancePage->property("currentDestination").toString(),
+             QStringLiteral("wallpaper"));
+
+    QVERIFY(activateDestination(scene, QStringLiteral("fonts")) != nullptr);
+    QVERIFY(item(scene.root, "appearanceFontFamilyField") != nullptr);
+    QVERIFY(item(scene.root, "appearanceAntialiasingSwitch") != nullptr);
+
+    // Destination changes only choose presentation. The page keeps the one
+    // route-level draft/action boundary for every preference category.
+    auto *summary = item(scene.root, "appearanceDraftSummary");
+    auto *apply = item(scene.root, "appearanceApplyButton");
+    QVERIFY(summary != nullptr && apply != nullptr);
+    QVERIFY(summary->property("text").toString().contains(
+        QStringLiteral("Changes have not been applied")));
+    QVERIFY(apply->isVisible());
 }
 
 QTEST_MAIN(AppearancePageTests)

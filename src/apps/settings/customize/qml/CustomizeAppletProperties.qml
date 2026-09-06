@@ -44,7 +44,7 @@ FormSurface {
             visible: (root.properties.settingsFields ?? []).length === 0
             text: root.properties.schemaAvailable
                   ? qsTr("This applet has no configurable manifest fields")
-                  : qsTr("Applet manifest unavailable; placement changes fail closed")
+                  : qsTr("This applet has no settings available")
             wrapMode: Text.Wrap
             Accessible.role: Accessible.StaticText
             Accessible.name: text

@@ -17,24 +17,30 @@ FormSurface {
         FormRow {
             Layout.fillWidth: true
             label: qsTr("Visibility")
-            description: qsTr("Always-hidden is unavailable until reveal controls land")
+            description: qsTr("Choose when this panel stays out of the way")
             editor: visibilityChoices
             Flow {
                 id: visibilityChoices
                 spacing: Tokens.space["1"]
                 Repeater {
-                    model: ["never", "intelligent", "dodge-active", "dodge-all", "maximized"]
+                    model: [
+                        { token: "never", label: qsTr("Always visible") },
+                        { token: "intelligent", label: qsTr("Auto-hide") },
+                        { token: "dodge-active", label: qsTr("Dodge active window") },
+                        { token: "dodge-all", label: qsTr("Dodge all windows") },
+                        { token: "maximized", label: qsTr("Hide when maximized") }
+                    ]
                     delegate: Button {
-                        required property string modelData
-                        text: modelData
+                        required property var modelData
+                        text: modelData.label
                         checkable: true
                         autoExclusive: true
-                        checked: root.properties.hideMode === modelData
+                        checked: root.properties.hideMode === modelData.token
                         available: root.customizeSettings.canEdit
                         emphasized: checked
                         Accessible.role: Accessible.RadioButton
                         Accessible.checked: checked
-                        onClicked: root.customizeSettings.configureSelectedPanel("hideMode", modelData)
+                        onClicked: root.customizeSettings.configureSelectedPanel("hideMode", modelData.token)
                     }
                 }
             }

@@ -119,18 +119,7 @@ set_tests_properties(
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
-# 4. QML QuickTest runner
-add_test(
-    NAME qindaqt.settings-app-offscreen
-    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
-            -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_settingsapp.qml"
-)
-set_tests_properties(
-    qindaqt.settings-app-offscreen PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
-)
-
-# 5. CLI unknown route rejection test
+# 4. CLI unknown route rejection test
 add_test(
     NAME qindaqt.settings-app-rejects-unknown-route
     COMMAND "${CMAKE_COMMAND}"

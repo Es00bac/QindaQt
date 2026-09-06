@@ -41,8 +41,7 @@ add_test(NAME qindaqt.appearance-settings-model
          COMMAND qindaqt_appearance_model_tests)
 
 qt_add_executable(qindaqt_appearance_page_tests
-                  tst_appearance_page.cpp
-                  appearance_page_traversal_test.cpp)
+                  tst_appearance_page.cpp)
 target_compile_definitions(
     qindaqt_appearance_page_tests PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"

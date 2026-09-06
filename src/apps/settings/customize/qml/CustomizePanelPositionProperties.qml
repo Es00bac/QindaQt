@@ -24,18 +24,23 @@ FormSurface {
                 id: edgeChoices
                 spacing: Tokens.space["1"]
                 Repeater {
-                    model: ["top", "right", "bottom", "left"]
+                    model: [
+                        { token: "top", label: qsTr("Top") },
+                        { token: "right", label: qsTr("Right") },
+                        { token: "bottom", label: qsTr("Bottom") },
+                        { token: "left", label: qsTr("Left") }
+                    ]
                     delegate: Button {
-                        required property string modelData
-                        text: modelData
+                        required property var modelData
+                        text: modelData.label
                         checkable: true
                         autoExclusive: true
-                        checked: root.properties.edge === modelData
+                        checked: root.properties.edge === modelData.token
                         available: root.customizeSettings.canEdit
                         emphasized: checked
                         Accessible.role: Accessible.RadioButton
                         Accessible.checked: checked
-                        onClicked: root.customizeSettings.configureSelectedPanel("edge", modelData)
+                        onClicked: root.customizeSettings.configureSelectedPanel("edge", modelData.token)
                     }
                 }
             }
@@ -49,18 +54,23 @@ FormSurface {
                 id: alignmentChoices
                 spacing: Tokens.space["1"]
                 Repeater {
-                    model: ["start", "center", "end", "fill"]
+                    model: [
+                        { token: "start", label: qsTr("Left") },
+                        { token: "center", label: qsTr("Center") },
+                        { token: "end", label: qsTr("Right") },
+                        { token: "fill", label: qsTr("Full width") }
+                    ]
                     delegate: Button {
-                        required property string modelData
-                        text: modelData
+                        required property var modelData
+                        text: modelData.label
                         checkable: true
                         autoExclusive: true
-                        checked: root.properties.alignment === modelData
+                        checked: root.properties.alignment === modelData.token
                         available: root.customizeSettings.canEdit
                         emphasized: checked
                         Accessible.role: Accessible.RadioButton
                         Accessible.checked: checked
-                        onClicked: root.customizeSettings.configureSelectedPanel("alignment", modelData)
+                        onClicked: root.customizeSettings.configureSelectedPanel("alignment", modelData.token)
                     }
                 }
             }

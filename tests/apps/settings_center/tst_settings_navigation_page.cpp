@@ -51,6 +51,9 @@ class StubQuietingModel final : public QObject {
   Q_PROPERTY(bool unavailable MEMBER unavailable NOTIFY changed)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
+  Q_PROPERTY(int requestCount MEMBER requestCount NOTIFY changed)
+  Q_PROPERTY(int retryCount MEMBER retryCount NOTIFY changed)
+  Q_PROPERTY(int applyCount MEMBER applyCount NOTIFY changed)
 
 public:
   bool enabled = false;
@@ -59,16 +62,24 @@ public:
   bool unavailable = false;
   QString statusText;
   QString errorText;
+  int requestCount = 0;
+  int retryCount = 0;
+  int applyCount = 0;
 
   explicit StubQuietingModel(QObject *parent = nullptr) : QObject(parent) {}
 
   Q_INVOKABLE bool requestSet(bool val) {
+    ++requestCount;
     enabled = val;
     Q_EMIT changed();
     return true;
   }
-  Q_INVOKABLE void retry() { Q_EMIT changed(); }
+  Q_INVOKABLE void retry() {
+    ++retryCount;
+    Q_EMIT changed();
+  }
   Q_INVOKABLE bool applyMyChoice() {
+    ++applyCount;
     Q_EMIT changed();
     return true;
   }
@@ -164,6 +175,7 @@ private Q_SLOTS:
   void testWideTwoColumnLayoutAndRouteSwitching();
   void testCompactLayoutAdaptation();
   void testKeyboardNavigationAndShortcuts();
+  void testNotificationsUseTokenBoundControlsAndActions();
   void testUnavailableRouteFailClosed();
 
 private:
@@ -569,6 +581,86 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
       *window, navigation);
   QindaQt::Apps::SettingsClipboard::TestSupport::verifyClipboardRouteInHost(
       *window, navigation, false);
+}
+
+void SettingsNavigationPageTest::testNotificationsUseTokenBoundControlsAndActions() {
+  SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
+  SettingsNavigationController navigation(registry,
+                                          QStringLiteral("notifications"));
+
+  m_quieting->enabled = false;
+  m_quieting->canToggle = false;
+  m_quieting->conflict = false;
+  m_quieting->unavailable = false;
+  m_quieting->requestCount = 0;
+  m_quieting->retryCount = 0;
+  m_quieting->applyCount = 0;
+
+  QQmlComponent component(m_engine.get());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(SettingsQmlDir) +
+                                        QStringLiteral("/Main.qml")));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  QObject *rootObj = component.createWithInitialProperties({
+      {QStringLiteral("navigation"),
+       QVariant::fromValue(static_cast<QObject *>(&navigation))},
+      {QStringLiteral("quietingSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("appearanceSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
+      {QStringLiteral("networkSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
+      {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
+  });
+  QVERIFY(rootObj != nullptr);
+  std::unique_ptr<QObject> rootGuard(rootObj);
+  auto *window = qobject_cast<QQuickWindow *>(rootObj);
+  QVERIFY(window != nullptr);
+  window->resize(900, 640);
+  window->show();
+  QVERIFY(QTest::qWaitForWindowExposed(window));
+
+  auto *toggle = sceneItem(window->contentItem(),
+                           QStringLiteral("settingsDoNotDisturbSwitch"));
+  auto *conflict = sceneItem(window->contentItem(),
+                             QStringLiteral("settingsConflictApplyButton"));
+  auto *retry = sceneItem(window->contentItem(),
+                          QStringLiteral("settingsRetryButton"));
+  QVERIFY(toggle != nullptr && conflict != nullptr && retry != nullptr);
+  QVERIFY(!toggle->isEnabled());
+  QVERIFY(sceneItem(window->contentItem(), QStringLiteral("settingsCloseButton"))
+          == nullptr);
+
+  m_quieting->canToggle = true;
+  Q_EMIT m_quieting->changed();
+  QTRY_VERIFY(toggle->isEnabled());
+  QVERIFY(QMetaObject::invokeMethod(toggle, "click"));
+  QTRY_COMPARE(m_quieting->requestCount, 1);
+  QVERIFY(m_quieting->enabled);
+
+  m_quieting->conflict = true;
+  Q_EMIT m_quieting->changed();
+  QTRY_VERIFY(conflict->isVisible());
+  toggle->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), conflict);
+  QVERIFY(QMetaObject::invokeMethod(conflict, "click"));
+  QCOMPARE(m_quieting->applyCount, 1);
+
+  m_quieting->conflict = false;
+  m_quieting->unavailable = true;
+  Q_EMIT m_quieting->changed();
+  QTRY_VERIFY(retry->isVisible());
+  toggle->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), retry);
+  QVERIFY(QMetaObject::invokeMethod(retry, "click"));
+  QCOMPARE(m_quieting->retryCount, 1);
 }
 
 void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {

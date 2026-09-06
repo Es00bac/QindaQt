@@ -98,7 +98,7 @@ T.Page {
 
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Customize")
+                text: qsTr("Panel layout")
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.title
                 font.weight: Font.DemiBold
@@ -134,6 +134,15 @@ T.Page {
         }
 
         Label {
+            objectName: "customizePagePurpose"
+            Layout.fillWidth: true
+            text: qsTr("Choose a layout, arrange applets in the preview, then apply your changes.")
+            muted: true
+            wrapMode: Text.Wrap
+            Accessible.name: text
+        }
+
+        Label {
             objectName: "customizeStatus"
             Layout.fillWidth: true
             text: root.customizeSettings.statusText
@@ -164,7 +173,7 @@ T.Page {
             visible: root.customizeSettings.unavailable
             reason: root.customizeSettings.errorText.length > 0
                     ? root.customizeSettings.errorText
-                    : qsTr("The profile repository, editor lease, or Settings1 transport is unavailable.")
+                    : qsTr("Layout editing is temporarily unavailable. Try again when Settings reconnects.")
         }
 
         RowLayout {
@@ -175,8 +184,19 @@ T.Page {
             spacing: Tokens.space["2"]
 
             ColumnLayout {
-                Layout.preferredWidth: 230
+                // Keep supporting tools secondary to the live layout preview.
+                // Without a maximum, long palette/outline text can claim the
+                // row's spare width and collapse the representative output.
+                Layout.minimumWidth: 220
+                Layout.preferredWidth: 240
+                Layout.maximumWidth: 240
                 Layout.fillHeight: true
+                Label {
+                    text: qsTr("Add and arrange")
+                    font.weight: Font.DemiBold
+                    Accessible.role: Accessible.Heading
+                    Accessible.name: text
+                }
                 CustomizeAppletPalette {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 250
@@ -189,12 +209,18 @@ T.Page {
                 }
             }
             CustomizeCanvas {
+                Layout.topMargin: Tokens.space["4"]
+                Layout.minimumWidth: 360
+                Layout.preferredWidth: 520
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 customizeSettings: root.customizeSettings
             }
             CustomizeProperties {
-                Layout.preferredWidth: 280
+                Layout.topMargin: Tokens.space["4"]
+                Layout.minimumWidth: 220
+                Layout.preferredWidth: 240
+                Layout.maximumWidth: 240
                 Layout.fillHeight: true
                 customizeSettings: root.customizeSettings
             }

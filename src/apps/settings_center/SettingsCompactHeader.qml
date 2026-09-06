@@ -49,14 +49,25 @@ Rectangle {
             Layout.fillWidth: true
         }
 
-        RowLayout {
-            spacing: Tokens.space["1"]
+        Flickable {
+            id: compactRouteScroller
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            contentWidth: compactTabs.width
+            contentHeight: compactTabs.height
+            boundsBehavior: Flickable.StopAtBounds
 
-            Repeater {
-                id: compactRepeater
-                model: header.navigation.routes
+            Row {
+                id: compactTabs
+                height: compactRouteScroller.height
+                spacing: Tokens.space["1"]
 
-                delegate: Controls.Button {
+                Repeater {
+                    id: compactRepeater
+                    model: header.navigation.routes
+
+                    delegate: Controls.Button {
                     id: routeTab
                     property bool routeAvailable: modelData.available
 
@@ -92,6 +103,7 @@ Rectangle {
                     Keys.onTabPressed: event => {
                         header.contentFocusRequested()
                         event.accepted = true
+                    }
                     }
                 }
             }

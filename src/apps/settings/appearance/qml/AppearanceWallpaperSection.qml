@@ -2,21 +2,24 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// This component stores wallpaper intent through its injected model. The shell
-// applies only the later confirmed Settings1 snapshot; QML reaches no surface API.
+// The route model owns wallpaper validation and commit authority. This page
+// only makes a desktop background choice in the shared Appearance draft.
 ColumnLayout {
     id: root
 
     required property var appearanceSettings
     required property bool editorBusy
     readonly property var draftValues: appearanceSettings.draft
+    property Item firstFocusTarget: null
+    readonly property string selectedWallpaper: String(root.draftValue("appearance.wallpaper"))
 
     Layout.fillWidth: true
-    spacing: Tokens.space["2"]
+    spacing: Tokens.space["3"]
 
     function draftValue(key) {
         return root.draftValues[key]
@@ -29,8 +32,19 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Wallpaper")
-        description: qsTr(
-            "Choose a background for your desktop. Apply to update it.")
+        description: qsTr("Choose the desktop background and how it fits the screen")
+    }
+
+    Image {
+        id: wallpaperPreview
+        objectName: "appearanceWallpaperPreview"
+        Layout.fillWidth: true
+        Layout.preferredHeight: 150
+        visible: root.selectedWallpaper.length > 0
+        source: root.selectedWallpaper.startsWith("qindaqt:") ? "" : root.selectedWallpaper
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        Accessible.name: qsTr("Selected wallpaper preview")
     }
 
     Flow {
@@ -89,32 +103,38 @@ ColumnLayout {
 
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("Custom wallpaper path")
-        description: qsTr("Choose a bundled image above or enter a custom path; leave empty for none")
-        errorMessage: root.appearanceSettings.fieldErrors[
-                          "appearance.wallpaper"] ?? ""
+        label: qsTr("Image file")
+        description: qsTr("Choose an image from your computer, or leave it empty for no wallpaper")
+        errorMessage: root.appearanceSettings.fieldErrors["appearance.wallpaper"] ?? ""
         editor: wallpaperField
 
-        TextField {
+        RowLayout {
             id: wallpaperField
-            objectName: "appearanceWallpaperField"
             width: 320
-            enabled: root.appearanceSettings.canEdit && !root.editorBusy
-            text: String(root.draftValue("appearance.wallpaper")).startsWith("qindaqt:")
-                  ? "" : root.draftValue("appearance.wallpaper")
-            error: root.appearanceSettings.fieldErrors[
-                       "appearance.wallpaper"] !== undefined
-            accessibleName: qsTr("Custom wallpaper path")
-            // TextInput::textEdited() has no signal argument in Qt 6.
-            onTextEdited: root.setDraft("appearance.wallpaper",
-                                        wallpaperField.text)
+
+            TextField {
+                id: wallpaperPath
+                objectName: "appearanceWallpaperField"
+                Layout.fillWidth: true
+                enabled: root.appearanceSettings.canEdit && !root.editorBusy
+                text: root.selectedWallpaper.startsWith("qindaqt:") ? "" : root.selectedWallpaper
+                error: root.appearanceSettings.fieldErrors["appearance.wallpaper"] !== undefined
+                accessibleName: qsTr("Wallpaper image file")
+                onTextEdited: root.setDraft("appearance.wallpaper", wallpaperPath.text)
+            }
+            Button {
+                objectName: "appearanceChooseWallpaperButton"
+                text: qsTr("Choose…")
+                available: root.appearanceSettings.canEdit && !root.editorBusy
+                onClicked: wallpaperDialog.open()
+            }
         }
     }
 
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("Wallpaper mode")
-        description: qsTr("How the wallpaper fills the desktop")
+        label: qsTr("Fit")
+        description: qsTr("Choose how the image fills the desktop")
         editor: wallpaperModeButtons
 
         SegmentedChoiceRow {
@@ -127,51 +147,16 @@ ColumnLayout {
             ]
             currentValue: root.draftValue("appearance.wallpaperMode")
             editable: root.appearanceSettings.canEdit && !root.editorBusy
-            descriptionPrefix: qsTr("Wallpaper mode")
-            onChoicePicked: token => root.setDraft(
-                                "appearance.wallpaperMode", token)
+            descriptionPrefix: qsTr("Wallpaper fit")
+            onChoicePicked: token => root.setDraft("appearance.wallpaperMode", token)
         }
     }
 
-    SectionHeader {
-        Layout.fillWidth: true
-        title: qsTr("Display scale intent")
-        description: qsTr(
-            "Stored logical UI scale for display configuration; it is not applied by this window")
-    }
-
-    FormRow {
-        Layout.fillWidth: true
-        label: qsTr("Logical UI scale")
-        description: qsTr("Applied later through the display settings boundary")
-        errorMessage: root.appearanceSettings.fieldErrors[
-                          "appearance.uiScale"] ?? ""
-        editor: uiScaleRow
-
-        RowLayout {
-            id: uiScaleRow
-            spacing: Tokens.space["3"]
-
-            Slider {
-                id: uiScaleSlider
-                objectName: "appearanceUiScaleSlider"
-                enabled: root.appearanceSettings.canEdit && !root.editorBusy
-                from: 0.5
-                to: 3.0
-                stepSize: 0.25
-                value: Number(root.draftValue("appearance.uiScale"))
-                accessibleName: qsTr("Logical UI scale")
-                accessibleDescription: qsTr(
-                    "Stored logical UI scale intent between 0.5 and 3.0")
-                onMoved: root.setDraft("appearance.uiScale", value)
-            }
-
-            Label {
-                objectName: "appearanceUiScaleValue"
-                text: Math.round(uiScaleSlider.value * 100) + "%"
-                muted: true
-                Accessible.ignored: true
-            }
-        }
+    FileDialog {
+        id: wallpaperDialog
+        title: qsTr("Choose wallpaper")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [qsTr("Images (*.png *.jpg *.jpeg *.webp *.bmp)"), qsTr("All files (*)")]
+        onAccepted: root.setDraft("appearance.wallpaper", selectedFile.toLocalFile())
     }
 }

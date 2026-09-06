@@ -15,6 +15,7 @@ ColumnLayout {
     required property bool editorBusy
     readonly property var draftValues: appearanceSettings.draft
     property Item firstThemeCard: null
+    readonly property Item firstFocusTarget: firstThemeCard
 
     Layout.fillWidth: true
     spacing: Tokens.space["2"]

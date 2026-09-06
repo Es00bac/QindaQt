@@ -38,8 +38,8 @@ T.ApplicationWindow {
         ? navigation.activeRouteTitle : qsTr("Unavailable page")
 
     visible: true
-    width: 720
-    height: 520
+    width: 960
+    height: 680
     minimumWidth: 420
     minimumHeight: 320
     color: Tokens.bg.base
@@ -82,6 +82,11 @@ T.ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+4"
         onActivated: root.navigation.selectRoute("network")
+    }
+
+    Shortcut {
+        sequence: "Ctrl+5"
+        onActivated: root.navigation.selectRoute("customize")
     }
 
     Shortcut {
@@ -276,7 +281,6 @@ T.ApplicationWindow {
         NotificationsPage {
             objectName: "notificationsPage"
             quietingSettings: root.quietingSettings
-            onCloseRequested: root.close()
         }
     }
 
@@ -285,6 +289,7 @@ T.ApplicationWindow {
         AppearancePage {
             objectName: "appearancePage"
             appearanceSettings: root.appearanceSettings
+            navigation: root.navigation
             onCloseRequested: root.close()
         }
     }
