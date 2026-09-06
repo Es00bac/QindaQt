@@ -191,6 +191,20 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
   }
   QCOMPARE(actualIds, expectedIds);
 
+  const auto labelFor = [&catalog](const char *id) {
+    const QString actionId = QString::fromLatin1(id);
+    for (const ActionSpec &action : catalog) {
+      if (action.id == actionId) {
+        return action.label;
+      }
+    }
+    return QString{};
+  };
+  QCOMPARE(labelFor(AppShellActionIds::FileOpen), QStringLiteral("Open…"));
+  QCOMPARE(labelFor(AppShellActionIds::FileSaveAs),
+           QStringLiteral("Save As…"));
+  QCOMPARE(labelFor(AppShellActionIds::EditFind), QStringLiteral("Find…"));
+
   // The catalog must satisfy the real ActionRegistry validation, not just
   // look plausible.
   ApplicationCoordinator coordinator;

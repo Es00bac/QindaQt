@@ -14,7 +14,7 @@ QList<QindaQt::AppShell::ActionSpec> editorActionCatalog() {
     return ActionSpec{.id = QString::fromLatin1(id),
                       .menuId = QString::fromLatin1(menu),
                       .menuLabel = QString::fromLatin1(menuLabel),
-                      .label = QString::fromLatin1(label),
+                      .label = QString::fromUtf8(label),
                       .accessibleDescription = QString::fromLatin1(description),
                       .shortcut = shortcut,
                       .menuOrder = menuOrder,
