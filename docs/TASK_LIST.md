@@ -73,6 +73,11 @@ replace earlier work:
   entries, and route activation/minimize/restoration through the container.
   Detaching restores a standalone task; verify transfers, member exit, and
   normalization against the existing task-list contract.
+- Remove competing default corner/edge tiling and make Alt-Tab visually fit
+  QindaQt window containers. Live inspection confirms one exposed switcher
+  representative per container, but stock KWin presentation and implicit edge
+  tiling remain. Preserve explicitly configured user choices while supplying
+  QindaQt defaults and a native-model switcher presentation.
 - Add a keyboard toggle for grouped-member title chrome, keeping container
   ownership and a visible focus cue in both clean-tile and title-visible modes.
 - Provide a dismissible desktop shortcut note with an obvious way to reopen it;
