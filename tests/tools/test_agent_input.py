@@ -121,6 +121,21 @@ class AgentInputModuleTest(unittest.TestCase):
         # No portal call should have been made.
         sess._portal_obj.assert_not_called()
 
+    def test_session_closed_signal_revokes_approval(self) -> None:
+        """External Session::Closed must end approval, not just the loop."""
+        from agent_input.portal_session import ApprovedInputSession
+        from unittest.mock import MagicMock
+        sess = ApprovedInputSession.__new__(ApprovedInputSession)
+        sess._approved = True
+        sess._session = "/dummy"
+        sess._on_closed = None
+        loop = MagicMock()
+        sess._loop = loop
+        sess._on_session_closed_signal({})
+        self.assertFalse(sess._approved)
+        self.assertIsNone(sess._session)
+        loop.quit.assert_called_once()
+
     # --- stdin_reader.py ---
 
     def test_stdin_reader_complete_line(self) -> None:
@@ -186,6 +201,20 @@ class AgentInputPortalProofTest(unittest.TestCase):
         r = _run_proof("no_events_before_start")
         self.assertEqual(r.returncode, 0,
                          f"no_events_before_start proof failed:\n{r.stdout}\n{r.stderr}")
+        self.assertIn("OK:", r.stderr)
+
+    def test_notify_failure_cleans_up(self) -> None:
+        """Notify* D-Bus error: Session.Close sent, nonzero exit, ERROR report."""
+        r = _run_proof("notify_failure")
+        self.assertEqual(r.returncode, 0,
+                         f"notify_failure proof failed:\n{r.stdout}\n{r.stderr}")
+        self.assertIn("OK:", r.stderr)
+
+    def test_revoke_ends_session(self) -> None:
+        """External Session Closed: tool exits 0 without stdin EOF or error."""
+        r = _run_proof("revoke")
+        self.assertEqual(r.returncode, 0,
+                         f"revoke proof failed:\n{r.stdout}\n{r.stderr}")
         self.assertIn("OK:", r.stderr)
 
 
