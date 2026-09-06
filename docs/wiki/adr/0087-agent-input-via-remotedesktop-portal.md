@@ -52,6 +52,26 @@ socket plumbing.
 The portal selector (`qindaqt-portals.conf`) and QindaQt's `.portal` metadata
 are unchanged; this ADR adds no backend interface to QindaQt's advertised set.
 
+### Installed command and dependencies
+
+The install component `AgentInput` provides `qindaqt-agent-input` in the
+normal `${CMAKE_INSTALL_BINDIR}` alongside its private `agent_input` Python
+package. The package is installed with the command so the helper does not
+fall back to a checkout or a symlink into the source tree. A normal terminal
+therefore runs:
+
+```text
+qindaqt-agent-input --devices pointer,keyboard
+```
+
+The runtime requires Python 3.10 or newer, `dbus-python`, and PyGObject
+(`gi.repository.GLib`). It also requires a session D-Bus and a portal backend
+that implements `org.freedesktop.portal.RemoteDesktop`; the helper does not
+start either service. The package's installed smoke test runs `--help` with
+an empty `PYTHONPATH`, proving the command imports its installed package and
+bindings without opening a bus or requesting approval. The lifecycle tests
+continue to use only the private fake portal.
+
 ### Backend readiness proof
 
 The test `tests/tools/test_agent_input.py::AgentInputBackendReadinessTest`

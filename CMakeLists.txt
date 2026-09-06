@@ -18,6 +18,22 @@ find_package(ECM 6.0 REQUIRED NO_MODULE)
 list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
 include(KDEInstallDirs6)
 
+# AGENT-CONTRACT: qindaqt-agent-input is a user-facing, portal-authorized
+# helper. Keep its CLI and adjacent Python package in the same relative bin
+# directory so the installed script never imports from the source tree.
+install(
+    PROGRAMS "${PROJECT_SOURCE_DIR}/tools/agent-input"
+    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    RENAME qindaqt-agent-input
+    COMPONENT AgentInput
+)
+install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/tools/agent_input/"
+    DESTINATION "${CMAKE_INSTALL_BINDIR}/agent_input"
+    COMPONENT AgentInput
+    FILES_MATCHING PATTERN "*.py"
+)
+
 option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
 option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
 option(QINDAQT_BUILD_PRODUCTION_SHELL
