@@ -10,8 +10,7 @@
 #include <QtCore/QSize>
 #include <QtCore/QString>
 
-namespace QindaQt::DisplayWriter
-{
+namespace QindaQt::DisplayWriter {
 
 enum class ConfigurationScope {
     CompleteTopology,
@@ -22,7 +21,8 @@ struct ModeReference {
     QSize pixelSize;
     quint32 refreshMilliHertz = 0;
 
-    friend bool operator==(const ModeReference &, const ModeReference &) = default;
+  friend bool operator==(const ModeReference &,
+                         const ModeReference &) = default;
 };
 
 struct OutputChange {
@@ -44,7 +44,21 @@ struct Configuration {
     ConfigurationScope scope = ConfigurationScope::CompleteTopology;
     QList<OutputChange> outputs;
 
-    friend bool operator==(const Configuration &, const Configuration &) = default;
+  friend bool operator==(const Configuration &,
+                         const Configuration &) = default;
+};
+
+// One compositor color-profile mutation. The caller resolves its stable
+// Display1 identity to the current connector and supplies the discovered
+// canonical ICC path. An empty path selects the compositor's standard sRGB
+// profile.
+struct ColorProfileConfiguration {
+  quint64 requestId = 0;
+  QString connectorName;
+  QString iccProfilePath;
+
+  friend bool operator==(const ColorProfileConfiguration &,
+                         const ColorProfileConfiguration &) = default;
 };
 
 // Structural validation for the least-authority compositor value. This is a
@@ -65,14 +79,17 @@ struct MapResult {
     MapError error = MapError::None;
     QString reasonCode;
 
-    [[nodiscard]] bool accepted() const noexcept { return error == MapError::None; }
+  [[nodiscard]] bool accepted() const noexcept {
+    return error == MapError::None;
+  }
 };
 
 // Pure, total translation from the Display1 machine request into the least-
 // authority value accepted by the compositor transport. It intentionally
 // supports only the connector/current-mode identity carried by integrated D2.
-[[nodiscard]] MapResult mapApplyRequest(
-    const DisplayTransaction::ApplyRequest &request, quint64 requestId);
+[[nodiscard]] MapResult
+mapApplyRequest(const DisplayTransaction::ApplyRequest &request,
+                quint64 requestId);
 
 enum class PortStartStatus {
     Started,
@@ -96,8 +113,7 @@ enum class CompletionOutcome {
     Malformed,
 };
 
-class OutputManagementObserver
-{
+class OutputManagementObserver {
 public:
     virtual ~OutputManagementObserver() = default;
     virtual void outputManagementOwnerChanged(quint64 ownerGeneration,
@@ -107,8 +123,7 @@ public:
                                            CompletionOutcome outcome) = 0;
 };
 
-class OutputManagementPort
-{
+class OutputManagementPort {
 public:
     virtual ~OutputManagementPort() = default;
 
@@ -122,7 +137,15 @@ public:
     // Linux production adapter derives this from SO_PEERCRED on the exact
     // private Wayland socket; no bus name or environment PID is accepted.
     [[nodiscard]] virtual qint64 peerProcessId() const noexcept = 0;
-    [[nodiscard]] virtual SubmitStatus submit(const Configuration &configuration) = 0;
+  [[nodiscard]] virtual SubmitStatus
+  submit(const Configuration &configuration) = 0;
+  // Kept virtual with an Unsupported default so older alternate adapters
+  // remain source-compatible while color-capable adapters opt in.
+  [[nodiscard]] virtual SubmitStatus
+  submitColorProfile(const ColorProfileConfiguration &configuration) {
+    Q_UNUSED(configuration);
+    return SubmitStatus::Unsupported;
+  }
 };
 
 } // namespace QindaQt::DisplayWriter

@@ -53,7 +53,8 @@ function(run_route result_name)
             --unset=LD_LIBRARY_PATH --unset=QT_PLUGIN_PATH
             --unset=QT_QPA_PLATFORM_PLUGIN_PATH
             QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
-            QML_DISABLE_DISK_CACHE=1
+            QML_DISABLE_DISK_CACHE=1 QML_IMPORT_TRACE=1
+            QML_IMPORT_PATH=${install_prefix}/${INSTALL_QMLDIR}
             DBUS_SESSION_BUS_ADDRESS=unix:path=${sandbox}/absent-session-bus
             DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent
             XDG_CONFIG_HOME=${sandbox}/config XDG_DATA_HOME=${sandbox}/data
@@ -84,5 +85,10 @@ run_route(route_status)
 if(NOT route_status MATCHES "[Tt]imeout")
     message(FATAL_ERROR
         "relocated Color route did not remain constructed (${route_status}):\n${route_status_log}")
+endif()
+string(FIND "${route_status_log}" "${module}/qmldir" module_trace_offset)
+if(module_trace_offset EQUAL -1)
+    message(FATAL_ERROR
+        "relocated Color route did not resolve the explicitly injected staged module:\n${route_status_log}")
 endif()
 message(STATUS "Relocated Color Settings route remained resident with host buses poisoned")

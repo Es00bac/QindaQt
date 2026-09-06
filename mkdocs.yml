@@ -199,3 +199,4 @@ nav:
       - "ADR-0080: First-party appearance resolution": adr/0080-resolve-first-party-appearance-from-settings.md
       - "ADR-0081: Window chrome appearance": adr/0081-project-confirmed-appearance-into-window-chrome.md
       - "ADR-0082: Session activation environment": adr/0082-publish-session-activation-environment.md
+      - "ADR-0083: Compositor ICC application": adr/0083-apply-saved-color-profiles-through-public-output-management.md

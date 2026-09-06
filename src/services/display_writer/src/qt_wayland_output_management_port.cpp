@@ -2,6 +2,9 @@
 
 #include <qindaqt/services/display_writer/production_output_management_port.h>
 
+#include <qindaqt/services/display_protocol/display_limits.h>
+#include <qindaqt/services/display_protocol/display_validation.h>
+
 #include "qt_wayland_output_objects_p.h"
 
 #include <QtCore/QHash>
@@ -26,6 +29,7 @@ namespace
 {
 
 inline constexpr quint32 kRequiredManagementVersion = 13;
+inline constexpr quint32 kRequiredColorProfileVersion = 8;
 inline constexpr quint32 kMaximumManagementVersion = 19;
 inline constexpr quint32 kMaximumDeviceVersion = 20;
 
@@ -253,6 +257,64 @@ public:
             }
             proxy->set_primary_output(primary->object());
         }
+        proxy->apply();
+        flush();
+        return SubmitStatus::Accepted;
+    }
+
+    [[nodiscard]] SubmitStatus submitColorProfile(
+        const ColorProfileConfiguration &configuration) override
+    {
+        if (!m_running || !m_available || m_management == nullptr) {
+            return SubmitStatus::Unavailable;
+        }
+        if (m_pending != nullptr) {
+            return SubmitStatus::Busy;
+        }
+        if (configuration.requestId == 0
+            || configuration.connectorName.isEmpty()
+            || !Display::isBoundedText(configuration.connectorName,
+                                       Display::kMaxConnectorNameUtf8Bytes)
+            || configuration.connectorName.contains(QChar::Null)
+            || configuration.iccProfilePath.contains(QChar::Null)
+            || configuration.iccProfilePath.toUtf8().size() > 4'096) {
+            return SubmitStatus::Malformed;
+        }
+        if (kde_output_management_v2_get_version(m_management->object())
+            < kRequiredColorProfileVersion) {
+            return SubmitStatus::Unsupported;
+        }
+
+        OutputDevice *target = nullptr;
+        for (const auto &device : m_devices) {
+            if (!device->ready()) {
+                return SubmitStatus::Malformed;
+            }
+            if (device->connectorName() == configuration.connectorName) {
+                if (target != nullptr) {
+                    return SubmitStatus::Malformed;
+                }
+                target = device.get();
+            }
+        }
+        if (target == nullptr || !target->enabled()) {
+            return SubmitStatus::Unsupported;
+        }
+
+        auto *raw = m_management->create_configuration();
+        if (raw == nullptr) {
+            return SubmitStatus::Unavailable;
+        }
+        auto *proxy = new ConfigurationProxy(raw, this, m_ownerGeneration,
+                                             configuration.requestId);
+        m_pending = proxy;
+        // AGENT-CONTRACT: KDE output-management v8 requires the path and
+        // source to be submitted on the same configuration. Empty path plus
+        // sRGB removes a prior ICC override without guessing a replacement.
+        proxy->set_icc_profile_path(target->object(),
+                                    configuration.iccProfilePath);
+        proxy->set_color_profile_source(
+            target->object(), configuration.iccProfilePath.isEmpty() ? 0U : 1U);
         proxy->apply();
         flush();
         return SubmitStatus::Accepted;

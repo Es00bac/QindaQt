@@ -66,6 +66,15 @@ T.Page {
         }
 
         Label {
+            objectName: "displayPagePurpose"
+            Layout.fillWidth: true
+            text: qsTr("Arrange displays and choose their resolution, scale, and orientation.")
+            wrapMode: Text.Wrap
+            muted: true
+            Accessible.name: text
+        }
+
+        Label {
             objectName: "displayStatus"
             Layout.fillWidth: true
             visible: text.length > 0
@@ -191,6 +200,12 @@ T.Page {
                         editorBusy: root.editorBusy
                     }
 
+                    DisplayArrangementSection {
+                        id: arrangementSection
+                        displaySettings: root.displaySettings
+                        editorBusy: root.editorBusy
+                    }
+
                     DisplayModeSection {
                         id: modeSection
                         displaySettings: root.displaySettings
@@ -209,11 +224,6 @@ T.Page {
                         editorBusy: root.editorBusy
                     }
 
-                    DisplayArrangementSection {
-                        id: arrangementSection
-                        displaySettings: root.displaySettings
-                        editorBusy: root.editorBusy
-                    }
                 }
             }
         }
@@ -231,15 +241,6 @@ T.Page {
             spacing: Tokens.space["2"]
 
             Item { Layout.fillWidth: true }
-
-            Button {
-                id: retryButton
-                objectName: "displayRetryButton"
-                visible: root.displaySettings.unavailable
-                available: !root.editorBusy
-                text: qsTr("Retry")
-                onClicked: root.displaySettings.retry()
-            }
 
             Button {
                 id: revertButton
@@ -269,7 +270,6 @@ T.Page {
                 KeyNavigation.tab: root.firstFocusTarget !== null ? root.firstFocusTarget : closeButton
                 KeyNavigation.backtab: applyButton.visible ? applyButton
                                        : revertButton.visible ? revertButton
-                                       : retryButton.visible ? retryButton
                                        : applyButton
                 onClicked: root.closeRequested()
             }

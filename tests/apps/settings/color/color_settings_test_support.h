@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <qindaqt/services/display_writer/output_management_port.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/settings_client/settings_transport.h>
 #include <qindaqt/services/settings_protocol/settings_wire_contract.h>
@@ -23,6 +24,48 @@ using WC = QindaQt::Services::SettingsProtocol::WireContract;
 
 inline constexpr auto kAssignmentsKey = "displays.colorAssignments";
 
+class FakeColorApplicationPort final
+    : public QindaQt::DisplayWriter::OutputManagementPort {
+public:
+  void setObserver(
+      QindaQt::DisplayWriter::OutputManagementObserver *value) override {
+    observer = value;
+  }
+  QindaQt::DisplayWriter::PortStartStatus start() override {
+    started = true;
+    return QindaQt::DisplayWriter::PortStartStatus::Started;
+  }
+  void stop() override { started = false; }
+  qint64 peerProcessId() const noexcept override { return started ? 42 : 0; }
+  QindaQt::DisplayWriter::SubmitStatus
+  submit(const QindaQt::DisplayWriter::Configuration &) override {
+    return QindaQt::DisplayWriter::SubmitStatus::Unsupported;
+  }
+  QindaQt::DisplayWriter::SubmitStatus submitColorProfile(
+      const QindaQt::DisplayWriter::ColorProfileConfiguration &value) override {
+    submissions.append(value);
+    return submitStatus;
+  }
+  void publishAvailable(bool available = true) {
+    ++generation;
+    if (observer != nullptr)
+      observer->outputManagementOwnerChanged(generation, available);
+  }
+  void complete(QindaQt::DisplayWriter::CompletionOutcome outcome) {
+    Q_ASSERT(!submissions.isEmpty());
+    if (observer != nullptr)
+      observer->outputManagementCompleted(
+          generation, submissions.constLast().requestId, outcome);
+  }
+
+  QindaQt::DisplayWriter::OutputManagementObserver *observer = nullptr;
+  QList<QindaQt::DisplayWriter::ColorProfileConfiguration> submissions;
+  QindaQt::DisplayWriter::SubmitStatus submitStatus =
+      QindaQt::DisplayWriter::SubmitStatus::Accepted;
+  quint64 generation = 0;
+  bool started = false;
+};
+
 // Scriptable Settings1 transport fake. Replies are driven by the test; no
 // bus, timer, or owner resolution happens inside.
 class FakeSettingsTransport final : public SettingsTransport {
@@ -30,7 +73,8 @@ class FakeSettingsTransport final : public SettingsTransport {
 public:
   bool start(QString *error) override {
     if (!startSucceeds) {
-      if (error != nullptr) *error = QStringLiteral("transport unavailable");
+      if (error != nullptr)
+        *error = QStringLiteral("transport unavailable");
       return false;
     }
     return true;
@@ -68,14 +112,15 @@ inline QVariant assignmentValue(const QString &stableId,
                                 const QString &profileId,
                                 const QString &lineage) {
   return QVariantMap{
-      {stableId,
-       QVariantMap{{QStringLiteral("profile"), profileId},
+      {stableId, QVariantMap{{QStringLiteral("profile"), profileId},
                    {QStringLiteral("lineage"), lineage}}}};
 }
 
 inline QVariantMap snapshotWire(const QString &epoch, quint64 revision,
                                 const QVariant &assignments) {
-  return {{QLatin1StringView(WC::FieldStatus), quint32(SettingsWireStatus::Applied)},
+  return {
+      {QLatin1StringView(WC::FieldStatus),
+       quint32(SettingsWireStatus::Applied)},
           {QLatin1StringView(WC::FieldWireSchemaVersion), WC::WireSchemaVersion},
           {QLatin1StringView(WC::FieldSettingsSchemaVersion), quint32{2}},
           {QLatin1StringView(WC::FieldEpoch), epoch},
@@ -83,15 +128,16 @@ inline QVariantMap snapshotWire(const QString &epoch, quint64 revision,
           {QLatin1StringView(WC::FieldValues),
            QVariantMap{{QLatin1String(kAssignmentsKey), assignments}}},
           {QLatin1StringView(WC::FieldSourceLayers),
-           QVariantMap{{QLatin1String(kAssignmentsKey),
-                        QStringLiteral("user-overrides")}}},
+       QVariantMap{
+           {QLatin1String(kAssignmentsKey), QStringLiteral("user-overrides")}}},
           {QLatin1StringView(WC::FieldMessage), QString{}}};
 }
 
 inline QVariantMap commitWire(SettingsWireStatus status, quint64 before,
                               quint64 after, const QVariant &authoritativeValue,
                               const QStringList &changed) {
-  return {{QLatin1StringView(WC::FieldStatus), quint32(status)},
+  return {
+      {QLatin1StringView(WC::FieldStatus), quint32(status)},
           {QLatin1StringView(WC::FieldWireSchemaVersion), WC::WireSchemaVersion},
           {QLatin1StringView(WC::FieldSettingsSchemaVersion), quint32{2}},
           {QLatin1StringView(WC::FieldEpoch), QStringLiteral("epoch-a")},
@@ -100,8 +146,8 @@ inline QVariantMap commitWire(SettingsWireStatus status, quint64 before,
           {QLatin1StringView(WC::FieldValues),
            QVariantMap{{QLatin1String(kAssignmentsKey), authoritativeValue}}},
           {QLatin1StringView(WC::FieldSourceLayers),
-           QVariantMap{{QLatin1String(kAssignmentsKey),
-                        QStringLiteral("user-overrides")}}},
+       QVariantMap{
+           {QLatin1String(kAssignmentsKey), QStringLiteral("user-overrides")}}},
           {QLatin1StringView(WC::FieldChangedKeys), changed},
           {QLatin1StringView(WC::FieldMessage), QString{}}};
 }
@@ -128,13 +174,15 @@ inline QByteArray fixtureProfileBytes() {
   return bytes;
 }
 
-inline QString writeFixtureProfile(const QDir &directory,
-                                   const QString &fileName,
+inline QString
+writeFixtureProfile(const QDir &directory, const QString &fileName,
                                    const QByteArray &bytes = fixtureProfileBytes()) {
   const QString path = directory.absoluteFilePath(fileName);
   QFile file(path);
-  if (!file.open(QIODevice::WriteOnly)) return {};
-  if (file.write(bytes) != bytes.size()) return {};
+  if (!file.open(QIODevice::WriteOnly))
+    return {};
+  if (file.write(bytes) != bytes.size())
+    return {};
   file.close();
   return path;
 }

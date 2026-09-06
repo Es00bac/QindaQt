@@ -89,3 +89,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0081: Project confirmed appearance into native and grouped chrome](0081-project-confirmed-appearance-into-window-chrome.md)
 
 - [ADR-0082: Publish the current session activation environment](0082-publish-session-activation-environment.md)
+- [ADR-0083: Apply saved color profiles through public output management](0083-apply-saved-color-profiles-through-public-output-management.md)

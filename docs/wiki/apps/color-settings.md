@@ -6,9 +6,10 @@ client for the live output inventory, the C1 discovery/import provider
 (`display_color_discovery`) for the profile catalog and user imports, and the
 C1 assignment store (`display_color_assignment`) for persistent per-output
 assignment intents through the public Settings1 client. The route model
-receives all four collaborators from one narrow engine-singleton composition;
-compositor, colord, and ICC *application* authority never cross into the
-route.
+receives all four borrowed collaborators from one narrow engine-singleton
+composition and owns a separate public display-writer port for compositor ICC
+application. Private compositor objects, colord, and KWin implementation APIs
+never cross into the route.
 
 The persisted document shape is fixed by
 [ADR-0066](../adr/0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md)
@@ -40,7 +41,8 @@ state `Ready` or `Degraded`), a confirmed usable Settings1 document
 (`Ready` availability), no write in flight, the selected output present in
 the current snapshot, and the target profile present in the current catalog.
 Re-assigning the already-persisted profile is refused as a no-op before any
-write.
+write. An active Display1 preview transaction closes admission so an ICC
+request cannot race a topology preview or its rollback.
 
 Assignment and removal dispatch one `SettingsAssignmentStore` draft fenced
 with the confirmed Settings1 revision. The draft record carries the imported
@@ -50,6 +52,14 @@ retains it from the import result); previously imported or scanned profiles
 carry an empty lineage, exactly as the C1 document contract records. Success
 never edits presented truth
 optimistically: rows update only from the authoritative document refresh.
+After Settings1 confirms the desired assignment, the route resolves the current
+connector and discovered ICC path and submits one public output-management
+configuration. It reports the profile active only after the compositor replies
+`Applied`; rejection, connection loss, and uncertain completion remain visible
+failures. On route activation, display or assignment refresh, and compositor
+reconnect, saved assignments for connected enabled outputs are reapplied
+serially after any Display1 preview finishes.
+
 `Conflict` surfaces "settings changed elsewhere" and rebases on the
 authoritative document; `Uncertain` and `Failed` surface visible feedback.
 Neither is ever replayed automatically, matching the Appearance route's
@@ -87,17 +97,15 @@ Discovery runs only while the route is active (a route hook
 mirrors the Bluetooth lease pattern), so an idle Settings process never
 scans.
 
-## Compositor-application poison boundary
+## Compositor application boundary
 
-This page records assignment intents only. It does not apply profiles to the
-compositor or to displays, and it claims no HDR/WCG runtime behavior; the
-page states that limit visibly. The model has no compositor-application
-invokable, and the allow-list source gate rejects compositor symbols, system
-color daemons, private Display service modules, sibling application
-internals, and direct D-Bus outside the named composition root. The
-negative-control row proves each poison is rejected. Compositor application
-remains a later, separately reviewed lane (see the
-[Display color model](../architecture/display-color-model.md) page).
+[ADR-0083](../adr/0083-apply-saved-color-profiles-through-public-output-management.md)
+confines ICC application to the existing public display-writer port. The route
+cannot change topology, mode, scale, transform, HDR, or WCG policy through this
+method. The allow-list source gate accepts only the writer's public header and
+continues to reject KWin/private compositor symbols, system color daemons,
+private Display service modules, sibling application internals, and direct
+D-Bus outside the named composition root.
 
 ## Responsive interaction and accessibility
 
@@ -160,17 +168,18 @@ CTest environment, so the selector is host-bus-free on any host regardless
 of the caller's environment.
 
 The model row covers inventory/assignment/catalog projection, state truth,
-unusable-document and stale closure, selection fencing across hotplug,
-disconnected-record presentation, and the absent compositor invokables. The
-apply row covers fenced draft dispatch, displayed-availability-equals-
-admission, no-op refusal, conflict/uncertain no-replay, in-flight fencing,
-owner replacement, and the import refresh/rejection flows — all over
-injected fake transports and temporary discovery roots. The composition row
+unusable-document and stale closure, selection fencing across hotplug and an
+active Display1 preview, and disconnected-record presentation. The apply row
+covers fenced draft dispatch, startup restore, compositor callback truth,
+displayed-availability-equals-admission, no-op refusal,
+conflict/uncertain no-replay, in-flight fencing, owner replacement, and the
+import refresh/rejection flows — all over injected fake transports and
+temporary discovery roots. The composition row
 redirects the XDG data locations to a fresh home and proves the composition
 provisions the mode-0700 EUID-owned user import root and that a first import
 through the public C1 provider succeeds on that fresh home. The warning-fatal
 page row renders wide and compact software scenes, verifies action wiring,
-accessible roles/descriptions, the authority disclosure, and the
+accessible roles/descriptions, the page purpose, and the
 always-admitted focus targets. The navigation-page row drives the real
 Settings Center host in both layouts: Ctrl+0 selection, Color PageTab
 accessibility, Escape/Tab focus entry, and exclusive wide/compact Color
@@ -178,10 +187,10 @@ loaders. Boundary/poison and installed-route rows
 prove the source and relocated package boundaries. Settings Center
 registry/controller tests additionally cover tenth-route order.
 
-No row contacts a host session/system bus, a host display, a real ICC
-directory, Wayland, or hardware; the composition and the warning-fatal
+No test row contacts a host session/system bus, a host display, a real ICC
+directory, Wayland, or hardware; writer callbacks are injected. The composition and the warning-fatal
 Settings Center host rows pin both bus addresses to nonexistent sockets in
 their CTest environment, so this claim is executable on any host. This
-slice does not claim compositor or display profile application, colord
-integration, HDR/WCG runtime behavior, profile-body interpretation, live
-AT-SPI, or nested-session visuals.
+slice does not claim colord integration, HDR/WCG runtime behavior,
+profile-body interpretation, physical calibration, live AT-SPI, or
+nested-session visuals.

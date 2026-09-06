@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+find_package(Qt6 6.11 REQUIRED COMPONENTS WaylandClient)
+find_package(Wayland REQUIRED COMPONENTS Client)
+
 qt_add_library(qindaqt_settings_color STATIC)
 target_sources(
     qindaqt_settings_color
-    PRIVATE color_settings_model.cpp color_settings_projection.cpp
+    PRIVATE color_application.cpp color_settings_model.cpp color_settings_projection.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -13,7 +16,7 @@ target_sources(
 target_link_libraries(
     qindaqt_settings_color
     PUBLIC QindaQt::DisplayClient QindaQt::DisplayColorAssignment
-           QindaQt::DisplayColorDiscovery Qt6::Core
+           QindaQt::DisplayColorDiscovery QindaQt::DisplayWriter Qt6::Core
 )
 target_compile_features(qindaqt_settings_color PUBLIC cxx_std_20)
 set_target_properties(

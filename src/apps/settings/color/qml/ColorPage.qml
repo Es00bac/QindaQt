@@ -68,6 +68,15 @@ T.Page {
             Accessible.name: text
         }
 
+        Label {
+            objectName: "colorPagePurpose"
+            Layout.fillWidth: true
+            text: qsTr("Choose and apply an ICC color profile for each connected display.")
+            wrapMode: Text.Wrap
+            muted: true
+            Accessible.name: text
+        }
+
         StateCard {
             objectName: "colorServiceState"
             Layout.fillWidth: true
@@ -75,10 +84,10 @@ T.Page {
                     : root.colorSettings.ready ? StateCard.Success
                     : root.colorSettings.degraded || root.colorSettings.stale
                       ? StateCard.Warning : StateCard.Error
-            title: root.colorSettings.stale ? qsTr("Stale color assignments")
-                   : root.colorSettings.degraded ? qsTr("Limited color information")
-                   : root.colorSettings.ready ? qsTr("Color settings ready")
-                   : qsTr("Color services unavailable")
+            title: root.colorSettings.stale ? qsTr("Saved profiles need refreshing")
+                   : root.colorSettings.degraded ? qsTr("Some color settings are unavailable")
+                   : root.colorSettings.ready ? qsTr("Color profiles ready")
+                   : qsTr("Color settings unavailable")
             message: root.colorSettings.statusText
         }
 
@@ -99,14 +108,6 @@ T.Page {
             color: Tokens.fg.default
             Accessible.role: Accessible.AlertMessage
             Accessible.name: text
-        }
-
-        StateCard {
-            objectName: "colorAuthorityBoundary"
-            Layout.fillWidth: true
-            status: StateCard.Information
-            title: qsTr("Assignments are stored intents")
-            message: qsTr("This page records which ICC profile each display should use. It does not apply profiles to the compositor or to displays; color application is a separate authority.")
         }
 
         Flickable {
@@ -190,11 +191,8 @@ T.Page {
             }
             Label {
                 Layout.fillWidth: true
-                text: root.colorSettings.busy ? qsTr("A color change is being saved.")
-                      : root.colorSettings.displayRevision > 0
-                        ? qsTr("Display revision %1, settings revision %2")
-                          .arg(root.colorSettings.displayRevision)
-                          .arg(root.colorSettings.settingsRevision) : ""
+                text: root.colorSettings.busy
+                      ? qsTr("Applying the color change…") : ""
                 muted: true
                 Accessible.name: text
             }

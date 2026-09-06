@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+find_package(Qt6 6.11 REQUIRED COMPONENTS WaylandClient)
+find_package(Wayland REQUIRED COMPONENTS Client)
+
 qt_add_executable(qindaqt_color_settings_model_tests
     tst_color_settings_model.cpp color_settings_test_support.h
     ${PROJECT_SOURCE_DIR}/tests/services/display_client/support/fake_display_transport.h)

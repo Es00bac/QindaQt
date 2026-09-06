@@ -22,12 +22,18 @@ The Display settings route provides comprehensive monitor and layout management:
 | Topology / Position | Position coordinate controls (X, Y) | Validates contiguous, non-overlapping canvas bounds |
 
 Output cards are Tab-focusable radio controls activated by pointer, Return,
-Enter, or Space. Coordinate text is an explicit edit session: Return or Enter
-commits one valid integer to the output where the edit began. Focus loss
-discards uncommitted text; invalid input is rejected and resynchronized. Output
-selection and externally refreshed draft truth also resynchronize the fields,
-so stale text cannot be applied to another output or resurrect a configuration
-that the service reverted.
+Enter, or Space. Coordinate text is an explicit edit session: Return, Enter,
+or focus loss commits one valid integer to the output where the edit began.
+Invalid input is rejected and resynchronized. Output selection and externally
+refreshed draft truth also resynchronize the fields, so stale text cannot be
+applied to another output or resurrect a configuration that the service
+reverted.
+
+The page follows the editing sequence directly: choose a display, arrange it,
+choose its resolution and scale, then set orientation. The fixed bottom action
+bar keeps Apply and Revert available while the form scrolls. Service recovery
+is offered once in the status notice rather than duplicated beside these
+editing actions.
 
 The page is built strictly using QindaQt.Controls primitives and QST-1 semantic
 roles, with comprehensive accessibility descriptions and visible focus chains.

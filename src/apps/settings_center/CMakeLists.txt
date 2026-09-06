@@ -1,4 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+# The statically composed Color backend uses DisplayWriter's private Wayland
+# implementation. Qt's deferred executable finalizer resolves those imported
+# link targets in this directory scope.
+find_package(Qt6 6.11 REQUIRED COMPONENTS WaylandClient)
+find_package(Wayland REQUIRED COMPONENTS Client)
+
 qt_add_library(
     qindaqt_settings_navigation STATIC
     settings_route.h

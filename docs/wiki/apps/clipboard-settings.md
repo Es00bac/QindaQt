@@ -25,16 +25,16 @@ service to purge history under the service contract.
 
 The saved consent value and the user's draft remain distinct. Only Boolean
 `true` sourced from `user-overrides` is presented as enabled; an inherited
-`true` from system, profile, or session defaults remains visibly off and leaves
-a direct On → Apply path that writes explicit opt-in. A later non-Boolean value
-makes the preference unavailable and revokes edit/apply admission while
-preserving any draft for recovery. Apply sends one optimistic Settings1 commit
-against the exact owner, epoch, and revision.
-Success remains Saving until a subsequent authoritative snapshot confirms the
-value. A conflict preserves the draft and offers an explicit “Apply my choice”
-action; cancellation restores the current confirmed value. Unknown commit
-outcomes and authority replacement preserve the draft, label the result
-uncertain/not replayed, and never retry the mutation automatically.
+`true` from system, profile, or session defaults remains visibly off. Changing
+the single switch immediately sends one optimistic Settings1 commit against
+the exact owner, epoch, and revision. A later non-Boolean value makes the
+preference unavailable and revokes edit/apply admission while preserving the
+user's choice for recovery.
+
+The page shows Saving until an authoritative snapshot confirms the value. A
+conflict preserves the choice and exposes one retry in the preference status.
+Unknown commit outcomes and authority replacement preserve the choice, label
+the result uncertain/not replayed, and never retry the mutation automatically.
 
 ## Service metadata and clear admission
 
@@ -43,8 +43,11 @@ only these values to QML:
 
 - available, degraded, or privacy-denied state;
 - history-enabled and privacy-admission truth;
-- entry count and the protocol capacity of 64; and
-- the current owner-fenced epoch, generation, and revision numbers.
+- entry count and the protocol capacity of 64.
+
+The model keeps the owner-fenced epoch, generation, and revision internally for
+safe clear admission. The page presents the useful history count without
+showing protocol diagnostics.
 
 Clipboard entry descriptors, identities, formats, previews, fingerprints, and
 payload bytes never cross the route-model boundary. The page consequently

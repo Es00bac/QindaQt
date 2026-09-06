@@ -22,7 +22,7 @@ ColumnLayout {
 
     SectionHeader {
         Layout.fillWidth: true
-        title: qsTr("Arrangement & Primary Role")
+        title: qsTr("Arrangement")
         description: qsTr("Set the main display for panels and dialogs, and arrange monitor positions")
     }
 
@@ -49,7 +49,7 @@ ColumnLayout {
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Position (X, Y)")
-        description: qsTr("Logical desktop offset coordinates in pixels")
+        description: qsTr("Set where this display sits relative to the others. Changes apply after you choose Apply.")
         editor: positionRow
 
         RowLayout {

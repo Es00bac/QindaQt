@@ -11,9 +11,12 @@ reviewed lane. The C1 lanes (`display_color_discovery` and
 `display_color_assignment`, recorded in
 [ADR-0066](../adr/0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md))
 deliver live ICC profile discovery/import over injected roots and persistent
-per-output assignment intents through Settings1; compositor application,
-Settings UI, colord integration, HDR/WCG runtime claims, and physical
-hardware qualification remain later slices. Focused build/tests pass; until
+per-output assignment intents through Settings1. The separate Settings route
+application boundary in
+[ADR-0083](../adr/0083-apply-saved-color-profiles-through-public-output-management.md)
+uses those public values without adding platform authority to this C0 model;
+colord integration, HDR/WCG runtime claims, and physical hardware qualification
+remain later slices. Focused build/tests pass; until
 independent exact-commit review accepts this preserved boundary, this page
 remains a normative candidate contract rather than integrated evidence. The
 recovery that finished the C0 slice preserved the original Solene Ward model
