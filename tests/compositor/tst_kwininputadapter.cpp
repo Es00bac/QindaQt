@@ -266,7 +266,7 @@ void KWinInputAdapterTest::arbitratesChromeAndKeyboardGrabsWithoutInstalledInput
             return ChromePointerHit{
                 QStringLiteral("group"),
                 {HybridChrome::HitKind::OuterTitleDrag,
-                 QStringLiteral("group"), -1, std::nullopt, {}}};
+                 QStringLiteral("group"), -1, std::nullopt, {}, std::nullopt}};
         });
     KWinInteractionFilter filter(nullptr, controller, {}, &chrome, {});
 
