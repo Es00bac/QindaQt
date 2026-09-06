@@ -6,13 +6,13 @@ T.ToolButton {
     id: control
     required property var theme
     readonly property var colors: theme.colors ?? ({})
+    font.pixelSize: 18
     contentItem: Text {
         text: control.text
         font: control.font
         color: !control.enabled ? (control.colors.textMuted ?? "#a9afa9")
               : control.checked ? (control.colors.accentText ?? "#10201b")
                                 : (control.colors.text ?? "#f2f1eb")
-        font.pixelSize: 18
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         textFormat: Text.PlainText
