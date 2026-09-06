@@ -35,6 +35,15 @@ replace earlier work:
   Meta+Arrow and other native KWin move/resize/maximize/tile paths must also
   respect grouped-member ownership: no member may move relative to the desktop
   while still bound to the container layout.
+- Add a keyboard toggle for grouped-member title chrome, keeping container
+  ownership and a visible focus cue in both clean-tile and title-visible modes.
+- Provide a dismissible desktop shortcut note with an obvious way to reopen it;
+  its actions must match the completed window-management behavior.
+- Add QindaQt-specific parent-frame controls for member-title visibility and
+  a compact management menu using the existing arrange, detach, and ungroup
+  actions, without obscuring normal window controls.
+- Make the active container and active member unmistakable through stronger
+  theme-consistent frame cues, including when member titles are hidden.
 
 Claude, GLM through Kimi, Kimi, and Codex workers contribute isolated candidates
 and independent reviews. Product completion requires integrated evidence;
