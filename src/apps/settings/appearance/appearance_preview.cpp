@@ -8,18 +8,18 @@
 namespace QindaQt::Apps::SettingsAppearance {
 AppearancePreview::AppearancePreview(QVector<Themes::ThemeSpec> installedThemes)
     : m_themes(std::move(installedThemes)) {
-    m_previewMaps.reserve(static_cast<size_t>(m_themes.size()));
-    for (const auto &theme : m_themes) {
+  m_previewMaps.reserve(static_cast<size_t>(m_themes.size()));
+  for (const auto &theme : m_themes) {
     const auto derived = DesignTokens::DesignTokenDeriver::derive(theme, {});
-        m_previewMaps.push_back(derived.ok() ? derived.tokens->toVariantMap()
-                                             : QVariantMap{});
-    }
+    m_previewMaps.push_back(derived.ok() ? derived.tokens->toVariantMap()
+                                         : QVariantMap{});
+  }
 }
 
 AppearanceResolution
 AppearancePreview::resolve(const AppearanceValues &values,
                            Qt::ColorScheme platformScheme) const {
-    AppearanceResolution resolution;
+  AppearanceResolution resolution;
   const auto scheme = values.colorScheme == ColorSchemePreference::Light
                           ? AppAppearance::ColorSchemePreference::Light
                       : values.colorScheme == ColorSchemePreference::Dark
@@ -29,31 +29,31 @@ AppearancePreview::resolve(const AppearanceValues &values,
       m_themes, {.themeId = values.themeId, .colorScheme = scheme},
       platformScheme);
   if (!resolved)
-            return resolution;
+    return resolution;
   const QString fallback = resolved->id;
-    for (int index = 0; index < m_themes.size(); ++index) {
-        if (m_themes.at(index).id == fallback) {
-            resolution.themeIndex = index;
+  for (int index = 0; index < m_themes.size(); ++index) {
+    if (m_themes.at(index).id == fallback) {
+      resolution.themeIndex = index;
       resolution.configuredInstalled = fallback == values.themeId;
       if (!resolution.configuredInstalled)
-            resolution.fallbackThemeId = fallback;
-            return resolution;
-        }
+        resolution.fallbackThemeId = fallback;
+      return resolution;
     }
-    return resolution;
+  }
+  return resolution;
 }
 
 DesignTokens::AccessibilityInputs
 AppearancePreview::accessibilityInputs(const AppearanceValues &values,
                                        const Themes::ThemeSpec &theme) const {
-    // Accessibility-domain settings (text scale, reduced motion/transparency)
-    // belong to their own Settings route and must not be guessed here. Font
-    // size is an explicit caller input; high contrast follows the dedicated
-    // theme variant, matching the text-editor composition.
-    DesignTokens::AccessibilityInputs inputs;
-    inputs.basePointSize = values.fontPointSize;
-    inputs.highContrast = theme.variant == QStringLiteral("high-contrast");
-    return inputs;
+  // Accessibility-domain settings (text scale, reduced motion/transparency)
+  // belong to their own Settings route and must not be guessed here. Font
+  // size is an explicit caller input; high contrast follows the dedicated
+  // theme variant, matching the text-editor composition.
+  DesignTokens::AccessibilityInputs inputs;
+  inputs.basePointSize = values.fontPointSize;
+  inputs.highContrast = theme.variant == QStringLiteral("high-contrast");
+  return inputs;
 }
 
 } // namespace QindaQt::Apps::SettingsAppearance
