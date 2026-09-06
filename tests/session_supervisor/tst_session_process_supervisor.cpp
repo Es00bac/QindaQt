@@ -107,6 +107,7 @@ private slots:
     void supervisorRollsBackWhenTheSecondChildCannotStart();
     void session1AuthenticatesShellAndStopsChildrenInOrder();
     void optionalSecretAgentRestartsOnceWithoutBlockingSession();
+    void optionalWelcomeStartsAfterShellAndDoesNotRestart();
     void session1DescriptorMatchesTheFixedSurface();
 };
 
@@ -442,6 +443,43 @@ void SessionProcessSupervisorTests::optionalSecretAgentRestartsOnceWithoutBlocki
     QCOMPARE(supervisor.networkSecretAgentRestartCount(), 1);
     QCOMPARE(finished.size(), 0);
     QVERIFY(supervisor.isRunning());
+    supervisor.stop();
+}
+
+void SessionProcessSupervisorTests::optionalWelcomeStartsAfterShellAndDoesNotRestart()
+{
+    qputenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS", QByteArrayLiteral("30000"));
+    const auto environmentGuard = qScopeGuard([] {
+        qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
+    });
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable =
+        QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.networkSecretAgentExecutable.clear();
+    options.welcomeExecutable = QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy finished(&supervisor,
+                        &SessionSupervisor::SessionProcessSupervisor::finished);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    QVERIFY(supervisor.shellProcessId() > 1);
+    QTRY_VERIFY_WITH_TIMEOUT(supervisor.welcomeProcessId() > 1, 5'000);
+
+    const qint64 welcomeProcessId = supervisor.welcomeProcessId();
+    QFile argumentsFile(QStringLiteral("/proc/%1/cmdline").arg(welcomeProcessId));
+    QVERIFY(argumentsFile.open(QIODevice::ReadOnly));
+    const QByteArray arguments = argumentsFile.readAll();
+    QVERIFY(arguments.contains("--first-launch"));
+
+    QCOMPARE(::kill(static_cast<pid_t>(welcomeProcessId), SIGTERM), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.welcomeProcessId(), qint64(0), 5'000);
+    QTest::qWait(100);
+    QCOMPARE(supervisor.welcomeProcessId(), qint64(0));
+    QVERIFY(supervisor.isRunning());
+    QCOMPARE(finished.size(), 0);
     supervisor.stop();
 }
 

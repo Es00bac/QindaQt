@@ -52,7 +52,7 @@ class PackageContractTests(unittest.TestCase):
                     encoding="utf-8",
                 )
             self.assertEqual(
-                len(authenticate_first_party_desktop_entries(stage)), 4
+                len(authenticate_first_party_desktop_entries(stage)), 5
             )
             (applications / "org.qindaqt.Settings.desktop").unlink()
             with self.assertRaisesRegex(PackagePayloadError, "Settings.desktop"):

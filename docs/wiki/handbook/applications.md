@@ -6,6 +6,20 @@ The shared AppShell boundary provides lifecycle, actions, menus, injected
 integration, focus, and accessibility contracts; it is not a universal owner of
 application documents or platform policy.
 
+## Welcome guide
+
+Welcome is the first-run introduction and remains available from the launcher.
+Its seven short chapters explain ordinary desktop use, intentional window
+arrangement, groups and pages, safe detach and movement, customization, and
+appearance before offering buttons that open the real Settings, Text Editor,
+and File Manager applications. The guide follows the confirmed desktop
+appearance and uses the shared QST-1/Controls language.
+
+Its **Show at next launch** choice is application-local and defaults on. Turning
+it off prevents later automatic opening without removing the manual launcher
+entry. See [Welcome to QindaQt](../apps/welcome.md) for the exact process and
+persistence boundary.
+
 ## Settings Center
 
 The Settings Center owns bounded route registration, wide/compact navigation,

@@ -28,6 +28,7 @@ PRODUCTION_EXECUTABLES: Mapping[str, str] = {
     "audio-service": "qindaqt-audio-service",
     "settings-app": "qindaqt-settings",
     "editor-app": "qindaqt-editor",
+    "welcome-app": "qindaqt-welcome",
 }
 
 SERVICE_DESCRIPTORS: Mapping[str, str] = {

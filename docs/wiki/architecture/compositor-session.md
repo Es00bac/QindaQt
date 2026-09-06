@@ -66,7 +66,11 @@ provisions their private presentation token through separate one-shot inherited
 descriptors, and keeps the token only in supervisor memory. When the installed
 sibling `qindaqt-network-secret-agent` exists, the supervisor also starts it as
 a readiness-independent child; one unexpected exit consumes its sole restart
-without affecting either essential child. The notification host is
+without affecting either essential child. After the first shell starts, the
+supervisor also starts an installed sibling `qindaqt-welcome --first-launch` as
+an optional parent-death-bound child. Welcome decides locally whether it should
+show, exits successfully when a person has opted out, and is never restarted;
+its failure cannot end the session. The notification host is
 session-resident. One unexpected shell exit consumes a fixed
 one-restart budget: the host stays running while a replacement shell receives
 a fresh descriptor containing the same token, the same direct KWin PID, and
@@ -88,8 +92,9 @@ The supervisor owns `org.qindaqt.Session1` at `/org/qindaqt/Session1` on the
 session bus. `CanLogout()` and `Logout()` resolve the caller's bus credential
 PID on every invocation and admit only the currently supervised shell PID; a
 retired or unrelated process receives the fixed Unauthorized error. Accepted
-logout replies before shutdown, then stops shell, notification host, and the
-optional secret agent in that order and exits successfully. KWin's
+logout replies before shutdown, then stops Welcome when it is still open,
+followed by shell, notification host, and the optional secret agent, and exits
+successfully. KWin's
 `--exit-with-session` coupling then ends the compositor. The exact wire and
 error contract is [Session1 version 1](../reference/session1-v1.md), and the
 client/platform split is recorded in

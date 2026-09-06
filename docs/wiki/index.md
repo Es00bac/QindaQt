@@ -195,6 +195,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Center](apps/settings-center.md) documents the typed bounded route
   registry, responsive wide/compact navigation, route lifetime, keyboard and
   accessibility behavior, and sanitized package proof.
+- [Welcome to QindaQt](apps/welcome.md) documents the first-run tutorial,
+  persistent show-next-launch choice, live appearance binding, and manual
+  launcher return path.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

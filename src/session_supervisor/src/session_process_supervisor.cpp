@@ -4,6 +4,7 @@
 #include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/supervised_process_launcher.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
+#include "first_launch_welcome.h"
 
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -48,7 +49,8 @@ std::optional<QStringList> shellProcessArguments(const SessionProcessOptions &op
 }
 
 SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options, QObject *parent)
-    : QObject(parent), m_options(std::move(options))
+    : QObject(parent), m_options(std::move(options)),
+      m_welcome(std::make_unique<FirstLaunchWelcome>())
 {
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -114,6 +116,7 @@ bool SessionProcessSupervisor::start(QString *error)
     }
     m_running = true;
     startNetworkSecretAgent();
+    startWelcome();
     setError(error, {});
     return true;
 }
@@ -129,6 +132,10 @@ void SessionProcessSupervisor::stop() noexcept
     // reentrant finished signals cannot launch a replacement. The restart
     // count is reset only after both children are stopped for the next session.
     m_token.reset();
+    if (m_welcome->isRunning()) {
+        Q_EMIT childStopRequested(QStringLiteral("welcome"));
+    }
+    m_welcome->stop();
     if (m_shell.state() != QProcess::NotRunning) {
         Q_EMIT childStopRequested(QStringLiteral("shell"));
     }
@@ -192,6 +199,11 @@ int SessionProcessSupervisor::networkSecretAgentRestartCount() const noexcept
     return m_networkSecretAgentRestartCount;
 }
 
+qint64 SessionProcessSupervisor::welcomeProcessId() const noexcept
+{
+    return m_welcome->processId();
+}
+
 QString SessionProcessSupervisor::resolveExecutable(const QString &configured) const
 {
     const QFileInfo requested(configured);
@@ -244,6 +256,14 @@ void SessionProcessSupervisor::startNetworkSecretAgent()
     }
 }
 
+void SessionProcessSupervisor::startWelcome()
+{
+    // AGENT-CONTRACT: Launch only after the essential shell successfully
+    // starts. The executable owns its show-next-launch decision; the session
+    // supervisor owns only this optional child's lifetime.
+    m_welcome->start(resolveExecutable(m_options.welcomeExecutable));
+}
+
 void SessionProcessSupervisor::networkSecretAgentEnded()
 {
     if (!m_running || m_stopping
@@ -291,6 +311,10 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     m_stopping = true;
     m_running = false;
     m_token.reset();
+    if (m_welcome->isRunning()) {
+        Q_EMIT childStopRequested(QStringLiteral("welcome"));
+    }
+    m_welcome->stop();
     if (role == ChildRole::NotificationHost) {
         if (m_shell.state() != QProcess::NotRunning) {
             Q_EMIT childStopRequested(QStringLiteral("shell"));

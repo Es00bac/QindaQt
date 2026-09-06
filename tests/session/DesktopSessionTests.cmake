@@ -32,6 +32,7 @@ set(
     qindaqt-audio-service
     qindaqt-settings
     qindaqt-editor
+    qindaqt-welcome
     qindaqt_app_shell
     qindaqt_tokens_qml
     qindaqt_tokens_qmlplugin

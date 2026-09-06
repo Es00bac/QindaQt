@@ -102,6 +102,7 @@ nav:
       - Testing harness: development/testing-harness.md
   - Applications:
       - QindaQt.AppShell 1.0: apps/application-shell.md
+      - Welcome to QindaQt: apps/welcome.md
       - Text Editor: apps/text-editor.md
       - File Manager: apps/file-manager.md
       - Settings Center: apps/settings-center.md
@@ -194,4 +195,5 @@ nav:
       - ADR-0076 Launcher persistence keys: adr/0076-register-launcher-persistence-in-panel-settings.md
       - "ADR-0077: Global menu hosting acknowledgment": adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md
       - "ADR-0078: Shell-owned wallpaper surfaces": adr/0078-own-wallpaper-surfaces-in-the-shell.md
+      - "ADR-0079: Welcome preference and supervision": adr/0079-own-welcome-presentation-preference-locally.md
       - "ADR-0080: First-party appearance resolution": adr/0080-resolve-first-party-appearance-from-settings.md

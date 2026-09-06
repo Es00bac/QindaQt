@@ -34,6 +34,9 @@ int main(int argc, char *argv[])
         {QStringLiteral("network-secret-agent"),
          QStringLiteral("Optional NetworkManager secret-agent executable."),
          QStringLiteral("path"), QStringLiteral("qindaqt-network-secret-agent")},
+        {QStringLiteral("welcome"),
+         QStringLiteral("Optional first-launch guide executable."),
+         QStringLiteral("path"), QStringLiteral("qindaqt-welcome")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Shell theme id."),
@@ -55,6 +58,7 @@ int main(int argc, char *argv[])
     options.shellExecutable = parser.value(QStringLiteral("shell"));
     options.networkSecretAgentExecutable =
         parser.value(QStringLiteral("network-secret-agent"));
+    options.welcomeExecutable = parser.value(QStringLiteral("welcome"));
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));
     options.compositorProcessId = *compositorProcessId;

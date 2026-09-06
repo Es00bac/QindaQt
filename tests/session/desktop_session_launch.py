@@ -52,6 +52,14 @@ def _configure_private_session(
     (config / "kscreenlockerrc").write_text(
         "[Daemon]\nAutolock=false\nLockOnResume=false\n", encoding="utf-8"
     )
+    # Ordinary desktop rows prove shell/compositor behavior and must not gain
+    # a first-run surface when Welcome is added to the package. The dedicated
+    # Welcome lifecycle test owns the fresh/default-true scenario.
+    welcome = config / "QindaQt" / "qindaqt-welcome.conf"
+    welcome.parent.mkdir(parents=True, exist_ok=True)
+    welcome.write_text(
+        "[welcome]\nshowAtNextLaunch=false\n", encoding="utf-8"
+    )
     return f"qindaqt-{environment['QINDAQT_SESSION_RUN_ID'][:12]}"
 
 

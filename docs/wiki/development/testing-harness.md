@@ -3134,6 +3134,37 @@ application, HDR/WCG runtime behavior, colord interaction, or physical
 hardware qualification; discovery tests read only injected temporary roots,
 and no test touches the host's real profile directories.
 
+## Welcome first-run proof
+
+The focused selectors are:
+
+```sh
+ctest --test-dir build/<debug|release> \
+  -R '^qindaqt\.(welcome-|session-supervisor)' \
+  --output-on-failure --no-tests=error
+```
+
+The Welcome lifecycle row runs the real compiled QML root at its 900x640
+initial size and verifies its 640x480 minimum, QindaQt Controls navigation, and
+exact **Show at next launch** checkbox. An empty application-local configuration
+opens in `--first-launch` mode with the checkbox selected; changing that real
+control persists false, suppresses a later first-launch invocation before QML
+construction, and still permits a manual UI invocation. The preference unit
+row independently checks default and reopen persistence.
+
+The session-supervisor row holds an optional Welcome helper beside the essential
+children, reads the exact process arguments from the live child, and verifies
+`--first-launch`, no restart, and no effect on session liveness after Welcome
+exits. Existing private desktop rows write the false preference into their
+fresh sandbox configuration. This keeps their window/topology and screenshot
+expectations stable while `DesktopVirtual` gains the real Welcome executable
+and launcher entry.
+
+These focused rows prove application construction, preference lifecycle,
+session ordering, and package inclusion. Human review of the fresh nested
+first-run screenshot remains required for the tutorial's visual quality,
+legibility, responsive composition, and optional Qinda Punk hero.
+
 ## Required display matrix
 
 Single-output scenarios cover:
