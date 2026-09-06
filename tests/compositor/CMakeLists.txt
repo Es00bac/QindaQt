@@ -509,6 +509,27 @@ if(TARGET qindaqt_kwin_input_adapter)
         COMMAND qindaqt_hybrid_container_placement_tests
     )
 
+    qt_add_executable(
+        qindaqt_hybrid_grouped_geometry_reconciler_tests
+        tst_hybridgroupedgeometryreconciler.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridgroupedgeometryreconciler.cpp"
+    )
+    target_compile_features(
+        qindaqt_hybrid_grouped_geometry_reconciler_tests PRIVATE cxx_std_20
+    )
+    target_include_directories(
+        qindaqt_hybrid_grouped_geometry_reconciler_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+    )
+    target_link_libraries(
+        qindaqt_hybrid_grouped_geometry_reconciler_tests
+        PRIVATE Qt6::Core Qt6::Test
+    )
+    add_test(
+        NAME compositor.hybrid-grouped-geometry-reconciler
+        COMMAND qindaqt_hybrid_grouped_geometry_reconciler_tests
+    )
+
     include("${CMAKE_CURRENT_LIST_DIR}/HybridSceneTests.cmake")
 
     qt_add_executable(

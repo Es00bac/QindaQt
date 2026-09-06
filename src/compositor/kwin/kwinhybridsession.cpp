@@ -7,6 +7,7 @@
 #include "hybridchromesyncscheduler.h"
 #include "hybridchromeplanbuilder.h"
 #include "hybridcontainerplacement.h"
+#include "hybridgroupedgeometryreconciler.h"
 #include "hybridinteractionruntime.h"
 #include "hybridshortcutmanager.h"
 #include "containercloseprompt.h"
@@ -167,10 +168,12 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             synchronizeChrome();
             Q_EMIT shellVisibilityStateChanged();
         });
+    initializeGroupedGeometryReconciliation();
     // KWin exposes the start of work-area rearrangement. Queue the Hybrid
-    // refresh so MaximizeArea includes the newly committed layer-shell struts.
+    // reconciliation so MaximizeArea and ordinary-client constraints include
+    // the newly committed layer-shell struts.
     connect(workspace, &KWin::Workspace::aboutToRearrange, this,
-            &KWinHybridSession::refreshMaximizedContainers,
+            &KWinHybridSession::reconcileWorkAreaGeometry,
             Qt::QueuedConnection);
     m_interactionController = std::make_unique<HybridInput::InteractionController>(
         *m_targetResolver);
@@ -328,6 +331,7 @@ void KWinHybridSession::shutdown() noexcept
     m_targetResolver.reset();
     m_groupStacking.reset();
     m_chromeManager.reset();
+    m_groupedGeometryReconciler.reset();
     m_placement.reset();
     m_runtime.reset();
     m_sceneFactory.reset();

@@ -66,7 +66,13 @@ item, not a native overlay window.
   work-area-reserving panel reduces the group frame; releasing that reservation
   for an auto-hidden panel expands the group to the usable output. Revealing or
   changing the panel mode re-resolves the area again without replacing the
-  container's independent restore frame.
+  container's independent restore frame. After KWin finishes any work-area
+  rearrangement, the compositor also reconciles each owned member's requested
+  frame with the container solver's stored target. This prevents KWin's
+  ordinary-client constraint pass from moving one member independently when a
+  restored floating group makes an auto-hidden panel reserve space again.
+  Member focus presentation and minimized groups remain under their existing
+  temporary native-frame authority until those modes restore the group.
 - Closing a member removes only that client. Outer close offers **Close All**,
   **Ungroup**, or **Cancel**.
 - A member maximize action temporarily focuses that tile without destroying the

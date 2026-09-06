@@ -4,10 +4,12 @@
 #include "hybridchromedragtranslator.h"
 #include "hybridchromepointerrouter.h"
 #include "hybridcontainerplacement.h"
+#include "hybridgroupedgeometryreconciler.h"
 #include "hybridinteractionruntime.h"
 #include "kwinchromemanager.h"
 #include "kwindockpreview.h"
 #include "kwinhybridgroupstacking.h"
+#include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
 
 #include <core/output.h>
@@ -65,14 +67,68 @@ QRect KWinHybridSession::workArea(const QString &containerId) const
         .toAlignedRect();
 }
 
-void KWinHybridSession::refreshMaximizedContainers()
+void KWinHybridSession::initializeGroupedGeometryReconciliation()
 {
-    if (m_shutdown || !m_placement) {
+    m_groupedGeometryReconciler =
+        std::make_unique<HybridGroupedGeometryReconciler>(
+            [this] {
+                QVector<GroupedWindowGeometry> result;
+                const auto focus = m_memberPolicy
+                    ? m_memberPolicy->focusState() : std::nullopt;
+                for (const auto &windowId : m_registry.windowIds()) {
+                    auto *const window = m_registry.window(windowId);
+                    if (!window) {
+                        continue;
+                    }
+                    const auto owner = m_registry.owner(windowId);
+                    result.append({.windowId = windowId,
+                                   .containerId = owner,
+                                   .requestedFrame = window->moveResizeGeometry(),
+                                   .targetFrame = m_registry.targetFrame(windowId),
+                                   .nativeFrameOverride =
+                                       m_minimizedContainers.contains(owner)
+                                       || (focus && focus->windowId == windowId)});
+                }
+                return result;
+            },
+            [this](const QString &windowId, const QRectF &target, QString *error) {
+                auto *const window = m_registry.window(windowId);
+                if (!window || m_registry.owner(windowId).isEmpty()) {
+                    if (error) {
+                        *error = QStringLiteral("owned window disappeared");
+                    }
+                    return false;
+                }
+                window->moveResize(target);
+                if (window->moveResizeGeometry() != target) {
+                    if (error) {
+                        *error = QStringLiteral("KWin did not accept the target frame");
+                    }
+                    return false;
+                }
+                return true;
+            });
+}
+
+void KWinHybridSession::reconcileWorkAreaGeometry()
+{
+    if (m_shutdown) {
         return;
     }
-    for (const auto &failure : m_placement->refreshMaximizedAreas()) {
-        qWarning("QindaQt Hybrid maximize-area refresh failed: %s",
-                 qPrintable(failure));
+    if (m_placement) {
+        for (const auto &failure : m_placement->refreshMaximizedAreas()) {
+            qWarning("QindaQt Hybrid maximize-area refresh failed: %s",
+                     qPrintable(failure));
+        }
+    }
+    // KWin constrains every ordinary client separately after a strut change.
+    // Reassert the container solver's target frames only after maximized groups
+    // have published their new area-dependent layout.
+    if (m_groupedGeometryReconciler) {
+        for (const auto &failure : m_groupedGeometryReconciler->reconcile()) {
+            qWarning("QindaQt Hybrid grouped geometry reconciliation failed: %s",
+                     qPrintable(failure));
+        }
     }
 }
 
