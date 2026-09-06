@@ -126,6 +126,10 @@ Pointer input reaches Hybrid policy through three deliberately separate paths:
   native KDecoration/KWin move. When KWin begins the interactive move, member
   policy atomically detaches that member; KWin then continues the same move with
   the restored independent size and pointer anchor through the final drop.
+- On first run, the session seeds KWin's absent native edge-tiling and
+  edge-maximize choices off. Thus an ordinary independent-window drag remains
+  a move even at an output edge or corner, while an explicit user choice can
+  restore KWin behavior without being overwritten on later logins.
 - Exact `Meta+Shift+Left` acquires the compositor input grab after an
   eight-logical-pixel threshold. It can start anywhere on an independent or
   grouped window's own input surface — title or client area alike, not only a

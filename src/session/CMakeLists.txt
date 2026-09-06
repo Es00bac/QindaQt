@@ -53,3 +53,12 @@ install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt.desktop"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/wayland-sessions"
 )
+
+# KWin owns switching and focus; this package supplies QindaQt presentation
+# over its public TabBox model. SessionDefaults selects it only for users who
+# have not already chosen a switcher layout.
+install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt/"
+    DESTINATION "${KDE_INSTALL_DATADIR}/kwin/tabbox/qindaqt"
+    COMPONENT QindaQt
+)

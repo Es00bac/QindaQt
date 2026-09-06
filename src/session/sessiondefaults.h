@@ -8,9 +8,9 @@ namespace QindaQt::Session {
 class SessionDefaults final
 {
 public:
-    // Seeds only missing desktop-owned keys. Existing values are user policy
-    // and must survive every subsequent login, including a deliberate switch
-    // back to a third-party KDecoration plugin.
+    // Seeds only missing desktop-owned KWin presentation and pointer-policy
+    // keys. Existing values are user policy and survive every subsequent
+    // login, including deliberate decoration, switcher, or edge choices.
     [[nodiscard]] static bool ensure(const QString &configHome,
                                      QString *error = nullptr);
 };

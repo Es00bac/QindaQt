@@ -51,6 +51,13 @@ not scrape a panel or depend on host desktop state. A physical panel should
 therefore show one group row while the group exists, and one standalone row
 per member after detach or release.
 
+KWin's `qindaqt` WindowSwitcher package consumes the same native
+`skipSwitcher` projection for Alt-Tab. KWin remains the activation authority;
+the package changes presentation and labels the one container representative
+with its native caption. Session first-run policy selects that package only
+when `TabBox/LayoutName` is absent, so an explicit switcher preference is
+preserved.
+
 ## Grouping and ordering
 
 Entries are the module's canonical projection:

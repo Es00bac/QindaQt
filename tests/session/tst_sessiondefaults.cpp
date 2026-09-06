@@ -13,13 +13,14 @@ class SessionDefaultsTest final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
-    void seedsQindaDecorationWhenMissing();
-    void preservesExplicitDecorationChoice();
+    void seedsQindaDesktopDefaultsWhenMissing();
+    void preservesExplicitDesktopChoices();
+    void seedsEachMissingChoiceIndependently();
     void createsMissingConfigurationHome();
     void rejectsEmptyConfigurationHome();
 };
 
-void SessionDefaultsTest::seedsQindaDecorationWhenMissing()
+void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
@@ -31,9 +32,17 @@ void SessionDefaultsTest::seedsQindaDecorationWhenMissing()
     settings.beginGroup(QStringLiteral("org.kde.kdecoration2"));
     QCOMPARE(settings.value(QStringLiteral("library")).toString(),
              QStringLiteral("org.qindaqt"));
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("Windows"));
+    QCOMPARE(settings.value(QStringLiteral("ElectricBorderTiling")).toBool(), false);
+    QCOMPARE(settings.value(QStringLiteral("ElectricBorderMaximize")).toBool(), false);
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("TabBox"));
+    QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
+             QStringLiteral("qindaqt"));
 }
 
-void SessionDefaultsTest::preservesExplicitDecorationChoice()
+void SessionDefaultsTest::preservesExplicitDesktopChoices()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
@@ -42,6 +51,13 @@ void SessionDefaultsTest::preservesExplicitDecorationChoice()
         QSettings settings(path, QSettings::IniFormat);
         settings.beginGroup(QStringLiteral("org.kde.kdecoration2"));
         settings.setValue(QStringLiteral("library"), QStringLiteral("org.example.choice"));
+        settings.endGroup();
+        settings.beginGroup(QStringLiteral("Windows"));
+        settings.setValue(QStringLiteral("ElectricBorderTiling"), true);
+        settings.setValue(QStringLiteral("ElectricBorderMaximize"), true);
+        settings.endGroup();
+        settings.beginGroup(QStringLiteral("TabBox"));
+        settings.setValue(QStringLiteral("LayoutName"), QStringLiteral("compact"));
     }
 
     QString error;
@@ -50,6 +66,38 @@ void SessionDefaultsTest::preservesExplicitDecorationChoice()
     settings.beginGroup(QStringLiteral("org.kde.kdecoration2"));
     QCOMPARE(settings.value(QStringLiteral("library")).toString(),
              QStringLiteral("org.example.choice"));
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("Windows"));
+    QCOMPARE(settings.value(QStringLiteral("ElectricBorderTiling")).toBool(), true);
+    QCOMPARE(settings.value(QStringLiteral("ElectricBorderMaximize")).toBool(), true);
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("TabBox"));
+    QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
+             QStringLiteral("compact"));
+}
+
+void SessionDefaultsTest::seedsEachMissingChoiceIndependently()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    {
+        QSettings settings(path, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("Windows"));
+        settings.setValue(QStringLiteral("ElectricBorderTiling"), true);
+    }
+
+    QString error;
+    QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
+
+    QSettings settings(path, QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("Windows"));
+    QCOMPARE(settings.value(QStringLiteral("ElectricBorderTiling")).toBool(), true);
+    QCOMPARE(settings.value(QStringLiteral("ElectricBorderMaximize")).toBool(), false);
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("TabBox"));
+    QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
+             QStringLiteral("qindaqt"));
 }
 
 void SessionDefaultsTest::createsMissingConfigurationHome()

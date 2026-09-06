@@ -126,6 +126,23 @@ relative plugin directory and verifies that a fresh isolated `kwinrc` selects
 it. The launcher seeds that selection only when the key is absent, preserving
 an explicit user choice.
 
+The same first-run boundary installs the `qindaqt` KWin
+`KWin/WindowSwitcher` package and selects it through `TabBox/LayoutName` only
+when no layout was chosen. KWin retains focus, activation, and native model
+ownership; the package presents each row using its caption, icon, minimized
+state, and current index. Because Hybrid publishes one unskipped active-page
+representative per container, a group appears once under that representative's
+native caption. An explicit third-party switcher remains unchanged.
+This host-owned presentation boundary is recorded in
+[ADR-0089](../adr/0089-present-task-switching-through-kwins-native-model.md).
+
+QindaQt also seeds absent `Windows/ElectricBorderTiling` and
+`Windows/ElectricBorderMaximize` values to false. This removes KWin's second
+interpretation of an ordinary edge or corner title drag; `Meta+Shift` remains
+the explicit QindaQt docking gesture. The seed neither changes configured
+`ElectricBorders` actions nor overwrites an explicit choice for either native
+edge behavior.
+
 ## Compositor-MVP runtime layers
 
 The KWin plugin provides:

@@ -1,0 +1,15 @@
+{
+  "KPackageStructure": "KWin/WindowSwitcher",
+  "KPlugin": {
+    "Authors": [
+      {
+        "Name": "QindaQt contributors"
+      }
+    ],
+    "Description": "A calm QindaQt window and container switcher",
+    "Icon": "preferences-system-windows-switcher",
+    "Id": "qindaqt",
+    "License": "GPL-3.0-or-later",
+    "Name": "QindaQt"
+  }
+}
