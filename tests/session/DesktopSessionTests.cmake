@@ -239,13 +239,19 @@ if(
         DESTINATION "${KDE_INSTALL_DBUSSERVICEDIR}"
         COMPONENT DesktopVirtual
     )
-    foreach(_data_directory IN ITEMS profiles themes applets settings)
+    foreach(_data_directory IN ITEMS profiles themes applets settings wallpapers)
         install(
             DIRECTORY "${PROJECT_SOURCE_DIR}/data/${_data_directory}/"
             DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/${_data_directory}"
             COMPONENT DesktopVirtual
         )
     endforeach()
+    install(
+        DIRECTORY "${PROJECT_SOURCE_DIR}/data/icons/QindaQt"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons"
+        COMPONENT DesktopVirtual
+        OPTIONAL
+    )
     install(
         FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"

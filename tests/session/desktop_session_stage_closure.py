@@ -183,6 +183,20 @@ def _authenticate_qmldirs(
             raise StageClosureError(f"staged QML module {module} has an unsafe qmldir")
 
 
+def _authenticate_artwork(stage: Path) -> None:
+    required = (stage / "share/icons/QindaQt/index.theme",) + tuple(
+        stage / "share/qindaqt/wallpapers" / name
+        for name in (
+            "jade-fold.png", "porcelain-dawn.png", "ink-tide.png",
+            "qinda-punk.png", "compile-club.png",
+        )
+    )
+    for asset in required:
+        resolved = _regular_resolved(asset)
+        if resolved is None or not _inside(resolved, stage):
+            raise StageClosureError(f"DesktopVirtual stage omitted required artwork: {asset}")
+
+
 def verify_stage_closure(
     stage_root: Path,
     *,
@@ -224,6 +238,7 @@ def verify_stage_closure(
         if not _inside(resolved, stage):
             raise StageClosureError(f"qindaqt-shell resolves {library} outside DesktopVirtual")
 
+    _authenticate_artwork(stage)
     imports = qml_imports(qml_sources)
     _authenticate_qmldirs(stage / qml_directory, imports, embedded_qml_modules)
     return ClosureReport(len(elf_files), needed_count, imports)

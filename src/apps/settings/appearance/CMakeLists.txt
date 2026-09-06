@@ -109,11 +109,9 @@ install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/wallpapers/"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/wallpapers"
     COMPONENT SettingsAppearanceRuntime
-    OPTIONAL
 )
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/icons/QindaQt"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/icons"
     COMPONENT SettingsAppearanceRuntime
-    OPTIONAL
 )
