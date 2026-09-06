@@ -315,7 +315,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     install(DIRECTORY "${PROJECT_SOURCE_DIR}/data/wallpapers/"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/wallpapers" COMPONENT QindaQt)
     install(DIRECTORY "${PROJECT_SOURCE_DIR}/data/icons/QindaQt"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons" COMPONENT QindaQt OPTIONAL)
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons" COMPONENT QindaQt)
     # AGENT-CONTRACT: The default component is a runnable shell package, just
     # like each narrow applet component below. Keep the shell's directly linked
     # Controls library and Controls' Tokens dependency in their relative

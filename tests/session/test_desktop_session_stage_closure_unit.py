@@ -9,6 +9,7 @@ from pathlib import Path
 
 from desktop_session_stage_closure import (
     StageClosureError,
+    _authenticate_artwork,
     _authenticate_qmldirs,
     parse_dynamic_output,
     qml_imports,
@@ -52,6 +53,22 @@ class StageClosureUnitTests(unittest.TestCase):
             (module / "qmldir").unlink()
             with self.assertRaisesRegex(StageClosureError, "has no qmldir"):
                 _authenticate_qmldirs(root, ("QindaQt.Shell.AudioApplet",))
+
+    def test_artwork_requires_icon_theme_and_default_wallpaper(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory)
+            icon = stage / "share/icons/QindaQt/index.theme"
+            wallpapers = stage / "share/qindaqt/wallpapers"
+            icon.parent.mkdir(parents=True)
+            wallpapers.mkdir(parents=True)
+            icon.write_text("[Icon Theme]\nName=QindaQt\n", encoding="utf-8")
+            for name in ("jade-fold.png", "porcelain-dawn.png", "ink-tide.png",
+                         "qinda-punk.png", "compile-club.png"):
+                (wallpapers / name).write_bytes(b"png")
+            _authenticate_artwork(stage)
+            icon.unlink()
+            with self.assertRaisesRegex(StageClosureError, "required artwork"):
+                _authenticate_artwork(stage)
 
     def test_embedded_qml_exemptions_must_name_an_import(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
