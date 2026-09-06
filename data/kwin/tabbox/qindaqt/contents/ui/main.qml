@@ -20,8 +20,22 @@ KWin.TabBoxSwitcher {
         property int selectedIndex: -1
         interval: Kirigami.Units.shortDuration
         onTriggered: {
-            if (selectedIndex >= 0)
+            if (tabBox.visible && tabBox.model !== null
+                    && selectedIndex >= 0
+                    && selectedIndex < tabBox.model.rowCount()) {
                 tabBox.model.activate(selectedIndex)
+            }
+            selectedIndex = -1
+        }
+    }
+
+    onVisibleChanged: {
+        if (!visible) {
+            // A mouse click is delayed briefly for selection feedback. Alt
+            // release or a model withdrawal can close the popup first; never
+            // let that stale callback activate a window after switching ended.
+            activationTimer.stop()
+            activationTimer.selectedIndex = -1
         }
     }
 

@@ -37,7 +37,9 @@ foreach(required_contract IN ITEMS
         "KWin.TabBoxSwitcher" "nativeModel: tabBox.model" "model: frame.nativeModel"
         "required property string caption"
         "required property var icon" "required property bool minimized"
-        "tabBox.model.activate" "onCurrentIndexChanged")
+        "tabBox.model.activate" "tabBox.model.rowCount()"
+        "activationTimer.stop()" "visible: row.minimized"
+        "text: qsTr(\"Minimized\")" "onCurrentIndexChanged")
     string(FIND "${qml}" "${required_contract}" contract_offset)
     if(contract_offset EQUAL -1)
         message(FATAL_ERROR

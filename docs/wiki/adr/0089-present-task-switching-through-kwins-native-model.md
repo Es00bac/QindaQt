@@ -45,7 +45,8 @@ identifier, palette literal, persistence, or shell dependency.
 ## Consequences
 
 - Alt-Tab presents one clear selected row per KWin switcher entry. A container
-  uses its single native representative's caption and icon.
+  uses its single native representative's caption and icon. Ordinary rows add
+  no generic type subtitle; only a minimized entry states that extra status.
 - Presentation can change without changing window ordering or activation.
 - The package follows the semantic palette selected in KWin's process rather
   than importing unconfirmed shell-engine QST state.
