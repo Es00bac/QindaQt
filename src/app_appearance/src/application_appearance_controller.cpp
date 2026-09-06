@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/app_appearance/application_appearance_controller.h>
 
-#include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/themes/theme_loader.h>
 
@@ -61,6 +60,8 @@ ApplicationAppearanceController::ApplicationAppearanceController(
     : QObject(parent), m_settings(settings),
       m_themeDirectories(std::move(themeDirectories)),
       m_explicitThemeOverride(std::move(explicitThemeOverride)) {
+  if (QGuiApplication::styleHints())
+    m_platformScheme = QGuiApplication::styleHints()->colorScheme();
   for (const QString &directory : std::as_const(m_themeDirectories)) {
     const QFileInfoList entries = QDir(directory).entryInfoList(
         {QStringLiteral("*.json")}, QDir::Files, QDir::Name);
@@ -92,7 +93,10 @@ ApplicationAppearanceController::ApplicationAppearanceController(
           &ApplicationAppearanceController::applySnapshot);
   if (QGuiApplication::styleHints()) {
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
-            this, [this] { applySnapshot(); });
+            this, [this](Qt::ColorScheme scheme) {
+              m_platformScheme = scheme;
+              applySnapshot();
+            });
   }
   applySnapshot();
 }
@@ -124,13 +128,9 @@ void ApplicationAppearanceController::applySnapshot() {
                                .toString());
   if (requested.isEmpty() || !scheme)
     return;
-  const Qt::ColorScheme platformScheme =
-      QGuiApplication::styleHints()
-          ? QGuiApplication::styleHints()->colorScheme()
-          : Qt::ColorScheme::Unknown;
   const auto resolved = resolveAppearanceTheme(
       m_installedThemes, {.themeId = requested, .colorScheme = *scheme},
-      platformScheme);
+      m_platformScheme);
   if (!resolved)
     return;
   QString error;
@@ -145,16 +145,6 @@ void ApplicationAppearanceController::applySnapshot() {
     m_lastError = error;
     emit errorChanged();
   }
-}
-
-bool ApplicationAppearanceController::publishTokens(
-    DesignTokens::TokenFacade &facade, QString *error) const {
-  if (m_theme.id.isEmpty()) {
-    if (error)
-      *error = QStringLiteral("No validated application theme");
-    return false;
-  }
-  return facade.publish(m_theme, {}, error);
 }
 
 } // namespace QindaQt::AppAppearance

@@ -256,7 +256,7 @@ void AppearanceSettingsModelTests::loadingThenReadyWithConfirmedBaseline()
              expected.themeId);
     QCOMPARE(model.draft().value(QLatin1String(AppearanceKeys::FontPointSize)),
              expected.fontPointSize);
-    QCOMPARE(model.resolvedThemeId(), QStringLiteral("qinda-light"));
+    QCOMPARE(model.resolvedThemeId(), QStringLiteral("qinda-dark"));
     QVERIFY(model.configuredThemeInstalled());
     QCOMPARE(model.fallbackNotice(), QString{});
     QVERIFY(model.statusText().isEmpty());

@@ -71,8 +71,6 @@ void ApplicationAppearanceControllerTest::
                                     QStringLiteral("appearance.colorScheme")});
   QStyleHints *hints = QGuiApplication::styleHints();
   QVERIFY(hints != nullptr);
-  const Qt::ColorScheme originalScheme = hints->colorScheme();
-  hints->setColorScheme(Qt::ColorScheme::Light);
   ApplicationAppearanceController controller(client, themeDirectories(),
                                              QStringLiteral("qinda-dark"));
   QSignalSpy changes(&controller,
@@ -80,18 +78,18 @@ void ApplicationAppearanceControllerTest::
   QVERIFY(client.start());
   transport.announce(QStringLiteral(":1.20"));
   transport.reply(QStringLiteral("qinda-dark"), QStringLiteral("system"));
+  Q_EMIT hints->colorSchemeChanged(Qt::ColorScheme::Light);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
   QCOMPARE(changes.count(), 1);
   transport.reply(QStringLiteral("qinda-dark"), QStringLiteral("system"), 2);
   QCOMPARE(changes.count(), 1);
-  hints->setColorScheme(Qt::ColorScheme::Dark);
+  Q_EMIT hints->colorSchemeChanged(Qt::ColorScheme::Dark);
   QTRY_COMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
   transport.reply(QStringLiteral("missing"), QStringLiteral("dark"), 3);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
   transport.reply(QStringLiteral("qinda-light"), QStringLiteral("sepia"), 4);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
   QCOMPARE(changes.count(), 2);
-  hints->setColorScheme(originalScheme);
 }
 
 void ApplicationAppearanceControllerTest::explicitOverrideIgnoresSettings() {

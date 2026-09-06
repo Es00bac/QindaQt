@@ -329,13 +329,17 @@ void AppearancePageTests::themeCardsRenderSelectAndGate()
     QVERIFY(darkCard->property("checked").toBool());
     QVERIFY(!lightCard->property("checked").toBool());
 
-    // Radio semantics: selecting the second card routes one typed draft write.
+    // Selecting a theme and its matching scheme forms one user draft.
     QVERIFY(QMetaObject::invokeMethod(lightCard, "click"));
-    QTRY_COMPARE(scene.model->draftKeys.size(), 1);
+    QTRY_COMPARE(scene.model->draftKeys.size(), 2);
     QCOMPARE(scene.model->draftKeys.constFirst(),
              QStringLiteral("appearance.theme"));
     QCOMPARE(scene.model->draftValues.constFirst().toString(),
              QStringLiteral("qinda-light"));
+    QCOMPARE(scene.model->draftKeys.constLast(),
+             QStringLiteral("appearance.colorScheme"));
+    QCOMPARE(scene.model->draftValues.constLast().toString(),
+             QStringLiteral("light"));
 
     // While saving, the fail-closed gate disables every theme card.
     scene.model->saving = true;
