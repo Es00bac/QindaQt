@@ -547,14 +547,14 @@ popup item is reparented into the popup window, before the platform surface
 
 Top-level menu switching follows menu-bar convention: with one entry's menu
 open, hovering another enabled submenu entry switches the popup to it, and
-clicking another entry switches too; clicking the entry whose menu is open
-closes it (toggle). The toggle is judged at `clicked()` time against the
-popup's record of which anchor its latest close ended (bounded to the same
-click gesture by timestamp), because delivery order between the press-outside
-close and the button's `pressed()` varies across platforms, and natively the
-`xdg_popup` grab may swallow the switching press entirely — hover is the
-reliable native switching path. A deferred focus-loss close scheduled before
-a switch is disarmed by an open-generation counter, so it cannot close the
+clicking another entry switches too. Clicking an enabled submenu entry always
+leaves its menu open — clicking the open entry re-asserts it rather than
+toggling closed, so no legitimate click is ever dropped regardless of
+platform delivery order or whether the native `xdg_popup` grab swallowed the
+switching press (hover is then the reliable native switching path). Closing
+belongs to the popup's own paths: Escape, outside press, focus loss, choosing
+an item, or provider churn. A deferred focus-loss close scheduled before a
+switch is disarmed by an open-generation counter, so it cannot close the
 freshly switched menu. Switching anchors while open re-anchors the LIVE popup
 window: after the anchor contract is rewritten, a popup window geometry poke
 makes QtWayland rebuild the positioner from the new anchor rect and send
@@ -569,8 +569,9 @@ bridge. The `global-menu-native-popup-placement` row pins the exact
 `_q_waylandPopupAnchor*` values as real QObject dynamic properties, read
 back through `QObject::property()` the way QtWayland reads them. The
 `global-menu-applet-switch-qml-offscreen` row pins the switch contract:
-click-switch, toggle-close, bounded reopen, hover-switch while open, and no
-hover-open while closed.
+click-switch, hover-switch while open, no hover-open while closed, and that
+clicking the open entry — including right after a hover switch — leaves its
+menu open.
 
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows

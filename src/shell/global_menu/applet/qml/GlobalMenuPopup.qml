@@ -15,12 +15,6 @@ Popup {
     // switch (panel press deactivates the popup window before the switched
     // menu opens) must not close the freshly switched popup.
     property int openSerial: 0
-    // Which entry's menu the latest close ended, and when. The menu bar uses
-    // this to tell "the press that produced this click already closed my
-    // menu" (toggle stays closed) from a fresh click (opens); the timestamp
-    // bounds the suppression to the same click gesture.
-    property Item closedAnchorItem: null
-    property real closedAt: 0
     readonly property var colors: theme.colors ?? ({})
     readonly property var currentMenu:
         menuStack.length > 0 ? menuStack[menuStack.length - 1] : ({})
@@ -229,8 +223,6 @@ Popup {
                  | Popup.CloseOnPressOutsideParent
 
     onClosed: {
-        closedAnchorItem = anchorItem
-        closedAt = Date.now()
         menuStack = []
         anchorItem = null
     }

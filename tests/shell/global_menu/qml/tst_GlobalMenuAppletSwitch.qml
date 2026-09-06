@@ -5,11 +5,13 @@ import QtQuick.Controls
 import QtTest
 
 // Top-level menu switching contract: with one entry's menu open, the menu bar
-// must follow the pointer — clicking another entry switches the popup to that
-// entry's menu, clicking the open entry closes it, and hovering another entry
-// switches while a menu is open. Production runs the popup as a separate
-// window whose native close paths (press-outside, focus loss) race the
-// switch; these rows pin the outcome rather than the mechanism.
+// follows the pointer — clicking or hovering another entry switches the popup
+// to that entry's menu, and clicking the open entry re-asserts it (never
+// toggles closed, so no legitimate click is dropped). Closing belongs to the
+// popup's own paths (Escape, outside press, focus loss, activation).
+// Production runs the popup as a separate window whose native close paths
+// (press-outside, focus loss) race the switch; these rows pin the outcome
+// rather than the mechanism.
 Item {
     id: root
     width: 640
@@ -65,14 +67,8 @@ Item {
             fakeAccess.items = menuItems()
             fakeAccess.activateCalls = 0
             const p = findChild(applet, "globalMenuPopup")
-            if (p !== null) {
-                if (p.opened)
-                    p.close()
-                // Keep the toggle-suppression window from leaking across
-                // test boundaries.
-                p.closedAnchorItem = null
-                p.closedAt = 0
-            }
+            if (p !== null && p.opened)
+                p.close()
         }
 
         function cleanup() {
@@ -129,23 +125,25 @@ Item {
             verifyOpenMenu("File", list[0])
         }
 
-        function test_clickOpenEntryClosesIt() {
+        function test_clickOpenEntryKeepsMenuOpen() {
+            // A click on an enabled submenu entry always leaves its menu
+            // open — no toggle deadband, so no legitimate click is dropped.
             const list = entries()
             clickEntry(list[0])
             verifyOpenMenu("File", list[0])
             clickEntry(list[0])
-            tryCompare(popup(), "opened", false)
+            verifyOpenMenu("File", list[0])
         }
 
-        function test_entryReopensAfterToggleSettles() {
-            // The toggle suppression is bounded to the closing click gesture;
-            // a later click opens the menu again.
+        function test_hoverSwitchThenClickKeepsMenuOpen() {
+            // The nested verification hook's exact gesture: open Edit, move
+            // to File (hover switches), then click File — File's menu must
+            // stay open, not toggle closed.
             const list = entries()
-            clickEntry(list[0])
+            clickEntry(list[1])
+            verifyOpenMenu("Edit", list[1])
+            hoverEntry(list[0])
             verifyOpenMenu("File", list[0])
-            clickEntry(list[0])
-            tryCompare(popup(), "opened", false)
-            wait(500)
             clickEntry(list[0])
             verifyOpenMenu("File", list[0])
         }
