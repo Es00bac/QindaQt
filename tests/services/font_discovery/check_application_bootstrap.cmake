@@ -15,16 +15,12 @@ set(application_sources
     "src/apps/terminal/main.cpp"
     "src/apps/text_editor/main.cpp"
 )
-set(call_text
-    "QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();"
-)
-
 foreach(relative_path IN LISTS application_sources)
     set(source_path "${SOURCE_ROOT}/${relative_path}")
     file(READ "${source_path}" content)
 
     string(REGEX MATCHALL
-        "QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings\\(\\)"
+        "QindaQt::Services::FontDiscovery::FontSessionBootstrap::[ \t\r\n]*applyFromSessionSettings\\(\\)"
         calls "${content}"
     )
     list(LENGTH calls call_count)
@@ -34,6 +30,7 @@ foreach(relative_path IN LISTS application_sources)
         )
     endif()
 
+    list(GET calls 0 call_text)
     string(FIND "${content}" "${call_text}" call_position)
     string(REGEX MATCH "Q(Gui)?Application application\\(argc, argv\\);" construction "${content}")
     if(construction STREQUAL "")
