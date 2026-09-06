@@ -22,6 +22,7 @@ private Q_SLOTS:
     void aNewDragResetsTrackedModifiers();
     void noActiveDragNeverTriggers();
     void resizeCallerNeverPassesAnIdentitySoItNeverTriggers();
+    void extraUnrelatedModifierNeverArmsTakeover();
 };
 
 void LateShiftTakeoverDetectorTest::triggersOnlyWhenShiftIsAddedMidDrag()
@@ -112,6 +113,30 @@ void LateShiftTakeoverDetectorTest::resizeCallerNeverPassesAnIdentitySoItNeverTr
     LateShiftTakeoverDetector detector(Qt::MetaModifier | Qt::ShiftModifier);
     QVERIFY(!detector.observe(nullptr, Qt::MetaModifier));
     QVERIFY(!detector.observe(nullptr, Qt::MetaModifier | Qt::ShiftModifier));
+}
+
+void LateShiftTakeoverDetectorTest::extraUnrelatedModifierNeverArmsTakeover()
+{
+    // Regression: a native Meta drag that then gains Ctrl+Shift (an unrelated
+    // accessibility/user chord layered on top of the still-held Meta) must
+    // never arm the takeover, since the resulting modifiers are a superset
+    // of the required Meta+Shift chord, not an exact match - mirroring
+    // InteractionController::pointerBindingMatches's exact equality. A
+    // subset test would wrongly consume this event and cancel/adopt the
+    // native move.
+    LateShiftTakeoverDetector detector(Qt::MetaModifier | Qt::ShiftModifier);
+
+    QVERIFY(!detector.observe(&windowA, Qt::NoModifier));
+    QVERIFY(!detector.observe(&windowA, Qt::MetaModifier));
+    QVERIFY(!detector.observe(&windowA,
+                              Qt::MetaModifier | Qt::ShiftModifier | Qt::ControlModifier));
+    QVERIFY(!detector.observe(&windowA,
+                              Qt::MetaModifier | Qt::ShiftModifier | Qt::ControlModifier));
+
+    // Dropping the unrelated Control modifier down to the exact chord is
+    // still a real, reachable late-Shift-style transition and must fire
+    // normally - the exact-match fix must not break the ordinary case.
+    QVERIFY(detector.observe(&windowA, Qt::MetaModifier | Qt::ShiftModifier));
 }
 
 QTEST_GUILESS_MAIN(LateShiftTakeoverDetectorTest)
