@@ -92,7 +92,9 @@ clipboard fallback may fork `wl-copy`; that process must not keep a captured
 stdout pipe open after the probe exits. Each step has a 120-second deadline,
 and the private namespace owns clipboard-process teardown. `DockWindows`
 replies are decoded from the public `ay` payload, including dbus-python’s
-array-of-bytes representation.
+array-of-bytes representation. KWin’s brace-wrapped UUIDs are normalized to
+Compositor1’s plain window IDs. Content discovery associates descendants with
+their application PID; descendant accessible objects need not repeat that PID.
 
 The inner session sets `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` and installs the
 standard `org.a11y.Bus` activation entry on its private session bus. A

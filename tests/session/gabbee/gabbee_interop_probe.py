@@ -109,12 +109,15 @@ class Probe:
         if accessibility.Atspi is not None:
             atspi = accessibility.Atspi
             root = atspi.get_desktop(0)
-            queue = [root]
+            queue = []
+            for index in range(root.get_child_count()):
+                application = root.get_child_at_index(index)
+                if application is not None and application.get_process_id() == target.pid:
+                    queue.append(application)
             while queue:
                 node = queue.pop(0)
                 try:
-                    if (node.get_process_id() == target.pid
-                            and node.get_role_name().lower() in {"text", "terminal"}
+                    if (node.get_role_name().lower() in {"text", "terminal"}
                             and node.get_state_set().contains(atspi.StateType.SHOWING)):
                         component = node.get_component_iface()
                         if component is not None and component.grab_focus():
@@ -193,7 +196,8 @@ class Probe:
         endpoint = bus.get_object(COMPOSITOR_SERVICE, COMPOSITOR_PATH)
         interface = dbus.Interface(endpoint, "org.qindaqt.Compositor1")
         reply = interface.DockWindows(
-            target_id, incoming_id, "horizontal", "second", dbus.Double(0.5),
+            target_id.strip("{}"), incoming_id.strip("{}"),
+            "horizontal", "second", dbus.Double(0.5),
             timeout=10,
         )
         # Compositor1 returns ay. dbus-python defaults to Array[Byte], not
