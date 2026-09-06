@@ -269,28 +269,20 @@ Item {
         // suppresses clicked() and keyboard activation while disabled, but an
         // AT press has no such gate; the explicit enabled check keeps
         // non-activating entries (disabled actions and empty submenus) honest.
-        // Menu-bar switch contract: clicking the entry whose menu is open
-        // closes it; clicking another entry switches the popup to it. The
-        // toggle is judged at clicked() time against the popup's close record
-        // — delivery order between the press-outside close and this button's
-        // pressed() varies across platforms (and the native popup grab may
-        // swallow the press entirely), so a press-time flag is unreliable.
+        // Menu-bar switch contract: a click on an enabled submenu entry ALWAYS
+        // leaves its menu open — clicking another entry switches the popup to
+        // it, clicking the open entry re-asserts it (never toggles closed, so
+        // no legitimate click is ever dropped regardless of platform delivery
+        // order or whether the native popup grab swallowed the press). Closing
+        // belongs to the popup's own paths: Escape, outside press, focus loss,
+        // choosing an item, or provider churn.
         function pressAction() {
             if (!entry.enabled)
                 return
-            if (entry.isSubmenu) {
-                if (submenuPopup.opened && submenuPopup.anchorItem === entry) {
-                    submenuPopup.close()
-                    return
-                }
-                if (!submenuPopup.opened
-                        && submenuPopup.closedAnchorItem === entry
-                        && (Date.now() - submenuPopup.closedAt) < 400)
-                    return
+            if (entry.isSubmenu)
                 submenuPopup.openMenu(entry.modelData, entry)
-            } else {
+            else
                 root.access.activate(entry.modelData.id, String(entry.modelData.generation ?? ""))
-            }
         }
 
         objectName: "globalMenuTopLevelItem"
