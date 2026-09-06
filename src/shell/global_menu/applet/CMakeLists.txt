@@ -43,13 +43,23 @@ qt_add_qml_module(
     VERSION 1.0
     OUTPUT_DIRECTORY "${QINDAQT_GLOBAL_MENU_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_global_menu.qmltypes
+    SOURCES
+        src/nativepopupplacement.h
+        src/nativepopupplacement.cpp
     QML_FILES
         qml/GlobalMenuApplet.qml
         qml/GlobalMenuPopup.qml
 )
 target_link_libraries(
     qindaqt_global_menu_qml
-    PRIVATE Qt6::Core Qt6::Qml Qt6::Quick Qt6::QuickControls2
+    PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
+)
+# The generated QML type-registration unit includes the QML_ELEMENT header as
+# <nativepopupplacement.h> (shell-icons precedent); expose its directory
+# privately.
+target_include_directories(
+    qindaqt_global_menu_qml
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 set_target_properties(qindaqt_global_menu_qml PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_global_menu_qml)
