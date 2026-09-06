@@ -184,14 +184,25 @@ test, allowing it to target chrome beneath itself while every other covering
 window still blocks the target.
 
 An unmodified right-button press and matching release on the shared outer title,
-or the visible management control in that row, opens a nonblocking group menu.
+a page tab, or a grouped native member title opens the same nonblocking QindaQt
+group menu. The visible management control in the shared row is the keyboard
+and touch-accessible route to that menu.
 Its first actions are **Arrange windows**, **Detach active window**, and
-**Ungroup**. Its remaining live, stable-ID actions cover Keep Above, Keep Below,
+**Ungroup**, followed by **Minimize group**. Minimize uses the existing typed
+whole-container action, so every member is iconified together and activating
+the collapsed task restores the active page without exposing inactive pages.
+The menu's remaining live, stable-ID actions cover Keep Above, Keep Below,
 pinning to all workspaces, individual workspace membership, all or individual
-activities, and moving the group to an output. Native member-title
-right clicks remain KWin's per-window menu. The group menu mutates one current
-representative; the queued whole-group context transaction described in
+activities, and moving the group to an output. These context actions mutate one
+current representative; the queued whole-group transaction described in
 [Hybrid constraints](hybrid-constraints.md) adopts the final state atomically.
+
+An ordinary QindaQt-decorated window also owns its chrome right click. Its menu
+exposes only actions supported by that live window through KDecoration's public
+requests: minimize, maximize or restore, optional roll up or down, workspace
+pinning, always on top or below, and close. Commands run after the popup hides
+so an action that closes or minimizes the window cannot invalidate the open
+menu.
 
 The adjacent title control, or `Meta+Shift+C`, toggles server-drawn member title
 bars for the active group. The choice lasts for the compositor session and is

@@ -152,6 +152,10 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
                    GroupContextMenuCommandKind::DetachActiveWindow, true);
     addGroupAction("Ungroup", QStringLiteral("qindaqt-context-ungroup"),
                    GroupContextMenuCommandKind::Ungroup, false);
+    auto *const minimizeGroup = addGroupAction(
+        "Minimize group", QStringLiteral("qindaqt-context-minimize-group"),
+        GroupContextMenuCommandKind::MinimizeGroup, false);
+    minimizeGroup->setEnabled(state->canMinimize);
     addSeparator();
     auto *const keepAbove = addToggleAction(
         this, menuText("Keep Above"),

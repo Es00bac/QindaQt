@@ -57,6 +57,7 @@ std::optional<GroupContextMenuState> contextState(
 
     GroupContextMenuState state{
         .activeMemberId = {},
+        .canMinimize = window.isMinimizable(),
         .keepAbove = window.keepAbove(),
         .keepBelow = window.keepBelow(),
         .pinnedToAllWorkspaces = window.isOnAllDesktops(),
@@ -114,6 +115,7 @@ bool applyContextCommand(
     case GroupContextMenuCommandKind::ArrangeWindows:
     case GroupContextMenuCommandKind::DetachActiveWindow:
     case GroupContextMenuCommandKind::Ungroup:
+    case GroupContextMenuCommandKind::MinimizeGroup:
         return fail(error, QStringLiteral("group action requires session policy"));
     case GroupContextMenuCommandKind::SetKeepAbove:
         window.setKeepAbove(command.enabled);
@@ -193,6 +195,13 @@ void KWinHybridSession::initializeGroupContextMenu()
             if (!state) {
                 return std::nullopt;
             }
+            const auto memberIds = m_runtime->topology().windowIds(containerId);
+            state->canMinimize = !memberIds.isEmpty()
+                && std::all_of(memberIds.cbegin(), memberIds.cend(),
+                               [this](const QString &windowId) {
+                                   const auto *window = m_registry.window(windowId);
+                                   return window && window->isMinimizable();
+                               });
             const QString activeId = m_registry.windowId(
                 KWin::workspace()->activeWindow());
             state->activeMemberId =
@@ -213,6 +222,20 @@ void KWinHybridSession::initializeGroupContextMenu()
                 return detachNativeMember(containerId, command.destinationId, error);
             case GroupContextMenuCommandKind::Ungroup:
                 return ungroupContainer(containerId, error);
+            case GroupContextMenuCommandKind::MinimizeGroup: {
+                const auto memberIds = m_runtime->topology().windowIds(containerId);
+                if (memberIds.isEmpty()
+                    || !std::all_of(memberIds.cbegin(), memberIds.cend(),
+                                    [this](const QString &windowId) {
+                                        const auto *window = m_registry.window(windowId);
+                                        return window && window->isMinimizable();
+                                    })) {
+                    return fail(error,
+                                QStringLiteral("group can no longer be minimized"));
+                }
+                return dispatchGroupWindowAction(
+                    containerId, HybridChrome::WindowAction::Minimize, error);
+            }
             default:
                 break;
             }

@@ -3,6 +3,7 @@
 
 #include "qindabutton.h"
 #include "qindadecorationvisuals.h"
+#include "qindawindowcontextmenu.h"
 
 #include <KDecoration3/DecoratedWindow>
 #include <KDecoration3/DecorationButtonGroup>
@@ -11,10 +12,14 @@
 
 #include <QDynamicPropertyChangeEvent>
 #include <QFontMetricsF>
+#include <QLineF>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPen>
+
+#include <utility>
 
 K_PLUGIN_FACTORY_WITH_JSON(
     QindaDecorationFactory,
@@ -43,6 +48,7 @@ bool QindaDecoration::memberFocusMaximized() const
 bool QindaDecoration::init()
 {
     createButtons();
+    createContextMenu();
     m_initialized = true;
     updateGeometry();
 
@@ -59,6 +65,40 @@ bool QindaDecoration::init()
     connect(window(), &KDecoration3::DecoratedWindow::scaleChanged,
             this, &QindaDecoration::updateGeometry);
     return true;
+}
+
+void QindaDecoration::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_contextPressPosition.has_value()) {
+        event->accept();
+        return;
+    }
+    KDecoration3::Decoration::mouseMoveEvent(event);
+}
+
+void QindaDecoration::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::RightButton) {
+        m_contextPressPosition = event->position();
+        event->accept();
+        return;
+    }
+    m_contextPressPosition.reset();
+    KDecoration3::Decoration::mousePressEvent(event);
+}
+
+void QindaDecoration::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::RightButton
+        && m_contextPressPosition.has_value()) {
+        const auto pressedAt = std::exchange(m_contextPressPosition, std::nullopt);
+        if (QLineF(*pressedAt, event->position()).length() <= 8.0) {
+            showContextMenu(event->position());
+        }
+        event->accept();
+        return;
+    }
+    KDecoration3::Decoration::mouseReleaseEvent(event);
 }
 
 bool QindaDecoration::event(QEvent *event)
@@ -153,6 +193,58 @@ void QindaDecoration::createButtons()
             m_leftButtons->addButton(button);
         }
     }
+}
+
+void QindaDecoration::createContextMenu()
+{
+    m_contextMenu = std::make_unique<QindaWindowContextMenu>(
+        [this](WindowContextCommand command) {
+            switch (command) {
+            case WindowContextCommand::Minimize:
+                requestMinimize();
+                break;
+            case WindowContextCommand::ToggleMaximized:
+                requestToggleMaximization(Qt::LeftButton);
+                break;
+            case WindowContextCommand::ToggleShaded:
+                requestToggleShade();
+                break;
+            case WindowContextCommand::ToggleAllWorkspaces:
+                requestToggleOnAllDesktops();
+                break;
+            case WindowContextCommand::ToggleKeepAbove:
+                requestToggleKeepAbove();
+                break;
+            case WindowContextCommand::ToggleKeepBelow:
+                requestToggleKeepBelow();
+                break;
+            case WindowContextCommand::Close:
+                requestClose();
+                break;
+            }
+        });
+}
+
+void QindaDecoration::showContextMenu(const QPointF &position)
+{
+    if (!m_contextMenu) {
+        return;
+    }
+    m_contextMenu->prepare({
+        .canMinimize = window()->isMinimizeable(),
+        .canMaximize = window()->isMaximizeable(),
+        .maximized = window()->isMaximized(),
+        .canShade = window()->isShadeable(),
+        .shaded = window()->isShaded(),
+        .onAllWorkspaces = window()->isOnAllDesktops(),
+        .keepAbove = window()->isKeepAbove(),
+        .keepBelow = window()->isKeepBelow(),
+        .canClose = window()->isCloseable(),
+    });
+
+    KDecoration3::Positioner positioner;
+    positioner.setAnchorRect(QRectF(position, QSizeF(1.0, 1.0)));
+    popup(positioner, m_contextMenu.get());
 }
 
 void QindaDecoration::updateGeometry()

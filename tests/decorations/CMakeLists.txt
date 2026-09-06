@@ -20,3 +20,16 @@ target_link_libraries(
 )
 qindaqt_enable_warnings(qindaqt_decoration_visual_tests)
 add_test(NAME hybrid.decoration-visuals COMMAND qindaqt_decoration_visual_tests)
+
+qt_add_executable(qindaqt_window_context_menu_tests tst_windowcontextmenu.cpp)
+target_link_libraries(
+    qindaqt_window_context_menu_tests
+    PRIVATE
+        Qt6::Test
+        qindaqt_decoration_context_menu
+)
+qindaqt_enable_warnings(qindaqt_window_context_menu_tests)
+add_test(NAME hybrid.window-context-menu COMMAND qindaqt_window_context_menu_tests)
+set_tests_properties(hybrid.window-context-menu PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

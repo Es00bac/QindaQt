@@ -26,6 +26,7 @@ struct GroupContextMenuDestination final
 struct GroupContextMenuState final
 {
     QString activeMemberId;
+    bool canMinimize = true;
     bool keepAbove = false;
     bool keepBelow = false;
     bool pinnedToAllWorkspaces = false;
@@ -39,6 +40,7 @@ enum class GroupContextMenuCommandKind {
     ArrangeWindows,
     DetachActiveWindow,
     Ungroup,
+    MinimizeGroup,
     SetKeepAbove,
     SetKeepBelow,
     SetPinnedToAllWorkspaces,

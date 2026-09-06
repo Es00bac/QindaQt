@@ -7,13 +7,19 @@
 #include <QPalette>
 #include <QVariantList>
 
+#include <memory>
+#include <optional>
+
 class QEvent;
+class QMouseEvent;
 
 namespace KDecoration3 {
 class DecorationButtonGroup;
 }
 
 namespace QindaQt::Decoration {
+
+class QindaWindowContextMenu;
 
 class QindaDecoration final : public KDecoration3::Decoration
 {
@@ -39,8 +45,15 @@ public:
 public Q_SLOTS:
     void updateControlHover();
 
+protected:
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+
 private:
     void createButtons();
+    void createContextMenu();
+    void showContextMenu(const QPointF &position);
     void updateGeometry();
     void updateVisualStyle();
     [[nodiscard]] QColor titleColor() const;
@@ -50,6 +63,8 @@ private:
                                       QPalette::ColorGroup group) const;
 
     KDecoration3::DecorationButtonGroup *m_leftButtons = nullptr;
+    std::unique_ptr<QindaWindowContextMenu> m_contextMenu;
+    std::optional<QPointF> m_contextPressPosition;
     bool m_controlsHovered = false;
     bool m_initialized = false;
 };

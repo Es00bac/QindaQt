@@ -118,6 +118,10 @@ Pointer input reaches Hybrid policy through three deliberately separate paths:
 - A compositor-side `HybridChromePointerRouter` owns ordinary left-button
   controls, tabs, dividers, outer-title moves, and outer-edge resizes. It uses
   Qt's configured drag threshold and leaves modified presses untouched.
+- The same router owns unmodified right-button context requests on shared
+  outer titles, tabs, and grouped native member titles. They all open the
+  QindaQt group menu; ordinary decorated windows use the QindaQt decoration
+  menu through KDecoration's public action requests.
 - A plain left-button drag on a preserved member title falls through to its
   native KDecoration/KWin move. When KWin begins the interactive move, member
   policy atomically detaches that member; KWin then continues the same move with
@@ -316,10 +320,12 @@ adoption cannot be made atomic. If release also fails, persistent chrome
 quarantine blocks rendering and pointer access across later synchronization
 until the group disappears or a subsequent atomic adoption proves it coherent.
 
-The outer-title context menu intentionally mutates only the current task
-representative. Its Keep Above/Below, pin/workspace, activity, and Move to
+The group context menu reached from the outer title, a page tab, or a grouped
+member title intentionally mutates only the current task representative for
+context adoption. Its Keep Above/Below, pin/workspace, activity, and Move to
 Output actions therefore share this same queued adoption path instead of
-maintaining a second group-state implementation. Destination IDs and the
+maintaining a second group-state implementation. Its Minimize group entry uses
+the existing typed whole-container window action. Destination IDs and the
 representative are read live and revalidated because topology, virtual
 desktops, activities, or outputs may change while the menu is open.
 

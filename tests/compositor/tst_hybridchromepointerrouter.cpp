@@ -98,8 +98,7 @@ void HybridChromePointerRouterTests::passesNativeMemberClientAndModifierPresses(
     QVERIFY(decision.containerRaiseRequests.isEmpty());
     QVERIFY(!router.active());
 
-    resolved = hit(HybridChrome::HitKind::MemberTitleDrag,
-                   QStringLiteral("window-a"));
+    resolved = hit(HybridChrome::HitKind::Client);
     decision = router.pointerPress(
         pointer({30.0, 30.0}, Qt::RightButton, Qt::RightButton));
     QVERIFY(!decision.consumed);
@@ -147,6 +146,20 @@ void HybridChromePointerRouterTests::routesOuterTitleContextMenuOnMatchingRightR
     QVERIFY(decision.consumed);
     QVERIFY(decision.contextMenus.isEmpty());
     QVERIFY(!router.active());
+
+    for (const auto kind : {HybridChrome::HitKind::MemberTitleDrag,
+                            HybridChrome::HitKind::Tab}) {
+        resolved = hit(kind, kind == HybridChrome::HitKind::MemberTitleDrag
+                                 ? QStringLiteral("window-a")
+                                 : QStringLiteral("page-a"));
+        QVERIFY(router.pointerPress(
+            pointer({60.0, 30.0}, Qt::RightButton, Qt::RightButton)).consumed);
+        decision = router.pointerRelease(
+            pointer({60.0, 30.0}, Qt::RightButton, {}));
+        QCOMPARE(decision.contextMenus,
+                 QVector<ChromeContextMenuRequest>({
+                     {QStringLiteral("container-a"), QPointF(60.0, 30.0)}}));
+    }
 }
 
 void HybridChromePointerRouterTests::activatesClicksWithoutAlsoCommittingDrags()
