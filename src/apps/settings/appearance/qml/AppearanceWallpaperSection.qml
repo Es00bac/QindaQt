@@ -29,6 +29,19 @@ ColumnLayout {
         root.appearanceSettings.setDraftValue(key, value)
     }
 
+    function previewSource() {
+        if (!root.selectedWallpaper.startsWith("qindaqt:")) {
+            return root.selectedWallpaper
+        }
+        const wallpapers = root.appearanceSettings.bundledWallpapers ?? []
+        for (let index = 0; index < wallpapers.length; ++index) {
+            if (wallpapers[index].value === root.selectedWallpaper) {
+                return wallpapers[index].previewUrl
+            }
+        }
+        return ""
+    }
+
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Wallpaper")
@@ -41,7 +54,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 150
         visible: root.selectedWallpaper.length > 0
-        source: root.selectedWallpaper.startsWith("qindaqt:") ? "" : root.selectedWallpaper
+        source: root.previewSource()
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         Accessible.name: qsTr("Selected wallpaper preview")

@@ -43,6 +43,42 @@ T.Page {
         })
     }
 
+    Keys.priority: Keys.BeforeItem
+    Keys.onPressed: event => {
+        const pageStep = Math.max(1, formViewport.height - Tokens.space["5"])
+        if (event.key === Qt.Key_PageDown) {
+            formViewport.contentY = Math.min(
+                        Math.max(0, formViewport.contentHeight - formViewport.height),
+                        formViewport.contentY + pageStep)
+            event.accepted = true
+        } else if (event.key === Qt.Key_PageUp) {
+            formViewport.contentY = Math.max(0, formViewport.contentY - pageStep)
+            event.accepted = true
+        } else if (event.key === Qt.Key_Home
+                   && (event.modifiers & Qt.ControlModifier)) {
+            formViewport.contentY = 0
+            event.accepted = true
+        } else if (event.key === Qt.Key_End
+                   && (event.modifiers & Qt.ControlModifier)) {
+            formViewport.contentY = Math.max(
+                        0, formViewport.contentHeight - formViewport.height)
+            event.accepted = true
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Home"
+        enabled: root.visible
+        onActivated: formViewport.contentY = 0
+    }
+
+    Shortcut {
+        sequence: "Ctrl+End"
+        enabled: root.visible
+        onActivated: formViewport.contentY = Math.max(
+                         0, formViewport.contentHeight - formViewport.height)
+    }
+
     background: Rectangle {
         color: Tokens.bg.base
     }
@@ -205,6 +241,43 @@ T.Page {
                         Accessible.name: qsTr("Appearance settings scroll position")
                     }
 
+                    function revealItem(focusedItem) {
+                        if (focusedItem === null || focusedItem === undefined
+                                || focusedItem === formViewport) {
+                            return
+                        }
+                        let cursor = focusedItem
+                        let belongsToForm = false
+                        while (cursor !== null && cursor !== undefined) {
+                            if (cursor === sectionLoader.item) {
+                                belongsToForm = true
+                                break
+                            }
+                            cursor = cursor.parent
+                        }
+                        if (!belongsToForm) {
+                            return
+                        }
+                        const position = focusedItem.mapToItem(sectionLoader.item, 0, 0)
+                        const margin = Tokens.space["2"]
+                        const top = position.y - margin
+                        const bottom = position.y + focusedItem.height + margin
+                        if (top < contentY) {
+                            contentY = Math.max(0, top)
+                        } else if (bottom > contentY + height) {
+                            contentY = Math.min(Math.max(0, contentHeight - height),
+                                                bottom - height)
+                        }
+                    }
+
+                    function revealActiveFocus() {
+                        if (root.Window.window !== null) {
+                            revealItem(root.Window.window.activeFocusItem)
+                        }
+                    }
+
+                    onHeightChanged: Qt.callLater(revealActiveFocus)
+
                     Loader {
                         id: sectionLoader
                         objectName: "appearanceDestinationPage_" + root.currentDestination
@@ -212,6 +285,14 @@ T.Page {
                         sourceComponent: root.currentDestination === "themes" ? themesPage
                             : root.currentDestination === "wallpaper" ? wallpaperPage
                             : fontsPage
+                    }
+                }
+
+                Connections {
+                    target: root.Window.window
+                    enabled: root.Window.window !== null
+                    function onActiveFocusItemChanged() {
+                        formViewport.revealActiveFocus()
                     }
                 }
             }

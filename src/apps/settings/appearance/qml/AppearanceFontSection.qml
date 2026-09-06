@@ -53,6 +53,10 @@ ColumnLayout {
             Accessible.role: Accessible.ComboBox
             Accessible.name: qsTr("Font family")
             Accessible.description: qsTr("Installed font families; type a family name to search")
+            // Keep an in-progress typed family in the shared draft even when
+            // focus moves before Enter. Selection still uses onActivated.
+            onEditTextChanged: if (activeFocus)
+                                   root.setDraft("fonts.family", editText)
             onActivated: index => root.setDraft("fonts.family", currentText)
             onAccepted: root.setDraft("fonts.family", editText)
         }
