@@ -11,6 +11,7 @@ namespace QindaQt::Services::SettingsClient {
 class SettingsClient;
 }
 namespace QindaQt::Shell {
+class ShortcutNoteController;
 class WallpaperController final : public QObject {
   Q_OBJECT
 public:
@@ -19,6 +20,12 @@ public:
                       QStringList dataRoots, QObject *parent = nullptr);
   ~WallpaperController() override;
   void start();
+
+  // Lends the desktop shortcut-note controller (ADR-0084) its presentation
+  // slot: every per-output background window created afterwards hosts one
+  // note card. The note controller is QObject-parented to this controller and
+  // must outlive `start()`; ownership is not transferred here.
+  void setShortcutNote(ShortcutNoteController *note);
 
 private:
   void applySnapshot();
@@ -31,5 +38,6 @@ private:
   QHash<QScreen *, QQuickWindow *> m_windows;
   QString m_source;
   QString m_mode{QStringLiteral("scaled")};
+  ShortcutNoteController *m_shortcutNote = nullptr;
 };
 } // namespace QindaQt::Shell

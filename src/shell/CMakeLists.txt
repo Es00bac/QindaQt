@@ -201,6 +201,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellpreferencevalues.h
         runtime/shellstartuppreferences.cpp
         runtime/shellstartuppreferences.h
+        runtime/shortcutnotecontroller.cpp
+        runtime/shortcutnotecontroller.h
+        runtime/shortcutnoteshortcut.cpp
+        runtime/shortcutnoteshortcut.h
         runtime/wallpapercontroller.cpp
         runtime/wallpapercontroller.h
         runtime/tasklistappletcomposition.cpp
@@ -229,6 +233,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/PanelAppletColumn.qml
             qml/PanelAppletRow.qml
             qml/PanelContent.qml
+            qml/ShortcutNoteCard.qml
             qml/RuntimePanel.qml
         DEPENDENCIES
             TARGET qindaqt_shell_launcher_qml

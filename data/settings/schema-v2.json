@@ -322,6 +322,12 @@
       "domain": "services",
       "type": "boolean",
       "default": false
+    },
+    {
+      "key": "shell.shortcutNoteDismissed",
+      "domain": "shell",
+      "type": "boolean",
+      "default": false
     }
   ]
 }

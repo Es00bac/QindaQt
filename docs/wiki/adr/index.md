@@ -90,3 +90,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0082: Publish the current session activation environment](0082-publish-session-activation-environment.md)
 - [ADR-0083: Apply saved color profiles through public output management](0083-apply-saved-color-profiles-through-public-output-management.md)
+
+- [ADR-0084: Own the desktop shortcut note on wallpaper surfaces](0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md)

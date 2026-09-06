@@ -52,6 +52,19 @@ See [applet runtime](../shell/applet-runtime.md), [panel surfaces](../shell/pane
 [visibility](../shell/panel-visibility.md), and the [complete documentation
 catalog](catalog/reading.md) for each component's focused page.
 
+## Desktop shortcut note
+
+The first desktop shows a compact pinned cheat sheet — the QindaQt gesture
+defaults — in the primary output's usable area. `Meta+F1` hides or shows it,
+and the **Got it** button dismisses it; a dismissal persists through Settings1
+so the note stays away on later sessions until `Meta+F1` brings it back. The
+card lists only shipped defaults (`Meta+Shift` left-drag combines windows,
+`Meta+Shift+D` enters docking mode, `Escape` cancels, `Enter` confirms), never
+unfinished actions. It is part of the desktop background: it never appears in
+the task list and never takes keyboard focus. See
+[ADR-0084](../adr/0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md)
+for the exact surface, persistence, and registration contract.
+
 ## Notifications and interruptions
 
 `Meta+N` is the shell-owned notification-center action. Do Not Disturb suppresses

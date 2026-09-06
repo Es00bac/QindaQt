@@ -2,6 +2,7 @@
 #include "wallpapercontroller.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "shellpreferencevalues.h"
+#include "shortcutnotecontroller.h"
 #include <LayerShellQt/Window>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -61,6 +62,9 @@ void WallpaperController::reconcile() {
     if (!m_windows.contains(screen))
       createWindow(screen);
 }
+void WallpaperController::setShortcutNote(ShortcutNoteController *note) {
+  m_shortcutNote = note;
+}
 void WallpaperController::createWindow(QScreen *screen) {
   QQmlComponent component(&m_engine);
   component.setData(R"QML(import QtQuick
@@ -110,5 +114,8 @@ Window {
   layer->setDesiredSize(QSize(0, 0));
   raw->show();
   m_windows.insert(screen, raw);
+  if (m_shortcutNote) {
+    m_shortcutNote->attachToWindow(*raw, screen->name());
+  }
 }
 } // namespace QindaQt::Shell
