@@ -182,6 +182,12 @@ complete outer frame. Close opens a nonblocking **Close All**, **Ungroup**, or
 **Cancel** prompt; cancel is the default and escape action. Ungroup uses the
 same atomic release path as detach and teardown.
 
+An AppAppearance controller owned once by the compositor projects each confirmed
+theme into both grouped chrome plans and native Qinda decorations. The native
+handoff is process-local and reapplied after decoration recreation; other
+decorations continue to use their KDecoration window palette. See
+[ADR-0081](../adr/0081-project-confirmed-appearance-into-window-chrome.md).
+
 Member decoration buttons continue to invoke KWin's per-window actions. An
 active-page member's maximize or fullscreen request enters temporary focus mode
 without changing the page tree: other group members and shared chrome hide,

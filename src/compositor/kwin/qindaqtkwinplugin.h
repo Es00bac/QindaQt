@@ -22,6 +22,7 @@ class KWinDevelopmentOutputSeam;
 class KWinInputAdapter;
 class KWinOutputInventory;
 class KWinHybridSession;
+class KWinChromeAppearance;
 class KWinSceneAdapter;
 class KWinShellVisibilityPublisher;
 class KWinShellWindowIdentityPublisher;
@@ -53,6 +54,7 @@ private:
     std::unique_ptr<ManagedWindowRegistry> m_registry;
     std::unique_ptr<KWinOutputInventory> m_outputInventory;
     std::unique_ptr<KWinShellVisibilityPublisher> m_shellVisibility;
+    std::unique_ptr<KWinChromeAppearance> m_chromeAppearance;
     std::unique_ptr<KWinHybridSession> m_hybridSession;
     std::unique_ptr<KWinShellWindowIdentityPublisher> m_shellIdentity;
     std::unique_ptr<KWinShellTaskFactsPublisher> m_shellTaskFacts;

@@ -11,6 +11,7 @@
 #include <QFontMetricsF>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPalette>
 #include <QPen>
 
 K_PLUGIN_FACTORY_WITH_JSON(
@@ -50,6 +51,8 @@ bool QindaDecoration::init()
             this, qOverload<>(&QindaDecoration::update));
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged,
             this, qOverload<>(&QindaDecoration::update));
+    connect(window(), &KDecoration3::DecoratedWindow::paletteChanged,
+            this, qOverload<>(&QindaDecoration::update));
     connect(window(), &KDecoration3::DecoratedWindow::scaleChanged,
             this, &QindaDecoration::updateGeometry);
     return true;
@@ -72,7 +75,10 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
     painter->fillPath(titlePath, titleColor());
     painter->fillRect(QRectF(0.0, borderTop() - radius,
                              size().width(), radius), titleColor());
-    painter->setPen(QPen(QColor(QStringLiteral("#82958e")), 0.75));
+    painter->setPen(QPen(paletteColor("border", QPalette::Mid,
+                                     window()->isActive() ? QPalette::Active
+                                                          : QPalette::Inactive),
+                         0.75));
     painter->drawLine(QPointF(0.0, borderTop() - 0.5),
                       QPointF(size().width(), borderTop() - 0.5));
 
@@ -152,14 +158,40 @@ void QindaDecoration::updateGeometry()
 
 QColor QindaDecoration::titleColor() const
 {
-    return window()->isActive() ? QColor(QStringLiteral("#e8f1ee"))
-                                : QColor(QStringLiteral("#d7e1de"));
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    return paletteColor(window()->isActive() ? "surfaceRaised" : "surface",
+                        QPalette::Window, group);
 }
 
 QColor QindaDecoration::textColor() const
 {
-    return window()->isActive() ? QColor(QStringLiteral("#17231f"))
-                                : QColor(QStringLiteral("#60716c"));
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    return paletteColor(window()->isActive() ? "text" : "textMuted",
+                        QPalette::WindowText, group);
+}
+
+QColor QindaDecoration::paletteColor(const char *key,
+                                     QPalette::ColorRole fallbackRole,
+                                     QPalette::ColorGroup group) const
+{
+    const auto map = property("qindaqtChromePalette").toMap();
+    const auto color = map.value(QString::fromLatin1(key)).value<QColor>();
+    return color.isValid() ? color : window()->palette().color(group, fallbackRole);
+}
+
+QColor QindaDecoration::buttonColor(KDecoration3::DecorationButtonType type) const
+{
+    const char *key = type == KDecoration3::DecorationButtonType::Close ? "close"
+        : type == KDecoration3::DecorationButtonType::Minimize ? "minimize"
+                                                               : "maximize";
+    return paletteColor(key, QPalette::Button,
+                        window()->isActive() ? QPalette::Active : QPalette::Inactive);
+}
+
+QColor QindaDecoration::buttonGlyphColor(KDecoration3::DecorationButtonType type) const
+{
+    const QColor fill = buttonColor(type);
+    return qGray(fill.rgb()) >= 128 ? QColor(Qt::black) : QColor(Qt::white);
 }
 
 } // namespace QindaQt::Decoration

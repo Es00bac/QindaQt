@@ -79,6 +79,7 @@ public:
         const QString &windowId,
         ShellWindowAction action,
         QString *error = nullptr);
+    void setChromePalette(const HybridChrome::ChromePalette &palette);
 
     // Idempotent. Restores every Hybrid-owned client before destroying scene,
     // chrome, input, and shortcut collaborators.
@@ -178,6 +179,7 @@ private:
     std::unique_ptr<KWinInteractionFilter> m_inputFilter;
     std::unique_ptr<HybridShortcutManager> m_shortcuts;
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;
+    HybridChrome::ChromePalette m_chromePalette;
     QSet<QString> m_minimizedContainers;
     QString m_lastGroupStackingFailure;
     bool m_synchronizingChrome = false;

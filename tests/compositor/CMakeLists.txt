@@ -40,6 +40,21 @@ target_link_libraries(
 )
 add_test(NAME compositor.transaction-bridge COMMAND qindaqt_compositor_bridge_tests)
 
+if(TARGET QindaQt::HybridChrome)
+    qt_add_executable(qindaqt_chrome_appearance_palette_tests
+        tst_chromeappearancepalette.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/chromeappearancepalette.cpp"
+    )
+    target_include_directories(qindaqt_chrome_appearance_palette_tests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin")
+    target_compile_definitions(qindaqt_chrome_appearance_palette_tests PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    target_link_libraries(qindaqt_chrome_appearance_palette_tests PRIVATE
+        QindaQt::HybridChrome qindaqt_themes Qt6::Test)
+    add_test(NAME compositor.chrome-appearance-palette
+        COMMAND qindaqt_chrome_appearance_palette_tests)
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")
 
 qt_add_executable(

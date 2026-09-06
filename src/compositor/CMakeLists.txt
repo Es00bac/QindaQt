@@ -307,6 +307,10 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridinteraction.cpp
             kwin/kwinhybridsession.cpp
             kwin/kwinhybridsession.h
+            kwin/chromeappearancepalette.cpp
+            kwin/chromeappearancepalette.h
+            kwin/kwinchromeappearance.cpp
+            kwin/kwinchromeappearance.h
             kwin/kwinhybridshutdown.cpp
             kwin/kwinhybridshutdown.h
             kwin/kwinhybridtaskidentity.cpp
@@ -347,6 +351,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::HybridChrome
             QindaQt::HybridConstraints
             QindaQt::HybridInput
+            QindaQt::AppAppearance
             qindaqt_container_close_prompt
             qindaqt_group_context_menu
             qindaqt_kwin_development_input

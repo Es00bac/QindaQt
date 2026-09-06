@@ -60,11 +60,11 @@ HybridConstraints::LayoutMetrics sceneMetrics()
     };
 }
 
-HybridChromePlanOptions chromePlanOptions()
+HybridChromePlanOptions chromePlanOptions(const HybridChrome::ChromePalette &palette)
 {
     HybridChromePlanOptions options;
     options.metrics = chromeMetrics();
-    options.style = HybridChrome::ChromeStyle::qindaMacOS({});
+    options.style = HybridChrome::ChromeStyle::qindaMacOS(palette);
     return options;
 }
 
@@ -263,6 +263,12 @@ KWinHybridSession::~KWinHybridSession()
     shutdown();
 }
 
+void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &palette)
+{
+    m_chromePalette = palette;
+    synchronizeChrome();
+}
+
 void KWinHybridSession::shutdown() noexcept
 {
     if (m_shutdown) {
@@ -440,7 +446,7 @@ void KWinHybridSession::synchronizeChrome()
         m_inputFilter->invalidateChromeTargets();
     }
     KWinChromeManager::ChromePlanMap plans;
-    const auto optionsTemplate = chromePlanOptions();
+    const auto optionsTemplate = chromePlanOptions(m_chromePalette);
     QString error;
     for (const auto &containerId : m_runtime->topology().containerIds()) {
         const auto *container = m_runtime->topology().container(containerId);
