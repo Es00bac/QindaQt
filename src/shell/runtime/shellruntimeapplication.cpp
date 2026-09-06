@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellruntimeapplication.h"
+#include "wallpapercontroller.h"
 
 #include "../common/catalogpaths.h"
 #include "../common/shelltokenpublisher.h"
