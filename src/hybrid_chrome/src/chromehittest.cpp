@@ -31,7 +31,8 @@ ChromeHitTarget resizeHit(const ChromeRenderPlan &plan, const QPointF &position)
     }
     return edges == Qt::Edges{}
         ? ChromeHitTarget{}
-        : ChromeHitTarget{HitKind::OuterResize, plan.containerId, -1, std::nullopt, edges};
+        : ChromeHitTarget{HitKind::OuterResize, plan.containerId, -1,
+                          std::nullopt, edges, std::nullopt};
 }
 
 } // namespace
@@ -42,7 +43,13 @@ ChromeHitTarget ChromeHitTester::hitTest(const ChromeRenderPlan &plan,
     for (const auto &button : plan.buttons) {
         if (button.rect.contains(logicalPosition)) {
             return {HitKind::WindowButton, plan.containerId, -1,
-                    std::optional<WindowAction>(button.action), {}};
+                    std::optional<WindowAction>(button.action), {}, std::nullopt};
+        }
+    }
+    for (const auto &control : plan.controls) {
+        if (control.rect.contains(logicalPosition)) {
+            return {HitKind::ContainerControl, plan.containerId, -1,
+                    std::nullopt, {}, control.control};
         }
     }
     if (const auto resize = resizeHit(plan, logicalPosition); resize.isInteractive()) {
@@ -53,24 +60,28 @@ ChromeHitTarget ChromeHitTester::hitTest(const ChromeRenderPlan &plan,
     }
     for (const auto &tab : plan.tabs) {
         if (tab.rect.contains(logicalPosition)) {
-            return {HitKind::Tab, tab.tabId, tab.logicalIndex, std::nullopt, {}};
+            return {HitKind::Tab, tab.tabId, tab.logicalIndex, std::nullopt, {},
+                    std::nullopt};
         }
     }
     for (const auto &divider : plan.dividers) {
         if (divider.hitRect.contains(logicalPosition)) {
-            return {HitKind::Divider, divider.dividerId, -1, std::nullopt, {}};
+            return {HitKind::Divider, divider.dividerId, -1, std::nullopt, {},
+                    std::nullopt};
         }
     }
     for (const auto &member : plan.members) {
         if (member.titleDragRect.contains(logicalPosition)) {
-            return {HitKind::MemberTitleDrag, member.memberId, -1, std::nullopt, {}};
+            return {HitKind::MemberTitleDrag, member.memberId, -1, std::nullopt, {},
+                    std::nullopt};
         }
     }
     if (plan.outerTitleDragRect.contains(logicalPosition)) {
-        return {HitKind::OuterTitleDrag, plan.containerId, -1, std::nullopt, {}};
+        return {HitKind::OuterTitleDrag, plan.containerId, -1, std::nullopt, {},
+                std::nullopt};
     }
     if (plan.contentRect.contains(logicalPosition)) {
-        return {HitKind::Client, {}, -1, std::nullopt, {}};
+        return {HitKind::Client, {}, -1, std::nullopt, {}, std::nullopt};
     }
     return {};
 }

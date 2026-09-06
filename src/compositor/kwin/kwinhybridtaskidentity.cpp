@@ -125,7 +125,35 @@ void KWinHybridSession::initializeTaskIdentityAndShortcuts()
         .restoreGroup = [this] {
             dispatchSemanticShortcut(HybridSemanticCommand::RestoreGroup);
         },
+        .toggleMemberChrome = [this] { toggleActiveMemberChrome(); },
     });
+}
+
+void KWinHybridSession::toggleActiveMemberChrome()
+{
+    if (!ready()) {
+        return;
+    }
+    const QString activeWindowId = m_registry.windowId(
+        KWin::workspace()->activeWindow());
+    const auto owner = m_runtime->topology().ownerOf(activeWindowId);
+    if (!owner) {
+        qWarning("QindaQt native title toggle requires an active grouped window");
+        return;
+    }
+    QString error;
+    const HybridSemanticRequest request{
+        .kind = HybridSemanticRequestKind::ContainerControl,
+        .containerId = *owner,
+        .pageId = {},
+        .destinationPageIndex = -1,
+        .dockSource = {},
+        .windowAction = std::nullopt,
+        .containerControl = HybridChrome::ContainerControl::ToggleMemberTitles,
+    };
+    if (!dispatchSemanticRequest(request, &error)) {
+        qWarning("QindaQt native title toggle failed: %s", qPrintable(error));
+    }
 }
 
 void KWinHybridSession::dispatchSemanticShortcut(HybridSemanticCommand command)
@@ -208,6 +236,11 @@ bool KWinHybridSession::dispatchSemanticRequest(
                                    HybridChrome::WindowAction action,
                                    QString *handlerError) {
             return dispatchGroupWindowAction(containerId, action, handlerError);
+        },
+        .containerControl = [this](const QString &containerId,
+                                   HybridChrome::ContainerControl control,
+                                   QString *handlerError) {
+            return dispatchContainerControl(containerId, control, handlerError);
         },
     });
     return dispatcher.dispatch(request, error);

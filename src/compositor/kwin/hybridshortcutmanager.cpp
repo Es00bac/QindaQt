@@ -69,6 +69,8 @@ const std::function<void()> &triggerFor(const HybridShortcutTriggers &triggers,
         return triggers.maximizeGroup;
     case HybridShortcutAction::RestoreGroup:
         return triggers.restoreGroup;
+    case HybridShortcutAction::ToggleMemberChrome:
+        return triggers.toggleMemberChrome;
     case HybridShortcutAction::Count:
         break;
     }
@@ -105,6 +107,8 @@ QString actionText(HybridShortcutAction action)
         return QStringLiteral("Maximize the active QindaQt window group");
     case HybridShortcutAction::RestoreGroup:
         return QStringLiteral("Restore the active QindaQt window group");
+    case HybridShortcutAction::ToggleMemberChrome:
+        return QStringLiteral("Show or hide native titles in the active QindaQt window group");
     case HybridShortcutAction::Count:
         return {};
     }
@@ -167,6 +171,8 @@ QKeySequence HybridShortcutManager::defaultShortcut(HybridShortcutAction action)
         return QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_X);
     case HybridShortcutAction::RestoreGroup:
         return QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_U);
+    case HybridShortcutAction::ToggleMemberChrome:
+        return QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_C);
     case HybridShortcutAction::Count:
         return {};
     }
@@ -202,6 +208,8 @@ QString HybridShortcutManager::stableActionId(HybridShortcutAction action)
         return QStringLiteral("qindaqt_keyboard_maximize_group");
     case HybridShortcutAction::RestoreGroup:
         return QStringLiteral("qindaqt_keyboard_restore_group");
+    case HybridShortcutAction::ToggleMemberChrome:
+        return QStringLiteral("qindaqt_keyboard_toggle_member_chrome");
     case HybridShortcutAction::Count:
         return {};
     }
@@ -277,6 +285,11 @@ QAction *HybridShortcutManager::keyboardMaximizeGroupAction() const noexcept
 QAction *HybridShortcutManager::keyboardRestoreGroupAction() const noexcept
 {
     return action(HybridShortcutAction::RestoreGroup);
+}
+
+QAction *HybridShortcutManager::keyboardToggleMemberChromeAction() const noexcept
+{
+    return action(HybridShortcutAction::ToggleMemberChrome);
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

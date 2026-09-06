@@ -13,6 +13,7 @@ and divider axes. It returns an owned render plan with:
 - one compact shared row that combines outer title/tab presentation and outer
   move/resize regions;
 - close, minimize, and maximize-or-restore controls for the whole container;
+- a native-member-title toggle and one entry point for group management;
 - a tab strip whose stored vector remains logical order;
 - one preserved title-drag region per member tile; and
 - visual and deliberately larger pointer hit rectangles for every divider.
@@ -65,7 +66,9 @@ or right control placement; the conventional right-side order is minimize,
 maximize-or-restore, close.
 
 The shared row reserves left traffic lights, right-to-left tabs, and a minimum
-outer drag region without stacking a separate tab strip below it. Native member
+outer drag region without stacking a separate tab strip below it. The two group
+controls occupy the side opposite the standard window buttons and remain
+separate from tabs and the drag region in left- and right-side layouts. Native member
 decorations stay visible as compact 24-logical-pixel strips: they retain normal
 member title dragging and per-window controls, while the shared row owns group
 controls, tabs, and outer resize. The constraint solver reserves the shared row
@@ -143,7 +146,7 @@ resolves global logical positions against the published plan. KWin's Popup
 filter runs first, so the outside press that dismisses a popup cannot also
 activate or mutate shared chrome; the QindaQt filter still runs before native
 KDecoration starts a title operation. It owns ordinary, unmodified left-button
-sequences only for group buttons, tabs, dividers, outer-title drag, and outer
+sequences only for group buttons, group controls, tabs, dividers, outer-title drag, and outer
 resize. It pushes hover state back to the scene renderer and, after Qt's
 configured drag distance, emits value-only begin/update/commit events with
 total displacement from the original press:
@@ -180,13 +183,24 @@ During an explicit dock drag only the dragged source may be excluded from this
 test, allowing it to target chrome beneath itself while every other covering
 window still blocks the target.
 
-An unmodified right-button press and matching release on the shared outer title
-opens a nonblocking group menu. Its live, stable-ID actions cover Keep Above,
-Keep Below, pinning to all workspaces, individual workspace membership, all or
-individual activities, and moving the group to an output. Native member-title
+An unmodified right-button press and matching release on the shared outer title,
+or the visible management control in that row, opens a nonblocking group menu.
+Its first actions are **Arrange windows**, **Detach active window**, and
+**Ungroup**. Its remaining live, stable-ID actions cover Keep Above, Keep Below,
+pinning to all workspaces, individual workspace membership, all or individual
+activities, and moving the group to an output. Native member-title
 right clicks remain KWin's per-window menu. The group menu mutates one current
 representative; the queued whole-group context transaction described in
 [Hybrid constraints](hybrid-constraints.md) adopts the final state atomically.
+
+The adjacent title control, or `Meta+Shift+C`, toggles server-drawn member title
+bars for the active group. The choice lasts for the compositor session and is
+also applied to members later added to that group. QindaQt records each native
+member's exact `noBorder` value before changing it and restores that value when
+the member detaches, the group is released, or the plugin shuts down. Existing
+borderless windows remain borderless. Client-drawn title bars cannot be hidden
+through KDecoration and stay under their application's control; the group menu
+and keyboard shortcut therefore remain available as recovery controls.
 
 Tab-to-edge drops are intentionally rejected: a tab owns a page tree, and no
 typed subtree-as-split command exists. A member dropped on a different page's
@@ -246,7 +260,8 @@ with `control-disabled`; the full control contract is in the
 The separate exact `Meta+Shift+Left` compositor gesture can start on an
 independent or grouped title and shares the same semantic docking runtime.
 Keyboard modes provide docking/detach, group move, active-divider adjustment,
-and group resize. Exact bindings and commit/cancel behavior are documented in
+group resize, and the `Meta+Shift+C` active-group title toggle. Exact bindings
+and commit/cancel behavior are documented in
 [Hybrid topology](hybrid-topology.md).
 
 ## Decoration discovery and defaults

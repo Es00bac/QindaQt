@@ -217,9 +217,10 @@ resize need no modifier. A plain member-title drag remains KWin's native move;
 its interactive-move start atomically detaches that member and the native move
 continues to the drop with restored independent size. Exact
 `Meta+Shift+Left` provides the compositor docking grab for independent and
-grouped titles. Thirteen autoloading actions cover member and complete-page
+grouped titles. Fourteen autoloading actions cover member and complete-page
 docking, group move/resize, split adjustment, page activation/reorder, and
-group close/minimize/maximize/restore policy. Interactive arrows update from one
+group close/minimize/maximize/restore policy plus the active-group native-title
+toggle. Interactive arrows update from one
 stable baseline, while `Enter` commits and `Escape` cancels. The filter consumes
 events only while it owns a grab; unrelated input and the older independently
 non-consuming input spy pass through.

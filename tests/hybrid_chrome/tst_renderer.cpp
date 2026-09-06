@@ -103,6 +103,7 @@ class ChromeRendererTests final : public QObject
 
 private Q_SLOTS:
     void trafficLightGlyphsAppearOnControlHover();
+    void groupControlsUsePlanGeometryAndPalette();
     void activeTabGetsThemeAccentCue();
     void focusedContainerAndMemberGetThemeAccentCues();
     void rendersAtDevicePixelRatioWithoutChangingLogicalPlan();
@@ -125,6 +126,31 @@ void ChromeRendererTests::trafficLightGlyphsAppearOnControlHover()
     QCOMPARE(idle.pixelColor(center), plan->style.palette.close);
     QVERIFY(active.pixelColor(center) != idle.pixelColor(center));
     QVERIFY(active != idle);
+}
+
+void ChromeRendererTests::groupControlsUsePlanGeometryAndPalette()
+{
+    auto request = baseRequest();
+    const auto visiblePlan = ChromeLayoutEngine::build(request);
+    QVERIFY(visiblePlan);
+    QCOMPARE(visiblePlan->controls.size(), 2);
+    const auto idle = render(*visiblePlan);
+    for (const auto &control : visiblePlan->controls) {
+        QVERIFY(idle.pixelColor(physicalPoint(control.rect.center(),
+                                              visiblePlan->devicePixelRatio)).alpha() > 0);
+    }
+
+    ChromePaintState hovered;
+    hovered.hoveredTarget = {
+        HitKind::ContainerControl, visiblePlan->containerId, -1,
+        std::nullopt, {}, ContainerControl::ManagementMenu};
+    const auto active = render(*visiblePlan, hovered);
+    QVERIFY(active != idle);
+
+    request.memberTitlesVisible = false;
+    const auto hiddenPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(hiddenPlan);
+    QVERIFY(render(*hiddenPlan) != idle);
 }
 
 void ChromeRendererTests::activeTabGetsThemeAccentCue()
@@ -169,7 +195,6 @@ void ChromeRendererTests::focusedContainerAndMemberGetThemeAccentCues()
 
         auto focusedRequest = unfocusedRequest;
         focusedRequest.containerFocused = true;
-        focusedRequest.focusedMemberId = QStringLiteral("member-a");
         focusedRequest.members[0].focused = true;
         const auto focusedPlan = ChromeLayoutEngine::build(focusedRequest);
         QVERIFY(focusedPlan);
@@ -192,7 +217,6 @@ void ChromeRendererTests::focusedContainerAndMemberGetThemeAccentCues()
                  QColor(Qt::transparent));
 
         auto siblingFocusedRequest = focusedRequest;
-        siblingFocusedRequest.focusedMemberId = QStringLiteral("member-b");
         siblingFocusedRequest.members[0].focused = false;
         siblingFocusedRequest.members[1].focused = true;
         const auto siblingFocusedPlan = ChromeLayoutEngine::build(siblingFocusedRequest);

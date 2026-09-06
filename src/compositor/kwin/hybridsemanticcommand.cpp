@@ -72,7 +72,7 @@ bool HybridSemanticRequest::isValid(QString *error) const
     }
     switch (kind) {
     case HybridSemanticRequestKind::BeginPageDock:
-        if (windowAction || pageId.isEmpty()
+        if (windowAction || containerControl || pageId.isEmpty()
             || destinationPageIndex != -1
             || dockSource.kind != HybridInput::HitKind::Tab
             || dockSource.containerId != containerId
@@ -81,21 +81,27 @@ bool HybridSemanticRequest::isValid(QString *error) const
         }
         return true;
     case HybridSemanticRequestKind::ActivatePage:
-        if (windowAction || dockSource.isValid() || pageId.isEmpty()
+        if (windowAction || containerControl || dockSource.isValid() || pageId.isEmpty()
             || destinationPageIndex != -1) {
             return fail(error, QStringLiteral("page activation request is inconsistent"));
         }
         return true;
     case HybridSemanticRequestKind::ReorderPage:
-        if (windowAction || dockSource.isValid() || pageId.isEmpty()
+        if (windowAction || containerControl || dockSource.isValid() || pageId.isEmpty()
             || destinationPageIndex < 0) {
             return fail(error, QStringLiteral("page reorder request is inconsistent"));
         }
         return true;
     case HybridSemanticRequestKind::GroupWindowAction:
-        if (!windowAction || !pageId.isEmpty() || dockSource.isValid()
+        if (!windowAction || containerControl || !pageId.isEmpty() || dockSource.isValid()
             || destinationPageIndex != -1) {
             return fail(error, QStringLiteral("group action request is inconsistent"));
+        }
+        return true;
+    case HybridSemanticRequestKind::ContainerControl:
+        if (windowAction || !containerControl || !pageId.isEmpty()
+            || dockSource.isValid() || destinationPageIndex != -1) {
+            return fail(error, QStringLiteral("container control request is inconsistent"));
         }
         return true;
     }
@@ -152,6 +158,7 @@ std::optional<HybridSemanticRequest> HybridSemanticCommandResolver::resolveActiv
             .destinationPageIndex = -1,
             .dockSource = std::move(source),
             .windowAction = std::nullopt,
+            .containerControl = std::nullopt,
         };
         return request.isValid(error)
             ? std::optional<HybridSemanticRequest>(std::move(request))
@@ -205,6 +212,7 @@ std::optional<HybridSemanticRequest> HybridSemanticCommandResolver::activatePage
         .destinationPageIndex = -1,
         .dockSource = {},
         .windowAction = std::nullopt,
+        .containerControl = std::nullopt,
     };
     return request.isValid(error)
         ? std::optional<HybridSemanticRequest>(std::move(request))
@@ -230,6 +238,7 @@ std::optional<HybridSemanticRequest> HybridSemanticCommandResolver::groupWindowA
         .destinationPageIndex = -1,
         .dockSource = {},
         .windowAction = action,
+        .containerControl = std::nullopt,
     };
     return request.isValid(error)
         ? std::optional<HybridSemanticRequest>(std::move(request))
@@ -270,6 +279,7 @@ std::optional<HybridSemanticRequest> HybridSemanticCommandResolver::reorderPage(
         .destinationPageIndex = destinationPageIndex,
         .dockSource = {},
         .windowAction = std::nullopt,
+        .containerControl = std::nullopt,
     };
     return request.isValid(error)
         ? std::optional<HybridSemanticRequest>(std::move(request))
@@ -318,6 +328,13 @@ bool HybridSemanticCommandDispatcher::dispatch(
         }
         accepted = m_handlers.groupWindowAction(
             request.containerId, *request.windowAction, error);
+        break;
+    case HybridSemanticRequestKind::ContainerControl:
+        if (!m_handlers.containerControl) {
+            return fail(error, QStringLiteral("container control handler is unavailable"));
+        }
+        accepted = m_handlers.containerControl(
+            request.containerId, *request.containerControl, error);
         break;
     }
     if (!accepted && error && error->isEmpty()) {

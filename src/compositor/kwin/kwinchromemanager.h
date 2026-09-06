@@ -149,6 +149,9 @@ Q_SIGNALS:
     void overlayVisibilityChanged(const QString &containerId, bool visible);
     void windowActionRequested(const QString &containerId,
                                QindaQt::HybridChrome::WindowAction action);
+    void containerControlRequested(
+        const QString &containerId,
+        QindaQt::HybridChrome::ContainerControl control);
     void tabActivationRequested(const QString &containerId, const QString &pageId);
     // Value-only bridge into HybridInput/topology policy. The manager never
     // exposes QWidget pointers or decides what a drag mutation means.

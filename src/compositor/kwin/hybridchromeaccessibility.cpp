@@ -340,6 +340,14 @@ QString HybridChromeAccessibilityAdapter::actionNodeId(
         .arg(containerId, AccessibilityInternal::actionToken(action));
 }
 
+QString HybridChromeAccessibilityAdapter::controlNodeId(
+    const QString &containerId,
+    HybridChrome::ContainerControl control)
+{
+    return QStringLiteral("qindaqt-hybrid-control-%1-%2")
+        .arg(containerId, AccessibilityInternal::controlToken(control));
+}
+
 QString HybridChromeAccessibilityAdapter::dockPageActionName()
 {
     return QStringLiteral("qindaqtDockPage");

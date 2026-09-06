@@ -21,6 +21,7 @@ struct HybridChromePlanOptions final
     // session supplies ownership after sampling Workspace::activeWindow().
     bool containerFocused = false;
     QString focusedMemberId;
+    bool memberTitlesVisible = true;
     HybridChrome::ChromeMetrics metrics;
     HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::qindaMacOS({});
 };

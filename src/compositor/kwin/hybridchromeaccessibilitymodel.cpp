@@ -34,6 +34,20 @@ QString actionName(HybridChrome::WindowAction action)
     return QStringLiteral("Window group action");
 }
 
+QString controlName(HybridChrome::ContainerControl control,
+                    bool memberTitlesVisible)
+{
+    using enum HybridChrome::ContainerControl;
+    switch (control) {
+    case ToggleMemberTitles:
+        return memberTitlesVisible ? QStringLiteral("Hide native member titles")
+                                   : QStringLiteral("Show native member titles");
+    case ManagementMenu:
+        return QStringLiteral("Manage window group");
+    }
+    return QStringLiteral("Window group control");
+}
+
 void appendTabNodes(const HybridChrome::ChromeRenderPlan &plan,
                     const QString &groupId,
                     const QMap<QString, QString> &tabRepresentatives,
@@ -68,7 +82,8 @@ void appendTabNodes(const HybridChrome::ChromeRenderPlan &plan,
                  .pageId = tab.tabId,
                  .destinationPageIndex = -1,
                  .dockSource = {},
-                 .windowAction = std::nullopt},
+                 .windowAction = std::nullopt,
+                 .containerControl = std::nullopt},
             });
             HybridInput::HitTarget source{
                 HybridInput::HitKind::Tab, plan.containerId,
@@ -81,7 +96,8 @@ void appendTabNodes(const HybridChrome::ChromeRenderPlan &plan,
                  .pageId = tab.tabId,
                  .destinationPageIndex = -1,
                  .dockSource = std::move(source),
-                 .windowAction = std::nullopt},
+                 .windowAction = std::nullopt,
+                 .containerControl = std::nullopt},
             });
             if (index > 0) {
                 nodeActions.append({
@@ -91,7 +107,8 @@ void appendTabNodes(const HybridChrome::ChromeRenderPlan &plan,
                      .pageId = tab.tabId,
                      .destinationPageIndex = index - 1,
                      .dockSource = {},
-                     .windowAction = std::nullopt},
+                     .windowAction = std::nullopt,
+                     .containerControl = std::nullopt},
                 });
             }
             if (index + 1 < plan.tabs.size()) {
@@ -102,7 +119,8 @@ void appendTabNodes(const HybridChrome::ChromeRenderPlan &plan,
                      .pageId = tab.tabId,
                      .destinationPageIndex = index + 1,
                      .dockSource = {},
-                     .windowAction = std::nullopt},
+                     .windowAction = std::nullopt,
+                     .containerControl = std::nullopt},
                 });
             }
         }
@@ -143,6 +161,18 @@ QString actionToken(HybridChrome::WindowAction action)
     return QStringLiteral("unknown");
 }
 
+QString controlToken(HybridChrome::ContainerControl control)
+{
+    using enum HybridChrome::ContainerControl;
+    switch (control) {
+    case ToggleMemberTitles:
+        return QStringLiteral("member-titles");
+    case ManagementMenu:
+        return QStringLiteral("management-menu");
+    }
+    return QStringLiteral("unknown");
+}
+
 QVector<NodeData> buildNodeSpecs(const HybridChrome::ChromeRenderPlan &plan,
                                  const QMap<QString, QString> &tabRepresentatives,
                                  bool actionsAvailable,
@@ -157,6 +187,7 @@ QVector<NodeData> buildNodeSpecs(const HybridChrome::ChromeRenderPlan &plan,
         return {};
     }
     QSet<HybridChrome::WindowAction> actions;
+    QSet<HybridChrome::ContainerControl> controls;
     QSet<QString> pages;
     qsizetype activeTabs = 0;
     for (const auto &button : plan.buttons) {
@@ -165,6 +196,13 @@ QVector<NodeData> buildNodeSpecs(const HybridChrome::ChromeRenderPlan &plan,
             return {};
         }
         actions.insert(button.action);
+    }
+    for (const auto &control : plan.controls) {
+        if (!control.rect.isValid() || controls.contains(control.control)) {
+            fail(error, QStringLiteral("accessible chrome has duplicate or invalid group controls"));
+            return {};
+        }
+        controls.insert(control.control);
     }
     for (const auto &tab : plan.tabs) {
         if (tab.tabId.isEmpty() || !tab.rect.isValid() || pages.contains(tab.tabId)) {
@@ -227,6 +265,7 @@ QVector<NodeData> buildNodeSpecs(const HybridChrome::ChromeRenderPlan &plan,
             .destinationPageIndex = -1,
             .dockSource = {},
             .windowAction = button.action,
+            .containerControl = std::nullopt,
         };
         QVector<NodeData::Action> nodeActions;
         if (actionsAvailable && visible) {
@@ -242,6 +281,41 @@ QVector<NodeData> buildNodeSpecs(const HybridChrome::ChromeRenderPlan &plan,
             .rect = button.rect.toAlignedRect(),
             .role = NodeRole::Button,
             .current = false,
+            .selected = false,
+            .focused = false,
+            .enabled = actionsAvailable && visible,
+            .visible = visible,
+            .actions = std::move(nodeActions),
+        });
+    }
+    for (const auto &control : plan.controls) {
+        QVector<NodeData::Action> nodeActions;
+        if (actionsAvailable && visible) {
+            nodeActions.append({
+                QAccessibleActionInterface::pressAction(),
+                {.kind = HybridSemanticRequestKind::ContainerControl,
+                 .containerId = plan.containerId,
+                 .pageId = {},
+                 .destinationPageIndex = -1,
+                 .dockSource = {},
+                 .windowAction = std::nullopt,
+                 .containerControl = control.control},
+            });
+        }
+        specs.append({
+            .id = HybridChromeAccessibilityAdapter::controlNodeId(
+                plan.containerId, control.control),
+            .parentId = groupId,
+            .name = controlName(control.control, plan.memberTitlesVisible),
+            .description = control.control
+                    == HybridChrome::ContainerControl::ToggleMemberTitles
+                ? QStringLiteral("Changes server-drawn titles in this window group")
+                : QStringLiteral("Opens window arrangement and group actions"),
+            .rect = control.rect.toAlignedRect(),
+            .role = NodeRole::Button,
+            .current = control.control
+                    == HybridChrome::ContainerControl::ToggleMemberTitles
+                && plan.memberTitlesVisible,
             .selected = false,
             .focused = false,
             .enabled = actionsAvailable && visible,

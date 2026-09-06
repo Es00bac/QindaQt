@@ -66,6 +66,7 @@ class HybridChromePlanBuilderTest final : public QObject
 
 private Q_SLOTS:
     void buildsQindaMacPlanInStableTopologyOrder();
+    void forwardsSessionMemberTitleChoice();
     void usesActualWindowFramesForBoundedMembers();
     void rejectsChromeMetricsThatDisagreeWithScene();
     void rejectsStaleCommittedGeometry();
@@ -103,6 +104,7 @@ void HybridChromePlanBuilderTest::buildsQindaMacPlanInStableTopologyOrder()
     QCOMPARE(plan->members.size(), 2);
     QCOMPARE(plan->members[0].memberId, QStringLiteral("left"));
     QVERIFY(plan->containerFocused);
+    QVERIFY(plan->memberTitlesVisible);
     QVERIFY(plan->members[0].focused);
     QVERIFY(!plan->members[1].focused);
     QCOMPARE(plan->members[1].memberId, QStringLiteral("right"));
@@ -110,6 +112,23 @@ void HybridChromePlanBuilderTest::buildsQindaMacPlanInStableTopologyOrder()
     QCOMPARE(plan->dividers[0].dividerId, QStringLiteral("main-divider"));
     QCOMPARE(plan->dividers[0].orientation, HybridChrome::DividerOrientation::Vertical);
     QCOMPARE(plan->contentRect, QRectF(solution->contentFrame));
+}
+
+void HybridChromePlanBuilderTest::forwardsSessionMemberTitleChoice()
+{
+    const auto container = sampleContainer();
+    const auto solution = solve(container);
+    QVERIFY(solution);
+    auto options = chromeOptions();
+    options.memberTitlesVisible = false;
+    QString error;
+    const auto plan = HybridChromePlanBuilder::build(
+        container, *solution, options, {}, &error);
+    QVERIFY2(plan, qPrintable(error));
+    QVERIFY(!plan->memberTitlesVisible);
+    for (const auto &member : plan->members) {
+        QVERIFY(member.titleDragRect.isEmpty());
+    }
 }
 
 void HybridChromePlanBuilderTest::usesActualWindowFramesForBoundedMembers()

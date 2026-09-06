@@ -25,6 +25,7 @@ enum class HybridShortcutAction {
     MinimizeGroup,
     MaximizeGroup,
     RestoreGroup,
+    ToggleMemberChrome,
     Count,
 };
 
@@ -43,6 +44,7 @@ struct HybridShortcutTriggers final
     std::function<void()> minimizeGroup;
     std::function<void()> maximizeGroup;
     std::function<void()> restoreGroup;
+    std::function<void()> toggleMemberChrome;
 };
 
 class HybridShortcutManager final
@@ -71,6 +73,7 @@ public:
     [[nodiscard]] QAction *keyboardMinimizeGroupAction() const noexcept;
     [[nodiscard]] QAction *keyboardMaximizeGroupAction() const noexcept;
     [[nodiscard]] QAction *keyboardRestoreGroupAction() const noexcept;
+    [[nodiscard]] QAction *keyboardToggleMemberChromeAction() const noexcept;
     [[nodiscard]] bool registered() const noexcept { return m_registered; }
 
 private:

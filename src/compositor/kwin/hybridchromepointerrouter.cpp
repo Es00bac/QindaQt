@@ -65,6 +65,7 @@ bool HybridChromePointerRouter::ownsOrdinaryInput(
     using enum HybridChrome::HitKind;
     switch (target.kind) {
     case WindowButton:
+    case ContainerControl:
     case Tab:
     case Divider:
     case OuterTitleDrag:
@@ -92,6 +93,7 @@ bool HybridChromePointerRouter::isDragTarget(
         return true;
     case None:
     case WindowButton:
+    case ContainerControl:
     case MemberTitleDrag:
     case Client:
         return false;
@@ -111,6 +113,7 @@ bool HybridChromePointerRouter::isActivationTarget(
     const HybridChrome::ChromeHitTarget &target) noexcept
 {
     return target.kind == HybridChrome::HitKind::WindowButton
+        || target.kind == HybridChrome::HitKind::ContainerControl
         || target.kind == HybridChrome::HitKind::Tab;
 }
 

@@ -187,6 +187,7 @@ KWinChromeManager::KWinChromeManager(ChromeOverlayFactory &factory, QObject *par
     , m_factory(&factory)
 {
     qRegisterMetaType<HybridChrome::WindowAction>();
+    qRegisterMetaType<HybridChrome::ContainerControl>();
     qRegisterMetaType<HybridChrome::ChromeDragEvent>();
     qRegisterMetaType<ChromeWindowActionRequest>();
 }

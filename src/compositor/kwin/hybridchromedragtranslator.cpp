@@ -112,6 +112,7 @@ std::optional<HybridInput::InteractionIntent> HybridChromeDragTranslator::transl
     }
     case HybridChrome::HitKind::None:
     case HybridChrome::HitKind::WindowButton:
+    case HybridChrome::HitKind::ContainerControl:
     case HybridChrome::HitKind::OuterResize:
     case HybridChrome::HitKind::Client:
         return reject(error,

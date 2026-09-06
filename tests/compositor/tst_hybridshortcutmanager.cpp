@@ -26,6 +26,7 @@ QVector<HybridShortcutAction> allActions()
         HybridShortcutAction::MinimizeGroup,
         HybridShortcutAction::MaximizeGroup,
         HybridShortcutAction::RestoreGroup,
+        HybridShortcutAction::ToggleMemberChrome,
     };
 }
 
@@ -70,6 +71,9 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
          },
          .restoreGroup = [&] {
              dispatched.append(HybridShortcutAction::RestoreGroup);
+         },
+         .toggleMemberChrome = [&] {
+             dispatched.append(HybridShortcutAction::ToggleMemberChrome);
          }},
         false);
 
@@ -87,6 +91,7 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
         QStringLiteral("qindaqt_keyboard_minimize_group"),
         QStringLiteral("qindaqt_keyboard_maximize_group"),
         QStringLiteral("qindaqt_keyboard_restore_group"),
+        QStringLiteral("qindaqt_keyboard_toggle_member_chrome"),
     };
     const auto kinds = allActions();
     const QVector<QKeySequence> defaults{
@@ -103,6 +108,7 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
         QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_N),
         QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_X),
         QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_U),
+        QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_C),
     };
 
     QCOMPARE(kinds.size(), objectNames.size());
@@ -136,6 +142,8 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
              manager.action(HybridShortcutAction::MaximizeGroup));
     QCOMPARE(manager.keyboardRestoreGroupAction(),
              manager.action(HybridShortcutAction::RestoreGroup));
+    QCOMPARE(manager.keyboardToggleMemberChromeAction(),
+             manager.action(HybridShortcutAction::ToggleMemberChrome));
     QVERIFY(!manager.action(HybridShortcutAction::Count));
     QVERIFY(!manager.registered());
     QCOMPARE(dispatched, kinds);

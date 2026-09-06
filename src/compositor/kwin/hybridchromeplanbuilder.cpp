@@ -160,7 +160,7 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         .devicePixelRatio = options.devicePixelRatio,
         .maximized = options.maximized,
         .containerFocused = options.containerFocused,
-        .focusedMemberId = options.focusedMemberId,
+        .memberTitlesVisible = options.memberTitlesVisible,
         .metrics = options.metrics,
         .style = options.style,
         .tabs = {},

@@ -55,6 +55,7 @@ bool ChromeWidget::isDragTarget(const ChromeHitTarget &target)
         return true;
     case HitKind::None:
     case HitKind::WindowButton:
+    case HitKind::ContainerControl:
     case HitKind::Client:
         return false;
     }

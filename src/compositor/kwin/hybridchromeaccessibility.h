@@ -70,6 +70,9 @@ public:
     [[nodiscard]] static QString actionNodeId(
         const QString &containerId,
         HybridChrome::WindowAction action);
+    [[nodiscard]] static QString controlNodeId(
+        const QString &containerId,
+        HybridChrome::ContainerControl control);
     [[nodiscard]] static QString dockPageActionName();
     [[nodiscard]] static QString reorderPagePreviousActionName();
     [[nodiscard]] static QString reorderPageNextActionName();

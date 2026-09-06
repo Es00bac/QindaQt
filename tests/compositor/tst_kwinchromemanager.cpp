@@ -317,6 +317,22 @@ void KWinChromeManagerTests::validatesPointerActivationAndRoutesHoverToPaint()
     staleAction.target.action = HybridChrome::WindowAction::Restore;
     QVERIFY(!manager.dispatchPointerActivation(staleAction));
 
+    QSignalSpy controls(&manager, &KWinChromeManager::containerControlRequested);
+    const auto controlHit = manager.pointerTargetAt(
+        plan.controls.constLast().rect.center());
+    QVERIFY(controlHit);
+    QCOMPARE(controlHit->target.kind, HybridChrome::HitKind::ContainerControl);
+    QVERIFY(manager.dispatchPointerActivation(*controlHit));
+    QCOMPARE(controls.size(), 1);
+    QCOMPARE(controls.constFirst().at(0).toString(),
+             QStringLiteral("container-alpha"));
+    QCOMPARE(controls.constFirst().at(1).value<HybridChrome::ContainerControl>(),
+             HybridChrome::ContainerControl::ManagementMenu);
+    auto staleControl = *controlHit;
+    staleControl.target.containerControl =
+        static_cast<HybridChrome::ContainerControl>(99);
+    QVERIFY(!manager.dispatchPointerActivation(staleControl));
+
     QSignalSpy tabs(&manager, &KWinChromeManager::tabActivationRequested);
     const auto tabHit = manager.pointerTargetAt(plan.tabs.constFirst().rect.center());
     QVERIFY(tabHit);

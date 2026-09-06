@@ -50,6 +50,7 @@ enum class NativeQuickTileEdge;
 class KWinTaskIdentityManager;
 class KWinTransientManager;
 class ManagedWindowRegistry;
+class MemberChromeVisibilityController;
 
 // Owns the production Hybrid collaborator graph for one KWin plugin lifetime.
 // The registry is borrowed and must outlive this object. All calls and Qt
@@ -105,9 +106,20 @@ private:
                           const HybridChrome::ChromeDragEvent &event);
     void handleWindowAction(const QString &containerId,
                             HybridChrome::WindowAction action);
+    void handleContainerControl(const QString &containerId,
+                                HybridChrome::ContainerControl control);
+    void initializeMemberChromeSupport();
+    void synchronizeMemberChromeVisibility();
+    [[nodiscard]] bool memberTitlesVisible(
+        const QString &containerId) const noexcept;
+    void restoreMemberChromeVisibilityForShutdown() noexcept;
     [[nodiscard]] bool dispatchGroupWindowAction(
         const QString &containerId,
         HybridChrome::WindowAction action,
+        QString *error = nullptr);
+    [[nodiscard]] bool dispatchContainerControl(
+        const QString &containerId,
+        HybridChrome::ContainerControl control,
         QString *error = nullptr);
     [[nodiscard]] bool restoreMemberFocusForInteraction(
         QString *error = nullptr);
@@ -118,6 +130,10 @@ private:
     void startKeyboardMove();
     void startKeyboardDividerResize();
     void startKeyboardContainerResize();
+    void toggleActiveMemberChrome();
+    [[nodiscard]] bool beginArrangeWindows(const QString &containerId,
+                                           const QString &windowId,
+                                           QString *error = nullptr);
     void initializeTaskIdentityAndShortcuts();
     void synchronizeTaskIdentity();
     void shutdownTaskIdentity() noexcept;
@@ -143,6 +159,8 @@ private:
                                            QString *error = nullptr);
     [[nodiscard]] bool requestCloseContainer(const QString &containerId,
                                              QString *error = nullptr);
+    [[nodiscard]] bool ungroupContainer(const QString &containerId,
+                                        QString *error = nullptr);
     void closeAllMembers(const QString &containerId);
     [[nodiscard]] bool detachNativeMember(const QString &containerId,
                                           const QString &windowId,
@@ -171,6 +189,7 @@ private:
     std::unique_ptr<KWinHybridSceneFactory> m_sceneFactory;
     std::unique_ptr<HybridInteractionRuntime> m_runtime;
     std::unique_ptr<KWinChromeManager> m_chromeManager;
+    std::unique_ptr<MemberChromeVisibilityController> m_memberChromeVisibility;
     std::unique_ptr<KWinChromeSceneLifecycle> m_chromeSceneLifecycle;
     std::unique_ptr<KWinHybridGroupStacking> m_groupStacking;
     std::unique_ptr<KWinGroupContextManager> m_groupContext;
