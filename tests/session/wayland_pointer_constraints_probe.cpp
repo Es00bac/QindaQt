@@ -176,7 +176,13 @@ const wl_pointer_listener pointerListener = {pointerEnter, pointerLeave, pointer
 void relativeMotion(void *data, zwp_relative_pointer_v1 *, uint32_t, uint32_t, wl_fixed_t,
                     wl_fixed_t, wl_fixed_t, wl_fixed_t)
 {
-    ++static_cast<Probe *>(data)->relativeMotionCount;
+    auto &probe = *static_cast<Probe *>(data);
+    // A relative event before the lock is established only proves that the
+    // manager exists.  The qualification must observe one while the lock is
+    // active, otherwise a pre-lock pointer move can make the gate pass.
+    if (probe.locked && !probe.unlocked) {
+        ++probe.relativeMotionCount;
+    }
 }
 
 const zwp_relative_pointer_v1_listener relativeListener = {relativeMotion};
@@ -186,14 +192,24 @@ void locked(void *data, zwp_locked_pointer_v1 *)
     static_cast<Probe *>(data)->locked = true;
 }
 
-void unlocked(void *data, zwp_locked_pointer_v1 *)
+void releaseLockedPointer(Probe &probe)
 {
-    auto &probe = *static_cast<Probe *>(data);
-    probe.unlocked = true;
     if (probe.lockedPointer) {
         zwp_locked_pointer_v1_destroy(probe.lockedPointer);
         probe.lockedPointer = nullptr;
     }
+    probe.lockReleaseRequested = true;
+}
+
+void unlocked(void *data, zwp_locked_pointer_v1 *)
+{
+    auto &probe = *static_cast<Probe *>(data);
+    probe.unlocked = true;
+    // KWin may withdraw the constraint in the same dispatch batch that
+    // reports activation.  Both this callback and the main loop use the
+    // idempotent release helper so that one event cannot double-destroy the
+    // protocol proxy.
+    releaseLockedPointer(probe);
 }
 
 const zwp_locked_pointer_v1_listener lockedListener = {locked, unlocked};
@@ -203,14 +219,20 @@ void confined(void *data, zwp_confined_pointer_v1 *)
     static_cast<Probe *>(data)->confined = true;
 }
 
-void unconfined(void *data, zwp_confined_pointer_v1 *)
+void releaseConfinedPointer(Probe &probe)
 {
-    auto &probe = *static_cast<Probe *>(data);
-    probe.unconfined = true;
     if (probe.confinedPointer) {
         zwp_confined_pointer_v1_destroy(probe.confinedPointer);
         probe.confinedPointer = nullptr;
     }
+    probe.confineReleaseRequested = true;
+}
+
+void unconfined(void *data, zwp_confined_pointer_v1 *)
+{
+    auto &probe = *static_cast<Probe *>(data);
+    probe.unconfined = true;
+    releaseConfinedPointer(probe);
 }
 
 const zwp_confined_pointer_v1_listener confinedListener = {confined, unconfined};
@@ -528,12 +550,14 @@ int main(int argc, char **argv)
     // probe itself never touches host input devices.
     waitFor(probe, [&probe] { return probe.locked; }, timeoutMs);
     if (probe.locked) {
+        // Keep the lock alive until a relative event has arrived after the
+        // activation callback.  This separates actual locked motion from
+        // events delivered while the pointer merely existed.
+        waitFor(probe, [&probe] { return probe.relativeMotionCount > 0; }, timeoutMs);
         // Destroy is the protocol-defined client release operation. An
-        // `unlocked` event is also recorded when KWin deactivates the lock
-        // because focus was withdrawn by the private runner.
-        zwp_locked_pointer_v1_destroy(probe.lockedPointer);
-        probe.lockedPointer = nullptr;
-        probe.lockReleaseRequested = true;
+        // `unlocked` event may have already withdrawn the proxy; the helper
+        // remains safe in either ordering.
+        releaseLockedPointer(probe);
         wl_display_roundtrip(probe.display);
     }
     if (probe.lockReleaseRequested) {
@@ -543,9 +567,7 @@ int main(int argc, char **argv)
             // Destroying a oneshot constraint after activation is the
             // protocol-defined release operation. If KWin deactivates it
             // independently, the unconfined event is recorded as well.
-            zwp_confined_pointer_v1_destroy(probe.confinedPointer);
-            probe.confinedPointer = nullptr;
-            probe.confineReleaseRequested = true;
+            releaseConfinedPointer(probe);
             wl_display_roundtrip(probe.display);
         }
     }

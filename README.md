@@ -75,7 +75,7 @@ On an Arch-derived system, the corresponding package names are:
 ```sh
 sudo pacman -S --needed \
   base-devel cmake ninja python extra-cmake-modules \
-  qt6-base qt6-declarative qt6-svg qt6-wayland \
+  qt6-base qt6-declarative qt6-svg qt6-wayland wayland-protocols \
   kcoreaddons kglobalaccel kdecoration kwin plasma-activities \
   layer-shell-qt dbus xdg-desktop-portal xdg-desktop-portal-kde \
   fontconfig xorg-xdpyinfo xorg-xwayland

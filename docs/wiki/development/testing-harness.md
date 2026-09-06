@@ -94,6 +94,11 @@ device is not an acceptable substitute. The target is built with
 the nested-session owner because only that owner can provide the isolated
 synthetic pointer and focus transitions.
 
+Building this target also requires the distribution's `wayland-protocols`
+package. The dependency-light Arch CI job installs and records that package so
+the generated client bindings are available in both the core and production
+shell builds.
+
 ## Continuous integration lanes
 
 The GitHub workflow keeps dependency policy, the portable value layer, and the
