@@ -366,7 +366,28 @@ void KWinOutputInventory::refresh()
 QVector<OutputInventoryEntry> KWinOutputInventory::sample(QString *error) const
 {
     QVector<OutputInventoryEntry> result;
-    const auto outputs = KWin::kwinApp()->outputBackend()->outputs();
+    const auto backendOutputs = KWin::kwinApp()->outputBackend()->outputs();
+    // Workspace order is the configured order of enabled logical desktops and
+    // therefore the primary-selection order consumed by Display1. Backend
+    // discovery additionally exposes connected disabled outputs, which must be
+    // appended without perturbing that configured enabled order.
+    QVector<const KWin::BackendOutput *> outputs;
+    outputs.reserve(backendOutputs.size());
+    QSet<const KWin::BackendOutput *> included;
+    for (const auto *logicalOutput : KWin::workspace()->outputOrder()) {
+        const auto *backendOutput = logicalOutput ? logicalOutput->backendOutput() : nullptr;
+        if (backendOutput && !backendOutput->isNonDesktop()
+            && backendOutputs.contains(const_cast<KWin::BackendOutput *>(backendOutput))) {
+            outputs.append(backendOutput);
+            included.insert(backendOutput);
+        }
+    }
+    for (const auto *backendOutput : backendOutputs) {
+        if (backendOutput && !backendOutput->isNonDesktop()
+            && !included.contains(backendOutput)) {
+            outputs.append(backendOutput);
+        }
+    }
     result.reserve(outputs.size());
     for (const auto *backendOutput : outputs) {
         if (!backendOutput) {
