@@ -8,8 +8,10 @@
 
 #include <QDBusConnection>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -18,12 +20,59 @@ using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt::Services::SettingsService;
 using namespace QindaQt::Settings;
 
+// Exercises the real qindaqt-shell startup path against a private Settings1
+// service: saved profile selection recovery and explicit CLI failure.
+// AGENT-NOTE: Qt 6.11 moc silently stops lexing at the R"xml(...)" literal in
+// startPrivateDaemon below, so this Q_OBJECT class must stay declared before
+// the anonymous namespace; moving the helper above the class erases the
+// generated metaobject and fails the link with a missing vtable.
+class ShellRuntimeStartupLaunchTests final : public QObject {
+    Q_OBJECT
+
+private slots:
+    void savedDeletedProfileFallsBackToDefault();
+    void explicitUnknownProfileIsAnError();
+    void absentServiceUsesBuiltInDefaults();
+};
+
 namespace {
 
-QString startPrivateDaemon(QProcess &daemon)
+// AGENT-NOTE: dbus-daemon --session loads the host session configuration with
+// its standard service directories, so a host-installed Settings1 provider is
+// autoactivated and answers the shell's snapshot read, defeating the
+// absent-service scenario. This explicit config declares no service
+// directories, so nothing can be activated. Mirrors the private-bus fix in
+// tests/shell/tst_shellstartuppreferences.cpp.
+QString startPrivateDaemon(QProcess &daemon, QTemporaryDir &busDirectory)
 {
+    QFile config(busDirectory.filePath(QStringLiteral("dbus.conf")));
+    if (!config.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return {};
+    }
+    const QByteArray configContents = R"xml(<!DOCTYPE busconfig PUBLIC
+        "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+        "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:tmpdir=)xml"
+                         + busDirectory.path().toUtf8()
+                         + R"xml(</listen>
+  <policy context="default">
+    <allow user="*"/>
+    <allow own="*"/>
+    <allow send_destination="*"/>
+    <allow send_interface="*"/>
+    <allow receive_sender="*"/>
+  </policy>
+</busconfig>
+)xml";
+    if (config.write(configContents) != configContents.size()) {
+        return {};
+    }
+    config.close();
     daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
-                 {QStringLiteral("--session"), QStringLiteral("--nofork"),
+                 {QStringLiteral("--config-file"), config.fileName(),
+                  QStringLiteral("--nofork"),
                   QStringLiteral("--print-address=1")});
     if (!daemon.waitForStarted() || !daemon.waitForReadyRead()) {
         return {};
@@ -78,25 +127,26 @@ ShellRun runShell(const QString &busAddress, const QString &xdgDataHome,
 
 } // namespace
 
-// Exercises the real qindaqt-shell startup path against a private Settings1
-// service: saved profile selection recovery and explicit CLI failure.
-class ShellRuntimeStartupLaunchTests final : public QObject {
-    Q_OBJECT
-
-private slots:
-    void savedDeletedProfileFallsBackToDefault();
-    void explicitUnknownProfileIsAnError();
-    void absentServiceUsesBuiltInDefaults();
-};
-
 void ShellRuntimeStartupLaunchTests::savedDeletedProfileFallsBackToDefault()
 {
-    QProcess daemon;
-    const QString address = startPrivateDaemon(daemon);
-    QVERIFY(!address.isEmpty());
+    QTemporaryDir busDirectory(QStringLiteral("/tmp/qindaqt-launch-bus-XXXXXX"));
+    QVERIFY(busDirectory.isValid());
     const QString suffix = QString::number(QCoreApplication::applicationPid());
     const QString serviceConnection = QStringLiteral("launch-service-") + suffix;
     const QString writerConnection = QStringLiteral("launch-writer-") + suffix;
+    QProcess daemon;
+    // AGENT-GUARD: every early return above the explicit teardown must still
+    // disconnect the named buses and reap the private daemon.
+    const auto cleanup = qScopeGuard([&] {
+        QDBusConnection::disconnectFromBus(serviceConnection);
+        QDBusConnection::disconnectFromBus(writerConnection);
+        if (daemon.state() != QProcess::NotRunning) {
+            daemon.kill();
+        }
+        daemon.waitForFinished();
+    });
+    const QString address = startPrivateDaemon(daemon, busDirectory);
+    QVERIFY(!address.isEmpty());
     auto serviceBus = QDBusConnection::connectToBus(address, serviceConnection);
     auto writerBus = QDBusConnection::connectToBus(address, writerConnection);
     QVERIFY(serviceBus.isConnected());
@@ -159,8 +209,17 @@ void ShellRuntimeStartupLaunchTests::savedDeletedProfileFallsBackToDefault()
 
 void ShellRuntimeStartupLaunchTests::explicitUnknownProfileIsAnError()
 {
+    QTemporaryDir busDirectory(QStringLiteral("/tmp/qindaqt-launch-bus-XXXXXX"));
+    QVERIFY(busDirectory.isValid());
     QProcess daemon;
-    const QString address = startPrivateDaemon(daemon);
+    // Reap the private daemon even when an assertion above the teardown fails.
+    const auto cleanup = qScopeGuard([&] {
+        if (daemon.state() != QProcess::NotRunning) {
+            daemon.kill();
+        }
+        daemon.waitForFinished();
+    });
+    const QString address = startPrivateDaemon(daemon, busDirectory);
     QVERIFY(!address.isEmpty());
 
     QTemporaryDir xdg;
@@ -179,8 +238,17 @@ void ShellRuntimeStartupLaunchTests::explicitUnknownProfileIsAnError()
 
 void ShellRuntimeStartupLaunchTests::absentServiceUsesBuiltInDefaults()
 {
+    QTemporaryDir busDirectory(QStringLiteral("/tmp/qindaqt-launch-bus-XXXXXX"));
+    QVERIFY(busDirectory.isValid());
     QProcess daemon;
-    const QString address = startPrivateDaemon(daemon);
+    // Reap the private daemon even when an assertion above the teardown fails.
+    const auto cleanup = qScopeGuard([&] {
+        if (daemon.state() != QProcess::NotRunning) {
+            daemon.kill();
+        }
+        daemon.waitForFinished();
+    });
+    const QString address = startPrivateDaemon(daemon, busDirectory);
     QVERIFY(!address.isEmpty());
 
     QTemporaryDir xdg;

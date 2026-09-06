@@ -213,6 +213,13 @@ foreach(component IN LISTS shell_components)
             "${expected_tokens}, resolved ${resolved_tokens}")
     endif()
 
+    # AGENT-NOTE: src/shell/runtime/main.cpp constructs QGuiApplication before
+    # parseRuntimeOptions processes --help, so even help output requires an
+    # initializable platform plugin. DISPLAY/WAYLAND_DISPLAY are unset above to
+    # prove the stage needs no ambient session, so the fixture must supply the
+    # headless offscreen platform explicitly (as qindaqt.shell-runtime-catalog
+    # does); requiring a compositor for --help would be a product defect, but
+    # requiring a platform is the intended construction order.
     execute_process(
         COMMAND "${QINDAQT_CMAKE}" -E env
                 --unset=LD_LIBRARY_PATH
@@ -220,6 +227,7 @@ foreach(component IN LISTS shell_components)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DISPLAY
                 --unset=WAYLAND_DISPLAY
+                "QT_QPA_PLATFORM=offscreen"
                 "${shell}" --help
         RESULT_VARIABLE shell_status
         OUTPUT_VARIABLE shell_output
