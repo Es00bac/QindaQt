@@ -454,7 +454,6 @@ function resizedInPlace(previousRects, nextRects) {
     return found
 }
 
-// Map the centred display union at a capped uniform scale.
 function fitLayout(rects, width, height, padding, maxFit) {
     var box = boundingBox(rects)
     if (box === null) {
