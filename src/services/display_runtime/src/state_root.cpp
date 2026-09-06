@@ -3,6 +3,7 @@
 #include <qindaqt/services/display_runtime/state_root.h>
 
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 
 namespace QindaQt::DisplayRuntime
 {
@@ -71,6 +72,21 @@ StateRootSelection selectStateRoot(const StateRootInputs &inputs)
     return {.path = {},
             .error = StateRootError::Missing,
             .reasonCode = QStringLiteral("missing-state-root")};
+}
+
+StateRootSelection
+resolveProvisionedStateRoot(const StateRootSelection &selection)
+{
+    if (!selection.accepted()) {
+        return selection;
+    }
+    const QString canonical = QFileInfo(selection.path).canonicalFilePath();
+    if (canonical.isEmpty()) {
+        return {.path = {},
+                .error = StateRootError::InvalidPath,
+                .reasonCode = QStringLiteral("invalid-state-root-path")};
+    }
+    return validate(canonical);
 }
 
 } // namespace QindaQt::DisplayRuntime

@@ -224,9 +224,11 @@ object, journal file, Settings, QML, lock client, or logind adapter; those
 process dependencies are isolated in `display_runtime`.
 
 The packaged systemd user unit sets its single `STATE_DIRECTORY` through
-`StateDirectory=qindaqt-display` with mode `0700`. This dedicated runtime path
-cannot collide with the legacy `XDG_STATE_HOME/qindaqt` compatibility symlink;
-direct and non-systemd launches retain the documented XDG/HOME fallbacks.
+`StateDirectory=qindaqt` with mode `0700`. The process composition resolves
+this systemd-provisioned root once so an established compatibility symlink
+does not prevent startup or strand an earlier pending journal. Direct and
+non-systemd launches retain the documented XDG/HOME fallbacks and the journal
+store's no-symlink rule.
 
 ## Persistent identity
 

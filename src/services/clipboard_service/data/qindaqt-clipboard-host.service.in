@@ -13,7 +13,10 @@ PrivateDevices=true
 PrivateTmp=true
 ProtectClock=true
 ProtectControlGroups=true
-ProtectHome=true
+# AGENT-GUARD: `true` also hides /run/user and therefore the session-bus and
+# Wayland sockets this user service must open. Read-only retains filesystem
+# protection while allowing connections to those existing sockets.
+ProtectHome=read-only
 ProtectHostname=true
 ProtectKernelLogs=true
 ProtectKernelModules=true

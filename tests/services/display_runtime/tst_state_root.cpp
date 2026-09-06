@@ -3,6 +3,10 @@
 #include <qindaqt/services/display_runtime/state_root.h>
 
 #include <QtTest/QTest>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QTemporaryDir>
 
 using namespace QindaQt::DisplayRuntime;
 
@@ -13,6 +17,7 @@ class StateRootTest final : public QObject
 private Q_SLOTS:
     void selectsOneDeterministicSource();
     void rejectsMissingAmbiguousAndHostileValues();
+    void resolvesSystemdProvisionedCompatibilityLink();
 };
 
 void StateRootTest::selectsOneDeterministicSource()
@@ -48,6 +53,32 @@ void StateRootTest::selectsOneDeterministicSource()
                          .home = QStringLiteral("/home/user")});
     QVERIFY(homeRoot.accepted());
     QCOMPARE(homeRoot.path, QStringLiteral("/home/user/.local/state/qindaqt"));
+}
+
+void StateRootTest::resolvesSystemdProvisionedCompatibilityLink()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const QString target = temporary.path() + QStringLiteral("/config-qindaqt");
+    const QString link = temporary.path() + QStringLiteral("/state-qindaqt");
+    QVERIFY(QDir().mkdir(target));
+    QVERIFY(QFile::link(target, link));
+
+    const StateRootSelection selected = selectStateRoot(
+        {.explicitPath = {},
+         .systemdStateDirectory = link,
+         .xdgStateHome = {},
+         .home = {}});
+    QVERIFY(selected.accepted());
+    const StateRootSelection resolved = resolveProvisionedStateRoot(selected);
+    QVERIFY(resolved.accepted());
+    QCOMPARE(resolved.path, QFileInfo(target).canonicalFilePath());
+
+    const StateRootSelection missing = resolveProvisionedStateRoot(
+        {.path = temporary.path() + QStringLiteral("/missing"),
+         .error = StateRootError::None,
+         .reasonCode = {}});
+    QCOMPARE(missing.error, StateRootError::InvalidPath);
 }
 
 void StateRootTest::rejectsMissingAmbiguousAndHostileValues()
