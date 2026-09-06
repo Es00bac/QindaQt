@@ -97,3 +97,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0086: Route GlobalShortcuts only to a verified backend](0086-route-globalshortcuts-only-to-a-verified-backend.md)
 - [ADR-0087: Deliver agent and Gabbee input through the RemoteDesktop portal](0087-agent-input-via-remotedesktop-portal.md)
 - [ADR-0088: Scope the KDE portal compatibility identity to its backend process](0088-enable-kde-remote-desktop-for-qindaqt.md)
+- [ADR-0089: Present task switching through KWin's native model](0089-present-task-switching-through-kwins-native-model.md)

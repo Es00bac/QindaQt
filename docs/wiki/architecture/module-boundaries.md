@@ -147,6 +147,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   explicitly. Controls consume complete QST roles without inspecting theme
   identity or adding fallback palette/timing authority; domain state and
   availability remain caller inputs.
+- The KWin-hosted `qindaqt` WindowSwitcher package is the one narrow exception:
+  KWin's QML engine has no confirmed QST publication, so the package consumes
+  KWin's public TabBox model and Kirigami semantic host palette without
+  importing shell code, theme identity, or palette literals. This boundary is
+  recorded in [ADR-0089](../adr/0089-present-task-switching-through-kwins-native-model.md).
 - Launcher presentation consumes the pure launcher model's values and resolves
   every activation through the catalog's single intent builder. The L1
   adapters in the same module own scanning, seam-based execution, and

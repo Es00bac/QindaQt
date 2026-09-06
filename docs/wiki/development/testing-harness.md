@@ -1761,8 +1761,13 @@ build tree, starts the staged launcher without a plugin-root override, and
 requires the installed KWin module to publish its live service. The same test
 requires `org.qindaqt` at KDecoration3's KDE-relative plugin destination and
 checks that a fresh isolated `kwinrc` selects that module. The focused
-`session.sessiondefaults` test separately proves that the first-run seed never
-overwrites an existing decoration choice. Configuration tests also reject a
+`session.sessiondefaults` test separately proves that first-run policy selects
+the QindaQt decoration and switcher, disables KWin's competing edge tile and
+corner maximize defaults, and never overwrites any explicit choice. The
+`session.window-switcher-package` test validates the KWin package metadata,
+native TabBox model roles, selection/activation bindings, and complete QML
+with a lint-only description of KWin's process-registered root type.
+Configuration tests also reject a
 conflicting ABI selection and prove that missing KWin is a hard error while the
 plugin option is `ON`; only explicit `OFF` permits a bridge-only build.
 
@@ -1877,8 +1882,11 @@ The focused suites cover:
   deferred dispatch;
   normal-chain development input parsing/injection, compositor scene
   lifecycle, and production pre-parse input rejection; and
-- KDecoration factory/metadata loading plus first-run default seeding that
-  preserves an existing user choice.
+- KDecoration factory/metadata loading plus first-run decoration, edge/corner,
+  and WindowSwitcher default seeding that preserves every existing user
+  choice; and
+- QindaQt WindowSwitcher package metadata and warning-free QML validation over
+  KWin's native caption, icon, minimized, current-index, and activation model.
 
 The live Hybrid workflows are selected with:
 

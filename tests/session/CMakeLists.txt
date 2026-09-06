@@ -78,6 +78,20 @@ foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline se
     add_test(NAME session.${test_name} COMMAND tst_${test_name})
 endforeach()
 
+add_test(
+    NAME session.window-switcher-package
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_SWITCHER_PACKAGE=${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt"
+        "-DQINDAQT_QML_IMPORTS=${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
+        "-DQINDAQT_QMLLINT=$<TARGET_FILE:Qt6::qmllint>"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_window_switcher_package.cmake"
+)
+set_tests_properties(
+    session.window-switcher-package
+    PROPERTIES LABELS "unit;session;package;qml"
+)
+
 qt_add_executable(
     qindaqt_shell_runtime_options_tests
     tst_runtimeoptions.cpp
