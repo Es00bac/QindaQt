@@ -171,8 +171,17 @@ Item {
     function focusFirstMenuItem(menu) {
         Qt.callLater(function() {
             if (menu !== null && menu.opened && menu.count > 0) {
-                menu.currentIndex = 0
-                menu.itemAt(0).forceActiveFocus(Qt.PopupFocusReason)
+                for (let index = 0; index < menu.count; ++index) {
+                    const item = menu.itemAt(index)
+                    // Separators have no triggered signal; disabled actions
+                    // must not consume the initial keyboard selection.
+                    if (item !== null && item.enabled
+                            && typeof item.triggered === "function") {
+                        menu.currentIndex = index
+                        item.forceActiveFocus(Qt.PopupFocusReason)
+                        return
+                    }
+                }
             }
         })
     }
