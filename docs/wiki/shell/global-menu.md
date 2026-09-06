@@ -584,7 +584,8 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-registrar-private-bus`,
 `qindaqt.global-menu-dbusmenu-decoder`,
 `qindaqt.global-menu-dbusmenu-private-bus`,
-`qindaqt.global-menu-transport-composition-private-bus`, and
+`qindaqt.global-menu-transport-registration-private-bus`,
+`qindaqt.global-menu-transport-churn-private-bus`, and
 `qindaqt.global-menu-transport-boundary-poison`. G2 adds
 `qindaqt.global-menu-runtime-composition-private-bus`,
 `qindaqt.file-manager-global-menu-shell-private-bus`,
