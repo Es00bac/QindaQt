@@ -241,7 +241,7 @@ void AppearanceSettingsModelTests::loadingThenReadyWithConfirmedBaseline()
                           {.requestTimeoutMilliseconds = 100,
                            .debounceMilliseconds = 0,
                            .retryMilliseconds = {10}});
-    AppearanceSettingsModel model(client, loadFixtureThemes(),
+    AppearanceSettingsModel model(client, loadFixtureThemes(), QVariantList {},
                                   Qt::ColorScheme::Dark);
     QVERIFY(model.loading());
     QVERIFY(!model.canEdit());

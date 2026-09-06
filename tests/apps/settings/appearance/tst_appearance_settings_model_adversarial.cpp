@@ -425,7 +425,7 @@ void AppearanceSettingsModelAdversarialTests::invalidSnapshotTypeFailsClosed()
                           {.requestTimeoutMilliseconds = 100,
                            .debounceMilliseconds = 0,
                            .retryMilliseconds = {10}});
-    AppearanceSettingsModel model(client, fixtureThemes(),
+    AppearanceSettingsModel model(client, fixtureThemes(), QVariantList {},
                                   Qt::ColorScheme::Light);
     QVERIFY(client.start());
     Q_EMIT transport.ownerChanged(QStringLiteral(":1.44"));
