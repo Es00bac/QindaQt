@@ -90,8 +90,7 @@ int main(int argc, char **argv) {
   // missing, unavailable, or unresolvable preference source leaves platform
   // defaults untouched (fail-closed). See
   // docs/wiki/architecture/font-preferences.md.
-  QindaQt::Services::FontDiscovery::FontSessionBootstrap::
-      applyFromSessionSettings();
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   QGuiApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-settings"));
   application.setOrganizationName(QStringLiteral("QindaQt"));
