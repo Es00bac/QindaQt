@@ -402,14 +402,22 @@ void GlobalMenuTransportCoordinator::suspendAuthority()
         clearAuthority();
         return;
     }
-    // Invocation authority dies now: with the selector cleared the facade
-    // rejects activation and the invocation guard can never match. The client
-    // and exporter stay alive so a prompt reread of the same window resumes
-    // without a GetLayout round trip or a delegate rebuild.
+    // Invocation authority dies now: with the selector cleared the invocation
+    // guard can never match, so no dbusmenu Event crosses while the identity
+    // reread is uncertain. The facade is deliberately NOT transitioned: the
+    // compositor invalidates on every visibility-affecting change (including
+    // the menu's own popup opening), and dropping `available` for each
+    // sub-second withdraw/reread cycle closes the open popup and disables the
+    // delegates between press and release — the user-visible "menu items are
+    // dead" defect. Presentation and interactivity are retained; only a
+    // reread that proves a DIFFERENT window/endpoint fences the retained
+    // entries (bindRegistration opens an inert transition), and grace expiry
+    // publishes the truthful unavailable state. The client and exporter stay
+    // alive so a prompt reread of the same window resumes without a GetLayout
+    // round trip or a delegate rebuild.
     m_authoritySuspended = true;
     m_selector.clear();
     m_focusGeneration = 0;
-    m_applet.beginTransition();
     m_presentationGraceTimer.start();
 }
 
@@ -474,12 +482,11 @@ void GlobalMenuTransportCoordinator::renewBoundProvider(
         m_applet.publishTree(*m_exporter->lastAccepted());
         refreshHostedMenu();
     } else if (exported.outcome == Exporter::ExportOutcome::Unchanged) {
-        if (wasSuspended) {
-            // Same provider, same content: restore the retained projection
-            // without touching delegate identity or the publication
-            // generation.
-            m_applet.endTransition();
-        }
+        // Content-identical restamp: the facade never left the ready state for
+        // a transient withdrawal, so there is nothing to restore — no
+        // projection signal, no delegate rebuild, and an open popup survives
+        // the churn. The selector/exporter lineage advance above is
+        // sufficient for invocation coherence.
         refreshHostedMenu();
     } else {
         withdrawHostedMenu(m_boundEndpoint);

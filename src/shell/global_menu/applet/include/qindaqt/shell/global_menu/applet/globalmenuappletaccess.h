@@ -65,19 +65,19 @@ public:
     void publishDegraded(const QString &reasonCode);
 
     // AGENT-CONTRACT (transition pairing): shell composition calls
-    // beginTransition() when the current provider's authority is withdrawn but
-    // a replacement tree is expected shortly (identity reread, focus switch to
-    // another exporting window). The last projection is retained so the panel
-    // slot keeps its extent and delegates, but `available` drops to false —
-    // the retained entries are inert presentation, never actionable for a new
-    // focus. endTransition() restores availability for the retained projection
-    // after the same provider re-proves itself with unchanged content;
-    // publishTree() (content changed or provider replaced) and
-    // publishUnavailable() (no replacement arrived) both end the transition on
-    // their own. Calling either without a retained projection is an inert
-    // no-op beyond keeping the unavailable state.
+    // beginTransition() only when a genuinely DIFFERENT provider is being
+    // bound (focus switch to another exporting window, registrar endpoint
+    // replacement): the last projection is retained so the panel slot keeps
+    // its extent and delegates, but `available` drops to false — the retained
+    // entries are inert presentation, never actionable for a new focus.
+    // Transient identity withdrawals do NOT open a transition: the transport
+    // coordinator revokes execution authority at the selector instead, so an
+    // open popup and armed delegates survive same-provider churn. A
+    // transition ends through publishTree() (replacement's first tree),
+    // publishUnavailable(), or publishDegraded(); calling beginTransition()
+    // without a retained projection is an inert no-op beyond keeping the
+    // unavailable state.
     void beginTransition();
-    void endTransition();
 
 Q_SIGNALS:
     void activationRequested(QString actionId);

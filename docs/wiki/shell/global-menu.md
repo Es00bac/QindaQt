@@ -277,16 +277,25 @@ the client's owner-loss and monotonic reread rules remain the menu's
 stale-truth withdrawal boundary for invocation authority.
 Because the snapshot's canonical state carries the action fence, the
 compositor also invalidates on visibility changes that are not focus moves
-(for example a geometry change of any visible window). The coordinator
-therefore separates authority from presentation: every withdrawal revokes
-invocation authority synchronously (the selector is cleared, so neither the
-facade nor the invocation guard can admit an action), but the last published
-presentation is retained as an inert placeholder for a bounded grace window
-(500 ms) so a transient invalidation/reread cycle never collapses the panel.
-A reread that re-proves the same window and endpoint resumes the binding in
-place; a reread that presents a different window binds it without ever
-painting the old menu as actionable; and a grace expiry without any proof
-publishes the truthful unavailable state.
+(for example a geometry change of any visible window, or the menu popup's own
+surface appearing). The coordinator therefore separates authority from
+presentation: every withdrawal revokes invocation authority synchronously
+(the selector is cleared, so the invocation guard can never match and no
+dbusmenu `Event` crosses while the reread is uncertain), but the facade keeps
+the last published presentation fully available for a bounded grace window
+(500 ms) — dropping `available` on each transient withdraw/reread cycle would
+close the open popup and disable delegates between press and release, which
+is the user-visible "menu items are dead" regression. A reread that re-proves
+the same window and endpoint resumes the binding in place with no facade
+signal at all; a reread that presents a different window or endpoint binds it
+through `beginTransition()`, so the old menu stays painted but inert until
+the replacement's first tree lands; and a grace expiry without any proof
+publishes the truthful unavailable state. An activation that lands inside the
+uncertain reread window itself (bounded to one identity round trip) is
+rejected by the invocation guard with `no-active-provider` and emits no
+`Event`; the intent is dropped rather than queued, so a withdrawn action is
+never replayed against a provider that re-proves later, and never against a
+different target.
 
 ## First-party AppShell export
 
@@ -462,13 +471,17 @@ paint no “unavailable” label; their exact truth remains in the applet's
 accessible description. This prevents a missing exporter from turning the
 global bar into diagnostic text. The loading phase is the exception by design:
 `beginTransition()` retains the last accepted projection so the panel slot
-keeps its extent and delegate identities while the shell proves the next
-provider, but drops `available`, so the retained entries render dimmed and are
-inert to pointer, keyboard, and assistive-technology activation — a retained
-menu is never actionable for a new focus. `endTransition()` restores the
-retained projection when the same provider re-proves itself with unchanged
-content; `publishTree()` or `publishUnavailable()` end the transition
-otherwise. Only genuinely empty state collapses to zero extent.
+keeps its extent and delegate identities while the shell proves a genuinely
+different provider (a focus switch to another exporting window or a registrar
+endpoint replacement), but drops `available`, so the retained entries render
+dimmed and are inert to pointer, keyboard, and assistive-technology
+activation — a retained menu is never actionable for a new focus.
+`publishTree()` (the replacement's first tree), `publishUnavailable()`, and
+`publishDegraded()` each end the transition on their own. Transient identity
+withdrawals do not enter the loading phase at all: the transport coordinator
+revokes execution authority at the ownership selector without touching the
+facade, so an open popup and armed delegates survive same-provider churn.
+Only genuinely empty state collapses to zero extent.
 
 An enabled submenu opens one `GlobalMenuPopup`. The popup keeps a stack of at
 most six menu levels, skips disabled entries and separators during Up/Down

@@ -84,8 +84,10 @@ private Q_SLOTS:
     void focusedRegistrationPublishesAndActivatesExactlyOnce();
     void announcedNativeAddressUsesExactOwnerAndClearsOnLoss();
     void transientIdentityWithdrawalRetainsPresentation();
+    void repeatedChurnKeepsOpenMenuInteractive();
     void unansweredWithdrawalClearsPresentationAfterGrace();
     void sameWindowGenerationMoveRenewsWithoutRepublish();
+    void identicalContentReplacementEndsTransition();
     void replacementEndpointWithRejectedFirstLayoutClearsRetainedProjection();
 };
 
@@ -192,14 +194,16 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
     const qsizetype hostedBeforeFocusRetirement = hosted.size();
     active.observation.reset();
     coordinator.refreshFocus();
-    // Authority is revoked synchronously: nothing is activatable while no
-    // authenticated focus exists.
-    QVERIFY(!applet.available());
+    // Authority is revoked synchronously at the selector: the invocation guard
+    // admits nothing while no authenticated focus exists, so no Event crosses.
+    // The facade itself stays live — a transient withdrawal must not close an
+    // open popup or disable delegates mid-click.
+    QVERIFY(applet.available());
     // Ordinary focus retirement retains the proven endpoint so the inactive
     // application's content height does not jump.
     QCOMPARE(hosted.size(), hostedBeforeFocusRetirement);
-    // The last presentation is retained as an inert placeholder through the
-    // bounded grace window instead of collapsing the panel slot.
+    // The last presentation is retained through the bounded grace window
+    // instead of collapsing the panel slot.
     QVERIFY(!applet.items().isEmpty());
     const QString retainedGeneration =
         applet.items().first().toMap().value(QStringLiteral("generation")).toString();
@@ -438,17 +442,28 @@ void GlobalMenuTransportCompositionTest::transientIdentityWithdrawalRetainsPrese
     const QString generation =
         applet.items().first().toMap().value(QStringLiteral("generation")).toString();
     QSignalSpy republished(&applet, &GlobalMenuAppletAccess::itemsChanged);
+    QSignalSpy availability(&applet, &GlobalMenuAppletAccess::availableChanged);
+    QSignalSpy rejected(&coordinator,
+                        &Composition::GlobalMenuTransportCoordinator::activationRejected);
 
     // The compositor identity channel invalidates and republishes on
     // visibility changes that are not focus moves; between withdrawal and
-    // reread the source observes no identity at all.
+    // reread the source observes no identity at all. The facade must stay
+    // fully live — dropping availability here closes an open popup and
+    // disables delegates between press and release.
     fixture.active.observation.reset();
     coordinator.refreshFocus();
-    QVERIFY(!applet.available());
+    QVERIFY(applet.available());
+    QCOMPARE(applet.phase(), QStringLiteral("ready"));
     QVERIFY(!applet.items().isEmpty());
+    // Execution authority is still revoked synchronously: the selector is
+    // cleared, so the invocation guard rejects and no Event crosses.
     applet.activate(QStringLiteral("1"));
     QTest::qWait(100);
     QCOMPARE(fixture.exporter->eventCount(), 0);
+    QCOMPARE(rejected.size(), 1);
+    QCOMPARE(rejected.constFirst().constFirst().toString(),
+             QStringLiteral("no-active-provider"));
 
     fixture.generation = 6;
     fixture.active.observation = Ownership::ActiveWindowObservation{
@@ -457,14 +472,76 @@ void GlobalMenuTransportCompositionTest::transientIdentityWithdrawalRetainsPrese
             .processId = static_cast<qint64>(QCoreApplication::applicationPid())},
         .focusGeneration = fixture.generation};
     coordinator.refreshFocus();
-    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
-    // The placeholder resumed in place: no projection replacement means the
-    // panel keeps its extent and every delegate survives the cycle.
+    QVERIFY(applet.available());
+    // The binding resumed in place with zero facade signals: the panel keeps
+    // its extent, every delegate survives, and an open popup is never closed
+    // by a same-provider churn cycle.
     QCOMPARE(republished.size(), 0);
+    QCOMPARE(availability.size(), 0);
     QCOMPARE(applet.items().first().toMap().value(QStringLiteral("generation")).toString(),
              generation);
     applet.activate(QStringLiteral("1"));
     QTRY_COMPARE_WITH_TIMEOUT(fixture.exporter->eventCount(), 1, 5'000);
+
+    coordinator.stop();
+    teardownFixture(fixture);
+}
+
+void GlobalMenuTransportCompositionTest::repeatedChurnKeepsOpenMenuInteractive()
+{
+    BoundFixture fixture;
+    QVERIFY(bindFixture(fixture, QStringLiteral("churn")));
+    GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        fixture.shellBus, fixture.active, fixture.resolver, *fixture.registrar->registry(),
+        applet);
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    const QString generation =
+        applet.items().first().toMap().value(QStringLiteral("generation")).toString();
+    QSignalSpy republished(&applet, &GlobalMenuAppletAccess::itemsChanged);
+    QSignalSpy availability(&applet, &GlobalMenuAppletAccess::availableChanged);
+    QSignalSpy rejected(&coordinator,
+                        &Composition::GlobalMenuTransportCoordinator::activationRejected);
+
+    // Live-session regression: the compositor invalidates and republishes the
+    // active-window identity on every visibility-affecting change — including
+    // the menu popup's own surface appearing — so an open menu meets a
+    // withdraw/reread cycle exactly when the user is about to click. Repeated
+    // identical re-proofs must be interaction-neutral: no availability drop
+    // (which closes the popup and disables delegates between press and
+    // release), no projection rebuild, and activation works afterwards.
+    for (int cycle = 0; cycle < 5; ++cycle) {
+        fixture.active.observation.reset();
+        coordinator.refreshFocus();
+        QVERIFY(applet.available());
+        QVERIFY(!applet.items().isEmpty());
+        if (cycle == 2) {
+            // A click landing inside an uncertain reread window is fenced by
+            // the invocation guard — rejected, never executed.
+            applet.activate(QStringLiteral("1"));
+        }
+        fixture.active.observation = Ownership::ActiveWindowObservation{
+            .window = Ownership::WindowIdentity{
+                .windowId = fixture.windowId,
+                .processId = static_cast<qint64>(QCoreApplication::applicationPid())},
+            .focusGeneration = fixture.generation};
+        coordinator.refreshFocus();
+        QVERIFY(applet.available());
+    }
+    QTest::qWait(100);
+    QCOMPARE(availability.size(), 0);
+    QCOMPARE(republished.size(), 0);
+    QCOMPARE(fixture.exporter->eventCount(), 0);
+    QCOMPARE(rejected.size(), 1);
+    QCOMPARE(applet.items().first().toMap().value(QStringLiteral("generation")).toString(),
+             generation);
+
+    applet.activate(QStringLiteral("1"));
+    QTRY_COMPARE_WITH_TIMEOUT(fixture.exporter->eventCount(), 1, 5'000);
+    QTest::qWait(100);
+    QCOMPARE(fixture.exporter->eventCount(), 1);
 
     coordinator.stop();
     teardownFixture(fixture);
@@ -484,10 +561,16 @@ void GlobalMenuTransportCompositionTest::unansweredWithdrawalClearsPresentationA
 
     fixture.active.observation.reset();
     coordinator.refreshFocus();
-    QVERIFY(!applet.available());
+    // Presentation and interactivity are retained through the grace window —
+    // execution authority alone is revoked (selector cleared) — so an open
+    // popup is not destroyed by a withdrawal that may still re-prove.
+    QVERIFY(applet.available());
     QVERIFY(!applet.items().isEmpty());
+    applet.activate(QStringLiteral("1"));
+    QTest::qWait(100);
+    QCOMPARE(fixture.exporter->eventCount(), 0);
     // No reread re-proves the provider: after the bounded grace the retained
-    // placeholder must give way to the truthful unavailable state.
+    // presentation must give way to the truthful unavailable state.
     QTRY_VERIFY_WITH_TIMEOUT(applet.items().isEmpty(), 5'000);
     QVERIFY(!applet.available());
 
@@ -529,6 +612,56 @@ void GlobalMenuTransportCompositionTest::sameWindowGenerationMoveRenewsWithoutRe
     QCOMPARE(coordinator.publishedTree()->epoch, initialEpoch);
     applet.activate(QStringLiteral("1"));
     QTRY_COMPARE_WITH_TIMEOUT(fixture.exporter->eventCount(), 1, 5'000);
+
+    coordinator.stop();
+    teardownFixture(fixture);
+}
+
+void GlobalMenuTransportCompositionTest::identicalContentReplacementEndsTransition()
+{
+    BoundFixture fixture;
+    QVERIFY(bindFixture(fixture, QStringLiteral("twin")));
+    // A replacement endpoint serving byte-identical content: the bind opens an
+    // inert transition, and the replacement's first accepted layout must end
+    // it through publishTree even though nothing visibly changed — the
+    // placeholder can never hang in loading.
+    Test::FakeDbusMenuExporter twinExporter;
+    twinExporter.setLayout(1, Test::menuLayout());
+    QVERIFY(fixture.providerBus.registerObject(
+        QStringLiteral("/TwinMenu"), &twinExporter,
+        QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
+            | QDBusConnection::ExportScriptableProperties));
+    GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        fixture.shellBus, fixture.active, fixture.resolver, *fixture.registrar->registry(),
+        applet);
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QVERIFY(coordinator.publishedTree().has_value());
+    const QUuid initialEpoch = coordinator.publishedTree()->epoch;
+    const quint64 initialRevision = coordinator.publishedTree()->revision;
+
+    QCOMPARE(registrarCall(fixture.providerBus, QStringLiteral("RegisterWindow"),
+                           {QVariant::fromValue(quint32{77}),
+                            QVariant::fromValue(
+                                QDBusObjectPath(QStringLiteral("/TwinMenu")))})
+                 .type(),
+             QDBusMessage::ReplyMessage);
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QCOMPARE(applet.phase(), QStringLiteral("ready"));
+    QCOMPARE(applet.items().first().toMap().value(QStringLiteral("text")).toString(),
+             QStringLiteral("File"));
+    QVERIFY(coordinator.publishedTree().has_value());
+    QCOMPARE(coordinator.publishedTree()->epoch, initialEpoch);
+    QVERIFY(coordinator.publishedTree()->revision > initialRevision);
+
+    // Activation lands on the replacement endpoint exactly once; the retired
+    // exporter observes nothing.
+    applet.activate(QStringLiteral("1"));
+    QTRY_COMPARE_WITH_TIMEOUT(twinExporter.eventCount(), 1, 5'000);
+    QTest::qWait(100);
+    QCOMPARE(fixture.exporter->eventCount(), 0);
 
     coordinator.stop();
     teardownFixture(fixture);

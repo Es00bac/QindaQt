@@ -77,16 +77,18 @@ private:
         const Ownership::ActiveWindowObservation &focus);
     void watchAnnouncedService(const QString &serviceName);
     void clearAuthority();
-    // Revokes invocation authority synchronously (selector cleared, so neither
-    // the facade nor the invocation guard can admit an action) but retains the
-    // last published presentation as an inert placeholder for a bounded grace
+    // Revokes invocation authority synchronously (selector cleared, so the
+    // invocation guard can never admit an action) but retains the last
+    // published presentation AND facade availability for a bounded grace
     // period. The compositor identity channel invalidates and republishes on
-    // every visibility-affecting change — including pure geometry changes that
-    // are not focus moves — so treating each transient withdrawal as a hard
-    // clear collapses and rebuilds the panel slot on every such event, the
-    // user-visible "global menu flashes" defect. When the grace expires without
-    // the same provider re-proving itself, the retained presentation is
-    // published unavailable.
+    // every visibility-affecting change — including pure geometry changes and
+    // the menu popup's own surface appearing — so dropping facade
+    // availability on each transient withdrawal closes the open popup and
+    // disables delegates mid-click, the user-visible "menu items are dead"
+    // defect. Only a reread proving a different window/endpoint fences the
+    // retained entries (bindRegistration opens an inert transition); when the
+    // grace expires without the same provider re-proving itself, the retained
+    // presentation is published unavailable.
     void suspendAuthority();
     void expirePresentationGrace();
     void renewBoundProvider(const Ownership::ActiveWindowObservation &focus);

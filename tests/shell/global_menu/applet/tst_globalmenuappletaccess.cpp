@@ -74,7 +74,6 @@ private Q_SLOTS:
     void activateOnHiddenActionEmitsNothing();
     void rendererLeasesAreReferenceCounted();
     void transitionRetainsProjectionButFencesActivation();
-    void endTransitionRestoresRetainedProjection();
     void transitionOnEmptyProjectionIsUnavailable();
     void publishTreeDuringTransitionReplacesProjection();
 };
@@ -343,34 +342,6 @@ void GlobalMenuAppletAccessTests::transitionRetainsProjectionButFencesActivation
     QCOMPARE(activations.count(), 0);
 }
 
-void GlobalMenuAppletAccessTests::endTransitionRestoresRetainedProjection()
-{
-    GlobalMenuAppletAccess access;
-    access.publishTree(fixtureTree());
-    const QVariantList retained = access.items();
-    const QString generation =
-        retained.first().toMap().value(QStringLiteral("generation")).toString();
-    QSignalSpy publications(&access, &GlobalMenuAppletAccess::itemsChanged);
-    QSignalSpy activations(&access, &GlobalMenuAppletAccess::activationRequested);
-
-    access.beginTransition();
-    access.endTransition();
-    QVERIFY(access.available());
-    QCOMPARE(access.phase(), QStringLiteral("ready"));
-    QCOMPARE(access.items(), retained);
-    QCOMPARE(publications.count(), 0);
-    access.activate(QStringLiteral("fileNewAction"), generation);
-    QCOMPARE(activations.count(), 1);
-
-    // A mismatched publisher still ends the retained placeholder truthfully.
-    access.beginTransition();
-    access.publishUnavailable();
-    QVERIFY(!access.available());
-    QVERIFY(access.items().isEmpty());
-    access.endTransition();
-    QVERIFY(!access.available());
-}
-
 void GlobalMenuAppletAccessTests::transitionOnEmptyProjectionIsUnavailable()
 {
     GlobalMenuAppletAccess access;
@@ -378,8 +349,6 @@ void GlobalMenuAppletAccessTests::transitionOnEmptyProjectionIsUnavailable()
     QVERIFY(!access.available());
     QVERIFY(access.items().isEmpty());
     QCOMPARE(access.phase(), QStringLiteral("unavailable"));
-    access.endTransition();
-    QVERIFY(!access.available());
 }
 
 void GlobalMenuAppletAccessTests::publishTreeDuringTransitionReplacesProjection()
