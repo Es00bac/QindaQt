@@ -2,6 +2,27 @@
 
 ## Installed-session completion in progress — 2026-09-06
 
+Runtime update: normal Meta+Shift grouping now passes in private run
+`7bf2271d708648ee99e1afd80493ef40`: Editor and Settings become a real hybrid
+container, both frames converge, four Meta+Arrow checks keep the outer frame
+unchanged, and standalone Welcome still quick-tiles independently. Cleanup
+leaves no private processes. The delayed-Shift variant is the next runtime gate.
+
+Popup placement remains open despite offscreen acceptance of `24ae2c3d`.
+Integrated native run `371c0483edd9477ea1a408d65790d1d3` still places the File
+popup at the end of the menu bar. The menu action repair itself has prior real
+File → New evidence; the placement repair is back with its implementer/reviewer.
+The pointer probe maps and activates, and native lock/confinement both activate;
+relative motion is unqualified because the development injector currently sends
+only absolute motion. Its narrowly scoped relative-motion support is in repair.
+
+Reviewed layer-shell exclusion and development keys are integrated through
+`57b01211`; focused admission/parser/note checks pass 3/3, and the input-device
+teardown gate passes separately 1/1. Navigation/transport test decomposition is
+integrated through `04feefda`, with four focused tests passing. Source-shape
+validation now reports no errors across 2,785 files. Native pointer test support
+is integrated at `e73331b3`; it does not claim completed runtime qualification.
+
 Current source checkpoint `d2be019f` builds successfully after independently
 reviewed aggregate-fixture repair `a4d552b2`. Integrated Settings/Controls gates
 pass 33/33; menu/chrome selection passes 31/31; portal/fixture selection passes
