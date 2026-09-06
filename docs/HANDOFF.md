@@ -1,5 +1,44 @@
 # Integration handoff
 
+## Completion restart after connectivity report — 2026-09-06
+
+The user returned to KDE and requested completion of already-started work,
+without added scope. Current integrated source is `963b2893`; the deployed
+QindaQt session still needs the final accepted refresh. The remaining gates are
+native menu switching/keyboard behavior, approved input and Gabbee insertion,
+the preserved screen-lock Settings candidate, actual Display/Color/chrome
+acceptance, the closing combined suite, and installation verification. The
+independent Kimi worker retains all file-manager ownership.
+
+Native Alt-Tab run `5f700906669c498ab4889da621667fc7` passes forward/reverse
+selection and grouped representative activation, with its production package
+present, screenshots inspected, restored harness files, and no survivors.
+The two-monitor Settings discovery run `812814054ac9409a9133b9f9f5047323`
+fails before acceptance: the private Display state root is invalid and the
+unarranged group-drag fixture does not converge. Neither run proves physical
+monitor or ICC acceptance.
+
+The native-menu repair is independently reviewed and integrated through
+`a30fe46b`. The reviewer found inherited KDE input behavior, stale dynamically
+created menu colors, and initial selection of disabled/separator rows; repaired
+candidate `1a74ff5e` passes the manager's seven focused QML rows and its module
+build. The combined integrated selection passes **658/658** in 114 seconds,
+including current Display arrangement, grouped geometry, Gabbee unit, and
+switcher/package checks. Installed/private-desktop rows remain separate gates.
+The Qt/KWin accessibility package transaction has completed, and private
+AT-SPI now enumerates the editor and actual portal approval dialog. Final
+approved Unicode delivery and Gabbee insertion remain unproved.
+
+Read-only NetworkManager inspection reports current connected/full state.
+The recorded 16:53:40 disconnect came from live KDE `plasmashell` PID1600891,
+followed by successful reconnection at 16:53:55. The user places the outage shortly before switching sessions, with their phone
+unaffected. Resolved logs show the upstream DNS feature downgrade at 16:40:37
+and repeated DNSSEC validation failures from 16:40:39, while NetworkManager and
+kernel logs show no preceding Wi-Fi disconnect. DNS lookups succeed after the
+KDE reconnect; the cause of the resolver failure and any QindaQt involvement
+remain under investigation. Host networking has not been changed for this audit.
+
+
 ## Installed-session completion in progress — 2026-09-06
 
 Runtime update: both normal Meta+Shift grouping and late Shift now pass in

@@ -118,6 +118,12 @@ for the current installed and integrated boundaries.
 
 ### Explicit checkpoint stopping rule (2026-09-06)
 
+The renewed September 6 instruction freezes scope to finishing work already
+started. Investigate the reported connectivity loss, close the existing
+implementation and acceptance gaps, and deploy the accepted result. The
+independent Kimi worker retains file-manager ownership. No new feature queue
+is authorized by this completion request.
+
 The user explicitly requested a goal with a finite stopping point. Finish the
 reported desktop-experience list above as one usable deployed checkpoint:
 independently reviewed integration, focused checks, one closing broad suite,
