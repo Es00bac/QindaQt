@@ -129,6 +129,9 @@ inline QByteArray compositorPayload(const quint64 generation,
         {QStringLiteral("scale"), 1.0},
         {QStringLiteral("refreshRateMilliHz"), 60'000},
         {QStringLiteral("transform"), QStringLiteral("normal")},
+        // D0 is an enabled desktop output; retain the wire contract used by
+        // private-bus lifecycle coverage as Display1 decoders reject absent state.
+        {QStringLiteral("enabled"), true},
         {QStringLiteral("internal"), false},
         {QStringLiteral("uuid"), QStringLiteral("runtime-uuid")},
         {QStringLiteral("priority"), 0},
