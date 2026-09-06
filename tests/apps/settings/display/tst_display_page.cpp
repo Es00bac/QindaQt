@@ -41,6 +41,7 @@ private Q_SLOTS:
   void testAbandonedPositionEditCannotCrossOutputSelection();
   void testExternalPositionRefreshCannotBeResurrectedOnBlur();
   void testOutputCardsSupportKeyboardRadioSelection();
+  void testDisabledConnectedOutputCanBeEnabled();
   void testUnavailableNoticeAndRetry();
   void testPreviewBannerAndTransactionActions();
 
@@ -333,6 +334,42 @@ void DisplayPageTest::testOutputCardsSupportKeyboardRadioSelection() {
   QCOMPARE(accessible->role(), QAccessible::RadioButton);
   QVERIFY(accessible->state().checkable);
   QVERIFY(accessible->state().checked);
+}
+
+void DisplayPageTest::testDisabledConnectedOutputCanBeEnabled() {
+  m_model->setupTwoOutputs();
+  auto projector = m_model->outputsMap.value(QStringLiteral("edid:hdmi1"));
+  projector[QStringLiteral("enabled")] = false;
+  m_model->outputsMap[QStringLiteral("edid:hdmi1")] = projector;
+  m_model->baselineOutputsMap = m_model->outputsMap;
+  m_model->outputs = {m_model->outputsMap.value(QStringLiteral("edid:dp1")), projector};
+  m_model->setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+  PageSupport::attachPage(*m_view, *pageItem);
+
+  auto *enableSwitch =
+      findItemByObjectName(pageItem, QStringLiteral("displayEnableSwitch"));
+  QVERIFY(enableSwitch != nullptr);
+  QCOMPARE(enableSwitch->property("checked").toBool(), false);
+
+  const QPoint switchCenter = enableSwitch->mapToScene(
+      QPointF(enableSwitch->width() / 2.0, enableSwitch->height() / 2.0)).toPoint();
+  QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, switchCenter);
+  QTRY_COMPARE(m_model->selectedOutput.value(QStringLiteral("enabled")).toBool(),
+               true);
+  QVERIFY(m_model->draftDirty);
+  QVERIFY(m_model->applyAvailable);
 }
 
 void DisplayPageTest::testUnavailableNoticeAndRetry() {

@@ -47,7 +47,7 @@ ColumnLayout {
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Enable display")
-        description: qsTr("Turn this display output on or off")
+        description: qsTr("Enable this connected display before configuring it")
         editor: enableSwitch
 
         Switch {

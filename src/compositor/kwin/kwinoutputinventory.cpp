@@ -151,7 +151,7 @@ OutputInventoryPublishResult OutputInventoryStore::publish(
     QString *error)
 {
     if (candidate.isEmpty() || candidate.size() > MaxOutputs) {
-        fail(error, QStringLiteral("enabled output count is outside the inventory limit"));
+        fail(error, QStringLiteral("output count is outside the inventory limit"));
         return OutputInventoryPublishResult::Rejected;
     }
 
@@ -195,6 +195,7 @@ OutputInventoryPublishResult OutputInventoryStore::publish(
             {QStringLiteral("refreshRateMilliHz"),
              static_cast<qint64>(output.refreshRateMilliHz)},
             {QStringLiteral("transform"), output.transform},
+            {QStringLiteral("enabled"), output.enabled},
             {QStringLiteral("internal"), output.internal},
             {QStringLiteral("uuid"), output.uuid},
             {QStringLiteral("priority"), static_cast<qint64>(output.priority)},
@@ -317,6 +318,9 @@ void KWinOutputInventory::rebuildOutputConnections()
                                            this, changed));
         if (auto *backendOutput = output->backendOutput()) {
             m_outputConnections.append(connect(backendOutput,
+                                               &KWin::BackendOutput::enabledChanged,
+                                               this, changed));
+            m_outputConnections.append(connect(backendOutput,
                                                &KWin::BackendOutput::priorityChanged,
                                                this, changed));
             m_outputConnections.append(connect(backendOutput,
@@ -380,6 +384,7 @@ QVector<OutputInventoryEntry> KWinOutputInventory::sample(QString *error) const
             .scale = output->scale(),
             .refreshRateMilliHz = output->refreshRate(),
             .transform = transformName(output->transform().kind()),
+            .enabled = output->backendOutput()->isEnabled(),
             .internal = output->isInternal(),
             .uuid = output->uuid(),
             .priority = output->backendOutput()->priority(),

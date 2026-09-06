@@ -47,6 +47,7 @@ QJsonObject outputJson(const InventoryOutput &value)
             {QStringLiteral("refreshRateMilliHz"),
              static_cast<qint64>(value.refreshRateMilliHertz)},
             {QStringLiteral("transform"), transformName(value.transform)},
+            {QStringLiteral("enabled"), value.enabled},
             {QStringLiteral("internal"), value.internal},
             {QStringLiteral("uuid"), value.runtimeCompositorUuid},
             {QStringLiteral("priority"), static_cast<qint64>(value.compositorPriority)},
@@ -82,6 +83,7 @@ class DisplayInventoryAdapterTest : public QObject
 
 private Q_SLOTS:
     void decodesAndProjectsPrivacyPreservingInventory();
+    void projectsConnectedDisabledOutput();
     void rejectsHostileLineageAndGeometry();
     void projectsTransformAndFractionalScale();
 };
@@ -119,6 +121,32 @@ void DisplayInventoryAdapterTest::decodesAndProjectsPrivacyPreservingInventory()
                  DisplayTopology::candidateFromSnapshot(projected.snapshot)));
 }
 
+void DisplayInventoryAdapterTest::projectsConnectedDisabledOutput()
+{
+    InventoryOutput active = output(QStringLiteral("HDMI-A-1"));
+    InventoryOutput disabled = output(QStringLiteral("DP-1"),
+                                      QRect(3840, 0, 1920, 1080), 1.0);
+    disabled.enabled = false;
+    disabled.runtimeCompositorUuid = QStringLiteral("runtime-uuid-projector");
+
+    const InventoryDecodeResult decoded =
+        decodeCompositorInventory(payload(8, {active, disabled}), QStringLiteral(":1.42"));
+    QVERIFY(decoded.accepted());
+    QVERIFY(!decoded.frame.outputs.at(1).enabled);
+
+    const InventoryProjectionResult projected =
+        projectInventory(decoded.frame, QStringLiteral("epoch-disabled"));
+    QVERIFY2(projected.accepted(), qPrintable(projected.reasonCode));
+    QVERIFY(Display::validateSnapshot(projected.snapshot).accepted);
+    const Display::Output &projector = projected.snapshot.outputs.at(1);
+    QVERIFY(!projector.enabled);
+    QVERIFY(!projector.primary);
+    QCOMPARE(projector.priority, quint32(0));
+    QCOMPARE(projector.position, QPoint());
+    QCOMPARE(projector.modeId, QStringLiteral("current:1920x1080@60000"));
+    QCOMPARE(projector.logicalSize, QSize(1920, 1080));
+}
+
 void DisplayInventoryAdapterTest::rejectsHostileLineageAndGeometry()
 {
     QCOMPARE(decodeCompositorInventory(payload(1, {output()}),
@@ -145,6 +173,20 @@ void DisplayInventoryAdapterTest::rejectsHostileLineageAndGeometry()
                                              QJsonArray{malformed}}})
                                 .toJson(QJsonDocument::Compact);
     QCOMPARE(decodeCompositorInventory(body, QStringLiteral(":1.42")).error,
+             InventoryError::InvalidOutput);
+
+    malformed = outputJson(output());
+    malformed.remove(QStringLiteral("enabled"));
+    const QByteArray missingEnabled = QJsonDocument(
+                                        QJsonObject{{QStringLiteral("status"),
+                                                     QStringLiteral("ok")},
+                                                    {QStringLiteral("schemaVersion"), 1},
+                                                    {QStringLiteral("outputGeneration"),
+                                                     QStringLiteral("1")},
+                                                    {QStringLiteral("outputs"),
+                                                     QJsonArray{malformed}}})
+                                        .toJson(QJsonDocument::Compact);
+    QCOMPARE(decodeCompositorInventory(missingEnabled, QStringLiteral(":1.42")).error,
              InventoryError::InvalidOutput);
 
     InventoryOutput hostileText = output();

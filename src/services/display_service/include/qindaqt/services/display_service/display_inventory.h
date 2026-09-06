@@ -34,6 +34,7 @@ struct InventoryOutput {
     double scale = 1.0;
     quint32 refreshRateMilliHertz = 0;
     Display::Transform transform = Display::Transform::Normal;
+    bool enabled = true;
     bool internal = false;
     QString runtimeCompositorUuid;
     quint32 compositorPriority = 0;

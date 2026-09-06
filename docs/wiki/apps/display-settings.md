@@ -29,6 +29,12 @@ refreshed draft truth also resynchronize the fields, so stale text cannot be
 applied to another output or resurrect a configuration that the service
 reverted.
 
+A connected display that is currently disabled remains in this selector. Its
+card clearly states that state; selecting it exposes **Enable display**. Enabling
+it retains the advertised mode and places the new draft to the right of the
+existing non-mirrored desktop so the user can review and apply a valid layout,
+or use Revert to restore the disabled snapshot.
+
 The page follows the editing sequence directly: choose a display, arrange it,
 choose its resolution and scale, then set orientation. The fixed bottom action
 bar keeps Apply and Revert available while the form scrolls. Service recovery
@@ -83,6 +89,6 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   -R '^qindaqt\.(display-settings-model|display-settings-model-adversarial|display-page)$'
 ```
 
-- `qindaqt.display-settings-model` verifies snapshot projection, draft edits, scale/transform/position mutations, reset, and full confirm/revert transaction cycles.
+- `qindaqt.display-settings-model` verifies snapshot projection, connected-but-disabled output enable drafts and reset, scale/transform/position mutations, and full confirm/revert transaction cycles.
 - `qindaqt.display-settings-model-adversarial` verifies rejection of invalid topologies (all outputs disabled, overlapping outputs), stale lineage recovery, service crash handling, and stage rejection.
-- `qindaqt.display-page` verifies offscreen QML page rendering, output card selection, control interaction, preview banner countdown actions, and degraded notice display.
+- `qindaqt.display-page` verifies offscreen QML page rendering, including selecting and enabling a connected disabled display, output-card keyboard selection, control interaction, preview banner countdown actions, and degraded notice display.

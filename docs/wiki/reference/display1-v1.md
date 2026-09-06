@@ -196,12 +196,14 @@ A later accepted frame starts a fresh epoch, so revisions are never compared
 across source owners.
 
 Projection is intentionally narrower than full output management. It publishes
-only D0 enabled outputs and one synthesized current mode, requires integral
+each connected D0 output with one synthesized current mode, requires integral
 geometry and Display1's 32-output/scale-3 limits, uses connector-fallback stable
 identity because D0 supplies no EDID/MST material, and retains runtime UUID only
-as non-persistent metadata. The first output in D0 semantic order is primary;
-priorities are canonical contiguous order. Replication and disabled-output mode
-inventory are not invented.
+as non-persistent metadata. D0 carries a required enabled state: the first
+enabled output in D0 semantic order is primary and enabled priorities are
+canonical contiguous order; disabled outputs receive the canonical D1 disabled
+fields while retaining their current mode, scale, and transform. Replication is
+not invented.
 
 The resident owns actual single-shot scheduling for D1 deadlines, a separate
 500 ms accepted-inventory topology quiet window, and typed inventory routing.
