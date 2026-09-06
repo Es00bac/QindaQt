@@ -90,6 +90,10 @@ ApplicationAppearanceController::ApplicationAppearanceController(
   connect(&m_settings,
           &Services::SettingsClient::SettingsClient::snapshotChanged, this,
           &ApplicationAppearanceController::applySnapshot);
+  if (QGuiApplication::styleHints()) {
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
+            this, [this] { applySnapshot(); });
+  }
   applySnapshot();
 }
 

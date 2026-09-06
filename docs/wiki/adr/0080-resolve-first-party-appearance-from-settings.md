@@ -1,4 +1,4 @@
-# ADR-0079: Resolve first-party appearance from confirmed Settings1 preferences
+# ADR-0080: Resolve first-party appearance from confirmed Settings1 preferences
 
 - Status: Accepted
 - Date: 2026-09-05
@@ -20,7 +20,7 @@ Invalid, partial, unavailable, or uninstalled preferences retain the last
 validated theme.
 
 Light retains an installed light theme and Dark retains an installed dark or
-dusk theme. System uses the platform scheme; an unknown platform scheme falls
+dusk theme. System follows live platform scheme changes; an unknown platform scheme falls
 back deterministically to dark. An incompatible or missing preference resolves
 to `qinda-light`/`qinda-dark`, then another compatible installed theme. An
 explicit high-contrast theme remains selected across scheme changes. Settings
