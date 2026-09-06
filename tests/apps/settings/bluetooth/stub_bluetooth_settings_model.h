@@ -140,6 +140,7 @@ public:
     };
   }
 
+  Q_INVOKABLE bool reload() { return !busy; }
   Q_INVOKABLE void setRouteActive(bool active) {
     routeActive = active;
     ++routeActiveChanges;

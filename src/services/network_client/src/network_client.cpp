@@ -320,7 +320,7 @@ void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
     if (applied.accepted) {
         m_retryIndex = 0;
         publish(stateForAvailability(reply.availability),
-                errorForSnapshot(reply));
+                errorForSnapshot(reply), true);
         Q_EMIT snapshotChanged();
     } else if (isBenignStaleDuplicate(applied, m_model.lineage(), reply)) {
         // Out-of-order duplicate of the already-current lineage: not an error.
@@ -328,7 +328,7 @@ void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
         const std::optional<Snapshot> &current = m_model.snapshot();
         if (current.has_value()) {
             publish(stateForAvailability(current->availability),
-                    errorForSnapshot(*current));
+                    errorForSnapshot(*current), true);
         }
     } else {
         publish(ClientState::Degraded,
@@ -468,12 +468,14 @@ void NetworkClient::scheduleRetry() {
     notifyOperationAdmissionChanged();
 }
 
-void NetworkClient::publish(const ClientState state, QString error) {
+void NetworkClient::publish(const ClientState state, QString error, const bool snapshotCurrent) {
     QString redacted = redactDiagnostic(std::move(error));
-    if (m_state == state && m_lastError == redacted) {
+    if (m_state == state && m_lastError == redacted
+        && m_snapshotCurrent == snapshotCurrent) {
         notifyOperationAdmissionChanged();
         return;
     }
+    m_snapshotCurrent = snapshotCurrent;
     m_state = state;
     m_lastError = std::move(redacted);
     Q_EMIT stateChanged();

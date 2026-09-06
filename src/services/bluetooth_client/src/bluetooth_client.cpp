@@ -189,6 +189,17 @@ void BluetoothClient::start()
     m_transport->start();
 }
 
+void BluetoothClient::refresh()
+{
+    if (operationPending()) return;
+    if (m_owner.isEmpty()) {
+        stop();
+        start();
+    } else {
+        requestSnapshot();
+    }
+}
+
 void BluetoothClient::stop()
 {
     if (m_state == ClientState::Stopped) return;

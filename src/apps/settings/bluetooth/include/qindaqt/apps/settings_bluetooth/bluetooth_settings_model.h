@@ -79,6 +79,7 @@ public:
   [[nodiscard]] QVariantList devices() const;
   [[nodiscard]] QVariantMap pairingPrompt() const;
 
+  Q_INVOKABLE bool reload();
   Q_INVOKABLE void setRouteActive(bool active);
   Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);
   Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);

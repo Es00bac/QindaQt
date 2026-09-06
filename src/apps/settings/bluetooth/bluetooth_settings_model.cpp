@@ -104,11 +104,23 @@ bool BluetoothSettingsModel::exactSnapshotReady() const noexcept {
       && validateSnapshot(snapshot).accepted;
 }
 
+bool BluetoothSettingsModel::reload() {
+  if (busy()) return false;
+  m_errorText.clear();
+  m_operationStatusText.clear();
+  m_client.refresh();
+  Q_EMIT viewChanged();
+  return true;
+}
+
 QString BluetoothSettingsModel::statusText() const {
   if (loading()) return tr("Connecting to the Bluetooth service…");
   if (ready()) return tr("Bluetooth information is current.");
   if (degraded()) return tr("Bluetooth information could not be verified.");
-  return tr("The Bluetooth service is unavailable.");
+  if (m_client.hasSnapshot()
+      && m_client.snapshot().reasonCode == QStringLiteral("no-adapter"))
+    return tr("No Bluetooth adapter was found. Connect an adapter or enable Bluetooth in your computer’s firmware.");
+  return tr("Bluetooth is not running. Enable the Bluetooth system service, then try again.");
 }
 
 QString BluetoothSettingsModel::serviceOwner() const {
@@ -395,7 +407,7 @@ void BluetoothSettingsModel::handleOperationCompleted(
   if (!exact || result.status == OperationStatus::Uncertain) {
     m_convergence.reset();
     m_operationStatusText.clear();
-    m_errorText = tr("The Bluetooth result is uncertain. It was not replayed; check current state before trying again.");
+    m_errorText = tr("The device has not confirmed the change. Check its state before trying again.");
   } else if (result.status != OperationStatus::Succeeded) {
     m_convergence.reset();
     m_operationStatusText.clear();
@@ -404,7 +416,7 @@ void BluetoothSettingsModel::handleOperationCompleted(
     m_convergence = SuccessConvergence{pending.owner, result.observedEpoch,
                                        result.observedRevision};
     m_errorText.clear();
-    m_operationStatusText = tr("Waiting for authoritative Bluetooth state…");
+    m_operationStatusText = tr("Waiting for the device to confirm the change…");
     if (pending.request.kind == OperationKind::AcquireDiscovery) {
       m_discoveryLease = pending.request.target;
       m_discoveryLeaseOwner = pending.owner;
@@ -462,7 +474,7 @@ void BluetoothSettingsModel::synchronizeAuthority() {
               && m_client.snapshot().epoch != m_promptPending->epoch))) {
     m_promptPending.reset();
     m_operationStatusText.clear();
-    m_errorText = tr("Bluetooth authority changed. The pairing response was not replayed.");
+    m_errorText = tr("Bluetooth restarted during pairing. Check the device and try pairing again.");
   }
   if (m_pending && (m_client.owner() != m_pending->owner
                     || (m_client.hasSnapshot()
@@ -472,7 +484,7 @@ void BluetoothSettingsModel::synchronizeAuthority() {
     m_pending.reset();
     m_convergence.reset();
     m_operationStatusText.clear();
-    m_errorText = tr("Bluetooth authority changed. The operation was not replayed.");
+    m_errorText = tr("Bluetooth restarted during the change. Refresh the device list to check its state.");
     if (retiredAcquire && !m_discoveryLease.has_value()) {
       m_releaseRequested = false;
       m_automaticReleaseBlocked = false;
@@ -514,7 +526,9 @@ void BluetoothSettingsModel::tryAutomaticRelease() {
 
 void BluetoothSettingsModel::reject(const QString &reason) {
   m_operationStatusText.clear();
-  m_errorText = tr("The Bluetooth request was not admitted (%1).").arg(reason);
+  m_errorText = reason == QStringLiteral("not-paired")
+      ? tr("Pair this device before connecting.")
+      : tr("That Bluetooth change is unavailable. Refresh the device list and try again.");
   Q_EMIT actionRejected(reason);
   Q_EMIT viewChanged();
 }
@@ -522,13 +536,13 @@ void BluetoothSettingsModel::reject(const QString &reason) {
 QString BluetoothSettingsModel::failureText(const OperationResult &result) const {
   switch (result.status) {
   case OperationStatus::Rejected:
-    return tr("The Bluetooth request was rejected (%1).").arg(result.reasonCode);
+    return tr("That Bluetooth change is unavailable. Check the device and try again.");
   case OperationStatus::Unsupported:
     return tr("That Bluetooth operation is not supported.");
   case OperationStatus::Busy:
     return tr("Bluetooth is busy; wait for the current operation to finish.");
   case OperationStatus::Failed:
-    return tr("The Bluetooth operation failed (%1).").arg(result.reasonCode);
+    return tr("The Bluetooth change failed. Make sure the device is nearby and try again.");
   case OperationStatus::Uncertain:
     return tr("The Bluetooth operation result is uncertain.");
   case OperationStatus::Succeeded:

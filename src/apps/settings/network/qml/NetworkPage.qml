@@ -68,9 +68,6 @@ T.Page {
                     : StateCard.Error
             title: root.networkSettings.connectivityText
             message: root.networkSettings.statusText
-            actionText: root.networkSettings.reloadAvailable
-                        && !root.networkSettings.ready ? qsTr("Retry") : ""
-            onActionTriggered: root.networkSettings.reload()
         }
 
         Label {
@@ -94,12 +91,13 @@ T.Page {
 
         StateCard {
             objectName: "networkCredentialBoundary"
+            visible: !root.networkSettings.secretAgentRegistered
             Layout.fillWidth: true
             status: root.networkSettings.secretAgentRegistered
                     ? StateCard.Success : StateCard.Warning
             title: root.networkSettings.secretAgentRegistered
-                   ? qsTr("Credential prompt available")
-                   : qsTr("Credential prompt unavailable")
+                   ? qsTr("Wi-Fi password prompts available")
+                   : qsTr("Wi-Fi password prompts unavailable")
             message: root.networkSettings.secretAgentStatusText
         }
 
@@ -198,7 +196,7 @@ T.Page {
                 busy: root.networkSettings.loading
                 emphasized: false
                 text: qsTr("Reload")
-                accessibleDescription: qsTr("Reload authoritative Network1 state")
+                accessibleDescription: qsTr("Refresh network connections")
                 onClicked: root.networkSettings.reload()
             }
 

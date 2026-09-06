@@ -3,6 +3,10 @@
 #include "support/bluez_harness.h"
 
 #include <QtTest>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QDir>
+#include <QTimer>
 
 #include <algorithm>
 
@@ -19,6 +23,7 @@ class BluezAdapterBackendTests final : public QObject
 
 private Q_SLOTS:
     void absentAtStartupPublishesUnavailable();
+    void activatesInstalledBluezOnColdStart();
     void initialInventoryMapsTruth();
     void powerToggleRoundTrip();
     void hostilePropertiesAreBounded();
@@ -30,6 +35,30 @@ private Q_SLOTS:
     void invalidConnectionFailsClosed();
 };
 
+void BluezAdapterBackendTests::activatesInstalledBluezOnColdStart()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    const QString serviceDirectory = root.filePath(QStringLiteral("share/dbus-1/services"));
+    QVERIFY(QDir().mkpath(serviceDirectory));
+    QFile descriptor(serviceDirectory + QStringLiteral("/org.bluez.service"));
+    QVERIFY(descriptor.open(QIODevice::WriteOnly));
+    descriptor.write("[D-BUS Service]\nName=org.bluez\nExec=");
+    descriptor.write(QCoreApplication::applicationFilePath().toUtf8());
+    descriptor.write(" --activation-fake\n");
+    descriptor.close();
+    QindaQt::Tests::PrivateBus bus;
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QStringLiteral("XDG_DATA_DIRS"), root.filePath(QStringLiteral("share")));
+    bus.process.setProcessEnvironment(environment);
+    QVERIFY(bus.start());
+    BluezAdapterBackend backend(bus.connection);
+    BluetoothModel model(&backend, 7011);
+    model.start();
+    QTRY_COMPARE_WITH_TIMEOUT(model.snapshot().availability, Availability::Ready, 5000);
+    QCOMPARE(model.snapshot().adapters.size(), 1);
+}
+
 void BluezAdapterBackendTests::absentAtStartupPublishesUnavailable()
 {
     BluezHarness harness(7001);
@@ -39,7 +68,7 @@ void BluezAdapterBackendTests::absentAtStartupPublishesUnavailable()
     harness.model->start();
     QVERIFY(harness.waitUnavailable());
     const Snapshot snapshot = harness.model->snapshot();
-    QCOMPARE(snapshot.reasonCode, QStringLiteral("no-adapter"));
+    QCOMPARE(snapshot.reasonCode, QStringLiteral("bluez-unavailable"));
     QVERIFY(snapshot.adapters.isEmpty());
     QVERIFY(snapshot.devices.isEmpty());
 }
@@ -393,7 +422,7 @@ void BluezAdapterBackendTests::invalidConnectionFailsClosed()
     QVERIFY(QTest::qWaitFor([&model] {
         return model.snapshot().availability == Availability::Unavailable;
     }));
-    QCOMPARE(model.snapshot().reasonCode, QStringLiteral("no-adapter"));
+    QCOMPARE(model.snapshot().reasonCode, QStringLiteral("bluez-unavailable"));
     const OperationSubmission submission = model.submit(
         {.kind = OperationKind::SetAdapterPower, .target = {.epoch = 7009, .serial = 1}},
         QStringLiteral(":1.10"));
@@ -402,5 +431,21 @@ void BluezAdapterBackendTests::invalidConnectionFailsClosed()
     QCOMPARE(submission.immediateResult.reasonCode, QStringLiteral("unavailable"));
 }
 
-QTEST_GUILESS_MAIN(BluezAdapterBackendTests)
+int main(int argc, char **argv)
+{
+    QCoreApplication application(argc, argv);
+    if (application.arguments().contains(QStringLiteral("--activation-fake"))) {
+        FakeBluez fake(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"));
+        (void)fake.addAdapter(QStringLiteral("hci0"), QStringLiteral("AA:BB:CC:00:11:22"),
+                        QStringLiteral("Activated adapter"), true);
+        if (!fake.takeOwnership()) return 2;
+        QTimer::singleShot(10'000, &application, &QCoreApplication::quit);
+        QDBusConnection::sessionBus().connect(QString{}, QStringLiteral("/org/freedesktop/DBus/Local"),
+            QStringLiteral("org.freedesktop.DBus.Local"), QStringLiteral("Disconnected"),
+            &application, SLOT(quit()));
+        return application.exec();
+    }
+    BluezAdapterBackendTests tests;
+    return QTest::qExec(&tests, argc, argv);
+}
 #include "tst_bluez_adapter_backend.moc"

@@ -37,6 +37,7 @@ private Q_SLOTS:
 private:
     void setOwner(const QString &owner);
     void queryInitialOwner();
+    void requestActivation();
 
     class Private;
     std::unique_ptr<Private> d;

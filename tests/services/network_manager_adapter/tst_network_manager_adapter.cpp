@@ -5,6 +5,7 @@
 #include <qindaqt/services/network_manager_adapter/network_manager_backend.h>
 #include <qindaqt/services/network_model/network_model.h>
 #include <qindaqt/services/network_protocol/network_identity.h>
+#include <qindaqt/services/network_protocol/network_limits.h>
 #include <qindaqt/services/network_protocol/network_validation.h>
 
 #include <QtCore/QElapsedTimer>
@@ -161,6 +162,7 @@ private Q_SLOTS:
   void defersSynchronousStartFactsUntilGenerationIsReturned();
   void mapsBoundedSecretFreeFacts();
   void degradesMalformedAndUnavailableFacts();
+  void denseWifiInventoryKeepsStrongestAndRemainsReady();
   void dispatchesEveryPermittedIntentThroughInjectedPort();
   void fencesStopAndAuthorityReplacement();
   void concreteOwnerNotificationFencesLossAndReplacementBelowPoll();
@@ -223,6 +225,34 @@ void NetworkManagerAdapterTests::mapsBoundedSecretFreeFacts() {
   snapshot.knownNetworks = result.knownNetworks;
   snapshot.activeConnections = result.activeConnections;
   QVERIFY(validateSnapshot(snapshot).accepted);
+}
+
+void NetworkManagerAdapterTests::denseWifiInventoryKeepsStrongestAndRemainsReady() {
+  auto port = std::make_unique<FakeNetworkManagerPort>();
+  auto *fake = port.get();
+  NetworkManagerBackend backend(std::move(port));
+  QSignalSpy observed(&backend, &NetworkBackend::observationReady);
+  QVERIFY(backend.start() != 0);
+  Facts dense = validFacts();
+  dense.accessPoints.clear();
+  for (int i = 0; i < 90; ++i) {
+    dense.accessPoints.append({QStringLiteral("wlan0"), QByteArray("Cafe"),
+        QStringLiteral("02:00:00:00:00:%1").arg(i, 2, 16, QLatin1Char('0')),
+        SecuritySuite::Wpa2Personal, 5180, static_cast<quint32>(i)});
+  }
+  fake->publish(dense);
+  const BackendObservation snapshot = observed.takeFirst().at(1).value<BackendObservation>();
+  QCOMPARE(snapshot.availability, Availability::Ready);
+  QCOMPARE(snapshot.connectivity, ConnectivityKind::Full);
+  QCOMPARE(snapshot.accessPoints.size(), kMaxAccessPoints);
+  QCOMPARE(snapshot.activeConnections.size(), 1);
+  QVERIFY(snapshot.capabilities.testFlag(Capability::VisibleNetworkControl));
+  QVERIFY(snapshot.capabilities.testFlag(Capability::ActiveConnectionControl));
+  for (const AccessPoint &point : snapshot.accessPoints) {
+    QVERIFY(point.signalStrength >= 26);
+  }
+  QVERIFY(std::is_sorted(snapshot.accessPoints.cbegin(), snapshot.accessPoints.cend(),
+      [](const AccessPoint &left, const AccessPoint &right) { return left.bssid < right.bssid; }));
 }
 
 void NetworkManagerAdapterTests::degradesMalformedAndUnavailableFacts() {

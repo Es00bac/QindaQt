@@ -60,3 +60,17 @@ set_tests_properties(
         LABELS "session;service;dbus"
         ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
+
+qt_add_executable(qindaqt_session_activation_publisher session_activation_publisher.cpp)
+target_include_directories(qindaqt_session_activation_publisher PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_session_activation_publisher PRIVATE QindaQt::SessionSupervisorSupport)
+qindaqt_enable_warnings(qindaqt_session_activation_publisher)
+qt_add_executable(qindaqt_activation_environment_tests tst_activation_environment.cpp)
+target_link_libraries(qindaqt_activation_environment_tests PRIVATE Qt6::Core Qt6::DBus Qt6::Test)
+target_compile_definitions(qindaqt_activation_environment_tests PRIVATE
+    QINDAQT_ACTIVATION_PUBLISHER="$<TARGET_FILE:qindaqt_session_activation_publisher>")
+add_dependencies(qindaqt_activation_environment_tests qindaqt_session_activation_publisher)
+qindaqt_enable_warnings(qindaqt_activation_environment_tests)
+add_test(NAME qindaqt.session-activation-environment
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_activation_environment_tests>)
+set_tests_properties(qindaqt.session-activation-environment PROPERTIES TIMEOUT 15 LABELS "session;dbus")

@@ -20,7 +20,7 @@ struct Fixture final {
   NetworkSettingsModel model;
 
   Fixture()
-      : client(transport, [this] { return now; }, fastTiming()), model(client) {
+      : client(transport, [this] { return now; }, fastTiming()), model(client, QDBusConnection(QStringLiteral("no-host-presence"))) {
     transport.setSnapshot(readySnapshot());
     const bool started = client.start();
     Q_ASSERT(started);

@@ -56,7 +56,7 @@ void AudioSettingsModelTest::projectsBoundedAuthoritativeInventory() {
   QCOMPARE(fixture.model.serviceOwner(), QStringLiteral(":1.7"));
   QCOMPARE(fixture.model.serviceEpoch(), qulonglong(11));
   QCOMPARE(fixture.model.serviceRevision(), qulonglong(2));
-  QVERIFY(fixture.model.statusText().contains(QStringLiteral("Authoritative")));
+  QVERIFY(fixture.model.statusText().contains(QStringLiteral("volume")));
   QCOMPARE(fixture.model.defaultOutputName(), QStringLiteral("Desk Speakers"));
   QCOMPARE(fixture.model.defaultInputName(), QStringLiteral("Desk Microphone"));
 

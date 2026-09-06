@@ -9,6 +9,8 @@
 #include <QTextStream>
 #include <QtDBus/QDBusConnection>
 
+#include "../src/activation_environment.h"
+
 #include <utility>
 
 using namespace QindaQt::SessionSupervisor;
@@ -52,6 +54,9 @@ int main(int argc, char *argv[])
                             << error << '\n';
         return 2;
     }
+
+    publishActivationEnvironment(QDBusConnection::sessionBus(),
+                                 QProcessEnvironment::systemEnvironment());
 
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));

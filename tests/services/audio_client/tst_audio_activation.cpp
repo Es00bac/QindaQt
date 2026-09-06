@@ -184,17 +184,7 @@ void AudioActivationTests::daemonLossExitsAndReplacementStartsFresh()
     PrivateActivatingBus firstBus;
     QVERIFY(firstBus.start());
 
-    QDBusMessage start = QDBusMessage::createMethodCall(
-        QStringLiteral("org.freedesktop.DBus"),
-        QStringLiteral("/org/freedesktop/DBus"),
-        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
-    start.setArguments({QString::fromLatin1(kServiceName), quint32(0)});
-    QDBusPendingCallWatcher activation(firstBus.connection.asyncCall(start));
-    QSignalSpy activated(&activation, &QDBusPendingCallWatcher::finished);
-    QTRY_COMPARE_WITH_TIMEOUT(activated.size(), 1, 5000);
-    const QDBusPendingReply<quint32> activationReply = activation;
-    QVERIFY2(!activationReply.isError(), qPrintable(activationReply.error().message()));
-
+    // Starting the public client must activate its installed service.
     QtAudioTransport firstTransport(firstBus.connection);
     AudioClient firstClient(&firstTransport);
     firstClient.start();
@@ -215,13 +205,6 @@ void AudioActivationTests::daemonLossExitsAndReplacementStartsFresh()
     // assign the same textual owner as the first independent bus.
     PrivateActivatingBus secondBus;
     QVERIFY(secondBus.start(true));
-    QDBusPendingCallWatcher secondActivation(secondBus.connection.asyncCall(start));
-    QSignalSpy secondActivated(&secondActivation, &QDBusPendingCallWatcher::finished);
-    QTRY_COMPARE_WITH_TIMEOUT(secondActivated.size(), 1, 5000);
-    const QDBusPendingReply<quint32> secondActivationReply = secondActivation;
-    QVERIFY2(!secondActivationReply.isError(),
-             qPrintable(secondActivationReply.error().message()));
-
     QtAudioTransport secondTransport(secondBus.connection);
     AudioClient secondClient(&secondTransport);
     secondClient.start();

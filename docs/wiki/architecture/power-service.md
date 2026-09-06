@@ -316,3 +316,10 @@ provider, external monitor, hardware key, or host-session integration. The
 logind action boundary has no Power1 v1 or shell presentation route, and the
 sysfs write primitive has no public Power1 v1 operation. Those later slices
 require their own executable and hardware evidence.
+
+## Consumer-triggered recovery
+
+The Qt Power client now requests installed-service activation at startup and
+after owner loss, with one in-flight activation request and a one-second retry
+interval. Exact-owner snapshot resolution follows activation, without replaying
+controls. Cold-client activation and daemon replacement are private-bus gates.

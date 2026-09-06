@@ -33,6 +33,7 @@ public:
 
 private:
     void queryInitialOwner();
+    void requestActivation();
     void setOwner(const QString &owner);
 
 private Q_SLOTS:

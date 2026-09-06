@@ -93,6 +93,9 @@ Service::BackendObservation mapNetworkManagerFacts(const Facts &facts) {
   QSet<QString> accessPointKeys;
   QList<AccessPointFact> points = facts.accessPoints;
   sorted(points, [](const AccessPointFact &left, const AccessPointFact &right) {
+    if (left.signalStrength != right.signalStrength) {
+      return left.signalStrength > right.signalStrength;
+    }
     if (left.deviceInterface != right.deviceInterface) {
       return left.deviceInterface < right.deviceInterface;
     }
@@ -110,7 +113,7 @@ Service::BackendObservation mapNetworkManagerFacts(const Facts &facts) {
                      });
     const QString key =
         fact.deviceInterface + QLatin1Char('/') + fact.bssid.toLower();
-    if (result.accessPoints.size() >= kMaxAccessPoints || !identity.valid ||
+    if (!identity.valid ||
         !normalizeInterfaceName(fact.deviceInterface, &interfaceName) ||
         !normalizeBssid(fact.bssid, &bssid) ||
         device == result.devices.cend() || accessPointKeys.contains(key) ||
@@ -122,10 +125,21 @@ Service::BackendObservation mapNetworkManagerFacts(const Facts &facts) {
       continue;
     }
     accessPointKeys.insert(key);
+    // AGENT-NOTE: Dense Wi-Fi environments routinely exceed the wire budget.
+    // A bounded strongest-signal inventory is current, usable information;
+    // truncation must not disable radio/disconnect controls for the session.
+    if (result.accessPoints.size() >= kMaxAccessPoints) {
+      continue;
+    }
     result.accessPoints.append({interfaceName, identity.text, identity.hidden,
                                 bssid, fact.security, fact.frequencyMHz,
                                 fact.signalStrength});
   }
+
+  sorted(result.accessPoints, [](const AccessPoint &left, const AccessPoint &right) {
+    return left.deviceInterface != right.deviceInterface
+        ? left.deviceInterface < right.deviceInterface : left.bssid < right.bssid;
+  });
 
   QSet<QString> activeDevices;
   QList<ActiveConnectionFact> active = facts.activeConnections;

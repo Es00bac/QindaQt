@@ -226,3 +226,15 @@ and integrated-session gates.
 
 The applet's separate focused offscreen/package evidence does not change those
 platform nonclaims; hardware and integrated-session gates remain.
+
+## Startup recovery and missing hardware
+
+The BlueZ adapter asks the system bus to activate the installed upstream daemon
+at startup before relying on its owner watcher for device inventory. An absent
+upstream now publishes `bluez-unavailable`; a running upstream with no adapters
+publishes `no-adapter`. The internal backend inventory carries that distinction.
+The public client has an observation-only refresh that cannot interrupt or
+repeat a pending mutation. Settings provides one Try again action when the
+service is unavailable and separately explains missing hardware. A distribution
+whose BlueZ activation unit alias is absent still requires the system service
+to be enabled; the desktop does not install or configure system units.

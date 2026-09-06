@@ -38,8 +38,8 @@ ColumnLayout {
 
     SectionHeader {
         Layout.fillWidth: true
-        title: qsTr("Power profile")
-        description: qsTr("The active profile and the profiles currently admitted by Power1")
+        title: qsTr("Power mode")
+        description: qsTr("Choose between power saving and performance.")
     }
 
     Repeater {

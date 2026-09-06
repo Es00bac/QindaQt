@@ -69,9 +69,10 @@ Snapshot BluetoothModel::projectInventory(const BackendInventory &inventory) con
     snapshot.schemaVersion = kSchemaVersion;
     snapshot.epoch = m_snapshot.epoch;
     snapshot.revision = m_snapshot.revision;
-    if (inventory.adapters.isEmpty()) {
+    if (!inventory.upstreamAvailable || inventory.adapters.isEmpty()) {
         snapshot.availability = Availability::Unavailable;
-        snapshot.reasonCode = QStringLiteral("no-adapter");
+        snapshot.reasonCode = inventory.upstreamAvailable
+            ? QStringLiteral("no-adapter") : QStringLiteral("bluez-unavailable");
         return snapshot;
     }
     snapshot.availability = Availability::Ready;

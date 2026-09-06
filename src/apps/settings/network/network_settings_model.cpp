@@ -191,7 +191,7 @@ bool NetworkSettingsModel::unavailable() const noexcept {
 }
 
 bool NetworkSettingsModel::stale() const {
-  return m_client.projection().hasSnapshot && !ready();
+  return m_client.projection().hasSnapshot && !m_client.snapshotCurrent();
 }
 
 bool NetworkSettingsModel::busy() const noexcept {
@@ -216,12 +216,8 @@ bool NetworkSettingsModel::secretAgentRegistered() const noexcept {
 
 QString NetworkSettingsModel::secretAgentStatusText() const {
   return secretAgentRegistered()
-             ? tr("The QindaQt credential prompt is registered with "
-                  "NetworkManager. A password prompt will appear for a "
-                  "supported secured network; credentials still bypass this "
-                  "page and Network1.")
-             : tr("No secret agent running — secured networks cannot prompt. "
-                  "Open networks remain available.");
+             ? tr("A password prompt will appear when a network needs one.")
+             : tr("Password prompts are unavailable. Open and previously saved networks can still connect.");
 }
 
 QString NetworkSettingsModel::statusText() const {
@@ -236,7 +232,7 @@ QString NetworkSettingsModel::statusText() const {
     return tr("Network information is stale while the service recovers.");
   }
   if (degraded()) {
-    return tr("Network information could not be verified.");
+    return tr("Some network information is unavailable. The connection shown is current.");
   }
   return tr("The network service is unavailable.");
 }

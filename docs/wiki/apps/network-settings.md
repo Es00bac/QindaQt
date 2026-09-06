@@ -143,3 +143,12 @@ creation/editing, software-radio mutation, persistence control, a shell applet,
 physical network/radio qualification, or session-runtime integration. Its only
 profile-creation request is the fixed supported visible-network intent. The
 separate process owns the bounded credential-entry claim.
+
+## Recovery presentation
+
+Fresh limited snapshots no longer say the connection information is stale.
+The route reports stale information only after the client loses currentness.
+Normal AP truncation does not disable connection controls. The password-prompt
+notice is shown only when prompts are unavailable, and connection instructions
+use user-facing language. Model fixtures inject a disconnected presence bus so
+a running host credential agent cannot change their expected admission results.

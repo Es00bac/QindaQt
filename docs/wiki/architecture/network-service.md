@@ -178,3 +178,17 @@ This is deterministic process and software-boundary evidence only. The
 consumer without expanding N1 authority. Physical Wi-Fi, Ethernet, radios,
 stored-profile compatibility, external secret agents, credential entry, and
 host policy remain explicit later qualification.
+
+## Dense Wi-Fi inventory and freshness
+
+More than 64 nearby access points is normal in dense environments. The adapter
+selects the strongest 64 valid rows, uses deterministic interface/BSSID tie
+breaking, and restores canonical wire ordering. Truncation alone preserves
+Ready connectivity and control capabilities; malformed platform data still
+produces degraded truth. A 90-access-point regression proves bounded selection,
+active connectivity, and retained connection-control capabilities.
+
+The public client exposes `snapshotCurrent()` separately from availability.
+Accepted limited snapshots are current; failed refreshes retain last-known rows
+with currentness false. Settings therefore distinguishes partial information
+from stale information after transport or validation failure.

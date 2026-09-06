@@ -15,8 +15,8 @@ ColumnLayout {
 
     SectionHeader {
         Layout.fillWidth: true
-        title: qsTr("Visible Wi-Fi networks")
-        description: qsTr("Connect creates a profile without sending credentials through Settings or Network1")
+        title: qsTr("Wi-Fi networks")
+        description: qsTr("Choose a network to connect. Secured networks ask for a password.")
     }
 
     Repeater {

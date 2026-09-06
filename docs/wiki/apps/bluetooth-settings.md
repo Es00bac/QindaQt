@@ -166,3 +166,10 @@ Release profiles.
 This slice does not claim physical-device interoperability, persistent
 preferences, live BlueZ or radio behavior, host-bus integration, live AT-SPI,
 screen-reader traversal, or nested-session screenshots.
+
+## Recovery presentation
+
+The route distinguishes an unavailable upstream service from a current empty
+adapter inventory, provides a single Try again observation action, and shows
+themed device icons instead of letter abbreviations. Search instructions and
+errors avoid protocol, lease, and raw reason-code language.

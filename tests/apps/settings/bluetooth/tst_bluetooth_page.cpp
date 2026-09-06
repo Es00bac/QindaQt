@@ -109,7 +109,7 @@ void BluetoothPageTest::rendersWideInventoryAndPairingActions() {
   QVERIFY(pair != nullptr);
   QVERIFY(trust != nullptr);
   QVERIFY(forget != nullptr);
-  QCOMPARE(classIcon->property("text").toString(), QStringLiteral("HP"));
+  QCOMPARE(classIcon->property("deviceIconName").toString(), QStringLiteral("audio-headphones"));
   QVERIFY(adapterLayout != nullptr);
   QCOMPARE(adapterLayout->property("columns").toInt(), 3);
   QVERIFY(power->isEnabled());

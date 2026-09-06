@@ -168,3 +168,11 @@ That evidence does not qualify USB, HDMI, Bluetooth, jack sensing,
 multichannel/channel-volume semantics, a physical microphone or speaker,
 suspend/resume, hotplug churn, realtime scheduling, memory/CPU budgets, or
 either future UI. Those remain hardware and integrated-session gates.
+
+## Consumer-triggered recovery
+
+The Qt client requests D-Bus activation when it starts and after owner loss,
+with at most one activation request in flight and a one-second retry interval.
+Activation resolves an exact unique owner before any snapshot request; controls
+are never replayed. Private activation tests start only the public client, so
+they cover a genuinely cold installed service instead of pre-starting it.

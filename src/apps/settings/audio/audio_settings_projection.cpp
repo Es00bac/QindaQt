@@ -132,7 +132,7 @@ QString AudioSettingsModel::statusText() const {
     return translateAudio("Connecting to the audio service…");
   }
   if (ready()) {
-    return translateAudio("Authoritative audio state is shown.");
+    return translateAudio("Choose your speakers and microphone, and adjust their volume.");
   }
   if (stale()) {
     return translateAudio("Audio information is stale while the service recovers.");

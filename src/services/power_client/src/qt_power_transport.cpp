@@ -5,6 +5,7 @@
 #include <qindaqt/services/power_protocol/power_dbus.h>
 #include <qindaqt/services/power_protocol/power_limits.h>
 
+#include <QtCore/QTimer>
 #include <QtDBus/QDBusError>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
@@ -46,6 +47,9 @@ public:
     QString owner;
     quint64 ownerGeneration = 0;
     std::unique_ptr<QDBusServiceWatcher> watcher;
+    QTimer activationRetry;
+    bool activationPending = false;
+    bool ownerResolved = false;
     bool running = false;
 };
 
@@ -57,6 +61,10 @@ QtPowerTransport::QtPowerTransport(const QDBusConnection &connection,
                                             : std::move(serviceName)))
 {
     registerDBusTypes();
+    d->activationRetry.setSingleShot(true);
+    d->activationRetry.setInterval(1000);
+    connect(&d->activationRetry, &QTimer::timeout, this,
+            &QtPowerTransport::requestActivation);
 }
 
 QtPowerTransport::~QtPowerTransport()
@@ -76,6 +84,7 @@ void QtPowerTransport::start()
     connect(d->watcher.get(), &QDBusServiceWatcher::serviceOwnerChanged, this,
             &QtPowerTransport::onServiceOwnerChanged);
     queryInitialOwner();
+    requestActivation();
 }
 
 void QtPowerTransport::stop()
@@ -84,9 +93,12 @@ void QtPowerTransport::stop()
         return;
     }
     d->running = false;
+    d->activationRetry.stop();
+    d->activationPending = false;
     ++d->ownerGeneration;
     setOwner({});
     d->watcher.reset();
+    d->ownerResolved = false;
 }
 
 void QtPowerTransport::queryInitialOwner()
@@ -111,6 +123,34 @@ void QtPowerTransport::queryInitialOwner()
             });
 }
 
+void QtPowerTransport::requestActivation()
+{
+    if (!d->running || d->activationPending || !d->owner.isEmpty()) {
+        return;
+    }
+    d->activationPending = true;
+    const quint64 generation = d->ownerGeneration;
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+    call.setArguments({d->serviceName, quint32(0)});
+    auto *watcher = new QDBusPendingCallWatcher(d->connection.asyncCall(call), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, generation](QDBusPendingCallWatcher *) {
+                watcher->deleteLater();
+                if (!d->running || generation != d->ownerGeneration) {
+                    return;
+                }
+                d->activationPending = false;
+                // AGENT-GUARD: Activation only requests residency. Resolve the
+                // unique owner before fetching; never replay a control request.
+                queryInitialOwner();
+                if (d->owner.isEmpty() && d->connection.isConnected()) {
+                    d->activationRetry.start();
+                }
+            });
+}
+
 void QtPowerTransport::onServiceOwnerChanged(const QString &service,
                                              const QString &oldOwner,
                                              const QString &newOwner)
@@ -118,13 +158,19 @@ void QtPowerTransport::onServiceOwnerChanged(const QString &service,
     Q_UNUSED(oldOwner)
     if (d->running && service == d->serviceName) {
         ++d->ownerGeneration;
+        d->activationPending = false;
         setOwner(newOwner);
+        if (newOwner.isEmpty()) {
+            d->activationRetry.start();
+        } else {
+            d->activationRetry.stop();
+        }
     }
 }
 
 void QtPowerTransport::setOwner(const QString &owner)
 {
-    if (owner == d->owner) {
+    if (owner == d->owner && d->ownerResolved) {
         return;
     }
     if (!d->owner.isEmpty()) {
@@ -133,6 +179,7 @@ void QtPowerTransport::setOwner(const QString &owner)
                                  QStringLiteral("Changed"), this,
                                  SLOT(onChanged(quint64,quint64)));
     }
+    d->ownerResolved = true;
     d->owner = owner;
     if (!d->owner.isEmpty()) {
         d->connection.connect(d->owner, QString::fromLatin1(kObjectPath),

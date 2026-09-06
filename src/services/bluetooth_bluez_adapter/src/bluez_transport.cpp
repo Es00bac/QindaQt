@@ -131,6 +131,21 @@ void BluezTransport::start()
     connect(m_watcher.get(), &QDBusServiceWatcher::serviceOwnerChanged, this,
             &BluezTransport::onOwnerWatchChanged);
     queryInitialOwner();
+    // BlueZ is commonly installed for bus activation without being enabled at
+    // boot. Request residency; the owner watcher still gates all device I/O.
+    QDBusMessage activation = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+    activation.setArguments({QString(kBluezServiceName), quint32(0)});
+    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(activation), this);
+    const quint64 token = m_ownerToken;
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, token](QDBusPendingCallWatcher *) {
+                watcher->deleteLater();
+                if (m_running && token == m_ownerToken) {
+                    queryInitialOwner();
+                }
+            });
 }
 
 void BluezTransport::stop()

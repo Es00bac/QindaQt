@@ -89,9 +89,6 @@ T.Page {
                    : root.audioSettings.ready ? qsTr("Audio service ready")
                    : qsTr("Audio service unavailable")
             message: root.audioSettings.statusText
-            actionText: root.audioSettings.reloadAvailable
-                        && !root.audioSettings.ready ? qsTr("Retry") : ""
-            onActionTriggered: root.audioSettings.reload()
         }
 
         Label {
@@ -250,10 +247,7 @@ T.Page {
                 Layout.fillWidth: true
                 text: root.audioSettings.busy
                       ? qsTr("An audio change is in progress…")
-                      : root.audioSettings.serviceEpoch > 0
-                        ? qsTr("Epoch %1, revision %2")
-                          .arg(root.audioSettings.serviceEpoch)
-                          .arg(root.audioSettings.serviceRevision)
+
                         : ""
                 muted: true
                 Accessible.name: text

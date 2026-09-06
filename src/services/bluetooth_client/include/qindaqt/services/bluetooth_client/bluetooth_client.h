@@ -42,6 +42,8 @@ public:
 
     void start();
     void stop();
+    // Refresh observation only; never interrupts or repeats a pending mutation.
+    void refresh();
     [[nodiscard]] ClientState state() const noexcept;
     [[nodiscard]] QString reasonCode() const;
     [[nodiscard]] QString owner() const;

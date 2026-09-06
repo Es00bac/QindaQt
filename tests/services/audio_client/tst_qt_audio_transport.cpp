@@ -69,8 +69,24 @@ class QtAudioTransportTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void absentServiceLeavesStartingState();
     void successiveOwnersAndDelayedOperation();
 };
+
+void QtAudioTransportTests::absentServiceLeavesStartingState()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    QtAudioTransport transport(bus.connection, QStringLiteral("org.qindaqt.AbsentService"));
+    QSignalSpy owners(&transport, &AudioTransport::ownerChanged);
+    transport.start();
+    QTRY_COMPARE_WITH_TIMEOUT(owners.size(), 1, 2000);
+    QVERIFY(owners.constFirst().constFirst().toString().isEmpty());
+    transport.stop();
+    transport.start();
+    QTRY_COMPARE_WITH_TIMEOUT(owners.size(), 2, 2000);
+    QVERIFY(owners.constLast().constFirst().toString().isEmpty());
+}
 
 void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
 {

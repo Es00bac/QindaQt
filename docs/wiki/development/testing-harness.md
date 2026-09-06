@@ -3216,3 +3216,14 @@ Performance gates initially measure a 1,024 MiB aggregate idle PSS ceiling and
 latency, overview animation, and metrics overhead. The memory ceiling is a
 bring-up budget, not a reason to block functional integration prematurely;
 measure first, then lower it from evidence after the nested desktop is stable.
+
+### Settings service recovery regressions
+
+`qindaqt.audio-activation` and `qindaqt.power-activation` start a cold public
+client against private activation descriptors.
+`qindaqt.network-networkmanager-adapter` covers a 90-AP neighborhood with current
+connectivity and retained controls; `qindaqt.network-settings-model` separates
+current partial inventory from stale retained rows.
+`qindaqt.session-activation-environment` runs a publisher subprocess against a
+private broker and fake user manager, proving startup environment propagation.
+These rows never start, stop, or reconfigure host services.
