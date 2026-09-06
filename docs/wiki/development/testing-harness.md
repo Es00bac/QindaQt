@@ -2807,6 +2807,25 @@ shortcut reveal, and the installed notification center opened with `Meta+N`
 holds the panel visible after that shortcut lease expires. A second `Meta+N`
 closes the center and must allow the panel to hide again.
 
+### Optional fullscreen control for a private runtime row
+
+The panel-visibility probe normally completes those eight phases and exits. An
+explicit `--control-file /var/lib/qindaqt-evidence/<name>` instead stops after
+its real moved-away drag, writes `<name>.ack` with a schema-v1 `ready` record,
+and waits for the private runner to atomically replace `<name>` with one command:
+`{"schemaVersion":1,"sequence":N,"action":"fullscreen","enabled":true|false}`
+or `{"schemaVersion":1,"sequence":N,"action":"close"}`. Every accepted
+command replaces the acknowledgement with the matching sequence and observed
+client fullscreen state. The wait is bounded to 45 seconds and records
+`timed-out` before failure.
+
+This is a test-client control boundary only. The runner maps the file through
+the existing per-run writable evidence directory, uses unique increasing
+sequences, and still proves compositor state through public snapshots. The
+probe does not activate its window while processing fullscreen commands, so the
+runner's real drag and focus transitions retain ownership. The default panel
+row passes no control file and therefore preserves its original phase flow.
+
 System-KWin rows keep the private Weston prefix out of the sandbox-global
 `LD_LIBRARY_PATH`; this is what prevents `/usr/bin/kwin_wayland` from borrowing
 an ABI-incompatible private libkwin. The launch boundary instead passes the
