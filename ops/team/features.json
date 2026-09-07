@@ -221,7 +221,7 @@
             {
               "kind": "commit",
               "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
-              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File \u2192 New action succeed."
+              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File → New action succeed."
             }
           ],
           "caveat": "Native popup positioning repair and physical-session deployment remain open; Sloom exporter selection is integrated with real panel consumption pending."
@@ -341,7 +341,7 @@
             {
               "kind": "commit",
               "reference": "f3abd4ab",
-              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by R\u00f3zsa P\u00e9ter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             },
             {
               "kind": "commit",
@@ -1148,7 +1148,7 @@
           "title": "QindaQt Text Editor",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge. S2 adds bounded multi-document hosting with independent per-document persistence and external-change truth, bounded find/replace, and a Settings1-governed paths-only restore policy (ADR-0065).",
+          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge. S2 adds bounded multi-document hosting with independent per-document persistence and external-change truth, bounded find/replace, and a Settings1-governed paths-only restore policy (ADR-0065). The September 7 daily-use update adds line numbers, filename-based syntax highlighting, line navigation, indentation, per-tab wrapping and zoom.",
           "evidence": [
             {
               "kind": "commit",
@@ -1169,6 +1169,11 @@
               "kind": "commit",
               "reference": "28bcd37cc8ba472510dabed9132088e4ae1d8858",
               "summary": "The exact Text Editor S2 candidate d68f8b1 (Olga Ladyzhenskaya, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting symlinked-parent path uniqueness and restore-root containment defects) is integrated with its ADR renumbered to 0065; the merged tree passes editor, settings, app-shell, terminal, and file-manager rows 97/97 in Debug and Release, the static gates, and the broad safe Debug suite 494/495 with the single failing session-probe unit row passing on isolated re-run (attributed to the concurrent nested-row review on the host)."
+            },
+            {
+              "kind": "commit",
+              "reference": "44fff730",
+              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             }
           ],
           "caveat": "Portals, print, extensions, rich text, a nested display screenshot matrix, and whole-application assistive-technology qualification remain."
@@ -1178,7 +1183,7 @@
           "title": "QindaQt File Manager",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime. S1 adds recoverable local mutation (new folder, rename, copy, move, trash, restore, empty trash) with freedesktop Trash records, atomic no-replace primitives, changed-underneath identity checks, off-GUI-thread execution with cancellation, and keyboard/accessible confirmations through the AppShell action catalog.",
+          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime. S1 adds recoverable local mutation (new folder, rename, copy, move, trash, restore, empty trash) with freedesktop Trash records, atomic no-replace primitives, changed-underneath identity checks, off-GUI-thread execution with cancellation, and keyboard/accessible confirmations through the AppShell action catalog. S2 adds the editable path bar, identity-stable multi-selection and batch operations, sorting, hidden-file toggle, shared list/grid selection and bookmarks; primary-assistant repairs resolve the original selection review findings.",
           "evidence": [
             {
               "kind": "commit",
@@ -1194,6 +1199,11 @@
               "kind": "commit",
               "reference": "0b9795426898b4c089e52cff011285361ae39dc4",
               "summary": "The exact File Manager S1 candidate 9ade95a (Kathleen Antonelli, Moonshot Kimi, ACCEPT 0/0/0/0 after rejecting the QML identity precision loss, orphan-trash collision, and racing-overwrite defects) is integrated; the merged tree passes file-manager rows in Debug and Release under host isolation, the static gates, and the broad safe Debug suite 485/485."
+            },
+            {
+              "kind": "commit",
+              "reference": "44fff730",
+              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             }
           ],
           "caveat": "Mounts, search, previews, portals, nested screenshots, and whole-application assistive-technology qualification remain later slices."
@@ -1203,7 +1213,7 @@
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native Terminal S0 single-session slice is joined by S1: a bounded multi-session tab strip where every session owns its PTY/child with process-group-complete teardown (HUP, TERM, KILL escalation and verified emptiness before ownership release), validated profiles within the existing launch policy, Settings1 persistence with presented asynchronous apply outcomes and no-replay truth, AppShell action-catalog exposure, exact argv preservation, and keyboard/accessibility parity under host-unset isolation. S2 adds per-session scrollback search (bounded regex, wrap, keyboard parity, accessible announcements) and bounded link presentation with confirmed argv-only opening through the injected spawner.",
+          "summary": "The native Terminal S0 single-session slice is joined by S1: a bounded multi-session tab strip where every session owns its PTY/child with process-group-complete teardown (HUP, TERM, KILL escalation and verified emptiness before ownership release), validated profiles within the existing launch policy, Settings1 persistence with presented asynchronous apply outcomes and no-replay truth, AppShell action-catalog exposure, exact argv preservation, and keyboard/accessibility parity under host-unset isolation. S2 adds per-session scrollback search (bounded regex, wrap, keyboard parity, accessible announcements) and bounded link presentation with confirmed argv-only opening through the injected spawner. The September 7 daily-use update preserves terminal fonts through theme changes, adds per-tab zoom, and opens tabs in the active owned shell directory.",
           "evidence": [
             {
               "kind": "commit",
@@ -1224,9 +1234,14 @@
               "kind": "commit",
               "reference": "9e3422e96bc749fd923826b7f1c02be57d899b80",
               "summary": "The exact Terminal S2 candidate e030a42 (Sofia Kovalevskaya, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting cross-session search announcements and bidi format controls in the link gate) is integrated; the merged tree passes terminal, app-shell, and editor rows 34/34 in Debug and Release under host isolation, the static gates, and the broad safe Debug suite 489/489."
+            },
+            {
+              "kind": "commit",
+              "reference": "44fff730",
+              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             }
           ],
-          "caveat": "GPU rendering, global-menu export, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain."
+          "caveat": "GPU rendering, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain."
         },
         {
           "id": "QQ-006.09",
