@@ -40,7 +40,9 @@ jobs:
         run: ./tools/check-source-shape
 
       - name: Validate the release pin and packaging contract
-        run: ./tools/check-release-contract
+        run: |
+          python3 ./tools/test-check-release-contract
+          ./tools/check-release-contract
 
       - name: Install the pinned wiki toolchain
         run: >-
