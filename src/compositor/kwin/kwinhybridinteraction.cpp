@@ -171,20 +171,19 @@ void KWinHybridSession::dispatchChromePointerDecision(
         m_chromeManager->setPointerHover(decision.hovered);
     }
     for (const auto &containerId : decision.containerRaiseRequests) {
-        if (m_placement && m_placement->isShaded(containerId)) {
-            // AGENT-GUARD: raiseContainer's activateWindow() targets the
-            // group's activation representative, which for a shaded
-            // container is the content-preserving anchor -- genuinely
-            // Window::isHidden() by design, not "a real client" the way its
-            // own AGENT-CONTRACT assumes. Activating it anyway (observed via
-            // a live nested run) unhid and natively detached the other,
-            // plain-hidden member as a side effect. A shaded strip press
-            // needs no raise/activation at all: it is already the topmost
-            // input target the click just resolved to.
-            continue;
-        }
+        // AGENT-GUARD: raiseContainer's default activation targets the
+        // group's activation representative, which for a shaded container is
+        // the content-preserving anchor -- genuinely Window::isHidden() by
+        // design, not "a real client" the way its own AGENT-CONTRACT assumes.
+        // Activating it anyway (observed via a live nested run) unhid and
+        // natively detached the other, plain-hidden member as a side effect.
+        // A shaded strip's press still needs the real z-order raise (an
+        // occluded strip must come to front), just never the activation.
+        const auto raiseActivation = m_placement && m_placement->isShaded(containerId)
+            ? RaiseActivation::RaiseOnly
+            : RaiseActivation::ActivateRepresentative;
         QString error;
-        if (!m_groupStacking->raiseContainer(containerId, &error)) {
+        if (!m_groupStacking->raiseContainer(containerId, raiseActivation, &error)) {
             m_lastGroupStackingFailure = error;
             qWarning("QindaQt Hybrid group raise failed: %s", qPrintable(error));
             // The pointer router captured this press before requesting the

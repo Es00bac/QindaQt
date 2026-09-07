@@ -462,6 +462,42 @@ std::optional<HybridPointerWorkflowResult> exerciseHybridPointerWorkflow(
                             << QJsonDocument(shadeProof).toJson(QJsonDocument::Compact)
                             << '\n';
     }
+    const auto shadeOcclusionRaise = exerciseHybridPointerShadeOcclusionRaise(
+        client, pointer, *state, *settledForShade,
+        sharedTitleCenter(window(*settledForShade, state->gesture.sourceTitle),
+                          window(*settledForShade, state->gesture.targetTitle)),
+        activateProbe, error);
+    if (!shadeOcclusionRaise) {
+        return std::nullopt;
+    }
+    if (forceDevelopmentInput) {
+        // AGENT-NOTE: standalone breadcrumb, same rationale as
+        // QINDAQT_SHADE_PROOF above -- root's recorded bounded limitation
+        // (raising an occluded shaded strip must not activate the hidden
+        // anchor) needs its own real, live-run evidence regardless of what
+        // an unrelated later phase does.
+        const QJsonObject occlusionRaiseProof{
+            {QStringLiteral("sourceHiddenAfterRaise"),
+             window(shadeOcclusionRaise->raised, state->gesture.sourceTitle).hidden},
+            {QStringLiteral("targetHiddenAfterRaise"),
+             window(shadeOcclusionRaise->raised, state->gesture.targetTitle).hidden},
+            {QStringLiteral("framesUnchangedThroughRaise"),
+             sameGeometry(window(shadeOcclusionRaise->raised, state->gesture.sourceTitle).frame,
+                         window(*settledForShade, state->gesture.sourceTitle).frame)
+                 && sameGeometry(window(shadeOcclusionRaise->raised, state->gesture.targetTitle).frame,
+                                window(*settledForShade, state->gesture.targetTitle).frame)},
+            {QStringLiteral("groupAboveOccluderAfterRaise"),
+             std::max(window(shadeOcclusionRaise->raised, state->gesture.sourceTitle).stackIndex,
+                      window(shadeOcclusionRaise->raised, state->gesture.targetTitle).stackIndex)
+                 > window(shadeOcclusionRaise->raised, state->bystander).stackIndex},
+            {QStringLiteral("sourceVisibleAfterUnroll"),
+             !window(shadeOcclusionRaise->unrolled, state->gesture.sourceTitle).hidden},
+            {QStringLiteral("targetVisibleAfterUnroll"),
+             !window(shadeOcclusionRaise->unrolled, state->gesture.targetTitle).hidden}};
+        QTextStream(stderr) << "QINDAQT_SHADE_OCCLUSION_RAISE_PROOF="
+                            << QJsonDocument(occlusionRaiseProof).toJson(QJsonDocument::Compact)
+                            << '\n';
+    }
     const auto restart = exerciseHybridCompositorRestart(client, *state, error);
     if (!restart) {
         return std::nullopt;

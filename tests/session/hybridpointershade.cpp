@@ -3,6 +3,8 @@
 
 #include "hybridpointergrouping.h"
 
+#include <algorithm>
+
 namespace QindaQt::Test {
 namespace {
 
@@ -263,6 +265,180 @@ std::optional<HybridPointerShadeEvidence> exerciseHybridPointerShade(
     return HybridPointerShadeEvidence{*shaded, *unrolled, *shadedDiagnostics,
                                       *movedDiagnostics, *unrolledDiagnostics,
                                       dragDelta};
+}
+
+std::optional<HybridPointerShadeOcclusionEvidence>
+exerciseHybridPointerShadeOcclusionRaise(
+    CompositorProbeClient &client,
+    HybridPointerGrouping &pointer,
+    const HybridPointerGroupedState &state,
+    const WindowInventory &grouped,
+    const QPointF &sharedTitlePoint,
+    const std::function<void(const QString &)> &activateProbe,
+    QString *error)
+{
+    const QStringList titles{state.gesture.sourceTitle,
+                             state.gesture.targetTitle, state.bystander};
+    if (!activateProbe) {
+        *error = QStringLiteral(
+            "nested workflow omitted its owned-probe activation seam");
+        return std::nullopt;
+    }
+
+    if (!pointer.activateContextMenuActionAt(
+            sharedTitlePoint, RollUpMenuActionIndex, error)) {
+        return std::nullopt;
+    }
+    auto shaded = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            return bothMembersMatch(inventory, grouped, state)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/true);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!shaded) {
+        *error = QStringLiteral(
+            "could not shade the group to test partial-occlusion raise: %1")
+                     .arg(*error);
+        return std::nullopt;
+    }
+    auto shadedDiagnostics = awaitHybridDiagnostics(
+        client,
+        [&](const HybridDiagnostics &value) {
+            return value.containerCount == 1
+                && value.json.value(QStringLiteral("shadedContainerCount"))
+                       .toInt(-1) == 1;
+        }, error);
+    if (!shadedDiagnostics) {
+        *error = QStringLiteral(
+            "compositor did not report the container as shaded: %1").arg(*error);
+        return std::nullopt;
+    }
+    const auto stripFrame = soleShadedStripFrame(*shadedDiagnostics, error);
+    if (!stripFrame) {
+        return std::nullopt;
+    }
+
+    // Move the unrelated bystander (never a member of this group) so it
+    // partially covers the strip, mirroring hybridpointerraise.cpp's
+    // coverAndRaiseGroup technique for an ordinary, non-shaded group.
+    activateProbe(state.bystander);
+    const auto activated = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            const auto &source = window(inventory, state.gesture.sourceTitle);
+            const auto &target = window(inventory, state.gesture.targetTitle);
+            const auto &bystander = window(inventory, state.bystander);
+            return bystander.active
+                && bystander.stackIndex > std::max(source.stackIndex, target.stackIndex);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!activated) {
+        *error = QStringLiteral(
+            "bystander did not rise above the shaded strip: %1").arg(*error);
+        return std::nullopt;
+    }
+    // AGENT-NOTE: unlike hybridpointerraise.cpp's coverAndRaiseGroup (whose
+    // ordinary, unshaded outer frame is wide enough that centering a
+    // same-sized bystander over it still leaves its near-edge fractions past
+    // the window buttons/container controls), the shaded strip is exactly
+    // one row tall and only as wide as the container: those same controls
+    // (window buttons at the left edge, opposite the shade-toggle/management
+    // controls at the right edge -- see hybrid-chrome.md) occupy a much
+    // larger fraction of it. Centering the bystander here left only narrow
+    // edge slivers exposed and one press landed on the real
+    // ContainerControl::ToggleShade button instead of the plain drag area,
+    // unshading the group -- a test-geometry mistake, not the production bug
+    // this test exists to catch. Cover only the strip's right half instead
+    // (deliberately including that control) and click a fixed point in the
+    // left quarter, comfortably clear of both the left-edge window buttons
+    // and the occluder's boundary at the strip's midpoint.
+    const auto &bystanderBefore = window(*activated, state.bystander);
+    const QPointF movePress(bystanderBefore.frame.center().x(),
+                            bystanderBefore.frame.top() + 12.0);
+    const QPointF targetOccluderCenter(
+        stripFrame->left() + stripFrame->width() * 0.5 + bystanderBefore.frame.width() / 2.0,
+        stripFrame->center().y());
+    const QPointF moveDrop = movePress
+        + (targetOccluderCenter - bystanderBefore.frame.center());
+    if (!state.output.contains(movePress) || !state.output.contains(moveDrop)
+        || !pointer.drag(movePress, moveDrop, /*metaShift=*/false, error)) {
+        if (error->isEmpty()) {
+            *error = QStringLiteral("could not move the bystander over the shaded strip");
+        }
+        return std::nullopt;
+    }
+    auto occluded = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            const auto &source = window(inventory, state.gesture.sourceTitle);
+            const auto &target = window(inventory, state.gesture.targetTitle);
+            const auto &moved = window(inventory, state.bystander);
+            return bothMembersMatch(inventory, grouped, state)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/true)
+                && moved.active
+                && moved.stackIndex > std::max(source.stackIndex, target.stackIndex)
+                && stripFrame->intersects(moved.frame);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!occluded) {
+        *error = QStringLiteral(
+            "bystander did not come to cover part of the shaded strip: %1")
+                     .arg(*error);
+        return std::nullopt;
+    }
+
+    const QPointF exposed(stripFrame->left() + stripFrame->width() * 0.28,
+                         stripFrame->center().y());
+    const auto &occluderFrame = window(*occluded, state.bystander).frame;
+    if (occluderFrame.contains(exposed) || !state.output.contains(exposed)) {
+        *error = QStringLiteral(
+            "chosen left-quarter strip point is not actually exposed");
+        return std::nullopt;
+    }
+    // AGENT-CONTRACT: the exact claim this test exists for. A press on the
+    // strip's exposed sliver must raise it above the occluder (real KWin
+    // z-order, RaiseActivation::RaiseOnly) without granting native
+    // activation to the hidden anchor -- both members must stay exactly as
+    // hidden and frozen as they were the instant before this click.
+    if (!pointer.drag(exposed, exposed, /*metaShift=*/false, error)) {
+        return std::nullopt;
+    }
+    auto raised = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            const auto &source = window(inventory, state.gesture.sourceTitle);
+            const auto &target = window(inventory, state.gesture.targetTitle);
+            const auto &bystander = window(inventory, state.bystander);
+            return bothMembersMatch(inventory, grouped, state)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/true)
+                && std::max(source.stackIndex, target.stackIndex) > bystander.stackIndex;
+        }, error, InventoryTimeoutMilliseconds);
+    if (!raised) {
+        *error = QStringLiteral(
+            "pressing the exposed strip sliver did not raise it above the "
+            "occluder, or unhid/moved a member: %1").arg(*error);
+        return std::nullopt;
+    }
+
+    // Unroll at the original, undisturbed point and confirm geometry is
+    // exactly recoverable -- the raise-only press must not have left shade/
+    // placement bookkeeping in a state unroll cannot restore from.
+    if (!pointer.activateContextMenuActionAt(
+            sharedTitlePoint, RollUpMenuActionIndex, error)) {
+        return std::nullopt;
+    }
+    auto unrolled = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            return bothMembersMatch(inventory, grouped, state)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/false);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!unrolled) {
+        *error = QStringLiteral(
+            "member frames or visibility did not restore exactly after "
+            "unrolling the raised-while-occluded group: %1").arg(*error);
+        return std::nullopt;
+    }
+
+    return HybridPointerShadeOcclusionEvidence{*occluded, *raised, *unrolled};
 }
 
 } // namespace QindaQt::Test

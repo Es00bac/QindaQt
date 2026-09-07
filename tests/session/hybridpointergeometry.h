@@ -43,6 +43,13 @@ struct SplitEvidence final
     QString *error);
 [[nodiscard]] SplitEvidence splitEvidence(const QRectF &first,
                                           const QRectF &second);
+// A point inside area, inside output, and outside occluder. Shared by
+// hybridpointerraise.cpp's covered-group regression and the shaded-strip
+// partial-occlusion raise proof, which both need "click the bit of shared
+// chrome an unrelated window does not cover."
+[[nodiscard]] std::optional<QPointF> exposedPoint(const QRectF &area,
+                                                  const QRectF &occluder,
+                                                  const QRectF &output);
 // A point on the shared group title before any covering window exists. Mirrors
 // hybridpointerraise.cpp's private inferredGroupOuterFrame/sharedTitleRect
 // metrics (one outer border, then the 29px shared title row above active

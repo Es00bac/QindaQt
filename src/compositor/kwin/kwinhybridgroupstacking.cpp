@@ -297,8 +297,8 @@ bool KWinHybridGroupStacking::synchronize(
     return true;
 }
 
-bool KWinHybridGroupStacking::raiseContainer(const QString &containerId,
-                                              QString *error)
+bool KWinHybridGroupStacking::raiseContainer(
+    const QString &containerId, RaiseActivation activation, QString *error)
 {
     if (error) {
         error->clear();
@@ -365,10 +365,15 @@ bool KWinHybridGroupStacking::raiseContainer(const QString &containerId,
     // client, then replay the synchronized member order independently of that
     // focus choice. Its top slot may deliberately be a different member that
     // owns a native transient; changing that order lets KWin interleave the
-    // transient and split the supposedly contiguous group block.
+    // transient and split the supposedly contiguous group block. RaiseOnly
+    // (shaded containers) skips activation entirely -- see RaiseActivation --
+    // but still performs this same real z-order raise, so an occluded strip
+    // still comes to front on press.
     {
         KWin::StackingUpdatesBlocker blocker(workspace);
-        workspace->activateWindow(representative);
+        if (activation == RaiseActivation::ActivateRepresentative) {
+            workspace->activateWindow(representative);
+        }
         for (auto *window : memberWindows) {
             workspace->raiseWindow(window, true);
         }
@@ -403,7 +408,8 @@ bool KWinHybridGroupStacking::raiseContainer(const QString &containerId,
         }
         previous = index;
     }
-    if (workspace->activeWindow() != representative
+    if (activation == RaiseActivation::ActivateRepresentative
+        && workspace->activeWindow() != representative
         && !transientWindows.contains(workspace->activeWindow())) {
         invalidatePublishedContainer();
         return fail(error,
