@@ -59,9 +59,9 @@ void TerminalWindow::runSearch(TerminalSearchDirection direction) {
   m_searchBySession.insert(m_activeSession, query);
   const TerminalSearchResult result =
       m_activeSession->searchScrollback(query, direction);
-  // AGENT-GUARD: Query, visibility, and renderer position are all session
-  // state. Cache the matching result with them or a tab switch can announce
-  // another session's match truth (review P1-1).
+  // AGENT-GUARD: Query, visibility, and renderer position are all owned by
+  // this window's sole session. Keep the result with that session so focus
+  // and status continue to describe the same renderer state.
   m_searchResultBySession.insert(m_activeSession, result);
   if (findBarShown) {
     m_findBar->presentResult(result);

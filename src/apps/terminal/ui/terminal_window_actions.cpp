@@ -6,7 +6,6 @@
 #include "profiles/terminal_profile_settings.h"
 #include "ui/terminal_profile_apply_status.h"
 #include "ui/terminal_profile_dialog.h"
-#include "ui/terminal_tab_bar.h"
 
 #include <QAction>
 #include <QMenu>
@@ -20,12 +19,7 @@ namespace {
 // AGENT-GUARD: Plain Ctrl+letter sequences belong to readline and terminal
 // flow control. Character-based window shortcuts stay Shift-modified; F3 is
 // the non-character find-navigation convention.
-constexpr auto kNewTabShortcut = "Ctrl+Shift+T";
-constexpr auto kCloseTabShortcut = "Ctrl+Shift+W";
-constexpr auto kNextTabShortcut = "Ctrl+Shift+Right";
-constexpr auto kPreviousTabShortcut = "Ctrl+Shift+Left";
-constexpr auto kMoveTabLeftShortcut = "Ctrl+Shift+Alt+Left";
-constexpr auto kMoveTabRightShortcut = "Ctrl+Shift+Alt+Right";
+constexpr auto kNewTerminalShortcut = "Ctrl+Shift+T";
 constexpr auto kManageProfilesShortcut = "Ctrl+Shift+P";
 constexpr auto kRestartShortcut = "Ctrl+Shift+R";
 constexpr auto kCopyShortcut = "Ctrl+Shift+C";
@@ -56,31 +50,15 @@ void TerminalWindow::buildActions() {
         (*action)->setToolTip(statusTip);
       };
 
-  addTerminalAction(&m_newTabAction, QStringLiteral("tabNewAction"),
-                    QStringLiteral("New Tab"), kNewTabShortcut,
-                    QStringLiteral("Open a new terminal tab with the default "
-                                   "profile"));
-  addTerminalAction(&m_closeTabAction, QStringLiteral("tabCloseAction"),
-                    QStringLiteral("Close Tab"), kCloseTabShortcut,
-                    QStringLiteral("Close the active terminal tab"));
-  addTerminalAction(&m_nextTabAction, QStringLiteral("tabNextAction"),
-                    QStringLiteral("Next Tab"), kNextTabShortcut,
-                    QStringLiteral("Switch to the next terminal tab"));
-  addTerminalAction(&m_previousTabAction, QStringLiteral("tabPreviousAction"),
-                    QStringLiteral("Previous Tab"), kPreviousTabShortcut,
-                    QStringLiteral("Switch to the previous terminal tab"));
-  addTerminalAction(&m_moveTabLeftAction, QStringLiteral("tabMoveLeftAction"),
-                    QStringLiteral("Move Tab Left"), kMoveTabLeftShortcut,
-                    QStringLiteral("Move the active terminal tab one "
-                                   "position left"));
-  addTerminalAction(&m_moveTabRightAction, QStringLiteral("tabMoveRightAction"),
-                    QStringLiteral("Move Tab Right"), kMoveTabRightShortcut,
-                    QStringLiteral("Move the active terminal tab one "
-                                   "position right"));
+  addTerminalAction(&m_newTerminalAction,
+                    QStringLiteral("fileNewTerminalAction"),
+                    QStringLiteral("New Terminal"), kNewTerminalShortcut,
+                    QStringLiteral("Open another Terminal window with the "
+                                   "current profile and folder"));
   addTerminalAction(&m_manageProfilesAction,
                     QStringLiteral("profileManageAction"),
                     QStringLiteral("Manage Profiles…"), kManageProfilesShortcut,
-                    QStringLiteral("Edit terminal profiles and tab restore"));
+                    QStringLiteral("Edit terminal profiles"));
   addTerminalAction(&m_restartAction, QStringLiteral("sessionRestartAction"),
                     QStringLiteral("Restart Session"), kRestartShortcut,
                     QStringLiteral("Close this session and start a fresh "
@@ -142,18 +120,12 @@ void TerminalWindow::buildActions() {
   connect(m_zoomOutAction, &QAction::triggered, this, [this] { if (m_activeSession) m_activeSession->zoomText(-1); });
   connect(m_zoomResetAction, &QAction::triggered, this, [this] { if (m_activeSession) m_activeSession->resetZoom(); });
 
-  connect(m_newTabAction, &QAction::triggered, this,
-          [this] { newSessionWithDefaultProfile(); });
-  connect(m_closeTabAction, &QAction::triggered, this,
-          [this] { closeActiveSession(); });
-  connect(m_nextTabAction, &QAction::triggered, this,
-          [this] { activateRelativeTab(1); });
-  connect(m_previousTabAction, &QAction::triggered, this,
-          [this] { activateRelativeTab(-1); });
-  connect(m_moveTabLeftAction, &QAction::triggered, this,
-          [this] { moveActiveTab(-1); });
-  connect(m_moveTabRightAction, &QAction::triggered, this,
-          [this] { moveActiveTab(1); });
+  connect(m_newTerminalAction, &QAction::triggered, this,
+          [this] {
+            launchNewTerminal(m_activeSession != nullptr
+                                  ? m_activeSession->profile()
+                                  : currentDefaultProfile());
+          });
   connect(m_manageProfilesAction, &QAction::triggered, this,
           [this] { manageProfiles(); });
   connect(m_restartAction, &QAction::triggered, this, [this] {
@@ -205,22 +177,16 @@ void TerminalWindow::buildActions() {
 void TerminalWindow::buildMenus() {
   auto *fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
   fileMenu->setObjectName(QStringLiteral("fileMenu"));
-  fileMenu->addAction(m_newTabAction);
-  m_profileMenu = fileMenu->addMenu(QStringLiteral("New Tab With Profil&e"));
-  m_profileMenu->setObjectName(QStringLiteral("profileNewTabMenu"));
-  fileMenu->addAction(m_closeTabAction);
+  fileMenu->addAction(m_newTerminalAction);
+  m_profileMenu =
+      fileMenu->addMenu(QStringLiteral("New Terminal With Profil&e"));
+  m_profileMenu->setObjectName(QStringLiteral("profileNewTerminalMenu"));
   fileMenu->addSeparator();
   fileMenu->addAction(m_quitAction);
 
   auto *sessionMenu = menuBar()->addMenu(QStringLiteral("&Session"));
   sessionMenu->setObjectName(QStringLiteral("sessionMenu"));
   sessionMenu->addAction(m_restartAction);
-  sessionMenu->addSeparator();
-  sessionMenu->addAction(m_previousTabAction);
-  sessionMenu->addAction(m_nextTabAction);
-  sessionMenu->addSeparator();
-  sessionMenu->addAction(m_moveTabLeftAction);
-  sessionMenu->addAction(m_moveTabRightAction);
   sessionMenu->addSeparator();
   sessionMenu->addAction(m_manageProfilesAction);
 
@@ -257,19 +223,11 @@ void TerminalWindow::publishAppShellProjection() {
     std::fflush(stderr);
   }
   const QHash<QString, QAction *> targets{
-      {QString::fromLatin1(AppShellActionIds::SessionNewTab), m_newTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionCloseTab),
-       m_closeTabAction},
+      {QString::fromLatin1(AppShellActionIds::FileNewTerminal),
+       m_newTerminalAction},
       {QString::fromLatin1(AppShellActionIds::SessionRestart), m_restartAction},
       {QString::fromLatin1(AppShellActionIds::SessionManageProfiles),
        m_manageProfilesAction},
-      {QString::fromLatin1(AppShellActionIds::SessionNextTab), m_nextTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionPreviousTab),
-       m_previousTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionMoveTabLeft),
-       m_moveTabLeftAction},
-      {QString::fromLatin1(AppShellActionIds::SessionMoveTabRight),
-       m_moveTabRightAction},
       {QString::fromLatin1(AppShellActionIds::EditCopy), m_copyAction},
       {QString::fromLatin1(AppShellActionIds::EditPaste), m_pasteAction},
       {QString::fromLatin1(AppShellActionIds::EditPasteSelection),
@@ -345,11 +303,11 @@ void TerminalWindow::rebuildProfileMenu() {
   m_profileMenu->clear();
   const auto addProfileEntry = [this](const TerminalProfile &profile) {
     QAction *action = m_profileMenu->addAction(
-        QStringLiteral("New Tab With \"%1\"").arg(profile.name));
+        QStringLiteral("New Terminal With \"%1\"").arg(profile.name));
     action->setObjectName(
-        QStringLiteral("newTabWithProfileAction-%1").arg(profile.id));
+        QStringLiteral("newTerminalWithProfileAction-%1").arg(profile.id));
     connect(action, &QAction::triggered, this,
-            [this, profile] { addSessionWithProfile(profile); });
+            [this, profile] { launchNewTerminal(profile); });
   };
   addProfileEntry(builtinDefaultProfile());
   if (m_profileSettings != nullptr && m_profileSettings->baselineReceived()) {
@@ -358,7 +316,7 @@ void TerminalWindow::rebuildProfileMenu() {
       addProfileEntry(profile);
     }
   }
-  updateTabActionStates();
+  updateProfileActionState();
 }
 
 TerminalProfile TerminalWindow::currentDefaultProfile() const {
@@ -401,16 +359,7 @@ void TerminalWindow::updateViewActionStates() {
                               state != TerminalSession::State::ShutdownFailed);
 }
 
-void TerminalWindow::updateTabActionStates() {
-  const int count = m_sessions->count();
-  const int current = m_tabBar->currentIndex();
-  m_newTabAction->setEnabled(count < TerminalSessionCollection::kMaxSessions);
-  m_closeTabAction->setEnabled(count > 0);
-  m_nextTabAction->setEnabled(count > 1);
-  m_previousTabAction->setEnabled(count > 1);
-  m_moveTabLeftAction->setEnabled(count > 1 && current > 0);
-  m_moveTabRightAction->setEnabled(count > 1 && current >= 0 &&
-                                   current + 1 < count);
+void TerminalWindow::updateProfileActionState() {
   m_manageProfilesAction->setEnabled(m_profileSettings != nullptr &&
                                      m_profileSettings->baselineReceived());
 }

@@ -3,7 +3,6 @@
 
 #include "session/terminal_launch_policy.h"
 
-#include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -131,12 +130,6 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
 
   auto *layout = new QVBoxLayout(this);
   layout->addWidget(splitter);
-  m_restoreTabsCheck =
-      new QCheckBox(QStringLiteral("Restore tabs on startup"), this);
-  m_restoreTabsCheck->setObjectName(QStringLiteral("restoreTabsCheck"));
-  m_restoreTabsCheck->setAccessibleName(m_restoreTabsCheck->text());
-  m_restoreTabsCheck->setChecked(m_restoreTabs);
-  layout->addWidget(m_restoreTabsCheck);
   m_applyStatus = new QLabel(this);
   m_applyStatus->setObjectName(QStringLiteral("profileApplyStatus"));
   m_applyStatus->setAccessibleName(QStringLiteral("Profile save status"));
@@ -295,7 +288,6 @@ void TerminalProfileDialog::accept() {
     return;
   }
   writeFieldsToSelected();
-  m_restoreTabs = m_restoreTabsCheck->isChecked();
   QStringList problems;
   if (m_userProfiles.size() > TerminalProfile::kMaxUserProfiles) {
     problems.append(QStringLiteral("At most %1 user profiles are allowed")
@@ -328,7 +320,6 @@ void TerminalProfileDialog::accept() {
   }
   m_applyInFlight = true;
   m_editingSurface->setEnabled(false);
-  m_restoreTabsCheck->setEnabled(false);
   m_buttons->setEnabled(false);
   m_applyStatus->setText(QStringLiteral("Saving terminal profiles…"));
   m_applyStatus->setAccessibleDescription(m_applyStatus->text());
@@ -350,7 +341,6 @@ void TerminalProfileDialog::finishApply(bool allApplied,
     return;
   }
   m_editingSurface->setEnabled(true);
-  m_restoreTabsCheck->setEnabled(true);
   m_buttons->setEnabled(true);
 }
 

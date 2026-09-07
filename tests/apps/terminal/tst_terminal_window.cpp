@@ -188,12 +188,7 @@ void TerminalWindowTest::actionsCarryStableIdentityAndShiftModifiedShortcuts() {
     const char *shortcut;
   };
   const QVector<Expectation> expectations = {
-      {"tabNewAction", "Ctrl+Shift+T"},
-      {"tabCloseAction", "Ctrl+Shift+W"},
-      {"tabNextAction", "Ctrl+Shift+Right"},
-      {"tabPreviousAction", "Ctrl+Shift+Left"},
-      {"tabMoveLeftAction", "Ctrl+Shift+Alt+Left"},
-      {"tabMoveRightAction", "Ctrl+Shift+Alt+Right"},
+      {"fileNewTerminalAction", "Ctrl+Shift+T"},
       {"profileManageAction", "Ctrl+Shift+P"},
       {"sessionRestartAction", "Ctrl+Shift+R"},
       {"editCopyAction", "Ctrl+Shift+C"},

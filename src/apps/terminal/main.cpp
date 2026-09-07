@@ -24,12 +24,14 @@
 #include <QFileInfo>
 #include <QMenuBar>
 #include <QProcessEnvironment>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QWindow>
 
 #include <cstdio>
+#include <algorithm>
 #include <memory>
 
 #include <qindaqt/app_shell/menu_export/first_party_composition.h>
@@ -118,6 +120,9 @@ void configureCommandLine(QCommandLineParser &parser) {
   parser.addOption({QStringLiteral("working-directory"),
                     QStringLiteral("Initial working directory"),
                     QStringLiteral("directory")});
+  parser.addOption({QStringLiteral("profile"),
+                    QStringLiteral("Saved profile identifier"),
+                    QStringLiteral("id")});
   parser.addOption(
       {QStringLiteral("check-theme"),
        QStringLiteral("Validate the selected theme through QST-1 and exit")});
@@ -323,9 +328,43 @@ int main(int argc, char **argv) {
   TerminalLinkOpener linkOpener(TerminalLinkOpener::resolveXdgOpen(),
                                 &linkSpawner, &linkConfirmation);
 
+  // A second Terminal is another process, so QindaQt containers remain the
+  // sole owner of window tab/split topology. The launched process resolves
+  // the selected persisted profile itself; this dispatch intentionally never
+  // waits for that process to create a window or start its shell.
+  const QString executable = QCoreApplication::applicationFilePath();
+  const auto launchAnotherTerminal =
+      [executable, &parser](const TerminalProfile &profile,
+                            const QString &workingDirectory) -> QString {
+    QStringList arguments;
+    arguments << QStringLiteral("--profile") << profile.id;
+    if (parser.isSet(QStringLiteral("theme"))) {
+      arguments << QStringLiteral("--theme")
+                << parser.value(QStringLiteral("theme"));
+    }
+    if (parser.isSet(QStringLiteral("theme-directory"))) {
+      arguments << QStringLiteral("--theme-directory")
+                << parser.value(QStringLiteral("theme-directory"));
+    }
+    if (parser.isSet(QStringLiteral("shell"))) {
+      arguments << QStringLiteral("--shell")
+                << parser.value(QStringLiteral("shell"));
+    }
+    for (const QString &argument : parser.values(QStringLiteral("arg"))) {
+      arguments << QStringLiteral("--arg") << argument;
+    }
+    if (!workingDirectory.isEmpty()) {
+      arguments << QStringLiteral("--working-directory") << workingDirectory;
+    }
+    if (!QProcess::startDetached(executable, arguments)) {
+      return QStringLiteral("could not start another Terminal process");
+    }
+    return {};
+  };
+
   TerminalWindow window(std::move(collection), *appearance.appearance,
                         availableThemeIds(themeDirectories), &profileSettings,
-                        &linkOpener);
+                        &linkOpener, launchAnotherTerminal);
   TerminalAppearanceBinding appearanceBinding(
       application, window, themeDirectories,
       parser.isSet(QStringLiteral("theme"))
@@ -334,8 +373,10 @@ int main(int argc, char **argv) {
 
   window.resize(800, 500);
   bool firstSessionStarted = false;
+  const QString requestedProfileId = parser.value(QStringLiteral("profile"));
   const auto startFirstSession = [&window, &profileSettings, &settingsClient,
-                                  &settingsStarted, &firstSessionStarted] {
+                                  &settingsStarted, &firstSessionStarted,
+                                  &requestedProfileId] {
     if (firstSessionStarted) {
       return;
     }
@@ -352,7 +393,25 @@ int main(int argc, char **argv) {
       return;
     }
     firstSessionStarted = true;
-    window.newSessionWithDefaultProfile();
+    TerminalProfile profile = profileSettings.defaultProfile();
+    if (!requestedProfileId.isEmpty() &&
+        requestedProfileId != builtinDefaultProfileId()) {
+      const auto profiles = profileSettings.userProfiles();
+      const auto found = std::find_if(
+          profiles.cbegin(), profiles.cend(), [&requestedProfileId](
+                                                   const TerminalProfile &item) {
+            return item.id == requestedProfileId;
+          });
+      if (found == profiles.cend()) {
+        std::fprintf(stderr, "qindaqt-terminal: saved profile is unavailable: %s\n",
+                     qPrintable(requestedProfileId));
+      } else {
+        profile = *found;
+      }
+    } else if (requestedProfileId == builtinDefaultProfileId()) {
+      profile = builtinDefaultProfile();
+    }
+    window.startSession(profile);
     if (auto *active = window.session();
         active != nullptr &&
         active->lastExit().kind == TerminalExitStatus::Kind::StartFailed) {

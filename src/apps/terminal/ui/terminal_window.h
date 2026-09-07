@@ -16,6 +16,7 @@
 #include <QPalette>
 #include <QVBoxLayout>
 #include <QVariantList>
+#include <functional>
 #include <memory>
 
 class QMenu;
@@ -30,10 +31,8 @@ class TerminalAppShellBridge;
 class TerminalFindBar;
 class TerminalLinkOpener;
 class TerminalProfileSettings;
-class TerminalTabBar;
-
 // AGENT-CONTRACT: TerminalWindow owns presentation only: actions, menus,
-// the tab strip, status reporting, focus, accessibility metadata, and the
+// status reporting, focus, accessibility metadata, and the
 // AppShell action projection. It never touches PTYs, processes, the
 // rendering library, or Settings1 transport; the injected collection owns
 // session lifecycles and the injected profile settings owns persistence.
@@ -45,6 +44,12 @@ class TerminalWindow final : public QMainWindow {
   Q_OBJECT
 
 public:
+  // Starts another Terminal process. The callback is borrowed through the
+  // window lifetime and must return a user-presentable error on dispatch
+  // failure. It must not wait for the launched process to become ready.
+  using NewTerminalLauncher =
+      std::function<QString(const TerminalProfile &, const QString &)>;
+
   // The window takes ownership of the collection. profileSettings is
   // injected, not owned, and may be null (persistence unavailable: only the
   // built-in profile is offered). linkOpener is likewise borrowed, may be
@@ -55,6 +60,7 @@ public:
                  const QStringList &themeIds,
                  TerminalProfileSettings *profileSettings,
                  TerminalLinkOpener *linkOpener = nullptr,
+                 NewTerminalLauncher newTerminalLauncher = {},
                  QWidget *parent = nullptr);
   ~TerminalWindow() override;
 
@@ -75,7 +81,7 @@ public:
   [[nodiscard]] TerminalSessionCollection *sessions() const {
     return m_sessions.get();
   }
-  // The active session; null when no tab exists.
+  // The window's sole session; null before initial launch or after teardown.
   [[nodiscard]] TerminalSession *session() const { return m_activeSession; }
 
   // AGENT-CONTRACT: the application-side composition seam for the first-party
@@ -85,9 +91,12 @@ public:
   [[nodiscard]] QindaQt::AppShell::ApplicationCoordinator &
   appShellCoordinator();
 
-  // Adds one session with the current default profile (used for the first
-  // tab and the New Tab command).
+  // Starts this window's only shell with the current default profile. Repeated
+  // calls are refused so the window can never grow an internal tab model.
   void newSessionWithDefaultProfile();
+  // Main uses this for a child process explicitly launched with --profile.
+  // Like the default entry point, it starts at most one shell in this window.
+  void startSession(const TerminalProfile &profile);
   void applyAppearance(const TerminalViewAppearance &appearance);
 
 signals:
@@ -113,11 +122,7 @@ private:
   void setActiveSession(TerminalSession *session);
   void attachSessionView(TerminalSession *session);
   void detachSessionView();
-  void addSessionWithProfile(const TerminalProfile &profile);
-  void closeSessionFromPresentation(TerminalSession *session);
-  void closeActiveSession();
-  void activateRelativeTab(int delta);
-  void moveActiveTab(int delta);
+  void launchNewTerminal(const TerminalProfile &profile);
   void manageProfiles();
   void rebuildProfileMenu();
   void showFindBar();
@@ -131,7 +136,7 @@ private:
   void presentLinkSelection(const TerminalLinkSelection &selection);
 
   void updateViewActionStates();
-  void updateTabActionStates();
+  void updateProfileActionState();
   void updateStatusForState(TerminalSession::State state);
   void showExitStatus(const TerminalExitStatus &status);
   void presentProfileApplyResult(const QVariantList &ledger);
@@ -140,7 +145,6 @@ private:
                          const QPalette &palette);
   void updateWindowTitle();
   [[nodiscard]] QString displayTitle(const TerminalSession *session) const;
-  [[nodiscard]] int tabIndexOf(const TerminalSession *session) const;
   [[nodiscard]] TerminalProfile currentDefaultProfile() const;
   void requestCloseShutdown();
 
@@ -150,19 +154,14 @@ private:
   QStringList m_themeIds;
   TerminalViewAppearance m_appearance;
   TerminalAppShellBridge *m_appShellBridge = nullptr;
-  TerminalTabBar *m_tabBar = nullptr;
+  NewTerminalLauncher m_newTerminalLauncher;
   QWidget *m_terminalHolder = nullptr;
   QVBoxLayout *m_terminalLayout = nullptr;
   TerminalFindBar *m_findBar = nullptr;
   QWidget *m_terminalView = nullptr;
   QLabel *m_statusLabel = nullptr;
   QMenu *m_profileMenu = nullptr;
-  QAction *m_newTabAction = nullptr;
-  QAction *m_closeTabAction = nullptr;
-  QAction *m_nextTabAction = nullptr;
-  QAction *m_previousTabAction = nullptr;
-  QAction *m_moveTabLeftAction = nullptr;
-  QAction *m_moveTabRightAction = nullptr;
+  QAction *m_newTerminalAction = nullptr;
   QAction *m_manageProfilesAction = nullptr;
   QAction *m_restartAction = nullptr;
   QAction *m_copyAction = nullptr;

@@ -26,7 +26,7 @@ using namespace QindaQt;
 namespace {
 
 constexpr quint32 kTestWindowId = 77;
-const auto kActivateId = QStringLiteral("session.new-tab");
+const auto kActivateId = QStringLiteral("file.new-terminal");
 const auto kQuitId = QStringLiteral("file.quit");
 const auto kAllowedStderrPrefix = QStringLiteral(
     "qindaqt-terminal: settings unavailable");
@@ -292,7 +292,7 @@ void TerminalMenuExportTest::shellFencesRealTerminalIdentity() {
   if (identityVariant == 0) {
     QTRY_VERIFY_WITH_TIMEOUT(composition.access()->available(), 10'000);
     const std::optional<QString> actionId = actionIdWithText(
-        composition.access()->items(), QStringLiteral("New Tab"));
+        composition.access()->items(), QStringLiteral("New Terminal"));
     QVERIFY(actionId.has_value());
     composition.access()->activate(*actionId);
     QTRY_COMPARE_WITH_TIMEOUT(

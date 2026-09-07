@@ -6,7 +6,6 @@
 #include <QDialog>
 #include <QStringList>
 
-class QCheckBox;
 class QComboBox;
 class QDialogButtonBox;
 class QLabel;
@@ -18,8 +17,7 @@ class QSpinBox;
 namespace QindaQt::Apps::Terminal {
 
 // AGENT-CONTRACT: TerminalProfileDialog is the bounded, keyboard-accessible
-// editor for the user profile list and the two persisted policy values
-// (default profile, restore-tabs flag). It owns no transport: the caller
+// editor for the user profile list and default profile. It owns no transport: the caller
 // passes the last confirmed values at construction and reads the edited
 // draft back after exec() returns Accepted, then drives the Settings1
 // commit. The built-in default profile is listed for reference and as the
@@ -78,7 +76,6 @@ private:
   QComboBox *m_colorScheme = nullptr;
   QSpinBox *m_scrollback = nullptr;
   QComboBox *m_bellPolicy = nullptr;
-  QCheckBox *m_restoreTabsCheck = nullptr;
   QWidget *m_editingSurface = nullptr;
   QLabel *m_applyStatus = nullptr;
   QDialogButtonBox *m_buttons = nullptr;

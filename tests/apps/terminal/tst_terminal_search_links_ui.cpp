@@ -188,7 +188,7 @@ class TerminalSearchLinksUiTest final : public QObject {
 
 private slots:
   void findBarHasKeyboardParityStatusAndFocusReturn();
-  void findTextAndVisibilityArePerSessionAndVolatile();
+  void findTextAndVisibilityAreWindowLocalAndVolatile();
   void linksTraverseCopyOpenAndPopulateContextMenu();
   void staleLinkSelectionCannotCopyOrOpen();
 };
@@ -239,41 +239,30 @@ void TerminalSearchLinksUiTest::findBarHasKeyboardParityStatusAndFocusReturn() {
   QCOMPARE(harness.backend->clearCalls, 1);
 }
 
-void TerminalSearchLinksUiTest::findTextAndVisibilityArePerSessionAndVolatile() {
+void TerminalSearchLinksUiTest::findTextAndVisibilityAreWindowLocalAndVolatile() {
   Harness harness;
   auto window = harness.window();
   auto *find = window->findChild<QAction *>(QStringLiteral("viewFindAction"));
   auto *editor =
       window->findChild<QLineEdit *>(QStringLiteral("terminalFindText"));
-  auto *tabs = window->findChild<QTabBar *>();
   auto *bar = window->findChild<QWidget *>(QStringLiteral("terminalFindBar"));
   auto *status =
       window->findChild<QLabel *>(QStringLiteral("terminalFindStatus"));
-  QVERIFY(find && editor && tabs && bar && status);
+  QVERIFY(find && editor && bar && status);
+  QVERIFY(window->findChild<QTabBar *>() == nullptr);
 
   find->trigger();
   QTest::keyClicks(editor, QStringLiteral("first-only"));
   QTRY_COMPARE(status->text(), QStringLiteral("Match 1 of 2"));
+  // A repeated initial-session request cannot create a hidden second shell or
+  // disturb the sole window's volatile search state.
   window->newSessionWithDefaultProfile();
-  QCOMPARE(harness.backends.size(), 2);
-  tabs->setCurrentIndex(1);
-  QVERIFY(bar->isHidden());
-  find->trigger();
-  QCOMPARE(editor->text(), QString());
-  QTest::keyClicks(editor, QStringLiteral("missing"));
-  QTRY_COMPARE(status->text(), QStringLiteral("No matches"));
-
-  // AGENT-NOTE: Regression for review P1-1. Returning to the first session
-  // restores its visible and accessible match truth, never tab two's result.
-  tabs->setCurrentIndex(0);
+  QCOMPARE(harness.backends.size(), 1);
   QCOMPARE(editor->text(), QStringLiteral("first-only"));
   QVERIFY(!bar->isHidden());
   QCOMPARE(status->text(), QStringLiteral("Match 1 of 2"));
   QCOMPARE(status->accessibleName(),
            QStringLiteral("Search status: Match 1 of 2"));
-  tabs->setCurrentIndex(1);
-  QCOMPARE(editor->text(), QStringLiteral("missing"));
-  QCOMPARE(status->text(), QStringLiteral("No matches"));
 }
 
 void TerminalSearchLinksUiTest::staleLinkSelectionCannotCopyOrOpen() {
