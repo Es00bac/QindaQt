@@ -111,7 +111,9 @@ action, then the first enabled keyboard slider, then Retry,
 then the route surface. Closing Settings remains a single window-level action;
 the page does not duplicate it. A disabled internal slider or fenced domain
 action is never nominated. Escape returns focus to the active Power PageTab in
-both layouts, and Ctrl+8 selects the appended eighth route.
+both layouts, and Ctrl+8 selects the appended eighth route. Tab from that
+PageTab lands on the automatic screen-lock toggle first, since the Screen lock
+section now precedes Power profiles on the page.
 
 ## Composition and package boundary
 
