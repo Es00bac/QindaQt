@@ -7,11 +7,17 @@ from KDE, despite the current QindaQt shell and Settings using `qindaqt-0`.
 The systemd activation environment was already correct; it had not updated the
 existing service. Restarting only Display at 21:04:35 produced PID 2012983
 with `WAYLAND_DISPLAY=qindaqt-0` and a fresh public Display1 snapshot.
-There was no logout. A session-lifecycle repair is being implemented to prevent
-this mismatch. A subsequent physical preview exposed a second defect: Wayland
+There was no logout. The session-lifecycle repair is integrated through `7d2c8f8a`, with independent
+and integrated focused tests passing; its new session binary is not yet installed.
+It refreshes Display and Clipboard after publishing activation environment to
+prevent this mismatch. A subsequent physical preview exposed a second defect: Wayland
 reports HDMI scale 1.25, but the QindaQt inventory remains at 1.0 and triggers
-rollback. The exact wire trace is recorded in the manager's live-scale-proof
-artifacts. An inventory notification repair is now assigned.
+rollback. A further direct Compositor Outputs read proved its scale and
+generation are correct. The transaction machine rejects observations during
+Applying, so an inventory event preceding the independent apply acknowledgement
+can be lost. The compositor-notification candidate was stopped; the transaction
+ordering repair is assigned in `codex/display-observation-order`. Preserve this
+distinction: do not integrate the earlier speculative notification or UI patch.
 
 The verified `3591a081` Display runtime is temporarily running from the canonical
 build through a user runtime systemd override. It clears the formerly stuck
