@@ -22,6 +22,14 @@ SDDM remains an operator-selected login manager and is not a package
 dependency. Portage must solve the plan without slot conflicts before the
 package is considered buildable.
 
+The binary native CI job is a compile-and-boot qualification lane rather than
+a substitute for this full package plan. It uses the generic
+`desktop/systemd` profile and a KWin build without the `lock` USE flag so that
+KScreenLocker's Gentoo `PDEPEND` does not pull Plasma Workspace and Plasma login
+sessions into the build image. The package plan below intentionally retains
+KWin `lock,shortcuts` and KScreenLocker; validate that larger runtime graph in a
+clean Portage image before publication.
+
 Copy `packaging/gentoo/gui-wm/qindaqt-desktop/` into a configured local overlay,
 regenerate the Manifest, run the repository's package QA, and inspect the plan:
 
