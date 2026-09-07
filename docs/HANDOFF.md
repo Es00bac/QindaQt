@@ -53,6 +53,19 @@ Remote CI, the full Portage merge, installed-session acceptance and the release
 tag remain pending. The definition is integrated; no new desktop installation
 or qualified release is claimed.
 
+## CI source-size blockers repaired
+
+Kimi's product candidate `d4f65d84` and handoff `61c39519` passed independent
+Luna review. The Global Menu action delegate is a registered and installed QML
+component; Gabbee CMake rows and process-start helpers are split without
+changing test names or startup order. The limits were not relaxed.
+Root reran the integrated Gabbee units: 26 passed; the PTY suite ran 21 with
+two documented real-sink skips. Candidate offscreen QML coverage passed 8/8.
+The integrated checker confirms the three original errors are gone but finds
+one new error from the Terminal change: `main()` spans 225 lines (limit 180).
+Terra owns a focused helper extraction before the next CI push. Remote native
+CI remains unpassed; no release qualification is claimed.
+
 ## Terminal now leaves tabs and splits to containers
 
 Reviewed and repaired candidate `e92243f0` removes the internal tab strip and

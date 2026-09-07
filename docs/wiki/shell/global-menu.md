@@ -461,8 +461,8 @@ request/content race the guard exists to close.
 `GlobalMenuApplet.qml` projects top-level submenus into a Qt Quick Controls
 `MenuBar`; `GlobalMenuNativeMenu` recursively projects the facade's immutable
 tree into `Menu`, `MenuItem`, and `MenuSeparator` objects. Rare top-level
-actions remain focusable buttons in the same measured layout because a
-`MenuBar` accepts menus only. Those buttons activate on the accepted press
+actions remain focusable buttons (the `GlobalMenuActionEntry` component) in
+the same measured layout because a `MenuBar` accepts menus only. Those buttons activate on the accepted press
 edge, matching `MenuBarItem` and remaining usable while another native popup
 owns the release grab. Both paths carry provider-owned checked state in their
 accessible attributes and never toggle it locally: activation requests the
