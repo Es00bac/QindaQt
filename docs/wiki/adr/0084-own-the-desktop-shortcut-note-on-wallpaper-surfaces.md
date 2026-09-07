@@ -48,6 +48,14 @@ because the registrar seam cannot report the user's current mapped sequences.
 The chrome-toggle binding is deliberately absent until its exact shortcut is
 integrated and confirmed by root.
 
+## Compatibility update (2026-09-06)
+
+KWin already assigns its Switch to Desktop 1 default to `Meta+F1`, so the
+accepted default could leave a fresh shortcut-note action unbound. New
+registrations use `Meta+Shift+F1`. KGlobalAccel Autoloading continues to
+preserve every existing remap and explicitly empty binding; QindaQt does not
+steal the KWin binding or re-enable a user-disabled note.
+
 ## Consequences
 
 Desktop-surface ownership stays in ADR-0078's single exception; the note adds

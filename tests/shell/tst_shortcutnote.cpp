@@ -185,7 +185,7 @@ void ShortcutNoteTests::shortcutExposesStableIdentityAndTracksOverrides()
     // The reopen binding is the documented default; the public registrar seam
     // cannot report remapped sequences, so the card must label defaults.
     QCOMPARE(ShortcutNoteShortcut::defaultShortcut(),
-             QKeySequence(Qt::META | Qt::Key_F1));
+             QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_F1));
     QCOMPARE(registrar.observedDefault, ShortcutNoteShortcut::defaultShortcut());
     QVERIFY(controller.shortcut()->registrationRequestAccepted());
     QVERIFY(!controller.shortcut()->activeBindingPresent());
@@ -205,7 +205,7 @@ void ShortcutNoteTests::shortcutExposesStableIdentityAndTracksOverrides()
     QVERIFY(!controller.shortcut()->activeBindingPresent());
     QCOMPARE(bindingChanges.size(), 2);
     QCOMPARE(registrar.observedDefault,
-             QKeySequence(Qt::META | Qt::Key_F1));
+             QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_F1));
 
     // The registered action drives the note toggle: visible -> dismissed.
     QVERIFY(controller.noteVisible());
@@ -295,7 +295,7 @@ void ShortcutNoteTests::dismissalPersistsAcrossSessionsAndHotkeyReopens()
                                            registrar);
         QTRY_VERIFY_WITH_TIMEOUT(!controller.noteVisible(), 2'000);
 
-        // Meta+F1 (registered through the seam) reopens and persists the
+        // Meta+Shift+F1 (registered through the seam) reopens and persists the
         // reopened state for the following session.
         registrar.observedAction->trigger();
         QVERIFY(controller.noteVisible());
