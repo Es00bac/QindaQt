@@ -106,3 +106,9 @@ The separate `qindaqt.session-powerdevil-lifetime` process test starts a private
 helper as the daemon, terminates it once, verifies replacement without session
 exit, and checks that session stop reaps the replacement. It does not start
 PowerDevil or change host power settings.
+
+Production selects `/usr/libexec/org_kde_powerdevil` unless `--powerdevil`
+provides another executable. Private session runners pass `--no-powerdevil`
+alongside `--no-polkit-agent`; their test helpers must never start either
+installed provider accidentally. The daemon's restart budget resets only
+between stopped sessions, and the lifetime regression exercises two sessions.

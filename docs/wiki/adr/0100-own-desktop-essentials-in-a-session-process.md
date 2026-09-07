@@ -61,6 +61,11 @@ as an optional one-restart child after the shell.
   the policy permanently passive.
 - The supervisor also starts an optional polkit authentication agent from
   well-known distribution paths; absence is honest and non-fatal.
+  `--no-polkit-agent` suppresses resolution outright and is mandatory for
+  staged private and nested sessions, which must never launch host binaries.
+  Both optional children hold a one-restart budget per supervised session;
+  the budget resets only after the child is stopped for a session
+  transition.
 
 ## Consequences
 

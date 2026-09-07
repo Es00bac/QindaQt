@@ -73,8 +73,11 @@ without affecting either essential child. The same optional one-restart
 treatment starts the installed sibling `qindaqt-desktop-controls` — the
 [desktop controls](desktop-controls.md) media-key, screenshot, polkit-agent,
 and idle display-off helper — and a polkit authentication agent resolved from
-well-known distribution paths (overridable with `--polkit-agent`); both start
-after the shell, and their absence is skipped without any session impact.
+well-known distribution paths (overridable with `--polkit-agent`, suppressed
+entirely with `--no-polkit-agent` — every staged private and nested run must
+pass the suppression so the supervisor never resolves a host binary); both
+start after the shell, and their absence is skipped without any session
+impact.
 After the first shell starts, the
 supervisor also starts an installed sibling `qindaqt-welcome --first-launch` as
 an optional parent-death-bound child. Welcome decides locally whether it should

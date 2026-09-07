@@ -111,6 +111,7 @@ private slots:
     void optionalWelcomeStartsAfterShellAndDoesNotRestart();
     void optionalDesktopControlsAndPolkitAgentRestartOnceWithoutBlockingSession();
     void missingOptionalHelpersAreSkippedWithoutFailingTheSession();
+    void optionalChildRestartBudgetResetsForANewSession();
     void session1DescriptorMatchesTheFixedSurface();
 };
 
@@ -589,6 +590,45 @@ void SessionProcessSupervisorTests::session1DescriptorMatchesTheFixedSurface()
     QCOMPARE(xml.count("method name=\"CanLogout\""), 1);
     QCOMPARE(xml.count("method name=\"Logout\""), 1);
     QCOMPARE(xml.count("direction=\"out\""), 1);
+}
+
+void SessionProcessSupervisorTests::optionalChildRestartBudgetResetsForANewSession()
+{
+    qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable =
+        QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.networkSecretAgentExecutable.clear();
+    options.desktopControlsExecutable =
+        QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+    options.polkitAgentExecutable.clear();
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy restarted(
+        &supervisor,
+        &SessionSupervisor::SessionProcessSupervisor::desktopControlsRestarted);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    // Session one: the short-lived helper dies once, is restarted once, then
+    // dies for good. The budget is spent.
+    QTRY_COMPARE_WITH_TIMEOUT(restarted.size(), 1, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.desktopControlsProcessId(), qint64(0),
+                              5'000);
+    QCOMPARE(supervisor.desktopControlsRestartCount(), 1);
+    QVERIFY(supervisor.isRunning());
+    supervisor.stop();
+
+    // Session two: the same supervisor object must grant a fresh budget.
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    QVERIFY(supervisor.isRunning());
+    QTRY_COMPARE_WITH_TIMEOUT(restarted.size(), 2, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.desktopControlsProcessId(), qint64(0),
+                              5'000);
+    QCOMPARE(supervisor.desktopControlsRestartCount(), 1);
+    QVERIFY(supervisor.isRunning());
+    supervisor.stop();
 }
 
 QTEST_GUILESS_MAIN(SessionProcessSupervisorTests)

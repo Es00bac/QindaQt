@@ -61,6 +61,15 @@ set_tests_properties(
         ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
+qt_add_executable(qindaqt_polkit_agent_selection_tests tst_polkit_agent_selection.cpp)
+target_link_libraries(qindaqt_polkit_agent_selection_tests
+    PRIVATE QindaQt::SessionSupervisorSupport Qt6::Core Qt6::Test)
+qindaqt_enable_warnings(qindaqt_polkit_agent_selection_tests)
+add_test(NAME qindaqt.session-polkit-agent-selection
+    COMMAND qindaqt_polkit_agent_selection_tests)
+set_tests_properties(qindaqt.session-polkit-agent-selection PROPERTIES
+    LABELS "session;model")
+
 qt_add_executable(qindaqt_session_activation_publisher session_activation_publisher.cpp)
 target_include_directories(qindaqt_session_activation_publisher PRIVATE "${PROJECT_SOURCE_DIR}")
 target_link_libraries(qindaqt_session_activation_publisher PRIVATE QindaQt::SessionSupervisorSupport)

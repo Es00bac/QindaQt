@@ -29,6 +29,11 @@ public:
     void stop() noexcept;
     void setRestartLimit(int limit) noexcept { m_restartLimit = limit; }
 
+    // AGENT-CONTRACT: the one-restart budget is per supervised session. The
+    // supervisor resets it only after this child has been stopped for a
+    // session transition, mirroring the shell and secret-agent counters.
+    void resetRestartCount() noexcept;
+
     [[nodiscard]] bool isRunning() const noexcept;
     [[nodiscard]] qint64 processId() const noexcept;
     [[nodiscard]] int restartCount() const noexcept;

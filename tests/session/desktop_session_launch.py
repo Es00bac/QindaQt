@@ -95,7 +95,8 @@ def _traced_session_program(
         "#!/usr/bin/sh\n"
         f"exec {python} {tracer} --role session --executable {executable} "
         f"--trace {trace} --exec-only -- --profile {profile} --theme {theme} "
-        f"--notification-host {notification} --shell {shell}\n",
+        f"--notification-host {notification} --shell {shell} "
+        "--no-polkit-agent --no-powerdevil\n",
         encoding="utf-8",
     )
     wrapper.chmod(0o700)
@@ -108,16 +109,29 @@ def _session_program(
     scenario: DesktopMatrixScenario | None,
 ) -> Path:
     if scenario is None:
-        return stage.executables["session"]
+        wrapper = Path(environment["XDG_RUNTIME_DIR"]) / "qindaqt-session"
+        wrapper.write_text(
+            # The empty root has no /bin compatibility symlink.
+            # AGENT-CONTRACT: every staged private session must never resolve
+            # and launch host privilege or power agents from production default paths.
+            "#!/usr/bin/sh\n"
+            f"exec {shlex.quote(str(stage.executables['session']))} "
+            "--no-polkit-agent --no-powerdevil\n",
+            encoding="utf-8",
+        )
+        wrapper.chmod(0o700)
+        return wrapper
     wrapper = Path(environment["XDG_RUNTIME_DIR"]) / "qindaqt-matrix-session"
     if environment.get(LIFECYCLE_TRACE_ENVIRONMENT) == "1":
         return _traced_session_program(stage, environment, scenario, wrapper)
     wrapper.write_text(
         # The empty root has no /bin compatibility symlink.
+        # AGENT-CONTRACT: staged private sessions must never resolve and
+        # launch host privilege or power agents from production default paths.
         "#!/usr/bin/sh\n"
         f"exec {shlex.quote(str(stage.executables['session']))} "
         f"--profile {shlex.quote(scenario.profile_id)} "
-        f"--theme {shlex.quote(scenario.theme_id)}\n",
+        f"--theme {shlex.quote(scenario.theme_id)} --no-polkit-agent --no-powerdevil\n",
         encoding="utf-8",
     )
     wrapper.chmod(0o700)

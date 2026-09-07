@@ -141,6 +141,37 @@ class LifecycleTraceTests(unittest.TestCase):
                 self.assertTrue(wrapper.is_file())
                 self.assertIn(f"--role {role}", wrapper.read_text())
 
+    def test_private_session_wrappers_always_disable_host_polkit_agent(self) -> None:
+        # Regression for the reviewed P1: scenario, traced, and plain private
+        # sessions must all suppress well-known host polkit discovery.
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = Path(directory)
+            stage = SimpleNamespace(
+                executables={
+                    "session": Path("/opt/qindaqt/bin/qindaqt-session"),
+                    "notification": Path(
+                        "/opt/qindaqt/bin/qindaqt-notification-host"
+                    ),
+                    "shell": Path("/opt/qindaqt/bin/qindaqt-shell"),
+                }
+            )
+            scenario = SimpleNamespace(profile_id="work", theme_id="light")
+            environment = {"XDG_RUNTIME_DIR": str(runtime)}
+            self.assertIn(
+                "--no-polkit-agent --no-powerdevil",
+                _session_program(stage, environment, scenario).read_text(),
+            )
+            environment[LIFECYCLE_TRACE_ENVIRONMENT] = "1"
+            self.assertIn(
+                "--no-polkit-agent --no-powerdevil",
+                _session_program(stage, environment, scenario).read_text(),
+            )
+            environment[LIFECYCLE_TRACE_ENVIRONMENT] = "0"
+            self.assertIn(
+                "--no-polkit-agent --no-powerdevil",
+                _session_program(stage, environment, None).read_text(),
+            )
+
     def test_forced_qt_stderr_is_lifecycle_diagnostic_only(self) -> None:
         default_environment = {"PATH": "/opt/qindaqt/bin:/usr/bin"}
         with patch.dict(os.environ, {}, clear=True):

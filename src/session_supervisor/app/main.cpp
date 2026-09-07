@@ -9,43 +9,14 @@
 #include <QTextStream>
 #include <QtDBus/QDBusConnection>
 
+#include "qindaqt/session_supervisor/polkit_agent_selection.h"
+
 #include "../src/activation_environment.h"
 #include "../src/resident_service_refresh.h"
-
-#include <QFileInfo>
-#include <QStringList>
 
 #include <utility>
 
 using namespace QindaQt::SessionSupervisor;
-
-namespace {
-
-// Well-known distribution locations of the polkit KDE authentication agent.
-// The first existing executable wins; an explicit --polkit-agent overrides.
-QStringList defaultPolkitAgentCandidates()
-{
-    return {
-        QStringLiteral("/usr/libexec/polkit-kde-authentication-agent-1"),
-        QStringLiteral("/usr/lib/polkit-kde-authentication-agent-1"),
-        QStringLiteral("/usr/lib64/libexec/polkit-kde-authentication-agent-1"),
-    };
-}
-
-QString resolvePolkitAgent(const QString &configured)
-{
-    if (!configured.trimmed().isEmpty()) {
-        return configured;
-    }
-    for (const QString &candidate : defaultPolkitAgentCandidates()) {
-        if (QFileInfo(candidate).isExecutable()) {
-            return candidate;
-        }
-    }
-    return {};
-}
-
-} // namespace
 
 int main(int argc, char *argv[])
 {
@@ -83,6 +54,11 @@ int main(int argc, char *argv[])
          QStringLiteral("Optional polkit authentication agent executable; "
                         "well-known locations are used when omitted."),
          QStringLiteral("path"), QStringLiteral("")},
+        {QStringLiteral("no-polkit-agent"),
+         QStringLiteral("Never start a polkit authentication agent, even when "
+                        "well-known host locations exist. Private and "
+                        "integration runs must pass this so a staged session "
+                        "never launches host binaries.")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Shell theme id."),
@@ -117,8 +93,9 @@ int main(int argc, char *argv[])
         ? QString{} : parser.value(QStringLiteral("powerdevil"));
     options.desktopControlsExecutable =
         parser.value(QStringLiteral("desktop-controls"));
-    options.polkitAgentExecutable =
-        resolvePolkitAgent(parser.value(QStringLiteral("polkit-agent")));
+    options.polkitAgentExecutable = resolvePolkitAgentExecutable(
+        parser.isSet(QStringLiteral("no-polkit-agent")),
+        parser.value(QStringLiteral("polkit-agent")));
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));
     options.compositorProcessId = *compositorProcessId;
