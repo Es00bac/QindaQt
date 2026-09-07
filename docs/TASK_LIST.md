@@ -852,8 +852,8 @@ model, storage and assignment boundary only; the checkpoint above remains active
 Capture and desktop-entry launch evidence: `2b479c6b` integrates independently
 accepted candidate `df5b5a91`; 4/4 integrated Core/workspace tests pass.
 Atomic adoption is integrated at `6bdde945`, and native dialogs at `343600b2`.
-The reviewed KWin runtime port candidate `e64e96b6` is integrated. Final
-session wiring and installed Save/Reopen qualification remain in progress.
+The reviewed KWin runtime port candidate `e64e96b6` is integrated. Session
+wiring is integrated at `541cddef`; installed Save/Reopen qualification remains open.
 
 Session crash recovery is also open: the September 7 shell render-thread crash
 ended the compositor session after the old one-restart budget was exhausted.
@@ -870,6 +870,19 @@ checks, full Gentoo desktop package definition, native build/boot CI, and
 release/upgrade guides. Candidate production build and nested boots passed;
 remote CI and the final combined source pin, Portage installation, installed
 acceptance and tag are still required.
+
+The combined implementation is integrated at `541cddef`, including reviewed
+container identity, genuine roll-up, raise-only handling of shaded strips,
+workspace UI composition, desktop controls, and session-owned PowerDevil.
+The production build and 16/16 combined control tests pass. Real nested native,
+portal, and legacy idle-inhibition tests pass all three modes. Workspace
+persistence and UI policy tests pass; actual two-session UI reopening and
+installed everyday-control acceptance remain required.
+
+The Gentoo plan accepts the existing tuned Power Profiles provider. The final
+source pin and Manifest, the apps-only package ownership transition, remote
+native CI, installation, and release tag remain open. No new installed desktop
+or completed checkpoint is claimed by this integration.
 
 ### Dock hover behavior (user addition, 2026-09-07)
 

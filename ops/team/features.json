@@ -1378,6 +1378,11 @@
             "kind": "commit",
             "reference": "3f1557c1",
             "summary": "Full Gentoo desktop package definition, native plugin build/boot CI and exact KWin source checks are integrated. Candidate full build and two nested boots passed. Final combined source pin, remote CI, Portage merge, installed acceptance and tag remain open; infrastructure alone does not advance release qualification."
+          },
+          {
+            "kind": "commit",
+            "reference": "541cddef",
+            "summary": "Reviewed workspace UI, container identity/roll-up and daily-control composition are integrated and build together. Real private nested native, portal and legacy idle inhibition passes; combined controls pass16/16. Installed UI reopening, everyday controls, final package source, remote native CI and tag remain open; this evidence does not qualify the whole release."
           }
         ]
       },
