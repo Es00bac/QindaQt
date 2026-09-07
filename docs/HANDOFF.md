@@ -1,5 +1,20 @@
 # Integration handoff
 
+## Panel hit-target repair integrated
+
+`8179a0f9` removes invisible interactive scrollbars from the panel's click
+areas and corrects cross-axis allocation. The exact candidate passed 20
+independent checks; the integrated shell build and the same 20 checks pass,
+including lower-edge/corner menu clicks, status controls, vertical layouts,
+overflow and dock geometry. Strict MkDocs and link validation pass. The
+running shell has not yet been replaced, so the user still sees its old panel.
+
+Gabbee's applied helper integration still has 41 passing focused tests.
+The private terminal proof has not reached input delivery: its compositor
+setup lacks the portal's screencast interface. The implementer is repairing
+only that private launch configuration, using the earlier successful portal
+fixture as a reference. No terminal insertion completion claim is warranted.
+
 ## Physical scaling verified and user-level deployment complete
 
 Integrated `347eb03f` retains valid inventory events that arrive before the
