@@ -25,7 +25,7 @@ class ShortcutNoteShortcut;
 // State controller for the dismissible desktop shortcut note (ADR-0084). The
 // note is presented inside the wallpaper controller's per-output background
 // surfaces, so this class owns note state only: visibility persisted through a
-// purpose-scoped Settings1 client, the Meta+F1 global toggle registered through
+// purpose-scoped Settings1 client, the Meta+Shift+F1 global toggle registered through
 // the shared GlobalShortcutRegistrar seam, and the theme/placement values the
 // note card binds to. It never creates its own window and never takes keyboard
 // focus; the hosting background surfaces stay desktop-scoped and

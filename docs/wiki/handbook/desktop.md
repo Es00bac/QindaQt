@@ -144,7 +144,7 @@ confirms and **Esc** cancels.
 | `Meta+Ctrl+Shift+X` / `Meta+Ctrl+Shift+U` | Maximize / restore the whole group |
 | `Meta+Ctrl+Shift+Q` | The group's Close All / Ungroup / Cancel choice |
 | `Meta+Shift+C` | Show or hide the member title strips QindaQt draws (for this session) |
-| `Meta+F1` | Show or hide the desktop shortcut note |
+| `Meta+Shift+F1` | Show or hide the desktop shortcut note |
 | `Meta+N` | Open the notification center |
 
 One rule worth knowing: while a window is grouped, its frame belongs to the
@@ -172,11 +172,11 @@ clear.
 
 The first time the desktop starts, a small **Desktop shortcuts** card sits on
 the wallpaper with a short list of defaults — six rows, not the whole
-keyboard reference above: **Meta+F1** to show or hide the note, **Meta+Shift**
+keyboard reference above: **Meta+Shift+F1** to show or hide the note, **Meta+Shift**
 + drag to combine windows, **Meta+Shift+D** to enter docking mode, the
 **arrow keys** to choose a docking edge, **Esc** to cancel, and **Enter** to
 confirm. **Got it** dismisses it, and the choice is remembered
-for later sessions. **Meta+F1** hides or shows the card whenever you want it
+for later sessions. **Meta+Shift+F1** hides or shows the card whenever you want it
 back. The card is part of the wallpaper layer: it never appears in the task
 list, never takes keyboard focus, and always labels its list as defaults.
 

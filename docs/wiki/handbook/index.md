@@ -25,7 +25,7 @@ being rolled out or verified is called out where it applies.
 4. **Change how it looks.** Open **System Settings → Appearance** and try a
    theme, a wallpaper, or a different font. The page previews every change;
    **Apply** saves it.
-5. **Lost?** Press **Meta+F1**. A small card on the desktop lists the default
+5. **Lost?** Press **Meta+Shift+F1**. A small card on the desktop lists the default
    shortcuts for combining and arranging windows, and the **Got it** button
    puts it away until you need it again.
 

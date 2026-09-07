@@ -26,7 +26,7 @@ Rectangle {
     readonly property string keyFontFamily: root.theme.monoFontFamily ?? ""
     readonly property string textFontFamily: root.theme.fontFamily ?? ""
     readonly property var rows: [
-        { keys: qsTr("Meta+F1"), label: qsTr("Show or hide this note"), own: true },
+        { keys: qsTr("Meta+Shift+F1"), label: qsTr("Show or hide this note"), own: true },
         { keys: qsTr("Meta+Shift + drag"), label: qsTr("Combine windows"), own: false },
         { keys: qsTr("Meta+Shift+D"), label: qsTr("Enter docking mode"), own: false },
         { keys: qsTr("Arrow keys"), label: qsTr("Choose docking edge"), own: false },

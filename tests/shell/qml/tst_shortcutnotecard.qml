@@ -130,8 +130,8 @@ Item {
                 keycaps.push(card.rows[index].keys);
             }
             keycaps.sort();
-            compare(keycaps, ["Arrow keys", "Enter", "Esc", "Meta+F1",
-                              "Meta+Shift + drag", "Meta+Shift+D"]);
+            compare(keycaps, ["Arrow keys", "Enter", "Esc", "Meta+Shift + drag",
+                              "Meta+Shift+D", "Meta+Shift+F1"]);
 
             const footnote = findChild(card, "shortcutNoteDefaultsFootnote");
             verify(footnote !== null);

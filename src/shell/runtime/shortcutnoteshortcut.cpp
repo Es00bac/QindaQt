@@ -37,7 +37,7 @@ QString ShortcutNoteShortcut::stableActionId()
 
 QKeySequence ShortcutNoteShortcut::defaultShortcut()
 {
-    return QKeySequence(Qt::META | Qt::Key_F1);
+    return QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_F1);
 }
 
 QAction *ShortcutNoteShortcut::action() const noexcept
