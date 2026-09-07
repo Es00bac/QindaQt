@@ -1,5 +1,30 @@
 # Integration handoff
 
+## Updated checkpoint and shortcut proof
+
+The current integrated tree `29be28fd` passes the closing selection again:
+**661/661**, exit 0, 129.73 seconds (`.cache/finish-closing-29be28fd.log`).
+The new 1,077-entry payload `.cache/session-checkpoint-29be28fd` is staged and
+manifest-verified; the previously supplied current installer now resolves to
+it. No system installation has occurred.
+
+The note default is now Meta+Shift+F1 because KWin already assigns Meta+F1 to
+Desktop 1. Independent and integrated focused tests pass 2/2. Private run
+`b752e061dc2a402f9729ab08b9606fca` proves the exact active/default binding,
+then real keyboard input changes the dismissal preference false → true → false.
+The manager inspected the visible card's full corrected shortcut label.
+Existing remaps and disabled bindings remain preserved by the product. This
+user's unassigned legacy note binding still needs deliberate configuration
+with deployment. The run's overall failure was a separate compact-hook route
+expectation; the shortcut evidence itself is complete.
+
+Compact tab visibility is integrated at `1d6d00f1`, independently tested 5/5
+and integrated-tested in all three navigation rows. Its final native capture
+remains separate. The Sloom staged package now proves global Help → About via
+real pointer input (run `b1bc50b9400d45168d7819393e06b70b`); its duplicate
+local menu exposed an observer using a well-known rather than the required
+unique exporter name. The isolated Sloom repair is being requalified.
+
 ## Menu labels and Settings native evidence
 
 Integrated `575e30d2` keeps admitted top-level menu names complete while the

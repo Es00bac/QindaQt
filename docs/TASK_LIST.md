@@ -112,8 +112,11 @@ replace earlier work:
   ownership and a visible focus cue in both clean-tile and title-visible modes.
 - Provide a dismissible desktop shortcut note with an obvious way to reopen it;
   its actions must match the completed window-management behavior. Integrated
-  `8ce25f98` provides persisted dismissal and Meta+F1; eight focused checks pass,
-  with actual desktop acceptance and deployment pending.
+  `8ce25f98` provides persisted dismissal. Integrated `29be28fd` changes the
+  default to Meta+Shift+F1 to avoid KWin Desktop 1. Private run
+  `b752e061dc2a402f9729ab08b9606fca` verifies real hide/reopen input and the
+  corrected visible label; deployment and this user's legacy binding update
+  remain outstanding.
 - Add QindaQt-specific parent-frame controls for member-title visibility and
   a compact management menu using the existing arrange, detach, and ungroup
   actions, without obscuring normal window controls.
