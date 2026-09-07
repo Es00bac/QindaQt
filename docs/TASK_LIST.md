@@ -9,6 +9,34 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ### Complete the installed desktop experience (2026-09-06)
 
+**Completed as the bounded usability checkpoint on September 7, 2026.**
+The reviewed changes are installed, the shell and services are refreshed,
+and the closing suite passed 661/661. This closes the reported-task checkpoint,
+not the broader desktop roadmap or File Manager S2.
+
+| Requirement | Acceptance evidence |
+| --- | --- |
+| Stable menus and usable hit areas | Native lower-edge File/status-icon clicks, retained popups and exactly-once actions; full labels in `5b76fbf122f043bbae405a34fd055ba1`; installed shell refreshed. |
+| Sloom global menu | Reviewed `f459b0fd`; actual Help → About and absent duplicate local menu in `a20d3aed75694d879a0a1cfab499c033`; complete installed package hash-verified. |
+| Services, displays and color | Six refreshed services return snapshots; physical ICC apply/readback/removal; physical scale preview/Keep/Cancel; user confirms Samsung Settings 125%, independently read back with no pending transaction. |
+| Focused Settings and QindaPunk design | Inspected Appearance, Color, Power and popup captures; compact navigation geometry tests plus native `d7a0ca34b3234d3ea1de20b892756ef8`; human guides and reviewed theme assets integrated. |
+| Grouping and grouped geometry | Normal and late-Shift native runs `7bf2271d708648ee99e1afd80493ef40` and `d90a2e7ddd8747a38dea9e06dc106bb9`; container-local arrows with independent standalone tiling. |
+| One container task and appropriate switching | Task identity regressions and native forward/reverse TabBox `5f700906669c498ab4889da621667fc7`. |
+| Chrome, active frames and group iconify | Native title toggles, inspected context menu and minimize/restore in `085a865f3f804842b342c06f088e0213`; scoped container checks pass although that run's unsupported nested scale check fails. |
+| Dock work area | Hidden/revealed/hidden maximized geometry and exact restore in `0c4d7868b85b44469417c4d28da7398a`. |
+| Note and automatic locking | Native note hide/reopen with corrected shortcut; host Meta+Shift+F1 persisted; actual Power switch/15-minute selection and restoration in `5b76fbf122f043bbae405a34fd055ba1`; host idle locking remains disabled. |
+| Gabbee and approved input | Real sink-to-PTY standalone/group Unicode readbacks; 187/187 Gabbee tests; real-backend push-to-talk and command callbacks each exactly once in their native runs. |
+| Fullscreen and representative games input | Native fullscreen focus/restoration `0aca8a74926c44f98def9b87b2a83328` and pointer lock/confinement/relative motion `d8f380054b0c44fe8b176692063e6e11`. |
+| Deployment and maintenance | 1,077 QindaQt and 3,181 Sloom entries independently match installed files; refreshed shell/services/Settings; compositor plugin matches the already refreshed session; reviewed integration pushed to GitHub, documentation gates pass. |
+
+Qualification limits remain explicit: native private captures supply visual
+checks because fresh host screenshot capture was unavailable. KWin's nested
+Wayland backend ignores requested scale; the physical Settings path is verified
+by the user's confirmation and live 1.25 readback. Synthetic dictation checks
+cover delivery and shortcut routing, not physical microphone transcription or
+every game. The user's Samsung remains at 125%; the projector remains at 100%.
+
+
 The physical-session report supersedes the earlier visual-polish deferral.
 These are concurrent requirements; later reports add to this list rather than
 replace earlier work:
@@ -26,7 +54,8 @@ replace earlier work:
   The reported scale rollback is repaired through `347eb03f`: physical Display1
   preview/Cancel and Keep cycles reached 125% and restored the original layout.
   The verified service is deployed through a stable user-level systemd override;
-  direct Settings-page pointer verification remains separate.
+  the user subsequently confirmed the physical Settings 125% change, and
+  live readback verifies 1.25 with no pending transaction.
 - Make maximized containers follow the available work area when the dock hides
   or changes its reservation, preserving their normal restore size. Integrated
   `04954961` passes actual hidden/revealed/hidden and exact restored-member
@@ -35,7 +64,8 @@ replace earlier work:
   capabilities without protocol jargon or nonfunctional controls. ICC application
   is integrated through `deb48cd3`; 13 focused checks pass. Physical KScreen application/readback/removal of a standard sRGB ICC profile
   passed and restored the original state (`.cache/live-color-proof/result.json`).
-  Complete Settings-page interaction and unavailable-state visual review remain open.
+  The actual Color unavailable-state presentation was inspected in the
+  native Settings run; physical ICC application evidence remains separate.
 - Make Settings and the wider desktop human-friendly: focused Appearance
   destinations, clear selection and apply behavior, usable customization,
   consistent controls, compact navigation, and real visual verification.
@@ -47,7 +77,8 @@ replace earlier work:
   direction. Use image generation across the design process where useful;
   preserve explicit wallpaper/theme choices. Palettes, shared editable controls,
   and reviewed Controls baselines are integrated through `3de6ac9f`; final
-  Settings consumer review and real desktop visual acceptance remain open.
+  Settings consumer review and native desktop visual acceptance are recorded
+  in the checkpoint table above.
 - Eliminate global-menu flashing and make pointer and keyboard actions reliable.
   The refreshed session still has undersized or vertically displaced click
   targets on menu labels and status icons. Integrated `8179a0f9` removes
@@ -109,8 +140,8 @@ replace earlier work:
   QindaQt window containers. Private run `5f700906669c498ab4889da621667fc7`
   passes native QindaQt TabBox forward/reverse selection and activation with
   one container representative. Normal and late-Shift grouping runs above
-  verify container-local versus standalone tiling. Final refreshed-session
-  visual acceptance remains distinct from those private checks.
+  verify container-local versus standalone tiling. The installed compositor plugin matches the tested session; native visual
+  acceptance is recorded separately from host capture, which was unavailable.
 - Add a keyboard toggle for grouped-member title chrome, keeping container
   ownership and a visible focus cue in both clean-tile and title-visible modes.
 - Provide a dismissible desktop shortcut note with an obvious way to reopen it;
