@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "session/terminal_session.h"
+#include <algorithm>
 
 #include "session/process_liveness.h"
 
@@ -50,6 +51,22 @@ void TerminalSession::setState(State state) {
 
 QWidget *TerminalSession::terminalWidget() const {
   return m_backend != nullptr ? m_backend->terminalWidget() : nullptr;
+}
+
+QString TerminalSession::workingDirectory() const {
+  if (m_state == State::Running && m_monitor) {
+    const auto directory = m_monitor->workingDirectory(m_childPid);
+    if (!directory.isEmpty()) return directory;
+  }
+  return m_request.workingDirectory;
+}
+void TerminalSession::zoomText(int steps) {
+  m_zoomSteps = std::clamp(m_zoomSteps + steps, -6, 24);
+  if (m_backend) m_backend->setZoomSteps(m_zoomSteps);
+}
+void TerminalSession::resetZoom() {
+  m_zoomSteps = 0;
+  if (m_backend) m_backend->setZoomSteps(0);
 }
 
 void TerminalSession::setAppearance(const TerminalViewAppearance &appearance) {
@@ -221,6 +238,7 @@ bool TerminalSession::spawnGeneration() {
   connect(m_backend.get(), &TerminalSessionBackend::linkContextRequested, this,
           &TerminalSession::linkContextRequested);
 
+  m_backend->setZoomSteps(m_zoomSteps);
   setState(State::Running);
   // A fresh view carries no selection; publishing that keeps the
   // presentation's action state truthful across restarts (P2-4).

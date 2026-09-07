@@ -104,7 +104,8 @@ TerminalSessionCollection::~TerminalSessionCollection() {
 }
 
 TerminalSessionCollection::AddResult
-TerminalSessionCollection::addSession(const TerminalProfile &profile) {
+TerminalSessionCollection::addSession(const TerminalProfile &profile,
+                                      const TerminalSession *inheritDirectoryFrom) {
   if (m_sessions.size() >= kMaxSessions) {
     const QString diagnostic =
         QStringLiteral("Session limit reached (%1 tabs)").arg(kMaxSessions);
@@ -116,9 +117,14 @@ TerminalSessionCollection::addSession(const TerminalProfile &profile) {
     emit sessionAddRejected(validation.diagnostic);
     return {.session = nullptr, .diagnostic = validation.diagnostic};
   }
+  QString directory = m_context.workingDirectory;
+  if (indexOf(inheritDirectoryFrom) >= 0) {
+    const auto current = inheritDirectoryFrom->workingDirectory();
+    if (!current.isEmpty()) directory = current;
+  }
   const auto resolution = resolveProfileLaunch(
       profile, m_context.fallbackProgram, m_context.fallbackArguments,
-      m_context.workingDirectory, m_context.baseEnvironment);
+      directory, m_context.baseEnvironment);
   if (!resolution.outcome.ok) {
     emit sessionAddRejected(resolution.outcome.diagnostic);
     return {.session = nullptr, .diagnostic = resolution.outcome.diagnostic};

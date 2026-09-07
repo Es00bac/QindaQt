@@ -81,6 +81,7 @@ private:
 private slots:
   void appearanceTracksAllBuiltinThemes_data();
   void appearanceTracksAllBuiltinThemes();
+  void viewToolsStayWithTheirDocument();
   void standardActionsAndAccessibility();
   void editingPublishesDirtyState();
   void externalChangeShowsNonDestructiveBanner();
@@ -145,6 +146,29 @@ void EditorWindowTest::appearanceTracksAllBuiltinThemes() {
            expected.tokens->danger().foreground);
   QCOMPARE(expected.tokens->inputs().highContrast,
            theme.theme.variant == QStringLiteral("high-contrast"));
+}
+
+void EditorWindowTest::viewToolsStayWithTheirDocument() {
+  EditorWindow window(localFactory(), appearance());
+  auto *first = window.editor();
+  auto *wrap = window.findChild<QAction *>(QStringLiteral("viewWordWrapAction"));
+  auto *zoom = window.findChild<QAction *>(QStringLiteral("viewZoomInAction"));
+  QVERIFY(wrap); QVERIFY(zoom);
+  const auto size = first->font().pointSizeF();
+  wrap->trigger(); zoom->trigger();
+  QCOMPARE(first->lineWrapMode(), QPlainTextEdit::NoWrap);
+  QCOMPARE(first->font().pointSizeF(), size + 1);
+  QVERIFY(!first->document()->isModified());
+  window.findChild<QAction *>(QStringLiteral("fileNewAction"))->trigger();
+  QVERIFY(window.editor() != first);
+  QCOMPARE(window.editor()->lineWrapMode(), QPlainTextEdit::WidgetWidth);
+  QCOMPARE(window.editor()->font().pointSizeF(), size);
+  QVERIFY(wrap->isChecked());
+  window.tabs()->setCurrentIndex(0);
+  QVERIFY(!wrap->isChecked());
+  QCOMPARE(window.editor(), first);
+  window.applyAppearance(appearance());
+  QCOMPARE(first->font().pointSizeF(), size + 1);
 }
 
 void EditorWindowTest::standardActionsAndAccessibility() {

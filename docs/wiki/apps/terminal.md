@@ -18,6 +18,20 @@ superseded by
 [ADR-0040](../adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md)
 —the application-owned child PTY bridge that is the current contract.
 
+## Everyday terminal work
+
+Open a new tab with `Ctrl+Shift+T`. It starts in the active shell's current
+folder, so you can keep working in the same project. If that folder cannot be
+read or the shell has exited, Terminal uses the tab's launch folder. The process
+monitor reads only the owned shell's `/proc/<pid>/cwd`; the window never inspects
+processes itself, and another window's session cannot supply a launch directory.
+
+Use **View → Zoom In / Zoom Out** (`Ctrl+Shift++` / `Ctrl+Shift+-`) to adjust
+text size for one tab. `Ctrl+Shift+0` restores its profile size. Zoom survives a
+live theme change or restarting that tab's shell, but is not a saved profile
+change. Applying a theme preserves the terminal's monospace font independently
+of the menu and tab fonts.
+
 ## Shell launch and the no-shell-string contract
 
 A launch request is always argv: one absolute program path plus verbatim
@@ -415,3 +429,11 @@ host-compositor interaction remain outside S2.
   unbuilt.
 - Whole-application assistive-technology proof, the nested screenshot matrix,
   and physical display/input qualification remain later integration gates.
+
+### Daily-use acceptance
+
+The real-widget adapter row drives an owned shell through a directory change,
+text input and output, and clean exit. It also checks independent profile-based
+zoom and theme changes. The collection row verifies active-directory inheritance,
+fallback when observation is unavailable, and rejection of a foreign session as
+a directory source. The window row checks the published zoom shortcuts.

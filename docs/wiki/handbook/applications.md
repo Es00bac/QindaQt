@@ -59,12 +59,20 @@ text and regular expressions, with Replace All undoable as one step. If you
 close with files open, the editor offers to remember *which* files to reopen
 next time (never unsaved contents).
 
+Line numbers, automatic syntax highlighting, and `Ctrl+G` to jump to a line
+help with scripts and configuration files. Tab and Shift+Tab indent selected
+lines; Enter carries indentation forward. The View menu gives each tab its own
+word-wrap switch and text zoom (`Ctrl++`, `Ctrl+-`, and `Ctrl+0` to reset).
+
 ## File Manager
 
 Browse folders with a path bar and back/forward history, open files with
 their proper applications, and organize with rename, copy, move, and the
 Trash. It works on local files; remote filesystems are not part of the
-current version.
+current version. Use `Ctrl+L` to type a path, `Ctrl+H` to show hidden files,
+and `Ctrl+D` to bookmark a folder. List and grid views share your selection;
+Ctrl-click picks individual files and Shift-click selects a range. Click a
+column heading to sort. Copy, move, and Trash work on the selected files together.
 
 ## Terminal
 
@@ -72,6 +80,10 @@ A real terminal for your shell, with up to eight sessions in tabs, saved
 profiles, searchable scrollback, and clickable links that open only after
 you confirm them. Closing a tab keeps the exit status honest — a crashed
 command reports the crash rather than vanishing.
+
+New tabs open in the active shell's current folder. Adjust a tab's text size
+from View, or use `Ctrl+Shift++` / `Ctrl+Shift+-`; `Ctrl+Shift+0` restores the
+profile size. Theme changes preserve that zoom and the terminal font.
 
 ## Menus in the top panel
 

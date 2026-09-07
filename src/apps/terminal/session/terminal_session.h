@@ -89,6 +89,9 @@ public:
   [[nodiscard]] TerminalLinkSelection selectVisibleLink(int delta);
   [[nodiscard]] TerminalLinkSelection currentVisibleLink();
   void setAppearance(const TerminalViewAppearance &appearance);
+  [[nodiscard]] QString workingDirectory() const;
+  void zoomText(int steps);
+  void resetZoom();
 
 signals:
   void stateChanged(QindaQt::Apps::Terminal::TerminalSession::State state);
@@ -123,6 +126,7 @@ private:
   TerminalLaunchRequest m_request;
   TerminalProfile m_profile = builtinDefaultProfile();
   TerminalExitStatus m_lastExit;
+  int m_zoomSteps = 0;
   ProcessId m_childPid = 0;
   ProcessId m_processGroupId = 0;
   bool m_exitPublished = false;

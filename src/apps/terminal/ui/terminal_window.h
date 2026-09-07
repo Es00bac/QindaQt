@@ -170,6 +170,9 @@ private:
   QAction *m_pasteSelectionAction = nullptr;
   QAction *m_selectAllAction = nullptr;
   QAction *m_clearAction = nullptr;
+  QAction *m_zoomInAction = nullptr;
+  QAction *m_zoomOutAction = nullptr;
+  QAction *m_zoomResetAction = nullptr;
   QAction *m_findAction = nullptr;
   QAction *m_findNextAction = nullptr;
   QAction *m_findPreviousAction = nullptr;

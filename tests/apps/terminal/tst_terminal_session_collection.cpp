@@ -17,6 +17,7 @@ using namespace QindaQt::Apps::Terminal;
 namespace {
 
 struct LifecycleStats final {
+  QHash<ProcessId, QString> directories;
   int created = 0;
   int shutdowns = 0;
   QSet<ProcessId> stopped;
@@ -27,6 +28,8 @@ class CollectionMonitor final : public ProcessMonitor {
 public:
   explicit CollectionMonitor(QSharedPointer<LifecycleStats> stats)
       : m_stats(std::move(stats)) {}
+
+  QString workingDirectory(ProcessId pid) override { return m_stats->directories.value(pid); }
 
   ProcessExitInfo reap(ProcessId pid) override {
     return m_stats->stopped.contains(pid)
@@ -112,11 +115,33 @@ class TerminalSessionCollectionTest final : public QObject {
   Q_OBJECT
 
 private slots:
+  void newTabInheritsOnlyOwnedLiveDirectory();
   void listIsBoundedAndMovable();
   void closeOneAndCloseAllDisposeEveryOwnedChild();
   void destructionForcesEveryRemainingChildDown();
   void titlesAreBoundedAndSanitized();
 };
+
+void TerminalSessionCollectionTest::newTabInheritsOnlyOwnedLiveDirectory() {
+  CollectionHarness harness;
+  harness.context.workingDirectory = QStringLiteral("/tmp");
+  auto collection = harness.makeCollection();
+  auto *first = collection->addSession(builtinDefaultProfile()).session;
+  QVERIFY(first);
+  harness.stats->directories.insert(7000, QStringLiteral("/usr"));
+  auto *second = collection->addSession(builtinDefaultProfile(), first).session;
+  QVERIFY(second);
+  QCOMPARE(second->workingDirectory(), QStringLiteral("/usr"));
+  harness.stats->directories.remove(7000);
+  auto *fallback = collection->addSession(builtinDefaultProfile(), first).session;
+  QVERIFY(fallback);
+  QCOMPARE(fallback->workingDirectory(), QStringLiteral("/tmp"));
+  auto other = harness.makeCollection();
+  harness.stats->directories.insert(7000, QStringLiteral("/usr"));
+  auto *foreign = other->addSession(builtinDefaultProfile(), first).session;
+  QVERIFY(foreign);
+  QCOMPARE(foreign->workingDirectory(), QStringLiteral("/tmp"));
+}
 
 void TerminalSessionCollectionTest::listIsBoundedAndMovable() {
   CollectionHarness harness;
