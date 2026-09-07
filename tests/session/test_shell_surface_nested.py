@@ -16,6 +16,7 @@ from nested_session_scenario import (
     VirtualOutputSpec,
     isolated_environment,
     load_virtual_spec,
+    running_private_session_bus,
     write_virtual_output_config,
 )
 from shell_surface_protocol_validation import (
@@ -227,14 +228,17 @@ def main() -> int:
         # compositor mutation test. Do not add --test-scenario or any
         # development-control environment marker to this command.
         try:
-            completed = subprocess.run(
-                [str(arguments.dbus_runner), "--", *launcher_command],
-                env=environment,
-                text=True,
-                capture_output=True,
-                timeout=30,
-                check=False,
-            )
+            with running_private_session_bus(
+                Path(directory), arguments.dbus_runner.with_name("dbus-daemon"), environment
+            ):
+                completed = subprocess.run(
+                    launcher_command,
+                    env=environment,
+                    text=True,
+                    capture_output=True,
+                    timeout=30,
+                    check=False,
+                )
         except subprocess.TimeoutExpired as error:
             print(f"nested shell-surface proof timed out: {error}", file=sys.stderr)
             return 1

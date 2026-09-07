@@ -3401,3 +3401,12 @@ it does not claim a physical Settings pointer-driven scale cycle. Use the
 physical backend for that end-to-end check, or a parent-controlled scale
 scenario when testing the nested backend. Do not modify production display
 code to make this unsupported nested request pass.
+
+The production shell surface row also owns a private bus with an empty service
+activation directory. Rendering and layer-surface checks exercise the real Qt
+Quick RHI path without activating the installed desktop portal from the test.
+
+For renderer qualification, `QINDAQT_SHELL_RENDER_DIAGNOSTICS=1` retains the
+probe's bounded shell stderr on a successful run as well as a failure. Combine
+it with `QT_LOGGING_RULES=qt.scenegraph.general=true` to establish the actual
+backend and render loop instead of inferring them from environment settings.
