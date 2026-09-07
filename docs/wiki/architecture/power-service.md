@@ -3,7 +3,8 @@
 This page defines the accepted architecture for QindaQt power state, session
 power actions, idle reporting, and brightness. Its current maturity is
 **EXECUTABLE (PB-2 upstream adapters)**: the PB-0 pure values, PB-1 resident
-service/client, and production UPower, power-profiles-daemon, logind-session,
+service/client, and production UPower, the standard Power Profiles provider,
+logind-session,
 logind-action, and injected-sysfs adapters are implemented with focused
 private-bus evidence. A production shell Power applet consumes the public
 client boundary. Idle, keyboard-backlight integration, the KWin backlight
@@ -28,7 +29,7 @@ selects production; the wire contract is unchanged.
 | Concern | Truth authority | QindaQt owner |
 | --- | --- | --- |
 | Batteries, AC/UPS state, estimates | UPower | `Power1` collaborator and typed snapshot |
-| Power profiles and holds | power-profiles-daemon | `Power1` collaborator |
+| Power profiles and holds | the standard Power Profiles D-Bus provider (`power-profiles-daemon` or Gentoo `tuned[ppd]`) | `Power1` collaborator |
 | Suspend, hibernate, reboot, power off | systemd-logind | Shell session-action controller |
 | Caller-relative `Can*` authorization | systemd-logind | Shell controller; never cached in `Power1` |
 | Power/suspend/hibernate keys | logind `handle-*` inhibitor locks | Shell controller |
@@ -88,13 +89,18 @@ PB-1 collaborator boundaries; the composition root owns adapter lifetimes.
 Power modules do not link Display implementation modules or Wayland. Only the
 later PB-5 binding may consume the public Display client.
 
+The profile adapter consumes the standard Power Profiles D-Bus contract. On
+Gentoo, `sys-apps/tuned[ppd]` is an equivalent provider and the desktop ebuild
+accepts it without requiring `sys-power/power-profiles-daemon`; QindaQt does
+not start or configure either provider.
+
 ## PB-1 resident service and client
 
 PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
 
 - `power_service` composes three injected collaborator seams — battery
   (UPower authority: supplies, keyboard backlights, AC truth), profile
-  (power-profiles-daemon authority: profiles and holds), and session (logind
+  (standard Power Profiles authority: profiles and holds), and session (logind
   authority: lid/dock/sleep truth and sanitized inhibitors). Each seam is a
   generation-fenced Qt interface; real daemon adapters arrive in later slices
   and must not leak raw upstream identity through it.
@@ -309,8 +315,8 @@ hardware hotkeys remain release evidence.
 ## Non-claims
 
 This contract proves production adapter behavior only against injected private
-services and fixture files. It does not claim a live host UPower,
-power-profiles-daemon, logind policy, polkit subject, suspend/resume cycle,
+services and fixture files. It does not claim a live host UPower, standard
+Power Profiles provider, logind policy, polkit subject, suspend/resume cycle,
 physical backlight mutation, idle hint, keyboard backlight, KWin Wayland
 provider, external monitor, hardware key, or host-session integration. The
 logind action boundary has no Power1 v1 or shell presentation route, and the

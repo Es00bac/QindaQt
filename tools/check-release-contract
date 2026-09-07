@@ -22,6 +22,12 @@ DESKTOP_EBUILD = (
     / "qindaqt-desktop-0.1.0_pre20260907.ebuild"
 )
 OBJECT_ID = re.compile(r"[0-9a-f]{40}")
+POWER_PROFILE_PROVIDER = re.compile(
+    r"\|\|\s*\(\s*"
+    r"sys-apps/tuned\[ppd\]\s+"
+    r"sys-power/power-profiles-daemon\s*\)",
+    re.DOTALL,
+)
 
 
 class ContractError(RuntimeError):
@@ -92,7 +98,6 @@ def verify_repository() -> tuple[str, str]:
         ">=kde-frameworks/kservice-6.0:6=",
         "net-wireless/bluez",
         "sys-apps/xdg-desktop-portal",
-        "sys-power/power-profiles-daemon",
         "sys-power/upower",
         "!gui-apps/qindaqt-apps",
         "-DQINDAQT_BUILD_KWIN_PLUGIN=ON",
@@ -102,6 +107,10 @@ def verify_repository() -> tuple[str, str]:
     )
     for fragment in required_fragments:
         require(fragment in ebuild, f"desktop ebuild misses release contract: {fragment}")
+    require(
+        POWER_PROFILE_PROVIDER.search(ebuild) is not None,
+        "desktop ebuild must accept tuned[ppd] or power-profiles-daemon as the Power Profiles provider",
+    )
     require(re.search(r'QINDAQT_COMMIT="[0-9a-f]{40}"', ebuild) is not None,
             "desktop ebuild must fetch one immutable source commit")
     require("cmake_src_install" in ebuild,

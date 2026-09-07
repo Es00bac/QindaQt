@@ -225,3 +225,4 @@ nav:
       - "0102: Adopt restored layouts atomically": adr/0102-adopt-restored-layouts-atomically.md
       - "0103: Preserve the compositor session during shell recovery": adr/0103-paced-shell-recovery.md
       - "0104: Serialize production shell rendering": adr/0104-serialize-shell-rendering.md
+      - "0106: Accept an equivalent Gentoo Power Profiles provider": adr/0106-accept-equivalent-power-profiles-provider.md
