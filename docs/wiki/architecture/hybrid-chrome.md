@@ -283,14 +283,35 @@ preserved offset. Context following never raises a transient by itself: the
 group-stacking policy keeps associated transients above the complete contiguous
 member block, so updating a dialog cannot split the group or pull it above an
 unrelated active window. A focused dialog remains the valid active window while
-scene transactions preserve its opaque KWin focus token. While a container is
-shaded, group stacking narrows that same-layer/contiguous-block requirement to
-just the content-preserving chrome anchor; its genuinely `Window::isHidden()`
-siblings are exempt rather than treated as a broken group, so the published
-chrome overlay (and the shaded strip's click/drag eligibility) survives the
-first shade action instead of dropping to zero. Unrelated hidden/unmapped
-windows outside a shaded container are unaffected and still fail
-synchronization normally.
+scene transactions preserve its opaque KWin focus token.
+
+A shaded container needed three corrections, all live-verified against a real
+nested compositor, to keep its published chrome overlay
+(`chromeOverlayCount`/`publishedGroupStackingCount`) and strip
+click/drag eligibility past the first shade action instead of permanently
+dropping to zero:
+
+- `KWinChromeManager`'s per-container plan validation compares a plan's tabs
+  against the topology's real pages; a shaded plan deliberately omits every
+  tab (see below), which always failed that check and discarded the whole
+  publication. The shaded branch now validates its own, simpler invariant —
+  no tabs, members, or dividers at all — instead of the ordinary plan's
+  structural check.
+- Group stacking's same-KWin-layer/contiguous-live-stack validation exists to
+  protect visible, input-eligible members; it was never given an exemption
+  for shade's design of marking every member (anchor included) genuinely
+  `Window::isHidden()`. A shaded container now narrows its required members
+  to just the content-preserving anchor before that validation runs; its
+  hidden siblings are exempt rather than treated as a broken group.
+  Unrelated hidden/unmapped windows outside a shaded container are
+  unaffected and still fail synchronization normally.
+- A shared-chrome press normally raises and activates the group's real
+  active-page member so focus/task policy sees a genuine client. For a
+  shaded container that representative is the anchor, which is deliberately
+  hidden, not a real client; activating it anyway unhid and natively
+  detached the container's other, plain-hidden member as a side effect. A
+  press on a shaded strip now skips this raise/activate step entirely — the
+  strip is already the topmost input target the press just resolved to.
 
 ## Compositor scene restart
 

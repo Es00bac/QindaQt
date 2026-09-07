@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -24,6 +25,7 @@ from nested_session_scenario import (
     VirtualOutputSpec,
     isolated_environment,
     load_virtual_spec,
+    running_private_session_bus,
     virtual_spec_from_document,
     write_virtual_output_config,
 )
@@ -223,6 +225,10 @@ def main() -> int:
     if consent_error is not None:
         print(consent_error, file=sys.stderr)
         return HOST_UINPUT_SKIP_CODE
+    dbus_daemon = shutil.which("dbus-daemon")
+    if not dbus_daemon:
+        print("private nested run requires dbus-daemon", file=sys.stderr)
+        return 2
     try:
         spec = load_virtual_spec(arguments.scenario)
     except ScenarioCoverageError as error:
@@ -283,14 +289,17 @@ def main() -> int:
                 arguments.probe,
             ]
         )
-        completed = subprocess.run(
-            [arguments.dbus_runner, "--", *launcher_command],
-            env=environment,
-            text=True,
-            capture_output=True,
-            timeout=35 if arguments.expect_hybrid_pointer is not None else 20,
-            check=False,
-        )
+        with running_private_session_bus(
+            Path(directory), Path(dbus_daemon), environment
+        ):
+            completed = subprocess.run(
+                launcher_command,
+                env=environment,
+                text=True,
+                capture_output=True,
+                timeout=35 if arguments.expect_hybrid_pointer is not None else 20,
+                check=False,
+            )
     if completed.returncode != 0:
         print(completed.stdout, file=sys.stderr)
         print(completed.stderr, file=sys.stderr)

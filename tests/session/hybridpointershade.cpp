@@ -205,6 +205,61 @@ std::optional<HybridPointerShadeEvidence> exerciseHybridPointerShade(
         return std::nullopt;
     }
 
+    // AGENT-GUARD: the drag proof above is a real, permanent reposition of
+    // the container (that is the point of it), but later phases of this same
+    // probe run (e.g. the compositor-restart proof) still expect the group
+    // at its original, pristine position. Drag the strip back by the exact
+    // inverse delta and unroll there so this phase leaves the world exactly
+    // as it found it, rather than leaking a moved container into unrelated
+    // later coverage.
+    if (!pointer.activateContextMenuActionAt(
+            draggedTitlePoint, RollUpMenuActionIndex, error)) {
+        return std::nullopt;
+    }
+    auto reshaded = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            return bothMembersMatchTranslated(inventory, grouped, state, dragDelta)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/true);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!reshaded) {
+        *error = QStringLiteral(
+            "could not re-shade the group to drag it back to its original "
+            "position: %1").arg(*error);
+        return std::nullopt;
+    }
+    if (!pointer.drag(draggedTitlePoint, sharedTitlePoint, /*metaShift=*/false, error)) {
+        return std::nullopt;
+    }
+    auto restoredDiagnostics = awaitHybridDiagnostics(
+        client,
+        [&](const HybridDiagnostics &value) {
+            const auto frame = soleShadedStripFrame(value, error);
+            return frame && sameGeometry(*frame, *shadedFrameBeforeDrag);
+        }, error);
+    if (!restoredDiagnostics) {
+        *error = QStringLiteral(
+            "dragging the shaded strip back to its original position "
+            "failed: %1").arg(*error);
+        return std::nullopt;
+    }
+    if (!pointer.activateContextMenuActionAt(
+            sharedTitlePoint, RollUpMenuActionIndex, error)) {
+        return std::nullopt;
+    }
+    auto restored = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            return bothMembersMatch(inventory, grouped, state)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/false);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!restored) {
+        *error = QStringLiteral(
+            "member frames did not return to their exact pre-shade position "
+            "after dragging the strip back and unrolling: %1").arg(*error);
+        return std::nullopt;
+    }
+
     return HybridPointerShadeEvidence{*shaded, *unrolled, *shadedDiagnostics,
                                       *movedDiagnostics, *unrolledDiagnostics,
                                       dragDelta};

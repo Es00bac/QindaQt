@@ -171,6 +171,18 @@ void KWinHybridSession::dispatchChromePointerDecision(
         m_chromeManager->setPointerHover(decision.hovered);
     }
     for (const auto &containerId : decision.containerRaiseRequests) {
+        if (m_placement && m_placement->isShaded(containerId)) {
+            // AGENT-GUARD: raiseContainer's activateWindow() targets the
+            // group's activation representative, which for a shaded
+            // container is the content-preserving anchor -- genuinely
+            // Window::isHidden() by design, not "a real client" the way its
+            // own AGENT-CONTRACT assumes. Activating it anyway (observed via
+            // a live nested run) unhid and natively detached the other,
+            // plain-hidden member as a side effect. A shaded strip press
+            // needs no raise/activation at all: it is already the topmost
+            // input target the click just resolved to.
+            continue;
+        }
         QString error;
         if (!m_groupStacking->raiseContainer(containerId, &error)) {
             m_lastGroupStackingFailure = error;

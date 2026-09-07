@@ -90,6 +90,29 @@ bool preparePlan(const Core::WindowContainer &container,
                                  .arg(container.id()));
     }
 
+    if (plan.shaded) {
+        // AGENT-GUARD: HybridChromePlanBuilder::build's shaded branch always
+        // omits tabs/members/dividers (the whole hit-testable rectangle is
+        // just the strip row, independent of the frozen real page/layout
+        // tree). The checks below compare those against the topology's real
+        // page/active-page structure and exist to protect the ordinary
+        // (non-shaded) plan; applied to a shaded plan they always reject
+        // with "chrome tabs do not preserve topology page order", which
+        // permanently drops chromeOverlayCount/publishedGroupStackingCount
+        // to 0 on the very first shade of any container with at least one
+        // page. Validate the shaded plan's own, much simpler invariant
+        // instead: it truly carries none of that structure.
+        if (!plan.tabs.isEmpty() || !plan.members.isEmpty() || !plan.dividers.isEmpty()) {
+            return reject(error,
+                          QStringLiteral("container '%1' shaded chrome plan must omit "
+                                        "tabs, members, and dividers")
+                              .arg(container.id()));
+        }
+        prepared->plan = std::move(plan);
+        prepared->tabRepresentatives.clear();
+        return true;
+    }
+
     QStringList expectedTabs;
     QStringList actualTabs;
     QMap<QString, QString> representatives;

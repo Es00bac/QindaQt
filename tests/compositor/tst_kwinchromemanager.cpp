@@ -21,6 +21,7 @@ private Q_SLOTS:
     void recreatesSceneOverlaysAfterSynchronousClear();
     void validatesPointerActivationAndRoutesHoverToPaint();
     void rejectsInvalidOrStaleSnapshotsAtomically();
+    void publishesAShadedPlanDespiteOmittingTabsMembersAndDividers();
 };
 
 void KWinChromeManagerTests::reconcilesOneOverlayPerContainerAndTearsDownSafely()
@@ -382,6 +383,53 @@ void KWinChromeManagerTests::rejectsInvalidOrStaleSnapshotsAtomically()
     malformed[QStringLiteral("container-alpha")].members.removeLast();
     QVERIFY(!manager.updateFromSnapshot(next, malformed, {}, &error));
     QVERIFY(error.contains(QStringLiteral("members")));
+    QCOMPARE(record->planCount, 1);
+}
+
+// AGENT-CONTRACT: regression for the live-run finding that a shaded
+// container's chromeOverlayCount/publishedGroupStackingCount permanently
+// dropped to 0 after the first shade. A multi-page container's shaded plan
+// (see makeShadedPlan) always has fewer tabs than the topology's real page
+// count by design; updateFromSnapshot must publish it anyway rather than
+// applying the ordinary plan's tab/member/divider structural checks, and
+// must still reject a shaded plan that (incorrectly) carries any of that
+// structure.
+void KWinChromeManagerTests::publishesAShadedPlanDespiteOmittingTabsMembersAndDividers()
+{
+    FakeOverlayFactory factory;
+    KWinChromeManager manager(factory);
+    auto alpha = makeContainer(QStringLiteral("alpha"));
+    QCOMPARE(alpha.pages().size(), 2);
+    const auto topology = makeTopology({alpha}, 4);
+
+    KWinChromeManager::ChromePlanMap shadedPlans;
+    shadedPlans.insert(QStringLiteral("container-alpha"), makeShadedPlan(alpha));
+    QString error;
+    QVERIFY2(manager.updateFromSnapshot(topology, shadedPlans, {}, &error),
+             qPrintable(error));
+    QCOMPARE(manager.overlayCount(), 1);
+    const auto record = factory.records.value(QStringLiteral("container-alpha"));
+    QCOMPARE(record->planCount, 1);
+    QVERIFY(record->plan.tabs.isEmpty());
+    QVERIFY(record->plan.members.isEmpty());
+    QVERIFY(record->plan.dividers.isEmpty());
+
+    auto malformedShaded = makeShadedPlan(alpha);
+    malformedShaded.tabs.append(HybridChrome::TabGeometry{
+        .tabId = QStringLiteral("page-alpha-main"),
+        .title = QStringLiteral("page-alpha-main"),
+        .logicalIndex = 0,
+        .rect = QRectF(0.0, 0.0, 100.0, 26.0),
+        .active = true,
+    });
+    KWinChromeManager::ChromePlanMap malformedPlans;
+    malformedPlans.insert(QStringLiteral("container-alpha"), malformedShaded);
+    const auto next = makeTopology({alpha}, 5);
+    QVERIFY(!manager.updateFromSnapshot(next, malformedPlans, {}, &error));
+    QVERIFY(error.contains(QStringLiteral("must omit")));
+    // Rejection is atomic: the previously published (valid) shaded entry
+    // survives untouched, matching rejectsInvalidOrStaleSnapshotsAtomically.
+    QCOMPARE(manager.overlayCount(), 1);
     QCOMPARE(record->planCount, 1);
 }
 
