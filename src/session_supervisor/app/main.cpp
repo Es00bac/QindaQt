@@ -10,6 +10,7 @@
 #include <QtDBus/QDBusConnection>
 
 #include "../src/activation_environment.h"
+#include "../src/resident_service_refresh.h"
 
 #include <utility>
 
@@ -57,6 +58,11 @@ int main(int argc, char *argv[])
 
     publishActivationEnvironment(QDBusConnection::sessionBus(),
                                  QProcessEnvironment::systemEnvironment());
+    // AGENT-CONTRACT: must run after publishActivationEnvironment (so the
+    // restarted unit reads the just-published environment) and before any
+    // desktop consumer starts. See resident_service_refresh.h.
+    refreshResidentWaylandServices(QDBusConnection::sessionBus(),
+                                   residentWaylandServiceUnits());
 
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));
