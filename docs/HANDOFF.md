@@ -8,10 +8,12 @@ Main `f3fd6dc9` integrates the independently reviewed workspace foundation
 passes 3/3 Core/workspace CTest rows and 195-document validation. External
 Calendar changes in the shared CMake files remain untouched.
 
-Capture and native desktop-entry launch are candidate `df5b5a91`, pending Kimi
-delta review; their candidate tree passes 4/4 focused CTest rows, including a
-real desktop-entry launch under an isolated test bus, plus strict docs. Terra
-is building native Save/Reopen dialogs. Sonnet owns container roll-up,
+Capture and native desktop-entry launch are integrated at `2b479c6b` after
+Kimi accepted exact candidate `df5b5a91`; the integrated source passes 4/4
+Core/workspace CTest rows, including real desktop-entry launch under an
+isolated test bus. Atomic adoption is candidate `e5492305`, with 8/8
+Hybrid/input rows and strict docs passing, pending independent review. Terra
+is repairing native Save/Reopen dialog usability after root review. Sonnet owns container roll-up,
 iconify and name/color projection; GLM owns daily desktop controls; Sol owns
 CI and Gentoo release packaging. Assignments are not completed features.
 

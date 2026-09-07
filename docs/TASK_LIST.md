@@ -839,3 +839,7 @@ not establish completion. Automatic grouping rules follow this checkpoint.
 Workspace foundation evidence: `f3fd6dc9` integrates reviewed candidate
 `1824b3cd`; 3/3 integrated Core/workspace tests pass. This is the portable
 model, storage and assignment boundary only; the checkpoint above remains active.
+
+Capture and desktop-entry launch evidence: `2b479c6b` integrates independently
+accepted candidate `df5b5a91`; 4/4 integrated Core/workspace tests pass.
+Atomic adoption and native Save/Reopen composition remain in progress.

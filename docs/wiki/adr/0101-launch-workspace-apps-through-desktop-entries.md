@@ -16,7 +16,7 @@ Add a separate `QindaQt::WorkspacesApps` desktop adapter using KF6 Service for
 application lookup and KF6 KIOGui's `ApplicationLauncherJob` for asynchronous
 launch. The pure Workspaces model remains dependent only on Core and Qt Core.
 Build this adapter for the compositor and its tests, not for apps-only builds.
-The full desktop package declares KService and KIO dependencies.
+The full desktop package must declare KService and KIO dependencies.
 
 The caller supplies any Wayland activation token. Launch returns whether the
 request was dispatched; its completion signal reports process-start success or
