@@ -119,3 +119,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0103: Preserve the compositor session during shell recovery](0103-paced-shell-recovery.md)
 - [ADR-0104: Serialize production shell rendering](0104-serialize-shell-rendering.md)
+- [ADR-0106: Accept an equivalent Gentoo Power Profiles provider](0106-accept-equivalent-power-profiles-provider.md)

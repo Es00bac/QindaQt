@@ -13,7 +13,7 @@ runtime closure follows the production process contracts:
 | Lock screen and compositor shortcuts | release-matched KScreenLocker and KWin `lock,shortcuts` |
 | Appearance and other standard portals | `xdg-desktop-portal` plus the release-matched KDE backend |
 | Bluetooth | BlueZ |
-| Battery and performance profiles | UPower and power-profiles-daemon; systemd supplies logind |
+| Battery and performance profiles | UPower and one standard Power Profiles provider (`tuned[ppd]` or `power-profiles-daemon`); systemd supplies logind |
 | Power management, brightness, and idle inhibition | release-matched PowerDevil and KConfig for its persisted idle preferences |
 | Audio and network | WirePlumber and NetworkManager |
 | Desktop-entry launch | KIO and KService |
@@ -22,6 +22,16 @@ runtime closure follows the production process contracts:
 SDDM remains an operator-selected login manager and is not a package
 dependency. Portage must solve the plan without slot conflicts before the
 package is considered buildable.
+
+The Power Profiles provider is deliberately an alternative dependency. Gentoo's
+`sys-apps/tuned[ppd]` installs `tuned-ppd`, a drop-in provider for
+`sys-power/power-profiles-daemon`; it exports the modern
+`org.freedesktop.UPower.PowerProfiles` API and the legacy
+`net.hadess.PowerProfiles` API that QindaQt consumes. The ebuild therefore uses
+`|| ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon )`, so a host with
+`tuned[ppd]` keeps its existing provider instead of scheduling a replacement.
+QindaQt talks to the public D-Bus contract and does not start or configure
+either provider.
 
 The binary native CI job is a compile-and-boot qualification lane rather than
 a substitute for this full package plan. It uses the generic
