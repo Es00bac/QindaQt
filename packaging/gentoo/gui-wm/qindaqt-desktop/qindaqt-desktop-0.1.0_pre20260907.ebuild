@@ -48,7 +48,10 @@ RDEPEND="
 	sys-apps/dbus
 	sys-apps/systemd
 	sys-apps/xdg-desktop-portal
-	sys-power/power-profiles-daemon
+	|| (
+		sys-apps/tuned[ppd]
+		sys-power/power-profiles-daemon
+	)
 	sys-power/upower
 	x11-base/xwayland
 	x11-misc/xdg-utils
