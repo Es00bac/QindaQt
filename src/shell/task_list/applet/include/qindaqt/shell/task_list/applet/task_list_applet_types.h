@@ -54,6 +54,9 @@ struct TaskListAppletRow {
   // application identity. No freedesktop/QIcon seam exists in this tree yet;
   // the placeholder keeps the row shape stable until one lands.
   QString iconText;
+  // User-chosen container color override (exact "#RRGGBB"), empty for a
+  // standalone window or an unrenamed/uncolored container.
+  QString colorHex;
   quint32 windowCount = 1;
   bool active = false;
   bool minimized = false;

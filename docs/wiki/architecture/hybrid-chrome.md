@@ -13,7 +13,8 @@ and divider axes. It returns an owned render plan with:
 - one compact shared row that combines outer title/tab presentation and outer
   move/resize regions;
 - close, minimize, and maximize-or-restore controls for the whole container;
-- a native-member-title toggle and one entry point for group management;
+- a native-member-title toggle, a roll-up/unroll (shade) toggle, and one entry
+  point for group management;
 - a tab strip whose stored vector remains logical order;
 - one preserved title-drag region per member tile; and
 - visual and deliberately larger pointer hit rectangles for every divider.
@@ -199,10 +200,24 @@ Its first actions are **Arrange windows**, **Detach active window**, and
 **Ungroup**, followed by **Minimize group**. Minimize uses the existing typed
 whole-container action, so every member is iconified together and activating
 the collapsed task restores the active page without exposing inactive pages.
-The menu's remaining live, stable-ID actions cover Keep Above, Keep Below,
-pinning to all workspaces, individual workspace membership, all or individual
-activities, and moving the group to an output. These context actions mutate one
-current representative; the queued whole-group transaction described in
+Next are **Roll up group**/**Unroll group** (the same toggle as the
+shared-row shade control; label reflects current state) and **Rename…**,
+which opens a synchronous rename prompt after the popup finishes hiding (see
+the queued-dispatch guard below) prefilled with the current override, if any.
+A **Group Color** submenu offers a fixed curated palette
+(`Compositor::containerColorSwatches()`) plus **Default**, radio-exclusive
+against the container's current color. Rename and color are process-local
+`ContainerAppearance` overrides (`HybridContainerAppearanceStore`, owned by
+`KWinHybridSession`): the name replaces the derived title painted into the
+shared row's outer-title drag region and the collapsed dock/task entry's
+title; the color replaces the shared row's resolved accent (active-tab
+underline, rename text, and other accent-derived cues) for that container
+only. Neither is part of `Core::WindowContainer`/`TopologyCommand` and
+neither persists across a compositor restart yet. The menu's remaining live,
+stable-ID actions cover Keep Above, Keep Below, pinning to all workspaces,
+individual workspace membership, all or individual activities, and moving the
+group to an output. These context actions mutate one current representative;
+the queued whole-group transaction described in
 [Hybrid constraints](hybrid-constraints.md) adopts the final state atomically.
 
 An ordinary QindaQt-decorated window also owns its chrome right click. Its menu
@@ -229,7 +244,14 @@ semantics are documented in [Hybrid topology](hybrid-topology.md).
 Group controls minimize/restore all members together and maximize/restore the
 complete outer frame. Close opens a nonblocking **Close All**, **Ungroup**, or
 **Cancel** prompt; cancel is the default and escape action. Ungroup uses the
-same atomic release path as detach and teardown.
+same atomic release path as detach and teardown. The shade control rolls the
+whole group up to a compact title strip at its current position and width.
+No member is minimized (the container never becomes one collapsed dock
+entry) and no member's real frame is resized, but every member's content and
+pointer input are genuinely hidden while shaded, and only the shared-chrome
+anchor stays scene-paintable so the strip remains visible and draggable; see
+[Hybrid constraints](hybrid-constraints.md) and
+[ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md).
 
 An AppAppearance controller owned once by the compositor projects each confirmed
 theme into both grouped chrome plans and native Qinda decorations. The native
@@ -319,7 +341,22 @@ hit precedence, malformed geometry, typed widget activation, thresholded drag
 lifecycle, cancellation, plan/scene agreement, scene-image lifecycle,
 anchor-aware exposure, ordinary router ownership/pass-through, popup ordering,
 right-click menu routing, hover forwarding, group-context reconciliation,
-focus mode, transient following, stale reconciliation, and teardown/rebuild.
+focus mode, transient following, stale reconciliation, teardown/rebuild,
+the shade/unroll control's checked state and independence from tab/member
+geometry, and rename-override text painted into the shared row. Focused
+`HybridContainerPlacementController` tests cover the shaded strip's
+independent frame tracking (never touching the real committed layout while
+shaded, one real reflow on unroll to the original size at the strip's current
+position), drag/cancel of the strip, and the maximize/shade mutual exclusion.
+`HybridShadeController` fake-platform tests cover the member-hiding
+orchestration itself: only the current anchor gets the content-preserving-
+visibility treatment, every other member gets plain hide/show, a rejected
+shade rolls every already-hidden member back, and a failed unshade still
+forgets the container so teardown cannot get stuck. `HybridContainerAppearanceStore`
+tests cover name/color normalization, rejection, and per-container
+independence. None of this yet covers shading a live grouped window through
+a nested KWin session — that is the only way to confirm the real KWin
+`WindowItem`/input behavior ADR-0099 depends on.
 The nested pointer workflow uses native KDecoration for an ordinary no-modifier
 detach; a second workflow unloads the plugin with a process-local group still
 owned and verifies restoration. These are functional input proofs, not pixel

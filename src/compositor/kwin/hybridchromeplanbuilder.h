@@ -6,6 +6,7 @@
 
 #include "windowcontainer.h"
 
+#include <QRectF>
 #include <QString>
 
 #include <functional>
@@ -17,11 +18,21 @@ struct HybridChromePlanOptions final
 {
     qreal devicePixelRatio = 1.0;
     bool maximized = false;
+    bool shaded = false;
+    // Authoritative only when shaded: the strip's current logical frame
+    // (HybridContainerPlacementController::shadedFrame), independent of the
+    // real (frozen, untouched) committed layout's solution/outerFrame. When
+    // shaded, build() uses this instead of solution entirely and produces a
+    // row-only plan with no member holes or dividers.
+    QRectF shadedOuterFrame;
     // KWin's active native window snapshot. The builder remains pure; the
     // session supplies ownership after sampling Workspace::activeWindow().
     bool containerFocused = false;
     QString focusedMemberId;
     bool memberTitlesVisible = true;
+    // ContainerAppearance rename override; empty means "no override" (see
+    // ChromeLayoutRequest::containerTitle).
+    QString containerTitle;
     HybridChrome::ChromeMetrics metrics;
     HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::qindaMacOS({});
 };

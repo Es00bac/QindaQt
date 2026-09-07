@@ -104,6 +104,7 @@ class ChromeRendererTests final : public QObject
 private Q_SLOTS:
     void trafficLightGlyphsAppearOnControlHover();
     void groupControlsUsePlanGeometryAndPalette();
+    void renamedContainerPaintsTitleInAccentColor();
     void activeTabGetsThemeAccentCue();
     void focusedContainerAndMemberGetThemeAccentCues();
     void rendersAtDevicePixelRatioWithoutChangingLogicalPlan();
@@ -133,7 +134,7 @@ void ChromeRendererTests::groupControlsUsePlanGeometryAndPalette()
     auto request = baseRequest();
     const auto visiblePlan = ChromeLayoutEngine::build(request);
     QVERIFY(visiblePlan);
-    QCOMPARE(visiblePlan->controls.size(), 2);
+    QCOMPARE(visiblePlan->controls.size(), 3);
     const auto idle = render(*visiblePlan);
     for (const auto &control : visiblePlan->controls) {
         QVERIFY(idle.pixelColor(physicalPoint(control.rect.center(),
@@ -151,6 +152,30 @@ void ChromeRendererTests::groupControlsUsePlanGeometryAndPalette()
     const auto hiddenPlan = ChromeLayoutEngine::build(request);
     QVERIFY(hiddenPlan);
     QVERIFY(render(*hiddenPlan) != idle);
+}
+
+void ChromeRendererTests::renamedContainerPaintsTitleInAccentColor()
+{
+    auto request = baseRequest();
+    const auto unnamedPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(unnamedPlan);
+    QVERIFY(unnamedPlan->outerTitleDragRect.width() > 0.0);
+    const auto dragCenter = physicalPoint(unnamedPlan->outerTitleDragRect.center(),
+                                         unnamedPlan->devicePixelRatio);
+    const auto unnamedImage = render(*unnamedPlan);
+
+    request.containerTitle = QStringLiteral("Research Stack");
+    const auto namedPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(namedPlan);
+    QCOMPARE(namedPlan->outerTitleDragRect, unnamedPlan->outerTitleDragRect);
+    const auto namedImage = render(*namedPlan);
+
+    // Painting the rename text into the previously-empty drag region changes
+    // at least one pixel there; an unnamed container leaves it exactly the
+    // tab strip's fill (baseRequest() has tabs, so the tab strip covers the
+    // whole outerTitleBar) with no separate text color.
+    QVERIFY(namedImage != unnamedImage);
+    QCOMPARE(unnamedImage.pixelColor(dragCenter), namedPlan->style.palette.surface);
 }
 
 void ChromeRendererTests::activeTabGetsThemeAccentCue()

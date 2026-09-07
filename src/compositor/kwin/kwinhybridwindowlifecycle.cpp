@@ -62,8 +62,10 @@ void KWinHybridSession::forgetManagedWindow(const QString &windowId)
     const auto afterContainers = m_runtime->topology().containerIds();
     for (const auto &id : beforeContainers) {
         if (!afterContainers.contains(id)) {
+            forgetShadedContainer(id);
             m_placement->forgetContainer(id);
             m_minimizedContainers.remove(id);
+            m_appearance.forgetContainer(id);
         }
     }
     synchronizeChrome();

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/compositor/shelltaskfacts.h"
 
+#include "qindaqt/compositor/containerappearance.h"
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -121,6 +123,7 @@ QJsonObject stateJson(const ShellTaskFactsCandidate &candidate)
             {QStringLiteral("applicationId"), window.applicationId},
             {QStringLiteral("applicationName"), window.applicationName},
             {QStringLiteral("title"), window.title},
+            {QStringLiteral("colorHex"), window.colorHex},
             {QStringLiteral("role"), roleName(window.role)},
             {QStringLiteral("windowType"), windowTypeName(window.type)},
             {QStringLiteral("ownerRole"), windowOwnerName(window.owner)},
@@ -187,7 +190,10 @@ bool validateWindows(const ShellTaskFactsCandidate &candidate,
             || !outputIds.contains(window.outputId)
             || grouped != !window.containerId.isEmpty()
             || (grouped && !containerIds.contains(window.containerId))
-            || (window.active && window.minimized)) {
+            || (window.active && window.minimized)
+            || (!window.colorHex.isEmpty() && !isValidContainerColor(window.colorHex))
+            || (!window.colorHex.isEmpty()
+                && window.role != ShellTaskWindowRole::ContainerPrimary)) {
             setError(error, QStringLiteral("task window facts are invalid"));
             return false;
         }

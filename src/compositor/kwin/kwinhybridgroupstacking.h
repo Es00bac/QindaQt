@@ -34,6 +34,11 @@ public:
         const QPointF &position,
         const QString &excludedWindowId = {}) const;
     [[nodiscard]] qsizetype publishedGroupCount() const noexcept;
+    // The current chrome anchor (topmost member in the live stack) for a
+    // published container, or empty if the container is not published.
+    // Shade uses this to know exactly which member's WindowItem to force
+    // visible while hiding every member's content/input.
+    [[nodiscard]] QString anchorMemberId(const QString &containerId) const;
     void clear() noexcept;
 
 private:

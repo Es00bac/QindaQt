@@ -50,6 +50,11 @@ struct ShellTaskWindow final {
     QString applicationId;
     QString applicationName;
     QString title;
+    // A ContainerPrimary's ContainerAppearance color override, exact
+    // "#RRGGBB" or empty for no override (see
+    // qindaqt/compositor/containerappearance.h). Empty for every other role;
+    // the dock projects it only for the one collapsed container entry.
+    QString colorHex;
     ShellTaskWindowRole role = ShellTaskWindowRole::Standalone;
     ShellTaskWindowType type = ShellTaskWindowType::Normal;
     ShellTaskWindowOwner owner = ShellTaskWindowOwner::Application;

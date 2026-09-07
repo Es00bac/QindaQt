@@ -35,13 +35,16 @@ QString actionName(HybridChrome::WindowAction action)
 }
 
 QString controlName(HybridChrome::ContainerControl control,
-                    bool memberTitlesVisible)
+                    bool memberTitlesVisible, bool shaded)
 {
     using enum HybridChrome::ContainerControl;
     switch (control) {
     case ToggleMemberTitles:
         return memberTitlesVisible ? QStringLiteral("Hide native member titles")
                                    : QStringLiteral("Show native member titles");
+    case ToggleShade:
+        return shaded ? QStringLiteral("Unroll window group")
+                      : QStringLiteral("Roll up window group");
     case ManagementMenu:
         return QStringLiteral("Manage window group");
     }
@@ -167,6 +170,8 @@ QString controlToken(HybridChrome::ContainerControl control)
     switch (control) {
     case ToggleMemberTitles:
         return QStringLiteral("member-titles");
+    case ToggleShade:
+        return QStringLiteral("shade");
     case ManagementMenu:
         return QStringLiteral("management-menu");
     }
@@ -306,7 +311,7 @@ QVector<NodeData> buildNodeSpecs(const HybridChrome::ChromeRenderPlan &plan,
             .id = HybridChromeAccessibilityAdapter::controlNodeId(
                 plan.containerId, control.control),
             .parentId = groupId,
-            .name = controlName(control.control, plan.memberTitlesVisible),
+            .name = controlName(control.control, plan.memberTitlesVisible, plan.shaded),
             .description = control.control
                     == HybridChrome::ContainerControl::ToggleMemberTitles
                 ? QStringLiteral("Changes server-drawn titles in this window group")

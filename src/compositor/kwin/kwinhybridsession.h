@@ -3,7 +3,10 @@
 
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactiontypes.h"
+#include "qindaqt/compositor/containerappearance.h"
 #include "qindaqt/compositor/shellwindowactions.h"
+#include "hybridcontainerappearance.h"
+#include "hybridshadecontroller.h"
 #include "hybridtaskidentitypolicy.h"
 
 #include <QObject>
@@ -74,6 +77,20 @@ public:
     [[nodiscard]] quint64 topologyRevision() const noexcept;
     [[nodiscard]] qsizetype containerCount() const noexcept;
     [[nodiscard]] bool isContainerMaximized(const QString &containerId) const noexcept;
+    [[nodiscard]] bool isContainerShaded(const QString &containerId) const noexcept;
+    // AGENT-CONTRACT: Public boundary for a future persistence owner
+    // (workspaces) to read/write process-local rename/color state. Renaming
+    // and recoloring are pure presentation-layer mutations dispatched from
+    // the KWin group context menu; see docs/wiki/architecture/hybrid-chrome.md
+    // and ops/team/messages for the exact proposed contract.
+    [[nodiscard]] Compositor::ContainerAppearance containerAppearance(
+        const QString &containerId) const;
+    [[nodiscard]] bool renameContainer(const QString &containerId,
+                                       const QString &name,
+                                       QString *error = nullptr);
+    [[nodiscard]] bool setContainerColor(const QString &containerId,
+                                         const QString &colorHex,
+                                         QString *error = nullptr);
     [[nodiscard]] QJsonObject diagnostics() const;
     [[nodiscard]] QJsonArray publicContainers() const;
     [[nodiscard]] QVector<TaskContainerIdentity> taskIdentityPlans() const;
@@ -159,6 +176,13 @@ private:
     void invalidateChromePublication();
     void synchronizeChrome();
     void reconcileMinimizedContainers();
+    void ensureShadeController();
+    [[nodiscard]] bool shadeContainer(const QString &containerId,
+                                      QString *error = nullptr);
+    [[nodiscard]] bool unshadeContainer(const QString &containerId,
+                                        QString *error = nullptr);
+    void forgetShadedContainer(const QString &containerId);
+    void restoreShadeForShutdown();
     void minimizeContainer(const QString &containerId);
     [[nodiscard]] bool unminimizeContainer(const QString &containerId,
                                            QString *error = nullptr);
@@ -216,6 +240,9 @@ private:
     std::unique_ptr<HybridShortcutManager> m_shortcuts;
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;
     HybridChrome::ChromePalette m_chromePalette;
+    HybridContainerAppearanceStore m_appearance;
+    std::unique_ptr<HybridShadeMemberPlatform> m_shadeMemberPlatform;
+    std::unique_ptr<HybridShadeController> m_shadeController;
     QSet<QString> m_minimizedContainers;
     QString m_lastGroupStackingFailure;
     bool m_synchronizingChrome = false;

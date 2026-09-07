@@ -64,6 +64,7 @@ std::optional<ObservedWindow> parseWindow(const QJsonObject &object, QString *er
     const auto title = object.value(QStringLiteral("title"));
     const auto owner = object.value(QStringLiteral("containerId"));
     const auto minimized = object.value(QStringLiteral("minimized"));
+    const auto hidden = object.value(QStringLiteral("hidden"));
     const auto active = object.value(QStringLiteral("active"));
     const auto skipTaskbar = object.value(QStringLiteral("skipTaskbar"));
     const auto skipSwitcher = object.value(QStringLiteral("skipSwitcher"));
@@ -74,7 +75,7 @@ std::optional<ObservedWindow> parseWindow(const QJsonObject &object, QString *er
     const auto serverDecorated = object.value(QStringLiteral("serverDecorated"));
     const auto decorationClass = object.value(QStringLiteral("decorationClass"));
     if (!id.isString() || id.toString().isEmpty() || !title.isString() || !owner.isString() ||
-        !minimized.isBool() || !active.isBool() || !skipTaskbar.isBool()
+        !minimized.isBool() || !hidden.isBool() || !active.isBool() || !skipTaskbar.isBool()
         || !skipSwitcher.isBool() || !keepAbove.isBool() || !keepBelow.isBool()
         || !stackIndex.isDouble()
         || !serverDecorated.isBool() || !decorationClass.isString()) {
@@ -93,6 +94,7 @@ std::optional<ObservedWindow> parseWindow(const QJsonObject &object, QString *er
         .frame = *parsedFrame,
         .targetFrame = *parsedTarget,
         .minimized = minimized.toBool(),
+        .hidden = hidden.toBool(),
         .active = active.toBool(),
         .skipTaskbar = skipTaskbar.toBool(),
         .skipSwitcher = skipSwitcher.toBool(),

@@ -150,6 +150,35 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
     if (!activePage) {
         return reject(error, QStringLiteral("container has no active page"));
     }
+    // AGENT-CONTRACT: A shaded container's real committed layout/solution is
+    // frozen (see HybridContainerPlacementController::shade); building the
+    // plan from it would either reject on the stale content-frame check
+    // below or, worse, paint/hit-test member tiles nobody has actually
+    // hidden. The strip is built directly from options.shadedOuterFrame with
+    // no tabs/members/dividers, so the whole visible+hit-testable rectangle
+    // really is just the compact row (see ADR-0099's follow-up correction).
+    if (options.shaded) {
+        if (options.shadedOuterFrame.isEmpty()
+            || options.shadedOuterFrame != options.shadedOuterFrame.normalized()) {
+            return reject(error, QStringLiteral("shaded container has no valid strip frame"));
+        }
+        const ChromeLayoutRequest shadedRequest{
+            .containerId = container.id(),
+            .outerRect = options.shadedOuterFrame,
+            .devicePixelRatio = options.devicePixelRatio,
+            .maximized = false,
+            .shaded = true,
+            .containerFocused = options.containerFocused,
+            .memberTitlesVisible = options.memberTitlesVisible,
+            .containerTitle = options.containerTitle,
+            .metrics = options.metrics,
+            .style = options.style,
+            .tabs = {},
+            .members = {},
+            .dividers = {},
+        };
+        return HybridChrome::ChromeLayoutEngine::build(shadedRequest, error);
+    }
     if (solution.outerFrame.isEmpty() || solution.outerFrame != solution.outerFrame.normalized()) {
         return reject(error, QStringLiteral("committed outer frame is invalid"));
     }
@@ -159,8 +188,10 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         .outerRect = QRectF(solution.outerFrame),
         .devicePixelRatio = options.devicePixelRatio,
         .maximized = options.maximized,
+        .shaded = options.shaded,
         .containerFocused = options.containerFocused,
         .memberTitlesVisible = options.memberTitlesVisible,
+        .containerTitle = options.containerTitle,
         .metrics = options.metrics,
         .style = options.style,
         .tabs = {},

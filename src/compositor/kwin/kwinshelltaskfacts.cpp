@@ -276,11 +276,29 @@ KWinShellTaskFactsPublisher::sample(QString *error)
         }
         const bool groupedMaximized = !containerId.isEmpty()
             && m_hybrid.isContainerMaximized(containerId);
+        // AGENT-CONTRACT: A container rename (ContainerAppearance::name) is a
+        // presentation override of the collapsed identity's reported title,
+        // not a rewrite of any member's real KWin caption. Only the primary
+        // representative's fact feeds the dock's one entry per container
+        // (see docs/wiki/architecture/window-containers.md); applying it to
+        // every member's fact here is harmless because non-primary facts are
+        // suppressed from the task list regardless.
+        const QString containerName = containerId.isEmpty()
+            ? QString{} : m_hybrid.containerAppearance(containerId).name;
+        const bool isContainerPrimary = !containerId.isEmpty()
+            && roles.value(windowId) == ShellTaskWindowRole::ContainerPrimary;
         ShellTaskWindow facts{
             .windowId = windowId,
             .applicationId = applicationId,
             .applicationName = applicationName,
-            .title = window->caption(),
+            .title = containerName.isEmpty() ? window->caption() : containerName,
+            // AGENT-CONTRACT: colorHex is a ContainerAppearance override and
+            // must be empty for every non-primary fact; the wire codec
+            // rejects a non-empty value on any other role
+            // (validateShellTaskFactsCandidate), matching the invariant that
+            // only the primary feeds the dock's one collapsed entry.
+            .colorHex = isContainerPrimary
+                ? m_hybrid.containerAppearance(containerId).colorHex : QString{},
             .role = containerId.isEmpty() ? ShellTaskWindowRole::Standalone
                                           : roles.value(windowId),
             .type = window->isNormalWindow() ? ShellTaskWindowType::Normal

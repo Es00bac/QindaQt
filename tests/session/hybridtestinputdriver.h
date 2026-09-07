@@ -35,6 +35,15 @@ public:
         const QPointF &point,
         const QRectF &output,
         QString *error);
+    // Generalizes activateFirstContextMenuAction: index 0 is byte-identical
+    // to it (one "down" press selects the first item). A right-click menu
+    // with no item pre-selected needs (index + 1) "down" presses before
+    // Enter to reach the item at that zero-based position.
+    [[nodiscard]] bool activateContextMenuActionAt(
+        const QPointF &point,
+        const QRectF &output,
+        int index,
+        QString *error);
     [[nodiscard]] bool isRunning() const;
     [[nodiscard]] QString diagnostics() const;
 
@@ -59,6 +68,11 @@ public:
                             QString *error);
     [[nodiscard]] bool activateFirstContextMenuAction(
         const QPointF &point,
+        QString *error);
+    // See DotoolProcess::activateContextMenuActionAt for the exact contract.
+    [[nodiscard]] bool activateContextMenuActionAt(
+        const QPointF &point,
+        int index,
         QString *error);
     [[nodiscard]] bool pressKey(QLatin1StringView key, QString *error);
     [[nodiscard]] bool pressChord(const QList<QLatin1StringView> &keys,

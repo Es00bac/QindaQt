@@ -100,6 +100,24 @@ item, not a native overlay window.
 - Theme decoration tokens may place the outer controls on either side and lay
   tabs left-to-right or right-to-left. This presentation choice never changes
   page order, stable IDs, keyboard traversal, or persistence semantics.
+- A container may be rolled up ("shaded") to a compact, still-visible,
+  still-movable title strip through the shared-row control or group menu,
+  distinct from whole-container minimize/iconify: a shaded container is never
+  sent to the dock as one collapsed entry (minimized and shaded are
+  independent states), and no member's real frame is ever resized. Instead,
+  every member's paint and pointer input is genuinely removed
+  (`KWin::Window::setHidden`), while the shared-chrome anchor member is kept
+  paintable through KWin's own force-visible scene API so the strip itself
+  stays visible and draggable. See
+  [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md).
+- A container may be renamed and given a user-chosen accent color through the
+  group menu. Both are process-local presentation overrides (not part of the
+  persistence-neutral `Core::WindowContainer` model below): the rename
+  replaces the derived title in the shared row and the collapsed dock/task
+  entry, and the color replaces the shared row's accent (active-tab
+  underline, rename text, focus cue). Neither survives a compositor restart
+  yet; see [Hybrid container chrome](hybrid-chrome.md) for the exact
+  boundary a future persistence owner reads/writes through.
 - The shared title row keeps a visible native-title toggle and group-management
   menu opposite the normal window buttons. `Meta+Shift+C` toggles the same
   active-group choice. Server-drawn member titles restore their exact prior

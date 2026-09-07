@@ -121,6 +121,7 @@ TaskListFactsResult TaskListWireDecoder::decodeTaskFacts(
         .applicationId = window.applicationId,
         .applicationName = window.applicationName,
         .title = window.title,
+        .colorHex = representative ? window.colorHex : QString{},
         .outputId = window.outputId,
         .workspaceIds = window.workspaceIds,
         .onAllWorkspaces = window.onAllWorkspaces,

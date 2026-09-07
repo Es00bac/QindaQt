@@ -51,6 +51,21 @@ QJsonObject KWinHybridSession::diagnostics() const
         ? int(m_chromeManager->quarantinedContainerCount()) : 0;
     const int publishedGroupStackingCount = m_groupStacking
         ? int(m_groupStacking->publishedGroupCount()) : 0;
+    const int shadedContainerCount = m_placement
+        ? int(m_placement->shadedContainerIds().size()) : 0;
+    QJsonArray shadedStripFrames;
+    if (m_placement) {
+        for (const auto &shadedId : m_placement->shadedContainerIds()) {
+            if (const auto frame = m_placement->shadedFrame(shadedId)) {
+                shadedStripFrames.append(QJsonObject{
+                    {QStringLiteral("containerId"), shadedId},
+                    {QStringLiteral("x"), frame->x()},
+                    {QStringLiteral("y"), frame->y()},
+                    {QStringLiteral("width"), frame->width()},
+                    {QStringLiteral("height"), frame->height()}});
+            }
+        }
+    }
     return {{QStringLiteral("ready"), ready()},
             {QStringLiteral("inputFilterInstalled"), inputFilterInstalled()},
             {QStringLiteral("shortcutRegistered"),
@@ -68,6 +83,8 @@ QJsonObject KWinHybridSession::diagnostics() const
              quarantinedContainerCount},
             {QStringLiteral("publishedGroupStackingCount"),
              publishedGroupStackingCount},
+            {QStringLiteral("shadedContainerCount"), shadedContainerCount},
+            {QStringLiteral("shadedStripFrames"), shadedStripFrames},
             {QStringLiteral("lastGroupStackingFailure"),
              m_lastGroupStackingFailure}};
 }

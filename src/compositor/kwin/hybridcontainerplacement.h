@@ -9,6 +9,7 @@
 
 #include <QHash>
 #include <QRect>
+#include <QSize>
 #include <QString>
 #include <QStringList>
 
@@ -57,6 +58,25 @@ public:
     // remain maximized so a later work-area transition can retry them.
     [[nodiscard]] QStringList refreshMaximizedAreas();
     [[nodiscard]] bool isMaximized(const QString &containerId) const noexcept;
+
+    // Rolls the container up to a compact, still-visible, still-movable strip
+    // at the frame's current position and width. Unlike maximize/restore,
+    // shading never reflows or resizes any member window: the real committed
+    // layout is left completely untouched (members keep their exact frame),
+    // and this controller instead tracks an independent "strip frame" used
+    // only for the shared chrome plan and for dragging the strip around.
+    // Content/decoration/shadow/input hiding for members is a KWin-adapter
+    // responsibility (see HybridShadeMemberController) driven by isShaded();
+    // this controller owns no KWin object and no visibility state.
+    [[nodiscard]] bool shade(const QString &containerId, QString *error = nullptr);
+    [[nodiscard]] bool unshade(const QString &containerId, QString *error = nullptr);
+    [[nodiscard]] bool isShaded(const QString &containerId) const noexcept;
+    // The strip's current logical frame while shaded (moves under drag);
+    // nullopt when the container is not shaded.
+    [[nodiscard]] std::optional<QRect> shadedFrame(const QString &containerId) const;
+    // Diagnostics-only enumeration (see KWinHybridSession::diagnostics());
+    // production code should use isShaded()/shadedFrame() per container.
+    [[nodiscard]] QStringList shadedContainerIds() const;
     void forgetContainer(const QString &containerId) noexcept;
     void cancelAll() noexcept;
 
@@ -77,6 +97,9 @@ private:
                                  const QString &containerId,
                                  Qt::Edges edges,
                                  QString *error);
+    [[nodiscard]] DirectInteractionResult handleShadedMove(
+        const QString &containerId,
+        const HybridInput::InteractionIntent &intent);
     [[nodiscard]] static QRect resizedFrame(const FrameDrag &drag,
                                             const QPointF &delta);
     static void assignError(QString *error, QString message);
@@ -89,12 +112,23 @@ private:
     QHash<QString, FrameDrag> m_moveDrags;
     QHash<QString, FrameDrag> m_resizeDrags;
     QHash<QString, QRect> m_maximizeRestoreFrames;
+    QHash<QString, QRect> m_shadeStripFrames;
+    // Original (pre-shade) size only; position is not tracked here because
+    // the strip's own current position (which may have moved under drag) is
+    // exactly the position the container reflows back to on unshade.
+    QHash<QString, QSize> m_shadeRestoreSizes;
 };
 
 inline bool HybridContainerPlacementController::isMaximized(
     const QString &containerId) const noexcept
 {
     return m_maximizeRestoreFrames.contains(containerId);
+}
+
+inline bool HybridContainerPlacementController::isShaded(
+    const QString &containerId) const noexcept
+{
+    return m_shadeStripFrames.contains(containerId);
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

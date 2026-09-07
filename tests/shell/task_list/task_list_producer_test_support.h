@@ -77,11 +77,13 @@ inline QJsonObject taskWindowJson(
     const QString &id, const QString &applicationId,
     const QString &role = QStringLiteral("standalone"),
     const QString &containerId = {}, bool active = false,
-    bool minimized = false, bool attention = false) {
+    bool minimized = false, bool attention = false,
+    const QString &colorHex = {}) {
   return {{QStringLiteral("id"), id},
           {QStringLiteral("applicationId"), applicationId},
           {QStringLiteral("applicationName"), applicationId},
           {QStringLiteral("title"), QStringLiteral("Title %1").arg(id)},
+          {QStringLiteral("colorHex"), colorHex},
           {QStringLiteral("role"), role},
           {QStringLiteral("windowType"), QStringLiteral("normal")},
           {QStringLiteral("ownerRole"), QStringLiteral("application")},

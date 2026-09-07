@@ -40,6 +40,7 @@ QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
     entry.applicationId = fact.applicationId;
     entry.applicationName = fact.applicationName;
     entry.title = fact.title;
+    entry.colorHex = fact.colorHex;
     entry.primaryWindowId = fact.windowId;
     entry.outputId = fact.outputId;
     entry.workspaceIds = fact.workspaceIds;

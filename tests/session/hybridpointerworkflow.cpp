@@ -9,7 +9,11 @@
 #include "hybridpointerraise.h"
 #include "hybridcompositorrestart.h"
 #include "hybridpointercontextmenu.h"
+#include "hybridpointershade.h"
 #include "hybridtestinputdriver.h"
+
+#include <QJsonDocument>
+#include <QTextStream>
 
 #include <algorithm>
 #include <cmath>
@@ -189,9 +193,9 @@ std::optional<NativeDetachEvidence> detachNativeMember(
         }, error);
     const auto containers = client.containers(error);
     if (!diagnostics || !containers || !containers->isEmpty()
-        || !pointer.dotoolRunning()) {
+        || !pointer.inputSessionHealthy()) {
         if (error->isEmpty()) {
-            *error = !pointer.dotoolRunning()
+            *error = !pointer.inputSessionHealthy()
                 ? QStringLiteral("dotool exited before the workflow completed; %1")
                       .arg(pointer.dotoolDiagnostics())
                 : QStringLiteral("Containers retained a normalized singleton owner");
@@ -207,6 +211,7 @@ QJsonObject workflowEvidence(const HybridPointerGroupedState &state,
                              const HybridCompositorRestartEvidence &restart,
                              const RaisedGroupEvidence &raised,
                              const HybridContextMenuEvidence &contextMenu,
+                             const HybridPointerShadeEvidence &shade,
                              const NativeDetachEvidence &detached)
 {
     const auto &initialSource = window(state.grouped, state.gesture.sourceTitle);
@@ -315,6 +320,48 @@ QJsonObject workflowEvidence(const HybridPointerGroupedState &state,
                                    state.gesture.targetTitle))},
             {QStringLiteral("topologyRevision"),
              QString::number(contextMenu.diagnostics.revision)}});
+    const auto shadeTitlePoint = sharedTitleCenter(
+        window(state.grouped, state.gesture.sourceTitle),
+        window(state.grouped, state.gesture.targetTitle));
+    evidence.insert(
+        QStringLiteral("shade"),
+        QJsonObject{
+            {QStringLiteral("menuActionIndex"), 4},
+            {QStringLiteral("sharedTitlePoint"), pointJson(shadeTitlePoint)},
+            {QStringLiteral("shadedContainerCount"),
+             shade.shadedDiagnostics.json.value(QStringLiteral("shadedContainerCount"))},
+            {QStringLiteral("unrolledContainerCount"),
+             shade.unrolledDiagnostics.json.value(QStringLiteral("shadedContainerCount"))},
+            {QStringLiteral("sourceFrameUnchangedWhileShaded"),
+             sameGeometry(window(shade.shaded, state.gesture.sourceTitle).frame,
+                         window(state.grouped, state.gesture.sourceTitle).frame)},
+            {QStringLiteral("targetFrameUnchangedWhileShaded"),
+             sameGeometry(window(shade.shaded, state.gesture.targetTitle).frame,
+                         window(state.grouped, state.gesture.targetTitle).frame)},
+            {QStringLiteral("framesExactAfterUnroll"),
+             sameGeometry(window(shade.unrolled, state.gesture.sourceTitle).frame,
+                         window(state.grouped, state.gesture.sourceTitle).frame)
+                 && sameGeometry(window(shade.unrolled, state.gesture.targetTitle).frame,
+                                window(state.grouped, state.gesture.targetTitle).frame)},
+            {QStringLiteral("sourceHiddenWhileShaded"),
+             window(shade.shaded, state.gesture.sourceTitle).hidden},
+            {QStringLiteral("targetHiddenWhileShaded"),
+             window(shade.shaded, state.gesture.targetTitle).hidden},
+            {QStringLiteral("sourceVisibleAfterUnroll"),
+             !window(shade.unrolled, state.gesture.sourceTitle).hidden},
+            {QStringLiteral("targetVisibleAfterUnroll"),
+             !window(shade.unrolled, state.gesture.targetTitle).hidden},
+            // AGENT-NOTE: hidden (Window::isHidden()) is observed directly
+            // via the same public inventory endpoint the rest of this
+            // workflow already uses (ManagedWindowRegistry::windowsJson()),
+            // proving the real KWin state, not just compositor bookkeeping.
+            // This still does not observe the chrome anchor's own
+            // WindowItem::isVisible()/refVisible() force-visible state or
+            // that pointer input actually lands on the strip and not on a
+            // member (that would need real pointer clicks at the strip's
+            // control positions, out of scope for this pass); see ADR-0099.
+            {QStringLiteral("provesMemberPaintInputRemovalDirectly"), true},
+            {QStringLiteral("provesAnchorForceVisibleOrPointerRouting"), false}});
     evidence.insert(
         QStringLiteral("restored"),
         QJsonObject{{QStringLiteral("hybrid"), detached.diagnostics.json},
@@ -334,18 +381,89 @@ std::optional<HybridPointerWorkflowResult> exerciseHybridPointerWorkflow(
     const std::function<void(const QString &)> &activateProbe,
     const std::function<void(const QString &)> &showPopupForProbe,
     const std::function<QString(const QString &)> &showDialogForProbe,
-    QString *error)
+    QString *error,
+    bool forceDevelopmentInput)
 {
     HybridPointerGrouping pointer(client, titles);
+    pointer.forceDevelopmentInput(forceDevelopmentInput);
     const auto state = pointer.group(dotoolPath, error);
     if (!state) {
         return std::nullopt;
+    }
+    // AGENT-NOTE: runs immediately after grouping, before coverAndRaiseGroup,
+    // since shading a container has no dependency on the raise/cover proof
+    // below — it only needs a grouped container and a point on its exposed
+    // shared title. Re-querying (rather than reusing state->grouped, a
+    // snapshot from the instant group() returned) guards against the shared
+    // title point going stale if geometry is still settling right after the
+    // dock gesture commits.
+    const QStringList shadeProbeTitles{titles.primary, titles.secondary, titles.page};
+    const auto settledForShade = client.awaitWindows(
+        shadeProbeTitles,
+        [&](const WindowInventory &inventory) {
+            const auto &source = window(inventory, state->gesture.sourceTitle);
+            const auto &target = window(inventory, state->gesture.targetTitle);
+            return !source.containerId.isEmpty()
+                && source.containerId == target.containerId
+                && source.targetFrame.isValid() && target.targetFrame.isValid();
+        }, error, InventoryTimeoutMilliseconds);
+    if (!settledForShade) {
+        *error = QStringLiteral("grouped members did not settle before shading: %1")
+                     .arg(*error);
+        return std::nullopt;
+    }
+    const auto shade = exerciseHybridPointerShade(
+        client, pointer, *state, *settledForShade,
+        sharedTitleCenter(window(*settledForShade, state->gesture.sourceTitle),
+                          window(*settledForShade, state->gesture.targetTitle)),
+        error);
+    if (!shade) {
+        return std::nullopt;
+    }
+    if (forceDevelopmentInput) {
+        // AGENT-NOTE: this workflow's overall evidence JSON is only emitted
+        // once every later phase also succeeds (see workflowEvidence()), so
+        // a failure in an unrelated later phase would otherwise silently
+        // discard this proof. Print a standalone breadcrumb with the same
+        // shade-specific fields workflowEvidence() would report, so a real,
+        // live-run result exists regardless of what happens afterward.
+        const auto shadeTitlePoint = sharedTitleCenter(
+            window(*settledForShade, state->gesture.sourceTitle),
+            window(*settledForShade, state->gesture.targetTitle));
+        const QJsonObject shadeProof{
+            {QStringLiteral("sharedTitlePoint"), pointJson(shadeTitlePoint)},
+            {QStringLiteral("sourceHiddenWhileShaded"),
+             window(shade->shaded, state->gesture.sourceTitle).hidden},
+            {QStringLiteral("targetHiddenWhileShaded"),
+             window(shade->shaded, state->gesture.targetTitle).hidden},
+            {QStringLiteral("sourceFrameUnchangedWhileShaded"),
+             sameGeometry(window(shade->shaded, state->gesture.sourceTitle).frame,
+                         window(*settledForShade, state->gesture.sourceTitle).frame)},
+            {QStringLiteral("targetFrameUnchangedWhileShaded"),
+             sameGeometry(window(shade->shaded, state->gesture.targetTitle).frame,
+                         window(*settledForShade, state->gesture.targetTitle).frame)},
+            {QStringLiteral("framesExactAfterUnroll"),
+             sameGeometry(window(shade->unrolled, state->gesture.sourceTitle).frame,
+                         window(*settledForShade, state->gesture.sourceTitle).frame)
+                 && sameGeometry(window(shade->unrolled, state->gesture.targetTitle).frame,
+                                window(*settledForShade, state->gesture.targetTitle).frame)},
+            {QStringLiteral("sourceVisibleAfterUnroll"),
+             !window(shade->unrolled, state->gesture.sourceTitle).hidden},
+            {QStringLiteral("targetVisibleAfterUnroll"),
+             !window(shade->unrolled, state->gesture.targetTitle).hidden},
+            {QStringLiteral("shadedContainerCountWhileShaded"),
+             shade->shadedDiagnostics.json.value(QStringLiteral("shadedContainerCount"))},
+            {QStringLiteral("shadedContainerCountAfterUnroll"),
+             shade->unrolledDiagnostics.json.value(QStringLiteral("shadedContainerCount"))}};
+        QTextStream(stderr) << "QINDAQT_SHADE_PROOF="
+                            << QJsonDocument(shadeProof).toJson(QJsonDocument::Compact)
+                            << '\n';
     }
     const auto restart = exerciseHybridCompositorRestart(client, *state, error);
     if (!restart) {
         return std::nullopt;
     }
-    const QStringList probeTitles{titles.primary, titles.secondary, titles.page};
+    const auto &probeTitles = shadeProbeTitles;
     if (!establishFloatingTransient(
             client, *state, probeTitles, showDialogForProbe, error)) {
         return std::nullopt;
@@ -369,7 +487,7 @@ std::optional<HybridPointerWorkflowResult> exerciseHybridPointerWorkflow(
     }
     return HybridPointerWorkflowResult{
         workflowEvidence(*state, pointer, *restart, *raised,
-                         *contextMenu, *detached),
+                         *contextMenu, *shade, *detached),
         detached->diagnostics.json};
 }
 

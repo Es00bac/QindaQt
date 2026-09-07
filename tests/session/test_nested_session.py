@@ -195,7 +195,21 @@ def parse_arguments() -> argparse.Namespace:
     mode.add_argument("--expect-plugin", action="store_true")
     mode.add_argument("--expect-read-only", action="store_true")
     mode.add_argument("--expect-hybrid-pointer", metavar="DOTOOL", type=Path)
-    return parser.parse_args()
+    parser.add_argument(
+        "--force-development-input",
+        action="store_true",
+        help=(
+            "skip dotool selection entirely and drive the hybrid pointer "
+            "proof through KWin's development-gated InputDevice, for hosts "
+            "where the dotool binary itself is absent (only valid with "
+            "--expect-hybrid-pointer; see docs/wiki/development/"
+            "testing-harness.md)"
+        ),
+    )
+    arguments = parser.parse_args()
+    if arguments.force_development_input and arguments.expect_hybrid_pointer is None:
+        parser.error("--force-development-input requires --expect-hybrid-pointer")
+    return arguments
 
 
 def main() -> int:
@@ -231,6 +245,8 @@ def main() -> int:
         if arguments.expect_hybrid_pointer is not None:
             environment["QINDAQT_EXPECT_HYBRID_POINTER"] = "1"
             environment["QINDAQT_DOTOOL"] = str(arguments.expect_hybrid_pointer)
+        if arguments.force_development_input:
+            environment["QINDAQT_FORCE_DEVELOPMENT_INPUT"] = "1"
         if inspect_outputs:
             environment["QINDAQT_EXPECT_COMPOSITOR_OUTPUTS"] = "1"
         # AGENT-GUARD: Integration tests exercise build artifacts, while the

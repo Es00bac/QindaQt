@@ -303,6 +303,8 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         hybridpointergeometry.h
         hybridpointercontextmenu.cpp
         hybridpointercontextmenu.h
+        hybridpointershade.cpp
+        hybridpointershade.h
         hybridcompositorrestart.cpp
         hybridcompositorrestart.h
         hybridpointergrouping.cpp

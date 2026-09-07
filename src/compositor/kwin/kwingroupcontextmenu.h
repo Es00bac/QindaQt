@@ -27,6 +27,13 @@ struct GroupContextMenuState final
 {
     QString activeMemberId;
     bool canMinimize = true;
+    bool shaded = false;
+    // Current rename override, empty when the container has never been
+    // renamed. Used only to prefill the rename prompt.
+    QString containerName;
+    // "default" plus every containerColorSwatches() entry, selected marking
+    // the current override (or "default" when colorHex is unset).
+    QVector<GroupContextMenuDestination> containerColors;
     bool keepAbove = false;
     bool keepBelow = false;
     bool pinnedToAllWorkspaces = false;
@@ -41,6 +48,9 @@ enum class GroupContextMenuCommandKind {
     DetachActiveWindow,
     Ungroup,
     MinimizeGroup,
+    ToggleShadeGroup,
+    RenameContainer,
+    SetContainerColor,
     SetKeepAbove,
     SetKeepBelow,
     SetPinnedToAllWorkspaces,

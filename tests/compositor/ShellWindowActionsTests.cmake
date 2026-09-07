@@ -24,6 +24,19 @@ set_tests_properties(
     compositor.shell-task-facts PROPERTIES LABELS "unit;compositor;task-list"
 )
 
+qt_add_executable(qindaqt_container_appearance_tests tst_containerappearance.cpp)
+target_link_libraries(
+    qindaqt_container_appearance_tests
+    PRIVATE QindaQt::CompositorShellActions Qt6::Test
+)
+add_test(
+    NAME compositor.container-appearance
+    COMMAND qindaqt_container_appearance_tests
+)
+set_tests_properties(
+    compositor.container-appearance PROPERTIES LABELS "unit;compositor;hybrid-chrome"
+)
+
 if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
     find_package(LayerShellQt 6.6.6 REQUIRED)
     find_package(KWayland 6.6.6 EXACT REQUIRED)
