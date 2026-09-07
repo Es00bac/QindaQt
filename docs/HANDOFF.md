@@ -48,8 +48,10 @@ The candidate's fresh full production build and two nested plugin boots passed;
 the manager verified its build/install contract and remote KWin source objects.
 The integrated documentation passes validation for 202 pages and strict MkDocs.
 
-The ebuild currently pins packaging baseline `c95d355c`. Before installation it
-must be advanced, with a new Manifest, to the final combined feature commit.
+The reviewed ebuild and Manifest now pin integrated source `d1232e75`
+(package integration `80d88779`). Archive size, both digests, and selected
+production source bytes were independently verified. Any further accepted
+production repair requires a new source pin and Manifest before installation.
 Remote CI, the full Portage merge, installed-session acceptance and the release
 tag remain pending. The definition is integrated; no new desktop installation
 or qualified release is claimed.
