@@ -49,5 +49,28 @@ if(NOT poison_status_log MATCHES "Direct session authority escaped session_actio
         "session-actions ScreenSaver poison failed for the wrong reason:\n${poison_status_log}")
 endif()
 
+file(REMOVE "${POISON_ROOT}/src/apps/settings/power/poison.cpp")
+
+file(WRITE "${POISON_ROOT}/src/apps/settings/power/qt_screen_lock_configurator.cpp"
+    "const char *service = \"org.kde.screensaver\";\n"
+    "const char *path = \"/ScreenSaver\";\n"
+    "const char *method = \"configure\";\n")
+run_boundary(allowed_status)
+if(NOT allowed_status EQUAL 0)
+    message(FATAL_ERROR
+        "session-actions boundary rejected the ADR-0091 configurator exception:\n${allowed_status_log}")
+endif()
+
+file(APPEND "${POISON_ROOT}/src/apps/settings/power/qt_screen_lock_configurator.cpp"
+    "const char *method = \"Lock\";\n")
+run_boundary(poison_status)
+if(poison_status EQUAL 0)
+    message(FATAL_ERROR "session-actions boundary accepted screen-lock action poison")
+endif()
+if(NOT poison_status_log MATCHES "configure-only authority")
+    message(FATAL_ERROR
+        "screen-lock action poison failed for the wrong reason:\n${poison_status_log}")
+endif()
+
 file(REMOVE_RECURSE "${POISON_ROOT}")
 message(STATUS "session-actions boundary rejected direct platform-authority poison")

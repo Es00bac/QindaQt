@@ -24,7 +24,21 @@ foreach(root IN LISTS consumer_roots)
     endif()
     foreach(file IN LISTS files)
         file(READ "${file}" contents)
-        if(contents MATCHES "org\\.freedesktop\\.login1|/org/freedesktop/login1|CanPowerOff|CanReboot|CanSuspend|org\\.freedesktop\\.ScreenSaver|/ScreenSaver")
+        set(is_screen_lock_configurator FALSE)
+        if(file STREQUAL "${SCAN_ROOT}/src/apps/settings/power/qt_screen_lock_configurator.cpp")
+            set(is_screen_lock_configurator TRUE)
+            # ADR-0091 permits this one adapter to ask KScreenLocker to reload
+            # saved preferences.  It must not grow session-action authority.
+            if(NOT contents MATCHES "org\\.kde\\.screensaver"
+                    OR NOT contents MATCHES "/ScreenSaver"
+                    OR NOT contents MATCHES "configure"
+                    OR contents MATCHES "org\\.freedesktop\\.login1|/org/freedesktop/login1|CanPowerOff|CanReboot|CanSuspend|CanLock|\"(Lock|Logout|Suspend|Reboot|PowerOff)\"")
+                message(FATAL_ERROR
+                    "Screen-lock configurator exceeded its configure-only authority: ${file}")
+            endif()
+        endif()
+        if(NOT is_screen_lock_configurator
+                AND contents MATCHES "org\\.freedesktop\\.login1|/org/freedesktop/login1|CanPowerOff|CanReboot|CanSuspend|org\\.freedesktop\\.ScreenSaver|org\\.kde\\.screensaver|/ScreenSaver")
             message(FATAL_ERROR
                 "Direct session authority escaped session_actions: ${file}")
         endif()
