@@ -29,6 +29,18 @@ TERMINAL_APP = "org.qindaqt.Terminal"
 EDITOR_APP = "org.qindaqt.TextEditor"
 
 
+def _private_session_program(stage, environment: dict) -> Path:
+    """Return the staged session wrapper used by this private Gabbee run."""
+
+    from desktop_session_launch import _session_program
+
+    # AGENT-CONTRACT: this sandbox deliberately mounts /usr for Weston, portal,
+    # and Gabbee dependencies.  Its staged session must still suppress optional
+    # host PowerDevil and polkit discovery; they are unrelated to the proof and
+    # could otherwise register on the private bus.
+    return _session_program(stage, environment, None)
+
+
 def run_inner() -> int:
     sys.path.insert(0, str(HERE.parent))
     from desktop_session_process import RuntimeState
@@ -180,7 +192,7 @@ def _run_inner_phases(
          "--scale", str(virtual.scale), "--output-count", str(virtual.output_count),
          "--socket", socket_name,
          "--test-scenario", "/opt/qindaqt-source/tests/scenarios/single-1080p.json",
-         "--session", str(stage.executables["session"])],
+         "--session", str(_private_session_program(stage, environment))],
         compositor_environment,
     )
     state.track(compositor, [stage.executables["launcher"], Path(arguments.kwin_wayland)])

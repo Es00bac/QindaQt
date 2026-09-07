@@ -43,6 +43,17 @@ Exec=/usr/libexec/at-spi-bus-launcher --launch-immediately
 """
 
 
+def _private_session_program(stage, environment: dict) -> Path:
+    """Return the staged session wrapper used by this private Gabbee run."""
+
+    from desktop_session_launch import _session_program
+
+    # AGENT-CONTRACT: /usr is mounted for real Gabbee and portal binaries, but
+    # the proof must not start optional host PowerDevil or polkit providers on
+    # its private bus.  The standard wrapper keeps every other session feature.
+    return _session_program(stage, environment, None)
+
+
 def _outer_parser() -> argparse.ArgumentParser:
     """Outer CLI surface; the documented wiki invocation must parse as-is."""
 
@@ -348,7 +359,7 @@ def _start_nested_desktop(
             "--scale", str(virtual.scale), "--output-count", str(virtual.output_count),
             "--socket", socket_name,
             "--test-scenario", "/opt/qindaqt-source/tests/scenarios/single-1080p.json",
-            "--session", str(stage.executables["session"]),
+            "--session", str(_private_session_program(stage, environment)),
         ],
         compositor_environment,
     )

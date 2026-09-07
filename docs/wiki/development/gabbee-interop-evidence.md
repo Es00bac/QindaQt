@@ -87,6 +87,13 @@ then runs:
    into one window container; Gabbee must capture exactly the focused member
    (distinct `window_id`s) and deliver per member.
 
+Both the nested interop runner and the Terminal PTY proof hand KWin the
+standard generated private-session wrapper. It invokes the staged session with
+`--no-polkit-agent --no-powerdevil`: `/usr` remains mounted for the real
+Gabbee, portal, and compositor dependencies, while optional host provider
+defaults cannot register on the proof's private bus. The wrapper leaves the
+session, shell, and all Gabbee-facing application behavior intact.
+
 The runner writes each child’s output directly to its log file. Gabbee’s
 clipboard fallback may fork `wl-copy`; that process must not keep a captured
 stdout pipe open after the probe exits. Each step has a 120-second deadline,
