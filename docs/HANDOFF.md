@@ -1,5 +1,30 @@
 # Integration handoff
 
+## Menu labels and Settings native evidence
+
+Integrated `575e30d2` keeps admitted top-level menu names complete while the
+existing whole-entry `+N` policy handles limited space. The manager reviewed
+exact candidate `8182b752`, independently passed 14 applet, 12 overflow and
+3 vertical checks, and inspected the full `Tabs` label in private run
+`5b76fbf122f043bbae405a34fd055ba1`. The integrated module build and all 10
+menu QML/boundary CTest rows pass. This production change is not yet installed.
+
+That run also provides inspected Appearance destination, Color capability,
+Clipboard popup theme, compact route activation and Power controls evidence.
+Power changed the timeout to 15 minutes and restored the original disabled/5
+minute preferences. The overall run remains failed: Got it dismisses the note,
+but Meta+F1 does not reopen it. The compact screenshot also exposes a distinct
+remaining defect: keyboard selection reaches Audio without scrolling its tab
+into view. Both are assigned focused follow-up work. Private files and both
+temporary menu-library overlays were restored, with no surviving test processes.
+
+Sloom's real exporter and native Help popup are verified in run
+`fd96e399e6524357ac956c5e9ed886ca`; About action acceptance remains open.
+The capture shows a duplicate local menu. A separate Sloom worktree is adding
+consumption of the existing ADR-0077 hosting acknowledgment; no new QindaQt
+protocol is needed. Failed hook calls and startup-only runs are not product
+failure evidence.
+
 ## Updated closing suite passed
 
 The integrated popup controls, Gabbee test registration and private font
