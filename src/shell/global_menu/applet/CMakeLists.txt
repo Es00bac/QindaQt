@@ -44,6 +44,7 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_GLOBAL_MENU_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_global_menu.qmltypes
     QML_FILES
+        qml/GlobalMenuActionEntry.qml
         qml/GlobalMenuApplet.qml
         qml/GlobalMenuNativeMenu.qml
         qml/GlobalMenuNativeMenuItem.qml
@@ -71,6 +72,7 @@ install(
     FILES
         "${QINDAQT_GLOBAL_MENU_QML_OUTPUT_DIRECTORY}/qmldir"
         "${QINDAQT_GLOBAL_MENU_QML_OUTPUT_DIRECTORY}/qindaqt_global_menu.qmltypes"
+        qml/GlobalMenuActionEntry.qml
         qml/GlobalMenuApplet.qml
         qml/GlobalMenuNativeMenu.qml
         qml/GlobalMenuNativeMenuItem.qml

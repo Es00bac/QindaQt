@@ -861,6 +861,10 @@ The reviewed paced-retry replacement (`cd951c65`) is integrated and its three
 process/activation/refresh gates pass. Install and verify it in the desktop;
 diagnose and verify the rendering mitigation separately.
 
+Kimi's three original CI source-size fixes are integrated and independently
+reviewed. The integrated gate found one new Terminal `main()` size error,
+assigned back for helper extraction before pushing the native workflow.
+
 Release infrastructure candidate `8f676db7` is integrated: exact native-stack
 checks, full Gentoo desktop package definition, native build/boot CI, and
 release/upgrade guides. Candidate production build and nested boots passed;

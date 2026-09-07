@@ -126,53 +126,12 @@ def _run_inner_phases(
 
     document.add(preflight_phase())
 
-    # -- private session bus (probe-owned service dir stays empty: every
-    # process below is spawned and named explicitly, never D-Bus activated,
-    # so activation cannot race a stray host backend into this private bus).
-    service_dir = runtime / "bus-services"
-    service_dir.mkdir(parents=True, exist_ok=True)
-    bus_config = runtime / "bus.conf"
-    from gabbee_probe_support import BUS_CONFIG_TEMPLATE
+    _start_private_bus(arguments, stage, environment, state, runtime)
 
-    bus_config.write_text(
-        BUS_CONFIG_TEMPLATE.format(address=f"unix:path={runtime / 'bus'}", service_dir=service_dir),
-        encoding="utf-8",
-    )
-    environment["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={runtime / 'bus'}"
-    bus = spawn_logged_process(
-        "dbus-daemon", [arguments.dbus_daemon, "--config-file", str(bus_config), "--nofork", "--nopidfile"],
-        environment,
-    )
-    state.track(bus, [arguments.dbus_daemon])
-    wait_for_path(runtime / "bus", state, 10)
-    for role in ("settings-service", "audio-service"):
-        child = spawn_logged_process(role, [str(stage.executables[role])], environment)
-        state.track(child, [stage.executables[role]])
-
-    # -- private PipeWire core BEFORE the compositor: KWin's screencast
-    # plugin auto-loads and makes its one connection attempt at compositor
-    # startup. AGENT-GUARD: starting PipeWire after the compositor leaves
-    # that first connection attempt permanently failed — the plugin's later
-    # D-Bus Unload/LoadPlugin cycle re-registers the plugin but does not
-    # retry the PipeWire connection, so the KDE portal backend never sees
-    # zkde_screencast_unstable_v1 and denies CreateSession outright. Found by
-    # tracing "kwin_screencast: Failed to connect PipeWire context" to the
-    # very first lines of the compositor's own log, before PipeWire existed.
-    pipewire_env = dict(environment)
-    pipewire_env["PIPEWIRE_RUNTIME_DIR"] = pipewire_env["XDG_RUNTIME_DIR"]
-    pipewire_env.pop("PIPEWIRE_REMOTE", None)
-    pipewire_env["XDG_STATE_HOME"] = tempfile.mkdtemp(prefix="qindaqt-pipewire-state-")
-    pipewire_env["XDG_CONFIG_HOME"] = tempfile.mkdtemp(prefix="qindaqt-pipewire-config-")
-    Path(pipewire_env["XDG_STATE_HOME"]).mkdir(parents=True, exist_ok=True)
-    Path(pipewire_env["XDG_CONFIG_HOME"]).mkdir(parents=True, exist_ok=True)
-    pipewire_evidence: dict = {}
-    pipewire = spawn_logged_process(
-        "pipewire", ["/usr/bin/pipewire", "-c", "/usr/share/pipewire/pipewire.conf"], pipewire_env,
-    )
-    state.track(pipewire, [Path("/usr/bin/pipewire")])
-    from gabbee_terminal_portal import wait_for_private_pipewire
-
-    wait_for_private_pipewire(pipewire_env, pipewire, pipewire_evidence)
+    # AGENT-GUARD: the private PipeWire core must run BEFORE the compositor;
+    # KWin's screencast plugin connects exactly once at compositor startup.
+    # _start_private_pipewire carries the full failure trace.
+    _start_private_pipewire(environment, state)
 
     # -- parent Wayland compositor (private Weston, headless + pixman).
     # AGENT-GUARD: the child KWin must run --windowed on this parent socket,
@@ -253,6 +212,58 @@ def _run_inner_phases(
     return remote_desktop_delivery(
         app_environment, state, document, terminal_window, editor_window
     )
+
+
+def _start_private_bus(arguments: argparse.Namespace, stage, environment: dict, state, runtime: Path) -> None:
+    from desktop_session_process import spawn_logged_process, wait_for_path
+    from gabbee_probe_support import BUS_CONFIG_TEMPLATE
+
+    # Probe-owned service dir stays empty: every process below is spawned and
+    # named explicitly, never D-Bus activated, so activation cannot race a
+    # stray host backend into this private bus.
+    service_dir = runtime / "bus-services"
+    service_dir.mkdir(parents=True, exist_ok=True)
+    bus_config = runtime / "bus.conf"
+    bus_config.write_text(
+        BUS_CONFIG_TEMPLATE.format(address=f"unix:path={runtime / 'bus'}", service_dir=service_dir),
+        encoding="utf-8",
+    )
+    environment["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={runtime / 'bus'}"
+    bus = spawn_logged_process(
+        "dbus-daemon", [arguments.dbus_daemon, "--config-file", str(bus_config), "--nofork", "--nopidfile"],
+        environment,
+    )
+    state.track(bus, [arguments.dbus_daemon])
+    wait_for_path(runtime / "bus", state, 10)
+    for role in ("settings-service", "audio-service"):
+        child = spawn_logged_process(role, [str(stage.executables[role])], environment)
+        state.track(child, [stage.executables[role]])
+
+
+def _start_private_pipewire(environment: dict, state) -> None:
+    from desktop_session_process import spawn_logged_process
+    from gabbee_terminal_portal import wait_for_private_pipewire
+
+    # AGENT-GUARD: starting PipeWire after the compositor leaves its first
+    # connection attempt permanently failed — the plugin's later D-Bus
+    # Unload/LoadPlugin cycle re-registers the plugin but does not retry the
+    # PipeWire connection, so the KDE portal backend never sees
+    # zkde_screencast_unstable_v1 and denies CreateSession outright. Found by
+    # tracing "kwin_screencast: Failed to connect PipeWire context" to the
+    # very first lines of the compositor's own log, before PipeWire existed.
+    pipewire_env = dict(environment)
+    pipewire_env["PIPEWIRE_RUNTIME_DIR"] = pipewire_env["XDG_RUNTIME_DIR"]
+    pipewire_env.pop("PIPEWIRE_REMOTE", None)
+    pipewire_env["XDG_STATE_HOME"] = tempfile.mkdtemp(prefix="qindaqt-pipewire-state-")
+    pipewire_env["XDG_CONFIG_HOME"] = tempfile.mkdtemp(prefix="qindaqt-pipewire-config-")
+    Path(pipewire_env["XDG_STATE_HOME"]).mkdir(parents=True, exist_ok=True)
+    Path(pipewire_env["XDG_CONFIG_HOME"]).mkdir(parents=True, exist_ok=True)
+    pipewire_evidence: dict = {}
+    pipewire = spawn_logged_process(
+        "pipewire", ["/usr/bin/pipewire", "-c", "/usr/share/pipewire/pipewire.conf"], pipewire_env,
+    )
+    state.track(pipewire, [Path("/usr/bin/pipewire")])
+    wait_for_private_pipewire(pipewire_env, pipewire, pipewire_evidence)
 
 
 def preflight_phase():

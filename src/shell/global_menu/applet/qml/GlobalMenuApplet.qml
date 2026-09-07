@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Controls.Basic as Basic
 
 // AGENT-NOTE: consumes only GlobalMenuAppletAccess's public Q_PROPERTY/
@@ -334,62 +333,17 @@ Item {
         Repeater {
             model: root.visibleEntries
 
-            delegate: AbstractButton {
-                id: actionEntry
-                required property var modelData
-                required property int index
-                readonly property bool isAction:
-                    String(modelData.kind ?? "action") === "action"
-                readonly property bool itemEnabled: Boolean(modelData.enabled)
-
-                function pressAction() {
-                    if (enabled)
-                        root.access.activate(String(modelData.id ?? ""),
-                                             String(modelData.generation ?? ""))
-                }
-
-                objectName: "globalMenuTopLevelItem"
-                visible: isAction
-                x: root.vertical ? Math.round((nativeLayout.width - width) / 2)
-                                 : root.entryOffset(index)
-                y: root.vertical ? root.entryOffset(index)
-                                 : Math.round((nativeLayout.height - height) / 2)
-                enabled: visible && itemEnabled && root.available
-                implicitWidth: root.measuredEntryWidth(modelData)
-                implicitHeight: root.vertical ? 24 : root.horizontalEntryHeight()
-                focusPolicy: Qt.TabFocus
-                checkable: false
-                checked: Boolean(modelData.checked ?? false)
-                Accessible.role: Accessible.MenuItem
-                Accessible.focusable: enabled
-                Accessible.name: String(modelData.text ?? "")
-                Accessible.checkable: Boolean(modelData.checkable ?? false)
-                Accessible.checked: Boolean(modelData.checked ?? false)
-                // Press activation is intentional: an already-open native
-                // popup may consume the corresponding release at its grab
-                // boundary. The pressed edge occurs exactly once for pointer
-                // and keyboard gestures, matching MenuBarItem itself.
-                onPressedChanged: {
-                    if (pressed)
-                        pressAction()
-                }
-                Accessible.onPressAction: pressAction()
-                Keys.onReturnPressed: pressAction()
-                Keys.onEnterPressed: pressAction()
-
-                contentItem: Text {
-                    text: String(actionEntry.modelData.text ?? "")
-                    textFormat: Text.PlainText
-                    elide: Text.ElideNone
-                    maximumLineCount: 1
-                    color: actionEntry.itemEnabled
-                        ? (root.colors.text ?? "white")
-                        : (root.colors.textMuted ?? "#a9afa9")
-                    font: entryMetrics.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Item {}
+            delegate: GlobalMenuActionEntry {
+                vertical: root.vertical
+                available: root.available
+                access: root.access
+                colors: root.colors
+                entryFont: entryMetrics.font
+                hostWidth: nativeLayout.width
+                hostHeight: nativeLayout.height
+                entryOffsetFor: root.entryOffset
+                measuredEntryWidthFor: root.measuredEntryWidth
+                horizontalEntryHeightFor: root.horizontalEntryHeight
             }
         }
     }

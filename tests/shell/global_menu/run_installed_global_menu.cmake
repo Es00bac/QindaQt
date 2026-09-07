@@ -36,6 +36,7 @@ foreach(required_path IN ITEMS
         "${qml}/libqindaqt_global_menu_qml.so"
         "${qml}/libqindaqt_global_menu_qmlplugin.so"
         "${qml}/qmldir"
+        "${qml}/GlobalMenuActionEntry.qml"
         "${qml}/GlobalMenuApplet.qml"
         "${qml}/GlobalMenuNativeMenu.qml"
         "${qml}/GlobalMenuNativeMenuItem.qml"
