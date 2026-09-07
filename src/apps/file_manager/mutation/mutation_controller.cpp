@@ -181,6 +181,20 @@ bool MutationController::trashItem(const QString &sourcePath,
   return submit(std::move(request));
 }
 
+bool MutationController::trashItems(const QVariantList &items) {
+  return submitBatch(MutationKind::Trash, items);
+}
+
+bool MutationController::copyItemsTo(const QVariantList &items,
+                                     const QString &destinationDirectory) {
+  return submitBatch(MutationKind::Copy, items, destinationDirectory);
+}
+
+bool MutationController::moveItemsTo(const QVariantList &items,
+                                     const QString &destinationDirectory) {
+  return submitBatch(MutationKind::Move, items, destinationDirectory);
+}
+
 bool MutationController::restoreLast() {
   if (!canRestore()) {
     fail(MutationError::InvalidRequest, QStringLiteral("There is no recoverable Trash item"));
@@ -299,6 +313,150 @@ bool MutationController::submit(MutationRequest request, bool isUndo) {
   return true;
 }
 
+bool MutationController::submitBatch(MutationKind kind,
+                                     const QVariantList &items,
+                                     const QString &destinationDirectory) {
+  if (busy()) {
+    fail(MutationError::Busy, QStringLiteral("Another file operation is still running"));
+    return false;
+  }
+  if (items.isEmpty()) {
+    fail(MutationError::InvalidRequest, QStringLiteral("No items are selected"));
+    return false;
+  }
+  const bool needsDestination =
+      kind == MutationKind::Copy || kind == MutationKind::Move;
+  const QFileInfo destinationInfo(destinationDirectory);
+  if (needsDestination && !destinationInfo.isAbsolute()) {
+    fail(MutationError::InvalidRequest,
+         QStringLiteral("Choose an absolute local destination path"));
+    return false;
+  }
+  const QString destinationRoot =
+      needsDestination ? destinationInfo.absoluteFilePath() : QString();
+
+  QVector<MutationRequest> requests;
+  requests.reserve(items.size());
+  for (const QVariant &item : items) {
+    if (item.metaType().id() != QMetaType::QVariantMap) {
+      fail(MutationError::InvalidRequest,
+           QStringLiteral("The selection is stale; refresh and try again"));
+      return false;
+    }
+    const QVariantMap map = item.toMap();
+    const QString source = map.value(QStringLiteral("path")).toString();
+    const std::optional<FileIdentity> identity = identityFromMap(map);
+    if (source.isEmpty() || !identity) {
+      fail(MutationError::InvalidRequest,
+           QStringLiteral("The selection is stale; refresh and try again"));
+      return false;
+    }
+    MutationRequest request;
+    request.kind = kind;
+    request.sourcePath = source;
+    if (needsDestination) {
+      request.destinationPath =
+          QDir(destinationRoot).filePath(QFileInfo(source).fileName());
+    }
+    request.declaredRoots = rootsFor(request.sourcePath, request.destinationPath);
+    if (needsDestination) {
+      request.declaredRoots.append(destinationRoot);
+      request.declaredRoots.removeDuplicates();
+    }
+    request.expectedSource = identity;
+    if (needsDestination) {
+      request.expectedParent = LocalMutationBackend::identityForPath(destinationRoot);
+    }
+    requests.append(std::move(request));
+  }
+
+  m_failure = MutationError::None;
+  m_failureMessage.clear();
+  m_resultText.clear();
+  m_progressValue = 0;
+  m_progressText = QStringLiteral("Starting file operation");
+  m_isUndo = false;
+  m_runningKind = kind;
+  m_cancellation = std::make_shared<std::atomic_bool>(false);
+  MutationBackend *backend = m_backend.get();
+  const MutationCancellation cancellation = m_cancellation;
+  const QPointer<MutationController> guard(this);
+  const int total = static_cast<int>(requests.size());
+  auto progress = [guard, total](const MutationProgress &update) {
+    if (!guard) {
+      return;
+    }
+    QMetaObject::invokeMethod(guard, [guard, update, total]() {
+      if (!guard || !guard->busy()) {
+        return;
+      }
+      guard->m_progressValue = qBound(0, update.completedItems * 100 / total, 100);
+      guard->m_progressText = boundedMutationDiagnostic(update.accessibleText);
+      emit guard->stateChanged();
+    }, Qt::QueuedConnection);
+  };
+  m_busy = true;
+  QMetaObject::invokeMethod(
+      m_workerContext,
+      [guard, backend, requests = std::move(requests), cancellation,
+       progress = std::move(progress), total]() mutable {
+        int completed = 0;
+        MutationResult outcome;
+        for (const MutationRequest &request : requests) {
+          if (cancellation->load(std::memory_order_relaxed)) {
+            outcome.error = MutationError::Cancelled;
+            outcome.diagnostic =
+                QStringLiteral("Cancelled after %1 of %2 items")
+                    .arg(completed)
+                    .arg(total);
+            break;
+          }
+          const int itemIndex = completed;
+          auto itemProgress = [&progress, itemIndex, total,
+                               &request](const MutationProgress &update) {
+            MutationProgress forwarded;
+            forwarded.completedItems = itemIndex;
+            forwarded.totalItems = total;
+            forwarded.accessibleText =
+                QStringLiteral("Item %1 of %2 (%3): %4")
+                    .arg(itemIndex + 1)
+                    .arg(total)
+                    .arg(QFileInfo(request.sourcePath).fileName())
+                    .arg(update.accessibleText);
+            progress(forwarded);
+          };
+          outcome = backend->execute(request, cancellation, itemProgress);
+          if (!outcome.ok()) {
+            outcome.diagnostic =
+                QStringLiteral("Completed %1 of %2 items; %3: %4")
+                    .arg(completed)
+                    .arg(total)
+                    .arg(QFileInfo(request.sourcePath).fileName())
+                    .arg(outcome.diagnostic);
+            break;
+          }
+          ++completed;
+        }
+        if (outcome.ok()) {
+          outcome.trashToken.clear();
+          outcome.undoRequest.reset();
+          outcome.outputIdentity.reset();
+          outcome.diagnostic =
+              QStringLiteral("Finished %1 items").arg(completed);
+        }
+        if (guard) {
+          QMetaObject::invokeMethod(guard, [guard, outcome]() {
+            if (guard) {
+              guard->finish(outcome);
+            }
+          }, Qt::QueuedConnection);
+        }
+      },
+      Qt::QueuedConnection);
+  emit stateChanged();
+  return true;
+}
+
 void MutationController::finish(const MutationResult &result) {
   m_busy = false;
   m_progressValue = result.ok() ? 100 : 0;
@@ -315,7 +473,9 @@ void MutationController::finish(const MutationResult &result) {
   m_failure = MutationError::None;
   m_failureMessage.clear();
   m_resultText = m_isUndo ? QStringLiteral("Operation undone")
-                          : QStringLiteral("File operation completed");
+                 : result.diagnostic.isEmpty()
+                     ? QStringLiteral("File operation completed")
+                     : boundedMutationDiagnostic(result.diagnostic);
   m_undoRequest = m_isUndo ? nullptr : result.undoRequest;
   m_isUndo = false;
   if (!result.trashToken.isEmpty() && result.outputIdentity) {

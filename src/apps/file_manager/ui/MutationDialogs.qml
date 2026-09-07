@@ -9,26 +9,36 @@ Item {
     required property var navigationController
     required property var mutationController
     property var selectedEntry: null
+    property var selectedItems: []
     property string destinationKind: "copy"
 
-    function dispatch(actionId, entry) {
+    // entries is the selection snapshot from the active view: an array of
+    // entry maps (possibly empty). Single-item dispatches keep the existing
+    // undo/restore-token-bearing invokables; multi-item dispatches use the
+    // serialized batch variants, which intentionally carry no undo request.
+    function dispatch(actionId, entries) {
+        const selection = entries && entries.length ? entries : []
         if (actionId === "file.new-folder") {
             newFolderName.text = ""
             newFolderDialog.open()
         } else if (actionId === "file.rename") {
-            if (!entry) return
-            selectedEntry = entry
-            renameName.text = entry.name
+            if (selection.length < 1) return
+            selectedEntry = selection[0]
+            renameName.text = selectedEntry.name
             renameDialog.open()
         } else if (actionId === "file.copy" || actionId === "file.move") {
-            if (!entry) return
-            selectedEntry = entry
+            if (selection.length < 1) return
+            selectedItems = selection
+            selectedEntry = selection[0]
             destinationKind = actionId === "file.copy" ? "copy" : "move"
-            destinationPath.text = navigationController.currentPath + "/" + entry.name
+            destinationPath.text = selection.length > 1
+                ? navigationController.currentPath
+                : navigationController.currentPath + "/" + selectedEntry.name
             destinationDialog.open()
         } else if (actionId === "file.trash") {
-            if (!entry) return
-            selectedEntry = entry
+            if (selection.length < 1) return
+            selectedItems = selection
+            selectedEntry = selection[0]
             trashConfirmationDialog.open()
         } else if (actionId === "file.restore-last") {
             mutationController.restoreLast()
@@ -89,10 +99,23 @@ Item {
         anchors.centerIn: parent
         width: Math.min(560, root.width - Tokens.space["4"] * 2)
         modal: true
-        title: root.destinationKind === "copy" ? qsTr("Copy to local path")
-                                                 : qsTr("Move to local path")
+        title: root.selectedItems.length > 1
+            ? (root.destinationKind === "copy"
+               ? qsTr("Copy %1 items into folder").arg(root.selectedItems.length)
+               : qsTr("Move %1 items into folder").arg(root.selectedItems.length))
+            : (root.destinationKind === "copy" ? qsTr("Copy to local path")
+                                               : qsTr("Move to local path"))
         standardButtons: T.Dialog.Ok | T.Dialog.Cancel
         onAccepted: {
+            if (root.selectedItems.length > 1) {
+                if (root.destinationKind === "copy")
+                    root.mutationController.copyItemsTo(root.selectedItems,
+                        destinationPath.text)
+                else
+                    root.mutationController.moveItemsTo(root.selectedItems,
+                        destinationPath.text)
+                return
+            }
             if (!root.selectedEntry) return
             if (root.destinationKind === "copy")
                 root.mutationController.copyItem(root.selectedEntry.path,
@@ -106,7 +129,8 @@ Item {
             id: destinationPath
             objectName: "destinationPathField"
             width: parent.width
-            Accessible.name: qsTr("Absolute destination path")
+            Accessible.name: root.selectedItems.length > 1
+                ? qsTr("Destination folder") : qsTr("Absolute destination path")
         }
     }
 
@@ -116,17 +140,25 @@ Item {
         anchors.centerIn: parent
         width: Math.min(560, root.width - Tokens.space["4"] * 2)
         modal: true
-        title: qsTr("Move selected item to Trash?")
+        title: root.selectedItems.length > 1
+            ? qsTr("Move %1 selected items to Trash?").arg(root.selectedItems.length)
+            : qsTr("Move selected item to Trash?")
         standardButtons: T.Dialog.Yes | T.Dialog.Cancel
         onAccepted: {
-            if (root.selectedEntry)
+            if (root.selectedItems.length > 1) {
+                root.mutationController.trashItems(root.selectedItems)
+            } else if (root.selectedEntry) {
                 root.mutationController.trashItem(root.selectedEntry.path,
                                                    root.selectedEntry)
+            }
         }
 
         T.Label {
-            text: root.selectedEntry ? qsTr("Move “%1” to the recoverable home Trash.")
-                                           .arg(root.selectedEntry.name) : ""
+            text: root.selectedItems.length > 1
+                ? qsTr("Move %1 selected items to the recoverable home Trash. Batch trash is not covered by Restore Last.")
+                      .arg(root.selectedItems.length)
+                : (root.selectedEntry ? qsTr("Move “%1” to the recoverable home Trash.")
+                                           .arg(root.selectedEntry.name) : "")
             wrapMode: Text.Wrap
             Accessible.name: text
         }

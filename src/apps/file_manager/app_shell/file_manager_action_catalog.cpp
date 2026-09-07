@@ -15,7 +15,7 @@ namespace {
 [[nodiscard]] QindaQt::AppShell::ActionSpec action(
     const QString &id, const QString &menuId, const QString &menuLabel,
     const QString &label, const QString &description, const QKeySequence &shortcut,
-    int menuOrder, int order, bool destructive = false) {
+    int menuOrder, int order, bool destructive = false, bool checkable = false) {
   return {.id = id,
           .menuId = menuId,
           .menuLabel = menuLabel,
@@ -25,7 +25,7 @@ namespace {
           .menuOrder = menuOrder,
           .order = order,
           .enabled = true,
-          .checkable = false,
+          .checkable = checkable,
           .checked = false,
           .destructive = destructive};
 }
@@ -70,6 +70,30 @@ QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
              QStringLiteral("Edit"), QStringLiteral("Cancel Operation"),
              QStringLiteral("Request cancellation of the running file operation"),
              QKeySequence(QStringLiteral("Ctrl+Escape")), 1, 1),
+      action(QStringLiteral("edit.select-all"), QStringLiteral("edit"),
+             QStringLiteral("Edit"), QStringLiteral("Select All"),
+             QStringLiteral("Select every entry in the current folder"),
+             QKeySequence(QStringLiteral("Ctrl+A")), 1, 2),
+      action(QStringLiteral("view.show-hidden"), QStringLiteral("view"),
+             QStringLiteral("View"), QStringLiteral("Show Hidden Files"),
+             QStringLiteral("Show or hide entries whose name begins with a dot"),
+             QKeySequence(QStringLiteral("Ctrl+H")), 2, 0, false, true),
+      action(QStringLiteral("view.grid-mode"), QStringLiteral("view"),
+             QStringLiteral("View"), QStringLiteral("Grid View"),
+             QStringLiteral("Switch between the list and grid presentation"),
+             QKeySequence(QStringLiteral("Ctrl+2")), 2, 1, false, true),
+      action(QStringLiteral("view.focus-location"), QStringLiteral("view"),
+             QStringLiteral("View"), QStringLiteral("Location Bar"),
+             QStringLiteral("Type a folder path directly"),
+             QKeySequence(QStringLiteral("Ctrl+L")), 2, 2),
+      action(QStringLiteral("go.home"), QStringLiteral("go"),
+             QStringLiteral("Go"), QStringLiteral("Home Folder"),
+             QStringLiteral("Open your home folder"),
+             QKeySequence(QStringLiteral("Alt+Home")), 3, 0),
+      action(QStringLiteral("bookmark.add"), QStringLiteral("go"),
+             QStringLiteral("Go"), QStringLiteral("Bookmark Current Folder"),
+             QStringLiteral("Add the current folder to the bookmarks sidebar"),
+             QKeySequence(QStringLiteral("Ctrl+D")), 3, 1),
   };
 }
 

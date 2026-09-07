@@ -51,6 +51,19 @@ public:
                             const QVariantMap &identity);
   Q_INVOKABLE bool trashItem(const QString &sourcePath,
                              const QVariantMap &identity);
+  // Batch variants run one serialized operation over a selection. Each item
+  // map is the QML entry snapshot: a "path" string plus the decimal-string
+  // identity fields identityFromMap() consumes. Every item still goes through
+  // the backend's single-item, identity-checked contract, in order, inside
+  // the one busy slot. The first typed failure stops the batch; cancellation
+  // between items skips the remainder. Batch results carry no undo request
+  // and no Trash restore token: undo stays one-level/single-item and
+  // restoreLast() keeps referring to the most recent single-item trash.
+  Q_INVOKABLE bool trashItems(const QVariantList &items);
+  Q_INVOKABLE bool copyItemsTo(const QVariantList &items,
+                               const QString &destinationDirectory);
+  Q_INVOKABLE bool moveItemsTo(const QVariantList &items,
+                               const QString &destinationDirectory);
   Q_INVOKABLE bool restoreLast();
   Q_INVOKABLE bool emptyTrash();
   Q_INVOKABLE bool undo();
@@ -65,6 +78,11 @@ private:
   [[nodiscard]] static std::optional<FileIdentity>
   identityFromMap(const QVariantMap &identity);
   [[nodiscard]] bool submit(MutationRequest request, bool isUndo = false);
+  // Validates the selection maps into per-item requests, then runs them in
+  // order inside one worker invocation. Returns false (typed failure set)
+  // when any item is invalid or another operation is running.
+  [[nodiscard]] bool submitBatch(MutationKind kind, const QVariantList &items,
+                                 const QString &destinationDirectory = {});
   void finish(const MutationResult &result);
   void fail(MutationError error, const QString &message);
 

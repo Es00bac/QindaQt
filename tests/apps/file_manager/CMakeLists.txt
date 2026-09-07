@@ -72,6 +72,21 @@ qindaqt_add_file_manager_test(
     tst_navigation_controller.cpp
     qindaqt.file-manager-navigation-controller
 )
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_listing_order_tests
+    tst_listing_order.cpp
+    qindaqt.file-manager-listing-order
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_bookmarks_store_tests
+    tst_bookmarks_store.cpp
+    qindaqt.file-manager-bookmarks-store
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_places_controller_tests
+    tst_places_controller.cpp
+    qindaqt.file-manager-places-controller
+)
 
 add_test(
     NAME qindaqt.file-manager-desktop-metadata
@@ -103,7 +118,7 @@ set_tests_properties(
     PROPERTIES
         LABELS "file-manager"
         ENVIRONMENT
-            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
@@ -122,7 +137,7 @@ set_tests_properties(
     PROPERTIES
         LABELS "file-manager"
         ENVIRONMENT
-            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-action-data"
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-action-data"
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )

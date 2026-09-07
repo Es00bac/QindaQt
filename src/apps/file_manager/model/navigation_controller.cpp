@@ -2,7 +2,12 @@
 #include "navigation_controller.h"
 
 #include <QDir>
+#include <QFileInfo>
+#include <QLocale>
+#include <QStringList>
 #include <QVariantMap>
+
+#include <algorithm>
 
 namespace QindaQt::Apps::FileManager {
 
@@ -25,6 +30,36 @@ namespace {
     break;
   }
   return NavigationStatus::Error;
+}
+
+// Presentation text is produced C++-side so QML delegates stay dumb and the
+// formatting rules are unit-testable through the public entries() snapshot.
+[[nodiscard]] QString sizeTextFor(const DirectoryEntry &entry) {
+  if (entry.isDirectory) {
+    return QStringLiteral("—");
+  }
+  return QLocale().formattedDataSize(entry.size);
+}
+
+[[nodiscard]] QString modifiedTextFor(const DirectoryEntry &entry) {
+  if (!entry.lastModified.isValid()) {
+    return QString();
+  }
+  return QLocale().toString(entry.lastModified, QLocale::ShortFormat);
+}
+
+[[nodiscard]] QString kindTextFor(const DirectoryEntry &entry) {
+  if (entry.isDirectory) {
+    return QStringLiteral("Folder");
+  }
+  if (entry.isSymlink) {
+    return QStringLiteral("Link");
+  }
+  const QString suffix = QFileInfo(entry.name).suffix();
+  if (suffix.isEmpty()) {
+    return QStringLiteral("File");
+  }
+  return QStringLiteral("%1 File").arg(suffix.toUpper());
 }
 
 } // namespace
@@ -115,6 +150,56 @@ int NavigationController::indexOfName(const QString &name) const {
   return -1;
 }
 
+void NavigationController::setSortColumn(const QString &columnKey) {
+  bool ok = false;
+  const SortColumn column = sortColumnFromKey(columnKey, &ok);
+  if (!ok) {
+    return;
+  }
+  if (m_order.column == column) {
+    m_order.direction = m_order.direction == SortDirection::Ascending
+                            ? SortDirection::Descending
+                            : SortDirection::Ascending;
+  } else {
+    m_order.column = column;
+    m_order.direction = SortDirection::Ascending;
+  }
+  rebuildVisibleEntries();
+  emit presentationChanged();
+  emit entriesChanged();
+}
+
+void NavigationController::setShowHidden(bool showHidden) {
+  if (m_showHidden == showHidden) {
+    return;
+  }
+  m_showHidden = showHidden;
+  rebuildVisibleEntries();
+  emit presentationChanged();
+  emit entriesChanged();
+}
+
+void NavigationController::setDirectoriesFirst(bool directoriesFirst) {
+  if (m_order.directoriesFirst == directoriesFirst) {
+    return;
+  }
+  m_order.directoriesFirst = directoriesFirst;
+  rebuildVisibleEntries();
+  emit presentationChanged();
+  emit entriesChanged();
+}
+
+void NavigationController::setViewMode(const QString &mode) {
+  if (mode != QStringLiteral("list") && mode != QStringLiteral("grid")) {
+    return;
+  }
+  if (m_viewMode == mode) {
+    return;
+  }
+  m_viewMode = mode;
+  emit presentationChanged();
+}
+
 QString NavigationController::currentPath() const {
   return m_history.currentPath();
 }
@@ -161,6 +246,9 @@ QVariantList NavigationController::entries() const {
         {QStringLiteral("isReadable"), entry.isReadable},
         {QStringLiteral("size"), entry.size},
         {QStringLiteral("modified"), entry.lastModified},
+        {QStringLiteral("sizeText"), sizeTextFor(entry)},
+        {QStringLiteral("modifiedText"), modifiedTextFor(entry)},
+        {QStringLiteral("kindText"), kindTextFor(entry)},
         // AGENT-GUARD: These identity fields cross QVariant -> JavaScript ->
         // QVariant before mutation dispatch. Decimal strings preserve all 64
         // bits; JS Number would round current-epoch nanoseconds and make every
@@ -178,6 +266,24 @@ QVariantList NavigationController::entries() const {
 
 QString NavigationController::launchError() const { return m_launchError; }
 
+QString NavigationController::sortColumn() const {
+  return sortColumnKey(m_order.column);
+}
+
+QString NavigationController::sortDirection() const {
+  return m_order.direction == SortDirection::Ascending
+             ? QStringLiteral("ascending")
+             : QStringLiteral("descending");
+}
+
+bool NavigationController::directoriesFirst() const {
+  return m_order.directoriesFirst;
+}
+
+bool NavigationController::showHidden() const { return m_showHidden; }
+
+QString NavigationController::viewMode() const { return m_viewMode; }
+
 int NavigationController::entryCount() const {
   return static_cast<int>(m_entries.size());
 }
@@ -194,15 +300,39 @@ NavigationStatus NavigationController::status() const { return m_status; }
 void NavigationController::reload() {
   const ListingResult result = m_lister->list(m_history.currentPath());
   m_status = statusFor(result);
-  m_entries = result.ok() ? result.entries : QVector<DirectoryEntry>{};
-  if (result.ok()) {
-    m_statusMessage = result.truncated
-        ? QStringLiteral("Showing the first %1 entries").arg(m_entries.size())
-        : QString();
-  } else {
+  m_truncated = result.ok() && result.truncated;
+  m_listedEntries = result.ok() ? result.entries : QVector<DirectoryEntry>{};
+  rebuildVisibleEntries();
+  if (!result.ok()) {
     m_statusMessage = result.diagnostic;
   }
   emit entriesChanged();
+}
+
+void NavigationController::rebuildVisibleEntries() {
+  m_entries.clear();
+  m_entries.reserve(m_listedEntries.size());
+  m_hiddenFilteredCount = 0;
+  for (const auto &entry : m_listedEntries) {
+    if (!m_showHidden && entry.isHidden) {
+      ++m_hiddenFilteredCount;
+      continue;
+    }
+    m_entries.append(entry);
+  }
+  std::sort(m_entries.begin(), m_entries.end(),
+            [this](const DirectoryEntry &a, const DirectoryEntry &b) {
+              return listingEntryLessThan(a, b, m_order);
+            });
+  QStringList notices;
+  if (m_truncated) {
+    notices.append(
+        QStringLiteral("Showing the first %1 entries").arg(m_listedEntries.size()));
+  }
+  if (m_hiddenFilteredCount > 0) {
+    notices.append(QStringLiteral("%1 hidden").arg(m_hiddenFilteredCount));
+  }
+  m_statusMessage = notices.join(QStringLiteral("; "));
 }
 
 QString NavigationController::statusKeyFor(NavigationStatus status) {

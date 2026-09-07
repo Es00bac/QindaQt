@@ -207,3 +207,4 @@ nav:
       - "ADR-0087: Agent input via RemoteDesktop portal": adr/0087-agent-input-via-remotedesktop-portal.md
       - "ADR-0088: KDE portal compatibility identity": adr/0088-enable-kde-remote-desktop-for-qindaqt.md
       - "ADR-0089: KWin native-model task switching": adr/0089-present-task-switching-through-kwins-native-model.md
+      - "ADR-0090: App-local file-manager bookmarks": adr/0090-keep-file-manager-bookmarks-app-local.md

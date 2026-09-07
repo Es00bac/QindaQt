@@ -2,17 +2,23 @@
 
 `qindaqt-file-manager` is QindaQt's first-party local-directory browser. S0
 landed bounded listing, navigation, and regular-file launch. S1 adds local new
-folder, rename, copy, same-filesystem move, home Trash, restore, and empty-Trash
-operations with cooperative cancellation, progress, typed failure, and
-one-level recovery. Mounts, search, previews, portals, per-volume Trash, and
-network locations remain explicit later slices.
+folder, rename, copy, same-filesystem move, home Trash, restore, and
+empty-Trash operations with cooperative cancellation, progress, typed failure,
+and one-level recovery. S2 adds the core browsing surface: an editable
+location bar, multi-select with serialized batch operations, configurable
+sorting with size/kind/modified columns, a hidden-file toggle, a list/grid
+view switch, and a places/bookmarks sidebar persisted in an app-local state
+file. Search, previews, drag-and-drop, per-volume Trash, mounts, and network
+locations remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md); the S1 mutation
 and Trash authority is recorded in
-[ADR-0064](../adr/0064-confine-file-mutation-to-identity-checked-local-authority.md).
+[ADR-0064](../adr/0064-confine-file-mutation-to-identity-checked-local-authority.md);
+the S2 bookmark persistence contract is recorded in
+[ADR-0090](../adr/0090-keep-file-manager-bookmarks-app-local.md).
 
-S1 composes `QindaQt.Tokens 1.0`, `QindaQt.Controls 1.0`, and the public
+S2 composes `QindaQt.Tokens 1.0`, `QindaQt.Controls 1.0`, and the public
 `QindaQt.AppShell 1.0` window/action/lifecycle boundary. File Manager retains
 all navigation and filesystem policy; AppShell owns only the standard menu,
 shortcut dispatch, focus reporting, and close-decision protocol (see
@@ -20,7 +26,7 @@ shortcut dispatch, focus reporting, and close-decision protocol (see
 
 ## First-party global-menu export
 
-File Manager opts its existing deterministic AppShell action catalog into
+File Manager opts its deterministic AppShell action catalog into
 `QindaQt::AppShell::MenuExport` after the real `ApplicationShell` window is
 constructed. With no usable session bus, registrar owner, or platform window
 identity, export remains disabled/waiting and the application continues
@@ -35,17 +41,36 @@ menu. Either local or shell activation enters the same
 `ApplicationCoordinator::activateAction()` enabled-action gate, and the shell
 path emits the File Manager action request exactly once.
 
-## S0 user experience
+## Browsing experience
 
 One window browses one local folder tree at a time, starting at the user's
-home folder unless a valid local folder is given on the command line. The
-toolbar provides Back, Forward, Up, and Refresh. A breadcrumb bar below it
-shows every path segment from the filesystem root to the current folder as a
-clickable button; clicking any segment navigates straight there. The main
-pane lists the current folder's immediate children, directories first, then
-files, both case-insensitively ordered by name. When the bounded lister has
-to stop early, a muted notice below the list states how many entries are
-shown instead of silently hiding the remainder.
+home folder unless a valid local folder is given on the command line. There
+are deliberately no in-window tabs or split panes: grouping windows is the
+[window container](../architecture/window-containers.md)'s job, and a file
+manager window composes with it like any other application window.
+
+The toolbar provides Back, Forward, Up, Refresh, a Location toggle, a hidden
+files toggle, and a list/grid view toggle. Below it the path surface is
+normally the breadcrumb bar (every segment from the filesystem root to the
+current folder as a clickable button); `Ctrl+L` or the Location toggle swaps
+it for an editable field seeded with the current path. Enter navigates
+through the same `NavigationController::navigateTo()` normalization and typed
+status mapping as every other path; Escape returns to the breadcrumb.
+
+The places sidebar offers fixed places (Home, File System, Trash) and the
+user's bookmarks. `Ctrl+D` bookmarks the current folder; each bookmark row
+has a Remove button. Bookmarks persist across restarts through
+`BookmarksStore` (ADR-0090); a bookmark whose folder vanished simply lands on
+the ordinary "missing" state card.
+
+The main pane lists the current folder's children under a clickable sort
+header (Name, Size, Kind, Modified). Clicking the active column reverses its
+direction; directories sort first by default. Hidden entries (dot names) are
+filtered out of the published listing by default; `Ctrl+H` or the toolbar
+toggle shows them at their sorted positions, and the status notice reports
+the filtered count ("3 hidden"). List mode shows preformatted size, kind, and
+modified columns; grid mode shows the same entries as glyph tiles. Both modes
+share one selection contract.
 
 | Action identity | Shortcut | Meaning |
 | --- | --- | --- |
@@ -53,24 +78,32 @@ shown instead of silently hiding the remainder.
 | `navigateForwardButton` | `Alt+Right` | Return to the folder undone by Back |
 | `navigateUpButton` | `Alt+Up`, `Backspace` (when the list has focus) | Go to the parent folder |
 | `refreshButton` | `F5`, `Ctrl+R` | Re-read the current folder |
-| `entryListView` | `Return`/`Enter` | Open the selected entry |
+| `view.focus-location` | `Ctrl+L` | Swap the breadcrumb for the editable location field |
+| `view.show-hidden` | `Ctrl+H` | Show or hide dot-name entries (checkable) |
+| `view.grid-mode` | `Ctrl+2` | Switch between list and grid presentation (checkable) |
+| `edit.select-all` | `Ctrl+A` | Select every visible entry |
+| `go.home` | `Alt+Home` | Open the home folder |
+| `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
+| `entryListView` / `entryGridView` | `Return`/`Enter` | Open the selected entry |
+
+Selection supports Ctrl-click toggle, Shift-click and Shift+arrow ranges, and
+`Ctrl+A`; the presentation-only set lives in `ui/EntrySelection.qml` and is
+pruned to the published listing whenever it changes, so a stale index can
+never dispatch a mutation against the wrong entry. Whenever the listing is
+rebuilt, the primary selection restores the previously selected entry by name
+when that name still exists, and otherwise falls to the first entry (or
+nothing, if empty). `NavigationController::indexOfName()` remains the pure,
+testable seam presentation uses for that restoration.
 
 Opening a directory entry navigates into it. Opening a file entry requests a
 bounded local launch (see below); the list selection and current folder never
 change just because a launch failed. A folder that cannot be listed (missing,
 not a folder, permission denied, or an unclassified read failure) or that
 lists cleanly but has no children presents one accessible
-`QindaQt.Controls` `StateCard` instead of an empty or frozen-looking list, so
-every non-Ready state is visibly distinct and never silently indistinguishable
-from "still loading."
-
-Selection is deterministic: whenever the current listing is rebuilt, the list
-restores the previously selected entry by name when that name still exists in
-the new listing, and otherwise selects the first entry (or nothing, if empty).
-A navigation into a different folder therefore usually lands on the first
-entry because the old selection's name rarely exists there, while a refresh
-of the same folder keeps the user's place. `NavigationController::indexOfName()`
-is the pure, testable seam presentation uses for that restoration.
+`QindaQt.Controls` `StateCard` instead of an empty or frozen-looking list. A
+ready folder whose entries are all hidden stays in the Ready state with an
+empty list and the "N hidden" notice rather than claiming the folder is
+empty.
 
 ## S1 local mutation and recovery
 
@@ -85,21 +118,27 @@ controller.
 | `file.rename` | `F2` | Rename the selected item without changing its parent |
 | `file.copy` | `Ctrl+Shift+C` | Copy the selected file or tree to an absolute local path |
 | `file.move` | `Ctrl+Shift+M` | Move the selected item to an absolute path on the same filesystem |
-| `file.trash` | `Delete` | Confirm and move the selected item to recoverable home Trash |
+| `file.trash` | `Delete` | Confirm and move the selected item(s) to recoverable home Trash |
 | `file.restore-last` | `Ctrl+Shift+R` | Restore the most recently trashed item to its recorded path |
 | `file.empty-trash` | `Ctrl+Shift+Delete` | Confirm and permanently empty home Trash |
 | `edit.undo` | platform Undo | Undo the last recoverable create, rename, or move |
 | `operation.cancel` | `Ctrl+Escape` | Request cancellation of the running operation |
 
-The toolbar's `newFolderButton`, list's `entryListView`, dialogs, and bounded
-progress/failure/result cards have stable object names for the offscreen UI
-contract. Dialog fields and context actions expose accessible text. The list
-supports the Menu key and `Shift+F10`, so mutation does not depend on a
-pointer-only context menu.
+With multiple entries selected, copy and move ask for a destination **folder**
+and trash confirms the count, then run as one serialized batch:
+`MutationController::copyItemsTo`/`moveItemsTo`/`trashItems` validate every
+item's path plus listing-time identity up front, then execute the existing
+single-item, identity-checked backend contract per selection entry in order
+inside the one busy slot. The first typed failure stops the batch and reports
+"Completed N of M items" with the failing name; cancellation between items
+skips the remainder. Batch operations intentionally carry no undo request and
+no Trash restore token: a completed batch clears any pending one-level undo,
+and `restore-last` keeps referring to the most recent single-item trash. This
+mirrors the deliberate S1 choice that copy has no undo.
 
 `MutationController` is GUI-thread confined and owns one injected
-`MutationBackend`, one worker thread, and at most one in-flight operation. It
-publishes bounded progress and terminal state. Cancellation is cooperative;
+`MutationBackend`, one worker thread, and at most one in-flight operation.
+It publishes bounded progress and terminal state. Cancellation is cooperative;
 controller destruction sets the token and joins the worker before releasing
 the backend. Only successful create, rename, and move results replace the
 one-level undo request. Trash instead retains one opaque identity-bearing
@@ -147,9 +186,9 @@ reserved for two successfully resolved, unequal device identities.
 
 The backend compares source and home-Trash device identities before rename.
 If they differ, `cross-device` is returned and the source remains untouched.
-S1 intentionally does not infer mount roots or create `.Trash`/`.Trash-$uid`
-directories. Empty Trash removes entries below `files/` and `info/` without
-following links and retains those two directories.
+Per-volume Trash remains deferred to the volumes slice. Empty Trash removes
+entries below `files/` and `info/` without following links and retains those
+two directories.
 
 ## Bounded local file launch
 
@@ -169,6 +208,9 @@ rationale and boundary.
 
 - `DirectoryEntry`/`ListingResult`/`LaunchResult` (`model/file_manager_types.h`,
   `model/launch_intent.h`) are plain values. They perform no I/O.
+- `ListingOrder` (`model/listing_order.h`) is the pure sort policy shared by
+  the controller and the QML header row. Its default value reproduces the
+  original directories-first, case-insensitive-name order exactly.
 - `NavigationHistory` (`model/navigation_history.h`) owns only back/forward/
   current-path bookkeeping plus pure lexical parent and breadcrumb-segment
   computation. It performs no I/O and displays no UI, mirroring the Text
@@ -187,28 +229,40 @@ rationale and boundary.
   test.
 - `NavigationController` (`model/navigation_controller.h`) is a GUI-thread
   `QObject` that owns one injected `DirectoryLister` and one injected
-  `FileLauncher` for its whole lifetime. It publishes complete navigation/
-  listing/launch-error state through Qt properties and never shows a dialog,
-  chooses a selection, or retries on its own.
+  `FileLauncher` for its whole lifetime. It keeps the raw listing and
+  re-derives the visible (hidden-filtered, sorted) snapshot when
+  presentation settings change, without re-reading the directory. It
+  publishes complete navigation/listing/launch-error state through Qt
+  properties and never shows a dialog, chooses a selection, or retries on
+  its own. Entry snapshots carry preformatted `sizeText`/`kindText`/
+  `modifiedText` so QML delegates stay presentation-only.
+- `BookmarksStore` (`model/bookmarks_store.h`) owns the versioned, bounded,
+  symlink-refusing bookmark file beneath `$XDG_STATE_HOME` with atomic
+  same-directory replacement (ADR-0090). `PlacesController` owns the fixed
+  places list, bookmark add/remove/dedup/cap policy, and typed store-error
+  publication; it never navigates or lists directories.
 - `MutationBackend` (`mutation/mutation_backend.h`) is the synchronous,
   worker-thread operation seam. `LocalMutationBackend` owns create, rename,
   copy, and move policy; `HomeTrash` owns only Trash/restore/empty behavior;
   `DeviceResolver` isolates device identity for deterministic cross-device
   refusal tests.
 - `MutationController` owns backend lifetime, worker scheduling, progress,
-  cancellation, typed presentation state, and one-level recovery. It never
-  lists folders, shows dialogs, or acquires shell/service authority.
-- `fileManagerActionCatalog()` contributes the closed mutation action set to
-  AppShell. `ApplicationCoordinator` transports activation and close requests
-  but never examines a path or decides whether an operation is recoverable.
+  cancellation, typed presentation state, serialized batch execution, and
+  one-level recovery. It never lists folders, shows dialogs, or acquires
+  shell/service authority.
+- `fileManagerActionCatalog()` contributes the closed mutation, view, edit,
+  and navigation action set to AppShell. `ApplicationCoordinator` transports
+  activation and close requests but never examines a path or decides whether
+  an operation is recoverable.
 - `composeFileManagerMenuExport()` is the application composition boundary. It
   lends the primary window, coordinator, and session-bus connection to the
   opt-in AppShell exporter; it contains no filesystem or shell authority.
-- QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`EntryList`/`StatePane`
+- QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`LocationBar`/
+  `PlacesSidebar`/`EntrySelection`/`EntryList`/`EntryGrid`/`StatePane`
   collaborators) owns only presentation: layout, keyboard routing to the
   controller's invokable methods, accessible names/roles, and the
-  presentation-owned `ListView` selection index. It never lists a directory or
-  launches a file itself.
+  presentation-owned selection. It never lists a directory or launches a file
+  itself.
 
 All expected errors cross the lister/launcher/mutation boundaries as typed
 values plus bounded human-readable diagnostics. There is no D-Bus authority,
@@ -217,10 +271,10 @@ channel. The one mutation worker and its backend are private implementation
 details with constructor-visible ownership. The optional menu transport is a
 borrowed AppShell adapter, not File Manager domain authority.
 
-The `model/**` C++ headers and build target are private implementation
-surfaces and are not installed or ABI-stable. The executable name, desktop ID,
-folder-launch-argument contract, and documented action object names/shortcuts
-form the compatibility surface.
+The `model/**` and `mutation/**` C++ headers and build target are private
+implementation surfaces and are not installed or ABI-stable. The executable
+name, desktop ID, folder-launch-argument contract, and documented action
+object names/shortcuts form the compatibility surface.
 
 ## QST-1 theme and accessibility boundary
 
@@ -239,12 +293,13 @@ depends on. `--check-theme` resolves the selected theme, prints its
 identifier and QST revision, and exits before constructing a window, matching
 the Text Editor's packaging-proof diagnostic.
 
-The folder list, breadcrumb buttons, toolbar buttons, and every state card
-expose accessible names/roles/descriptions through `Accessible.role`/`.name`
-on each QML item and through `QindaQt.Controls`' own accessible contracts
-(`Button`, `Label`, `StateCard`). List entries additionally state whether they
-are a folder or a file in their accessible name so a screen reader user does
-not have to rely on icon shape or color alone.
+The folder list and grid, sort headers, breadcrumb buttons, location field,
+places and bookmark rows, toolbar buttons, and every state card expose
+accessible names/roles/descriptions through `Accessible.role`/`.name` on each
+QML item and through `QindaQt.Controls`' own accessible contracts (`Button`,
+`Label`, `StateCard`). List entries additionally state whether they are a
+folder or a file in their accessible name so a screen reader user does not
+have to rely on icon shape or color alone.
 
 ## Desktop integration and verification
 
@@ -267,9 +322,12 @@ hidden/symlink/permission-denied/missing/not-a-directory/empty listing
 behavior, `DesktopFileLauncher`'s missing/directory/dangling-symlink/
 unreadable pre-flight rejections and canonical-target resolution,
 `NavigationController`'s dispatch/history/status-mapping/selection-restoration
-contract against injected fakes, desktop metadata, and CLI arity/argument
-validation. The package row stages only the `FileManager` component in a clean
-disposable prefix. That component intentionally carries its required Tokens
+contract against injected fakes plus its S2 sorting, hidden-filter, formatted
+field, and view-mode behavior, the pure `ListingOrder` policy across every
+column and direction, the `BookmarksStore` round-trip/bounds/symlink-poison
+contract and `PlacesController` policy, desktop metadata, and CLI arity/
+argument validation. The package row stages only the `FileManager` component
+in a clean disposable prefix. That component intentionally carries its required Tokens
 and Controls backing libraries, plugins, metadata, and Controls QML sources.
 With ambient QML and library paths cleared, the gate rejects an executable
 that embeds the build QML directory, validates every built-in theme through
@@ -282,7 +340,15 @@ startup boundary waits at most five seconds and reports either the QML error or
 an explicit timeout before it attempts singleton publication.
 
 S1 adds mutation, Trash, controller, action-catalog, UI-contract, UI-action, and
-boundary-policy rows. The first-party export slice adds a private-bus row that
+boundary-policy rows. S2 extends them: the UI-contract row also requires the
+sort headers, location field, view/hidden toggles, grid view, and sidebar
+object names; the UI-actions row drives the hidden-toggle round trip, a
+header-clicked size sort with direction toggle, and a multi-item batch Trash
+through the production action seam against disposable fixture seeds. The batch
+unit rows prove sequential ordering, per-item identity recheck,
+stop-on-first-failure with the "Completed N of M" diagnostic, stale-selection
+rejection before any dispatch, mid-batch cancellation, and that a completed
+batch arms neither undo nor the restore token. The first-party export slice adds a private-bus row that
 runs the real File Manager against the production shell global-menu
 composition, injects its exact child PID and window id, activates New Folder
 once, and proves owner exit clears the shell menu. Separate real-process
@@ -292,29 +358,47 @@ overlong rejection, permissions, collision, before/during-operation vanishing,
 identity change, nested and root symlink poison, cancellation cleanup, Trash
 round trips, an in-flight nested-directory swap, unique names, restore
 collision, orphan-payload allocation, vanished restore parents, empty Trash,
-an injected cross-device refusal, and a racing destination writer. One
-offscreen row constructs the production QML root; a second drives the real
-AppShell actions through production dialogs for rename, copy, move, Trash, and
-restore against a disposable tree. Both run under `QT_FATAL_WARNINGS=1` with
+an injected cross-device refusal, and a racing destination writer.
+Both offscreen rows run under `QT_FATAL_WARNINGS=1` with
 host display and session-bus variables removed. The
 boundary checker rejects dependencies on shell/services, D-Bus, KWin,
 LayerShell, desktop launch, or QML from the mutation module and proves itself
 against planted poison. All Trash roots live below disposable fixture/build
-directories; no row reads or mutates the user's home Trash.
+directories; no row reads or mutates the user's home Trash. Bookmark store
+rows likewise live below `QTemporaryDir` roots and never touch the real
+`$XDG_STATE_HOME` inventory.
 
-## Bounded S1 deferrals
+## Roadmap
 
-- There is no editable address bar; the breadcrumb's clickable segments are
-  S0's complete direct-path-entry surface. A typed/pasted path field is a
-  later presentation slice.
-- There is no multi-select, drag-and-drop, file-size/date column formatting,
-  icon-theme integration, hidden-file toggle, or general editable address bar.
+- **S2 (this slice, landed)** — editable location bar, multi-select with
+  serialized batch mutation, configurable sorting with size/kind/modified
+  columns, hidden-file toggle, list/grid view switch, places/bookmarks
+  sidebar with app-local persistence (ADR-0090).
+- **S3** — power features: drag-and-drop, in-app search, thumbnails and a
+  preview pane, a properties dialog, an open-with chooser (requires widening
+  ADR-0029's launch contract through a new ADR), optional permanent deletion,
+  and XDG icon-theme/MIME-aware icons behind an app-consumable icon seam
+  (today's icon module is shell-owned per ADR-0072).
+- **S4** — volumes: mount enumeration and per-volume Trash (supersedes the
+  ADR-0064 deferral with its own ADR; coordinate polkit/udisks boundaries
+  through the Program Manager thread first).
+- **S5** — network locations (SMB/SFTP-style browsing) behind a new injected
+  backend seam and ADR; the lister contract currently forbids network and
+  portal locations.
+
+## Bounded deferrals
+
+- Sort column/direction, hidden visibility, and list/grid mode are
+  session-local; persisting them is a Settings1 schema decision deferred per
+  ADR-0090.
+- Batch operations are not covered by undo or Restore Last (one-level,
+  single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  search, previews/thumbnails, portal-mediated paths, and network locations
-  remain explicit later outcomes.
+  search, previews/thumbnails, portal-mediated paths, drag-and-drop,
+  open-with, and network locations remain explicit later outcomes (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
-  recovery journal. Copy has no undo; users can trash its destination in a
-  separate confirmed action.
+  recovery journal. Single-item copy has no undo; users can trash its
+  destination in a separate confirmed action.
 - The offscreen UI rows prove construction, stable action/object identity,
   fatal-warning cleanliness, and the fixture-local identity-carrying mutation
   path. Nested screenshots and whole-application
