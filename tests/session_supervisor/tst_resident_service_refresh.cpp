@@ -120,8 +120,8 @@ private Q_SLOTS:
         const QStringList units = QindaQt::SessionSupervisor::residentServiceRefreshUnits();
         QCOMPARE(units, QStringList({QStringLiteral("qindaqt-clipboard-host.service"),
                                      QStringLiteral("qindaqt-display-service.service"),
-                                     QStringLiteral("xdg-desktop-portal.service"),
-                                     QStringLiteral("plasma-xdg-desktop-portal-kde.service")}));
+                                     QStringLiteral("plasma-xdg-desktop-portal-kde.service"),
+                                     QStringLiteral("xdg-desktop-portal.service")}));
     }
 };
 QTEST_GUILESS_MAIN(ResidentServiceRefreshTests)

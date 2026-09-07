@@ -532,20 +532,24 @@ limited variable set without touching the host manager.
 
 Republishing the environment only changes what *future* activations receive.
 A systemd user service that is already resident from a prior desktop and
-either opens its own direct Wayland connection — today
-`qindaqt-clipboard-host` and `qindaqt-display-service` — or independently
-caches desktop-scoped environment or routing state at its own startup —
-today the `xdg-desktop-portal` frontend and the `plasma-xdg-desktop-portal-kde`
-backend it routes to — keeps that stale connection or routing until the
-process itself restarts. Immediately after publishing the environment and
-before any desktop consumer starts, the supervisor therefore calls
-`refreshResidentServices` with the fixed, reviewed unit list from
-`residentServiceRefreshUnits()`, restarting each one through systemd's
-`RestartUnit`. This starts a unit that has not yet run in this session and
-restarts one that already holds a stale socket or cached routing, without a
-full logout and without touching any other resident service or its
-preferences. Each restart is bounded and best-effort; a missing unit or
-transport failure is logged and does not stop the session. See
+either opens its own direct Wayland connection or is itself a Wayland
+client — today `qindaqt-clipboard-host`, `qindaqt-display-service`, and the
+`plasma-xdg-desktop-portal-kde` backend (also a screencast/remote-desktop
+consumer) — or independently caches desktop-scoped environment or routing
+state at its own startup — today the `xdg-desktop-portal` frontend, which
+selects and caches which backend it routes to — keeps that stale connection
+or routing until the process itself restarts. Immediately after publishing
+the environment and before any desktop consumer starts, the supervisor
+therefore calls `refreshResidentServices` with the fixed, reviewed unit list
+from `residentServiceRefreshUnits()`, in order (the portal backend before the
+frontend that routes to it), requesting a restart of each one through
+systemd's `RestartUnit`, which enqueues a job and does not itself wait for
+the restart to finish. This starts a unit that has not yet run in this
+session and restarts one that already holds a stale socket or cached
+routing, without a full logout and without touching any other resident
+service or its preferences. Each D-Bus call is bounded and best-effort; a
+missing unit or transport failure is logged and does not stop the session.
+See
 [ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md). The
 private-bus `qindaqt.session-resident-service-refresh` gate covers both the
 mechanism (against a fake user manager, including one unit failing to restart

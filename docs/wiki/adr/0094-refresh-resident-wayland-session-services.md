@@ -31,20 +31,24 @@ D-Bus-only activatable services (Settings1, Network1, Power1, Bluetooth1) are
 unaffected: systemd starts them fresh, with the just-published environment,
 the first time this session's shell talks to them.
 
-A live physical-session recovery on 2026-09-06 found a second, related cause
-that is not a direct Wayland connection: the `xdg-desktop-portal` frontend
-process (PID 1966668, started 19:33 under a prior KDE desktop) stayed resident
-across a later QindaQt login (`qindaqt-0`, 20:17) and kept `WAYLAND_DISPLAY`
-and `XDG_CURRENT_DESKTOP=KDE` from that prior desktop. `xdg-desktop-portal`
-selects and caches its backend once, at its own startup, from
-`XDG_CURRENT_DESKTOP`; it does not re-select per call. Its routed-to backend,
+A live physical-session recovery on 2026-09-06 found a second, related cause:
+the `xdg-desktop-portal` frontend process (PID 1966668, started 19:33 under a
+prior KDE desktop) stayed resident across a later QindaQt login (`qindaqt-0`,
+20:17) and kept `WAYLAND_DISPLAY` and `XDG_CURRENT_DESKTOP=KDE` from that
+prior desktop. `xdg-desktop-portal` selects and caches which backend it
+routes to once, at its own startup, from `XDG_CURRENT_DESKTOP`; it does not
+re-select per call. Its routed-to backend,
 `plasma-xdg-desktop-portal-kde.service` ([ADR-0088](0088-enable-kde-remote-desktop-for-qindaqt.md)),
 also stayed resident and is exposed to the same stale environment through the
-KDE-only drop-in ADR-0088 installs. Neither process opens Wayland directly;
-both cache session identity/routing decisions at startup that `SetEnvironment`
-does not retroactively correct. Restarting the user session's two units (not a
-host logout) recovered correct routing. Other D-Bus-only activatable services
-have no such per-process startup cache and remain unaffected as above.
+KDE-only drop-in ADR-0088 installs; unlike the frontend, the KDE backend is
+not D-Bus-only — it is itself a Qt Wayland client and a screencast/
+remote-desktop consumer, so it independently holds a stale Wayland connection
+in the same way `qindaqt-clipboard-host` and `qindaqt-display-service` do.
+Both processes cache session identity/routing or connection state at startup
+that `SetEnvironment` does not retroactively correct. Restarting the user
+session's two portal units (not a host logout) recovered correct routing.
+Other D-Bus-only activatable services have no such per-process startup cache
+and remain unaffected as above.
 
 ## Decision
 
@@ -52,26 +56,32 @@ Immediately after `publishActivationEnvironment` and before any desktop
 consumer starts, `qindaqt-session` calls a new, separate
 `refreshResidentServices(bus, unitNames)` (in
 `src/session_supervisor/src/resident_service_refresh.{h,cpp}`) with a fixed,
-reviewed list of unit names returned by `residentServiceRefreshUnits()`:
-`qindaqt-clipboard-host.service`, `qindaqt-display-service.service`,
-`xdg-desktop-portal.service`, and `plasma-xdg-desktop-portal-kde.service`. The
-list is not limited to direct Wayland consumers; it also covers resident
-services that cache desktop-scoped environment or routing decisions at their
-own startup. It does not follow that every D-Bus service needs a restart here
-— only ones with such a startup-time cache do.
+reviewed list of unit names returned by `residentServiceRefreshUnits()`, in
+order: `qindaqt-clipboard-host.service`, `qindaqt-display-service.service`,
+`plasma-xdg-desktop-portal-kde.service`, and `xdg-desktop-portal.service` —
+the portal backend before the frontend that routes to it, so a restarted
+frontend re-selects against an already-refreshed backend. The list is not
+limited to direct Wayland consumers; it also covers resident services that
+cache desktop-scoped environment or routing decisions at their own startup.
+It does not follow that every D-Bus service needs a restart here — only ones
+with such a startup-time cache, or their own Wayland connection, do.
 
-For each named unit it calls `org.freedesktop.systemd1.Manager.RestartUnit(name,
-"replace")` on the same session bus, bounded by a two-second call timeout. This
-both restarts a unit that is already resident from a prior desktop and starts
-one that has not yet been activated in this session; no separate
-active-state query is needed. A restarted resident Wayland consumer
+For each named unit, in order, it calls
+`org.freedesktop.systemd1.Manager.RestartUnit(name, "replace")` on the same
+session bus, with the D-Bus call itself bounded by a two-second timeout.
+`RestartUnit` enqueues a systemd job and replies with a job object path; it
+does not wait for the unit to finish restarting. It both requests a restart
+for a unit that is already resident from a prior desktop and starts one that
+has not yet been activated in this session; no separate active-state query is
+needed. Once its restart job completes, a resident Wayland consumer
 reconnects with `wl_display_connect` under the environment `SetEnvironment`
 just applied; a restarted portal frontend or backend re-selects its routing
 from the same freshly applied `XDG_CURRENT_DESKTOP`.
 
 The list is closed and explicit. A service is added only when its own module
-independently opens Wayland, or independently caches desktop-scoped
-environment or routing state at its own startup; ownership and review stay
+independently opens Wayland or is itself a Wayland client, or independently
+caches desktop-scoped environment or routing state at its own startup;
+ownership and review stay
 with that module's ADR. No unit outside this fixed list is touched, so
 unrelated resident services (Settings1, Network1, Power1, Bluetooth1) and
 their persisted preferences are left running exactly as they were. A missing

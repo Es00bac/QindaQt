@@ -13,8 +13,8 @@ QStringList residentServiceRefreshUnits()
     return {
         QStringLiteral("qindaqt-clipboard-host.service"),
         QStringLiteral("qindaqt-display-service.service"),
-        QStringLiteral("xdg-desktop-portal.service"),
         QStringLiteral("plasma-xdg-desktop-portal-kde.service"),
+        QStringLiteral("xdg-desktop-portal.service"),
     };
 }
 
