@@ -76,6 +76,18 @@ set_tests_properties(qindaqt.session-desktop-controls-settings1-idle-preferences
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "session;session-desktop-controls;model")
 
+qt_add_executable(qindaqt_powerdevil_idle_preferences_binding_tests
+    tst_powerdevil_idle_preferences_binding.cpp)
+target_link_libraries(qindaqt_powerdevil_idle_preferences_binding_tests
+    PRIVATE qindaqt_desktop_controls QindaQt::PowerDevilIdle Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_powerdevil_idle_preferences_binding_tests)
+add_test(NAME qindaqt.session-desktop-controls-powerdevil-binding
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_powerdevil_idle_preferences_binding_tests>)
+set_tests_properties(qindaqt.session-desktop-controls-powerdevil-binding PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    TIMEOUT 45
+    LABELS "session;session-desktop-controls;dbus;power")
+
 qt_add_executable(qindaqt_freedesktop_feedback_notifier_tests
     tst_freedesktop_feedback_notifier.cpp)
 target_link_libraries(qindaqt_freedesktop_feedback_notifier_tests
