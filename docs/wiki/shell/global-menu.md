@@ -329,7 +329,10 @@ close retains the association, and composition/window destruction always
 withdraws it. Publication alone does not prove that the shell renders the
 menu. The QindaQt registrar therefore adds a bounded
 `IsMenuHosted(service, path)` query and
-`MenuHostedChanged(service, path, hosted)` notification. The shell acknowledges
+`MenuHostedChanged(service, path, hosted)` notification. Here `service` is the
+menu exporter's **unique D-Bus connection name** (for example `:1.42`), not its
+well-known service name and not a separate observer connection's name. Consumers
+use that same unique name in queries and signal matching. The shell acknowledges
 an endpoint only after a live panel renderer exists and the exact active
 provider has passed focus/PID authentication, dbusmenu decoding, and canonical
 export. First-party applications hide their in-window menu only after that
