@@ -741,10 +741,10 @@ private-D-Bus test runs the Qt client against successive host owners and verifie
 resynchronization and action activation-token forwarding.
 `qindaqt.session-supervisor` proves the secret is absent from child arguments,
 both descriptor consumers start, the notification-host PID remains stable
-across exactly one shell PID replacement, the replacement uses the same
-non-secret compositor argument contract, a second shell exit tears down the
-host, replacement-start failure fails closed, and initial second-child startup
-failure rolls back the first. On a private session bus it additionally proves
+across repeated shell PID replacements, and replacements use the same
+non-secret compositor argument contract. It also proves failed replacement
+launches retain the host, stable operation resets retry pacing, stop cancels a
+pending retry, and initial second-child startup failure rolls back the first. On a private session bus it additionally proves
 unrelated-PID rejection, live shell-PID admission, Session1 logout reply and
 shell/host/optional-agent stop order, and the exact XML surface. A disposable
 non-secret helper proves the optional network secret agent never blocks

@@ -7,6 +7,7 @@
 #include <QProcess>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 #include <QtTypes>
 
 #include <optional>
@@ -34,12 +35,13 @@ struct SessionProcessOptions final {
 
 // Owns the essential notification host and shell plus optional installed
 // network-secret-agent and first-launch Welcome children. The host is
-// session-resident; one unexpected shell exit consumes its bounded recovery
-// budget and starts a replacement with a fresh token descriptor. The optional
-// agent has an independent one-restart budget and never participates in
-// readiness. Welcome starts once after the shell, never restarts, and cannot
-// end the session. Host exit, replacement failure, or a second shell exit ends
-// the compositor session.
+// session-resident; an unexpected shell exit schedules a paced replacement
+// with a fresh token descriptor while the host remains healthy. Retry delay is
+// bounded and resets after a stable shell run. The optional agent has an
+// independent one-restart budget and never participates in readiness. Welcome
+// starts once after the shell, never restarts, and cannot end the session.
+// Host exit, explicit stop, and supervisor/compositor death still end the
+// complete session; repeated shell failures alone do not.
 class SessionProcessSupervisor final : public QObject {
     Q_OBJECT
 
@@ -79,11 +81,16 @@ private:
     [[nodiscard]] QString resolveExecutable(const QString &configured) const;
     [[nodiscard]] bool startShell(QString *error,
                                   qint64 predecessorProcessId = 0);
+    void scheduleShellRestart(qint64 predecessorProcessId,
+                               const QString &reason);
+    void attemptShellRestart();
+    void resetShellRestartBackoff();
     void startNetworkSecretAgent();
     void startWelcome();
     void networkSecretAgentEnded();
     void childFinished(ChildRole role, int exitCode,
                        QProcess::ExitStatus exitStatus);
+    void shellProcessError(QProcess::ProcessError error);
     void finishSession(ChildRole role, int exitCode,
                        QProcess::ExitStatus exitStatus,
                        const QString &detail = {});
@@ -101,6 +108,11 @@ private:
     qint64 m_networkSecretAgentProcessId = 0;
     qint64 m_networkSecretAgentPreviousProcessId = 0;
     int m_shellRestartCount = 0;
+    int m_shellRestartDelayMilliseconds = 0;
+    qint64 m_shellPredecessorProcessId = 0;
+    bool m_shellRestartAttemptInProgress = false;
+    QTimer m_shellRestartTimer;
+    QTimer m_shellStableTimer;
     int m_networkSecretAgentRestartCount = 0;
     bool m_running = false;
     bool m_stopping = false;

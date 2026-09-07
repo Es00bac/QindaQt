@@ -857,8 +857,9 @@ session wiring and installed Save/Reopen qualification remain in progress.
 
 Session crash recovery is also open: the September 7 shell render-thread crash
 ended the compositor session after the old one-restart budget was exhausted.
-Replace that destructive recovery policy with paced retries that preserve open
-applications; diagnose and verify the rendering fix separately.
+The reviewed paced-retry replacement (`cd951c65`) is integrated and its three
+process/activation/refresh gates pass. Install and verify it in the desktop;
+diagnose and verify the rendering mitigation separately.
 
 ### Dock hover behavior (user addition, 2026-09-07)
 

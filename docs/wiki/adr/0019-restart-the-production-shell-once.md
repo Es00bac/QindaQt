@@ -4,7 +4,10 @@
 - **Date:** 2026-08-27
 - **Owners:** Session and notification presentation
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0103](0103-paced-shell-recovery.md)
+
+This historical decision is superseded by ADR-0103, which replaces the fixed
+one-restart budget with paced, bounded-delay shell recovery.
 
 ## Context
 

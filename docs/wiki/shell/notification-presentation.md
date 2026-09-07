@@ -35,13 +35,13 @@ valid inherited descriptor. A standalone shell or host does not silently open
 the private presentation path. The shell links the public client and model; it
 never links the notification-service implementation.
 
-One unexpected shell exit leaves the notification host resident and consumes
-the supervisor's complete one-restart budget. The host releases the dead
-presenter's unique-name binding; the replacement independently authenticates,
-loads Settings1 state, registers GlobalAccel, and re-establishes exact-PID lock
-privacy. Failure to start it or a later shell exit ends the session. This
-bounded policy is specified by
-[ADR-0019](../adr/0019-restart-the-production-shell-once.md).
+After successful session startup, shell exits leave the notification host
+resident. Replacements are paced from one second up to a 30-second delay;
+30 seconds of stable operation resets that delay. The host releases the dead
+presenter's binding, and every replacement authenticates and reloads settings
+normally. Repeated shell crashes or replacement-launch failures preserve the
+session. Explicit stop and notification-host failure still end it. See
+[ADR-0103](../adr/0103-paced-shell-recovery.md).
 
 Live qualification adds no production automation API. In an explicitly marked
 private nested session, the shell may publish the read-only

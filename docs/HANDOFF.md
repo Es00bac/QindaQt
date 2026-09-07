@@ -29,6 +29,16 @@ installed desktop, container management and everyday controls work there, and
 the pinned release is reproducible. No logout restoration or refreshed runtime
 installation is claimed by this foundation integration.
 
+## Shell recovery integration
+
+Reviewed candidate `cd951c65` replaces the destructive one-restart shell limit
+with paced retries capped at 30 seconds. The notification host and applications
+remain resident across repeated shell failures; initial startup failure,
+explicit stop, host exit, and compositor death retain their terminal behavior.
+The integrated process/activation/refresh gates pass 3/3, including the full
+70-second supervisor test. Installation and rendering mitigation qualification
+remain pending; this is not a claim that the render-memory fault is repaired.
+
 ## Interactive Terminal fixed; Gentoo package installed
 
 This supersedes the earlier Terminal installation claim below. The earlier

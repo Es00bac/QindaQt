@@ -183,13 +183,14 @@ supervisor generates one token in memory, sends independent copies to the host
 and first shell over bounded inherited pipes, arms a race-closed parent-death
 witness, captures its direct KWin parent PID, and gives both children their own
 supervisor-death witnesses. If the first shell exits, the host and its active
-model remain resident while the supervisor starts exactly one replacement with
-a fresh one-shot descriptor containing the retained token and the same KWin
-PID. The host releases the former presenter's unique-name binding, so the
-replacement must authenticate normally. Restart failure or another shell exit
-ends the session; notification-host restart remains intentionally
-unimplemented. See
-[ADR-0019](../adr/0019-restart-the-production-shell-once.md).
+model remain resident while the supervisor schedules replacements with fresh
+one-shot descriptors containing the retained token and the same KWin PID.
+Retries use paced exponential backoff from one second to a 30-second cap and
+reset after a 30-second stable shell run. The host releases the former
+presenter's unique-name binding, so every replacement must authenticate
+normally. Failed launches and repeated shell exits do not end the session;
+notification-host exit, explicit stop, and supervisor or KWin death still do.
+See [ADR-0103](../adr/0103-paced-shell-recovery.md).
 
 Only the descriptor number and non-secret PID appear in shell arguments; the
 token never enters argv, environment, a persistent file, a signal, or
@@ -236,8 +237,9 @@ transport against two successive resident hosts and proves targeted updates,
 action-token forwarding, loss, new-owner authentication, and new epoch
 acceptance. Descriptor and supervisor tests prove bounded one-shot reads,
 secret-free arguments, two-child startup, resident-host PID continuity across
-one shell PID replacement, fresh-launch failure teardown, exhausted-budget
-shutdown, coupled parent death, and second-child startup rollback without
+repeated shell PID replacements, failed-launch retry survival, stable-run
+backoff reset, stop-during-delay cancellation, coupled parent death, and
+second-child startup rollback without
 opening a display.
 
 Presentation-model tests cover baseline-without-replay, new and replacement
@@ -268,7 +270,7 @@ registered `shell.notification-live.*` matrix stages the installed production
 stack on a private bus and nested virtual compositor. It proves exact
 KGlobalAccel dispatch/remapping, compositor-owned notification
 roles/output/geometry, center activation, full forward/reverse keyboard focus,
-Settings1 failure/restart behavior, the resident-host/single-shell-restart
+Settings1 failure/restart behavior, the resident-host/paced-shell-recovery
 contract, and actual nested KScreenLocker privacy without touching the host
 desktop. Its development-only read-only observability is specified by
 [ADR-0020](../adr/0020-authenticate-private-live-evidence.md).
@@ -277,7 +279,7 @@ The following are not yet implemented:
 
 - complete accessibility-tree and screen-reader behavior;
 - popup-safe icon/image loading and activation-token acquisition;
-- post-start notification-host restart policy beyond fail-closed session exit;
+- post-start notification-host restart policy;
 - sound, persistent disk history, Do Not Disturb scheduling/inhibition, and
   physical desktop interaction qualification;
 - physical-seat/real-desktop lock transition, multi-seat/session-switching,
