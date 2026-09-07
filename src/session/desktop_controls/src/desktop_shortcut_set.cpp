@@ -51,7 +51,8 @@ std::function<void()> triggerFor(const DesktopShortcutTriggers &triggers,
 
 DesktopShortcutSet::DesktopShortcutSet(ShortcutRegistrar &registrar,
                                        DesktopShortcutTriggers triggers,
-                                       QObject *parent)
+                                       QObject *parent,
+                                       const DesktopShortcutRegistrationOptions options)
     : QObject(parent)
 {
     const auto count = static_cast<std::size_t>(DesktopShortcutAction::Count);
@@ -68,6 +69,14 @@ DesktopShortcutSet::DesktopShortcutSet(ShortcutRegistrar &registrar,
                         callback();
                     }
                 });
+        if (!options.registerBrightness
+            && (action == DesktopShortcutAction::BrightnessUp
+                || action == DesktopShortcutAction::BrightnessDown)) {
+            // AGENT-GUARD: PowerDevil owns these keys and emits the public
+            // brightness feedback signal; registering a second KGlobalAccel
+            // action would make activation and OSD ownership ambiguous.
+            continue;
+        }
         const auto registration = registrar.registerShortcut(
             *actionObject, QKeySequence(spec.key), *this,
             [this, action](bool present) {

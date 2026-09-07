@@ -33,6 +33,25 @@ traffic, run a competing idle timer, or issue DPMS requests. When the service
 owner is absent, new preference writes fail closed and leave the configuration
 unchanged.
 
+## Brightness feedback compatibility
+
+PowerDevil 6.6.6 is also the sole owner of monitor-brightness media-key
+registration. QindaQt does not register duplicate `XF86MonBrightnessUp` or
+`XF86MonBrightnessDown` actions and does not write `/sys/class/backlight` from
+the resident desktop-controls process. Its
+`PowerDevilBrightnessFeedbackObserver` listens to the public
+`org.kde.ScreenBrightness.BrightnessChanged` signal, accepts only the pinned
+PowerDevil keyboard source `(internal)` with context `brightness_key`, reads
+the public per-display `MaxBrightness` property, and normalizes the reported
+value before forwarding it to the existing feedback notifier. Automatic dim,
+external clients, and uncontextualized changes are ignored so they do not
+produce duplicate key feedback.
+
+The source name and context filter are a PowerDevil 6.6.6 compatibility
+contract. An upgrade must recheck the installed PowerDevil source and public
+D-Bus XML, then rerun the private-bus key-vs-auto-dim, owner-loss, and range
+tests before changing the filter or claiming compatibility.
+
 ## Consequences
 
 - Portal and legacy ScreenSaver inhibition share PowerDevil's policy gate with
@@ -50,6 +69,7 @@ unchanged.
 ## Revisit when
 
 Revisit if PowerDevil changes the `powerdevilrc` profile keys or
-`refreshStatus` contract, publishes a newer stable idle-policy API, or QindaQt
+`refreshStatus` contract, changes the ScreenBrightness source/context or
+public range properties, publishes a newer stable idle-policy API, or QindaQt
 adopts a different single owner that demonstrably consumes both portal and
 legacy ScreenSaver inhibition.

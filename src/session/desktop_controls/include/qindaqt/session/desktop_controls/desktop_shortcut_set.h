@@ -31,6 +31,11 @@ struct DesktopShortcutTriggers final {
     std::function<void()> takeScreenshot;
 };
 
+struct DesktopShortcutRegistrationOptions final {
+    // PowerDevil owns the monitor-brightness keys in the resident process.
+    bool registerBrightness = true;
+};
+
 // One QAction per media key, registered through the injected registrar with
 // stable action ids so user remapping persists across sessions. The set owns
 // no policy: triggers are borrowed callbacks into the key controllers.
@@ -39,7 +44,8 @@ class DesktopShortcutSet final : public QObject {
 
 public:
     DesktopShortcutSet(ShortcutRegistrar &registrar,
-                       DesktopShortcutTriggers triggers, QObject *parent = nullptr);
+                       DesktopShortcutTriggers triggers, QObject *parent = nullptr,
+                       DesktopShortcutRegistrationOptions options = {});
     ~DesktopShortcutSet() override;
 
     DesktopShortcutSet(const DesktopShortcutSet &) = delete;
