@@ -68,3 +68,5 @@ Keep temporary logs, screenshots, and build artifacts under ignored build/cache
 roots. Include exact commit, command, exit status, test count, reproduction, and
 bounded caveats when reporting failures. See [repository catalog](catalog/repository.md)
 for tooling and [quality](quality.md) for acceptance. Return to [index](index.md).
+
+For installed bundled applications on Gentoo, use the [Portage package](../development/gentoo-apps.md). Raw build executables are not an installation artifact.
