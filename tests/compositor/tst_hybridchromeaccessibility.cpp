@@ -150,20 +150,26 @@ void HybridChromeAccessibilityTest::exposesNavigableRolesNamesAndCurrentState()
     QVERIFY(root);
     QCOMPARE(root->role(), QAccessible::Grouping);
     QVERIFY(root->text(QAccessible::Name).contains(QStringLiteral("Editor")));
-    QCOMPARE(root->childCount(), 6); // three traffic lights, two group controls, tabs
+    QCOMPARE(root->childCount(), 7); // three traffic lights, three group controls, tabs
 
     auto *titleControl = adapter.interfaceForNode(
         HybridChromeAccessibilityAdapter::controlNodeId(
             QStringLiteral("group"),
             HybridChrome::ContainerControl::ToggleMemberTitles));
+    auto *shadeControl = adapter.interfaceForNode(
+        HybridChromeAccessibilityAdapter::controlNodeId(
+            QStringLiteral("group"),
+            HybridChrome::ContainerControl::ToggleShade));
     auto *managementControl = adapter.interfaceForNode(
         HybridChromeAccessibilityAdapter::controlNodeId(
             QStringLiteral("group"),
             HybridChrome::ContainerControl::ManagementMenu));
-    QVERIFY(titleControl && managementControl);
+    QVERIFY(titleControl && shadeControl && managementControl);
     QCOMPARE(titleControl->role(), QAccessible::Button);
     QVERIFY(titleControl->text(QAccessible::Name).contains(QStringLiteral("Hide")));
     QCOMPARE(titleControl->text(QAccessible::Value), QStringLiteral("current"));
+    QCOMPARE(shadeControl->role(), QAccessible::Button);
+    QVERIFY(shadeControl->text(QAccessible::Name).contains(QStringLiteral("Roll up")));
     QVERIFY(managementControl->text(QAccessible::Name).contains(
         QStringLiteral("Manage")));
 
@@ -286,6 +292,16 @@ void HybridChromeAccessibilityTest::invokesTabsAndGroupControlsWithoutCoordinate
     QCOMPARE(requests.constLast().containerControl,
              std::optional(HybridChrome::ContainerControl::ToggleMemberTitles));
 
+    const auto shadeControlId = HybridChromeAccessibilityAdapter::controlNodeId(
+        QStringLiteral("group"), HybridChrome::ContainerControl::ToggleShade);
+    auto *shadeControl = adapter.interfaceForNode(shadeControlId);
+    QVERIFY(shadeControl);
+    shadeControl->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(requests.size(), 7);
+    QCOMPARE(requests.constLast().kind, HybridSemanticRequestKind::ContainerControl);
+    QCOMPARE(requests.constLast().containerControl,
+             std::optional(HybridChrome::ContainerControl::ToggleShade));
+
     const auto managementControlId = HybridChromeAccessibilityAdapter::controlNodeId(
         QStringLiteral("group"),
         HybridChrome::ContainerControl::ManagementMenu);
@@ -293,7 +309,7 @@ void HybridChromeAccessibilityTest::invokesTabsAndGroupControlsWithoutCoordinate
     QVERIFY(managementControl);
     managementControl->actionInterface()->doAction(
         QAccessibleActionInterface::pressAction());
-    QCOMPARE(requests.size(), 7);
+    QCOMPARE(requests.size(), 8);
     QCOMPARE(requests.constLast().containerControl,
              std::optional(HybridChrome::ContainerControl::ManagementMenu));
 }

@@ -27,6 +27,13 @@ T.ToolButton {
     property int dockTileSize: 60
     property bool reducedMotion: false
     readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
+    // A container's user-chosen accent color (see ContainerAppearance)
+    // recolors its dock/panel icon; empty for every standalone window and
+    // every container that never picked a color, in which case the icon
+    // keeps the ordinary enabled/disabled token color.
+    readonly property color resolvedIconColor: String(entry.colorHex ?? "").length > 0
+        ? entry.colorHex
+        : (enabled ? Tokens.fg.default : Tokens.fg.disabled)
 
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
@@ -90,7 +97,7 @@ T.ToolButton {
                 objectName: "taskListEntryIcon"
                 name: String(button.entry.iconName ?? "")
                 size: 18
-                color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
+                color: button.resolvedIconColor
                 symbolic: false
                 fallbackText: button.entry.applicationName
                 Accessible.ignored: true
@@ -141,7 +148,7 @@ T.ToolButton {
             anchors.verticalCenter: parent.verticalCenter
             name: String(button.entry.iconName ?? "")
             size: 40
-            color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            color: button.resolvedIconColor
             symbolic: false
             fallbackText: button.entry.applicationName
             scale: button.hovered && !button.reducedMotion ? 1.08 : 1.0

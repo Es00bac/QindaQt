@@ -156,6 +156,19 @@ std::optional<QPointF> emptyDesktopPoint(const WindowInventory &inventory,
     return std::nullopt;
 }
 
+QPointF sharedTitleCenter(const ObservedWindow &first, const ObservedWindow &second)
+{
+    // Mirrors hybridpointerraise.cpp's inferredGroupOuterFrame/sharedTitleRect:
+    // production contentInsets.top() = outerBorder + titleBarHeight = 1 + 28 =
+    // 29 (kwinhybridsession.cpp's sceneMetrics()); tabs share the outer title
+    // row rather than adding a second stacked row.
+    const auto outer = first.targetFrame.united(second.targetFrame)
+                            .adjusted(-1.0, -29.0, 1.0, 1.0);
+    const QRectF titleRect(outer.left() + 8.0, outer.top() + 4.0,
+                           outer.width() - 16.0, 26.0);
+    return titleRect.center();
+}
+
 SplitEvidence splitEvidence(const QRectF &first, const QRectF &second)
 {
     constexpr qreal tolerance = 1.0;

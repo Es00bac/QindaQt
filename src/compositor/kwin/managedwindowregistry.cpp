@@ -349,6 +349,11 @@ QJsonArray ManagedWindowRegistry::windowsJson() const
                                    rectJson(m_targetFrames.value(
                                        id, window->moveResizeGeometry()))},
                                   {QStringLiteral("minimized"), window->isMinimized()},
+                                  // Distinct from minimized: shade hides
+                                  // members via Window::isHidden(), never
+                                  // isMinimized() (see ADR-0099), so this is
+                                  // the only way to observe that state here.
+                                  {QStringLiteral("hidden"), window->isHidden()},
                                   {QStringLiteral("active"), window->isActive()},
                                   {QStringLiteral("skipTaskbar"), window->skipTaskbar()},
                                   {QStringLiteral("skipSwitcher"), window->skipSwitcher()},

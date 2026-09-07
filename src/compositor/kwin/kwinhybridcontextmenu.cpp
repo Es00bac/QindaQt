@@ -17,6 +17,9 @@
 #include <window.h>
 #include <workspace.h>
 
+#include <QInputDialog>
+#include <QLineEdit>
+
 #include <algorithm>
 #include <utility>
 
@@ -58,6 +61,9 @@ std::optional<GroupContextMenuState> contextState(
     GroupContextMenuState state{
         .activeMemberId = {},
         .canMinimize = window.isMinimizable(),
+        .shaded = false,
+        .containerName = {},
+        .containerColors = {},
         .keepAbove = window.keepAbove(),
         .keepBelow = window.keepBelow(),
         .pinnedToAllWorkspaces = window.isOnAllDesktops(),
@@ -116,6 +122,9 @@ bool applyContextCommand(
     case GroupContextMenuCommandKind::DetachActiveWindow:
     case GroupContextMenuCommandKind::Ungroup:
     case GroupContextMenuCommandKind::MinimizeGroup:
+    case GroupContextMenuCommandKind::ToggleShadeGroup:
+    case GroupContextMenuCommandKind::RenameContainer:
+    case GroupContextMenuCommandKind::SetContainerColor:
         return fail(error, QStringLiteral("group action requires session policy"));
     case GroupContextMenuCommandKind::SetKeepAbove:
         window.setKeepAbove(command.enabled);
@@ -202,6 +211,17 @@ void KWinHybridSession::initializeGroupContextMenu()
                                    const auto *window = m_registry.window(windowId);
                                    return window && window->isMinimizable();
                                });
+            state->shaded = isContainerShaded(containerId);
+            const auto appearance = containerAppearance(containerId);
+            state->containerName = appearance.name;
+            state->containerColors.append(
+                {QStringLiteral("default"), QStringLiteral("Default"),
+                 appearance.colorHex.isEmpty()});
+            for (const auto &swatch : Compositor::containerColorSwatches()) {
+                state->containerColors.append(
+                    {swatch.colorHex, swatch.label,
+                     swatch.colorHex == appearance.colorHex});
+            }
             const QString activeId = m_registry.windowId(
                 KWin::workspace()->activeWindow());
             state->activeMemberId =
@@ -235,6 +255,36 @@ void KWinHybridSession::initializeGroupContextMenu()
                 }
                 return dispatchGroupWindowAction(
                     containerId, HybridChrome::WindowAction::Minimize, error);
+            }
+            case GroupContextMenuCommandKind::ToggleShadeGroup: {
+                if (!restoreMemberFocusForInteraction(error)) {
+                    return false;
+                }
+                return isContainerShaded(containerId)
+                    ? unshadeContainer(containerId, error)
+                    : shadeContainer(containerId, error);
+            }
+            case GroupContextMenuCommandKind::RenameContainer: {
+                // AGENT-GUARD: Runs after the popup finishes hiding (see the
+                // menu's hideEvent/schedulePendingDispatches contract), so
+                // this modal prompt cannot stack a second popup over an
+                // in-flight QMenu close animation.
+                bool accepted = false;
+                const QString current = containerAppearance(containerId).name;
+                const QString entered = QInputDialog::getText(
+                    nullptr, QObject::tr("Rename Window Group"),
+                    QObject::tr("Group name:"), QLineEdit::Normal, current,
+                    &accepted);
+                if (!accepted) {
+                    return true;
+                }
+                return renameContainer(containerId, entered, error);
+            }
+            case GroupContextMenuCommandKind::SetContainerColor: {
+                const QString colorHex =
+                    command.destinationId == QLatin1StringView("default")
+                        ? QString{} : command.destinationId;
+                return setContainerColor(containerId, colorHex, error);
             }
             default:
                 break;
@@ -304,6 +354,14 @@ bool KWinHybridSession::dispatchContainerControl(
         }
         synchronizeChrome();
         return true;
+    }
+    case HybridChrome::ContainerControl::ToggleShade: {
+        if (!restoreMemberFocusForInteraction(error)) {
+            return false;
+        }
+        return isContainerShaded(containerId)
+            ? unshadeContainer(containerId, error)
+            : shadeContainer(containerId, error);
     }
     case HybridChrome::ContainerControl::ManagementMenu: {
         if (!m_groupContextMenu || !m_chromeManager) {
@@ -382,8 +440,10 @@ bool KWinHybridSession::ungroupContainer(const QString &containerId,
         }
         return false;
     }
+    forgetShadedContainer(containerId);
     m_placement->forgetContainer(containerId);
     m_minimizedContainers.remove(containerId);
+    m_appearance.forgetContainer(containerId);
     synchronizeChrome();
     return true;
 }

@@ -114,6 +114,26 @@ Current group-wide controls have these semantics:
   complete group to KWin's maximize work area. **Restore** reflows to that saved
   frame. Failure preserves whichever side of the transition was previously
   valid.
+- **Shade** never reflows or resizes any member's real frame. It tracks an
+  independent "strip" frame at the container's current position and width,
+  height fixed to the shared chrome row, used only to build the shared-chrome
+  plan; the real committed layout stays exactly as it was. Every member is
+  hidden from paint and pointer input (`KWin::Window::setHidden`), while the
+  current chrome anchor is additionally kept scene-paintable
+  (`WindowItem::refVisible(PAINT_DISABLED_BY_HIDDEN)`) with its own
+  content/decoration/shadow explicitly hidden, so the strip itself stays
+  visible and draggable while every member's content and input are genuinely
+  gone. The container is never added to the minimized set: shaded and
+  minimized are independent states, and a shaded container keeps reporting
+  its native task/switcher/dock presence unminimized. **Unroll** performs the
+  one real reflow in this lifecycle, back to the original size at the strip's
+  current (possibly dragged) position, then restores every member's
+  visibility. Shade is rejected while maximized (and maximize while shaded);
+  outer resize is rejected while shaded, but outer move remains available so
+  the strip stays draggable, and moving it changes where the container
+  reappears on unroll. See
+  [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
+  for why member visibility, not reflow, is the mechanism.
 - **Close** opens one nonblocking prompt for the container. **Close All** copies
   member IDs before requesting close, **Ungroup** performs one atomic
   `ReleaseContainer`, and **Cancel** changes nothing. The asynchronous decision

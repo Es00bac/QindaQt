@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/compositor/shelltaskfacts.h"
 
+#include "qindaqt/compositor/containerappearance.h"
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -155,8 +157,8 @@ bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
     }
     const QJsonObject object = value.toObject();
     if (!exactKeys(object, {"id", "applicationId", "applicationName", "title",
-                            "role", "windowType", "ownerRole", "active", "minimized",
-                            "maximized", "fullscreen", "demandsAttention",
+                            "colorHex", "role", "windowType", "ownerRole", "active",
+                            "minimized", "maximized", "fullscreen", "demandsAttention",
                             "outputId", "workspaceIds", "onAllWorkspaces",
                             "containerId"})) {
         return false;
@@ -181,6 +183,8 @@ bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
         && string("applicationId", &window->applicationId)
         && string("applicationName", &window->applicationName)
         && string("title", &window->title)
+        && string("colorHex", &window->colorHex)
+        && (window->colorHex.isEmpty() || isValidContainerColor(window->colorHex))
         && readRole(object.value(QStringLiteral("role")), &window->role)
         && readWindowType(object.value(QStringLiteral("windowType")),
                           &window->type)

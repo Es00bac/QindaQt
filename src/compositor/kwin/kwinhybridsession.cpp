@@ -296,6 +296,7 @@ void KWinHybridSession::shutdown() noexcept
         // observer through bounded release recovery.
         m_memberPolicy->restorePresentationForShutdown();
     }
+    restoreShadeForShutdown();
     restoreMemberChromeVisibilityForShutdown();
 
     if (m_runtime && m_sceneFactory) {
@@ -323,6 +324,7 @@ void KWinHybridSession::shutdown() noexcept
         m_chromeManager->clear();
     }
     m_minimizedContainers.clear();
+    m_appearance.clear();
     m_dockPreview.reset();
     m_closePrompt.reset();
     m_chromePointerRouter.reset();
@@ -440,9 +442,18 @@ void KWinHybridSession::synchronizeChrome()
         auto options = optionsTemplate;
         options.devicePixelRatio = containerScale(containerId);
         options.maximized = m_placement && m_placement->isMaximized(containerId);
+        options.shaded = m_placement && m_placement->isShaded(containerId);
+        if (options.shaded) {
+            options.shadedOuterFrame = QRectF(*m_placement->shadedFrame(containerId));
+        }
         options.containerFocused = activeOwner && *activeOwner == containerId;
         options.focusedMemberId = options.containerFocused ? activeWindowId : QString{};
         options.memberTitlesVisible = memberTitlesVisible(containerId);
+        const auto appearance = m_appearance.appearance(containerId);
+        options.containerTitle = appearance.name;
+        if (!appearance.colorHex.isEmpty()) {
+            options.style.palette.accent = QColor(appearance.colorHex);
+        }
         const auto plan = HybridChromePlanBuilder::build(
             *container, layout->activePage, options,
             [this](const QString &windowId) {

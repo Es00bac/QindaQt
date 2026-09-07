@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridcontainerplacement.h"
 
+#include "qindaqt/hybrid_chrome/chrometypes.h"
+
 #include <QtMath>
 
 #include <algorithm>
@@ -14,6 +16,22 @@ constexpr int MinimumOuterWidth = 240;
 constexpr int MinimumOuterHeight = 160;
 constexpr double MinimumSplitRatio = 0.01;
 constexpr double MaximumSplitRatio = 0.99;
+
+// AGENT-NOTE: The shaded strip's height is the shared chrome row plus its
+// outer border plus one logical pixel of content margin, matching the
+// qindaMacOS style's single-row layout (no separate tab strip beneath it) so
+// a shaded container reads as one compact title bar rather than a partially
+// collapsed window. The +1 is load-bearing: ChromeLayoutEngine::build()
+// rejects a request whose inner height is not strictly greater than
+// metrics.titleBarHeight (it needs a nonzero content rect below the row), so
+// shading to exactly titleBarHeight + 2*outerBorder would make every
+// subsequent chrome-plan rebuild fail. Kept in sync with ChromeMetrics
+// defaults; see docs/wiki/architecture/hybrid-chrome.md.
+int shadedOuterHeight()
+{
+    const HybridChrome::ChromeMetrics metrics;
+    return qMax(1, qCeil(metrics.titleBarHeight + 2.0 * metrics.outerBorder + 1.0));
+}
 
 QString interactionContainerId(const HybridInput::InteractionIntent &intent)
 {
@@ -113,6 +131,9 @@ DirectInteractionResult HybridContainerPlacementController::handleMove(
             QStringLiteral("container move intent is invalid"));
     }
     const auto &containerId = interactionContainerId(intent);
+    if (isShaded(containerId)) {
+        return handleShadedMove(containerId, intent);
+    }
     QString error;
     if (intent.phase == HybridInput::IntentPhase::Begin) {
         if (isMaximized(containerId)) {
@@ -159,6 +180,59 @@ DirectInteractionResult HybridContainerPlacementController::handleMove(
     return DirectInteractionResult::handled();
 }
 
+// AGENT-CONTRACT: A shaded container's real committed layout is frozen (no
+// member is ever reflowed while shaded), so dragging the strip must never
+// call reflow()/m_reflow: that would move real KWin member windows that are
+// deliberately untouched. Instead this updates only m_shadeStripFrames,
+// which the session reads to rebuild the shaded chrome plan. Reuses
+// m_moveDrags for baseline/applied bookkeeping; a container cannot be both a
+// normal drag and a shaded drag at once, so the shared key space is safe.
+DirectInteractionResult HybridContainerPlacementController::handleShadedMove(
+    const QString &containerId, const HybridInput::InteractionIntent &intent)
+{
+    if (intent.phase == HybridInput::IntentPhase::Begin) {
+        if (m_moveDrags.contains(containerId)) {
+            return DirectInteractionResult::rejected(
+                QStringLiteral("container already has an active placement drag"));
+        }
+        const auto baseline = m_shadeStripFrames.value(containerId);
+        if (!baseline.isValid()) {
+            return DirectInteractionResult::rejected(
+                QStringLiteral("shaded container has no strip frame"));
+        }
+        m_moveDrags.insert(containerId, FrameDrag{baseline, baseline, {}});
+        return DirectInteractionResult::handled();
+    }
+
+    auto found = m_moveDrags.find(containerId);
+    if (found == m_moveDrags.end()) {
+        return DirectInteractionResult::rejected(
+            QStringLiteral("container move has no active baseline"));
+    }
+    if (intent.phase == HybridInput::IntentPhase::Cancel) {
+        m_shadeStripFrames[containerId] = found->baseline;
+        m_moveDrags.erase(found);
+        if (m_changed) {
+            m_changed();
+        }
+        return DirectInteractionResult::handled();
+    }
+
+    const QRect requested = found->baseline.translated(
+        qRound(intent.delta.x()), qRound(intent.delta.y()));
+    if (requested != found->applied) {
+        m_shadeStripFrames[containerId] = requested;
+        found->applied = requested;
+        if (m_changed) {
+            m_changed();
+        }
+    }
+    if (intent.phase == HybridInput::IntentPhase::Commit) {
+        m_moveDrags.erase(found);
+    }
+    return DirectInteractionResult::handled();
+}
+
 DirectInteractionResult HybridContainerPlacementController::handleResize(
     const HybridInput::InteractionIntent &intent)
 {
@@ -175,6 +249,14 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
         if (isMaximized(containerId)) {
             return DirectInteractionResult::rejected(
                 QStringLiteral("restore a maximized container before resizing it"));
+        }
+        // AGENT-GUARD: A shaded outer frame has no content to expose; letting
+        // an outer-edge drag resize it would silently unshade or produce a
+        // frame the compositor never solved a real layout for. Move remains
+        // allowed while shaded (that is the point of a movable strip).
+        if (isShaded(containerId)) {
+            return DirectInteractionResult::rejected(
+                QStringLiteral("unroll a shaded container before resizing it"));
         }
         return beginDrag(m_resizeDrags, containerId, intent.source.edges, &error)
             ? DirectInteractionResult::handled()
@@ -329,6 +411,10 @@ bool HybridContainerPlacementController::maximize(
     if (isMaximized(containerId)) {
         return true;
     }
+    if (isShaded(containerId)) {
+        assignError(error, QStringLiteral("unroll a shaded container before maximizing it"));
+        return false;
+    }
     const auto current = m_layout ? m_layout(containerId) : std::nullopt;
     const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
     if (!current || !workArea.isValid()) {
@@ -358,6 +444,75 @@ bool HybridContainerPlacementController::restore(
         return false;
     }
     return true;
+}
+
+bool HybridContainerPlacementController::shade(
+    const QString &containerId, QString *error)
+{
+    if (isShaded(containerId)) {
+        return true;
+    }
+    if (isMaximized(containerId)) {
+        assignError(error, QStringLiteral("restore a maximized container before shading it"));
+        return false;
+    }
+    const auto current = m_layout ? m_layout(containerId) : std::nullopt;
+    if (!current || !current->outerFrame.isValid()) {
+        assignError(error, QStringLiteral("container has no valid frame to shade"));
+        return false;
+    }
+    // AGENT-GUARD: The real committed layout is never reflowed for shade
+    // (see ADR-0099's follow-up correction): member windows keep their exact
+    // frame so no live app is resized to fake being hidden. The strip frame
+    // is purely this controller's own bookkeeping; the KWin adapter is
+    // responsible for actually hiding member content/input.
+    m_shadeStripFrames.insert(
+        containerId,
+        QRect(current->outerFrame.topLeft(),
+              QSize(current->outerFrame.width(), shadedOuterHeight())));
+    m_shadeRestoreSizes.insert(containerId, current->outerFrame.size());
+    if (m_changed) {
+        m_changed();
+    }
+    return true;
+}
+
+bool HybridContainerPlacementController::unshade(
+    const QString &containerId, QString *error)
+{
+    const auto stripFound = m_shadeStripFrames.constFind(containerId);
+    const auto sizeFound = m_shadeRestoreSizes.constFind(containerId);
+    if (stripFound == m_shadeStripFrames.cend()
+        || sizeFound == m_shadeRestoreSizes.cend()) {
+        assignError(error, QStringLiteral("container is not shaded"));
+        return false;
+    }
+    // AGENT-CONTRACT: the strip's current position may have moved under drag
+    // since shade() was called; unrolling restores the original size at that
+    // (possibly moved) position, so "moving the rolled strip" genuinely
+    // relocates where the container reappears. This is the one legitimate
+    // reflow in the shade lifecycle: a real, intentional full restore.
+    const QRect restoreFrame(stripFound->topLeft(), *sizeFound);
+    if (!reflow(containerId, restoreFrame, error)) {
+        return false;
+    }
+    m_shadeStripFrames.erase(stripFound);
+    m_shadeRestoreSizes.remove(containerId);
+    m_moveDrags.remove(containerId);
+    return true;
+}
+
+std::optional<QRect> HybridContainerPlacementController::shadedFrame(
+    const QString &containerId) const
+{
+    const auto found = m_shadeStripFrames.constFind(containerId);
+    return found == m_shadeStripFrames.cend() ? std::nullopt
+                                              : std::optional<QRect>(*found);
+}
+
+QStringList HybridContainerPlacementController::shadedContainerIds() const
+{
+    return m_shadeStripFrames.keys();
 }
 
 QStringList HybridContainerPlacementController::refreshMaximizedAreas()
@@ -391,6 +546,8 @@ void HybridContainerPlacementController::forgetContainer(
     m_moveDrags.remove(containerId);
     m_resizeDrags.remove(containerId);
     m_maximizeRestoreFrames.remove(containerId);
+    m_shadeStripFrames.remove(containerId);
+    m_shadeRestoreSizes.remove(containerId);
 }
 
 void HybridContainerPlacementController::cancelAll() noexcept

@@ -5,6 +5,8 @@
 #include <QJsonObject>
 #include <QtTest>
 
+#include <algorithm>
+
 using namespace QindaQt::Compositor;
 
 namespace {
@@ -24,6 +26,7 @@ ShellTaskFactsCandidate candidate()
              .applicationId = QStringLiteral("org.qindaqt.Settings"),
              .applicationName = QStringLiteral("Settings"),
              .title = QStringLiteral("Settings"),
+             .colorHex = {},
              .role = ShellTaskWindowRole::Standalone,
              .outputId = QStringLiteral("WL-0"),
              .workspaceIds = {QStringLiteral("workspace-1")}},
@@ -31,6 +34,7 @@ ShellTaskFactsCandidate candidate()
              .applicationId = QStringLiteral("org.qindaqt.Editor"),
              .applicationName = QStringLiteral("Editor"),
              .title = QStringLiteral("Document"),
+             .colorHex = QStringLiteral("#0091FF"),
              .role = ShellTaskWindowRole::ContainerPrimary,
              .active = true,
              .maximized = true,
@@ -41,6 +45,7 @@ ShellTaskFactsCandidate candidate()
              .applicationId = QStringLiteral("org.qindaqt.Terminal"),
              .applicationName = QStringLiteral("Terminal"),
              .title = QStringLiteral("Terminal"),
+             .colorHex = {},
              .role = ShellTaskWindowRole::ContainerMember,
              .minimized = true,
              .demandsAttention = true,
@@ -86,6 +91,7 @@ class ShellTaskFactsTests final : public QObject {
 private Q_SLOTS:
     void publicationIsAtomicAndGenerationFenced();
     void roleAndOwnerProvenanceRoundTripsAndRejectsHostileValues();
+    void primaryColorRoundTripsAndRejectsMisplacedOrMalformedValues();
     void hostileBoundsAndReferencesRetainTheGeneration();
     void authenticationPrecedesSourceInspection();
 };
@@ -134,6 +140,54 @@ void ShellTaskFactsTests::roleAndOwnerProvenanceRoundTripsAndRejectsHostileValue
     QJsonObject hostile = windows[0].toObject();
     hostile.insert(QStringLiteral("ownerRole"), QStringLiteral("untrusted"));
     windows[0] = hostile;
+    root.insert(QStringLiteral("windows"), windows);
+    QVERIFY(!decodeShellTaskFactsSnapshot(
+        QJsonDocument(root).toJson(QJsonDocument::Compact), &error));
+}
+
+void ShellTaskFactsTests::primaryColorRoundTripsAndRejectsMisplacedOrMalformedValues()
+{
+    ShellTaskFactsStore store(QString::fromLatin1(Epoch));
+    QString error;
+    QCOMPARE(store.publish(candidate(), &error),
+             ShellTaskFactsPublishResult::Published);
+    const auto decoded = decodeShellTaskFactsSnapshot(store.snapshotJson(), &error);
+    QVERIFY2(decoded.has_value(), qPrintable(error));
+    const auto primary = std::find_if(
+        decoded->facts.windows.cbegin(), decoded->facts.windows.cend(),
+        [](const auto &window) {
+            return window.role == ShellTaskWindowRole::ContainerPrimary;
+        });
+    QVERIFY(primary != decoded->facts.windows.cend());
+    QCOMPARE(primary->colorHex, QStringLiteral("#0091FF"));
+    for (const auto &window : decoded->facts.windows) {
+        if (window.role != ShellTaskWindowRole::ContainerPrimary) {
+            QVERIFY(window.colorHex.isEmpty());
+        }
+    }
+
+    // A color on any non-primary role is rejected.
+    auto misplaced = candidate();
+    misplaced.windows[0].colorHex = QStringLiteral("#0091FF");
+    QCOMPARE(store.publish(misplaced, &error), ShellTaskFactsPublishResult::Rejected);
+
+    auto memberColored = candidate();
+    memberColored.windows[2].colorHex = QStringLiteral("#0091FF");
+    QCOMPARE(store.publish(memberColored, &error),
+             ShellTaskFactsPublishResult::Rejected);
+
+    // A malformed hex value on the primary is rejected.
+    auto malformed = candidate();
+    malformed.windows[1].colorHex = QStringLiteral("not-a-color");
+    QCOMPARE(store.publish(malformed, &error), ShellTaskFactsPublishResult::Rejected);
+
+    // A hostile lowercase hex fails the decoder's own defense-in-depth check
+    // even if it somehow reached the wire.
+    QJsonObject root = QJsonDocument::fromJson(store.snapshotJson()).object();
+    QJsonArray windows = root.value(QStringLiteral("windows")).toArray();
+    QJsonObject hostilePrimary = windows[1].toObject();
+    hostilePrimary.insert(QStringLiteral("colorHex"), QStringLiteral("#0091ff"));
+    windows[1] = hostilePrimary;
     root.insert(QStringLiteral("windows"), windows);
     QVERIFY(!decodeShellTaskFactsSnapshot(
         QJsonDocument(root).toJson(QJsonDocument::Compact), &error));

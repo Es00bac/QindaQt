@@ -154,6 +154,11 @@ private Q_SLOTS:
     void resizesEdgesAndEnforcesMinimumFrame();
     void maximizesAndRestoresWholeContainer();
     void tracksVisibleAndHiddenWorkAreasWhileMaximized();
+    void shadesAndUnshadesWholeContainerPreservingPositionAndWidth();
+    void rejectsShadeWhileMaximizedAndMaximizeWhileShaded();
+    void rejectsOuterResizeWhileShadedButStillAllowsMove();
+    void cancelledShadedMoveRestoresTheStripsPriorPosition();
+    void forgettingContainerClearsShadeRestoreFrame();
     void reportsReflowFailureWithoutAdvancingAppliedFrame();
     void failedCommitReleasesPlacementBaseline();
     void rejectsUnavailableOrInconsistentResizeState();
@@ -297,6 +302,118 @@ void HybridContainerPlacementTest::tracksVisibleAndHiddenWorkAreasWhileMaximized
     fixture.workArea = QRect(0, 0, 1920, 1080);
     QCOMPARE(fixture.controller.refreshMaximizedAreas(), QStringList{});
     QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+}
+
+void HybridContainerPlacementTest::shadesAndUnshadesWholeContainerPreservingPositionAndWidth()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    QVERIFY(fixture.controller.isShaded(QStringLiteral("group")));
+    // AGENT-GUARD: shade never reflows the real committed layout (see
+    // ADR-0099's follow-up correction) -- no live member window is resized
+    // to fake being hidden. The strip is purely this controller's own
+    // bookkeeping, tracked independently of fixture.layout.
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+    QCOMPARE(fixture.requestedFrames, QVector<QRect>{});
+
+    const auto strip = fixture.controller.shadedFrame(QStringLiteral("group"));
+    QVERIFY(strip.has_value());
+    QCOMPARE(strip->topLeft(), QPoint(100, 100));
+    QCOMPARE(strip->width(), 800);
+    QVERIFY(strip->height() < 600);
+    QVERIFY(strip->height() > 28);
+
+    // Idempotent: shading an already-shaded container is a no-op success and
+    // never touches the real layout or the strip frame.
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.controller.shadedFrame(QStringLiteral("group")), strip);
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+
+    // Unshade performs exactly one real reflow, back to the original size at
+    // the strip's current (here, unmoved) position.
+    QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
+    QVERIFY(!fixture.controller.isShaded(QStringLiteral("group")));
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+    QCOMPARE(fixture.requestedFrames, QVector<QRect>{QRect(100, 100, 800, 600)});
+
+    // Unshading a never-shaded (or already unshaded) container fails cleanly.
+    QVERIFY(!fixture.controller.unshade(QStringLiteral("group"), &error));
+    QVERIFY(!error.isEmpty());
+}
+
+void HybridContainerPlacementTest::rejectsShadeWhileMaximizedAndMaximizeWhileShaded()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
+    QVERIFY(!fixture.controller.shade(QStringLiteral("group"), &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(!fixture.controller.isShaded(QStringLiteral("group")));
+    QVERIFY(fixture.controller.restore(QStringLiteral("group"), &error));
+
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    QVERIFY(!fixture.controller.maximize(QStringLiteral("group"), &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(!fixture.controller.isMaximized(QStringLiteral("group")));
+}
+
+void HybridContainerPlacementTest::rejectsOuterResizeWhileShadedButStillAllowsMove()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    const auto initialStrip = *fixture.controller.shadedFrame(QStringLiteral("group"));
+
+    const auto rejectedResize = fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin));
+    QVERIFY(!rejectedResize.accepted);
+    QVERIFY(rejectedResize.message.contains(QStringLiteral("shaded")));
+
+    // Moving the strip updates only this controller's tracked strip frame:
+    // no reflow, no real member-window movement.
+    QVERIFY(fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Begin)).accepted);
+    QVERIFY(fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Commit, QPointF(50, 0))).accepted);
+    QVERIFY(fixture.requestedFrames.isEmpty());
+    QCOMPARE(*fixture.controller.shadedFrame(QStringLiteral("group")),
+             initialStrip.translated(50, 0));
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+
+    // Unrolling now reflows to the original size at the strip's moved
+    // position: dragging the strip really does relocate the restored group.
+    QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.layout.outerFrame, QRect(150, 100, 800, 600));
+}
+
+void HybridContainerPlacementTest::cancelledShadedMoveRestoresTheStripsPriorPosition()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    const auto initialStrip = *fixture.controller.shadedFrame(QStringLiteral("group"));
+
+    QVERIFY(fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Begin)).accepted);
+    QVERIFY(fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Update, QPointF(50, 20))).accepted);
+    QCOMPARE(*fixture.controller.shadedFrame(QStringLiteral("group")),
+             initialStrip.translated(50, 20));
+    QVERIFY(fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Cancel, QPointF(50, 20))).accepted);
+    QCOMPARE(*fixture.controller.shadedFrame(QStringLiteral("group")), initialStrip);
+    QVERIFY(fixture.requestedFrames.isEmpty());
+}
+
+void HybridContainerPlacementTest::forgettingContainerClearsShadeRestoreFrame()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    fixture.controller.forgetContainer(QStringLiteral("group"));
+    QVERIFY(!fixture.controller.isShaded(QStringLiteral("group")));
+    QVERIFY(!fixture.controller.shadedFrame(QStringLiteral("group")).has_value());
 }
 
 void HybridContainerPlacementTest::reportsReflowFailureWithoutAdvancingAppliedFrame()

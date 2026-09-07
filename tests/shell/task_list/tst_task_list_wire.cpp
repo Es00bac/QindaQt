@@ -24,6 +24,7 @@ class TaskListWireTests final : public QObject {
 
 private slots:
   void decodesAtomicTaskFacts();
+  void decodesThePrimarysColorAndRejectsAMisplacedOrMalformedOne();
   void rejectsHostileAtomicTaskFacts();
   void decodesValidInventories();
   void rejectsMalformedWindowsPayload();
@@ -47,6 +48,51 @@ void TaskListWireTests::decodesAtomicTaskFacts() {
   QCOMPARE(decoded.facts.at(2).role, TaskWindowRole::ContainerMember);
   QVERIFY(!decoded.facts.at(2).minimized);
   QVERIFY(decoded.facts.at(2).urgent);
+}
+
+void TaskListWireTests::decodesThePrimarysColorAndRejectsAMisplacedOrMalformedOne() {
+  const auto colored = taskFactsPayload(
+      QJsonArray{
+          taskWindowJson(QStringLiteral("w1"), QStringLiteral("app.one")),
+          taskWindowJson(QStringLiteral("w2"), QStringLiteral("app.two"),
+                         QStringLiteral("container-primary"),
+                         QStringLiteral("c1"), false, false, false,
+                         QStringLiteral("#0091FF")),
+          taskWindowJson(QStringLiteral("w3"), QStringLiteral("app.three"),
+                         QStringLiteral("container-member"),
+                         QStringLiteral("c1")),
+      },
+      1, kWindowEpoch, {{QStringLiteral("c1"), 7, QStringLiteral("hybrid-process")}});
+  const auto decoded = TaskListWireDecoder::decodeTaskFacts(colored);
+  QVERIFY2(decoded.ok(), qPrintable(decoded.message));
+  QCOMPARE(decoded.facts.at(1).role, TaskWindowRole::ContainerPrimary);
+  QCOMPARE(decoded.facts.at(1).colorHex, QStringLiteral("#0091FF"));
+  QVERIFY(decoded.facts.at(0).colorHex.isEmpty());
+  QVERIFY(decoded.facts.at(2).colorHex.isEmpty());
+
+  // A color on a standalone window is rejected by the shared compositor codec.
+  const auto misplaced = taskFactsPayload(
+      QJsonArray{taskWindowJson(QStringLiteral("w1"), QStringLiteral("app.one"),
+                                QStringLiteral("standalone"), {}, false, false,
+                                false, QStringLiteral("#0091FF"))});
+  QCOMPARE(TaskListWireDecoder::decodeTaskFacts(misplaced).error,
+           TaskListWireError::MalformedPayload);
+
+  // A malformed hex value is rejected even on the primary.
+  const auto malformed = taskFactsPayload(
+      QJsonArray{
+          taskWindowJson(QStringLiteral("w1"), QStringLiteral("app.one")),
+          taskWindowJson(QStringLiteral("w2"), QStringLiteral("app.two"),
+                         QStringLiteral("container-primary"),
+                         QStringLiteral("c1"), false, false, false,
+                         QStringLiteral("not-a-color")),
+          taskWindowJson(QStringLiteral("w3"), QStringLiteral("app.three"),
+                         QStringLiteral("container-member"),
+                         QStringLiteral("c1")),
+      },
+      1, kWindowEpoch, {{QStringLiteral("c1"), 7, QStringLiteral("hybrid-process")}});
+  QCOMPARE(TaskListWireDecoder::decodeTaskFacts(malformed).error,
+           TaskListWireError::MalformedPayload);
 }
 
 void TaskListWireTests::rejectsHostileAtomicTaskFacts() {

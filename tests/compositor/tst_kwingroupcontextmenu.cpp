@@ -27,6 +27,12 @@ GroupContextMenuState populatedState()
 {
     return {
         .activeMemberId = QStringLiteral("member-active"),
+        .shaded = false,
+        .containerName = QStringLiteral("Research Stack"),
+        .containerColors = {
+            {QStringLiteral("default"), QStringLiteral("Default"), true},
+            {QStringLiteral("#0091FF"), QStringLiteral("Blue"), false},
+        },
         .keepAbove = true,
         .keepBelow = false,
         .pinnedToAllWorkspaces = false,
@@ -56,6 +62,7 @@ private Q_SLOTS:
     void reflectsStateAndDispatchesTypedCommands();
     void defersDispatchWithStableContainerIdentity();
     void rejectsStaleOrMalformedState();
+    void exposesShadeRenameAndColorControls();
 };
 
 void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
@@ -254,6 +261,68 @@ void KWinGroupContextMenuTest::rejectsStaleOrMalformedState()
         disabledMinimize, QStringLiteral("qindaqt-context-minimize-group"));
     QVERIFY(minimize);
     QVERIFY(!minimize->isEnabled());
+}
+
+void KWinGroupContextMenuTest::exposesShadeRenameAndColorControls()
+{
+    QVector<std::pair<QString, GroupContextMenuCommand>> commands;
+    KWinGroupContextMenu menu(
+        [](const QString &containerId, QString *)
+            -> std::optional<GroupContextMenuState> {
+            return containerId == QStringLiteral("group-a")
+                ? std::optional(populatedState()) : std::nullopt;
+        },
+        [&commands](const QString &containerId,
+                    const GroupContextMenuCommand &command,
+                    QString *) {
+            commands.append({containerId, command});
+            return true;
+        });
+
+    QString error;
+    QVERIFY2(menu.prepare(QStringLiteral("group-a"), &error), qPrintable(error));
+    auto *const shade = actionNamed(menu, QStringLiteral("qindaqt-context-toggle-shade"));
+    auto *const rename = actionNamed(menu, QStringLiteral("qindaqt-context-rename"));
+    auto *const colorDefault = actionNamed(
+        menu, QStringLiteral("qindaqt-context-color-default"));
+    auto *const colorBlue = actionNamed(
+        menu, QStringLiteral("qindaqt-context-color-#0091FF"));
+    QVERIFY(shade && rename && colorDefault && colorBlue);
+    QCOMPARE(shade->text(), QStringLiteral("Roll up group"));
+    QCOMPARE(rename->text(), QStringLiteral("Rename…"));
+    QVERIFY(colorDefault->isCheckable());
+    QVERIFY(colorDefault->isChecked());
+    QVERIFY(!colorBlue->isChecked());
+
+    menu.show();
+    QVERIFY(menu.isVisible());
+    shade->trigger();
+    rename->trigger();
+    colorBlue->trigger();
+    QVERIFY(commands.isEmpty());
+    menu.hide();
+    QTRY_COMPARE(commands.size(), 3);
+    const GroupContextMenuCommand expectedShade{
+        GroupContextMenuCommandKind::ToggleShadeGroup, {}, true};
+    const GroupContextMenuCommand expectedRename{
+        GroupContextMenuCommandKind::RenameContainer, {}, true};
+    const GroupContextMenuCommand expectedColor{
+        GroupContextMenuCommandKind::SetContainerColor,
+        QStringLiteral("#0091FF"), true};
+    QCOMPARE(commands[0].second, expectedShade);
+    QCOMPARE(commands[1].second, expectedRename);
+    QCOMPARE(commands[2].second, expectedColor);
+
+    auto shadedState = populatedState();
+    shadedState.shaded = true;
+    KWinGroupContextMenu shadedMenu(
+        [shadedState](const QString &, QString *) { return std::optional(shadedState); },
+        [](const QString &, const GroupContextMenuCommand &, QString *) { return true; });
+    QVERIFY2(shadedMenu.prepare(QStringLiteral("group-a"), &error), qPrintable(error));
+    auto *const unshade = actionNamed(
+        shadedMenu, QStringLiteral("qindaqt-context-toggle-shade"));
+    QVERIFY(unshade);
+    QCOMPARE(unshade->text(), QStringLiteral("Unroll group"));
 }
 
 QTEST_MAIN(KWinGroupContextMenuTest)

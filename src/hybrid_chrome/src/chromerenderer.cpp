@@ -42,6 +42,17 @@ void paintContainerControlGlyph(QPainter &painter,
         painter.drawLine(frame.topLeft(), frame.topRight());
         return;
     }
+    if (control.control == ContainerControl::ToggleShade) {
+        // A short chevron: pointing up (roll up) when not yet shaded, down
+        // (unroll) when checked/shaded, mirroring the outer window's own
+        // maximize-or-restore glyph convention.
+        const qreal dy = control.checked ? -radius * 0.5 : radius * 0.5;
+        painter.drawLine(QPointF(center.x() - radius, center.y() - dy),
+                         QPointF(center.x(), center.y() + dy));
+        painter.drawLine(QPointF(center.x() + radius, center.y() - dy),
+                         QPointF(center.x(), center.y() + dy));
+        return;
+    }
     const qreal dotRadius = std::max(1.0, plan.borderHairline);
     painter.setPen(Qt::NoPen);
     painter.setBrush(plan.style.palette.text);
@@ -130,6 +141,17 @@ void ChromeRenderer::paint(QPainter &painter,
     painter.fillRect(plan.outerTitleBar, plan.style.palette.surfaceRaised);
     if (plan.tabStrip.isValid() && !plan.tabStrip.isEmpty()) {
         painter.fillRect(plan.tabStrip, plan.style.palette.surface);
+    }
+    // AGENT-CONTRACT: containerTitle is the user's rename override (see
+    // ContainerAppearance); it paints in the leftover outer-title drag
+    // region beside tabs/controls, in the resolved accent color so a custom
+    // container color (already folded into style.palette.accent by the
+    // session) is visible even when the container has no custom name and no
+    // tabs of its own page titles would otherwise show it. Empty title is a
+    // silent no-op, matching every container that never renamed.
+    if (!plan.containerTitle.isEmpty() && plan.outerTitleDragRect.width() > 0.0) {
+        paintLabel(painter, plan.outerTitleDragRect, plan.containerTitle,
+                  plan.style.palette.accent);
     }
 
     for (const auto &tab : plan.tabs) {

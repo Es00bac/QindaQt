@@ -52,6 +52,12 @@ withOutput(QindaQt::ShellTaskList::TaskWindowFact fact,
 }
 
 inline QindaQt::ShellTaskList::TaskWindowFact
+withColor(QindaQt::ShellTaskList::TaskWindowFact fact, const QString &colorHex) {
+  fact.colorHex = colorHex;
+  return fact;
+}
+
+inline QindaQt::ShellTaskList::TaskWindowFact
 withWorkspaces(QindaQt::ShellTaskList::TaskWindowFact fact,
                const QStringList &workspaceIds) {
   fact.workspaceIds = workspaceIds;

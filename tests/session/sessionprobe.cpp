@@ -77,7 +77,8 @@ bool verifyXWayland(const QString &display)
 QJsonObject collectResult(QWindow &primary, QWindow &secondary, QWindow &page,
                           QWindow &popup, QWindow &dialog,
                           QindaQt::Test::CompositorWorkflowMode compositorMode,
-                          const QString &dotoolPath)
+                          const QString &dotoolPath,
+                          bool forceDevelopmentInput)
 {
     QJsonArray outputs;
     for (const auto *screen : QGuiApplication::screens()) {
@@ -120,7 +121,8 @@ QJsonObject collectResult(QWindow &primary, QWindow &secondary, QWindow &page,
                 }
             }
             return QString{};
-        });
+        },
+        forceDevelopmentInput);
     return QJsonObject{
         {QStringLiteral("platform"), QGuiApplication::platformName()},
         {QStringLiteral("waylandDisplay"), QString::fromUtf8(qgetenv("WAYLAND_DISPLAY"))},
@@ -178,11 +180,18 @@ int main(int argc, char *argv[])
     const auto dotoolPath = qEnvironmentVariable("QINDAQT_DOTOOL");
     const bool compositorOutputsExpected =
         qEnvironmentVariableIntValue("QINDAQT_EXPECT_COMPOSITOR_OUTPUTS") == 1;
+    // AGENT-CONTRACT: root-authorized escape hatch for hosts missing the
+    // dotool binary itself; see HybridPointerGrouping::forceDevelopmentInput
+    // and docs/wiki/development/testing-harness.md. Leaving this unset keeps
+    // ordinary dotool-first selection unchanged.
+    const bool forceDevelopmentInput =
+        qEnvironmentVariableIntValue("QINDAQT_FORCE_DEVELOPMENT_INPUT") == 1;
     QTimer::singleShot(
         700, &application,
         [&application, &primary, &secondary, &page, &popup, &dialog,
          pluginExpected, readOnlyExpected,
-         hybridPointerExpected, compositorOutputsExpected, dotoolPath] {
+         hybridPointerExpected, compositorOutputsExpected, dotoolPath,
+         forceDevelopmentInput] {
             const auto mode =
                 hybridPointerExpected
                     ? QindaQt::Test::CompositorWorkflowMode::HybridPointer
@@ -200,7 +209,8 @@ int main(int argc, char *argv[])
                 page.requestActivate();
             }
             const auto result = collectResult(
-                primary, secondary, page, popup, dialog, mode, dotoolPath);
+                primary, secondary, page, popup, dialog, mode, dotoolPath,
+                forceDevelopmentInput);
             QTextStream(stdout) << "QINDAQT_PROBE="
                                 << QJsonDocument(result).toJson(QJsonDocument::Compact) << '\n';
             const bool valid =

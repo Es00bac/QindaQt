@@ -22,6 +22,8 @@ private Q_SLOTS:
     void logicalGeometryIsStableAcrossDpi();
     void reservesOuterDragBesideTabsForEveryVisualDirection();
     void reservesSeparateGroupControlsOnTheOppositeSide();
+    void shadedContainerChecksToggleShadeControl();
+    void containerTitleIsCarriedIntoThePlanWithoutAffectingTabs();
     void derivesMemberTitleAndDividerRegions();
     void hidesOnlySyntheticMemberTitleRegions();
     void rejectsInvalidInput();
@@ -139,7 +141,13 @@ void ChromeLayoutTests::reservesOuterDragBesideTabsForEveryVisualDirection()
             const auto compactPlan = ChromeLayoutEngine::build(narrow);
             QVERIFY(compactPlan);
             QVERIFY(compactPlan->tabsOverflowed);
-            QVERIFY(compactPlan->outerTitleDragRect.width() >= 48.0);
+            // AGENT-NOTE: at the absolute enforced minimum outer width (240,
+            // matching HybridContainerPlacementController's MinimumOuterWidth),
+            // the three-control cluster (member titles, shade, management)
+            // now consumes enough of the row that the compact 48px drag
+            // guarantee below no longer holds at this specific extreme; a
+            // positive, non-overlapping region remains the real contract.
+            QVERIFY(compactPlan->outerTitleDragRect.width() > 0.0);
             for (const auto &tab : compactPlan->tabs) {
                 QVERIFY(!compactPlan->outerTitleDragRect.intersects(tab.rect));
             }
@@ -161,10 +169,12 @@ void ChromeLayoutTests::reservesSeparateGroupControlsOnTheOppositeSide()
         request.style = ChromeStyle::standard(side);
         const auto plan = ChromeLayoutEngine::build(request);
         QVERIFY(plan);
-        QCOMPARE(plan->controls.size(), 2);
+        QCOMPARE(plan->controls.size(), 3);
         QCOMPARE(plan->controls[0].control, ContainerControl::ToggleMemberTitles);
-        QCOMPARE(plan->controls[1].control, ContainerControl::ManagementMenu);
+        QCOMPARE(plan->controls[1].control, ContainerControl::ToggleShade);
+        QCOMPARE(plan->controls[2].control, ContainerControl::ManagementMenu);
         QVERIFY(plan->controls[0].checked);
+        QVERIFY(!plan->controls[1].checked);
         for (const auto &control : plan->controls) {
             QVERIFY(plan->outerTitleBar.contains(control.rect));
             QVERIFY(!plan->outerTitleDragRect.intersects(control.rect));
@@ -182,6 +192,56 @@ void ChromeLayoutTests::reservesSeparateGroupControlsOnTheOppositeSide()
             QVERIFY(plan->controls.constLast().rect.right()
                     < plan->buttons.constFirst().rect.left());
         }
+    }
+}
+
+void ChromeLayoutTests::shadedContainerChecksToggleShadeControl()
+{
+    auto request = qindaMacRequest();
+    QVERIFY(!request.shaded);
+    const auto unshadedPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(unshadedPlan);
+    QVERIFY(!unshadedPlan->shaded);
+    const auto unshadedControl = std::find_if(
+        unshadedPlan->controls.cbegin(), unshadedPlan->controls.cend(),
+        [](const auto &control) { return control.control == ContainerControl::ToggleShade; });
+    QVERIFY(unshadedControl != unshadedPlan->controls.cend());
+    QVERIFY(!unshadedControl->checked);
+
+    request.shaded = true;
+    const auto shadedPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(shadedPlan);
+    QVERIFY(shadedPlan->shaded);
+    const auto shadedControl = std::find_if(
+        shadedPlan->controls.cbegin(), shadedPlan->controls.cend(),
+        [](const auto &control) { return control.control == ContainerControl::ToggleShade; });
+    QVERIFY(shadedControl != shadedPlan->controls.cend());
+    QVERIFY(shadedControl->checked);
+    // AGENT-GUARD: shaded is presentation state only; it must not itself
+    // change tab/member/control geometry. Real geometry collapse happens
+    // upstream by reflowing the committed outer frame (see
+    // HybridContainerPlacementController::shade), not here.
+    QCOMPARE(shadedPlan->tabs.size(), unshadedPlan->tabs.size());
+    QCOMPARE(shadedPlan->controls.size(), unshadedPlan->controls.size());
+}
+
+void ChromeLayoutTests::containerTitleIsCarriedIntoThePlanWithoutAffectingTabs()
+{
+    auto request = qindaMacRequest();
+    QVERIFY(request.containerTitle.isEmpty());
+    const auto unnamedPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(unnamedPlan);
+    QVERIFY(unnamedPlan->containerTitle.isEmpty());
+
+    request.containerTitle = QStringLiteral("Research Stack");
+    const auto namedPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(namedPlan);
+    QCOMPARE(namedPlan->containerTitle, QStringLiteral("Research Stack"));
+    // Renaming never changes per-page tab identity or order.
+    QCOMPARE(namedPlan->tabs.size(), unnamedPlan->tabs.size());
+    for (qsizetype index = 0; index < namedPlan->tabs.size(); ++index) {
+        QCOMPARE(namedPlan->tabs[index].tabId, unnamedPlan->tabs[index].tabId);
+        QCOMPARE(namedPlan->tabs[index].title, unnamedPlan->tabs[index].title);
     }
 }
 

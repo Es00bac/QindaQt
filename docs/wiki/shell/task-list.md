@@ -15,12 +15,36 @@ copied from one coherent compositor/hybrid generation:
 
 - unique window identity, application identity and display name, and window
   title;
+- for a `ContainerPrimary` fact only, a user-chosen container color override
+  (`colorHex`, exact `"#RRGGBB"` or empty for no override);
 - compositor-assigned output plus the window's virtual-desktop scope (an
   explicit all-workspaces flag, or a workspace id list);
 - the task-list role: `Standalone`, `ContainerPrimary`, or `ContainerMember`;
 - compositor window type (`Normal` or `NonNormal`) and client ownership
   (`Application` or the authenticated `BoundShell` panel owner);
 - presentation state: `active`, `minimized`, and `urgent`.
+
+For a `ContainerPrimary` fact, `title` is the container's user-chosen rename
+override (`ContainerAppearance::name`, see
+[Hybrid container chrome](../architecture/hybrid-chrome.md)) when one is set,
+falling back to the primary member's native caption otherwise; this is a
+same-process substitution in `KWinShellTaskFactsPublisher::sample()`; no new
+wire field or schema change was needed for the rename since `title` is
+already free-form, hostile-input-bounded text. The container color override
+(`ContainerAppearance::colorHex`) *is* a new field, `colorHex`, added to
+`Compositor::ShellTaskWindow`/the schema-1 task-facts wire object (encoded in
+`shelltaskfacts.cpp`, decoded and validated in `shelltaskfactscodec.cpp`,
+which both the compositor's reference decoder and the shell's
+`TaskListWireDecoder::decodeTaskFacts` share, so there is exactly one hostile-
+input boundary for it). It is empty for every role except `ContainerPrimary`;
+a non-empty value on any other role, or a value that is not exact
+`"#RRGGBB"`, is rejected atomically like every other malformed fact. The
+field flows through `TaskWindowFact` → `TaskEntry` (copied for the collapsed
+container entry only, `task_list_grouping.cpp`) → `TaskListAppletRow` → the
+QML row map (`colorHex`) → `TaskListEntryButton.qml`, which recolors both the
+panel-row and dock-tile icon glyph when set, leaving every standalone window
+and every uncolored container using the ordinary enabled/disabled token
+color.
 
 The producer classifies containers before publishing: exactly one primary
 represents each container, and suppressed members reference it by container id.

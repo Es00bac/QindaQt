@@ -66,6 +66,7 @@ TaskListAppletProjection TaskListAppletProjectionModel::project(
     row.applicationId = entry.applicationId;
     row.applicationName = entry.applicationName;
     row.iconText = iconPlaceholder(entry.applicationName, entry.applicationId);
+    row.colorHex = entry.colorHex;
     row.windowCount = entry.windowCount;
     row.active = entry.active;
     row.minimized = entry.minimized;

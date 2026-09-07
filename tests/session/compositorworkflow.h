@@ -50,6 +50,7 @@ struct CompositorWorkflowResult final
                                                                   std::function<void(const QString &)>
                                                                       showPopupForProbe = {},
                                                                   std::function<QString(const QString &)>
-                                                                      showDialogForProbe = {});
+                                                                      showDialogForProbe = {},
+                                                                  bool forceDevelopmentInput = false);
 
 } // namespace QindaQt::Test

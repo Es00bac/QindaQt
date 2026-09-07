@@ -28,6 +28,9 @@ struct ObservedWindow final
     QRectF frame;
     QRectF targetFrame;
     bool minimized = false;
+    // Distinct from minimized: shade hides members via Window::isHidden()
+    // (see ADR-0099), never isMinimized().
+    bool hidden = false;
     bool active = false;
     bool skipTaskbar = false;
     bool skipSwitcher = false;

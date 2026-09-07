@@ -3,6 +3,7 @@
 
 #include <QtTest>
 
+#include <algorithm>
 #include <utility>
 
 using namespace QindaQt::ShellTaskList;
@@ -85,6 +86,32 @@ private slots:
         QCOMPARE(container.memberWindowIds,
                  (QStringList{QStringLiteral("w-m1"), QStringLiteral("w-m2"),
                               QStringLiteral("w-p")}));
+    }
+
+    void containerEntryCopiesThePrimarysColorAndStandaloneEntriesNeverCarryOne()
+    {
+        TaskListSource source;
+        const auto evaluation = TaskListTest::publish(source, {
+            TaskListTest::standalone(QStringLiteral("w-loose"), kEditorId),
+            TaskListTest::withColor(
+                TaskListTest::primary(QStringLiteral("w-p"), kFilesId,
+                                      QStringLiteral("c-1")),
+                QStringLiteral("#0091FF")),
+            TaskListTest::member(QStringLiteral("w-m"), QStringLiteral("c-1")),
+        });
+        QVERIFY(evaluation.ok());
+        const auto &entries = evaluation.generation.entries;
+        QCOMPARE(entries.size(), 2);
+        const auto container = std::find_if(
+            entries.cbegin(), entries.cend(),
+            [](const TaskEntry &entry) { return entry.kind == TaskEntryKind::Container; });
+        const auto standalone = std::find_if(
+            entries.cbegin(), entries.cend(),
+            [](const TaskEntry &entry) { return entry.kind == TaskEntryKind::Window; });
+        QVERIFY(container != entries.cend());
+        QVERIFY(standalone != entries.cend());
+        QCOMPARE(container->colorHex, QStringLiteral("#0091FF"));
+        QVERIFY(standalone->colorHex.isEmpty());
     }
 
     void suppressedMembersNeverCreateTheirOwnEntries()

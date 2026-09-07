@@ -68,6 +68,7 @@ QVariantList TaskListAppletController::entryRows() const {
     map.insert(QStringLiteral("applicationId"), row.applicationId);
     map.insert(QStringLiteral("applicationName"), row.applicationName);
     map.insert(QStringLiteral("iconText"), row.iconText);
+    map.insert(QStringLiteral("colorHex"), row.colorHex);
     const QString iconName = m_iconNameResolver
         ? m_iconNameResolver(row.applicationId) : QString{};
     map.insert(QStringLiteral("iconName"), iconName);

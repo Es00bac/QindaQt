@@ -30,6 +30,32 @@ bool HybridPointerGrouping::selectInputDriver(const QString &dotoolPath,
                                               const QRectF &output,
                                               QString *error)
 {
+    if (m_forceDevelopmentInput) {
+        // AGENT-CONTRACT: root-authorized, explicit bypass for environments
+        // missing the dotool binary itself (docs/wiki/development/testing-harness.md).
+        // Ordinary selection below is completely unchanged by this branch;
+        // dotool is never started, so its liveness must never gate anything
+        // downstream (see inputSessionHealthy()).
+        m_injector = QStringLiteral("qindaqt-development-input-forced");
+        m_uinputAdmissionFailure = QStringLiteral(
+            "development input explicitly forced; dotool was not attempted");
+        m_drag = [this](const QPointF &start, const QPointF &end,
+                        bool metaShift, QString *gestureError) {
+            return m_developmentInput.drag(start, end, metaShift, gestureError);
+        };
+        m_activateFirstContextMenuAction =
+            [this](const QPointF &point, QString *gestureError) {
+                return m_developmentInput.activateFirstContextMenuAction(
+                    point, gestureError);
+            };
+        m_activateContextMenuActionAt =
+            [this](const QPointF &point, int index, QString *gestureError) {
+                return m_developmentInput.activateContextMenuActionAt(
+                    point, index, gestureError);
+            };
+        return true;
+    }
+
     if (!m_dotool.start(dotoolPath, error)
         || !m_dotool.moveTo(initialPoint, output, error)) {
         return false;
@@ -56,6 +82,11 @@ bool HybridPointerGrouping::selectInputDriver(const QString &dotoolPath,
                 return m_dotool.activateFirstContextMenuAction(
                     point, output, gestureError);
             };
+        m_activateContextMenuActionAt =
+            [this, output](const QPointF &point, int index, QString *gestureError) {
+                return m_dotool.activateContextMenuActionAt(
+                    point, output, index, gestureError);
+            };
         return true;
     }
 
@@ -74,6 +105,11 @@ bool HybridPointerGrouping::selectInputDriver(const QString &dotoolPath,
         [this](const QPointF &point, QString *gestureError) {
             return m_developmentInput.activateFirstContextMenuAction(
                 point, gestureError);
+        };
+    m_activateContextMenuActionAt =
+        [this](const QPointF &point, int index, QString *gestureError) {
+            return m_developmentInput.activateContextMenuActionAt(
+                point, index, gestureError);
         };
     return true;
 }
@@ -173,7 +209,7 @@ bool HybridPointerGrouping::drag(const QPointF &start,
                                  bool metaShift,
                                  QString *error)
 {
-    if (!m_dotool.isRunning()) {
+    if (!inputSessionHealthy()) {
         *error = QStringLiteral("dotool did not remain alive for the gesture; %1")
                      .arg(m_dotool.diagnostics());
         return false;
@@ -189,7 +225,7 @@ bool HybridPointerGrouping::activateFirstContextMenuAction(
     const QPointF &point,
     QString *error)
 {
-    if (!m_dotool.isRunning()) {
+    if (!inputSessionHealthy()) {
         *error = QStringLiteral("dotool did not remain alive for the context menu; %1")
                      .arg(m_dotool.diagnostics());
         return false;
@@ -201,9 +237,43 @@ bool HybridPointerGrouping::activateFirstContextMenuAction(
     return m_activateFirstContextMenuAction(point, error);
 }
 
+bool HybridPointerGrouping::activateContextMenuActionAt(
+    const QPointF &point,
+    int index,
+    QString *error)
+{
+    if (!inputSessionHealthy()) {
+        *error = QStringLiteral("dotool did not remain alive for the context menu; %1")
+                     .arg(m_dotool.diagnostics());
+        return false;
+    }
+    if (!m_activateContextMenuActionAt) {
+        *error = QStringLiteral("Hybrid context-menu input driver was not selected");
+        return false;
+    }
+    return m_activateContextMenuActionAt(point, index, error);
+}
+
 bool HybridPointerGrouping::dotoolRunning() const
 {
     return m_dotool.isRunning();
+}
+
+bool HybridPointerGrouping::usingDevelopmentInput() const noexcept
+{
+    return m_injector == QStringLiteral("qindaqt-development-input")
+        || m_injector == QStringLiteral("qindaqt-development-input-forced");
+}
+
+bool HybridPointerGrouping::inputSessionHealthy() const
+{
+    // AGENT-CONTRACT: dotool is never started when development input is
+    // forced, so its liveness is meaningless there; the pre-existing
+    // admission-failure fallback still starts dotool as a genuine process
+    // heartbeat even though it no longer emits events, so that case still
+    // checks it.
+    return m_injector == QStringLiteral("qindaqt-development-input-forced")
+        || m_dotool.isRunning();
 }
 
 QString HybridPointerGrouping::dotoolDiagnostics() const
@@ -213,8 +283,13 @@ QString HybridPointerGrouping::dotoolDiagnostics() const
 
 QJsonObject HybridPointerGrouping::inputEvidence() const
 {
+    // AGENT-CONTRACT: forced development input never starts dotool at all, so
+    // dotoolProcessCount must truthfully report zero rather than the literal
+    // "1" that holds for both real dotool-first paths (admitted or fallen
+    // back after a failed admission attempt), per root's explicit
+    // truthfulness requirement.
     return {{QStringLiteral("inputInjector"), m_injector},
-            {QStringLiteral("dotoolProcessCount"), 1},
+            {QStringLiteral("dotoolProcessCount"), m_forceDevelopmentInput ? 0 : 1},
             {QStringLiteral("dotoolProcessStayedRunning"), m_dotool.isRunning()},
             {QStringLiteral("uinputAdmitted"), m_uinputAdmitted},
             {QStringLiteral("uinputDevices"), m_uinputDevices},

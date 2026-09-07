@@ -5,6 +5,7 @@
 #include "kwinchromemanager.h"
 #include "managedwindowregistry.h"
 
+#include <scene/windowitem.h>
 #include <window.h>
 #include <workspace.h>
 
@@ -60,10 +61,21 @@ bool inputEligibleAt(const KWin::Window *window, const QPointF &position)
 
 bool paintableInCurrentContext(const KWin::Window *window)
 {
-    return window && !window->isDeleted()
-        && window->isOnCurrentActivity() && window->isOnCurrentDesktop()
-        && !window->isMinimized() && !window->isHidden()
-        && !window->isHiddenByShowDesktop() && window->readyForPainting();
+    // AGENT-CONTRACT: queries the scene item's actual computed visibility
+    // rather than duplicating KWin's isHidden()/isMinimized() heuristic,
+    // because a shaded container's chrome anchor is deliberately kept
+    // WindowItem-visible (WindowItem::refVisible(PAINT_DISABLED_BY_HIDDEN),
+    // see KWinShadeMemberPlatform::hideAnchorContent) despite being
+    // Window::isHidden(); the older heuristic would wrongly treat that
+    // anchor as unpaintable and make the shaded strip unclickable. A
+    // non-shaded anchor's WindowItem::isVisible() already reduces to the
+    // same activity/desktop/minimize/hidden/readyForPainting checks this
+    // replaced, so ordinary (non-shaded) exposure is unaffected.
+    if (!window || window->isDeleted()) {
+        return false;
+    }
+    const auto *const item = window->windowItem();
+    return item && item->isVisible();
 }
 
 QMap<QString, HybridGroupStackingInput> stackingGroups(
@@ -415,6 +427,12 @@ bool KWinHybridGroupStacking::chromeExposedAt(
         stack.append({stackId(window), inputEligibleAt(window, position)});
     }
     return sceneChromeExposed(anchorId, excludedWindowId, stack);
+}
+
+QString KWinHybridGroupStacking::anchorMemberId(const QString &containerId) const
+{
+    const auto members = m_membersBottomToTop.value(containerId);
+    return members.isEmpty() ? QString{} : members.constLast();
 }
 
 void KWinHybridGroupStacking::clear() noexcept

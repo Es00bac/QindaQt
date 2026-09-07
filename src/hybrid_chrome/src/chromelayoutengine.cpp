@@ -52,8 +52,9 @@ QVector<WindowAction> actionOrder(const ChromeStyle &style, bool maximized)
     return {WindowAction::Close, WindowAction::Minimize, sizeAction};
 }
 
-constexpr std::array<ContainerControl, 2> containerControlOrder{
+constexpr std::array<ContainerControl, 3> containerControlOrder{
     ContainerControl::ToggleMemberTitles,
+    ContainerControl::ToggleShade,
     ContainerControl::ManagementMenu,
 };
 
@@ -180,12 +181,15 @@ void appendContainerControls(const ChromeLayoutRequest &request,
     const qreal controlY = plan->outerTitleBar.center().y()
         - metrics.containerControlExtent / 2.0;
     for (const auto control : containerControlOrder) {
+        const bool checked =
+            (control == ContainerControl::ToggleMemberTitles
+             && request.memberTitlesVisible)
+            || (control == ContainerControl::ToggleShade && request.shaded);
         plan->controls.append({
             control,
             {controlX, controlY, metrics.containerControlExtent,
              metrics.containerControlExtent},
-            control == ContainerControl::ToggleMemberTitles
-                && request.memberTitlesVisible,
+            checked,
         });
         controlX += metrics.containerControlExtent
             + metrics.containerControlSpacing;
@@ -209,8 +213,10 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     plan.devicePixelRatio = request.devicePixelRatio;
     plan.borderHairline = request.metrics.physicalHairline(request.devicePixelRatio);
     plan.maximized = request.maximized;
+    plan.shaded = request.shaded;
     plan.containerFocused = request.containerFocused;
     plan.memberTitlesVisible = request.memberTitlesVisible;
+    plan.containerTitle = request.containerTitle;
     plan.metrics = request.metrics;
     plan.style = request.style;
     plan.outerFrame = request.outerRect;

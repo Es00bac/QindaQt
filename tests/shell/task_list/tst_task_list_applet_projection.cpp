@@ -144,6 +144,7 @@ void TaskListAppletProjectionTests::rowFieldsMirrorTheEntryAndStampTheRevision()
   container.memberWindowIds = {QStringLiteral("w-2"), QStringLiteral("w-3")};
   container.windowCount = 2;
   container.active = true;
+  container.colorHex = QStringLiteral("#0091FF");
   auto window = makeEntry(QStringLiteral("w-1"), kAppOne);
   window.minimized = true;
   window.urgent = true;
@@ -169,6 +170,7 @@ void TaskListAppletProjectionTests::rowFieldsMirrorTheEntryAndStampTheRevision()
   QCOMPARE(windowRow.generationRevision, quint64(42));
   QCOMPARE(windowRow.pending, false);
   QCOMPARE(windowRow.memberWindowIds.isEmpty(), true);
+  QVERIFY(windowRow.colorHex.isEmpty());
 
   const TaskListAppletRow &containerRow = projection.rows.at(1);
   QCOMPARE(containerRow.kind, TaskEntryKind::Container);
@@ -178,6 +180,7 @@ void TaskListAppletProjectionTests::rowFieldsMirrorTheEntryAndStampTheRevision()
            (QStringList{QStringLiteral("w-2"), QStringLiteral("w-3")}));
   QCOMPARE(containerRow.generationRevision, quint64(42));
   QCOMPARE(containerRow.keyboardIndex, 2);
+  QCOMPARE(containerRow.colorHex, QStringLiteral("#0091FF"));
 }
 
 void TaskListAppletProjectionTests::pendingMarkersFlagOnlyNamedTasks() {

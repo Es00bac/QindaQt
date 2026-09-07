@@ -8,6 +8,7 @@ add_library(qindaqt_compositor_shell_actions STATIC
     src/shelltaskfactscodec.cpp
     src/shellwindowidentity.cpp
     src/shellwindowactions.cpp
+    src/containerappearance.cpp
 )
 add_library(QindaQt::CompositorShellActions ALIAS qindaqt_compositor_shell_actions)
 target_sources(
@@ -20,6 +21,7 @@ target_sources(
             include/qindaqt/compositor/shellwindowactions.h
             include/qindaqt/compositor/shellwindowidentity.h
             include/qindaqt/compositor/shelltaskfacts.h
+            include/qindaqt/compositor/containerappearance.h
 )
 target_compile_features(qindaqt_compositor_shell_actions PUBLIC cxx_std_20)
 target_link_libraries(qindaqt_compositor_shell_actions PUBLIC Qt6::Core)
@@ -297,6 +299,10 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridchromeplanbuilder.h
             kwin/hybridcontainerplacement.cpp
             kwin/hybridcontainerplacement.h
+            kwin/hybridcontainerappearance.cpp
+            kwin/hybridcontainerappearance.h
+            kwin/hybridshadecontroller.cpp
+            kwin/hybridshadecontroller.h
             kwin/hybridgroupedgeometryreconciler.cpp
             kwin/hybridgroupedgeometryreconciler.h
             kwin/hybridmemberpolicy.cpp
@@ -345,6 +351,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridpublicstate.cpp
             kwin/kwinhybridwindowactions.cpp
             kwin/kwinhybridwindowlifecycle.cpp
+            kwin/kwinhybridcontainerappearance.cpp
+            kwin/kwinhybridshade.cpp
             kwin/kwinmemberpolicy.cpp
             kwin/kwinmemberpolicy.h
             kwin/kwintaskidentitymanager.cpp

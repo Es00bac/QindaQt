@@ -195,7 +195,8 @@ only its dragged source so that source can target chrome beneath itself.
 An ordinary right-button press and matching release on `OuterTitleDrag` emits
 one stable-ID context-menu request. Member-title right clicks remain native.
 The nonblocking group menu offers layer, workspace, activity, pin, and output
-commands plus Arrange windows, Detach active window, and Ungroup. It revalidates
+commands plus Arrange windows, Detach active window, Ungroup, Minimize group,
+Roll up/Unroll group, Rename, and a Group Color submenu. It revalidates
 the active representative when each command is dispatched.
 
 Fourteen autoloading KGlobalAccel actions cover interactive grabs and

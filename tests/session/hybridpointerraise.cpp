@@ -32,10 +32,14 @@ bool adjacentStackSlots(const ObservedWindow &first,
 QRectF inferredGroupOuterFrame(const ObservedWindow &first,
                                const ObservedWindow &second)
 {
-    // This live fixture uses the production default metrics: one outer border,
-    // then 34px title and 34px tab rows above active member frames.
+    // This live fixture uses the production default metrics
+    // (kwinhybridsession.cpp's sceneMetrics(): contentInsets.top() =
+    // outerBorder + titleBarHeight = 1 + 28 = 29). Tabs share the same title
+    // row as the outer title bar (ChromeLayoutEngine::build() sets
+    // plan.tabStrip = plan.outerTitleBar when tabs exist), so there is only
+    // one row above the member frames, not a separate stacked tab row.
     return first.targetFrame.united(second.targetFrame)
-        .adjusted(-1.0, -69.0, 1.0, 1.0);
+        .adjusted(-1.0, -29.0, 1.0, 1.0);
 }
 
 std::optional<QPointF> exposedPoint(const QRectF &area,

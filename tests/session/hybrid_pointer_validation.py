@@ -31,12 +31,29 @@ def validate_hybrid_public_snapshot(evidence: dict[str, Any]) -> None:
 
 
 def validate_hybrid_input_evidence(evidence: dict[str, Any]) -> None:
-    """Validate either real dotool admission or the explicitly disclosed fallback."""
+    """Validate real dotool admission, its disclosed fallback, or an explicit force.
+
+    Exactly one of three truthful shapes is accepted: dotool started and its
+    uinput devices were admitted; dotool started but admission failed, so the
+    development-gated InputDevice fallback ran; or development input was
+    explicitly forced (root-authorized, for hosts missing dotool itself), in
+    which case dotool must truthfully report zero processes and never having
+    run, not the "1"/"stayed running" shape the other two paths share.
+    """
+    injector = evidence.get("inputInjector")
+    if injector == "qindaqt-development-input-forced":
+        if evidence.get("dotoolProcessCount") != 0:
+            raise RuntimeError("forced development input falsely reported a dotool process")
+        if evidence.get("dotoolProcessStayedRunning") is not False:
+            raise RuntimeError("forced development input falsely reported dotool as running")
+        if evidence.get("uinputAdmitted") is not False:
+            raise RuntimeError("forced development input hid a successful uinput admission")
+        _validate_development_input_device(evidence)
+        return
     if evidence.get("dotoolProcessCount") != 1:
         raise RuntimeError("Hybrid input evidence did not use exactly one dotool process")
     if evidence.get("dotoolProcessStayedRunning") is not True:
         raise RuntimeError("dotool did not remain alive for the Hybrid workflow")
-    injector = evidence.get("inputInjector")
     if injector == "dotool-uinput":
         devices = evidence.get("uinputDevices")
         if evidence.get("uinputAdmitted") is not True:
@@ -51,21 +68,25 @@ def validate_hybrid_input_evidence(evidence: dict[str, Any]) -> None:
     admission_failure = evidence.get("uinputAdmissionFailure")
     if not isinstance(admission_failure, str) or not admission_failure:
         raise RuntimeError("development fallback omitted the concrete uinput failure")
+    _validate_development_input_device(evidence)
+
+
+def _validate_development_input_device(evidence: dict[str, Any]) -> None:
     if evidence.get("developmentInputDeviceId") != "qindaqt-development-input":
-        raise RuntimeError("development fallback did not preserve its gated device identity")
+        raise RuntimeError("development input did not preserve its gated device identity")
     requests = evidence.get("developmentInputRequestCount")
     if not isinstance(requests, int) or isinstance(requests, bool) or requests <= 0:
-        raise RuntimeError("development fallback did not report injected request batches")
+        raise RuntimeError("development input did not report injected request batches")
 
 
 def validate_hybrid_pointer_evidence(result: dict[str, Any]) -> None:
     evidence = result.get("compositorEvidence")
     if not isinstance(evidence, dict):
         raise RuntimeError("the Hybrid pointer workflow omitted structured evidence")
+    # dotoolProcessCount/dotoolProcessStayedRunning are driver-dependent (see
+    # validate_hybrid_input_evidence) so they are validated there, not here.
     expected = {
         "workflow": "hybrid-pointer",
-        "dotoolProcessCount": 1,
-        "dotoolProcessStayedRunning": True,
         "exactModifierGesture": "Meta+Shift+Left",
         "topologyRevisionAdvanced": True,
         "sameOwnerAfterDock": True,

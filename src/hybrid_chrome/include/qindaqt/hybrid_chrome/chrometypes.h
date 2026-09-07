@@ -42,6 +42,11 @@ Q_ENUM_NS(WindowAction)
 enum class ContainerControl {
     ToggleMemberTitles,
     ManagementMenu,
+    // Rolls the whole container up to a compact, still-movable title strip or
+    // unrolls it back to its saved frame. Deliberately distinct from
+    // WindowAction::Minimize/Restore: shading never minimizes/hides members
+    // and the container is never sent to the dock as one iconified entry.
+    ToggleShade,
 };
 Q_ENUM_NS(ContainerControl)
 
@@ -169,10 +174,19 @@ struct ChromeLayoutRequest final
     QRectF outerRect;
     qreal devicePixelRatio = 1.0;
     bool maximized = false;
+    // Whole-container roll-up state; see ContainerControl::ToggleShade. Does
+    // not change how members/tabs are computed here, only whether the
+    // optional containerTitle is painted (shaded always shows it when set).
+    bool shaded = false;
     // AGENT-CONTRACT: These values are a snapshot of KWin focus ownership.
     // A container can retain an active page while another window owns focus.
     bool containerFocused = false;
     bool memberTitlesVisible = true;
+    // User-chosen rename override (see ContainerAppearance). Empty means no
+    // override: the shared row paints no container-level title text, leaving
+    // tabs as the only page-identity presentation, exactly as before this
+    // field existed.
+    QString containerTitle;
     ChromeMetrics metrics;
     ChromeStyle style;
     QVector<ChromeTabSpec> tabs;
@@ -231,8 +245,10 @@ struct ChromeRenderPlan final
     qreal devicePixelRatio = 1.0;
     qreal borderHairline = 1.0;
     bool maximized = false;
+    bool shaded = false;
     bool containerFocused = false;
     bool memberTitlesVisible = true;
+    QString containerTitle;
     ChromeMetrics metrics;
     ChromeStyle style;
     QRectF outerFrame;

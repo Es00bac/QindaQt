@@ -90,6 +90,15 @@ bool DotoolProcess::activateFirstContextMenuAction(
     const QRectF &output,
     QString *error)
 {
+    return activateContextMenuActionAt(point, output, 0, error);
+}
+
+bool DotoolProcess::activateContextMenuActionAt(
+    const QPointF &point,
+    const QRectF &output,
+    int index,
+    QString *error)
+{
     if (!moveTo(point, output, error)) {
         return false;
     }
@@ -102,10 +111,12 @@ bool DotoolProcess::activateFirstContextMenuAction(
         return false;
     }
     processProbeEventsFor(200);
-    if (!writeCommands({QStringLiteral("key down")}, error)) {
-        return false;
+    for (int step = 0; step <= index; ++step) {
+        if (!writeCommands({QStringLiteral("key down")}, error)) {
+            return false;
+        }
+        processProbeEventsFor(80);
     }
-    processProbeEventsFor(80);
     if (!writeCommands({QStringLiteral("key enter")}, error)) {
         return false;
     }
@@ -265,6 +276,14 @@ bool DevelopmentInputDriver::activateFirstContextMenuAction(
     const QPointF &point,
     QString *error)
 {
+    return activateContextMenuActionAt(point, 0, error);
+}
+
+bool DevelopmentInputDriver::activateContextMenuActionAt(
+    const QPointF &point,
+    int index,
+    QString *error)
+{
     if (!inject({pointerEvent(point)}, error)) {
         return false;
     }
@@ -277,11 +296,13 @@ bool DevelopmentInputDriver::activateFirstContextMenuAction(
         return false;
     }
     processProbeEventsFor(200);
-    if (!inject({keyEvent(QLatin1StringView("down"), true),
-                 keyEvent(QLatin1StringView("down"), false)}, error)) {
-        return false;
+    for (int step = 0; step <= index; ++step) {
+        if (!inject({keyEvent(QLatin1StringView("down"), true),
+                     keyEvent(QLatin1StringView("down"), false)}, error)) {
+            return false;
+        }
+        processProbeEventsFor(80);
     }
-    processProbeEventsFor(80);
     if (!inject({keyEvent(QLatin1StringView("enter"), true),
                  keyEvent(QLatin1StringView("enter"), false)}, error)) {
         return false;

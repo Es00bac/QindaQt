@@ -121,7 +121,9 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
         || !destinationsValid(state->activities,
                               QLatin1StringView("activity"), error)
         || !destinationsValid(state->outputs,
-                              QLatin1StringView("output"), error)) {
+                              QLatin1StringView("output"), error)
+        || !destinationsValid(state->containerColors,
+                              QLatin1StringView("container color"), error)) {
         return false;
     }
 
@@ -156,6 +158,26 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
         "Minimize group", QStringLiteral("qindaqt-context-minimize-group"),
         GroupContextMenuCommandKind::MinimizeGroup, false);
     minimizeGroup->setEnabled(state->canMinimize);
+    addGroupAction(state->shaded ? "Unroll group" : "Roll up group",
+                   QStringLiteral("qindaqt-context-toggle-shade"),
+                   GroupContextMenuCommandKind::ToggleShadeGroup, false);
+    addGroupAction("Rename…",
+                   QStringLiteral("qindaqt-context-rename"),
+                   GroupContextMenuCommandKind::RenameContainer, false);
+    addSeparator();
+
+    auto *const colorMenu = addMenu(menuText("Group Color"));
+    colorMenu->setObjectName(QStringLiteral("qindaqt-context-colors"));
+    auto *const colorGroup = new QActionGroup(colorMenu);
+    colorGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);
+    for (const auto &destination : std::as_const(state->containerColors)) {
+        colorGroup->addAction(addDestinationAction(
+            colorMenu, destination,
+            QStringLiteral("qindaqt-context-color-"),
+            GroupContextMenuCommandKind::SetContainerColor,
+            /*checkable=*/true));
+    }
+    colorMenu->setEnabled(!state->containerColors.isEmpty());
     addSeparator();
     auto *const keepAbove = addToggleAction(
         this, menuText("Keep Above"),

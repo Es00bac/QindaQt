@@ -318,7 +318,8 @@ CompositorWorkflowResult exerciseCompositorWorkflow(const QString &primaryTitle,
                                                     std::function<void(const QString &)>
                                                         showPopupForProbe,
                                                     std::function<QString(const QString &)>
-                                                        showDialogForProbe)
+                                                        showDialogForProbe,
+                                                    bool forceDevelopmentInput)
 {
     CompositorWorkflowResult result;
     CompositorProbeClient client;
@@ -361,7 +362,8 @@ CompositorWorkflowResult exerciseCompositorWorkflow(const QString &primaryTitle,
     if (mode == CompositorWorkflowMode::HybridPointer) {
         auto pointerResult = exerciseHybridPointerWorkflow(
             client, titles, dotoolPath, activateProbe,
-            showPopupForProbe, showDialogForProbe, &error);
+            showPopupForProbe, showDialogForProbe, &error,
+            forceDevelopmentInput);
         if (!pointerResult) {
             refreshHybridDiagnostics(client, &result);
             result.failure = error;
