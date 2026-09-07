@@ -1,5 +1,39 @@
 # Integration handoff
 
+## Bundled applications installed — September 7
+
+The primary assistant personally implemented and checked candidate `4dfbe5a2`,
+integrated at `44fff730`. The user explicitly requested no delegated coding;
+no independent worker review is claimed.
+
+- Text Editor: line numbers, syntax highlighting, current-line and cursor
+  position, Go to Line, undoable indentation, auto-indent, per-tab wrapping and
+  zoom. KF6 SyntaxHighlighting is installed; ADR-0095 confines it to presentation.
+- Terminal: preserve monospace fonts on theme changes, per-tab zoom, and new
+  tabs in the active shell's current directory. Live PTY input/output and owned
+  process-directory observation are tested.
+- File Manager: Kimi's S2 plus the selection and keyboard repairs described
+  below are rebuilt with the same integrated dependencies and installed.
+
+Main passes **66/66** app CTest rows, including global-menu composition and
+staged packages. Installed `/usr/bin` binaries match the main build. Native
+Wayland launch checks pass for Editor and Terminal; Terminal's child confirms
+TTY input/output and its working directory. Editor's installed offscreen first
+frame is 51 ms and median PSS is 21,954 KiB, within the existing 400 ms/65,536 KiB
+limits. The actual installed File Manager UI-action probe passes.
+
+Evidence is in ignored `.cache/apps-integrated-*.log` and
+`.cache/apps-installed-proof/` (hash manifest, launch logs, runtime measurements
+and previous executable backups). Documentation validation passes for 191 pages,
+strict MkDocs and whitespace checks pass. The source-shape checker still reports
+three violations already present at base `67b61c61`: GlobalMenuApplet.qml length,
+tests/session/CMakeLists.txt length, and `_run_inner_phases` length in
+`tests/session/gabbee/gabbee_terminal_boot.py`. No new violation is introduced.
+
+The existing desktop session was preserved. Launching an app again uses the new
+binary. Kimi separately owns Calendar. File Manager's later icon/preview,
+mounting and SMB slices remain on its documented roadmap.
+
 ## File Manager S2 integrated and installed
 
 Kimi’s `0ab8cd75` plus primary-assistant repair `01e41ede` are integrated
@@ -10,10 +44,10 @@ list/grid keyboard parity, stable focus, and meaningful batch confirmations.
 All 22 File Manager rows pass on the integrated tree, including real QML
 actions, global-menu routing and staged installation. The installed executable
 matches the main build and its actual `--check-ui-actions` probe passes.
-Documentation, strict MkDocs, source shape and whitespace gates pass.
+Documentation, strict MkDocs and whitespace gates pass; the current source-shape
+qualification is recorded above.
 
-The active follow-up is to finish the bundled Terminal and improve Text Editor
-with practical editing tools, using the current passwordless-sudo window.
+The Terminal and Text Editor follow-up is now installed, as recorded above.
 
 ## Bounded usability checkpoint complete
 
@@ -28,8 +62,8 @@ and Settings plus its service and appearance portal run the new binaries. The
 compositor plugin is byte-identical to the one already deployed for this session.
 Closing tests pass 661/661; native interaction and hardware evidence are scoped
 precisely in the task table. No additional feature work or logout is needed for
-this checkpoint. File Manager S2 remains a separate rejected candidate awaiting
-selection repairs; mounts and SMB remain later file-manager slices.
+this checkpoint. File Manager S2 has since been repaired and integrated, as recorded above;
+mounts and SMB remain later file-manager slices.
 
 ## Final dual-output diagnosis
 

@@ -15,8 +15,11 @@ UI-action probe pass. Stable selection repairs supersede the rejected original
 candidate. Text Editor now has line numbers, syntax highlighting, line navigation,
 indentation, per-tab wrapping and zoom. Terminal preserves its font on theme
 changes, supports per-tab zoom, and opens tabs in the active shell’s folder.
-The candidate passes all 44 Editor/Terminal rows, including live PTY input/output
-and global menus. Integration and installed-binary qualification are the final gate.
+**Installed and verified:** all 66 File Manager/Editor/Terminal rows pass on
+main at `44fff730`. The installed Editor and Terminal launch in native Wayland;
+Terminal’s shell owns a working PTY. Editor also passes its installed startup
+and memory limits. This closes the daily-use app update, not the later File
+Manager mounts/SMB roadmap.
 Kimi is separately implementing Calendar; these changes do not own that app.
 
 
