@@ -842,7 +842,14 @@ model, storage and assignment boundary only; the checkpoint above remains active
 
 Capture and desktop-entry launch evidence: `2b479c6b` integrates independently
 accepted candidate `df5b5a91`; 4/4 integrated Core/workspace tests pass.
-Atomic adoption and native Save/Reopen composition remain in progress.
+Atomic adoption is integrated at `6bdde945`, and native dialogs at `343600b2`.
+The reviewed KWin runtime port candidate `e64e96b6` is integrated. Final
+session wiring and installed Save/Reopen qualification remain in progress.
+
+Session crash recovery is also open: the September 7 shell render-thread crash
+ended the compositor session after the old one-restart budget was exhausted.
+Replace that destructive recovery policy with paced retries that preserve open
+applications; diagnose and verify the rendering fix separately.
 
 ### Dock hover behavior (user addition, 2026-09-07)
 
