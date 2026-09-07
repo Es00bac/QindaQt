@@ -188,6 +188,7 @@ add_test(
         "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
         "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_daily_controls_live_unit.py"
 )
 set_tests_properties(
     session.nested-scenario-parser
@@ -264,6 +265,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_daily_controls_live_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
@@ -285,6 +287,11 @@ find_file(
 find_program(QINDAQT_DOTOOL dotool)
 find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 find_program(QINDAQT_DESKTOP_DBUS_DAEMON dbus-daemon)
+find_program(QINDAQT_PIPEWIRE pipewire)
+find_program(QINDAQT_WIREPLUMBER wireplumber)
+find_program(QINDAQT_PW_CLI pw-cli)
+find_program(QINDAQT_SPECTACLE spectacle)
+find_file(QINDAQT_PIPEWIRE_TEST_CONFIG NAMES pipewire.conf PATHS /usr/share /usr/local/share PATH_SUFFIXES pipewire)
 find_program(
     QINDAQT_POWERDEVIL
     NAMES org_kde_powerdevil
@@ -440,6 +447,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
 
     if(TARGET qindaqt_compositor)
         include("${CMAKE_CURRENT_LIST_DIR}/NotificationLiveTests.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/DailyControlsTests.cmake")
 
         qt_add_executable(
             qindaqt-plugin-unload-probe

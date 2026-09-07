@@ -5,10 +5,7 @@ media-key volume and brightness with visible feedback, the Print screenshot
 action, the session-started polkit authentication agent, and the configurable
 idle display-off policy. Its current maturity is **EXECUTABLE (focused
 evidence)**: the resident process, supervisor startup, Settings Power section,
-and focused tests are implemented and green in Debug builds. Live physical
-key, brightness hardware, Spectacle launch, and real idle/DPMS behavior on an
-installed desktop remain later installed-session evidence owned by the
-integration gate.
+and focused tests are implemented and green in Debug builds. Live brightness hardware and real idle/DPMS behavior remain later installed-session evidence. The installed private `desktop.daily-controls.live` row now qualifies `VolumeUp` and `Print` through the production session, KGlobalAccel, Audio1/PipeWire, notification host, shell, and Spectacle; it remains lane-gated until the manager grants the single nested runtime slot.
 
 The durable choice of a separate supervised process over shell or compositor
 integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-process.md).
@@ -105,10 +102,13 @@ notifier wire shape and replaces-id reuse against a private
 and skip-on-absence; and the Settings Power model and page behavior for the
 new section.
 
-These rows use fixtures, fake transports, and private buses only. They do not
-claim a physical media key, a real PowerDevil brightness operation, a live
-Spectacle capture, a polkit prompt on installed packages, or real idle/display
-cycling on the host desktop; those belong to the installed-session
-verification gate. The nested inhibition matrix (native, portal, and
-ScreenSaver inhibition suppresses PowerDevil display-off and release re-enables
-it) remains required with the real service owner.
+Focused rows use fixtures, fake transports, and private buses only. The separate
+`desktop.daily-controls.live` installed row accepts only a manager-granted private
+namespace: it verifies the real `VolumeUp` global shortcut changes Audio1’s
+private PipeWire default output and makes a production shell feedback popup, then
+requires `Print` to show a visible Spectacle capture surface. It does not claim a
+physical media key, a real PowerDevil brightness operation, a polkit prompt on
+installed packages, or real idle/display cycling on the host desktop. The nested
+inhibition matrix (native, portal, and ScreenSaver inhibition suppresses
+PowerDevil display-off and release re-enables it) remains required with the real
+service owner.
