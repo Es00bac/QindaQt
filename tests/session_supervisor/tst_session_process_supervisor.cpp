@@ -99,11 +99,12 @@ private slots:
     void parentDeathTerminatesTheWitnessedSessionChild();
     void supervisorDeathTerminatesATokenizedChild();
     void buildsTheExactNonSecretShellArguments();
-    void supervisorStartsBothChildrenAndCouplesTheirLifetime();
+    void supervisorKeepsResidentHostAcrossRepeatedShellCrashes();
     void supervisorDoesNotRestartShellAfterHostExit();
     void supervisorRestartsShellOnceWithoutRestartingHost();
-    void supervisorEndsSessionAfterReplacementShellExits();
-    void supervisorEndsSessionWhenShellRestartCannotStart();
+    void supervisorResetsBackoffAfterStableShellRun();
+    void supervisorStopsDuringShellRestartDelayWithoutRespawn();
+    void supervisorKeepsSessionAliveWhenReplacementLaunchFails();
     void supervisorRollsBackWhenTheSecondChildCannotStart();
     void session1AuthenticatesShellAndStopsChildrenInOrder();
     void optionalSecretAgentRestartsOnceWithoutBlockingSession();
@@ -205,25 +206,31 @@ void SessionProcessSupervisorTests::buildsTheExactNonSecretShellArguments()
     QVERIFY(!error.isEmpty());
 }
 
-void SessionProcessSupervisorTests::supervisorStartsBothChildrenAndCouplesTheirLifetime()
+void SessionProcessSupervisorTests::supervisorKeepsResidentHostAcrossRepeatedShellCrashes()
 {
     SessionSupervisor::SessionProcessOptions options;
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
-    options.profileId = QStringLiteral("test-shell-role");
-    options.themeId = QStringLiteral("test-theme");
+    options.profileId = QStringLiteral("test-hold-shell");
     options.compositorProcessId = 42'424;
     SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
-    QSignalSpy finished(&supervisor, &SessionSupervisor::SessionProcessSupervisor::finished);
     QSignalSpy restarted(&supervisor, &SessionSupervisor::SessionProcessSupervisor::shellRestarted);
+    QSignalSpy finished(&supervisor, &SessionSupervisor::SessionProcessSupervisor::finished);
     QString error;
     QVERIFY2(supervisor.start(&error), qPrintable(error));
     QVERIFY(supervisor.isRunning());
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 5'000);
-    QCOMPARE(restarted.size(), 1);
-    QCOMPARE(supervisor.shellRestartCount(), 1);
-    QCOMPARE(finished.constFirst().at(0).toInt(), 1);
-    QVERIFY(!supervisor.isRunning());
+    const qint64 hostProcessId = supervisor.notificationHostProcessId();
+    for (int crash = 0; crash < 3; ++crash) {
+        const qint64 shellProcessId = supervisor.shellProcessId();
+        QVERIFY(shellProcessId > 1);
+        QCOMPARE(::kill(static_cast<pid_t>(shellProcessId), SIGTERM), 0);
+        QTRY_COMPARE_WITH_TIMEOUT(restarted.size(), crash + 1, 5'000);
+        QCOMPARE(supervisor.notificationHostProcessId(), hostProcessId);
+        QVERIFY(supervisor.isRunning());
+        QCOMPARE(supervisor.shellRestartCount(), crash + 1);
+    }
+    QCOMPARE(finished.size(), 0);
+    supervisor.stop();
 }
 
 void SessionProcessSupervisorTests::supervisorDoesNotRestartShellAfterHostExit()
@@ -289,7 +296,7 @@ void SessionProcessSupervisorTests::supervisorRestartsShellOnceWithoutRestarting
     QCOMPARE(finished.size(), 0);
 }
 
-void SessionProcessSupervisorTests::supervisorEndsSessionAfterReplacementShellExits()
+void SessionProcessSupervisorTests::supervisorResetsBackoffAfterStableShellRun()
 {
     SessionSupervisor::SessionProcessOptions options;
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
@@ -298,25 +305,41 @@ void SessionProcessSupervisorTests::supervisorEndsSessionAfterReplacementShellEx
     options.compositorProcessId = 42'424;
     SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
     QSignalSpy restarted(&supervisor, &SessionSupervisor::SessionProcessSupervisor::shellRestarted);
-    QSignalSpy finished(&supervisor, &SessionSupervisor::SessionProcessSupervisor::finished);
     QString error;
     QVERIFY2(supervisor.start(&error), qPrintable(error));
 
-    QCOMPARE(::kill(static_cast<pid_t>(supervisor.shellProcessId()), SIGTERM), 0);
+    const qint64 initialShellProcessId = supervisor.shellProcessId();
+    QCOMPARE(::kill(static_cast<pid_t>(initialShellProcessId), SIGTERM), 0);
     QTRY_COMPARE_WITH_TIMEOUT(restarted.size(), 1, 5'000);
-    const qint64 replacementProcessId = supervisor.shellProcessId();
-    QVERIFY(replacementProcessId > 1);
-    QCOMPARE(::kill(static_cast<pid_t>(replacementProcessId), SIGTERM), 0);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 5'000);
-    QCOMPARE(restarted.size(), 1);
     QCOMPARE(supervisor.shellRestartCount(), 1);
-    QVERIFY(finished.constFirst().at(1).toString().contains(QStringLiteral("shell exited")));
-    QVERIFY(!supervisor.isRunning());
-    QCOMPARE(supervisor.notificationHostProcessId(), 0);
-    QCOMPARE(supervisor.shellProcessId(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.shellRestartCount(), 0, 35'000);
+    QVERIFY(supervisor.shellProcessId() > 1);
+    QVERIFY(supervisor.isRunning());
+    supervisor.stop();
 }
 
-void SessionProcessSupervisorTests::supervisorEndsSessionWhenShellRestartCannotStart()
+void SessionProcessSupervisorTests::supervisorStopsDuringShellRestartDelayWithoutRespawn()
+{
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy restarted(&supervisor, &SessionSupervisor::SessionProcessSupervisor::shellRestarted);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    const qint64 shellProcessId = supervisor.shellProcessId();
+    QVERIFY(shellProcessId > 1);
+    QCOMPARE(::kill(static_cast<pid_t>(shellProcessId), SIGTERM), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.shellRestartCount(), 1, 2'000);
+    supervisor.stop();
+    QTest::qWait(1'500);
+    QCOMPARE(restarted.size(), 0);
+    QVERIFY(!supervisor.isRunning());
+}
+
+void SessionProcessSupervisorTests::supervisorKeepsSessionAliveWhenReplacementLaunchFails()
 {
     QTemporaryDir temporaryDirectory;
     QVERIFY(temporaryDirectory.isValid());
@@ -336,19 +359,26 @@ void SessionProcessSupervisorTests::supervisorEndsSessionWhenShellRestartCannotS
     QSignalSpy finished(&supervisor, &SessionSupervisor::SessionProcessSupervisor::finished);
     QString error;
     QVERIFY2(supervisor.start(&error), qPrintable(error));
+    const qint64 hostProcessId = supervisor.notificationHostProcessId();
     const qint64 initialShellProcessId = supervisor.shellProcessId();
+    QVERIFY(hostProcessId > 1);
     QVERIFY(initialShellProcessId > 1);
     QVERIFY(QFile::remove(disposableShell));
 
     QCOMPARE(::kill(static_cast<pid_t>(initialShellProcessId), SIGTERM), 0);
-    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.shellRestartCount(), 2, 4'000);
     QCOMPARE(restarted.size(), 0);
-    QCOMPARE(supervisor.shellRestartCount(), 1);
-    QVERIFY(
-        finished.constFirst().at(1).toString().contains(QStringLiteral("could not restart shell")));
-    QVERIFY(!supervisor.isRunning());
-    QCOMPARE(supervisor.notificationHostProcessId(), 0);
-    QCOMPARE(supervisor.shellProcessId(), 0);
+    QCOMPARE(finished.size(), 0);
+    QCOMPARE(supervisor.notificationHostProcessId(), hostProcessId);
+    QVERIFY(supervisor.isRunning());
+    QVERIFY(!supervisor.canLogout());
+
+    QVERIFY(QFile::copy(source, disposableShell));
+    QVERIFY(QFile::setPermissions(disposableShell, QFile::permissions(source)));
+    QTRY_COMPARE_WITH_TIMEOUT(restarted.size(), 1, 5'000);
+    QVERIFY(supervisor.isRunning());
+    QCOMPARE(supervisor.notificationHostProcessId(), hostProcessId);
+    supervisor.stop();
 }
 
 void SessionProcessSupervisorTests::supervisorRollsBackWhenTheSecondChildCannotStart()

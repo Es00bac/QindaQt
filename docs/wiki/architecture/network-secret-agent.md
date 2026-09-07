@@ -112,8 +112,8 @@ remembered storage.
 Production `qindaqt-session` starts the agent only when the executable is an
 installed sibling. It is non-essential: startup and registration never block
 session readiness, absence is silent unavailable truth, and an unexpected exit
-is restarted once. Logout and essential-child failure still stop it during the
-session teardown. Ambient `PATH` is not searched, preventing an unrelated
+is restarted once. Logout and notification-host failure still stop it during session teardown;
+paced shell recovery leaves it resident. Ambient `PATH` is not searched, preventing an unrelated
 development binary from being adopted by the production supervisor.
 
 The `QindaQtNetworkSecretAgent` install component carries the executable, QST

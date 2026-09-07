@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
         });
     }
     const int lifetime = hold
-        ? 30'000
-        : (parser.isSet(QStringLiteral("quick-exit")) || shellRole ? 20 : 30'000);
+        ? 120'000
+        : (parser.isSet(QStringLiteral("quick-exit")) || shellRole ? 20 : 120'000);
     QTimer::singleShot(lifetime, &application, &QCoreApplication::quit);
     return application.exec();
 }

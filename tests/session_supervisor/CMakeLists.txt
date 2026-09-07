@@ -56,7 +56,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.session-supervisor PROPERTIES
-        TIMEOUT 45
+        TIMEOUT 120
         LABELS "session;service;dbus"
         ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )

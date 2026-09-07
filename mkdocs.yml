@@ -219,3 +219,4 @@ nav:
       - "0097: Separate workspace slots from live windows": adr/0097-separate-workspace-slots-from-live-windows.md
       - "0101: Launch workspace applications through desktop entries": adr/0101-launch-workspace-apps-through-desktop-entries.md
       - "0102: Adopt restored layouts atomically": adr/0102-adopt-restored-layouts-atomically.md
+      - "0103: Preserve the compositor session during shell recovery": adr/0103-paced-shell-recovery.md

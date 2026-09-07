@@ -8,16 +8,25 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QLoggingCategory>
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 
 namespace QindaQt::SessionSupervisor {
 namespace {
 
 constexpr int StopTimeoutMilliseconds = 2'000;
-constexpr int ShellRestartLimit = 1;
 constexpr int SecretAgentRestartLimit = 1;
+constexpr int ShellRestartInitialDelayMilliseconds = 1'000;
+constexpr int ShellRestartMaximumDelayMilliseconds = 30'000;
+// A shell must remain healthy for a meaningful interval before a crash loop
+// may return to the first retry delay. This keeps repeated short-lived shells
+// paced instead of allowing each replacement to reset the backoff.
+constexpr int ShellStableRunMilliseconds = 30'000;
+
+Q_LOGGING_CATEGORY(SESSION_SUPERVISOR, "qindaqt.session-supervisor")
 
 void setError(QString *error, QString message)
 {
@@ -52,6 +61,12 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     : QObject(parent), m_options(std::move(options)),
       m_welcome(std::make_unique<FirstLaunchWelcome>())
 {
+    m_shellRestartTimer.setSingleShot(true);
+    m_shellStableTimer.setSingleShot(true);
+    connect(&m_shellRestartTimer, &QTimer::timeout, this,
+            &SessionProcessSupervisor::attemptShellRestart);
+    connect(&m_shellStableTimer, &QTimer::timeout, this,
+            &SessionProcessSupervisor::resetShellRestartBackoff);
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
     m_networkSecretAgent.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -61,6 +76,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(&m_shell, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
         childFinished(ChildRole::Shell, code, status);
     });
+    connect(&m_shell, &QProcess::errorOccurred, this,
+            &SessionProcessSupervisor::shellProcessError);
     connect(&m_networkSecretAgent, &QProcess::finished, this,
             [this](int, QProcess::ExitStatus) { networkSecretAgentEnded(); });
     connect(&m_networkSecretAgent, &QProcess::started, this, [this] {
@@ -93,6 +110,10 @@ bool SessionProcessSupervisor::start(QString *error)
         return false;
     }
     m_shellRestartCount = 0;
+    m_shellRestartDelayMilliseconds = 0;
+    m_shellPredecessorProcessId = 0;
+    m_shellRestartTimer.stop();
+    m_shellStableTimer.stop();
     m_networkSecretAgentRestartCount = 0;
     m_hostProcessId = 0;
     m_shellProcessId = 0;
@@ -153,6 +174,10 @@ void SessionProcessSupervisor::stop() noexcept
     m_networkSecretAgentProcessId = 0;
     m_networkSecretAgentPreviousProcessId = 0;
     m_shellRestartCount = 0;
+    m_shellRestartDelayMilliseconds = 0;
+    m_shellPredecessorProcessId = 0;
+    m_shellRestartTimer.stop();
+    m_shellStableTimer.stop();
     m_stopping = false;
 }
 
@@ -167,13 +192,19 @@ void SessionProcessSupervisor::requestLogout()
 
 bool SessionProcessSupervisor::isRunning() const noexcept
 {
-    return m_running && m_host.state() != QProcess::NotRunning
-           && m_shell.state() != QProcess::NotRunning;
+    // A missing shell is a recoverable interval. The notification host keeps
+    // the session's authenticated service resident while the retry timer
+    // paces a replacement.
+    return m_running && m_host.state() != QProcess::NotRunning;
 }
 
 bool SessionProcessSupervisor::canLogout() const noexcept
 {
-    return isRunning() && !m_stopping;
+    // Session1 authorizes the shell by PID. During a replacement interval
+    // there is no shell caller to authorize, even though the session remains
+    // alive and the resident host continues serving applications.
+    return isRunning() && !m_stopping
+           && m_shell.state() != QProcess::NotRunning;
 }
 
 qint64 SessionProcessSupervisor::notificationHostProcessId() const noexcept
@@ -237,7 +268,71 @@ bool SessionProcessSupervisor::startShell(QString *error, qint64 predecessorProc
         return false;
     }
     m_shellProcessId = m_shell.processId();
+    m_shellStableTimer.start(ShellStableRunMilliseconds);
     return true;
+}
+
+void SessionProcessSupervisor::scheduleShellRestart(qint64 predecessorProcessId,
+                                                    const QString &reason)
+{
+    if (!m_running || m_stopping || m_host.state() == QProcess::NotRunning
+        || m_shellRestartTimer.isActive()) {
+        return;
+    }
+    m_shellStableTimer.stop();
+    m_shellPredecessorProcessId = predecessorProcessId;
+    if (m_shellRestartCount == 0) {
+        m_shellRestartDelayMilliseconds = ShellRestartInitialDelayMilliseconds;
+    } else {
+        m_shellRestartDelayMilliseconds = std::min(
+            ShellRestartMaximumDelayMilliseconds,
+            std::max(ShellRestartInitialDelayMilliseconds,
+                     m_shellRestartDelayMilliseconds * 2));
+    }
+    if (m_shellRestartCount < std::numeric_limits<int>::max()) {
+        ++m_shellRestartCount;
+    }
+    qCInfo(SESSION_SUPERVISOR)
+        << "shell restart scheduled" << m_shellRestartCount << "in"
+        << m_shellRestartDelayMilliseconds << "ms:" << reason;
+    m_shellRestartTimer.start(m_shellRestartDelayMilliseconds);
+}
+
+void SessionProcessSupervisor::attemptShellRestart()
+{
+    if (!m_running || m_stopping || m_host.state() == QProcess::NotRunning) {
+        return;
+    }
+    const qint64 predecessorProcessId = m_shellPredecessorProcessId;
+    m_shellPredecessorProcessId = 0;
+    m_shellRestartAttemptInProgress = true;
+    QString error;
+    // AGENT-CONTRACT: A replacement reuses only the in-memory session token.
+    // TokenizedProcessLauncher creates a new one-shot descriptor, and
+    // shellProcessArguments repeats the same authenticated compositor PID.
+    const bool started = startShell(&error, predecessorProcessId);
+    m_shellRestartAttemptInProgress = false;
+    if (started) {
+        qCInfo(SESSION_SUPERVISOR) << "shell replacement started"
+                                   << m_shellProcessId;
+        Q_EMIT shellRestarted(predecessorProcessId, m_shellProcessId);
+        return;
+    }
+    scheduleShellRestart(predecessorProcessId,
+                         QStringLiteral("could not start replacement: %1")
+                             .arg(error));
+}
+
+void SessionProcessSupervisor::resetShellRestartBackoff()
+{
+    if (!m_running || m_stopping || m_shell.state() == QProcess::NotRunning) {
+        return;
+    }
+    if (m_shellRestartCount != 0) {
+        qCInfo(SESSION_SUPERVISOR) << "shell stable; resetting restart backoff";
+    }
+    m_shellRestartCount = 0;
+    m_shellRestartDelayMilliseconds = 0;
 }
 
 void SessionProcessSupervisor::startNetworkSecretAgent()
@@ -285,20 +380,15 @@ void SessionProcessSupervisor::childFinished(ChildRole role, int exitCode,
         return;
     }
 
-    if (role == ChildRole::Shell && m_shellRestartCount < ShellRestartLimit
+    if (role == ChildRole::Shell
         && m_host.state() != QProcess::NotRunning) {
         const qint64 previousProcessId = m_shellProcessId;
-        ++m_shellRestartCount;
-        QString error;
-        // AGENT-CONTRACT: A replacement reuses only the in-memory session
-        // token. TokenizedProcessLauncher creates a new one-shot descriptor,
-        // and shellProcessArguments repeats the same authenticated KWin PID.
-        if (startShell(&error, previousProcessId)) {
-            Q_EMIT shellRestarted(previousProcessId, m_shellProcessId);
-            return;
-        }
-        finishSession(role, exitCode, exitStatus,
-                      QStringLiteral("could not restart shell: %1").arg(error));
+        m_shellProcessId = 0;
+        scheduleShellRestart(previousProcessId,
+                             QStringLiteral("shell exited %1")
+                                 .arg(exitStatus == QProcess::NormalExit
+                                          ? QString::number(exitCode)
+                                          : QStringLiteral("abnormally")));
         return;
     }
 
@@ -310,6 +400,9 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
 {
     m_stopping = true;
     m_running = false;
+    m_shellRestartTimer.stop();
+    m_shellStableTimer.stop();
+    m_shellPredecessorProcessId = 0;
     m_token.reset();
     if (m_welcome->isRunning()) {
         Q_EMIT childStopRequested(QStringLiteral("welcome"));
@@ -349,6 +442,19 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
                                                           : QStringLiteral("with a failure"))
                                : detail;
     Q_EMIT finished(clean ? 1 : std::max(exitCode, 1), reason);
+}
+
+void SessionProcessSupervisor::shellProcessError(QProcess::ProcessError error)
+{
+    if (error != QProcess::FailedToStart || !m_running || m_stopping
+        || m_shellRestartAttemptInProgress) {
+        return;
+    }
+    const qint64 predecessorProcessId = m_shellProcessId;
+    m_shellProcessId = 0;
+    scheduleShellRestart(predecessorProcessId,
+                         QStringLiteral("shell failed to start: %1")
+                             .arg(m_shell.errorString()));
 }
 
 void SessionProcessSupervisor::stopChild(QProcess &process) noexcept

@@ -71,13 +71,14 @@ supervisor also starts an installed sibling `qindaqt-welcome --first-launch` as
 an optional parent-death-bound child. Welcome decides locally whether it should
 show, exits successfully when a person has opted out, and is never restarted;
 its failure cannot end the session. The notification host is
-session-resident. One unexpected shell exit consumes a fixed
-one-restart budget: the host stays running while a replacement shell receives
-a fresh descriptor containing the same token, the same direct KWin PID, and
-the same profile/theme arguments. Host exit, replacement-start failure, a
-second shell exit, or explicit stop ends the complete session. This contract is
-recorded in
-[ADR-0019](../adr/0019-restart-the-production-shell-once.md). Because
+session-resident. An unexpected shell exit schedules a replacement with a
+fresh descriptor containing the same token, the same direct KWin PID, and the
+same profile/theme arguments. Retry delays use paced exponential backoff from
+one second to a 30-second cap, and reset only after a 30-second stable shell
+run. Failed launches and repeated shell exits keep the host and compositor
+session alive while retries continue. Host exit, explicit stop, or supervisor
+and compositor death ends the complete session. This contract is recorded in
+[ADR-0103](../adr/0103-paced-shell-recovery.md). Because
 KWin directly launches this supervisor, it arms a kernel parent-death signal,
 race-checks and validates the direct parent PID, and passes the value to the
 shell with the presentation descriptor. Host and shell also die with their
