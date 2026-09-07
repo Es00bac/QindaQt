@@ -1,5 +1,25 @@
 # Integration handoff
 
+## Reusable workspace checkpoint is underway
+
+Main `f3fd6dc9` integrates the independently reviewed workspace foundation
+(candidate `1824b3cd`). Kimi accepted the exact commit after its own build,
+10/10 QtTest cases and 15 additional contract probes. The integrated source
+passes 3/3 Core/workspace CTest rows and 195-document validation. External
+Calendar changes in the shared CMake files remain untouched.
+
+Capture and native desktop-entry launch are candidate `df5b5a91`, pending Kimi
+delta review; their candidate tree passes 4/4 focused CTest rows, including a
+real desktop-entry launch under an isolated test bus, plus strict docs. Terra
+is building native Save/Reopen dialogs. Sonnet owns container roll-up,
+iconify and name/color projection; GLM owns daily desktop controls; Sol owns
+CI and Gentoo release packaging. Assignments are not completed features.
+
+The checkpoint remains incomplete until saved workspaces reopen in the
+installed desktop, container management and everyday controls work there, and
+the pinned release is reproducible. No logout restoration or refreshed runtime
+installation is claimed by this foundation integration.
+
 ## Interactive Terminal fixed; Gentoo package installed
 
 This supersedes the earlier Terminal installation claim below. The earlier
