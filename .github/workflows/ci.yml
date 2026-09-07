@@ -133,7 +133,9 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: archlinux:base-devel
-    timeout-minutes: 30
+    # A cold full-tree build at the required two-way parallelism exceeded the
+    # former 30-minute cap before either runtime row could start.
+    timeout-minutes: 60
     steps:
       # AGENT-CONTRACT: This lane deliberately uses the current rolling KWin
       # runtime with QindaQt's binary KWin plugin disabled. It proves the public
@@ -278,6 +280,7 @@ jobs:
           dev-qt/qtbase -accessibility
           kde-plasma/kwin -accessibility -lock -screencast shortcuts
           net-misc/networkmanager -bluetooth -policykit -systemd
+          x11-misc/xdg-utils -X -dbus -gnome -perl -plasma
           EOF
 
       # `--usepkgonly` makes absence of a compatible official binary package a
