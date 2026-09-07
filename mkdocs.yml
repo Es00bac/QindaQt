@@ -217,3 +217,4 @@ nav:
       - "ADR-0095: Editor syntax highlighting": adr/0095-use-ksyntaxhighlighting-for-editor-presentation.md
       - "0096: Package bundled applications with Portage": adr/0096-package-bundled-apps-with-portage.md
       - "0097: Separate workspace slots from live windows": adr/0097-separate-workspace-slots-from-live-windows.md
+      - "0101: Launch workspace applications through desktop entries": adr/0101-launch-workspace-apps-through-desktop-entries.md

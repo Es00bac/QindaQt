@@ -9,7 +9,8 @@ workspace must not guess which is which.
 ## Current implementation boundary
 
 `QindaQt::Workspaces` provides the saved document, atomic filesystem storage,
-window assignment policy and construction of a fresh container value. It does
+capture of an existing layout, window assignment policy and construction of a
+fresh container value. It does
 not yet add Save or Reopen controls to the desktop, launch applications, or
 restore a running compositor session. Those remain acceptance requirements for
 the reusable-workspace checkpoint in `docs/TASK_LIST.md`.
@@ -49,7 +50,11 @@ last-save preservation, damaged-file reporting, schema/layout rejection,
 identity rebinding, ambiguous application matches, explicit replacement and
 ineligible/duplicate-window rejection. These tests do not prove logout restore.
 
-The next integration adds capture of the active container, application launch
+Capture accepts a complete application-intent inventory for the current
+container, preserves page order and active page, and replaces live leaf IDs
+with durable slot IDs. A stale or incomplete inventory rejects the capture.
+
+The next integration connects active-container capture to application launch
 and missing-app reporting, a manual assignment interface, and atomic adoption.
 Container name/color projection and roll-up/iconify controls are implemented
 separately at the compositor boundary. Their geometry and visibility must not
@@ -58,3 +63,20 @@ be confused with the durable split layout.
 See [ADR-0097](../adr/0097-separate-workspace-slots-from-live-windows.md),
 [Window containers](window-containers.md) and
 [Module boundaries](module-boundaries.md).
+
+## Desktop application adapter
+
+`QindaQt::WorkspacesApps` supplies installed desktop-entry lookup and
+asynchronous launch through KF6 Service and KIOGui. Missing applications return
+a useful error immediately; failed process startup arrives through
+`launchFinished`. The caller must display that failure and refresh the live
+window inventory separately. A successful launch is not a window assignment.
+The adapter accepts a caller-supplied Wayland activation token and keeps URL
+expansion in the platform launcher. See
+[ADR-0101](../adr/0101-launch-workspace-apps-through-desktop-entries.md).
+
+`workspaces.desktop-applications` runs on a private test bus with a temporary
+XDG application catalog. It exercises missing-app rejection, real desktop-file
+launch with a spaced document URL, asynchronous executable failure, and invalid
+URL rejection. It does not launch the user's installed applications or prove
+host-session window adoption.

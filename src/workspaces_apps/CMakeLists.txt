@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+find_package(KF6Service 6.0 REQUIRED CONFIG)
+find_package(KF6KIO 6.0 REQUIRED CONFIG)
+add_library(qindaqt_workspaces_apps STATIC desktop_applications.cpp include/qindaqt/workspaces_apps/desktop_applications.h)
+add_library(QindaQt::WorkspacesApps ALIAS qindaqt_workspaces_apps)
+target_include_directories(qindaqt_workspaces_apps PUBLIC include)
+target_link_libraries(qindaqt_workspaces_apps PUBLIC Qt6::Core PRIVATE KF6::Service KF6::KIOGui)
+target_compile_features(qindaqt_workspaces_apps PUBLIC cxx_std_20)
+set_target_properties(qindaqt_workspaces_apps PROPERTIES AUTOMOC ON POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_workspaces_apps)
+endif()
