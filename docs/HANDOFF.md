@@ -1,5 +1,15 @@
 # Integration handoff
 
+## Updated closing suite passed
+
+The integrated popup controls, Gabbee test registration and private font
+configuration pass the updated closing selection: **661/661**, exit0,
+129.78 seconds (`.cache/finish-closing-661.log`). The versioned deployment
+payload is `.cache/session-checkpoint-375dc660`, with all 1,077 entries verified.
+The previously supplied `.cache/session-checkpoint-current/install.py` command
+resolves to that installer. System installation remains outstanding; the
+Settings/Sloom native acceptance runs are the remaining active runtime work.
+
 ## Native Gabbee shortcut routing verified
 
 Private run `bd01eade1a1442d7ac9bc4147ac293d2` passes 4/4 phases against the
