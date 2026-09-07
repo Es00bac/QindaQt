@@ -38,6 +38,24 @@ CommandResult Machine::applyCompleted(const quint64 token, const ApplyOutcome ou
     }
     if (m_view.state == MachineState::Applying) {
         const bool rollbackWasRequested = m_revertRequested;
+        // AGENT-CONTRACT: The compositor's Applied callback and the independent
+        // D0 inventory update are delivered on separate channels and may arrive
+        // in either order. observedSnapshot() retains a genuinely advanced,
+        // same-lineage snapshot seen while still Applying instead of rejecting
+        // it as CallbackOutOfOrder; consume that retained fact here so a
+        // matching transaction can reach AwaitingConfirmation without waiting
+        // for a second, redundant inventory event that may never come.
+        //
+        // AGENT-GUARD: A pre-ACK retained snapshot that is NOT the staged
+        // target must never be read as proof of apply rejection here, even if
+        // it happens to equal the pre-image (for example descriptive-only
+        // inventory metadata observed before the compositor actually applied
+        // the candidate). Only a retained snapshot matching the staged target
+        // may short-circuit straight to AwaitingConfirmation; anything else
+        // must fall through to ordinary Observing and be proven or timed out
+        // by a later, genuinely post-ACK observation.
+        const bool hadFreshObservation = m_freshObservationDuringApply;
+        m_freshObservationDuringApply = false;
         m_activeToken = 0;
         m_view.deadlineMonotonicMilliseconds = Private::saturatedDeadline(
             m_clock.nowMilliseconds(), m_timing.observationTimeoutMilliseconds);
@@ -51,6 +69,9 @@ CommandResult Machine::applyCompleted(const quint64 token, const ApplyOutcome ou
         }
         if (outcome == ApplyOutcome::Applied) {
             setState(MachineState::Observing);
+            if (hadFreshObservation && snapshotMatches(m_snapshot, m_staged)) {
+                return resolveObserving(true);
+            }
             return accepted(true);
         }
         setState(MachineState::ResolvingUncertain);
@@ -90,6 +111,32 @@ CommandResult Machine::applyCompleted(const quint64 token, const ApplyOutcome ou
     return rejected(CommandError::CallbackOutOfOrder);
 }
 
+CommandResult Machine::resolveObserving(const bool changed)
+{
+    if (snapshotMatches(m_snapshot, m_staged)) {
+        m_journal.phase = JournalPhase::AwaitingConfirmation;
+        if (!Private::journalMutationDurable(m_port.storeJournal(m_journal))) {
+            beginRevert(Display::TransactionReason::JournalFailure);
+            return accepted(true, CommandError::JournalFailure);
+        }
+        setState(MachineState::AwaitingConfirmation);
+        m_view.deadlineMonotonicMilliseconds = Private::saturatedDeadline(
+            m_clock.nowMilliseconds(), m_timing.confirmationTimeoutMilliseconds);
+        return accepted(true);
+    }
+    if (snapshotMatches(m_snapshot, m_preimage)) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
+            enterStuck(true);
+            return accepted(true, CommandError::JournalFailure);
+        }
+        m_view.reason = Display::TransactionReason::ApplyRejected;
+        const Display::Snapshot current = m_snapshot;
+        finishReady(current);
+        return accepted(true, CommandError::ApplyRejected);
+    }
+    return accepted(changed, CommandError::ObservationMismatch);
+}
+
 CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
 {
     if (!validSnapshot(snapshot)) {
@@ -124,31 +171,28 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
         m_view.currentRevision = snapshot.revision;
         return accepted(changed);
     }
+    if (m_view.state == MachineState::Applying) {
+        // AGENT-CONTRACT: The independent D0 inventory update can arrive before
+        // the Wayland Applied callback for the same apply. Retain a valid,
+        // same-lineage snapshot in m_snapshot rather than rejecting it as
+        // CallbackOutOfOrder; applyCompleted() evaluates it once the matching
+        // ack lands (see m_freshObservationDuringApply).
+        if (!followsCurrentLineage(snapshot, m_snapshot)) {
+            return rejected(CommandError::InvalidSnapshot);
+        }
+        const bool changed = snapshot != m_snapshot;
+        m_snapshot = snapshot;
+        m_view.currentRevision = snapshot.revision;
+        if (changed) {
+            m_freshObservationDuringApply = true;
+        }
+        return accepted(changed);
+    }
     if (m_view.state == MachineState::Observing) {
         const bool changed = snapshot != m_snapshot;
         m_snapshot = snapshot;
         m_view.currentRevision = snapshot.revision;
-        if (snapshotMatches(snapshot, m_staged)) {
-            m_journal.phase = JournalPhase::AwaitingConfirmation;
-            if (!Private::journalMutationDurable(m_port.storeJournal(m_journal))) {
-                beginRevert(Display::TransactionReason::JournalFailure);
-                return accepted(true, CommandError::JournalFailure);
-            }
-            setState(MachineState::AwaitingConfirmation);
-            m_view.deadlineMonotonicMilliseconds = Private::saturatedDeadline(
-                m_clock.nowMilliseconds(), m_timing.confirmationTimeoutMilliseconds);
-            return accepted(true);
-        }
-        if (snapshotMatches(snapshot, m_preimage)) {
-            if (!Private::journalMutationDurable(m_port.clearJournal())) {
-                enterStuck(true);
-                return accepted(true, CommandError::JournalFailure);
-            }
-            m_view.reason = Display::TransactionReason::ApplyRejected;
-            finishReady(snapshot);
-            return accepted(true, CommandError::ApplyRejected);
-        }
-        return accepted(changed, CommandError::ObservationMismatch);
+        return resolveObserving(changed);
     }
     if (m_view.state == MachineState::ResolvingUncertain) {
         const Display::TransactionReason uncertaintyReason = m_view.reason;
@@ -170,6 +214,21 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
             return accepted(true, CommandError::ApplyUncertain);
         }
         return accepted(changed, CommandError::ObservationMismatch);
+    }
+    if (m_view.state == MachineState::RevertingApply) {
+        // AGENT-CONTRACT: Symmetric to the Applying branch above. Retain a
+        // fresh, same-lineage snapshot so applyCompleted()'s existing
+        // snapshotMatches(m_snapshot, m_preimage) no-op short-circuit (see
+        // acknowledgedNoOpRollbackCompletesFromRetainedPreimage) can fire from
+        // a retained observation instead of only from a value already present
+        // before the revert apply was issued.
+        if (!followsCurrentLineage(snapshot, m_snapshot)) {
+            return rejected(CommandError::InvalidSnapshot);
+        }
+        const bool changed = snapshot != m_snapshot;
+        m_snapshot = snapshot;
+        m_view.currentRevision = snapshot.revision;
+        return accepted(changed);
     }
     if (m_view.state == MachineState::RevertingObserve) {
         const bool changed = snapshot != m_snapshot;

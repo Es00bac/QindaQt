@@ -62,6 +62,7 @@ private:
         bool cleanupOnly = false,
         Display::TransactionReason durableReason = Display::TransactionReason::None);
     void finishReady(const Display::Snapshot &snapshot);
+    [[nodiscard]] CommandResult resolveObserving(bool changed);
     [[nodiscard]] bool snapshotMatches(const Display::Snapshot &snapshot,
                                        const Display::Candidate &candidate) const;
     [[nodiscard]] bool snapshotMatchesSurvivingProperties(
@@ -88,6 +89,12 @@ private:
     bool m_revertRequested = false;
     bool m_abandonAfterSettle = false;
     bool m_cleanupOnlyStuck = false;
+    // AGENT-GUARD: The Wayland Applied callback and the independent D0 inventory
+    // update race; inventory can land first. Only a genuinely advanced snapshot
+    // observed while still Applying may short-circuit the post-ack evaluation in
+    // applyCompleted() — never the untouched pre-apply snapshot, which would
+    // read as the preimage and misreport a real Applied outcome as rejected.
+    bool m_freshObservationDuringApply = false;
 };
 
 } // namespace QindaQt::DisplayTransaction
