@@ -1,5 +1,18 @@
 # Integration handoff
 
+## Installed checkpoint and component refresh
+
+The user entered sudo credentials in a native terminal. Both installers
+completed; independent post-install hashing matched all 1,077 QindaQt and
+3,181 Sloom entries. The manager removed the temporary Display override and
+restarted the six resident services. Every service returned a snapshot; no
+recent user-service errors were logged. The shell restarted at 08:33 MDT on
+September 7 as PID 2205657, with the original compositor and session preserved.
+Settings, its D-Bus service, and the appearance portal were refreshed afterward.
+
+Final running-desktop interaction checks and any required compositor refresh
+remain outstanding. Installation is no longer blocked on credentials.
+
 ## Host shortcut configured
 
 The manager configured this user’s previously unassigned note shortcut through
