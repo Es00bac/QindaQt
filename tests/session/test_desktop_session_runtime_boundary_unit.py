@@ -18,6 +18,7 @@ from desktop_session_interaction_runtime import (
     _secondary_primary_environment,
 )
 from desktop_session_sandbox import (
+    FONTCONFIG_FILE_PATH,
     ReadOnlyMount,
     SandboxSpec,
     build_bwrap_argv,
@@ -215,6 +216,57 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertEqual(aliases, [("usr/lib", "/lib"), ("usr/lib64", "/lib64")])
             self.assertLess(argv.index("/lib64"), argv.index("--proc"))
             remove_run_root(paths, build, "b" * 32)
+
+    def test_fontconfig_env_names_the_source_root_fixture(self) -> None:
+        environment = sandbox_environment(
+            run_id="c" * 32, uid=1000,
+            stage_bin="/opt/qindaqt/bin", system_path=["/usr/bin"],
+        )
+        self.assertEqual(environment["FONTCONFIG_FILE"], FONTCONFIG_FILE_PATH)
+        self.assertEqual(
+            FONTCONFIG_FILE_PATH,
+            "/opt/qindaqt-source/tests/session/fontconfig/private-runtime/fonts.conf",
+        )
+        # The `tests` ReadOnlyMount binds the whole source_root at
+        # /opt/qindaqt-source (see test_desktop_session_nested.py), so this
+        # relies on no mount beyond the one every caller already has.
+        fixture = Path(__file__).resolve().parent / "fontconfig/private-runtime/fonts.conf"
+        self.assertTrue(fixture.is_file())
+
+    def test_fontconfig_fixture_resolves_the_vendored_family_via_fc_match(self) -> None:
+        fc_match = shutil.which("fc-match")
+        if fc_match is None:
+            self.skipTest("fc-match is required to verify fontconfig parsing")
+        repo_root = Path(__file__).resolve().parents[2]
+        fixture = repo_root / "tests/session/fontconfig/private-runtime/fonts.conf"
+        fonts_dir = repo_root / "tests/controls/fonts"
+        self.assertTrue(fixture.is_file())
+        self.assertTrue((fonts_dir / "NotoSans-Regular.ttf").is_file())
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / "cache"
+            cache.mkdir()
+            # Real fc-match parse of the checked-in fixture: swap only the
+            # in-sandbox source path for the real repo path and point the
+            # cache at a throwaway directory. Font input stays read-only.
+            rewritten = fixture.read_text(encoding="utf-8").replace(
+                "/opt/qindaqt-source/tests/controls/fonts", str(fonts_dir)
+            ).replace(
+                '<dir prefix="xdg">fonts</dir>', ""
+            ).replace(
+                '<cachedir prefix="xdg">fontconfig</cachedir>',
+                f"<cachedir>{cache}</cachedir>",
+            )
+            private_conf = Path(directory) / "fonts.conf"
+            private_conf.write_text(rewritten, encoding="utf-8")
+            result = subprocess.run(
+                [fc_match, "--format=%{family}\n", "QindaQt Sans"],
+                env={**os.environ, "FONTCONFIG_FILE": str(private_conf), "HOME": directory},
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("QindaQt Sans", result.stdout)
 
     def test_host_python_interpreter_resolves_through_merged_usr_aliases(self) -> None:
         bwrap = shutil.which("bwrap")
