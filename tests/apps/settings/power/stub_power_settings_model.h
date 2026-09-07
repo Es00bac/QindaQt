@@ -68,6 +68,34 @@ Q_SIGNALS:
   void changed();
 };
 
+class StubIdleDisplaySettings final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool enabled MEMBER enabled NOTIFY changed)
+  Q_PROPERTY(int minutes MEMBER minutes NOTIFY changed)
+  Q_PROPERTY(bool busy MEMBER busy NOTIFY changed)
+  Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
+public:
+  using QObject::QObject;
+  bool enabled = true;
+  int minutes = 10;
+  bool busy = false;
+  QString statusText = QStringLiteral("10 minutes of inactivity turns the display off.");
+  QString errorText;
+  int enabledCalls = 0;
+  int minutesCalls = 0;
+  int retryCalls = 0;
+  Q_INVOKABLE bool setEnabled(bool value) {
+    ++enabledCalls; enabled = value; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool setMinutes(int value) {
+    ++minutesCalls; minutes = value; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool retry() { ++retryCalls; return true; }
+Q_SIGNALS:
+  void changed();
+};
+
 class StubPowerSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading MEMBER loading NOTIFY viewChanged)

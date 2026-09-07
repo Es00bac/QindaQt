@@ -25,6 +25,7 @@ The route presents only validated, bounded public snapshot copies:
 | Internal brightness | Normalized 0–10000 position and exact observed raw value/maximum | Read-only disabled slider because Power1 version 1 has no internal-display mutation |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
 | Screen lock | Saved automatic-idle-lock preference and timeout | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled |
+| Display power | Purpose-scoped Settings1 `power.idleDisplayOffMinutes` truth (-1 = never, 1–240 minutes) | Enable/disable idle display-off; choose the retained timeout only while it is enabled; never locks and never touches the screen-lock preference |
 | Session | Typed availability for Lock, Log out, Suspend, Restart, and Shut down | Lock and Suspend dispatch directly; Log out, Restart, and Shut down require confirmation |
 
 Every state and warning has visible text; meaning is not carried by color
@@ -50,6 +51,21 @@ unsaved change. The current timeout stays stored while automatic
 locking is off, and the page disables its duration selector until it is
 turned on again. The selector offers common idle durations and retains a
 previous valid custom duration so opening the page never silently changes it.
+
+## Display-power preference boundary
+
+The Display power section is display energy only. It reads and writes exactly
+one purpose-scoped Settings1 key, `power.idleDisplayOffMinutes`, through the
+route's own scoped client: `-1` (and any value at or below zero) means the
+display never turns off, positive values are clamped to 1–240 minutes, and
+the documented default is ten. The resident
+[`qindaqt-desktop-controls`](../architecture/desktop-controls.md) process
+enforces the policy through KIdleTime and org-kde-kwin-dpms; the route never
+dispatches DPMS itself and never locks the session. Writes are optimistic
+with busy suppression while a commit is in flight, a confirmed non-applied or
+uncertain outcome surfaces as visible error text with one explicit retry, and
+the timeout selector stays disabled until idle display-off is enabled. The
+section shares no storage or authority with the screen-lock preference above.
 
 ## Exact admission and operation lifetime
 

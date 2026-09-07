@@ -15,6 +15,7 @@
 
 using QindaQt::Apps::SettingsPower::TestSupport::StubPowerSettingsModel;
 using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
+using QindaQt::Apps::SettingsPower::TestSupport::StubIdleDisplaySettings;
 
 namespace {
 QQuickItem *findItem(QQuickItem *root, const QString &name) {
@@ -36,11 +37,13 @@ private Q_SLOTS:
   void sessionActionsHaveKeyboardParityAndDestructiveConfirmation();
   void compactAndUnavailableFocusRemainAdmitted();
   void screenLockControlsRespectAutomaticLock();
+  void idleDisplayControlsRespectThePolicy();
 
 private:
   std::unique_ptr<QQuickView> m_view;
   std::unique_ptr<StubPowerSettingsModel> m_model;
   StubScreenLockSettings *m_screenLock = nullptr;
+  StubIdleDisplaySettings *m_idleDisplay = nullptr;
   std::pair<std::unique_ptr<QObject>, QQuickItem *> createPage(QSize size);
 };
 
@@ -69,11 +72,15 @@ PowerPageTest::createPage(const QSize size) {
   }
   auto *screenLock = new StubScreenLockSettings(m_model.get());
   m_screenLock = screenLock;
+  auto *idleDisplay = new StubIdleDisplaySettings(m_model.get());
+  m_idleDisplay = idleDisplay;
   QObject *object = component.createWithInitialProperties({
       {QStringLiteral("powerSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
       {QStringLiteral("screenLockSettings"),
        QVariant::fromValue(static_cast<QObject *>(screenLock))},
+      {QStringLiteral("idleDisplaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(idleDisplay))},
   });
   if (object == nullptr) {
     qWarning().noquote() << component.errorString();
@@ -230,6 +237,33 @@ void PowerPageTest::screenLockControlsRespectAutomaticLock() {
   Q_EMIT m_screenLock->changed();
   QTRY_COMPARE(selector->property("currentText").toString(), QStringLiteral("17 minutes"));
   QCOMPARE(m_screenLock->timeoutCalls, 1);
+}
+
+void PowerPageTest::idleDisplayControlsRespectThePolicy() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *toggle = findItem(page, QStringLiteral("powerIdleDisplayOff"));
+  auto *selector =
+      findItem(page, QStringLiteral("powerIdleDisplayOffTimeoutSelector"));
+  QVERIFY(toggle != nullptr);
+  QVERIFY(selector != nullptr);
+  QVERIFY(selector->isEnabled());
+  QCOMPARE(m_idleDisplay->enabledCalls, 0);
+
+  const QPoint toggleCenter = toggle->mapToScene(
+      QPointF(toggle->width() / 2.0, toggle->height() / 2.0)).toPoint();
+  QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, toggleCenter);
+  QTRY_COMPARE(m_idleDisplay->enabledCalls, 1);
+  QVERIFY(!m_idleDisplay->enabled);
+  QTRY_VERIFY(!selector->isEnabled());
+
+  m_idleDisplay->enabled = true;
+  m_idleDisplay->minutes = 15;
+  Q_EMIT m_idleDisplay->changed();
+  QTRY_VERIFY(selector->isEnabled());
+  QTRY_COMPARE(selector->property("currentText").toString(),
+               QStringLiteral("15 minutes"));
+  QCOMPARE(m_idleDisplay->minutesCalls, 0);
 }
 
 QTEST_MAIN(PowerPageTest)

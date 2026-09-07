@@ -2,6 +2,7 @@
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 
 #include "qindaqt/session_supervisor/direct_parent_process.h"
+#include "qindaqt/session_supervisor/session_optional_child.h"
 #include "qindaqt/session_supervisor/supervised_process_launcher.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 #include "first_launch_welcome.h"
@@ -58,8 +59,14 @@ std::optional<QStringList> shellProcessArguments(const SessionProcessOptions &op
 }
 
 SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options, QObject *parent)
-    : QObject(parent), m_options(std::move(options)),
-      m_welcome(std::make_unique<FirstLaunchWelcome>())
+    : QObject(parent), m_options(std::move(options))
+      , m_welcome(std::make_unique<FirstLaunchWelcome>())
+      , m_desktopControls(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("desktop-controls"), QStringList{}))
+      , m_polkitAgent(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("polkit-agent"), QStringList{}))
+      , m_powerDevil(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("powerdevil"), QStringList{}))
 {
     m_shellRestartTimer.setSingleShot(true);
     m_shellStableTimer.setSingleShot(true);
@@ -67,6 +74,20 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             &SessionProcessSupervisor::attemptShellRestart);
     connect(&m_shellStableTimer, &QTimer::timeout, this,
             &SessionProcessSupervisor::resetShellRestartBackoff);
+    connect(m_desktopControls.get(), &OptionalSessionChild::restarted, this,
+            [this](const QString &, qint64 previousProcessId, qint64 processId) {
+                Q_EMIT desktopControlsRestarted(previousProcessId, processId);
+            });
+    connect(m_polkitAgent.get(), &OptionalSessionChild::restarted, this,
+            [this](const QString &, qint64 previousProcessId, qint64 processId) {
+                Q_EMIT polkitAgentRestarted(previousProcessId, processId);
+            });
+    connect(m_desktopControls.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_polkitAgent.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_powerDevil.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
     m_networkSecretAgent.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -115,6 +136,11 @@ bool SessionProcessSupervisor::start(QString *error)
     m_shellRestartTimer.stop();
     m_shellStableTimer.stop();
     m_networkSecretAgentRestartCount = 0;
+    // AGENT-GUARD: optional budgets are per session; reset only now that any
+    // previous session's children were stopped by stop()/finishSession().
+    m_desktopControls->resetRestartCount();
+    m_polkitAgent->resetRestartCount();
+    m_powerDevil->resetRestartCount();
     m_hostProcessId = 0;
     m_shellProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -137,6 +163,7 @@ bool SessionProcessSupervisor::start(QString *error)
     }
     m_running = true;
     startNetworkSecretAgent();
+    startOptionalChildren();
     startWelcome();
     setError(error, {});
     return true;
@@ -169,6 +196,9 @@ void SessionProcessSupervisor::stop() noexcept
         Q_EMIT childStopRequested(QStringLiteral("network-secret-agent"));
     }
     stopChild(m_networkSecretAgent);
+    m_desktopControls->stop();
+    m_polkitAgent->stop();
+    m_powerDevil->stop();
     m_shellProcessId = 0;
     m_hostProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -178,6 +208,11 @@ void SessionProcessSupervisor::stop() noexcept
     m_shellPredecessorProcessId = 0;
     m_shellRestartTimer.stop();
     m_shellStableTimer.stop();
+    // All optional children are stopped above; their budgets belong to the
+    // next session.
+    m_desktopControls->resetRestartCount();
+    m_polkitAgent->resetRestartCount();
+    m_powerDevil->resetRestartCount();
     m_stopping = false;
 }
 
@@ -228,6 +263,31 @@ qint64 SessionProcessSupervisor::networkSecretAgentProcessId() const noexcept
 int SessionProcessSupervisor::networkSecretAgentRestartCount() const noexcept
 {
     return m_networkSecretAgentRestartCount;
+}
+
+qint64 SessionProcessSupervisor::desktopControlsProcessId() const noexcept
+{
+    return m_desktopControls->processId();
+}
+
+int SessionProcessSupervisor::desktopControlsRestartCount() const noexcept
+{
+    return m_desktopControls->restartCount();
+}
+
+qint64 SessionProcessSupervisor::powerDevilProcessId() const noexcept
+{
+    return m_powerDevil->processId();
+}
+
+qint64 SessionProcessSupervisor::polkitAgentProcessId() const noexcept
+{
+    return m_polkitAgent->processId();
+}
+
+int SessionProcessSupervisor::polkitAgentRestartCount() const noexcept
+{
+    return m_polkitAgent->restartCount();
 }
 
 qint64 SessionProcessSupervisor::welcomeProcessId() const noexcept
@@ -351,6 +411,19 @@ void SessionProcessSupervisor::startNetworkSecretAgent()
     }
 }
 
+void SessionProcessSupervisor::startOptionalChildren()
+{
+    // AGENT-CONTRACT: all three children start after the shell establishes
+    // the compositor session. PowerDevil starts before desktop-controls so
+    // idle preferences can follow its owner arrival; polkit registers prompts
+    // for this session. Missing optional executables never prevent login.
+    // PowerDevil owns the idle timer and inhibitors. Keep it in this process
+    // tree because QindaQt does not activate graphical-session.target.
+    m_powerDevil->start(m_options.powerDevilExecutable);
+    m_desktopControls->start(resolveExecutable(m_options.desktopControlsExecutable));
+    m_polkitAgent->start(m_options.polkitAgentExecutable);
+}
+
 void SessionProcessSupervisor::startWelcome()
 {
     // AGENT-CONTRACT: Launch only after the essential shell successfully
@@ -426,6 +499,9 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     }
     stopChild(m_networkSecretAgent);
     m_networkSecretAgentProcessId = 0;
+    m_desktopControls->stop();
+    m_polkitAgent->stop();
+    m_powerDevil->stop();
     if (role == ChildRole::NotificationHost) {
         m_hostProcessId = 0;
     } else {

@@ -25,6 +25,7 @@ enum class SettingDomain {
     Accessibility,
     Services,
     Shell,
+    Power,
 };
 
 enum class SettingValueType {

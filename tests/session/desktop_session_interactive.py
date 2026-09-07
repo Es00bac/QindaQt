@@ -180,7 +180,8 @@ def _validate_matrix_captures(
             if expected.requested_scale != 1.0 else None
         ),
         "sessionArguments": [
-            "--profile", expected.profile_id, "--theme", expected.theme_id
+            "--profile", expected.profile_id, "--theme", expected.theme_id,
+            "--no-polkit-agent", "--no-powerdevil",
         ],
         "editorArguments": ["--theme", expected.theme_id],
     }:
