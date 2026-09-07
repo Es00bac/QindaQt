@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+find_package(KF6SyntaxHighlighting REQUIRED)
 qt_add_library(qindaqt_editor_support STATIC)
 target_sources(
     qindaqt_editor_support
@@ -17,10 +18,12 @@ target_sources(
         restore/restore_state_store.cpp
         restore/text_editor_restore_policy.cpp
         ui/document_title.cpp
+        ui/document_editor.cpp
         ui/editor_appearance.cpp
         ui/editor_document_view.cpp
         ui/find_replace_bar.cpp
         ui/editor_window_actions.cpp
+        ui/editor_window_editing.cpp
         ui/editor_window_find.cpp
         ui/editor_window_restore.cpp
         ui/editor_window.cpp
@@ -41,12 +44,13 @@ target_sources(
         restore/restore_state_store.h
         restore/text_editor_restore_policy.h
         ui/document_title.h
+        ui/document_editor.h
         ui/editor_appearance.h
         ui/editor_document_view.h
         ui/find_replace_bar.h
         ui/editor_window.h
 )
-target_link_libraries(qindaqt_editor_support PRIVATE qindaqt_settings_client)
+target_link_libraries(qindaqt_editor_support PRIVATE qindaqt_settings_client KF6::SyntaxHighlighting)
 target_include_directories(qindaqt_editor_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
     qindaqt_editor_support

@@ -8,7 +8,7 @@ claims that this handbook change rebuilt or exercised the desktop.
 The snapshot uses CMake 3.25+, Ninja, C++20, Python 3, and Qt 6.11+. The default
 presets require the release-matched KWin/Plasma Activities 6.6.6 integration,
 KDecoration3, LayerShellQt, ECM, and focused KF6 dependencies. Feature targets
-also require their confined providers, including fontconfig and qtermwidget6.
+also require their confined providers, including fontconfig, qtermwidget6, and KF6 SyntaxHighlighting (Gentoo: `kde-frameworks/syntax-highlighting`).
 `README.md`, `CMakeLists.txt`, per-module CMake files, and
 `compositor/upstream/kwin.json` contain the actual requirements; package names
 and a coherent pinned stack matter more than a generic distro recipe.

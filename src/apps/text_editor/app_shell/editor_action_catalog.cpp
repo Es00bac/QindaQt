@@ -69,22 +69,29 @@ QList<QindaQt::AppShell::ActionSpec> editorActionCatalog() {
            "Select the previous match with wrap", key("Shift+F3"), 1, 9, false),
       spec(AppShellActionIds::EditFindClose, "edit", "Edit", "Close Find",
            "Close the find and replace bar", key("Escape"), 1, 10, false),
+      spec("edit.go-to-line", "edit", "Edit", "Go to Line…", "Move to a numbered line", key("Ctrl+G"), 1, 11),
+      spec("edit.indent", "edit", "Edit", "Indent Lines", "Indent selected lines by four spaces", key("Ctrl+]"), 1, 12),
+      spec("edit.unindent", "edit", "Edit", "Unindent Lines", "Remove one level of indentation", key("Ctrl+["), 1, 13),
+      spec("view.word-wrap", "view", "View", "Word Wrap", "Wrap long lines at the window edge", key("Ctrl+Alt+W"), 2, 0, true, true),
+      spec("view.zoom-in", "view", "View", "Zoom In", "Increase text size", key("Ctrl++"), 2, 1),
+      spec("view.zoom-out", "view", "View", "Zoom Out", "Decrease text size", key("Ctrl+-"), 2, 2),
+      spec("view.zoom-reset", "view", "View", "Actual Size", "Restore the configured text size", key("Ctrl+0"), 2, 3),
       spec(AppShellActionIds::TabNext, "tabs", "Tabs", "Next Tab",
-           "Select the next document tab with wrap", key("Ctrl+Tab"), 2, 0,
+           "Select the next document tab with wrap", key("Ctrl+Tab"), 3, 0,
            false),
       spec(AppShellActionIds::TabPrevious, "tabs", "Tabs", "Previous Tab",
            "Select the previous document tab with wrap", key("Ctrl+Shift+Tab"),
-           2, 1, false),
+           3, 1, false),
       spec(AppShellActionIds::RestoreDocuments, "settings", "Settings",
            "Restore Open Documents", "Persist and restore open document paths",
-           key("Ctrl+Alt+R"), 3, 0, false, true),
+           key("Ctrl+Alt+R"), 4, 0, false, true),
   };
   for (int index = 1; index <= 9; ++index) {
     actions.append(
         spec(qPrintable(QStringLiteral("tabs.select-%1").arg(index)), "tabs",
              "Tabs", qPrintable(QStringLiteral("Select Tab %1").arg(index)),
              qPrintable(QStringLiteral("Select document tab %1").arg(index)),
-             key(qPrintable(QStringLiteral("Ctrl+%1").arg(index))), 2,
+             key(qPrintable(QStringLiteral("Ctrl+%1").arg(index))), 3,
              index + 1, index == 1));
   }
   return actions;

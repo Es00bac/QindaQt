@@ -212,3 +212,4 @@ nav:
       - "ADR-0092: Compositor UI palette projection": adr/0092-project-confirmed-palette-into-compositor-ui.md
       - "ADR-0093: Agent input portal acknowledgement": adr/0093-acknowledge-agent-input-portal-acceptance.md
       - "ADR-0094: Resident Wayland session-service refresh": adr/0094-refresh-resident-wayland-session-services.md
+      - "ADR-0095: Editor syntax highlighting": adr/0095-use-ksyntaxhighlighting-for-editor-presentation.md

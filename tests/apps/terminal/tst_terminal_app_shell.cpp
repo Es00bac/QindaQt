@@ -20,7 +20,7 @@ private slots:
 
 void TerminalAppShellTest::catalogIsCompleteStableAndShiftModified() {
   const auto catalog = terminalActionCatalog();
-  QCOMPARE(catalog.size(), 21);
+  QCOMPARE(catalog.size(), 24);
   QSet<QString> ids;
   for (const auto &spec : catalog) {
     QVERIFY(!spec.id.isEmpty());

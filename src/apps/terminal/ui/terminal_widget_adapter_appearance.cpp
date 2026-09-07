@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <algorithm>
 #include "ui/terminal_widget_adapter.h"
 
 #include "ui/terminal_appearance.h"
@@ -51,6 +52,12 @@ void TerminalWidgetAdapter::applyAppearance() {
     QFile::remove(temporaryPath);
   }
 
+  applyFont();
+  m_widget->setHistorySize(m_profile.scrollbackLines);
+}
+
+void TerminalWidgetAdapter::applyFont() {
+  if (!m_widget) return;
   QFont terminalFont = m_appearance.terminalFont;
   if (!m_profile.fontFamily.isEmpty()) {
     terminalFont.setFamily(m_profile.fontFamily);
@@ -58,8 +65,8 @@ void TerminalWidgetAdapter::applyAppearance() {
   if (m_profile.fontSize > 0) {
     terminalFont.setPointSize(m_profile.fontSize);
   }
+  terminalFont.setPointSizeF(std::clamp(terminalFont.pointSizeF() + m_zoomSteps, 6.0, 48.0));
   m_widget->setTerminalFont(terminalFont);
-  m_widget->setHistorySize(m_profile.scrollbackLines);
 }
 
 } // namespace QindaQt::Apps::Terminal

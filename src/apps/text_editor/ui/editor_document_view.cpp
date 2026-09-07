@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "editor_document_view.h"
+#include "document_editor.h"
 
 #include <QAccessible>
 #include <QAccessibleAnnouncementEvent>
@@ -52,14 +53,14 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   bannerLayout->addWidget(m_saveAsButton);
   m_externalBanner->hide();
 
-  m_editor = new QPlainTextEdit(this);
+  m_editor = new DocumentEditor(this);
   m_editor->setObjectName(QStringLiteral("documentEditor"));
   m_editor->setAccessibleName(tr("Document text"));
   m_editor->setAccessibleDescription(
       tr("Edit the current local UTF-8 plain-text document"));
   m_editor->setTabChangesFocus(false);
   m_editor->setLineWrapMode(QPlainTextEdit::WidgetWidth);
-  m_editor->setFont(m_appearance.editorFont);
+  static_cast<DocumentEditor *>(m_editor)->setBaseFont(m_appearance.editorFont);
   layout->addWidget(m_externalBanner);
   layout->addWidget(m_editor, 1);
   setTabOrder(m_editor, m_reloadButton);
@@ -70,6 +71,7 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   m_editor->setPlainText(m_controller->state().text());
   m_editor->document()->setModified(m_controller->state().isDirty());
   m_replacingContents = false;
+  static_cast<DocumentEditor *>(m_editor)->setDocumentPath(m_controller->state().path());
   connectState();
   updateExternalBanner(m_controller->state().externalState());
 }
@@ -78,11 +80,13 @@ void EditorDocumentView::applyAppearance(const EditorAppearance &appearance) {
   m_appearance = appearance;
   setPalette(appearance.palette);
   setFont(appearance.interfaceFont);
-  m_editor->setFont(appearance.editorFont);
+  static_cast<DocumentEditor *>(m_editor)->setBaseFont(appearance.editorFont);
   updateExternalBanner(m_renderedExternalState);
 }
 
 void EditorDocumentView::connectState() {
+  connect(m_editor, &QPlainTextEdit::cursorPositionChanged, this,
+          &EditorDocumentView::presentationChanged);
   connect(m_editor->document(), &QTextDocument::contentsChange, this,
           [this](int position, int charsRemoved, int charsAdded) {
             if (m_replacingContents) {
@@ -107,6 +111,7 @@ void EditorDocumentView::connectState() {
           });
   connect(m_controller, &DocumentController::stateChanged, this, [this] {
     m_editor->document()->setModified(m_controller->state().isDirty());
+    static_cast<DocumentEditor *>(m_editor)->setDocumentPath(m_controller->state().path());
     updateExternalBanner(m_controller->state().externalState());
     emit presentationChanged();
   });
@@ -185,10 +190,11 @@ QString EditorDocumentView::statusText() const {
   if (state.externalState() == ExternalState::Unreadable) {
     return tr("File can no longer be checked");
   }
-  if (state.isDirty()) {
-    return tr("Modified");
-  }
-  return state.isUntitled() ? tr("Ready") : tr("Saved");
+  const auto cursor = m_editor->textCursor();
+  return tr("Ln %1, Col %2  ·  %3  ·  UTF-8%4")
+      .arg(cursor.blockNumber() + 1).arg(cursor.positionInBlock() + 1)
+      .arg(static_cast<DocumentEditor *>(m_editor)->syntaxName())
+      .arg(state.isDirty() ? tr("  ·  Modified") : QString{});
 }
 
 } // namespace QindaQt::Apps::TextEditor

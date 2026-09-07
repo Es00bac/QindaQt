@@ -153,9 +153,11 @@ private slots:
 
 void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
   const QList<ActionSpec> catalog = editorActionCatalog();
-  QCOMPARE(catalog.size(), 29);
+  QCOMPARE(catalog.size(), 36);
 
   QSet<QString> expectedIds{
+      QStringLiteral("edit.go-to-line"), QStringLiteral("edit.indent"), QStringLiteral("edit.unindent"),
+      QStringLiteral("view.word-wrap"), QStringLiteral("view.zoom-in"), QStringLiteral("view.zoom-out"), QStringLiteral("view.zoom-reset"),
       QString::fromLatin1(AppShellActionIds::FileNew),
       QString::fromLatin1(AppShellActionIds::FileOpen),
       QString::fromLatin1(AppShellActionIds::FileCloseTab),
@@ -186,6 +188,7 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
     QVERIFY(!action.shortcut.isEmpty());
     QVERIFY(action.menuId == QStringLiteral("file") ||
             action.menuId == QStringLiteral("edit") ||
+            action.menuId == QStringLiteral("view") ||
             action.menuId == QStringLiteral("tabs") ||
             action.menuId == QStringLiteral("settings"));
   }
@@ -216,7 +219,7 @@ void EditorAppShellTest::
   EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   const QVariantList menus = window.appShellCoordinator().menus();
-  QCOMPARE(menus.size(), 4);
+  QCOMPARE(menus.size(), 5);
 
   const QVariantMap fileNew =
       findAction(menus, QStringLiteral("file"),

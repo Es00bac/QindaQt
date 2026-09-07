@@ -31,6 +31,8 @@ class ProcessMonitor {
 public:
   virtual ~ProcessMonitor() = default;
 
+  // Best-effort directory of the owned live shell; empty means unavailable.
+  [[nodiscard]] virtual QString workingDirectory(ProcessId) { return {}; }
   [[nodiscard]] virtual ProcessExitInfo reap(ProcessId pid) = 0;
   [[nodiscard]] virtual ProcessGroupState
   processGroupState(ProcessId processGroupId) = 0;
@@ -45,6 +47,7 @@ public:
 // zombie descendant cannot be mistaken for teardown completion.
 class PosixProcessMonitor final : public ProcessMonitor {
 public:
+  [[nodiscard]] QString workingDirectory(ProcessId pid) override;
   [[nodiscard]] ProcessExitInfo reap(ProcessId pid) override;
   [[nodiscard]] ProcessGroupState
   processGroupState(ProcessId processGroupId) override;

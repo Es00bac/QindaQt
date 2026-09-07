@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/terminal_appearance.h"
+#include "session/process_liveness.h"
 #include "ui/terminal_widget_adapter.h"
 
 #include "qindaqt/themes/theme_loader.h"
 
+#include <qtermwidget.h>
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QImage>
@@ -45,10 +47,54 @@ class TerminalWidgetAdapterTest final : public QObject {
   Q_OBJECT
 
 private slots:
+  void liveShellDirectoryAndKeyboardInput();
+  void zoomIsLocalAndSurvivesAppearance();
   void blankGridDoesNotPublishCopyAvailability();
   void customSchemePaintsRequestedTerminalBackground();
   void realPtyOutputSupportsBoundedSearchAndVisibleLinks();
 };
+
+void TerminalWidgetAdapterTest::liveShellDirectoryAndKeyboardInput() {
+  TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
+  const TerminalLaunchRequest request{
+      .program = QStringLiteral("/bin/sh"),
+      .arguments = {QStringLiteral("-c"), QStringLiteral("cd /tmp; printf 'directory-ready\\n'; read answer; printf 'received:%s\\n' \"$answer\"")},
+      .workingDirectory = QStringLiteral("/"),
+      .environment = {QStringLiteral("PATH=/usr/bin:/bin"), QStringLiteral("LANG=C.UTF-8"), QStringLiteral("TERM=xterm-256color")},
+      .title = {}};
+  QVERIFY(adapter.start(request).ok);
+  const auto contains = [&adapter](const QString &text) {
+    return adapter.searchScrollback({.pattern = text}, TerminalSearchDirection::Initial).found;
+  };
+  QTRY_VERIFY(contains(QStringLiteral("directory-ready")));
+  QindaQt::Apps::Terminal::PosixProcessMonitor monitor;
+  QCOMPARE(monitor.workingDirectory(adapter.shellProcessId()), QStringLiteral("/tmp"));
+  adapter.sendTextToSession(QStringLiteral("keyboard-proof\n"));
+  QTRY_VERIFY(contains(QStringLiteral("received:keyboard-proof")));
+  int status = 0;
+  const auto pid = static_cast<pid_t>(adapter.shellProcessId());
+  pid_t reaped = 0;
+  QTRY_VERIFY(reaped == pid || (reaped = ::waitpid(pid, &status, WNOHANG)) == pid);
+  QVERIFY(WIFEXITED(status));
+  QCOMPARE(WEXITSTATUS(status), 0);
+}
+
+void TerminalWidgetAdapterTest::zoomIsLocalAndSurvivesAppearance() {
+  auto profile = builtinDefaultProfile();
+  profile.fontSize = 12;
+  TerminalWidgetAdapter first(darkAppearance(), profile);
+  TerminalWidgetAdapter second(darkAppearance(), profile);
+  auto *widget = qobject_cast<QTermWidget *>(first.terminalWidget());
+  auto *other = qobject_cast<QTermWidget *>(second.terminalWidget());
+  QVERIFY(widget); QVERIFY(other);
+  first.setZoomSteps(3);
+  QCOMPARE(widget->getTerminalFont().pointSize(), 15);
+  QCOMPARE(other->getTerminalFont().pointSize(), 12);
+  first.setAppearance(darkAppearance());
+  QCOMPARE(widget->getTerminalFont().pointSize(), 15);
+  first.setZoomSteps(0);
+  QCOMPARE(widget->getTerminalFont().pointSize(), 12);
+}
 
 void TerminalWidgetAdapterTest::blankGridDoesNotPublishCopyAvailability() {
   TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());

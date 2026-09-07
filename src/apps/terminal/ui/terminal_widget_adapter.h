@@ -78,11 +78,17 @@ public:
   [[nodiscard]] TerminalLinkSelection selectVisibleLink(int delta) override;
   [[nodiscard]] TerminalLinkSelection currentVisibleLink() override;
 
+  void setZoomSteps(int steps) override {
+    m_zoomSteps = steps;
+    applyFont();
+  }
+
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
   void applyAppearance();
+  void applyFont();
   [[nodiscard]] bool initializeChannels();
   void makeWidgetTransportByteTransparent();
   void closeChildChannel();
@@ -96,6 +102,7 @@ private:
 
   QTermWidget *m_widget = nullptr;
   TerminalViewAppearance m_appearance;
+  int m_zoomSteps = 0;
   TerminalProfile m_profile;
   QString m_schemePath;
   TerminalPtyBridge *m_bridge = nullptr;

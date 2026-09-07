@@ -38,6 +38,9 @@ public:
   // Starts the child described by the request on a fresh PTY. Returns a typed
   // failure when the PTY or child cannot be created; the diagnostic is
   // bounded, single-line, and user-presentable.
+  // View-local zoom in font points; fakes and nonvisual backends may ignore it.
+  virtual void setZoomSteps(int) {}
+
   [[nodiscard]] virtual StartOutcome
   start(const TerminalLaunchRequest &request) = 0;
 

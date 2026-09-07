@@ -76,7 +76,8 @@ jobs:
             qt6-svg \
             qt6-wayland \
             wayland-protocols \
-            qtermwidget
+            qtermwidget \
+            syntax-highlighting
 
       - uses: actions/checkout@v4
 
@@ -134,7 +135,7 @@ jobs:
             qt6-svg \
             qt6-wayland \
             wayland-protocols \
-            qtermwidget \
+            qtermwidget syntax-highlighting \
             xorg-xdpyinfo \
             xorg-xwayland
 
@@ -166,7 +167,7 @@ jobs:
       - name: Record production shell stack
         run: >-
           pacman -Q dbus extra-cmake-modules kdecoration kwin
-          kglobalaccel layer-shell-qt libcap qtermwidget qt6-base
+          kglobalaccel layer-shell-qt libcap qtermwidget syntax-highlighting qt6-base
           qt6-declarative qt6-svg qt6-wayland xorg-xwayland
           wayland-protocols
 

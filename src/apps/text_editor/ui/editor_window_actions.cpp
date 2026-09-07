@@ -174,6 +174,7 @@ void EditorWindow::createActions() {
     m_appShellActionIds.insert(QStringLiteral("tabs.select-%1").arg(index + 1),
                                m_actions.tabSelect.at(index));
   }
+  createEditingActions();
   updateActionStates();
 }
 
@@ -196,6 +197,10 @@ void EditorWindow::createMenus() {
   edit->addSeparator();
   edit->addActions({m_actions.editFind, m_actions.editReplace,
                     m_actions.editFindNext, m_actions.editFindPrevious});
+
+  edit->addSeparator();
+  edit->addActions(m_actions.editingTools);
+  createViewMenu();
 
   auto *tabs = menuBar()->addMenu(tr("&Tabs"));
   tabs->setObjectName(QStringLiteral("tabsMenu"));
@@ -255,6 +260,10 @@ void EditorWindow::updateActionStates() {
   m_actions.editFindNext->setEnabled(hasDocument && m_findBar->isVisible());
   m_actions.editFindPrevious->setEnabled(hasDocument && m_findBar->isVisible());
   m_actions.editFindClose->setEnabled(m_findBar->isVisible());
+  for (auto *action : m_actions.editingTools) action->setEnabled(hasDocument);
+  for (auto *action : m_actions.viewTools) action->setEnabled(hasDocument);
+  if (!m_actions.viewTools.isEmpty())
+    m_actions.viewTools.first()->setChecked(hasDocument && activeEditor->lineWrapMode() != QPlainTextEdit::NoWrap);
   const bool multiple = m_documents->count() > 1;
   m_actions.tabNext->setEnabled(multiple);
   m_actions.tabPrevious->setEnabled(multiple);

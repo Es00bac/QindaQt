@@ -201,6 +201,9 @@ void TerminalWindowTest::actionsCarryStableIdentityAndShiftModifiedShortcuts() {
       {"editPasteSelectionAction", "Ctrl+Shift+Insert"},
       {"editSelectAllAction", "Ctrl+Shift+A"},
       {"viewClearAction", "Ctrl+Shift+K"},
+      {"viewZoomInAction", "Ctrl+Shift++"},
+      {"viewZoomOutAction", "Ctrl+Shift+-"},
+      {"viewZoomResetAction", "Ctrl+Shift+0"},
       {"fileQuitAction", "Ctrl+Shift+Q"},
   };
   for (const auto &expectation : expectations) {

@@ -294,3 +294,9 @@ set_tests_properties(
     qindaqt.editor-global-menu-identity-variants-source-policy
     PROPERTIES LABELS "editor;shell;global-menu;policy"
 )
+
+qindaqt_add_editor_test(qindaqt_editor_editing_tools_tests
+    tst_document_editor.cpp qindaqt.editor-editing-tools-offscreen)
+set_tests_properties(qindaqt.editor-editing-tools-offscreen PROPERTIES
+    LABELS "editor"
+    ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
