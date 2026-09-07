@@ -89,7 +89,11 @@ failing instead of compiling a missing binary package from source.
 The lane also selects NetworkManager's client-library binary without its
 Bluetooth, policykit, or systemd daemon integrations. QindaQt needs `libnm` to
 compile in this lane; the full desktop package retains the resident provider
-and hardware integrations.
+and hardware integrations. WirePlumber's PipeWire graph reaches `xdg-utils`
+through libcanberra, PulseAudio, GTK, and CUPS. None of its desktop handlers
+participate in the native build or nested boots, so the lane selects the
+official headless `xdg-utils` binary explicitly. This avoids a KDE CLI tools
+tail while retaining `--binpkg-respect-use=y` as a hard gate.
 
 Both Arch jobs keep `QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS=ON` and install the
 PipeWire daemon and CLI, WirePlumber daemon, and `pw-cat`. Gentoo's official

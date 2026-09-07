@@ -278,6 +278,7 @@ jobs:
           dev-qt/qtbase -accessibility
           kde-plasma/kwin -accessibility -lock -screencast shortcuts
           net-misc/networkmanager -bluetooth -policykit -systemd
+          x11-misc/xdg-utils -X -dbus -gnome -perl -plasma
           EOF
 
       # `--usepkgonly` makes absence of a compatible official binary package a
