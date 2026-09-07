@@ -3346,3 +3346,28 @@ current partial inventory from stale retained rows.
 `qindaqt.session-activation-environment` runs a publisher subprocess against a
 private broker and fake user manager, proving startup environment propagation.
 These rows never start, stop, or reconfigure host services.
+
+## Nested Wayland scale limitation (September 2026 checkpoint)
+
+KWin 6.6.6's nested Wayland backend deliberately ignores output-configuration
+scale requests in `WaylandOutput::applyChanges`; scale comes from the parent
+compositor's fractional-scale protocol. The exact release source, checked
+against the local release archive, is available in
+[KWin's implementation](https://invent.kde.org/plasma/kwin/-/blob/v6.6.6/src/backends/wayland/wayland_output.cpp).
+Do not treat a position-only response in this backend as successful scaling.
+
+Run `085a865f3f804842b342c06f088e0213` drives the real Settings interface:
+the wire trace contains the requested scale 1.25, while the backend keeps 1.0
+and the transaction restores the original arrangement. It also verifies
+member-title hide/restore and whole-group minimize/restore after correcting
+the pointer target relative to the actual menu anchor. Its overall result
+remains failed because the nested scale requirement cannot converge.
+
+The physical-display evidence is separate: Display1 Preview/Cancel and Keep
+cycles reached 125% and restored both physical outputs to 100%, recorded in
+`.cache/live-scale-proof/result.json` and `confirm-result.json`. Combined with
+the real Settings request trace, this establishes the two integration boundaries;
+it does not claim a physical Settings pointer-driven scale cycle. Use the
+physical backend for that end-to-end check, or a parent-controlled scale
+scenario when testing the nested backend. Do not modify production display
+code to make this unsupported nested request pass.

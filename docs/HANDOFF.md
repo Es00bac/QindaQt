@@ -1,5 +1,18 @@
 # Integration handoff
 
+## Final dual-output diagnosis
+
+Run `085a865f3f804842b342c06f088e0213` verifies actual member-title
+hide/restore and group minimize/restore using the measured context-menu row
+relative to its current anchor. The remaining scale failure is explained by
+the exact KWin 6.6.6 source: its nested Wayland backend ignores requested
+scale. Settings sends 1.25 correctly, while the nested output remains 1.0.
+The source downloaded from upstream matches the local release archive byte
+for byte. Physical preview/Keep/Cancel scaling evidence remains valid and
+separate; no physical Settings-pointer cycle is claimed. See the
+[testing harness](wiki/development/testing-harness.md) for the precise boundary.
+The private run restored its frozen harness files and left zero survivors.
+
 ## Gabbee command shortcut activation verified
 
 Private run `29894db03d7d49d2ad9766a346b3f181` passes all four phases
