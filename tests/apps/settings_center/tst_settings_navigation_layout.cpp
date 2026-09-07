@@ -36,6 +36,7 @@ private Q_SLOTS:
   void initTestCase();
   void testWideTwoColumnLayoutAndRouteSwitching();
   void testCompactLayoutAdaptation();
+  void testCompactHeaderRevealsInitialActiveRoute();
 
 private:
   std::unique_ptr<QQmlApplicationEngine> m_engine;
@@ -255,6 +256,16 @@ void SettingsNavigationLayoutTest::testCompactLayoutAdaptation() {
   QCOMPARE(compactAccessible->role(), QAccessible::PageTab);
   QVERIFY(compactAccessible->state().selected);
 
+  auto *compactScroller = sceneItem(
+      window->contentItem(), QStringLiteral("settingsCompactRouteScroller"));
+  QVERIFY(compactScroller != nullptr);
+  const auto isInsideScroller = [compactScroller](QQuickItem *tab) {
+    const QPointF topLeft = tab->mapToItem(compactScroller, QPointF(0, 0));
+    return topLeft.x() >= -0.5 &&
+           topLeft.x() + tab->width() <= compactScroller->width() + 0.5;
+  };
+  QTRY_VERIFY(isInsideScroller(compactNotifications));
+
   // Switch to Appearance via navigation controller
   QVERIFY(navigation.selectRoute(QStringLiteral("appearance")));
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("appearance"));
@@ -290,6 +301,7 @@ void SettingsNavigationLayoutTest::testCompactLayoutAdaptation() {
   QCOMPARE(compactAudioAccessible->text(QAccessible::Name),
            QStringLiteral("Audio"));
   QVERIFY(compactAudioAccessible->state().selected);
+  QTRY_VERIFY(isInsideScroller(compactAudioTab));
 
   QTest::keyClick(window, Qt::Key_Escape);
   QTRY_COMPARE(window->activeFocusItem(), compactAudioTab);
@@ -298,11 +310,88 @@ void SettingsNavigationLayoutTest::testCompactLayoutAdaptation() {
       sceneItem(window->contentItem(), QStringLiteral("audioOutputVolume_10"));
   QVERIFY(compactAudioVolume != nullptr);
   QTRY_COMPARE(window->activeFocusItem(), compactAudioVolume);
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(window->activeFocusItem(), compactAudioTab);
+
+  // Keyboard traversal reveals each newly focused real tab without selecting it.
+  QTest::keyClick(window, Qt::Key_Right);
+  auto *compactBluetoothTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsCompactTab_bluetooth"));
+  QVERIFY(compactBluetoothTab != nullptr);
+  QTRY_COMPARE(window->activeFocusItem(), compactBluetoothTab);
+  QTRY_VERIFY(isInsideScroller(compactBluetoothTab));
+
+  // A narrower viewport re-reveals the active route, including an initially
+  // offscreen selection reached through the navigation controller.
+  QVERIFY(navigation.selectRoute(QStringLiteral("color")));
+  auto *compactColorTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsCompactTab_color"));
+  QVERIFY(compactColorTab != nullptr);
+  QTRY_VERIFY(isInsideScroller(compactColorTab));
+  window->resize(420, 360);
+  QTRY_VERIFY(isInsideScroller(compactColorTab));
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(window->activeFocusItem(), compactColorTab);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QVERIFY(window->activeFocusItem() != compactColorTab);
 
   QindaQt::Apps::SettingsPower::TestSupport::verifyCompactPowerNavigation(
       *window, navigation);
   QindaQt::Apps::SettingsClipboard::TestSupport::verifyClipboardRouteInHost(
       *window, navigation, true);
+}
+
+void SettingsNavigationLayoutTest::testCompactHeaderRevealsInitialActiveRoute() {
+  SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
+  SettingsNavigationController navigation(registry, QStringLiteral("color"));
+
+  QQmlComponent component(m_engine.get());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(SettingsQmlDir) +
+                                        QStringLiteral("/SettingsCompactHeader.qml")));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+  QObject *rootObj = component.createWithInitialProperties({
+      {QStringLiteral("navigation"),
+       QVariant::fromValue(static_cast<QObject *>(&navigation))},
+  });
+  QVERIFY2(rootObj != nullptr, qPrintable(component.errorString()));
+  std::unique_ptr<QObject> rootGuard(rootObj);
+  auto *header = qobject_cast<QQuickItem *>(rootObj);
+  QVERIFY(header != nullptr);
+
+  QQuickWindow window;
+  window.resize(360, 80);
+  header->setParentItem(window.contentItem());
+  header->setWidth(360);
+  header->setHeight(48);
+  window.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+  auto *scroller =
+      sceneItem(header, QStringLiteral("settingsCompactRouteScroller"));
+  auto *colorTab = sceneItem(header, QStringLiteral("settingsCompactTab_color"));
+  QVERIFY(scroller != nullptr);
+  QVERIFY(colorTab != nullptr);
+  const auto isInsideScroller = [scroller](QQuickItem *tab) {
+    const QPointF topLeft = tab->mapToItem(scroller, QPointF(0, 0));
+    return topLeft.x() >= -0.5 &&
+           topLeft.x() + tab->width() <= scroller->width() + 0.5;
+  };
+  QTRY_VERIFY(isInsideScroller(colorTab));
+  QVERIFY(scroller->property("contentX").toReal() > 0.0);
+
+  QVERIFY(QMetaObject::invokeMethod(header, "focusActiveButton"));
+  QTRY_COMPARE(window.activeFocusItem(), colorTab);
+  header->setWidth(300);
+  QTRY_VERIFY(isInsideScroller(colorTab));
+
+  // With no selection, focus, inventory, or width change, application code
+  // must leave a deliberate manual scroll position alone.
+  const qreal manualX = scroller->property("contentX").toReal() / 2.0;
+  QVERIFY(scroller->setProperty("contentX", manualX));
+  QTest::qWait(20);
+  QCOMPARE(scroller->property("contentX").toReal(), manualX);
 }
 
 QTEST_MAIN(SettingsNavigationLayoutTest)

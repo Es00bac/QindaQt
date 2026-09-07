@@ -136,7 +136,11 @@ only QST-1 semantic roles and QindaQt.Controls presentation. The selected
 route tab uses the default foreground on its raised-surface background; the
 accent foreground is reserved for text placed on the accent surface. This
 keeps selected navigation readable when the theme changes live between light,
-dark, and high-contrast palettes.
+dark, and high-contrast palettes. The compact list reveals the selected route
+when it is created, selected, or resized, and reveals each tab reached by
+Left/Right keyboard focus. Reveal adjustments occur only for those navigation
+and viewport events so touch and pointer users can otherwise scroll the list
+freely.
 
 The ordinary starting window is 960×680 logical pixels. Its 420×320 minimum
 remains supported for compact/offscreen interaction coverage.
