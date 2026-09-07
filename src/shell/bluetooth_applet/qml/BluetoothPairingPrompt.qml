@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as C
 
 Rectangle {
     id: root
@@ -40,28 +41,27 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
 
-            Button {
+            C.Button {
                 objectName: "bluetoothAppletPairingConfirm"
                 visible: root.access !== null
                          && root.access.pairingConfirmationAvailable
-                enabled: root.access !== null
-                         && !root.access.pairingReplyPending
+                available: root.access !== null
+                           && !root.access.pairingReplyPending
                 focusPolicy: Qt.StrongFocus
                 text: qsTr("Confirm")
-                Accessible.name: text
-                Accessible.description: qsTr("Confirm this Bluetooth pairing request")
+                accessibleDescription: qsTr("Confirm this Bluetooth pairing request")
                 onClicked: root.access.confirmPrompt()
             }
 
-            Button {
+            C.Button {
                 objectName: "bluetoothAppletPairingCancel"
                 Layout.fillWidth: true
-                enabled: root.access !== null
-                         && !root.access.pairingReplyPending
+                emphasized: false
+                available: root.access !== null
+                           && !root.access.pairingReplyPending
                 focusPolicy: Qt.StrongFocus
                 text: qsTr("Cancel")
-                Accessible.name: text
-                Accessible.description: qsTr("Cancel this Bluetooth pairing request")
+                accessibleDescription: qsTr("Cancel this Bluetooth pairing request")
                 onClicked: root.access.cancelPrompt()
             }
         }

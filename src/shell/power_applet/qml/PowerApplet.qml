@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
@@ -145,20 +146,21 @@ Item {
             Repeater {
                 model: root.access !== null ? root.access.profileRows : []
 
-                Button {
+                C.Button {
                     required property var modelData
 
                     objectName: "powerAppletProfileButton"
                     Layout.fillWidth: true
+                    emphasized: modelData.active
                     text: modelData.active
                           ? qsTr("%1 (current)").arg(modelData.label)
                           : modelData.label
-                    enabled: modelData.adjustable && !modelData.pending
-                             && !root.access.operationPending
+                    available: modelData.adjustable && !modelData.pending
+                               && !root.access.operationPending
                     focusPolicy: Qt.TabFocus
                     Accessible.role: Accessible.RadioButton
                     Accessible.name: modelData.accessibleName
-                    Accessible.description: modelData.accessibleDescription
+                    accessibleDescription: modelData.accessibleDescription
                     Accessible.checked: modelData.active
                     onClicked: root.access.requestProfile(modelData.profileId)
                     Accessible.onPressAction: {
@@ -226,76 +228,77 @@ Item {
                 Layout.fillWidth: true
                 columns: 2
 
-                Button {
+                C.Button {
                     objectName: "powerAppletLockButton"
                     Layout.fillWidth: true
+                    emphasized: false
                     text: qsTr("Lock")
-                    enabled: root.sessionActions !== null
-                             && root.sessionActions.canLock
-                             && !root.sessionActions.pending
+                    available: root.sessionActions !== null
+                               && root.sessionActions.canLock
+                               && !root.sessionActions.pending
                     focusPolicy: Qt.TabFocus
                     Accessible.role: Accessible.Button
                     Accessible.name: qsTr("Lock session")
-                    Accessible.description: qsTr("Lock the current QindaQt session")
+                    accessibleDescription: qsTr("Lock the current QindaQt session")
                     onClicked: root.sessionActions.requestLock()
                 }
-                Button {
+                C.Button {
                     objectName: "powerAppletLogoutButton"
                     Layout.fillWidth: true
+                    emphasized: false
                     text: qsTr("Log out")
-                    enabled: root.sessionActions !== null
-                             && root.sessionActions.canLogout
-                             && !root.sessionActions.pending
+                    available: root.sessionActions !== null
+                               && root.sessionActions.canLogout
+                               && !root.sessionActions.pending
                     focusPolicy: Qt.TabFocus
                     Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.description: qsTr("Confirm and end the current QindaQt session")
+                    accessibleDescription: qsTr("Confirm and end the current QindaQt session")
                     onClicked: {
                         root.confirmationAction = "logout"
                         confirmation.open()
                     }
                 }
-                Button {
+                C.Button {
                     objectName: "powerAppletSuspendButton"
                     Layout.fillWidth: true
+                    emphasized: false
                     text: qsTr("Suspend")
-                    enabled: root.sessionActions !== null
-                             && root.sessionActions.canSuspend
-                             && !root.sessionActions.pending
+                    available: root.sessionActions !== null
+                               && root.sessionActions.canSuspend
+                               && !root.sessionActions.pending
                     focusPolicy: Qt.TabFocus
                     Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.description: qsTr("Suspend the computer now")
+                    accessibleDescription: qsTr("Suspend the computer now")
                     onClicked: root.sessionActions.requestSuspend()
                 }
-                Button {
+                C.Button {
                     objectName: "powerAppletRestartButton"
                     Layout.fillWidth: true
+                    emphasized: false
                     text: qsTr("Restart")
-                    enabled: root.sessionActions !== null
-                             && root.sessionActions.canReboot
-                             && !root.sessionActions.pending
+                    available: root.sessionActions !== null
+                               && root.sessionActions.canReboot
+                               && !root.sessionActions.pending
                     focusPolicy: Qt.TabFocus
                     Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.description: qsTr("Confirm and restart the computer")
+                    accessibleDescription: qsTr("Confirm and restart the computer")
                     onClicked: {
                         root.confirmationAction = "reboot"
                         confirmation.open()
                     }
                 }
-                Button {
+                C.Button {
                     objectName: "powerAppletPowerOffButton"
                     Layout.columnSpan: 2
                     Layout.fillWidth: true
+                    emphasized: false
                     text: qsTr("Shut down")
-                    enabled: root.sessionActions !== null
-                             && root.sessionActions.canPowerOff
-                             && !root.sessionActions.pending
+                    available: root.sessionActions !== null
+                               && root.sessionActions.canPowerOff
+                               && !root.sessionActions.pending
                     focusPolicy: Qt.TabFocus
                     Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.description: qsTr("Confirm and shut down the computer")
+                    accessibleDescription: qsTr("Confirm and shut down the computer")
                     onClicked: {
                         root.confirmationAction = "poweroff"
                         confirmation.open()

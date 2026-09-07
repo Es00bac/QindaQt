@@ -5,7 +5,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QindaQt.Controls 1.0 as QindaControls
+import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
@@ -112,7 +112,7 @@ Item {
                 controller: root.controller
             }
 
-            QindaControls.Button {
+            C.Button {
                 id: closeButton
 
                 objectName: "clipboardPanelCloseButton"

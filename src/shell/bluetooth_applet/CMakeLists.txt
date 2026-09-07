@@ -69,3 +69,8 @@ target_compile_features(qindaqt_shell_bluetooth_applet_runtime PUBLIC cxx_std_20
 set_target_properties(qindaqt_shell_bluetooth_applet_runtime
                       PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_shell_bluetooth_applet_runtime)
+
+# The compiled module imports QindaQt.Controls; that module must be built
+# before qmlcachegen runs. src/controls is processed before this directory
+# (Clipboard applet precedent), so the target already exists here.
+add_dependencies(qindaqt_shell_bluetooth_applet_runtime qindaqt_controls_qmlplugin)
