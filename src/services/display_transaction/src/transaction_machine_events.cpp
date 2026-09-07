@@ -64,6 +64,19 @@ CommandResult Machine::applyCompleted(const quint64 token, const ApplyOutcome ou
     if (m_view.state == MachineState::RevertingApply) {
         m_activeToken = 0;
         if (outcome == ApplyOutcome::Applied) {
+            // AGENT-GUARD: A compositor need not publish a new inventory
+            // generation for an acknowledged rollback whose endpoint is
+            // already the retained preimage. Waiting for such an event would
+            // retry the same no-op write until the transaction became Stuck.
+            if (snapshotMatches(m_snapshot, m_preimage)) {
+                if (!Private::journalMutationDurable(m_port.clearJournal())) {
+                    enterStuck(true);
+                    return accepted(true, CommandError::JournalFailure);
+                }
+                const Display::Snapshot current = m_snapshot;
+                finishReady(current);
+                return accepted(true);
+            }
             setState(MachineState::RevertingObserve);
             m_view.deadlineMonotonicMilliseconds = Private::saturatedDeadline(
                 m_clock.nowMilliseconds(), m_timing.observationTimeoutMilliseconds);

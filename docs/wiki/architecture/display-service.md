@@ -132,8 +132,16 @@ Stage, preview, confirm, cancel, exact-token completion, tick, safety, suspend,
 and settle calls remain D1 transitions. The resident owns one single-shot Qt
 timer for D1 monotonic deadlines and a separate 500 ms single-shot quiet-window
 timer for accepted output-set changes. Every changed complete frame restarts
-the quiet window; only its expiry routes `topologySettled`. It exports
-`GetSnapshot`, `Stage`, `Preview`, `Confirm`, and `Cancel`, plus a complete-read
+the quiet window; only its expiry routes `topologySettled`.
+
+An acknowledged rollback may be a no-op when the retained current snapshot
+already matches the durable preimage. In that case the machine clears the
+journal and returns to Ready immediately: requiring a duplicate inventory
+generation would retry the acknowledged no-op until `Stuck`. A retained
+non-preimage still enters `RevertingObserve`, so an acknowledgement alone never
+claims restoration of changed live truth.
+
+The service exports `GetSnapshot`, `Stage`, `Preview`, `Confirm`, and `Cancel`, plus a complete-read
 `Changed(epoch, revision, available)` hint. Unavailable reads return a typed
 D-Bus error rather than an invalid placeholder snapshot.
 

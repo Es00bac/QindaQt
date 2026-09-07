@@ -45,6 +45,8 @@ private Q_SLOTS:
     void applyObserveConfirmFlow();
     void readyInputsEnforceCurrentLineage();
     void rejectedAndTimedOutApplyNeverReplayForward();
+    void acknowledgedNoOpRollbackCompletesFromRetainedPreimage();
+    void acknowledgedRollbackWithNonPreimageRetainedSnapshotEntersObservation();
     void observationMismatchTimeoutAndInvalidCallbacks();
 };
 
@@ -305,6 +307,61 @@ void TransactionStateTests::rejectedAndTimedOutApplyNeverReplayForward()
                                }),
                  1);
     }
+}
+
+void TransactionStateTests::acknowledgedNoOpRollbackCompletesFromRetainedPreimage()
+{
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    Test::previewToObserving(machine, port, candidate);
+
+    clock.advance(Test::timing().observationTimeoutMilliseconds);
+    QCOMPARE(machine.tick().error, CommandError::ObservationTimeout);
+    QCOMPARE(machine.view().state, MachineState::RevertingApply);
+    const quint64 rollbackToken = port.requests.last().token;
+
+    QVERIFY(machine.applyCompleted(rollbackToken, ApplyOutcome::Applied).accepted);
+    QCOMPARE(machine.view().state, MachineState::Ready);
+    QCOMPARE(machine.currentSnapshot(), base);
+    QCOMPARE(machine.view().lastTerminalReason,
+             Display::TransactionReason::ObservationTimeout);
+    QVERIFY(!port.journalPresent);
+    QCOMPARE(port.requests.size(), 2);
+}
+
+void TransactionStateTests::acknowledgedRollbackWithNonPreimageRetainedSnapshotEntersObservation()
+{
+    // Counterexample to acknowledgedNoOpRollbackCompletesFromRetainedPreimage:
+    // when the retained snapshot at the Applied ack is neither the preimage
+    // nor the target, the no-op short-circuit must not fire and the machine
+    // must still prove restoration through RevertingObserve.
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    Test::previewToObserving(machine, port, candidate);
+
+    Display::Candidate mismatchCandidate = candidate;
+    mismatchCandidate.outputs[0].modeId = QStringLiteral("small");
+    const Display::Snapshot mismatch = Test::observed(base, mismatchCandidate, 2);
+    QVERIFY(machine.observedSnapshot(mismatch).accepted);
+    QCOMPARE(machine.view().state, MachineState::Observing);
+
+    clock.advance(Test::timing().observationTimeoutMilliseconds);
+    QCOMPARE(machine.tick().error, CommandError::ObservationTimeout);
+    QCOMPARE(machine.view().state, MachineState::RevertingApply);
+    const quint64 rollbackToken = port.requests.last().token;
+
+    QVERIFY(machine.applyCompleted(rollbackToken, ApplyOutcome::Applied).accepted);
+    QCOMPARE(machine.view().state, MachineState::RevertingObserve);
+    QVERIFY(port.journalPresent);
+    QCOMPARE(port.requests.size(), 2);
 }
 
 void TransactionStateTests::observationMismatchTimeoutAndInvalidCallbacks()
