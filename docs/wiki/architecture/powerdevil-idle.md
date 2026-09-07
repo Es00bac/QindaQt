@@ -60,7 +60,10 @@ preference, coalesces changes while an asynchronous write and reload are in
 flight, and drains that value through a queued callback. The queued boundary is
 intentional: PowerDevil owner and apply signals can be delivered synchronously,
 so applying from a signal handler could allow a recovery request to supersede
-the consumer's request and strand the adapter's in-flight state.
+the consumer's request and strand the adapter's in-flight state. A preference
+becomes acknowledged only after the adapter reports a successful daemon
+reload; the adapter's optimistic in-memory fields never suppress a retry after
+a failed reload.
 
 When the PowerDevil owner is absent, the binding keeps the latest value and
 replays it after the exact owner returns. A configuration or reload failure is

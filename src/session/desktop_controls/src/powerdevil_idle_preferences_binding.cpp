@@ -37,6 +37,9 @@ void PowerDevilIdlePreferencesBinding::start()
     m_started = true;
     m_haveLatest = true;
     m_latest = m_preferences.currentPreferences();
+    ++m_preferenceRevision;
+    m_haveAcknowledged = false;
+    m_haveInFlight = false;
     m_blockedAfterFailure = false;
     m_waitingForAvailability = false;
 
@@ -52,6 +55,9 @@ void PowerDevilIdlePreferencesBinding::stop()
     }
     m_started = false;
     m_haveLatest = false;
+    m_haveAcknowledged = false;
+    m_haveInFlight = false;
+    ++m_preferenceRevision;
     m_blockedAfterFailure = false;
     m_waitingForAvailability = false;
     m_adapter.stop();
@@ -65,6 +71,7 @@ void PowerDevilIdlePreferencesBinding::onPreferencesChanged(
     }
     m_latest = preferences;
     m_haveLatest = true;
+    ++m_preferenceRevision;
     // A new preference is an explicit retry after a previous config or reload
     // failure. Repeated failure signals alone never create a retry loop.
     m_blockedAfterFailure = false;
@@ -79,10 +86,12 @@ void PowerDevilIdlePreferencesBinding::onAvailabilityChanged()
     }
     if (!m_adapter.available()) {
         m_waitingForAvailability = true;
+        m_haveAcknowledged = false;
         return;
     }
 
     // Owner return is an explicit retry boundary for an unavailable apply.
+    m_haveAcknowledged = false;
     m_blockedAfterFailure = false;
     m_waitingForAvailability = false;
     queueDrain();
@@ -94,11 +103,25 @@ void PowerDevilIdlePreferencesBinding::onApplyFinished(const bool success,
     if (!m_started) {
         return;
     }
+    const bool hadInFlight = m_haveInFlight;
+    const quint64 inFlightRevision = m_inFlightRevision;
+    const IdleDisplayPreferences inFlight = m_inFlight;
+    m_haveInFlight = false;
+
     if (success) {
+        if (hadInFlight) {
+            m_acknowledged = inFlight;
+            m_haveAcknowledged = true;
+        }
         m_blockedAfterFailure = false;
         queueDrain();
         return;
     }
+
+    // Adapter fields are optimistic: apply() updates them before the daemon
+    // confirms refreshStatus. A failed request must invalidate that state so a
+    // later explicit retry cannot be suppressed by an equality comparison.
+    m_haveAcknowledged = false;
 
     const bool ownerUnavailable = !m_adapter.available()
         || error == QLatin1String("powerdevil-unavailable")
@@ -114,6 +137,15 @@ void PowerDevilIdlePreferencesBinding::onApplyFinished(const bool success,
         // after ownerChanged() returns so its recovery request cannot be
         // re-entered or leave the adapter busy.
         m_waitingForAvailability = false;
+        m_blockedAfterFailure = false;
+        queueDrain();
+        return;
+    }
+
+    if (hadInFlight && m_preferenceRevision > inFlightRevision) {
+        // A newer preference arrived while the failed request was in flight.
+        // One queued attempt for that newer revision is valid; only that
+        // attempt's own failure may establish the retry block.
         m_blockedAfterFailure = false;
         queueDrain();
         return;
@@ -148,17 +180,25 @@ void PowerDevilIdlePreferencesBinding::drain()
     }
 
     const int minutes = adapterMinutes(m_latest);
-    if (m_adapter.enabled() == m_latest.enabled
-        && m_adapter.minutes() == minutes) {
+    if (m_haveAcknowledged && samePreferences(m_acknowledged, m_latest)) {
         m_waitingForAvailability = false;
         return;
     }
 
     m_waitingForAvailability = false;
+    m_inFlight = m_latest;
+    m_inFlightRevision = m_preferenceRevision;
+    m_haveInFlight = true;
     if (!m_adapter.apply(m_latest.enabled, minutes)) {
-        const bool ownerUnavailable = !m_adapter.available();
-        m_waitingForAvailability = ownerUnavailable;
-        m_blockedAfterFailure = !ownerUnavailable;
+        // apply() normally emits applyFinished synchronously for rejection;
+        // retain a safe fallback for an adapter that only returns false.
+        if (m_haveInFlight) {
+            m_haveInFlight = false;
+            m_haveAcknowledged = false;
+            const bool ownerUnavailable = !m_adapter.available();
+            m_waitingForAvailability = ownerUnavailable;
+            m_blockedAfterFailure = !ownerUnavailable;
+        }
     }
 }
 
@@ -169,6 +209,13 @@ int PowerDevilIdlePreferencesBinding::adapterMinutes(
     // requires a positive stored timeout even when its enabled flag is false.
     return preferences.enabled ? preferences.minutes
                                 : IdleDisplayPreferences::defaultTimeoutMinutes();
+}
+
+bool PowerDevilIdlePreferencesBinding::samePreferences(
+    const IdleDisplayPreferences &left,
+    const IdleDisplayPreferences &right) noexcept
+{
+    return left.enabled == right.enabled && left.minutes == right.minutes;
 }
 
 } // namespace QindaQt::Session::DesktopControls
