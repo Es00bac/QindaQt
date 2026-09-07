@@ -18,7 +18,9 @@ this module does not itself prove an installed logout/restore session.
 The public boundary is `qindaqt/workspaces/workspace.h` and
 `qindaqt/workspaces/workspace_store.h`. Values own their data and can cross
 threads by copy. `WorkspaceStore` is synchronous; its caller supplies the
-storage directory and serializes access on an I/O thread. Saving uses atomic
+storage directory and serializes access on the calling thread. The native
+dialog performs its small document reads and atomic writes synchronously on
+the GUI thread. Saving uses atomic
 replacement. Failed validation leaves the previous document intact; loading a
 damaged or unsupported document reports an error without rewriting it.
 

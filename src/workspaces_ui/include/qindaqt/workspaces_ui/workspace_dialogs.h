@@ -53,7 +53,7 @@ public:
 };
 
 // A compact native entry point for a caller-owned durable workspace directory.
-// It is GUI-thread confined; callers serialize the synchronous store separately.
+// It is GUI-thread confined; its small document reads/writes are synchronous.
 class WorkspaceLibraryDialog final : public QDialog {
   Q_OBJECT
 public:
