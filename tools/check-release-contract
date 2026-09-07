@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Fail closed when QindaQt release pins, packaging, or build output drift."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = ROOT / "compositor/upstream/kwin.json"
+SERIES = ROOT / "compositor/patches/series.json"
+COMPOSITOR_DOC = ROOT / "docs/wiki/architecture/compositor-session.md"
+ADR = ROOT / "docs/wiki/adr/0001-use-kwin-as-compositor-base.md"
+DESKTOP_EBUILD = (
+    ROOT
+    / "packaging/gentoo/gui-wm/qindaqt-desktop"
+    / "qindaqt-desktop-0.1.0_pre20260907.ebuild"
+)
+OBJECT_ID = re.compile(r"[0-9a-f]{40}")
+
+
+class ContractError(RuntimeError):
+    pass
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ContractError(message)
+
+
+def load_json(path: Path) -> dict[str, object]:
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ContractError(f"{path}: {error}") from error
+    require(isinstance(document, dict), f"{path}: top level must be an object")
+    return document
+
+
+def read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise ContractError(f"{path}: {error}") from error
+
+
+def verify_repository() -> tuple[str, str]:
+    manifest = load_json(MANIFEST)
+    require(manifest.get("schemaVersion") == 1, "KWin manifest schema must be 1")
+    upstream = manifest.get("upstream")
+    require(isinstance(upstream, dict), "KWin manifest needs an upstream object")
+    release = upstream.get("release")
+    commit = upstream.get("commit")
+    require(isinstance(release, str), "KWin release must be a string")
+    require(isinstance(commit, str) and OBJECT_ID.fullmatch(commit) is not None,
+            "KWin commit must be a lowercase 40-character object ID")
+    require(upstream.get("ref") == f"refs/tags/v{release}",
+            "KWin release and ref disagree")
+
+    series = load_json(SERIES)
+    require(series.get("schemaVersion") == 1, "KWin patch-series schema must be 1")
+    require(series.get("upstreamCommit") == commit,
+            "KWin patch series does not target the pinned upstream commit")
+    patches = series.get("patches")
+    require(isinstance(patches, list), "KWin patches must be an array")
+
+    for path in (COMPOSITOR_DOC, ADR):
+        contents = read_text(path)
+        for field in (release, upstream.get("tagObject"), commit, upstream.get("tree")):
+            require(isinstance(field, str) and field in contents,
+                    f"{path}: pinned KWin metadata is stale")
+
+    ebuild = read_text(DESKTOP_EBUILD)
+    required_fragments = (
+        f"=kde-plasma/kwin-{release}*:6=[lock,shortcuts]",
+        f"=kde-plasma/kdecoration-{release}*:6",
+        f"=kde-plasma/kscreenlocker-{release}*:6",
+        f"=kde-plasma/layer-shell-qt-{release}*:6",
+        f"=kde-plasma/kwayland-{release}*:6",
+        f"=kde-plasma/polkit-kde-agent-{release}*:6",
+        f"=kde-plasma/plasma-activities-{release}*:6",
+        f"=kde-plasma/spectacle-{release}*:6",
+        f"=kde-plasma/xdg-desktop-portal-kde-{release}*:6",
+        ">=kde-frameworks/kidletime-6.0:6=",
+        ">=kde-frameworks/kio-6.0:6=",
+        ">=kde-frameworks/kservice-6.0:6=",
+        "net-wireless/bluez",
+        "sys-apps/xdg-desktop-portal",
+        "sys-power/power-profiles-daemon",
+        "sys-power/upower",
+        "!gui-apps/qindaqt-apps",
+        "-DQINDAQT_BUILD_KWIN_PLUGIN=ON",
+        "-DQINDAQT_BUILD_SHELL=ON",
+        "-DQINDAQT_BUILD_PRODUCTION_SHELL=ON",
+        "-DBUILD_TESTING=OFF",
+    )
+    for fragment in required_fragments:
+        require(fragment in ebuild, f"desktop ebuild misses release contract: {fragment}")
+    require(re.search(r'QINDAQT_COMMIT="[0-9a-f]{40}"', ebuild) is not None,
+            "desktop ebuild must fetch one immutable source commit")
+    require("cmake_src_install" in ebuild,
+            "desktop ebuild must install the complete production tree")
+    return release, commit
+
+
+def verify_runtime(command: Path, expected_release: str, cmake_version: Path) -> None:
+    require(command.is_file(), f"KWin command is missing: {command}")
+    completed = subprocess.run(
+        [str(command), "--version"],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    output = completed.stdout.strip()
+    require(completed.returncode == 0, f"KWin version command failed: {output}")
+    require(output == f"kwin {expected_release}",
+            f"runtime KWin must be {expected_release} exactly, got: {output}")
+    config = read_text(cmake_version)
+    require(f'set(PACKAGE_VERSION "{expected_release}")' in config,
+            f"KWin CMake package is not {expected_release} exactly: {cmake_version}")
+
+
+def verify_build(build_root: Path) -> None:
+    cache = read_text(build_root / "CMakeCache.txt")
+    require("QINDAQT_BUILD_KWIN_PLUGIN:BOOL=ON" in cache,
+            "release build did not enable the native KWin plugin")
+    require("QINDAQT_BUILD_PRODUCTION_SHELL:BOOL=ON" in cache,
+            "release build did not enable the production shell")
+    plugin = build_root / "plugins/kwin/plugins/qindaqt_compositor.so"
+    launcher = build_root / "src/session/qindaqt-wm"
+    require(plugin.is_file() and plugin.stat().st_size > 0,
+            f"native KWin plugin artifact is missing: {plugin}")
+    require(launcher.is_file() and launcher.stat().st_size > 0,
+            f"session launcher artifact is missing: {launcher}")
+
+
+def verify_install(install_root: Path) -> None:
+    required_commands = (
+        "qindaqt-wm",
+        "qindaqt-shell",
+        "qindaqt-file-manager",
+        "qindaqt-editor",
+        "qindaqt-terminal",
+    )
+    for name in required_commands:
+        command = install_root / "bin" / name
+        require(command.is_file() and command.stat().st_size > 0,
+                f"full desktop install omitted {command}")
+
+    required_plugins = (
+        "qindaqt_compositor.so",
+        "org.qindaqt.so",
+        "libqindaqt_app_shellplugin.so",
+        "libqindaqt_controls_qmlplugin.so",
+        "libqindaqt_tokens_qmlplugin.so",
+    )
+    installed_files = {
+        path.name for path in install_root.rglob("*") if path.is_file()
+    }
+    for name in required_plugins:
+        require(name in installed_files,
+                f"full desktop install omitted runtime plugin {name}")
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("--kwin-wayland", type=Path)
+    result.add_argument("--kwin-cmake-version", type=Path)
+    result.add_argument("--build-root", type=Path)
+    result.add_argument("--install-root", type=Path)
+    return result
+
+
+def main() -> int:
+    arguments = parser().parse_args()
+    try:
+        release, commit = verify_repository()
+        runtime_arguments = (arguments.kwin_wayland, arguments.kwin_cmake_version)
+        require(all(runtime_arguments) or not any(runtime_arguments),
+                "runtime verification needs both KWin command and CMake version file")
+        if arguments.kwin_wayland and arguments.kwin_cmake_version:
+            verify_runtime(arguments.kwin_wayland, release, arguments.kwin_cmake_version)
+        if arguments.build_root:
+            verify_build(arguments.build_root.resolve())
+        if arguments.install_root:
+            verify_install(arguments.install_root.resolve())
+    except ContractError as error:
+        print(f"check-release-contract: error: {error}", file=sys.stderr)
+        return 1
+    print(f"Release contract verified: KWin {release} at {commit}.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

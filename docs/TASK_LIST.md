@@ -861,6 +861,12 @@ The reviewed paced-retry replacement (`cd951c65`) is integrated and its three
 process/activation/refresh gates pass. Install and verify it in the desktop;
 diagnose and verify the rendering mitigation separately.
 
+Release infrastructure candidate `8f676db7` is integrated: exact native-stack
+checks, full Gentoo desktop package definition, native build/boot CI, and
+release/upgrade guides. Candidate production build and nested boots passed;
+remote CI and the final combined source pin, Portage installation, installed
+acceptance and tag are still required.
+
 ### Dock hover behavior (user addition, 2026-09-07)
 
 Add a configurable dock hover mode: window/container preview, temporary raise,

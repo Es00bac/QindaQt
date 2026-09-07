@@ -39,6 +39,20 @@ The integrated process/activation/refresh gates pass 3/3, including the full
 70-second supervisor test. Installation and rendering mitigation qualification
 remain pending; this is not a claim that the render-memory fault is repaired.
 
+## Native release and Gentoo package definition integrated
+
+Reviewed release candidate `8f676db7` adds the full desktop ebuild, exact KWin
+source/ABI checks, native plugin build and boot CI, and release/upgrade guides.
+The candidate's fresh full production build and two nested plugin boots passed;
+the manager verified its build/install contract and remote KWin source objects.
+The integrated documentation passes validation for 202 pages and strict MkDocs.
+
+The ebuild currently pins packaging baseline `c95d355c`. Before installation it
+must be advanced, with a new Manifest, to the final combined feature commit.
+Remote CI, the full Portage merge, installed-session acceptance and the release
+tag remain pending. The definition is integrated; no new desktop installation
+or qualified release is claimed.
+
 ## Interactive Terminal fixed; Gentoo package installed
 
 This supersedes the earlier Terminal installation claim below. The earlier

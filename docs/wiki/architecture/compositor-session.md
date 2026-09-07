@@ -15,9 +15,9 @@ The source manifest pins one immutable upstream state:
 | Field | Value |
 | --- | --- |
 | Release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
-| Tag object | `1b035282ff05101a3441113648a93f57fe0351c1` |
-| Commit | `b04d59c03749484a8a0ed5a8d4cda515a267c59b` |
-| Tree | `99868e7da683d59f3ed90b0f0fe7ebfa4be5bc2b` |
+| Tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
+| Commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
+| Tree | `88f96f8cde49c51552d82f60fd461b6e8b950685` |
 | Current downstream patches | Zero |
 | KWin CMake target | `KWin::kwin`, found with version `6.6.6 EXACT` |
 | Plugin factory ABI/IID | `KWin::PluginFactory`, `org.kde.kwin.PluginFactoryInterface6.6.6` |
@@ -43,7 +43,10 @@ Pin checks are:
 The verifier also supports `--fetch NEW_DIRECTORY` and `--verify CHECKOUT`.
 Patch filenames and SHA-256 values become mandatory if the currently empty
 series gains entries. [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md)
-records this maintenance model.
+records this maintenance model. Follow the [KWin upgrade
+procedure](../development/kwin-upgrades.md) for any patch-release change; the
+[release procedure](../development/releases.md) requires a fresh native build
+and sequential build-tree plus staged-install plugin boots.
 
 ## `qindaqt-wm` launcher
 

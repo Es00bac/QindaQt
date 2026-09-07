@@ -25,12 +25,12 @@ rootless XWayland started on demand and no separate native X11 session.
 
 ## Current operational pin
 
-The milestone-2 workspace pins KWin `6.6.5` exactly: tag object
-`1b035282ff05101a3441113648a93f57fe0351c1`, commit
-`b04d59c03749484a8a0ed5a8d4cda515a267c59b`, and tree
-`99868e7da683d59f3ed90b0f0fe7ebfa4be5bc2b`. The current downstream patch
+The release workspace pins KWin `6.6.6` exactly: tag object
+`43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff`, commit
+`9bf2235fad10de9048c634e376bf12e56b3023e6`, and tree
+`88f96f8cde49c51552d82f60fd461b6e8b950685`. The current downstream patch
 series is empty. The binary plugin is compiled for
-`org.kde.kwin.PluginFactoryInterface6.6.5`; it must be rebuilt and the
+`org.kde.kwin.PluginFactoryInterface6.6.6`; it must be rebuilt and the
 integration matrix rerun for every KWin patch release rather than assuming ABI
 compatibility. Pin verification and plugin discovery are detailed in
 [Compositor and session integration](../architecture/compositor-session.md).

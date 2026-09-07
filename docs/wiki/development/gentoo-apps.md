@@ -38,3 +38,10 @@ or the separate Calendar work. Its configure stage still checks the desktop's
 NetworkManager and WirePlumber providers, so those build dependencies are listed
 explicitly. [ADR-0096](../adr/0096-package-bundled-apps-with-portage.md) records
 this packaging boundary.
+
+Install [`gui-wm/qindaqt-desktop`](gentoo-desktop.md) instead when Portage should
+own the complete compositor, shell, services, and applications. The full package
+declares the applications-only package as a replacement blocker so their shared
+files have one owner. Deselect the applications-only package before selecting
+the full package; deselection changes the world set but does not unmerge the
+installed files before Portage plans the replacement.
