@@ -126,8 +126,8 @@ trimmed printable name (maximum 64 characters); an optional absolute shell
 program and at most 64 verbatim arguments under the existing launch-policy
 byte limits; an optional font family and either the theme font size or 6–48
 points; a safe QindaQt theme identifier; 0–100,000 scrollback lines; and a
-`silent` or `audible` bell policy. Silent profiles strip BEL from child output;
-audible profiles pass it to the renderer. A user profile never changes the
+`silent` or `audible` bell policy. Both preserve all PTY bytes. Silent ignores
+parsed bell notifications; Audible requests a GUI beep. A user profile never changes the
 shell contract: its program and argv go through `TerminalLaunchPolicy`, never
 through a shell string, and an invalid or unresolvable profile is refused. The
 line-oriented profile editor preserves every unchanged argv element exactly,
@@ -437,3 +437,17 @@ text input and output, and clean exit. It also checks independent profile-based
 zoom and theme changes. The collection row verifies active-directory inheritance,
 fallback when observation is unavailable, and rejection of a foreign session as
 a directory source. The window row checks the published zoom shortcuts.
+
+### Interactive prompt regression
+
+Gentoo's shell prompt ends its OSC window-title sequence with BEL. Removing BEL
+for the silent profile left that sequence open, so the renderer swallowed the
+prompt and subsequent output. Bell policy now handles QTermWidget's parsed
+`bell` signal; Audible requests a GUI beep, while Silent does nothing. The PTY
+stream is byte-preserving in both modes. QTermWidget 2.4 uses notification mode
+for this public signal ([upstream implementation](https://github.com/lxqt/qtermwidget/blob/2.4.0/lib/qtermwidget.cpp)).
+
+The real-widget test now creates the complete TerminalWindow with an isolated
+interactive Bash, a BEL-terminated title prompt, keyboard input, theme refresh,
+searchable command output and a pixel check of the terminal viewport. This
+reproduces the previously missed normal-shell failure without host shell files.

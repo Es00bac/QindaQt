@@ -39,8 +39,8 @@ struct TerminalProfile final {
   int scrollbackLines = kDefaultScrollbackLines;
 
   enum class BellPolicy { Silent, Audible };
-  // Silent strips BEL bytes from forwarded child output before they reach
-  // the rendering widget; Audible passes them through to the widget bell.
+  // Silent ignores parsed bell notifications; Audible requests a GUI beep.
+  // Both preserve PTY bytes, including BEL used to terminate OSC sequences.
   BellPolicy bellPolicy = BellPolicy::Silent;
 
   [[nodiscard]] bool operator==(const TerminalProfile &) const = default;
