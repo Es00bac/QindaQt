@@ -8,7 +8,17 @@ The systemd activation environment was already correct; it had not updated the
 existing service. Restarting only Display at 21:04:35 produced PID 2012983
 with `WAYLAND_DISPLAY=qindaqt-0` and a fresh public Display1 snapshot.
 There was no logout. A session-lifecycle repair is being implemented to prevent
-this mismatch. Actual scale Apply/Keep behavior still needs verification.
+this mismatch. A subsequent physical preview exposed a second defect: Wayland
+reports HDMI scale 1.25, but the QindaQt inventory remains at 1.0 and triggers
+rollback. The exact wire trace is recorded in the manager's live-scale-proof
+artifacts. An inventory notification repair is now assigned.
+
+The verified `3591a081` Display runtime is temporarily running from the canonical
+build through a user runtime systemd override. It clears the formerly stuck
+no-op rollback correctly; the latest probe restored both original output
+positions/scales and left no transaction. The override also enables temporary
+Wayland tracing; remove tracing when diagnosis is complete. This is not a
+system-wide installation of that newer binary.
 
 The reviewed Gabbee terminal helper integration is now applied to the external
 checkout after baseline hash checks and backups. All 41 focused tests pass on
