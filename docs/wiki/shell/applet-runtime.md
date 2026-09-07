@@ -236,3 +236,12 @@ not part of `QindaQt.Applets 1.0` and must not be exposed to third-party hosts.
 The architectural decision is in
 [ADR-0002](../adr/0002-native-qindaqt-applet-api.md), and manifest fields are in
 [Applet manifest schema v1](../reference/applet-manifest-schema-v1.md).
+
+## Production rendering recovery
+
+The production shell defaults to Qt Quick's single-threaded `basic` render
+loop; an explicit `QSG_RENDER_LOOP` overrides it for diagnosis. This mitigates
+the render/window-lifetime path seen in the September 7 shell crash, but does
+not establish that its underlying memory fault is fixed. Other applications
+and the compositor retain their own rendering choices. See
+[ADR-0104](../adr/0104-serialize-shell-rendering.md) for evidence and limits.

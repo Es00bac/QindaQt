@@ -31,6 +31,8 @@ constexpr int globalTimeoutMilliseconds = 15'000;
 constexpr int shellStopGraceMilliseconds = 1'000;
 constexpr int compositorUnmapSettleMilliseconds = 250;
 constexpr qsizetype maximumDiagnosticBytes = 8 * 1024;
+constexpr qsizetype maximumRenderDiagnosticBytes = 8 * 1024;
+constexpr qsizetype maximumRenderDiagnosticLineBytes = 16 * 1024;
 
 QJsonObject rectangleJson(const QRect &rectangle)
 {
@@ -248,6 +250,17 @@ private:
         // the zwlr role and configure handshake. Production never enables or
         // parses WAYLAND_DEBUG, and the raw transcript is not emitted.
         environment.insert(QStringLiteral("WAYLAND_DEBUG"), QStringLiteral("client"));
+        if (m_renderDiagnosticsEnabled) {
+            // AGENT-GUARD: Keep renderer qualification opt-in. These categories
+            // are captured separately from the bounded raw Wayland transcript,
+            // whose 8 KiB limit is a parser-diagnostic safety boundary.
+            const QString rules = QStringLiteral(
+                "qt.scenegraph.general=true;qt.scenegraph.*=true;qt.rhi.*=true");
+            const QString existingRules = environment.value(QStringLiteral("QT_LOGGING_RULES"));
+            environment.insert(QStringLiteral("QT_LOGGING_RULES"),
+                               existingRules.isEmpty() ? rules : existingRules + u';' + rules);
+            environment.insert(QStringLiteral("QSG_INFO"), QStringLiteral("1"));
+        }
         m_shell.setProcessEnvironment(environment);
         m_shell.setProgram(executable);
         m_shell.setArguments({
@@ -268,15 +281,13 @@ private:
 
     void drainShellError()
     {
-        if (!m_shell.isOpen()) {
-            return;
-        }
         const QByteArray chunk = m_shell.readAllStandardError();
         if (chunk.isEmpty()) {
             return;
         }
         m_protocol.ingest(chunk);
         appendDiagnostic(chunk);
+        appendRenderDiagnostic(chunk);
     }
 
     void appendDiagnostic(const QByteArray &chunk)
@@ -286,6 +297,52 @@ private:
         }
         const qsizetype remaining = maximumDiagnosticBytes - m_diagnostic.size();
         m_diagnostic.append(chunk.first(std::min(remaining, chunk.size())));
+    }
+
+    void appendRenderDiagnostic(const QByteArray &chunk, bool flush = false)
+    {
+        if (!m_renderDiagnosticsEnabled) {
+            return;
+        }
+        m_renderDiagnosticPending.append(chunk);
+        for (;;) {
+            const qsizetype newline = m_renderDiagnosticPending.indexOf('\n');
+            if (newline < 0) {
+                break;
+            }
+            const QByteArray line = m_renderDiagnosticPending.first(newline + 1);
+            m_renderDiagnosticPending.remove(0, newline + 1);
+            appendRenderDiagnosticLine(line);
+        }
+        if (m_renderDiagnosticPending.size() > maximumRenderDiagnosticLineBytes) {
+            m_renderDiagnosticPending.clear();
+        }
+        if (flush && !m_renderDiagnosticPending.isEmpty()) {
+            appendRenderDiagnosticLine(m_renderDiagnosticPending);
+            m_renderDiagnosticPending.clear();
+        }
+    }
+
+    void appendRenderDiagnosticLine(const QByteArray &line)
+    {
+        if (!line.contains("qt.scenegraph") && !line.contains("qt.rhi")) {
+            return;
+        }
+        if (m_renderDiagnostic.size() >= maximumRenderDiagnosticBytes) {
+            return;
+        }
+        const qsizetype remaining = maximumRenderDiagnosticBytes - m_renderDiagnostic.size();
+        m_renderDiagnostic.append(line.first(std::min(remaining, line.size())));
+    }
+
+    void printRenderDiagnostic()
+    {
+        if (!m_renderDiagnosticsEnabled) {
+            return;
+        }
+        appendRenderDiagnostic({}, true);
+        QTextStream(stderr) << "qindaqt-shell renderer diagnostic:\n"
+                            << QString::fromUtf8(m_renderDiagnostic) << '\n';
     }
 
     void enter(Stage stage)
@@ -320,6 +377,7 @@ private:
             {QStringLiteral("activeMappedSnapshotTaken"), m_activeMappedSnapshotTaken},
             {QStringLiteral("activeMappedLayerProtocol"), m_activeMappedProtocol},
             {QStringLiteral("layerProtocol"), m_protocol.evidence().toJson()},
+            {QStringLiteral("rendererDiagnostics"), QString::fromUtf8(m_renderDiagnostic)},
         };
     }
 
@@ -333,10 +391,13 @@ private:
     {
         enter(Stage::Finished);
         m_tick.stop();
+        drainShellError();
+        appendRenderDiagnostic({}, true);
         printResult(result(true));
         if (qEnvironmentVariableIsSet("QINDAQT_SHELL_RENDER_DIAGNOSTICS")) {
             QTextStream(stderr) << "qindaqt-shell bounded diagnostic:\n"
                                 << QString::fromUtf8(m_diagnostic) << '\n';
+            printRenderDiagnostic();
         }
         m_application.exit(0);
     }
@@ -351,6 +412,7 @@ private:
             m_shell.waitForFinished(1'000);
         }
         drainShellError();
+        appendRenderDiagnostic({}, true);
         m_protocol.finish();
         enter(Stage::Finished);
         m_tick.stop();
@@ -359,6 +421,7 @@ private:
             QTextStream(stderr) << "qindaqt-shell bounded diagnostic:\n"
                                 << QString::fromUtf8(m_diagnostic) << '\n';
         }
+        printRenderDiagnostic();
         m_application.exit(1);
     }
 
@@ -377,10 +440,14 @@ private:
     QRect m_restoredGeometry;
     QSize m_expectedReservedSize;
     QByteArray m_diagnostic;
+    QByteArray m_renderDiagnostic;
+    QByteArray m_renderDiagnosticPending;
     QJsonObject m_activeMappedProtocol;
     int m_stableSamples = 0;
     bool m_shellStarted = false;
     bool m_activeMappedSnapshotTaken = false;
+    const bool m_renderDiagnosticsEnabled =
+        qEnvironmentVariableIsSet("QINDAQT_SHELL_RENDER_DIAGNOSTICS");
 };
 
 } // namespace
