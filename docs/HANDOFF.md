@@ -1,5 +1,42 @@
 # Integration handoff
 
+## Interactive Terminal fixed; Gentoo package installed
+
+This supersedes the earlier Terminal installation claim below. The earlier
+checks proved process startup and plain output, but missed the normal Gentoo
+interactive prompt. Silent bell handling removed BEL, which also terminates OSC
+window-title sequences; the renderer swallowed the prompt and later output.
+Fix `3ec80588`, integrated at `89ad375d`, preserves PTY bytes and handles sound
+only through parsed bell notifications.
+
+The complete TerminalWindow regression now starts an isolated interactive Bash
+with a BEL-terminated prompt, enters a command through widget keyboard events,
+and verifies searchable output and painted glyphs. It passes on Wayland; the
+real-widget suite passes 8/8 cases and six focused Terminal CTest rows pass.
+
+`gui-apps/qindaqt-apps-0.1.0_pre20260907::qindaqt` is installed through Portage
+from the immutable fixed commit. It owns File Manager, Editor, Terminal and
+shared QML runtime files, declares slot-bound dependencies and is in world.
+All 40 installed object checksums match Portage's CONTENTS. Executable RUNPATHs
+resolve under `/usr`; no build/source paths or missing libraries remain.
+The original `--buildpkg` attempt hit unconfigured local GPG verification; a
+source-only resume merged successfully without changing binary trust policy.
+Portage adopted the previously unmanaged files and reported no owning-package
+collision. [Gentoo installation](wiki/development/gentoo-apps.md) documents updates.
+
+A fresh installed Terminal launched with no options and published the normal
+`cabewse@qinda container-wm` shell title through the compositor inventory. It is
+left open for the user. Installed File Manager UI actions pass. Installed Editor
+reports a 46 ms first frame and 17,160 KiB median PSS. Evidence and the fixed
+window capture are under ignored `.cache/terminal-visible-install/`.
+
+The main checkout contains unfinished Calendar edits owned by the separate
+worker, so its full reconfigure currently fails on missing Calendar CMake files.
+Those edits are preserved. Verification and the Portage build use the exact
+committed snapshot, excluding that unrelated working-tree state. Documentation
+validation and strict MkDocs pass for 193 pages; the previous three unrelated
+source-shape violations remain outside this fix.
+
 ## Bundled applications installed — September 7
 
 The primary assistant personally implemented and checked candidate `4dfbe5a2`,

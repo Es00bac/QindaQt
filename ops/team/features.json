@@ -1239,6 +1239,11 @@
               "kind": "commit",
               "reference": "44fff730",
               "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+            },
+            {
+              "kind": "commit",
+              "reference": "89ad375d",
+              "summary": "Correct the normal Gentoo prompt failure missed by plain-output tests: preserve BEL-terminated OSC strings and silence parsed bell notifications. Complete TerminalWindow interactive prompt/keyboard/pixel regression passes on Wayland; six focused CTest rows pass. Portage installs the immutable fixed app snapshot with declared dependencies and no build RUNPATHs; normal installed launch publishes its shell title. See docs/HANDOFF.md."
             }
           ],
           "caveat": "GPU rendering, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain."
