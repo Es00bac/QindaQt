@@ -13,8 +13,10 @@ path is the next required proof, and the candidate remains unintegrated.
 The live portal pair was refreshed without logout. Both connect to `qindaqt-0`;
 the frontend identifies QindaQt and exports RemoteDesktop, GlobalShortcuts and
 ScreenCast. The KDE backend intentionally retains its KDE-specific desktop
-identity. Startup candidate `a83b32a4` needs corrected backend documentation
-and backend-first ordering before integration.
+identity. Startup repair is integrated through `e360059e`, after independent review
+and correction of backend facts and asynchronous restart wording. The integrated
+session build and three supervisor/environment/refresh tests pass; strict MkDocs
+and documentation links pass. The updated session binary still needs deployment.
 
 ## Closing suite and prepared system installation
 
