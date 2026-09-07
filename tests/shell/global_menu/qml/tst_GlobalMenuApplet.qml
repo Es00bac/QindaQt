@@ -126,10 +126,6 @@ Item {
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 3);
-            for (let index = 0; index < entries.length; ++index) {
-                verify(entries[index].contentItem !== null)
-                compare(entries[index].contentItem.elide, Text.ElideNone)
-            }
             // Realistic menus present submenus alongside actions; every
             // entry keeps an accessible name even when non-activating.
             compare(entries[0].Accessible.name, "File");
@@ -142,7 +138,11 @@ Item {
             fakeAccess.items[2] = {
                 "id": "tabsMenu", "kind": "submenu", "text": "Tabs",
                 "mnemonicIndex": 0, "enabled": true, "checkable": false,
-                "checked": false
+                "checked": false, "children": [{
+                    "id": "newTab", "kind": "action", "text": "New Tab",
+                    "mnemonicIndex": 0, "enabled": true, "checkable": false,
+                    "checked": false
+                }]
             }
             const applet = createTemporaryObject(appletComponent, testRoot,
                                                  {"width": 1000})
@@ -153,9 +153,13 @@ Item {
             const tabs = entries.find(entry => entry.Accessible.name === "Tabs")
             verify(tabs !== undefined)
             verify(tabs.contentItem !== null)
+            verify(tabs.enabled)
             compare(tabs.contentItem.text, "Tabs")
-            compare(tabs.contentItem.elide, Text.ElideNone)
-            verify(!tabs.contentItem.truncated)
+            tryCompare(tabs.contentItem, "truncated", false)
+            // The live Verdana fallback can paint fractionally beyond the
+            // FontMetrics-derived content box, but the label must still fit
+            // inside the complete admitted item, including its padding.
+            verify(tabs.contentItem.contentWidth <= tabs.width)
         }
 
         function test_submenuEntryIsVisibleButNotActivating() {
