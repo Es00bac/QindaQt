@@ -56,7 +56,7 @@ replace earlier work:
   `b9959bfb91df43e49b5a5d4568aafcb4` verifies a measured 93 ms lower-edge
   File click, a popup retained after release and one second, and exactly one
   New action. Separate captures verify lower-edge Clipboard and Bluetooth
-  opening. Installation of the new shell remains open.
+  opening. The new shell is installed and was refreshed at 08:33 MDT on September 7.
   Native-menu fixes are integrated through `71f3b49b`. In isolated run
   `de9f130640494649993e7001d75810a7`, inspected screenshots show a correctly
   anchored File popup staying open after release and a one-second wait, with
@@ -84,7 +84,7 @@ replace earlier work:
   consumption and Help → About now pass in private native run
   `a20d3aed75694d879a0a1cfab499c033`. The separately reviewed Sloom
   candidate `f459b0fd` also removes the duplicate local menu; its packaged
-  production files match the accepted source. Host installation remains open.
+  production files match the accepted source. Host installation is complete and all packaged files were independently verified.
 - Diagnose the reported ChatGPT launch segmentation fault and repair any
   established desktop/runtime integration defect without resetting user data.
   Resolved launch regression: isolated X11 launch reproduced SIGSEGV; native
@@ -118,8 +118,8 @@ replace earlier work:
   `8ce25f98` provides persisted dismissal. Integrated `29be28fd` changes the
   default to Meta+Shift+F1 to avoid KWin Desktop 1. Private run
   `b752e061dc2a402f9729ab08b9606fca` verifies real hide/reopen input and the
-  corrected visible label; deployment and this user's legacy binding update
-  remain outstanding.
+  corrected visible label. The verified build is installed and the host
+  binding is persisted as Meta+Shift+F1.
 - Add QindaQt-specific parent-frame controls for member-title visibility and
   a compact management menu using the existing arrange, detach, and ungroup
   actions, without obscuring normal window controls.
@@ -142,8 +142,10 @@ replace earlier work:
   Integrated `f23f6710` has two real sink-to-PTY runs, each 11/11: standalone
   and grouped terminals receive separate unique Unicode sentinels, independently
   matched against shell-written files. The actual Gabbee checkout passes 187/187
-  tests. Physical microphone transcription is not claimed; final shortcut routing
-  evidence remains separate from terminal insertion.
+  tests. Native push-to-talk run `bd01eade1a1442d7ac9bc4147ac293d2` and
+  command run `29894db03d7d49d2ad9766a346b3f181` each verify exactly one
+  press/release callback through the real KDE backend. Physical microphone
+  transcription and user-specific F23/F24 activation are not claimed.
 - Qualify fullscreen video and games: fullscreen entry/exit and restoration,
   input focus, panel visibility, and pointer capture/confinement behavior.
   Controlled native fullscreen run `0aca8a74926c44f98def9b87b2a83328` passes
