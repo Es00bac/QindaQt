@@ -13,6 +13,7 @@ target_sources(
         src/freedesktop_feedback_notifier.cpp
         src/idle_display_preferences.cpp
         src/idle_display_policy.cpp
+        src/powerdevil_idle_preferences_binding.cpp
         src/screenshot_launcher.cpp
         src/settings1_idle_preferences.cpp
         src/volume_key_controller.cpp
@@ -27,6 +28,7 @@ target_sources(
             include/qindaqt/session/desktop_controls/idle_display_preferences.h
             include/qindaqt/session/desktop_controls/idle_display_policy.h
             include/qindaqt/session/desktop_controls/idle_tracker.h
+            include/qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h
             include/qindaqt/session/desktop_controls/screenshot_launcher.h
             include/qindaqt/session/desktop_controls/settings1_idle_preferences.h
             include/qindaqt/session/desktop_controls/shortcut_registration.h
@@ -37,6 +39,7 @@ target_link_libraries(
     PUBLIC
         QindaQt::AudioClient
         QindaQt::PowerService
+        QindaQt::PowerDevilIdle
         QindaQt::SettingsClient
         Qt6::Core
         Qt6::Gui
@@ -53,17 +56,12 @@ install(
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-# The production process needs the compositor-provided KGlobalAccel service,
-# the KIdleTime ext-idle-notify backend, and the KWayland dpms client. Missing
-# frameworks degrade to no resident process while the library and its focused
-# tests keep building; the dependency request is tracked on the team board.
+# The production process needs the compositor-provided KGlobalAccel service and
+# the session-owned PowerDevil idle preference adapter. Missing frameworks
+# degrade to no resident process while the library and focused tests build.
 find_package(KF6GlobalAccel 6.0 CONFIG)
-find_package(KF6IdleTime 6.0 CONFIG)
-find_package(KWayland 6.0 CONFIG)
 
-# KWayland 6 exports its Qt6-built client as Plasma::KWaylandClient.
-if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET Plasma::KWaylandClient)
-    set(QINDAQT_KWAYLAND_CLIENT_TARGET Plasma::KWaylandClient)
+if(TARGET KF6::GlobalAccel AND TARGET QindaQt::PowerDevilIdle)
     qt_add_library(qindaqt_desktop_controls_production STATIC)
     add_library(QindaQt::DesktopControlsProduction ALIAS
         qindaqt_desktop_controls_production)
@@ -73,10 +71,6 @@ if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET Plasma::KWaylandC
         PRIVATE
             production/kglobal_accel_registrar.cpp
             production/kglobal_accel_registrar.h
-            production/kidle_time_tracker.cpp
-            production/kidle_time_tracker.h
-            production/kwayland_dpms_controller.cpp
-            production/kwayland_dpms_controller.h
     )
     target_include_directories(
         qindaqt_desktop_controls_production PUBLIC production)
@@ -85,8 +79,7 @@ if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET Plasma::KWaylandC
         PUBLIC
             QindaQt::DesktopControls
             KF6::GlobalAccel
-            KF6::IdleTime
-            ${QINDAQT_KWAYLAND_CLIENT_TARGET}
+            QindaQt::PowerDevilIdle
             Qt6::Core
             Qt6::Gui
     )
@@ -117,6 +110,6 @@ if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET Plasma::KWaylandC
 else()
     message(
         STATUS
-            "qindaqt-desktop-controls: KF6GlobalAccel/KF6IdleTime/KWayland not all found; resident process not built"
+            "qindaqt-desktop-controls: KF6GlobalAccel/PowerDevilIdle not all found; resident process not built"
     )
 endif()

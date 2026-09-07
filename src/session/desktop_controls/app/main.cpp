@@ -2,8 +2,8 @@
 #include "qindaqt/session/desktop_controls/brightness_key_controller.h"
 #include "qindaqt/session/desktop_controls/desktop_shortcut_set.h"
 #include "qindaqt/session/desktop_controls/freedesktop_feedback_notifier.h"
-#include "qindaqt/session/desktop_controls/idle_display_policy.h"
 #include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
+#include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
 #include "qindaqt/session/desktop_controls/screenshot_launcher.h"
 #include "qindaqt/session/desktop_controls/volume_key_controller.h"
 
@@ -13,9 +13,9 @@
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
-#include "kidle_time_tracker.h"
 #include "kglobal_accel_registrar.h"
-#include "kwayland_dpms_controller.h"
+
+#include <qindaqt/session/powerdevil_idle/powerdevil_idle_adapter.h>
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -176,15 +176,6 @@ int main(int argc, char *argv[])
         },
         &application);
 
-    QindaQt::Session::DesktopControls::KIdleTimeTracker idleTracker;
-    QindaQt::Session::DesktopControls::KWaylandDpmsController dpmsController;
-    QString dpmsError;
-    if (!dpmsController.start(&dpmsError)) {
-        QTextStream(stderr) << "qindaqt-desktop-controls: display power control "
-                               "unavailable: "
-                            << dpmsError << '\n';
-    }
-
     QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(sessionBus);
     QindaQt::Services::SettingsClient::SettingsClient settingsClient(
         settingsTransport,
@@ -196,10 +187,11 @@ int main(int argc, char *argv[])
     }
     QindaQt::Session::DesktopControls::Settings1IdlePreferences idlePreferences(settingsClient);
 
-    QindaQt::Session::DesktopControls::IdleDisplayPolicy idlePolicy(idlePreferences, idleTracker, dpmsController,
-                                 &application);
+    QindaQt::Session::PowerDevilIdle::PowerDevilIdleAdapter powerDevilIdle(sessionBus);
+    QindaQt::Session::DesktopControls::PowerDevilIdlePreferencesBinding idleBinding(
+        idlePreferences, powerDevilIdle, &application);
     if (!parser.isSet(QStringLiteral("no-idle-policy"))) {
-        idlePolicy.start();
+        idleBinding.start();
     }
 
     return application.exec();

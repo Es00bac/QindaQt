@@ -52,6 +52,29 @@ session options disables this child; tests never discover a host daemon from
 that options default. Production executable selection and installed validation
 remain part of the session composition qualification.
 
+## Desktop-controls binding
+
+`PowerDevilIdlePreferencesBinding` connects the Settings1 idle-preference
+provider to the adapter in the desktop-controls process. It retains the latest
+preference, coalesces changes while an asynchronous write and reload are in
+flight, and drains that value through a queued callback. The queued boundary is
+intentional: PowerDevil owner and apply signals can be delivered synchronously,
+so applying from a signal handler could allow a recovery request to supersede
+the consumer's request and strand the adapter's in-flight state.
+
+When the PowerDevil owner is absent, the binding keeps the latest value and
+replays it after the exact owner returns. A configuration or reload failure is
+reported once and blocks repeated automatic retries until a new preference or
+an owner transition provides an explicit retry boundary. Settings1 represents
+a disabled idle policy with a zero-minute value; the binding stores the
+PowerDevil-required positive timeout using the default ten-minute duration
+while leaving the enabled flag false.
+
+The production desktop-controls composition uses this binding and the
+PowerDevil adapter instead of the old KIdleTime-to-DPMS path. The retained
+idle-policy classes remain available to focused migration tests, but they are
+not instantiated by the resident process and do not own display power.
+
 ## Verification boundary
 
 The focused private-bus test uses a temporary `XDG_CONFIG_HOME` and a fake
