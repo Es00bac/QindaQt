@@ -112,10 +112,10 @@ integration retains every accepted decision in numeric order.
 - [ADR-0097: Separate workspace slots from live windows](0097-separate-workspace-slots-from-live-windows.md)
 - [ADR-0098: Gate releases on the exact native compositor stack](0098-gate-releases-on-the-exact-native-compositor-stack.md)
 - [ADR-0099: Shade containers by hiding member content](0099-shade-whole-containers-by-hiding-member-content.md)
+- [ADR-0100: Own desktop essentials in a session process](0100-own-desktop-essentials-in-a-session-process.md)
 - [ADR-0101: Launch workspace applications through desktop entries](0101-launch-workspace-apps-through-desktop-entries.md)
 - [ADR-0102: Adopt restored layouts atomically](0102-adopt-restored-layouts-atomically.md)
 - [ADR-0103: Preserve the compositor session during shell recovery](0103-paced-shell-recovery.md)
 - [ADR-0104: Serialize production shell rendering](0104-serialize-shell-rendering.md)
-- [ADR-0100: Own desktop essentials in a session process](0100-own-desktop-essentials-in-a-session-process.md)
-
 - [ADR-0105: Delegate idle display-off to PowerDevil](0105-delegate-idle-display-off-to-powerdevil.md)
+- [ADR-0106: Accept an equivalent Gentoo Power Profiles provider](0106-accept-equivalent-power-profiles-provider.md)

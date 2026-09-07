@@ -161,6 +161,12 @@ the resolved KWin, LayerShellQt, Qt Wayland, ECM, and KDecoration package
 versions before configuring. Its rolling environment is intentional for the
 public layer-shell client compatibility lane.
 
+Both cold Arch builds retain two-way compilation and a 60-minute job ceiling.
+The core lane reached 3183 of 4007 build commands before GitHub canceled its
+former 30-minute window, while the production lane had independently exceeded
+the same former ceiling. The longer bound lets their mandatory test selectors
+run; it does not remove or skip any build target or test row.
+
 Arch packages `/usr/bin/kwin_wayland` with the `cap_sys_nice=ep` file
 capability. An ordinary GitHub job container intentionally lacks `SYS_NICE` in
 its capability bounding set, so Linux rejects that executable before KWin can
