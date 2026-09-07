@@ -76,32 +76,32 @@ class ApprovedInputSession:
 
     # --- notify methods: only valid after on_ready ---
 
-    def notify_pointer_motion(self, dx: float, dy: float) -> None:
-        self._call("NotifyPointerMotion",
+    def notify_pointer_motion(self, dx: float, dy: float) -> bool:
+        return self._call("NotifyPointerMotion",
                    dbus.ObjectPath(self._session), {}, dx, dy)
 
-    def notify_pointer_button(self, button: str, pressed: bool) -> None:
+    def notify_pointer_button(self, button: str, pressed: bool) -> bool:
         """Raise ValueError for unknown button names instead of silently falling back."""
         code = _BUTTON.get(button.lower())
         if code is None:
             raise ValueError(
                 f"unknown pointer button {button!r}; valid: {', '.join(_BUTTON)}"
             )
-        self._call("NotifyPointerButton",
+        return self._call("NotifyPointerButton",
                    dbus.ObjectPath(self._session), {},
                    dbus.Int32(code), dbus.UInt32(1 if pressed else 0))
 
-    def notify_pointer_axis(self, dx: float, dy: float) -> None:
-        self._call("NotifyPointerAxis",
+    def notify_pointer_axis(self, dx: float, dy: float) -> bool:
+        return self._call("NotifyPointerAxis",
                    dbus.ObjectPath(self._session), {},
                    dbus.Double(dx), dbus.Double(dy))
 
-    def notify_key_keysym(self, keysym: int, pressed: bool) -> None:
-        self._call("NotifyKeyboardKeysym",
+    def notify_key_keysym(self, keysym: int, pressed: bool) -> bool:
+        return self._call("NotifyKeyboardKeysym",
                    dbus.ObjectPath(self._session), {},
                    dbus.Int32(keysym), dbus.UInt32(1 if pressed else 0))
 
-    def notify_text(self, text: str) -> None:
+    def notify_text(self, text: str) -> bool:
         """Deliver text as paired keysym press/release events.
 
         AGENT-NOTE: X11 keysym encoding for Unicode: codepoints 0x20–0xFF map
@@ -111,8 +111,11 @@ class ApprovedInputSession:
         for char in text:
             cp = ord(char)
             keysym = cp if cp <= 0xFF else (0x01000000 | cp)
-            self.notify_key_keysym(keysym, True)
-            self.notify_key_keysym(keysym, False)
+            if not self.notify_key_keysym(keysym, True):
+                return False
+            if not self.notify_key_keysym(keysym, False):
+                return False
+        return True
 
     # --- internal portal handshake ---
 
@@ -254,14 +257,16 @@ class ApprovedInputSession:
             except dbus.DBusException:
                 pass
 
-    def _call(self, method: str, *args) -> None:
+    def _call(self, method: str, *args) -> bool:
         if not self._approved:
-            return
+            return False
         try:
             iface = dbus.Interface(self._portal_obj, _RD_IFACE)
             getattr(iface, method)(*args)
+            return True
         except dbus.DBusException as exc:
             self._fail(f"{method}: {exc}")
+            return False
 
     def _fail(self, msg: str) -> None:
         self._send_close()

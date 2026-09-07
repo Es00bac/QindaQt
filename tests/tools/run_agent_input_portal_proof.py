@@ -64,7 +64,7 @@ def _proof_basic() -> int:
         b'{"action":"scroll","dx":0.0,"dy":2.0}\n'
         b'{"action":"key_press","keysym":65}\n'
         b'{"action":"key_release","keysym":65}\n'
-        b'{"action":"text","text":"hi"}\n'
+        b'{"action":"text","text":"hi","requestId":"basic-text"}\n'
         + unicode_event
         + b'{"action":"close"}\n'
     )
@@ -85,6 +85,9 @@ def _proof_basic() -> int:
     loop.run()
     t.join(timeout=2)
 
+    ack_output = proc.stdout.read()
+    if b'{"requestId":"basic-text","ok":true}' not in ack_output:
+        return _fail(f"missing successful portal-acceptance ack: {ack_output!r}")
     if portal.calls[:3] != ["CreateSession", "SelectDevices", "Start"]:
         return _fail(f"handshake wrong: {portal.calls[:3]}")
     expected_notify = [
@@ -183,7 +186,7 @@ def _proof_notify_failure() -> int:
     def _interact() -> None:
         # stdin stays OPEN so only the failure path can end the process.
         if wait_for_ready(proc, timeout=5):
-            proc.stdin.write(b'{"action":"move","dx":1.0,"dy":2.0}\n')
+            proc.stdin.write(b'{"action":"move","dx":1.0,"dy":2.0,"requestId":"failing-move"}\n')
             proc.stdin.flush()
 
     threading.Thread(target=_interact, daemon=True).start()
@@ -201,6 +204,9 @@ def _proof_notify_failure() -> int:
     stderr_tail = proc.stderr.read()
     if b"ERROR:" not in stderr_tail:
         return _fail(f"no ERROR report on stderr: {stderr_tail!r}")
+    ack_output = proc.stdout.read()
+    if b'{"requestId":"failing-move","ok":false,' not in ack_output:
+        return _fail(f"missing failed portal-acceptance ack: {ack_output!r}")
     print("OK: notify failure closed session and exited nonzero", file=sys.stderr)
     return 0
 
