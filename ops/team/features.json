@@ -631,9 +631,19 @@
               "kind": "test",
               "reference": "docs/wiki/development/testing-harness.md",
               "summary": "D6 exact review passes strict Debug/Release hostile service 19/19, focused package/boundary 7/7, and adjacent D0-D6/session-lock 40/40; fresh manager verification repeats the affected gates."
+            },
+            {
+              "kind": "commit",
+              "reference": "347eb03f",
+              "summary": "Retains valid compositor inventory observed before apply ACK; independently reviewed and five integrated transaction test groups pass."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/HANDOFF.md",
+              "summary": "Physical HDMI 125% preview/Cancel and Keep/restore cycles pass through Display1; verified service deployed through a user-level override."
             }
           ],
-          "caveat": "End-to-end nested preview/confirm/revert convergence, mixed-output matrices, resource proof, suspend/hotplug, and physical hardware qualification remain; the Settings route is integrated separately under QQ-006.05."
+          "caveat": "Physical Display1 preview, confirmation and rollback are qualified; direct Settings pointer interaction, broader hardware/hotplug/suspend/resource coverage remain distinct. Settings integration is under QQ-006.05."
         },
         {
           "id": "QQ-005.03",
@@ -831,9 +841,19 @@
               "kind": "commit",
               "reference": "3ad28017a08cd8803db24b22e7d2e4ab78b88238",
               "summary": "GlobalShortcuts routes to the installed backend that actually advertises it; focused portal checks pass."
+            },
+            {
+              "kind": "commit",
+              "reference": "f23f6710",
+              "summary": "Independently reviewed real Gabbee AgentInputTextSink terminal qualification is integrated; three CTest rows and 47 discovered units pass."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/development/gabbee-interop-evidence.md",
+              "summary": "Two private real-portal runs each pass 11/11 phases. Manager independently verifies all four standalone/group Unicode PTY output files and real sink receipts."
             }
           ],
-          "caveat": "Gabbee real text delivery and user-approved RemoteDesktop input are active qualification work; mock-portal results do not claim physical input success."
+          "caveat": "Standalone/group Terminal insertion through the real Gabbee sink and approved RemoteDesktop portal is qualified in the private desktop. Physical microphone transcription and native global-shortcut activation remain distinct; fake-backend shortcut tests alone do not prove native activation."
         }
       ],
       "stoppingPoint": {
