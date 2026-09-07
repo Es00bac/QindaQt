@@ -107,3 +107,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0094: Refresh resident Wayland-connected services at session entry](0094-refresh-resident-wayland-session-services.md)
 
 - [ADR-0095: Use KSyntaxHighlighting for editor presentation](0095-use-ksyntaxhighlighting-for-editor-presentation.md)
+
+- [ADR-0096: Package bundled applications with Portage](0096-package-bundled-apps-with-portage.md)
