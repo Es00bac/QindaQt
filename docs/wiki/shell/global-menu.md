@@ -481,7 +481,11 @@ the indicator hides itself when even it cannot fit) rather than painting
 partial content inside the clipped root. A clamped
 `maximumVisibleEntries` acts as the count cap on top of the measured fit.
 Provider-owned top-level names intentionally remain visible because they are
-the menu affordances. Unavailable and empty phases occupy no panel extent and
+the menu affordances. Width pressure moves complete entries behind the `+N`
+indicator; an admitted entry never independently elides its provider-owned
+name. This avoids Qt text-layout rounding shortening a label that the shared
+font metrics already admitted within the measured extent. Unavailable and
+empty phases occupy no panel extent and
 paint no “unavailable” label; their exact truth remains in the applet's
 accessible description. This prevents a missing exporter from turning the
 global bar into diagnostic text. The loading phase is the exception by design:

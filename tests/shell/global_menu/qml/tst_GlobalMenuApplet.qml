@@ -126,10 +126,36 @@ Item {
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 3);
+            for (let index = 0; index < entries.length; ++index) {
+                verify(entries[index].contentItem !== null)
+                compare(entries[index].contentItem.elide, Text.ElideNone)
+            }
             // Realistic menus present submenus alongside actions; every
             // entry keeps an accessible name even when non-activating.
             compare(entries[0].Accessible.name, "File");
             compare(entries[2].Accessible.name, "About");
+        }
+
+        function test_topLevelNamesNeverElideAfterAdmission() {
+            fakeAccess.available = true
+            fakeAccess.items = realisticMenuItems()
+            fakeAccess.items[2] = {
+                "id": "tabsMenu", "kind": "submenu", "text": "Tabs",
+                "mnemonicIndex": 0, "enabled": true, "checkable": false,
+                "checked": false
+            }
+            const applet = createTemporaryObject(appletComponent, testRoot,
+                                                 {"width": 1000})
+            verify(applet !== null)
+            const entries = []
+            collectEntries(applet, entries)
+            compare(entries.length, 3)
+            const tabs = entries.find(entry => entry.Accessible.name === "Tabs")
+            verify(tabs !== undefined)
+            verify(tabs.contentItem !== null)
+            compare(tabs.contentItem.text, "Tabs")
+            compare(tabs.contentItem.elide, Text.ElideNone)
+            verify(!tabs.contentItem.truncated)
         }
 
         function test_submenuEntryIsVisibleButNotActivating() {

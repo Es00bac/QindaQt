@@ -293,7 +293,12 @@ Item {
                 contentItem: Text {
                     text: String(menuEntry.entryData.text ?? "")
                     textFormat: Text.PlainText
-                    elide: Text.ElideRight
+                    // The applet handles width pressure by hiding complete
+                    // entries behind +N. Keep every admitted affordance's
+                    // provider-owned name intact; Qt can otherwise elide a
+                    // fitting label because QTextLayout and FontMetrics round
+                    // the same glyph run differently.
+                    elide: Text.ElideNone
                     maximumLineCount: 1
                     color: menuEntry.itemEnabled
                         ? (root.colors.text ?? "white")
@@ -375,7 +380,7 @@ Item {
                 contentItem: Text {
                     text: String(actionEntry.modelData.text ?? "")
                     textFormat: Text.PlainText
-                    elide: Text.ElideRight
+                    elide: Text.ElideNone
                     maximumLineCount: 1
                     color: actionEntry.itemEnabled
                         ? (root.colors.text ?? "white")
