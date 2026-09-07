@@ -1,5 +1,15 @@
 # Integration handoff
 
+## Host shortcut configured
+
+The manager configured this user’s previously unassigned note shortcut through
+KGlobalAccel as Meta+Shift+F1. A preflight query showed no owner for that key;
+readback returns `318767152`, and `kglobalshortcutsrc` persisted the sequence.
+The previous configuration is preserved in `.cache/shortcut-note-host-binding`.
+The running old shell still advertises the old default; the staged build has
+the corrected card and default. This host check proves binding and persistence,
+not physical key activation.
+
 ## Combined deployment prepared
 
 The existing `.cache/session-checkpoint-current/install.py` now resolves to
