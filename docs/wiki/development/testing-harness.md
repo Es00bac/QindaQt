@@ -5,6 +5,17 @@ QindaQt development must not modify or replace the developer's active desktop.
 directories and a private D-Bus session. A failed nested run can therefore be
 discarded without damaging the real session.
 
+The common direct-nested runner contract suppresses Qt and GTK portal use and
+uses a private D-Bus daemon whose only activation directory belongs to that
+disposable run. This prevents a KWin or client request on a test bus from
+launching an installed host portal backend. The shared
+`create_private_session_bus()` helper in
+`tests/session/nested_session_scenario.py` prepares the daemon command and
+address; its caller must start and stop that exact process. A portal test opts
+in with `isolated_environment(..., allow_portal_activation=True)` and supplies
+only its own private frontend/backend services. Production sessions keep their
+normal portal behavior.
+
 Process and XDG isolation do **not** isolate Linux `uinput`: a `dotool` device
 may be admitted by the host compositor and can move, click, or type on the
 active desktop even when the nested KWin seat rejects it. Those two live input

@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from host_input_consent import (
     HOST_UINPUT_CONSENT_ENV,
@@ -16,6 +20,11 @@ from host_input_consent import (
 from hybrid_pointer_validation import (
     validate_hybrid_pointer_evidence,
     validate_hybrid_unload_evidence,
+)
+from nested_session_scenario import (
+    create_private_session_bus,
+    isolated_environment,
+    running_private_session_bus,
 )
 from test_nested_session import (
     ScenarioCoverageError,
@@ -128,6 +137,71 @@ class HostInputConsentTests(unittest.TestCase):
                 {HOST_UINPUT_CONSENT_ENV: HOST_UINPUT_CONSENT_VALUE},
             )
         )
+
+
+class NestedPortalIsolationTests(unittest.TestCase):
+    def test_direct_nested_environment_suppresses_ambient_portals(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            environment = isolated_environment(Path(directory))
+
+        self.assertEqual(environment["QT_NO_XDG_DESKTOP_PORTAL"], "1")
+        self.assertEqual(environment["GTK_USE_PORTAL"], "0")
+
+    def test_explicit_portal_scenario_can_opt_in(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"QT_NO_XDG_DESKTOP_PORTAL": "1", "GTK_USE_PORTAL": "0"},
+        ), tempfile.TemporaryDirectory() as directory:
+            environment = isolated_environment(
+                Path(directory), allow_portal_activation=True
+            )
+
+        self.assertNotIn("QT_NO_XDG_DESKTOP_PORTAL", environment)
+        self.assertNotIn("GTK_USE_PORTAL", environment)
+
+    def test_private_bus_config_excludes_host_service_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            isolated_environment(root)
+            bus = create_private_session_bus(root, Path("/usr/bin/dbus-daemon"))
+            configuration = bus.configuration.read_text(encoding="utf-8")
+            service_directory_is_empty = not any(bus.service_directory.iterdir())
+
+        self.assertEqual(bus.address, f"unix:path={root / 'runtime' / 'bus'}")
+        self.assertEqual(bus.command[:2], ("/usr/bin/dbus-daemon", "--config-file"))
+        self.assertIn(f"<servicedir>{bus.service_directory}</servicedir>", configuration)
+        self.assertNotIn("/usr/share/dbus-1/services", configuration)
+        self.assertTrue(service_directory_is_empty)
+
+    def test_private_bus_refuses_host_portal_activation(self) -> None:
+        dbus_daemon = shutil.which("dbus-daemon")
+        dbus_send = shutil.which("dbus-send")
+        if not dbus_daemon or not dbus_send:
+            self.skipTest("D-Bus tools are unavailable")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            environment = isolated_environment(root)
+            with running_private_session_bus(root, Path(dbus_daemon), environment) as bus:
+                completed = subprocess.run(
+                    [
+                        dbus_send,
+                        "--session",
+                        "--print-reply",
+                        "--dest=org.freedesktop.DBus",
+                        "/org/freedesktop/DBus",
+                        "org.freedesktop.DBus.StartServiceByName",
+                        "string:org.freedesktop.portal.Desktop",
+                        "uint32:0",
+                    ],
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                    timeout=5,
+                    env=environment,
+                )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("ServiceUnknown", completed.stderr)
 
 
 class HybridPointerEvidenceTests(unittest.TestCase):

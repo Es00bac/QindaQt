@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,38 +19,7 @@ from host_input_consent import (
     HOST_UINPUT_SKIP_CODE,
     host_uinput_consent_error,
 )
-
-
-def isolated_environment(root: Path) -> dict[str, str]:
-    environment = dict(os.environ)
-    for key in (
-        "DBUS_SESSION_BUS_ADDRESS",
-        "DISPLAY",
-        "WAYLAND_DISPLAY",
-        "QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD",
-        "QINDAQT_DOTOOL",
-    ):
-        environment.pop(key, None)
-    for name in ("home", "config", "data", "cache", "state"):
-        (root / name).mkdir()
-    runtime = root / "runtime"
-    runtime.mkdir(mode=0o700)
-    environment.update(
-        {
-            "HOME": str(root / "home"),
-            "XDG_CONFIG_HOME": str(root / "config"),
-            "XDG_DATA_HOME": str(root / "data"),
-            "XDG_CACHE_HOME": str(root / "cache"),
-            "XDG_STATE_HOME": str(root / "state"),
-            "XDG_RUNTIME_DIR": str(runtime),
-            "XDG_CURRENT_DESKTOP": "QindaQt",
-            "XDG_SESSION_DESKTOP": "qindaqt",
-            "KWIN_COMPOSE": "Q",
-            "QT_QPA_PLATFORM": "wayland",
-            "QT_QUICK_BACKEND": "software",
-        }
-    )
-    return environment
+from nested_session_scenario import isolated_environment, running_private_session_bus
 
 
 def extract_result(stdout: str) -> dict[str, Any]:
@@ -85,6 +55,10 @@ def main() -> int:
     if consent_error is not None:
         print(consent_error, file=sys.stderr)
         return HOST_UINPUT_SKIP_CODE
+    dbus_daemon = shutil.which("dbus-daemon")
+    if not dbus_daemon:
+        print("private nested run requires dbus-daemon", file=sys.stderr)
+        return 2
     with tempfile.TemporaryDirectory(prefix="qindaqt-plugin-unload-") as directory:
         environment = isolated_environment(Path(directory))
         environment.pop(HOST_UINPUT_CONSENT_ENV, None)
@@ -92,8 +66,6 @@ def main() -> int:
             environment["QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD"] = "1"
             environment["QINDAQT_DOTOOL"] = str(arguments.expect_hybrid_pointer)
         command = [
-            arguments.dbus_runner,
-            "--",
             arguments.launcher,
             "--plugin-root",
             str(arguments.plugin_root),
@@ -114,14 +86,17 @@ def main() -> int:
             "--session",
             arguments.probe,
         ]
-        completed = subprocess.run(
-            command,
-            env=environment,
-            text=True,
-            capture_output=True,
-            timeout=50 if arguments.expect_hybrid_pointer is not None else 20,
-            check=False,
-        )
+        with running_private_session_bus(
+            Path(directory), Path(dbus_daemon), environment
+        ):
+            completed = subprocess.run(
+                command,
+                env=environment,
+                text=True,
+                capture_output=True,
+                timeout=50 if arguments.expect_hybrid_pointer is not None else 20,
+                check=False,
+            )
     if completed.returncode != 0:
         print(completed.stdout, file=sys.stderr)
         print(completed.stderr, file=sys.stderr)
