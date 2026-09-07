@@ -7,6 +7,15 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Let containers manage Terminal tabs and splits (September 7)
+
+**Open, user correction:** one shell per Terminal window. Remove Terminal's
+internal tab strip, tab navigation, and tab-specific actions. New Terminal
+opens a separate window with the current working directory/profile behavior;
+QindaQt containers provide grouping, tabs, and splits. Keep search, copy/paste,
+font, zoom, and the verified interactive PTY/prompt behavior. Install the change
+through the maintained Gentoo package after focused regression checks.
+
 ### Correct the interactive Terminal and Gentoo installation (September 7)
 
 **Installed:** the silent-bell parser bug is fixed at `89ad375d`. A full-window

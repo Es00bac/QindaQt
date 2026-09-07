@@ -8,10 +8,12 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QPointer>
 #include <QPushButton>
 #include <QTemporaryDir>
-#include <QTimer>
 #include <QtTest>
+
+#include <memory>
 
 using namespace QindaQt;
 using namespace QindaQt::Workspaces;
@@ -79,26 +81,9 @@ public:
   }
 };
 
-void completeSaveDialog(const QString &name, const QString &color) {
-  QTimer::singleShot(0, [name, color] {
-    auto *dialog = QApplication::activeModalWidget();
-    QVERIFY(dialog);
-    auto *nameEdit = dialog->findChild<QLineEdit *>(QStringLiteral("workspaceName"));
-    auto *choose = dialog->findChild<QPushButton *>(QStringLiteral("chooseColor"));
-    auto *save = dialog->findChild<QPushButton *>(QStringLiteral("confirmSave"));
-    QVERIFY(nameEdit);
-    QVERIFY(choose);
-    QVERIFY(save);
-    nameEdit->setText(name);
-    QTimer::singleShot(0, [color] {
-      auto *picker = qobject_cast<QColorDialog *>(QApplication::activeModalWidget());
-      QVERIFY(picker);
-      picker->setCurrentColor(QColor(color));
-      picker->accept();
-    });
-    QTest::mouseClick(choose, Qt::LeftButton);
-    QTest::mouseClick(save, Qt::LeftButton);
-  });
+QDialog *activeDialog()
+{
+  return qobject_cast<QDialog *>(QApplication::activeModalWidget());
 }
 } // namespace
 
@@ -123,11 +108,27 @@ private slots:
     port.current->layout = *live;
     WorkspaceLibraryDialog dialog(directory.path(), port);
     dialog.show();
-    completeSaveDialog(QStringLiteral("Essay"), QStringLiteral("#A4503A"));
     QTest::mouseClick(dialog.findChild<QPushButton *>(QStringLiteral("saveCurrent")),
                       Qt::LeftButton);
+    QTRY_VERIFY(activeDialog());
+    auto *saveDialog = activeDialog();
+    auto *nameEdit = saveDialog->findChild<QLineEdit *>(QStringLiteral("workspaceName"));
+    auto *choose = saveDialog->findChild<QPushButton *>(QStringLiteral("chooseColor"));
+    auto *save = saveDialog->findChild<QPushButton *>(QStringLiteral("confirmSave"));
+    QVERIFY(nameEdit);
+    QVERIFY(choose);
+    QVERIFY(save);
+    nameEdit->setText(QStringLiteral("Essay"));
+    QTest::mouseClick(choose, Qt::LeftButton);
+    QTRY_VERIFY(qobject_cast<QColorDialog *>(QApplication::activeModalWidget()));
+    auto *picker = qobject_cast<QColorDialog *>(QApplication::activeModalWidget());
+    picker->setCurrentColor(QColor(QStringLiteral("#A4503A")));
+    picker->accept();
+    QTRY_VERIFY(activeDialog());
+    QCOMPARE(activeDialog(), saveDialog);
+    QTest::mouseClick(save, Qt::LeftButton);
     WorkspaceStore store(directory.path());
-    QCOMPARE(store.ids().size(), 1);
+    QTRY_COMPARE(store.ids().size(), 1);
     const auto written = store.load(store.ids().first());
     QVERIFY(written.has_value());
     QCOMPARE(written->name, QStringLiteral("Essay"));
@@ -164,46 +165,43 @@ private slots:
                      QStringLiteral("Terminal — logs")}};
     WorkspaceLibraryDialog dialog(directory.path(), port);
     dialog.show();
-    QTimer::singleShot(0, [&dialog, &port] {
-      auto *reopen = QApplication::activeModalWidget();
-      QVERIFY(reopen);
-      const auto boxes = reopen->findChildren<QComboBox *>();
-      QCOMPARE(boxes.size(), 2);
-      auto *draft = reopen->findChild<QComboBox *>(QStringLiteral("slot_draft"));
-      auto *notes = reopen->findChild<QComboBox *>(QStringLiteral("slot_notes"));
-      QVERIFY(draft);
-      QVERIFY(notes);
-      bool displayNameShown = false;
-      for (const auto *label : reopen->findChildren<QLabel *>()) {
-        if (label->text() == QStringLiteral("Draft — QindaQt Editor"))
-          displayNameShown = true;
-      }
-      QVERIFY(displayNameShown);
-      draft->setCurrentIndex(draft->findData(QStringLiteral("terminal-one")));
-      QTest::mouseClick(
-          reopen->findChild<QPushButton *>(QStringLiteral("refreshWindows")),
-          Qt::LeftButton);
-      draft = reopen->findChild<QComboBox *>(QStringLiteral("slot_draft"));
-      notes = reopen->findChild<QComboBox *>(QStringLiteral("slot_notes"));
-      QVERIFY(draft);
-      QVERIFY(notes);
-      QCOMPARE(draft->currentData().toString(), QStringLiteral("terminal-one"));
-      QTest::mouseClick(reopen->findChild<QPushButton *>(QStringLiteral("launch_draft")),
-                        Qt::LeftButton);
-      QCOMPARE(port.launched, 1);
-      dialog.reportLaunchFailure(QStringLiteral("org.qindaqt.Editor"),
-                                 QStringLiteral("Desktop launch failed"));
-      QCOMPARE(reopen->findChild<QLabel *>(QStringLiteral("assignmentStatus"))->text(),
-               QStringLiteral("Desktop launch failed"));
-      notes->setCurrentIndex(notes->findData(QStringLiteral("terminal-two")));
-      auto *restore = reopen->findChild<QPushButton *>(QStringLiteral("restoreWorkspace"));
-      QVERIFY(restore);
-      QVERIFY(restore->isEnabled());
-      QTest::mouseClick(restore, Qt::LeftButton);
-    });
     QTest::mouseClick(dialog.findChild<QPushButton *>(QStringLiteral("reopenSelected")),
                       Qt::LeftButton);
-    QVERIFY(port.restoredWorkspace.has_value());
+    QTRY_VERIFY(activeDialog());
+    auto *reopen = activeDialog();
+    const auto boxes = reopen->findChildren<QComboBox *>();
+    QCOMPARE(boxes.size(), 2);
+    auto *draft = reopen->findChild<QComboBox *>(QStringLiteral("slot_draft"));
+    auto *notes = reopen->findChild<QComboBox *>(QStringLiteral("slot_notes"));
+    QVERIFY(draft);
+    QVERIFY(notes);
+    bool displayNameShown = false;
+    for (const auto *label : reopen->findChildren<QLabel *>()) {
+      if (label->text() == QStringLiteral("Draft — QindaQt Editor"))
+        displayNameShown = true;
+    }
+    QVERIFY(displayNameShown);
+    draft->setCurrentIndex(draft->findData(QStringLiteral("terminal-one")));
+    QTest::mouseClick(reopen->findChild<QPushButton *>(QStringLiteral("refreshWindows")),
+                      Qt::LeftButton);
+    draft = reopen->findChild<QComboBox *>(QStringLiteral("slot_draft"));
+    notes = reopen->findChild<QComboBox *>(QStringLiteral("slot_notes"));
+    QVERIFY(draft);
+    QVERIFY(notes);
+    QCOMPARE(draft->currentData().toString(), QStringLiteral("terminal-one"));
+    QTest::mouseClick(reopen->findChild<QPushButton *>(QStringLiteral("launch_draft")),
+                      Qt::LeftButton);
+    QCOMPARE(port.launched, 1);
+    dialog.reportLaunchFailure(QStringLiteral("org.qindaqt.Editor"),
+                               QStringLiteral("Desktop launch failed"));
+    QCOMPARE(reopen->findChild<QLabel *>(QStringLiteral("assignmentStatus"))->text(),
+             QStringLiteral("Desktop launch failed"));
+    notes->setCurrentIndex(notes->findData(QStringLiteral("terminal-two")));
+    auto *restore = reopen->findChild<QPushButton *>(QStringLiteral("restoreWorkspace"));
+    QVERIFY(restore);
+    QVERIFY(restore->isEnabled());
+    QTest::mouseClick(restore, Qt::LeftButton);
+    QTRY_VERIFY(port.restoredWorkspace.has_value());
     QCOMPARE(port.restoredWorkspace->id, workspace.id);
     QCOMPARE(port.restoredWorkspace->color, workspace.color);
     QVERIFY(port.restoredLayout->findWindow(QStringLiteral("terminal-one")));
@@ -224,20 +222,58 @@ private slots:
                      QStringLiteral("Shell")}};
     WorkspaceLibraryDialog dialog(directory.path(), port);
     dialog.show();
-    QTimer::singleShot(0, [] {
-      auto *reopen = QApplication::activeModalWidget();
-      QVERIFY(reopen);
-      auto *restore = reopen->findChild<QPushButton *>(QStringLiteral("restoreWorkspace"));
-      QVERIFY(restore && restore->isEnabled());
-      QTest::mouseClick(restore, Qt::LeftButton);
-      QTest::mouseClick(reopen->findChild<QPushButton *>(QStringLiteral("cancelReopen")),
-                        Qt::LeftButton);
-    });
     QTest::mouseClick(dialog.findChild<QPushButton *>(QStringLiteral("reopenSelected")),
                       Qt::LeftButton);
+    QTRY_VERIFY(activeDialog());
+    auto *reopen = activeDialog();
+    auto *restore = reopen->findChild<QPushButton *>(QStringLiteral("restoreWorkspace"));
+    QVERIFY(restore && restore->isEnabled());
+    QTest::mouseClick(restore, Qt::LeftButton);
+    QTest::mouseClick(reopen->findChild<QPushButton *>(QStringLiteral("cancelReopen")),
+                      Qt::LeftButton);
+    QTRY_VERIFY(!activeDialog());
     const auto stillSaved = store.load(workspace.id);
     QVERIFY(stillSaved.has_value());
     QCOMPARE(stillSaved->toJson(), workspace.toJson());
+  }
+
+  void parentTeardownDeletesOpenSaveAndColorDialogs() {
+    QTemporaryDir directory;
+    FakePort port;
+    port.current = CurrentContainer{savedWorkspace().layout, {}, {}, {}, {}};
+    auto library = std::make_unique<WorkspaceLibraryDialog>(directory.path(), port);
+    library->show();
+    QTest::mouseClick(library->findChild<QPushButton *>(QStringLiteral("saveCurrent")),
+                      Qt::LeftButton);
+    QTRY_VERIFY(activeDialog());
+    QPointer<QDialog> saveDialog(activeDialog());
+    QTest::mouseClick(saveDialog->findChild<QPushButton *>(QStringLiteral("chooseColor")),
+                      Qt::LeftButton);
+    QTRY_VERIFY(qobject_cast<QColorDialog *>(QApplication::activeModalWidget()));
+    QPointer<QColorDialog> picker(
+        qobject_cast<QColorDialog *>(QApplication::activeModalWidget()));
+
+    library.reset();
+
+    QTRY_VERIFY(saveDialog.isNull());
+    QTRY_VERIFY(picker.isNull());
+  }
+
+  void parentTeardownDeletesOpenReopenDialog() {
+    QTemporaryDir directory;
+    const auto workspace = savedWorkspace();
+    QVERIFY(WorkspaceStore(directory.path()).save(workspace));
+    FakePort port;
+    auto library = std::make_unique<WorkspaceLibraryDialog>(directory.path(), port);
+    library->show();
+    QTest::mouseClick(library->findChild<QPushButton *>(QStringLiteral("reopenSelected")),
+                      Qt::LeftButton);
+    QTRY_VERIFY(activeDialog());
+    QPointer<QDialog> reopenDialog(activeDialog());
+
+    library.reset();
+
+    QTRY_VERIFY(reopenDialog.isNull());
   }
 };
 

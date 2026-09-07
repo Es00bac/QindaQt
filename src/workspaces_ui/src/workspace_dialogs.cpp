@@ -10,7 +10,6 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
-#include <QMessageBox>
 #include <QPalette>
 #include <QPainter>
 #include <QPixmap>
@@ -69,19 +68,24 @@ public:
     buttons->button(QDialogButtonBox::Save)->setObjectName(
         QStringLiteral("confirmSave"));
     form->addRow(buttons);
+    m_error.setObjectName(QStringLiteral("saveWorkspaceError"));
+    m_error.setWordWrap(true);
+    form->addRow(&m_error);
     connect(buttons, &QDialogButtonBox::accepted, this, [this] {
       if (m_name.text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, windowTitle(), tr("Enter a workspace name."));
+        m_error.setText(tr("Enter a workspace name."));
         return;
       }
       accept();
     });
     connect(choose, &QPushButton::clicked, this, [this] {
-      const auto selected = QColorDialog::getColor(
-          m_color.isEmpty() ? palette().color(QPalette::Accent) : QColor(m_color),
-          this, tr("Choose workspace color"));
-      if (selected.isValid())
-        setColor(selected);
+      auto *picker = new QColorDialog(
+          m_color.isEmpty() ? palette().color(QPalette::Accent) : QColor(m_color), this);
+      picker->setAttribute(Qt::WA_DeleteOnClose);
+      picker->setWindowTitle(tr("Choose workspace color"));
+      connect(picker, &QColorDialog::colorSelected, this,
+              [this](const QColor &selected) { setColor(selected); });
+      picker->open();
     });
     connect(followTheme, &QPushButton::clicked, this, [this] { setColor({}); });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -107,6 +111,7 @@ private:
   QLineEdit m_name;
   QLabel m_swatch;
   QLabel m_colorName;
+  QLabel m_error;
   QString m_color;
 };
 
@@ -346,21 +351,26 @@ void WorkspaceLibraryDialog::saveCurrent() {
                                       : error);
     return;
   }
-  SaveDialog dialog(current->name, current->color, this);
-  if (dialog.exec() != QDialog::Accepted)
-    return;
-  const auto saved = Workspaces::capture(
-      current->workspaceId.isEmpty()
-          ? QUuid::createUuid().toString(QUuid::WithoutBraces)
-          : current->workspaceId,
-      dialog.name(), dialog.color(),
-      current->layout, current->applicationsByWindow, &error);
-  if (!saved || !m_store.save(*saved, &error)) {
-    m_result->setText(error.isEmpty() ? tr("The workspace could not be saved.") : error);
-    return;
-  }
-  reload();
-  m_result->setText(tr("Saved %1.").arg(saved->name));
+  const auto snapshot = *current;
+  auto *dialog = new SaveDialog(snapshot.name, snapshot.color, this);
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+  connect(dialog, &QDialog::accepted, this, [this, dialog, snapshot] {
+    QString saveError;
+    const auto saved = Workspaces::capture(
+        snapshot.workspaceId.isEmpty()
+            ? QUuid::createUuid().toString(QUuid::WithoutBraces)
+            : snapshot.workspaceId,
+        dialog->name(), dialog->color(), snapshot.layout,
+        snapshot.applicationsByWindow, &saveError);
+    if (!saved || !m_store.save(*saved, &saveError)) {
+      m_result->setText(saveError.isEmpty() ? tr("The workspace could not be saved.")
+                                            : saveError);
+      return;
+    }
+    reload();
+    m_result->setText(tr("Saved %1.").arg(saved->name));
+  });
+  dialog->open();
 }
 
 void WorkspaceLibraryDialog::reopenSelected() {
@@ -376,10 +386,13 @@ void WorkspaceLibraryDialog::reopenSelected() {
                                       : error);
     return;
   }
-  ReopenDialog dialog(*workspace, m_port, this);
-  connect(this, &WorkspaceLibraryDialog::launchFailureReported, &dialog,
+  auto *dialog = new ReopenDialog(*workspace, m_port, this);
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+  connect(this, &WorkspaceLibraryDialog::launchFailureReported, dialog,
           &ReopenDialog::reportLaunchFailure);
-  dialog.exec();
+  connect(dialog, &QDialog::accepted, this,
+          [this] { m_result->setText(tr("Workspace restored.")); });
+  dialog->open();
 }
 
 void WorkspaceLibraryDialog::reportLaunchFailure(QString desktopEntryId,
