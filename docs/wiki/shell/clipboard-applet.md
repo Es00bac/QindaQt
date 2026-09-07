@@ -101,8 +101,11 @@ opens a non-modal `Popup.Window`, because the layer-shell panel itself does not
 accept keyboard focus. The popup transfers focus to search, keeps an
 always-present Close button in the Tab chain, accepts Space/Return activation,
 restores summary focus on close, and closes on Escape or outside press. The
-same compiled host renders in `qindaqt-shell` and the deterministic preview;
-only the injected controller differs. The “Clipboard” label remains the
+Close button is `QindaQt.Controls`' themed `Button` (`emphasized: false`), the
+same Tokens-backed boundary used for popup actions elsewhere (`ControlPopupFrame`,
+`TaskListApplet`), so it never falls back to the platform-default control
+chrome inside the dark popup. The same compiled host renders in `qindaqt-shell`
+and the deterministic preview; only the injected controller differs. The “Clipboard” label remains the
 accessible name and popup title; an unresolved `edit-paste-symbolic` asset
 renders the typed placeholder instead of restoring panel text.
 
