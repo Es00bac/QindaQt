@@ -71,7 +71,10 @@ public:
   // adds the session so its diagnostic is visible and restartable. An invalid
   // profile, unresolvable command, or full list is refused with
   // sessionAddRejected and a null session.
-  [[nodiscard]] AddResult addSession(const TerminalProfile &profile);
+  // Optional source must belong to this collection; snapshot its live directory
+  // synchronously, falling back to its launch directory when unavailable.
+  [[nodiscard]] AddResult addSession(const TerminalProfile &profile,
+                                      const TerminalSession *inheritDirectoryFrom = nullptr);
 
   // S0 semantics per session: refused while a SIGKILL survivor is owned
   // (sessionCloseFailed); closing during a pending restart cancels it.

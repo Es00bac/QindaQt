@@ -137,7 +137,7 @@ qt_add_executable(
 )
 target_link_libraries(
     qindaqt_terminal_widget_adapter_tests
-    PRIVATE qindaqt_terminal_adapter Qt6::Test
+    PRIVATE qindaqt_terminal_adapter qtermwidget6 Qt6::Test
 )
 target_compile_features(qindaqt_terminal_widget_adapter_tests PRIVATE cxx_std_20)
 set_target_properties(

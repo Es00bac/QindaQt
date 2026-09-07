@@ -85,7 +85,6 @@ TerminalWindow::~TerminalWindow() = default;
 
 void TerminalWindow::applyAppearance(const TerminalViewAppearance &appearance) {
   m_appearance = appearance;
-  m_sessions->setAppearance(appearance);
   setPalette(appearance.windowPalette);
   setFont(appearance.interfaceFont);
   const auto children = findChildren<QWidget *>();
@@ -93,6 +92,8 @@ void TerminalWindow::applyAppearance(const TerminalViewAppearance &appearance) {
     child->setPalette(appearance.windowPalette);
     child->setFont(appearance.interfaceFont);
   }
+  // Restore renderer-owned fonts after styling the surrounding widgets.
+  m_sessions->setAppearance(appearance);
   if (m_activeSession)
     updateStatusForState(m_activeSession->state());
 }
@@ -304,7 +305,7 @@ void TerminalWindow::detachSessionView() {
 }
 
 void TerminalWindow::newSessionWithDefaultProfile() {
-  addSessionWithProfile(currentDefaultProfile());
+  static_cast<void>(m_sessions->addSession(currentDefaultProfile(), m_activeSession));
 }
 
 void TerminalWindow::addSessionWithProfile(const TerminalProfile &profile) {

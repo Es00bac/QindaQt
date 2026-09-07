@@ -132,6 +132,16 @@ void TerminalWindow::buildActions() {
                     QStringLiteral("Quit"), kQuitShortcut,
                     QStringLiteral("Close every session and quit"));
 
+  addTerminalAction(&m_zoomInAction, QStringLiteral("viewZoomInAction"),
+                    tr("Zoom In"), "Ctrl+Shift++", tr("Increase terminal text size"));
+  addTerminalAction(&m_zoomOutAction, QStringLiteral("viewZoomOutAction"),
+                    tr("Zoom Out"), "Ctrl+Shift+-", tr("Decrease terminal text size"));
+  addTerminalAction(&m_zoomResetAction, QStringLiteral("viewZoomResetAction"),
+                    tr("Actual Size"), "Ctrl+Shift+0", tr("Restore profile text size"));
+  connect(m_zoomInAction, &QAction::triggered, this, [this] { if (m_activeSession) m_activeSession->zoomText(1); });
+  connect(m_zoomOutAction, &QAction::triggered, this, [this] { if (m_activeSession) m_activeSession->zoomText(-1); });
+  connect(m_zoomResetAction, &QAction::triggered, this, [this] { if (m_activeSession) m_activeSession->resetZoom(); });
+
   connect(m_newTabAction, &QAction::triggered, this,
           [this] { newSessionWithDefaultProfile(); });
   connect(m_closeTabAction, &QAction::triggered, this,
@@ -226,6 +236,8 @@ void TerminalWindow::buildMenus() {
 
   auto *viewMenu = menuBar()->addMenu(QStringLiteral("&View"));
   viewMenu->setObjectName(QStringLiteral("viewMenu"));
+  viewMenu->addActions({m_zoomInAction, m_zoomOutAction, m_zoomResetAction});
+  viewMenu->addSeparator();
   viewMenu->addAction(m_clearAction);
   viewMenu->addSeparator();
   viewMenu->addAction(m_findAction);
@@ -265,6 +277,9 @@ void TerminalWindow::publishAppShellProjection() {
       {QString::fromLatin1(AppShellActionIds::EditSelectAll),
        m_selectAllAction},
       {QString::fromLatin1(AppShellActionIds::ViewClear), m_clearAction},
+      {QStringLiteral("view.zoom-in"), m_zoomInAction},
+      {QStringLiteral("view.zoom-out"), m_zoomOutAction},
+      {QStringLiteral("view.zoom-reset"), m_zoomResetAction},
       {QString::fromLatin1(AppShellActionIds::ViewFind), m_findAction},
       {QString::fromLatin1(AppShellActionIds::ViewFindNext), m_findNextAction},
       {QString::fromLatin1(AppShellActionIds::ViewFindPrevious),
@@ -367,6 +382,9 @@ void TerminalWindow::updateViewActionStates() {
   m_pasteSelectionAction->setEnabled(generationLive);
   m_selectAllAction->setEnabled(viewLive);
   m_clearAction->setEnabled(viewLive);
+  m_zoomInAction->setEnabled(viewLive);
+  m_zoomOutAction->setEnabled(viewLive);
+  m_zoomResetAction->setEnabled(viewLive);
   m_findAction->setEnabled(viewLive);
   const bool hasSearch = active != nullptr &&
                          !m_searchBySession.value(active).pattern.isEmpty();

@@ -105,3 +105,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0093: Acknowledge agent input only after portal acceptance](0093-acknowledge-agent-input-portal-acceptance.md)
 
 - [ADR-0094: Refresh resident Wayland-connected services at session entry](0094-refresh-resident-wayland-session-services.md)
+
+- [ADR-0095: Use KSyntaxHighlighting for editor presentation](0095-use-ksyntaxhighlighting-for-editor-presentation.md)
