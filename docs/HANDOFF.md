@@ -1,5 +1,20 @@
 # Integration handoff
 
+## Graphical refresh confirmed — 2026-09-06T20:21:09-06:00
+
+The user is back in QindaQt. KWin PID 1981017 started at 20:17:41 MDT;
+qindaqt-session PID 1981273 and qindaqt-shell PID 1981276 started at 20:17:42.
+The shell maps /usr/lib64/libqindaqt_global_menu_qml.so. Installed shell, menu
+library, and compositor hashes match the independently verified 1,077-file
+payload. The earlier SDDM restart did not complete automatic QindaQt login;
+its temporary autologin configuration is gone. Do not interrupt the current
+session again during verification. Display and Network services report active.
+
+The closing-tests, display-scale, and Gabbee workers are active in isolated
+worktrees. Closing tests still require the screen-lock stub AUTOMOC repair.
+Display scaling and terminal dictation remain genuine open acceptance items;
+installation does not close them.
+
 ## Host refresh — 2026-09-06 18:20 MDT
 
 Installed the complete a3be5ee0 production runtime: 1,077 files independently hash/link verified. Six QindaQt services restarted at 18:17:35 and report active. Agent-input acknowledgement repair 9b60cf7c was separately installed after independent 25/25 tests. The manager is transitioning KDE to QindaQt through SDDM. Read actual session/process state before claiming graphical restart completed.
