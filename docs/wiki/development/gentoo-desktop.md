@@ -14,6 +14,7 @@ runtime closure follows the production process contracts:
 | Appearance and other standard portals | `xdg-desktop-portal` plus the release-matched KDE backend |
 | Bluetooth | BlueZ |
 | Battery and performance profiles | UPower and power-profiles-daemon; systemd supplies logind |
+| Power management, brightness, and idle inhibition | release-matched PowerDevil |
 | Audio and network | WirePlumber and NetworkManager |
 | Desktop-entry launch | KIO and KService |
 | Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, Spectacle, and the KDE polkit agent |
