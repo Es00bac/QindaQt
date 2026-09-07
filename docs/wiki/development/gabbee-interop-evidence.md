@@ -103,12 +103,111 @@ broker introspection result. If the Qt AT-SPI bridge is missing or the focused
 control does not expose `EditableText`, the phase remains red and reports that
 fact; clipboard contents do not mask it.
 
-Typed-character insertion inside the contained lane is deliberately absent:
-the compositor's development input injector has a closed key enum (no
-character keys) and uinput is unreachable by sandbox design.  Gabbee's
-production recovery chain therefore proves the AT-SPI EditableText and
-clipboard paths there; typed insertion into a live terminal would require the
-explicitly acknowledged host-uinput lane this evidence must never enable.
+Typed-character insertion is absent from *this* probe: the compositor's
+development input injector has a closed key enum with no character keys, and
+uinput is unreachable by sandbox design.  Gabbee's production recovery chain
+therefore proves the AT-SPI EditableText and clipboard paths here.
+
+Typed insertion into a live terminal does **not** require a host-uinput lane.
+An earlier revision of this page claimed it did; that claim was wrong and is
+corrected here.  The supported route is the standard
+`org.freedesktop.portal.RemoteDesktop` portal: the user approves one real
+consent dialog, and the installed `qindaqt-agent-input` helper — which
+Gabbee's own `AgentInputTextSink` drives — delivers keysyms through that
+approved session.  No uinput device is created, no typing tool is admitted,
+and no permission check is bypassed.  That route is tested separately by
+[the Terminal PTY proof](#terminal-pty-proof), which reads the delivered
+sentinel back out of the terminal's own shell.  This probe keeps its
+no-synthetic-input contract because it is a different, narrower experiment,
+not because typed insertion is impossible.
+
+## Terminal PTY proof
+
+A separate row tests what the probe above deliberately does not:
+that Gabbee's own text sink can type into a live Terminal through the real
+RemoteDesktop portal, verified by reading the text back out of the
+terminal's own shell rather than out of an accessibility API.
+
+Its assets are decomposed by the boundary each one owns, so no module
+carries unrelated behaviour:
+
+| Module | Owns |
+| --- | --- |
+| `gabbee_terminal_sentinel.py` | The sentinel and its exact expected bytes. Pure; both delivery and readback derive from it so a delivery bug and a readback bug cannot cancel out. |
+| `gabbee_terminal_sink.py` | The adapter around Gabbee's real `AgentInputTextSink`, including the concurrent-approval drive. |
+| `gabbee_terminal_lane.py` | Outer bubblewrap lane: acknowledgement, session lock, staging, sandbox spec, evidence collection. |
+| `gabbee_terminal_boot.py` | Inner session boot and teardown, in the order the portal requires. |
+| `gabbee_terminal_delivery.py` | Portal lifecycle, the two delivery routes, and the byte-exact readback. |
+| `gabbee_terminal_portal.py` | Real-portal helpers: window enumeration, dialog approval, PipeWire/screencast readiness, docking. |
+| `run_gabbee_terminal_pty_proof.py` | Entry point only. |
+
+### Why two delivery routes
+
+Gabbee's `AgentInputTextSink` is a *text* sink: `deliver_key()` reports
+failure by design.  The proof therefore splits delivery, and the split is
+what makes it an integration proof rather than a helper proof:
+
+- **The sentinel** — the payload the proof is about — is typed by Gabbee's
+  real sink, using the sink's own helper lifecycle and its own
+  `{"requestId": ..., "ok": true}` acknowledgement contract.
+- **Framing only** — the pointer click that focuses the Terminal and the
+  Return/Ctrl-D strokes that open and close the `cat` redirection — comes
+  from a separately approved direct helper session, because the sink offers
+  no key-chord route to carry them.
+
+A unit test pins the sink's key-chord refusal, so if Gabbee ever gains a real
+key route that test fails and the framing session should be retired.
+
+### Three load-bearing runtime constraints
+
+Each of these was found from a portal denial that reports itself only as a
+one-line warning in the KDE backend's log, so each is stated as an
+`AGENT-GUARD` at its call site:
+
+1. **Service cache.** KWin grants `zkde_screencast_unstable_v1` only to a
+   client whose desktop file it can resolve through KApplicationTrader.  The
+   fixture writes an XDG applications menu and runs `kbuildsycoca6` before
+   the backend starts; without it the interface is withheld and every
+   `CreateSession` is denied.
+2. **Latched probe.** `xdg-desktop-portal-kde` probes that interface once at
+   startup and latches the result, so a backend that starts before the
+   global appears stays broken for its whole lifetime.  The proof restarts
+   the backend and retries, bounded, rather than depending on timing.
+3. **Parent compositor.** The child KWin must run `--windowed` on a private
+   Weston parent (`--backend=headless --renderer=pixman`).  The `--virtual`
+   platform never advertises the global, and forcing `KWIN_COMPOSE=O2` there
+   is a no-op — it logs `Configured compositor not supported by Platform`.
+   Weston renders in software, so this is **not** a GPU requirement.
+
+The Weston prefix reaches only its own `LD_LIBRARY_PATH`, never the
+sandbox-wide search paths, or the system KWin loads a private-prefix libkwin
+and rejects the release-matched plugin.
+
+### Rows and invocation
+
+`session.gabbee-terminal-pty-unit` covers the sentinel contract, the chooser
+predicate, and the sink adapter; it is host-safe and needs no lane, and its
+two real-sink contract cases skip when the Gabbee checkout is absent.  The
+sandboxed proof is manager-run and deliberately not a registered CTest row,
+because it needs the private runtime lane:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+python tests/session/gabbee/run_gabbee_terminal_pty_proof.py \
+  --build-root <configured-build> \
+  --kwin-wayland /usr/bin/kwin_wayland \
+  --plugin-relative lib64/qt6/plugins/kwin/plugins/qindaqt_compositor.so \
+  --decoration-relative lib64/qt6/plugins/org.kde.kdecoration3/org.qindaqt.so \
+  --gabbee-root /home/cabewse/gabbee
+```
+
+It additionally needs the private Weston prefix (`--weston`, defaulting to
+the accepted audit configuration's binary).  Both the standalone Terminal and
+the Terminal grouped with the Editor through `Compositor1.DockWindows` are
+tested, each with its own sentinel and output file, so neither case can be
+satisfied by the other's artifact. The earlier direct-helper revision passed
+both cases twice. The integrated Gabbee-sink revision has independent unit
+verification; its live acceptance run remains required.
 
 ## Host AT-SPI bridge prerequisite
 

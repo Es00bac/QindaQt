@@ -1,5 +1,18 @@
 # Integration handoff
 
+## Gabbee sink candidate accepted for integration
+
+Independent GLM review accepts exact `fc8723a1` after rechecking all three
+blocking findings: the real external sink now sends the sentinel, the wiki
+corrects its earlier host-uinput claim, and the unit/syntax rows are registered
+with CTest. Source decomposition keeps the runner and collaborators cohesive.
+Integrated verification passes all three CTest rows and 47 discovered
+unit tests against the actual Gabbee checkout; strict MkDocs and link validation
+pass. The live sink run remains required; the earlier direct-helper readbacks are
+not substituted for it. The actual external Gabbee checkout now passes its
+complete 187-test suite (one GI deprecation warning), beyond the 44 focused
+checks previously recorded.
+
 ## Adapter and portal verification update
 
 Gabbee focus restoration now precedes its terminal helper route; the applied

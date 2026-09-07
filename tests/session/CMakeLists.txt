@@ -608,10 +608,30 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_interop_probe.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/run_gabbee_interop_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/test_gabbee_interop_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_terminal_sentinel.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_terminal_sink.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_terminal_portal.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_terminal_lane.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_terminal_boot.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_terminal_delivery.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/run_gabbee_terminal_pty_proof.py"
+)
+# Terminal PTY proof units: the sentinel byte contract, the portal chooser
+# predicate, and the adapter that drives Gabbee's real AgentInputTextSink.
+# Host-safe and lane-free; the sandboxed proof itself is manager-run and is
+# deliberately not a registered row (it needs the private runtime lane).
+# The two real-sink contract cases skip when the Gabbee checkout is absent.
+add_test(
+    NAME session.gabbee-terminal-pty-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/test_gabbee_terminal_pty_proof_unit.py"
 )
 set_tests_properties(
     session.gabbee-interop-unit
     session.gabbee-probe-syntax
+    session.gabbee-terminal-pty-unit
     PROPERTIES
         ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
         LABELS "unit;portal;session"
