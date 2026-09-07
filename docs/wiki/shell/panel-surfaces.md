@@ -138,7 +138,7 @@ it cannot paint over neighboring controls. `rows` distributes consecutive
 applets across actual horizontal rows (vertical columns on side panels),
 sharing the panel cross-axis extent rather than stretching one row.
 Zone viewports are the content clip authority; live `AppletChip` content is
-not clipped a second time, including the 18-pixel content row of the stock
+not clipped a second time, including the 22-pixel content row of the stock
 26-pixel minimal panel. Launcher, Bluetooth, power, audio and clipboard details and status-notifier
 operational notices live in focusable `Popup.Window` surfaces, so their text
 cannot inflate the panel and their controls remain reachable from a
@@ -205,3 +205,49 @@ QML with purpose-specific applet doubles. It proves per-instance construction,
 disjoint overflowing zones and two-row/two-column placement independently of
 compositor mapping. The nested resolution matrix remains the separate surface
 and visual qualification boundary.
+
+## Panel hit targets
+
+Two independent host defects made the panel's own controls hard to click, and
+both are fixed at the host rather than by enlarging individual buttons.
+
+The first is the zone viewport's attached scroll bars. `PanelAppletRow`
+declared `ScrollBar.horizontal`/`ScrollBar.vertical` unconditionally. An
+attached `ScrollBar` is a pointer-interactive `Control` spanning the trailing
+~10 logical pixels of the zone on its axis, and the Basic style keeps it
+mapped and hit-testable while painting it at zero opacity. On the stock 30px
+top panel that transparent overlay covered the bottom ~10px of the 26px
+applet row and the trailing ~10px of every zone, so it consumed presses aimed
+at the hosted control underneath: the lower part of a global-menu word did
+nothing and only a click high in the word registered, and status icons lost
+their bottom and trailing edges. Each bar now exists only while its own axis
+actually overflows and is a non-interactive indicator. The documented
+overflow affordance is unchanged — the zone still flicks, wheels, and reveals
+a keyboard-focused control inside overflow.
+
+The second is the cross-axis inset. `PanelContent`'s `contentInset` keeps
+zones off the panel's along-edge start and end (the left/right margin on a
+top/bottom panel, the top/bottom margin on a left/right panel). The
+perpendicular inset — the amount trimmed from the panel's own thickness
+before a zone's applets are laid out — is now a separate, deliberately
+smaller `crossAxisInset`. Reusing the along-axis token for both left only
+22px of cross-axis room on the stock 30px panel for hosted controls whose
+implicit height is 24-28px, so a control was *taller* than the row hosting
+it and its centering expression resolved to a negative offset: the box hung
+above and below the row it painted in, spending hit area outside the clipped
+row instead of on the label. `crossAxisInset` leaves 26px on that same panel,
+at or above those implicit heights. Hosted horizontal controls additionally
+fill the row they are given (see `GlobalMenuApplet.qml`'s
+`horizontalEntryHeight()`) rather than assuming a fixed 24px box, clamped to
+36px so an unusually thick panel does not grow an oversized target.
+
+Evidence: `qindaqt.global-menu-panel-hit-targets-qml-offscreen` hosts the
+real global-menu module through `PanelContent` at the default profile's 30px
+thickness and opens the menu by clicking the lower edge and the lower
+trailing corner of the rendered word, asserting separately that no scroll bar
+owns those points. `qindaqt.panel-geometry-offscreen` proves the same
+overlay-free hit area for hosted chips in both panel orientations and that an
+overflowing zone still shows exactly one, non-interactive, bar on the
+overflowing axis only. `qindaqt.desktop-controls-offscreen-workspaces` clicks
+the real system-status summary at its lower edge and trailing corner while
+hosted at the 26px row a stock panel hands it.

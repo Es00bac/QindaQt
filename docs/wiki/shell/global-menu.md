@@ -618,7 +618,13 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-native-submenu-qml-offscreen` under
 `QT_FATAL_WARNINGS=1`,
 `qindaqt.global-menu-production-panel-keyboard-qml-offscreen` through the real
-panel dispatcher, `qindaqt.global-menu-installed-package`, and the shared
+panel dispatcher,
+`qindaqt.global-menu-panel-hit-targets-qml-offscreen` (the real module hosted
+through `PanelContent` at the default profile's 30px panel thickness, opened
+by clicking the lower edge and lower trailing corner of a rendered menu word,
+with a separate assertion that no zone scroll bar owns those points; see
+[panel surfaces](panel-surfaces.md#panel-hit-targets)),
+`qindaqt.global-menu-installed-package`, and the shared
 `qindaqt.shell-runtime-component-closure`. The first-party application rows
 add the `qindaqt.(terminal|editor)-global-menu-identity-variants-source-policy`
 registrations that keep their hostile variants and live child-PID boundary in

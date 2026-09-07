@@ -138,6 +138,19 @@ Item {
             + (topLevelItems.length > count ? measuredIndicatorHeight() + 4 : 0)
     }
 
+    // AGENT-CONTRACT: horizontal top-level entries fill the applet's actual
+    // hosted height, clamped to 36px, instead of a fixed 24px box. The stock
+    // 30px panel hosts this applet in a row shorter than that fixed box, so
+    // the entry was *taller* than its host and the centering expression
+    // resolved to a negative y: the box hung above and below the row it is
+    // painted in, wasting hit area outside the clipped row instead of
+    // covering the label. Filling the row (bounded so an unusually thick
+    // panel cannot grow an oversized target) keeps the whole rendered label
+    // clickable edge to edge.
+    function horizontalEntryHeight() {
+        return Math.max(1, Math.min(height, 36))
+    }
+
     function entryOffset(index) {
         let result = 0
         for (let i = 0; i < index; ++i)
@@ -260,7 +273,7 @@ Item {
                 leftPadding: 7
                 rightPadding: 8
                 implicitWidth: root.measuredEntryWidth(entryData)
-                implicitHeight: 24
+                implicitHeight: root.vertical ? 24 : root.horizontalEntryHeight()
                 // MenuBar's internal content layout may assign a narrower
                 // width even though this applet positions entries itself.
                 width: implicitWidth
@@ -338,7 +351,7 @@ Item {
                                  : Math.round((nativeLayout.height - height) / 2)
                 enabled: visible && itemEnabled && root.available
                 implicitWidth: root.measuredEntryWidth(modelData)
-                implicitHeight: 24
+                implicitHeight: root.vertical ? 24 : root.horizontalEntryHeight()
                 focusPolicy: Qt.TabFocus
                 checkable: false
                 checked: Boolean(modelData.checked ?? false)
