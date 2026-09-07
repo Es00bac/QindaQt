@@ -61,7 +61,10 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: archlinux:base-devel
-    timeout-minutes: 30
+    # A cold full-tree test build reached 3183/4007 commands at the old
+    # 30-minute ceiling. Keep two-way compilation and give its required tests
+    # the same bounded completion window as the production-shell lane.
+    timeout-minutes: 60
     steps:
       # AGENT-CONTRACT: Keep mandatory build dependencies explicit here. Do not
       # hide a missing dependency or failed target behind `|| true`; split future
