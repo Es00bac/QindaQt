@@ -1,33 +1,32 @@
 # Integration handoff
 
-## Reusable workspace checkpoint is underway
+## Reusable workspace checkpoint: integrated, installed acceptance pending
 
-Main `f3fd6dc9` integrates the independently reviewed workspace foundation
-(candidate `1824b3cd`). Kimi accepted the exact commit after its own build,
-10/10 QtTest cases and 15 additional contract probes. The integrated source
-passes 3/3 Core/workspace CTest rows and 195-document validation. External
-Calendar changes in the shared CMake files remain untouched.
+Main `541cddef` contains the reviewed combined workspace and desktop-control
+implementation. Save/Reopen is wired into the compositor; containers carry
+names and colors, roll up into movable strips, and iconify as one dock item.
+The final raise-only repair keeps shaded members hidden while bringing a
+partly covered strip forward; explicit activation unrolls before focusing.
+Its independent review accepted `61dce8be` after the live interaction proof.
 
-Capture and native desktop-entry launch are integrated at `2b479c6b` after
-Kimi accepted exact candidate `df5b5a91`; the integrated source passes 4/4
-Core/workspace CTest rows, including real desktop-entry launch under an
-isolated test bus. Atomic adoption is integrated at `6bdde945` after Kimi acceptance of
-`e5492305`. The repaired native dialogs are integrated at `343600b2` after
-root rereview of `be514ce9`. Combined integrated Core/workspace/Hybrid/UI
-tests passed 9/9 before the runtime adapter; the combined source now passes
-11/11, plus 197-document validation and strict MkDocs. The KWin runtime port is now integrated from Terra's
-reviewed candidate `e64e96b6`: it validates live selections before atomic
-adoption and reports post-restore appearance errors as warnings. Final KWin
-session composition and installed logout/reopen verification remain pending.
-Dialog lifetime repair `186dcd2a` is integrated: Save, Reopen, and color
-selection use owned asynchronous dialogs, including tested teardown while open. Sonnet owns container roll-up,
-iconify and name/color projection; GLM owns daily desktop controls; Sol owns
-CI and Gentoo release packaging. Assignments are not completed features.
+The exact combined tree builds the production desktop and session probe.
+Controls pass 16/16 focused CTest rows; workspace persistence, workspace UI
+policy, and chrome-manager checks pass. Real private nested PowerDevil tests
+pass native Wayland, portal Idle, and legacy ScreenSaver inhibition: each
+holds display-off, then permits it after release. Documentation validation
+covers 209 pages; strict MkDocs and source-shape checks pass. These results
+do not establish installed-session acceptance.
 
-The checkpoint remains incomplete until saved workspaces reopen in the
-installed desktop, container management and everyday controls work there, and
-the pinned release is reproducible. No logout restoration or refreshed runtime
-installation is claimed by this foundation integration.
+The remaining acceptance work is two-session Save/Reopen through the real UI,
+media keys and feedback, actual Spectacle capture, a privilege prompt, and
+verification after installing the complete Gentoo package. The staged Terminal
+has executed a shell command with both input and output attached to a real PTY.
+The staged prefix is a test artifact, not a host installation.
+
+External Calendar changes remain outside the integrated commit. Their three
+CMake edits were restored exactly after the fast-forward. The schema retains
+all three Calendar preferences alongside the new idle preference; a backup
+stash and the original patch are retained in the manager's ignored scratch area.
 
 ## Shell recovery integration
 
@@ -36,8 +35,10 @@ with paced retries capped at 30 seconds. The notification host and applications
 remain resident across repeated shell failures; initial startup failure,
 explicit stop, host exit, and compositor death retain their terminal behavior.
 The integrated process/activation/refresh gates pass 3/3, including the full
-70-second supervisor test. Installation and rendering mitigation qualification
-remain pending; this is not a claim that the render-memory fault is repaired.
+70-second supervisor test. The basic render-loop default and renderer diagnostics are also integrated;
+a private OpenGL/llvmpipe run recorded the basic loop and all three shell roles.
+Installation and physical-GPU qualification remain pending; the mitigation is
+not a claim that the render-memory fault is repaired.
 
 ## Native release and Gentoo package definition integrated
 
