@@ -25,6 +25,17 @@ struct Workspace {
   [[nodiscard]] static std::optional<Workspace>
   fromJson(const QJsonObject &, QString *error = nullptr);
 };
+// Captures an owned live layout using caller-supplied durable application
+// slots. There must be exactly one entry for each live member and no extra
+// entries. The caller obtains application intent through its platform
+// inventory, not through this module. Failure leaves the source container
+// untouched.
+[[nodiscard]] std::optional<Workspace>
+capture(const QString &id, const QString &name, const QString &color,
+        const Core::WindowContainer &liveLayout,
+        const QMap<QString, ApplicationSlot> &applicationsByWindow,
+        QString *error = nullptr);
+
 struct AvailableWindow {
   QString id;
   QString desktopEntryId;

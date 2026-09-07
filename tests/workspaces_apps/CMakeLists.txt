@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+find_package(Qt6 REQUIRED COMPONENTS Test Gui)
+add_executable(tst_workspace_applications tst_workspace_applications.cpp)
+target_link_libraries(tst_workspace_applications PRIVATE QindaQt::WorkspacesApps Qt6::Test Qt6::Gui)
+set_target_properties(tst_workspace_applications PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(tst_workspace_applications)
+endif()
+add_test(NAME workspaces.desktop-applications COMMAND dbus-run-session -- $<TARGET_FILE:tst_workspace_applications>)
+set_tests_properties(workspaces.desktop-applications PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)

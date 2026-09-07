@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
+#include "layout_binding_p.h"
 #include "qindaqt/workspaces/workspace.h"
 #include <QSet>
 
@@ -56,18 +57,6 @@ assignWindows(const Workspace &workspace, const QList<AvailableWindow> &windows,
   }
   return result;
 }
-namespace {
-Core::LayoutNode bindNode(const Core::LayoutNode &node,
-                          const QMap<QString, QString> &bindings) {
-  if (node.isLeaf())
-    return Core::LayoutNode::makeLeaf(node.id(),
-                                      bindings.value(node.windowId()));
-  return Core::LayoutNode::makeSplit(node.id(), *node.orientation(),
-                                     *node.ratio(),
-                                     bindNode(*node.firstChild(), bindings),
-                                     bindNode(*node.secondChild(), bindings));
-}
-} // namespace
 std::optional<Core::WindowContainer> instantiate(const Workspace &workspace,
                                                  const AssignmentPlan &plan,
                                                  const QString &containerId,
@@ -95,8 +84,8 @@ std::optional<Core::WindowContainer> instantiate(const Workspace &workspace,
   Core::WindowContainer result(containerId);
   for (const auto &page : workspace.layout.pages())
     if (!result.addPage(
-            Core::ContainerPage(page.id(),
-                                bindNode(page.root(), plan.windowsBySlot)),
+            Core::ContainerPage(
+                page.id(), Detail::bindNode(page.root(), plan.windowsBySlot)),
             error))
       return std::nullopt;
   if (!result.activatePage(workspace.layout.activePageId(), error))

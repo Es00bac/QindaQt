@@ -44,6 +44,47 @@ QList<AvailableWindow> windows(bool sameApp = false) {
 class WorkspaceTest final : public QObject {
   Q_OBJECT
 private slots:
+  void captureRestoresAllPagesAndRejectsStaleInventory() {
+    auto original = sample();
+    auto live = instantiate(original, assignWindows(original, windows()),
+                            QStringLiteral("session-container"));
+    QVERIFY(live.has_value());
+    QVERIFY(live->addPage(QStringLiteral("second-page"),
+                          QStringLiteral("third-leaf"),
+                          QStringLiteral("live-c")));
+    QVERIFY(live->activatePage(QStringLiteral("second-page")));
+    QMap<QString, ApplicationSlot> intent{
+        {QStringLiteral("live-a"), original.applicationSlots.at(0)},
+        {QStringLiteral("live-b"), original.applicationSlots.at(1)},
+        {QStringLiteral("live-c"),
+         {QStringLiteral("notes"),
+          QStringLiteral("Notes"),
+          QStringLiteral("org.qindaqt.TextEditor"),
+          {}}}};
+    const auto saved =
+        capture(original.id, original.name, original.color, *live, intent);
+    QVERIFY(saved.has_value());
+    QVERIFY(saved->layout.findWindow(QStringLiteral("notes")));
+    QVERIFY(!saved->layout.findWindow(QStringLiteral("live-c")));
+    QCOMPARE(saved->layout.activePageId(), QStringLiteral("second-page"));
+    auto inventory = windows();
+    inventory.append({QStringLiteral("new-c"),
+                      QStringLiteral("org.qindaqt.TextEditor"), true});
+    const auto rebound = instantiate(
+        *saved,
+        assignWindows(*saved, inventory,
+                      {{QStringLiteral("notes"), QStringLiteral("new-c")}}),
+        QStringLiteral("next-session"));
+    QVERIFY(rebound.has_value());
+    QCOMPARE(rebound->pages().size(), 2);
+    QCOMPARE(rebound->activePageId(), QStringLiteral("second-page"));
+    QVERIFY(rebound->findWindow(QStringLiteral("new-c")));
+    intent.remove(QStringLiteral("live-c"));
+    QVERIFY(
+        !capture(original.id, original.name, original.color, *live, intent));
+    QVERIFY(live->findWindow(QStringLiteral("live-c")));
+  }
+
   void persistsAcrossStoreLifetime() {
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
