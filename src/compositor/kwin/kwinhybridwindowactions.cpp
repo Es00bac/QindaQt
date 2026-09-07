@@ -366,9 +366,31 @@ bool KWinHybridSession::executeShellWindowAction(
         if (!unminimizeContainer(*owner, error)) {
             return false;
         }
-        [[fallthrough]];
-    case ShellWindowAction::Raise:
-        return m_groupStacking && m_groupStacking->raiseContainer(*owner, error);
+        // AGENT-GUARD: Activate means "make this a real, focused client" --
+        // unlike a bare Raise, it must never leave the container shaded with
+        // its anchor still hidden, so unshade first (a real reflow/visibility
+        // restore) and only then perform an ordinary, activating raise. This
+        // is the one dock/task-list path that is allowed to change shade
+        // state; Raise below never does.
+        if (m_placement && m_placement->isShaded(*owner)
+            && !unshadeContainer(*owner, error)) {
+            return false;
+        }
+        return m_groupStacking
+            && m_groupStacking->raiseContainer(
+                   *owner, RaiseActivation::ActivateRepresentative, error);
+    case ShellWindowAction::Raise: {
+        // AGENT-GUARD: a shaded container's representative is the
+        // content-preserving anchor, genuinely Window::isHidden(); a bare
+        // raise must never activate it (see RaiseActivation and
+        // dispatchChromePointerDecision's identical guard) and must never
+        // unshade -- only Activate above is allowed to change shade state.
+        const auto raiseActivation = m_placement && m_placement->isShaded(*owner)
+            ? RaiseActivation::RaiseOnly
+            : RaiseActivation::ActivateRepresentative;
+        return m_groupStacking
+            && m_groupStacking->raiseContainer(*owner, raiseActivation, error);
+    }
     case ShellWindowAction::Minimize:
         minimizeContainer(*owner);
         return true;

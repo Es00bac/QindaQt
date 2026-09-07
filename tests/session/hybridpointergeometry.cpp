@@ -83,6 +83,24 @@ std::optional<DropCandidate> edgePoint(const ObservedWindow &target,
 
 } // namespace
 
+std::optional<QPointF> exposedPoint(const QRectF &area,
+                                    const QRectF &occluder,
+                                    const QRectF &output)
+{
+    constexpr std::array<qreal, 7> fractions{
+        0.50, 0.72, 0.28, 0.86, 0.14, 0.94, 0.06};
+    for (const auto y : fractions) {
+        for (const auto x : fractions) {
+            const QPointF candidate(area.left() + area.width() * x,
+                                    area.top() + area.height() * y);
+            if (output.contains(candidate) && !occluder.contains(candidate)) {
+                return candidate;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<DockGestureGeometry> chooseDockGesture(const WindowInventory &inventory,
                                                      const ProbeWindowTitles &titles,
                                                      const QRectF &output,

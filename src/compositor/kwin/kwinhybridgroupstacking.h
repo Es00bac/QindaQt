@@ -14,6 +14,20 @@ namespace QindaQt::Compositor::KWinIntegration {
 class KWinChromeManager;
 class ManagedWindowRegistry;
 
+// Whether raiseContainer also grants native activation to the group's
+// activation representative. A shaded container's representative is the
+// content-preserving chrome anchor -- genuinely Window::isHidden() by
+// design, not a real focusable client -- so activating it is never correct:
+// live-verified, doing so unhid and natively detached the container's other,
+// plain-hidden member as a side effect. RaiseOnly still performs every dead/
+// layer/contiguous-block validation and the real KWin z-order raise; it only
+// skips the activateWindow() call and the activation-specific postcondition
+// that assumes a real, activatable representative.
+enum class RaiseActivation {
+    ActivateRepresentative,
+    RaiseOnly,
+};
+
 // Applies the pure active-page block plan through KWin's public stacking API,
 // then reparents each scene chrome item to that block's topmost member.
 // Everything runs synchronously on KWin's compositor thread.
@@ -35,8 +49,15 @@ public:
     [[nodiscard]] bool synchronize(const Hybrid::WindowTopology &topology,
                                    const QMap<QString, QString> &shadedAnchors = {},
                                    QString *error = nullptr);
-    [[nodiscard]] bool raiseContainer(const QString &containerId,
-                                      QString *error = nullptr);
+    // activation controls whether the group's representative is granted
+    // native focus (see RaiseActivation). Every other check -- live/dead
+    // members, shared layer, contiguous stack block, transient ordering,
+    // and the real z-order raise itself -- runs identically regardless of
+    // activation.
+    [[nodiscard]] bool raiseContainer(
+        const QString &containerId,
+        RaiseActivation activation = RaiseActivation::ActivateRepresentative,
+        QString *error = nullptr);
     // Answers against KWin's live stack rather than chrome-plan geometry.
     // excludedWindowId is used only while dragging that exact source window.
     [[nodiscard]] bool chromeExposedAt(

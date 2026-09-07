@@ -305,13 +305,21 @@ dropping to zero:
   hidden siblings are exempt rather than treated as a broken group.
   Unrelated hidden/unmapped windows outside a shaded container are
   unaffected and still fail synchronization normally.
-- A shared-chrome press normally raises and activates the group's real
-  active-page member so focus/task policy sees a genuine client. For a
-  shaded container that representative is the anchor, which is deliberately
-  hidden, not a real client; activating it anyway unhid and natively
-  detached the container's other, plain-hidden member as a side effect. A
-  press on a shaded strip now skips this raise/activate step entirely — the
-  strip is already the topmost input target the press just resolved to.
+- A shared-chrome press, dock click, or task-list raise/activate normally
+  raises the group's real KWin stack position *and* grants native activation
+  to its active-page representative, so focus/task policy sees a genuine
+  client. For a shaded container that representative is the anchor, which is
+  deliberately hidden, not a real client; activating it anyway unhid and
+  natively detached the container's other, plain-hidden member as a side
+  effect. `KWinHybridGroupStacking::RaiseActivation` splits the two: a
+  shaded container's raise still performs the real z-order raise (so a
+  partially occluded strip comes back to front on a press to its exposed
+  area) but never activates the anchor, and skips only the
+  activation-specific postcondition that assumes a real, activatable
+  representative — every dead/layer/contiguous-block check still runs
+  identically either way. Every caller that can raise a container (the
+  chrome pointer router, dock/task-list window actions) chooses `RaiseOnly`
+  for a shaded container and the ordinary activating behavior otherwise.
 
 ## Compositor scene restart
 

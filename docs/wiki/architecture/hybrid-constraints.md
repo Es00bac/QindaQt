@@ -129,12 +129,18 @@ Current group-wide controls have these semantics:
   instead of the ordinary plan's tab/page-order check, group stacking
   exempts the non-anchor members from its live-stack same-layer/contiguous-
   block checks (they name the content-preserving anchor via
-  `HybridShadeController::anchorWindowId`), and a press on the strip skips
-  the ordinary raise/activate step (the anchor is deliberately hidden, not a
-  real client to activate). Live-verified: without all three, the published
-  chrome overlay dropped to zero on the first shade, or a drag on the strip
-  unhid and natively detached the container's other member as a side
-  effect. The container is never added to the minimized set: shaded and
+  `HybridShadeController::anchorWindowId`), and any raise of a shaded
+  container's strip (a press on it, a dock click, a task-list raise/activate)
+  uses `KWinHybridGroupStacking::RaiseActivation::RaiseOnly`: the real KWin
+  z-order raise still runs (so a strip an unrelated window has partially
+  covered still comes back to front), but the anchor is never natively
+  activated, since it is deliberately hidden, not a real client. Live-
+  verified: without the first two, the published chrome overlay dropped to
+  zero on the first shade; without the raise/activation split, either every
+  raise unhid and natively detached the container's other member as a side
+  effect (activating on every press), or an occluded strip could never
+  self-raise again (skipping every raise). The container is never added to
+  the minimized set: shaded and
   minimized are independent states, and a shaded container keeps reporting
   its native task/switcher/dock presence unminimized. **Unroll** performs the
   one real reflow in this lifecycle, back to the original size at the strip's

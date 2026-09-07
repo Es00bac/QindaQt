@@ -6,6 +6,7 @@
 
 #include <QPointF>
 
+#include <functional>
 #include <optional>
 
 namespace QindaQt::Test {
@@ -50,5 +51,34 @@ exerciseHybridPointerShade(CompositorProbeClient &client,
                           const WindowInventory &grouped,
                           const QPointF &sharedTitlePoint,
                           QString *error);
+
+struct HybridPointerShadeOcclusionEvidence final
+{
+    WindowInventory occluded;
+    WindowInventory raised;
+    WindowInventory unrolled;
+};
+
+// Proves the repair for root's recorded bounded limitation: an unrelated
+// window partially covering a shaded strip, then a press on the strip's
+// still-exposed sliver, must raise the strip's real KWin stack position back
+// above the occluder (RaiseActivation::RaiseOnly's z-order raise) without
+// granting native activation to the hidden anchor (see
+// KWinHybridGroupStacking::RaiseActivation and
+// dispatchChromePointerDecision/executeShellWindowAction's identical guard)
+// -- so both real members stay exactly as hidden and frozen as they were
+// before the click, never activated or unhidden as a side effect. Ends by
+// unrolling at the (undisturbed) original point and checking geometry
+// restores exactly, proving the raise did not leave the shaded/placement
+// bookkeeping in a state unroll cannot recover from.
+[[nodiscard]] std::optional<HybridPointerShadeOcclusionEvidence>
+exerciseHybridPointerShadeOcclusionRaise(
+    CompositorProbeClient &client,
+    HybridPointerGrouping &pointer,
+    const HybridPointerGroupedState &state,
+    const WindowInventory &grouped,
+    const QPointF &sharedTitlePoint,
+    const std::function<void(const QString &)> &activateProbe,
+    QString *error);
 
 } // namespace QindaQt::Test
