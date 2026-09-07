@@ -56,6 +56,11 @@ owns only GUI-thread dialog state. Its caller explicitly supplies the durable
 storage root and keeps the borrowed `WorkspaceUiPort` alive for the dialog's
 lifetime. Every port call is synchronous on the GUI thread; it returns owned
 snapshots and never exposes a KWin or application-process object to the UI.
+Save, Reopen, and color-picker dialogs are heap children opened asynchronously
+with `WA_DeleteOnClose`; the library therefore owns and deletes them before its
+borrowed port can be torn down. Their accepted callbacks use the library as
+their QObject context, so no delayed save or restore callback can run after
+library destruction.
 
 The Save action asks the port for one complete current-container snapshot,
 prefills its name and color, then calls `capture()` and `WorkspaceStore::save()`.

@@ -18,7 +18,9 @@ tests passed 9/9 before the runtime adapter; the combined source now passes
 11/11, plus 197-document validation and strict MkDocs. The KWin runtime port is now integrated from Terra's
 reviewed candidate `e64e96b6`: it validates live selections before atomic
 adoption and reports post-restore appearance errors as warnings. Final KWin
-session composition and installed logout/reopen verification remain pending. Sonnet owns container roll-up,
+session composition and installed logout/reopen verification remain pending.
+Dialog lifetime repair `186dcd2a` is integrated: Save, Reopen, and color
+selection use owned asynchronous dialogs, including tested teardown while open. Sonnet owns container roll-up,
 iconify and name/color projection; GLM owns daily desktop controls; Sol owns
 CI and Gentoo release packaging. Assignments are not completed features.
 
