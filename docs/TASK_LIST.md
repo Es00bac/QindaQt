@@ -835,3 +835,7 @@ This is a functional visual follow-up, not a memory optimization task.
 The stopping point is the installed behavior above, including a named workspace
 surviving logout and reopening. Foundation tests and unintegrated candidates do
 not establish completion. Automatic grouping rules follow this checkpoint.
+
+Workspace foundation evidence: `f3fd6dc9` integrates reviewed candidate
+`1824b3cd`; 3/3 integrated Core/workspace tests pass. This is the portable
+model, storage and assignment boundary only; the checkpoint above remains active.
