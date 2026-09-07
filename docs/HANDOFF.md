@@ -28,6 +28,23 @@ CMake edits were restored exactly after the fast-forward. The schema retains
 all three Calendar preferences alongside the new idle preference; a backup
 stash and the original patch are retained in the manager's ignored scratch area.
 
+## Gentoo package build passed; host merge pending
+
+The full package pinned to `d1232e75` built successfully through Portage's
+compile, install-image, and package phases. Compilation resumed with 24 jobs
+at the user's request, preserving completed objects. The resulting gpkg is
+25,098,240 bytes. Its image contains all three bundled applications, the
+production shell, session launcher, desktop controls, KWin plugin, and
+KDecoration plugin. Checked application/shell dynamic dependencies resolve;
+the release contract verifies exact KWin 6.6.6 and both build/image artifacts.
+
+The local overlay and package-specific keyword are configured. Portage's
+host plan resolves the desktop package and replacement of the apps-only
+package with all blockers satisfied. Apps-only was deselected without
+uninstalling its files; a fresh rollback gpkg was created from the installed
+apps. No host merge or session restart has occurred. The pending screenshot
+ownership repair requires a new final source pin before release installation.
+
 ## Shell recovery integration
 
 Reviewed candidate `cd951c65` replaces the destructive one-restart shell limit
