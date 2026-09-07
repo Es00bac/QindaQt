@@ -3420,3 +3420,7 @@ also enables `QSG_INFO=1` and `QT_LOGGING_RULES` for `qt.scenegraph.*` and
 establishes the actual
 backend and render loop without enlarging the raw Wayland protocol capture or
 inferring renderer selection from environment settings.
+
+Workspace adoption policy tests are registered in `tests/compositor/WorkspaceTests.cmake`,
+included from the compositor test directory so relative sources and test properties
+retain the same scope.
