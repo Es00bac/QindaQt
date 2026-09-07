@@ -196,3 +196,19 @@ their CTest environment, so this claim is executable on any host. This
 slice does not claim colord integration, HDR/WCG runtime behavior,
 profile-body interpretation, physical calibration, live AT-SPI, or
 nested-session visuals.
+
+### Physical compositor application check — 2026-09-06
+
+On the physical HDMI-A-1 display, a temporary standard sRGB ICC profile was
+applied through the public KScreen output-management client. A fresh compositor
+readback reported the exact profile path. Removing the assignment and reading
+back again restored the original empty path. Both operations exited successfully.
+This proves that the running DRM backend accepts and removes an ICC assignment;
+it does not establish calibration accuracy or qualify the Settings UI end to end.
+
+The separate Settings-page run exercised discovery, display selection, and
+assignment in a private desktop. Its protocol trace contains the profile-path
+request, profile-source request, and compositor acknowledgement. The nested
+Wayland backend does not retain ICC state, so that acknowledgement alone cannot
+prove profile application. Keep the physical readback evidence distinct from
+that UI/protocol evidence.
