@@ -30,6 +30,7 @@ RDEPEND="
 	=kde-plasma/kwayland-6.6.6*:6=
 	=kde-plasma/polkit-kde-agent-6.6.6*:6=
 	=kde-plasma/plasma-activities-6.6.6*:6=
+	~kde-plasma/powerdevil-6.6.6
 	=kde-plasma/spectacle-6.6.6*:6=
 	=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6=
 	>=kde-frameworks/kcoreaddons-6.0:6=
