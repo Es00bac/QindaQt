@@ -60,6 +60,7 @@ nav:
       - Clipboard service: architecture/clipboard-service.md
       - Font preferences: architecture/font-preferences.md
       - Window containers: architecture/window-containers.md
+      - Saved workspaces: architecture/workspaces.md
   - Shell:
       - QindaQt.Controls 1.0: shell/controls.md
       - Desktop controls: shell/desktop-controls.md
@@ -215,3 +216,4 @@ nav:
       - "ADR-0094: Resident Wayland session-service refresh": adr/0094-refresh-resident-wayland-session-services.md
       - "ADR-0095: Editor syntax highlighting": adr/0095-use-ksyntaxhighlighting-for-editor-presentation.md
       - "0096: Package bundled applications with Portage": adr/0096-package-bundled-apps-with-portage.md
+      - "0097: Separate workspace slots from live windows": adr/0097-separate-workspace-slots-from-live-windows.md

@@ -815,3 +815,23 @@ The user requests space-efficient window chrome: tabs inside the main title
 bar, right-to-left placement in the macOS layout, and minimal tiled-member
 title strips that preserve pointer controls, dragging, resizing and detaching.
 This is a functional visual follow-up, not a memory optimization task.
+
+### Reusable workspace checkpoint (2026-09-07, active)
+
+- Preserve named layouts and application intent across logout; provide Save
+  workspace and Reopen workspace with missing-app reporting and explicit window
+  assignment when several windows belong to the same application.
+- Give each container a name and optional user-chosen color. Carry that identity
+  through its title bar, rolled-up title strip, and single dock item.
+- Add Roll up / Unroll and Iconify / Restore to container title-bar controls and
+  the QindaQt context menu. Roll-up retains a compact movable title strip;
+  iconifying hides the whole group behind one dock item. Restoring either must
+  preserve geometry, layout, active member, and member ownership.
+- Verify media keys with feedback, Print Screen, privilege prompts, and
+  configurable idle display-off behavior in the installed session.
+- Compile and boot the pinned plugin in CI; document KWin upgrades and publish a
+  tagged, Gentoo-installable desktop checkpoint.
+
+The stopping point is the installed behavior above, including a named workspace
+surviving logout and reopening. Foundation tests and unintegrated candidates do
+not establish completion. Automatic grouping rules follow this checkpoint.

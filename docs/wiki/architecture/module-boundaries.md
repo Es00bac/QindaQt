@@ -9,6 +9,7 @@ tests, and the wiki page describing its contract.
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
 | `compositor` | Immutable upstream KWin pin, downstream patch inventory and verifier, and checked-in compositor IPC descriptors | Repository tooling and upstream source metadata; never shell implementation |
+| `src/workspaces` | Saved workspace values, slot assignment, container instantiation and atomic workspace storage | Public Core plus Qt Core; never live compositor handles, app launching, shell or QML |
 | `src/core` | Pure window-container domain model, mutations, invariants, and persistence-neutral values | Qt Core and the C++ standard library |
 | `src/hybrid` | Session-wide window ownership, typed topology commands, and atomic candidate/scene publication | `core` and Qt Core; never KWin objects or input events |
 | `src/hybrid_constraints` | Recursive member-size solving and lossless independent-window restore values | `core` and Qt Core; never compositor objects or presentation |

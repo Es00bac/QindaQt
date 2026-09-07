@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 add_subdirectory(core)
+add_subdirectory(workspaces)
 add_subdirectory(hybrid)
 add_subdirectory(hybrid_constraints)
 add_subdirectory(hybrid_chrome)
