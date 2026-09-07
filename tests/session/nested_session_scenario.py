@@ -109,7 +109,11 @@ def running_private_session_bus(
         time.sleep(0.02)
     else:
         process.terminate()
-        process.wait(timeout=3)
+        try:
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=3)
         if process.stderr:
             process.stderr.close()
         raise RuntimeError("private dbus-daemon did not create its socket")
@@ -281,6 +285,7 @@ def isolated_environment(
         "QINDAQT_EXPECT_COMPOSITOR_OUTPUTS",
         "QINDAQT_EXPECT_READ_ONLY_CONTROL",
         "QINDAQT_EXPECT_HYBRID_POINTER",
+        "QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD",
         "QINDAQT_DOTOOL",
         "QT_NO_XDG_DESKTOP_PORTAL",
         "GTK_USE_PORTAL",

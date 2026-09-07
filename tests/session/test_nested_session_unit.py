@@ -140,12 +140,20 @@ class HostInputConsentTests(unittest.TestCase):
 
 
 class NestedPortalIsolationTests(unittest.TestCase):
-    def test_direct_nested_environment_suppresses_ambient_portals(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+    def test_direct_nested_environment_clears_ambient_workflow_and_portal_markers(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD": "1",
+                "QT_NO_XDG_DESKTOP_PORTAL": "0",
+                "GTK_USE_PORTAL": "1",
+            },
+        ), tempfile.TemporaryDirectory() as directory:
             environment = isolated_environment(Path(directory))
 
         self.assertEqual(environment["QT_NO_XDG_DESKTOP_PORTAL"], "1")
         self.assertEqual(environment["GTK_USE_PORTAL"], "0")
+        self.assertNotIn("QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD", environment)
 
     def test_explicit_portal_scenario_can_opt_in(self) -> None:
         with patch.dict(
