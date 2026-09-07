@@ -16,14 +16,20 @@ Supported actions:
   {"action":"scroll","dx":0.0,"dy":3.0}
   {"action":"key_press","keysym":65}
   {"action":"key_release","keysym":65}
-  {"action":"text","text":"hello"}
+  {"action":"text","text":"hello","requestId":"dictation-42"}
   {"action":"close"}
+
+When requestId is present, stdout emits one newline-delimited JSON acknowledgement
+only after the portal accepted the event: {"requestId":"dictation-42","ok":true}.
+Failures emit {"requestId":"dictation-42","ok":false,"error":"..."}. This proves
+portal acceptance, not receipt by a particular application.
 
 Exits 0 on normal close, 1 on portal denial or transport error.
 """
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -73,6 +79,14 @@ def main() -> int:
     state: dict = {"error": None}
     reader = StdinReader()
 
+    def _ack(request_id: str | None, ok: bool, error: str = "") -> None:
+        if request_id is None:
+            return
+        reply = {"requestId": request_id, "ok": ok}
+        if not ok:
+            reply["error"] = error
+        print(json.dumps(reply, separators=(",", ":")), flush=True)
+
     def _on_stdin(fd: int, condition: GLib.IOCondition) -> bool:
         # AGENT-GUARD: Read available bytes before checking HUP. A closed pipe
         # can deliver both IN and HUP simultaneously; checking HUP first would
@@ -96,11 +110,14 @@ def main() -> int:
                 continue
             if not event:
                 continue
+            request_id = event.get("requestId")
             try:
                 keep = dispatch_event(event, session)
             except EventError as exc:
+                _ack(request_id, False, str(exc))
                 print(f"WARN: {exc}", file=sys.stderr)
                 continue
+            _ack(request_id, True)
             if not keep:
                 session.close()
                 return False

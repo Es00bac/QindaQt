@@ -70,16 +70,31 @@ class AgentInputModuleTest(unittest.TestCase):
 
     def test_parse_event_text(self) -> None:
         from agent_input.events import parse_event
-        ev = parse_event('{"action":"text","text":"hello"}')
+        ev = parse_event('{"action":"text","text":"hello","requestId":"dictation-1"}')
         self.assertEqual(ev["text"], "hello")
+        self.assertEqual(ev["requestId"], "dictation-1")
+
+    def test_parse_event_rejects_invalid_request_id(self) -> None:
+        from agent_input.events import EventError, parse_event
+        with self.assertRaises(EventError):
+            parse_event('{"action":"text","requestId":0}')
 
     def test_dispatch_close_returns_false(self) -> None:
         from agent_input.events import dispatch_event
         self.assertFalse(dispatch_event({"action": "close"}, object()))
 
-    def test_dispatch_unknown_action_returns_true(self) -> None:
-        from agent_input.events import dispatch_event
-        self.assertTrue(dispatch_event({"action": "future_action"}, object()))
+    def test_dispatch_unknown_action_is_rejected(self) -> None:
+        from agent_input.events import EventError, dispatch_event
+        with self.assertRaises(EventError):
+            dispatch_event({"action": "future_action"}, object())
+
+    def test_dispatch_rejects_unaccepted_portal_event(self) -> None:
+        from agent_input.events import EventError, dispatch_event
+        from unittest.mock import MagicMock
+        session = MagicMock()
+        session.notify_pointer_motion.return_value = False
+        with self.assertRaises(EventError):
+            dispatch_event({"action": "move", "dx": 1, "dy": 2}, session)
 
     def test_dispatch_unknown_button_raises_event_error(self) -> None:
         from agent_input.events import EventError, dispatch_event

@@ -35,6 +35,9 @@ def parse_event(line: str) -> dict[str, Any]:
     action = obj.get("action")
     if not isinstance(action, str):
         raise EventError("event missing string 'action'")
+    request_id = obj.get("requestId")
+    if request_id is not None and (not isinstance(request_id, str) or not request_id):
+        raise EventError("requestId must be a non-empty string when present")
     return obj
 
 
@@ -47,25 +50,28 @@ def dispatch_event(event: dict[str, Any], session) -> bool:
     on_ready before this function is called.
     """
     action = event.get("action", "")
+    delivered = True
     if action == "move":
-        session.notify_pointer_motion(float(event.get("dx", 0)),
-                                      float(event.get("dy", 0)))
+        delivered = session.notify_pointer_motion(float(event.get("dx", 0)),
+                                                  float(event.get("dy", 0)))
     elif action in ("press", "release"):
         try:
-            session.notify_pointer_button(event.get("button", ""),
-                                          action == "press")
+            delivered = session.notify_pointer_button(event.get("button", ""),
+                                                      action == "press")
         except ValueError as exc:
             raise EventError(str(exc)) from exc
     elif action == "scroll":
-        session.notify_pointer_axis(float(event.get("dx", 0)),
-                                    float(event.get("dy", 0)))
+        delivered = session.notify_pointer_axis(float(event.get("dx", 0)),
+                                                float(event.get("dy", 0)))
     elif action in ("key_press", "key_release"):
-        session.notify_key_keysym(int(event.get("keysym", 0)),
-                                  action == "key_press")
+        delivered = session.notify_key_keysym(int(event.get("keysym", 0)),
+                                              action == "key_press")
     elif action == "text":
-        session.notify_text(str(event.get("text", "")))
+        delivered = session.notify_text(str(event.get("text", "")))
     elif action == "close":
         return False
-    # Unknown actions are silently ignored; callers should not depend on
-    # undocumented behavior of future actions.
+    else:
+        raise EventError(f"unknown action {action!r}")
+    if not delivered:
+        raise EventError("portal did not accept input event")
     return True

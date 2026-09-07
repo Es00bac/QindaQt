@@ -100,3 +100,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0089: Present task switching through KWin's native model](0089-present-task-switching-through-kwins-native-model.md)
 - [ADR-0091: Configure KScreenLocker preferences through a narrow Settings adapter](0091-configure-kscreenlocker-preferences-through-settings.md)
 - [ADR-0092: Project the confirmed palette into QindaQt compositor UI](0092-project-confirmed-palette-into-compositor-ui.md)
+
+- [ADR-0093: Acknowledge agent input only after portal acceptance](0093-acknowledge-agent-input-portal-acceptance.md)

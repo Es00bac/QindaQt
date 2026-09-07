@@ -43,7 +43,8 @@ portal in a minimal session with bounded lifetime:
 1. Opens one session with the standard three-step handshake.
 2. Prints `READY` on stderr after user approval.
 3. Reads newline-delimited JSON events from stdin and dispatches them to the
-   portal using `Notify*` calls.
+   portal using `Notify*` calls. An event with `requestId` receives one matching
+   stdout acknowledgement only after that portal call returns.
 4. Closes the session when stdin closes or a `{"action":"close"}` event arrives.
 
 The tool lives in `tools/agent_input/` (package) and `tools/agent-input` (CLI).
@@ -98,6 +99,10 @@ the real session bus or triggering a live approval dialog. Its modes are:
 - `notify_failure` — a `Notify*` D-Bus error closes the session and exits 1.
 - `revoke` — an external `Session::Closed` signal ends the tool cleanly even
   with stdin still open.
+- acknowledgement — one successful and one failed `requestId` event prove that
+  stdout reports portal acceptance or rejection, never a stdin-write claim.
+
+The exact acknowledgement contract is [ADR-0093](0093-acknowledge-agent-input-portal-acceptance.md).
 
 ### Session lifecycle contract
 
