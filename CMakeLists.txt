@@ -51,6 +51,8 @@ option(QINDAQT_BUILD_KWIN_PLUGIN
 option(QINDAQT_ENABLE_STRICT_WARNINGS "Treat QindaQt warnings as errors" ON)
 option(QINDAQT_ENABLE_HOST_UINPUT_TESTS
        "Register tests that may inject pointer/keyboard events into the host seat" OFF)
+option(QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS
+       "Register tests that launch private PipeWire and WirePlumber processes" ON)
 
 if(QINDAQT_ENABLE_HOST_UINPUT_TESTS)
     message(WARNING

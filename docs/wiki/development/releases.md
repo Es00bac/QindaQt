@@ -86,6 +86,18 @@ When the dated stage image and pinned Portage snapshot differ, the CI install
 uses `--update --newuse` with `--usepkgonly`. This permits a compatible official
 binary to replace a base package whose selected USE flags changed, while still
 failing instead of compiling a missing binary package from source.
+The lane also selects NetworkManager's client-library binary without its
+Bluetooth, policykit, or systemd daemon integrations. QindaQt needs `libnm` to
+compile in this lane; the full desktop package retains the resident provider
+and hardware integrations.
+
+Both Arch jobs keep `QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS=ON` and install the
+PipeWire daemon and CLI, WirePlumber daemon, and `pw-cat`. Gentoo's official
+binhost does not provide the PipeWire `extra` variant that contains `pw-cat`,
+so the native plugin lane sets this option `OFF`. The audio service and its unit
+test still compile there. The complete production tree, static KWin ABI rows,
+staged install, live plugin service boot, and installed-plugin discovery boot
+remain mandatory.
 
 ## Record and publish
 

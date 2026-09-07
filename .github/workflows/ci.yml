@@ -69,7 +69,9 @@ jobs:
           pacman-key --init
           pacman-key --populate archlinux
           pacman -Syu --noconfirm --needed \
+            binutils \
             cmake \
+            dbus \
             extra-cmake-modules \
             fontconfig \
             git \
@@ -82,6 +84,8 @@ jobs:
             libnm \
             libwireplumber \
             ninja \
+            pipewire \
+            pipewire-audio \
             python \
             qt6-base \
             qt6-declarative \
@@ -89,6 +93,7 @@ jobs:
             qt6-wayland \
             wayland \
             wayland-protocols \
+            wireplumber \
             qtermwidget \
             syntax-highlighting
 
@@ -96,11 +101,11 @@ jobs:
 
       - name: Record dependency versions
         run: >-
-          pacman -Q cmake extra-cmake-modules fontconfig kdecoration
+          pacman -Q binutils cmake dbus extra-cmake-modules fontconfig kdecoration
           kglobalaccel kidletime kio kservice kwayland libnm libwireplumber
-          qtermwidget
+          pipewire pipewire-audio qtermwidget
           qt6-base qt6-declarative qt6-svg qt6-wayland wayland
-          wayland-protocols
+          wayland-protocols wireplumber
 
       - name: Configure
         run: >-
@@ -138,6 +143,7 @@ jobs:
           pacman-key --init
           pacman-key --populate archlinux
           pacman -Syu --noconfirm --needed \
+            binutils \
             cmake \
             dbus \
             extra-cmake-modules \
@@ -155,6 +161,8 @@ jobs:
             libnm \
             libwireplumber \
             ninja \
+            pipewire \
+            pipewire-audio \
             python \
             qt6-base \
             qt6-declarative \
@@ -162,6 +170,7 @@ jobs:
             qt6-wayland \
             wayland \
             wayland-protocols \
+            wireplumber \
             qtermwidget syntax-highlighting \
             xorg-xdpyinfo \
             xorg-xwayland
@@ -193,11 +202,12 @@ jobs:
 
       - name: Record production shell stack
         run: >-
-          pacman -Q dbus extra-cmake-modules fontconfig kdecoration kwin
+          pacman -Q binutils dbus extra-cmake-modules fontconfig kdecoration kwin
           kglobalaccel kidletime kio kservice kwayland layer-shell-qt libcap
-          libnm libwireplumber qtermwidget syntax-highlighting qt6-base
+          libnm libwireplumber pipewire pipewire-audio qtermwidget
+          syntax-highlighting qt6-base
           qt6-declarative qt6-svg qt6-wayland xorg-xwayland
-          wayland wayland-protocols
+          wayland wayland-protocols wireplumber
 
       - name: Configure production shell without the binary KWin plugin
         run: >-
@@ -267,6 +277,7 @@ jobs:
           # desktop ebuild separately qualifies the lock-screen runtime closure.
           dev-qt/qtbase -accessibility
           kde-plasma/kwin -accessibility -lock -screencast shortcuts
+          net-misc/networkmanager -bluetooth -policykit -systemd
           EOF
 
       # `--usepkgonly` makes absence of a compatible official binary package a
@@ -356,6 +367,7 @@ jobs:
           -DQINDAQT_BUILD_KWIN_PLUGIN=ON
           -DQINDAQT_BUILD_SHELL=ON
           -DQINDAQT_BUILD_PRODUCTION_SHELL=ON
+          -DQINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS=OFF
           -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
 
       - name: Build the complete production tree and nested probe
