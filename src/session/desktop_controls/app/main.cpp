@@ -1,0 +1,206 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/session/desktop_controls/brightness_key_controller.h"
+#include "qindaqt/session/desktop_controls/desktop_shortcut_set.h"
+#include "qindaqt/session/desktop_controls/freedesktop_feedback_notifier.h"
+#include "qindaqt/session/desktop_controls/idle_display_policy.h"
+#include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
+#include "qindaqt/session/desktop_controls/screenshot_launcher.h"
+#include "qindaqt/session/desktop_controls/volume_key_controller.h"
+
+#include <qindaqt/services/audio_client/audio_client.h>
+#include <qindaqt/services/audio_client/qt_audio_transport.h>
+#include <qindaqt/services/power_service/adapters/sysfs_backlight_source.h>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
+#include <qindaqt/services/settings_client/settings_client.h>
+
+#include "kidle_time_tracker.h"
+#include "kglobal_accel_registrar.h"
+#include "kwayland_dpms_controller.h"
+
+#include <QCommandLineParser>
+#include <QGuiApplication>
+#include <QtDBus/QDBusConnection>
+#include <QTextStream>
+
+#include <memory>
+#include <utility>
+
+using QindaQt::Session::DesktopControls::BrightnessKeyController;
+using QindaQt::Session::DesktopControls::ScreenshotLauncher;
+using QindaQt::Session::DesktopControls::VolumeKeyController;
+
+namespace {
+
+// Reason codes are stable identifiers; the user sees friendly text with the
+// code only when nothing specific matches.
+QString audioUnavailableText(const QString &reasonCode)
+{
+    if (reasonCode == QLatin1String("no-default-output")) {
+        return QStringLiteral("No default output device is selected.");
+    }
+    if (reasonCode == QLatin1String("volume-unsupported")
+        || reasonCode == QLatin1String("mute-unsupported")) {
+        return QStringLiteral("The default output does not support this control.");
+    }
+    if (reasonCode == QLatin1String("operation-busy")) {
+        return QStringLiteral("Audio is busy; try again in a moment.");
+    }
+    return QStringLiteral("Audio control is unavailable (%1).").arg(reasonCode);
+}
+
+QString brightnessUnavailableText(const QString &reasonCode)
+{
+    if (reasonCode == QLatin1String("no-backlight-device")) {
+        return QStringLiteral("No display backlight is available.");
+    }
+    if (reasonCode == QLatin1String("backlight-read-only")) {
+        return QStringLiteral("Display brightness is read-only on this system.");
+    }
+    return QStringLiteral("Display brightness is unavailable (%1).").arg(reasonCode);
+}
+
+QString screenshotUnavailableText(const QString &reasonCode)
+{
+    if (reasonCode == QLatin1String("screenshot-program-unavailable")) {
+        return QStringLiteral("The screenshot tool is not installed.");
+    }
+    if (reasonCode == QLatin1String("screenshot-launch-failed")) {
+        return QStringLiteral("The screenshot tool could not start.");
+    }
+    return QStringLiteral("The screenshot tool is unavailable (%1).").arg(reasonCode);
+}
+
+} // namespace
+
+int main(int argc, char *argv[])
+{
+    QGuiApplication application(argc, argv);
+    QGuiApplication::setApplicationName(QStringLiteral("qindaqt-desktop-controls"));
+    QGuiApplication::setApplicationVersion(QStringLiteral(QINDAQT_VERSION));
+    QGuiApplication::setOrganizationDomain(QStringLiteral("qindaqt.org"));
+    // Media-key QActions and the KIdleTime Wayland backend need a running
+    // GUI event loop even though this process draws nothing of its own.
+    QGuiApplication::setQuitOnLastWindowClosed(false);
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription(
+        QStringLiteral("QindaQt media keys, screenshot launch, and idle display-off policy."));
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.addOptions({
+        {QStringLiteral("screenshot-command"),
+         QStringLiteral("Screenshot helper program (default: spectacle)."),
+         QStringLiteral("program"), QStringLiteral("spectacle")},
+        {QStringLiteral("screenshot-arguments"),
+         QStringLiteral("Arguments passed to the screenshot helper "
+                        "(default: -b -r for a background rectangular capture)."),
+         QStringLiteral("args"), QStringLiteral("-b,-r")},
+        {QStringLiteral("backlight-root"),
+         QStringLiteral("Backlight sysfs root to observe and write."),
+         QStringLiteral("path"),
+         QString::fromLatin1(QindaQt::Power::Upstream::kSysfsBacklightDefaultRoot)},
+        {QStringLiteral("no-idle-policy"),
+         QStringLiteral("Do not turn displays off after user idle time.")},
+    });
+    parser.process(application);
+
+    const QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    if (!sessionBus.isConnected()) {
+        QTextStream(stderr) << "qindaqt-desktop-controls: no session bus\n";
+        return 2;
+    }
+
+    QindaQt::Audio::QtAudioTransport audioTransport(sessionBus);
+    QindaQt::Audio::AudioClient audioClient(&audioTransport);
+    audioClient.start();
+
+    auto backlightSource = std::make_unique<QindaQt::Power::Upstream::SysfsBacklightSource>(
+        parser.value(QStringLiteral("backlight-root")));
+    backlightSource->start();
+
+    QindaQt::Session::DesktopControls::FreedesktopFeedbackNotifier notifier(sessionBus);
+
+    QindaQt::Session::DesktopControls::VolumeKeyController volumeController(audioClient);
+    QObject::connect(&volumeController, &VolumeKeyController::volumeFeedbackRequested,
+                     &notifier, [&notifier](int percent, bool muted) {
+                         notifier.showVolume(percent, muted);
+                     });
+    QObject::connect(&volumeController, &VolumeKeyController::volumeUnavailable,
+                     &notifier, [&notifier](const QString &reasonCode) {
+                         notifier.showNotice(
+                             QStringLiteral("Volume"), audioUnavailableText(reasonCode),
+                             QStringLiteral("audio-volume-muted"));
+                     });
+
+    QindaQt::Session::DesktopControls::BrightnessKeyController brightnessController(*backlightSource);
+    QObject::connect(&brightnessController,
+                     &BrightnessKeyController::brightnessFeedbackRequested, &notifier,
+                     [&notifier](int percent) {
+                         notifier.showBrightness(percent);
+                     });
+    QObject::connect(&brightnessController,
+                     &BrightnessKeyController::brightnessUnavailable, &notifier,
+                     [&notifier](const QString &reasonCode) {
+                         notifier.showNotice(
+                             QStringLiteral("Brightness"),
+                             brightnessUnavailableText(reasonCode),
+                             QStringLiteral("video-display"));
+                     });
+
+    QindaQt::Session::DesktopControls::ScreenshotLauncher screenshotLauncher(
+        parser.value(QStringLiteral("screenshot-command")),
+        parser.value(QStringLiteral("screenshot-arguments"))
+            .split(QLatin1Char(','), Qt::SkipEmptyParts));
+    QObject::connect(&screenshotLauncher, &ScreenshotLauncher::launchFailed,
+                     &notifier, [&notifier](const QString &reasonCode) {
+                         notifier.showNotice(
+                             QStringLiteral("Screenshot"),
+                             screenshotUnavailableText(reasonCode),
+                             QStringLiteral("camera-photo"));
+                     });
+
+    QindaQt::Session::DesktopControls::KGlobalAccelRegistrar registrar;
+    QindaQt::Session::DesktopControls::DesktopShortcutSet shortcuts(
+        registrar,
+        QindaQt::Session::DesktopControls::DesktopShortcutTriggers{
+            .volumeUp = [&volumeController] { volumeController.raiseVolume(); },
+            .volumeDown = [&volumeController] { volumeController.lowerVolume(); },
+            .toggleMute = [&volumeController] { volumeController.toggleMute(); },
+            .brightnessUp = [&brightnessController] {
+                brightnessController.raiseBrightness();
+            },
+            .brightnessDown = [&brightnessController] {
+                brightnessController.lowerBrightness();
+            },
+            .takeScreenshot = [&screenshotLauncher] { screenshotLauncher.launch(); },
+        },
+        &application);
+
+    QindaQt::Session::DesktopControls::KIdleTimeTracker idleTracker;
+    QindaQt::Session::DesktopControls::KWaylandDpmsController dpmsController;
+    QString dpmsError;
+    if (!dpmsController.start(&dpmsError)) {
+        QTextStream(stderr) << "qindaqt-desktop-controls: display power control "
+                               "unavailable: "
+                            << dpmsError << '\n';
+    }
+
+    QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(sessionBus);
+    QindaQt::Services::SettingsClient::SettingsClient settingsClient(
+        settingsTransport,
+        QindaQt::Session::DesktopControls::Settings1IdlePreferences::scopedKey());
+    QString settingsError;
+    if (!settingsClient.start(&settingsError)) {
+        QTextStream(stderr) << "qindaqt-desktop-controls: settings client failed: "
+                            << settingsError << '\n';
+    }
+    QindaQt::Session::DesktopControls::Settings1IdlePreferences idlePreferences(settingsClient);
+
+    QindaQt::Session::DesktopControls::IdleDisplayPolicy idlePolicy(idlePreferences, idleTracker, dpmsController,
+                                 &application);
+    if (!parser.isSet(QStringLiteral("no-idle-policy"))) {
+        idlePolicy.start();
+    }
+
+    return application.exec();
+}

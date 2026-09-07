@@ -48,6 +48,7 @@ if(TARGET qindaqt_applet_host)
     add_subdirectory(applet_host)
 endif()
 add_subdirectory(session)
+add_subdirectory(session/powerdevil_idle)
 add_subdirectory(settings)
 add_subdirectory(services/settings_protocol)
 add_subdirectory(services/settings_service)
@@ -119,6 +120,10 @@ add_subdirectory(apps/terminal)
 
 if(TARGET qindaqt_session_supervisor_support)
     add_subdirectory(session_supervisor)
+endif()
+
+if(TARGET qindaqt_desktop_controls)
+    add_subdirectory(session/desktop_controls)
 endif()
 
 if(QINDAQT_BUILD_SHELL)

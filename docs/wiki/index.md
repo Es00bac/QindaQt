@@ -57,6 +57,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   Power1, shell-action, fail-closed backlight, and session-bound activation
   architecture, including the resident service, live upstream adapters,
   public client, and activation package.
+- [Desktop controls](architecture/desktop-controls.md) records the
+  session-owned media-key volume/brightness feedback, Print screenshot
+  launch, polkit agent startup, and configurable idle display-off policy.
 - [Network service](architecture/network-service.md) records the resident
   Network1 N1 boundary: the unchanged pure N0 values/model/client, exact-owner
   activating Qt transport, fixed-wire service, confined libnm adapter, and

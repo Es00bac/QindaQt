@@ -118,3 +118,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0102: Adopt restored layouts atomically](0102-adopt-restored-layouts-atomically.md)
 
 - [ADR-0103: Preserve the compositor session during shell recovery](0103-paced-shell-recovery.md)
+- [ADR-0100: Own desktop essentials in a session process](0100-own-desktop-essentials-in-a-session-process.md)
+
+- [ADR-0105: Delegate idle display-off to PowerDevil](0105-delegate-idle-display-off-to-powerdevil.md)

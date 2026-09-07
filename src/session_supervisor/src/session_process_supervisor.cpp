@@ -2,6 +2,7 @@
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 
 #include "qindaqt/session_supervisor/direct_parent_process.h"
+#include "qindaqt/session_supervisor/session_optional_child.h"
 #include "qindaqt/session_supervisor/supervised_process_launcher.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 #include "first_launch_welcome.h"
@@ -58,8 +59,12 @@ std::optional<QStringList> shellProcessArguments(const SessionProcessOptions &op
 }
 
 SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options, QObject *parent)
-    : QObject(parent), m_options(std::move(options)),
-      m_welcome(std::make_unique<FirstLaunchWelcome>())
+    : QObject(parent), m_options(std::move(options))
+      , m_welcome(std::make_unique<FirstLaunchWelcome>())
+      , m_desktopControls(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("desktop-controls"), QStringList{}))
+      , m_polkitAgent(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("polkit-agent"), QStringList{}))
 {
     m_shellRestartTimer.setSingleShot(true);
     m_shellStableTimer.setSingleShot(true);
@@ -67,6 +72,18 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             &SessionProcessSupervisor::attemptShellRestart);
     connect(&m_shellStableTimer, &QTimer::timeout, this,
             &SessionProcessSupervisor::resetShellRestartBackoff);
+    connect(m_desktopControls.get(), &OptionalSessionChild::restarted, this,
+            [this](const QString &, qint64 previousProcessId, qint64 processId) {
+                Q_EMIT desktopControlsRestarted(previousProcessId, processId);
+            });
+    connect(m_polkitAgent.get(), &OptionalSessionChild::restarted, this,
+            [this](const QString &, qint64 previousProcessId, qint64 processId) {
+                Q_EMIT polkitAgentRestarted(previousProcessId, processId);
+            });
+    connect(m_desktopControls.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_polkitAgent.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
     m_networkSecretAgent.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -137,6 +154,7 @@ bool SessionProcessSupervisor::start(QString *error)
     }
     m_running = true;
     startNetworkSecretAgent();
+    startOptionalChildren();
     startWelcome();
     setError(error, {});
     return true;
@@ -169,6 +187,8 @@ void SessionProcessSupervisor::stop() noexcept
         Q_EMIT childStopRequested(QStringLiteral("network-secret-agent"));
     }
     stopChild(m_networkSecretAgent);
+    m_desktopControls->stop();
+    m_polkitAgent->stop();
     m_shellProcessId = 0;
     m_hostProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -228,6 +248,26 @@ qint64 SessionProcessSupervisor::networkSecretAgentProcessId() const noexcept
 int SessionProcessSupervisor::networkSecretAgentRestartCount() const noexcept
 {
     return m_networkSecretAgentRestartCount;
+}
+
+qint64 SessionProcessSupervisor::desktopControlsProcessId() const noexcept
+{
+    return m_desktopControls->processId();
+}
+
+int SessionProcessSupervisor::desktopControlsRestartCount() const noexcept
+{
+    return m_desktopControls->restartCount();
+}
+
+qint64 SessionProcessSupervisor::polkitAgentProcessId() const noexcept
+{
+    return m_polkitAgent->processId();
+}
+
+int SessionProcessSupervisor::polkitAgentRestartCount() const noexcept
+{
+    return m_polkitAgent->restartCount();
 }
 
 qint64 SessionProcessSupervisor::welcomeProcessId() const noexcept
@@ -351,6 +391,15 @@ void SessionProcessSupervisor::startNetworkSecretAgent()
     }
 }
 
+void SessionProcessSupervisor::startOptionalChildren()
+{
+    // AGENT-CONTRACT: both helpers must start after the shell because their
+    // capabilities (compositor global shortcuts, polkit prompt registration)
+    // assume a running compositor session. Absence is skipped, never fatal.
+    m_desktopControls->start(resolveExecutable(m_options.desktopControlsExecutable));
+    m_polkitAgent->start(m_options.polkitAgentExecutable);
+}
+
 void SessionProcessSupervisor::startWelcome()
 {
     // AGENT-CONTRACT: Launch only after the essential shell successfully
@@ -426,6 +475,8 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     }
     stopChild(m_networkSecretAgent);
     m_networkSecretAgentProcessId = 0;
+    m_desktopControls->stop();
+    m_polkitAgent->stop();
     if (role == ChildRole::NotificationHost) {
         m_hostProcessId = 0;
     } else {

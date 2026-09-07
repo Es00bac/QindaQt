@@ -32,6 +32,8 @@ target_compile_definitions(
 set_target_properties(qindaqt_session_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_session_support)
 
+add_subdirectory(desktop_controls)
+
 qt_add_executable(qindaqt-wm main.cpp)
 target_link_libraries(qindaqt-wm PRIVATE QindaQt::SessionSupport Qt6::Core)
 target_compile_definitions(qindaqt-wm PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}")

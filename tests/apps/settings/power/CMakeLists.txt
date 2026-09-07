@@ -21,6 +21,16 @@ add_test(NAME qindaqt.settings-screen-lock-model
 set_tests_properties(qindaqt.settings-screen-lock-model PROPERTIES
     LABELS "settings;power;screen-lock")
 
+qt_add_executable(qindaqt_idle_display_settings_tests
+    tst_idle_display_settings.cpp)
+target_link_libraries(qindaqt_idle_display_settings_tests
+    PRIVATE qindaqt_settings_power Qt6::Test)
+qindaqt_enable_warnings(qindaqt_idle_display_settings_tests)
+add_test(NAME qindaqt.settings-idle-display-model
+    COMMAND qindaqt_idle_display_settings_tests)
+set_tests_properties(qindaqt.settings-idle-display-model PROPERTIES
+    LABELS "settings;power;idle-display")
+
 qt_add_executable(qindaqt_power_settings_slider_tests
     tst_power_settings_slider.cpp power_settings_test_support.h)
 target_link_libraries(qindaqt_power_settings_slider_tests
