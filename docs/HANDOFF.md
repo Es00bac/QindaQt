@@ -1,5 +1,16 @@
 # Integration handoff
 
+## Combined deployment prepared
+
+The existing `.cache/session-checkpoint-current/install.py` now resolves to
+a combined installer. It verifies both payloads before installing either:
+1,077 QindaQt entries and 3,181 Sloom files/symlinks, including file modes.
+The Sloom installer copies the complete package into a staging directory,
+verifies it, then replaces `/opt/sloom-studio` while retaining the previous
+directory as `/opt/sloom-studio.before-qindaqt-f459b0fd`. Both installers
+write installation receipts and leave process restarts to the manager.
+Verification-only execution passes; no system installation has occurred.
+
 ## Final native checks and Sloom package inspection
 
 The compact Settings check is complete: run
