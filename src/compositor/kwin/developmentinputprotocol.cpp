@@ -115,6 +115,8 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
             event.key = DevelopmentInputKey::LeftMeta;
         } else if (key == QStringLiteral("left-alt")) {
             event.key = DevelopmentInputKey::LeftAlt;
+        } else if (key == QStringLiteral("left-control")) {
+            event.key = DevelopmentInputKey::LeftControl;
         } else if (key == QStringLiteral("left-shift")) {
             event.key = DevelopmentInputKey::LeftShift;
         } else if (key == QStringLiteral("f1")) {
@@ -143,6 +145,12 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
             event.key = DevelopmentInputKey::Enter;
         } else if (key == QStringLiteral("v")) {
             event.key = DevelopmentInputKey::V;
+        } else if (key == QStringLiteral("w")) {
+            event.key = DevelopmentInputKey::W;
+        } else if (key == QStringLiteral("volume-up")) {
+            event.key = DevelopmentInputKey::VolumeUp;
+        } else if (key == QStringLiteral("print")) {
+            event.key = DevelopmentInputKey::Print;
         } else {
             return std::nullopt;
         }

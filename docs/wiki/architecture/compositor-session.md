@@ -369,7 +369,9 @@ Development test sessions construct one combined keyboard/pointer
 `KWin::InputDevice` and register it with KWin input redirection. The versioned,
 bounded `InjectTestInput` method emits only the documented absolute pointer,
 left button, and small fixed keyboard allowlist through the ordinary input
-chain; shutdown releases held state before removing the device. Production
+chain. The allowed keyboard names include `volume-up` and `print` for the
+installed daily-controls row, and `left-control`/`w` for the workspace reopen
+row; shutdown releases held state before removing the device. Production
 does not construct the injector, and its gate-before-parse reply is identical
 for malformed and oversized input. This is a deterministic nested-session seam,
 never a public automation API or physical-device claim.

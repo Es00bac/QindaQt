@@ -55,6 +55,8 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
         return KEY_LEFTMETA;
     case DevelopmentInputKey::LeftAlt:
         return KEY_LEFTALT;
+    case DevelopmentInputKey::LeftControl:
+        return KEY_LEFTCTRL;
     case DevelopmentInputKey::LeftShift:
         return KEY_LEFTSHIFT;
     case DevelopmentInputKey::F1:
@@ -83,6 +85,12 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
         return KEY_ENTER;
     case DevelopmentInputKey::V:
         return KEY_V;
+    case DevelopmentInputKey::W:
+        return KEY_W;
+    case DevelopmentInputKey::VolumeUp:
+        return KEY_VOLUMEUP;
+    case DevelopmentInputKey::Print:
+        return KEY_SYSRQ;
     }
     Q_UNREACHABLE_RETURN(0);
 }
@@ -167,6 +175,7 @@ public:
         // scenario can leave compositor modifiers/buttons logically stuck.
         for (const auto key : {DevelopmentInputKey::LeftMeta,
                                DevelopmentInputKey::LeftAlt,
+                               DevelopmentInputKey::LeftControl,
                                DevelopmentInputKey::LeftShift,
                                DevelopmentInputKey::F1,
                                DevelopmentInputKey::F11,
@@ -180,7 +189,10 @@ public:
                                DevelopmentInputKey::Left,
                                DevelopmentInputKey::Right,
                                DevelopmentInputKey::Enter,
-                               DevelopmentInputKey::V}) {
+                               DevelopmentInputKey::V,
+                               DevelopmentInputKey::W,
+                               DevelopmentInputKey::VolumeUp,
+                               DevelopmentInputKey::Print}) {
             if (m_pressedKeys.contains(key)) {
                 dispatch({.type = DevelopmentInputEventType::Key,
                           .position = {},
