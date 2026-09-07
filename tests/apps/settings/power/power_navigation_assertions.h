@@ -28,16 +28,21 @@ inline void verifyCompactPowerNavigation(
       QStringLiteral("compactSettingsRoutePowerLoader"));
   auto *tab = powerSceneItem(window.contentItem(),
       QStringLiteral("settingsCompactTab_power"));
-  auto *profile = powerSceneItem(window.contentItem(),
-      QStringLiteral("powerProfile_balanced"));
+  auto *screenLock = powerSceneItem(window.contentItem(),
+      QStringLiteral("powerAutomaticScreenLock"));
   QVERIFY(loader != nullptr);
   QVERIFY(loader->property("active").toBool());
   QVERIFY(tab != nullptr);
-  QVERIFY(profile != nullptr);
+  QVERIFY(screenLock != nullptr);
+  QVERIFY(screenLock->isEnabled());
+  auto *screenLockAccessible = QAccessible::queryAccessibleInterface(screenLock);
+  QVERIFY(screenLockAccessible != nullptr);
+  QCOMPARE(screenLockAccessible->role(), QAccessible::CheckBox);
+  QVERIFY(screenLockAccessible->state().checkable);
   QTest::keyClick(&window, Qt::Key_Escape);
   QTRY_COMPARE(window.activeFocusItem(), tab);
   QTest::keyClick(&window, Qt::Key_Tab);
-  QTRY_COMPARE(window.activeFocusItem(), profile);
+  QTRY_COMPARE(window.activeFocusItem(), screenLock);
 }
 
 inline void verifyWidePowerNavigation(
@@ -47,14 +52,18 @@ inline void verifyWidePowerNavigation(
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("power"));
   auto *loader = powerSceneItem(window.contentItem(),
       QStringLiteral("wideSettingsRoutePowerLoader"));
-  auto *profile = powerSceneItem(window.contentItem(),
-      QStringLiteral("powerProfile_balanced"));
+  auto *screenLock = powerSceneItem(window.contentItem(),
+      QStringLiteral("powerAutomaticScreenLock"));
   auto *tab = powerSceneItem(window.contentItem(),
       QStringLiteral("settingsNavButton_power"));
   QVERIFY(loader != nullptr);
   QVERIFY(loader->property("active").toBool());
-  QVERIFY(profile != nullptr);
-  QVERIFY(profile->isEnabled());
+  QVERIFY(screenLock != nullptr);
+  QVERIFY(screenLock->isEnabled());
+  auto *screenLockAccessible = QAccessible::queryAccessibleInterface(screenLock);
+  QVERIFY(screenLockAccessible != nullptr);
+  QCOMPARE(screenLockAccessible->role(), QAccessible::CheckBox);
+  QVERIFY(screenLockAccessible->state().checkable);
   QVERIFY(tab != nullptr);
   auto *accessible = QAccessible::queryAccessibleInterface(tab);
   QVERIFY(accessible != nullptr);
@@ -64,7 +73,7 @@ inline void verifyWidePowerNavigation(
   QTest::keyClick(&window, Qt::Key_Escape);
   QTRY_COMPARE(window.activeFocusItem(), tab);
   QTest::keyClick(&window, Qt::Key_Tab);
-  QTRY_COMPARE(window.activeFocusItem(), profile);
+  QTRY_COMPARE(window.activeFocusItem(), screenLock);
 }
 
 } // namespace QindaQt::Apps::SettingsPower::TestSupport
