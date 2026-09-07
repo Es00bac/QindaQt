@@ -108,3 +108,17 @@ add_test(NAME qindaqt.session-resident-service-refresh
 set_tests_properties(
     qindaqt.session-resident-service-refresh PROPERTIES TIMEOUT 15 LABELS "session;dbus"
 )
+
+qt_add_executable(qindaqt_powerdevil_lifetime_tests tst_powerdevil_lifetime.cpp)
+target_link_libraries(qindaqt_powerdevil_lifetime_tests PRIVATE
+    QindaQt::SessionSupervisorSupport Qt6::Test)
+target_compile_definitions(qindaqt_powerdevil_lifetime_tests PRIVATE
+    QINDAQT_SESSION_TOKEN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_token_child_helper>"
+    QINDAQT_SESSION_PLAIN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_plain_child_helper>")
+add_dependencies(qindaqt_powerdevil_lifetime_tests
+    qindaqt_session_token_child_helper qindaqt_session_plain_child_helper)
+qindaqt_enable_warnings(qindaqt_powerdevil_lifetime_tests)
+add_test(NAME qindaqt.session-powerdevil-lifetime
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_powerdevil_lifetime_tests>)
+set_tests_properties(qindaqt.session-powerdevil-lifetime PROPERTIES
+    TIMEOUT 20 LABELS "session;service;dbus")

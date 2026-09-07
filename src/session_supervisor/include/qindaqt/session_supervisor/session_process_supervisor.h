@@ -31,6 +31,9 @@ struct SessionProcessOptions final {
     // means the session has no agent to offer; the caller resolves known
     // distribution paths before constructing the options.
     QString polkitAgentExecutable;
+    // Empty disables the daemon in private sessions; production resolves the
+    // distribution PowerDevil executable before constructing this supervisor.
+    QString powerDevilExecutable;
     QString profileId;
     QString themeId;
     qint64 compositorProcessId = 0;
@@ -42,7 +45,7 @@ struct SessionProcessOptions final {
     const SessionProcessOptions &options, QString *error = nullptr);
 
 // Owns the essential notification host and shell plus optional installed
-// network-secret-agent, desktop-controls, polkit-agent and first-launch
+// network-secret-agent, desktop-controls, polkit-agent, PowerDevil and first-launch
 // Welcome children. The host is
 // session-resident; an unexpected shell exit schedules a paced replacement
 // with a fresh token descriptor while the host remains healthy. Retry delay is
@@ -74,6 +77,7 @@ public:
     [[nodiscard]] int networkSecretAgentRestartCount() const noexcept;
     [[nodiscard]] qint64 desktopControlsProcessId() const noexcept;
     [[nodiscard]] int desktopControlsRestartCount() const noexcept;
+    [[nodiscard]] qint64 powerDevilProcessId() const noexcept;
     [[nodiscard]] qint64 polkitAgentProcessId() const noexcept;
     [[nodiscard]] int polkitAgentRestartCount() const noexcept;
     [[nodiscard]] qint64 welcomeProcessId() const noexcept;
@@ -119,6 +123,7 @@ private:
     std::unique_ptr<FirstLaunchWelcome> m_welcome;
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
+    std::unique_ptr<OptionalSessionChild> m_powerDevil;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_token;
     qint64 m_hostProcessId = 0;

@@ -65,6 +65,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             QStringLiteral("desktop-controls"), QStringList{}))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
             QStringLiteral("polkit-agent"), QStringList{}))
+      , m_powerDevil(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("powerdevil"), QStringList{}))
 {
     m_shellRestartTimer.setSingleShot(true);
     m_shellStableTimer.setSingleShot(true);
@@ -83,6 +85,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(m_desktopControls.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_polkitAgent.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_powerDevil.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -189,6 +193,7 @@ void SessionProcessSupervisor::stop() noexcept
     stopChild(m_networkSecretAgent);
     m_desktopControls->stop();
     m_polkitAgent->stop();
+    m_powerDevil->stop();
     m_shellProcessId = 0;
     m_hostProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -258,6 +263,11 @@ qint64 SessionProcessSupervisor::desktopControlsProcessId() const noexcept
 int SessionProcessSupervisor::desktopControlsRestartCount() const noexcept
 {
     return m_desktopControls->restartCount();
+}
+
+qint64 SessionProcessSupervisor::powerDevilProcessId() const noexcept
+{
+    return m_powerDevil->processId();
 }
 
 qint64 SessionProcessSupervisor::polkitAgentProcessId() const noexcept
@@ -396,6 +406,9 @@ void SessionProcessSupervisor::startOptionalChildren()
     // AGENT-CONTRACT: both helpers must start after the shell because their
     // capabilities (compositor global shortcuts, polkit prompt registration)
     // assume a running compositor session. Absence is skipped, never fatal.
+    // PowerDevil owns the idle timer and inhibitors. Keep it in this process
+    // tree because QindaQt does not activate graphical-session.target.
+    m_powerDevil->start(m_options.powerDevilExecutable);
     m_desktopControls->start(resolveExecutable(m_options.desktopControlsExecutable));
     m_polkitAgent->start(m_options.polkitAgentExecutable);
 }
@@ -477,6 +490,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     m_networkSecretAgentProcessId = 0;
     m_desktopControls->stop();
     m_polkitAgent->stop();
+    m_powerDevil->stop();
     if (role == ChildRole::NotificationHost) {
         m_hostProcessId = 0;
     } else {
