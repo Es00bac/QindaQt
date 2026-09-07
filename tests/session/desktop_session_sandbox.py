@@ -24,6 +24,11 @@ RUN_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
 # aliases do not exist even when /usr is mounted. Keep these as relative
 # in-sandbox links; binding host /lib* would broaden the evidence boundary.
 MERGED_USR_LIBRARY_ALIASES = (("usr/lib", "/lib"), ("usr/lib64", "/lib64"))
+# AGENT-CONTRACT: the `tests` ReadOnlyMount already binds the whole
+# source_root read-only at /opt/qindaqt-source, so this fixture needs no
+# mount of its own. Keep this path in sync with
+# tests/session/fontconfig/private-runtime/fonts.conf.
+FONTCONFIG_FILE_PATH = "/opt/qindaqt-source/tests/session/fontconfig/private-runtime/fonts.conf"
 FORBIDDEN_ENVIRONMENT = frozenset(
     {
         "DISPLAY",
@@ -247,6 +252,12 @@ def sandbox_environment(
         "KWIN_COMPOSE": "Q",
         "QT_QPA_PLATFORM": "wayland",
         "QT_QUICK_BACKEND": "software",
+        # AGENT-GUARD: The sandbox root has no /etc/fonts, so fontconfig's
+        # compiled-in default config path is absent and every client fails
+        # closed with "Cannot load default config file". Point it at the
+        # self-contained fixture already covered by the `tests` source_root
+        # mount, so no extra mount or destination is needed.
+        "FONTCONFIG_FILE": FONTCONFIG_FILE_PATH,
         # AGENT-GUARD: A private desktop has no portal authority. Letting Qt
         # activate the host-installed portal stack can transiently spawn a
         # second dbus-daemon inside the PID namespace and invalidate the exact

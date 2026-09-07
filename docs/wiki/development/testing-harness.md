@@ -99,6 +99,34 @@ package. The dependency-light Arch CI job installs and records that package so
 the generated client bindings are available in both the core and production
 shell builds.
 
+### Private desktop-session sandbox fontconfig provisioning
+
+The bwrap sandbox built by `tests/session/desktop_session_sandbox.py`
+(`build_bwrap_argv`) starts every nested run from an empty `--tmpfs /` root.
+It binds `/etc/machine-id`, `/etc/passwd`, `/etc/group`, and (through
+`system_mounts`) `/etc/ld.so.cache`, but never `/etc/fonts`, so fontconfig's
+compiled-in `/etc/fonts/fonts.conf` does not exist there and any client that
+touches text rendering fails closed with `Cannot load default config file`.
+
+`sandbox_environment()` fixes this by setting `FONTCONFIG_FILE` to
+`/opt/qindaqt-source/tests/session/fontconfig/private-runtime/fonts.conf`
+(`FONTCONFIG_FILE_PATH` in `desktop_session_sandbox.py`). That path is already
+covered by the `tests` `ReadOnlyMount`, which every caller binds read-only at
+`/opt/qindaqt-source` — no additional mount, destination, or writable cache
+bind is required. The fixture itself is self-contained (it does not
+`<include>` any host config), lists `/usr/share/fonts` (already visible
+through the sandbox's `system_mounts` `/usr` bind) and the checked-in
+`tests/controls/fonts` fixture as its only font directories, and points its
+cache at the sandbox's writable per-run XDG cache directory. It is verified
+in `test_desktop_session_runtime_boundary_unit.py` both structurally (the env
+var names the fixture, and the fixture file exists) and by an actual
+`fc-match` parse of the checked-in fixture (with only the in-sandbox source
+path rewritten to the real repository path and the cache directory
+redirected to a throwaway temp directory) that resolves the vendored
+`QindaQt Sans` family. This closes font resolution for the private runtime
+only; it makes no claim about any specific shell/Settings rendering defect,
+since verifying that requires a recapture inside the actual nested session.
+
 ## Continuous integration lanes
 
 The GitHub workflow keeps dependency policy, the portable value layer, and the
