@@ -33,6 +33,7 @@ RDEPEND="
 	~kde-plasma/powerdevil-6.6.6
 	=kde-plasma/spectacle-6.6.6*:6=
 	=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6=
+	>=kde-frameworks/kconfig-6.0:6=
 	>=kde-frameworks/kcoreaddons-6.0:6=
 	>=kde-frameworks/kglobalaccel-6.0:6=
 	>=kde-frameworks/kidletime-6.0:6=
