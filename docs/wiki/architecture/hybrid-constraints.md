@@ -123,14 +123,18 @@ Current group-wide controls have these semantics:
   (`WindowItem::refVisible(PAINT_DISABLED_BY_HIDDEN)`) with its own
   content/decoration/shadow explicitly hidden, so the strip itself stays
   visible and draggable while every member's content and input are genuinely
-  gone. Group stacking exempts a shaded container's non-anchor members from
-  its live-stack same-layer/contiguous-block checks (they name the
-  content-preserving anchor via `HybridShadeController::anchorWindowId`),
-  since those checks exist to protect visible, input-eligible members and
-  would otherwise treat the genuinely-hidden siblings as a broken group and
-  drop the published chrome overlay entirely, making the strip unclickable
-  and undraggable after the first shade. The container is never added to the
-  minimized set: shaded and
+  gone. Its chrome plan carries no tabs, members, or dividers at all (the
+  whole hit-testable rectangle is exactly the strip row), the chrome
+  manager's plan validation checks that reduced shape's own invariant
+  instead of the ordinary plan's tab/page-order check, group stacking
+  exempts the non-anchor members from its live-stack same-layer/contiguous-
+  block checks (they name the content-preserving anchor via
+  `HybridShadeController::anchorWindowId`), and a press on the strip skips
+  the ordinary raise/activate step (the anchor is deliberately hidden, not a
+  real client to activate). Live-verified: without all three, the published
+  chrome overlay dropped to zero on the first shade, or a drag on the strip
+  unhid and natively detached the container's other member as a side
+  effect. The container is never added to the minimized set: shaded and
   minimized are independent states, and a shaded container keeps reporting
   its native task/switcher/dock presence unminimized. **Unroll** performs the
   one real reflow in this lifecycle, back to the original size at the strip's

@@ -178,6 +178,29 @@ inline HybridChrome::ChromeRenderPlan makePlan(
     return std::move(*plan);
 }
 
+// A shaded container's plan intentionally carries no tabs/members/dividers
+// regardless of how many pages the topology has (see
+// HybridChromePlanBuilder::build's shaded branch): the whole visible/
+// hit-testable rectangle is exactly the strip row.
+inline HybridChrome::ChromeRenderPlan makeShadedPlan(
+    const Core::WindowContainer &container,
+    HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::standard(
+        HybridChrome::ButtonSide::Right),
+    QRectF outerRect = QRectF(0.0, 0.0, 400.0, 32.0))
+{
+    HybridChrome::ChromeLayoutRequest request;
+    request.containerId = container.id();
+    request.outerRect = outerRect;
+    request.shaded = true;
+    request.style = std::move(style);
+    QString error;
+    auto plan = HybridChrome::ChromeLayoutEngine::build(request, &error);
+    if (!plan) {
+        qFatal("chrome fixture failed: %s", qPrintable(error));
+    }
+    return std::move(*plan);
+}
+
 inline KWinChromeManager::ChromePlanMap plansFor(
     const Hybrid::WindowTopology &topology,
     HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::standard(
