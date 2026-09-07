@@ -1,5 +1,20 @@
 # Integration handoff
 
+## Gabbee command shortcut activation verified
+
+Private run `29894db03d7d49d2ad9766a346b3f181` passes all four phases
+against the real KDE GlobalShortcuts backend. The actual Gabbee binding receives
+exactly one command pressed and one command released callback from injected
+F11 input, with the duplicate-observation window retained. This complements
+the earlier push-to-talk F1 activation proof. User-specific F23/F24 bindings
+and physical microphone transcription are outside these synthetic-input checks.
+
+The manager also compared the newly installed compositor plugin with the
+pre-install backup: they are byte-identical. The existing compositor session
+already loaded the accepted changes; this refresh does not require a logout.
+A fresh host screenshot was unavailable through both Spectacle and the
+standard screenshot portal (response 2); no successful host capture is claimed.
+
 ## Installed checkpoint and component refresh
 
 The user entered sudo credentials in a native terminal. Both installers

@@ -858,7 +858,16 @@
               "summary": "Real KDE GlobalShortcuts backend registers both Gabbee ids; native private F1 activation reaches push-to-talk pressed/released callbacks exactly once (4/4 phases)."
             }
           ],
-          "caveat": "Standalone/group Terminal insertion through the real Gabbee sink and approved RemoteDesktop portal is qualified privately. Both shortcut ids register with the real KDE backend; push-to-talk native activation is verified with private F1. Command activation, user-specific key mappings and physical microphone transcription are not separately claimed."
+          "caveat": "Standalone/group Terminal insertion through the real Gabbee sink and approved RemoteDesktop portal is qualified privately. Push-to-talk F1 and command F11 each have exactly-once native press/release evidence against the real KDE backend. User-specific F23/F24 activation and physical microphone transcription are not claimed.",
+          "stoppingPoint": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "docs/HANDOFF.md",
+                "summary": "Native command shortcut run 29894db03d7d49d2ad9766a346b3f181 passes 4/4 phases and exactly-once callbacks, complementing the existing push-to-talk activation evidence."
+              }
+            ]
+          }
         }
       ],
       "stoppingPoint": {
