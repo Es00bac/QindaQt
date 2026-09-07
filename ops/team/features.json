@@ -851,9 +851,14 @@
               "kind": "test",
               "reference": "docs/wiki/development/gabbee-interop-evidence.md",
               "summary": "Two private real-portal runs each pass 11/11 phases. Manager independently verifies all four standalone/group Unicode PTY output files and real sink receipts."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/HANDOFF.md",
+              "summary": "Real KDE GlobalShortcuts backend registers both Gabbee ids; native private F1 activation reaches push-to-talk pressed/released callbacks exactly once (4/4 phases)."
             }
           ],
-          "caveat": "Standalone/group Terminal insertion through the real Gabbee sink and approved RemoteDesktop portal is qualified in the private desktop. Physical microphone transcription and native global-shortcut activation remain distinct; fake-backend shortcut tests alone do not prove native activation."
+          "caveat": "Standalone/group Terminal insertion through the real Gabbee sink and approved RemoteDesktop portal is qualified privately. Both shortcut ids register with the real KDE backend; push-to-talk native activation is verified with private F1. Command activation, user-specific key mappings and physical microphone transcription are not separately claimed."
         }
       ],
       "stoppingPoint": {
