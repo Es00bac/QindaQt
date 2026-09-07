@@ -10,6 +10,7 @@ tests, and the wiki page describing its contract.
 | --- | --- | --- |
 | `compositor` | Immutable upstream KWin pin, downstream patch inventory and verifier, and checked-in compositor IPC descriptors | Repository tooling and upstream source metadata; never shell implementation |
 | `src/workspaces_apps` | XDG application lookup and asynchronous desktop-entry launch | Qt Core, KF6 Service and KIOGui; no persistence, matching, compositor or UI policy |
+| `src/workspaces_ui` | Compact native Qt Widgets saved-workspace dialogs backed by public Workspaces values and a borrowed synchronous platform port | Public Workspaces/Core values plus Qt Widgets; never KWin objects, application-launch implementation, persistence policy, or matching/adoption logic |
 | `src/workspaces` | Saved workspace values, slot assignment, container instantiation and atomic workspace storage | Public Core plus Qt Core; never live compositor handles, app launching, shell or QML |
 | `src/core` | Pure window-container domain model, mutations, invariants, and persistence-neutral values | Qt Core and the C++ standard library |
 | `src/hybrid` | Session-wide window ownership, typed topology commands, and atomic candidate/scene publication | `core` and Qt Core; never KWin objects or input events |
