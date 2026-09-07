@@ -28,7 +28,7 @@ CMake edits were restored exactly after the fast-forward. The schema retains
 all three Calendar preferences alongside the new idle preference; a backup
 stash and the original patch are retained in the manager's ignored scratch area.
 
-## Gentoo package build passed; host merge pending
+## Gentoo development checkpoint installed; release acceptance pending
 
 The full package pinned to `d1232e75` built successfully through Portage's
 compile, install-image, and package phases. Compilation resumed with 24 jobs
@@ -42,8 +42,16 @@ The local overlay and package-specific keyword are configured. Portage's
 host plan resolves the desktop package and replacement of the apps-only
 package with all blockers satisfied. Apps-only was deselected without
 uninstalling its files; a fresh rollback gpkg was created from the installed
-apps. No host merge or session restart has occurred. The pending screenshot
-ownership repair requires a new final source pin before release installation.
+apps. The binary package then merged successfully and replaced the apps-only
+package. Portage CONTENTS confirms ownership of the desktop and app files.
+The inactive QindaQt session was ended for the merge; SDDM and TTY workers
+were retained. A fresh login uses this development checkpoint.
+
+The installed Terminal launched its shell with real PTY input/output and
+executed a proof command. This offscreen check is narrower than a complete
+GUI acceptance run. The pending screenshot ownership repair requires a new
+final source pin, and installed-session workspace/desktop-control acceptance
+and the release tag remain open.
 
 ## Shell recovery integration
 
