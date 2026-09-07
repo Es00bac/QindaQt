@@ -658,10 +658,24 @@ ctest --test-dir build/dev \
   --output-on-failure
 ```
 
+For a renderer-qualified 1080p row, retain the scenegraph backend trace without
+overriding backend or render-loop policy:
+
+```sh
+QT_LOGGING_RULES='qt.scenegraph.general=true' \
+  ctest --test-dir build/dev -V \
+  -R '^shell\.production-surface\.1080p$' --no-tests=error
+```
+
+The trace must identify a QRhi backend selected by Qt. A trace that says
+`Loading backend software` remains valid layer-protocol evidence but does not
+qualify the production renderer.
+
 Each row boots a disposable virtual KWin session without enabling compositor
 mutation APIs. A painted ordinary client first maximizes to the complete
 output. The production `qindaqt-shell` then loads the schema-valid
-`qindaqt-surface-proof` fixture and maps exactly two real layer surfaces. The
+`qindaqt-surface-proof` fixture and maps exactly three real layer surfaces: one
+background-layer desktop, one top-layer bar, and one top-layer shelf. The
 fixture retains QindaQt's qualified top-bar and 52%-width shelf geometry but
 sets both hide modes to `never`. This keeps the initial-publication/work-area
 proof independent from the live intelligent-hide policy that a maximized
@@ -677,18 +691,23 @@ chain can establish the active mapped epoch. The probe freezes that exact epoch
 while the reduced work area is observable, before shell teardown. Later or
 unacknowledged configures and uncommitted setters cannot backfill the proof.
 
-Both roles must request layer 2 when created. The top role's committed state
-must be layer 2, anchors 13, edge/zone 1/30, and desired size `(0, 30)`; the
-bottom shelf role must commit layer 2, anchors 6, edge/zone 2/54, and the
-profile's exact 52%-width desired size. Both mapped configure sizes are checked
-against the live output. The ordinary client must then maximize to the reduced
-work area and return to the complete output after shell exit. Qualified logical
-sizes are
+The desktop role must request background layer 0, anchors 15, no exclusive
+edge, exclusive zone -1, desired size `(0, 0)`, and the complete configured
+output size. Both panel roles must request layer 2 when created. The top role's
+committed state must be layer 2, anchors 13, edge/zone 1/30, and desired size
+`(0, 30)`; the bottom shelf role must commit layer 2, anchors 6, edge/zone 2/54,
+and the profile's exact 52%-width desired size. Both mapped configure sizes are
+checked against the live output. The ordinary client must then maximize to the
+reduced work area and return to the complete output after shell exit. Qualified
+logical sizes are
 1920x1080 -> 1920x996 -> 1920x1080, 1920x1200 -> 1920x1116 -> 1920x1200, and
 2560x1440 -> 2560x1356 -> 2560x1440.
 
-This proves real top/bottom layer roles, work-area causality, and teardown at
-three resolutions. `shell.surface-protocol-trace` separately exercises stream
+This proves the real desktop/top/bottom layer roles, work-area causality, and
+teardown at three resolutions. The surface row removes the shared nested
+helper's `QT_QUICK_BACKEND=software` fixture so Qt selects its production RHI
+backend; scenegraph render-loop policy remains owned by the production shell
+entry point. `shell.surface-protocol-trace` separately exercises stream
 fragmentation, bounded line/chunk/capture rejection, pending-versus-committed
 state, multiple configure selection and ordering, null/unmapped attaches, and
 object-ID reuse/destroy ambiguity. Relevant malformed or over-bounded input

@@ -9,19 +9,24 @@ from typing import Any, Protocol
 EXPECTED_TOP_ZONE = 30
 EXPECTED_BOTTOM_ZONE = 54
 EXPECTED_RESERVATION = EXPECTED_TOP_ZONE + EXPECTED_BOTTOM_ZONE
-EXPECTED_SURFACE_COUNT = 2
-EXPECTED_SCOPE = "dock"
+EXPECTED_SURFACE_COUNT = 3
+DESKTOP_SCOPE = "desktop"
+PANEL_SCOPE = "dock"
+LAYER_BACKGROUND = 0
 LAYER_TOP = 2
+NO_EXCLUSIVE_EDGE = 0
 ANCHOR_TOP = 1
 ANCHOR_BOTTOM = 2
 ANCHOR_LEFT = 4
 ANCHOR_RIGHT = 8
 TOP_ANCHORS = ANCHOR_TOP | ANCHOR_LEFT | ANCHOR_RIGHT
 BOTTOM_ANCHORS = ANCHOR_BOTTOM | ANCHOR_LEFT
+ALL_ANCHORS = ANCHOR_TOP | ANCHOR_BOTTOM | ANCHOR_LEFT | ANCHOR_RIGHT
 
 
 class LogicalOutputSpec(Protocol):
     logical_width: int
+    logical_height: int
 
 
 def _object(value: Any, location: str) -> dict[str, Any]:
@@ -141,7 +146,10 @@ def _protocol_surfaces(protocol: dict[str, Any], location: str) -> list[dict[str
             raise RuntimeError(f"{location} is unusable because {flag} is true")
     surfaces = _object_list(protocol.get("surfaces"), f"{location}.surfaces")
     if len(surfaces) != EXPECTED_SURFACE_COUNT:
-        raise RuntimeError(f"{location} observed {len(surfaces)} roles instead of two")
+        raise RuntimeError(
+            f"{location} observed {len(surfaces)} roles; expected exactly one "
+            "desktop, top bar, and shelf"
+        )
     return surfaces
 
 
@@ -155,10 +163,22 @@ def _surface_identity(
     )
 
 
-def _surface_contracts(spec: LogicalOutputSpec) -> dict[int, dict[str, Any]]:
+def _surface_contracts(
+    spec: LogicalOutputSpec,
+) -> dict[tuple[str, int], dict[str, Any]]:
     shelf_width = (spec.logical_width * 52 + 50) // 100
     return {
-        ANCHOR_TOP: {
+        (DESKTOP_SCOPE, NO_EXCLUSIVE_EDGE): {
+            "name": "desktop",
+            "layer": LAYER_BACKGROUND,
+            "anchors": ALL_ANCHORS,
+            "exclusiveEdge": NO_EXCLUSIVE_EDGE,
+            "exclusiveZone": -1,
+            "desiredSize": (0, 0),
+            "configured": (spec.logical_width, spec.logical_height),
+        },
+        (PANEL_SCOPE, ANCHOR_TOP): {
+            "name": "top bar",
             "layer": LAYER_TOP,
             "anchors": TOP_ANCHORS,
             "exclusiveEdge": ANCHOR_TOP,
@@ -166,7 +186,8 @@ def _surface_contracts(spec: LogicalOutputSpec) -> dict[int, dict[str, Any]]:
             "desiredSize": (0, EXPECTED_TOP_ZONE),
             "configured": (spec.logical_width, EXPECTED_TOP_ZONE),
         },
-        ANCHOR_BOTTOM: {
+        (PANEL_SCOPE, ANCHOR_BOTTOM): {
+            "name": "shelf",
             "layer": LAYER_TOP,
             "anchors": BOTTOM_ANCHORS,
             "exclusiveEdge": ANCHOR_BOTTOM,
@@ -241,8 +262,9 @@ def validate_active_protocol(
 ) -> set[tuple[str, str, str]]:
     surfaces = _protocol_surfaces(protocol, location)
     identities: set[tuple[str, str, str]] = set()
-    surfaces_by_edge: dict[
-        int, tuple[dict[str, Any], dict[str, Any], str, int]
+    contracts = _surface_contracts(spec)
+    surfaces_by_role: dict[
+        tuple[str, int], tuple[dict[str, Any], dict[str, Any], str, int]
     ] = {}
     for index, surface in enumerate(surfaces):
         surface_location = f"{location}.surfaces[{index}]"
@@ -252,8 +274,9 @@ def validate_active_protocol(
         identities.add(identity)
         if _integer(surface.get("requestCount"), f"{surface_location}.requestCount") != 1:
             raise RuntimeError(f"{surface_location} reused one protocol role ID")
-        if surface.get("scope") != EXPECTED_SCOPE:
-            raise RuntimeError(f"{surface_location} did not use the QindaQt dock scope")
+        scope = surface.get("scope")
+        if not isinstance(scope, str) or not scope:
+            raise RuntimeError(f"{surface_location}.scope must be a non-empty string")
         initial_layer = _integer(
             surface.get("initialLayer"), f"{surface_location}.initialLayer"
         )
@@ -273,9 +296,11 @@ def validate_active_protocol(
             surface.get("committedState"), f"{surface_location}.committedState"
         )
         edge = committed_state["exclusiveEdge"]
-        if edge in surfaces_by_edge:
-            raise RuntimeError(f"multiple layer surfaces claimed exclusive edge {edge}")
-        surfaces_by_edge[edge] = (
+        role = (scope, edge)
+        if role in surfaces_by_role:
+            name = contracts.get(role, {}).get("name", repr(role))
+            raise RuntimeError(f"multiple layer surfaces claimed the {name} role")
+        surfaces_by_role[role] = (
             surface,
             committed_state,
             surface_location,
@@ -289,14 +314,13 @@ def validate_active_protocol(
         raise RuntimeError(f"layer surfaces targeted different outputs: {sorted(output_ids)}")
     if output_ids.intersection(role_ids | surface_ids) or role_ids.intersection(surface_ids):
         raise RuntimeError("live Wayland objects reused an identity")
-    contracts = _surface_contracts(spec)
-    if set(surfaces_by_edge) != set(contracts):
+    if set(surfaces_by_role) != set(contracts):
         raise RuntimeError(
-            "expected one top and one bottom exclusive edge, observed "
-            f"{sorted(surfaces_by_edge)}"
+            "expected exactly one desktop, top bar, and shelf role, observed "
+            f"{sorted(surfaces_by_role)}"
         )
-    for edge, contract in contracts.items():
-        surface, committed_state, surface_location, initial_layer = surfaces_by_edge[edge]
+    for role, contract in contracts.items():
+        surface, committed_state, surface_location, initial_layer = surfaces_by_role[role]
         if initial_layer != contract["layer"]:
             raise RuntimeError(
                 f"{surface_location}.initialLayer was {initial_layer}, "

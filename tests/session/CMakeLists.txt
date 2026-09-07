@@ -175,9 +175,17 @@ add_test(
         "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_unit.py"
 )
+add_test(
+    NAME session.shell-surface-protocol-validation
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_shell_surface_protocol_validation_unit.py"
+)
 set_tests_properties(
     session.nested-scenario-parser
     session.notification-live-driver-unit
+    session.shell-surface-protocol-validation
     PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" LABELS unit
 )
 
@@ -198,6 +206,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/shell_surface_protocol_validation.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_shell_surface_protocol_validation_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_measure.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_capture.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_evidence.py"
