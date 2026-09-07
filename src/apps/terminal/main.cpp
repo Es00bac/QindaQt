@@ -6,6 +6,7 @@
 #include "session/terminal_session.h"
 #include "session/terminal_session_collection.h"
 #include "ui/terminal_appearance.h"
+#include "ui/terminal_startup.h"
 #include "ui/terminal_widget_adapter.h"
 #include "ui/terminal_window.h"
 
@@ -24,14 +25,12 @@
 #include <QFileInfo>
 #include <QMenuBar>
 #include <QProcessEnvironment>
-#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QWindow>
 
 #include <cstdio>
-#include <algorithm>
 #include <memory>
 
 #include <qindaqt/app_shell/menu_export/first_party_composition.h>
@@ -328,39 +327,7 @@ int main(int argc, char **argv) {
   TerminalLinkOpener linkOpener(TerminalLinkOpener::resolveXdgOpen(),
                                 &linkSpawner, &linkConfirmation);
 
-  // A second Terminal is another process, so QindaQt containers remain the
-  // sole owner of window tab/split topology. The launched process resolves
-  // the selected persisted profile itself; this dispatch intentionally never
-  // waits for that process to create a window or start its shell.
-  const QString executable = QCoreApplication::applicationFilePath();
-  const auto launchAnotherTerminal =
-      [executable, &parser](const TerminalProfile &profile,
-                            const QString &workingDirectory) -> QString {
-    QStringList arguments;
-    arguments << QStringLiteral("--profile") << profile.id;
-    if (parser.isSet(QStringLiteral("theme"))) {
-      arguments << QStringLiteral("--theme")
-                << parser.value(QStringLiteral("theme"));
-    }
-    if (parser.isSet(QStringLiteral("theme-directory"))) {
-      arguments << QStringLiteral("--theme-directory")
-                << parser.value(QStringLiteral("theme-directory"));
-    }
-    if (parser.isSet(QStringLiteral("shell"))) {
-      arguments << QStringLiteral("--shell")
-                << parser.value(QStringLiteral("shell"));
-    }
-    for (const QString &argument : parser.values(QStringLiteral("arg"))) {
-      arguments << QStringLiteral("--arg") << argument;
-    }
-    if (!workingDirectory.isEmpty()) {
-      arguments << QStringLiteral("--working-directory") << workingDirectory;
-    }
-    if (!QProcess::startDetached(executable, arguments)) {
-      return QStringLiteral("could not start another Terminal process");
-    }
-    return {};
-  };
+  const auto launchAnotherTerminal = makeNewTerminalLauncher(parser);
 
   TerminalWindow window(std::move(collection), *appearance.appearance,
                         availableThemeIds(themeDirectories), &profileSettings,
@@ -386,30 +353,16 @@ int main(int argc, char **argv) {
         state == QindaQt::Services::SettingsClient::ClientState::Degraded ||
         (state == QindaQt::Services::SettingsClient::ClientState::Unavailable &&
          !settingsClient.lastError().isEmpty());
-    // A successfully started client begins Unavailable while activation is
-    // still pending. Do not race that transient state with startup: a
-    // persisted default profile must win when an owner is discoverable.
-    if (!profileSettings.baselineReceived() && !definitiveFallback) {
+    if (!initialSessionReady(profileSettings, definitiveFallback)) {
       return;
     }
     firstSessionStarted = true;
-    TerminalProfile profile = profileSettings.defaultProfile();
-    if (!requestedProfileId.isEmpty() &&
-        requestedProfileId != builtinDefaultProfileId()) {
-      const auto profiles = profileSettings.userProfiles();
-      const auto found = std::find_if(
-          profiles.cbegin(), profiles.cend(), [&requestedProfileId](
-                                                   const TerminalProfile &item) {
-            return item.id == requestedProfileId;
-          });
-      if (found == profiles.cend()) {
-        std::fprintf(stderr, "qindaqt-terminal: saved profile is unavailable: %s\n",
-                     qPrintable(requestedProfileId));
-      } else {
-        profile = *found;
-      }
-    } else if (requestedProfileId == builtinDefaultProfileId()) {
-      profile = builtinDefaultProfile();
+    QString unavailableProfile;
+    const TerminalProfile profile = initialSessionProfile(
+        profileSettings, requestedProfileId, &unavailableProfile);
+    if (!unavailableProfile.isEmpty()) {
+      std::fprintf(stderr, "qindaqt-terminal: saved profile is unavailable: %s\n",
+                   qPrintable(unavailableProfile));
     }
     window.startSession(profile);
     if (auto *active = window.session();

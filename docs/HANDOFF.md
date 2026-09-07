@@ -61,10 +61,10 @@ component; Gabbee CMake rows and process-start helpers are split without
 changing test names or startup order. The limits were not relaxed.
 Root reran the integrated Gabbee units: 26 passed; the PTY suite ran 21 with
 two documented real-sink skips. Candidate offscreen QML coverage passed 8/8.
-The integrated checker confirms the three original errors are gone but finds
-one new error from the Terminal change: `main()` spans 225 lines (limit 180).
-Terra owns a focused helper extraction before the next CI push. Remote native
-CI remains unpassed; no release qualification is claimed.
+The integrated checker now passes with zero errors after the Terminal startup
+helper repair (`abe3413a`). That repair preserves profile/argument handling and
+reduces `main()` to 179 lines. Remote native CI remains unpassed; no release
+qualification is claimed.
 
 ## Terminal now leaves tabs and splits to containers
 

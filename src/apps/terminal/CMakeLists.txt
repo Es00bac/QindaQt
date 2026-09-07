@@ -28,6 +28,7 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     ui/terminal_profile_apply_status.cpp
     ui/terminal_profile_dialog.cpp
     ui/terminal_find_bar.cpp
+    ui/terminal_startup.cpp
     ui/terminal_window.cpp
     ui/terminal_window_actions.cpp
     ui/terminal_window_links.cpp
