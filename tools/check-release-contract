@@ -86,6 +86,7 @@ def verify_repository() -> tuple[str, str]:
         f"=kde-plasma/plasma-activities-{release}*:6",
         f"=kde-plasma/spectacle-{release}*:6",
         f"=kde-plasma/xdg-desktop-portal-kde-{release}*:6",
+        ">=kde-frameworks/kconfig-6.0:6=",
         ">=kde-frameworks/kidletime-6.0:6=",
         ">=kde-frameworks/kio-6.0:6=",
         ">=kde-frameworks/kservice-6.0:6=",

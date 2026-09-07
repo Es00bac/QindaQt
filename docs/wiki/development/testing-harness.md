@@ -105,6 +105,12 @@ device is not an acceptable substitute. The target is built with
 the nested-session owner because only that owner can provide the isolated
 synthetic pointer and focus transitions.
 
+The probe initializes its core `wl_pointer` listener with named assignments
+after zero-initialization. This keeps callbacks for newer optional protocol
+events, such as `wl_pointer.warp` introduced in core protocol version 11, null
+until the qualification has an explicit assertion for them; it also keeps the
+probe buildable against older generated headers.
+
 Building this target also requires the distribution's `wayland-protocols`
 package. The dependency-light Arch CI job installs and records that package so
 the generated client bindings are available in both the core and production
