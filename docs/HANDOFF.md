@@ -1,5 +1,22 @@
 # Integration handoff
 
+## Native Gabbee shortcut routing verified
+
+Private run `bd01eade1a1442d7ac9bc4147ac293d2` passes 4/4 phases against the
+real `/usr/libexec/xdg-desktop-portal-kde` backend. Both `push_to_talk` and
+`command` register using private test bindings F1/F11. An F1 press/release
+through the compositor keyboard path produces exactly one Gabbee push-to-talk
+pressed callback and one released callback, with a duplicate-observation
+window. Manager inspected the real backend executable evidence, registrations,
+input route and callback events. This does not assert that the command binding
+was activated or that physical microphone capture was tested.
+
+Private font configuration `6b628be9` passes independent and integrated focused
+checks (10/10 each), including real fc-match parsing. Its minimal environment
+patch and fixture are copied to the frozen visual runtime with the original
+file preserved under `.cache/fontconfig-frozen-backup`. The private shell stage
+is refreshed to popup-controls `375dc660`; Settings visual acceptance is next.
+
 ## Popup controls follow the shared theme
 
 Integrated `375dc660` completes the themed-button repair for Clipboard Close,
