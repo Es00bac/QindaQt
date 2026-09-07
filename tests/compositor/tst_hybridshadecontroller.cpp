@@ -88,6 +88,11 @@ void HybridShadeControllerTests::shadesEveryMemberAndOnlyTheAnchorGetsContentHid
     QCOMPARE(platform.hiddenMembers,
              (QStringList{QStringLiteral("a"), QStringLiteral("c")}));
     QCOMPARE(platform.hiddenAnchorContents, QStringList{QStringLiteral("b")});
+    // Group stacking reads this to exempt the shaded, non-anchor members
+    // from its live-stack contiguity/layer checks (see
+    // KWinHybridGroupStacking::synchronize's shadedAnchors parameter).
+    QCOMPARE(controller.anchorWindowId(QStringLiteral("group")),
+             QStringLiteral("b"));
 }
 
 void HybridShadeControllerTests::unshadesExactlyWhatWasHiddenRegardlessOfCurrentTopology()
@@ -102,6 +107,7 @@ void HybridShadeControllerTests::unshadesExactlyWhatWasHiddenRegardlessOfCurrent
     QVERIFY(!controller.isShaded(QStringLiteral("group")));
     QVERIFY(platform.hiddenMembers.isEmpty());
     QVERIFY(platform.hiddenAnchorContents.isEmpty());
+    QVERIFY(controller.anchorWindowId(QStringLiteral("group")).isEmpty());
 
     // Unshading a container that was never shaded fails cleanly.
     QVERIFY(!controller.unshadeMembers(QStringLiteral("group"), &error));
@@ -188,6 +194,7 @@ void HybridShadeControllerTests::forgetContainerDropsShadeStateWithoutTouchingTh
     controller.forgetContainer(QStringLiteral("group"));
     QVERIFY(!controller.isShaded(QStringLiteral("group")));
     QCOMPARE(controller.shadedContainerIds(), QStringList{});
+    QVERIFY(controller.anchorWindowId(QStringLiteral("group")).isEmpty());
     // forgetContainer is a bookkeeping-only drop; a real teardown path is
     // expected to call unshadeMembers itself first if it wants members shown
     // again (see KWinHybridSession::forgetShadedContainer).

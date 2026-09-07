@@ -23,7 +23,17 @@ public:
     KWinHybridGroupStacking(ManagedWindowRegistry &registry,
                             KWinChromeManager &chrome);
 
+    // shadedAnchors names, for each currently-shaded container, the one real
+    // member kept content-visible (HybridShadeController::anchorWindowId).
+    // That member is still required to resolve to a live, anchorable KWin
+    // window; its shaded siblings are genuinely Window::isHidden() by design
+    // and are exempted from the same-layer/contiguous-stack-block checks
+    // that exist to protect visible, input-eligible members. Omitting a
+    // shaded container from this map (or passing none) is only correct for
+    // members hidden for unrelated reasons, where a missing/incompatible
+    // member remains a real synchronization failure.
     [[nodiscard]] bool synchronize(const Hybrid::WindowTopology &topology,
+                                   const QMap<QString, QString> &shadedAnchors = {},
                                    QString *error = nullptr);
     [[nodiscard]] bool raiseContainer(const QString &containerId,
                                       QString *error = nullptr);

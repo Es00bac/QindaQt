@@ -59,6 +59,12 @@ public:
                                       QString *error = nullptr);
     [[nodiscard]] bool isShaded(const QString &containerId) const noexcept;
     [[nodiscard]] QStringList shadedContainerIds() const;
+    // The member kept content-visible while shaded (see hideAnchorContent),
+    // or empty if containerId is not shaded. Group stacking uses this to
+    // know which single member must still participate in live KWin stack
+    // validation while its shaded siblings are genuinely hidden and must
+    // not be held to that same requirement.
+    [[nodiscard]] QString anchorWindowId(const QString &containerId) const;
     void forgetContainer(const QString &containerId) noexcept;
 
 private:
@@ -75,6 +81,12 @@ private:
 inline bool HybridShadeController::isShaded(const QString &containerId) const noexcept
 {
     return m_shaded.contains(containerId);
+}
+
+inline QString HybridShadeController::anchorWindowId(const QString &containerId) const
+{
+    const auto found = m_shaded.constFind(containerId);
+    return found == m_shaded.cend() ? QString{} : found->anchorWindowId;
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

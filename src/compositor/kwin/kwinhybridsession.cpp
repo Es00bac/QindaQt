@@ -488,7 +488,21 @@ void KWinHybridSession::synchronizeChrome()
     if (m_groupContext) {
         m_groupContext->synchronize(m_runtime->topology());
     }
-    if (!m_groupStacking->synchronize(m_runtime->topology(), &error)) {
+    QMap<QString, QString> shadedAnchors;
+    if (m_shadeController) {
+        // AGENT-CONTRACT: tells group stacking which member of a shaded
+        // container is the content-preserving anchor (see
+        // KWinShadeMemberPlatform::hideAnchorContent) so it does not hold
+        // that container's genuinely-hidden siblings to the same-layer/
+        // contiguous-stack checks meant for visible members.
+        for (const auto &containerId : m_shadeController->shadedContainerIds()) {
+            const auto anchorId = m_shadeController->anchorWindowId(containerId);
+            if (!anchorId.isEmpty()) {
+                shadedAnchors.insert(containerId, anchorId);
+            }
+        }
+    }
+    if (!m_groupStacking->synchronize(m_runtime->topology(), shadedAnchors, &error)) {
         m_lastGroupStackingFailure = error;
         qWarning("QindaQt Hybrid group stacking failed: %s", qPrintable(error));
         invalidateChromePublication();
