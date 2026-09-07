@@ -48,6 +48,11 @@ private Q_SLOTS:
     void acknowledgedNoOpRollbackCompletesFromRetainedPreimage();
     void acknowledgedRollbackWithNonPreimageRetainedSnapshotEntersObservation();
     void observationMismatchTimeoutAndInvalidCallbacks();
+    void inventoryObservationBeforeApplyAckReachesAwaitingConfirmation();
+    void inventoryObservationBeforeApplyAckMismatchStaysObserving();
+    void inventoryObservationBeforeApplyAckMatchingPreimageIsNotRejection();
+    void staleOrWrongLineageObservationDuringApplyIsRejected();
+    void inventoryObservationBeforeRevertAckCompletesNoOpRollback();
 };
 
 void TransactionStateTests::stageFencesRevisionAndDetectsNoOp()
@@ -394,6 +399,194 @@ void TransactionStateTests::observationMismatchTimeoutAndInvalidCallbacks()
     QCOMPARE(machine.tick().error, CommandError::ObservationTimeout);
     QCOMPARE(machine.view().state, MachineState::RevertingApply);
     QCOMPARE(port.requests.last().scope, ApplyScope::FullPreimage);
+}
+
+void TransactionStateTests::inventoryObservationBeforeApplyAckReachesAwaitingConfirmation()
+{
+    // The independent D0 inventory update and the Wayland Applied callback are
+    // delivered on separate channels; inventory can win the race and land
+    // while the machine is still Applying. That valid, same-lineage
+    // observation must be retained and evaluated as soon as the matching ack
+    // arrives, reaching AwaitingConfirmation without a second inventory event.
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
+    QVERIFY(machine.preview(QStringLiteral("tx")).accepted);
+    QCOMPARE(machine.view().state, MachineState::Applying);
+    const quint64 token = port.requests.last().token;
+
+    const Display::Snapshot targetObserved = Test::observed(base, candidate, base.revision + 1);
+    const CommandResult observation = machine.observedSnapshot(targetObserved);
+    QVERIFY(observation.accepted);
+    QCOMPARE(observation.error, CommandError::None);
+    QCOMPARE(machine.view().state, MachineState::Applying);
+    QCOMPARE(machine.currentSnapshot(), targetObserved);
+
+    const CommandResult ackResult = machine.applyCompleted(token, ApplyOutcome::Applied);
+    QVERIFY(ackResult.accepted);
+    QCOMPARE(machine.view().state, MachineState::AwaitingConfirmation);
+    QCOMPARE(port.journal.phase, JournalPhase::AwaitingConfirmation);
+    QCOMPARE(machine.view().deadlineMonotonicMilliseconds,
+             clock.now + Test::timing().confirmationTimeoutMilliseconds);
+    QCOMPARE(port.requests.size(), 1);
+}
+
+void TransactionStateTests::inventoryObservationBeforeApplyAckMismatchStaysObserving()
+{
+    // A retained pre-ack observation that does not match the staged target
+    // must never be evaluated at ack time; only a target-matching retained
+    // snapshot may short-circuit past Observing. A non-matching retained
+    // snapshot (here, one that also happens to equal neither the target nor
+    // the pre-image) must land in plain Observing and wait for a genuinely
+    // post-ack observation or the observation timeout, not be judged here.
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
+    QVERIFY(machine.preview(QStringLiteral("tx")).accepted);
+    const quint64 token = port.requests.last().token;
+
+    Display::Candidate mismatchCandidate = candidate;
+    mismatchCandidate.outputs[0].modeId = QStringLiteral("small");
+    const Display::Snapshot mismatch = Test::observed(base, mismatchCandidate, base.revision + 1);
+    const CommandResult observation = machine.observedSnapshot(mismatch);
+    QVERIFY(observation.accepted);
+    QCOMPARE(machine.view().state, MachineState::Applying);
+
+    const CommandResult ackResult = machine.applyCompleted(token, ApplyOutcome::Applied);
+    QVERIFY(ackResult.accepted);
+    QCOMPARE(ackResult.error, CommandError::None);
+    QCOMPARE(machine.view().state, MachineState::Observing);
+    QCOMPARE(machine.currentSnapshot(), mismatch);
+    QVERIFY(port.journalPresent);
+    QCOMPARE(machine.view().deadlineMonotonicMilliseconds,
+             clock.now + Test::timing().observationTimeoutMilliseconds);
+}
+
+void TransactionStateTests::inventoryObservationBeforeApplyAckMatchingPreimageIsNotRejection()
+{
+    // Counterexample to inventoryObservationBeforeApplyAckReachesAwaitingConfirmation:
+    // an advanced, same-lineage observation retained during Applying can
+    // coincidentally equal the pre-image (for example descriptive-only
+    // inventory metadata observed before the compositor has actually applied
+    // the candidate). That must never be read as proof the apply was
+    // rejected at ack time; the retained truth is kept, but the transaction
+    // simply proceeds to ordinary Observing and is proven or timed out by a
+    // later, genuinely post-ack observation.
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
+    QVERIFY(machine.preview(QStringLiteral("tx")).accepted);
+    const quint64 token = port.requests.last().token;
+
+    const Display::Snapshot preimageObserved = Test::observed(
+        base, DisplayTopology::candidateFromSnapshot(base), base.revision + 1);
+    const CommandResult observation = machine.observedSnapshot(preimageObserved);
+    QVERIFY(observation.accepted);
+    QCOMPARE(machine.view().state, MachineState::Applying);
+
+    const CommandResult ackResult = machine.applyCompleted(token, ApplyOutcome::Applied);
+    QVERIFY(ackResult.accepted);
+    QCOMPARE(ackResult.error, CommandError::None);
+    QCOMPARE(machine.view().state, MachineState::Observing);
+    QCOMPARE(machine.currentSnapshot(), preimageObserved);
+    QVERIFY(port.journalPresent);
+    QCOMPARE(port.journal.phase, JournalPhase::Applying);
+
+    const Display::Snapshot targetObserved =
+        Test::observed(base, candidate, base.revision + 2);
+    QVERIFY(machine.observedSnapshot(targetObserved).accepted);
+    QCOMPARE(machine.view().state, MachineState::AwaitingConfirmation);
+    QCOMPARE(port.journal.phase, JournalPhase::AwaitingConfirmation);
+}
+
+void TransactionStateTests::staleOrWrongLineageObservationDuringApplyIsRejected()
+{
+    // A stale replay (same revision, different content) or an observation
+    // from a foreign service epoch must never be accepted as a retained
+    // candidate while Applying; both are rejected without mutating state, and
+    // the eventual Applied ack still proceeds normally.
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
+    QVERIFY(machine.preview(QStringLiteral("tx")).accepted);
+    const quint64 token = port.requests.last().token;
+    const MachineView applying = machine.view();
+    const Display::Snapshot beforeAck = machine.currentSnapshot();
+
+    Display::Snapshot staleSameRevision = Test::observed(base, candidate, base.revision);
+    QCOMPARE(machine.observedSnapshot(staleSameRevision).error, CommandError::InvalidSnapshot);
+    QCOMPARE(machine.view(), applying);
+    QCOMPARE(machine.currentSnapshot(), beforeAck);
+
+    Display::Snapshot foreignEpoch = Test::observed(base, candidate, base.revision + 1);
+    foreignEpoch.serviceEpoch = QStringLiteral("other-epoch");
+    foreignEpoch.liveFingerprint = DisplayTopology::canonicalFingerprint(
+        DisplayTopology::candidateFromSnapshot(foreignEpoch));
+    QCOMPARE(machine.observedSnapshot(foreignEpoch).error, CommandError::InvalidSnapshot);
+    QCOMPARE(machine.view(), applying);
+    QCOMPARE(machine.currentSnapshot(), beforeAck);
+
+    QVERIFY(machine.applyCompleted(token, ApplyOutcome::Applied).accepted);
+    QCOMPARE(machine.view().state, MachineState::Observing);
+    QCOMPARE(machine.currentSnapshot(), beforeAck);
+}
+
+void TransactionStateTests::inventoryObservationBeforeRevertAckCompletesNoOpRollback()
+{
+    // Symmetric to the forward-apply race: the independent inventory update
+    // can also announce a completed rollback before the revert's Applied
+    // callback arrives. That retained truth must let the existing no-op
+    // short-circuit in applyCompleted() fire without waiting for
+    // RevertingObserve and a further inventory event.
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    Test::previewToObserving(machine, port, candidate);
+
+    Display::Candidate mismatchCandidate = candidate;
+    mismatchCandidate.outputs[0].modeId = QStringLiteral("small");
+    const Display::Snapshot mismatch = Test::observed(base, mismatchCandidate, 2);
+    QVERIFY(machine.observedSnapshot(mismatch).accepted);
+    QCOMPARE(machine.view().state, MachineState::Observing);
+
+    clock.advance(Test::timing().observationTimeoutMilliseconds);
+    QCOMPARE(machine.tick().error, CommandError::ObservationTimeout);
+    QCOMPARE(machine.view().state, MachineState::RevertingApply);
+    const quint64 rollbackToken = port.requests.last().token;
+
+    const Display::Snapshot restored = Test::observed(
+        base, DisplayTopology::candidateFromSnapshot(base), 3);
+    const CommandResult observation = machine.observedSnapshot(restored);
+    QVERIFY(observation.accepted);
+    QCOMPARE(machine.view().state, MachineState::RevertingApply);
+    QCOMPARE(machine.currentSnapshot(), restored);
+
+    QVERIFY(machine.applyCompleted(rollbackToken, ApplyOutcome::Applied).accepted);
+    QCOMPARE(machine.view().state, MachineState::Ready);
+    QCOMPARE(machine.currentSnapshot(), restored);
+    QCOMPARE(machine.view().lastTerminalReason,
+             Display::TransactionReason::ObservationTimeout);
+    QVERIFY(!port.journalPresent);
+    QCOMPARE(port.requests.size(), 2);
 }
 
 QTEST_GUILESS_MAIN(TransactionStateTests)

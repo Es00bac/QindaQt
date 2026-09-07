@@ -110,6 +110,7 @@ void Machine::clearTransaction()
     m_revertRequested = false;
     m_abandonAfterSettle = false;
     m_cleanupOnlyStuck = false;
+    m_freshObservationDuringApply = false;
     m_view.transactionId.clear();
     m_view.reason = Display::TransactionReason::None;
     m_view.deadlineMonotonicMilliseconds = 0;
@@ -185,6 +186,7 @@ CommandResult Machine::stage(const QString &transactionId,
 void Machine::beginForwardApply()
 {
     setState(MachineState::Applying);
+    m_freshObservationDuringApply = false;
     m_activeToken = nextToken();
     m_view.deadlineMonotonicMilliseconds = Private::saturatedDeadline(
         m_clock.nowMilliseconds(), m_timing.applyTimeoutMilliseconds);

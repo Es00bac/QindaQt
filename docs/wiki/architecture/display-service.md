@@ -299,12 +299,12 @@ never replayed.
 | `Discovering` | `initialize` or `recover` with a valid snapshot/journal | None |
 | `Ready` | stage a valid non-no-op candidate; accept exact unchanged redelivery or strictly newer same-epoch observed/external/topology state | None |
 | `Staged` | preview when safety is `Safe`; cancel without mutation; same-set external changes must use `externalIntentObserved`, because ordinary observations are rejected | None |
-| `Applying` | exact-token completion enters observation or uncertainty resolution | Apply timeout enters `ResolvingUncertain` |
+| `Applying` | a same-lineage `observedSnapshot` is retained (not rejected); if it already matches the staged target once the exact-token completion arrives, the transaction reaches `AwaitingConfirmation` immediately without a further inventory event, otherwise it enters ordinary `Observing` to be proven or timed out by a later observation — a retained snapshot equal to the pre-image is never itself read as apply rejection; exact-token completion alone enters observation or uncertainty resolution | Apply timeout enters `ResolvingUncertain` |
 | `Observing` | target fingerprint enters confirmation; pre-image returns ready; other valid observations remain mismatches | Observation timeout begins rollback |
 | `AwaitingConfirmation` | confirm clears journal; cancel, lock, suspend, topology or external intent resolve safely | Confirmation deadline begins rollback |
 | `ResolvingUncertain` | observed pre-image clears; observed target rolls back; other ordinary observations remain mismatches; explicitly routed external intent aborts | Observation timeout begins rollback; no forward replay |
 | `SettlingTopology` | repeated topology changes replace the pending snapshot; cancel/lock/suspend or external-abandon action is recorded; only explicit `topologySettled` acts | Timing/coalescing belongs to D2 adapter |
-| `RevertingApply` | exact-token success enters revert observation; failure schedules retry | Apply timeout consumes the attempt and schedules retry |
+| `RevertingApply` | a same-lineage `observedSnapshot` is retained symmetrically with `Applying`; if it already matches the pre-image once the exact-token success arrives, the no-op short-circuit below applies from that retained truth without a further inventory event; exact-token success alone enters revert observation, failure schedules retry | Apply timeout consumes the attempt and schedules retry |
 | `RevertingObserve` | matching full pre-image or surviving properties clears journal | Observation timeout schedules retry |
 | `RevertBackoff` | no command issues another write | Injected 250/500 ms defaults issue attempts two/three |
 | `Stuck` | consume current snapshots/topology; explicit retry either clears a stale journal or restarts rollback against the current set | Journal remains active; no silent success |
@@ -357,6 +357,20 @@ or timeout).
   after every apply callback and apply deadline, even if revision and contents
   appear unchanged. A changed output set is routed through `topologyChanged`
   in every active state.
+- The D0 inventory update and the Wayland apply-completion callback are
+  delivered on independent channels and may race in either order. A
+  same-lineage `observedSnapshot` that arrives while the machine is still
+  `Applying` or `RevertingApply` is retained rather than rejected as
+  out-of-order. In `Applying`, only a retained snapshot matching the staged
+  target short-circuits straight to `AwaitingConfirmation` once the matching
+  completion callback lands; a retained snapshot that merely equals the
+  pre-image (for example unrelated inventory metadata observed before the
+  compositor actually applies the candidate) is never itself read as apply
+  rejection and instead proceeds to ordinary `Observing`. In `RevertingApply`,
+  a retained snapshot matching the pre-image lets the existing no-op-rollback
+  short-circuit fire once the matching completion callback lands. A stale
+  (non-advancing) or foreign-epoch snapshot delivered in either state is still
+  rejected as invalid; it is never accepted as a candidate to retain.
 - While a candidate is `Staged`, a same-set change from another client is
   routed through `externalIntentObserved`; `observedSnapshot` is intentionally
   invalid there so the adapter cannot leave a stale candidate staged.
