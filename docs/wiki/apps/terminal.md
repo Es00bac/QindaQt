@@ -50,6 +50,11 @@ never be mistaken for shell-string syntax.
 Terminal** uses it internally with the active session's profile while carrying
 the observed working directory through `--working-directory`; the new process
 then resolves its own Settings1 snapshot before it creates its sole shell.
+The private `ui/terminal_startup.*` helper owns process-dispatch argument
+capture and initial profile selection. Its launcher captures values rather
+than borrowing the command-line parser; it reports dispatch errors without
+waiting for the child window. `main()` composes it with the existing settings
+readiness and one-window lifetime.
 
 The child environment is derived, not inherited blindly. Entries with
 malformed keys, newline-bearing values, or oversized entries are dropped, never

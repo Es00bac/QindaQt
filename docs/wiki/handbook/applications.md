@@ -76,14 +76,14 @@ column heading to sort. Copy, move, and Trash work on the selected files togethe
 
 ## Terminal
 
-A real terminal for your shell, with up to eight sessions in tabs, saved
-profiles, searchable scrollback, and clickable links that open only after
-you confirm them. Closing a tab keeps the exit status honest — a crashed
-command reports the crash rather than vanishing.
+Each Terminal window runs one shell, with saved profiles and searchable
+scrollback. To work with several shells, open more Terminal windows and group
+them in a QindaQt container. The container handles tabs and splits.
 
-New tabs open in the active shell's current folder. Adjust a tab's text size
-from View, or use `Ctrl+Shift++` / `Ctrl+Shift+-`; `Ctrl+Shift+0` restores the
-profile size. Theme changes preserve that zoom and the terminal font.
+**New Terminal** (`Ctrl+Shift+T`) opens a window in the active shell's current
+folder, using the same profile. Adjust its text size from View, or use
+`Ctrl+Shift++` / `Ctrl+Shift+-`; `Ctrl+Shift+0` restores the profile size.
+Theme changes preserve that zoom and the terminal font.
 
 ## Menus in the top panel
 
