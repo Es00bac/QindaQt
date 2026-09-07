@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
+#include "model/bookmarks_store.h"
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
+#include "model/places_controller.h"
 #include "runtime/qml_component_ready.h"
 #include "runtime/mutation_ui_action_probe.h"
 #include "mutation/local_mutation_backend.h"
@@ -159,6 +161,16 @@ private:
     coordinator.setWindowTitle(
         QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
   });
+  QObject::connect(&navigation,
+                   &QindaQt::Apps::FileManager::NavigationController::presentationChanged,
+                   &coordinator, [&coordinator, &navigation]() {
+    const auto hiddenResult = coordinator.setActionChecked(
+        QStringLiteral("view.show-hidden"), navigation.showHidden());
+    const auto gridResult = coordinator.setActionChecked(
+        QStringLiteral("view.grid-mode"), navigation.viewMode() == QStringLiteral("grid"));
+    Q_UNUSED(hiddenResult);
+    Q_UNUSED(gridResult);
+  });
   QObject::connect(
       &mutation, &QindaQt::Apps::FileManager::MutationController::stateChanged,
       &coordinator, [&coordinator, &mutation]() {
@@ -222,6 +234,61 @@ void registerCommandLineOptions(QCommandLineParser &parser) {
        QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
 }
 
+// Creates and seeds the disposable --check-ui-actions fixture. The probe's S2
+// stage needs one differently sized visible file (qml-batch.txt) for the
+// size-sort assertions and one hidden file (.qml-hidden.txt) for the
+// hidden-filter round trip. Returns nullptr on failure.
+[[nodiscard]] std::unique_ptr<QTemporaryDir>
+seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
+  auto fixture = std::make_unique<QTemporaryDir>(
+      QDir(parentPath).filePath(QStringLiteral("qindaqt-file-manager-ui-XXXXXX")));
+  if (!fixture->isValid()) {
+    return nullptr;
+  }
+  *fixturePath = fixture->path();
+  const struct {
+    const char *name;
+    QByteArray payload;
+  } seeds[] = {
+      {"qml-source.txt", QByteArray("fixture-data")},
+      {"qml-batch.txt", QByteArray("fixture-batch-payload")},
+      {".qml-hidden.txt", QByteArray("hidden-fixture")},
+  };
+  for (const auto &seedInfo : seeds) {
+    QFile seed(QDir(*fixturePath).filePath(QString::fromLatin1(seedInfo.name)));
+    if (!seed.open(QIODevice::WriteOnly) ||
+        seed.write(seedInfo.payload) != seedInfo.payload.size()) {
+      return nullptr;
+    }
+  }
+  return fixture;
+}
+
+// Returns the first missing required UI object name, or an empty string when
+// the complete --check-ui-contract surface is present.
+[[nodiscard]] QString missingUiContractObject(QObject *root) {
+  const QStringList requiredObjects = {
+      QStringLiteral("newFolderButton"), QStringLiteral("entryListView"),
+      QStringLiteral("entryGridView"), QStringLiteral("locationField"),
+      QStringLiteral("locationToggleButton"), QStringLiteral("toggleHiddenButton"),
+      QStringLiteral("toggleViewModeButton"), QStringLiteral("placesSidebar"),
+      QStringLiteral("addBookmarkButton"), QStringLiteral("bookmarkList"),
+      QStringLiteral("bookmarkStoreBanner"), QStringLiteral("sortHeader_name"),
+      QStringLiteral("sortHeader_size"), QStringLiteral("sortHeader_kind"),
+      QStringLiteral("sortHeader_modified"),
+      QStringLiteral("mutationProgressCard"), QStringLiteral("mutationFailureCard"),
+      QStringLiteral("mutationResultCard"), QStringLiteral("newFolderDialog"),
+      QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
+      QStringLiteral("trashConfirmationDialog"),
+      QStringLiteral("emptyTrashConfirmationDialog")};
+  for (const QString &objectName : requiredObjects) {
+    if (!root->findChild<QObject *>(objectName)) {
+      return objectName;
+    }
+  }
+  return {};
+}
+
 } // namespace
 
 // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
@@ -268,21 +335,14 @@ int main(int argc, char **argv) {
 
   std::unique_ptr<QTemporaryDir> uiActionFixture;
   if (parser.isSet(QStringLiteral("check-ui-actions"))) {
-    uiActionFixture = std::make_unique<QTemporaryDir>(
-        QDir(startPath).filePath(QStringLiteral("qindaqt-file-manager-ui-XXXXXX")));
-    if (!uiActionFixture->isValid()) {
+    QString fixturePath;
+    uiActionFixture = seedUiActionFixture(startPath, &fixturePath);
+    if (!uiActionFixture) {
       std::fprintf(stderr,
-                   "qindaqt-file-manager: could not create the UI action fixture\n");
+                   "qindaqt-file-manager: could not create or seed the UI action fixture\n");
       return 5;
     }
-    startPath = uiActionFixture->path();
-    QFile seed(QDir(startPath).filePath(QStringLiteral("qml-source.txt")));
-    if (!seed.open(QIODevice::WriteOnly) ||
-        seed.write("fixture-data") != QByteArray("fixture-data").size()) {
-      std::fprintf(stderr,
-                   "qindaqt-file-manager: could not seed the UI action fixture\n");
-      return 5;
-    }
+    startPath = fixturePath;
   }
 
   const auto theme = loadTheme(
@@ -327,6 +387,12 @@ int main(int argc, char **argv) {
   auto mutationController =
       std::make_unique<QindaQt::Apps::FileManager::MutationController>(
           std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(trashRoot));
+  auto placesController =
+      std::make_unique<QindaQt::Apps::FileManager::PlacesController>(
+          std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(
+              QDir(QStandardPaths::writableLocation(
+                       QStandardPaths::GenericStateLocation))
+                  .filePath(QStringLiteral("qindaqt-file-manager"))));
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
   const QString appShellError = configureAppShell(
       *appCoordinator, *controller, *mutationController);
@@ -341,6 +407,8 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(controller.get()))},
        {QStringLiteral("mutationController"),
         QVariant::fromValue(static_cast<QObject *>(mutationController.get()))},
+       {QStringLiteral("placesController"),
+        QVariant::fromValue(static_cast<QObject *>(placesController.get()))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
@@ -363,21 +431,12 @@ int main(int argc, char **argv) {
     return 0;
   }
   if (parser.isSet(QStringLiteral("check-ui-contract"))) {
-    const QStringList requiredObjects = {
-        QStringLiteral("newFolderButton"), QStringLiteral("entryListView"),
-        QStringLiteral("mutationProgressCard"), QStringLiteral("mutationFailureCard"),
-        QStringLiteral("mutationResultCard"), QStringLiteral("newFolderDialog"),
-        QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
-        QStringLiteral("trashConfirmationDialog"),
-        QStringLiteral("emptyTrashConfirmationDialog")};
-    QObject *root = engine.rootObjects().constFirst();
-    for (const QString &objectName : requiredObjects) {
-      if (!root->findChild<QObject *>(objectName)) {
-        std::fprintf(stderr, "qindaqt-file-manager: missing UI object %s\n",
-                     qPrintable(objectName));
-        destroyRoots();
-        return 5;
-      }
+    const QString missing = missingUiContractObject(engine.rootObjects().constFirst());
+    if (!missing.isEmpty()) {
+      std::fprintf(stderr, "qindaqt-file-manager: missing UI object %s\n",
+                   qPrintable(missing));
+      destroyRoots();
+      return 5;
     }
     std::printf("mutation-ui-contract-ok\n");
     destroyRoots();

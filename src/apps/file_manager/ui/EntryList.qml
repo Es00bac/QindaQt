@@ -9,11 +9,22 @@ Item {
     id: root
 
     required property var navigationController
+    required property var selection
     required property var appCoordinator
+
+    function focusView() { listView.forceActiveFocus() }
 
     function currentEntry() {
         return listView.currentIndex >= 0
             ? root.navigationController.entries[listView.currentIndex] : null
+    }
+
+    function selectedEntries() {
+        return selection.selectedEntries()
+    }
+
+    function selectAll() {
+        selection.selectAll()
     }
 
     function activateCurrent() {
@@ -22,32 +33,59 @@ Item {
         }
     }
 
-    // AGENT-GUARD: Preserve the previously selected entry's name across a
-    // refresh of the same folder so review-visible selection stays
-    // deterministic instead of silently jumping to index 0 whenever the
-    // underlying listing is rebuilt. A genuine navigation to a different
-    // folder still lands on index 0 because the old name normally will not
-    // exist there.
-    property string lastSelectedName: ""
-
-    Connections {
-        target: root.navigationController
-        function onEntriesChanged() {
-            const restored = root.navigationController.indexOfName(root.lastSelectedName)
-            listView.currentIndex = restored >= 0
-                ? restored
-                : (root.navigationController.entries.length > 0 ? 0 : -1)
-        }
-    }
-
-    // AGENT-NOTE: The controller publishes a non-empty statusMessage only for
-    // a truncated ready-state listing (errors use StatePane instead), so this
-    // notice is the single user-visible surface for that bound. Keep it
-    // outside the ListView so the notice cannot scroll out of view.
+    // Listing notices remain outside the scrolling entries.
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Tokens.space["2"]
         spacing: 0
+
+        RowLayout {
+            id: headerRow
+            Layout.fillWidth: true
+            spacing: 0
+
+            // AGENT-NOTE: The sort headers are statically declared buttons, not
+            // a Repeater, because model-instantiated delegates are not
+            // reachable through QObject::findChild from the QML root; the
+            // --check-ui-contract gate and the UI action probe resolve
+            // sortHeader_* by objectName. The column set is fixed by
+            // ListingOrder (model/listing_order.h).
+            component SortHeaderButton: Qinda.Button {
+                required property string key
+                required property string label
+                property bool stretch: false
+
+                Layout.fillWidth: stretch
+                Layout.preferredWidth: stretch ? -1 : 140
+                text: label + (root.navigationController.sortColumn === key
+                    ? (root.navigationController.sortDirection === "ascending" ? " ▲" : " ▼") : "")
+                emphasized: root.navigationController.sortColumn === key
+                accessibleDescription: qsTr("Sort by %1").arg(label)
+                onClicked: root.navigationController.setSortColumn(key)
+            }
+
+            SortHeaderButton {
+                objectName: "sortHeader_name"
+                key: "name"
+                label: qsTr("Name")
+                stretch: true
+            }
+            SortHeaderButton {
+                objectName: "sortHeader_size"
+                key: "size"
+                label: qsTr("Size")
+            }
+            SortHeaderButton {
+                objectName: "sortHeader_kind"
+                key: "kind"
+                label: qsTr("Kind")
+            }
+            SortHeaderButton {
+                objectName: "sortHeader_modified"
+                key: "modified"
+                label: qsTr("Modified")
+            }
+        }
 
         ListView {
             id: listView
@@ -56,22 +94,38 @@ Item {
             Layout.fillHeight: true
             clip: true
             focus: true
-            keyNavigationEnabled: true
+            keyNavigationEnabled: false
+            currentIndex: root.selection.currentIndex
+            function selectEntry(index) { root.selection.selectOnly(index) }
             model: root.navigationController.entries
 
             Accessible.role: Accessible.List
             Accessible.name: qsTr("Folder contents")
-
-            onCurrentIndexChanged: {
-                root.lastSelectedName = currentIndex >= 0
-                    ? root.navigationController.entries[currentIndex].name : ""
-            }
 
             Keys.onReturnPressed: root.activateCurrent()
             Keys.onEnterPressed: root.activateCurrent()
             Keys.onPressed: (event) => {
                 if (event.key === Qt.Key_Backspace) {
                     root.navigationController.goUp()
+                    event.accepted = true
+                } else if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
+                            Qt.Key_Home, Qt.Key_End].indexOf(event.key) >= 0) {
+                    const columns = 1
+                    let target = root.selection.currentIndex
+                    if (event.key === Qt.Key_Home) target = 0
+                    else if (event.key === Qt.Key_End) target = listView.count - 1
+                    else if (event.key === Qt.Key_Up) target -= columns
+                    else if (event.key === Qt.Key_Down) target += columns
+                    else if (event.key === Qt.Key_Left) target -= 1
+                    else target += 1
+                    target = Math.max(0, Math.min(listView.count - 1, target))
+                    root.selection.moveTo(target, event.modifiers)
+                    listView.positionViewAtIndex(target, listView.Contain)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_Space) {
+                    if (event.modifiers & Qt.ControlModifier)
+                        root.selection.toggle(root.selection.currentIndex)
+                    else root.selection.selectOnly(root.selection.currentIndex)
                     event.accepted = true
                 } else if (event.key === Qt.Key_Menu
                            || (event.key === Qt.Key_F10
@@ -87,26 +141,55 @@ Item {
                 required property var modelData
                 required property int index
 
+                property bool entrySelected: selection.isSelected(delegateRoot.index)
+
                 width: listView.width
                 height: 36
-                color: ListView.isCurrentItem ? Tokens.state.pressed
+                color: delegateRoot.entrySelected ? Tokens.state.pressed
                      : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
 
                 Accessible.role: Accessible.ListItem
                 Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                     ? qsTr(", folder") : qsTr(", file"))
-                Accessible.selected: ListView.isCurrentItem
+                Accessible.selected: delegateRoot.entrySelected
+                border.width: ListView.isCurrentItem ? 1 : 0
+                border.color: Tokens.accent.default
 
-                Qinda.Label {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                RowLayout {
+                    anchors.fill: parent
                     anchors.leftMargin: Tokens.space["3"]
                     anchors.rightMargin: Tokens.space["3"]
-                    text: delegateRoot.modelData.name
-                    muted: delegateRoot.modelData.isHidden
-                    elide: Text.ElideMiddle
-                    Accessible.ignored: true
+                    spacing: Tokens.space["2"]
+
+                    Qinda.Label {
+                        Layout.fillWidth: true
+                        text: delegateRoot.modelData.name
+                        muted: delegateRoot.modelData.isHidden
+                        elide: Text.ElideMiddle
+                        Accessible.ignored: true
+                    }
+                    Qinda.Label {
+                        Layout.preferredWidth: 130
+                        horizontalAlignment: Text.AlignRight
+                        text: delegateRoot.modelData.sizeText
+                        muted: true
+                        elide: Text.ElideRight
+                        Accessible.ignored: true
+                    }
+                    Qinda.Label {
+                        Layout.preferredWidth: 130
+                        text: delegateRoot.modelData.kindText
+                        muted: true
+                        elide: Text.ElideRight
+                        Accessible.ignored: true
+                    }
+                    Qinda.Label {
+                        Layout.preferredWidth: 130
+                        text: delegateRoot.modelData.modifiedText
+                        muted: true
+                        elide: Text.ElideRight
+                        Accessible.ignored: true
+                    }
                 }
 
                 MouseArea {
@@ -115,12 +198,27 @@ Item {
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: (mouse) => {
-                        listView.currentIndex = delegateRoot.index
+                        listView.forceActiveFocus()
+                        if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
+                            selection.focusIndex(delegateRoot.index)
+                        } else if (mouse.modifiers & Qt.ControlModifier) {
+                            selection.toggle(delegateRoot.index)
+                            selection.focusIndex(delegateRoot.index)
+                        } else if (mouse.modifiers & Qt.ShiftModifier) {
+                            selection.rangeTo(delegateRoot.index)
+                            selection.focusIndex(delegateRoot.index)
+                        } else {
+                            selection.selectOnly(delegateRoot.index)
+                            selection.focusIndex(delegateRoot.index)
+                        }
                         if (mouse.button === Qt.RightButton)
                             contextMenu.popup()
                     }
-                    onDoubleClicked: {
-                        listView.currentIndex = delegateRoot.index
+                    onDoubleClicked: (mouse) => {
+                        if (mouse.modifiers !== Qt.NoModifier)
+                            return
+                        selection.selectOnly(delegateRoot.index)
+                        selection.focusIndex(delegateRoot.index)
                         root.activateCurrent()
                     }
                 }

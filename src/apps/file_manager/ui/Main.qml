@@ -10,6 +10,7 @@ ApplicationShell {
 
     required property var navigationController
     required property var mutationController
+    required property var placesController
 
     initialFocusItem: toolbar.primaryFocusItem
     width: 900
@@ -17,10 +18,49 @@ ApplicationShell {
     minimumWidth: 480
     minimumHeight: 320
 
+    EntrySelection {
+        id: entrySelection
+        objectName: "entrySelection"
+        navigationController: root.navigationController
+    }
+
+    function activeView() {
+        return root.navigationController.viewMode === "grid" ? entryGrid : entryList
+    }
+
     Connections {
         target: root.coordinator
         function onActionRequested(actionId) {
-            mutationDialogs.dispatch(actionId, entries.currentEntry())
+            const navigation = root.navigationController
+            if (actionId === "view.show-hidden") {
+                navigation.setShowHidden(!navigation.showHidden)
+            } else if (actionId === "view.grid-mode") {
+                navigation.setViewMode(navigation.viewMode === "grid" ? "list" : "grid")
+            } else if (actionId === "view.focus-location") {
+                locationBar.visible = true
+                locationBar.activate()
+            } else if (actionId === "edit.select-all") {
+                root.activeView().selectAll()
+            } else if (actionId === "go.home") {
+                const places = root.placesController.places
+                if (places.length > 0)
+                    navigation.navigateTo(places[0].path)
+            } else if (actionId === "bookmark.add") {
+                root.placesController.addBookmark(
+                    navigation.breadcrumb.length > 0
+                        ? navigation.breadcrumb[navigation.breadcrumb.length - 1].name
+                        : navigation.currentPath,
+                    navigation.currentPath)
+            } else {
+                mutationDialogs.dispatch(actionId, root.activeView().selectedEntries())
+            }
+        }
+    }
+
+    Connections {
+        target: root.navigationController
+        function onViewModeChanged() {
+            Qt.callLater(() => root.activeView().focusView())
         }
     }
 
@@ -46,26 +86,60 @@ ApplicationShell {
                 appCoordinator: root.coordinator
             }
 
+            LocationBar {
+                id: locationBar
+                Layout.fillWidth: true
+                visible: false
+                navigationController: root.navigationController
+                onClosed: visible = false
+            }
+
             Breadcrumb {
                 Layout.fillWidth: true
+                visible: !locationBar.visible
                 navigationController: root.navigationController
             }
 
-            StackLayout {
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
+                spacing: 0
 
-                EntryList {
-                    id: entries
+                PlacesSidebar {
+                    Layout.fillHeight: true
                     navigationController: root.navigationController
+                    placesController: root.placesController
                     appCoordinator: root.coordinator
                 }
 
-                StatePane {
-                    statusKey: root.navigationController.statusKey
-                    statusMessage: root.navigationController.statusMessage
-                    onRetryRequested: root.navigationController.refresh()
+                StackLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
+
+                    StackLayout {
+                        currentIndex: root.navigationController.viewMode === "grid" ? 1 : 0
+
+                        EntryList {
+                            id: entryList
+                            selection: entrySelection
+                            navigationController: root.navigationController
+                            appCoordinator: root.coordinator
+                        }
+
+                        EntryGrid {
+                            id: entryGrid
+                            selection: entrySelection
+                            navigationController: root.navigationController
+                            appCoordinator: root.coordinator
+                        }
+                    }
+
+                    StatePane {
+                        statusKey: root.navigationController.statusKey
+                        statusMessage: root.navigationController.statusMessage
+                        onRetryRequested: root.navigationController.refresh()
+                    }
                 }
             }
 
@@ -118,6 +192,17 @@ ApplicationShell {
                 message: root.navigationController.launchError
                 actionText: qsTr("Dismiss")
                 onActionTriggered: root.navigationController.clearLaunchError()
+            }
+
+            Qinda.StateCard {
+                objectName: "bookmarkStoreBanner"
+                Layout.fillWidth: true
+                visible: root.placesController.storeError.length > 0
+                status: Qinda.StateCard.Warning
+                title: qsTr("Bookmark storage problem")
+                message: root.placesController.storeError
+                actionText: qsTr("Dismiss")
+                onActionTriggered: root.placesController.clearStoreError()
             }
         }
 
