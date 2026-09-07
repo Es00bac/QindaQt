@@ -113,3 +113,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0097: Separate workspace slots from live windows](0097-separate-workspace-slots-from-live-windows.md)
 
 - [ADR-0101: Launch workspace applications through desktop entries](0101-launch-workspace-apps-through-desktop-entries.md)
+
+- [ADR-0102: Adopt restored layouts atomically](0102-adopt-restored-layouts-atomically.md)

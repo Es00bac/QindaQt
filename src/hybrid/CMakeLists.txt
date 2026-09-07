@@ -4,6 +4,7 @@ add_library(qindaqt_hybrid STATIC)
 target_sources(
     qindaqt_hybrid
     PRIVATE
+        topologyadoptionmutation.cpp
         topologycommand.cpp
         topologycoordinator.cpp
         topologyplacementmutation.cpp

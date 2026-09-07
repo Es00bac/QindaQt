@@ -373,7 +373,9 @@ bool TopologyMutation::apply(WindowTopology &candidate,
     return std::visit(
         [&](const auto &typedCommand) {
             using Command = std::decay_t<decltype(typedCommand)>;
-            if constexpr (std::is_same_v<Command, AddIndependentWindow>) {
+            if constexpr (std::is_same_v<Command, AdoptIndependentLayout>) {
+                return TopologyAdoptionMutation::apply(candidate, typedCommand, error);
+            } else if constexpr (std::is_same_v<Command, AddIndependentWindow>) {
                 return applyAddIndependent(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, ForgetWindow>) {
                 return applyForget(candidate, typedCommand, error);

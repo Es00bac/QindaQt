@@ -26,3 +26,5 @@ endfunction()
 qindaqt_add_hybrid_test(topology_commands tst_topology_commands.cpp)
 qindaqt_add_hybrid_test(topology_placement tst_topology_placement.cpp)
 qindaqt_add_hybrid_test(atomic_coordinator tst_atomic_coordinator.cpp)
+
+qindaqt_add_hybrid_test(layout_adoption tst_layout_adoption.cpp)

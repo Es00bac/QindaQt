@@ -2,6 +2,7 @@
 #pragma once
 
 #include "layoutnode.h"
+#include "windowcontainer.h"
 
 #include <QString>
 #include <QtTypes>
@@ -210,6 +211,14 @@ struct ReleaseContainer final
     QString containerId;
 };
 
+// Atomically adopts a complete restored layout. Every leaf must name a live,
+// currently independent member. No member or partial container is published
+// until the existing scene transaction commits successfully.
+struct AdoptIndependentLayout final
+{
+    Core::WindowContainer container;
+};
+
 using TopologyCommand = std::variant<AddIndependentWindow,
                                      ForgetWindow,
                                      DockIndependentWindows,
@@ -228,7 +237,8 @@ using TopologyCommand = std::variant<AddIndependentWindow,
                                      ReorderMembers,
                                      ReparentMember,
                                      DetachMember,
-                                     ReleaseContainer>;
+                                     ReleaseContainer,
+                                     AdoptIndependentLayout>;
 
 enum class TopologyCommandKind {
     AddIndependentWindow,
@@ -250,6 +260,7 @@ enum class TopologyCommandKind {
     ReparentMember,
     DetachMember,
     ReleaseContainer,
+    AdoptIndependentLayout,
 };
 
 [[nodiscard]] TopologyCommandKind commandKind(const TopologyCommand &command) noexcept;

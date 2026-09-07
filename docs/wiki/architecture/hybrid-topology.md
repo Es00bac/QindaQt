@@ -66,6 +66,7 @@ of low-level tree operations.
 | `ReparentMember` | Detaches and reinserts a member relative to another member in the same container, preserving the moved leaf ID and creating one requested split. |
 | `DetachMember` | Returns a member to independent placement and normalizes its source. |
 | `ReleaseContainer` | Returns every member to independent placement and removes the container. |
+| `AdoptIndependentLayout` | Adopts one complete Core layout from currently independent windows through a single scene transaction. |
 
 Commands reject duplicate or empty newly mapped IDs, stale source ownership,
 unknown IDs, same-source/target moves, invalid indices or ratios, structural
@@ -502,3 +503,19 @@ Platform or Release gates.
 The per-container tree invariants remain owned by
 [Window containers](window-containers.md). Cross-module dependency direction is
 defined by [Module boundaries](module-boundaries.md).
+
+## Restoring a saved layout
+
+`AdoptIndependentLayout` receives a complete, validated Core container with live
+window IDs already assigned by the workspace UI. It rejects an existing
+container ID, fewer than two members, or any member no longer independent.
+All checks precede candidate ownership changes. The existing coordinator then
+prepares and commits the entire scene before publishing one new topology
+revision; either scene failure rolls back without publishing partial groups.
+
+This command depends only on Core, not on workspace persistence or launching.
+The compositor adapter still rechecks current window eligibility and supplies
+name/color presentation state. `hybrid.layout_adoption` tests multi-page
+adoption, stale/owned member rejection, and prepare/commit failure rollback.
+See [ADR-0102](../adr/0102-adopt-restored-layouts-atomically.md) and
+[Saved workspaces](workspaces.md).

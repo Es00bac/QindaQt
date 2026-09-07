@@ -21,6 +21,14 @@ public:
     }
 };
 
+class TopologyAdoptionMutation final
+{
+public:
+    [[nodiscard]] static bool apply(WindowTopology &candidate,
+                                    const AdoptIndependentLayout &command,
+                                    QString *error);
+};
+
 class TopologyPlacementMutation final
 {
 public:

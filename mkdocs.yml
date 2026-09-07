@@ -218,3 +218,4 @@ nav:
       - "0096: Package bundled applications with Portage": adr/0096-package-bundled-apps-with-portage.md
       - "0097: Separate workspace slots from live windows": adr/0097-separate-workspace-slots-from-live-windows.md
       - "0101: Launch workspace applications through desktop entries": adr/0101-launch-workspace-apps-through-desktop-entries.md
+      - "0102: Adopt restored layouts atomically": adr/0102-adopt-restored-layouts-atomically.md

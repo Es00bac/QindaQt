@@ -132,3 +132,9 @@ XDG application catalog. It exercises missing-app rejection, real desktop-file
 launch with a spaced document URL, asynchronous executable failure, and invalid
 URL rejection. It does not launch the user's installed applications or prove
 host-session window adoption.
+
+The Hybrid `AdoptIndependentLayout` command now provides atomic model/scene
+adoption for a fully bound layout. It rejects stale or already-grouped windows
+before scene preparation; scene failures retain the old topology. The native
+compositor adapter still needs to connect this command to Reopen and apply
+container identity. See [Hybrid topology](hybrid-topology.md).
