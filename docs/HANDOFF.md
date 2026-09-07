@@ -1,5 +1,25 @@
 # Integration handoff
 
+## Physical scaling verified and user-level deployment complete
+
+Integrated `347eb03f` retains valid inventory events that arrive before the
+independent apply acknowledgement. The repaired candidate passed independent
+and integrated transaction gates (five groups each), strict MkDocs, and the
+link checker. The physical HDMI-A-1 preview reached 125% and AwaitingConfirmation;
+Cancel restored both displays and cleared the transaction. A separate Keep
+cycle confirmed 125%, then a second confirmed change restored the original 100%
+configuration. Evidence is in the manager's live-scale-proof result and
+confirm-result artifacts. This is direct Display1/compositor evidence; it is
+not a screenshot-based Settings interaction claim.
+
+The service is now deployed to `$HOME/.local/libexec/qindaqt-checkpoint/` with
+a persistent user systemd ExecStart override. Its bytes match the verified
+build (SHA256 `3b58f66f14704fba247b2541df6e2e63322844e258dc314dd6141abaec841317`).
+The temporary build-directory override and Wayland tracing were removed.
+The system-wide `/usr/bin` copy has not been replaced: passwordless sudo has
+expired. Session-startup refresh `7d2c8f8a` still awaits deployment.
+No full graphical-session restart occurred during these checks.
+
 ## Live Display connection repaired — 2026-09-06 21:04 MDT
 
 The old Display service PID 1780106 retained `WAYLAND_DISPLAY=wayland-0`
