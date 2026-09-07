@@ -6,6 +6,7 @@
 #include <qindaqt/session/powerdevil_idle/powerdevil_idle_adapter.h>
 
 #include <QObject>
+#include <QtGlobal>
 
 namespace QindaQt::Session::DesktopControls {
 
@@ -40,12 +41,20 @@ private:
     void queueDrain();
     void drain();
     [[nodiscard]] static int adapterMinutes(const IdleDisplayPreferences &preferences) noexcept;
+    [[nodiscard]] static bool samePreferences(const IdleDisplayPreferences &left,
+                                               const IdleDisplayPreferences &right) noexcept;
 
     IdlePreferencesProvider &m_preferences;
     QindaQt::Session::PowerDevilIdle::PowerDevilIdleAdapter &m_adapter;
     IdleDisplayPreferences m_latest{};
+    IdleDisplayPreferences m_acknowledged{};
+    IdleDisplayPreferences m_inFlight{};
     bool m_started = false;
     bool m_haveLatest = false;
+    bool m_haveAcknowledged = false;
+    bool m_haveInFlight = false;
+    quint64 m_preferenceRevision = 0;
+    quint64 m_inFlightRevision = 0;
     bool m_blockedAfterFailure = false;
     bool m_waitingForAvailability = false;
     bool m_drainQueued = false;

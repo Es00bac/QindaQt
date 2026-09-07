@@ -54,12 +54,14 @@ class FakePowerDevil final : public QObject, protected QDBusContext {
     Q_CLASSINFO("D-Bus Interface", "org.kde.Solid.PowerManagement")
 
 public:
+    int attemptCount = 0;
     int refreshCount = 0;
     bool failRefresh = false;
 
 public Q_SLOTS:
     void refreshStatus()
     {
+        ++attemptCount;
         if (failRefresh) {
             sendErrorReply(QDBusError::Failed,
                            QStringLiteral("binding-refresh-failed"));
@@ -107,6 +109,8 @@ private Q_SLOTS:
     void coalescesLatestPreferenceWhileApplyIsPending();
     void replaysLatestPreferenceAfterOwnerRestart();
     void reportsFailureWithoutRetryLoop();
+    void retriesAfterExplicitSamePreferenceChange();
+    void retriesNewerPreferenceAfterInFlightFailure();
     void stopCancelsQueuedDrain();
 
 private:
@@ -202,6 +206,50 @@ void PowerDevilIdlePreferencesBindingTest::reportsFailureWithoutRetryLoop()
     fake.failRefresh = false;
     preferences.set(IdleDisplayPreferences(true, 11));
     QTRY_COMPARE(fake.refreshCount, 1);
+    unregisterPowerDevil(bus);
+}
+
+void PowerDevilIdlePreferencesBindingTest::retriesAfterExplicitSamePreferenceChange()
+{
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    FakePowerDevil fake;
+    fake.failRefresh = true;
+    QVERIFY(registerPowerDevil(bus, fake));
+    FakePreferences preferences;
+    PowerDevilIdleAdapter adapter(bus);
+    PowerDevilIdlePreferencesBinding binding(preferences, adapter);
+    binding.start();
+
+    QTRY_COMPARE(fake.attemptCount, 1);
+    preferences.set(preferences.currentPreferences());
+    QTRY_COMPARE(fake.attemptCount, 2);
+    fake.failRefresh = false;
+    preferences.set(preferences.currentPreferences());
+    QTRY_COMPARE(fake.refreshCount, 1);
+    unregisterPowerDevil(bus);
+}
+
+void PowerDevilIdlePreferencesBindingTest::retriesNewerPreferenceAfterInFlightFailure()
+{
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    FakePowerDevil fake;
+    fake.failRefresh = true;
+    QVERIFY(registerPowerDevil(bus, fake));
+    FakePreferences preferences;
+    PowerDevilIdleAdapter adapter(bus);
+    PowerDevilIdlePreferencesBinding binding(preferences, adapter);
+    bool changedDuringApply = false;
+    connect(&adapter, &PowerDevilIdleAdapter::applyingChanged, &adapter, [&] {
+        if (adapter.applying() && !changedDuringApply) {
+            changedDuringApply = true;
+            preferences.set(IdleDisplayPreferences(true, 11));
+        }
+    });
+    binding.start();
+
+    QTRY_COMPARE(fake.attemptCount, 2);
+    QTest::qWait(100);
+    QCOMPARE(fake.attemptCount, 2);
     unregisterPowerDevil(bus);
 }
 
