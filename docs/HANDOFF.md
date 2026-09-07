@@ -1,5 +1,21 @@
 # Integration handoff
 
+## Adapter and portal verification update
+
+Gabbee focus restoration now precedes its terminal helper route; the applied
+external source passes 44/44 focused checks, including failed focus restoration
+and uncertain-delivery no-replay cases. Candidate `cd0d4465` proves byte-exact
+Unicode PTY readback through the real portal helper in standalone and grouped
+Terminal windows, twice. Inspection confirms this fixture calls the helper
+directly, so it does not yet qualify the Gabbee text sink itself. That adapter
+path is the next required proof, and the candidate remains unintegrated.
+
+The live portal pair was refreshed without logout. Both connect to `qindaqt-0`;
+the frontend identifies QindaQt and exports RemoteDesktop, GlobalShortcuts and
+ScreenCast. The KDE backend intentionally retains its KDE-specific desktop
+identity. Startup candidate `a83b32a4` needs corrected backend documentation
+and backend-first ordering before integration.
+
 ## Closing suite and prepared system installation
 
 The updated closing selection passes **660/660** on integrated `8179a0f9`

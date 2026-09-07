@@ -22,7 +22,7 @@ replace earlier work:
   per-monitor scaling, mixed-resolution layouts, and understandable Apply/Keep/
   Revert behavior; raw coordinates alone are not the main arrangement workflow.
   The physical DP-1 projector is enabled beside HDMI-A-1; inventory and
-  arrangement presentation repairs are integrated through `86342441`; physical
+  arrangement presentation repairs are integrated through `86342441`.
   The reported scale rollback is repaired through `347eb03f`: physical Display1
   preview/Cancel and Keep cycles reached 125% and restored the original layout.
   The verified service is deployed through a stable user-level systemd override;
@@ -33,8 +33,9 @@ replace earlier work:
   geometry in run `0c4d7868b85b44469417c4d28da7398a`.
 - Finish existing Color profile application and explain actual hardware
   capabilities without protocol jargon or nonfunctional controls. ICC application
-  is integrated through `deb48cd3`; 13 focused checks pass. Physical color-profile
-  qualification and unavailable-state visual cleanup remain open.
+  is integrated through `deb48cd3`; 13 focused checks pass. Physical KScreen application/readback/removal of a standard sRGB ICC profile
+  passed and restored the original state (`.cache/live-color-proof/result.json`).
+  Complete Settings-page interaction and unavailable-state visual review remain open.
 - Make Settings and the wider desktop human-friendly: focused Appearance
   destinations, clear selection and apply behavior, usable customization,
   consistent controls, compact navigation, and real visual verification.
@@ -49,8 +50,10 @@ replace earlier work:
   Settings consumer review and real desktop visual acceptance remain open.
 - Eliminate global-menu flashing and make pointer and keyboard actions reliable.
   The refreshed session still has undersized or vertically displaced click
-  targets on menu labels and status icons; full visible-label/icon hit areas
-  and usable padding require a repair and runtime verification.
+  targets on menu labels and status icons. Integrated `8179a0f9` removes
+  invisible scrollbar interception and expands usable hit areas; independent
+  and integrated checks pass 20/20. Fresh native interaction verification and
+  installation of the new shell remain open.
   Native-menu fixes are integrated through `71f3b49b`. In isolated run
   `de9f130640494649993e7001d75810a7`, inspected screenshots show a correctly
   anchored File popup staying open after release and a one-second wait, with
@@ -80,7 +83,7 @@ replace earlier work:
   session, with the original preserved and a normal-launch survival check.
 - Maintain the project on the user’s GitHub with reviewed integration commits,
   working CI dependencies, isolated worker branches, and ignored build/session
-  output. `origin/main` was pushed through `d8c6fbad`; isolated candidates and
+  output. `origin/main` was pushed through `7d63ebca`; isolated candidates and
   rejected speculative fixes remain separate from the integration branch.
 - Make Meta+Shift left-drag consistently combine windows into QindaQt
   containers without competing KWin custom/thirds tiling. Normal and late-Shift
