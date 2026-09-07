@@ -17,11 +17,12 @@ applet resolution rules in [Applet runtime](applet-runtime.md).
 Current maturity: **production built-in composition (compiled and verified)**.
 The P2 slice has a manifest, audited registry entry, production dispatcher and
 host injection, keyboard/accessibility interaction, installed-package proof,
-and mutation-sensitive boundary gates. Its live truth still reflects PB-1:
-until platform collaborators arrive, the resident service reports
-`Unavailable/upstream-not-integrated`, so the applet presents unavailable
-truth and dispatches no operation. This UI slice does not advance the Power
-platform milestone (QQ-005.03) by itself.
+and mutation-sensitive boundary gates. The applet presents the current public
+Power1/Brightness1 state; unavailable upstream capabilities remain unavailable
+in the UI. This consumer does not advance hardware qualification by itself.
+Profile and session-action buttons use [QindaQt.Controls](controls.md), preserving
+their existing availability, focus, confirmation and action-routing contracts
+while following the selected desktop theme.
 
 ## Projection contract
 
