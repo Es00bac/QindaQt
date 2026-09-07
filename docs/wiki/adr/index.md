@@ -118,3 +118,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0102: Adopt restored layouts atomically](0102-adopt-restored-layouts-atomically.md)
 
 - [ADR-0103: Preserve the compositor session during shell recovery](0103-paced-shell-recovery.md)
+- [ADR-0104: Serialize production shell rendering](0104-serialize-shell-rendering.md)
