@@ -66,9 +66,12 @@ jobs:
       # compositor integration into a separately provisioned job instead.
       - name: Install build dependencies
         run: |
+          pacman-key --init
+          pacman-key --populate archlinux
           pacman -Syu --noconfirm --needed \
             cmake \
             extra-cmake-modules \
+            fontconfig \
             git \
             kglobalaccel \
             kidletime \
@@ -76,12 +79,15 @@ jobs:
             kio \
             kservice \
             kwayland \
+            libnm \
+            libwireplumber \
             ninja \
             python \
             qt6-base \
             qt6-declarative \
             qt6-svg \
             qt6-wayland \
+            wayland \
             wayland-protocols \
             qtermwidget \
             syntax-highlighting
@@ -90,9 +96,11 @@ jobs:
 
       - name: Record dependency versions
         run: >-
-          pacman -Q cmake extra-cmake-modules kdecoration kglobalaccel kidletime
-          kio kservice kwayland qtermwidget
-          qt6-base qt6-declarative qt6-svg qt6-wayland wayland-protocols
+          pacman -Q cmake extra-cmake-modules fontconfig kdecoration
+          kglobalaccel kidletime kio kservice kwayland libnm libwireplumber
+          qtermwidget
+          qt6-base qt6-declarative qt6-svg qt6-wayland wayland
+          wayland-protocols
 
       - name: Configure
         run: >-
@@ -127,12 +135,16 @@ jobs:
       # layer-shell client boundary, not the separately pinned KWin 6.6.6 ABI.
       - name: Install production shell and nested-session dependencies
         run: |
+          pacman-key --init
+          pacman-key --populate archlinux
           pacman -Syu --noconfirm --needed \
             cmake \
             dbus \
             extra-cmake-modules \
+            fontconfig \
             git \
             kdecoration \
+            kglobalaccel \
             kwin \
             layer-shell-qt \
             libcap \
@@ -140,12 +152,15 @@ jobs:
             kio \
             kservice \
             kwayland \
+            libnm \
+            libwireplumber \
             ninja \
             python \
             qt6-base \
             qt6-declarative \
             qt6-svg \
             qt6-wayland \
+            wayland \
             wayland-protocols \
             qtermwidget syntax-highlighting \
             xorg-xdpyinfo \
@@ -178,11 +193,11 @@ jobs:
 
       - name: Record production shell stack
         run: >-
-          pacman -Q dbus extra-cmake-modules kdecoration kwin
+          pacman -Q dbus extra-cmake-modules fontconfig kdecoration kwin
           kglobalaccel kidletime kio kservice kwayland layer-shell-qt libcap
-          qtermwidget syntax-highlighting qt6-base
+          libnm libwireplumber qtermwidget syntax-highlighting qt6-base
           qt6-declarative qt6-svg qt6-wayland xorg-xwayland
-          wayland-protocols
+          wayland wayland-protocols
 
       - name: Configure production shell without the binary KWin plugin
         run: >-
@@ -224,7 +239,7 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       # Dated 2026-09-07. Pin the amd64 systemd image so the base does not move
-      # underneath the exact Portage repository and Plasma profile below.
+      # underneath the exact Portage repository and desktop profile below.
       image: gentoo/stage3@sha256:35356fe25c32d5c94c04b4d40a046223c342ae7126fe0bffa052e15331c9cec8
     timeout-minutes: 60
     env:
@@ -244,42 +259,42 @@ jobs:
             --strip-components=1 -C /var/db/repos/gentoo
           test -f /var/db/repos/gentoo/kde-plasma/kwin/kwin-6.6.6.ebuild
           ln -snf \
-            /var/db/repos/gentoo/profiles/default/linux/amd64/23.0/desktop/plasma/systemd \
+            /var/db/repos/gentoo/profiles/default/linux/amd64/23.0/desktop/systemd \
             /etc/portage/make.profile
+          mkdir -p /etc/portage/package.use
+          cat > /etc/portage/package.use/qindaqt-ci <<'EOF'
+          # The native lane compiles and boots QindaQt's plugin. The complete
+          # desktop ebuild separately qualifies the lock-screen runtime closure.
+          dev-qt/qtbase -accessibility
+          kde-plasma/kwin -accessibility -lock -screencast shortcuts
+          EOF
 
       # `--usepkgonly` makes absence of a compatible official binary package a
       # hard failure instead of turning this lane into an unbounded distro
       # build. The fixed repository and exact atoms retain dependency metadata.
-      - name: Install exact binary release dependencies
+      - name: Install exact binary native build dependencies
         run: |
           emerge --jobs=2 --getbinpkg --usepkgonly --binpkg-respect-use=y \
+            --update --newuse \
             --autounmask=n --autounmask-use=n --autounmask-license=n \
             dev-build/cmake \
             dev-build/ninja \
             dev-vcs/git \
             sys-libs/libcap \
             sys-apps/dbus \
-            sys-apps/xdg-desktop-portal \
-            sys-power/power-profiles-daemon \
-            sys-power/upower \
             x11-apps/xdpyinfo \
             x11-base/xwayland \
-            net-wireless/bluez \
             dev-libs/wayland \
             dev-libs/wayland-protocols \
             dev-util/wayland-scanner \
             '>=dev-qt/qtbase-6.11:6' \
             '>=dev-qt/qtdeclarative-6.11:6' \
             '>=dev-qt/qtsvg-6.11:6' \
-            '=kde-plasma/kwin-6.6.6*:6[lock,shortcuts]' \
+            '=kde-plasma/kwin-6.6.6*:6[shortcuts]' \
             '=kde-plasma/kdecoration-6.6.6*:6' \
-            '=kde-plasma/kscreenlocker-6.6.6*:6' \
             '=kde-plasma/layer-shell-qt-6.6.6*:6' \
             '=kde-plasma/kwayland-6.6.6*:6' \
-            '=kde-plasma/polkit-kde-agent-6.6.6*:6' \
             '=kde-plasma/plasma-activities-6.6.6*:6' \
-            '=kde-plasma/spectacle-6.6.6*:6' \
-            '=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6' \
             '>=kde-frameworks/extra-cmake-modules-6.0' \
             '>=kde-frameworks/kcoreaddons-6.0:6' \
             '>=kde-frameworks/kglobalaccel-6.0:6' \
@@ -322,17 +337,15 @@ jobs:
             --kwin-wayland /usr/bin/kwin_wayland \
             --kwin-cmake-version "$cmake_version"
 
-      - name: Record the exact release stack
+      - name: Record the exact native build stack
         run: |
           emerge --info \
             kde-plasma/kwin kde-plasma/kdecoration \
-            kde-plasma/kscreenlocker kde-plasma/layer-shell-qt \
-            kde-plasma/kwayland kde-plasma/plasma-activities kde-plasma/spectacle \
-            kde-plasma/polkit-kde-agent kde-plasma/xdg-desktop-portal-kde \
+            kde-plasma/layer-shell-qt kde-plasma/kwayland \
+            kde-plasma/plasma-activities \
             kde-frameworks/kidletime kde-frameworks/kio kde-frameworks/kservice
           emerge --info \
-            net-wireless/bluez sys-apps/xdg-desktop-portal \
-            sys-power/power-profiles-daemon sys-power/upower
+            media-video/wireplumber net-misc/networkmanager sys-apps/systemd
           /usr/bin/kwin_wayland --version
 
       - name: Configure the complete release build

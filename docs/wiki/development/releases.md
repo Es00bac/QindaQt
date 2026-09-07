@@ -73,6 +73,20 @@ an install and proves that the installed launcher discovers the relocated
 plugin. Also run the focused tests for every changed module and the repository
 documentation gates.
 
+The native CI lane uses Gentoo's generic `desktop/systemd` profile and the
+official KWin 6.6.6 binary with `shortcuts` enabled and `lock` disabled. That
+lane qualifies the binary plugin ABI, complete source build, staged install,
+and two private nested boots. Keeping lock-screen runtime integration out of
+this build lane avoids pulling Plasma Workspace and Plasma login sessions into
+a desktop that installs its own session entry. It does not reduce the package
+contract: the full-desktop ebuild still requires release-matched KScreenLocker,
+KWin `lock,shortcuts`, portals, hardware providers, and session utilities.
+
+When the dated stage image and pinned Portage snapshot differ, the CI install
+uses `--update --newuse` with `--usepkgonly`. This permits a compatible official
+binary to replace a base package whose selected USE flags changed, while still
+failing instead of compiling a missing binary package from source.
+
 ## Record and publish
 
 Record the exact QindaQt commit, KWin package version, commands, exit statuses,
