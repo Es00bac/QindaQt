@@ -18,6 +18,12 @@ ApplicationShell {
     minimumWidth: 480
     minimumHeight: 320
 
+    EntrySelection {
+        id: entrySelection
+        objectName: "entrySelection"
+        navigationController: root.navigationController
+    }
+
     function activeView() {
         return root.navigationController.viewMode === "grid" ? entryGrid : entryList
     }
@@ -48,6 +54,13 @@ ApplicationShell {
             } else {
                 mutationDialogs.dispatch(actionId, root.activeView().selectedEntries())
             }
+        }
+    }
+
+    Connections {
+        target: root.navigationController
+        function onViewModeChanged() {
+            Qt.callLater(() => root.activeView().focusView())
         }
     }
 
@@ -109,12 +122,14 @@ ApplicationShell {
 
                         EntryList {
                             id: entryList
+                            selection: entrySelection
                             navigationController: root.navigationController
                             appCoordinator: root.coordinator
                         }
 
                         EntryGrid {
                             id: entryGrid
+                            selection: entrySelection
                             navigationController: root.navigationController
                             appCoordinator: root.coordinator
                         }

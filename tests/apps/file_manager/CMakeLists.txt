@@ -198,3 +198,11 @@ set_tests_properties(
     qindaqt.file-manager-installed-runtime
     PROPERTIES LABELS "file-manager;package" RUN_SERIAL TRUE TIMEOUT 180
 )
+
+add_test(NAME qindaqt.file-manager-selection-qml
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_selection.qml")
+set_tests_properties(qindaqt.file-manager-selection-qml PROPERTIES
+    LABELS "file-manager"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")

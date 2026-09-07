@@ -9,7 +9,10 @@ Item {
     id: root
 
     required property var navigationController
+    required property var selection
     required property var appCoordinator
+
+    function focusView() { listView.forceActiveFocus() }
 
     function currentEntry() {
         return listView.currentIndex >= 0
@@ -17,11 +20,7 @@ Item {
     }
 
     function selectedEntries() {
-        const selected = selection.selectedEntries()
-        if (selected.length > 0)
-            return selected
-        const current = currentEntry()
-        return current ? [current] : []
+        return selection.selectedEntries()
     }
 
     function selectAll() {
@@ -34,35 +33,7 @@ Item {
         }
     }
 
-    // AGENT-GUARD: Preserve the previously selected entry's name across a
-    // refresh of the same folder so review-visible selection stays
-    // deterministic instead of silently jumping to index 0 whenever the
-    // underlying listing is rebuilt. A genuine navigation to a different
-    // folder still lands on index 0 because the old name normally will not
-    // exist there.
-    property string lastSelectedName: ""
-
-    EntrySelection {
-        id: selection
-        navigationController: root.navigationController
-    }
-
-    Connections {
-        target: root.navigationController
-        function onEntriesChanged() {
-            selection.prune()
-            const restored = root.navigationController.indexOfName(root.lastSelectedName)
-            listView.currentIndex = restored >= 0
-                ? restored
-                : (root.navigationController.entries.length > 0 ? 0 : -1)
-        }
-    }
-
-    // AGENT-NOTE: The controller publishes a non-empty statusMessage only for
-    // a truncated ready-state listing or a hidden-entry filter notice (errors
-    // use StatePane instead), so this label is the single user-visible surface
-    // for those bounds. Keep it outside the ListView so the notice cannot
-    // scroll out of view.
+    // Listing notices remain outside the scrolling entries.
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Tokens.space["2"]
@@ -123,16 +94,13 @@ Item {
             Layout.fillHeight: true
             clip: true
             focus: true
-            keyNavigationEnabled: true
+            keyNavigationEnabled: false
+            currentIndex: root.selection.currentIndex
+            function selectEntry(index) { root.selection.selectOnly(index) }
             model: root.navigationController.entries
 
             Accessible.role: Accessible.List
             Accessible.name: qsTr("Folder contents")
-
-            onCurrentIndexChanged: {
-                root.lastSelectedName = currentIndex >= 0
-                    ? root.navigationController.entries[currentIndex].name : ""
-            }
 
             Keys.onReturnPressed: root.activateCurrent()
             Keys.onEnterPressed: root.activateCurrent()
@@ -140,15 +108,24 @@ Item {
                 if (event.key === Qt.Key_Backspace) {
                     root.navigationController.goUp()
                     event.accepted = true
-                } else if ((event.key === Qt.Key_Up || event.key === Qt.Key_Down)
-                           && (event.modifiers & Qt.ShiftModifier)) {
-                    const delta = event.key === Qt.Key_Up ? -1 : 1
-                    const target = Math.max(0, Math.min(listView.count - 1,
-                                                        listView.currentIndex + delta))
-                    if (target !== listView.currentIndex) {
-                        listView.currentIndex = target
-                        selection.rangeTo(target)
-                    }
+                } else if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
+                            Qt.Key_Home, Qt.Key_End].indexOf(event.key) >= 0) {
+                    const columns = 1
+                    let target = root.selection.currentIndex
+                    if (event.key === Qt.Key_Home) target = 0
+                    else if (event.key === Qt.Key_End) target = listView.count - 1
+                    else if (event.key === Qt.Key_Up) target -= columns
+                    else if (event.key === Qt.Key_Down) target += columns
+                    else if (event.key === Qt.Key_Left) target -= 1
+                    else target += 1
+                    target = Math.max(0, Math.min(listView.count - 1, target))
+                    root.selection.moveTo(target, event.modifiers)
+                    listView.positionViewAtIndex(target, listView.Contain)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_Space) {
+                    if (event.modifiers & Qt.ControlModifier)
+                        root.selection.toggle(root.selection.currentIndex)
+                    else root.selection.selectOnly(root.selection.currentIndex)
                     event.accepted = true
                 } else if (event.key === Qt.Key_Menu
                            || (event.key === Qt.Key_F10
@@ -169,13 +146,14 @@ Item {
                 width: listView.width
                 height: 36
                 color: delegateRoot.entrySelected ? Tokens.state.pressed
-                     : ListView.isCurrentItem ? Tokens.state.pressed
                      : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
 
                 Accessible.role: Accessible.ListItem
                 Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                     ? qsTr(", folder") : qsTr(", file"))
-                Accessible.selected: delegateRoot.entrySelected || ListView.isCurrentItem
+                Accessible.selected: delegateRoot.entrySelected
+                border.width: ListView.isCurrentItem ? 1 : 0
+                border.color: Tokens.accent.default
 
                 RowLayout {
                     anchors.fill: parent
@@ -220,15 +198,18 @@ Item {
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: (mouse) => {
-                        if (mouse.modifiers & Qt.ControlModifier) {
+                        listView.forceActiveFocus()
+                        if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
+                            selection.focusIndex(delegateRoot.index)
+                        } else if (mouse.modifiers & Qt.ControlModifier) {
                             selection.toggle(delegateRoot.index)
-                            listView.currentIndex = delegateRoot.index
+                            selection.focusIndex(delegateRoot.index)
                         } else if (mouse.modifiers & Qt.ShiftModifier) {
                             selection.rangeTo(delegateRoot.index)
-                            listView.currentIndex = delegateRoot.index
+                            selection.focusIndex(delegateRoot.index)
                         } else {
                             selection.selectOnly(delegateRoot.index)
-                            listView.currentIndex = delegateRoot.index
+                            selection.focusIndex(delegateRoot.index)
                         }
                         if (mouse.button === Qt.RightButton)
                             contextMenu.popup()
@@ -237,7 +218,7 @@ Item {
                         if (mouse.modifiers !== Qt.NoModifier)
                             return
                         selection.selectOnly(delegateRoot.index)
-                        listView.currentIndex = delegateRoot.index
+                        selection.focusIndex(delegateRoot.index)
                         root.activateCurrent()
                     }
                 }

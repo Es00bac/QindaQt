@@ -51,6 +51,7 @@ qindaqt_enable_warnings(qindaqt_file_manager_support)
 qt_add_executable(qindaqt-file-manager
     main.cpp
     runtime/mutation_ui_action_probe.cpp
+    runtime/selection_ui_probe.cpp
     runtime/mutation_ui_action_probe.h
     runtime/qml_component_ready.cpp
     runtime/qml_component_ready.h

@@ -1,88 +1,104 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 
-// Multi-select state shared by EntryList and EntryGrid. The primary (current)
-// index stays owned by the host view so the existing name-based selection
-// restore contract is untouched; this component only tracks the extended
-// selection set and its range anchor.
+// One window owns selection; list/grid are projections of this state.
 QtObject {
     id: root
-
-    property var navigationController
-    // Index-keyed object (never mutated in place) so view delegates rebind
-    // whenever the set changes.
+    required property var navigationController
     property var selected: ({})
-    property int anchor: -1
+    property string folder: ""
+    property string currentKey: ""
+    property string anchorKey: ""
+    readonly property int currentIndex: indexOfKey(currentKey)
+    property Connections changes: Connections {
+        target: root.navigationController
+        function onEntriesChanged() { root.reconcile() }
+        function onNavigationChanged() { root.reconcile() }
+    }
+    Component.onCompleted: reconcile()
 
+    function key(entry) {
+        return entry ? JSON.stringify([entry.name, entry.device, entry.inode]) : ""
+    }
+    function indexOfKey(value) {
+        const entries = navigationController.entries
+        for (let i = 0; i < entries.length; ++i)
+            if (key(entries[i]) === value) return i
+        return -1
+    }
+    function focusIndex(index) {
+        currentKey = key(navigationController.entries[index])
+    }
     function isSelected(index) {
-        return root.selected[index] === true
+        return selected[key(navigationController.entries[index])] !== undefined
     }
-
-    function count() {
-        return Object.keys(root.selected).length
-    }
-
+    function count() { return Object.keys(selected).length }
     function selectOnly(index) {
+        const entry = navigationController.entries[index]
         const next = ({})
-        if (index >= 0)
-            next[index] = true
-        root.selected = next
-        root.anchor = index
+        if (entry) next[key(entry)] = entry
+        selected = next
+        focusIndex(index)
+        anchorKey = currentKey
     }
-
     function toggle(index) {
-        const next = Object.assign({}, root.selected)
-        if (next[index] === true)
-            delete next[index]
-        else
-            next[index] = true
-        root.selected = next
-        root.anchor = index
+        const entry = navigationController.entries[index]
+        if (!entry) return
+        const next = Object.assign({}, selected)
+        const id = key(entry)
+        if (next[id] !== undefined) delete next[id]
+        else next[id] = entry
+        selected = next
+        focusIndex(index)
+        anchorKey = currentKey
     }
-
     function rangeTo(index) {
-        const total = root.navigationController.entries.length
-        if (total === 0 || index < 0)
-            return
-        const from = root.anchor >= 0 && root.anchor < total ? root.anchor : index
-        const next = ({})
-        for (let i = Math.min(from, index); i <= Math.max(from, index); ++i)
-            next[i] = true
-        root.selected = next
-    }
-
-    function selectAll() {
-        const total = root.navigationController.entries.length
-        const next = ({})
-        for (let i = 0; i < total; ++i)
-            next[i] = true
-        root.selected = next
-    }
-
-    // AGENT-GUARD: Indexes refer to the current published listing. After a
-    // refresh or filter change the set must be pruned to the new length so a
-    // stale index can never dispatch a mutation against the wrong entry.
-    function prune() {
-        const total = root.navigationController.entries.length
-        const next = ({})
-        for (const key of Object.keys(root.selected)) {
-            const index = parseInt(key)
-            if (index >= 0 && index < total)
-                next[index] = true
+        const entries = navigationController.entries
+        if (index < 0 || index >= entries.length) return
+        let anchor = indexOfKey(anchorKey)
+        if (anchor < 0) {
+            anchor = currentIndex >= 0 ? currentIndex : index
+            anchorKey = key(entries[anchor])
         }
-        root.selected = next
-        if (root.anchor >= total)
-            root.anchor = -1
+        const next = ({})
+        for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); ++i)
+            next[key(entries[i])] = entries[i]
+        selected = next
+        focusIndex(index)
     }
-
-    // Entry maps in ascending index order; each map carries the decimal-string
-    // identity fields MutationController batch dispatch requires.
+    function selectAll() {
+        const next = ({})
+        for (const entry of navigationController.entries) next[key(entry)] = entry
+        selected = next
+    }
+    function moveTo(index, modifiers) {
+        if (modifiers & Qt.ShiftModifier) rangeTo(index)
+        else if (modifiers & Qt.ControlModifier) focusIndex(index)
+        else selectOnly(index)
+    }
+    function reconcile() {
+        // AGENT-GUARD: Navigation changes the authority of every row. Clear
+        // selection even if the destination has identical names or inodes.
+        if (folder !== navigationController.currentPath) {
+            folder = navigationController.currentPath
+            selected = ({})
+            currentKey = ""
+            anchorKey = ""
+        }
+        const next = ({})
+        for (const entry of navigationController.entries) {
+            const id = key(entry)
+            if (selected[id] !== undefined) next[id] = selected[id]
+        }
+        selected = next
+        if (indexOfKey(currentKey) < 0) focusIndex(0)
+        if (indexOfKey(anchorKey) < 0) anchorKey = currentKey
+    }
     function selectedEntries() {
-        const entries = root.navigationController.entries
-        const indexes = Object.keys(root.selected)
-            .map((key) => parseInt(key))
-            .filter((index) => index >= 0 && index < entries.length)
-            .sort((a, b) => a - b)
-        return indexes.map((index) => entries[index])
+        // AGENT-CONTRACT: Retain listing-time identity for mutation checks.
+        // Never refresh a selected entry's identity from a replacement row.
+        if (folder !== navigationController.currentPath) return []
+        return navigationController.entries.filter(entry => selected[key(entry)] !== undefined)
+            .map(entry => selected[key(entry)])
     }
 }

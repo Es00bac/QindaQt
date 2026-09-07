@@ -86,14 +86,20 @@ share one selection contract.
 | `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
 | `entryListView` / `entryGridView` | `Return`/`Enter` | Open the selected entry |
 
-Selection supports Ctrl-click toggle, Shift-click and Shift+arrow ranges, and
-`Ctrl+A`; the presentation-only set lives in `ui/EntrySelection.qml` and is
-pruned to the published listing whenever it changes, so a stale index can
-never dispatch a mutation against the wrong entry. Whenever the listing is
-rebuilt, the primary selection restores the previously selected entry by name
-when that name still exists, and otherwise falls to the first entry (or
-nothing, if empty). `NavigationController::indexOfName()` remains the pure,
-testable seam presentation uses for that restoration.
+Selection is shared between list and grid views. Ctrl-click toggles individual
+files; Shift-click and Shift+arrows select a range; Ctrl+A selects all visible
+entries. Plain arrows select the destination, while Ctrl+arrows move only the
+focus outline. Grid Up/Down move by a row. Right-clicking an already selected
+file keeps the batch selected for the context menu.
+
+Sorting and refreshing keep the same selected files, identified by name,
+device and inode. Filtering drops entries that are no longer visible; revealing
+them again does not silently reselect them. Opening another folder clears the
+selection. The focus outline may start at the first item, but that alone does
+not select it for a file operation. Switching list/grid preserves both focus
+and selection. Batch dispatch retains the selected entries' original identity
+snapshots so a changed file is checked by the mutation backend rather than
+silently substituting newly observed data.
 
 Opening a directory entry navigates into it. Opening a file entry requests a
 bounded local launch (see below); the list selection and current folder never
