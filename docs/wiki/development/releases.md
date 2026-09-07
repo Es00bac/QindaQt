@@ -51,7 +51,10 @@ cmake --install build/release-checkpoint \
 
 Adjust only the KWin CMake version-file path for the distribution layout. The
 checker requires the runtime and development package to report the exact same
-release and requires non-empty plugin and session-launcher artifacts.
+release and requires non-empty plugin and session-launcher artifacts. It reads
+one exact `kwin VERSION` line because restricted containers can also emit a
+realtime-scheduling diagnostic; a missing, duplicate, or mismatched version
+line remains a hard failure.
 
 Run the static ABI rows, then acquire the shared nested-test slot described in
 the [testing harness](testing-harness.md). Execute nested rows one at a time:
