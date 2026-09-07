@@ -188,9 +188,12 @@ ctest --test-dir build/dev --output-on-failure \
   paths, PageTab semantics, selected state, and fail-closed alerts; it is
   registered with `QT_FATAL_WARNINGS=1`, so any QML warning emitted while
   constructing the host or a route page aborts the row instead of passing
-  silently. The child-process construction and installed rows deliberately
-  tolerate `main()`'s absent-bus client-unavailability warnings and are not
-  registered as fatal;
+  silently. The target also lists Power's Q_OBJECT screen-lock fixture
+  header, whose stub preferences the host injects while Color is selected,
+  as an explicit source so AUTOMOC generates its Qt meta-object; without
+  that registration the target fails to link. The child-process construction
+  and installed rows deliberately tolerate `main()`'s absent-bus
+  client-unavailability warnings and are not registered as fatal;
 - the CLI row rejects ordinary unknown, uppercase, parent-path, and nested-path
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
