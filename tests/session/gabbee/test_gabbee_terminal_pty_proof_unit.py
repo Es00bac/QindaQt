@@ -17,12 +17,15 @@ stub cannot drift away from it unnoticed.
 from __future__ import annotations
 
 import sys
+import tempfile
 import threading
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 
 from gabbee_terminal_portal import chooser_matches  # noqa: E402
 from gabbee_terminal_sentinel import (  # noqa: E402
@@ -84,6 +87,22 @@ class ChooserMatchTests(unittest.TestCase):
     def test_rejects_unrelated_names(self) -> None:
         self.assertFalse(chooser_matches("Whole Screen", "terminal"))
         self.assertFalse(chooser_matches("Untitled — QindaQt Text Editor", "terminal"))
+
+
+class PrivateSessionLaunchTests(unittest.TestCase):
+    def test_terminal_boot_suppresses_optional_host_providers(self) -> None:
+        from gabbee_terminal_boot import _private_session_program
+
+        stage = SimpleNamespace(executables={"session": Path("/opt/qindaqt/bin/qindaqt-session")})
+        with tempfile.TemporaryDirectory() as temporary:
+            wrapper = _private_session_program(stage, {"XDG_RUNTIME_DIR": temporary})
+            self.assertEqual(wrapper, Path(temporary) / "qindaqt-session")
+            self.assertEqual(
+                wrapper.read_text(encoding="utf-8"),
+                "#!/usr/bin/sh\n"
+                "exec /opt/qindaqt/bin/qindaqt-session --no-polkit-agent --no-powerdevil\n",
+            )
+            self.assertEqual(wrapper.stat().st_mode & 0o777, 0o700)
 
 
 class _StubResult:

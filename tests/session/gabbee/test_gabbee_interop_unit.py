@@ -370,6 +370,24 @@ class OuterPreflightTests(unittest.TestCase):
         self.assertIn("/opt/qindaqt/bin", env["PATH"])
 
 
+class NestedLaunchIsolationTests(unittest.TestCase):
+    def test_nested_runner_suppresses_optional_host_providers(self) -> None:
+        from types import SimpleNamespace
+
+        from run_gabbee_interop_nested import _private_session_program
+
+        stage = SimpleNamespace(executables={"session": Path("/opt/qindaqt/bin/qindaqt-session")})
+        with tempfile.TemporaryDirectory() as temporary:
+            wrapper = _private_session_program(stage, {"XDG_RUNTIME_DIR": temporary})
+            self.assertEqual(wrapper, Path(temporary) / "qindaqt-session")
+            self.assertEqual(
+                wrapper.read_text(encoding="utf-8"),
+                "#!/usr/bin/sh\n"
+                "exec /opt/qindaqt/bin/qindaqt-session --no-polkit-agent --no-powerdevil\n",
+            )
+            self.assertEqual(wrapper.stat().st_mode & 0o777, 0o700)
+
+
 class OuterCliTests(unittest.TestCase):
     """Regression for the review blocker: the documented nested-lane command
     (which omits --source-root) must parse before any external-runtime
