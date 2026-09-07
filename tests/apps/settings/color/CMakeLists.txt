@@ -65,7 +65,11 @@ set_tests_properties(qindaqt.settings-color-page PROPERTIES
 
 qt_add_executable(qindaqt_color_navigation_page_tests
     tst_color_navigation_page.cpp
-    stub_color_settings_model.h color_navigation_assertions.h)
+    stub_color_settings_model.h color_navigation_assertions.h
+    # The real Settings host injects this Q_OBJECT screen-lock fixture while
+    # navigating from Power to Color. Listing it gives AUTOMOC ownership of
+    # the meta-object used by this otherwise Color-owned test target.
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/power/stub_power_settings_model.h)
 target_include_directories(qindaqt_color_navigation_page_tests
     PRIVATE "${PROJECT_SOURCE_DIR}")
 target_compile_definitions(qindaqt_color_navigation_page_tests PRIVATE
