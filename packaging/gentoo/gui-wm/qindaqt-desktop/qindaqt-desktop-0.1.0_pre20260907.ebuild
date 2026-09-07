@@ -7,7 +7,7 @@ inherit cmake xdg
 
 DESCRIPTION="QindaQt Wayland desktop, services and bundled applications"
 HOMEPAGE="https://github.com/Es00bac/QindaQt"
-QINDAQT_COMMIT="c95d355c0a0aa655c59f50ce10c4af66eea3cb5e"
+QINDAQT_COMMIT="d1232e75996fde216ed232622a5b20198dadb2e7"
 SRC_URI="https://github.com/Es00bac/QindaQt/archive/${QINDAQT_COMMIT}.tar.gz -> ${P}.tar.gz"
 S="${WORKDIR}/QindaQt-${QINDAQT_COMMIT}"
 
