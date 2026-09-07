@@ -23,6 +23,7 @@
 
 using namespace QindaQt::Apps::SettingsCenter;
 using namespace QindaQt::Apps::SettingsCenter::TestSupport;
+using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 
 namespace {
 const char *const SettingsQmlDir = QINDAQT_SETTINGS_SOURCE_DIR;
