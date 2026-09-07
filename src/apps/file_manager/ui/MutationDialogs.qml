@@ -156,7 +156,10 @@ Item {
         T.Label {
             text: root.selectedItems.length > 1
                 ? qsTr("Move %1 selected items to the recoverable home Trash. Batch trash is not covered by Restore Last.")
-                      .arg(root.selectedItems.length)
+                      .arg(root.selectedItems.length) + "\n\n"
+                  + root.selectedItems.slice(0, 5).map(entry => entry.name).join("\n")
+                  + (root.selectedItems.length > 5
+                     ? qsTr("\n…and %1 more").arg(root.selectedItems.length - 5) : "")
                 : (root.selectedEntry ? qsTr("Move “%1” to the recoverable home Trash.")
                                            .arg(root.selectedEntry.name) : "")
             wrapMode: Text.Wrap

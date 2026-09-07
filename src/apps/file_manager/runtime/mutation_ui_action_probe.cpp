@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "mutation_ui_action_probe.h"
+#include "selection_ui_probe.h"
 
 #include "model/navigation_controller.h"
 #include "mutation/mutation_controller.h"
@@ -49,7 +50,7 @@ namespace {
                                NavigationController *navigation,
                                const QString &name, QString *error) {
   const int index = navigation->indexOfName(name);
-  if (index < 0 || !list->setProperty("currentIndex", index)) {
+  if (index < 0 || !QMetaObject::invokeMethod(list, "selectEntry", Q_ARG(QVariant, QVariant(index)))) {
     return fail(error, QStringLiteral("could not select fixture entry %1").arg(name));
   }
   QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
@@ -125,6 +126,7 @@ bool verifyMutationUiActions(
   if (!root || !coordinator || !navigation || !mutation) {
     return fail(error, QStringLiteral("the UI action probe is missing a collaborator"));
   }
+  if (!verifySelectionUi(root, navigation, fixtureRoot, error)) return false;
   QObject *list = root->findChild<QObject *>(QStringLiteral("entryListView"));
   QObject *renameDialog =
       root->findChild<QObject *>(QStringLiteral("renameDialog"));

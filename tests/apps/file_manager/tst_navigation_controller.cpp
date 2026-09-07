@@ -496,7 +496,9 @@ void TestNavigationController::formattedFieldsArePublishedPerEntry() {
 }
 
 void TestNavigationController::indexOfNameFollowsTheVisibleListing() {
-  // AGENT-CONTRACT: QML restores the selection by name after every refresh
+  // AGENT-CONTRACT: This helper finds a visible name; extended selection uses
+  // name/device/inode identities in EntrySelection, not a retained row index.
+  // The navigation helper remains valid after every refresh
   // (EntryList.qml's lastSelectedName guard). indexOfName must therefore
   // address the visible listing only, so filtering or re-sorting shifts the
   // returned index to wherever the name actually landed.

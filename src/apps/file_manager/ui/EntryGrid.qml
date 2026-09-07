@@ -12,7 +12,10 @@ Item {
     id: root
 
     required property var navigationController
+    required property var selection
     required property var appCoordinator
+
+    function focusView() { gridView.forceActiveFocus() }
 
     function currentEntry() {
         return gridView.currentIndex >= 0
@@ -20,11 +23,7 @@ Item {
     }
 
     function selectedEntries() {
-        const selected = selection.selectedEntries()
-        if (selected.length > 0)
-            return selected
-        const current = currentEntry()
-        return current ? [current] : []
+        return selection.selectedEntries()
     }
 
     function selectAll() {
@@ -34,24 +33,6 @@ Item {
     function activateCurrent() {
         if (gridView.currentIndex >= 0) {
             root.navigationController.activate(gridView.currentIndex)
-        }
-    }
-
-    property string lastSelectedName: ""
-
-    EntrySelection {
-        id: selection
-        navigationController: root.navigationController
-    }
-
-    Connections {
-        target: root.navigationController
-        function onEntriesChanged() {
-            selection.prune()
-            const restored = root.navigationController.indexOfName(root.lastSelectedName)
-            gridView.currentIndex = restored >= 0
-                ? restored
-                : (root.navigationController.entries.length > 0 ? 0 : -1)
         }
     }
 
@@ -67,7 +48,9 @@ Item {
             Layout.fillHeight: true
             clip: true
             focus: true
-            keyNavigationEnabled: true
+            keyNavigationEnabled: false
+            currentIndex: root.selection.currentIndex
+            function selectEntry(index) { root.selection.selectOnly(index) }
             cellWidth: 112
             cellHeight: 104
             model: root.navigationController.entries
@@ -75,16 +58,30 @@ Item {
             Accessible.role: Accessible.List
             Accessible.name: qsTr("Folder contents")
 
-            onCurrentIndexChanged: {
-                root.lastSelectedName = currentIndex >= 0
-                    ? root.navigationController.entries[currentIndex].name : ""
-            }
-
             Keys.onReturnPressed: root.activateCurrent()
             Keys.onEnterPressed: root.activateCurrent()
             Keys.onPressed: (event) => {
                 if (event.key === Qt.Key_Backspace) {
                     root.navigationController.goUp()
+                    event.accepted = true
+                } else if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
+                            Qt.Key_Home, Qt.Key_End].indexOf(event.key) >= 0) {
+                    const columns = Math.max(1, Math.floor(gridView.width / gridView.cellWidth))
+                    let target = root.selection.currentIndex
+                    if (event.key === Qt.Key_Home) target = 0
+                    else if (event.key === Qt.Key_End) target = gridView.count - 1
+                    else if (event.key === Qt.Key_Up) target -= columns
+                    else if (event.key === Qt.Key_Down) target += columns
+                    else if (event.key === Qt.Key_Left) target -= 1
+                    else target += 1
+                    target = Math.max(0, Math.min(gridView.count - 1, target))
+                    root.selection.moveTo(target, event.modifiers)
+                    gridView.positionViewAtIndex(target, gridView.Contain)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_Space) {
+                    if (event.modifiers & Qt.ControlModifier)
+                        root.selection.toggle(root.selection.currentIndex)
+                    else root.selection.selectOnly(root.selection.currentIndex)
                     event.accepted = true
                 } else if (event.key === Qt.Key_Menu
                            || (event.key === Qt.Key_F10
@@ -106,13 +103,14 @@ Item {
                 height: gridView.cellHeight - Tokens.space["1"]
                 radius: 4
                 color: delegateRoot.entrySelected ? Tokens.state.pressed
-                     : GridView.isCurrentItem ? Tokens.state.pressed
                      : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
 
                 Accessible.role: Accessible.ListItem
                 Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                     ? qsTr(", folder") : qsTr(", file"))
-                Accessible.selected: delegateRoot.entrySelected || GridView.isCurrentItem
+                Accessible.selected: delegateRoot.entrySelected
+                border.width: GridView.isCurrentItem ? 1 : 0
+                border.color: Tokens.accent.default
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -180,15 +178,18 @@ Item {
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: (mouse) => {
-                        if (mouse.modifiers & Qt.ControlModifier) {
+                        gridView.forceActiveFocus()
+                        if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
+                            selection.focusIndex(delegateRoot.index)
+                        } else if (mouse.modifiers & Qt.ControlModifier) {
                             selection.toggle(delegateRoot.index)
-                            gridView.currentIndex = delegateRoot.index
+                            selection.focusIndex(delegateRoot.index)
                         } else if (mouse.modifiers & Qt.ShiftModifier) {
                             selection.rangeTo(delegateRoot.index)
-                            gridView.currentIndex = delegateRoot.index
+                            selection.focusIndex(delegateRoot.index)
                         } else {
                             selection.selectOnly(delegateRoot.index)
-                            gridView.currentIndex = delegateRoot.index
+                            selection.focusIndex(delegateRoot.index)
                         }
                         if (mouse.button === Qt.RightButton)
                             contextMenu.popup()
@@ -197,7 +198,7 @@ Item {
                         if (mouse.modifiers !== Qt.NoModifier)
                             return
                         selection.selectOnly(delegateRoot.index)
-                        gridView.currentIndex = delegateRoot.index
+                        selection.focusIndex(delegateRoot.index)
                         root.activateCurrent()
                     }
                 }
