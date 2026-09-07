@@ -12,7 +12,7 @@ target_sources(
 )
 target_compile_features(qindaqt_workspaces_ui PUBLIC cxx_std_20)
 target_link_libraries(qindaqt_workspaces_ui PUBLIC QindaQt::Workspaces Qt6::Widgets)
-set_target_properties(qindaqt_workspaces_ui PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_workspaces_ui PROPERTIES AUTOMOC ON POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
 if(COMMAND qindaqt_enable_warnings)
     qindaqt_enable_warnings(qindaqt_workspaces_ui)
 endif()
