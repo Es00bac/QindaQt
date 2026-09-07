@@ -56,6 +56,27 @@ Rectangle {
         }
         Item { Layout.fillWidth: true }
         Qinda.Button {
+            objectName: "locationToggleButton"
+            text: qsTr("Location")
+            emphasized: false
+            accessibleDescription: qsTr("Type a folder path directly")
+            onClicked: root.appCoordinator.activateAction("view.focus-location")
+        }
+        Qinda.Button {
+            objectName: "toggleHiddenButton"
+            text: root.navigationController.showHidden ? qsTr("Hide Hidden") : qsTr("Show Hidden")
+            emphasized: root.navigationController.showHidden
+            accessibleDescription: qsTr("Show or hide hidden entries")
+            onClicked: root.appCoordinator.activateAction("view.show-hidden")
+        }
+        Qinda.Button {
+            objectName: "toggleViewModeButton"
+            text: root.navigationController.viewMode === "grid" ? qsTr("List View") : qsTr("Grid View")
+            emphasized: root.navigationController.viewMode === "grid"
+            accessibleDescription: qsTr("Switch between list and grid view")
+            onClicked: root.appCoordinator.activateAction("view.grid-mode")
+        }
+        Qinda.Button {
             objectName: "restoreLastButton"
             text: qsTr("Restore")
             available: root.mutationController.canRestore
