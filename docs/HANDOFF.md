@@ -1,5 +1,14 @@
 # Integration handoff
 
+## Popup controls follow the shared theme
+
+Integrated `375dc660` completes the themed-button repair for Clipboard Close,
+Bluetooth pairing Confirm/Cancel and Power profile/session actions. Root reviewed
+the exact candidate and independently passed all 13 affected checks; the
+integrated shell build and the same 13 checks pass. The existing availability,
+accessibility and action guards are preserved. Strict MkDocs and documentation
+links pass; final native visual capture and installation remain outstanding.
+
 ## Gabbee sink live acceptance passed
 
 The real `gabbee.agent_input.AgentInputTextSink` passes both standalone and

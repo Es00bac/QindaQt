@@ -25,6 +25,10 @@ The service authority and pairing ownership remain those of
 does not initiate pairing or accept PIN/passkey entry, but presents the one
 current prompt and may confirm or cancel it.
 
+Pairing Confirm and Cancel use the shared [QindaQt.Controls button](controls.md),
+so their appearance follows the selected desktop theme. Their availability still
+follows the current prompt and pending reply; styling adds no pairing authority.
+
 ## Exact-owner projection
 
 The controller publishes rows only while all of these facts hold together:
