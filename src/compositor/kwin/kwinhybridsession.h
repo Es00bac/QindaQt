@@ -163,6 +163,7 @@ private:
                                            QString *error = nullptr);
     void initializeTaskIdentityAndShortcuts();
     void initializeSavedWorkspaces();
+    void initializeChromeSceneLifecycle();
     void shutdownSavedWorkspaces() noexcept;
     void synchronizeTaskIdentity();
     void shutdownTaskIdentity() noexcept;

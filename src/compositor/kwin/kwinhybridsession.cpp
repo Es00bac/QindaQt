@@ -205,6 +205,34 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
     initializeTaskIdentityAndShortcuts();
     initializeSavedWorkspaces();
     initializeGroupContextMenu();
+    initializeChromeSceneLifecycle();
+    m_closePrompt = std::make_unique<ContainerClosePrompt>(
+        [this](const QString &containerId, ContainerCloseDecision decision) {
+            handleCloseDecision(containerId, decision);
+        });
+
+    connect(&registry, &ManagedWindowRegistry::managedWindowAdded,
+            this, &KWinHybridSession::addManagedWindow);
+    connect(&registry, &ManagedWindowRegistry::managedWindowClosed,
+            this, [this](const QString &id, const QString &) { forgetManagedWindow(id); });
+    connect(&registry, &ManagedWindowRegistry::windowsChanged,
+            this, &KWinHybridSession::handleWindowsChanged);
+    connect(m_chromeManager.get(), &KWinChromeManager::chromeDragLifecycle,
+            this, &KWinHybridSession::handleChromeDrag);
+    connect(m_chromeManager.get(), &KWinChromeManager::windowActionRequested,
+            this, &KWinHybridSession::handleWindowAction);
+    connect(m_chromeManager.get(), &KWinChromeManager::tabActivationRequested,
+            this, &KWinHybridSession::handleTabActivation);
+
+    if (!m_runtime->ready()) {
+        qWarning("QindaQt Hybrid runtime could not initialize: %s",
+                 qPrintable(m_runtime->initializationError()));
+    }
+    synchronizeChrome();
+}
+
+void KWinHybridSession::initializeChromeSceneLifecycle()
+{
     auto *const compositor = KWin::Compositor::self();
     m_chromeSceneLifecycle = std::make_unique<KWinChromeSceneLifecycle>(
         [this] {
@@ -234,29 +262,6 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
                 &KWinChromeSceneLifecycle::compositingToggled,
                 Qt::DirectConnection);
     }
-    m_closePrompt = std::make_unique<ContainerClosePrompt>(
-        [this](const QString &containerId, ContainerCloseDecision decision) {
-            handleCloseDecision(containerId, decision);
-        });
-
-    connect(&registry, &ManagedWindowRegistry::managedWindowAdded,
-            this, &KWinHybridSession::addManagedWindow);
-    connect(&registry, &ManagedWindowRegistry::managedWindowClosed,
-            this, [this](const QString &id, const QString &) { forgetManagedWindow(id); });
-    connect(&registry, &ManagedWindowRegistry::windowsChanged,
-            this, &KWinHybridSession::handleWindowsChanged);
-    connect(m_chromeManager.get(), &KWinChromeManager::chromeDragLifecycle,
-            this, &KWinHybridSession::handleChromeDrag);
-    connect(m_chromeManager.get(), &KWinChromeManager::windowActionRequested,
-            this, &KWinHybridSession::handleWindowAction);
-    connect(m_chromeManager.get(), &KWinChromeManager::tabActivationRequested,
-            this, &KWinHybridSession::handleTabActivation);
-
-    if (!m_runtime->ready()) {
-        qWarning("QindaQt Hybrid runtime could not initialize: %s",
-                 qPrintable(m_runtime->initializationError()));
-    }
-    synchronizeChrome();
 }
 
 KWinHybridSession::~KWinHybridSession()
