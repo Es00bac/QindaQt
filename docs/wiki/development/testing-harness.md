@@ -3407,6 +3407,10 @@ activation directory. Rendering and layer-surface checks exercise the real Qt
 Quick RHI path without activating the installed desktop portal from the test.
 
 For renderer qualification, `QINDAQT_SHELL_RENDER_DIAGNOSTICS=1` retains the
-probe's bounded shell stderr on a successful run as well as a failure. Combine
-it with `QT_LOGGING_RULES=qt.scenegraph.general=true` to establish the actual
-backend and render loop instead of inferring them from environment settings.
+probe's bounded raw shell stderr on a successful run as well as a failure. It
+also enables `QSG_INFO=1` and `QT_LOGGING_RULES` for `qt.scenegraph.*` and
+`qt.rhi.*`, then captures only those renderer lines in a separate bounded
+`rendererDiagnostics` result field over the shell's full stderr lifetime. This
+establishes the actual
+backend and render loop without enlarging the raw Wayland protocol capture or
+inferring renderer selection from environment settings.
