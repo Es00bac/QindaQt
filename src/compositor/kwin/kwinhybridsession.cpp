@@ -10,6 +10,9 @@
 #include "hybridgroupedgeometryreconciler.h"
 #include "hybridinteractionruntime.h"
 #include "hybridshortcutmanager.h"
+#include "kwinworkspacecontroller.h"
+#include "kwinworkspaceuiport.h"
+#include "qindaqt/workspaces_apps/desktop_applications.h"
 #include "containercloseprompt.h"
 #include "kwinchromemanager.h"
 #include "kwinchromescenelifecycle.h"
@@ -200,6 +203,7 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             dispatchChromePointerDecision(decision);
         });
     initializeTaskIdentityAndShortcuts();
+    initializeSavedWorkspaces();
     initializeGroupContextMenu();
     auto *const compositor = KWin::Compositor::self();
     m_chromeSceneLifecycle = std::make_unique<KWinChromeSceneLifecycle>(
@@ -266,6 +270,8 @@ void KWinHybridSession::shutdown() noexcept
         return;
     }
     m_shutdown = true;
+    // Dialog callbacks borrow runtime/app collaborators; release them first.
+    shutdownSavedWorkspaces();
     m_groupContextMenu.reset();
     // Disconnect compositor callbacks before explicit shutdown starts clearing
     // the same scene resources and restoring independent client state.

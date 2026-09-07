@@ -84,6 +84,9 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     QString error;
     QVERIFY2(menu.prepare(QStringLiteral("group-a"), &error),
              qPrintable(error));
+    auto *const saved = actionNamed(
+        menu, QStringLiteral("qindaqt-context-saved-workspaces"));
+    QVERIFY(saved);
     auto *const above = actionNamed(
         menu, QStringLiteral("qindaqt-context-keep-above"));
     auto *const arrange = actionNamed(
@@ -120,10 +123,11 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     workspace->trigger();
     activity->trigger();
     output->trigger();
+    saved->trigger();
     QVERIFY(commands.isEmpty());
     menu.hide();
     QVERIFY(!menu.isVisible());
-    QTRY_COMPARE(commands.size(), 8);
+    QTRY_COMPARE(commands.size(), 9);
     const GroupContextMenuCommand expectedArrange{
         GroupContextMenuCommandKind::ArrangeWindows,
         QStringLiteral("member-active"), true};
@@ -146,6 +150,8 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     const GroupContextMenuCommand expectedOutput{
         GroupContextMenuCommandKind::MoveToOutput,
         QStringLiteral("right"), true};
+    QCOMPARE(commands[8].first, QStringLiteral("group-a"));
+    QCOMPARE(commands[8].second.kind, GroupContextMenuCommandKind::SavedWorkspaces);
     QCOMPARE(commands[0].second, expectedArrange);
     QCOMPARE(commands[1].second, expectedDetach);
     QCOMPARE(commands[2].second, expectedUngroup);
@@ -156,7 +162,7 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     QCOMPARE(commands[7].second, expectedOutput);
 
     QCoreApplication::processEvents();
-    QCOMPARE(commands.size(), 8);
+    QCOMPARE(commands.size(), 9);
 }
 
 void KWinGroupContextMenuTest::defersDispatchWithStableContainerIdentity()

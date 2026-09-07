@@ -15,9 +15,10 @@ Widgets Save and Reopen dialogs over those public operations.
 `KWinWorkspaceUiPort` is the compositor-side bridge: it snapshots a
 preselected live container, discovers installed desktop entries, dispatches
 launches, and sends a fully assigned layout through the runtime's atomic
-adoption command. Session composition remains responsible for constructing the
-bridge and connecting its signals, so this module does not itself prove an
-installed logout/restore session.
+adoption command. The session constructs the bridge, desktop application adapter and a separate
+`KWinWorkspaceController`. The controller owns the library and its shortcut;
+it is destroyed before the borrowed port and Hybrid runtime. Installed
+logout/restore verification remains a separate acceptance requirement.
 
 The public boundary is `qindaqt/workspaces/workspace.h` and
 `qindaqt/workspaces/workspace_store.h`. Values own their data and can cross
@@ -27,6 +28,21 @@ dialog performs its small document reads and atomic writes synchronously on
 the GUI thread. Saving uses atomic
 replacement. Failed validation leaves the previous document intact; loading a
 damaged or unsupported document reports an error without rewriting it.
+
+## Opening the library in the desktop
+
+**Meta+Ctrl+W** opens the saved-workspace library. The container context menu
+also offers **Saved workspaces…**. The source container is selected before the
+library takes focus. Pressing the shortcut again raises the existing dialog
+without discarding pending window assignments. With no selected container,
+Reopen remains available and Save explains that a container must be selected.
+
+The controller supplies `$XDG_DATA_HOME/qindaqt/workspaces` (normally
+`~/.local/share/qindaqt/workspaces`) as the storage root. This location does not
+change with KWin's executable or application name. The controller follows the
+native desktop palette and presents asynchronous launch failures in the library.
+A presentation warning after successful adoption says the workspace was restored;
+it does not invite retrying an already committed layout.
 
 ## Names, colors and application slots
 
