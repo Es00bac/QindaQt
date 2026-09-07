@@ -81,7 +81,10 @@ replace earlier work:
   existing contract and qualify real menu actions. The reviewed selector is
   integrated at `d2be019f`; focused Sloom/editor checks pass 2/2. Real installed
   Sloom exports the expected service from its Electron main process; panel
-  consumption after compositor refresh remains the acceptance gate.
+  consumption and Help → About now pass in private native run
+  `a20d3aed75694d879a0a1cfab499c033`. The separately reviewed Sloom
+  candidate `f459b0fd` also removes the duplicate local menu; its packaged
+  production files match the accepted source. Host installation remains open.
 - Diagnose the reported ChatGPT launch segmentation fault and repair any
   established desktop/runtime integration defect without resetting user data.
   Resolved launch regression: isolated X11 launch reproduced SIGSEGV; native
