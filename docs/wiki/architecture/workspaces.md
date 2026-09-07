@@ -165,3 +165,8 @@ once. It first validates the bound Core layout before enumerating its members,
 then validates name/color presentation before adoption; if the later
 presentation write fails, its warning explicitly says the layout was restored.
 See [Hybrid topology](hybrid-topology.md).
+
+The static workspace UI library is built with position-independent code because
+its production consumer is the KWin plugin. Qualification must link the real
+plugin; compiling the dialog library or an executable-only test does not check
+that shared-library boundary.
