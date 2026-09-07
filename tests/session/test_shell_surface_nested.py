@@ -192,6 +192,10 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory(prefix="qindaqt-shell-surface-") as directory:
         environment = isolated_environment(Path(directory))
+        # AGENT-GUARD: The shared nested helper selects Qt Quick's software
+        # backend for protocol-only probes. This row qualifies the production
+        # shell renderer, so leave backend selection to Qt's default RHI path.
+        environment.pop("QT_QUICK_BACKEND", None)
         write_virtual_output_config(Path(environment["XDG_CONFIG_HOME"]), spec)
         environment.update(
             {
