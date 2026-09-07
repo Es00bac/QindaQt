@@ -7,6 +7,16 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Finish the bundled applications (September 7)
+
+The user requests primary-assistant implementation, with no delegated coding.
+File Manager S2 is integrated and installed: 22/22 tests plus the installed
+UI-action probe pass. Stable selection repairs supersede the rejected original
+candidate. Next: verify Terminal’s actual shell and daily-use controls, and
+add line numbers, syntax highlighting, navigation, indentation, wrapping and
+zoom to Text Editor. Install the resulting applications and verify them.
+
+
 ### Complete the installed desktop experience (2026-09-06)
 
 **Completed as the bounded usability checkpoint on September 7, 2026.**

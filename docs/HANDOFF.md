@@ -1,5 +1,20 @@
 # Integration handoff
 
+## File Manager S2 integrated and installed
+
+Kimi’s `0ab8cd75` plus primary-assistant repair `01e41ede` are integrated
+at `0f280019`. The user requested the primary assistant do this personally;
+no independent review of the repair is claimed. The original independent
+findings are addressed by shared identity-based selection, navigation clearing,
+list/grid keyboard parity, stable focus, and meaningful batch confirmations.
+All 22 File Manager rows pass on the integrated tree, including real QML
+actions, global-menu routing and staged installation. The installed executable
+matches the main build and its actual `--check-ui-actions` probe passes.
+Documentation, strict MkDocs, source shape and whitespace gates pass.
+
+The active follow-up is to finish the bundled Terminal and improve Text Editor
+with practical editing tools, using the current passwordless-sudo window.
+
 ## Bounded usability checkpoint complete
 
 The September 6 reported-task checkpoint is complete and deployed. The final
