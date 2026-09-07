@@ -1,5 +1,21 @@
 # Integration handoff
 
+## Live Display connection repaired — 2026-09-06 21:04 MDT
+
+The old Display service PID 1780106 retained `WAYLAND_DISPLAY=wayland-0`
+from KDE, despite the current QindaQt shell and Settings using `qindaqt-0`.
+The systemd activation environment was already correct; it had not updated the
+existing service. Restarting only Display at 21:04:35 produced PID 2012983
+with `WAYLAND_DISPLAY=qindaqt-0` and a fresh public Display1 snapshot.
+There was no logout. A session-lifecycle repair is being implemented to prevent
+this mismatch. Actual scale Apply/Keep behavior still needs verification.
+
+The reviewed Gabbee terminal helper integration is now applied to the external
+checkout after baseline hash checks and backups. All 41 focused tests pass on
+the applied copy. Actual standalone/grouped terminal PTY readback remains open;
+the terminal-proof worker owns the private runtime lane. The manager must not
+launch another private compositor concurrently.
+
 ## Graphical refresh confirmed — 2026-09-06T20:21:09-06:00
 
 The user is back in QindaQt. KWin PID 1981017 started at 20:17:41 MDT;
