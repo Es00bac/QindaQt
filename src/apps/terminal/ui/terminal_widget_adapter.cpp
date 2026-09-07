@@ -9,6 +9,7 @@
 #include <QContextMenuEvent>
 #include <QEvent>
 #include <QCoreApplication>
+#include <QApplication>
 #include <QFile>
 #include <QResizeEvent>
 #include <QTimer>
@@ -167,6 +168,13 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
     m_widget->focusProxy()->installEventFilter(this);
   }
   initializeSearchSurface();
+  // AGENT-GUARD: BEL also terminates OSC title/control sequences. Never
+  // remove it from PTY bytes: doing so swallows interactive shell prompts.
+  // qtermwidget emits parsed bell notifications; sound policy belongs here.
+  connect(m_widget, &QTermWidget::bell, this, [this](const QString &) {
+    if (m_profile.bellPolicy == TerminalProfile::BellPolicy::Audible)
+      QApplication::beep();
+  });
 
   connect(m_widget, &QTermWidget::sendData, this,
           [this](const char *data, int length) {
