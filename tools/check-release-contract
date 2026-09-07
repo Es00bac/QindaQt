@@ -22,7 +22,6 @@ DESKTOP_EBUILD = (
     / "qindaqt-desktop-0.1.0_pre20260907.ebuild"
 )
 OBJECT_ID = re.compile(r"[0-9a-f]{40}")
-KWIN_VERSION_LINE = re.compile(r"^kwin ([^\s]+)$")
 
 
 class ContractError(RuntimeError):
@@ -116,22 +115,22 @@ def verify_runtime(command: Path, expected_release: str, cmake_version: Path) ->
         [str(command), "--version"],
         check=False,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
         text=True,
     )
-    output = completed.stdout.strip()
-    require(completed.returncode == 0, f"KWin version command failed: {output}")
-    verify_runtime_output(output, expected_release)
+    detail = "\n".join(part.strip() for part in (completed.stderr, completed.stdout)
+                       if part.strip())
+    require(completed.returncode == 0, f"KWin version command failed: {detail}")
+    verify_runtime_output(completed.stdout, completed.stderr, expected_release)
     config = read_text(cmake_version)
     require(f'set(PACKAGE_VERSION "{expected_release}")' in config,
             f"KWin CMake package is not {expected_release} exactly: {cmake_version}")
 
 
-def verify_runtime_output(output: str, expected_release: str) -> None:
-    versions = [match.group(1) for line in output.splitlines()
-                if (match := KWIN_VERSION_LINE.fullmatch(line.strip()))]
-    require(versions == [expected_release],
-            f"runtime KWin must report {expected_release} exactly once, got: {output}")
+def verify_runtime_output(stdout: str, stderr: str, expected_release: str) -> None:
+    require(stdout.strip() == f"kwin {expected_release}",
+            f"runtime KWin must report {expected_release} exactly once on stdout, "
+            f"got stdout={stdout.strip()!r}, stderr={stderr.strip()!r}")
 
 
 def verify_build(build_root: Path) -> None:
