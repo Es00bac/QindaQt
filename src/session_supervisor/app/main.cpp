@@ -9,6 +9,8 @@
 #include <QTextStream>
 #include <QtDBus/QDBusConnection>
 
+#include "qindaqt/session_supervisor/polkit_agent_selection.h"
+
 #include "../src/activation_environment.h"
 #include "../src/resident_service_refresh.h"
 
@@ -40,6 +42,23 @@ int main(int argc, char *argv[])
         {QStringLiteral("welcome"),
          QStringLiteral("Optional first-launch guide executable."),
          QStringLiteral("path"), QStringLiteral("qindaqt-welcome")},
+        {QStringLiteral("desktop-controls"),
+         QStringLiteral("Optional media-key/screenshot/idle-display helper."),
+         QStringLiteral("path"), QStringLiteral("qindaqt-desktop-controls")},
+        {QStringLiteral("powerdevil"),
+         QStringLiteral("PowerDevil daemon executable."), QStringLiteral("path"),
+         QStringLiteral("/usr/libexec/org_kde_powerdevil")},
+        {QStringLiteral("no-powerdevil"),
+         QStringLiteral("Disable the PowerDevil child for a private session.")},
+        {QStringLiteral("polkit-agent"),
+         QStringLiteral("Optional polkit authentication agent executable; "
+                        "well-known locations are used when omitted."),
+         QStringLiteral("path"), QStringLiteral("")},
+        {QStringLiteral("no-polkit-agent"),
+         QStringLiteral("Never start a polkit authentication agent, even when "
+                        "well-known host locations exist. Private and "
+                        "integration runs must pass this so a staged session "
+                        "never launches host binaries.")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Shell theme id."),
@@ -70,6 +89,13 @@ int main(int argc, char *argv[])
     options.networkSecretAgentExecutable =
         parser.value(QStringLiteral("network-secret-agent"));
     options.welcomeExecutable = parser.value(QStringLiteral("welcome"));
+    options.powerDevilExecutable = parser.isSet(QStringLiteral("no-powerdevil"))
+        ? QString{} : parser.value(QStringLiteral("powerdevil"));
+    options.desktopControlsExecutable =
+        parser.value(QStringLiteral("desktop-controls"));
+    options.polkitAgentExecutable = resolvePolkitAgentExecutable(
+        parser.isSet(QStringLiteral("no-polkit-agent")),
+        parser.value(QStringLiteral("polkit-agent")));
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));
     options.compositorProcessId = *compositorProcessId;

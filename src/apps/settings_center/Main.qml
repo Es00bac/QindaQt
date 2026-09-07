@@ -29,6 +29,7 @@ T.ApplicationWindow {
     property var bluetoothSettings: null
     property var powerSettings: PowerRouteComposition.model
     property var screenLockSettings: PowerRouteComposition.screenLockSettings
+    property var idleDisplaySettings: PowerRouteComposition.idleDisplaySettings
     property var clipboardSettings: ClipboardRouteComposition.model
     property var colorSettings: ColorRouteComposition.model
     property bool applicationClosePending: false
@@ -216,6 +217,7 @@ T.ApplicationWindow {
             bluetoothSettings: root.bluetoothSettings
             powerSettings: root.powerSettings
             screenLockSettings: root.screenLockSettings
+            idleDisplaySettings: root.idleDisplaySettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
             notificationsComponent: notificationsRouteComponent
@@ -263,6 +265,7 @@ T.ApplicationWindow {
             bluetoothSettings: root.bluetoothSettings
             powerSettings: root.powerSettings
             screenLockSettings: root.screenLockSettings
+            idleDisplaySettings: root.idleDisplaySettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
             notificationsComponent: notificationsRouteComponent
@@ -339,6 +342,7 @@ T.ApplicationWindow {
             objectName: "powerPage"
             powerSettings: root.powerSettings
             screenLockSettings: root.screenLockSettings
+            idleDisplaySettings: root.idleDisplaySettings
             onCloseRequested: root.close()
         }
     }

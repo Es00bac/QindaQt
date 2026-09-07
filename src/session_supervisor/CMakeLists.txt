@@ -10,6 +10,8 @@ target_sources(
         src/direct_parent_process.cpp
         src/first_launch_welcome.cpp
         src/first_launch_welcome.h
+        src/session_optional_child.cpp
+        src/polkit_agent_selection.cpp
         src/resident_service_refresh.cpp
         src/resident_service_refresh.h
         src/supervised_process_launcher.cpp
@@ -21,6 +23,8 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/session_supervisor/direct_parent_process.h
+            include/qindaqt/session_supervisor/session_optional_child.h
+            include/qindaqt/session_supervisor/polkit_agent_selection.h
             include/qindaqt/session_supervisor/supervised_process_launcher.h
             include/qindaqt/session_supervisor/tokenized_process_launcher.h
             include/qindaqt/session_supervisor/session_process_supervisor.h

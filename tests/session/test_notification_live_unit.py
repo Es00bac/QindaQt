@@ -139,8 +139,24 @@ class NotificationLiveDriverTests(unittest.TestCase):
                     profile,
                     "--theme",
                     theme,
+                    "--no-polkit-agent", "--no-powerdevil",
                 ],
             )
+
+    def test_session_wrapper_disables_host_polkit_agent_discovery(self) -> None:
+        # Regression for the reviewed P1: a staged private session must never
+        # resolve well-known host polkit paths when --polkit-agent is omitted.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifacts = {
+                "session": root / "session",
+                "notification_host": root / "host",
+                "shell": root / "shell",
+            }
+            wrapper = _write_session_wrapper(root, artifacts, "p", "t")
+            command = wrapper.read_text(encoding="utf-8").splitlines()[1]
+            self.assertIn("--no-polkit-agent", shlex.split(command))
+            self.assertIn("--no-powerdevil", shlex.split(command))
 
     def test_process_group_guard_rejects_self_and_non_leader_targets(self) -> None:
         with self.assertRaises(RuntimeError):

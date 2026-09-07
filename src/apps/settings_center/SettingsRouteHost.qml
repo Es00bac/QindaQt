@@ -15,6 +15,7 @@ Item {
     property var bluetoothSettings: null
     property var powerSettings: null
     property var screenLockSettings: null
+    property var idleDisplaySettings: null
     property var clipboardSettings: null
     property var colorSettings: null
     required property Component notificationsComponent

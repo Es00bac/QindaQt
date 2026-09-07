@@ -53,6 +53,8 @@ nav:
       - Audio service: architecture/audio-service.md
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
+      - PowerDevil idle preferences: architecture/powerdevil-idle.md
+      - Desktop controls: architecture/desktop-controls.md
       - Pure brightness model: architecture/brightness-model.md
       - Network service: architecture/network-service.md
       - Network secret agent: architecture/network-secret-agent.md
@@ -226,3 +228,5 @@ nav:
       - "0102: Adopt restored layouts atomically": adr/0102-adopt-restored-layouts-atomically.md
       - "0103: Preserve the compositor session during shell recovery": adr/0103-paced-shell-recovery.md
       - "0104: Serialize production shell rendering": adr/0104-serialize-shell-rendering.md
+      - "ADR-0100: Desktop essentials in a session process": adr/0100-own-desktop-essentials-in-a-session-process.md
+      - ADR-0105 PowerDevil idle display-off: adr/0105-delegate-idle-display-off-to-powerdevil.md

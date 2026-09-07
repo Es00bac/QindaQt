@@ -69,7 +69,16 @@ provisions their private presentation token through separate one-shot inherited
 descriptors, and keeps the token only in supervisor memory. When the installed
 sibling `qindaqt-network-secret-agent` exists, the supervisor also starts it as
 a readiness-independent child; one unexpected exit consumes its sole restart
-without affecting either essential child. After the first shell starts, the
+without affecting either essential child. The same optional one-restart
+treatment starts the installed sibling `qindaqt-desktop-controls` — the
+[desktop controls](desktop-controls.md) media-key, screenshot, polkit-agent,
+and idle display-off helper — and a polkit authentication agent resolved from
+well-known distribution paths (overridable with `--polkit-agent`, suppressed
+entirely with `--no-polkit-agent` — every staged private and nested run must
+pass the suppression so the supervisor never resolves a host binary); both
+start after the shell, and their absence is skipped without any session
+impact.
+After the first shell starts, the
 supervisor also starts an installed sibling `qindaqt-welcome --first-launch` as
 an optional parent-death-bound child. Welcome decides locally whether it should
 show, exits successfully when a person has opted out, and is never restarted;
@@ -97,7 +106,8 @@ session bus. `CanLogout()` and `Logout()` resolve the caller's bus credential
 PID on every invocation and admit only the currently supervised shell PID; a
 retired or unrelated process receives the fixed Unauthorized error. Accepted
 logout replies before shutdown, then stops Welcome when it is still open,
-followed by shell, notification host, and the optional secret agent, and exits
+followed by shell, notification host, the optional secret agent, and the
+optional desktop-controls and polkit-agent children, and exits
 successfully. KWin's
 `--exit-with-session` coupling then ends the compositor. The exact wire and
 error contract is [Session1 version 1](../reference/session1-v1.md), and the
