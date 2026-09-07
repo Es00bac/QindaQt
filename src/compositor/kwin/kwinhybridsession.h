@@ -22,6 +22,8 @@
 #include <memory>
 #include <optional>
 
+namespace QindaQt::WorkspacesApps { class DesktopApplications; }
+
 namespace QindaQt::HybridInput {
 class InteractionController;
 }
@@ -53,6 +55,8 @@ class KWinInteractionTargetResolver;
 class KWinMemberPolicyManager;
 enum class NativeQuickTileEdge;
 class KWinTaskIdentityManager;
+class KWinWorkspaceUiPort;
+class KWinWorkspaceController;
 class KWinTransientManager;
 class ManagedWindowRegistry;
 class MemberChromeVisibilityController;
@@ -102,6 +106,7 @@ public:
         QString *error = nullptr);
     void setChromePalette(const HybridChrome::ChromePalette &palette);
     void setNativePalette(const QPalette &palette);
+    void showSavedWorkspaces(const QString &containerId);
 
     // Idempotent. Restores every Hybrid-owned client before destroying scene,
     // chrome, input, and shortcut collaborators.
@@ -157,6 +162,8 @@ private:
                                            const QString &windowId,
                                            QString *error = nullptr);
     void initializeTaskIdentityAndShortcuts();
+    void initializeSavedWorkspaces();
+    void shutdownSavedWorkspaces() noexcept;
     void synchronizeTaskIdentity();
     void shutdownTaskIdentity() noexcept;
     void dispatchSemanticShortcut(HybridSemanticCommand command);
@@ -238,6 +245,9 @@ private:
     std::unique_ptr<KWinDockPreview> m_dockPreview;
     std::unique_ptr<KWinInteractionFilter> m_inputFilter;
     std::unique_ptr<HybridShortcutManager> m_shortcuts;
+    std::unique_ptr<WorkspacesApps::DesktopApplications> m_workspaceApplications;
+    std::unique_ptr<KWinWorkspaceUiPort> m_workspacePort;
+    std::unique_ptr<KWinWorkspaceController> m_workspaceController;
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;
     HybridChrome::ChromePalette m_chromePalette;
     HybridContainerAppearanceStore m_appearance;

@@ -147,6 +147,8 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
                 });
         return action;
     };
+    addGroupAction("Saved workspaces…", QStringLiteral("qindaqt-context-saved-workspaces"),
+                   GroupContextMenuCommandKind::SavedWorkspaces, false);
     addGroupAction("Arrange windows", QStringLiteral("qindaqt-context-arrange"),
                    GroupContextMenuCommandKind::ArrangeWindows, true);
     addGroupAction("Detach active window",

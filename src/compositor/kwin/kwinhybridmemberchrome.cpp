@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwingroupcontextmenu.h"
 #include "kwinhybridsession.h"
+#include "kwinworkspacecontroller.h"
 
 #include "hybridinteractionruntime.h"
 #include "kwinchromemanager.h"
@@ -90,6 +91,9 @@ void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &pale
 void KWinHybridSession::setNativePalette(const QPalette &palette)
 {
     m_nativePalette = palette;
+    if (m_workspaceController) {
+        m_workspaceController->setPalette(palette);
+    }
     if (m_groupContextMenu) {
         m_groupContextMenu->setPalette(m_nativePalette);
     }

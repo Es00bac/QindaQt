@@ -50,6 +50,22 @@ Prefer the keyboard? **Meta+Shift+D** starts docking mode on the active
 window: the **arrow keys** choose an edge, **T** chooses the tab target,
 **D** detaches a grouped member, **Enter** confirms, and **Esc** cancels.
 
+### Keep a workspace for another day
+
+Arrange a container the way you want it, then press **Meta+Ctrl+W**, or choose
+**Saved workspaces…** from its title-bar menu. Choose **Save** and give it a
+name you will recognize later. The saved workspace keeps its arrangement,
+application choices and color.
+
+After logging in again, open the same library and choose **Reopen**. You can
+launch missing applications there, then assign their windows to the saved
+positions. If you have several Terminal or Editor windows open, choose which
+belongs in each position; QindaQt will not guess. Missing applications are
+reported in the dialog, and you can select a replacement window.
+
+Saving a workspace does not save unsaved documents or a running shell's state.
+Save your work in each application before logging out.
+
 ### One dock entry per container
 
 Each window container appears as **one entry** in the dock, not one per

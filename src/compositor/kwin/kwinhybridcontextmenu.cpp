@@ -118,6 +118,7 @@ bool applyContextCommand(
     }
 
     switch (command.kind) {
+    case GroupContextMenuCommandKind::SavedWorkspaces:
     case GroupContextMenuCommandKind::ArrangeWindows:
     case GroupContextMenuCommandKind::DetachActiveWindow:
     case GroupContextMenuCommandKind::Ungroup:
@@ -233,6 +234,12 @@ void KWinHybridSession::initializeGroupContextMenu()
                const GroupContextMenuCommand &command,
                QString *error) {
             switch (command.kind) {
+            case GroupContextMenuCommandKind::SavedWorkspaces:
+                if (!ready() || !m_workspaceController) {
+                    return fail(error, QStringLiteral("Saved workspaces are unavailable."));
+                }
+                showSavedWorkspaces(containerId);
+                return true;
             case GroupContextMenuCommandKind::ArrangeWindows:
                 return beginArrangeWindows(containerId, command.destinationId, error);
             case GroupContextMenuCommandKind::DetachActiveWindow:

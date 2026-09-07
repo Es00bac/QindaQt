@@ -58,6 +58,7 @@ enum class GroupContextMenuCommandKind {
     SetAllActivities,
     ToggleActivity,
     MoveToOutput,
+    SavedWorkspaces,
 };
 
 struct GroupContextMenuCommand final
