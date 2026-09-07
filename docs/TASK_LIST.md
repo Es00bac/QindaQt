@@ -23,9 +23,10 @@ replace earlier work:
   Revert behavior; raw coordinates alone are not the main arrangement workflow.
   The physical DP-1 projector is enabled beside HDMI-A-1; inventory and
   arrangement presentation repairs are integrated through `86342441`; physical
-  Settings qualification after session refresh remains open. The user confirms
-  that scaling returns to 100% in the physical session. This is an open product
-  defect; the integrated no-op rollback fix (`3591a081`) does not resolve it.
+  The reported scale rollback is repaired through `347eb03f`: physical Display1
+  preview/Cancel and Keep cycles reached 125% and restored the original layout.
+  The verified service is deployed through a stable user-level systemd override;
+  direct Settings-page pointer verification remains separate.
 - Make maximized containers follow the available work area when the dock hides
   or changes its reservation, preserving their normal restore size. Integrated
   `04954961` passes actual hidden/revealed/hidden and exact restored-member
