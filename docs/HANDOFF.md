@@ -1,5 +1,23 @@
 # Integration handoff
 
+## Closing suite and prepared system installation
+
+The updated closing selection passes **660/660** on integrated `8179a0f9`
+plus documentation-only follow-ups. The complete staged payload contains
+1,077 files/symlinks, verified against its manifest. The prepared installer is
+`.cache/session-checkpoint-current/install.py`; `--verify-only` validates the
+payload without privilege, and running it with sudo installs the staged files
+with backups and post-copy checks. It does not restart the graphical session.
+The expired passwordless sudo grant prevents the manager executing this system
+installation. The user-level Display service remains deployed and verified.
+
+The Gabbee worker's claimed absence of a Weston backend and earlier portal
+proof was disproved: `usr/lib/libweston-15/headless-backend.so` exists, and run
+`2a2db7b6777e487b8694c5275d51443e` has an exact Unicode expected/readback match
+with helper READY and exit0. Its remaining terminal proof has been redirected
+to that known working private Weston setup; no environment blocker is accepted
+on the contradicted report. Candidate `f1187bad` is preserved but unintegrated.
+
 ## Panel hit-target repair integrated
 
 `8179a0f9` removes invisible interactive scrollbars from the panel's click
