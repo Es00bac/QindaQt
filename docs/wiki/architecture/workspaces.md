@@ -11,9 +11,13 @@ workspace must not guess which is which.
 `QindaQt::Workspaces` provides the saved document, atomic filesystem storage,
 capture of an existing layout, window assignment policy and construction of a
 fresh container value. `QindaQt::WorkspacesUi` provides compact native Qt
-Widgets Save and Reopen dialogs over those public operations. The compositor
-adapter still owns application discovery/launch and atomic live adoption, so
-this module does not itself prove an installed logout/restore session.
+Widgets Save and Reopen dialogs over those public operations.
+`KWinWorkspaceUiPort` is the compositor-side bridge: it snapshots a
+preselected live container, discovers installed desktop entries, dispatches
+launches, and sends a fully assigned layout through the runtime's atomic
+adoption command. Session composition remains responsible for constructing the
+bridge and connecting its signals, so this module does not itself prove an
+installed logout/restore session.
 
 The public boundary is `qindaqt/workspaces/workspace.h` and
 `qindaqt/workspaces/workspace_store.h`. Values own their data and can cross
@@ -106,8 +110,6 @@ Capture accepts a complete application-intent inventory for the current
 container, preserves page order and active page, and replaces live leaf IDs
 with durable slot IDs. A stale or incomplete inventory rejects the capture.
 
-The next integration connects the injected UI port to platform application
-launch and atomic adoption.
 `workspaces-ui.dialog-actions` clicks through save, duplicate-window selection,
 and a failed atomic restore while preserving the saved document.
 Container name/color projection and roll-up/iconify controls are implemented
@@ -135,8 +137,10 @@ launch with a spaced document URL, asynchronous executable failure, and invalid
 URL rejection. It does not launch the user's installed applications or prove
 host-session window adoption.
 
-The Hybrid `AdoptIndependentLayout` command now provides atomic model/scene
-adoption for a fully bound layout. It rejects stale or already-grouped windows
-before scene preparation; scene failures retain the old topology. The native
-compositor adapter still needs to connect this command to Reopen and apply
-container identity. See [Hybrid topology](hybrid-topology.md).
+The Hybrid `AdoptIndependentLayout` command provides atomic model/scene
+adoption for a fully bound layout. `KWinWorkspaceUiPort` rejects stale,
+non-normal, or already-grouped windows before it calls that command exactly
+once. It first validates the bound Core layout before enumerating its members,
+then validates name/color presentation before adoption; if the later
+presentation write fails, its warning explicitly says the layout was restored.
+See [Hybrid topology](hybrid-topology.md).

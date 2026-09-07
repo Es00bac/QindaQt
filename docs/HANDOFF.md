@@ -14,8 +14,11 @@ Core/workspace CTest rows, including real desktop-entry launch under an
 isolated test bus. Atomic adoption is integrated at `6bdde945` after Kimi acceptance of
 `e5492305`. The repaired native dialogs are integrated at `343600b2` after
 root rereview of `be514ce9`. Combined integrated Core/workspace/Hybrid/UI
-tests pass 9/9. Terra now owns the runtime port adapter; final KWin session
-composition and installed logout/reopen verification remain pending. Sonnet owns container roll-up,
+tests passed 9/9 before the runtime adapter; the combined source now passes
+11/11, plus 197-document validation and strict MkDocs. The KWin runtime port is now integrated from Terra's
+reviewed candidate `e64e96b6`: it validates live selections before atomic
+adoption and reports post-restore appearance errors as warnings. Final KWin
+session composition and installed logout/reopen verification remain pending. Sonnet owns container roll-up,
 iconify and name/color projection; GLM owns daily desktop controls; Sol owns
 CI and Gentoo release packaging. Assignments are not completed features.
 
@@ -49,8 +52,8 @@ Portage adopted the previously unmanaged files and reported no owning-package
 collision. [Gentoo installation](wiki/development/gentoo-apps.md) documents updates.
 
 A fresh installed Terminal launched with no options and published the normal
-`cabewse@qinda container-wm` shell title through the compositor inventory. It is
-left open for the user. Installed File Manager UI actions pass. Installed Editor
+`cabewse@qinda container-wm` shell title through the compositor inventory. It was
+left open for the user at verification time; the later shell crash ended that session. Installed File Manager UI actions pass. Installed Editor
 reports a 46 ms first frame and 17,160 KiB median PSS. Evidence and the fixed
 window capture are under ignored `.cache/terminal-visible-install/`.
 

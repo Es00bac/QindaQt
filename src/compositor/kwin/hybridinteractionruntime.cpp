@@ -200,6 +200,15 @@ HybridRuntimeResult HybridInteractionRuntime::releaseContainer(
     return execute(Hybrid::ReleaseContainer{containerId});
 }
 
+HybridRuntimeResult HybridInteractionRuntime::adoptIndependentLayout(
+    Core::WindowContainer container)
+{
+    if (!ready()) {
+        return rejected(m_initializationError);
+    }
+    return execute(Hybrid::AdoptIndependentLayout{std::move(container)});
+}
+
 HybridRuntimeResult HybridInteractionRuntime::commitMemberDock(
     const HybridInput::InteractionIntent &intent)
 {

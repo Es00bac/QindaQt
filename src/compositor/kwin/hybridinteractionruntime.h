@@ -129,6 +129,10 @@ public:
     [[nodiscard]] HybridRuntimeResult handleIntent(
         const HybridInput::InteractionIntent &intent);
     [[nodiscard]] HybridRuntimeResult releaseContainer(const QString &containerId);
+    // Restore UI submits a fully bound layout only through the coordinator so
+    // scene preparation and topology publication remain one transaction.
+    [[nodiscard]] HybridRuntimeResult adoptIndependentLayout(
+        Core::WindowContainer container);
     [[nodiscard]] ReleaseAllResult releaseAll();
 
 private:

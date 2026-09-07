@@ -279,6 +279,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridshortcutmanager.h
             kwin/hybridinteractionruntime.cpp
             kwin/hybridinteractionruntime.h
+            kwin/kwinworkspaceuiport.cpp
+            kwin/kwinworkspaceuiport.h
             kwin/hybridinteractionplacement.cpp
             kwin/hybridchromedragtranslator.cpp
             kwin/hybridchromedragtranslator.h
@@ -377,6 +379,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::HybridChrome
             QindaQt::HybridConstraints
             QindaQt::HybridInput
+            QindaQt::WorkspacesUi
+            QindaQt::WorkspacesApps
             QindaQt::AppAppearance
             qindaqt_container_close_prompt
             qindaqt_group_context_menu

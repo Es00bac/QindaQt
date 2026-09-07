@@ -7,6 +7,7 @@ using namespace QindaQt::Compositor::KWinIntegration;
 using namespace QindaQt::Compositor::KWinIntegration::Test;
 namespace Hybrid = QindaQt::Hybrid;
 namespace HybridInput = QindaQt::HybridInput;
+namespace Core = QindaQt::Core;
 
 class HybridInteractionRuntimeTest final : public QObject
 {
@@ -22,6 +23,8 @@ private slots:
     void releasesOneRequestedContainer();
     void releasesEveryContainerInStableOrder();
     void continuesReleaseAfterSceneFailure();
+    void adoptsRestoredIndependentLayoutAtomically();
+    void rejectsInvalidRestoredLayoutWithoutMutation();
 };
 
 void HybridInteractionRuntimeTest::validatesAndReconcilesLifecycle()
@@ -351,6 +354,57 @@ void HybridInteractionRuntimeTest::continuesReleaseAfterSceneFailure()
     QCOMPARE(runtime.topology().containerIds(),
              QStringList({QStringLiteral("hybrid-r1-container")}));
     QCOMPARE(scene.rolledBack, 1);
+}
+
+void HybridInteractionRuntimeTest::adoptsRestoredIndependentLayoutAtomically()
+{
+    Core::WindowContainer layout(QStringLiteral("restored-container"));
+    QVERIFY(layout.addPage(QStringLiteral("restored-page"),
+                            QStringLiteral("restored-leaf-a"),
+                            QStringLiteral("window-a")));
+    QVERIFY(layout.splitWindow({QStringLiteral("window-a"),
+                                QStringLiteral("window-b"),
+                                QStringLiteral("restored-leaf-b"),
+                                QStringLiteral("restored-split"),
+                                Core::SplitOrientation::Horizontal,
+                                0.5,
+                                Core::InsertPosition::Second}));
+
+    RecordingSceneFactory scene;
+    HybridInteractionRuntime runtime({QStringLiteral("window-a"),
+                                      QStringLiteral("window-b")}, scene);
+    const auto adopted = runtime.adoptIndependentLayout(layout);
+
+    QVERIFY2(adopted.topologyChanged(), qPrintable(adopted.message));
+    QCOMPARE(scene.created, 1);
+    QCOMPARE(scene.kinds.constLast(), Hybrid::TopologyCommandKind::AdoptIndependentLayout);
+    QVERIFY(runtime.topology().container(QStringLiteral("restored-container")));
+    QVERIFY(runtime.topology().independentWindowIds().isEmpty());
+
+    RecordingSceneFactory failingScene({false});
+    HybridInteractionRuntime failingRuntime({QStringLiteral("window-a"),
+                                             QStringLiteral("window-b")}, failingScene);
+    const auto failed = failingRuntime.adoptIndependentLayout(layout);
+    QCOMPARE(failed.status, HybridRuntimeStatus::Rejected);
+    QCOMPARE(failingScene.kinds.constLast(), Hybrid::TopologyCommandKind::AdoptIndependentLayout);
+    QVERIFY(failingRuntime.topology().containerIds().isEmpty());
+    QCOMPARE(failingRuntime.topology().independentWindowIds().size(), qsizetype{2});
+}
+
+void HybridInteractionRuntimeTest::rejectsInvalidRestoredLayoutWithoutMutation()
+{
+    RecordingSceneFactory scene;
+    HybridInteractionRuntime runtime({QStringLiteral("window-a"),
+                                      QStringLiteral("window-b")}, scene);
+    Core::WindowContainer invalid(QStringLiteral("invalid-container"));
+
+    const auto rejected = runtime.adoptIndependentLayout(invalid);
+
+    QCOMPARE(rejected.status, HybridRuntimeStatus::Rejected);
+    QCOMPARE(runtime.topology().revision(), quint64{0});
+    QCOMPARE(runtime.topology().independentWindowIds(),
+             QStringList({QStringLiteral("window-a"), QStringLiteral("window-b")}));
+    QCOMPARE(scene.created, 0);
 }
 
 QTEST_APPLESS_MAIN(HybridInteractionRuntimeTest)

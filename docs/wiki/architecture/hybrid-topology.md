@@ -514,8 +514,15 @@ prepares and commits the entire scene before publishing one new topology
 revision; either scene failure rolls back without publishing partial groups.
 
 This command depends only on Core, not on workspace persistence or launching.
-The compositor adapter still rechecks current window eligibility and supplies
-name/color presentation state. `hybrid.layout_adoption` tests multi-page
-adoption, stale/owned member rejection, and prepare/commit failure rollback.
+`HybridInteractionRuntime::adoptIndependentLayout()` is the only public KWin
+runtime path to the command, so the workspace port cannot bypass scene
+preparation or topology publication. The port rechecks live normal-window and
+independent ownership eligibility, validates presentation before adoption, then
+projects name/color after success. A post-adoption projection failure reports
+that the group exists and does not issue a second mutation or rollback; the
+restore call succeeds and delivers the warning separately so the UI cannot
+retry already-owned windows.
+`hybrid.layout_adoption` tests multi-page adoption, stale/owned member
+rejection, and prepare/commit failure rollback.
 See [ADR-0102](../adr/0102-adopt-restored-layouts-atomically.md) and
 [Saved workspaces](workspaces.md).
