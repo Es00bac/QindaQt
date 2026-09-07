@@ -1,5 +1,13 @@
 # Integration handoff
 
+## Host refresh — 2026-09-06 18:20 MDT
+
+Installed the complete a3be5ee0 production runtime: 1,077 files independently hash/link verified. Six QindaQt services restarted at 18:17:35 and report active. Agent-input acknowledgement repair 9b60cf7c was separately installed after independent 25/25 tests. The manager is transitioning KDE to QindaQt through SDDM. Read actual session/process state before claiming graphical restart completed.
+
+Closing suite: 654/658, four test-fixture/scanner failures repaired through a822d5b9, but test build still needs StubScreenLockSettings AUTOMOC header registration (Terra owns repair). Production runtime unchanged by those test fixes. Sol owns actual scale Apply/no-op rollback bug in isolated display_transaction paths. Luna and Terra coordinate Gabbee helper ACK sink; external sink snapshot is not yet applied. Grouped editor insertion b3ac957acaf64dfdbf8b429919c59513 passed direct AT-SPI with no clipboard fallback.
+
+Fresh native run a1bdb644aa3f4cdebd6a174f5ad7d7d9 shows complete menu labels, correct dark/amber context palette, arrangement Apply/Revert and group minimize/restore. Scale transaction stalls and rollback falsely becomes Stuck; not accepted. Goal remains active.
+
 ## Current integration and runtime ownership — 2026-09-06 17:56 MDT
 
 The original goal task is the sole integration, shared-stage, runtime, and
