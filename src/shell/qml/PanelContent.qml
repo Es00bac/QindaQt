@@ -32,6 +32,15 @@ Item {
     readonly property bool reducedMotion: Tokens.ready
         && Boolean(Tokens.accessibility.reducedMotion)
     readonly property real contentInset: Tokens.space["2"]
+    // AGENT-CONTRACT: the along-axis inset (contentInset) keeps zones off the
+    // panel's short edges. The cross-axis inset is independent and stays
+    // deliberately small: it is subtracted twice from the panel's thickness,
+    // and hosted controls (menu entries, status buttons) target 24-36px hit
+    // areas. Reusing contentInset here left 22px on the stock 30px panel, so
+    // a hosted control was taller than its own row and centered to a negative
+    // offset -- hanging above and below the row and spending hit area outside
+    // it. See docs/wiki/shell/panel-surfaces.md#panel-hit-targets.
+    readonly property real crossAxisInset: Tokens.space["1"]
     readonly property bool dockUsesSideZones: dockMode
         && (startZone.desiredExtent > 0 || endZone.desiredExtent > 0)
     // The surface plan remains solver-owned. This mask only prevents the
@@ -93,10 +102,10 @@ Item {
         id: startZone
         objectName: "panelZoneStart"
         vertical: !root.horizontal
-        x: root.contentInset
-        y: root.contentInset
-        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.contentInset * 2)
-        height: root.horizontal ? Math.max(0, parent.height - root.contentInset * 2) : root.zoneExtent(this)
+        x: root.horizontal ? root.contentInset : root.crossAxisInset
+        y: root.horizontal ? root.crossAxisInset : root.contentInset
+        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
+        height: root.horizontal ? Math.max(0, parent.height - root.crossAxisInset * 2) : root.zoneExtent(this)
         zone: "start"
         panel: root.panel
         theme: root.theme
@@ -119,10 +128,10 @@ Item {
         id: centerZone
         objectName: "panelZoneCenter"
         vertical: !root.horizontal
-        x: root.horizontal ? root.centerOffset : root.contentInset
-        y: root.horizontal ? root.contentInset : root.centerOffset
-        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.contentInset * 2)
-        height: root.horizontal ? Math.max(0, parent.height - root.contentInset * 2) : root.zoneExtent(this)
+        x: root.horizontal ? root.centerOffset : root.crossAxisInset
+        y: root.horizontal ? root.crossAxisInset : root.centerOffset
+        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
+        height: root.horizontal ? Math.max(0, parent.height - root.crossAxisInset * 2) : root.zoneExtent(this)
         zone: "center"
         panel: root.panel
         theme: root.theme
@@ -145,10 +154,10 @@ Item {
         id: endZone
         objectName: "panelZoneEnd"
         vertical: !root.horizontal
-        x: root.horizontal ? root.contentInset + root.extent - root.zoneExtent(endZone) : root.contentInset
-        y: root.horizontal ? root.contentInset : root.contentInset + root.extent - root.zoneExtent(endZone)
-        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.contentInset * 2)
-        height: root.horizontal ? Math.max(0, parent.height - root.contentInset * 2) : root.zoneExtent(this)
+        x: root.horizontal ? root.contentInset + root.extent - root.zoneExtent(endZone) : root.crossAxisInset
+        y: root.horizontal ? root.crossAxisInset : root.contentInset + root.extent - root.zoneExtent(endZone)
+        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
+        height: root.horizontal ? Math.max(0, parent.height - root.crossAxisInset * 2) : root.zoneExtent(this)
         zone: "end"
         panel: root.panel
         theme: root.theme

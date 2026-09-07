@@ -60,8 +60,12 @@ struct AppletHost {
 
     // Creates `typeName` from the compiled module with `access` injected and
     // shows it in a 640x480 offscreen window at (20, 20).
+    // hostHeight mirrors the cross-axis extent the production panel row hands
+    // a hosted control. The stock 30px panel leaves 26 logical pixels, which
+    // is smaller than several controls' implicit height, so a case that only
+    // ever hosts at the roomier default cannot see an edge-of-control defect.
     bool create(const QString &typeName, QObject *access, QString *error, bool vertical = false,
-                bool dockMode = false, int dockTileSize = 60)
+                bool dockMode = false, int dockTileSize = 60, int hostHeight = 28)
     {
         engine = std::make_unique<QQmlEngine>();
         engine->addImportPath(QStringLiteral(QINDAQT_DESKTOP_CONTROLS_QML_IMPORT_PATH));
@@ -99,7 +103,7 @@ struct AppletHost {
         item->setParentItem(window->contentItem());
         item->setPosition(QPointF(20, 20));
         item->setWidth(item->implicitWidth());
-        item->setHeight(28);
+        item->setHeight(hostHeight);
         window->show();
         return true;
     }

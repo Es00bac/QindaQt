@@ -17,6 +17,20 @@ Item {
             result = result.concat(named(child, name))
         return result
     }
+    function deepestVisibleItemAt(item, sceneX, sceneY) {
+        const local = item.mapFromItem(null, sceneX, sceneY)
+        if (local.x < 0 || local.y < 0 || local.x >= item.width || local.y >= item.height)
+            return null
+        let deepest = item
+        for (let child of item.children || []) {
+            if (!child.visible)
+                continue
+            const hit = deepestVisibleItemAt(child, sceneX, sceneY)
+            if (hit !== null)
+                deepest = hit
+        }
+        return deepest
+    }
     Shell.PanelContent {
         id: panel
         width: 160
@@ -144,7 +158,7 @@ Item {
             compare(chips.length, 2)
             compare(chips[0].x, chips[1].x)
             verify(chips[0].y + chips[0].height < chips[1].y)
-            compare(chips[0].height, 26)
+            compare(chips[0].height, 28)
             panel.width = 64
             panel.height = 200
             panel.panel = { edge: "left", rows: 2, applets: [
@@ -153,8 +167,67 @@ Item {
             chips = root.named(panel, "appletChip")
             compare(chips[0].y, chips[1].y)
             verify(chips[0].x + chips[0].width < chips[1].x)
-            compare(chips[0].width, 26)
+            compare(chips[0].width, 28)
         }
+        // AGENT-GUARD: the zone viewport's attached scroll bars are indicators
+        // only. An unconditional, pointer-interactive bar spans the trailing
+        // ~10 logical pixels of every zone even at zero opacity, which on a
+        // stock 30px panel swallowed presses aimed at the bottom of a hosted
+        // menu word or the edge of a status icon.
+        function test_zoneScrollBarsNeverCoverHostedAppletHitAreas_data() {
+            return [
+                { tag: "horizontal", edge: "top", width: 480, height: 30 },
+                { tag: "vertical", edge: "left", width: 30, height: 480 }
+            ]
+        }
+        function test_zoneScrollBarsNeverCoverHostedAppletHitAreas(data) {
+            panel.width = data.width
+            panel.height = data.height
+            panel.panel = { edge: data.edge, rows: 1, applets: [
+                root.spec("start", "start"), root.spec("end", "end")] }
+            wait(20)
+            const chips = root.named(panel, "appletChip")
+            compare(chips.length, 2)
+            for (let chip of chips) {
+                verify(chip.width > 0 && chip.height > 0)
+                const probes = [
+                    { tag: "bottom edge", x: chip.width / 2, y: chip.height - 1 },
+                    { tag: "trailing corner", x: chip.width - 1, y: chip.height - 1 },
+                    { tag: "leading bottom corner", x: 1, y: chip.height - 1 }
+                ]
+                for (let probe of probes) {
+                    const point = chip.mapToItem(null, probe.x, probe.y)
+                    const hit = root.deepestVisibleItemAt(panel, point.x, point.y)
+                    verify(hit !== null)
+                    verify(String(hit).indexOf("ScrollBar") === -1,
+                           data.tag + " " + probe.tag + " is owned by " + hit)
+                }
+            }
+        }
+
+        // Overflow still reports itself: the bar appears on the overflowing
+        // axis only, so the documented scroll affordance is not lost.
+        function test_overflowingZoneStillShowsItsScrollBar() {
+            panel.width = 400
+            panel.height = 32
+            const items = [root.spec("short", "start")]
+            for (let i = 0; i < 20; ++i)
+                items.push(root.spec("task" + i, "end"))
+            panel.panel = { edge: "top", rows: 1, applets: items }
+            wait(20)
+            const end = findChild(panel, "panelZoneEnd")
+            verify(end.contentWidth > end.width)
+            const bars = root.named(end, "").filter(
+                item => String(item).indexOf("ScrollBar") !== -1)
+            const visibleBars = bars.filter(item => item.visible)
+            compare(visibleBars.length, 1)
+            verify(!visibleBars[0].interactive)
+            const start = findChild(panel, "panelZoneStart")
+            compare(root.named(start, "").filter(
+                item => String(item).indexOf("ScrollBar") !== -1
+                        && item.visible).length, 0)
+        }
+
         function test_centeredDockPaintAndInputBoundsHugContent() {
             panel.width = 400
             panel.height = 80

@@ -34,8 +34,26 @@ Flickable {
     flickableDirection: vertical ? Flickable.VerticalFlick : Flickable.HorizontalFlick
     boundsBehavior: Flickable.StopAtBounds
     clip: true
-    T.ScrollBar.horizontal: T.ScrollBar { }
-    T.ScrollBar.vertical: T.ScrollBar { }
+    // AGENT-GUARD: an unconditional attached scroll bar is a full-width,
+    // pointer-interactive overlay across the last ~10 logical pixels of the
+    // zone even while it paints at zero opacity. On a stock 30px panel that
+    // is the bottom third of the 26px applet row plus its trailing edge, and
+    // it consumed presses aimed at the hosted control underneath -- the
+    // "clicking the lower part of a menu word does nothing" and "status icons
+    // are hard to hit" defects. Each bar therefore exists only while its own
+    // axis actually overflows, and stays a non-interactive indicator: the
+    // zone remains scrollable by flick, wheel and keyboard reveal, which is
+    // the documented overflow contract.
+    T.ScrollBar.horizontal: T.ScrollBar {
+        policy: T.ScrollBar.AsNeeded
+        interactive: false
+        visible: !root.vertical && root.contentWidth > root.width
+    }
+    T.ScrollBar.vertical: T.ScrollBar {
+        policy: T.ScrollBar.AsNeeded
+        interactive: false
+        visible: root.vertical && root.contentHeight > root.height
+    }
 
     // Keyboard navigation must reveal the focused control inside overflow,
     // without stealing focus from applet popup windows.

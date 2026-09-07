@@ -86,6 +86,25 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 
+# Reuses the same production-panel double set as the keyboard row below: the
+# panel host imports every built-in applet module eagerly, so only
+# GlobalMenu is removed from the shared doubles, leaving this row to resolve
+# the real compiled global-menu implementation.
+add_test(
+    NAME qindaqt.global-menu-panel-hit-targets-qml-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_BINARY_DIR}/qml"
+        -import "${global_menu_panel_imports}"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_PanelHitTargets.qml"
+)
+set_tests_properties(
+    qindaqt.global-menu-panel-hit-targets-qml-offscreen
+    PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+        LABELS "shell;global-menu;desktop-controls;runtime;offscreen;hit-targets"
+)
+
 add_test(
     NAME qindaqt.global-menu-production-panel-keyboard-qml-offscreen
     COMMAND

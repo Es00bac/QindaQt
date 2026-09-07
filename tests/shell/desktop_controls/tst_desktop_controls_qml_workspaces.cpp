@@ -25,6 +25,7 @@ private Q_SLOTS:
     void workspaceTilesShowNamesAndUnavailableStateStaysIconOnly();
     void showDesktopButtonTogglesThroughTheFacade();
     void systemStatusOpensAWindowPopupWithLaneControls();
+    void systemStatusSummaryIsClickableToItsLowerEdgeOnAStockPanelRow();
 };
 
 void DesktopControlsQmlWorkspaceTests::workspaceSwitcherIsKeyboardOperableAndAccessible()
@@ -182,6 +183,57 @@ void DesktopControlsQmlWorkspaceTests::systemStatusOpensAWindowPopupWithLaneCont
     QCOMPARE(transport.operations.constLast().request.profileId, QStringLiteral("power-saver"));
 
     keyClickFocused(host, Qt::Key_Escape);
+    QTRY_VERIFY(!popup->property("opened").toBool());
+}
+
+// The stock 30px top panel hands its applets a 26px row, which is shorter
+// than this control's 28px implicit height. The summary button must still
+// fill that row and stay pressable at its lower edge and trailing corner --
+// the panel-side complement is the zone scroll-bar overlay proven in
+// qindaqt.panel-geometry-offscreen.
+void DesktopControlsQmlWorkspaceTests::systemStatusSummaryIsClickableToItsLowerEdgeOnAStockPanelRow()
+{
+    QindaQt::Tests::FakePowerTransport transport;
+    Power::PowerClient client(&transport);
+    Shell::PowerApplet::PowerAppletController power(&client, true, true);
+    client.start();
+    transport.announceOwner(QStringLiteral(":1.42"));
+    transport.reply(transport.fetches.constLast(), QindaQt::Tests::powerClientSnapshot());
+    SystemStatusController status(nullptr, nullptr, &power, {false, false, false, false, true, true});
+
+    AppletHost host;
+    QString error;
+    constexpr int stockPanelRowHeight = 26;
+    QVERIFY2(host.create(QStringLiteral("SystemStatusApplet"), &status, &error, false, false, 60,
+                         stockPanelRowHeight),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *summary = host.child<QQuickItem>(QStringLiteral("systemStatusSummary"));
+    QVERIFY(summary != nullptr);
+    // The button fills the row it was given rather than overhanging it.
+    QCOMPARE(summary->height(), qreal(stockPanelRowHeight));
+    QCOMPARE(summary->y(), qreal(0));
+
+    QObject *popup = host.child<QObject>(QStringLiteral("systemStatusPopup"));
+    QVERIFY(popup != nullptr);
+    QVERIFY(!popup->property("opened").toBool());
+
+    const auto pressAt = [&](const QPointF &local) {
+        const QPointF scene = summary->mapToScene(local);
+        QTest::mouseClick(host.window.get(), Qt::LeftButton, Qt::NoModifier, scene.toPoint());
+    };
+
+    pressAt(QPointF(summary->width() / 2, summary->height() - 1));
+    QTRY_VERIFY2(popup->property("opened").toBool(),
+                 "clicking the summary's lower edge must open the status popup");
+    QMetaObject::invokeMethod(popup, "close");
+    QTRY_VERIFY(!popup->property("opened").toBool());
+
+    pressAt(QPointF(summary->width() - 1, summary->height() - 1));
+    QTRY_VERIFY2(popup->property("opened").toBool(),
+                 "clicking the summary's lower trailing corner must open the status popup");
+    QMetaObject::invokeMethod(popup, "close");
     QTRY_VERIFY(!popup->property("opened").toBool());
 }
 
