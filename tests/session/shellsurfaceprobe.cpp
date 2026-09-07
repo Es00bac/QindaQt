@@ -334,6 +334,10 @@ private:
         enter(Stage::Finished);
         m_tick.stop();
         printResult(result(true));
+        if (qEnvironmentVariableIsSet("QINDAQT_SHELL_RENDER_DIAGNOSTICS")) {
+            QTextStream(stderr) << "qindaqt-shell bounded diagnostic:\n"
+                                << QString::fromUtf8(m_diagnostic) << '\n';
+        }
         m_application.exit(0);
     }
 
