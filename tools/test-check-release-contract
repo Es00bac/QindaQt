@@ -19,20 +19,20 @@ verify_runtime_output = CONTRACT["verify_runtime_output"]
 class RuntimeVersionOutputTests(unittest.TestCase):
     def test_accepts_exact_version_after_restricted_scheduler_diagnostic(self) -> None:
         verify_runtime_output(
-            "Failed to gain real time thread priority (See CAP_SYS_NICE).\n"
-            "error: Operation not permitted\n"
             "kwin 6.6.6",
+            "Failed to gain real time thread priority (See CAP_SYS_NICE).\n"
+            "error: Operation not permitted\n",
             "6.6.6",
         )
 
     def test_rejects_mismatched_version(self) -> None:
         with self.assertRaises(ContractError):
-            verify_runtime_output("kwin 6.6.7", "6.6.6")
+            verify_runtime_output("kwin 6.6.7", "", "6.6.6")
 
     def test_rejects_missing_or_ambiguous_version_line(self) -> None:
         for output in ("Operation not permitted", "kwin 6.6.6\nkwin 6.6.6"):
             with self.subTest(output=output), self.assertRaises(ContractError):
-                verify_runtime_output(output, "6.6.6")
+                verify_runtime_output(output, "", "6.6.6")
 
 
 if __name__ == "__main__":
