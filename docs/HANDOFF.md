@@ -1,5 +1,21 @@
 # Integration handoff
 
+## Bounded usability checkpoint complete
+
+The September 6 reported-task checkpoint is complete and deployed. The final
+requirement table and qualification limits are in [Task list](TASK_LIST.md).
+The user confirmed setting the Samsung 4K monitor to 125% through Settings;
+independent readback shows HDMI-A-1 scale 1.25, DP-1 scale 1.0 at x=3072,
+and no pending transaction. The manager did not change that preference.
+
+Both packages match their manifests, the shell and six services were refreshed,
+and Settings plus its service and appearance portal run the new binaries. The
+compositor plugin is byte-identical to the one already deployed for this session.
+Closing tests pass 661/661; native interaction and hardware evidence are scoped
+precisely in the task table. No additional feature work or logout is needed for
+this checkpoint. File Manager S2 remains a separate rejected candidate awaiting
+selection repairs; mounts and SMB remain later file-manager slices.
+
 ## Final dual-output diagnosis
 
 Run `085a865f3f804842b342c06f088e0213` verifies actual member-title
