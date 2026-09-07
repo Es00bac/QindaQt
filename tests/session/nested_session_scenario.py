@@ -6,13 +6,131 @@ from __future__ import annotations
 import json
 import math
 import os
+import stat
+import subprocess
+import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 
 class ScenarioCoverageError(ValueError):
     """The virtual CLI cannot faithfully bootstrap the requested initial outputs."""
+
+
+@dataclass(frozen=True)
+class PrivateSessionBus:
+    """Probe-owned D-Bus daemon inputs for one disposable nested desktop."""
+
+    address: str
+    configuration: Path
+    service_directory: Path
+    command: tuple[str, ...]
+
+
+_PRIVATE_SESSION_BUS_TEMPLATE = """<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>{address}</listen>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+  </policy>
+  <servicedir>{service_directory}</servicedir>
+</busconfig>
+"""
+
+
+def create_private_session_bus(root: Path, dbus_daemon: Path) -> PrivateSessionBus:
+    """Prepare a private D-Bus config which cannot activate host services.
+
+    The caller owns starting and stopping the returned command.  `root` must
+    already be the disposable root used by :func:`isolated_environment`.
+    """
+
+    runtime = root / "runtime"
+    service_directory = runtime / "bus-services"
+    service_directory.mkdir(parents=True, exist_ok=True)
+    address = f"unix:path={runtime / 'bus'}"
+    configuration = runtime / "bus.conf"
+    configuration.write_text(
+        _PRIVATE_SESSION_BUS_TEMPLATE.format(
+            address=address, service_directory=service_directory
+        ),
+        encoding="utf-8",
+    )
+    # AGENT-GUARD: The stock session configuration loads /usr/share/dbus-1/
+    # services, which can activate the installed portal implementations from a
+    # disposable compositor. This config has exactly one empty, probe-owned
+    # service directory. Explicit portal tests must build their own private
+    # service directory and opt in rather than weakening this common runner.
+    return PrivateSessionBus(
+        address=address,
+        configuration=configuration,
+        service_directory=service_directory,
+        command=(
+            str(dbus_daemon),
+            "--config-file",
+            str(configuration),
+            "--nofork",
+            "--nopidfile",
+        ),
+    )
+
+
+@contextmanager
+def running_private_session_bus(
+    root: Path, dbus_daemon: Path, environment: dict[str, str]
+) -> Iterator[PrivateSessionBus]:
+    """Run one probe-owned D-Bus daemon and restore the caller environment."""
+
+    bus = create_private_session_bus(root, dbus_daemon)
+    process = subprocess.Popen(
+        bus.command,
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    socket = root / "runtime" / "bus"
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        if socket.exists() and stat.S_ISSOCK(socket.stat().st_mode):
+            break
+        if process.poll() is not None:
+            diagnostic = process.stderr.read() if process.stderr else ""
+            if process.stderr:
+                process.stderr.close()
+            raise RuntimeError(f"private dbus-daemon exited early: {diagnostic}")
+        time.sleep(0.02)
+    else:
+        process.terminate()
+        process.wait(timeout=3)
+        if process.stderr:
+            process.stderr.close()
+        raise RuntimeError("private dbus-daemon did not create its socket")
+
+    previous_address = environment.get("DBUS_SESSION_BUS_ADDRESS")
+    environment["DBUS_SESSION_BUS_ADDRESS"] = bus.address
+    try:
+        yield bus
+    finally:
+        if previous_address is None:
+            environment.pop("DBUS_SESSION_BUS_ADDRESS", None)
+        else:
+            environment["DBUS_SESSION_BUS_ADDRESS"] = previous_address
+        process.terminate()
+        try:
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=3)
+        if process.stderr:
+            process.stderr.close()
 
 
 @dataclass(frozen=True)
@@ -143,8 +261,15 @@ def load_virtual_spec(path: Path) -> VirtualOutputSpec:
     return virtual_spec_from_document(document, str(path))
 
 
-def isolated_environment(root: Path) -> dict[str, str]:
-    """Create the process environment for one hermetic nested KWin run."""
+def isolated_environment(
+    root: Path, *, allow_portal_activation: bool = False
+) -> dict[str, str]:
+    """Create the environment for one hermetic nested KWin run.
+
+    Portal activation is off by default because a direct nested run has no
+    portal authority. Dedicated portal tests must opt in and provide their own
+    private portal services.
+    """
     environment = dict(os.environ)
     for key in (
         "DBUS_SESSION_BUS_ADDRESS",
@@ -157,6 +282,8 @@ def isolated_environment(root: Path) -> dict[str, str]:
         "QINDAQT_EXPECT_READ_ONLY_CONTROL",
         "QINDAQT_EXPECT_HYBRID_POINTER",
         "QINDAQT_DOTOOL",
+        "QT_NO_XDG_DESKTOP_PORTAL",
+        "GTK_USE_PORTAL",
     ):
         environment.pop(key, None)
     for name in ("home", "config", "data", "cache", "state"):
@@ -178,6 +305,16 @@ def isolated_environment(root: Path) -> dict[str, str]:
             "QT_QUICK_BACKEND": "software",
         }
     )
+    if not allow_portal_activation:
+        # AGENT-GUARD: This guards Qt/GTK clients while create_private_session_bus
+        # removes D-Bus activation of installed portal backends. Keep both
+        # defenses for direct nested compositor tests.
+        environment.update(
+            {
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0",
+            }
+        )
     return environment
 
 
