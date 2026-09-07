@@ -293,7 +293,7 @@ Item {
                 contentItem: Text {
                     text: String(menuEntry.entryData.text ?? "")
                     textFormat: Text.PlainText
-                    // The applet handles width pressure by hiding complete
+                    // AGENT-GUARD: The applet handles width pressure by hiding complete
                     // entries behind +N. Keep every admitted affordance's
                     // provider-owned name intact; Qt can otherwise elide a
                     // fitting label because QTextLayout and FontMetrics round
