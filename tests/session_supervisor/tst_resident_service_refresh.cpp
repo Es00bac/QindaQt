@@ -112,12 +112,16 @@ private Q_SLOTS:
     }
 
     // The fixed list itself is the reviewed product contract: only modules
-    // that independently open a Wayland connection belong here.
-    void residentUnitListNamesOnlyDirectWaylandConsumers()
+    // that independently open a Wayland connection, or that otherwise cache
+    // session-scoped desktop identity/routing at their own startup, belong
+    // here.
+    void residentUnitListNamesOnlyReviewedResidentServices()
     {
-        const QStringList units = QindaQt::SessionSupervisor::residentWaylandServiceUnits();
+        const QStringList units = QindaQt::SessionSupervisor::residentServiceRefreshUnits();
         QCOMPARE(units, QStringList({QStringLiteral("qindaqt-clipboard-host.service"),
-                                     QStringLiteral("qindaqt-display-service.service")}));
+                                     QStringLiteral("qindaqt-display-service.service"),
+                                     QStringLiteral("xdg-desktop-portal.service"),
+                                     QStringLiteral("plasma-xdg-desktop-portal-kde.service")}));
     }
 };
 QTEST_GUILESS_MAIN(ResidentServiceRefreshTests)

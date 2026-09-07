@@ -8,16 +8,18 @@ namespace {
 constexpr int RestartTimeoutMilliseconds = 2'000;
 }
 
-QStringList residentWaylandServiceUnits()
+QStringList residentServiceRefreshUnits()
 {
     return {
         QStringLiteral("qindaqt-clipboard-host.service"),
         QStringLiteral("qindaqt-display-service.service"),
+        QStringLiteral("xdg-desktop-portal.service"),
+        QStringLiteral("plasma-xdg-desktop-portal-kde.service"),
     };
 }
 
-void refreshResidentWaylandServices(const QDBusConnection &bus,
-                                    const QStringList &unitNames)
+void refreshResidentServices(const QDBusConnection &bus,
+                             const QStringList &unitNames)
 {
     if (!bus.isConnected()) return;
     for (const QString &unitName : unitNames) {
