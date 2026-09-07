@@ -130,20 +130,6 @@ void TerminalWidgetAdapter::forwardChildOutput(const char *data, int length) {
       m_widgetOutputBuffer.size() >= kMaxWidgetOutputBufferBytes) {
     return;
   }
-  QByteArray payload;
-  if (m_profile.bellPolicy == TerminalProfile::BellPolicy::Silent) {
-    payload.reserve(length);
-    for (int index = 0; index < length; ++index) {
-      if (data[index] != '\a') {
-        payload.append(data[index]);
-      }
-    }
-    if (payload.isEmpty()) {
-      return;
-    }
-    data = payload.constData();
-    length = static_cast<int>(payload.size());
-  }
   const qsizetype room =
       kMaxWidgetOutputBufferBytes - m_widgetOutputBuffer.size();
   m_widgetOutputBuffer.append(data, qMin<qsizetype>(length, room));

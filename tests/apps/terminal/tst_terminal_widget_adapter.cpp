@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/terminal_appearance.h"
+#include "ui/terminal_window.h"
 #include "session/process_liveness.h"
 #include "ui/terminal_widget_adapter.h"
 
@@ -47,12 +48,57 @@ class TerminalWidgetAdapterTest final : public QObject {
   Q_OBJECT
 
 private slots:
+  void productionWindowPaintsInteractivePrompt();
   void liveShellDirectoryAndKeyboardInput();
   void zoomIsLocalAndSurvivesAppearance();
   void blankGridDoesNotPublishCopyAvailability();
   void customSchemePaintsRequestedTerminalBackground();
   void realPtyOutputSupportsBoundedSearchAndVisibleLinks();
 };
+
+void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
+  using namespace QindaQt::Apps::Terminal;
+  PosixProcessMonitor monitor;
+  TerminalWidgetAdapter *adapter = nullptr;
+  // Gentoo's normal prompt sends an OSC title terminated by BEL. Use an
+  // isolated equivalent so this regression never depends on host shell files.
+  TerminalSessionContext context{
+      {QStringLiteral("PATH=/usr/bin:/bin"), QStringLiteral("LANG=C.UTF-8"),
+       QStringLiteral("PS1=\\[\\e]0;QindaQt prompt\\a\\]PROMPT> ")},
+      QStringLiteral("/bin/bash"),
+      {QStringLiteral("--noprofile"), QStringLiteral("--norc"), QStringLiteral("-i")},
+      QStringLiteral("/tmp")};
+  auto collection = std::make_unique<TerminalSessionCollection>(context,
+      [&adapter](const TerminalProfile &profile) {
+        auto result = std::make_unique<TerminalWidgetAdapter>(darkAppearance(), profile);
+        adapter = result.get(); return result;
+      }, &monitor, TeardownBounds{});
+  TerminalWindow window(std::move(collection), darkAppearance(), {}, nullptr);
+  window.resize(800, 500); window.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&window));
+  QTest::qWait(75);
+  window.newSessionWithDefaultProfile();
+  QVERIFY(adapter);
+  const auto contains = [&adapter](const QString &text) {
+    return adapter->searchScrollback({.pattern=text}, TerminalSearchDirection::Initial).found;
+  };
+  QTRY_VERIFY(contains(QStringLiteral("PROMPT>")));
+  window.applyAppearance(darkAppearance());
+  auto *input = adapter->terminalWidget()->focusProxy();
+  QVERIFY(input);
+  QTest::keyClicks(input, QStringLiteral("printf '%s%s\\n' INTERACTIVE- KEYBOARD-PROOF"));
+  QTest::keyClick(input, Qt::Key_Return);
+  QTRY_VERIFY(contains(QStringLiteral("INTERACTIVE-KEYBOARD-PROOF")));
+  adapter->clearScrollbackSearch();
+  QTest::qWait(100);
+  const auto rendered = adapter->terminalWidget()->grab().toImage();
+  if (qEnvironmentVariableIsSet("QINDAQT_TEST_CAPTURE"))
+    rendered.save(qEnvironmentVariable("QINDAQT_TEST_CAPTURE"));
+  int bright = 0;
+  for (int y=0; y<rendered.height(); ++y) for (int x=40; x<rendered.width(); ++x)
+    if (rendered.pixelColor(x,y).lightness()>120) ++bright;
+  QVERIFY2(bright>100, "Production window parsed output but painted no glyphs");
+}
 
 void TerminalWidgetAdapterTest::liveShellDirectoryAndKeyboardInput() {
   TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
