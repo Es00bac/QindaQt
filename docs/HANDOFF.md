@@ -1,5 +1,23 @@
 # Integration handoff
 
+## Gabbee sink live acceptance passed
+
+The real `gabbee.agent_input.AgentInputTextSink` passes both standalone and
+group-member Terminal delivery in private runs `bd2ad5a9fa424203ab552f7075a90834`
+and `6fbbe1a2f3f0485880eb4925cf057cf8`. Each run passes 11/11 phases, with
+`method=agent-input`, successful non-uncertain delivery, separate unique Unicode
+sentinels and actual shell-written files. Manager inspection independently
+compared all four files with the expected bytes. Each sink session used the real
+portal approval; direct helper sessions carried only framing keys and pointer
+focus. Both runs clean up. This closes the terminal adapter delivery gate for
+integrated `f23f6710`; it does not claim a physical microphone transcription test.
+
+Native panel fast-click run `b9959bfb91df43e49b5a5d4568aafcb4` uses a measured
+93 ms click at the lower File-label edge, retains the popup after release and
+one second, then adds exactly one tab through New. Separate native captures
+verify lower-edge Clipboard and Bluetooth popup opening. The top menu Tabs
+label remains visibly elided and has a bounded repair owner.
+
 ## Gabbee sink candidate accepted for integration
 
 Independent GLM review accepts exact `fc8723a1` after rechecking all three

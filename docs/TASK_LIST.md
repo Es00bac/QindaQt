@@ -127,6 +127,11 @@ replace earlier work:
   an explicitly chosen test application.
 - Qualify Gabbee dictation, its global shortcuts, and text insertion into
   ordinary applications and terminals, including correct grouped-window focus.
+  Integrated `f23f6710` has two real sink-to-PTY runs, each 11/11: standalone
+  and grouped terminals receive separate unique Unicode sentinels, independently
+  matched against shell-written files. The actual Gabbee checkout passes 187/187
+  tests. Physical microphone transcription is not claimed; final shortcut routing
+  evidence remains separate from terminal insertion.
 - Qualify fullscreen video and games: fullscreen entry/exit and restoration,
   input focus, panel visibility, and pointer capture/confinement behavior.
   Controlled native fullscreen run `0aca8a74926c44f98def9b87b2a83328` passes

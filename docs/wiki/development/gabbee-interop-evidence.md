@@ -206,8 +206,11 @@ the accepted audit configuration's binary).  Both the standalone Terminal and
 the Terminal grouped with the Editor through `Compositor1.DockWindows` are
 tested, each with its own sentinel and output file, so neither case can be
 satisfied by the other's artifact. The earlier direct-helper revision passed
-both cases twice. The integrated Gabbee-sink revision has independent unit
-verification; its live acceptance run remains required.
+both cases twice. The integrated Gabbee-sink revision passes live runs
+`bd2ad5a9fa424203ab552f7075a90834` and `6fbbe1a2f3f0485880eb4925cf057cf8`: each
+has 11 passing phases, the real external sink class and successful delivery
+results, separate standalone/group sentinels, and byte-exact files independently
+checked by the manager. Both private sessions clean up completely.
 
 ## Host AT-SPI bridge prerequisite
 
