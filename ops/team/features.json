@@ -221,7 +221,7 @@
             {
               "kind": "commit",
               "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
-              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File → New action succeed."
+              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File \u2192 New action succeed."
             }
           ],
           "caveat": "Native popup positioning repair and physical-session deployment remain open; Sloom exporter selection is integrated with real panel consumption pending."
@@ -341,7 +341,7 @@
             {
               "kind": "commit",
               "reference": "f3abd4ab",
-              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by R\u00f3zsa P\u00e9ter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             },
             {
               "kind": "commit",
@@ -1173,7 +1173,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             }
           ],
           "caveat": "Portals, print, extensions, rich text, a nested display screenshot matrix, and whole-application assistive-technology qualification remain."
@@ -1203,7 +1203,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             }
           ],
           "caveat": "Mounts, search, previews, portals, nested screenshots, and whole-application assistive-technology qualification remain later slices."
@@ -1213,7 +1213,7 @@
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native Terminal S0 single-session slice is joined by S1: a bounded multi-session tab strip where every session owns its PTY/child with process-group-complete teardown (HUP, TERM, KILL escalation and verified emptiness before ownership release), validated profiles within the existing launch policy, Settings1 persistence with presented asynchronous apply outcomes and no-replay truth, AppShell action-catalog exposure, exact argv preservation, and keyboard/accessibility parity under host-unset isolation. S2 adds per-session scrollback search (bounded regex, wrap, keyboard parity, accessible announcements) and bounded link presentation with confirmed argv-only opening through the injected spawner. The September 7 daily-use update preserves terminal fonts through theme changes, adds per-tab zoom, and opens tabs in the active owned shell directory.",
+          "summary": "Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The no-tabs interface is integrated; the installed package still contains the prior interface pending the combined release.",
           "evidence": [
             {
               "kind": "commit",
@@ -1238,12 +1238,17 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
               "reference": "89ad375d",
               "summary": "Correct the normal Gentoo prompt failure missed by plain-output tests: preserve BEL-terminated OSC strings and silence parsed bell notifications. Complete TerminalWindow interactive prompt/keyboard/pixel regression passes on Wayland; six focused CTest rows pass. Portage installs the immutable fixed app snapshot with declared dependencies and no build RUNPATHs; normal installed launch publishes its shell title. See docs/HANDOFF.md."
+            },
+            {
+              "kind": "commit",
+              "reference": "06979dfe",
+              "summary": "Integrate reviewed and repaired e92243f0. Root reran six focused candidate window/action/container/private-bus rows, all passing, and verified integrated Terminal source identity. One newly detected main-function size violation is assigned for helper extraction; combined build and installation remain pending."
             }
           ],
           "caveat": "GPU rendering, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain."
@@ -1368,6 +1373,11 @@
             "kind": "decision",
             "reference": "docs/wiki/adr/0015-qualify-function-before-resource-refinement.md",
             "summary": "ADR-0015 makes functional virtual-desktop qualification precede aggressive memory refinement."
+          },
+          {
+            "kind": "commit",
+            "reference": "3f1557c1",
+            "summary": "Full Gentoo desktop package definition, native plugin build/boot CI and exact KWin source checks are integrated. Candidate full build and two nested boots passed. Final combined source pin, remote CI, Portage merge, installed acceptance and tag remain open; infrastructure alone does not advance release qualification."
           }
         ]
       },
