@@ -403,9 +403,10 @@ void SessionProcessSupervisor::startNetworkSecretAgent()
 
 void SessionProcessSupervisor::startOptionalChildren()
 {
-    // AGENT-CONTRACT: both helpers must start after the shell because their
-    // capabilities (compositor global shortcuts, polkit prompt registration)
-    // assume a running compositor session. Absence is skipped, never fatal.
+    // AGENT-CONTRACT: all three children start after the shell establishes
+    // the compositor session. PowerDevil starts before desktop-controls so
+    // idle preferences can follow its owner arrival; polkit registers prompts
+    // for this session. Missing optional executables never prevent login.
     // PowerDevil owns the idle timer and inhibitors. Keep it in this process
     // tree because QindaQt does not activate graphical-session.target.
     m_powerDevil->start(m_options.powerDevilExecutable);

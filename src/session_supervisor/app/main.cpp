@@ -74,6 +74,11 @@ int main(int argc, char *argv[])
         {QStringLiteral("desktop-controls"),
          QStringLiteral("Optional media-key/screenshot/idle-display helper."),
          QStringLiteral("path"), QStringLiteral("qindaqt-desktop-controls")},
+        {QStringLiteral("powerdevil"),
+         QStringLiteral("PowerDevil daemon executable."), QStringLiteral("path"),
+         QStringLiteral("/usr/libexec/org_kde_powerdevil")},
+        {QStringLiteral("no-powerdevil"),
+         QStringLiteral("Disable the PowerDevil child for a private session.")},
         {QStringLiteral("polkit-agent"),
          QStringLiteral("Optional polkit authentication agent executable; "
                         "well-known locations are used when omitted."),
@@ -108,6 +113,8 @@ int main(int argc, char *argv[])
     options.networkSecretAgentExecutable =
         parser.value(QStringLiteral("network-secret-agent"));
     options.welcomeExecutable = parser.value(QStringLiteral("welcome"));
+    options.powerDevilExecutable = parser.isSet(QStringLiteral("no-powerdevil"))
+        ? QString{} : parser.value(QStringLiteral("powerdevil"));
     options.desktopControlsExecutable =
         parser.value(QStringLiteral("desktop-controls"));
     options.polkitAgentExecutable =
