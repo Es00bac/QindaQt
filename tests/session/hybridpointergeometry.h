@@ -45,8 +45,9 @@ struct SplitEvidence final
                                           const QRectF &second);
 // A point on the shared group title before any covering window exists. Mirrors
 // hybridpointerraise.cpp's private inferredGroupOuterFrame/sharedTitleRect
-// metrics (one outer border, then 34px title and 34px tab rows above active
-// member frames) for callers that need this before coverAndRaiseGroup runs.
+// metrics (one outer border, then the 29px shared title row above active
+// member frames; tabs share that same row rather than adding a second
+// stacked one) for callers that need this before coverAndRaiseGroup runs.
 [[nodiscard]] QPointF sharedTitleCenter(const ObservedWindow &first,
                                         const ObservedWindow &second);
 

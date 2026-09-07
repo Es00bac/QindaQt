@@ -79,7 +79,8 @@ bool paintableInCurrentContext(const KWin::Window *window)
 }
 
 QMap<QString, HybridGroupStackingInput> stackingGroups(
-    const Hybrid::WindowTopology &topology)
+    const Hybrid::WindowTopology &topology,
+    const QMap<QString, QString> &shadedAnchors)
 {
     QMap<QString, HybridGroupStackingInput> result;
     QHash<QString, QString> activeOwners;
@@ -91,6 +92,17 @@ QMap<QString, HybridGroupStackingInput> stackingGroups(
         QStringList members;
         if (page) {
             collectMembers(page->root(), &members);
+        }
+        const auto shadedAnchor = shadedAnchors.value(containerId);
+        if (!shadedAnchor.isEmpty()) {
+            // AGENT-GUARD: a shaded container's non-anchor members are
+            // genuinely Window::isHidden() (ADR-0099); they must not be
+            // required to share the anchor's KWin layer or sit contiguous
+            // with it in the live stack, or a legitimate shade permanently
+            // drops chromeOverlayCount/publishedGroupStackingCount to 0 and
+            // the strip becomes unclickable/undraggable. Only the anchor
+            // still needs a real, anchorable stack position.
+            members = {shadedAnchor};
         }
         for (const auto &memberId : members) {
             activeOwners.insert(memberId, containerId);
@@ -154,7 +166,8 @@ KWinHybridGroupStacking::KWinHybridGroupStacking(
 }
 
 bool KWinHybridGroupStacking::synchronize(
-    const Hybrid::WindowTopology &topology, QString *error)
+    const Hybrid::WindowTopology &topology,
+    const QMap<QString, QString> &shadedAnchors, QString *error)
 {
     if (error) {
         error->clear();
@@ -183,7 +196,7 @@ bool KWinHybridGroupStacking::synchronize(
         stack.append(id);
         windows.insert(id, window);
     }
-    const auto groups = stackingGroups(topology);
+    const auto groups = stackingGroups(topology, shadedAnchors);
     const auto plan = planHybridGroupStacking(stack, groups, error);
     if (!plan) {
         hideAll();

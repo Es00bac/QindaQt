@@ -16,6 +16,7 @@ private Q_SLOTS:
     void preservesAnUnrelatedWindowAboveTheTransientBlock();
     void plansMultipleGroupsWithoutChangingOutsideOrder();
     void rejectsMissingDuplicateAndMultiplyOwnedMembers();
+    void aSingleAnchorMemberFormsItsOwnCompleteBlockWithoutItsHiddenSiblings();
 };
 
 void HybridGroupStackingTests::compactsAtTopmostMemberWithoutRaisingPastUnrelatedWindows()
@@ -191,6 +192,36 @@ void HybridGroupStackingTests::rejectsMissingDuplicateAndMultiplyOwnedMembers()
            }}}},
         &error));
     QVERIFY(error.contains(QStringLiteral("invalid grouped owner")));
+}
+
+// AGENT-CONTRACT: KWinHybridGroupStacking::synchronize reduces a shaded
+// container's HybridGroupStackingInput::activeMembers to just its chrome
+// anchor (KWinHybridGroupStacking's stackingGroups(), driven by
+// HybridShadeController::anchorWindowId) before calling this planner, so a
+// genuinely-hidden non-anchor sibling is never required to appear in the
+// live KWin stack. This proves the planner itself forms a valid,
+// independent single-member block in that reduced shape, without needing a
+// real KWin Window to prove the reduction happens (see
+// tst_hybridshadecontroller's anchorWindowId assertions for that half).
+void HybridGroupStackingTests::aSingleAnchorMemberFormsItsOwnCompleteBlockWithoutItsHiddenSiblings()
+{
+    const auto plan = planHybridGroupStacking(
+        {QStringLiteral("outside-low"), QStringLiteral("anchor"),
+         QStringLiteral("outside-high")},
+        {{QStringLiteral("group"),
+          {.activeMembers = {QStringLiteral("anchor")},
+           .associatedTransients = {},
+           .transientOwnerById = {}}}});
+    QVERIFY(plan);
+    QCOMPARE(plan->windowsBottomToTop,
+             QStringList({QStringLiteral("outside-low"),
+                          QStringLiteral("anchor"),
+                          QStringLiteral("outside-high")}));
+    QCOMPARE(plan->blocksBottomToTop.size(), 1);
+    QCOMPARE(plan->blocksBottomToTop.constFirst().membersBottomToTop,
+             QStringList{QStringLiteral("anchor")});
+    QCOMPARE(plan->blocksBottomToTop.constFirst().topMemberId(),
+             QStringLiteral("anchor"));
 }
 
 QTEST_GUILESS_MAIN(HybridGroupStackingTests)

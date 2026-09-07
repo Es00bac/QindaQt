@@ -18,7 +18,9 @@ struct HybridPointerShadeEvidence final
     WindowInventory shaded;
     WindowInventory unrolled;
     HybridDiagnostics shadedDiagnostics;
+    HybridDiagnostics movedDiagnostics;
     HybridDiagnostics unrolledDiagnostics;
+    QPointF dragDelta;
 };
 
 // Drives the production group context menu's "Roll up group"/"Unroll group"
@@ -29,15 +31,18 @@ struct HybridPointerShadeEvidence final
 // frame, and each member is genuinely Window::isHidden() (not just
 // compositor bookkeeping) while shaded and restored afterward.
 //
-// AGENT-NOTE: does NOT yet prove "moving the rolled strip must affect the
-// restored position correctly" — dragging the shaded strip to a new
-// position and unrolling there was attempted and is not yet working; see
-// ops/team/messages for the live-run findings (confirmed via a real nested
-// run and a new shadedStripFrames diagnostic: pointer.drag() at a point
-// geometrically inside ChromeLayoutEngine's real outerTitleDragRect for the
-// shaded (tabs-empty) plan does not move the strip, so the gap looks like
-// input-intent routing rather than test geometry). Left as a known,
-// reported gap rather than a permanently-failing assertion.
+// Also drags the rolled strip to a new position and unrolls it there,
+// proving HybridContainerPlacementController::handleShadedMove and the
+// group-stacking fix that keeps the shaded strip's chrome overlay published
+// (see KWinHybridGroupStacking::synchronize's shadedAnchors parameter):
+// dragging previously never reached the strip at all because
+// chromeOverlayCount/publishedGroupStackingCount dropped to 0 immediately
+// after the first shade (see ops/team/messages for that live-run finding).
+// The drag translates the strip by an exact, known delta; unroll performs
+// its one real reflow to the original size at that dragged position, so
+// both members' post-unroll frames must equal their pre-shade frames
+// translated by the same delta (divider ratios and container size are
+// unchanged by a pure-translation reflow; only the origin moves).
 [[nodiscard]] std::optional<HybridPointerShadeEvidence>
 exerciseHybridPointerShade(CompositorProbeClient &client,
                           HybridPointerGrouping &pointer,

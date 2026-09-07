@@ -283,7 +283,14 @@ preserved offset. Context following never raises a transient by itself: the
 group-stacking policy keeps associated transients above the complete contiguous
 member block, so updating a dialog cannot split the group or pull it above an
 unrelated active window. A focused dialog remains the valid active window while
-scene transactions preserve its opaque KWin focus token.
+scene transactions preserve its opaque KWin focus token. While a container is
+shaded, group stacking narrows that same-layer/contiguous-block requirement to
+just the content-preserving chrome anchor; its genuinely `Window::isHidden()`
+siblings are exempt rather than treated as a broken group, so the published
+chrome overlay (and the shaded strip's click/drag eligibility) survives the
+first shade action instead of dropping to zero. Unrelated hidden/unmapped
+windows outside a shaded container are unaffected and still fail
+synchronization normally.
 
 ## Compositor scene restart
 

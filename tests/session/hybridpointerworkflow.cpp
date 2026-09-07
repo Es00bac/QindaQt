@@ -442,11 +442,14 @@ std::optional<HybridPointerWorkflowResult> exerciseHybridPointerWorkflow(
             {QStringLiteral("targetFrameUnchangedWhileShaded"),
              sameGeometry(window(shade->shaded, state->gesture.targetTitle).frame,
                          window(*settledForShade, state->gesture.targetTitle).frame)},
-            {QStringLiteral("framesExactAfterUnroll"),
+            {QStringLiteral("dragDelta"), pointJson(shade->dragDelta)},
+            {QStringLiteral("framesTranslatedByDragDeltaAfterUnroll"),
              sameGeometry(window(shade->unrolled, state->gesture.sourceTitle).frame,
-                         window(*settledForShade, state->gesture.sourceTitle).frame)
+                         window(*settledForShade, state->gesture.sourceTitle)
+                             .frame.translated(shade->dragDelta))
                  && sameGeometry(window(shade->unrolled, state->gesture.targetTitle).frame,
-                                window(*settledForShade, state->gesture.targetTitle).frame)},
+                                window(*settledForShade, state->gesture.targetTitle)
+                                    .frame.translated(shade->dragDelta))},
             {QStringLiteral("sourceVisibleAfterUnroll"),
              !window(shade->unrolled, state->gesture.sourceTitle).hidden},
             {QStringLiteral("targetVisibleAfterUnroll"),

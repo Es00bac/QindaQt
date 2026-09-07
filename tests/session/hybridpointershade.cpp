@@ -48,6 +48,43 @@ bool bothMembersHidden(const WindowInventory &inventory,
         && target.hidden == expectedHidden && !target.minimized;
 }
 
+// Unroll-at-a-dragged-position reflows the whole container to the strip's
+// new origin at its original (pre-shade) size, so ratios/size are unchanged
+// and every member frame simply translates by the same drag delta.
+bool bothMembersMatchTranslated(const WindowInventory &inventory,
+                                const WindowInventory &expected,
+                                const HybridPointerGroupedState &state,
+                                const QPointF &delta)
+{
+    const auto &source = window(inventory, state.gesture.sourceTitle);
+    const auto &expectedSource = window(expected, state.gesture.sourceTitle);
+    const auto &target = window(inventory, state.gesture.targetTitle);
+    const auto &expectedTarget = window(expected, state.gesture.targetTitle);
+    return sameGeometry(source.frame, expectedSource.frame.translated(delta))
+        && sameGeometry(source.targetFrame,
+                        expectedSource.targetFrame.translated(delta))
+        && sameGeometry(target.frame, expectedTarget.frame.translated(delta))
+        && sameGeometry(target.targetFrame,
+                        expectedTarget.targetFrame.translated(delta));
+}
+
+std::optional<QRectF> soleShadedStripFrame(const HybridDiagnostics &diagnostics,
+                                           QString *error)
+{
+    const auto frames = diagnostics.json.value(QStringLiteral("shadedStripFrames"))
+                             .toArray();
+    if (frames.size() != 1) {
+        *error = QStringLiteral(
+            "expected exactly one shaded strip frame, found %1").arg(frames.size());
+        return std::nullopt;
+    }
+    const auto frame = frames.first().toObject();
+    return QRectF(frame.value(QStringLiteral("x")).toDouble(),
+                 frame.value(QStringLiteral("y")).toDouble(),
+                 frame.value(QStringLiteral("width")).toDouble(),
+                 frame.value(QStringLiteral("height")).toDouble());
+}
+
 } // namespace
 
 std::optional<HybridPointerShadeEvidence> exerciseHybridPointerShade(
@@ -93,23 +130,65 @@ std::optional<HybridPointerShadeEvidence> exerciseHybridPointerShade(
         return std::nullopt;
     }
 
-    // Unroll: same menu, same index (only the label flips), same point (the
-    // shared row's own position never moved).
+    const auto shadedFrameBeforeDrag = soleShadedStripFrame(*shadedDiagnostics, error);
+    if (!shadedFrameBeforeDrag) {
+        return std::nullopt;
+    }
+
+    // Drag the rolled strip to a new position. Ordinary title-bar drag
+    // semantics apply: the grabbed point stays under the pointer, so the new
+    // shared-title click point is exactly sharedTitlePoint + dragDelta.
+    constexpr QPointF dragDelta{40.0, 24.0};
+    const QPointF draggedTitlePoint = sharedTitlePoint + dragDelta;
+    if (!pointer.drag(sharedTitlePoint, draggedTitlePoint, /*metaShift=*/false, error)) {
+        return std::nullopt;
+    }
+    auto movedDiagnostics = awaitHybridDiagnostics(
+        client,
+        [&](const HybridDiagnostics &value) {
+            const auto frame = soleShadedStripFrame(value, error);
+            return frame
+                && sameGeometry(*frame, shadedFrameBeforeDrag->translated(dragDelta));
+        }, error);
+    if (!movedDiagnostics) {
+        *error = QStringLiteral(
+            "dragging the shaded strip did not move its published frame by "
+            "the exact drag delta: %1").arg(*error);
+        return std::nullopt;
+    }
+    // Members stay exactly where they were before shading; only the
+    // independent strip frame (and the compositor bookkeeping tracking it)
+    // may move under drag.
+    auto draggedMembers = client.awaitWindows(
+        titles,
+        [&](const WindowInventory &inventory) {
+            return bothMembersMatch(inventory, grouped, state)
+                && bothMembersHidden(inventory, state, /*expectedHidden=*/true);
+        }, error, InventoryTimeoutMilliseconds);
+    if (!draggedMembers) {
+        *error = QStringLiteral(
+            "member frames changed, or members were unhidden, while "
+            "dragging the shaded strip: %1").arg(*error);
+        return std::nullopt;
+    }
+
+    // Unroll at the dragged position: same menu, same index (only the label
+    // flips), the strip's new position rather than its original one.
     if (!pointer.activateContextMenuActionAt(
-            sharedTitlePoint, RollUpMenuActionIndex, error)) {
+            draggedTitlePoint, RollUpMenuActionIndex, error)) {
         return std::nullopt;
     }
     auto unrolled = client.awaitWindows(
         titles,
         [&](const WindowInventory &inventory) {
-            return bothMembersMatch(inventory, grouped, state)
+            return bothMembersMatchTranslated(inventory, grouped, state, dragDelta)
                 && bothMembersHidden(inventory, state, /*expectedHidden=*/false);
         }, error, InventoryTimeoutMilliseconds);
     if (!unrolled) {
         *error = QStringLiteral(
-            "member frames did not remain exact, or members were not "
-            "restored to visible, after unrolling the group: %1")
-                     .arg(*error);
+            "member frames were not the pre-shade frames translated by the "
+            "exact drag delta, or members were not restored to visible, "
+            "after unrolling the dragged group: %1").arg(*error);
         return std::nullopt;
     }
     auto unrolledDiagnostics = awaitHybridDiagnostics(
@@ -126,8 +205,9 @@ std::optional<HybridPointerShadeEvidence> exerciseHybridPointerShade(
         return std::nullopt;
     }
 
-    return HybridPointerShadeEvidence{*shaded, *unrolled,
-                                      *shadedDiagnostics, *unrolledDiagnostics};
+    return HybridPointerShadeEvidence{*shaded, *unrolled, *shadedDiagnostics,
+                                      *movedDiagnostics, *unrolledDiagnostics,
+                                      dragDelta};
 }
 
 } // namespace QindaQt::Test
