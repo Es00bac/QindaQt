@@ -52,15 +52,19 @@ replace earlier work:
   The refreshed session still has undersized or vertically displaced click
   targets on menu labels and status icons. Integrated `8179a0f9` removes
   invisible scrollbar interception and expands usable hit areas; independent
-  and integrated checks pass 20/20. Fresh native interaction verification and
-  installation of the new shell remain open.
+  and integrated checks pass 20/20. Native run
+  `b9959bfb91df43e49b5a5d4568aafcb4` verifies a measured 93 ms lower-edge
+  File click, a popup retained after release and one second, and exactly one
+  New action. Separate captures verify lower-edge Clipboard and Bluetooth
+  opening. Installation of the new shell remains open.
   Native-menu fixes are integrated through `71f3b49b`. In isolated run
   `de9f130640494649993e7001d75810a7`, inspected screenshots show a correctly
   anchored File popup staying open after release and a one-second wait, with
   exactly one new tab per pointer/keyboard New action. The semantic observer
-  was unavailable, so the automated gate remains false. The clipped Tabs label
-  is fixed through `a631a02c`; fresh native run
-  `a1bdb644aa3f4cdebd6a174f5ad7d7d9` shows complete labels. The refreshed
+  was unavailable, so the automated gate remains false. The earlier Tabs sizing
+  repair `a631a02c` is insufficient: run
+  `838a789f4bc24ff499dff150c641118d` still shows the label elided after
+  private font configuration was repaired. This defect remains open. The refreshed
   installed QindaQt session started at 20:17 MDT; live action verification
   remains separate from that installation proof.
 - Offer automatic screen-lock configuration in Settings and respect the user's
