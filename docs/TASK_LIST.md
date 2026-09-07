@@ -50,13 +50,16 @@ replace earlier work:
   anchored File popup staying open after release and a one-second wait, with
   exactly one new tab per pointer/keyboard New action. The semantic observer
   was unavailable, so the automated gate remains false. The clipped Tabs label
-  and physical-session deployment still need completion.
+  is fixed through `a631a02c`; fresh native run
+  `a1bdb644aa3f4cdebd6a174f5ad7d7d9` shows complete labels. The refreshed
+  installed QindaQt session started at 20:17 MDT; live action verification
+  remains separate from that installation proof.
 - Offer automatic screen-lock configuration in Settings and respect the user's
   choice to disable idle locking. Integrated through `94b302ea`: Power settings
   has an automatic-lock switch and duration selector, preserving custom values
   and unrelated locker preferences; independent focused tests pass 7/7. The
-  host automatic idle-lock preference is off. Installing the updated Settings
-  UI remains part of the desktop refresh.
+  host automatic idle-lock preference is off. The updated Settings UI is installed
+  in the refreshed desktop; host interaction verification remains.
 - Support Sloom Studio by default through its existing Electron/custom-KDE
   global-menu integration. Its standard dbusmenu twin is exported at
   `/org/signalloom/menus/active` by `org.signalloom.PanelMenu`; preserve that
