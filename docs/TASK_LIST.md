@@ -843,3 +843,16 @@ model, storage and assignment boundary only; the checkpoint above remains active
 Capture and desktop-entry launch evidence: `2b479c6b` integrates independently
 accepted candidate `df5b5a91`; 4/4 integrated Core/workspace tests pass.
 Atomic adoption and native Save/Reopen composition remain in progress.
+
+### Dock hover behavior (user addition, 2026-09-07)
+
+Add a configurable dock hover mode: window/container preview, temporary raise,
+or off. A container's dock item represents its whole group. Temporary raise
+must not move keyboard focus, and leaving the item must restore the previous
+stacking unless the user explicitly activates the item. A preview must depict
+the represented window/group, not merely repeat its title. Preserve normal
+click activation and fullscreen behavior.
+
+Queue implementation after the container identity/dock candidate integrates,
+so hover handling and name/color projection do not collide. This remains open;
+no preview or hover-raise runtime completion is claimed.
