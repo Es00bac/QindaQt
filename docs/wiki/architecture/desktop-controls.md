@@ -19,12 +19,12 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | --- | --- | --- |
 | Volume/mute media keys | KGlobalAccel (compositor-provided) | `qindaqt-desktop-controls` shortcut set |
 | Volume and mute mutation | resident `Audio1` | public `AudioClient` on the default output |
-| Brightness media keys | KGlobalAccel | same shortcut set |
-| Internal-panel brightness write | kernel backlight sysfs | public `SysfsBacklightSource` write primitive (ADR-0060) |
+| Brightness media keys | PowerDevil 6.6.6 `ScreenBrightnessAgent` | PowerDevil's registered shortcuts |
+| Internal/external brightness mutation | PowerDevil `org.kde.ScreenBrightness` | session-owned PowerDevil |
 | Print screenshot | `org.kde.KWin.ScreenShot2` (Spectacle) | detached `spectacle -b -r` launch |
 | Visible media-key feedback | resident notification host | `org.freedesktop.Notifications` with per-category replaces-id |
-| Idle observation | KIdleTime over ext-idle-notify-v1 | `IdleTracker` seam (inhibitor-aware) |
-| Display power off/on | org-kde-kwin-dpms on KWin | `DpmsController` seam on a private Wayland connection |
+| Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
+| Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
 | Polkit authentication UI | polkit daemon | optional supervisor child, distribution agent binary |
 
@@ -47,15 +47,19 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | --- | --- |
 | `DesktopShortcutSet` | one QAction per media key with stable ids, registered through the `ShortcutRegistrar` seam (production: KGlobalAccel Autoloading; user remapping survives restarts) |
 | `VolumeKeyController` | ±5% steps and mute toggle on the snapshot's default output, capability-gated, optimistic feedback, honest unavailable reasons |
-| `BrightnessKeyController` | firmware > platform > raw device preference, one-sixteenth-of-maximum steps clamped to `[1, maximum]`, typed read-only truth |
+| `PowerDevilBrightnessFeedbackObserver` | filters PowerDevil keyboard feedback, reads the public per-display maximum, and emits normalized notifier feedback |
+| `BrightnessKeyController` | retained sysfs fixture seam for migration coverage; not instantiated or registered by production |
 | `ScreenshotLauncher` | sibling-then-PATH resolution, detached launch, honest failure feedback |
 | `FreedesktopFeedbackNotifier` | one replaceable notification per feedback category, bounded text, fail-quiet on host loss |
-| `IdleDisplayPolicy` | arms the configured idle timeout, requests DPMS off on reach and on on resume, passive when disabled or DPMS is unavailable |
+| `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
 
-Production adapters (`KGlobalAccelRegistrar`, `KIdleTimeTracker`,
-`KWaylandDpmsController`) live behind a build gate on the KF6/KWayland CMake
-configs; the library and its tests build without them.
+The production process keeps `KGlobalAccelRegistrar` for volume, mute, and
+screenshot actions. PowerDevil owns monitor-brightness shortcut registration
+and the idle display-off policy; QindaQt only observes its documented public
+brightness signal and binds its idle preference. The retained KIdleTime,
+DPMS, and sysfs classes are migration seams for focused tests and are not
+instantiated by the resident process.
 
 ## Preference contract
 
@@ -70,25 +74,18 @@ group) is untouched and independent.
 
 ## Inhibition and availability boundary
 
-Idle inhibition is honored on exactly one path today, and the boundary is an
-explicit non-claim rather than a completion statement:
+Idle inhibition is delegated to PowerDevil's policy authority:
 
-- **Native Wayland idle inhibitors (`zwp_idle_inhibitor_v1`) are honored.**
-  KIdleTime 6.27's Wayland backend creates `get_idle_notification` objects,
-  which the ext-idle-notify-v1 protocol requires to stay non-idle while a
-  visible surface inhibitor is active. A full-screen video or game holding
-  the native inhibitor therefore suppresses the timeout itself; no DPMS
-  request is made while it is inhibited.
-- **`org.freedesktop.ScreenSaver.Inhibit` and XDG portal `Inhibit` (flag 8)
-  are NOT consumed by this slice.** KIdleTime has no D-Bus inhibition path,
-  and the display-off request goes directly to org-kde-kwin-dpms, so a client
-  that inhibits only through those D-Bus APIs can still be blanked. Until a
-  suppression path or runtime evidence lands (tracked as the next idle gate),
-  this desktop must not be claimed to "respect video/game inhibitors" in
-  general — only the native Wayland path is claimed.
-- Legacy `org_kde_kwin_idle` compositors (KIdleTime's fallback) carry no
-  ext-idle inhibitor semantics in the protocol, so inhibitor protection is
-  not claimed there either.
+- **Native Wayland idle inhibitors (`zwp_idle_inhibitor_v1`) are honored** by
+  PowerDevil's idle policy through the KDE idle policy path.
+- **Portal Idle and legacy `org.freedesktop.ScreenSaver.Inhibit` are honored**
+  by PowerDevil's PolicyAgent when the session-owned PowerDevil service is
+  present. QindaQt does not inspect either inhibition source or issue a
+  competing DPMS request.
+- If the PowerDevil owner is absent, QindaQt does not provide idle display-off;
+  the display remains on. The installed-session gate must exercise fullscreen
+  video/game playback through native, portal, and ScreenSaver inhibition with
+  the real release-matched PowerDevil owner.
 
 A DPMS controller that is unavailable at policy start (late global bind,
 hotplug) cannot permanently disarm the policy: the controller reports an
@@ -98,23 +95,20 @@ never needs to be re-sent.
 
 ## Verification and non-claims
 
-Focused executable evidence covers: shortcut ids/defaults/dispatch and
-binding-change reporting; volume stepping bounds, mute toggling, capability
-gating, rejected-operation honesty, and uncertain-operation quietness; sysfs
-fixture brightness stepping, clamping, device preference, and typed read-only
-failure; idle-preference mapping including never/clamps; policy arming, DPMS
-off on timeout, on on resume, disabled and unavailable-DPMS passivity,
-re-arming on preference change, and recovery when DPMS availability appears
-after start (including with an equal, suppressed snapshot); screenshot
-resolution and detached launch against a fixture helper; notifier wire shape
-and replaces-id reuse against a private `dbus-run-session` fake; supervisor
-optional-child startup, one-restart budget, and skip-on-absence; and the
-Settings Power model and page behavior for the new section.
+Focused executable evidence covers: volume/mute/screenshot shortcut ids and
+dispatch; PowerDevil brightness feedback filtering, range normalization, and
+owner absence; sysfs fixture brightness stepping remains migration coverage;
+idle-preference mapping and PowerDevil binding coalescing/recovery/failure
+boundaries; screenshot resolution and detached launch against a fixture helper;
+notifier wire shape and replaces-id reuse against a private
+`dbus-run-session` fake; supervisor optional-child startup, one-restart budget,
+and skip-on-absence; and the Settings Power model and page behavior for the
+new section.
 
 These rows use fixtures, fake transports, and private buses only. They do not
-claim a physical media key, a real backlight write, a live Spectacle capture,
-a polkit prompt on installed packages, or real idle/DPMS cycling on the host
-desktop; those belong to the installed-session verification gate. The nested
-compositor inhibition matrix (native inhibitor suppresses the timeout;
-inhibitor release re-enables it; portal/ScreenSaver-only behavior recorded)
-is the requested next nested-lane gate and has not been run in this slice.
+claim a physical media key, a real PowerDevil brightness operation, a live
+Spectacle capture, a polkit prompt on installed packages, or real idle/display
+cycling on the host desktop; those belong to the installed-session
+verification gate. The nested inhibition matrix (native, portal, and
+ScreenSaver inhibition suppresses PowerDevil display-off and release re-enables
+it) remains required with the real service owner.

@@ -13,6 +13,7 @@ target_sources(
         src/freedesktop_feedback_notifier.cpp
         src/idle_display_preferences.cpp
         src/idle_display_policy.cpp
+        src/powerdevil_brightness_feedback_observer.cpp
         src/powerdevil_idle_preferences_binding.cpp
         src/screenshot_launcher.cpp
         src/settings1_idle_preferences.cpp
@@ -28,6 +29,7 @@ target_sources(
             include/qindaqt/session/desktop_controls/idle_display_preferences.h
             include/qindaqt/session/desktop_controls/idle_display_policy.h
             include/qindaqt/session/desktop_controls/idle_tracker.h
+            include/qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h
             include/qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h
             include/qindaqt/session/desktop_controls/screenshot_launcher.h
             include/qindaqt/session/desktop_controls/settings1_idle_preferences.h

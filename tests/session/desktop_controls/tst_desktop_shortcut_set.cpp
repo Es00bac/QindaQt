@@ -67,6 +67,7 @@ private Q_SLOTS:
     void triggersDispatchToTheMatchingCallback();
     void activeBindingChangesAreReportedPerAction();
     void rejectedRegistrationIsObservable();
+    void brightnessRegistrationCanBeDisabledForPowerDevilOwnership();
 
 private:
     RecordingRegistrar m_registrar;
@@ -171,6 +172,30 @@ void DesktopShortcutSetTest::rejectedRegistrationIsObservable() {
                            });
     QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::VolumeUp));
     QVERIFY(!set.activeBindingPresent(DesktopShortcutAction::VolumeUp));
+}
+
+void DesktopShortcutSetTest::brightnessRegistrationCanBeDisabledForPowerDevilOwnership()
+{
+    RecordingRegistrar registrar;
+    DesktopShortcutSet set(
+        registrar,
+        DesktopShortcutTriggers{
+            .volumeUp = [] {},
+            .volumeDown = [] {},
+            .toggleMute = [] {},
+            .brightnessUp = [] {},
+            .brightnessDown = [] {},
+            .takeScreenshot = [] {},
+        },
+        nullptr,
+        DesktopShortcutRegistrationOptions{.registerBrightness = false});
+
+    QCOMPARE(registrar.records().size(),
+             static_cast<int>(DesktopShortcutAction::Count) - 2);
+    QCOMPARE(indexOf(registrar, QStringLiteral("qindaqt_brightness_up")), -1);
+    QCOMPARE(indexOf(registrar, QStringLiteral("qindaqt_brightness_down")), -1);
+    QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::BrightnessUp));
+    QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::BrightnessDown));
 }
 
 QTEST_MAIN(DesktopShortcutSetTest)

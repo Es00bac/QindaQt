@@ -78,6 +78,19 @@ PowerDevil adapter instead of the old KIdleTime-to-DPMS path. The retained
 idle-policy classes remain available to focused migration tests, but they are
 not instantiated by the resident process and do not own display power.
 
+## Brightness ownership and feedback
+
+PowerDevil 6.6.6 owns monitor-brightness shortcut registration and the
+brightness mutation path. Desktop-controls therefore does not register a
+second monitor-brightness action or write a sysfs backlight. Its
+`PowerDevilBrightnessFeedbackObserver` consumes the public
+`org.kde.ScreenBrightness.BrightnessChanged` signal only when the source is
+`(internal)` and the context is `brightness_key`, reads the child display's
+`MaxBrightness` property, and forwards the normalized percentage to the
+existing notification seam. Automatic dimming and other clients are ignored;
+the source/context filter is pinned to PowerDevil 6.6.6 and must be rechecked
+on upgrade.
+
 ## Verification boundary
 
 The focused private-bus test uses a temporary `XDG_CONFIG_HOME` and a fake
