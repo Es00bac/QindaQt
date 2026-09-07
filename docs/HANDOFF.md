@@ -53,6 +53,20 @@ Remote CI, the full Portage merge, installed-session acceptance and the release
 tag remain pending. The definition is integrated; no new desktop installation
 or qualified release is claimed.
 
+## Terminal now leaves tabs and splits to containers
+
+Reviewed and repaired candidate `e92243f0` removes the internal tab strip and
+tab actions. New Terminal launches a separate process with the selected saved
+profile and observed working directory. Root reran six focused window,
+container, action-catalog and private-bus menu tests: 6/6 passed. The integrated
+Terminal source/tests match that exact candidate; its dependent app-shell,
+theme and settings sources have not changed since the candidate base.
+
+The first review caught an obsolete menu action in the test fixture; the
+repair uses `file.new-terminal` and the real private-bus activation test passes.
+Combined release build and installation remain pending. The installed Terminal
+still has the previous interface until the full Gentoo package is updated.
+
 ## Interactive Terminal fixed; Gentoo package installed
 
 This supersedes the earlier Terminal installation claim below. The earlier

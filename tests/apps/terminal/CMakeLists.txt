@@ -114,16 +114,16 @@ qindaqt_add_terminal_test(
     qindaqt.terminal-adapter-boundary
 )
 qindaqt_add_terminal_test(
-    qindaqt_terminal_tabs_tests
-    tst_terminal_tabs.cpp
-    qindaqt.terminal-tabs-offscreen
+    qindaqt_terminal_container_tests
+    tst_terminal_container.cpp
+    qindaqt.terminal-container-offscreen
 )
 target_compile_definitions(
-    qindaqt_terminal_tabs_tests
+    qindaqt_terminal_container_tests
     PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
 set_tests_properties(
-    qindaqt.terminal-tabs-offscreen
+    qindaqt.terminal-container-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 

@@ -20,7 +20,7 @@ private slots:
 
 void TerminalAppShellTest::catalogIsCompleteStableAndShiftModified() {
   const auto catalog = terminalActionCatalog();
-  QCOMPARE(catalog.size(), 24);
+  QCOMPARE(catalog.size(), 19);
   QSet<QString> ids;
   for (const auto &spec : catalog) {
     QVERIFY(!spec.id.isEmpty());
@@ -35,9 +35,8 @@ void TerminalAppShellTest::catalogIsCompleteStableAndShiftModified() {
               shortcut == QStringLiteral("F3"));
     }
   }
-  QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::SessionNewTab)));
-  QVERIFY(
-      ids.contains(QString::fromLatin1(AppShellActionIds::SessionCloseTab)));
+  QVERIFY(ids.contains(
+      QString::fromLatin1(AppShellActionIds::FileNewTerminal)));
   QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::FileQuit)));
   QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::ViewFind)));
   QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::LinkCopy)));
@@ -49,7 +48,8 @@ void TerminalAppShellTest::bridgeRoutesEnabledActionsToTheirLocalCommand() {
   QVERIFY(bridge.publishActionCatalog().ok());
   QAction action;
   QSignalSpy triggered(&action, &QAction::triggered);
-  const QString id = QString::fromLatin1(AppShellActionIds::SessionNewTab);
+  const QString id =
+      QString::fromLatin1(AppShellActionIds::FileNewTerminal);
   bridge.bindActivationTargets({{id, &action}});
 
   QVERIFY(bridge.coordinator().activateAction(id));

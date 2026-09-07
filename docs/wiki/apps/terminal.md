@@ -1,11 +1,12 @@
 # QindaQt Terminal
 
-`qindaqt-terminal` is QindaQt's first-party terminal. S2 is an ordinary Qt 6
-desktop client with up to eight independent tabs in one window. Every tab owns
-the complete S0 PTY/child/teletype lifecycle, may select a validated profile at
-creation, and participates in teardown-first close and quit. User profiles,
-the default profile, and the tab-restore policy are persisted through the
-public Settings1 client. S2 adds bounded per-session scrollback search and
+`qindaqt-terminal` is QindaQt's first-party terminal. It is an ordinary Qt 6
+desktop client with one shell session per window. QindaQt containers own the
+tab and split topology across terminal windows; Terminal has no internal tab
+model. Every window owns the complete S0 PTY/child/teletype lifecycle, may
+select a validated profile at creation, and participates in teardown-first
+close and quit. User profiles and the default profile are persisted through the
+public Settings1 client. The client adds bounded per-session scrollback search and
 confirmed URL/local-path handling. The window opts its AppShell catalog into
 the first-party global-menu export through the shared AppShell composition
 entry; GPU qualification and
@@ -20,17 +21,18 @@ superseded by
 
 ## Everyday terminal work
 
-Open a new tab with `Ctrl+Shift+T`. It starts in the active shell's current
-folder, so you can keep working in the same project. If that folder cannot be
-read or the shell has exited, Terminal uses the tab's launch folder. The process
-monitor reads only the owned shell's `/proc/<pid>/cwd`; the window never inspects
-processes itself, and another window's session cannot supply a launch directory.
+Open **New Terminal** with `Ctrl+Shift+T`. It dispatches another Terminal
+process using the active shell's profile and current folder. If that folder
+cannot be read or the shell has exited, it uses the window's launch folder. The
+process monitor reads only the owned shell's `/proc/<pid>/cwd`; the window never
+inspects processes itself. Dispatch does not wait for the new process to become
+ready.
 
 Use **View → Zoom In / Zoom Out** (`Ctrl+Shift++` / `Ctrl+Shift+-`) to adjust
-text size for one tab. `Ctrl+Shift+0` restores its profile size. Zoom survives a
-live theme change or restarting that tab's shell, but is not a saved profile
+text size for this window. `Ctrl+Shift+0` restores its profile size. Zoom
+survives a live theme change or restarting the shell, but is not a saved profile
 change. Applying a theme preserves the terminal's monospace font independently
-of the menu and tab fonts.
+of the menu font.
 
 ## Shell launch and the no-shell-string contract
 
@@ -43,6 +45,11 @@ directories, non-executable, oversized, or contain control characters.
 `--arg` passes one verbatim argument and may repeat. Positional arguments are
 rejected with exit code 2 before any window or session exists, so the CLI can
 never be mistaken for shell-string syntax.
+
+`--profile <id>` selects a saved profile for a new Terminal process. **New
+Terminal** uses it internally with the active session's profile while carrying
+the observed working directory through `--working-directory`; the new process
+then resolves its own Settings1 snapshot before it creates its sole shell.
 
 The child environment is derived, not inherited blindly. Entries with
 malformed keys, newline-bearing values, or oversized entries are dropped, never
@@ -99,24 +106,19 @@ session's `beginShutdown`, which is the restart cancellation in that state.
 Bounds are injected values (default close 3 s, term 1 s,
 kill 1 s; 20 ms poll) which makes the sequence deterministic in tests.
 
-## Multiple sessions and tab titles
+## One shell per window
 
-One `TerminalSessionCollection` owns at most eight sessions. A ninth creation
-is refused without disturbing any existing child. Each accepted session gets a
-fresh backend, PTY, bridge, child process, copied profile value, and tab. Close
-Tab applies the S0 refusal/cancel rules to that session; closing the last tab is
-quit intent and therefore takes the same close-all path as File > Quit or the
-window decoration. Close-all starts every teardown, removes cleanly terminated
-sessions, retains any SIGKILL survivor, and refuses application quit while a
-survivor remains. Collection destruction synchronously invokes every retained
-session's forced-destruction guard, including process-exit teardown.
+TerminalWindow starts exactly one `TerminalSession`. A second shell is always a
+separate Terminal process, which lets QindaQt containers provide all tabs and
+splits consistently. Window close starts teardown for that sole session,
+retains a SIGKILL survivor, and refuses application quit while a survivor
+remains. Collection destruction invokes the retained session's
+forced-destruction guard, including process-exit teardown.
 
-Child-published tab titles are presentation data, never authority. Controls
-and Unicode format characters are removed, whitespace runs collapse, unpaired
-surrogates are dropped, and the result is capped at 128 UTF-16 code units
-without splitting a surrogate pair. Empty results use `Session N`. The tab
-strip has the accessible name `Terminal tabs`, exposes standard PageTabList /
-PageTab roles, and is keyboard-operable through the persistent actions below.
+Child-published titles remain presentation data only. Controls and Unicode
+format characters are removed, whitespace runs collapse, unpaired surrogates
+are dropped, and the result is capped at 128 UTF-16 code units without splitting
+a surrogate pair. An empty title uses `Terminal` in the window title.
 
 ## Profiles and Settings1 persistence
 
@@ -138,8 +140,8 @@ The terminal reads and writes this exact Settings1 scope:
 | Key | Type/default | Meaning |
 | --- | --- | --- |
 | `services.terminalProfiles` | string / `[]` | Canonical JSON array of validated user profiles |
-| `services.terminalDefaultProfile` | string / `builtin-default` | Profile copied into new sessions |
-| `services.terminalRestoreTabs` | Boolean / `false` | Policy allowing a future saved tab inventory to be restored |
+| `services.terminalDefaultProfile` | string / `builtin-default` | Profile used by a new Terminal window |
+| `services.terminalRestoreTabs` | Boolean / `false` | Legacy compatibility value; Terminal does not restore internal tabs |
 
 The three values form one logical draft but use the public v1 client's
 single-key writes in the fixed table order. Each commit waits for the automatic
@@ -160,21 +162,19 @@ confirmed rejection names failed and not-attempted keys, and transport loss or
 timeout is labeled uncertain and explicitly not replayed.
 
 Session content, scrollback bytes, child environment, argv history, titles,
-process identifiers, and tab inventory are never persisted. Consequently S1
-persists the restore *policy* but deliberately has no content-bearing inventory
-to restore yet; startup opens one tab using the confirmed default profile (or
-the built-in default after a definitive Settings1 failure).
+and process identifiers are never persisted. The legacy restore-tabs value is
+retained only for settings compatibility and has no UI or runtime effect;
+startup opens one shell using the confirmed default profile (or the built-in
+default after a definitive Settings1 failure).
 
 ## Per-session scrollback search
 
 Each session owns volatile find text, case sensitivity, regex mode, current
 match/result announcement, and find-bar visibility. `Ctrl+Shift+F` opens the
 non-modal in-window bar, `F3` and `Shift+F3` traverse with wrap, and Escape
-clears renderer highlights, hides the bar, and returns focus to that session
+clears renderer highlights, hides the bar, and returns focus to the session
 without discarding its logical match position. A later `F3` or `Shift+F3`
-resumes in the requested direction from that position. Switching tabs restores
-the selected session's complete volatile bar and accessible result without
-copying or announcing another tab's state. Search text is never sent to
+resumes in the requested direction from that position. Search text is never sent to
 Settings1 or any persistence surface.
 
 The qtermwidget-free admission policy limits patterns to 256 UTF-16 code units,
@@ -264,13 +264,8 @@ name, Shift-modified terminal-safe shortcut, and window-shortcut context.
 
 | Action identity | Default | Meaning |
 | --- | --- | --- |
-| `tabNewAction` | `Ctrl+Shift+T` | Open a tab with the confirmed default profile |
-| `tabCloseAction` | `Ctrl+Shift+W` | Close the active tab, or close-all when it is last |
-| `tabNextAction` | `Ctrl+Shift+Right` | Select the next tab, wrapping at the end |
-| `tabPreviousAction` | `Ctrl+Shift+Left` | Select the previous tab, wrapping at the start |
-| `tabMoveLeftAction` | `Ctrl+Shift+Alt+Left` | Move the active tab left |
-| `tabMoveRightAction` | `Ctrl+Shift+Alt+Right` | Move the active tab right |
-| `profileManageAction` | `Ctrl+Shift+P` | Edit profiles and persistence policy |
+| `fileNewTerminalAction` | `Ctrl+Shift+T` | Dispatch a separate Terminal process with the active profile and folder |
+| `profileManageAction` | `Ctrl+Shift+P` | Edit terminal profiles |
 | `sessionRestartAction` | `Ctrl+Shift+R` | Tear down and start a fresh session |
 | `editCopyAction` | `Ctrl+Shift+C` | Copy selection to clipboard |
 | `editPasteAction` | `Ctrl+Shift+V` | Paste clipboard into the session |
@@ -301,7 +296,8 @@ Deep screen-reader bridge qualification stays a cross-application milestone
 (QQ-006.09), not an S2 claim.
 
 The same fixed commands are projected through `QindaQt.AppShell 1.0` as
-`session.*`, `edit.*`, `view.*`, `link.*`, and `file.quit` action identifiers.
+`file.new-terminal`, `session.*`, `edit.*`, `view.*`, `link.*`, and `file.quit`
+action identifiers.
 External activation is routed back to the corresponding local `QAction`, so a
 global-menu activation cannot bypass local enablement or lifecycle policy.
 After the window is shown, the executable composes the shared first-party
@@ -378,15 +374,14 @@ wiring binding), window action identity and action-state truth across
 Running→Exited, readline-safe shortcuts, exit-status severity rendering,
 accessibility and focus metadata, hostile-resize clamping, QST scheme
 documents for all five themes, real-adapter custom-scheme rendering and blank
-selection truth; bounded multi-session creation, movement, close-all, and
-forced destruction; title sanitization; hostile profile values, canonical
+selection truth; one-shell window launch, separate-process New Terminal
+dispatch, close-all, and forced destruction; title sanitization; hostile profile values, canonical
 round trips, and unchanged empty-argument preservation; Settings1 baseline,
 sequential apply, conflict, fail-closed loss, uncertain no-replay behavior, and
 the production Manage Profiles modal remaining visible, enabled, and
 accessibly descriptive after conflict, rejection, transport loss, owner loss,
-or timeout while the all-applied control closes it; tab shortcuts,
-traversal/movement, and
-PageTab accessibility under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
+or timeout while the all-applied control closes it; no internal tab widget or
+tab-navigation actions under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
 activation routing; desktop metadata; positional-argument
 rejection, and staged installed metadata with installed-prefix theme
 resolution. The global-menu export slice adds real-process private-bus rows
@@ -415,8 +410,8 @@ host-compositor interaction remain outside S2.
 
 ## Bounded S2 exclusions
 
-- The restore-policy flag is persisted, but tab inventory and terminal content
-  are intentionally not; startup restores no prior session bytes or argv.
+- The legacy restore-tabs value is retained for Settings1 compatibility but is
+  ignored; Terminal restores no prior session bytes or argv.
 - OSC-8 semantic hyperlinks are not interpreted; S2 detects only printed
   `http(s)` text and absolute local paths, and never click-to-opens them.
 - The GPU/scrolling optimizations of the widget are upstream concerns; no

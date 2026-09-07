@@ -5,7 +5,6 @@
 #include "profiles/terminal_profile_settings.h"
 #include "session/terminal_launch_policy.h"
 #include "ui/terminal_find_bar.h"
-#include "ui/terminal_tab_bar.h"
 
 #include <QAction>
 #include <QApplication>
@@ -20,10 +19,11 @@ TerminalWindow::TerminalWindow(
     std::unique_ptr<TerminalSessionCollection> sessions,
     const TerminalViewAppearance &appearance, const QStringList &themeIds,
     TerminalProfileSettings *profileSettings, TerminalLinkOpener *linkOpener,
-    QWidget *parent)
+    NewTerminalLauncher newTerminalLauncher, QWidget *parent)
     : QMainWindow(parent), m_sessions(std::move(sessions)),
       m_profileSettings(profileSettings), m_linkOpener(linkOpener),
-      m_themeIds(themeIds), m_appearance(appearance) {
+      m_themeIds(themeIds), m_appearance(appearance),
+      m_newTerminalLauncher(std::move(newTerminalLauncher)) {
   setObjectName(QStringLiteral("qindaqtTerminalWindow"));
   setAccessibleName(QStringLiteral("QindaQt Terminal"));
   setAccessibleDescription(
@@ -37,8 +37,6 @@ TerminalWindow::TerminalWindow(
   auto *containerLayout = new QVBoxLayout(container);
   containerLayout->setContentsMargins(0, 0, 0, 0);
   containerLayout->setSpacing(0);
-  m_tabBar = new TerminalTabBar(container);
-  containerLayout->addWidget(m_tabBar);
   buildFindBar();
   containerLayout->addWidget(m_findBar);
   m_terminalHolder = new QWidget(container);
@@ -63,22 +61,7 @@ TerminalWindow::TerminalWindow(
             &TerminalWindow::presentProfileApplyResult);
   }
 
-  connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index) {
-    const QVariant tab = m_tabBar->tabData(index);
-    auto *session = tab.value<TerminalSession *>();
-    if (session != nullptr && session != m_activeSession) {
-      setActiveSession(session);
-    }
-    updateTabActionStates();
-  });
-  connect(m_tabBar, &QTabBar::tabCloseRequested, this, [this](int index) {
-    if (auto *session = m_tabBar->tabData(index).value<TerminalSession *>()) {
-      closeSessionFromPresentation(session);
-    }
-  });
-
   updateViewActionStates();
-  updateTabActionStates();
 }
 
 TerminalWindow::~TerminalWindow() = default;
@@ -130,21 +113,19 @@ void TerminalWindow::buildStatusBar() {
 void TerminalWindow::wireCollection() {
   connect(m_sessions.get(), &TerminalSessionCollection::sessionAdded, this,
           [this](TerminalSession *session) {
-            wireSessionPresentation(session);
-            m_tabBar->addTab(displayTitle(session));
-            m_tabBar->setTabData(m_tabBar->count() - 1,
-                                 QVariant::fromValue(session));
-            if (m_activeSession == nullptr) {
-              setActiveSession(session);
+            // AGENT-GUARD: TerminalWindow deliberately permits one session.
+            // Containers own tab and split topology, so a second shell must
+            // be a separate Terminal process launched by launchNewTerminal.
+            if (m_activeSession != nullptr) {
+              showStatusMessage(QStringLiteral("Error: this window already has a shell"),
+                                true);
+              return;
             }
-            updateTabActionStates();
+            wireSessionPresentation(session);
+            setActiveSession(session);
           });
   connect(m_sessions.get(), &TerminalSessionCollection::sessionRemoved, this,
           [this](TerminalSession *session) {
-            const int index = tabIndexOf(session);
-            if (index >= 0) {
-              m_tabBar->removeTab(index);
-            }
             m_selectionBySession.remove(session);
             m_titlesBySession.remove(session);
             m_searchBySession.remove(session);
@@ -155,34 +136,13 @@ void TerminalWindow::wireCollection() {
             if (session == m_activeSession) {
               m_activeSession = nullptr;
               detachSessionView();
-              TerminalSession *next = nullptr;
-              if (m_tabBar->count() > 0) {
-                const int clamped = qBound(0, index, m_tabBar->count() - 1);
-                next = m_tabBar->tabData(clamped).value<TerminalSession *>();
-              }
-              if (next != nullptr) {
-                setActiveSession(next);
-              } else {
-                showStatusMessage(QStringLiteral("No session"), false);
-                updateWindowTitle();
-              }
-            }
-            updateTabActionStates();
-          });
-  connect(m_sessions.get(), &TerminalSessionCollection::sessionMoved, this,
-          [this](TerminalSession *session, int newIndex) {
-            const int from = tabIndexOf(session);
-            if (from >= 0 && from != newIndex) {
-              m_tabBar->moveTab(from, newIndex);
+              showStatusMessage(QStringLiteral("No session"), false);
+              updateWindowTitle();
             }
           });
   connect(m_sessions.get(), &TerminalSessionCollection::sessionTitleChanged,
           this, [this](TerminalSession *session, const QString &title) {
             m_titlesBySession.insert(session, title);
-            const int index = tabIndexOf(session);
-            if (index >= 0) {
-              m_tabBar->setTabText(index, displayTitle(session));
-            }
             if (session == m_activeSession) {
               updateWindowTitle();
             }
@@ -201,7 +161,6 @@ void TerminalWindow::wireCollection() {
           });
   connect(m_sessions.get(), &TerminalSessionCollection::allSessionsClosed, this,
           [this](bool clean, const QString &diagnostic) {
-            updateTabActionStates();
             updateViewActionStates();
             if (!clean) {
               // A SIGKILL survivor stays owned: quit is refused and the
@@ -271,13 +230,8 @@ void TerminalWindow::setActiveSession(TerminalSession *session) {
   m_activeSession = session;
   detachSessionView();
   attachSessionView(session);
-  const int index = tabIndexOf(session);
-  if (index >= 0 && m_tabBar->currentIndex() != index) {
-    m_tabBar->setCurrentIndex(index);
-  }
   updateStatusForState(session->state());
   updateViewActionStates();
-  updateTabActionStates();
   updateWindowTitle();
   restoreSearchPresentation();
 }
@@ -305,52 +259,31 @@ void TerminalWindow::detachSessionView() {
 }
 
 void TerminalWindow::newSessionWithDefaultProfile() {
-  static_cast<void>(m_sessions->addSession(currentDefaultProfile(), m_activeSession));
+  startSession(currentDefaultProfile());
 }
 
-void TerminalWindow::addSessionWithProfile(const TerminalProfile &profile) {
-  // The collection validates, resolves through the launch policy, and
-  // emits sessionAdded; refusal diagnostics arrive via sessionAddRejected.
+void TerminalWindow::startSession(const TerminalProfile &profile) {
+  if (m_sessions->count() != 0) {
+    showStatusMessage(QStringLiteral("Error: this window already has a shell"),
+                      true);
+    return;
+  }
   static_cast<void>(m_sessions->addSession(profile));
 }
 
-void TerminalWindow::closeActiveSession() {
-  closeSessionFromPresentation(m_activeSession);
-}
-
-void TerminalWindow::closeSessionFromPresentation(TerminalSession *session) {
-  if (session == nullptr) {
+void TerminalWindow::launchNewTerminal(const TerminalProfile &profile) {
+  const QString directory = m_activeSession != nullptr
+                                ? m_activeSession->workingDirectory()
+                                : m_sessions->context().workingDirectory;
+  if (!m_newTerminalLauncher) {
+    showStatusMessage(QStringLiteral("Error: opening another Terminal is unavailable"),
+                      true);
     return;
   }
-  // AGENT-GUARD: Closing the final tab is application quit intent, not merely
-  // an empty-window mutation. Route it through closeEvent so teardown-first
-  // quit and survivor refusal remain identical for the tab button, shortcut,
-  // File > Quit, and window decoration.
-  if (m_sessions->count() == 1) {
-    close();
-    return;
+  const QString error = m_newTerminalLauncher(profile, directory);
+  if (!error.isEmpty()) {
+    showStatusMessage(QStringLiteral("Error: %1").arg(error), true);
   }
-  m_sessions->requestCloseSession(session);
-}
-
-void TerminalWindow::activateRelativeTab(int delta) {
-  const int count = m_tabBar->count();
-  if (count < 2) {
-    return;
-  }
-  const int next = (m_tabBar->currentIndex() + delta + count) % count;
-  if (auto *session = m_tabBar->tabData(next).value<TerminalSession *>()) {
-    setActiveSession(session);
-  }
-}
-
-void TerminalWindow::moveActiveTab(int delta) {
-  const int from = m_tabBar->currentIndex();
-  const int target = from + delta;
-  if (m_activeSession == nullptr || target < 0 || target >= m_tabBar->count()) {
-    return;
-  }
-  m_sessions->moveSession(m_activeSession, target);
 }
 
 void TerminalWindow::updateWindowTitle() {
@@ -366,17 +299,7 @@ QString TerminalWindow::displayTitle(const TerminalSession *session) const {
   if (!title.isEmpty()) {
     return title;
   }
-  const int index = m_sessions->indexOf(session);
-  return QStringLiteral("Session %1").arg(index + 1);
-}
-
-int TerminalWindow::tabIndexOf(const TerminalSession *session) const {
-  for (int index = 0; index < m_tabBar->count(); ++index) {
-    if (m_tabBar->tabData(index).value<TerminalSession *>() == session) {
-      return index;
-    }
-  }
-  return -1;
+  return QStringLiteral("Terminal");
 }
 
 void TerminalWindow::requestCloseShutdown() {
@@ -394,8 +317,8 @@ void TerminalWindow::closeEvent(QCloseEvent *event) {
   // AGENT-GUARD (P1: Restart→Close): every non-refused close — including
   // one that arrives while a Restart's teardown is already in flight —
   // reaches TerminalSession::beginShutdown() through the collection, which
-  // cancels pending restarts. A SIGKILL survivor anywhere in the tab list
-  // refuses the close: ownership of the survivor is retained, so closing
+  // cancels pending restarts. A SIGKILL survivor in the owned session
+  // refuses the close: ownership of that survivor is retained, so closing
   // (and the quit it would trigger) stays refused until the child is gone.
   const auto sessions = m_sessions.get();
   for (int index = 0; index < sessions->count(); ++index) {
