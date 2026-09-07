@@ -111,6 +111,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0096: Package bundled applications with Portage](0096-package-bundled-apps-with-portage.md)
 
 - [ADR-0097: Separate workspace slots from live windows](0097-separate-workspace-slots-from-live-windows.md)
+- [ADR-0098: Gate releases on the exact native compositor stack](0098-gate-releases-on-the-exact-native-compositor-stack.md)
 
 - [ADR-0101: Launch workspace applications through desktop entries](0101-launch-workspace-apps-through-desktop-entries.md)
 

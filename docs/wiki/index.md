@@ -43,6 +43,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.
+- [Release procedure](development/releases.md) defines the exact native build,
+  nested plugin boots, package inspection, review, and evidence required before
+  publishing. [KWin upgrades](development/kwin-upgrades.md) keep source objects,
+  package versions, and the binary plugin ABI coherent.
 - [Notification service](architecture/notifications-service.md) records the
   bounded model, freedesktop adapter, authenticated host/client transport,
   descriptor provisioning, and remaining service policy.

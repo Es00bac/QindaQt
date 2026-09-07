@@ -19,9 +19,9 @@ jobs:
     name: Scenarios, docs, and source shape
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -38,6 +38,9 @@ jobs:
 
       - name: Enforce modular source shape
         run: ./tools/check-source-shape
+
+      - name: Validate the release pin and packaging contract
+        run: ./tools/check-release-contract
 
       - name: Install the pinned wiki toolchain
         run: >-
@@ -68,7 +71,11 @@ jobs:
             extra-cmake-modules \
             git \
             kglobalaccel \
+            kidletime \
             kdecoration \
+            kio \
+            kservice \
+            kwayland \
             ninja \
             python \
             qt6-base \
@@ -79,11 +86,12 @@ jobs:
             qtermwidget \
             syntax-highlighting
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Record dependency versions
         run: >-
-          pacman -Q cmake extra-cmake-modules kdecoration qtermwidget
+          pacman -Q cmake extra-cmake-modules kdecoration kglobalaccel kidletime
+          kio kservice kwayland qtermwidget
           qt6-base qt6-declarative qt6-svg qt6-wayland wayland-protocols
 
       - name: Configure
@@ -116,7 +124,7 @@ jobs:
     steps:
       # AGENT-CONTRACT: This lane deliberately uses the current rolling KWin
       # runtime with QindaQt's binary KWin plugin disabled. It proves the public
-      # layer-shell client boundary, not the separately pinned KWin 6.6.5 ABI.
+      # layer-shell client boundary, not the separately pinned KWin 6.6.6 ABI.
       - name: Install production shell and nested-session dependencies
         run: |
           pacman -Syu --noconfirm --needed \
@@ -128,6 +136,10 @@ jobs:
             kwin \
             layer-shell-qt \
             libcap \
+            kidletime \
+            kio \
+            kservice \
+            kwayland \
             ninja \
             python \
             qt6-base \
@@ -162,12 +174,13 @@ jobs:
           test -z "$(getcap /usr/bin/kwin_wayland)"
           kwin_wayland --version
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Record production shell stack
         run: >-
           pacman -Q dbus extra-cmake-modules kdecoration kwin
-          kglobalaccel layer-shell-qt libcap qtermwidget syntax-highlighting qt6-base
+          kglobalaccel kidletime kio kservice kwayland layer-shell-qt libcap
+          qtermwidget syntax-highlighting qt6-base
           qt6-declarative qt6-svg qt6-wayland xorg-xwayland
           wayland-protocols
 
@@ -203,4 +216,165 @@ jobs:
             --output-on-failure --no-tests=error
           ctest --test-dir build/ci-production \
             -R '^shell\.production-surface\.1440p$' \
+            --output-on-failure --no-tests=error
+
+  native-release:
+    name: Build and boot the KWin 6.6.6 plugin
+    needs: repository-policy
+    runs-on: ubuntu-24.04
+    container:
+      # Dated 2026-09-07. Pin the amd64 systemd image so the base does not move
+      # underneath the exact Portage repository and Plasma profile below.
+      image: gentoo/stage3@sha256:35356fe25c32d5c94c04b4d40a046223c342ae7126fe0bffa052e15331c9cec8
+    timeout-minutes: 60
+    env:
+      MAKEOPTS: -j2
+      NINJAFLAGS: -j2
+    steps:
+      - name: Install the pinned Gentoo repository snapshot
+        env:
+          GENTOO_REPOSITORY_COMMIT: 31e40ddc0b008a861694da39785eee26500a68e6
+        run: |
+          rm -rf /var/db/repos/gentoo
+          mkdir -p /var/db/repos/gentoo
+          wget --https-only --quiet \
+            "https://github.com/gentoo/gentoo/archive/${GENTOO_REPOSITORY_COMMIT}.tar.gz" \
+            -O /tmp/gentoo-repository.tar.gz
+          tar -xzf /tmp/gentoo-repository.tar.gz \
+            --strip-components=1 -C /var/db/repos/gentoo
+          test -f /var/db/repos/gentoo/kde-plasma/kwin/kwin-6.6.6.ebuild
+          ln -snf \
+            /var/db/repos/gentoo/profiles/default/linux/amd64/23.0/desktop/plasma/systemd \
+            /etc/portage/make.profile
+
+      # `--usepkgonly` makes absence of a compatible official binary package a
+      # hard failure instead of turning this lane into an unbounded distro
+      # build. The fixed repository and exact atoms retain dependency metadata.
+      - name: Install exact binary release dependencies
+        run: |
+          emerge --jobs=2 --getbinpkg --usepkgonly --binpkg-respect-use=y \
+            --autounmask=n --autounmask-use=n --autounmask-license=n \
+            dev-build/cmake \
+            dev-build/ninja \
+            dev-vcs/git \
+            sys-libs/libcap \
+            sys-apps/dbus \
+            sys-apps/xdg-desktop-portal \
+            sys-power/power-profiles-daemon \
+            sys-power/upower \
+            x11-apps/xdpyinfo \
+            x11-base/xwayland \
+            net-wireless/bluez \
+            dev-libs/wayland \
+            dev-libs/wayland-protocols \
+            dev-util/wayland-scanner \
+            '>=dev-qt/qtbase-6.11:6' \
+            '>=dev-qt/qtdeclarative-6.11:6' \
+            '>=dev-qt/qtsvg-6.11:6' \
+            '=kde-plasma/kwin-6.6.6*:6[lock,shortcuts]' \
+            '=kde-plasma/kdecoration-6.6.6*:6' \
+            '=kde-plasma/kscreenlocker-6.6.6*:6' \
+            '=kde-plasma/layer-shell-qt-6.6.6*:6' \
+            '=kde-plasma/kwayland-6.6.6*:6' \
+            '=kde-plasma/polkit-kde-agent-6.6.6*:6' \
+            '=kde-plasma/plasma-activities-6.6.6*:6' \
+            '=kde-plasma/spectacle-6.6.6*:6' \
+            '=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6' \
+            '>=kde-frameworks/extra-cmake-modules-6.0' \
+            '>=kde-frameworks/kcoreaddons-6.0:6' \
+            '>=kde-frameworks/kglobalaccel-6.0:6' \
+            '>=kde-frameworks/kidletime-6.0:6' \
+            '>=kde-frameworks/kio-6.0:6' \
+            '>=kde-frameworks/kservice-6.0:6' \
+            '>=kde-frameworks/syntax-highlighting-6.0:6' \
+            '=x11-libs/qtermwidget-2.4*:0' \
+            '>=media-video/wireplumber-0.5' \
+            '>=net-misc/networkmanager-1.44' \
+            media-libs/fontconfig
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # The packaged capability cannot be admitted by an ordinary GitHub job
+      # container. Nested virtual outputs do not need realtime scheduling.
+      - name: Make nested KWin executable in the restricted CI container
+        run: |
+          kwin_capability="$(getcap /usr/bin/kwin_wayland)"
+          case "$kwin_capability" in
+            "/usr/bin/kwin_wayland cap_sys_nice=ep")
+              setcap -r /usr/bin/kwin_wayland
+              ;;
+            "")
+              ;;
+            *)
+              echo "unexpected kwin_wayland file capabilities: $kwin_capability" >&2
+              exit 1
+              ;;
+          esac
+          test -z "$(getcap /usr/bin/kwin_wayland)"
+
+      - name: Verify the exact runtime and source pin
+        run: |
+          cmake_version="$(find /usr/lib /usr/lib64 \
+            -path '*/cmake/KWin/KWinConfigVersion.cmake' -print -quit)"
+          test -n "$cmake_version"
+          ./compositor/tools/verify-kwin-source --check-remote
+          ./tools/check-release-contract \
+            --kwin-wayland /usr/bin/kwin_wayland \
+            --kwin-cmake-version "$cmake_version"
+
+      - name: Record the exact release stack
+        run: |
+          emerge --info \
+            kde-plasma/kwin kde-plasma/kdecoration \
+            kde-plasma/kscreenlocker kde-plasma/layer-shell-qt \
+            kde-plasma/kwayland kde-plasma/plasma-activities kde-plasma/spectacle \
+            kde-plasma/polkit-kde-agent kde-plasma/xdg-desktop-portal-kde \
+            kde-frameworks/kidletime kde-frameworks/kio kde-frameworks/kservice
+          emerge --info \
+            net-wireless/bluez sys-apps/xdg-desktop-portal \
+            sys-power/power-profiles-daemon sys-power/upower
+          /usr/bin/kwin_wayland --version
+
+      - name: Configure the complete release build
+        run: >-
+          cmake -S . -B build/ci-native-release -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=ON
+          -DQINDAQT_BUILD_KWIN_PLUGIN=ON
+          -DQINDAQT_BUILD_SHELL=ON
+          -DQINDAQT_BUILD_PRODUCTION_SHELL=ON
+          -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
+
+      - name: Build the complete production tree and nested probe
+        run: >-
+          cmake --build build/ci-native-release --parallel 2
+          --target src/all qindaqt-session-probe
+
+      - name: Stage the full desktop install
+        run: >-
+          cmake --install build/ci-native-release
+          --prefix "${GITHUB_WORKSPACE}/build/ci-native-release-stage"
+
+      - name: Verify release artifacts and static ABI gates
+        run: |
+          cmake_version="$(find /usr/lib /usr/lib64 \
+            -path '*/cmake/KWin/KWinConfigVersion.cmake' -print -quit)"
+          ./tools/check-release-contract \
+            --kwin-wayland /usr/bin/kwin_wayland \
+            --kwin-cmake-version "$cmake_version" \
+            --build-root build/ci-native-release \
+            --install-root build/ci-native-release-stage
+          ctest --test-dir build/ci-native-release \
+            -R '^(compositor\.kwin-abi-pin|compositor\.rejects-conflicting-kwin-abi|compositor\.kwin-plugin-dependency-contract)$' \
+            --output-on-failure --no-tests=error
+
+      # Keep compositor processes serialized. Both rows require the plugin's
+      # live service; the second also proves relocated installed discovery.
+      - name: Boot the plugin under nested KWin
+        run: |
+          ctest --test-dir build/ci-native-release \
+            -R '^compositor\.kwin-plugin-nested$' \
+            --output-on-failure --no-tests=error
+          ctest --test-dir build/ci-native-release \
+            -R '^session\.installed-plugin-discovery$' \
             --output-on-failure --no-tests=error

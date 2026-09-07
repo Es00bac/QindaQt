@@ -69,4 +69,9 @@ roots. Include exact commit, command, exit status, test count, reproduction, and
 bounded caveats when reporting failures. See [repository catalog](catalog/repository.md)
 for tooling and [quality](quality.md) for acceptance. Return to [index](index.md).
 
-For installed bundled applications on Gentoo, use the [Portage package](../development/gentoo-apps.md). Raw build executables are not an installation artifact.
+For installed bundled applications on Gentoo, use the [applications-only
+package](../development/gentoo-apps.md). The [full desktop
+package](../development/gentoo-desktop.md) owns the compositor, shell, services,
+and the same applications. Follow the [release procedure](../development/releases.md)
+and [KWin upgrade procedure](../development/kwin-upgrades.md) for native builds.
+Raw build executables are not an installation artifact.

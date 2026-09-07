@@ -9,6 +9,13 @@ project(
     LANGUAGES CXX
 )
 
+# AGENT-CONTRACT: The documented project baseline is C++20. Apply it to test
+# and helper targets too; several nested-session probes use C++20 syntax but do
+# not link a production library whose PUBLIC features could propagate it.
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(CTest)
 
 # QindaQt ships a binary KWin plugin, so use KDE's Qt-aware install layout
