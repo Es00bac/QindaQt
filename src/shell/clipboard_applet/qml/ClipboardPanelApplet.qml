@@ -5,6 +5,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as QindaControls
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
@@ -111,11 +112,12 @@ Item {
                 controller: root.controller
             }
 
-            Button {
+            QindaControls.Button {
                 id: closeButton
 
                 objectName: "clipboardPanelCloseButton"
                 Layout.alignment: Qt.AlignRight
+                emphasized: false
                 text: qsTr("Close")
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Close clipboard history")
