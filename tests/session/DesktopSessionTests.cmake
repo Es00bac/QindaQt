@@ -119,6 +119,70 @@ if(
 
     include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopNotificationShellReadinessTests.cmake")
 
+    if(
+        TARGET KF6::ScreenDpms
+        AND QINDAQT_POWERDEVIL
+        AND QINDAQT_PORTAL_FRONTEND
+        AND QINDAQT_PORTAL_KDE
+        AND QINDAQT_QLIST
+    )
+        set(
+            _qindaqt_powerdevil_protocol_dir
+            "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-powerdevil-probe-protocol"
+        )
+        file(MAKE_DIRECTORY "${_qindaqt_powerdevil_protocol_dir}")
+        set(_qindaqt_powerdevil_protocols idle-inhibit-unstable-v1 xdg-shell)
+        set(
+            _qindaqt_powerdevil_protocol_xmls
+            "${QINDAQT_WAYLAND_PROTOCOLS_DIR}/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml"
+            "${QINDAQT_WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml"
+        )
+        set(_qindaqt_powerdevil_generated)
+        foreach(_protocol_name _protocol_xml IN ZIP_LISTS
+                _qindaqt_powerdevil_protocols _qindaqt_powerdevil_protocol_xmls)
+            set(
+                _protocol_header
+                "${_qindaqt_powerdevil_protocol_dir}/${_protocol_name}-client-protocol.h"
+            )
+            set(
+                _protocol_code
+                "${_qindaqt_powerdevil_protocol_dir}/${_protocol_name}-protocol.c"
+            )
+            add_custom_command(
+                OUTPUT "${_protocol_header}" "${_protocol_code}"
+                COMMAND "${QINDAQT_WAYLAND_SCANNER}" client-header
+                        "${_protocol_xml}" "${_protocol_header}"
+                COMMAND "${QINDAQT_WAYLAND_SCANNER}" private-code
+                        "${_protocol_xml}" "${_protocol_code}"
+                DEPENDS "${_protocol_xml}"
+                VERBATIM
+            )
+            list(
+                APPEND _qindaqt_powerdevil_generated
+                "${_protocol_header}" "${_protocol_code}"
+            )
+        endforeach()
+
+        qt_add_executable(
+            qindaqt-powerdevil-inhibition-probe
+            "${CMAKE_CURRENT_SOURCE_DIR}/powerdevilinhibitionprobe.cpp"
+            ${_qindaqt_powerdevil_generated}
+        )
+        target_include_directories(
+            qindaqt-powerdevil-inhibition-probe
+            PRIVATE "${_qindaqt_powerdevil_protocol_dir}"
+        )
+        target_link_libraries(
+            qindaqt-powerdevil-inhibition-probe
+            PRIVATE KF6::ScreenDpms Qt6::Core Qt6::DBus Qt6::Gui Wayland::Client
+        )
+        target_compile_features(qindaqt-powerdevil-inhibition-probe PRIVATE cxx_std_20)
+        set_target_properties(
+            qindaqt-powerdevil-inhibition-probe PROPERTIES CXX_EXTENSIONS OFF
+        )
+        qindaqt_enable_warnings(qindaqt-powerdevil-inhibition-probe)
+    endif()
+
     if(QINDAQT_DBUS_RUN_SESSION)
         add_test(
             NAME desktop.virtual.interaction-probe-cli-unit
@@ -309,6 +373,38 @@ if(
             --dbus-daemon "${QINDAQT_DESKTOP_DBUS_DAEMON}"
             --kwin-wayland "${QINDAQT_KWIN_WAYLAND}"
     )
+
+    if(TARGET qindaqt-powerdevil-inhibition-probe)
+        add_test(
+            NAME desktop.virtual.powerdevil-inhibition
+            COMMAND
+                "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_nested.py"
+                --outer
+                --build-root "${CMAKE_BINARY_DIR}"
+                --source-root "${PROJECT_SOURCE_DIR}"
+                ${_qindaqt_desktop_common_arguments}
+                --probe "$<TARGET_FILE:qindaqt-powerdevil-inhibition-probe>"
+                --bwrap "${QINDAQT_DESKTOP_BWRAP}"
+                --python "${Python3_EXECUTABLE}"
+                --dbus-daemon "${QINDAQT_DESKTOP_DBUS_DAEMON}"
+                --kwin-wayland "${QINDAQT_KWIN_WAYLAND}"
+                --powerdevil "${QINDAQT_POWERDEVIL}"
+                --portal-frontend "${QINDAQT_PORTAL_FRONTEND}"
+                --portal-kde "${QINDAQT_PORTAL_KDE}"
+                --qlist "${QINDAQT_QLIST}"
+        )
+        set_tests_properties(
+            desktop.virtual.powerdevil-inhibition
+            PROPERTIES
+                TIMEOUT 240
+                RUN_SERIAL TRUE
+                RESOURCE_LOCK qindaqt-private-session
+                FIXTURES_REQUIRED desktop_virtual_stage
+                SKIP_RETURN_CODE 77
+                LABELS "integration;install;session;power;display;wayland;portal;security"
+        )
+    endif()
     set_tests_properties(
         desktop.virtual.boot.1080p
         PROPERTIES

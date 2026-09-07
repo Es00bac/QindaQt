@@ -182,10 +182,18 @@ add_test(
         "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_shell_surface_protocol_validation_unit.py"
 )
+add_test(
+    NAME session.powerdevil-inhibition-runner-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
+)
 set_tests_properties(
     session.nested-scenario-parser
     session.notification-live-driver-unit
     session.shell-surface-protocol-validation
+    session.powerdevil-inhibition-runner-unit
     PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" LABELS unit
 )
 
@@ -254,6 +262,8 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_panel_visibility_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_nested.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
@@ -275,6 +285,23 @@ find_file(
 find_program(QINDAQT_DOTOOL dotool)
 find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 find_program(QINDAQT_DESKTOP_DBUS_DAEMON dbus-daemon)
+find_program(
+    QINDAQT_POWERDEVIL
+    NAMES org_kde_powerdevil
+    HINTS /usr/libexec /usr/lib64/libexec
+)
+find_program(
+    QINDAQT_PORTAL_FRONTEND
+    NAMES xdg-desktop-portal
+    HINTS /usr/libexec /usr/lib64/libexec
+)
+find_program(
+    QINDAQT_PORTAL_KDE
+    NAMES xdg-desktop-portal-kde
+    HINTS /usr/libexec /usr/lib64/libexec
+)
+find_program(QINDAQT_QLIST qlist)
+find_package(KF6Screen 6.6 QUIET CONFIG)
 find_program(QINDAQT_READELF readelf REQUIRED)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopSessionTests.cmake")

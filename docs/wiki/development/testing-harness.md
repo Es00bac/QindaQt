@@ -3189,6 +3189,52 @@ The selector does not contact an ambient system/session bus, the host
 session. It proves only the injected adapter and package contracts; physical
 battery/backlight behavior and suspend/resume remain hardware evidence.
 
+## Installed PowerDevil idle-inhibition qualification
+
+The release-matched desktop adds one serialized, explicitly enabled row:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=powerdevil-inhibition \
+  ctest --test-dir build/release \
+  -R '^desktop\.virtual\.powerdevil-inhibition$' \
+  --output-on-failure --no-tests=error
+```
+
+The row registers only when the complete desktop stage, bubblewrap, KWin,
+PowerDevil, the portal frontend and KDE backend, Gentoo package query tool,
+and KScreen DPMS client are available. Before entering the sandbox it requires
+KWin, KScreenLocker, libkscreen, PowerDevil, and the KDE portal backend to be
+installed from release 6.6.6. The existing authenticated desktop stage and
+cross-worktree private-session lock remain the install and serialization
+boundaries.
+
+Inside the empty-root PID/network/IPC namespace, the runner starts a private
+session bus, the staged QindaQt compositor launcher over KWin's virtual 1080p
+backend, installed PowerDevil, and explicit installed portal frontend and KDE
+backend processes. It verifies that the PowerDevil, PolicyAgent, portal
+frontend, and portal backend bus names belong to those exact child PIDs and
+records the real ScreenSaver provider PID. The staged portal selector routes
+only `org.freedesktop.impl.portal.Inhibit` to KDE; no ambient activation
+directory, host bus address, host Wayland socket, system bus, render node, or
+power device is mounted.
+
+Each of the native `zwp_idle_inhibitor_v1`, portal Idle flag 8, and legacy
+`org.freedesktop.ScreenSaver.Inhibit` paths holds inhibition across the
+upstream 30-second minimum unlocked DPMS timeout. The probe requires no DPMS
+Off signal during a 35-second hold, releases the real inhibitor, then requires
+exactly one Off signal within 35 seconds and restores the nested output to On.
+Portal and legacy phases additionally require PowerDevil PolicyAgent type 4 to
+be true while held and false after release; the native Wayland path requires
+that policy to stay false because KWin suppresses idle directly. The private
+`powerdevilrc` sets the same display timeout for AC, Battery, and LowBattery,
+disables dimming and auto-suspend, and never changes the user's configuration.
+
+The emitted evidence contains exact provider PIDs, request/cookie identity,
+PolicyAgent transitions, and timestamped KScreen DPMS mode signals. This row
+qualifies installed idle-off behavior on a virtual KWin output. It does not
+exercise a physical monitor, DRM/KMS, suspend, logind, UPower, polkit, or host
+power policy.
+
 ## Text Editor S2 focused proof
 
 The `^qindaqt\.editor-` selector is a process-local proof for Text Editor's
