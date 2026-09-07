@@ -12,9 +12,12 @@ completion. Architectural detail and long-range milestone state remain in the
 The user requests primary-assistant implementation, with no delegated coding.
 File Manager S2 is integrated and installed: 22/22 tests plus the installed
 UI-action probe pass. Stable selection repairs supersede the rejected original
-candidate. Next: verify Terminal’s actual shell and daily-use controls, and
-add line numbers, syntax highlighting, navigation, indentation, wrapping and
-zoom to Text Editor. Install the resulting applications and verify them.
+candidate. Text Editor now has line numbers, syntax highlighting, line navigation,
+indentation, per-tab wrapping and zoom. Terminal preserves its font on theme
+changes, supports per-tab zoom, and opens tabs in the active shell’s folder.
+The candidate passes all 44 Editor/Terminal rows, including live PTY input/output
+and global menus. Integration and installed-binary qualification are the final gate.
+Kimi is separately implementing Calendar; these changes do not own that app.
 
 
 ### Complete the installed desktop experience (2026-09-06)

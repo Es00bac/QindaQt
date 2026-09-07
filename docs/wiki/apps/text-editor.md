@@ -12,6 +12,29 @@ and adds the bounded multi-document and paths-only restore decision in
 participates in [QindaQt.AppShell 1.0](application-shell.md) as established by
 [ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md).
 
+## Everyday editing
+
+Line numbers and a highlighted current line make long files easier to follow.
+Use **Edit → Go to Line** (`Ctrl+G`) to jump to a line from an error message.
+The status bar shows your line, column, document language, and whether you have
+unsaved changes. File names select syntax highlighting automatically, including
+Python, shell scripts, JSON, C++, and Markdown. Unknown file types stay plain text.
+
+Tab inserts spaces to the next four-column stop. Select several lines and press
+Tab to indent them together; Shift+Tab moves them back. Enter carries the current
+line's leading whitespace onto the next line. Each indentation command is one
+undo step. Find and Replace remain available with `Ctrl+F` and `Ctrl+H`.
+
+The **View** menu controls word wrapping and text size. `Ctrl++` and `Ctrl+-`
+zoom; `Ctrl+0` restores the theme's size. Wrapping and zoom belong to each open
+tab and do not change the file or survive closing it.
+
+`DocumentEditor` owns these presentation and input behaviors. Its confined
+KF6 SyntaxHighlighting dependency is recorded in
+[ADR-0095](../adr/0095-use-ksyntaxhighlighting-for-editor-presentation.md).
+Highlighting never rewrites the document, changes its saved encoding, or creates
+an undo step. Document policy and disk access remain with their existing owners.
+
 ## Multi-document experience
 
 One window hosts at most 32 tabs. Each tab owns an independent
@@ -63,11 +86,15 @@ same local action.
 | `editFindAction`, `editReplaceAction` | `edit.find`, `edit.replace` | `Ctrl+F`, `Ctrl+H` | Open the in-window bar |
 | `editFindNextAction`, `editFindPreviousAction` | `edit.find-next`, `edit.find-previous` | `F3`, `Shift+F3` | Traverse matches with wrap |
 | `editFindCloseAction` | `edit.find-close` | `Escape` | Close the bar and restore editor focus |
+| `editGoToLineAction` | `edit.go-to-line` | `Ctrl+G` | Jump to a line |
+| `editIndentAction`, `editUnindentAction` | `edit.indent`, `edit.unindent` | `Ctrl+]`, `Ctrl+[` | Indent or unindent selected lines |
+| `viewWordWrapAction` | `view.word-wrap` | `Ctrl+Alt+W` | Toggle wrapping for this tab |
+| `viewZoomInAction`, `viewZoomOutAction`, `viewZoomResetAction` | `view.zoom-in`, `view.zoom-out`, `view.zoom-reset` | `Ctrl++`, `Ctrl+-`, `Ctrl+0` | Change or reset this tab's text size |
 | `tabNextAction`, `tabPreviousAction` | `tabs.next`, `tabs.previous` | `Ctrl+Tab`, `Ctrl+Shift+Tab` | Traverse tabs with wrap |
 | `tabSelect1Action` … `tabSelect9Action` | `tabs.select-1` … `tabs.select-9` | `Ctrl+1` … `Ctrl+9` | Select a numbered tab when present |
 | `restoreDocumentsAction` | `settings.restore-documents` | `Ctrl+Alt+R` | Toggle confirmed paths-only restore policy |
 
-The catalog is published atomically across File, Edit, Tabs, and Settings
+The catalog is published atomically across File, Edit, View, Tabs, and Settings
 menus. Live enabled and checked state is projected back to AppShell. The window
 routes close consent through AppShell's exact quit lineage. Open and Save As
 use the injected `FileSelectionAdapter`; production uses the native chooser,
@@ -229,3 +256,10 @@ a nested display screenshot matrix, and whole-application assistive-technology
 qualification remain later outcomes. Dirty-save and destination-replacement
 consent still use direct `QMessageBox` presentation. The desktop entry keeps
 the platform `accessories-text-editor` icon until a branded asset lands.
+
+### Editing-tools acceptance
+
+`qindaqt.editor-editing-tools-offscreen` exercises multi-line indentation and
+undo, Enter/Tab input, syntax detection without content or dirty-state changes,
+line navigation, gutter sizing, and theme-preserving zoom. The real window row
+also verifies that wrapping and zoom follow their document across tab switches.

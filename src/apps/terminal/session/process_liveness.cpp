@@ -11,6 +11,12 @@
 #include <unistd.h>
 
 namespace QindaQt::Apps::Terminal {
+QString PosixProcessMonitor::workingDirectory(ProcessId pid) {
+  if (pid <= 0) return {};
+  const QString path = QFileInfo(QStringLiteral("/proc/%1/cwd").arg(pid)).symLinkTarget();
+  return QFileInfo(path).isDir() ? path : QString{};
+}
+
 namespace {
 
 ProcessGroupState scanProcForGroup(ProcessId processGroupId) {

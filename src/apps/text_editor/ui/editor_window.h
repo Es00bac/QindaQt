@@ -70,6 +70,8 @@ private:
   void createCentralSurface();
   void createActions();
   void createMenus();
+  void createEditingActions();
+  void createViewMenu();
   void publishAppShellProjection();
   void connectCollection();
   void connectRestorePolicy();
@@ -123,6 +125,8 @@ private:
     QAction *tabPrevious = nullptr;
     QList<QAction *> tabSelect;
     QAction *restoreDocuments = nullptr;
+    QList<QAction *> editingTools;
+    QList<QAction *> viewTools;
   };
 
   DocumentCollection *m_documents = nullptr;
