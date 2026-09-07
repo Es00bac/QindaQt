@@ -70,6 +70,7 @@ private Q_SLOTS:
     void parsesAndDispatchesAllowlistedEvents();
     void parsesBoundedRelativePointerMotion();
     void parsesFullscreenAndShellProbeKeys();
+    void parsesDailyControlsAndWorkspaceProbeKeys();
     void rejectsMalformedAndLimitFailures();
     void checksProductionGateBeforePayloadInspection();
     void reportsUnavailableSinkAndCapabilities();
@@ -227,6 +228,32 @@ void DevelopmentInputProtocolTest::parsesFullscreenAndShellProbeKeys()
                      {QStringLiteral("pressed"), true}}});
     QVERIFY(!DevelopmentInputCodec::parse(unknown, &failure));
     QCOMPARE(failure.code, QStringLiteral("malformed-input-request"));
+}
+
+void DevelopmentInputProtocolTest::parsesDailyControlsAndWorkspaceProbeKeys()
+{
+    const auto payload = request(
+        {QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("volume-up")},
+                     {QStringLiteral("pressed"), true}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("print")},
+                     {QStringLiteral("pressed"), false}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("left-control")},
+                     {QStringLiteral("pressed"), true}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("w")},
+                     {QStringLiteral("pressed"), false}}});
+
+    DevelopmentInputFailure failure;
+    const auto parsed = DevelopmentInputCodec::parse(payload, &failure);
+    QVERIFY2(parsed.has_value(), qPrintable(failure.message));
+    QCOMPARE(parsed->events.size(), 4);
+    QCOMPARE(parsed->events.at(0).key, DevelopmentInputKey::VolumeUp);
+    QCOMPARE(parsed->events.at(1).key, DevelopmentInputKey::Print);
+    QCOMPARE(parsed->events.at(2).key, DevelopmentInputKey::LeftControl);
+    QCOMPARE(parsed->events.at(3).key, DevelopmentInputKey::W);
 }
 
 void DevelopmentInputProtocolTest::rejectsMalformedAndLimitFailures()
