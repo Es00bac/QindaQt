@@ -45,7 +45,12 @@ The adapter clears a stale unavailable error when the owner returns, then
 reports any refresh failure. It does not create or monitor a replacement
 service. The session composition owns the real `/usr/libexec/org_kde_powerdevil`
 process and its lifetime; the adapter only consumes its documented D-Bus
-authority.
+authority. It starts the daemon after the shell, before desktop controls, and
+reaps it when the session ends. One unexpected daemon exit gets an independent
+restart without ending the desktop. An empty `powerDevilExecutable` in private
+session options disables this child; tests never discover a host daemon from
+that options default. Production executable selection and installed validation
+remain part of the session composition qualification.
 
 ## Verification boundary
 
@@ -57,3 +62,8 @@ on owner availability, and replacement-owner refresh ordering. It does not
 touch host settings, DPMS, Wayland, or the system bus. End-to-end video/game
 inhibition remains a session qualification: portal Idle and legacy ScreenSaver
 inhibitors must be tested while the real PowerDevil owner is running.
+
+The separate `qindaqt.session-powerdevil-lifetime` process test starts a private
+helper as the daemon, terminates it once, verifies replacement without session
+exit, and checks that session stop reaps the replacement. It does not start
+PowerDevil or change host power settings.
