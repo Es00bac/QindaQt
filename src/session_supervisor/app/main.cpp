@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
     // AGENT-CONTRACT: must run after publishActivationEnvironment (so the
     // restarted unit reads the just-published environment) and before any
     // desktop consumer starts. See resident_service_refresh.h.
-    refreshResidentWaylandServices(QDBusConnection::sessionBus(),
-                                   residentWaylandServiceUnits());
+    refreshResidentServices(QDBusConnection::sessionBus(),
+                            residentServiceRefreshUnits());
 
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));
