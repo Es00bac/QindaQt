@@ -79,22 +79,25 @@ replace earlier work:
   session, with the original preserved and a normal-launch survival check.
 - Maintain the project on the user’s GitHub with reviewed integration commits,
   working CI dependencies, isolated worker branches, and ignored build/session
-  output. `origin/main` was pushed and independently read back at `ce63d1bb`.
+  output. `origin/main` was pushed through `d8c6fbad`; isolated candidates and
+  rejected speculative fixes remain separate from the integration branch.
 - Make Meta+Shift left-drag consistently combine windows into QindaQt
   containers without competing KWin custom/thirds tiling. Normal and late-Shift
   grouping pass private runs `7bf2271d708648ee99e1afd80493ef40` and
   `d90a2e7ddd8747a38dea9e06dc106bb9`, including actual member-frame convergence
   and container-local Meta+Arrow. Standalone Welcome still tiles independently.
-  Deploy these verified repairs with the final compositor refresh.
+  These compositor repairs are included in the verified runtime installed for
+  the QindaQt session started at 20:17 MDT.
 - Show each window container as one dock/task-list entry, suppress its member
   entries, and route activation/minimize/restoration through the container.
   Detaching restores a standalone task; verify transfers, member exit, and
   normalization against the existing task-list contract.
 - Remove competing default corner/edge tiling and make Alt-Tab visually fit
-  QindaQt window containers. Live inspection confirms one exposed switcher
-  representative per container, but stock KWin presentation and implicit edge
-  tiling remain. Preserve explicitly configured user choices while supplying
-  QindaQt defaults and a native-model switcher presentation.
+  QindaQt window containers. Private run `5f700906669c498ab4889da621667fc7`
+  passes native QindaQt TabBox forward/reverse selection and activation with
+  one container representative. Normal and late-Shift grouping runs above
+  verify container-local versus standalone tiling. Final refreshed-session
+  visual acceptance remains distinct from those private checks.
 - Add a keyboard toggle for grouped-member title chrome, keeping container
   ownership and a visible focus cue in both clean-tile and title-visible modes.
 - Provide a dismissible desktop shortcut note with an obvious way to reopen it;
@@ -110,6 +113,9 @@ replace earlier work:
   controls, exposing the same completed actions as the parent frame.
 - Add whole-group roll-up/shade or iconify behavior appropriate to the selected
   interface, with parent controls and reliable member/focus restoration.
+  Run `a1bdb644aa3f4cdebd6a174f5ad7d7d9` records the actual context-menu
+  minimize action and taskbar restoration of both members. Its overall result
+  remains false because display scaling failed; this is scoped container evidence.
 - Provide an easy user-approved production mouse/keyboard path for agents and
   Gabbee, also usable for realistic testing and debugging. Reuse the standard
   RemoteDesktop portal and its approval/session lifetime instead of exposing
