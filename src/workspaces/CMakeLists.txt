@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+add_library(qindaqt_workspaces STATIC workspace.cpp assignment.cpp workspace_store.cpp)
+add_library(QindaQt::Workspaces ALIAS qindaqt_workspaces)
+target_include_directories(qindaqt_workspaces PUBLIC include)
+target_link_libraries(qindaqt_workspaces PUBLIC QindaQt::Core Qt6::Core)
+target_compile_features(qindaqt_workspaces PUBLIC cxx_std_20)
+set_target_properties(qindaqt_workspaces PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_workspaces)
+endif()
