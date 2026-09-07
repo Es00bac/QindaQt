@@ -12,6 +12,13 @@ qindaqt_enable_warnings(qindaqt_audio_service_tests)
 add_test(NAME qindaqt.audio-service COMMAND qindaqt_audio_service_tests)
 set_tests_properties(qindaqt.audio-service PROPERTIES LABELS "service;audio")
 
+# AGENT-GUARD: This defaults ON for broad build jobs. The pinned native plugin
+# lane disables only these process-launching rows because Gentoo's official
+# binhost has no PipeWire `extra` variant providing pw-cat.
+if(NOT QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS)
+    return()
+endif()
+
 find_program(QINDAQT_PIPEWIRE_EXECUTABLE NAMES pipewire REQUIRED)
 find_program(QINDAQT_WIREPLUMBER_EXECUTABLE NAMES wireplumber REQUIRED)
 find_program(QINDAQT_PW_CLI_EXECUTABLE NAMES pw-cli REQUIRED)
