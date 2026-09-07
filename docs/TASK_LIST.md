@@ -23,7 +23,9 @@ replace earlier work:
   Revert behavior; raw coordinates alone are not the main arrangement workflow.
   The physical DP-1 projector is enabled beside HDMI-A-1; inventory and
   arrangement presentation repairs are integrated through `86342441`; physical
-  Settings qualification after session refresh remains open.
+  Settings qualification after session refresh remains open. The user confirms
+  that scaling returns to 100% in the physical session. This is an open product
+  defect; the integrated no-op rollback fix (`3591a081`) does not resolve it.
 - Make maximized containers follow the available work area when the dock hides
   or changes its reservation, preserving their normal restore size. Integrated
   `04954961` passes actual hidden/revealed/hidden and exact restored-member
@@ -45,6 +47,9 @@ replace earlier work:
   and reviewed Controls baselines are integrated through `3de6ac9f`; final
   Settings consumer review and real desktop visual acceptance remain open.
 - Eliminate global-menu flashing and make pointer and keyboard actions reliable.
+  The refreshed session still has undersized or vertically displaced click
+  targets on menu labels and status icons; full visible-label/icon hit areas
+  and usable padding require a repair and runtime verification.
   Native-menu fixes are integrated through `71f3b49b`. In isolated run
   `de9f130640494649993e7001d75810a7`, inspected screenshots show a correctly
   anchored File popup staying open after release and a one-second wait, with

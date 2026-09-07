@@ -10,10 +10,21 @@ payload. The earlier SDDM restart did not complete automatic QindaQt login;
 its temporary autologin configuration is gone. Do not interrupt the current
 session again during verification. Display and Network services report active.
 
-The closing-tests, display-scale, and Gabbee workers are active in isolated
-worktrees. Closing tests still require the screen-lock stub AUTOMOC repair.
-Display scaling and terminal dictation remain genuine open acceptance items;
-installation does not close them.
+The closing suite now passes **658/658** on integrated `48a5b58d` after the
+AUTOMOC and navigation-fixture repairs. The strict documentation build also
+passes. The no-op rollback repair is integrated through `3591a081`; it does
+not establish successful scale application and is newer than the installed
+Display service.
+
+Two fresh physical-session reports remain open: selecting display scaling
+returns to 100%, and the lower portion of global-menu labels/status controls
+is difficult to click. Separate Claude CLI workers own those repairs in
+isolated worktrees. Gabbee terminal delivery is undergoing candidate review;
+its new helper sink has not yet been applied to the external checkout.
+The external Kimi file-manager worker was interrupted by the earlier logout;
+the user restarted it and the manager posted a reconnect message in its
+existing shared thread. Its paths remain reserved. No new session restart
+is planned while these workers run.
 
 ## Host refresh — 2026-09-06 18:20 MDT
 
