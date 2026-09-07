@@ -74,3 +74,37 @@ qindaqt_enable_warnings(qindaqt_activation_environment_tests)
 add_test(NAME qindaqt.session-activation-environment
     COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_activation_environment_tests>)
 set_tests_properties(qindaqt.session-activation-environment PROPERTIES TIMEOUT 15 LABELS "session;dbus")
+
+qt_add_executable(
+    qindaqt_session_resident_service_refresh_publisher
+    session_resident_service_refresh_publisher.cpp
+)
+target_include_directories(
+    qindaqt_session_resident_service_refresh_publisher PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_session_resident_service_refresh_publisher
+    PRIVATE QindaQt::SessionSupervisorSupport
+)
+qindaqt_enable_warnings(qindaqt_session_resident_service_refresh_publisher)
+qt_add_executable(qindaqt_resident_service_refresh_tests tst_resident_service_refresh.cpp)
+target_include_directories(qindaqt_resident_service_refresh_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(
+    qindaqt_resident_service_refresh_tests
+    PRIVATE QindaQt::SessionSupervisorSupport Qt6::Core Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_resident_service_refresh_tests
+    PRIVATE
+        QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER="$<TARGET_FILE:qindaqt_session_resident_service_refresh_publisher>"
+)
+add_dependencies(
+    qindaqt_resident_service_refresh_tests
+    qindaqt_session_resident_service_refresh_publisher
+)
+qindaqt_enable_warnings(qindaqt_resident_service_refresh_tests)
+add_test(NAME qindaqt.session-resident-service-refresh
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_resident_service_refresh_tests>)
+set_tests_properties(
+    qindaqt.session-resident-service-refresh PROPERTIES TIMEOUT 15 LABELS "session;dbus"
+)

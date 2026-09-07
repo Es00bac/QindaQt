@@ -10,6 +10,8 @@ target_sources(
         src/direct_parent_process.cpp
         src/first_launch_welcome.cpp
         src/first_launch_welcome.h
+        src/resident_service_refresh.cpp
+        src/resident_service_refresh.h
         src/supervised_process_launcher.cpp
         src/tokenized_process_launcher.cpp
         src/session_process_supervisor.cpp

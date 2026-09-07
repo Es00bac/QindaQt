@@ -210,3 +210,4 @@ nav:
       - "ADR-0091: KScreenLocker preferences adapter": adr/0091-configure-kscreenlocker-preferences-through-settings.md
       - "ADR-0092: Compositor UI palette projection": adr/0092-project-confirmed-palette-into-compositor-ui.md
       - "ADR-0093: Agent input portal acknowledgement": adr/0093-acknowledge-agent-input-portal-acceptance.md
+      - "ADR-0094: Resident Wayland session-service refresh": adr/0094-refresh-resident-wayland-session-services.md

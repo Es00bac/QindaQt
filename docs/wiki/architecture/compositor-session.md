@@ -529,3 +529,21 @@ socket. Calls are bounded and failure is diagnostic rather than fatal. See
 [ADR-0082](../adr/0082-publish-session-activation-environment.md). The private-bus
 `qindaqt.session-activation-environment` gate verifies the current socket and
 limited variable set without touching the host manager.
+
+Republishing the environment only changes what *future* activations receive.
+A systemd user service that is already resident from a prior desktop and
+opens its own direct Wayland connection — today `qindaqt-clipboard-host` and
+`qindaqt-display-service` — keeps that stale connection until the process
+itself restarts. Immediately after publishing the environment and before any
+desktop consumer starts, the supervisor therefore calls
+`refreshResidentWaylandServices` with the fixed, reviewed unit list from
+`residentWaylandServiceUnits()`, restarting each one through systemd's
+`RestartUnit`. This starts a unit that has not yet run in this session and
+restarts one that already holds a stale socket, without a full logout and
+without touching any other resident service or its preferences. Each restart
+is bounded and best-effort; a missing unit or transport failure is logged and
+does not stop the session. See
+[ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md). The
+private-bus `qindaqt.session-resident-service-refresh` gate covers both the
+mechanism (against a fake user manager, including one unit failing to restart
+without stopping the request for the rest) and the fixed production list.
