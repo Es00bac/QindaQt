@@ -168,10 +168,23 @@ void pointerAxisDiscrete(void *, wl_pointer *, uint32_t, int32_t)
 {
 }
 
-const wl_pointer_listener pointerListener = {pointerEnter, pointerLeave, pointerMotion,
-                                             pointerButton, pointerAxis, pointerFrame,
-                                             pointerAxisSource, pointerAxisStop,
-                                             pointerAxisDiscrete, nullptr, nullptr};
+// AGENT-GUARD: Keep newer wl_pointer events null unless this probe explicitly
+// qualifies them. Named assignments let an older generated header compile
+// while zero-initialization absorbs optional callbacks added by newer core
+// protocol versions (currently wl_pointer.warp since protocol version 11).
+const wl_pointer_listener pointerListener = [] {
+    wl_pointer_listener listener{};
+    listener.enter = pointerEnter;
+    listener.leave = pointerLeave;
+    listener.motion = pointerMotion;
+    listener.button = pointerButton;
+    listener.axis = pointerAxis;
+    listener.frame = pointerFrame;
+    listener.axis_source = pointerAxisSource;
+    listener.axis_stop = pointerAxisStop;
+    listener.axis_discrete = pointerAxisDiscrete;
+    return listener;
+}();
 
 void relativeMotion(void *data, zwp_relative_pointer_v1 *, uint32_t, uint32_t, wl_fixed_t,
                     wl_fixed_t, wl_fixed_t, wl_fixed_t)
