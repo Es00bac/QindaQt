@@ -1,5 +1,28 @@
 # Integration handoff
 
+## Final native checks and Sloom package inspection
+
+The compact Settings check is complete: run
+`d7a0ca34b3234d3ea1de20b892756ef8` reaches Customize by keyboard and
+reveals its tab after shrinking the window. A notification popup overlaps part
+of the capture; the independent five-case Qt geometry test supplies the exact
+viewport-fit evidence.
+
+Sloom candidate `f459b0fd3b22e33047590ae5d307a6c410d3fc03` passed
+independent source review and 20/20 focused tests. Native run
+`a20d3aed75694d879a0a1cfab499c033` opens Help → About through real pointer
+input with no duplicate window menu. The manager inspected the About capture,
+verified successful cleanup, and compared all three changed production files
+inside the packaged ASAR byte-for-byte against the accepted commit. Its SHA-256
+is `1cc9658d2b57edf2d2826e6dab0017a21bbccc0075ea87f2fe0a8c91ce53e7ad`.
+Live host withdrawal was not exercised; focused lifecycle tests cover fallback.
+The additional package-review worker stopped at a provider usage limit; no
+independent package-audit result is claimed.
+
+QindaQt and Sloom installation, the legacy note binding adjustment, and checks
+in the refreshed host session remain outstanding. The staged QindaQt payload
+still passes 661/661 closing tests; sudo currently requires a password.
+
 ## Updated checkpoint and shortcut proof
 
 The current integrated tree `29be28fd` passes the closing selection again:

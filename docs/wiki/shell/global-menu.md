@@ -643,3 +643,14 @@ Natural menu size is measured from the bounded source entries independently
 of the assigned width or height. Hosts that size from the implicit extent
 therefore show complete menus; an explicitly smaller host still uses the
 existing measured overflow limits.
+
+## Sloom native acceptance checkpoint
+
+The separately packaged Sloom candidate `f459b0fd` consumes the hosting
+acknowledgment using its exporter connection’s unique bus name. Private run
+`a20d3aed75694d879a0a1cfab499c033` verifies that the global Help menu opens
+About through pointer input while the duplicate local menu is absent. The
+manager inspected the capture and matched the three packaged production
+files to the independently reviewed source. This is staged-package evidence;
+host installation remains outstanding. Owner-loss fallback has focused
+lifecycle test coverage, but was not exercised in that native run.
