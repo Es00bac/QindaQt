@@ -99,6 +99,7 @@ nav:
   - Development:
       - Implementation roadmap: development/implementation-roadmap.md
       - Coding practices: development/coding-practices.md
+      - Gentoo app installation: development/gentoo-apps.md
       - Testing harness: development/testing-harness.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
@@ -213,3 +214,4 @@ nav:
       - "ADR-0093: Agent input portal acknowledgement": adr/0093-acknowledge-agent-input-portal-acceptance.md
       - "ADR-0094: Resident Wayland session-service refresh": adr/0094-refresh-resident-wayland-session-services.md
       - "ADR-0095: Editor syntax highlighting": adr/0095-use-ksyntaxhighlighting-for-editor-presentation.md
+      - "0096: Package bundled applications with Portage": adr/0096-package-bundled-apps-with-portage.md
