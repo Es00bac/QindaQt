@@ -44,6 +44,7 @@ private:
   std::unique_ptr<StubAudioSettingsModel> m_audio;
   std::unique_ptr<StubBluetoothSettingsModel> m_bluetooth;
   std::unique_ptr<StubPowerSettingsModel> m_power;
+  std::unique_ptr<StubScreenLockSettings> m_screenLock;
   std::unique_ptr<StubClipboardSettingsModel> m_clipboard;
   std::unique_ptr<StubCustomizeSettingsModel> m_customize;
 };
@@ -66,6 +67,7 @@ void SettingsNavigationLayoutTest::initTestCase() {
   m_audio = std::make_unique<StubAudioSettingsModel>();
   m_bluetooth = std::make_unique<StubBluetoothSettingsModel>();
   m_power = std::make_unique<StubPowerSettingsModel>();
+  m_screenLock = std::make_unique<StubScreenLockSettings>();
   m_clipboard = std::make_unique<StubClipboardSettingsModel>();
   m_customize = std::make_unique<StubCustomizeSettingsModel>();
 }
@@ -95,6 +97,7 @@ void SettingsNavigationLayoutTest::testWideTwoColumnLayoutAndRouteSwitching() {
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("screenLockSettings"), QVariant::fromValue(m_screenLock.get())},
       {QStringLiteral("clipboardSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
@@ -210,6 +213,7 @@ void SettingsNavigationLayoutTest::testCompactLayoutAdaptation() {
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("screenLockSettings"), QVariant::fromValue(m_screenLock.get())},
       {QStringLiteral("clipboardSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });

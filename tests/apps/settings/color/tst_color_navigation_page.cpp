@@ -2,6 +2,7 @@
 
 #include "color_navigation_assertions.h"
 #include "stub_color_settings_model.h"
+#include "tests/apps/settings/power/stub_power_settings_model.h"
 
 #include "src/apps/settings_center/settings_navigation_controller.h"
 #include "src/apps/settings_center/settings_route_registry.h"
@@ -20,6 +21,7 @@
 
 using namespace QindaQt::Apps::SettingsCenter;
 using QindaQt::Apps::SettingsColor::TestSupport::StubColorSettingsModel;
+using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 
 namespace {
 
@@ -53,6 +55,7 @@ private:
   QObject m_unusedRouteModel;
   StubCustomizeSettings m_customize;
   StubColorSettingsModel m_color;
+  StubScreenLockSettings m_screenLock;
   std::unique_ptr<QObject> createWindow(
       SettingsNavigationController &navigation, const QSize &size);
 };
@@ -94,6 +97,8 @@ ColorNavigationPageTest::createWindow(
        QVariant::fromValue(static_cast<QObject *>(&m_customize))},
       {QStringLiteral("colorSettings"),
        QVariant::fromValue(static_cast<QObject *>(&m_color))},
+      {QStringLiteral("screenLockSettings"),
+       QVariant::fromValue(static_cast<QObject *>(&m_screenLock))},
   }));
   if (root == nullptr) {
     qWarning().noquote() << component.errorString();
