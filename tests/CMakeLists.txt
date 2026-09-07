@@ -2,6 +2,7 @@
 
 add_subdirectory(core)
 add_subdirectory(workspaces)
+add_subdirectory(workspaces_ui)
 add_subdirectory(workspaces_apps)
 add_subdirectory(hybrid)
 add_subdirectory(hybrid_constraints)
