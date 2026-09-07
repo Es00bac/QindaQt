@@ -19,7 +19,11 @@ set(allowed_public_include_prefixes
     "qindaqt/services/power_client/"
     "qindaqt/services/power_protocol/"
     "qindaqt/services/brightness_model/"
-    "qindaqt/services/session_actions/")
+    "qindaqt/services/session_actions/"
+    # The idle display-off section consumes the public Settings1 client and
+    # the desktop-controls idle-preference seam; no service internals.
+    "qindaqt/services/settings_client/"
+    "qindaqt/session/desktop_controls/")
 
 foreach(source IN LISTS route_files)
     file(READ "${source}" contents)

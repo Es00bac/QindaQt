@@ -77,10 +77,11 @@ composition separate:
 | `power_service` | Resident ownership, collaborator orchestration, and confined platform adapters | PB-2 production upstreams implemented |
 | `power_client` | Exact-owner asynchronous snapshots and operations | PB-1 implemented |
 | `power_backlight_provider` | Identity gate, KWin binding, external observation, Wayland teardown | Pending later slice |
-| `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice |
+| `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice; the session-owned display-off behavior users configure today is enforced by [desktop controls](desktop-controls.md) through KIdleTime and org-kde-kwin-dpms with no Power1 wire surface |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
 | [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard mutation and no session actions | Installed eighth Settings route; no platform maturity claim |
+| [`desktop_controls`](desktop-controls.md) | Session-process brightness media keys over the public sysfs write primitive, notification feedback, and idle display-off enforcement | Focused-evidence slice; no Power1 wire change |
 
 The service coordinator may not own UPower, logind, profile-daemon, or sysfs
 transport objects. Dedicated adapters own those resources behind the injected
@@ -175,7 +176,10 @@ malformed, disappearing, or read-only devices with typed fail-closed truth. A
 narrow write primitive is available only for a writable injected
 `brightness` file and re-reads observation after the write. No setuid helper,
 polkit prompt, fallback path, or host path exists in tests. Power1 v1 has no
-display-brightness method, so this primitive is not remotely dispatchable.
+display-brightness method, so this primitive is not remotely dispatchable;
+the local session-process media keys in
+[desktop controls](desktop-controls.md) are its first in-tree consumer, and a
+later PB-4/PB-5 method remains free to supersede them.
 
 ## Production shell consumer
 

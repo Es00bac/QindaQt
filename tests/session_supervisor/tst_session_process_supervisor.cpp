@@ -109,6 +109,8 @@ private slots:
     void session1AuthenticatesShellAndStopsChildrenInOrder();
     void optionalSecretAgentRestartsOnceWithoutBlockingSession();
     void optionalWelcomeStartsAfterShellAndDoesNotRestart();
+    void optionalDesktopControlsAndPolkitAgentRestartOnceWithoutBlockingSession();
+    void missingOptionalHelpersAreSkippedWithoutFailingTheSession();
     void session1DescriptorMatchesTheFixedSurface();
 };
 
@@ -509,6 +511,71 @@ void SessionProcessSupervisorTests::optionalWelcomeStartsAfterShellAndDoesNotRes
     QTest::qWait(100);
     QCOMPARE(supervisor.welcomeProcessId(), qint64(0));
     QVERIFY(supervisor.isRunning());
+    QCOMPARE(finished.size(), 0);
+    supervisor.stop();
+}
+
+void SessionProcessSupervisorTests::optionalDesktopControlsAndPolkitAgentRestartOnceWithoutBlockingSession()
+{
+    qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable =
+        QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.networkSecretAgentExecutable.clear();
+    options.desktopControlsExecutable =
+        QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+    options.polkitAgentExecutable =
+        QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy desktopControlsRestarted(
+        &supervisor,
+        &SessionSupervisor::SessionProcessSupervisor::desktopControlsRestarted);
+    QSignalSpy polkitAgentRestarted(
+        &supervisor,
+        &SessionSupervisor::SessionProcessSupervisor::polkitAgentRestarted);
+    QSignalSpy finished(&supervisor,
+                        &SessionSupervisor::SessionProcessSupervisor::finished);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    QVERIFY(supervisor.isRunning());
+    QTRY_COMPARE_WITH_TIMEOUT(desktopControlsRestarted.size(), 1, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(polkitAgentRestarted.size(), 1, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.desktopControlsProcessId(), qint64(0),
+                              5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.polkitAgentProcessId(), qint64(0),
+                              5'000);
+    QCOMPARE(supervisor.desktopControlsRestartCount(), 1);
+    QCOMPARE(supervisor.polkitAgentRestartCount(), 1);
+    QCOMPARE(finished.size(), 0);
+    QVERIFY(supervisor.isRunning());
+    supervisor.stop();
+}
+
+void SessionProcessSupervisorTests::missingOptionalHelpersAreSkippedWithoutFailingTheSession()
+{
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable =
+        QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.networkSecretAgentExecutable.clear();
+    options.desktopControlsExecutable =
+        QStringLiteral("/nonexistent/qindaqt-desktop-controls");
+    options.polkitAgentExecutable.clear();
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy finished(&supervisor,
+                        &SessionSupervisor::SessionProcessSupervisor::finished);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    QVERIFY(supervisor.isRunning());
+    QCOMPARE(supervisor.desktopControlsProcessId(), qint64(0));
+    QCOMPARE(supervisor.polkitAgentProcessId(), qint64(0));
+    QCOMPARE(supervisor.desktopControlsRestartCount(), 0);
+    QCOMPARE(supervisor.polkitAgentRestartCount(), 0);
     QCOMPARE(finished.size(), 0);
     supervisor.stop();
 }

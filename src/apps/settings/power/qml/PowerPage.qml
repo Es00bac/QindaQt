@@ -12,6 +12,7 @@ T.Page {
 
     required property var powerSettings
     required property var screenLockSettings
+    required property var idleDisplaySettings
     signal closeRequested()
 
     // AGENT-GUARD: Host entry must never nominate a disabled action. Domain
@@ -146,6 +147,10 @@ T.Page {
                     PowerScreenLockSection {
                         id: screenLockSection
                         screenLockSettings: root.screenLockSettings
+                    }
+                    PowerIdleDisplaySection {
+                        id: idleDisplaySection
+                        idleDisplaySettings: root.idleDisplaySettings
                     }
                     PowerSupplySection { powerSettings: root.powerSettings }
                     PowerProfileSection {
