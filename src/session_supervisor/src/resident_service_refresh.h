@@ -9,8 +9,9 @@ namespace QindaQt::SessionSupervisor {
 // prior desktop with session-scoped state that `SetEnvironment` alone cannot
 // refresh, and so must be explicitly restarted when this session starts, in
 // the listed order. AGENT-NOTE: source of truth is each service's own module.
-// Listed backend-first so a restarted frontend re-selects against an
-// already-refreshed backend: `plasma-xdg-desktop-portal-kde` (the KDE portal
+// The backend restart is requested first; request order does not guarantee
+// completion order, since each `RestartUnit` call only enqueues a systemd
+// job: `plasma-xdg-desktop-portal-kde` (the KDE portal
 // backend; a Qt Wayland client and screencast/remote-desktop consumer, not
 // D-Bus-only) and `xdg-desktop-portal` (the portal frontend, which selects
 // and caches which backend it routes to, from `XDG_CURRENT_DESKTOP`, once at

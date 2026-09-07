@@ -59,8 +59,9 @@ consumer starts, `qindaqt-session` calls a new, separate
 reviewed list of unit names returned by `residentServiceRefreshUnits()`, in
 order: `qindaqt-clipboard-host.service`, `qindaqt-display-service.service`,
 `plasma-xdg-desktop-portal-kde.service`, and `xdg-desktop-portal.service` —
-the portal backend before the frontend that routes to it, so a restarted
-frontend re-selects against an already-refreshed backend. The list is not
+the portal backend before the frontend that routes to it: the backend restart
+is requested first, but request order does not guarantee completion order,
+since each `RestartUnit` call only enqueues a systemd job. The list is not
 limited to direct Wayland consumers; it also covers resident services that
 cache desktop-scoped environment or routing decisions at their own startup.
 It does not follow that every D-Bus service needs a restart here — only ones
