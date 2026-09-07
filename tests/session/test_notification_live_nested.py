@@ -124,6 +124,8 @@ def _write_session_wrapper(
     # Paths originate from the validated staged prefix and JSON supplies only
     # existing catalog ids. POSIX shell quoting must suppress every expansion;
     # JSON double quotes are not a shell-escaping mechanism.
+    # AGENT-CONTRACT: --no-polkit-agent and --no-powerdevil keep this private
+    # session from launching host privilege or power agents through defaults.
     words = [
         str(artifacts["session"]),
         "--notification-host",
@@ -134,6 +136,7 @@ def _write_session_wrapper(
         profile,
         "--theme",
         theme,
+        "--no-polkit-agent", "--no-powerdevil",
     ]
     wrapper.write_text(
         "#!/bin/sh\nexec " + " ".join(shlex.quote(word) for word in words) + "\n",

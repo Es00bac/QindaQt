@@ -74,6 +74,14 @@ bool OptionalSessionChild::isRunning() const noexcept
     return m_process.state() != QProcess::NotRunning;
 }
 
+void OptionalSessionChild::resetRestartCount() noexcept
+{
+    // AGENT-GUARD: callers reset only after stop(); resetting a live child
+    // would grant an unintended extra restart within one session.
+    m_restartCount = 0;
+    m_previousProcessId = 0;
+}
+
 qint64 OptionalSessionChild::processId() const noexcept
 {
     return isRunning() ? m_processId : 0;

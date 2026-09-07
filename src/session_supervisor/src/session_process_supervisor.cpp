@@ -136,6 +136,11 @@ bool SessionProcessSupervisor::start(QString *error)
     m_shellRestartTimer.stop();
     m_shellStableTimer.stop();
     m_networkSecretAgentRestartCount = 0;
+    // AGENT-GUARD: optional budgets are per session; reset only now that any
+    // previous session's children were stopped by stop()/finishSession().
+    m_desktopControls->resetRestartCount();
+    m_polkitAgent->resetRestartCount();
+    m_powerDevil->resetRestartCount();
     m_hostProcessId = 0;
     m_shellProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -203,6 +208,11 @@ void SessionProcessSupervisor::stop() noexcept
     m_shellPredecessorProcessId = 0;
     m_shellRestartTimer.stop();
     m_shellStableTimer.stop();
+    // All optional children are stopped above; their budgets belong to the
+    // next session.
+    m_desktopControls->resetRestartCount();
+    m_polkitAgent->resetRestartCount();
+    m_powerDevil->resetRestartCount();
     m_stopping = false;
 }
 

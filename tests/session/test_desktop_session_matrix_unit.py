@@ -289,7 +289,8 @@ def _add_presentation_evidence(
         "requestedScale": scenario.virtual.scale,
         "parentArguments": parent_arguments,
         "sessionArguments": [
-            "--profile", scenario.profile_id, "--theme", scenario.theme_id
+            "--profile", scenario.profile_id, "--theme", scenario.theme_id,
+            "--no-polkit-agent", "--no-powerdevil",
         ],
         "editorArguments": ["--theme", scenario.theme_id],
     }

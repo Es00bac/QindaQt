@@ -29,6 +29,7 @@ qindaqt_enable_warnings(qindaqt_idle_display_settings_tests)
 add_test(NAME qindaqt.settings-idle-display-model
     COMMAND qindaqt_idle_display_settings_tests)
 set_tests_properties(qindaqt.settings-idle-display-model PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "settings;power;idle-display")
 
 qt_add_executable(qindaqt_power_settings_slider_tests

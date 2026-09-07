@@ -25,19 +25,21 @@ private Q_SLOTS:
         SessionProcessSupervisor supervisor(options);
         QSignalSpy finished(&supervisor, &SessionProcessSupervisor::finished);
         QString error;
-        QVERIFY2(supervisor.start(&error), qPrintable(error));
-        QTRY_VERIFY(supervisor.powerDevilProcessId() > 1);
-        const auto initial = supervisor.powerDevilProcessId();
-        QCOMPARE(::kill(static_cast<pid_t>(initial), SIGTERM), 0);
-        QTRY_VERIFY(supervisor.powerDevilProcessId() > 1
-                    && supervisor.powerDevilProcessId() != initial);
-        QVERIFY(supervisor.isRunning());
-        QCOMPARE(finished.size(), 0);
-        const auto replacement = supervisor.powerDevilProcessId();
-        supervisor.stop();
-        QCOMPARE(supervisor.powerDevilProcessId(), qint64(0));
-        QCOMPARE(::kill(static_cast<pid_t>(replacement), 0), -1);
-        QCOMPARE(errno, ESRCH);
+        for (int session = 0; session != 2; ++session) {
+            QVERIFY2(supervisor.start(&error), qPrintable(error));
+            QTRY_VERIFY(supervisor.powerDevilProcessId() > 1);
+            const auto initial = supervisor.powerDevilProcessId();
+            QCOMPARE(::kill(static_cast<pid_t>(initial), SIGTERM), 0);
+            QTRY_VERIFY(supervisor.powerDevilProcessId() > 1
+                        && supervisor.powerDevilProcessId() != initial);
+            QVERIFY(supervisor.isRunning());
+            QCOMPARE(finished.size(), 0);
+            const auto replacement = supervisor.powerDevilProcessId();
+            supervisor.stop();
+            QCOMPARE(supervisor.powerDevilProcessId(), qint64(0));
+            QCOMPARE(::kill(static_cast<pid_t>(replacement), 0), -1);
+            QCOMPARE(errno, ESRCH);
+        }
         qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
     }
 };
