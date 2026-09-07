@@ -7,6 +7,15 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Correct the interactive Terminal and Gentoo installation (September 7)
+
+**Installed:** the silent-bell parser bug is fixed at `89ad375d`. A full-window
+interactive Bash regression verifies the prompt, keyboard input and visible
+output on Wayland. Portage now owns the three bundled apps and shared runtime
+files as `gui-apps/qindaqt-apps-0.1.0_pre20260907`, with declared dependencies and
+installed RUNPATHs. This corrects the insufficient earlier normal-shell and
+raw-copy installation checks. See [Handoff](HANDOFF.md) for evidence.
+
 ### Finish the bundled applications (September 7)
 
 The user requests primary-assistant implementation, with no delegated coding.
