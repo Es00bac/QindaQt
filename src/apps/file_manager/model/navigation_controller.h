@@ -4,6 +4,7 @@
 #include "directory_lister.h"
 #include "file_manager_types.h"
 #include "launch_intent.h"
+#include "listing_order.h"
 #include "navigation_history.h"
 
 #include <QObject>
@@ -41,6 +42,11 @@ class NavigationController final : public QObject {
   Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY entriesChanged FINAL)
   Q_PROPERTY(QVariantList entries READ entries NOTIFY entriesChanged FINAL)
   Q_PROPERTY(QString launchError READ launchError NOTIFY launchErrorChanged FINAL)
+  Q_PROPERTY(QString sortColumn READ sortColumn NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(QString sortDirection READ sortDirection NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(bool directoriesFirst READ directoriesFirst NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(bool showHidden READ showHidden NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(QString viewMode READ viewMode NOTIFY presentationChanged FINAL)
 
 public:
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
@@ -60,6 +66,15 @@ public:
   // Returns the index of the entry named name in the current listing, or -1.
   // QML uses this to restore a deterministic selection across a refresh.
   Q_INVOKABLE int indexOfName(const QString &name) const;
+  // Applies a new sort column; calling with the active column flips the
+  // direction instead (standard header-click behavior). Unknown keys are
+  // ignored. Changing presentation re-sorts the already-listed entries
+  // without re-reading the directory.
+  Q_INVOKABLE void setSortColumn(const QString &columnKey);
+  Q_INVOKABLE void setShowHidden(bool showHidden);
+  Q_INVOKABLE void setDirectoriesFirst(bool directoriesFirst);
+  // Accepted values are "list" and "grid"; anything else is ignored.
+  Q_INVOKABLE void setViewMode(const QString &mode);
 
   [[nodiscard]] QString currentPath() const;
   [[nodiscard]] bool canGoBack() const;
@@ -70,8 +85,14 @@ public:
   [[nodiscard]] QString statusMessage() const;
   [[nodiscard]] QVariantList entries() const;
   [[nodiscard]] QString launchError() const;
+  [[nodiscard]] QString sortColumn() const;
+  [[nodiscard]] QString sortDirection() const;
+  [[nodiscard]] bool directoriesFirst() const;
+  [[nodiscard]] bool showHidden() const;
+  [[nodiscard]] QString viewMode() const;
 
-  // Test seams independent of QML's QVariantList marshalling.
+  // Test seams independent of QML's QVariantList marshalling. entryCount and
+  // entryAt expose the visible (filtered and sorted) listing QML sees.
   [[nodiscard]] int entryCount() const;
   [[nodiscard]] const DirectoryEntry *entryAt(int index) const;
   [[nodiscard]] NavigationStatus status() const;
@@ -80,9 +101,14 @@ signals:
   void navigationChanged();
   void entriesChanged();
   void launchErrorChanged();
+  void presentationChanged();
 
 private:
   void reload();
+  // Re-derives the visible listing from m_listedEntries under the active
+  // filter/order and republishes statusMessage. Callers emit entriesChanged
+  // (and presentationChanged for user-facing setting changes) afterwards.
+  void rebuildVisibleEntries();
   [[nodiscard]] static QString statusKeyFor(NavigationStatus status);
 
   DirectoryListerPtr m_lister;
@@ -90,8 +116,14 @@ private:
   NavigationHistory m_history;
   NavigationStatus m_status = NavigationStatus::Empty;
   QString m_statusMessage;
+  QVector<DirectoryEntry> m_listedEntries;
   QVector<DirectoryEntry> m_entries;
   QString m_launchError;
+  ListingOrder m_order;
+  bool m_showHidden = false;
+  bool m_truncated = false;
+  int m_hiddenFilteredCount = 0;
+  QString m_viewMode = QStringLiteral("list");
 };
 
 } // namespace QindaQt::Apps::FileManager

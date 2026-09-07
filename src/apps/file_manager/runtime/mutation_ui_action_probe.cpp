@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "mutation_ui_action_probe.h"
+#include "selection_ui_probe.h"
 
 #include "model/navigation_controller.h"
 #include "mutation/mutation_controller.h"
@@ -13,6 +14,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QThread>
+
+#include <optional>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
@@ -47,7 +50,7 @@ namespace {
                                NavigationController *navigation,
                                const QString &name, QString *error) {
   const int index = navigation->indexOfName(name);
-  if (index < 0 || !list->setProperty("currentIndex", index)) {
+  if (index < 0 || !QMetaObject::invokeMethod(list, "selectEntry", Q_ARG(QVariant, QVariant(index)))) {
     return fail(error, QStringLiteral("could not select fixture entry %1").arg(name));
   }
   QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
@@ -84,6 +87,32 @@ namespace {
   return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray{};
 }
 
+// Clicks a production sort-header button through its QQC2 clicked() signal so
+// the probe covers the QML onClicked -> setSortColumn wiring, not just the
+// controller. A missing signal fails the probe rather than silently degrading
+// to a controller-only sort check.
+[[nodiscard]] bool clickObject(QObject *object, const QString &description,
+                               QString *error) {
+  if (!object ||
+      object->metaObject()->indexOfMethod(QMetaObject::normalizedSignature("clicked()")) < 0 ||
+      !QMetaObject::invokeMethod(object, "clicked", Qt::DirectConnection)) {
+    return fail(error, QStringLiteral("could not click %1").arg(description));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  return true;
+}
+
+[[nodiscard]] std::optional<bool> actionChecked(
+    QindaQt::AppShell::ApplicationCoordinator *coordinator, const QString &actionId) {
+  const auto actions = coordinator->actionRegistry().actions();
+  for (const auto &action : actions) {
+    if (action.id == actionId) {
+      return action.checked;
+    }
+  }
+  return std::nullopt;
+}
+
 } // namespace
 
 bool verifyMutationUiActions(
@@ -97,6 +126,7 @@ bool verifyMutationUiActions(
   if (!root || !coordinator || !navigation || !mutation) {
     return fail(error, QStringLiteral("the UI action probe is missing a collaborator"));
   }
+  if (!verifySelectionUi(root, navigation, fixtureRoot, error)) return false;
   QObject *list = root->findChild<QObject *>(QStringLiteral("entryListView"));
   QObject *renameDialog =
       root->findChild<QObject *>(QStringLiteral("renameDialog"));
@@ -150,6 +180,74 @@ bool verifyMutationUiActions(
   if (!coordinator->activateAction(QStringLiteral("file.restore-last")) ||
       !waitForIdle(mutation, error) || readAll(moved) != QByteArray("fixture-data")) {
     return fail(error, QStringLiteral("production QML restore did not commit"));
+  }
+
+  // S2 stage: hidden-toggle round trip, header-driven sort switch, and a
+  // multi-item batch trash — all through the same production action seam.
+  const QString batch = QDir(fixtureRoot).filePath(QStringLiteral("qml-batch.txt"));
+  const QString hidden = QDir(fixtureRoot).filePath(QStringLiteral(".qml-hidden.txt"));
+  if (!QFileInfo::exists(batch) || !QFileInfo::exists(hidden)) {
+    return fail(error, QStringLiteral("the UI action fixture is missing its S2 seeds"));
+  }
+  if (navigation->showHidden() || navigation->entryCount() != 3 ||
+      navigation->indexOfName(QStringLiteral(".qml-hidden.txt")) >= 0 ||
+      navigation->statusMessage() != QStringLiteral("1 hidden")) {
+    return fail(error, QStringLiteral("hidden entries were not filtered by default"));
+  }
+  if (!coordinator->activateAction(QStringLiteral("view.show-hidden"))) {
+    return fail(error, QStringLiteral("could not dispatch the Show Hidden action"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (!navigation->showHidden() || navigation->entryCount() != 4 ||
+      navigation->indexOfName(QStringLiteral(".qml-hidden.txt")) < 0 ||
+      actionChecked(coordinator, QStringLiteral("view.show-hidden")) !=
+          std::optional<bool>(true)) {
+    return fail(error,
+                QStringLiteral("the Show Hidden action did not republish the listing"));
+  }
+  if (!coordinator->activateAction(QStringLiteral("view.show-hidden"))) {
+    return fail(error, QStringLiteral("could not re-dispatch the Show Hidden action"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (navigation->showHidden() || navigation->entryCount() != 3 ||
+      actionChecked(coordinator, QStringLiteral("view.show-hidden")) !=
+          std::optional<bool>(false)) {
+    return fail(error, QStringLiteral("the Show Hidden action did not round-trip"));
+  }
+
+  QObject *sortHeaderSize =
+      root->findChild<QObject *>(QStringLiteral("sortHeader_size"));
+  // Sizes: qml-copy.txt and qml-moved.txt hold 12 bytes, qml-batch.txt 21, so
+  // ascending puts the batch file last and descending puts it first; equal
+  // sizes keep the ascending name tiebreak.
+  if (!clickObject(sortHeaderSize, QStringLiteral("the size sort header"), error) ||
+      navigation->sortColumn() != QLatin1String("size") ||
+      navigation->sortDirection() != QLatin1String("ascending") ||
+      navigation->indexOfName(QStringLiteral("qml-batch.txt")) != 2) {
+    return fail(error, QStringLiteral("the size sort header did not reorder ascending"));
+  }
+  if (!clickObject(sortHeaderSize, QStringLiteral("the size sort header"), error) ||
+      navigation->sortDirection() != QLatin1String("descending") ||
+      navigation->indexOfName(QStringLiteral("qml-batch.txt")) != 0) {
+    return fail(error, QStringLiteral("the size sort header did not toggle descending"));
+  }
+  navigation->setSortColumn(QStringLiteral("bogus"));
+  if (navigation->sortColumn() != QLatin1String("size") ||
+      navigation->sortDirection() != QLatin1String("descending")) {
+    return fail(error, QStringLiteral("an unknown sort key was not ignored"));
+  }
+
+  if (!coordinator->activateAction(QStringLiteral("edit.select-all")) ||
+      !coordinator->activateAction(QStringLiteral("file.trash"))) {
+    return fail(error, QStringLiteral("could not dispatch the batch Trash actions"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (!acceptDialog(trashDialog, error) || !waitForIdle(mutation, error) ||
+      QFileInfo::exists(copied) || QFileInfo::exists(moved) ||
+      QFileInfo::exists(batch) || !QFileInfo::exists(hidden) ||
+      mutation->resultText() != QStringLiteral("Finished 3 items") ||
+      mutation->canUndo() || mutation->canRestore()) {
+    return fail(error, QStringLiteral("production QML batch Trash did not commit"));
   }
   return true;
 }

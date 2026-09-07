@@ -5,6 +5,9 @@ import QtQuick.Controls as T
 import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Qinda
 
+// Grid presentation over the same published listing and selection contract as
+// EntryList. Glyphs are deliberately built-in minimal shapes; XDG icon-theme
+// and MIME-aware icons are an S3 outcome pending an icon-seam ADR.
 Item {
     id: root
 
@@ -12,11 +15,11 @@ Item {
     required property var selection
     required property var appCoordinator
 
-    function focusView() { listView.forceActiveFocus() }
+    function focusView() { gridView.forceActiveFocus() }
 
     function currentEntry() {
-        return listView.currentIndex >= 0
-            ? root.navigationController.entries[listView.currentIndex] : null
+        return gridView.currentIndex >= 0
+            ? root.navigationController.entries[gridView.currentIndex] : null
     }
 
     function selectedEntries() {
@@ -28,68 +31,19 @@ Item {
     }
 
     function activateCurrent() {
-        if (listView.currentIndex >= 0) {
-            root.navigationController.activate(listView.currentIndex)
+        if (gridView.currentIndex >= 0) {
+            root.navigationController.activate(gridView.currentIndex)
         }
     }
 
-    // Listing notices remain outside the scrolling entries.
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Tokens.space["2"]
         spacing: 0
 
-        RowLayout {
-            id: headerRow
-            Layout.fillWidth: true
-            spacing: 0
-
-            // AGENT-NOTE: The sort headers are statically declared buttons, not
-            // a Repeater, because model-instantiated delegates are not
-            // reachable through QObject::findChild from the QML root; the
-            // --check-ui-contract gate and the UI action probe resolve
-            // sortHeader_* by objectName. The column set is fixed by
-            // ListingOrder (model/listing_order.h).
-            component SortHeaderButton: Qinda.Button {
-                required property string key
-                required property string label
-                property bool stretch: false
-
-                Layout.fillWidth: stretch
-                Layout.preferredWidth: stretch ? -1 : 140
-                text: label + (root.navigationController.sortColumn === key
-                    ? (root.navigationController.sortDirection === "ascending" ? " ▲" : " ▼") : "")
-                emphasized: root.navigationController.sortColumn === key
-                accessibleDescription: qsTr("Sort by %1").arg(label)
-                onClicked: root.navigationController.setSortColumn(key)
-            }
-
-            SortHeaderButton {
-                objectName: "sortHeader_name"
-                key: "name"
-                label: qsTr("Name")
-                stretch: true
-            }
-            SortHeaderButton {
-                objectName: "sortHeader_size"
-                key: "size"
-                label: qsTr("Size")
-            }
-            SortHeaderButton {
-                objectName: "sortHeader_kind"
-                key: "kind"
-                label: qsTr("Kind")
-            }
-            SortHeaderButton {
-                objectName: "sortHeader_modified"
-                key: "modified"
-                label: qsTr("Modified")
-            }
-        }
-
-        ListView {
-            id: listView
-            objectName: "entryListView"
+        GridView {
+            id: gridView
+            objectName: "entryGridView"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
@@ -97,6 +51,8 @@ Item {
             keyNavigationEnabled: false
             currentIndex: root.selection.currentIndex
             function selectEntry(index) { root.selection.selectOnly(index) }
+            cellWidth: 112
+            cellHeight: 104
             model: root.navigationController.entries
 
             Accessible.role: Accessible.List
@@ -110,17 +66,17 @@ Item {
                     event.accepted = true
                 } else if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
                             Qt.Key_Home, Qt.Key_End].indexOf(event.key) >= 0) {
-                    const columns = 1
+                    const columns = Math.max(1, Math.floor(gridView.width / gridView.cellWidth))
                     let target = root.selection.currentIndex
                     if (event.key === Qt.Key_Home) target = 0
-                    else if (event.key === Qt.Key_End) target = listView.count - 1
+                    else if (event.key === Qt.Key_End) target = gridView.count - 1
                     else if (event.key === Qt.Key_Up) target -= columns
                     else if (event.key === Qt.Key_Down) target += columns
                     else if (event.key === Qt.Key_Left) target -= 1
                     else target += 1
-                    target = Math.max(0, Math.min(listView.count - 1, target))
+                    target = Math.max(0, Math.min(gridView.count - 1, target))
                     root.selection.moveTo(target, event.modifiers)
-                    listView.positionViewAtIndex(target, listView.Contain)
+                    gridView.positionViewAtIndex(target, gridView.Contain)
                     event.accepted = true
                 } else if (event.key === Qt.Key_Space) {
                     if (event.modifiers & Qt.ControlModifier)
@@ -143,8 +99,9 @@ Item {
 
                 property bool entrySelected: selection.isSelected(delegateRoot.index)
 
-                width: listView.width
-                height: 36
+                width: gridView.cellWidth - Tokens.space["1"]
+                height: gridView.cellHeight - Tokens.space["1"]
+                radius: 4
                 color: delegateRoot.entrySelected ? Tokens.state.pressed
                      : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
 
@@ -152,42 +109,65 @@ Item {
                 Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                     ? qsTr(", folder") : qsTr(", file"))
                 Accessible.selected: delegateRoot.entrySelected
-                border.width: ListView.isCurrentItem ? 1 : 0
+                border.width: GridView.isCurrentItem ? 1 : 0
                 border.color: Tokens.accent.default
 
-                RowLayout {
+                ColumnLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: Tokens.space["3"]
-                    anchors.rightMargin: Tokens.space["3"]
-                    spacing: Tokens.space["2"]
+                    anchors.margins: Tokens.space["2"]
+                    spacing: Tokens.space["1"]
+
+                    Item {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+
+                        // Folder: tabbed outline. File: folded-corner page.
+                        // Symlink: accent badge dot over the base glyph.
+                        Rectangle {
+                            visible: delegateRoot.modelData.isDirectory
+                            anchors.fill: parent
+                            radius: 4
+                            color: Tokens.accent.default
+                            Rectangle {
+                                width: 18
+                                height: 7
+                                radius: 2
+                                color: parent.color
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.leftMargin: 2
+                                anchors.topMargin: -3
+                            }
+                        }
+                        Rectangle {
+                            visible: !delegateRoot.modelData.isDirectory
+                            anchors.fill: parent
+                            radius: 2
+                            color: "transparent"
+                            border.color: Tokens.fg.muted
+                            border.width: 2
+                        }
+                        Rectangle {
+                            visible: delegateRoot.modelData.isSymlink
+                            width: 12
+                            height: 12
+                            radius: 6
+                            color: Tokens.accent.default
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                        }
+                        Accessible.ignored: true
+                    }
 
                     Qinda.Label {
                         Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
                         text: delegateRoot.modelData.name
                         muted: delegateRoot.modelData.isHidden
                         elide: Text.ElideMiddle
-                        Accessible.ignored: true
-                    }
-                    Qinda.Label {
-                        Layout.preferredWidth: 130
-                        horizontalAlignment: Text.AlignRight
-                        text: delegateRoot.modelData.sizeText
-                        muted: true
-                        elide: Text.ElideRight
-                        Accessible.ignored: true
-                    }
-                    Qinda.Label {
-                        Layout.preferredWidth: 130
-                        text: delegateRoot.modelData.kindText
-                        muted: true
-                        elide: Text.ElideRight
-                        Accessible.ignored: true
-                    }
-                    Qinda.Label {
-                        Layout.preferredWidth: 130
-                        text: delegateRoot.modelData.modifiedText
-                        muted: true
-                        elide: Text.ElideRight
+                        maximumLineCount: 2
+                        wrapMode: Text.Wrap
                         Accessible.ignored: true
                     }
                 }
@@ -198,7 +178,7 @@ Item {
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: (mouse) => {
-                        listView.forceActiveFocus()
+                        gridView.forceActiveFocus()
                         if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
                             selection.focusIndex(delegateRoot.index)
                         } else if (mouse.modifiers & Qt.ControlModifier) {
@@ -227,32 +207,26 @@ Item {
 
         T.Menu {
             id: contextMenu
-            objectName: "entryContextMenu"
 
             T.MenuItem {
-                objectName: "contextRenameAction"
                 text: qsTr("Rename")
                 onTriggered: root.appCoordinator.activateAction("file.rename")
             }
             T.MenuItem {
-                objectName: "contextCopyAction"
                 text: qsTr("Copy To…")
                 onTriggered: root.appCoordinator.activateAction("file.copy")
             }
             T.MenuItem {
-                objectName: "contextMoveAction"
                 text: qsTr("Move To…")
                 onTriggered: root.appCoordinator.activateAction("file.move")
             }
             T.MenuItem {
-                objectName: "contextTrashAction"
                 text: qsTr("Move to Trash")
                 onTriggered: root.appCoordinator.activateAction("file.trash")
             }
         }
 
         Qinda.Label {
-            objectName: "truncationNotice"
             Layout.fillWidth: true
             Layout.topMargin: Tokens.space["1"]
             visible: root.navigationController.statusMessage.length > 0

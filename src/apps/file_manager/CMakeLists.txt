@@ -12,10 +12,13 @@ target_sources(
         mutation/mutation_types.cpp
         mutation/safe_path_operations.cpp
         mutation/safe_tree_operations.cpp
+        model/bookmarks_store.cpp
         model/launch_intent.cpp
+        model/listing_order.cpp
         model/local_directory_lister.cpp
         model/navigation_controller.cpp
         model/navigation_history.cpp
+        model/places_controller.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
         mutation/device_resolver.h
@@ -26,12 +29,15 @@ target_sources(
         mutation/mutation_types.h
         mutation/safe_path_operations.h
         mutation/safe_tree_operations.h
+        model/bookmarks_store.h
         model/directory_lister.h
         model/file_manager_types.h
         model/launch_intent.h
+        model/listing_order.h
         model/local_directory_lister.h
         model/navigation_controller.h
         model/navigation_history.h
+        model/places_controller.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
@@ -45,6 +51,7 @@ qindaqt_enable_warnings(qindaqt_file_manager_support)
 qt_add_executable(qindaqt-file-manager
     main.cpp
     runtime/mutation_ui_action_probe.cpp
+    runtime/selection_ui_probe.cpp
     runtime/mutation_ui_action_probe.h
     runtime/qml_component_ready.cpp
     runtime/qml_component_ready.h
@@ -57,7 +64,11 @@ qt_add_qml_module(
         ui/Main.qml
         ui/Toolbar.qml
         ui/Breadcrumb.qml
+        ui/LocationBar.qml
+        ui/PlacesSidebar.qml
+        ui/EntrySelection.qml
         ui/EntryList.qml
+        ui/EntryGrid.qml
         ui/StatePane.qml
         ui/MutationDialogs.qml
 )
