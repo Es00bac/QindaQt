@@ -11,9 +11,11 @@ Calendar changes in the shared CMake files remain untouched.
 Capture and native desktop-entry launch are integrated at `2b479c6b` after
 Kimi accepted exact candidate `df5b5a91`; the integrated source passes 4/4
 Core/workspace CTest rows, including real desktop-entry launch under an
-isolated test bus. Atomic adoption is candidate `e5492305`, with 8/8
-Hybrid/input rows and strict docs passing, pending independent review. Terra
-is repairing native Save/Reopen dialog usability after root review. Sonnet owns container roll-up,
+isolated test bus. Atomic adoption is integrated at `6bdde945` after Kimi acceptance of
+`e5492305`. The repaired native dialogs are integrated at `343600b2` after
+root rereview of `be514ce9`. Combined integrated Core/workspace/Hybrid/UI
+tests pass 9/9. Terra now owns the runtime port adapter; final KWin session
+composition and installed logout/reopen verification remain pending. Sonnet owns container roll-up,
 iconify and name/color projection; GLM owns daily desktop controls; Sol owns
 CI and Gentoo release packaging. Assignments are not completed features.
 
