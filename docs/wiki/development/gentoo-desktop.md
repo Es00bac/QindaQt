@@ -83,6 +83,10 @@ desktop:
 emerge --ask --usepkg gui-wm/qindaqt-desktop
 ```
 
+If your user session stays running in a text console or uses systemd lingering,
+reboot after the merge. Logging out of the desktop alone can leave older D-Bus
+services running, even though Portage has replaced their executables and schemas.
+
 After a fresh login, confirm the KWin plugin service, production panels, session
 services, and all three application desktop entries. Inspect
 `/var/db/pkg/gui-wm/qindaqt-desktop-*/CONTENTS` to confirm Portage owns their
