@@ -47,6 +47,17 @@ TerminalProfileDialog::TerminalProfileDialog(
   setAccessibleName(QStringLiteral("Terminal profile settings"));
   resize(720, 480);
   buildUi(themeIds);
+  if (parent) {
+    // AGENT-GUARD: Stylesheet windows do not reliably propagate all native
+    // palette roles across a modal boundary. Seed this new dialog explicitly;
+    // TerminalWindow::applyAppearance also updates it during a live refresh.
+    setPalette(parent->palette());
+    setFont(parent->font());
+    for (auto *child : findChildren<QWidget *>()) {
+      child->setPalette(parent->palette());
+      child->setFont(parent->font());
+    }
+  }
   refreshList();
   if (m_list->count() > 0) {
     m_list->setCurrentRow(0);

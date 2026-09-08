@@ -6,6 +6,7 @@
 #include "ui/terminal_widget_adapter.h"
 
 #include "qindaqt/themes/theme_loader.h"
+#include "qindaqt/design_tokens/token_deriver.h"
 
 #include <qtermwidget.h>
 #include <QCoreApplication>
@@ -52,6 +53,7 @@ class TerminalWidgetAdapterTest final : public QObject {
 
 private slots:
   void productionWindowPaintsInteractivePrompt();
+  void profilesInheritReadableWindowPalette();
   void liveShellDirectoryAndKeyboardInput();
   void ansiColorsPaintAcrossLiveThemeChanges();
   void explicitProfileSchemeSurvivesDesktopRefresh();
@@ -60,6 +62,53 @@ private slots:
   void customSchemePaintsRequestedTerminalBackground();
   void realPtyOutputSupportsBoundedSearchAndVisibleLinks();
 };
+
+void TerminalWidgetAdapterTest::profilesInheritReadableWindowPalette() {
+  using namespace QindaQt::Apps::Terminal;
+  using QindaQt::DesignTokens::DesignTokenDeriver;
+  for (const auto &name : {"qinda-dark", "qinda-light", "qinda-high-contrast"}) {
+    const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + name + ".json");
+    QVERIFY(theme.ok);
+    const auto adapted = TerminalAppearanceAdapter::fromTheme(theme.theme);
+    QVERIFY(adapted.ok());
+    const auto &appearance = *adapted.appearance;
+    // Keep the QApplication palette unchanged: a new modal must inherit the
+    // owning window even before another desktop-wide appearance notification.
+    QWidget parent;
+    parent.setPalette(appearance.windowPalette);
+    parent.setFont(appearance.interfaceFont);
+    parent.setStyleSheet(appearance.chromeStyleSheet);
+    TerminalProfileDialog dialog({}, {}, false, {}, &parent);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *list = dialog.findChild<QListWidget *>(QStringLiteral("terminalProfileList"));
+    QVERIFY(list);
+    list->clearSelection();
+    list->clearFocus();
+    QTest::qWait(20);
+    const auto image = list->viewport()->grab().toImage();
+    QVERIFY(!image.isNull());
+    const auto background = image.pixelColor(image.width()/2, image.height()-3);
+    QVERIFY2(DesignTokenDeriver::contrastRatio(list->palette().color(QPalette::Text),
+                                             background) >= 4.5, name);
+    list->setCurrentRow(0);
+    list->clearFocus();
+    QTest::qWait(20);
+    const auto selected = list->viewport()->grab().toImage();
+    const auto rectangle = list->visualItemRect(list->item(0));
+    const qreal scale = selected.devicePixelRatio();
+    const auto selectedBackground = selected.pixelColor(
+        qRound((rectangle.right()-8)*scale), qRound(rectangle.center().y()*scale));
+    QVERIFY2(DesignTokenDeriver::contrastRatio(
+        list->palette().color(QPalette::HighlightedText), selectedBackground) >= 4.5, name);
+    QCOMPARE(dialog.palette().color(QPalette::Window),
+             appearance.windowPalette.color(QPalette::Window));
+    QCOMPARE(dialog.palette().color(QPalette::WindowText),
+             appearance.windowPalette.color(QPalette::WindowText));
+    QCOMPARE(dialog.font(), appearance.interfaceFont);
+  }
+}
 
 void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
   using namespace QindaQt::Apps::Terminal;
@@ -73,6 +122,11 @@ void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
       QStringLiteral("/bin/bash"),
       {QStringLiteral("--noprofile"), QStringLiteral("--norc"), QStringLiteral("-i")},
       QStringLiteral("/tmp")};
+  // AGENT-CONTRACT: The native harness retires detached PTY descendants by
+  // their unique private runtime, so preserve that marker in this lean fixture.
+  if (qEnvironmentVariableIsSet("XDG_RUNTIME_DIR"))
+    context.baseEnvironment.append(QStringLiteral("XDG_RUNTIME_DIR=") +
+                                   qEnvironmentVariable("XDG_RUNTIME_DIR"));
   auto collection = std::make_unique<TerminalSessionCollection>(context,
       [&adapter](const TerminalProfile &profile) {
         auto result = std::make_unique<TerminalWidgetAdapter>(darkAppearance(), profile);
