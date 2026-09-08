@@ -2770,6 +2770,11 @@ Weston's required backend and kiosk-shell modules are resolved under `lib` or
 private tool installations. Missing modules, non-files, dangling links and
 symlinks escaping that prefix fail closed before the sandbox is launched.
 
+The native parent Weston and its framebuffer capture child receive explicit,
+canonical `/usr/lib` and `/usr/lib64` loader roots when using the system prefix.
+This parent-only opt-in rejects escaping symlinks, leaves staged application
+loader environments unchanged, and does not export ambient Qt plugins or QML.
+
 The sandbox starts a Weston 15 headless/pixman kiosk parent at exact
 `1920x1080@1` on `qindaqt-parent-wayland`. KWin's windowed backend connects to
 that endpoint and publishes a different `qindaqt-<run-id>` child socket for all

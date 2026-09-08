@@ -69,9 +69,9 @@ def resolved_system_input(
 
 
 def library_search_roots(
-    tools: list[Path],
+    tools: list[Path], *, include_system_libraries: bool = False,
 ) -> tuple[list[str], list[str], list[str]]:
-    """Return sandbox library/plugin/qml roots for non-/usr tool prefixes."""
+    """Return private roots, optionally explicit system loader roots for Weston."""
 
     roots = sorted({tool_root(tool) for tool in tools}, key=str)
     library_entries: list[str] = []
@@ -79,6 +79,25 @@ def library_search_roots(
     qml_entries: list[str] = []
     for root in roots:
         if str(root) == "/usr":
+            if include_system_libraries:
+                # AGENT-CONTRACT: Only the parent Weston/capture closure opts in.
+                # Do not expose ambient system Qt plugins or QML to staged apps.
+                for name in ("lib", "lib64"):
+                    candidate = root / name
+                    if not candidate.exists() and not candidate.is_symlink():
+                        continue
+                    try:
+                        resolved = candidate.resolve(strict=True)
+                    except (OSError, RuntimeError) as error:
+                        raise SandboxContractError(
+                            f"system loader root is unavailable: {candidate}"
+                        ) from error
+                    if not resolved.is_dir() or root not in resolved.parents:
+                        raise SandboxContractError(
+                            f"system loader root escapes its tool prefix: {candidate}"
+                        )
+                    if str(resolved) not in library_entries:
+                        library_entries.append(str(resolved))
             continue
         # tool_root returns the executable's installation prefix (`/usr` or a
         # private `usr`), so appending another `usr` would empty its searches.
