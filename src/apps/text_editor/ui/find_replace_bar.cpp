@@ -110,14 +110,17 @@ FindReplaceBar::FindReplaceBar(QWidget *parent) : QWidget(parent) {
   hide();
 }
 
+void FindReplaceBar::refreshIcons() {
+  for (auto *button : findChildren<QPushButton *>()) {
+    const auto name = button->property("editorIconName").toString();
+    if (!name.isEmpty()) button->setIcon(editorIcon(name, palette().color(QPalette::WindowText)));
+  }
+}
+
 void FindReplaceBar::changeEvent(QEvent *event) {
   QWidget::changeEvent(event);
-  if (event->type() == QEvent::PaletteChange) {
-    for (auto *button : findChildren<QPushButton *>()) {
-      const auto name = button->property("editorIconName").toString();
-      if (!name.isEmpty()) button->setIcon(editorIcon(name, palette().color(QPalette::WindowText)));
-    }
-  }
+  if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ThemeChange)
+    refreshIcons();
 }
 
 FindOptions FindReplaceBar::options() const {

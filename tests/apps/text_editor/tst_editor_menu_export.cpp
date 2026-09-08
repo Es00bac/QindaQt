@@ -6,11 +6,14 @@
 #include <qindaqt/applets/manifest_catalog.h>
 #include <qindaqt/compositor/shellwindowidentity.h>
 #include <qindaqt/shell/global_menu/applet/globalmenuappletaccess.h>
+#include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_wire.h>
 #include <qindaqt/shell_window_actions_client/shell_window_actions_client.h>
 #include <qindaqt/shell_window_actions_client/shell_window_actions_transport.h>
 
 #include <QDBusContext>
 #include <QDBusError>
+#include <QDBusPendingReply>
+#include <QFile>
 #include <QDBusObjectPath>
 #include <QCoreApplication>
 #include <QDir>
@@ -87,6 +90,44 @@ public Q_SLOTS:
                    QStringLiteral("hostile registrar"));
   }
 };
+
+class RecordingRegistrar final : public QObject, public QDBusContext {
+  Q_OBJECT
+  Q_CLASSINFO("D-Bus Interface", "com.canonical.AppMenu.Registrar")
+public:
+  QStringList owners;
+public Q_SLOTS:
+  Q_SCRIPTABLE void RegisterWindow(quint32, const QDBusObjectPath &) {
+    if (!owners.contains(message().service())) owners.append(message().service());
+  }
+  Q_SCRIPTABLE void UnregisterWindow(quint32) {}
+  Q_SCRIPTABLE bool IsMenuHosted(const QString &, const QDBusObjectPath &) { return false; }
+};
+
+using Shell::GlobalMenu::DbusMenu::LayoutItem;
+std::optional<LayoutItem> remoteLayout(const QDBusConnection &bus, const QString &owner) {
+  auto call = QDBusMessage::createMethodCall(owner, QStringLiteral("/org/qindaqt/AppShell/Menu"),
+      QStringLiteral("com.canonical.dbusmenu"), QStringLiteral("GetLayout"));
+  call.setArguments({qint32(0), qint32(-1), QStringList{}});
+  QDBusPendingReply<quint32, LayoutItem> reply = bus.asyncCall(call, 2000);
+  reply.waitForFinished();
+  if (!reply.isValid()) return std::nullopt;
+  return reply.argumentAt<1>();
+}
+std::optional<LayoutItem> layoutAction(const LayoutItem &root, const QString &label) {
+  if (root.properties.value(QStringLiteral("label")).toString() == label) return root;
+  for (const auto &child : root.children) {
+    const auto node = qdbus_cast<LayoutItem>(child);
+    if (auto found = layoutAction(node, label)) return found;
+  }
+  return std::nullopt;
+}
+bool clickRemote(const QDBusConnection &bus, const QString &owner, qint32 id) {
+  auto call = QDBusMessage::createMethodCall(owner, QStringLiteral("/org/qindaqt/AppShell/Menu"),
+      QStringLiteral("com.canonical.dbusmenu"), QStringLiteral("Event"));
+  call.setArguments({id, QStringLiteral("clicked"), QVariant::fromValue(QDBusVariant(0)), quint32(1)});
+  return bus.call(call, QDBus::Block, 2000).type() == QDBusMessage::ReplyMessage;
+}
 
 struct CatalogFixture final {
   Applets::ManifestCatalog catalog;
@@ -185,7 +226,7 @@ private:
   }
 
   void launchEditor(QProcess &editor, QByteArray *standardOutput,
-                    QByteArray *standardError) {
+                    QByteArray *standardError, const QStringList &paths = {}) {
     connect(&editor, &QProcess::readyReadStandardOutput, this,
             [standardOutput, &editor] {
               standardOutput->append(editor.readAllStandardOutput());
@@ -197,8 +238,8 @@ private:
     editor.setProcessEnvironment(appEnvironment());
     editor.setProcessChannelMode(QProcess::SeparateChannels);
     editor.setProgram(QStringLiteral(QINDAQT_EDITOR));
-    editor.setArguments({QStringLiteral("--theme-directory"),
-                         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")});
+    editor.setArguments(QStringList{QStringLiteral("--theme-directory"),
+                         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")} + paths);
     editor.start();
     QVERIFY2(editor.waitForStarted(5'000), qPrintable(editor.errorString()));
     QVERIFY(editor.processId() > 0);
@@ -220,7 +261,68 @@ private Q_SLOTS:
   void shellFencesRealEditorIdentity();
   void staysFailClosedUntilRegistrarArrives();
   void failsClosedUnderHostileRegistrar();
+  void eachDocumentOwnsItsMenuConnection();
 };
+
+void EditorMenuExportTest::eachDocumentOwnsItsMenuConnection() {
+  setIsolationRoot(QStringLiteral("multiple-windows"));
+  QVERIFY(QDir().mkpath(m_isolationRoot));
+  QStringList paths;
+  for (const QString &name : {QStringLiteral("first.txt"), QStringLiteral("second.txt")}) {
+    paths.append(m_isolationRoot + QLatin1Char('/') + name);
+    QFile file(paths.last()); QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write("document"), qint64(8));
+  }
+  Shell::GlobalMenu::DbusMenu::registerDbusMenuWireTypes();
+  auto bus = QDBusConnection::connectToBus(QDBusConnection::SessionBus,
+      QStringLiteral("editor-multiple-window-observer"));
+  QVERIFY(bus.isConnected());
+  RecordingRegistrar registrar;
+  QVERIFY(bus.registerObject(QStringLiteral("/com/canonical/AppMenu/Registrar"), &registrar,
+                              QDBusConnection::ExportScriptableSlots));
+  QVERIFY(bus.registerService(QStringLiteral("com.canonical.AppMenu.Registrar")));
+  QProcess editor;
+  auto cleanup = qScopeGuard([&] {
+    if (editor.state() != QProcess::NotRunning) {
+      editor.terminate();
+      if (!editor.waitForFinished(2000)) { editor.kill(); (void)editor.waitForFinished(2000); }
+    }
+    bus.unregisterService(QStringLiteral("com.canonical.AppMenu.Registrar"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("editor-multiple-window-observer"));
+  });
+  QByteArray out, err;
+  launchEditor(editor, &out, &err, paths);
+  QTRY_COMPARE_WITH_TIMEOUT(registrar.owners.size(), 2, 5000);
+  const auto one = registrar.owners.at(0), two = registrar.owners.at(1);
+  QVERIFY(one != two);
+  // The offscreen fixed-ID publisher has no compositor identity. Assert actual
+  // production endpoint independence through each registrar-announced owner.
+  const auto first = remoteLayout(bus, one), second = remoteLayout(bus, two);
+  QVERIFY(first); QVERIFY(second);
+  auto firstWrap = layoutAction(*first, QStringLiteral("Word Wrap"));
+  auto secondWrap = layoutAction(*second, QStringLiteral("Word Wrap"));
+  QVERIFY(firstWrap); QVERIFY(secondWrap);
+  QVERIFY(clickRemote(bus, one, firstWrap->id));
+  auto updatedOne = remoteLayout(bus, one), updatedTwo = remoteLayout(bus, two);
+  QVERIFY(updatedOne); QVERIFY(updatedTwo);
+  QCOMPARE(layoutAction(*updatedOne, QStringLiteral("Word Wrap"))->properties.value("toggle-state").toInt(), 0);
+  QCOMPARE(layoutAction(*updatedTwo, QStringLiteral("Word Wrap"))->properties.value("toggle-state").toInt(), 1);
+  const auto secondQuit = layoutAction(*updatedTwo, QStringLiteral("Quit"));
+  QVERIFY(secondQuit); QVERIFY(clickRemote(bus, two, secondQuit->id));
+  QTRY_VERIFY_WITH_TIMEOUT(!remoteLayout(bus, two), 5000);
+  QVERIFY(editor.state() != QProcess::NotRunning);
+  updatedOne = remoteLayout(bus, one); QVERIFY(updatedOne);
+  firstWrap = layoutAction(*updatedOne, QStringLiteral("Word Wrap"));
+  QVERIFY(firstWrap); QVERIFY(clickRemote(bus, one, firstWrap->id));
+  updatedOne = remoteLayout(bus, one); QVERIFY(updatedOne);
+  QCOMPARE(layoutAction(*updatedOne, QStringLiteral("Word Wrap"))->properties.value("toggle-state").toInt(), 1);
+  const auto firstQuit = layoutAction(*updatedOne, QStringLiteral("Quit"));
+  QVERIFY(firstQuit); QVERIFY(clickRemote(bus, one, firstQuit->id));
+  QTRY_COMPARE_WITH_TIMEOUT(editor.state(), QProcess::NotRunning, 5000);
+  QCOMPARE(editor.exitCode(), 0);
+  err.append(editor.readAllStandardError());
+  QVERIFY2(unexpectedStderr(err).isEmpty(), qPrintable(unexpectedStderr(err)));
+}
 
 void EditorMenuExportTest::shellFencesRealEditorIdentity_data() {
   QTest::addColumn<int>("identityVariant");

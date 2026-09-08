@@ -19,6 +19,7 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
+#include <QIcon>
 #include <QMenuBar>
 #include <QRegularExpression>
 #include <QStandardPaths>
@@ -30,6 +31,30 @@
 #include <qindaqt/app_shell/menu_export/first_party_composition.h>
 
 namespace {
+
+// AppShell's fixed menu object path is per bus connection. Each ordinary
+// document window therefore owns a distinct connection, retired only after
+// its exporter has withdrawn its endpoint and identity.
+class WindowMenuExport final : public QObject {
+public:
+  WindowMenuExport(QindaQt::Apps::TextEditor::EditorWindow &window, quint64 sequence)
+      : m_connectionName(QStringLiteral("qindaqt-editor-menu-%1-%2")
+            .arg(QCoreApplication::applicationPid()).arg(sequence)) {
+    auto bus = QDBusConnection::connectToBus(QDBusConnection::SessionBus, m_connectionName);
+    if (QWindow *handle = window.windowHandle()) {
+      m_export = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
+          window.appShellCoordinator(), *handle, bus,
+          [&window](bool visible) { window.menuBar()->setVisible(visible); });
+    }
+  }
+  ~WindowMenuExport() override {
+    m_export.reset();
+    QDBusConnection::disconnectFromBus(m_connectionName);
+  }
+private:
+  QString m_connectionName;
+  std::unique_ptr<QObject> m_export;
+};
 
 QStringList themeSearchDirectories(const QString &explicitDirectory) {
   QStringList directories;
@@ -141,6 +166,7 @@ int main(int argc, char **argv) {
                  qPrintable(appearance.diagnostic));
     return 3;
   }
+  QIcon::setThemeName(theme.theme.iconTheme);
   application.setPalette(appearance.appearance->palette);
   application.setFont(appearance.appearance->interfaceFont);
   if (parser.isSet(QStringLiteral("check-theme"))) {
@@ -210,6 +236,7 @@ int main(int argc, char **argv) {
                                            appearanceController.accessibilityInputs());
     if (!adapted.ok())
       return;
+    QIcon::setThemeName(appearanceController.theme().iconTheme);
     application.setPalette(adapted.appearance->palette);
     application.setFont(adapted.appearance->interfaceFont);
     editor.applyAppearance(*adapted.appearance);
@@ -239,17 +266,10 @@ int main(int argc, char **argv) {
               });
         }
       });
+  quint64 menuWindowSequence = 0;
   QObject::connect(&editor, &EditorApplication::windowShown, &editor,
-      [](EditorWindow *window) {
-        // AGENT-CONTRACT: Every document is an independent menu owner. Bind
-        // export lifetime to that window, before its coordinator teardown.
-        if (QWindow *handle = window->windowHandle()) {
-          auto menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
-              window->appShellCoordinator(), *handle,
-              QDBusConnection::sessionBus(),
-              [window](bool visible) { window->menuBar()->setVisible(visible); });
-          window->setMenuExport(std::move(menuExport));
-        }
+      [&menuWindowSequence](EditorWindow *window) {
+        window->setMenuExport(std::make_unique<WindowMenuExport>(*window, ++menuWindowSequence));
       });
   QString diagnostic;
   if (!editor.start(paths, &diagnostic)) {

@@ -317,3 +317,12 @@ target_compile_definitions(qindaqt_editor_visual_tests PRIVATE
 set_tests_properties(qindaqt.editor-visual-offscreen PROPERTIES
     LABELS "editor;visual"
     ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
+
+add_test(NAME qindaqt.editor-global-menu-multiple-windows-private-bus
+    COMMAND "${QINDAQT_EDITOR_MENU_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_editor_menu_export_tests>
+            eachDocumentOwnsItsMenuConnection)
+set_tests_properties(qindaqt.editor-global-menu-multiple-windows-private-bus PROPERTIES
+    TIMEOUT 60 LABELS "editor;global-menu;runtime;private-bus;offscreen"
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")

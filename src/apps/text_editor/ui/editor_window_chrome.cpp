@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "editor_icon.h"
 #include "editor_window.h"
+#include "find_replace_bar.h"
 #include "qindaqt/controls/application_icon.h"
 
 #include <QAction>
@@ -45,6 +46,9 @@ void EditorWindow::createToolbar() {
 }
 
 void EditorWindow::applyChrome() {
+  m_findBar->refreshIcons();
+  setWindowIcon(QindaQt::Controls::applicationIcon(
+      QStringLiteral("org.qindaqt.TextEditor")));
   for (auto *action : findChildren<QAction *>()) {
     const auto name = action->property("editorIconName").toString();
     if (!name.isEmpty())
