@@ -39,8 +39,16 @@ Reopen remains available and Save explains that a container must be selected.
 
 The controller supplies `$XDG_DATA_HOME/qindaqt/workspaces` (normally
 `~/.local/share/qindaqt/workspaces`) as the storage root. This location does not
-change with KWin's executable or application name. The controller follows the
-native desktop palette and presents asynchronous launch failures in the library.
+change with KWin's executable or application name. It opens the library
+asynchronously as an application-modal native dialog, so the shortcut transfers
+keyboard input from the active managed client without entering a nested event
+loop. The controller records visible modal KWin-owned Qt dialogs in show order
+and forwards key pairs only to the latest visible dialog's focused widget;
+KWin's popup filter retains first claim, and held-key releases remain swallowed
+after a dialog closes. This covers the library, Save/Reopen children, and the
+native group-name prompt without leaking text to a managed client. The
+controller follows the native desktop palette and presents asynchronous launch
+failures in the library.
 A presentation warning after successful adoption says the workspace was restored;
 it does not invite retrying an already committed layout.
 

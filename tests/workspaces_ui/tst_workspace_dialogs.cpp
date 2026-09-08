@@ -196,8 +196,14 @@ private slots:
                                QStringLiteral("Desktop launch failed"));
     QCOMPARE(reopen->findChild<QLabel *>(QStringLiteral("assignmentStatus"))->text(),
              QStringLiteral("Desktop launch failed"));
-    notes->setCurrentIndex(notes->findData(QStringLiteral("terminal-two")));
+    notes->setCurrentIndex(notes->findData(QStringLiteral("terminal-one")));
     auto *restore = reopen->findChild<QPushButton *>(QStringLiteral("restoreWorkspace"));
+    QVERIFY(restore);
+    // A transient duplicate must stay visible so a keyboard user can advance
+    // to another choice; only Restore is disabled until it becomes distinct.
+    QCOMPARE(notes->currentData().toString(), QStringLiteral("terminal-one"));
+    QVERIFY(!restore->isEnabled());
+    notes->setCurrentIndex(notes->findData(QStringLiteral("terminal-two")));
     QVERIFY(restore);
     QVERIFY(restore->isEnabled());
     QTest::mouseClick(restore, Qt::LeftButton);
