@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+qt_add_executable(qindaqt_system_monitor_ui_tests tst_metric_chart.cpp)
+target_link_libraries(qindaqt_system_monitor_ui_tests PRIVATE qindaqt_system_monitor_ui QindaQt::SystemMonitorHardware Qt6::Test)
+target_compile_features(qindaqt_system_monitor_ui_tests PRIVATE cxx_std_20)
+set_target_properties(qindaqt_system_monitor_ui_tests PROPERTIES CXX_EXTENSIONS OFF)
+qindaqt_enable_warnings(qindaqt_system_monitor_ui_tests)
+add_test(NAME qindaqt.system-monitor-ui COMMAND qindaqt_system_monitor_ui_tests)
+set_tests_properties(qindaqt.system-monitor-ui PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
