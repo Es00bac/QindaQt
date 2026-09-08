@@ -7,11 +7,8 @@ each name genuinely means "settings for <subsystem>" -- the badge is a real
 semantic device, not an index-derived decoration. See
 tools/qinda_icon_shapes.py for the transparency rule these fragments follow.
 
-AGENT-GUARD: first-party identity here is a BLUE body with at most one AMBER
-accent (see the palette contract in tools/qinda_icon_shapes.py). Marks
-painted *on top of* a BLUE body stay PORCELAIN or INK: AMBER and BLUE have
-nearly equal luminance, so an amber mark on a blue body survives only by hue.
-AMBER is placed where it meets the surface (tails, ticks, prompts, pens).
+AGENT-GUARD: First-party material icons use plum, pearl and apricot. Keep
+small on-body marks readable by luminance and preserve real symbolic cutouts.
 """
 from qinda_icon_shapes import (
     AMBER, APRICOT, BELL_CLAPPER_D, BELL_D, BLUE, BLUETOOTH_D, FOLDER_D,
@@ -143,6 +140,40 @@ CANON = {
         + stroke("M36 42h10", color=AMBER, width=5),
     ),
 }
+
+# Three app identities share a material vocabulary, not a generic app tile.
+# Gradients are confined to color artwork; symbolic masks remain precise glyphs.
+_material = (f'<defs><linearGradient id="glass" x2="0" y2="1">'
+             f'<stop stop-color="{BLUE}"/><stop offset="1" stop-color="{INK}"/>'
+             f'</linearGradient><linearGradient id="paper" x2="0" y2="1">'
+             f'<stop stop-color="{PORCELAIN}"/><stop offset="1" stop-color="{VIOLET}"/>'
+             f'</linearGradient></defs>')
+CANON["system-file-manager"] = Icon(
+    GROUP, stroke("M8 22V14q0-5 5-5h12l7 7h18q6 0 6 6v26q0 7-7 7H15q-7 0-7-7z", width=4)
+    + stroke("M9 25h46M24 43h16", width=4),
+    _material + filled("M8 23V14q0-5 5-5h12l7 7h18q6 0 6 6v25H8z", fill=AMBER)
+    + rect(12, 20, 40, 29, rx=5, fill=PORCELAIN)
+    + filled("M7 27q0-5 6-5h38q6 0 6 5v21q0 8-8 8H15q-8 0-8-8z", fill="url(#glass)")
+    + stroke("M12 27h40", color=PORCELAIN, width=2)
+    + stroke("M25 44h14", color=PORCELAIN, width=4))
+CANON["accessories-text-editor"] = Icon(
+    GROUP, stroke("M15 8h23l11 11v32q0 5-5 5H15q-5 0-5-5V13q0-5 5-5zM38 8v13h11", width=4)
+    + stroke("M19 28h17M19 36h12M38 49l13-19 6 5-13 19-8 3z", width=3),
+    _material + rect(13, 12, 38, 46, rx=7, fill=BLUE)
+    + filled("M15 6h23l11 11v32q0 5-5 5H15q-5 0-5-5V11q0-5 5-5z", fill="url(#paper)")
+    + filled("M38 6v12h11z", fill=BLUE)
+    + strokes("M19 27h17", "M19 35h13", "M19 43h9", color=INK, width=3)
+    + filled("M37 48l14-20 7 5-14 20-9 4z", fill=AMBER)
+    + stroke("M38 49l5 4", color=INK, width=2))
+CANON["utilities-terminal"] = Icon(
+    GROUP, rect(7, 10, 50, 45, rx=10, width=4)
+    + stroke("M8 21h48M19 30l8 7-8 7M35 44h10", width=4),
+    _material + rect(7, 10, 50, 45, rx=10, fill="url(#glass)")
+    + rect(10, 13, 44, 39, rx=8, stroke_color=BLUE, width=1.5)
+    + stroke("M12 20h40", color=PORCELAIN, width=1.5)
+    + dot(15,16,1.2,PORCELAIN) + dot(20,16,1.2,PORCELAIN)
+    + stroke("M19 29l8 7-8 7", color=PORCELAIN, width=4)
+    + stroke("M35 43h10", color=AMBER, width=4))
 
 ALIASES = {
     "application-launcher": ("start-here-kde", None),
