@@ -24,6 +24,8 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     session/terminal_session_backend.cpp
     session/terminal_session_collection.cpp
     search/terminal_search.cpp
+    ui/terminal_ansi_palette.cpp
+    ui/terminal_chrome.cpp
     ui/terminal_appearance.cpp
     ui/terminal_profile_apply_status.cpp
     ui/terminal_profile_dialog.cpp
@@ -50,6 +52,8 @@ set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     session/terminal_session_collection.h
     session/terminal_session_types.h
     search/terminal_search.h
+    ui/terminal_ansi_palette.h
+    ui/terminal_chrome.h
     ui/terminal_appearance.h
     ui/terminal_profile_apply_status.h
     ui/terminal_profile_dialog.h
@@ -78,7 +82,7 @@ target_link_libraries(
 )
 target_link_libraries(
     qindaqt_terminal_support
-    PRIVATE qindaqt_settings_client
+    PRIVATE qindaqt_settings_client QindaQt::ControlsQml
 )
 target_compile_features(qindaqt_terminal_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_terminal_support PROPERTIES CXX_EXTENSIONS OFF)
@@ -148,7 +152,7 @@ set_target_properties(
     qindaqt-terminal
     PROPERTIES
         CXX_EXTENSIONS OFF
-        INSTALL_RPATH "$ORIGIN/${qindaqt_terminal_qml_relative_path}/QindaQt/AppShell"
+        INSTALL_RPATH "$ORIGIN/${qindaqt_terminal_qml_relative_path}/QindaQt/AppShell;$ORIGIN/${qindaqt_terminal_qml_relative_path}/QindaQt/Controls"
 )
 qindaqt_enable_warnings(qindaqt-terminal)
 

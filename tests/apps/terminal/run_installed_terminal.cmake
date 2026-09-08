@@ -41,9 +41,13 @@ if(NOT IS_ABSOLUTE "${QTERMWIDGET_LIBRARY}" OR
     message(FATAL_ERROR
         "qtermwidget dependency is not an exact existing file: ${QTERMWIDGET_LIBRARY}")
 endif()
-get_filename_component(
-    qtermwidget_library_directory "${QTERMWIDGET_LIBRARY}" DIRECTORY
-)
+# The external library may share /usr/lib64 with a previously installed QindaQt.
+# Copy only the exact audited dependency into the stage; adding its whole host
+# directory to LD_LIBRARY_PATH would silently override staged application libs.
+set(qtermwidget_library_directory "${STAGE_PREFIX}/audited-dependencies")
+file(MAKE_DIRECTORY "${qtermwidget_library_directory}")
+file(COPY_FILE "${QTERMWIDGET_LIBRARY}"
+     "${qtermwidget_library_directory}/libqtermwidget6.so.2")
 
 set(ENV{QT_QPA_PLATFORM} "offscreen")
 # Strip ambient theme roots so only the staged prefix can satisfy resolution.

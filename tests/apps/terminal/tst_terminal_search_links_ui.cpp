@@ -8,7 +8,7 @@
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QAction>
-#include <QCheckBox>
+#include <QToolButton>
 #include <QClipboard>
 #include <QLabel>
 #include <QLineEdit>
@@ -213,9 +213,9 @@ void TerminalSearchLinksUiTest::findBarHasKeyboardParityStatusAndFocusReturn() {
   auto *status =
       window->findChild<QLabel *>(QStringLiteral("terminalFindStatus"));
   auto *regex =
-      window->findChild<QCheckBox *>(QStringLiteral("terminalFindRegex"));
+      window->findChild<QToolButton *>(QStringLiteral("terminalFindRegex"));
   auto *matchCase =
-      window->findChild<QCheckBox *>(QStringLiteral("terminalFindCase"));
+      window->findChild<QToolButton *>(QStringLiteral("terminalFindCase"));
   QVERIFY(editor && status && regex && matchCase);
   QCOMPARE(editor->focusPolicy(), Qt::StrongFocus);
   QTest::keyClicks(editor, QStringLiteral("needle"));

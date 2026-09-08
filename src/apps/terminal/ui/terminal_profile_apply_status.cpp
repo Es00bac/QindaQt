@@ -27,7 +27,7 @@ QString keyLabel(const QString &key) {
     return QStringLiteral("Default profile");
   }
   if (key == TerminalKeys::RestoreTabs) {
-    return QStringLiteral("Restore tabs");
+    return QStringLiteral("Compatibility preference");
   }
   return {};
 }

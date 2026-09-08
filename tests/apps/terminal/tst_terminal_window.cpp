@@ -51,6 +51,8 @@ public:
   int pasteSelectionCalls = 0;
   int selectAllCalls = 0;
   int clearCalls = 0;
+  TerminalViewAppearance appearance;
+  void setAppearance(const TerminalViewAppearance &value) override { appearance = value; }
 
   StartOutcome start(const TerminalLaunchRequest &) override {
     return {.ok = true, .diagnostic = {}};
@@ -152,6 +154,7 @@ private slots:
     qRegisterMetaType<TerminalExitStatus>("TerminalExitStatus");
   }
   void windowEmbedsOnlyPublishedWidgets();
+  void startupAndRestartUseRetainedAppearance();
   void actionsCarryStableIdentityAndShiftModifiedShortcuts();
   void noWindowShortcutUsesPlainReadlineControlSequences();
   void clipboardAndSelectionActionsRouteThroughSession();
@@ -164,6 +167,22 @@ private slots:
   void restartThenCloseSpawnsNothingBeforeQuit();
   void exitedStateDisablesPasteAndKeepsScrollbackOps();
 };
+
+void TerminalWindowTest::startupAndRestartUseRetainedAppearance() {
+  WindowHarness harness;
+  auto window = harness.makeWindow(false);
+  auto appearance = testAppearance();
+  appearance.terminalBackground = QColor("#291825");
+  appearance.terminalFont.setPointSizeF(17);
+  window->applyAppearance(appearance);
+  window->newSessionWithDefaultProfile();
+  QCOMPARE(harness.stub->appearance.terminalBackground, appearance.terminalBackground);
+  QCOMPARE(harness.stub->appearance.terminalFont.pointSizeF(), 17.0);
+  QVERIFY(window->session()->restart());
+  QTRY_COMPARE(harness.createdBackends, 2);
+  QCOMPARE(harness.stub->appearance.terminalBackground, appearance.terminalBackground);
+  QCOMPARE(harness.stub->appearance.terminalFont.pointSizeF(), 17.0);
+}
 
 void TerminalWindowTest::windowEmbedsOnlyPublishedWidgets() {
   WindowHarness harness;

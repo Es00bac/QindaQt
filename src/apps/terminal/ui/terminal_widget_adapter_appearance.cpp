@@ -15,6 +15,20 @@
 
 namespace QindaQt::Apps::Terminal {
 
+void TerminalWidgetAdapter::setAppearance(const TerminalViewAppearance &appearance) {
+  m_appearance = appearance;
+  // AGENT-GUARD: A saved profile's explicit scheme survives desktop refreshes.
+  // High contrast temporarily takes precedence; retain the original palette so
+  // disabling it restores the user's choice without restarting their shell.
+  if (m_profile.id != builtinDefaultProfileId() && !appearance.highContrast) {
+    m_appearance.terminalBackground = m_profileAppearance.terminalBackground;
+    m_appearance.terminalForeground = m_profileAppearance.terminalForeground;
+    for (int index = 0; index < 16; ++index)
+      m_appearance.ansi[index] = m_profileAppearance.ansi[index];
+  }
+  applyAppearance();
+}
+
 void TerminalWidgetAdapter::applyAppearance() {
   if (m_widget == nullptr) {
     return;
@@ -44,8 +58,11 @@ void TerminalWidgetAdapter::applyAppearance() {
           QFile::remove(targetPath);
         }
         if (QFile::rename(temporaryPath, targetPath)) {
+          const QString previousPath = m_schemePath;
           m_schemePath = targetPath;
           m_widget->setColorScheme(m_schemePath);
+          if (!previousPath.isEmpty())
+            QFile::remove(previousPath);
         }
       }
     }
@@ -63,7 +80,7 @@ void TerminalWidgetAdapter::applyFont() {
     terminalFont.setFamily(m_profile.fontFamily);
   }
   if (m_profile.fontSize > 0) {
-    terminalFont.setPointSize(m_profile.fontSize);
+    terminalFont.setPointSizeF(m_profile.fontSize * m_appearance.textScale);
   }
   terminalFont.setPointSizeF(std::clamp(terminalFont.pointSizeF() + m_zoomSteps, 6.0, 48.0));
   m_widget->setTerminalFont(terminalFont);

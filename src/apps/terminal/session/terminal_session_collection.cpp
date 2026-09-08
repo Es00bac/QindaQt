@@ -108,7 +108,7 @@ TerminalSessionCollection::addSession(const TerminalProfile &profile,
                                       const TerminalSession *inheritDirectoryFrom) {
   if (m_sessions.size() >= kMaxSessions) {
     const QString diagnostic =
-        QStringLiteral("Session limit reached (%1 tabs)").arg(kMaxSessions);
+        QStringLiteral("Session limit reached (%1 shells)").arg(kMaxSessions);
     emit sessionAddRejected(diagnostic);
     return {.session = nullptr, .diagnostic = diagnostic};
   }
@@ -136,7 +136,7 @@ TerminalSessionCollection::addSession(const TerminalProfile &profile,
   m_sessions.append(session);
   emit sessionAdded(session);
   // A typed start failure (PTY/channel/theme) still adds the session: the
-  // diagnostic is its exit status, visible in the tab, and Restart applies.
+  // diagnostic is its exit status, visible in the window, and Restart applies.
   static_cast<void>(session->start(resolution.request, profile));
   return {.session = session, .diagnostic = {}};
 }
@@ -146,7 +146,7 @@ void TerminalSessionCollection::requestCloseSession(TerminalSession *session) {
     return;
   }
   if (m_sessions.size() == 1) {
-    // One quit path: the last tab close is the window close.
+    // One quit path: the last shell close is the window close.
     requestCloseAll();
     return;
   }

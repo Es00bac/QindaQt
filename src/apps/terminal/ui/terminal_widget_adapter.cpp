@@ -153,6 +153,7 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
     const TerminalViewAppearance &appearance, const TerminalProfile &profile,
     QObject *parent)
     : TerminalSessionBackend(parent), m_appearance(appearance),
+      m_profileAppearance(appearance),
       m_profile(profile) {
   // AGENT-NOTE: startnow is deliberately 0 and setShellProgram/setArgs are
   // never used: the widget must not spawn its own child (ADR-0040). Teletype
