@@ -27,7 +27,7 @@ struct TerminalViewAppearance final {
   QColor terminalBackground;
   QColor terminalForeground;
   // ANSI is a terminal protocol palette, independently contrast-fitted to
-  // the opaque QST content surface (ADR-0101).
+  // the opaque QST content surface (ADR-0112).
   QColor ansi[16];
   QString sourceThemeId;
   QString chromeStyleSheet;

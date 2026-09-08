@@ -58,8 +58,8 @@ endforeach()
 string(REPLACE "|" ";" expected_qml_paths "${QINDAQT_EXPECTED_QML_DEPLOY_PATHS}")
 list(SORT expected_qml_paths)
 list(LENGTH expected_qml_paths expected_qml_count)
-if(NOT expected_qml_count EQUAL 15)
-    message(FATAL_ERROR "Expected exactly 15 generated Controls QML paths, got ${expected_qml_count}")
+if(NOT expected_qml_count EQUAL 16)
+    message(FATAL_ERROR "Expected exactly 16 generated Controls QML paths, got ${expected_qml_count}")
 endif()
 
 file(GLOB_RECURSE installed_qml_paths

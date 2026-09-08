@@ -25,6 +25,30 @@ the exact `QINDAQT_ALLOW_HOST_UINPUT` acknowledgement shown below. Use only a
 dedicated virtual seat or disposable machine. Ordinary local and CI test runs
 must leave the option off.
 
+## First-party material verification
+
+The `qindaqt.apps-native-material-matrix` row renders the real File Manager,
+Editor and Terminal fixtures on a private KWin virtual Wayland display. It
+observes the compositor's output mode and scale before accepting 1920×1080
+at 100% and 150%, 1920×1200 at 100%, and 2560×1440 at 125%. Each row captures
+light, dark, high-contrast and compact application views; Terminal also
+captures search and profile controls. Editor syntax is checked against both
+its canvas and current-line surface. Capture files are fresh for each row.
+
+The runner clears inherited scale overrides and uses disposable XDG state,
+a private D-Bus activation directory, and bounded process cleanup that covers
+PTY descendants. Artifacts live under the ignored build tree at
+`tests/session/app-material-native/`. This proves native client rendering and
+fixture input; the separate desktop interactive matrix proves container and
+profile behavior. It does not claim physical input or complete assistive
+technology qualification.
+
+Compile with `cmake --build build/dev --parallel 24`. For TTY verification,
+set `QT_QPA_PLATFORM=offscreen` for the broad suite; native runners select their
+own Wayland platform. Use a short, private `TMPDIR` on a filesystem with free
+space: Unix display and bus socket paths must fit within 108 bytes. Do not
+clear another session's temporary files to make room for tests.
+
 ## Backend roles
 
 | Backend | Use |

@@ -39,7 +39,7 @@ std::array<QColor, 16> terminalAnsiPalette(const QColor &background,
   const double contrast = highContrast ? 7.0 : 4.5;
   // AGENT-CONTRACT: ANSI indices are protocol hues, not status semantics.
   // Red, green, ochre/yellow, blue, orchid/magenta and cyan remain recognizable
-  // across theme changes. See ADR-0101; explicit 24-bit output is untouched.
+  // across theme changes. See ADR-0112; explicit 24-bit output is untouched.
   constexpr int hues[] = {0, 4, 142, 43, 220, 304, 184, 0};
   for (int index = 0; index < 8; ++index) {
     const bool neutral = index == 0 || index == 7;

@@ -191,4 +191,4 @@ its accessible name; decorative icons are ignored by accessibility.
 adds local translucent highlights over its opaque background. High contrast
 and reduced transparency remove those highlights. It does not request backdrop
 capture or compositor blur. See [Icon theme](icon-theme.md) and
-[ADR-0098](../adr/0098-use-pearl-and-smoked-plum-app-materials.md).
+[ADR-0109](../adr/0109-use-pearl-and-smoked-plum-app-materials.md).

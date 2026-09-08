@@ -233,3 +233,8 @@ set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png
 qt_add_resources(qindaqt_file_manager_visual_probe file_manager_probe_artwork
     PREFIX /qindaqt/file-manager
     FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
+
+# QTEST_MAIN instantiates QGuiApplication through the public AppShell/Controls
+# dependency; even a pure action-catalog test needs a display-less backend.
+set_tests_properties(qindaqt.file-manager-action-catalog PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")

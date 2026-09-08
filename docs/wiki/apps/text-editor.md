@@ -8,7 +8,7 @@ Widgets presentation have separate owners under `src/apps/text_editor`.
 [ADR-0022](../adr/0022-keep-text-documents-local-and-atomic.md) owns the
 per-document persistence guarantees. The paths-only restore decision in
 [ADR-0065](../adr/0065-persist-text-editor-path-inventory.md) remains compatible;
-[ADR-0099](../adr/0099-own-editor-documents-in-ordinary-windows.md) supersedes its
+[ADR-0110](../adr/0110-own-editor-documents-in-ordinary-windows.md) supersedes its
 single-window hosting choice. Each window
 participates in [QindaQt.AppShell 1.0](application-shell.md) as established by
 [ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md).

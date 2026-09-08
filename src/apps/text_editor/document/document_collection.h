@@ -23,7 +23,7 @@ struct AddDocumentResult final {
 };
 
 // Nonvisual bounded document collection retained for document-policy consumers.
-// Production EditorApplication owns ordinary windows instead (ADR-0099). This
+// Production EditorApplication owns ordinary windows instead (ADR-0110). This
 // helper owns its controllers, while each controller owns its store/watcher.
 // The GUI-thread factory must return a fresh non-null store for every document.
 class DocumentCollection final : public QObject {

@@ -4,7 +4,7 @@
 - **Date:** 2026-09-03
 - **Owners:** First-party applications / Text Editor
 - **Supersedes:** The single-document hosting consequence of ADR-0022 only
-- **Superseded by:** [ADR-0099](0099-own-editor-documents-in-ordinary-windows.md)
+- **Superseded by:** [ADR-0110](0110-own-editor-documents-in-ordinary-windows.md)
   for single-window collection hosting only; the paths-only format and safeguards remain accepted.
 
 ## Context

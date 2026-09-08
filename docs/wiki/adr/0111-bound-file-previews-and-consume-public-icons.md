@@ -1,4 +1,4 @@
-# ADR-0100: Bound local image previews and consume public application icons
+# ADR-0111: Bound local image previews and consume public application icons
 
 - Status: Accepted
 - Date: 2026-09-08
