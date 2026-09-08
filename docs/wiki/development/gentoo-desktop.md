@@ -5,29 +5,44 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260908`, pinned to Git
-commit `c1952e90a84005aa3ce3aee07cea1b6d89b6a35c`. Regenerate the package
+The current dated package checkpoint is `0.1.0_pre20260908-r1`, pinned to Git
+commit `44d83ff53399d42df7ad30338515b72cf04acc67`. Regenerate the package
 Manifest whenever this immutable pin changes. This September 8 checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. Its ebuild
 uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
 in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=c1952e90a84005aa3ce3aee07cea1b6d89b6a35c
+qq_source_commit=44d83ff53399d42df7ad30338515b72cf04acc67
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260908.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260908-r1.tar.gz
 ```
 
 Portage verifies the maintained Manifest before unpacking. The ebuild installs
 the complete image through Portage; do not copy executables into the installed
 runtime by hand.
 
-The September 8 redesign is installed as this package. The user explicitly
-requested the merge while existing sessions remained running. Portage verified
-and installed the signed binary; all 1,067 payload files match its image and
-package ownership. Installed File Manager UI actions and native Editor/Terminal
-startup and PTY checks pass. Already running applications use their loaded
-version until restarted; this installation does not claim a fresh desktop login.
+The September 8 revision is installed as this package. It includes the reviewed
+File Manager browsing improvements, exported tray menus and additive native Qt
+appearance adapter; existing application skins remain intact. Portage's signed
+binary verification and binary-only merge passed. All 1,070 installed payload
+files match the signed package and its ownership record. The installed Qt
+platform plugin passed five private-bus tests covering live Widgets/Quick
+appearance changes, invalid input and owner replacement.
+
+The user explicitly requested installation while the desktop and terminal
+remained running. The session, shell, compositor and seven captured terminal
+processes retained their original process identities and start times. No
+application or service was restarted. Already running applications continue
+using their loaded code until the user's later restart; this installation does
+not claim a fresh desktop login. The previous signed September 8 package and
+source archive remain available for rollback with the unchanged KWin ABI.
+
+The build used the site's existing signing key and recorded noninteractive
+signing command without changing trust policy. Compilation resumed with 24 jobs
+and no load cap after preserving completed objects. Existing Portage QA notices
+for `/usr/Tokens` and `/usr/bin/agent_input` also occur in the previous installed
+package; their placement remains a separate packaging cleanup.
 
 The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
 runtime closure follows the production process contracts:
@@ -69,7 +84,7 @@ Copy `packaging/gentoo/gui-wm/qindaqt-desktop/` into a configured local overlay,
 regenerate the Manifest, run the repository's package QA, and inspect the plan:
 
 ```sh
-ebuild /path/to/qindaqt-desktop-0.1.0_pre20260908.ebuild manifest
+ebuild /path/to/qindaqt-desktop-0.1.0_pre20260908-r1.ebuild manifest
 pkgcheck scan --repo your-overlay gui-wm/qindaqt-desktop
 emerge --pretend --verbose gui-wm/qindaqt-desktop
 ```
