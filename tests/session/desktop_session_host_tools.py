@@ -98,18 +98,37 @@ def library_search_roots(
     return library_entries, plugin_entries, qml_entries
 
 
+def _weston_module(root: Path, relative: str) -> Path:
+    # AGENT-GUARD: Gentoo uses lib64; private tool prefixes may use lib. Keep
+    # each module inside the authenticated prefix and reject poisoned candidates
+    # rather than silently falling through to another library directory.
+    for library in ("lib", "lib64"):
+        candidate = root / library / relative
+        if not candidate.exists() and not candidate.is_symlink():
+            continue
+        try:
+            resolved = candidate.resolve(strict=True)
+        except (OSError, RuntimeError) as error:
+            raise SandboxContractError(
+                f"Weston module is unavailable: {candidate}"
+            ) from error
+        if not resolved.is_file() or root not in resolved.parents:
+            raise SandboxContractError(
+                f"Weston module is outside its tool prefix or not a file: {candidate}"
+            )
+        return resolved
+    raise SandboxContractError(
+        f"Weston module is unavailable below {root}/lib or lib64: {relative}"
+    )
+
+
 def weston_module_map(weston: Path) -> str:
     root = tool_root(weston)
     modules = (
-        ("headless-backend.so", root / "lib/libweston-15/headless-backend.so"),
-        ("kiosk-shell.so", root / "lib/weston/kiosk-shell.so"),
+        ("headless-backend.so", "libweston-15/headless-backend.so"),
+        ("kiosk-shell.so", "weston/kiosk-shell.so"),
     )
-    entries: list[str] = []
-    for name, path in modules:
-        resolved = path.resolve(strict=True)
-        if not resolved.is_file() or root not in resolved.parents:
-            raise SandboxContractError(
-                f"Weston module is outside its tool prefix: {path}"
-            )
-        entries.append(f"{name}={PurePosixPath(str(resolved))}")
-    return ";".join(entries)
+    return ";".join(
+        f"{name}={PurePosixPath(str(_weston_module(root, relative)))}"
+        for name, relative in modules
+    )

@@ -20,6 +20,7 @@ from desktop_session_interaction_runtime import (
 from desktop_session_sandbox import (
     FONTCONFIG_FILE_PATH,
     ReadOnlyMount,
+    SandboxContractError,
     SandboxSpec,
     build_bwrap_argv,
     create_run_root,
@@ -144,14 +145,57 @@ class RuntimeBoundaryTests(unittest.TestCase):
         else:
             self.assertEqual(cache_mounts, [])
 
-    def test_weston_module_map_names_only_the_private_backend_and_shell(self) -> None:
+    def test_weston_module_map_supports_lib_and_lib64(self) -> None:
+        for library in ("lib", "lib64"):
+            with self.subTest(library=library), tempfile.TemporaryDirectory() as directory:
+                prefix = Path(directory) / "runtime/usr"
+                weston = prefix / "bin/weston"
+                backend = prefix / library / "libweston-15/headless-backend.so"
+                shell = prefix / library / "weston/kiosk-shell.so"
+                for path in (weston, backend, shell):
+                    executable(path)
+                self.assertEqual(
+                    weston_module_map(weston),
+                    f"headless-backend.so={backend};kiosk-shell.so={shell}",
+                )
+
+    def test_weston_modules_reject_missing_directory_and_escaped_symlink(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             prefix = Path(directory) / "runtime/usr"
             weston = prefix / "bin/weston"
-            backend = prefix / "lib/libweston-15/headless-backend.so"
-            shell = prefix / "lib/weston/kiosk-shell.so"
+            executable(weston)
+            with self.assertRaises(SandboxContractError):
+                weston_module_map(weston)
+            backend = prefix / "lib64/libweston-15/headless-backend.so"
+            shell = prefix / "lib64/weston/kiosk-shell.so"
+            executable(backend)
+            shell.mkdir(parents=True)
+            with self.assertRaises(SandboxContractError):
+                weston_module_map(weston)
+            shell.rmdir()
+            executable(shell)
+            # A poisoned first-choice candidate must not fall through to the
+            # otherwise valid lib64 installation.
+            hostile = prefix / "lib/libweston-15/headless-backend.so"
+            hostile.parent.mkdir(parents=True)
+            outside = Path(directory) / "outside.so"
+            executable(outside)
+            hostile.symlink_to(outside)
+            with self.assertRaises(SandboxContractError):
+                weston_module_map(weston)
+            outside.unlink()
+            with self.assertRaises(SandboxContractError):
+                weston_module_map(weston)
+
+    def test_weston_accepts_in_prefix_lib_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / "runtime/usr"
+            weston = prefix / "bin/weston"
+            backend = prefix / "lib64/libweston-15/headless-backend.so"
+            shell = prefix / "lib64/weston/kiosk-shell.so"
             for path in (weston, backend, shell):
                 executable(path)
+            (prefix / "lib").symlink_to("lib64", target_is_directory=True)
             self.assertEqual(
                 weston_module_map(weston),
                 f"headless-backend.so={backend};kiosk-shell.so={shell}",
