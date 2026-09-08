@@ -825,7 +825,7 @@ bar, right-to-left placement in the macOS layout, and minimal tiled-member
 title strips that preserve pointer controls, dragging, resizing and detaching.
 This is a functional visual follow-up, not a memory optimization task.
 
-### Reusable workspace checkpoint (2026-09-07, active)
+### Reusable workspace checkpoint (2026-09-07, complete)
 
 September 7 controls follow-up: reviewed Print delegation and the real private
 installed-session capture/volume proof are integrated (`a5f1fdd8`, `f8f0b504`).
@@ -833,7 +833,8 @@ The integrated controls build, shortcut gate, three runner contracts, and strict
 documentation build pass. The final `0.1.0_pre20260907-r1` package is installed
 from source `8486e058`. The actual installed launcher/plugin passed two-session
 Save/Reopen, exact layout and manual window assignment, and identity re-save.
-Native CI boot results and the release tag remain open. Installed idle-preference
+Native CI run `34180153305` passes both mandatory boots and the complete native
+build. Release tag: `v0.1.0-pre.20260907`. Installed idle-preference
 verification passes: changing 10 → 11 → default 10 through Settings1 updates
 PowerDevil profiles 600 → 660 → 600 seconds through the production binding.
 The real KDE privilege prompt appeared

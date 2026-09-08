@@ -1357,7 +1357,7 @@
       "workspace": "Roadmap milestone",
       "state": "EXECUTABLE",
       "stoppingPoint": {
-        "summary": "A full Gentoo desktop package is installed and executable. The installed two-session named workspace and manual reassignment check passes; real screenshot/volume feedback, privilege prompt, and idle preference round trip are evidenced. Native remote boot qualification and the release tag remain open. The broader hardware matrix, performance, migration, recovery, and upgrade qualification remain outside this bounded checkpoint.",
+        "summary": "A full Gentoo desktop package is installed and executable. The installed two-session named workspace and manual reassignment check passes; real screenshot/volume feedback, privilege prompt, and idle preference round trip are evidenced. Native remote compile and both boot gates pass; the Gentoo checkpoint is tagged v0.1.0-pre.20260907. The broader hardware matrix, performance, migration, recovery, and upgrade qualification remain outside this bounded checkpoint.",
         "evidence": [
           {
             "kind": "source",
@@ -1388,10 +1388,15 @@
             "kind": "commit",
             "reference": "98f29fe2",
             "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10→11→default10 producing PowerDevil600→660→600 through production code. Native CI boots and tag remain pending."
+          },
+          {
+            "kind": "test",
+            "reference": "https://github.com/Es00bac/QindaQt/actions/runs/34180153305/job/101917487408",
+            "summary": "Exact dc8a54cc native build/stage/release contract and 3 static checks pass; build-tree and installed-discovery boot gates each pass1/1. Tagged production sources match installed8486e058."
           }
         ]
       },
-      "caveat": "Executable means the installed functional checkpoint is evidenced, not that the broad release milestone is qualified. Hardware/performance/migration/upgrade matrices and final remote native boot/tag acceptance are not claimed."
+      "caveat": "The bounded Gentoo functional checkpoint is complete. The broader release milestone remains executable, not fully qualified: physical hardware, performance, migration, and upgrade matrices are not claimed."
     }
   ]
 }

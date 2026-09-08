@@ -1,5 +1,19 @@
 # Integration handoff
 
+## September 7 checkpoint complete
+
+The installed Gentoo r1 checkpoint is released as `v0.1.0-pre.20260907`.
+Named workspace restoration and daily controls passed installed-session checks.
+Native CI run `34180153305`, job `101917487408`, passed the complete build,
+staging, release contract, three static checks, and both mandatory native boots
+on `dc8a54cc`. Product source remains the installed `8486e058`; subsequent
+changes are tests, packaging, CI setup, and documentation. See the
+[release notes](wiki/development/release-checkpoint-2026-09-07.md).
+
+This closes the bounded active goal. New bundled-app design work may proceed
+in its separate worktree. The broader hardware/performance/migration matrices
+and unrelated CI failures are not represented as complete.
+
 ## Installed idle preference verified
 
 The private installed-session writer check passed Settings1 default 10 → user
@@ -27,7 +41,7 @@ The installed package is now `0.1.0_pre20260907-r1`, built from exact source
 `8486e0588e8dd8c21f176be162b53d81ee73a5b6`. Portage build and merge both passed.
 The two-session workspace proof passed against the actual installed launcher
 and plugin, without an artifact overlay. Its reviewed regression is integrated
-at `83d07911`. The remaining release gate is the native CI boot result and tag.
+at `83d07911`. The native CI boot checks and release tagging are complete.
 
 ## Earlier component qualification
 
