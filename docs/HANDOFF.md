@@ -1,5 +1,23 @@
 # Integration handoff
 
+## System Monitor installed — September 8
+
+`gui-apps/qindaqt-system-monitor-0.1.0_pre20260908` is installed through Portage,
+from reviewed source `67314971fd0ac0a764154341e9275b365afd5ba8`. Launch
+`qindaqt-system-monitor`; no desktop restart is required. The isolated integration
+branch is `worker/system-monitor-integration`; concurrent app-redesign and dirty
+Calendar changes were preserved. The new package owns only its app/launcher/icon
+and documentation, and depends on the desktop for common runtime libraries.
+
+Strict build and five focused rows passed, as did compact/wide visual review,
+strict documentation checks, source-shape, pkgcheck, Portage build/install,
+installed dependency/ownership checks and actual installed Wayland launch.
+Live AMD readings were verified; NVIDIA/Intel hardware was unavailable.
+See [System Monitor](wiki/apps/system-monitor.md) and ADR-0108 for supported
+readings and component ownership. A future full-desktop recipe must exclude this
+app component or replace/block the standalone package to avoid duplicate files.
+
+
 ## September 7 checkpoint complete
 
 The installed Gentoo r1 checkpoint is released as `v0.1.0-pre.20260907`.
