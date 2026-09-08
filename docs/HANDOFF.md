@@ -44,9 +44,17 @@ mutation UI probe succeeds. The actual packaged Terminal shell confirms a real
 PTY on stdin/stdout on private native Wayland, and the packaged Editor keeps a
 fixture document window live. Normal-scale desktop 1080p/WUXGA/dual interaction and
 both panel-visibility rows pass after the reviewed Gentoo `lib64` harness repair.
-Host merge and fresh-login acceptance remain pending; the inactive tty7 session
-still owns Firefox, Thunderbird and other Codex workers and must not be killed
-as automatic test cleanup. Follow the [Gentoo install procedure](wiki/development/gentoo-desktop.md).
+**Installed and verified:** at the user's explicit direction, Portage merged
+`gui-wm/qindaqt-desktop-0.1.0_pre20260908` using the verified signed binary package.
+The existing desktop and worker sessions were preserved. All 1,067 installed
+payload files exactly match the signed package and have the expected Portage
+owner. The installed File Manager production mutation UI probe passes; the
+installed Editor opens a document on private native Wayland; the installed
+Terminal executes a shell with real PTY stdin/stdout. The installed exact KWin
+release contract also passes. Newly launched apps use the redesigns; existing
+processes retain their loaded code until restarted. Fresh-login acceptance of
+the entire desktop is separate from this completed app installation.
+See the [Gentoo install procedure](wiki/development/gentoo-desktop.md).
 
 
 ## September 7 checkpoint complete

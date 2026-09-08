@@ -7,7 +7,7 @@ QML runtime plugins from one immutable source commit.
 
 The current dated package checkpoint is `0.1.0_pre20260908`, pinned to Git
 commit `c1952e90a84005aa3ce3aee07cea1b6d89b6a35c`. Regenerate the package
-Manifest whenever this immutable pin changes. This September8 checkpoint is a
+Manifest whenever this immutable pin changes. This September 8 checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. Its ebuild
 uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
 in Portage's DISTDIR:
@@ -21,6 +21,13 @@ git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_co
 Portage verifies the maintained Manifest before unpacking. The ebuild installs
 the complete image through Portage; do not copy executables into the installed
 runtime by hand.
+
+The September 8 redesign is installed as this package. The user explicitly
+requested the merge while existing sessions remained running. Portage verified
+and installed the signed binary; all 1,067 payload files match its image and
+package ownership. Installed File Manager UI actions and native Editor/Terminal
+startup and PTY checks pass. Already running applications use their loaded
+version until restarted; this installation does not claim a fresh desktop login.
 
 The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
 runtime closure follows the production process contracts:

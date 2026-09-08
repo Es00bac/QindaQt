@@ -1179,9 +1179,14 @@
               "kind": "commit",
               "reference": "c1952e90a84005aa3ce3aee07cea1b6d89b6a35c",
               "summary": "Reviewed ordinary-window and material implementation; the integrated candidate passes 121/121 focused app/shared rows and four observed-scale native app capture rows. See docs/HANDOFF.md for broader suite failures and pending Portage host merge; no full desktop release claim."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/HANDOFF.md",
+              "summary": "September 8 redesign installed through signed gui-wm/qindaqt-desktop-0.1.0_pre20260908. All1,067 payload files match the verified package and Portage ownership. Installed File Manager UI actions and native Editor startup/Terminal real-PTY checks pass; existing sessions preserved at explicit user direction."
             }
           ],
-          "caveat": "Portals, print, extensions, rich text and whole-application assistive-technology qualification remain; host installation of the September 8 checkpoint is pending."
+          "caveat": "Portals, print, extensions, rich text and whole-application assistive-technology qualification remain."
         },
         {
           "id": "QQ-006.07",
@@ -1214,16 +1219,21 @@
               "kind": "commit",
               "reference": "c1952e90a84005aa3ce3aee07cea1b6d89b6a35c",
               "summary": "Reviewed ordinary-window and material implementation; the integrated candidate passes 121/121 focused app/shared rows and four observed-scale native app capture rows. See docs/HANDOFF.md for broader suite failures and pending Portage host merge; no full desktop release claim."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/HANDOFF.md",
+              "summary": "September 8 redesign installed through signed gui-wm/qindaqt-desktop-0.1.0_pre20260908. All1,067 payload files match the verified package and Portage ownership. Installed File Manager UI actions and native Editor startup/Terminal real-PTY checks pass; existing sessions preserved at explicit user direction."
             }
           ],
-          "caveat": "Mounts, search, network previews, portals and whole-application assistive-technology qualification remain; host installation of the September 8 checkpoint is pending."
+          "caveat": "Mounts, search, network previews, portals and whole-application assistive-technology qualification remain."
         },
         {
           "id": "QQ-006.08",
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The September 8 checkpoint adds independent ANSI contrast, readable search and native profile dialogs, live themed icons and font/accessibility updates. Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The no-tabs interface is integrated; the installed package still contains the prior interface pending the combined release.",
+          "summary": "The September 8 checkpoint adds independent ANSI contrast, readable search and native profile dialogs, live themed icons and font/accessibility updates. Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The redesigned single-shell interface is installed through the September 8 desktop package.",
           "evidence": [
             {
               "kind": "commit",
@@ -1264,9 +1274,14 @@
               "kind": "commit",
               "reference": "c1952e90a84005aa3ce3aee07cea1b6d89b6a35c",
               "summary": "Reviewed ordinary-window and material implementation; the integrated candidate passes 121/121 focused app/shared rows and four observed-scale native app capture rows. See docs/HANDOFF.md for broader suite failures and pending Portage host merge; no full desktop release claim."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/HANDOFF.md",
+              "summary": "September 8 redesign installed through signed gui-wm/qindaqt-desktop-0.1.0_pre20260908. All1,067 payload files match the verified package and Portage ownership. Installed File Manager UI actions and native Editor startup/Terminal real-PTY checks pass; existing sessions preserved at explicit user direction."
             }
           ],
-          "caveat": "GPU rendering, later terminal capabilities, whole-application assistive-technology and physical display/input qualification remain; host installation of the September 8 checkpoint is pending."
+          "caveat": "GPU rendering, later terminal capabilities, whole-application assistive-technology and physical display/input qualification remain."
         },
         {
           "id": "QQ-006.09",
