@@ -90,3 +90,15 @@ add_test(NAME qindaqt.status-notifier-icon COMMAND qindaqt_status_notifier_icon_
 set_tests_properties(qindaqt.status-notifier-icon PROPERTIES LABELS "shell;status-notifier")
 
 add_subdirectory(applet)
+
+qt_add_executable(qindaqt_status_notifier_menu_tests
+    tst_status_notifier_menu.cpp
+    status_notifier_fake_item_test_support.h
+    status_notifier_private_bus_test_support.h
+    ../global_menu/dbusmenu/fake_dbusmenu_exporter.h)
+target_link_libraries(qindaqt_status_notifier_menu_tests PRIVATE
+    QindaQt::StatusNotifierItemClient QindaQt::StatusNotifierWatcher
+    QindaQt::GlobalMenuDbusMenu Qt6::Test)
+qindaqt_enable_warnings(qindaqt_status_notifier_menu_tests)
+add_test(NAME qindaqt.status-notifier-menu COMMAND qindaqt_status_notifier_menu_tests)
+set_tests_properties(qindaqt.status-notifier-menu PROPERTIES LABELS "shell;status-notifier" TIMEOUT 45)

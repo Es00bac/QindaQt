@@ -51,6 +51,10 @@ StatusNotifierAppletController::StatusNotifierAppletController(
         connect(m_source, &StatusNotifierSourceInterface::changed,
                 this, &StatusNotifierAppletController::reproject);
     }
+    if (m_source && m_readGranted) {
+        connect(m_source, &StatusNotifierSourceInterface::menuChanged,
+                this, &StatusNotifierAppletController::menuChanged);
+    }
     reproject();
 }
 
@@ -194,10 +198,18 @@ const StatusNotifierItemRow *StatusNotifierAppletController::findRow(
     return nullptr;
 }
 
-bool StatusNotifierAppletController::dispatchIntent(IntentKind kind,
-                                                    const QString &uniqueName,
-                                                    const QString &objectPath,
-                                                    quint64 generation)
+bool StatusNotifierAppletController::liveTarget(const QString &uniqueName,
+                                                const QString &objectPath,
+                                                quint64 generation) const
+{
+    return m_readGranted && m_source && generation != 0
+        && findRow(uniqueName, objectPath, generation)
+        && m_source->currentGeneration(uniqueName) == generation;
+}
+
+bool StatusNotifierAppletController::admitAction(const QString &uniqueName,
+                                                 const QString &objectPath,
+                                                 quint64 generation)
 {
     if (!m_activateGranted) {
         setFeedback(m_texts.feedbackActivateNotGranted);
@@ -217,22 +229,32 @@ bool StatusNotifierAppletController::dispatchIntent(IntentKind kind,
         setFeedback(m_texts.feedbackBusy);
         return false;
     }
+    return true;
+}
+
+bool StatusNotifierAppletController::dispatchIntent(IntentKind kind,
+                                                    const QString &uniqueName,
+                                                    const QString &objectPath,
+                                                    quint64 generation, int x, int y)
+{
+    if (!admitAction(uniqueName, objectPath, generation)) {
+        return false;
+    }
     m_dispatchInProgress = true;
     const auto guard = qScopeGuard([this] { m_dispatchInProgress = false; });
 
-    // One seam call per gesture. x/y stay 0,0: the S1 wire contract's signed
-    // coordinates carry no pointer position from this surface.
+    // One seam call per gesture, with the item anchor in global logical coordinates.
     const QindaQt::StatusNotifier::OwnerKey target { uniqueName, objectPath, generation };
     QindaQt::StatusNotifier::RegistryOutcome outcome;
     switch (kind) {
     case IntentKind::Activate:
-        outcome = m_source->activate(target, 0, 0);
+        outcome = m_source->activate(target, x, y);
         break;
     case IntentKind::SecondaryActivate:
-        outcome = m_source->secondaryActivate(target, 0, 0);
+        outcome = m_source->secondaryActivate(target, x, y);
         break;
     case IntentKind::ContextMenu:
-        outcome = m_source->contextMenu(target, 0, 0);
+        outcome = m_source->openMenu(target, x, y);
         break;
     }
     if (!outcome.accepted()) {
@@ -244,23 +266,23 @@ bool StatusNotifierAppletController::dispatchIntent(IntentKind kind,
 
 bool StatusNotifierAppletController::activateItem(const QString &uniqueName,
                                                   const QString &objectPath,
-                                                  quint64 generation)
+                                                  quint64 generation, int x, int y)
 {
-    return dispatchIntent(IntentKind::Activate, uniqueName, objectPath, generation);
+    return dispatchIntent(IntentKind::Activate, uniqueName, objectPath, generation, x, y);
 }
 
 bool StatusNotifierAppletController::secondaryActivateItem(const QString &uniqueName,
                                                            const QString &objectPath,
-                                                           quint64 generation)
+                                                           quint64 generation, int x, int y)
 {
-    return dispatchIntent(IntentKind::SecondaryActivate, uniqueName, objectPath, generation);
+    return dispatchIntent(IntentKind::SecondaryActivate, uniqueName, objectPath, generation, x, y);
 }
 
 bool StatusNotifierAppletController::openContextMenu(const QString &uniqueName,
                                                      const QString &objectPath,
-                                                     quint64 generation)
+                                                     quint64 generation, int x, int y)
 {
-    return dispatchIntent(IntentKind::ContextMenu, uniqueName, objectPath, generation);
+    return dispatchIntent(IntentKind::ContextMenu, uniqueName, objectPath, generation, x, y);
 }
 
 QVariantList StatusNotifierAppletController::menuRowsFor(const QString &uniqueName,

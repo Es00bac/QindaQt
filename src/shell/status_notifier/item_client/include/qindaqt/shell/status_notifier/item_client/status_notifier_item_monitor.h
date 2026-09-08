@@ -11,9 +11,12 @@
 
 #include <QtCore/QHash>
 #include <QtCore/QObject>
+#include <QtCore/QVariantMap>
 
 namespace QindaQt::StatusNotifier
 {
+
+class StatusNotifierItemMenu;
 
 // AGENT-CONTRACT: The production StatusNotifierTransport. It watches whichever
 // connection owns org.kde.StatusNotifierWatcher — QindaQt's own
@@ -77,7 +80,18 @@ public:
                                                 int delta,
                                                 const QString &orientation);
 
+    // Exact-generation menu projection, with decimal revision and bounded
+    // recursive entries. All wire decoding stays in the shared dbusmenu
+    // client. Pending/failed refreshes retain display but block invocation.
+    [[nodiscard]] bool itemIsMenu(const OwnerKey &target) const;
+    [[nodiscard]] bool hasExportedMenu(const OwnerKey &target) const;
+    [[nodiscard]] QVariantMap menuState(const OwnerKey &target) const;
+    [[nodiscard]] RegistryOutcome openMenu(const OwnerKey &target, int x, int y);
+    [[nodiscard]] RegistryOutcome aboutToShowMenu(const OwnerKey &target, quint64 revision, int id);
+    [[nodiscard]] RegistryOutcome invokeMenu(const OwnerKey &target, quint64 revision, int id);
+
 signals:
+    void menuChanged();
     void watcherLiveChanged(bool live);
 
 private slots:
@@ -92,6 +106,7 @@ private:
     struct ItemSlot {
         OwnerKey key;
         StatusNotifierItemClient *client = nullptr;
+        StatusNotifierItemMenu *menu = nullptr;
         bool populationPending = false;
     };
 
@@ -108,6 +123,7 @@ private:
                                                             RequestKind kind,
                                                             const ItemSlot **slot) const;
     void resetEpochState();
+    [[nodiscard]] quint64 nextMenuRevision();
     void setWatcherLive(bool live);
 
     [[nodiscard]] static bool parseServiceId(const QString &serviceId,
@@ -119,6 +135,7 @@ private:
     StatusNotifierEventSink *m_sink = nullptr;
     int m_fetchTimeoutMs;
     quint64 m_epoch = 0;
+    quint64 m_menuRevision = 0;
     bool m_populationInFlight = false;
     qsizetype m_populationOutstanding = 0;
     bool m_watcherLive = false;

@@ -58,6 +58,7 @@ target_sources(
     qindaqt_shell_status_notifier_applet_runtime
     PRIVATE
         src/status_notifier_applet_controller.cpp
+        src/status_notifier_applet_menu.cpp
         src/status_notifier_monitor_adapter.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -76,6 +77,8 @@ qt_add_qml_module(
     QML_FILES
         qml/StatusNotifierApplet.qml
         qml/StatusNotifierItemDelegate.qml
+        qml/StatusNotifierMenu.qml
+        qml/StatusNotifierMenuItem.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons
 )

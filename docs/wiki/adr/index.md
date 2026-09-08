@@ -125,3 +125,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0110: Ordinary editor windows](0110-own-editor-documents-in-ordinary-windows.md)
 - [ADR-0111: bound file previews and consume public icons](0111-bound-file-previews-and-consume-public-icons.md)
 - [ADR-0112: terminal protocol palette](0112-terminal-protocol-palette.md)
+
+- [ADR-0114: actionable status notifier menus](0114-status-notifier-actionable-menus.md)

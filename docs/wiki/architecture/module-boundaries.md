@@ -199,6 +199,13 @@ implemented; do not use placeholder modules to bypass a boundary.
   shell QML receives only a default-output facade and settings-opening action.
   See [Audio service](audio-service.md) and
   [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
+- StatusNotifier exported menu transport privately consumes the public
+  `GlobalMenuDbusMenu` client and its bounded canonical tree. Registry owner
+  generations plus local menu revisions fence all menu invocations; the
+  applet receives copied presentation values and narrow intents, never wire
+  handles. The shared client marks retained layouts non-current during reads
+  and AboutToShow preparation. See
+  [ADR-0114](../adr/0114-status-notifier-actionable-menus.md).
 - StatusNotifier items are owned by their bus unique name, never a well-known
   name, and reach the tray only through bounded validation and an injected
   transport seam; the registry records request intents instead of executing

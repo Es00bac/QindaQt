@@ -112,6 +112,8 @@ StatusNotifierMonitorAdapter::StatusNotifierMonitorAdapter(QDBusConnection conne
     , m_monitor(connection, m_registry, fetchTimeoutMs)
     , m_renderer(std::move(iconThemeRoots))
 {
+    connect(&m_monitor, &StatusNotifierItemMonitor::menuChanged,
+            this, &StatusNotifierMonitorAdapter::menuChanged);
     // Watcher (re)appearance and loss change presentation (Loading/Degraded)
     // without touching the registry, so liveness transitions notify too.
     connect(&m_monitor, &StatusNotifierItemMonitor::watcherLiveChanged,
@@ -189,6 +191,27 @@ RegistryOutcome StatusNotifierMonitorAdapter::contextMenu(const OwnerKey &target
 {
     return m_monitor.requestContextMenu(target, x, y);
 }
+
+bool StatusNotifierMonitorAdapter::itemIsMenu(const OwnerKey &target) const
+{ return m_monitor.itemIsMenu(target); }
+
+bool StatusNotifierMonitorAdapter::hasExportedMenu(const OwnerKey &target) const
+{ return m_monitor.hasExportedMenu(target); }
+
+QVariantMap StatusNotifierMonitorAdapter::menuState(const OwnerKey &target) const
+{ return m_monitor.menuState(target); }
+
+RegistryOutcome StatusNotifierMonitorAdapter::openMenu(const OwnerKey &target, int x, int y)
+{ return m_monitor.openMenu(target, x, y); }
+
+RegistryOutcome StatusNotifierMonitorAdapter::aboutToShowMenu(const OwnerKey &target, quint64 revision, int id)
+{ return m_monitor.aboutToShowMenu(target, revision, id); }
+
+RegistryOutcome StatusNotifierMonitorAdapter::invokeMenu(const OwnerKey &target, quint64 revision, int id)
+{ return m_monitor.invokeMenu(target, revision, id); }
+
+RegistryOutcome StatusNotifierMonitorAdapter::scroll(const OwnerKey &target, int delta, const QString &orientation)
+{ return m_monitor.requestScroll(target, delta, orientation); }
 
 void StatusNotifierMonitorAdapter::acknowledgeDegraded()
 {
