@@ -9,7 +9,11 @@ target_sources(
     qindaqt_status_notifier_item_client
     PRIVATE
         src/status_notifier_item_client.cpp
+        src/status_notifier_item_signals.cpp
         src/status_notifier_item_monitor.cpp
+        src/status_notifier_item_monitor_menu.cpp
+        src/status_notifier_item_menu.cpp
+        src/status_notifier_item_menu.h
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -23,6 +27,7 @@ target_link_libraries(
     PUBLIC
         QindaQt::StatusNotifier
         Qt6::DBus
+    PRIVATE QindaQt::GlobalMenuDbusMenu
 )
 target_compile_features(qindaqt_status_notifier_item_client PUBLIC cxx_std_20)
 set_target_properties(qindaqt_status_notifier_item_client PROPERTIES CXX_EXTENSIONS OFF)

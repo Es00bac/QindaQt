@@ -181,6 +181,9 @@ void DbusMenuClient::stop()
     m_ownerWatcher = nullptr;
     m_layoutInFlight = false;
     m_layoutDirty = false;
+    m_aboutToShowPending = 0;
+    m_layoutValid = false;
+    setLayoutCurrent(false);
     m_snapshot.reset();
     m_metadata = {};
     m_remoteRevision = 0;
@@ -211,11 +214,26 @@ quint32 DbusMenuClient::remoteRevision() const noexcept
     return m_remoteRevision;
 }
 
+bool DbusMenuClient::isLayoutCurrent() const noexcept
+{
+    return m_layoutCurrent;
+}
+
+void DbusMenuClient::setLayoutCurrent(bool current)
+{
+    if (m_layoutCurrent != current) {
+        m_layoutCurrent = current;
+        Q_EMIT layoutCurrentChanged();
+    }
+}
+
 void DbusMenuClient::refreshLayout()
 {
     if (!m_started) {
         return;
     }
+    m_layoutValid = false;
+    setLayoutCurrent(false);
     if (m_layoutInFlight) {
         m_layoutDirty = true;
         return;
@@ -270,12 +288,17 @@ void DbusMenuClient::refreshLayout()
                 if (m_snapshot && revision == m_remoteRevision) {
                     if (m_snapshot->tree.items != decoded.snapshot.tree.items) {
                         Q_EMIT rejected(QStringLiteral("changed-equal-layout-revision"));
+                    } else {
+                        m_layoutValid = true;
+                        setLayoutCurrent(m_aboutToShowPending == 0);
                     }
                     return;
                 }
                 m_remoteRevision = revision;
                 m_snapshot = std::move(decoded.snapshot);
+                m_layoutValid = true;
                 Q_EMIT treeChanged();
+                setLayoutCurrent(m_aboutToShowPending == 0);
             });
 }
 
@@ -346,10 +369,15 @@ void DbusMenuClient::requestGroupProperties(const QList<qint32> &itemIds)
 
 void DbusMenuClient::aboutToShow(qint32 itemId)
 {
-    if (!m_started || itemId <= 0) {
+    if (!m_started || itemId < 0) {
         Q_EMIT rejected(QStringLiteral("invalid-about-to-show-request"));
         return;
     }
+    // AGENT-CONTRACT: dbusmenu root id 0 is legal for AboutToShow, while
+    // Event remains positive-id-only. Block current-action dispatch until the
+    // exporter has finished preparing the root/submenu and any required read.
+    ++m_aboutToShowPending;
+    setLayoutCurrent(false);
     const quint64 generation = m_generation;
     QDBusMessage call = methodCall(m_ownerUniqueName, m_objectPath, kDbusMenuInterface,
                                    "AboutToShow");
@@ -365,10 +393,13 @@ void DbusMenuClient::aboutToShow(qint32 itemId)
                 if (!m_started || generation != m_generation) {
                     return;
                 }
+                --m_aboutToShowPending;
                 if (reply.isError()) {
                     Q_EMIT rejected(QStringLiteral("about-to-show-failed"));
                 } else if (reply.value()) {
                     refreshLayout();
+                } else if (m_layoutValid && !m_layoutInFlight && !m_layoutDirty && m_snapshot) {
+                    setLayoutCurrent(m_aboutToShowPending == 0);
                 }
             });
 }

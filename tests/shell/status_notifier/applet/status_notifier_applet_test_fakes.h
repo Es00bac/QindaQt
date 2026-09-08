@@ -94,6 +94,35 @@ public:
         return record(QStringLiteral("contextMenu"), target, x, y);
     }
 
+    bool m_itemIsMenu = false;
+    bool m_exportedMenu = false;
+    QVariantMap m_menuState;
+    quint64 m_lastRevision = 0;
+    int m_lastMenuId = -1;
+    QString m_scrollOrientation;
+    mutable int m_menuReads = 0;
+
+    bool itemIsMenu(const OwnerKey &) const override { ++m_menuReads; return m_itemIsMenu; }
+    bool hasExportedMenu(const OwnerKey &) const override { ++m_menuReads; return m_exportedMenu; }
+    QVariantMap menuState(const OwnerKey &) const override { ++m_menuReads; return m_menuState; }
+    RegistryOutcome invokeMenu(const OwnerKey &target, quint64 revision, int id) override
+    {
+        m_lastRevision = revision;
+        m_lastMenuId = id;
+        return record(QStringLiteral("invokeMenu"), target, 0, 0);
+    }
+    RegistryOutcome aboutToShowMenu(const OwnerKey &target, quint64 revision, int id) override
+    {
+        m_lastRevision = revision;
+        m_lastMenuId = id;
+        return record(QStringLiteral("aboutToShowMenu"), target, 0, 0);
+    }
+    RegistryOutcome scroll(const OwnerKey &target, int delta, const QString &orientation) override
+    {
+        m_scrollOrientation = orientation;
+        return record(QStringLiteral("scroll"), target, delta, 0);
+    }
+
     // Mirrors the production registry→seam recovery: acknowledging a scripted
     // Degraded presentation clears the diagnostic, restores the non-degraded
     // phase matching the scripted rows, and notifies — so controller tests

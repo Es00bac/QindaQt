@@ -15,15 +15,14 @@ namespace QindaQt::StatusNotifier
 {
 
 // Wire-side details that the ADR-0032 value model deliberately has no slot
-// for. They are recorded for later composition — the Global Menu G1 lane
-// consumes `menuObjectPath` through the shared dbusmenu adapter, and window
-// routing consumes `windowId` — but they never reach the registry descriptor
-// and are never rendered by this module.
+// for. The monitor consumes itemIsMenu/menuObjectPath through its private
+// exported-menu collaborator and the public shared dbusmenu adapter. Window
+// and overlay facts remain observation-only; none enter the registry descriptor.
 struct ItemWireDetails {
     quint32 windowId = 0;
     QString overlayIconName;
     bool itemIsMenu = false;
-    // The DBusMenu exporter object path; recorded but not rendered here.
+    // Exact-owner DBusMenu exporter path consumed by the monitor.
     QString menuObjectPath;
 
     friend bool operator==(const ItemWireDetails &, const ItemWireDetails &) = default;
@@ -71,7 +70,7 @@ struct ItemDescriptorFetch {
 // truthfully. Unknown properties are ignored. Presentation-bearing recognized
 // properties with unexpected types fail the descriptor closed; recorded-only
 // WindowId, OverlayIconName, ItemIsMenu, and Menu facts are safe-dropped on a
-// wrong type because they cannot reach the registry or renderer. A missing
+// wrong type. Missing or invalid Menu retires the previous exported binding. A missing
 // optional property decodes to its default.
 //
 // Late-reply fencing: every emitted result is tagged with the owner generation
@@ -113,10 +112,14 @@ public:
     [[nodiscard]] bool scroll(int delta, const QString &orientation);
 
 signals:
+    void menuDetailsInvalidated();
     void descriptorFetched(const QindaQt::StatusNotifier::ItemDescriptorFetch &result);
 
 private slots:
     void handleNewTitle();
+    void handleNewMenu();
+    void handlePropertiesChanged(const QString &interface, const QVariantMap &changed,
+                                 const QStringList &invalidated);
     void handleNewIcon();
     void handleNewAttentionIcon();
     void handleNewOverlayIcon();
@@ -135,6 +138,8 @@ private:
     GenerationFence m_generationFence;
     int m_fetchTimeoutMs;
     bool m_fetchInFlight = false;
+    bool m_fetchDirty = false;
+    quint64 m_fetchSerial = 0;
 };
 
 } // namespace QindaQt::StatusNotifier

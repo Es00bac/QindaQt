@@ -338,6 +338,11 @@ StatusNotifierItemClient::StatusNotifierItemClient(QDBusConnection connection,
     const QString service = m_key.uniqueName;
     const QString path = m_key.objectPath;
     const QString interface = QString::fromLatin1(kItemInterfaceName);
+    m_connection.connect(service, path, interface, QStringLiteral("NewMenu"),
+                         this, SLOT(handleNewMenu()));
+    m_connection.connect(service, path, QStringLiteral("org.freedesktop.DBus.Properties"),
+                         QStringLiteral("PropertiesChanged"), this,
+                         SLOT(handlePropertiesChanged(QString,QVariantMap,QStringList)));
     m_connection.connect(service, path, interface, QStringLiteral("NewTitle"),
                          this, SLOT(handleNewTitle()));
     m_connection.connect(service, path, interface, QStringLiteral("NewIcon"),
@@ -367,6 +372,7 @@ void StatusNotifierItemClient::fetchDescriptor()
         return;
     }
     m_fetchInFlight = true;
+    const quint64 serial = ++m_fetchSerial;
 
     // AGENT-NOTE: The GetAll call goes out with an EMPTY interface field.
     // "org.freedesktop.D-Bus.Properties" is not a spec-valid interface name
@@ -385,8 +391,8 @@ void StatusNotifierItemClient::fetchDescriptor()
     request << QVariant(QString::fromLatin1(kItemInterfaceName));
     QPointer<QDBusPendingCallWatcher> watcher =
         new QDBusPendingCallWatcher(m_connection.asyncCall(request), this);
-    QTimer::singleShot(m_fetchTimeoutMs, this, [this, watcher]() {
-        if (!m_fetchInFlight) {
+    QTimer::singleShot(m_fetchTimeoutMs, this, [this, watcher, serial]() {
+        if (!m_fetchInFlight || serial != m_fetchSerial) {
             return; // The reply path already reported.
         }
         // QPointer guard: the finished lambda may already have deleteLater()d
@@ -399,9 +405,9 @@ void StatusNotifierItemClient::fetchDescriptor()
         finishFetch(std::move(result));
     });
     connect(watcher.data(), &QDBusPendingCallWatcher::finished, this,
-            [this](QDBusPendingCallWatcher *call) {
+            [this, serial](QDBusPendingCallWatcher *call) {
                 call->deleteLater();
-                if (!m_fetchInFlight) {
+                if (!m_fetchInFlight || serial != m_fetchSerial) {
                     return; // The timeout path already reported.
                 }
                 const QDBusMessage reply = call->reply();
@@ -456,48 +462,6 @@ bool StatusNotifierItemClient::scroll(int delta, const QString &orientation)
     return true;
 }
 
-void StatusNotifierItemClient::handleNewTitle()
-{
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::handleNewIcon()
-{
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::handleNewAttentionIcon()
-{
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::handleNewOverlayIcon()
-{
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::handleNewToolTip()
-{
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::handleNewStatus(const QString &status)
-{
-    Q_UNUSED(status)
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::handleNewIconThemePath(const QString &path)
-{
-    Q_UNUSED(path)
-    scheduleRefetch();
-}
-
-void StatusNotifierItemClient::scheduleRefetch()
-{
-    fetchDescriptor();
-}
-
 void StatusNotifierItemClient::sendIntent(const QString &member,
                                           const QList<QVariant> &arguments)
 {
@@ -526,6 +490,13 @@ void StatusNotifierItemClient::finishFetch(ItemDescriptorFetch result)
         // AGENT-GUARD: A reply that raced owner loss, removal, or a watcher
         // rebaseline is dropped here, not emitted; the registry fences again
         // on registration, so a removed item can never be resurrected.
+        return;
+    }
+    if (m_fetchDirty) {
+        // A NewMenu/PropertiesChanged hint racing the read must not publish
+        // the previous path or be dropped. Re-read once after the last hint.
+        m_fetchDirty = false;
+        fetchDescriptor();
         return;
     }
     result.key = m_key;

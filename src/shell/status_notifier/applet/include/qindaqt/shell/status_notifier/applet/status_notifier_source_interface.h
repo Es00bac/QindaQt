@@ -4,6 +4,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QVariantMap>
 #include <QtGui/QImage>
 #include <qindaqt/shell/status_notifier/status_notifier_types.h>
 
@@ -64,6 +65,40 @@ public:
     [[nodiscard]] virtual QindaQt::StatusNotifier::RegistryOutcome contextMenu(
         const QindaQt::StatusNotifier::OwnerKey &target, int x, int y) = 0;
 
+    // Optional exported-menu extension. Defaults preserve legacy sources.
+    // Reads are GUI-thread snapshots. menuState returns status none/loading/
+    // ready/error, revision as an exact decimal string, and recursive entries:
+    // id(int), kind(action/submenu/separator), label, enabled, separator,
+    // checkable, checked, radio, iconName, shortcut, children. Invisible nodes
+    // are omitted and disabled ancestors disable descendants. Consumers retain
+    // the captured owner key and revision; only ready state permits invocation.
+    // openMenu prepares root 0 or falls back to legacy ContextMenu only when
+    // no export is advertised. AboutToShow accepts existing enabled submenus;
+    // invokeMenu accepts only existing enabled leaf actions, sends clicked once
+    // without retry, and consumes the captured revision before notification.
+    [[nodiscard]] virtual bool itemIsMenu(const QindaQt::StatusNotifier::OwnerKey &) const
+    { return false; }
+    [[nodiscard]] virtual bool hasExportedMenu(const QindaQt::StatusNotifier::OwnerKey &) const
+    { return false; }
+    [[nodiscard]] virtual QVariantMap menuState(const QindaQt::StatusNotifier::OwnerKey &) const
+    {
+        return {{QStringLiteral("status"), QStringLiteral("none")},
+                {QStringLiteral("revision"), QStringLiteral("0")},
+                {QStringLiteral("entries"), QVariantList{}}};
+    }
+    [[nodiscard]] virtual QindaQt::StatusNotifier::RegistryOutcome openMenu(
+        const QindaQt::StatusNotifier::OwnerKey &target, int x, int y)
+    { return contextMenu(target, x, y); }
+    [[nodiscard]] virtual QindaQt::StatusNotifier::RegistryOutcome aboutToShowMenu(
+        const QindaQt::StatusNotifier::OwnerKey &, quint64, int)
+    { return {QindaQt::StatusNotifier::RegistryStatus::InvalidRequest, QStringLiteral("menu-unavailable")}; }
+    [[nodiscard]] virtual QindaQt::StatusNotifier::RegistryOutcome invokeMenu(
+        const QindaQt::StatusNotifier::OwnerKey &, quint64, int)
+    { return {QindaQt::StatusNotifier::RegistryStatus::InvalidRequest, QStringLiteral("menu-unavailable")}; }
+    [[nodiscard]] virtual QindaQt::StatusNotifier::RegistryOutcome scroll(
+        const QindaQt::StatusNotifier::OwnerKey &, int, const QString &)
+    { return {QindaQt::StatusNotifier::RegistryStatus::InvalidRequest, QStringLiteral("scroll-unavailable")}; }
+
     // AGENT-CONTRACT: the only degradation-recovery transition at this
     // boundary (docs/wiki/shell/status-tray.md). Implementations clear the
     // registry's degradation marker when one is pending and emit changed()
@@ -73,6 +108,8 @@ public:
     virtual void acknowledgeDegraded() = 0;
 
 Q_SIGNALS:
+    // Menu changes do not recreate item delegates or discard menu focus.
+    void menuChanged();
     // Emitted after every registry-affecting event, on the GUI thread —
     // including REJECTED outcomes that still moved registry presentation
     // (e.g. a malformed live replacement or a capacity rejection that set

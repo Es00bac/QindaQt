@@ -130,9 +130,10 @@ hostile icon resolves to the deterministic S1 placeholder and the row says so
 (presented-row match plus `currentGeneration`; generation 0 is never live),
 then the seam revalidates and dispatches once: a reentrancy guard refuses a
 second dispatch while a gesture is in flight, so a seam that emits `changed()`
-synchronously inside a dispatch cannot double it. The menu payload projects to
-a bounded, depth-capped read-only preview; dbusmenu entry activation is a
-later composition lane.
+synchronously inside a dispatch cannot double it. The production menu is a
+bounded hierarchical DBusMenu snapshot loaded through the shared desktop menu
+client. The older descriptor menu projection remains
+available for compatibility tests; the live popup does not use that preview.
 
 An observed empty tray has zero panel extent: `AppletChip` suppresses both its
 surface fill and unavailable marker when the hosted applet's implicit extent
@@ -168,6 +169,9 @@ ctest --test-dir build/dev \
 
 | Test | Scope |
 | --- | --- |
+| `qindaqt.status-notifier-applet-menu-integration-offscreen` | Full private-bus watcher/exporter/controller/compiled-QML composition, menu actions and configuration window in two panel orientations. |
+| `qindaqt.status-notifier-applet-menu-controller` | Captured revision precision, exact coordinates/scroll, stale and denied admission, and menu-only notifications without icon reprojection. |
+| `qindaqt.status-notifier-applet-menus-offscreen` | Real left/right/middle clicks, both scroll axes, direct native fallback, actionable exported menus, checkbox states, hidden/disabled rows, keyboard activation, menu-only primary clicks, live updates and submenu traversal. |
 | `qindaqt.status-notifier-applet-model` | Pure projection: every phase including read-denied Unavailable with no rows, the 24-row cap with truthful overflow, descriptor matching and fail-closed misses, status flags, keyboard texts, menu flattening with the depth cap against hostile chains, determinism. |
 | `qindaqt.status-notifier-applet-controller` | Scripted seam: capability gates (read denial withholds all seam reads; activate denial refuses before dispatch), exactly-once dispatch including a seam that emits `changed()` re-entrantly, stale-generation and owner-loss fencing, overflow truth, data-URL icons with placeholder truth, iconSize re-render, bounded fenced menu preview, and the degradation acknowledgement action (seam forwarding with synchronous reprojection; fail-closed no-op under read denial or a missing source). |
 | `qindaqt.status-notifier-applet-adapter` | Real registry + monitor + watcher composition over a private session bus: population through the seam, exactly one recorded wire `Activate` through the controller, owner disconnect, watcher-loss Degraded with last-known-good retention and replacement-watcher repopulation, immediate Degraded notification on rejected live updates that degrade the registry (malformed replacement and membership-capacity overflow, both with last-known-good retention), and the acknowledgement recovery back to `ready`. |
@@ -176,7 +180,7 @@ ctest --test-dir build/dev \
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
 | `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through; plus the shell-composition pair (adapter/watcher boundary only, no registry/item-client/icon internals, no own bus connections) with its own poison case. |
 | `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, and the explicit `status-items.read` denial withholding all observation. |
-| `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: an empty tray has zero extent and no amber marker; Tab reaches a real item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without dispatch. |
+| `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: an empty tray has zero extent and no amber marker; Tab reaches a real item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without invoking an application action. |
 | `qindaqt.status-notifier-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset, generation-fence contract and staged-module instantiation at the installed boundary. |
 | `qindaqt.status-notifier-applet-runtime-installed-package` | Source-poisoned `StatusNotifierAppletRuntime` stage containing the shell, manifest/profile/theme/policy, and the complete generated StatusNotifier QML module. |
 
@@ -189,17 +193,44 @@ cmake -DQINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR=<repository>/src/shell/status_
   -P tests/shell/status_notifier/applet/check_status_notifier_applet_boundary.cmake
 ```
 
-## Applet non-claims
+## Application menus and gestures
 
-This slice proves the shell's production StatusNotifier composition and the
-offscreen production dispatcher, not live host session items, a real
-watch-registered third-party item on the host bus, dbusmenu entry activation
-(the menu preview is read-only), or assistive-technology bridge behavior; those
-belong to later lanes and their own gates. The verified white/amber smart-shelf
-chip was a redundant legacy task-list alias, not the status tray. The older `system-tray` manifest
-(`data/applets/status-tray.json`) remains an accepted catalog contract
-resolving `implementation-unavailable` beside the hosted `status-notifier`
-applet.
+Right-click, Shift+F10 and the Menu key open an application's exported menu
+directly. Left-click/Enter/Space invokes Activate for ordinary tray items and
+opens the menu for `ItemIsMenu` items. Middle-click forwards SecondaryActivate;
+wheel input preserves its signed delta and horizontal/vertical orientation.
+Coordinate methods receive the item anchor in global logical coordinates,
+including negative coordinates on outputs left of the primary display.
+
+`StatusNotifierMenu.qml` and `StatusNotifierMenuItem.qml` render real actionable
+menus using focusable Qt Basic `Menu` popup windows. Qt owns keyboard traversal,
+submenu placement and screen-edge adjustment. Separators, disabled/hidden
+entries, checkboxes and radio indicators reflect the exporter; a click does not
+optimistically change the application's checked state. Submenus request
+`AboutToShow`, including lazy menus. Root opening also calls `AboutToShow(0)`.
+Loading/error/empty states are visible without introducing an extra “Open menu”
+step. Items without a menu export retain their native `ContextMenu` method.
+
+The injected source seam supplies `menuState`, `openMenu`, `aboutToShowMenu`,
+`invokeMenu`, `itemIsMenu`, `hasExportedMenu` and `scroll`; the controller owns
+capability admission and QML projection. The item transport owns its menu
+collaborator and uses the public shared DBusMenu client. No D-Bus connection,
+proxy or exporter path enters QML. A dedicated `menuChanged` notification updates
+the open menu without recreating the tray icon strip.
+
+Each action carries the captured owner, generation and opaque decimal menu
+revision. Pending invalidation, a changed menu address, retired owner, hidden or
+disabled entry, or old revision prevents dispatch. Menu events are sent once
+without retries after an uncertain result. `NewMenu` and item property changes
+refresh exporter details. See [ADR 0114](../adr/0114-status-notifier-actionable-menus.md)
+for the shared-client composition decision.
+
+Read-only host inspection found Gabbee exporting `/MenuBar` with Configuration
+and Command Studio actions. Installed Venus Pro source uses the same Qt tray
+pattern with configuration and a checked battery-color option, but was not
+running during that inspection. Private fixtures qualify the protocol paths;
+this is not a claim of clicking every third-party action in the user's session.
+Assistive-technology bridge behavior remains separately unqualified.
 
 ## Ownership identity
 
@@ -346,10 +377,9 @@ admission gate. Pixmap structs are decoded by manual wire iteration rather
 than registered-type demarshalling, so a hostile payload can never crash the
 decoder inside libdbus. Unknown properties are ignored.
 Presentation-bearing recognized properties with unexpected types fail the
-descriptor closed. The recorded-only optional facts `WindowId`,
-`OverlayIconName`, `ItemIsMenu`, and
-`Menu` are safe-dropped on a wrong type because they cannot reach the registry
-or renderer. Missing optional properties decode to defaults. Every emitted
+descriptor closed. The optional facts `WindowId`, `OverlayIconName`, `ItemIsMenu`, and
+`Menu` are safe-dropped on a wrong type; menu composition consumes only accepted
+current wire details. Missing optional properties decode to defaults. Every emitted
 result is tagged with the owner
 generation captured at construction and fenced through an injected predicate,
 so a reply racing owner loss or a watcher rebaseline is dropped instead of
@@ -360,11 +390,9 @@ coalesce into at most one in-flight refetch. The intent calls (`activate`,
 methods use the protocol's signed `(int, int)` signature. Callers must evaluate
 and revalidate a `RequestIntent` through the registry before dispatching, and
 a non-horizontal/non-vertical scroll orientation is refused without sending.
-Wire-side details the value model has no slot for — `windowId`,
-`overlayIconName`, `itemIsMenu`, and the DBusMenu exporter path — are recorded
-in `ItemWireDetails` for later composition: the `Menu` path is **recorded but
-not rendered** here; the Global Menu G1 lane delivers the shared dbusmenu
-adapter and a later lane composes it into the tray.
+Wire-side details the value model has no slot for remain in `ItemWireDetails`.
+The menu collaborator consumes `itemIsMenu` and the exporter path through the
+monitor, independently of the pure registry descriptor and icon renderer.
 
 `StatusNotifierItemMonitor` drives the registry through the event sink. It
 watches the watcher name, opens a fresh epoch and re-populates whenever a
@@ -487,7 +515,6 @@ reattach refusal, state-clearing detach, and destructor-triggered detach.
 
 This evidence is source, unit, private-bus, and offscreen-dispatcher level
 with fake items and hosts.
-It does not claim host session bus behavior, live third-party items on a real
-session, dbusmenu rendering (deferred to the Global Menu G1 lane and a later
-composition lane), nested-session evidence, or assistive-technology bridge
-behavior; those belong to later milestones and their own gates.
+The foundation fixtures do not alone qualify a live third-party session or the
+assistive-technology bridge. Application-menu interaction has additional
+controller, private-bus and compiled QML gates described above.

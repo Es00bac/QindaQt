@@ -505,7 +505,7 @@ private slots:
         QVERIFY(wiki.open(QIODevice::ReadOnly));
         const QByteArray wikiText = wiki.readAll();
         QVERIFY(wikiText.contains("Presentation-bearing recognized properties"));
-        QVERIFY(wikiText.contains("recorded-only optional facts"));
+        QVERIFY(wikiText.contains("menu composition consumes only accepted"));
     }
 };
 

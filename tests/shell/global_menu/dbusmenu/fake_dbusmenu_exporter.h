@@ -46,6 +46,7 @@ public:
         return m_groupPropertiesCallCount;
     }
     [[nodiscard]] int aboutToShowCallCount() const noexcept { return m_aboutToShowCallCount; }
+    [[nodiscard]] qint32 lastAboutToShowId() const noexcept { return m_lastAboutToShowId; }
 
 public Q_SLOTS:
     Q_SCRIPTABLE void GetLayout(qint32, qint32, const QStringList &, quint32 &revision,
@@ -68,8 +69,9 @@ public Q_SLOTS:
         return result;
     }
 
-    Q_SCRIPTABLE bool AboutToShow(qint32)
+    Q_SCRIPTABLE bool AboutToShow(qint32 id)
     {
+        m_lastAboutToShowId = id;
         ++m_aboutToShowCallCount;
         return true;
     }
@@ -95,6 +97,7 @@ private:
     int m_layoutCallCount = 0;
     int m_groupPropertiesCallCount = 0;
     int m_aboutToShowCallCount = 0;
+    qint32 m_lastAboutToShowId = -1;
     qint32 m_lastEventId = 0;
     QString m_lastEventName;
 };
