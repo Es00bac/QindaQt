@@ -7,6 +7,15 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
+
+**Reviewed and integrated; Portage installation pending.** The tray uses real
+exported application menus and forwards primary, middle, context and scroll
+input. An additive Qt platform theme propagates the existing palette, fonts and
+icons to standard Qt consumers. Existing desktop styling, layout and useful
+backend dependencies are preserved. See [Handoff](HANDOFF.md) for exact accepted
+candidates, focused evidence and live-session qualification limits.
+
 ### Make File Manager comfortable for everyday browsing (September 8)
 
 **Browsing slice integrated; host installation pending.** Draggable scrollbars,
