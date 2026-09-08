@@ -47,6 +47,11 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool directoriesFirst READ directoriesFirst NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool showHidden READ showHidden NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString viewMode READ viewMode NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(QString nameFilter READ nameFilter NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(int maximumNameFilterLength READ nameFilterLengthLimit CONSTANT FINAL)
+  Q_PROPERTY(int iconSize READ iconSize NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(bool canZoomIn READ canZoomIn NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(bool canZoomOut READ canZoomOut NOTIFY presentationChanged FINAL)
 
 public:
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
@@ -75,6 +80,15 @@ public:
   Q_INVOKABLE void setDirectoriesFirst(bool directoriesFirst);
   // Accepted values are "list" and "grid"; anything else is ignored.
   Q_INVOKABLE void setViewMode(const QString &mode);
+  // GUI-thread, session-local literal filename matching; no I/O or recursion.
+  // Truncates to the bound without splitting UTF-16 pairs. Actual directory
+  // navigation clears the filter; refresh and presentation changes retain it.
+  static constexpr int maximumNameFilterLength = 256;
+  Q_INVOKABLE void setNameFilter(const QString &filter);
+  // Steps through 32, 48, 64, 96 and 128 logical pixels with saturating bounds.
+  // Changes presentation only: listing identities and generations stay intact.
+  Q_INVOKABLE void zoomBy(int steps);
+  Q_INVOKABLE void resetZoom();
 
   [[nodiscard]] QString currentPath() const;
   [[nodiscard]] bool canGoBack() const;
@@ -90,6 +104,11 @@ public:
   [[nodiscard]] bool directoriesFirst() const;
   [[nodiscard]] bool showHidden() const;
   [[nodiscard]] QString viewMode() const;
+  [[nodiscard]] QString nameFilter() const;
+  [[nodiscard]] int nameFilterLengthLimit() const { return maximumNameFilterLength; }
+  [[nodiscard]] int iconSize() const;
+  [[nodiscard]] bool canZoomIn() const;
+  [[nodiscard]] bool canZoomOut() const;
   [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
@@ -105,7 +124,7 @@ signals:
   void presentationChanged();
 
 private:
-  void reload();
+  void reload(bool resetFilter = false);
   // Re-derives the visible listing from m_listedEntries under the active
   // filter/order and republishes statusMessage. Callers emit entriesChanged
   // (and presentationChanged for user-facing setting changes) afterwards.
@@ -126,6 +145,8 @@ private:
   int m_hiddenFilteredCount = 0;
   quint64 m_listingGeneration = 0;
   QString m_viewMode = QStringLiteral("grid");
+  QString m_nameFilter;
+  int m_iconSizeIndex = 2;
 };
 
 } // namespace QindaQt::Apps::FileManager
