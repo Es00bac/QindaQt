@@ -15,11 +15,13 @@ Reviewed screenshot candidate `3b191acd` is integrated as `a5f1fdd8` and
 `f8f0b504`; its input prerequisite was already integrated. Print now delegates
 to Spectacle. The private installed-session proof captured and decoded a real
 region image and observed volume increase with one shell feedback popup.
-The host package still contains source `d1232e75`; this follow-up needs the
-final package refresh. Workspace two-session acceptance still fails at saving
-through the dialog and is not complete.
+The installed package is now `0.1.0_pre20260907-r1`, built from exact source
+`8486e0588e8dd8c21f176be162b53d81ee73a5b6`. Portage build and merge both passed.
+The two-session workspace proof passed against the actual installed launcher
+and plugin, without an artifact overlay. Its reviewed regression is integrated
+at `83d07911`. The remaining release gate is the native CI boot result and tag.
 
-## Reusable workspace checkpoint: integrated, installed acceptance pending
+## Earlier component qualification
 
 Main `541cddef` contains the reviewed combined workspace and desktop-control
 implementation. Save/Reopen is wired into the compositor; containers carry
