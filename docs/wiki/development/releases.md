@@ -84,6 +84,10 @@ this build lane avoids pulling Plasma Workspace and Plasma login sessions into
 a desktop that installs its own session entry. It does not reduce the package
 contract: the full-desktop ebuild still requires release-matched KScreenLocker,
 KWin `lock,shortcuts`, portals, hardware providers, and session utilities.
+For no-lock test sessions, `qindaqt-wm` inspects the selected KWin executable's
+help and omits `--no-lockscreen` when the complete screen-locker feature was
+compiled out; build-tree and installed-discovery boots therefore exercise the
+same launcher without passing an option that this native binary cannot parse.
 
 When the dated stage image and pinned Portage snapshot differ, the CI install
 uses `--update --newuse` with `--usepkgonly`. This permits a compatible official

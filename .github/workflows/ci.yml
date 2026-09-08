@@ -380,7 +380,7 @@ jobs:
 
       - name: Build the complete production tree and nested probe
         run: >-
-          cmake --build build/ci-native-release --parallel 2
+          cmake --build build/ci-native-release --parallel "$(nproc)"
           --target src/all qindaqt-session-probe
 
       - name: Stage the full desktop install

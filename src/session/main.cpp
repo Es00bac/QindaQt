@@ -6,15 +6,50 @@
 
 #include <QCoreApplication>
 #include <QFile>
+#include <QProcess>
+#include <QProcessEnvironment>
 #include <QStandardPaths>
 #include <QTextStream>
 
 #include <cerrno>
 #include <cstring>
+#include <optional>
 #include <unistd.h>
 #include <vector>
 
 namespace {
+
+std::optional<QindaQt::Session::KWinCommandCapabilities> queryKWinCapabilities(
+    const QString &executable,
+    QString *error)
+{
+    QProcess probe;
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QStringLiteral("LC_ALL"), QStringLiteral("C"));
+    probe.setProcessEnvironment(environment);
+    probe.start(executable, {QStringLiteral("--help")}, QIODevice::ReadOnly);
+    if (!probe.waitForStarted(5000)) {
+        *error = QStringLiteral("could not inspect %1 command options: %2")
+                     .arg(executable, probe.errorString());
+        return std::nullopt;
+    }
+    if (!probe.waitForFinished(5000)) {
+        probe.kill();
+        probe.waitForFinished();
+        *error = QStringLiteral("timed out inspecting %1 command options").arg(executable);
+        return std::nullopt;
+    }
+    if (probe.exitStatus() != QProcess::NormalExit || probe.exitCode() != 0) {
+        *error = QStringLiteral("%1 --help failed with exit code %2")
+                     .arg(executable)
+                     .arg(probe.exitCode());
+        return std::nullopt;
+    }
+
+    const auto helpText = QString::fromUtf8(probe.readAllStandardOutput())
+        + QString::fromUtf8(probe.readAllStandardError());
+    return QindaQt::Session::KWinCommandBuilder::capabilitiesFromHelpText(helpText);
+}
 
 int replaceWithKWin(const QStringList &command)
 {
@@ -66,7 +101,23 @@ int main(int argc, char *argv[])
         QTextStream(stderr) << "qindaqt-wm: " << error << '\n';
         return 2;
     }
-    const auto command = QindaQt::Session::KWinCommandBuilder::build(*options, &error);
+    QindaQt::Session::KWinCommandCapabilities capabilities;
+    if (!options->lockscreen) {
+        const auto detected = queryKWinCapabilities(options->kwinExecutable, &error);
+        if (!detected) {
+            QTextStream(stderr) << "qindaqt-wm: " << error << '\n';
+            return 2;
+        }
+        capabilities = *detected;
+        if (capabilities.lockscreenOption && !capabilities.noLockscreenOption) {
+            QTextStream(stderr)
+                << "qindaqt-wm: selected KWin cannot disable its compiled-in screen locker\n";
+            return 2;
+        }
+    }
+    const auto command = QindaQt::Session::KWinCommandBuilder::build(*options,
+                                                                     &error,
+                                                                     capabilities);
     if (command.isEmpty()) {
         QTextStream(stderr) << "qindaqt-wm: " << error << '\n';
         return 2;
