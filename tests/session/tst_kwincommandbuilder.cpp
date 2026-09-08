@@ -13,6 +13,7 @@ class KWinCommandBuilderTest final : public QObject
 private slots:
     void buildsVirtualXWaylandSession();
     void buildsNestedSession();
+    void adaptsToCompiledOutScreenLocker();
     void rejectsInvalidBoundaries();
 };
 
@@ -57,6 +58,29 @@ void KWinCommandBuilderTest::buildsNestedSession()
     QCOMPARE(command[command.indexOf(QStringLiteral("--wayland-display")) + 1],
              QStringLiteral("wayland-parent"));
     QVERIFY(!command.contains(QStringLiteral("--xwayland")));
+}
+
+void KWinCommandBuilderTest::adaptsToCompiledOutScreenLocker()
+{
+    const auto withScreenLocker = KWinCommandBuilder::capabilitiesFromHelpText(
+        QStringLiteral("--lockscreen\n--no-lockscreen\n--no-global-shortcuts\n"));
+    QVERIFY(withScreenLocker.lockscreenOption);
+    QVERIFY(withScreenLocker.noLockscreenOption);
+
+    const auto withoutScreenLocker = KWinCommandBuilder::capabilitiesFromHelpText(
+        QStringLiteral("--no-global-shortcuts\n"));
+    QVERIFY(!withoutScreenLocker.lockscreenOption);
+    QVERIFY(!withoutScreenLocker.noLockscreenOption);
+
+    SessionOptions options;
+    options.backend = Backend::Virtual;
+    options.lockscreen = false;
+    options.globalShortcuts = false;
+    QString error;
+    const auto command = KWinCommandBuilder::build(options, &error, withoutScreenLocker);
+    QVERIFY2(!command.isEmpty(), qPrintable(error));
+    QVERIFY(!command.contains(QStringLiteral("--no-lockscreen")));
+    QVERIFY(command.contains(QStringLiteral("--no-global-shortcuts")));
 }
 
 void KWinCommandBuilderTest::rejectsInvalidBoundaries()

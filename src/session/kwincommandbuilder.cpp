@@ -31,7 +31,9 @@ bool validSocketName(const QString &name)
 
 } // namespace
 
-QStringList KWinCommandBuilder::build(const SessionOptions &options, QString *error)
+QStringList KWinCommandBuilder::build(const SessionOptions &options,
+                                      QString *error,
+                                      KWinCommandCapabilities capabilities)
 {
     if (options.kwinExecutable.trimmed().isEmpty()) {
         return fail(error, QStringLiteral("KWin executable must not be empty"));
@@ -86,7 +88,10 @@ QStringList KWinCommandBuilder::build(const SessionOptions &options, QString *er
     if (options.xwayland) {
         command.append(QStringLiteral("--xwayland"));
     }
-    if (!options.lockscreen) {
+    // AGENT-CONTRACT: KWin 6.6 registers this option only when its screen-locker
+    // feature is compiled in. A -lock build already cannot start a lock screen,
+    // so omitting the unavailable option preserves the requested behavior.
+    if (!options.lockscreen && capabilities.noLockscreenOption) {
         command.append(QStringLiteral("--no-lockscreen"));
     }
     if (!options.globalShortcuts) {
@@ -99,6 +104,14 @@ QStringList KWinCommandBuilder::build(const SessionOptions &options, QString *er
         command.append({QStringLiteral("--exit-with-session"), options.sessionExecutable});
     }
     return command;
+}
+
+KWinCommandCapabilities KWinCommandBuilder::capabilitiesFromHelpText(QStringView helpText)
+{
+    return {
+        .lockscreenOption = helpText.contains(QStringLiteral("--lockscreen")),
+        .noLockscreenOption = helpText.contains(QStringLiteral("--no-lockscreen")),
+    };
 }
 
 } // namespace QindaQt::Session
