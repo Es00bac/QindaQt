@@ -256,9 +256,11 @@ void AppearanceSettingsModelTests::loadingThenReadyWithConfirmedBaseline()
              expected.themeId);
     QCOMPARE(model.draft().value(QLatin1String(AppearanceKeys::FontPointSize)),
              expected.fontPointSize);
-    QCOMPARE(model.resolvedThemeId(), QStringLiteral("qinda-dark"));
+    // System scheme preserves the installed explicit theme even when the
+    // host reports dark; the preview must not invent a fallback notice.
+    QCOMPARE(model.resolvedThemeId(), expected.themeId);
     QVERIFY(model.configuredThemeInstalled());
-    QVERIFY(model.fallbackNotice().contains(QStringLiteral("qinda-dark")));
+    QVERIFY(model.fallbackNotice().isEmpty());
     QVERIFY(model.statusText().isEmpty());
 }
 

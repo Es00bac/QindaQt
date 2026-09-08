@@ -30,7 +30,7 @@ NETWORK_QML_FILES = (
 
 FIRST_PARTY_DESKTOP_ICONS = {
     "org.qindaqt.Settings.desktop": "preferences-system",
-    "org.qindaqt.TextEditor.desktop": "accessories-text-editor",
+    "org.qindaqt.TextEditor.desktop": "org.qindaqt.TextEditor",
     "org.qindaqt.Terminal.desktop": "utilities-terminal",
     "org.qindaqt.FileManager.desktop": "system-file-manager",
     "org.qindaqt.Welcome.desktop": "help-about",
