@@ -179,7 +179,9 @@ def _parent_library_environment(
     """Give the parent Weston (and its screenshooter) their own prefix libraries."""
 
     parent_environment = dict(environment)
-    weston_libraries, _plugins, _qml = library_search_roots([Path(arguments.weston)])
+    weston_libraries, _plugins, _qml = library_search_roots(
+        [Path(arguments.weston)], include_system_libraries=True
+    )
     if weston_libraries:
         existing = parent_environment.get("LD_LIBRARY_PATH", "")
         parent_environment["LD_LIBRARY_PATH"] = ":".join(

@@ -27,6 +27,8 @@ from desktop_session_sandbox import (
     remove_run_root,
     sandbox_environment,
 )
+from desktop_session_launch import _parent_library_environment
+from panel_visibility_capture import visibility_probe_command
 from desktop_session_host_tools import (
     library_search_roots,
     system_mounts,
@@ -134,6 +136,40 @@ class RuntimeBoundaryTests(unittest.TestCase):
                 qml_import_path=qml_roots,
             )
             self.assertEqual(environment["LD_LIBRARY_PATH"].split(":"), libraries)
+
+    def test_system_loader_opt_in_keeps_qt_and_qml_roots_private(self) -> None:
+        with patch("desktop_session_host_tools.tool_root", return_value=Path("/usr")):
+            self.assertEqual(library_search_roots([Path("/usr/bin/weston")]),
+                             ([], [], []))
+            libraries, plugins, qml = library_search_roots(
+                [Path("/usr/bin/weston")], include_system_libraries=True)
+        expected = list(dict.fromkeys(str(path.resolve(strict=True))
+                        for path in (Path("/usr/lib"), Path("/usr/lib64"))
+                        if path.is_dir()))
+        self.assertEqual(libraries, expected)
+        self.assertEqual((plugins, qml), ([], []))
+
+    def test_system_loader_opt_in_rejects_escaping_library_root(self) -> None:
+        with patch("desktop_session_host_tools.tool_root", return_value=Path("/usr")), \
+             patch.object(Path, "exists", return_value=True), \
+             patch.object(Path, "resolve", return_value=Path("/outside/lib")), \
+             patch.object(Path, "is_dir", return_value=True):
+            with self.assertRaisesRegex(SandboxContractError, "escapes its tool prefix"):
+                library_search_roots([Path("/usr/bin/weston")],
+                                     include_system_libraries=True)
+
+    def test_system_parent_capture_receives_explicit_loader_closure(self) -> None:
+        arguments = Namespace(weston=Path("/usr/bin/weston"),
+                              visibility_probe=Path("/opt/qindaqt-tools/probe"),
+                              weston_screenshooter=Path("/usr/bin/weston-screenshooter"))
+        application_environment = {"QT_PLUGIN_PATH": "/private/plugins"}
+        with patch("desktop_session_host_tools.tool_root", return_value=Path("/usr")):
+            parent = _parent_library_environment(arguments, application_environment)
+        command = visibility_probe_command(arguments, parent)
+        self.assertEqual(command[2], parent["LD_LIBRARY_PATH"])
+        self.assertEqual(parent["QT_PLUGIN_PATH"], "/private/plugins")
+        self.assertNotIn("QML_IMPORT_PATH", parent)
+        self.assertNotIn("LD_LIBRARY_PATH", application_environment)
 
     def test_generated_mounts_admit_only_the_host_loader_cache_file(self) -> None:
         mounts = system_mounts([Path(sys.executable)])
