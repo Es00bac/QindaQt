@@ -178,6 +178,15 @@ can request a revisioned reread. `Version`, `Status`, and `TextDirection` are
 read through the standard properties interface and published only as one
 validated metadata value.
 
+`AboutToShow(0)` prepares an exported root, while `Event` still requires a
+positive action ID. `isLayoutCurrent()` and `layoutCurrentChanged()` let
+consumers retain a menu during refresh while refusing stale action dispatch.
+Currentness is false during layout reads and root/submenu preparation, and
+after failed reads; an accepted complete layout and completed preparation
+restore it. These additive observations support the tray's exact-owner menu
+binding in [ADR-0114](../adr/0114-status-notifier-actionable-menus.md) without
+changing the global menu ownership or publication contracts.
+
 The decoder accepts the recursive `(ia{sv}av)` layout and converts it to the
 canonical tree as one atomic operation. It enforces the canonical depth,
 children, total-item, label, id, shortcut, and per-item property-count limits,

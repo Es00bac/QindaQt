@@ -51,6 +51,10 @@ public:
     [[nodiscard]] Exporter::MenuSnapshot snapshot() const override;
     [[nodiscard]] ClientMetadata metadata() const;
     [[nodiscard]] quint32 remoteRevision() const noexcept;
+    // False during layout/AboutToShow requests and after a failed read. The
+    // retained snapshot may still be displayed, but current-action consumers
+    // must refuse dispatch until a complete accepted read makes it true.
+    [[nodiscard]] bool isLayoutCurrent() const noexcept;
 
     void refreshLayout();
     void requestGroupProperties(const QList<qint32> &itemIds);
@@ -60,6 +64,7 @@ public:
 
 Q_SIGNALS:
     void treeChanged();
+    void layoutCurrentChanged();
     void metadataChanged();
     void unavailable();
     void rejected(QString reasonCode);
@@ -82,6 +87,7 @@ private Q_SLOTS:
 
 private:
     void requestMetadata();
+    void setLayoutCurrent(bool current);
     void disconnectSignals();
     void retirePendingCalls();
     void handleOwnerLoss();
@@ -101,6 +107,9 @@ private:
     bool m_started = false;
     bool m_layoutInFlight = false;
     bool m_layoutDirty = false;
+    bool m_layoutCurrent = false;
+    bool m_layoutValid = false;
+    int m_aboutToShowPending = 0;
 };
 
 } // namespace QindaQt::Shell::GlobalMenu::DbusMenu
