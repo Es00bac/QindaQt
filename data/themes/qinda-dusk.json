@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
   "id": "qinda-dusk",
-  "name": "QindaPunk Dusk",
+  "name": "QindaQt Velvet",
   "variant": "dusk",
   "iconTheme": "QindaQt",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
-  "cornerRadius": 10,
+  "cornerRadius": 12,
   "motionDuration": 160,
   "blurEnabled": true,
   "colors": {
-    "canvas": "#192634",
-    "surface": "#243443",
-    "surfaceRaised": "#304355",
-    "border": "#5B6B7C",
-    "text": "#F4F0E8",
-    "textMuted": "#B9C0C3",
-    "accent": "#E19A3C",
-    "accentText": "#1B1309",
-    "danger": "#EC786B"
+    "canvas": "#29212D",
+    "surface": "#352A39",
+    "surfaceRaised": "#433549",
+    "border": "#83708A",
+    "text": "#FCF1F5",
+    "textMuted": "#CFBDD0",
+    "accent": "#EABC9C",
+    "accentText": "#30201C",
+    "danger": "#F39CAA"
   }
 }

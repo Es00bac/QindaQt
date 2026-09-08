@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
   "id": "qinda-dark",
-  "name": "QindaPunk Nightfall",
+  "name": "QindaQt Smoked Plum",
   "variant": "dark",
   "iconTheme": "QindaQt",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
-  "cornerRadius": 10,
+  "cornerRadius": 12,
   "motionDuration": 160,
   "blurEnabled": false,
   "colors": {
-    "canvas": "#111E2C",
-    "surface": "#192939",
-    "surfaceRaised": "#273746",
-    "border": "#526170",
-    "text": "#F2EFE8",
-    "textMuted": "#B0B6B7",
-    "accent": "#D98A32",
-    "accentText": "#1B1309",
-    "danger": "#E86F62"
+    "canvas": "#211D27",
+    "surface": "#2B2633",
+    "surfaceRaised": "#393140",
+    "border": "#746779",
+    "text": "#F6EFF2",
+    "textMuted": "#C3B5C3",
+    "accent": "#EAB391",
+    "accentText": "#30201C",
+    "danger": "#F18E98"
   }
 }

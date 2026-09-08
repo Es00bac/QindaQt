@@ -196,6 +196,27 @@ CANON = {
     ),
 }
 
+# App navigation commands have distinct small-size silhouettes.
+CANON.update({
+    "application-menu": Icon(GROUP, strokes("M14 18h36", "M14 32h36", "M14 46h36"),
+        strokes("M14 18h36", "M14 32h36", "M14 46h36", color=BLUE)),
+    "folder-new": Icon(GROUP, stroke(FOLDER_D) + stroke("M32 29v16M24 37h16", width=4),
+        filled(FOLDER_D, fill=APRICOT) + stroke("M32 29v16M24 37h16", color=INK, width=4)),
+    "document-edit": Icon(GROUP, stroke("M14 44l4-13L42 7l13 13-24 24zM18 31l13 13M37 12l13 13M14 44l-2 8 8-2", width=4),
+        filled("M14 44l4-13L42 7l13 13-24 24z", fill=AMBER) + stroke("M18 31l13 13M37 12l13 13M14 44l-2 8 8-2", width=4)),
+    "bookmark-new": Icon(GROUP, stroke("M18 10h28v44L32 43 18 54z", width=4) + stroke("M24 26h16M32 18v16", width=4),
+        filled("M18 10h28v44L32 43 18 54z", fill=BLUE) + stroke("M24 26h16M32 18v16", color=PORCELAIN, width=4)),
+    "bookmark-remove": Icon(GROUP, stroke("M18 10h28v44L32 43 18 54z", width=4) + stroke("M24 26h16", width=4),
+        filled("M18 10h28v44L32 43 18 54z", fill=BLUE) + stroke("M24 26h16", color=PORCELAIN, width=4)),
+    "list-add": Icon(GROUP, stroke("M32 14v36M14 32h36"), stroke("M32 14v36M14 32h36", color=BLUE)),
+    "list-remove": Icon(GROUP, stroke("M14 32h36"), stroke("M14 32h36", color=BLUE)),
+    "edit-delete": Icon(GROUP, stroke("M14 18h36M24 10h16M19 19l3 34h20l3-34M28 27v17M36 27v17", width=4),
+        stroke("M14 18h36M24 10h16M19 19l3 34h20l3-34M28 27v17M36 27v17", color=APRICOT, width=4)),
+    "emblem-symbolic-link": Icon(GROUP, stroke("M27 22l8-8a10 10 0 0 1 14 14l-8 8M22 27l-8 8a10 10 0 0 0 14 14l8-8M24 40l16-16", width=5),
+        stroke("M27 22l8-8a10 10 0 0 1 14 14l-8 8M22 27l-8 8a10 10 0 0 0 14 14l8-8M24 40l16-16", color=BLUE, width=5)),
+})
+
 ALIASES = {
+    "view-list-details": ("view-list", None),
     "system-search": ("edit-find", None),
 }

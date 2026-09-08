@@ -12,7 +12,7 @@ bool ApplicationAppearanceController::publishTokens(
       *error = QStringLiteral("No validated application theme");
     return false;
   }
-  return facade.publish(m_theme, {}, error);
+  return facade.publish(m_theme, accessibilityInputs(), error);
 }
 
 } // namespace QindaQt::AppAppearance

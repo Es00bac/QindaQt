@@ -48,7 +48,7 @@ T.ApplicationWindow {
             shortcuts: [qsTr("Meta + Shift + left drag"), qsTr("Escape to cancel")],
             cards: [
                 { marker: "↔", title: qsTr("Drop on an edge for a split"), body: qsTr("An edge target places the dragged window beside the target. Splits can be horizontal or vertical, and a later split can sit inside an existing one. Drag the divider between windows to give either side more room.") },
-                { marker: "＋", title: qsTr("Drop in the center or tab strip for a page"), body: qsTr("The dragged window becomes another top-level desktop tab page in the group. This is a page of windows, which is different from document tabs inside an app.") },
+                { marker: "＋", title: qsTr("Drop in the center or tab strip for a page"), body: qsTr("The dragged window becomes another top-level desktop tab page in the group. Each QindaQt document or terminal session is a window; the desktop provides its tabs and splits.") },
                 { marker: "Esc", title: qsTr("Change your mind safely"), body: qsTr("Press Escape during the arrangement to cancel it. Drop an independent window outside every valid target to leave it independent; a grouped member dropped there leaves its group and becomes independent.") }
             ]
         },
@@ -59,7 +59,7 @@ T.ApplicationWindow {
             diagram: "container", hero: "",
             shortcuts: [qsTr("Meta + Ctrl + PageDown / PageUp"), qsTr("Meta + Ctrl + Shift + PageDown / PageUp")],
             cards: [
-                { marker: "1", title: qsTr("Desktop pages are above app content"), body: qsTr("A desktop page can hold a browser, an editor, or an entire split. Document tabs remain inside their own application and are managed by that app.") },
+                { marker: "1", title: qsTr("Desktop pages are above app content"), body: qsTr("A desktop page can hold a browser, an editor, or an entire split. QindaQt apps open documents and sessions in ordinary windows. Group them here to build your workspace.") },
                 { marker: "2", title: qsTr("Switch and reorder pages"), body: qsTr("Click a top-level tab to activate its page. Use Meta+Ctrl+PageDown or PageUp to move between pages; add Shift to reorder the active page.") },
                 { marker: "3", title: qsTr("Nested splits stay part of one group"), body: qsTr("A page may split again inside either side. The group still moves, switches, and appears as one task while each member keeps its own content and focus.") }
             ]

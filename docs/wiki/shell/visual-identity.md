@@ -1,35 +1,42 @@
 # QindaQt visual identity
 
-QindaQt's **QindaPunk** identity combines a cinematic ink-blue night, graphite
-surfaces, pale porcelain text and a restrained amber action color. It should
-feel precise and characterful while leaving the wallpaper's quiet areas usable
-for work. Artwork supports readable controls and an uncluttered workspace.
+QindaQt's Pearl and Smoked Plum identity pairs warm ceramic surfaces with
+rounded plum glass and restrained apricot highlights. Velvet is the dusk
+variant. The character comes from shape, material and useful pictograms;
+working surfaces remain calm and readable. [ADR-0098](../adr/0098-use-pearl-and-smoked-plum-app-materials.md)
+supersedes the former mandatory blue/amber QindaPunk palette.
 
 ## Palette and form
 
 | Color | Reference | Role |
 | --- | --- | --- |
-| Ink night | `#111E2C` | Dark grounding and strong silhouettes |
-| Graphite | `#192939` | Nightfall application surfaces |
-| Porcelain | `#F5F7F3` | Light counterpart surfaces |
-| Amber | `#D98A32` | Action and selected-state emphasis |
-| Burnt amber | `#9B4D12` | Light-theme action color with readable text |
-| Ice blue | `#83BDF2` | Status/info and focus fallback only |
+| Smoked Plum | `#211D27` | Dark canvas and icon outlines |
+| Plum glass | `#2B2633` | Raised dark surface |
+| Pearl | `#FAF5F0` | Light surfaces and icon paper |
+| Apricot | `#EAB391` | Dark-theme action highlight |
+| Fired clay | `#8C4D38` | Readable light-theme action color |
+| Heather | `#9C86AA` | Layered application icon body |
 
-The Nightfall and Porcelain values above are the packaged `qinda-dark` and
-`qinda-light` semantic theme roles. Ice blue is supplied by QST status/info
-derivation and is not a general-purpose accent. UI foregrounds, state colors,
-high contrast, motion preferences, and semantic contrast rules remain owned by
-[design tokens](../architecture/design-tokens.md).
+These are authored theme and artwork values, never per-application palette
+literals. Semantic foregrounds, focus, state colors and contrast belong to
+[design tokens](../architecture/design-tokens.md). Application content uses
+opaque backgrounds. Local translucent gradients, fine rims and rounded layers
+suggest glass without sampling wallpaper. Reduced transparency and high
+contrast remove these layers; text never fades with its container.
 
-Application icons use rounded silhouettes and a few clear layers. First-party
-application icons draw a blue body with at most one amber accent; jade appears
-only for success or positive status, never as a brand color (see
-[Icon theme](icon-theme.md)). Action and
-status icons must communicate their meaning at small sizes without relying on
-color. Different battery levels, navigation directions, and destructive actions
-must remain distinguishable. The same rounded vocabulary connects the icons
-to the dock; detailed texture belongs in the wallpaper rather than tiny controls.
+Application icons use tactile rounded silhouettes with pearl marks and a
+restrained apricot detail. Navigation commands use recognizable symbolic
+geometry with theme-derived tint. Color supplements shape. Places retain short
+names; file grids emphasize MIME icons and image previews. Tooltips and accessible
+names explain icon buttons without permanent paragraphs of instruction.
+
+A small original glass-folder illustration adds personality to empty directories;
+its generation provenance is in [ARTWORK.md](../../../data/artwork/ARTWORK.md).
+Mascot artwork is an accent, never a substitute for actionable UI.
+
+One document, directory or shell session occupies one ordinary app window.
+QindaQt containers own task grouping, tabs and window splits; first-party apps
+do not build parallel task-management systems.
 
 ## Wallpaper collection
 
@@ -46,7 +53,7 @@ shape vocabulary rather than merely recoloring one image. The original PNGs
 are 1672 × 941 pixels. Generation provenance and full prompts are preserved
 with the assets in `data/wallpapers/ARTWORK.md`.
 
-The packaged QindaPunk theme pair uses `qinda-punk.png` as its companion
+The packaged default theme pair uses `qinda-punk.png` as its companion
 wallpaper when the default appearance has no explicit wallpaper choice. Use
 [Appearance Settings](../apps/appearance-settings.md) to select artwork. The
 desktop preserves an explicit user choice, including no wallpaper.
