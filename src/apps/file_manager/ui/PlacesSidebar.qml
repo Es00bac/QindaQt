@@ -8,16 +8,17 @@ import QindaQt.Controls 1.0 as Qinda
 // Fixed places plus the user's persisted bookmarks. Activation only routes a
 // path into NavigationController::navigateTo; a vanished bookmark therefore
 // lands on the ordinary navigation state card.
-Rectangle {
+Qinda.MaterialSurface {
     id: root
+    radius: 0
     objectName: "placesSidebar"
 
     required property var navigationController
     required property var placesController
     required property var appCoordinator
 
-    implicitWidth: 220
-    color: Tokens.bg.base
+    implicitWidth: 196
+    color: Tokens.bg.raised
 
     ColumnLayout {
         anchors.fill: parent
@@ -33,8 +34,9 @@ Rectangle {
         Repeater {
             model: root.placesController.places
 
-            Qinda.Button {
+            PlaceButton {
                 required property var modelData
+                iconName: modelData.id === "home" ? "user-home" : modelData.id === "trash" ? "user-trash" : "drive-harddisk"
 
                 objectName: "placeButton_" + modelData.id
                 Layout.fillWidth: true
@@ -55,9 +57,10 @@ Rectangle {
                 muted: true
                 Accessible.ignored: true
             }
-            Qinda.Button {
+            IconButton {
+                iconName: "bookmark-new"
                 objectName: "addBookmarkButton"
-                text: qsTr("Add")
+                text: qsTr("Bookmark this folder")
                 emphasized: false
                 accessibleDescription: qsTr("Bookmark the current folder")
                 onClicked: root.appCoordinator.activateAction("bookmark.add")
@@ -83,7 +86,8 @@ Rectangle {
                 width: bookmarkList.width
                 spacing: Tokens.space["1"]
 
-                Qinda.Button {
+                PlaceButton {
+                    iconName: "folder"
                     objectName: "bookmarkButton_" + bookmarkRow.modelData.index
                     Layout.fillWidth: true
                     text: bookmarkRow.modelData.name
@@ -91,9 +95,11 @@ Rectangle {
                     accessibleDescription: qsTr("Open %1").arg(bookmarkRow.modelData.path)
                     onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
                 }
-                Qinda.Button {
+                IconButton {
+                    iconName: "edit-delete"
+                    implicitWidth: 28
                     objectName: "removeBookmark_" + bookmarkRow.modelData.index
-                    text: qsTr("Remove")
+                    text: qsTr("Remove bookmark")
                     emphasized: false
                     accessibleDescription: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
                     onClicked: root.placesController.removeBookmark(bookmarkRow.modelData.index)
@@ -101,12 +107,5 @@ Rectangle {
             }
         }
 
-        Qinda.Label {
-            Layout.fillWidth: true
-            visible: root.placesController.bookmarks.length === 0
-            text: qsTr("No bookmarks yet")
-            muted: true
-            Accessible.ignored: true
-        }
     }
 }

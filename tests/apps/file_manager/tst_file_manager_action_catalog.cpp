@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 15);
+  QCOMPARE(actions.size(), 19);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -39,7 +39,8 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("operation.cancel"), QStringLiteral("edit.select-all"),
       QStringLiteral("view.show-hidden"), QStringLiteral("view.grid-mode"),
       QStringLiteral("view.focus-location"), QStringLiteral("go.home"),
-      QStringLiteral("bookmark.add")};
+      QStringLiteral("bookmark.add"), QStringLiteral("go.back"),
+      QStringLiteral("go.forward"), QStringLiteral("go.up"), QStringLiteral("view.refresh")};
   QCOMPARE(identities, expected);
 
   const auto trash = std::find_if(actions.cbegin(), actions.cend(), [](const auto &action) {

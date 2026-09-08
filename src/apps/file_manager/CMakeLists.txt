@@ -12,6 +12,8 @@ target_sources(
         mutation/mutation_types.cpp
         mutation/safe_path_operations.cpp
         mutation/safe_tree_operations.cpp
+        preview/local_preview.cpp
+        preview/preview_provider.cpp
         model/bookmarks_store.cpp
         model/launch_intent.cpp
         model/listing_order.cpp
@@ -29,6 +31,8 @@ target_sources(
         mutation/mutation_types.h
         mutation/safe_path_operations.h
         mutation/safe_tree_operations.h
+        preview/local_preview.h
+        preview/preview_provider.h
         model/bookmarks_store.h
         model/directory_lister.h
         model/file_manager_types.h
@@ -42,7 +46,7 @@ target_sources(
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
     qindaqt_file_manager_support
-    PUBLIC QindaQt::AppShell QindaQt::AppShellMenuExport Qt6::Core Qt6::Gui
+    PUBLIC QindaQt::AppShell QindaQt::AppShellMenuExport Qt6::Core Qt6::Gui Qt6::Quick
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
@@ -56,11 +60,18 @@ qt_add_executable(qindaqt-file-manager
     runtime/qml_component_ready.cpp
     runtime/qml_component_ready.h
 )
+set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png"
+    PROPERTIES QT_RESOURCE_ALIAS empty-folder.png)
+qt_add_resources(qindaqt-file-manager file_manager_artwork
+    PREFIX /qindaqt/file-manager
+    FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
 qt_add_qml_module(
     qindaqt-file-manager
     URI QindaQt.FileManagerApp
     VERSION 1.0
     QML_FILES
+        ui/IconButton.qml
+        ui/PlaceButton.qml
         ui/Main.qml
         ui/Toolbar.qml
         ui/Breadcrumb.qml

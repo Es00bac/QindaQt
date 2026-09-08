@@ -45,14 +45,27 @@ Item {
     readonly property var current: presentation[statusKey] !== undefined
         ? presentation[statusKey] : presentation["error"]
 
+    Column {
+        anchors.centerIn: parent
+        width: Math.min(420, root.width - Tokens.space["4"] * 2)
+        spacing: Tokens.space["3"]
+        Image {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.statusKey === "empty" && root.height >= 280
+            width: 120
+            height: 120
+            source: "qrc:/qindaqt/file-manager/empty-folder.png"
+            fillMode: Image.PreserveAspectFit
+            Accessible.ignored: true
+        }
     Qinda.StateCard {
         objectName: "navigationStateCard"
-        anchors.centerIn: parent
-        width: Math.min(420, root.width - Tokens.space["6"] * 2)
+        width: parent.width
         status: root.current.status
         title: root.current.title
-        message: root.statusMessage
+        message: root.statusKey === "empty" ? qsTr("A little room for something new.") : root.statusMessage
         actionText: root.current.showRetry ? qsTr("Retry") : ""
         onActionTriggered: root.retryRequested()
+    }
     }
 }

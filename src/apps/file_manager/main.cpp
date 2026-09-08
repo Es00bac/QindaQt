@@ -6,6 +6,7 @@
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
 #include "runtime/qml_component_ready.h"
+#include "preview/preview_provider.h"
 #include "runtime/mutation_ui_action_probe.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
@@ -26,6 +27,7 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 #include <QRegularExpression>
@@ -106,7 +108,10 @@ registerAndPublishTokens(QQmlApplicationEngine &engine,
     }
     return nullptr;
   }
-  if (!facade->publish(theme, {}, error)) {
+  QIcon::setThemeName(theme.iconTheme);
+  QindaQt::DesignTokens::AccessibilityInputs inputs;
+  inputs.highContrast = theme.variant == QStringLiteral("high-contrast");
+  if (!facade->publish(theme, inputs, error)) {
     return nullptr;
   }
   return facade;
@@ -120,7 +125,11 @@ public:
                                const QString &explicitTheme)
       : transport(QDBusConnection::sessionBus()),
         client(transport, {QStringLiteral("appearance.theme"),
-                           QStringLiteral("appearance.colorScheme")}),
+                           QStringLiteral("appearance.colorScheme"),
+                           QStringLiteral("fonts.family"), QStringLiteral("fonts.monospaceFamily"),
+                           QStringLiteral("fonts.pointSize"), QStringLiteral("accessibility.textScale"),
+                           QStringLiteral("accessibility.highContrast"), QStringLiteral("accessibility.reducedMotion"),
+                           QStringLiteral("accessibility.reducedTransparency")}),
         controller(client,
                    QindaQt::AppAppearance::standardThemeDirectories(themeDirectory),
                    QStringLiteral("qinda-dark"), explicitTheme) {
@@ -128,6 +137,7 @@ public:
         &controller,
         &QindaQt::AppAppearance::ApplicationAppearanceController::appearanceChanged,
         &engine, [&facade, this] {
+          QIcon::setThemeName(controller.theme().iconTheme);
           QString error;
           if (!controller.publishTokens(facade, &error))
             qWarning().noquote() << "QindaQt File Manager kept its theme:" << error;
@@ -211,6 +221,9 @@ private:
   Q_UNUSED(undoDisabled);
   Q_UNUSED(restoreDisabled);
   Q_UNUSED(cancelDisabled);
+  const auto initialGrid = coordinator.setActionChecked(
+      QStringLiteral("view.grid-mode"), navigation.viewMode() == QStringLiteral("grid"));
+  Q_UNUSED(initialGrid);
   return {};
 }
 
@@ -379,6 +392,11 @@ int main(int argc, char **argv) {
   auto controller = std::make_unique<QindaQt::Apps::FileManager::NavigationController>(
       std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
       std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>());
+  auto *previews = new QindaQt::Apps::FileManager::PreviewProvider(
+      std::make_unique<QindaQt::Apps::FileManager::LocalPreviewDecoder>());
+  engine.addImageProvider(QStringLiteral("previews"), previews);
+  QObject::connect(controller.get(), &QindaQt::Apps::FileManager::NavigationController::entriesChanged,
+                   &engine, [previews, &controller] { previews->setGeneration(controller->listingGeneration()); });
   controller->navigateTo(startPath);
 
   const QString trashRoot = QDir(QStandardPaths::writableLocation(

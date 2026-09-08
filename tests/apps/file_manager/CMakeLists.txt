@@ -206,3 +206,30 @@ set_tests_properties(qindaqt.file-manager-selection-qml PROPERTIES
     LABELS "file-manager"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_local_preview_tests
+    tst_local_preview.cpp
+    qindaqt.file-manager-local-preview
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_preview_provider_tests
+    tst_preview_provider.cpp
+    qindaqt.file-manager-preview-provider
+)
+
+set_tests_properties(qindaqt.file-manager-preview-provider PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
+qt_add_executable(qindaqt_file_manager_visual_probe visual_probe.cpp)
+target_link_libraries(qindaqt_file_manager_visual_probe PRIVATE
+    qindaqt_file_manager_support QindaQt::TokensQml qindaqt_themes Qt6::Quick)
+target_compile_features(qindaqt_file_manager_visual_probe PRIVATE cxx_std_20)
+qindaqt_enable_warnings(qindaqt_file_manager_visual_probe)
+add_dependencies(qindaqt_file_manager_visual_probe qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin qindaqt_app_shellplugin)
+set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png"
+    PROPERTIES QT_RESOURCE_ALIAS empty-folder.png)
+qt_add_resources(qindaqt_file_manager_visual_probe file_manager_probe_artwork
+    PREFIX /qindaqt/file-manager
+    FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
