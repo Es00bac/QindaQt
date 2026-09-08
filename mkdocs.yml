@@ -125,6 +125,7 @@ nav:
       - Settings Clipboard route: apps/clipboard-settings.md
       - Settings Color route: apps/color-settings.md
       - Terminal: apps/terminal.md
+      - System Monitor: apps/system-monitor.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -233,3 +234,4 @@ nav:
       - ADR-0105 PowerDevil idle display-off: adr/0105-delegate-idle-display-off-to-powerdevil.md
       - "0106: Accept an equivalent Gentoo Power Profiles provider": adr/0106-accept-equivalent-power-profiles-provider.md
       - ADR-0107 Delegate Print to Spectacle: adr/0107-delegate-print-to-spectacle.md
+      - ADR-0108 Detachable System Monitor views: adr/0108-compose-system-monitor-from-detachable-views.md
