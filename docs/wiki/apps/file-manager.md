@@ -8,7 +8,7 @@ and one-level recovery. S2 adds the core browsing surface: an editable
 location bar, multi-select with serialized batch operations, configurable
 sorting with size/kind/modified columns, a hidden-file toggle, a list/grid
 view switch, and a places/bookmarks sidebar persisted in an app-local state
-file. Search, previews, drag-and-drop, per-volume Trash, mounts, and network
+file. The visual browsing revision adds catalog icons and bounded local raster previews. Search, drag-and-drop, per-volume Trash, mounts, and network
 locations remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -17,6 +17,8 @@ and Trash authority is recorded in
 [ADR-0064](../adr/0064-confine-file-mutation-to-identity-checked-local-authority.md);
 the S2 bookmark persistence contract is recorded in
 [ADR-0090](../adr/0090-keep-file-manager-bookmarks-app-local.md).
+Bounded local previews and public icon composition follow
+[ADR-0100](../adr/0100-bound-file-previews-and-consume-public-icons.md).
 
 S2 composes `QindaQt.Tokens 1.0`, `QindaQt.Controls 1.0`, and the public
 `QindaQt.AppShell 1.0` window/action/lifecycle boundary. File Manager retains
@@ -49,38 +51,43 @@ are deliberately no in-window tabs or split panes: grouping windows is the
 [window container](../architecture/window-containers.md)'s job, and a file
 manager window composes with it like any other application window.
 
-The toolbar provides Back, Forward, Up, Refresh, a Location toggle, a hidden
-files toggle, and a list/grid view toggle. Below it the path surface is
-normally the breadcrumb bar (every segment from the filesystem root to the
-current folder as a clickable button); `Ctrl+L` or the Location toggle swaps
-it for an editable field seeded with the current path. Enter navigates
-through the same `NavigationController::navigateTo()` normalization and typed
-status mapping as every other path; Escape returns to the breadcrumb.
+A single compact toolbar combines icon buttons for Back, Up, New Folder and
+view mode with clickable breadcrumbs. The current folder and at most two
+ancestors are shown (one ancestor at compact widths); a leading parent-folders
+menu retains the full hierarchy. `Ctrl+L` always reveals the complete path. Forward is also shown above 680 pixels;
+its keyboard/menu action remains available at compact widths. Folder Options
+holds direct location entry, hidden files, refresh, sorting and Trash recovery.
+`Ctrl+L` replaces the breadcrumbs with a themed location field; Enter uses the
+same normalized navigation boundary, and Escape restores the breadcrumbs.
+Tooltips and accessible labels explain every icon action.
 
 The places sidebar offers fixed places (Home, File System, Trash) and the
 user's bookmarks. `Ctrl+D` bookmarks the current folder; each bookmark row
-has a Remove button. Bookmarks persist across restarts through
+has an icon button to remove it. Places retain both recognizable icons and labels;
+the sidebar narrows from 196 to 148 pixels below 680 pixels window width. Bookmarks persist across restarts through
 `BookmarksStore` (ADR-0090); a bookmark whose folder vanished simply lands on
 the ordinary "missing" state card.
 
-The main pane lists the current folder's children under a clickable sort
-header (Name, Size, Kind, Modified). Clicking the active column reverses its
+The main pane defaults to a spacious icon grid. Details mode exposes a clickable
+sort header (Name, Size, Kind, Modified); metadata columns progressively hide
+below the available width, preserving the filename and size. Clicking the active column reverses its
 direction; directories sort first by default. Hidden entries (dot names) are
 filtered out of the published listing by default; `Ctrl+H` or the toolbar
 toggle shows them at their sorted positions, and the status notice reports
 the filtered count ("3 hidden"). List mode shows preformatted size, kind, and
-modified columns; grid mode shows the same entries as glyph tiles. Both modes
-share one selection contract.
+modified columns; grid mode shows the same entries as catalog/MIME icons with local image previews. Both modes
+share one selection contract. Original folder artwork adds a decorative empty
+state at roomy sizes, while compact windows retain the accessible state card.
 
 | Action identity | Shortcut | Meaning |
 | --- | --- | --- |
-| `navigateBackButton` | `Alt+Left` | Return to the previous folder in history |
-| `navigateForwardButton` | `Alt+Right` | Return to the folder undone by Back |
-| `navigateUpButton` | `Alt+Up`, `Backspace` (when the list has focus) | Go to the parent folder |
-| `refreshButton` | `F5`, `Ctrl+R` | Re-read the current folder |
+| `go.back` / `navigateBackButton` | `Alt+Left` | Return to the previous folder in history |
+| `go.forward` / `navigateForwardButton` | `Alt+Right` | Return to the folder undone by Back |
+| `go.up` / `navigateUpButton` | `Alt+Up`, `Backspace` (when the list has focus) | Go to the parent folder |
+| `view.refresh` / `refreshButton` | `F5`, `Ctrl+R` | Re-read the current folder |
 | `view.focus-location` | `Ctrl+L` | Swap the breadcrumb for the editable location field |
 | `view.show-hidden` | `Ctrl+H` | Show or hide dot-name entries (checkable) |
-| `view.grid-mode` | `Ctrl+2` | Switch between list and grid presentation (checkable) |
+| `view.grid-mode` | `Ctrl+2` | Switch between details and icon presentation (checkable) |
 | `edit.select-all` | `Ctrl+A` | Select every visible entry |
 | `go.home` | `Alt+Home` | Open the home folder |
 | `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
@@ -110,6 +117,22 @@ lists cleanly but has no children presents one accessible
 ready folder whose entries are all hidden stays in the Ready state with an
 empty list and the "N hidden" notice rather than claiming the folder is
 empty.
+
+## Bounded visual previews
+
+The private `PreviewDecoder` seam and engine-owned `PreviewProvider` keep image
+I/O out of QML. At most two jobs decode PNG, JPEG, BMP or WebP locally. Inputs
+are limited to 32 MiB and 40 megapixels; previews are at most 192 × 192 pixels,
+with a 64 MiB memory LRU and no disk cache. Icons stay visible behind previews
+so unsupported, unreadable, oversized and corrupt images remain recognizable.
+
+A URL includes the exact listing identity/revision and generation. Navigation
+or refresh cancels obsolete requests; the decoder checks a pinned regular-file
+descriptor before/after decoding and the current path afterward. Cache hits
+also recheck identity, and generation checks fence publication. Cancellation is
+cooperative around the codec call; destruction cancels and joins workers.
+Symlinks retain icons and are not previewed. Sorting and selection keep their
+existing independent identities and do not gain preview policy.
 
 ## S1 local mutation and recovery
 
@@ -309,6 +332,16 @@ have to rely on icon shape or color alone.
 
 ## Desktop integration and verification
 
+The visual revision adds focused local-decoder and asynchronous-provider tests
+for resource admission, corrupt input, cancellation, two-job concurrency,
+generation fencing, cache identity rechecks and listing refresh. A test-only
+`qindaqt_file_manager_visual_probe` instantiates production QML and real local
+controllers, creates its own browsing fixture, and saves an offscreen capture.
+It accepts source root, theme ID, output path, width and height; an optional
+last argument enables reduced transparency. Output belongs under ignored build
+or cache directories. This probe does not add a production screenshot API.
+
+
 `org.qindaqt.FileManager.desktop` registers the ordinary Wayland application
 for `inode/directory` with one `%u` local-folder argument. Multiple folder
 arguments, and a positional argument that is not a folder, are both rejected
@@ -380,11 +413,10 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   serialized batch mutation, configurable sorting with size/kind/modified
   columns, hidden-file toggle, list/grid view switch, places/bookmarks
   sidebar with app-local persistence (ADR-0090).
-- **S3** — power features: drag-and-drop, in-app search, thumbnails and a
+- **S3** — power features: drag-and-drop, in-app search and a
   preview pane, a properties dialog, an open-with chooser (requires widening
   ADR-0029's launch contract through a new ADR), optional permanent deletion,
-  and XDG icon-theme/MIME-aware icons behind an app-consumable icon seam
-  (today's icon module is shell-owned per ADR-0072).
+  refinement beyond the shipped public Controls icon boundary (ADR-0100).
 - **S4** — volumes: mount enumeration and per-volume Trash (supersedes the
   ADR-0064 deferral with its own ADR; coordinate polkit/udisks boundaries
   through the Program Manager thread first).
@@ -400,7 +432,7 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  search, previews/thumbnails, portal-mediated paths, drag-and-drop,
+  search, additional preview formats, portal-mediated paths, drag-and-drop,
   open-with, and network locations remain explicit later outcomes (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its

@@ -18,6 +18,8 @@ ApplicationShell {
     minimumWidth: 480
     minimumHeight: 320
 
+    Shortcut { sequence: "Ctrl+R"; onActivated: root.coordinator.activateAction("view.refresh") }
+
     EntrySelection {
         id: entrySelection
         objectName: "entrySelection"
@@ -32,13 +34,21 @@ ApplicationShell {
         target: root.coordinator
         function onActionRequested(actionId) {
             const navigation = root.navigationController
-            if (actionId === "view.show-hidden") {
+            if (actionId === "go.back") {
+                navigation.goBack()
+            } else if (actionId === "go.forward") {
+                navigation.goForward()
+            } else if (actionId === "go.up") {
+                navigation.goUp()
+            } else if (actionId === "view.refresh") {
+                navigation.refresh()
+            } else if (actionId === "view.show-hidden") {
                 navigation.setShowHidden(!navigation.showHidden)
             } else if (actionId === "view.grid-mode") {
                 navigation.setViewMode(navigation.viewMode === "grid" ? "list" : "grid")
             } else if (actionId === "view.focus-location") {
-                locationBar.visible = true
-                locationBar.activate()
+                toolbar.locationBar.visible = true
+                toolbar.locationBar.activate()
             } else if (actionId === "edit.select-all") {
                 root.activeView().selectAll()
             } else if (actionId === "go.home") {
@@ -57,12 +67,8 @@ ApplicationShell {
         }
     }
 
-    Connections {
-        target: root.navigationController
-        function onViewModeChanged() {
-            Qt.callLater(() => root.activeView().focusView())
-        }
-    }
+    readonly property string displayedViewMode: root.navigationController.viewMode
+    onDisplayedViewModeChanged: Qt.callLater(() => root.activeView().focusView())
 
     Connections {
         target: root.mutationController
@@ -86,26 +92,13 @@ ApplicationShell {
                 appCoordinator: root.coordinator
             }
 
-            LocationBar {
-                id: locationBar
-                Layout.fillWidth: true
-                visible: false
-                navigationController: root.navigationController
-                onClosed: visible = false
-            }
-
-            Breadcrumb {
-                Layout.fillWidth: true
-                visible: !locationBar.visible
-                navigationController: root.navigationController
-            }
-
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 0
 
                 PlacesSidebar {
+                    Layout.preferredWidth: root.width < 680 ? 148 : 196
                     Layout.fillHeight: true
                     navigationController: root.navigationController
                     placesController: root.placesController

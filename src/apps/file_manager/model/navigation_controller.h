@@ -90,6 +90,7 @@ public:
   [[nodiscard]] bool directoriesFirst() const;
   [[nodiscard]] bool showHidden() const;
   [[nodiscard]] QString viewMode() const;
+  [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
   // entryAt expose the visible (filtered and sorted) listing QML sees.
@@ -123,7 +124,8 @@ private:
   bool m_showHidden = false;
   bool m_truncated = false;
   int m_hiddenFilteredCount = 0;
-  QString m_viewMode = QStringLiteral("list");
+  quint64 m_listingGeneration = 0;
+  QString m_viewMode = QStringLiteral("grid");
 };
 
 } // namespace QindaQt::Apps::FileManager

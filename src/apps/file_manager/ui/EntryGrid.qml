@@ -5,9 +5,7 @@ import QtQuick.Controls as T
 import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Qinda
 
-// Grid presentation over the same published listing and selection contract as
-// EntryList. Glyphs are deliberately built-in minimal shapes; XDG icon-theme
-// and MIME-aware icons are an S3 outcome pending an icon-seam ADR.
+// Visual browsing shares the exact selection policy with the details view.
 Item {
     id: root
 
@@ -51,8 +49,8 @@ Item {
             keyNavigationEnabled: false
             currentIndex: root.selection.currentIndex
             function selectEntry(index) { root.selection.selectOnly(index) }
-            cellWidth: 112
-            cellHeight: 104
+            cellWidth: Math.max(116, Math.floor(width / Math.max(1, Math.floor(width / 136))))
+            cellHeight: 144
             model: root.navigationController.entries
 
             Accessible.role: Accessible.List
@@ -101,7 +99,7 @@ Item {
 
                 width: gridView.cellWidth - Tokens.space["1"]
                 height: gridView.cellHeight - Tokens.space["1"]
-                radius: 4
+                radius: 12
                 color: delegateRoot.entrySelected ? Tokens.state.pressed
                      : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
 
@@ -109,7 +107,7 @@ Item {
                 Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                     ? qsTr(", folder") : qsTr(", file"))
                 Accessible.selected: delegateRoot.entrySelected
-                border.width: GridView.isCurrentItem ? 1 : 0
+                border.width: GridView.isCurrentItem && gridView.activeFocus ? 2 : 0
                 border.color: Tokens.accent.default
 
                 ColumnLayout {
@@ -119,43 +117,33 @@ Item {
 
                     Item {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 40
-                        Layout.preferredHeight: 40
-
-                        // Folder: tabbed outline. File: folded-corner page.
-                        // Symlink: accent badge dot over the base glyph.
-                        Rectangle {
-                            visible: delegateRoot.modelData.isDirectory
-                            anchors.fill: parent
-                            radius: 4
-                            color: Tokens.accent.default
-                            Rectangle {
-                                width: 18
-                                height: 7
-                                radius: 2
-                                color: parent.color
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.leftMargin: 2
-                                anchors.topMargin: -3
-                            }
+                        Layout.preferredWidth: 80
+                        Layout.preferredHeight: 80
+                        Qinda.Icon {
+                            anchors.centerIn: parent
+                            width: 64
+                            height: 64
+                            name: delegateRoot.modelData.iconName || "application-octet-stream"
+                            visible: previewImage.status !== Image.Ready || previewImage.implicitWidth <= 1
                         }
-                        Rectangle {
-                            visible: !delegateRoot.modelData.isDirectory
+                        Image {
+                            id: previewImage
                             anchors.fill: parent
-                            radius: 2
-                            color: "transparent"
-                            border.color: Tokens.fg.muted
-                            border.width: 2
+                            source: delegateRoot.modelData.previewUrl || ""
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+                            cache: false
+                            smooth: true
+                            Accessible.ignored: true
                         }
-                        Rectangle {
+                        Qinda.Icon {
                             visible: delegateRoot.modelData.isSymlink
-                            width: 12
-                            height: 12
-                            radius: 6
-                            color: Tokens.accent.default
                             anchors.right: parent.right
                             anchors.bottom: parent.bottom
+                            width: 20
+                            height: 20
+                            name: "emblem-symbolic-link"
+                            color: Tokens.fg.default
                         }
                         Accessible.ignored: true
                     }

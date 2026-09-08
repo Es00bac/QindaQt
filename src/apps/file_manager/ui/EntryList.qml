@@ -56,7 +56,7 @@ Item {
                 property bool stretch: false
 
                 Layout.fillWidth: stretch
-                Layout.preferredWidth: stretch ? -1 : 140
+                Layout.preferredWidth: stretch ? -1 : 112
                 text: label + (root.navigationController.sortColumn === key
                     ? (root.navigationController.sortDirection === "ascending" ? " ▲" : " ▼") : "")
                 emphasized: root.navigationController.sortColumn === key
@@ -77,11 +77,13 @@ Item {
             }
             SortHeaderButton {
                 objectName: "sortHeader_kind"
+                visible: root.width > 580
                 key: "kind"
                 label: qsTr("Kind")
             }
             SortHeaderButton {
                 objectName: "sortHeader_modified"
+                visible: root.width > 440
                 key: "modified"
                 label: qsTr("Modified")
             }
@@ -144,7 +146,8 @@ Item {
                 property bool entrySelected: selection.isSelected(delegateRoot.index)
 
                 width: listView.width
-                height: 36
+                height: 44
+                radius: 8
                 color: delegateRoot.entrySelected ? Tokens.state.pressed
                      : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
 
@@ -152,7 +155,7 @@ Item {
                 Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                     ? qsTr(", folder") : qsTr(", file"))
                 Accessible.selected: delegateRoot.entrySelected
-                border.width: ListView.isCurrentItem ? 1 : 0
+                border.width: ListView.isCurrentItem && listView.activeFocus ? 2 : 0
                 border.color: Tokens.accent.default
 
                 RowLayout {
@@ -161,6 +164,11 @@ Item {
                     anchors.rightMargin: Tokens.space["3"]
                     spacing: Tokens.space["2"]
 
+                    Qinda.Icon {
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        name: delegateRoot.modelData.iconName || "application-octet-stream"
+                    }
                     Qinda.Label {
                         Layout.fillWidth: true
                         text: delegateRoot.modelData.name
@@ -169,7 +177,7 @@ Item {
                         Accessible.ignored: true
                     }
                     Qinda.Label {
-                        Layout.preferredWidth: 130
+                        Layout.preferredWidth: 102
                         horizontalAlignment: Text.AlignRight
                         text: delegateRoot.modelData.sizeText
                         muted: true
@@ -177,14 +185,16 @@ Item {
                         Accessible.ignored: true
                     }
                     Qinda.Label {
-                        Layout.preferredWidth: 130
+                        Layout.preferredWidth: 102
+                        visible: root.width > 580
                         text: delegateRoot.modelData.kindText
                         muted: true
                         elide: Text.ElideRight
                         Accessible.ignored: true
                     }
                     Qinda.Label {
-                        Layout.preferredWidth: 130
+                        Layout.preferredWidth: 102
+                        visible: root.width > 440
                         text: delegateRoot.modelData.modifiedText
                         muted: true
                         elide: Text.ElideRight

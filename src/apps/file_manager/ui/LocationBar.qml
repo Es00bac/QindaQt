@@ -22,19 +22,24 @@ Rectangle {
         field.selectAll()
     }
 
-    implicitHeight: row.implicitHeight + Tokens.space["2"] * 2
+    implicitHeight: 40
     color: Tokens.bg.base
 
     RowLayout {
         id: row
         anchors.fill: parent
-        anchors.margins: Tokens.space["2"]
+        anchors.margins: 0
         spacing: Tokens.space["2"]
 
         T.TextField {
             id: field
             objectName: "locationField"
             Layout.fillWidth: true
+            color: Tokens.fg.default
+            selectionColor: Tokens.accent.default
+            selectedTextColor: Tokens.accent.fg
+            placeholderTextColor: Tokens.fg.muted
+            background: Rectangle { radius: 8; color: Tokens.bg.base; border.color: field.activeFocus ? Tokens.accent.default : Tokens.outline.divider }
             placeholderText: qsTr("Type a folder path")
             Accessible.name: qsTr("Location")
 
@@ -47,7 +52,8 @@ Rectangle {
             Keys.onEscapePressed: root.closed()
         }
 
-        Qinda.Button {
+        IconButton {
+            iconName: "go-next"
             objectName: "locationGoButton"
             text: qsTr("Go")
             emphasized: false

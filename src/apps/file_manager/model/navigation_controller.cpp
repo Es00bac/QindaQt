@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "navigation_controller.h"
+#include "preview/local_preview.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -249,6 +250,8 @@ QVariantList NavigationController::entries() const {
         {QStringLiteral("sizeText"), sizeTextFor(entry)},
         {QStringLiteral("modifiedText"), modifiedTextFor(entry)},
         {QStringLiteral("kindText"), kindTextFor(entry)},
+        {QStringLiteral("iconName"), entryIconName(entry)},
+        {QStringLiteral("previewUrl"), previewUrl(entry, m_listingGeneration)},
         // AGENT-GUARD: These identity fields cross QVariant -> JavaScript ->
         // QVariant before mutation dispatch. Decimal strings preserve all 64
         // bits; JS Number would round current-epoch nanoseconds and make every
@@ -298,6 +301,7 @@ const DirectoryEntry *NavigationController::entryAt(int index) const {
 NavigationStatus NavigationController::status() const { return m_status; }
 
 void NavigationController::reload() {
+  ++m_listingGeneration;
   const ListingResult result = m_lister->list(m_history.currentPath());
   m_status = statusFor(result);
   m_truncated = result.ok() && result.truncated;

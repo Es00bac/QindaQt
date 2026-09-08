@@ -80,6 +80,7 @@ private slots:
   void formattedFieldsArePublishedPerEntry();
   void indexOfNameFollowsTheVisibleListing();
   void viewModeAcceptsOnlyListAndGrid();
+  void previewGenerationChangesOnlyWhenListingReloads();
 };
 
 void TestNavigationController::initialNavigationPublishesEntriesAndStatus() {
@@ -528,23 +529,37 @@ void TestNavigationController::viewModeAcceptsOnlyListAndGrid() {
   auto lister = std::make_unique<FakeDirectoryLister>();
   lister->setResult(QStringLiteral("/home"), okListing(QStringLiteral("/home"), {}));
   NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>());
-  QCOMPARE(controller.viewMode(), QStringLiteral("list"));
+  QCOMPARE(controller.viewMode(), QStringLiteral("grid"));
 
   QSignalSpy presentationSpy(&controller, &NavigationController::presentationChanged);
-  controller.setViewMode(QStringLiteral("grid"));
-  QCOMPARE(controller.viewMode(), QStringLiteral("grid"));
+  controller.setViewMode(QStringLiteral("list"));
+  QCOMPARE(controller.viewMode(), QStringLiteral("list"));
   QCOMPARE(presentationSpy.count(), 1);
 
   // Same value and unknown modes are ignored without republishing.
-  controller.setViewMode(QStringLiteral("grid"));
+  controller.setViewMode(QStringLiteral("list"));
   controller.setViewMode(QStringLiteral("columns"));
   controller.setViewMode(QString());
-  QCOMPARE(controller.viewMode(), QStringLiteral("grid"));
+  QCOMPARE(controller.viewMode(), QStringLiteral("list"));
   QCOMPARE(presentationSpy.count(), 1);
 
-  controller.setViewMode(QStringLiteral("list"));
-  QCOMPARE(controller.viewMode(), QStringLiteral("list"));
+  controller.setViewMode(QStringLiteral("grid"));
+  QCOMPARE(controller.viewMode(), QStringLiteral("grid"));
   QCOMPARE(presentationSpy.count(), 2);
+}
+
+void TestNavigationController::previewGenerationChangesOnlyWhenListingReloads() {
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  lister->setResult(QStringLiteral("/home"), okListing(QStringLiteral("/home"), {}));
+  NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>());
+  controller.navigateTo(QStringLiteral("/home"));
+  const auto generation = controller.listingGeneration();
+  controller.setSortColumn(QStringLiteral("size"));
+  controller.setViewMode(QStringLiteral("list"));
+  controller.setShowHidden(true);
+  QCOMPARE(controller.listingGeneration(), generation);
+  controller.refresh();
+  QVERIFY(controller.listingGeneration() > generation);
 }
 
 QTEST_APPLESS_MAIN(TestNavigationController)
