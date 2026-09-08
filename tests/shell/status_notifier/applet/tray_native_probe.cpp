@@ -188,7 +188,9 @@ void TrayNativeProbe::exportedMenuOpensWindow()
     panel.setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
     panel.setColor(QColor("#eee9e5"));
     applet->setParentItem(panel.contentItem());
-    panel.showFullScreen();
+    // QWindow::showFullScreen requests activation even for non-focusing windows.
+    panel.setWindowState(Qt::WindowFullScreen);
+    panel.show();
     QTRY_VERIFY(panel.isExposed());
     applet->setWidth(applet->implicitWidth());
     applet->setHeight(applet->implicitHeight());
