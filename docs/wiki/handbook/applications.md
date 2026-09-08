@@ -51,7 +51,7 @@ plainly instead of showing dead controls.
 
 ## Text Editor
 
-A plain-text editor for local files, handling up to 32 documents in tabs. It
+A plain-text editor for local files, opening each document in its own ordinary window. It
 keeps each file's existing line endings and encoding intact, saves
 atomically, and warns you if a file changes on disk underneath you — a
 conflict never silently overwrites your work. Find and replace covers plain

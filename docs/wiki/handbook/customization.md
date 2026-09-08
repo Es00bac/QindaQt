@@ -23,9 +23,9 @@ Five themes ship with QindaQt:
 
 | Theme | Character |
 | --- | --- |
-| QindaPunk Nightfall | The dark default: ink-blue night, graphite surfaces, pale text, and a warm amber accent |
-| QindaPunk Porcelain | The light counterpart: pale ceramic and apricot |
-| QindaPunk Dusk | Between the two, for late evenings |
+| QindaQt Smoked Plum | The dark default: smoked plum, pearl text, and an apricot accent |
+| QindaQt Pearl | The light counterpart: pale ceramic and apricot |
+| QindaQt Velvet | Between the two, for late evenings |
 | Qinda High Contrast | Maximum separation for readability |
 | Qinda macOS | A mist-and-sage take on the familiar Mac look |
 

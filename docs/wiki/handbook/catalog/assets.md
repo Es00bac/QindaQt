@@ -113,7 +113,7 @@ Default theme: `qinda-dusk`. Workflow: `{"overview":"optional","workspacePolicy"
 
 ## Themes (5)
 
-### qinda-dark — QindaPunk Nightfall
+### qinda-dark — QindaQt Smoked Plum
 
 Source: `data/themes/qinda-dark.json`. 
 
@@ -129,7 +129,7 @@ Source: `data/themes/qinda-dark.json`.
 | blurEnabled | `false` |
 | colors | `{"canvas":"#111E2C","surface":"#192939","surfaceRaised":"#273746","border":"#526170","text":"#F2EFE8","textMuted":"#B0B6B7","accent":"#D98A32","accentText":"#1B1309","danger":"#E86F62"}` |
 
-### qinda-dusk — QindaPunk Dusk
+### qinda-dusk — QindaQt Velvet
 
 Source: `data/themes/qinda-dusk.json`. 
 
@@ -161,7 +161,7 @@ Source: `data/themes/qinda-high-contrast.json`.
 | blurEnabled | `false` |
 | colors | `{"canvas":"#000000","surface":"#000000","surfaceRaised":"#101010","border":"#ffffff","text":"#ffffff","textMuted":"#e6e6e6","accent":"#ffdd00","accentText":"#000000","danger":"#ff5c5c"}` |
 
-### qinda-light — QindaPunk Porcelain
+### qinda-light — QindaQt Pearl
 
 Source: `data/themes/qinda-light.json`. 
 
