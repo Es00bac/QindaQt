@@ -135,7 +135,7 @@ void TrayNativeProbe::exportedMenuOpensWindow()
     FakeStatusNotifierItem item;
     item.id = QStringLiteral("org.qindaqt.NativeTrayFixture");
     item.title = QStringLiteral("Native tray fixture");
-    item.iconPixmap = {FakeStatusNotifierItem::pixmap(22, 22, 0xffda9c26)};
+    item.iconPixmap = {FakeStatusNotifierItem::pixmap(22, 22, 0xda9c26ff)};
     item.menu = QDBusObjectPath(QStringLiteral("/MenuBar"));
     item.itemIsMenu = false;
     QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/StatusNotifierItem"), &item));
