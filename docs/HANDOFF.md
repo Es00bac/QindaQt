@@ -1,5 +1,15 @@
 # Integration handoff
 
+## Desktop-controls integration follow-up
+
+Reviewed screenshot candidate `3b191acd` is integrated as `a5f1fdd8` and
+`f8f0b504`; its input prerequisite was already integrated. Print now delegates
+to Spectacle. The private installed-session proof captured and decoded a real
+region image and observed volume increase with one shell feedback popup.
+The host package still contains source `d1232e75`; this follow-up needs the
+final package refresh. Workspace two-session acceptance still fails at saving
+through the dialog and is not complete.
+
 ## Reusable workspace checkpoint: integrated, installed acceptance pending
 
 Main `541cddef` contains the reviewed combined workspace and desktop-control
