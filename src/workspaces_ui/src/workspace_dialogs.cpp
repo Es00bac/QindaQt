@@ -5,6 +5,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QShowEvent>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -93,6 +94,12 @@ public:
   }
   [[nodiscard]] QString name() const { return m_name.text().trimmed(); }
   [[nodiscard]] QString color() const { return m_color; }
+
+protected:
+  void showEvent(QShowEvent *event) override {
+    QDialog::showEvent(event);
+    m_name.setFocus(Qt::OtherFocusReason);
+  }
 
 private:
   void setColor(const QColor &color) {
@@ -195,7 +202,9 @@ private:
                               Qt::ToolTipRole);
         }
       }
-      choice->setCurrentIndex(choice->findData(plan.windowsBySlot.value(slot.id)));
+      const auto selected = m_explicit.value(
+          slot.id, plan.windowsBySlot.value(slot.id));
+      choice->setCurrentIndex(choice->findData(selected));
       if (choice->currentIndex() < 0)
         choice->setCurrentIndex(0);
       rowLayout->addWidget(choice, 1);
@@ -214,13 +223,14 @@ private:
           setResultText(tr("Launch requested for %1. Refresh when its window appears.")
                             .arg(slot.label));
       });
+      const QString slotId = slot.id;
       connect(choice, &QComboBox::currentIndexChanged, this,
-              [this, slot, choice](int) {
+              [this, slotId, choice](int) {
                 const auto id = choice->currentData().toString();
                 if (id.isEmpty())
-                  m_explicit.remove(slot.id);
+                  m_explicit.remove(slotId);
                 else
-                  m_explicit.insert(slot.id, id);
+                  m_explicit.insert(slotId, id);
                 updatePlan();
               });
       rowLayout->addWidget(launch);
@@ -235,6 +245,14 @@ private:
       m_boxes.insert(slot.id, choice);
     }
     updatePlan();
+    if (!m_workspace.applicationSlots.isEmpty()) {
+      if (auto *const first = m_boxes.value(m_workspace.applicationSlots.first().id))
+        first->setFocus(Qt::OtherFocusReason);
+    }
+    // Rows are rebuilt after the asynchronous window inventory arrives. A
+    // parentless dialog otherwise keeps Qt's 100x30 default and exposes zero-
+    // height choice controls on first show.
+    adjustSize();
   }
 
   [[nodiscard]] QList<Workspaces::AvailableWindow> available() const {
@@ -250,8 +268,9 @@ private:
     // automatic match into a user choice; refresh must preserve explicit intent.
     for (const auto &slot : m_workspace.applicationSlots) {
       auto *const choice = m_boxes.value(slot.id);
-      const auto matched = plan.windowsBySlot.value(slot.id);
-      const auto index = matched.isEmpty() ? 0 : choice->findData(matched);
+      const auto selected = m_explicit.value(
+          slot.id, plan.windowsBySlot.value(slot.id));
+      const auto index = selected.isEmpty() ? 0 : choice->findData(selected);
       const QSignalBlocker block(choice);
       choice->setCurrentIndex(index < 0 ? 0 : index);
     }
@@ -370,7 +389,8 @@ void WorkspaceLibraryDialog::saveCurrent() {
     reload();
     m_result->setText(tr("Saved %1.").arg(saved->name));
   });
-  dialog->open();
+  dialog->setWindowModality(Qt::ApplicationModal);
+  dialog->show();
 }
 
 void WorkspaceLibraryDialog::reopenSelected() {
@@ -392,7 +412,8 @@ void WorkspaceLibraryDialog::reopenSelected() {
           &ReopenDialog::reportLaunchFailure);
   connect(dialog, &QDialog::accepted, this,
           [this] { m_result->setText(tr("Workspace restored.")); });
-  dialog->open();
+  dialog->setWindowModality(Qt::ApplicationModal);
+  dialog->show();
 }
 
 void WorkspaceLibraryDialog::reportLaunchFailure(QString desktopEntryId,
