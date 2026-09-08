@@ -29,10 +29,10 @@ QList<QindaQt::AppShell::ActionSpec> editorActionCatalog() {
 
   QList<ActionSpec> actions{
       spec(AppShellActionIds::FileNew, "file", "File", "New",
-           "Open a new untitled document tab", QKeySequence::New, 0, 0),
+           "Open a new untitled document window", QKeySequence::New, 0, 0),
       spec(AppShellActionIds::FileOpen, "file", "File", "Open…",
-           "Open a local document in a new tab", QKeySequence::Open, 0, 1),
-      spec(AppShellActionIds::FileCloseTab, "file", "File", "Close Tab",
+           "Open a local document in a new window", QKeySequence::Open, 0, 1),
+      spec(AppShellActionIds::FileCloseWindow, "file", "File", "Close Window",
            "Close the active document after dirty consent", key("Ctrl+W"), 0,
            2),
       spec(AppShellActionIds::FileSave, "file", "File", "Save",
@@ -42,7 +42,7 @@ QList<QindaQt::AppShell::ActionSpec> editorActionCatalog() {
            "Choose a new local target for the active document",
            QKeySequence::SaveAs, 0, 4),
       spec(AppShellActionIds::FileQuit, "file", "File", "Quit",
-           "Close all documents after bounded dirty consent",
+           "Close this window after document dirty consent",
            QKeySequence::Quit, 0, 5),
       spec(AppShellActionIds::EditUndo, "edit", "Edit", "Undo",
            "Undo the active document's last change", QKeySequence::Undo, 1, 0,
@@ -76,24 +76,10 @@ QList<QindaQt::AppShell::ActionSpec> editorActionCatalog() {
       spec("view.zoom-in", "view", "View", "Zoom In", "Increase text size", key("Ctrl++"), 2, 1),
       spec("view.zoom-out", "view", "View", "Zoom Out", "Decrease text size", key("Ctrl+-"), 2, 2),
       spec("view.zoom-reset", "view", "View", "Actual Size", "Restore the configured text size", key("Ctrl+0"), 2, 3),
-      spec(AppShellActionIds::TabNext, "tabs", "Tabs", "Next Tab",
-           "Select the next document tab with wrap", key("Ctrl+Tab"), 3, 0,
-           false),
-      spec(AppShellActionIds::TabPrevious, "tabs", "Tabs", "Previous Tab",
-           "Select the previous document tab with wrap", key("Ctrl+Shift+Tab"),
-           3, 1, false),
       spec(AppShellActionIds::RestoreDocuments, "settings", "Settings",
            "Restore Open Documents", "Persist and restore open document paths",
            key("Ctrl+Alt+R"), 4, 0, false, true),
   };
-  for (int index = 1; index <= 9; ++index) {
-    actions.append(
-        spec(qPrintable(QStringLiteral("tabs.select-%1").arg(index)), "tabs",
-             "Tabs", qPrintable(QStringLiteral("Select Tab %1").arg(index)),
-             qPrintable(QStringLiteral("Select document tab %1").arg(index)),
-             key(qPrintable(QStringLiteral("Ctrl+%1").arg(index))), 3,
-             index + 1, index == 1));
-  }
   return actions;
 }
 

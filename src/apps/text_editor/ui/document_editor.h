@@ -13,6 +13,7 @@ public:
   ~DocumentEditor() override;
   void setDocumentPath(const QString &path);
   void setBaseFont(const QFont &font);
+  void setHighContrast(bool enabled);
   void zoomText(int steps);
   void resetZoom();
   void indentLines(bool remove);

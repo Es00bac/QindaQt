@@ -26,7 +26,7 @@ using namespace QindaQt;
 namespace {
 
 constexpr quint32 kTestWindowId = 77;
-const auto kActivateId = QStringLiteral("file.new");
+const auto kActivateId = QStringLiteral("view.word-wrap");
 const auto kAllowedStderrPrefix = QStringLiteral(
     "qindaqt-editor: settings unavailable");
 
@@ -278,7 +278,7 @@ void EditorMenuExportTest::shellFencesRealEditorIdentity() {
   if (identityVariant == 0) {
     QTRY_VERIFY_WITH_TIMEOUT(composition.access()->available(), 10'000);
     const std::optional<QString> actionId = actionIdWithText(
-        composition.access()->items(), QStringLiteral("New"));
+        composition.access()->items(), QStringLiteral("Word Wrap"));
     QVERIFY(actionId.has_value());
     composition.access()->activate(*actionId);
     QTRY_COMPARE_WITH_TIMEOUT(

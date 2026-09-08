@@ -3,6 +3,7 @@ foreach(required
         "Type=Application"
         "Name=QindaQt Text Editor"
         "Exec=qindaqt-editor %F"
+        "Icon=org.qindaqt.TextEditor"
         "Categories=Qt;Utility;TextEditor;"
         "MimeType=text/plain;"
         "Terminal=false")

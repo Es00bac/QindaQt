@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "find_replace_bar.h"
+#include "editor_icon.h"
+#include <QEvent>
 
 #include <QAccessible>
 #include <QAccessibleAnnouncementEvent>
@@ -21,6 +23,7 @@ FindReplaceBar::FindReplaceBar(QWidget *parent) : QWidget(parent) {
   auto *findRow = new QHBoxLayout;
   auto *findLabel = new QLabel(tr("&Find:"), this);
   m_find = new QLineEdit(this);
+  m_find->setPlaceholderText(tr("Find in this document"));
   m_find->setObjectName(QStringLiteral("findPatternEditor"));
   m_find->setAccessibleName(tr("Find text"));
   m_find->setMaxLength(FindReplaceEngine::maximumPatternLength);
@@ -34,7 +37,17 @@ FindReplaceBar::FindReplaceBar(QWidget *parent) : QWidget(parent) {
   auto *close = new QPushButton(tr("Close"), this);
   close->setObjectName(QStringLiteral("findCloseButton"));
   close->setAccessibleName(tr("Close find and replace"));
-  findRow->addWidget(findLabel);
+  findLabel->hide();
+  const auto iconButton = [](QPushButton *button, const char *icon, const QString &tip) {
+    button->setText(QString());
+    button->setProperty("editorIconName", QString::fromLatin1(icon));
+    button->setIcon(editorIcon(QString::fromLatin1(icon), button->palette().color(QPalette::WindowText)));
+    button->setFixedWidth(34);
+    button->setToolTip(tip);
+  };
+  iconButton(previous, "go-up", tr("Previous match · Shift+F3"));
+  iconButton(next, "go-down", tr("Next match · F3"));
+  iconButton(close, "window-close", tr("Close search · Escape"));
   findRow->addWidget(m_find, 1);
   findRow->addWidget(previous);
   findRow->addWidget(next);
@@ -61,12 +74,18 @@ FindReplaceBar::FindReplaceBar(QWidget *parent) : QWidget(parent) {
   layout->addWidget(m_replaceFields);
 
   auto *optionsRow = new QHBoxLayout;
-  m_caseSensitive = new QCheckBox(tr("Match &case"), this);
+  m_caseSensitive = new QCheckBox(tr("&Aa"), this);
   m_caseSensitive->setObjectName(QStringLiteral("findCaseSensitive"));
-  m_wholeWord = new QCheckBox(tr("&Whole word"), this);
+  m_wholeWord = new QCheckBox(tr("&Word"), this);
   m_wholeWord->setObjectName(QStringLiteral("findWholeWord"));
-  m_regex = new QCheckBox(tr("Regular e&xpression"), this);
+  m_regex = new QCheckBox(tr(".*"), this);
   m_regex->setObjectName(QStringLiteral("findRegex"));
+  m_caseSensitive->setAccessibleName(tr("Match case"));
+  m_caseSensitive->setToolTip(tr("Match uppercase and lowercase exactly"));
+  m_wholeWord->setAccessibleName(tr("Whole word"));
+  m_wholeWord->setToolTip(tr("Match whole words"));
+  m_regex->setAccessibleName(tr("Regular expression"));
+  m_regex->setToolTip(tr("Use a regular expression"));
   m_status = new QLabel(this);
   m_status->setObjectName(QStringLiteral("findStatus"));
   m_status->setAccessibleName(tr("Find result"));
@@ -89,6 +108,16 @@ FindReplaceBar::FindReplaceBar(QWidget *parent) : QWidget(parent) {
   connect(m_find, &QLineEdit::returnPressed, this,
           &FindReplaceBar::findNextRequested);
   hide();
+}
+
+void FindReplaceBar::changeEvent(QEvent *event) {
+  QWidget::changeEvent(event);
+  if (event->type() == QEvent::PaletteChange) {
+    for (auto *button : findChildren<QPushButton *>()) {
+      const auto name = button->property("editorIconName").toString();
+      if (!name.isEmpty()) button->setIcon(editorIcon(name, palette().color(QPalette::WindowText)));
+    }
+  }
 }
 
 FindOptions FindReplaceBar::options() const {

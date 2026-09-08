@@ -22,11 +22,10 @@ struct AddDocumentResult final {
   [[nodiscard]] bool ok() const { return controller != nullptr; }
 };
 
-// AGENT-CONTRACT: The collection owns every controller in one window and is
-// the only authority allowed to add, remove, or rename an open document. This
-// keeps canonical paths unique while every controller retains its independent
-// state, byte revision, watcher, and store. The injected factory is called once
-// per new document and must return a fresh non-null store.
+// Nonvisual bounded document collection retained for document-policy consumers.
+// Production EditorApplication owns ordinary windows instead (ADR-0099). This
+// helper owns its controllers, while each controller owns its store/watcher.
+// The GUI-thread factory must return a fresh non-null store for every document.
 class DocumentCollection final : public QObject {
   Q_OBJECT
 

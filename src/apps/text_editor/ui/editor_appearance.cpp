@@ -8,9 +8,10 @@
 namespace QindaQt::Apps::TextEditor {
 
 AppearanceResult
-EditorAppearanceAdapter::fromTheme(const QindaQt::Themes::ThemeSpec &theme) {
-  QindaQt::DesignTokens::AccessibilityInputs accessibility;
-  accessibility.highContrast = theme.variant == QStringLiteral("high-contrast");
+EditorAppearanceAdapter::fromTheme(const QindaQt::Themes::ThemeSpec &theme,
+    QindaQt::DesignTokens::AccessibilityInputs accessibility) {
+  accessibility.highContrast = accessibility.highContrast ||
+      theme.variant == QStringLiteral("high-contrast");
   const auto derived =
       QindaQt::DesignTokens::DesignTokenDeriver::derive(theme, accessibility);
   if (!derived.ok()) {
@@ -61,10 +62,14 @@ EditorAppearanceAdapter::fromTheme(const QindaQt::Themes::ThemeSpec &theme) {
                   .interfaceFont = interfaceFont,
                   .editorFont = editorFont,
                   .focusRing = tokens.focusRing(),
+                  .divider = tokens.divider(),
+                  .hover = tokens.state().hover,
+                  .pressed = tokens.state().pressed,
                   .warningBackground = tokens.status().warning.background,
                   .warningForeground = tokens.status().warning.foreground,
                   .dangerBackground = tokens.danger().defaultColor,
                   .dangerForeground = tokens.danger().foreground,
+                  .highContrast = accessibility.highContrast,
                   .mediumRadius = tokens.radius().medium,
                   .sourceThemeId = tokens.sourceThemeId(),
               },

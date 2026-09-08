@@ -4,6 +4,7 @@
 #include "restore/text_editor_restore_policy.h"
 #include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
+#include "ui/editor_application.h"
 
 #include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/design_tokens/design_tokens.h"
@@ -155,14 +156,14 @@ int main(int argc, char **argv) {
     // The CLI admission proof needs document policy only. Exiting before
     // Settings1 composition guarantees the isolated row cannot discover or
     // activate an ambient session-bus service.
-    EditorWindow window(factory, *appearance.appearance);
+    EditorApplication editor(factory, *appearance.appearance, nullptr, nullptr, {}, false);
     QString diagnostic;
-    if (!window.openDocuments(paths, &diagnostic)) {
+    if (!editor.start(paths, &diagnostic)) {
       std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
       return 4;
     }
-    std::printf("open-documents=%d\n", window.documents()->count());
-    for (const QString &path : window.documents()->openPaths()) {
+    std::printf("open-documents=%d\n", int(editor.windows().size()));
+    for (const QString &path : editor.openPaths()) {
       std::printf("path=%s\n", qPrintable(path));
     }
     return 0;
@@ -181,12 +182,19 @@ int main(int argc, char **argv) {
   }
   TextEditorRestorePolicy restorePolicy(settingsClient);
   RestoreStateStore restoreStore(editorStateDirectory());
-  EditorWindow window(factory, *appearance.appearance, nullptr, &restorePolicy,
-                      &restoreStore);
+  EditorApplication editor(factory, *appearance.appearance, &restorePolicy,
+                           &restoreStore);
   QtSettingsTransport appearanceTransport(QDBusConnection::sessionBus());
   SettingsClient appearanceClient(appearanceTransport,
                                   {QStringLiteral("appearance.theme"),
-                                   QStringLiteral("appearance.colorScheme")});
+                                   QStringLiteral("appearance.colorScheme"),
+                                   QStringLiteral("fonts.family"),
+                                   QStringLiteral("fonts.monospaceFamily"),
+                                   QStringLiteral("fonts.pointSize"),
+                                   QStringLiteral("accessibility.textScale"),
+                                   QStringLiteral("accessibility.reducedMotion"),
+                                   QStringLiteral("accessibility.reducedTransparency"),
+                                   QStringLiteral("accessibility.highContrast")});
   QindaQt::AppAppearance::ApplicationAppearanceController appearanceController(
       appearanceClient,
       QindaQt::AppAppearance::standardThemeDirectories(
@@ -195,20 +203,21 @@ int main(int argc, char **argv) {
       parser.isSet(QStringLiteral("theme"))
           ? parser.value(QStringLiteral("theme"))
           : QString());
-  const auto applyLiveAppearance = [&application, &window,
+  const auto applyLiveAppearance = [&application, &editor,
                                     &appearanceController] {
     const auto adapted =
-        EditorAppearanceAdapter::fromTheme(appearanceController.theme());
+        EditorAppearanceAdapter::fromTheme(appearanceController.theme(),
+                                           appearanceController.accessibilityInputs());
     if (!adapted.ok())
       return;
     application.setPalette(adapted.appearance->palette);
     application.setFont(adapted.appearance->interfaceFont);
-    window.applyAppearance(*adapted.appearance);
+    editor.applyAppearance(*adapted.appearance);
   };
   QObject::connect(&appearanceController,
                    &QindaQt::AppAppearance::ApplicationAppearanceController::
                        appearanceChanged,
-                   &window, applyLiveAppearance);
+                   &editor, applyLiveAppearance);
   applyLiveAppearance();
   QString appearanceSettingsError;
   if (!appearanceClient.start(&appearanceSettingsError)) {
@@ -216,37 +225,36 @@ int main(int argc, char **argv) {
                  "qindaqt-editor: appearance settings unavailable (%s)\n",
                  qPrintable(appearanceSettingsError));
   }
-  if (parser.isSet(QStringLiteral("report-startup"))) {
-    QObject::connect(
-        &window, &EditorWindow::firstFramePainted, &window,
-        [&startupTimer] {
-          std::printf("startup-first-frame-ms=%lld\n",
-                      static_cast<long long>(startupTimer.elapsed()));
-          std::fflush(stdout);
-        },
-        Qt::SingleShotConnection);
-  }
-  if (!paths.isEmpty()) {
-    QString diagnostic;
-    if (!window.openDocuments(paths, &diagnostic)) {
-      std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
-      return 4;
-    }
-  }
-  window.restoreIfEnabled();
-  window.show();
-  // AGENT-CONTRACT: first-party global-menu export — the same shared
-  // composition the File Manager and Terminal use (docs/wiki/shell/
-  // global-menu.md). Composed after show() so the widget's platform QWindow
-  // exists; retained for the window lifetime and destroyed before it. A
-  // missing session bus or registrar leaves the export disabled/waiting and
-  // the local QMenuBar stays the only authority.
-  std::unique_ptr<QObject> menuExport;
-  if (QWindow *windowHandle = window.windowHandle()) {
-    menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
-        window.appShellCoordinator(), *windowHandle,
-        QDBusConnection::sessionBus(),
-        [&window](bool visible) { window.menuBar()->setVisible(visible); });
+  bool startupReported = false;
+  QObject::connect(&editor, &EditorApplication::windowCreated, &editor,
+      [&](EditorWindow *window) {
+        if (parser.isSet(QStringLiteral("report-startup"))) {
+          QObject::connect(window, &EditorWindow::firstFramePainted, &editor,
+              [&] {
+                if (startupReported) return;
+                startupReported = true;
+                std::printf("startup-first-frame-ms=%lld\n",
+                    static_cast<long long>(startupTimer.elapsed()));
+                std::fflush(stdout);
+              });
+        }
+      });
+  QObject::connect(&editor, &EditorApplication::windowShown, &editor,
+      [](EditorWindow *window) {
+        // AGENT-CONTRACT: Every document is an independent menu owner. Bind
+        // export lifetime to that window, before its coordinator teardown.
+        if (QWindow *handle = window->windowHandle()) {
+          auto menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
+              window->appShellCoordinator(), *handle,
+              QDBusConnection::sessionBus(),
+              [window](bool visible) { window->menuBar()->setVisible(visible); });
+          window->setMenuExport(std::move(menuExport));
+        }
+      });
+  QString diagnostic;
+  if (!editor.start(paths, &diagnostic)) {
+    std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
+    if (editor.openPaths().isEmpty()) return 4;
   }
   return application.exec();
 }

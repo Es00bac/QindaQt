@@ -4,6 +4,7 @@
 #include "restore/text_editor_restore_policy.h"
 #include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
+#include "ui/editor_application.h"
 
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
@@ -129,6 +130,9 @@ private slots:
   void conflictRequiresExplicitRetry();
   void uncertainWriteIsNeverReplayed();
   void startupDropsUnavailablePathsWithoutContentState();
+  void explicitPathsSuppressAlreadyEnabledRestore();
+  void delayedInitialPolicyPreservesInventory();
+  void windowInventoryTracksCloseAndPreferredActivePath();
 };
 
 void RestorePolicyTest::baselineAndLossFailClosed() {
@@ -247,8 +251,10 @@ void RestorePolicyTest::startupDropsUnavailablePathsWithoutContentState() {
   QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
 
-  EditorWindow window(localFactory(), appearance(), nullptr, &policy, &store);
-  QCOMPARE(window.documents()->openPaths(), QStringList{valid});
+  EditorApplication application(localFactory(), appearance(), &policy, &store, {}, false);
+  QVERIFY(application.start());
+  auto &window = *application.windows().first();
+  QCOMPARE(application.openPaths(), QStringList{valid});
   QCOMPARE(window.controller()->state().text(), QStringLiteral("disk truth"));
   QVERIFY(!window.controller()->state().isDirty());
   QVERIFY(window.statusBar()->currentMessage().contains(
@@ -256,6 +262,77 @@ void RestorePolicyTest::startupDropsUnavailablePathsWithoutContentState() {
   const RestoreLoadResult rewritten = store.load();
   QVERIFY(rewritten.ok());
   QCOMPARE(rewritten.state->paths, QStringList{valid});
+}
+
+
+void RestorePolicyTest::delayedInitialPolicyPreservesInventory() {
+  QTemporaryDir root;
+  const auto path = root.filePath("saved.txt");
+  QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly));
+  QCOMPARE(file.write("saved"), qint64(5)); file.close();
+  RestoreStateStore store(root.filePath("state"));
+  QVERIFY(store.store({.paths={path}, .activeIndex=0}).ok());
+  PolicyTransport transport;
+  SettingsClient client(transport, TextEditorKeys::scopedKeys(), {100, 0, {10}});
+  TextEditorRestorePolicy policy(client);
+  QVERIFY(client.start());
+  EditorApplication app(localFactory(), appearance(), &policy, &store, {}, false);
+  QVERIFY(app.start());
+  QCOMPARE(store.load().state->paths, QStringList{path});
+  QVERIFY(app.openPaths().isEmpty());
+  QVERIFY(establish(transport, true));
+  QTRY_COMPARE(app.openPaths(), QStringList{path});
+  QCOMPARE(app.windows().size(), 1);
+  emit transport.ownerChanged(QString{});
+  QTRY_VERIFY(!policy.baselineReceived());
+  QCOMPARE(store.load().error, RestoreStateError::Absent);
+  QCOMPARE(app.openPaths(), QStringList{path});
+}
+
+void RestorePolicyTest::explicitPathsSuppressAlreadyEnabledRestore() {
+  QTemporaryDir root;
+  const auto saved = root.filePath("saved.txt"), explicitPath = root.filePath("explicit.txt");
+  for (const auto &path : {saved, explicitPath}) {
+    QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write("disk"), qint64(4));
+  }
+  RestoreStateStore store(root.filePath("state"));
+  QVERIFY(store.store({.paths={saved}, .activeIndex=0}).ok());
+  PolicyTransport transport;
+  SettingsClient client(transport, TextEditorKeys::scopedKeys(), {100, 0, {10}});
+  TextEditorRestorePolicy policy(client);
+  QVERIFY(client.start()); QVERIFY(establish(transport, true));
+  QTRY_VERIFY(policy.enabled());
+  EditorApplication application(localFactory(), appearance(), &policy, &store, {}, false);
+  QVERIFY(application.start({explicitPath}));
+  QCOMPARE(application.openPaths(), QStringList{explicitPath});
+  QCOMPARE(store.load().state->paths, QStringList{explicitPath});
+}
+
+void RestorePolicyTest::windowInventoryTracksCloseAndPreferredActivePath() {
+  QTemporaryDir root;
+  const auto first = root.filePath("first.txt"), second = root.filePath("second.txt");
+  for (const auto &path : {first, second}) {
+    QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write("disk"), qint64(4));
+  }
+  RestoreStateStore store(root.filePath("state"));
+  QVERIFY(store.store({.paths={first, second}, .activeIndex=0}).ok());
+  PolicyTransport transport;
+  SettingsClient client(transport, TextEditorKeys::scopedKeys(), {100, 0, {10}});
+  TextEditorRestorePolicy policy(client);
+  QVERIFY(client.start()); QVERIFY(establish(transport, true));
+  QTRY_VERIFY(policy.enabled());
+  EditorApplication application(localFactory(), appearance(), &policy, &store, {}, false);
+  QVERIFY(application.start());
+  QCOMPARE(application.windows().size(), 2);
+  QCOMPARE(store.load().state->activeIndex, 0);
+  QVERIFY(application.windowForPath(first)->close());
+  QCOMPARE(application.openPaths(), QStringList{second});
+  QCOMPARE(store.load().state->paths, QStringList{second});
+  QVERIFY(application.windowForPath(second)->close());
+  QVERIFY(application.windows().isEmpty());
+  QCOMPARE(store.load().state->paths, QStringList{second});
 }
 
 QTEST_MAIN(RestorePolicyTest)
