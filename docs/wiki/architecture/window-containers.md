@@ -93,7 +93,9 @@ item, not a native overlay window.
   area cannot satisfy all members, the container enters an explicit recoverable
   overflow state rather than clipping silently or corrupting saved ratios.
 - Task lists and Alt-Tab expose exactly one primary active-page member as the
-  container identity. Every other member is suppressed while grouped;
+  container identity. The dock renders that identity with a stacked-window
+  icon in the user-chosen container color, rather than the primary application
+  icon. Every other member is suppressed while grouped;
   activating or unminimizing an inactive-page member activates that page before
   it can paint. Each member's independent task/switcher/minimized baseline is
   restored on detach, normalization, close recovery, rollback, or unload.

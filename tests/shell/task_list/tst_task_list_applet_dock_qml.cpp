@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
+#include "qindaqt/shell/icons/icon_runtime.h"
+
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
@@ -81,6 +83,8 @@ class TaskListAppletDockQmlTests final : public QObject {
 private slots:
     void dockModeReservesInteractiveTiles();
     void emptyDockDoesNotReserveATile();
+    void groupingReplacesApplicationsWithOneColoredContainer_data();
+    void groupingReplacesApplicationsWithOneColoredContainer();
 };
 
 void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
@@ -170,6 +174,126 @@ void TaskListAppletDockQmlTests::emptyDockDoesNotReserveATile()
   QVERIFY(!root->property("visible").toBool());
   QCOMPARE(root->implicitWidth(), 0.0);
   QCOMPARE(root->implicitHeight(), 0.0);
+}
+
+void TaskListAppletDockQmlTests::groupingReplacesApplicationsWithOneColoredContainer_data()
+{
+  QTest::addColumn<bool>("vertical");
+  QTest::addColumn<bool>("dockMode");
+  QTest::newRow("horizontal-dock") << false << true;
+  QTest::newRow("vertical-dock") << true << true;
+  QTest::newRow("horizontal-taskbar") << false << false;
+  QTest::newRow("vertical-taskbar") << true << false;
+}
+
+void TaskListAppletDockQmlTests::groupingReplacesApplicationsWithOneColoredContainer()
+{
+  QFETCH(bool, vertical);
+  QFETCH(bool, dockMode);
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port, {true, true, true},
+      [](const QString &app) { return app + QStringLiteral("-icon"); });
+  const auto publish = [&](const QVector<TaskWindowFact> &facts) {
+    if (!source.publishGeneration(facts).ok())
+      return false;
+    authority.revision = source.revision();
+    authority.sourceStatus = TaskListSourceStatus::Ready;
+    authority.owner = QStringLiteral(":1.1");
+    Q_EMIT authority.stateChanged();
+    return true;
+  };
+  const auto firefox = TaskListTest::standalone(QStringLiteral("firefox-window"),
+                                               QStringLiteral("firefox"));
+  const auto mail = TaskListTest::standalone(QStringLiteral("mail-window"),
+                                            QStringLiteral("thunderbird"));
+  QVERIFY(publish({firefox, mail}));
+  QCOMPARE(controller.entryCount(), 2);
+  const quint64 beforeMerge = source.revision();
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QVERIFY(QindaQt::Shell::Icons::IconRuntime::install(engine,
+      {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")}, {QStringLiteral("QindaQt")}));
+  QString error;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &error), qPrintable(error));
+  auto owned = createDockApplet(engine, controller, &error);
+  QVERIFY2(owned != nullptr, qPrintable(error));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root);
+  root->setProperty("vertical", vertical);
+  root->setProperty("dockMode", dockMode);
+  QQuickWindow window;
+  window.setGeometry(0, 0, 900, 220);
+  root->setParentItem(window.contentItem());
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+
+  auto primary = firefox;
+  primary.role = TaskWindowRole::ContainerPrimary;
+  primary.containerId = QStringLiteral("group");
+  primary.colorHex = QStringLiteral("#269CDA");
+  auto member = mail;
+  member.role = TaskWindowRole::ContainerMember;
+  member.containerId = primary.containerId;
+  QVERIFY(publish({primary, member}));
+  QCOMPARE(controller.entryCount(), 1);
+  QCOMPARE(controller.entryRows().first().toMap().value("taskId").toString(),
+           QStringLiteral("group"));
+  QTRY_VERIFY(dockEntry(root));
+  auto *entry = dockEntry(root);
+  const auto verifyIcon = [&]() {
+    auto *icon = entry->findChild<QQuickItem *>(dockMode
+        ? QStringLiteral("taskListDockEntryIcon") : QStringLiteral("taskListEntryIcon"));
+    QVERIFY(icon);
+    QCOMPARE(icon->property("name").toString(), QStringLiteral("window-restore-symbolic"));
+    QVERIFY(icon->property("symbolic").toBool());
+    QVERIFY(icon->property("resolved").toBool());
+    QCOMPARE(icon->property("color").value<QColor>(), QColor("#269CDA"));
+  };
+  verifyIcon();
+  QTRY_VERIFY([&]() {
+    const QImage frame = window.grabWindow();
+    for (int y = 0; y < frame.height(); ++y) {
+      for (int x = 0; x < frame.width(); ++x) {
+        if (frame.pixelColor(x, y) == QColor("#269CDA"))
+          return true;
+      }
+    }
+    return false;
+  }());
+  if (dockMode && !vertical)
+    QVERIFY(window.grabWindow().save(QStringLiteral(QINDAQT_SOURCE_DIR "/build/dock-container.png")));
+  QVERIFY(!controller.activateTask(firefox.windowId, beforeMerge));
+  QVERIFY(!controller.activateTask(member.windowId, source.revision()));
+  QVERIFY(port.calls.isEmpty());
+
+  // AGENT-GUARD: Tabs and focused tiles may change the representative; the
+  // sole group row, color, and activation target must follow that generation.
+  std::swap(primary, member);
+  primary.role = TaskWindowRole::ContainerPrimary;
+  primary.colorHex = QStringLiteral("#269CDA");
+  member.role = TaskWindowRole::ContainerMember;
+  member.colorHex.clear();
+  QVERIFY(publish({member, primary}));
+  QCOMPARE(controller.entryCount(), 1);
+  QTRY_VERIFY(dockEntry(root));
+  entry = dockEntry(root);
+  verifyIcon();
+  QVERIFY(controller.activateTask(QStringLiteral("group"), source.revision()));
+  QCOMPARE(port.calls.size(), 1);
+  QCOMPARE(port.lastCall().outcome.primaryWindowId, mail.windowId);
+
+  QVERIFY(publish({firefox, mail}));
+  QCOMPARE(controller.entryCount(), 2);
+  for (const auto &row : controller.entryRows()) {
+    const auto map = row.toMap();
+    QCOMPARE(map.value("kind").toString(), QStringLiteral("window"));
+    QVERIFY(map.value("colorHex").toString().isEmpty());
+    QCOMPARE(map.value("iconName").toString(),
+             map.value("applicationId").toString() + QStringLiteral("-icon"));
+  }
 }
 
 QTEST_MAIN(TaskListAppletDockQmlTests)

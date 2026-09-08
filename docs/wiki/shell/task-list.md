@@ -44,7 +44,9 @@ container entry only, `task_list_grouping.cpp`) → `TaskListAppletRow` → the
 QML row map (`colorHex`) → `TaskListEntryButton.qml`, which recolors both the
 panel-row and dock-tile icon glyph when set, leaving every standalone window
 and every uncolored container using the ordinary enabled/disabled token
-color.
+color. Containers use the bundled symbolic stacked-window icon, independent
+of the primary member’s application icon. Symbolic rendering applies the
+chosen color to the glyph in both dock and taskbar modes.
 
 The producer classifies containers before publishing: exactly one primary
 represents each container, and suppressed members reference it by container id.
@@ -321,9 +323,10 @@ Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
 for container rows — Ungroup, which maps to the T1 `releaseContainer`. Close
 uses the hosted Close All policy. Shell composition injects one
 `DesktopEntryIconResolver` built from explicit freedesktop application roots
-and one `IconThemeLocator` over the icon roots used by QML. Each row resolves
-the compositor-provided application id to the desktop entry's `Icon=` name and
-publishes whether theme lookup succeeded. Horizontal buttons show the icon plus an elided title
+and one `IconThemeLocator` over the icon roots used by QML. Standalone rows resolve
+the compositor-provided application id to the desktop entry's `Icon=` name;
+container rows use `window-restore-symbolic`. Both publish whether theme lookup
+succeeded. Changing the active tab or tile keeps the container icon and tint. Horizontal buttons show the icon plus an elided title
 inside an 84–168 by 28 logical-pixel bound; vertical buttons show only the
 icon. Missing and hostile mappings use the typed application placeholder.
 
