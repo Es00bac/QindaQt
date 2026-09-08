@@ -2,6 +2,7 @@
 #include "icon_item.h"
 #include <qindaqt/controls/application_icon.h>
 #include <QGuiApplication>
+#include <QEvent>
 #include <QPainter>
 #include <QQuickWindow>
 
@@ -10,7 +11,12 @@ IconItem::IconItem(QQuickItem *parent) : QQuickPaintedItem(parent) {
     setImplicitWidth(20);
     setImplicitHeight(20);
     setAntialiasing(true);
-    connect(qGuiApp, &QGuiApplication::paletteChanged, this, [this] { update(); });
+    qGuiApp->installEventFilter(this);
+}
+bool IconItem::eventFilter(QObject *watched, QEvent *event) {
+    if (event->type() == QEvent::ApplicationPaletteChange || event->type() == QEvent::ThemeChange)
+        update();
+    return QQuickPaintedItem::eventFilter(watched, event);
 }
 void IconItem::setName(const QString &name) {
     if (m_name == name) return;

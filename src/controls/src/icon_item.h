@@ -7,7 +7,7 @@ namespace QindaQt::Controls {
 // QML visual adapter only. Domain identity and accessible command naming stay
 // with the containing button/list item. A valid color requests alpha-preserving
 // symbolic tint; an invalid color preserves the icon's original artwork.
-class IconItem final : public QQuickPaintedItem {
+class IconItem : public QQuickPaintedItem {
     Q_OBJECT
     QML_NAMED_ELEMENT(Icon)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
@@ -19,6 +19,7 @@ public:
     void setName(const QString &name);
     void setColor(const QColor &color);
     void paint(QPainter *painter) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 Q_SIGNALS:
     void nameChanged();
     void colorChanged();
