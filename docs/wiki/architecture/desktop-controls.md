@@ -11,8 +11,11 @@ popup, and a decoded Spectacle region capture. The real KDE polkit agent also
 presented an authentication dialog in installed QindaQt session 39, corroborated
 by the user; terminating the unapproved request removed the dialog and left
 the session healthy. No credential was entered or privileged command run.
-Private PowerDevil inhibition/display-off evidence is recorded below; physical
-brightness hardware and the final installed idle-preference check remain open.
+Private PowerDevil inhibition/display-off evidence is recorded below. Installed
+Settings1 now returns the ten-minute idle preference, matching the active AC
+PowerDevil profile exactly (enabled, 600 seconds). The obsolete Settings1 owner
+needed restarting after installation. Physical brightness hardware coverage
+remains outside this observed evidence.
 
 The durable choice of a separate supervised process over shell or compositor
 integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-process.md).
