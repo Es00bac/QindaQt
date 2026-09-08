@@ -9,6 +9,7 @@ tests, and the wiki page describing its contract.
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
 | `compositor` | Immutable upstream KWin pin, downstream patch inventory and verifier, and checked-in compositor IPC descriptors | Repository tooling and upstream source metadata; never shell implementation |
+| `src/apps/system_monitor` | Native system monitoring: background Linux sampling and process actions, independent hardware adapters, published models/history, and detachable ordinary view windows | Public AppShell/AppAppearance/QST plus Qt Core/Concurrent/Gui/Widgets; no compositor-private API or other app implementation |
 | `src/workspaces_apps` | XDG application lookup and asynchronous desktop-entry launch | Qt Core, KF6 Service and KIOGui; no persistence, matching, compositor or UI policy |
 | `src/workspaces_ui` | Compact native Qt Widgets saved-workspace dialogs backed by public Workspaces values and a borrowed synchronous platform port | Public Workspaces/Core values plus Qt Widgets; never KWin objects, application-launch implementation, persistence policy, or matching/adoption logic |
 | `src/compositor/kwin/kwinworkspaceuiport.*` | GUI-thread KWin implementation of the workspace UI port: preselected live snapshots, eligible window inventory, desktop-entry delegation, and one coordinator-backed restore | KWin live registry/runtime plus public Workspaces UI and desktop-app APIs; borrows all collaborators, never reaches into session private state or bypasses topology coordination |
