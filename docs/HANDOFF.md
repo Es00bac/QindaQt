@@ -1,5 +1,35 @@
 # Integration handoff
 
+## Verified Portage delivery (September 8, r1)
+
+**Installed:** `gui-wm/qindaqt-desktop-0.1.0_pre20260908-r1`, built from immutable
+runtime `44d83ff53399d42df7ad30338515b72cf04acc67`. Independently reviewed
+package candidate `f648effa` is integrated at `4d453768`. The solve updated only
+QindaQt; KWin and all backend dependencies remained unchanged. Compilation
+finished through Portage with 24 concurrent jobs after preserving and resuming
+the objects from the initial six-job invocation.
+
+Portage verified the new binary package's full integrity and signature before
+installation. All 1,070 installed payload files match its bytes/symlink targets
+and are owned by the new VDB entry. The installed Qt platform plugin passes all
+five private-bus/offscreen test cases for live palette/font updates and owner
+recovery. The payload includes the native KWin plugin, decoration, shell,
+services and bundled apps. The prior signed package is retained for rollback.
+
+The original session, shell, compositor and captured terminal processes retained
+their process start times. No service, app or desktop restart was performed.
+The user can now log out and back in to load the new code. Installed-byte and
+private-fixture evidence does not establish live third-party tray actions or
+resolve the unconfirmed duplicate grouped-window report below.
+
+Evidence is preserved under `.cache/tray-package/.cache/`: the Portage build,
+24-job resume and install logs, `r1-payload-verification.json` and
+`r1-installed-verification.json`. The signed package is
+`/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260908-r1-1.gpkg.tar`.
+The combined 31 focused gates, strict MkDocs and 218-document link check pass.
+The source-shape checker still reports the pre-tray `EntryGrid.qml` `qsTr`
+function-span false positive; no unrelated source refactor was included.
+
 ## Focused tray and shared Qt appearance repairs (September 8)
 
 Independently accepted tray candidate `06bc22ca108076f647cc4fc703b9dc28bdf5708f`
@@ -30,8 +60,8 @@ The user's current direction is to preserve the desktop they already like and
 repair specific problems. Useful targeted KDE dependencies, including PowerDevil,
 remain authorized. A compositor fork, dependency purge and broad application
 reskin are outside this delivery. The separate unfinished QWidget styling
-candidate `f6115476` is not integrated. Host installation of these repairs is
-pending the combined Portage package; no session restart has been performed.
+candidate `f6115476` is not integrated. These repairs are installed in the verified r1 Portage package above; no
+session restart has been performed.
 
 ## File Manager browsing comfort (September 8)
 
@@ -49,7 +79,7 @@ and private-bus menu tests. Twelve private native captures cover compact, light,
 dark, high-contrast, Details and large-icon layouts at observed 100%, 125% and
 150% output scales. Strict MkDocs and the 215-page documentation link check pass.
 The exact candidate received independent source, regression and visual review.
-These changes have not been installed into the host desktop.
+These changes are installed in the verified r1 Portage package above.
 
 The broader daily-driver request remains open: standard file clipboard
 operations, drag-and-drop, properties, recursive search and the remaining
@@ -72,7 +102,8 @@ and stale/suppressed member action rejection. It does not execute real tab/tile
 merges. The user-reported extra live member entries remain unconfirmed: source
 grouping already suppresses them, the running shell matches its installed
 executable, and the production session has no development snapshot endpoint.
-No host installation/restart or native-session convergence is claimed.
+The repair is installed in the verified r1 package above. No restart or
+native-session convergence is claimed.
 
 ## First-party material and window ownership checkpoint (September 8)
 
