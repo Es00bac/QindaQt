@@ -170,8 +170,9 @@ bool verifyAccent(const QVariant &input, QString *error)
     argument.beginStructure();
     argument >> red >> green >> blue;
     argument.endStructure();
-    if (!near(red, 217.0 / 255.0) || !near(green, 138.0 / 255.0)
-        || !near(blue, 50.0 / 255.0)) {
+    // Smoked Plum publishes its opaque #EAB391 QST accent over the real bus.
+    if (!near(red, 234.0 / 255.0) || !near(green, 179.0 / 255.0)
+        || !near(blue, 145.0 / 255.0)) {
         *error = QStringLiteral("frontend accent-color differs from QindaQt QST projection");
         return false;
     }
