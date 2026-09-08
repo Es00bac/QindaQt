@@ -20,6 +20,12 @@ void SessionEnvironment::apply(const SessionOptions &options)
     qputenv("XDG_CURRENT_DESKTOP", "QindaQt");
     qputenv("XDG_SESSION_DESKTOP", "qindaqt");
     qputenv("XDG_SESSION_TYPE", "wayland");
+    // AGENT-CONTRACT: One Qt platform theme supplies QindaQt and other Qt
+    // applications. Explicit user toolkit overrides always retain authority.
+    if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORMTHEME"))
+        qputenv("QT_QPA_PLATFORMTHEME", "qindaqt");
+    if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_STYLE"))
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
     // AGENT-GUARD: External compositor mutation is a development-harness
     // capability, never an inherited production-session default. The KWin
     // endpoint additionally verifies both markers before enabling it. Output

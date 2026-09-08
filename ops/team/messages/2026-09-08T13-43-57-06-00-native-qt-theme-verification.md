@@ -1,0 +1,7 @@
+# Qt-only platform appearance verification
+
+2026-09-08T13:43:57-06:00: Isolated focused build succeeds and CTest passes5/5: session environment defaults/overrides, native Widgets/Quick live Settings1 palette/font, explicit widget style retention, installed relocated plugin, injected platform service delegation. Native Qt cases each pass5/5 QtTest functions; service delegation3/3, session environment6/6. Fatal warnings enabled for native fixture rows, bus has no host activation paths, XDG config/data/runtime are private. Plugin ldd contains QtGui/QtDBus/QtCore and system libraries only, without build-tree support libraries or KDE.
+
+Tests prove existing explicit widget palette is retained, full native role projection, font17-to19 change, light/dark transitions, invalid-state/loss retention, new-owner recovery and no writes. No control skins, application QSS, shell layout, KDE config or running services changed. Injected base-theme fixture proves native tray/menu/dialog calls stay delegated; actual Wayland service availability remains a combined-session qualification caveat.
+
+Strict MkDocs and the217-document link/navigation validator pass with parent's exact pending registry additions overlaid in ignored .cache/docs-check-root. Requested next action: independent exact candidate review, then parent integrates its registry changes and preserves existing desktop appearance. Package-prep branch/plan remains separate and released for reviewer continuation after acceptance.
