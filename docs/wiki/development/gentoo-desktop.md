@@ -5,8 +5,8 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260907`, pinned to Git
-commit `d1232e75996fde216ed232622a5b20198dadb2e7`. Regenerate the package
+The current dated package checkpoint is `0.1.0_pre20260907-r1`, pinned to Git
+commit `8486e0588e8dd8c21f176be162b53d81ee73a5b6`. Regenerate the package
 Manifest whenever this immutable pin changes.
 
 The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
@@ -49,7 +49,7 @@ Copy `packaging/gentoo/gui-wm/qindaqt-desktop/` into a configured local overlay,
 regenerate the Manifest, run the repository's package QA, and inspect the plan:
 
 ```sh
-ebuild /path/to/qindaqt-desktop-0.1.0_pre20260907.ebuild manifest
+ebuild /path/to/qindaqt-desktop-0.1.0_pre20260907-r1.ebuild manifest
 pkgcheck scan --repo your-overlay gui-wm/qindaqt-desktop
 emerge --pretend --verbose gui-wm/qindaqt-desktop
 ```
