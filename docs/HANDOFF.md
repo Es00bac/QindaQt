@@ -1,5 +1,14 @@
 # Integration handoff
 
+## Installed service refresh
+
+The real KDE privilege prompt appeared in session 39 and was corroborated by
+the user. Terminating the pending request removed it without disrupting the
+desktop. Settings1 was still an obsolete pre-install daemon; after restarting
+it, the ten-minute idle preference matches PowerDevil AC display-off at 600
+seconds. Audio, Bluetooth, Network, and Power services also had deleted old
+executables and were restarted successfully through their existing user units.
+
 ## Desktop-controls integration follow-up
 
 Reviewed screenshot candidate `3b191acd` is integrated as `a5f1fdd8` and
