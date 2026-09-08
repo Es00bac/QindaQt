@@ -23,8 +23,6 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     enabled("view.zoom-in", navigation.canZoomIn());
     enabled("view.zoom-out", navigation.canZoomOut());
     checked("view.show-hidden", navigation.showHidden());
-    checked("view.grid-mode", navigation.viewMode() == QLatin1String("grid"));
-    checked("view.details-mode", navigation.viewMode() == QLatin1String("list"));
   };
   QObject::connect(&navigation, &NavigationController::navigationChanged,
                    &coordinator, sync);

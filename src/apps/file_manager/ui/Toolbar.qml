@@ -104,12 +104,14 @@ Rectangle {
                 T.MenuItem {
                     text: qsTr("Details View")
                     checkable: true
+                    autoExclusive: true
                     checked: root.navigationController.viewMode === "list"
                     onTriggered: root.appCoordinator.activateAction("view.details-mode")
                 }
                 T.MenuItem {
                     text: qsTr("Icon View")
                     checkable: true
+                    autoExclusive: true
                     checked: root.navigationController.viewMode === "grid"
                     onTriggered: root.appCoordinator.activateAction("view.grid-mode")
                 }

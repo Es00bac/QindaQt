@@ -113,6 +113,14 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   QTRY_VERIFY(grid->hasActiveFocus());
   QTest::keyClick(window, Qt::Key_2, Qt::ControlModifier);
   QCOMPARE(navigation.viewMode(), QStringLiteral("grid"));
+  QObject *gridAction = nullptr;
+  for (QObject *object : window->findChildren<QObject *>()) {
+    if (object->property("modelData").toMap().value("id").toString()
+        == QStringLiteral("view.grid-mode")) gridAction = object;
+  }
+  QVERIFY(gridAction);
+  QVERIFY(!gridAction->property("checkable").toBool());
+  QVERIFY(!gridAction->property("checked").toBool());
 
   const QPointF local = grid->mapToScene(QPointF(grid->width() / 2, grid->height() / 2));
   const auto wheel = [&](Qt::KeyboardModifiers modifiers) {

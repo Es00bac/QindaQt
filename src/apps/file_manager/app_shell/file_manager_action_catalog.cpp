@@ -78,14 +78,16 @@ QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
              QStringLiteral("View"), QStringLiteral("Show Hidden Files"),
              QStringLiteral("Show or hide entries whose name begins with a dot"),
              QKeySequence(QStringLiteral("Ctrl+H")), 2, 0, false, true),
+      // AGENT-GUARD: Direct view choices must not be checkable Qt Actions;
+      // selecting the current mode again would uncheck the unchanged view.
       action(QStringLiteral("view.grid-mode"), QStringLiteral("view"),
              QStringLiteral("View"), QStringLiteral("Icon View"),
              QStringLiteral("Show this folder as icons"),
-             QKeySequence(QStringLiteral("Ctrl+2")), 2, 1, false, true),
+             QKeySequence(QStringLiteral("Ctrl+2")), 2, 1),
       action(QStringLiteral("view.details-mode"), QStringLiteral("view"),
              QStringLiteral("View"), QStringLiteral("Details View"),
              QStringLiteral("Show this folder as a detailed list"),
-             QKeySequence(QStringLiteral("Ctrl+1")), 2, 4, false, true),
+             QKeySequence(QStringLiteral("Ctrl+1")), 2, 4),
       action(QStringLiteral("view.zoom-in"), QStringLiteral("view"),
              QStringLiteral("View"), QStringLiteral("Zoom In"),
              QStringLiteral("Increase icon size"), QKeySequence::ZoomIn, 2, 5),

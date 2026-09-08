@@ -91,7 +91,7 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `view.refresh` / `refreshButton` | `F5`, `Ctrl+R` | Re-read the current folder |
 | `view.focus-location` | `Ctrl+L` | Swap the breadcrumb for the editable location field |
 | `view.show-hidden` | `Ctrl+H` | Show or hide dot-name entries (checkable) |
-| `view.details-mode` / `view.grid-mode` | `Ctrl+1` / `Ctrl+2` | Select Details / Icon view directly (checkable) |
+| `view.details-mode` / `view.grid-mode` | `Ctrl+1` / `Ctrl+2` | Select Details / Icon view directly |
 | `view.zoom-in` / `view.zoom-out` | `Ctrl++` (`Ctrl+=` also accepted) / `Ctrl+-`, or `Ctrl+wheel` | Increase / decrease icon size in the current view |
 | `view.zoom-reset` | `Ctrl+0` | Restore the default icon size |
 | `view.filter` | `Ctrl+F` | Focus the current-folder filename filter |
@@ -104,7 +104,9 @@ The status bar reports the visible item or selection count and provides zoom
 buttons plus a reset percentage. Zoom uses five bounded, session-local icon
 sizes (32, 48, 64, 96, 128 logical pixels; 64 is the default). Details rows scale
 their icons and height proportionally. Zoom leaves the view mode unchanged;
-`Ctrl+1`/`Ctrl+2` select a mode explicitly. Plain wheel input scrolls, while
+`Ctrl+1`/`Ctrl+2` select a mode explicitly. These catalog commands are not
+checkable toggles: repeating the current view does nothing. Folder Options
+uses exclusive view choices to indicate the current mode. Plain wheel input scrolls, while
 Ctrl+wheel accumulates fine wheel/trackpad deltas into zoom steps and does not
 also scroll. Resizing or zooming keeps the current item visible without
 changing its selection identity. Keyboard focus starts in the file view when
