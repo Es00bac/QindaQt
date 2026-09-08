@@ -1,20 +1,37 @@
 # QindaQt System Monitor
 
-System Monitor is being built as a native QindaQt application for understanding
-resource use and managing processes. It belongs alongside the bundled editor,
-terminal, and file manager. The implementation is not installed or qualified yet.
+System Monitor is a native QindaQt application for understanding resource use
+and managing processes. It belongs alongside the bundled editor, terminal,
+and file manager. Source integration and focused verification are complete;
+Portage installation is being qualified.
 
 ## A workspace for watching your system
 
-The main window will offer Overview, Processes, CPU, Memory, Disks, Network,
-and Hardware. Each view can also open in its own window. For example, put CPU
-and disk graphs beside a build terminal, or keep process details on another
-page of the same container. QindaQt manages the tiles and tabs.
+Use Overview for a quick look at CPU, memory, disk, and network activity. The
+other views let you investigate a particular resource:
 
-Graphs should answer a specific question: how busy a resource is, how quickly
-it is transferring data, or how its use has changed. Values include units and
-explain unavailable readings. Process management includes search, sorting,
-details, termination, pause/resume, and priority changes with real error feedback.
+- **Processes:** search for an application, sort the table, inspect its resource
+  use, and terminate, pause, resume, or change its priority.
+- **CPU:** watch total utilization and compare individual logical CPUs.
+- **Memory:** inspect used, available, and cached memory, plus swap.
+- **Disks:** select a device to watch reads and writes, and check filesystem space.
+- **Network:** select an interface to watch incoming and outgoing traffic.
+- **Hardware:** inspect GPU utilization and memory, temperatures, fan speeds,
+  and other readings exposed by the installed driver.
+
+Choose **View → Open view in new window** (`Ctrl+N`) to keep a resource visible
+while looking at another. Put CPU and disk graphs beside a build terminal, or
+combine monitoring windows into a container. QindaQt manages the tiles and tabs.
+Closing one monitoring window leaves the others running.
+
+**View → Pause updates** (`Ctrl+Alt+P`) freezes sampling across the windows of
+this app instance. The View menu also controls the sampling interval and graph
+duration. A shorter interval gives more frequent readings; a longer interval
+reduces sampling work. History is kept in memory with a bounded retention period.
+
+To open a particular view from a terminal, use, for example,
+`qindaqt-system-monitor --view network`. View names are `overview`, `processes`,
+`cpu`, `memory`, `disks`, `network`, and `hardware`.
 
 ## Implementation boundary
 
@@ -24,9 +41,21 @@ GPU and sensor adapters belong to its hardware module. The interface consumes
 published snapshots and process models, without reading procfs itself. Sampling
 runs away from the GUI thread and retains bounded history.
 
-Portage integration and actual installed verification are part of delivery.
-This page will record supported readings, shortcuts, and verified limitations
-when the implementation is integrated.
+## Installing and opening System Monitor
+
+The Gentoo package is `gui-apps/qindaqt-system-monitor` in the QindaQt overlay.
+It depends on the desktop's shared runtime and installs its own executable,
+launcher, and icon. It does not replace the compositor.
+
+```sh
+emerge --ask gui-apps/qindaqt-system-monitor
+qindaqt-system-monitor
+```
+
+Open **QindaQt System Monitor** from the application launcher, or run the
+command above. A desktop restart is not needed after installation. The package
+recipe and its pinned source are kept under
+`packaging/gentoo/gui-apps/qindaqt-system-monitor/` in the repository.
 
 ## Design and data references
 
@@ -51,3 +80,17 @@ Disk and network activity are rates in bytes per second. The first reading
 establishes a baseline; a device that disappears or resets needs a new baseline.
 Missing process I/O permissions and unsupported driver readings remain
 unavailable rather than appearing as zero activity.
+
+## Hardware and filesystem coverage
+
+AMD GPU readings come from the kernel's sysfs interface. NVIDIA readings use
+NVML when it is already installed with the driver. Missing GPU counters are
+reported as unavailable; installing System Monitor does not install or change
+a graphics driver. Sensor availability depends on the machine and kernel.
+Intel engine utilization is not currently collected.
+
+Filesystem capacity excludes remote and FUSE mounts so an unavailable server
+cannot stall collection. Disk activity still describes the local block devices.
+Process I/O can be unavailable when the current account cannot read another
+process's counters. Process actions use your account's permissions and show the
+operating system's error when an action is denied.

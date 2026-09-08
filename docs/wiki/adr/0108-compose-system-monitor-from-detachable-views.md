@@ -34,8 +34,11 @@ unavailable. CPU process percentages use a documented, consistent denominator.
 Read Linux procfs and sysfs directly. Optional vendor GPU telemetry stays behind
 the hardware provider and does not become a required proprietary dependency.
 Process actions target the selected process identity, including its start time,
-and report the real operating-system result. A selected process exiting or its
-PID being reused must not redirect an action to another process.
+and report the real operating-system result. Stale selected identities are
+rejected before an action. Signals use pidfds; systems without this support
+report an unavailable identity handle. Priority changes use immediate identity
+checks; Linux does not offer an atomic start-time condition for this numeric-PID
+operation, so priority changes remain best-effort.
 
 Use QindaQt's public appearance and application-menu boundaries. Charts are
 painted using Qt's existing rendering facilities, avoiding a separate charting
