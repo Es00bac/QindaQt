@@ -449,6 +449,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
 
     if(TARGET qindaqt_compositor)
         include("${CMAKE_CURRENT_LIST_DIR}/NotificationLiveTests.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/WorkspaceReopenTests.cmake")
         include("${CMAKE_CURRENT_LIST_DIR}/DailyControlsTests.cmake")
 
         qt_add_executable(

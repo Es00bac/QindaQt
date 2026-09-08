@@ -178,3 +178,15 @@ The static workspace UI library is built with position-independent code because
 its production consumer is the KWin plugin. Qualification must link the real
 plugin; compiling the dialog library or an executable-only test does not check
 that shared-library boundary.
+
+## Two-session acceptance
+
+The private `shell.workspace-reopen.two-session` row saves a named, colored
+three-window layout, stops that compositor, and reopens the same stored
+workspace in a fresh compositor session. It explicitly assigns two windows
+with the same application ID and supplies a replacement for the missing
+application. The restored split tree must match the saved tree exactly; a
+second save must preserve the workspace ID, name, color, and chosen window
+identities. This is a fixed 1080p virtual-output check, not physical display
+coverage. The dialog unit tests separately cover unavailable applications
+and correcting a duplicate manual choice.
