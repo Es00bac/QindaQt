@@ -2765,6 +2765,11 @@ ctest --test-dir build/dev --parallel 1 --output-on-failure \
   -R '^desktop\.virtual\.interactive\.1080p$'
 ```
 
+Weston's required backend and kiosk-shell modules are resolved under `lib` or
+`lib64` within the authenticated executable prefix, supporting Gentoo and
+private tool installations. Missing modules, non-files, dangling links and
+symlinks escaping that prefix fail closed before the sandbox is launched.
+
 The sandbox starts a Weston 15 headless/pixman kiosk parent at exact
 `1920x1080@1` on `qindaqt-parent-wayland`. KWin's windowed backend connects to
 that endpoint and publishes a different `qindaqt-<run-id>` child socket for all

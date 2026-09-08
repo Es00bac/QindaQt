@@ -42,8 +42,8 @@ class SelectorBoundaryTests(unittest.TestCase):
             for tool in tools.values():
                 executable(tool)
             for module in (
-                prefix / "lib/libweston-15/headless-backend.so",
-                prefix / "lib/weston/kiosk-shell.so",
+                prefix / "lib64/libweston-15/headless-backend.so",
+                prefix / "lib64/weston/kiosk-shell.so",
             ):
                 executable(module)
             backend = (
@@ -85,6 +85,11 @@ class SelectorBoundaryTests(unittest.TestCase):
             try:
                 spec = _make_spec(arguments, run_id, paths)
                 command = list(spec.command)
+                self.assertEqual(
+                    spec.environment["WESTON_MODULE_MAP"],
+                    f"headless-backend.so={prefix}/lib64/libweston-15/headless-backend.so;"
+                    f"kiosk-shell.so={prefix}/lib64/weston/kiosk-shell.so",
+                )
                 self.assertEqual(tool_root(backend), prefix)
                 self.assertEqual(
                     command[command.index("--kscreen-doctor") + 1],
