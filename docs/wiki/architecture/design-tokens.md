@@ -226,3 +226,13 @@ QML `publishTokens()` consumes those values; Widgets adapters accept the same
 inputs. Missing optional keys and owner loss retain the prior confirmed values;
 malformed values do not replace them. An explicit theme override locks the
 palette, while user readability preferences still apply.
+
+## Standard Qt consumers
+
+The [Qt platform theme](qt-platform-theme.md) projects the same QST values into
+standard `QPalette`, interface/fixed `QFont` and icon hints for ordinary Qt
+applications. Its private QPA adapter observes AppAppearance; token derivation
+retains its pure public boundary. Existing first-party skins and layouts remain
+unchanged. The desktop defaults to built-in Qt Fusion rendering for standard
+controls, preserves explicit toolkit overrides, and never writes KDE appearance
+configuration ([ADR-0115](../adr/0115-share-appearance-through-qt-platform-theme.md)).
