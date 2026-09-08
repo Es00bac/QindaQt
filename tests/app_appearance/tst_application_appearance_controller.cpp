@@ -104,14 +104,16 @@ void ApplicationAppearanceControllerTest::
   const quint64 duplicateToken = transport.lastToken;
   transport.invalidate(3);
   QTRY_VERIFY(transport.lastToken != duplicateToken);
+  // An unavailable requested ID with an explicit scheme resolves to the
+  // installed compatible variant; malformed scheme tokens retain that value.
   transport.reply(QStringLiteral("missing"), QStringLiteral("dark"), 3);
-  QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
   const quint64 missingToken = transport.lastToken;
   transport.invalidate(4);
   QTRY_VERIFY(transport.lastToken != missingToken);
   transport.reply(QStringLiteral("qinda-light"), QStringLiteral("sepia"), 4);
-  QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
-  QCOMPARE(changes.count(), 1);
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
+  QCOMPARE(changes.count(), 2);
 }
 
 void ApplicationAppearanceControllerTest::explicitOverrideIgnoresSettings() {
