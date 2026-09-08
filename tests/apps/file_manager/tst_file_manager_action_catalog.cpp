@@ -73,10 +73,8 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QVERIFY(!selectAll->checkable);
   QVERIFY(!selectAll->destructive);
 
-  // AGENT-CONTRACT: The checkable view actions mirror
-  // NavigationController's showHidden/viewMode state; main.cpp syncs their
-  // checked flags on presentationChanged, so the checkable bit and shortcut
-  // here are part of the UI contract the S2 UI probe drives.
+  // Hidden files is a toggle; explicit view selections are idempotent commands.
+  // A checkable Qt Action would toggle itself off when selecting the same view.
   const auto showHidden = find("view.show-hidden");
   QVERIFY(showHidden != actions.cend());
   QCOMPARE(showHidden->menuId, QStringLiteral("view"));
@@ -91,7 +89,11 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QCOMPARE(gridMode->menuOrder, 2);
   QCOMPARE(gridMode->order, 1);
   QCOMPARE(gridMode->shortcut, QKeySequence(QStringLiteral("Ctrl+2")));
-  QVERIFY(gridMode->checkable);
+  QVERIFY(!gridMode->checkable);
+  const auto detailsMode = find("view.details-mode");
+  QVERIFY(detailsMode != actions.cend());
+  QVERIFY(!detailsMode->checkable);
+  QCOMPARE(detailsMode->shortcut, QKeySequence(QStringLiteral("Ctrl+1")));
 
   const auto focusLocation = find("view.focus-location");
   QVERIFY(focusLocation != actions.cend());
