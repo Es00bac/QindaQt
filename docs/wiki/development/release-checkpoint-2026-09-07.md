@@ -1,7 +1,7 @@
 # September 7 desktop checkpoint
 
 The Gentoo desktop package `0.1.0_pre20260907-r1` is built and installed.
-Release tagging is waiting for the native CI boot checks.
+The release checkpoint is tagged `v0.1.0-pre.20260907`.
 
 ## Saved workspaces
 
@@ -46,6 +46,15 @@ process updated all PowerDevil profiles from 600 to 660 and back to 600 seconds
 without a diagnostic refresh call. Separate private checks exercised real
 PowerDevil idle inhibition and display-off after inhibition ended. This evidence does not claim a hardware
 matrix or unrestricted automatic application-session restoration.
+
+The [native CI job](https://github.com/Es00bac/QindaQt/actions/runs/34180153305/job/101917487408)
+passed the complete pinned production build, staged installation, release
+contract, all three static ABI/dependency checks, and both mandatory boots:
+build-tree plugin loading and relocated installed-plugin discovery. Its source
+is `dc8a54cc`; the tagged production sources are identical to the installed
+package source. Later changes record tests, packaging, CI setup, and documentation.
+This is native-release qualification, not a claim that every unrelated CI suite
+is green or that the broader hardware and upgrade matrices are complete.
 
 See [Gentoo installation](gentoo-desktop.md), the [release procedure](releases.md),
 and [KWin upgrades](kwin-upgrades.md) for installation and maintenance.
