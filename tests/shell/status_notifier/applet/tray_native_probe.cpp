@@ -190,6 +190,7 @@ void TrayNativeProbe::exportedMenuOpensWindow()
     QQuickWindow panel;
     panel.setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
     panel.setColor(QColor("#eee9e5"));
+    panel.setGeometry(panel.screen()->geometry());
     applet->setParentItem(panel.contentItem());
     // QWindow::showFullScreen requests activation even for non-focusing windows.
     panel.setWindowState(Qt::WindowFullScreen);
