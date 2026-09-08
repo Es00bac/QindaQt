@@ -1,5 +1,38 @@
 # Integration handoff
 
+## Focused tray and shared Qt appearance repairs (September 8)
+
+Independently accepted tray candidate `06bc22ca108076f647cc4fc703b9dc28bdf5708f`
+is integrated at `c82c60c4`. Tray context menus now consume application-exported
+DBusMenu actions through the existing shared client, including checked actions,
+submenus and configuration-window requests. Primary/middle clicks now reach
+the item; menu-only activation, wheel input and actual global coordinates are
+forwarded. Existing tray styling remains in place. All 25 tray/shared-menu tests
+pass, including relocated package checks and two offscreen full-stack fixtures
+with exactly one configuration action. Native QTest input lacks a compositor
+popup-grab serial, so these captures are explicitly offscreen evidence. Gabbee's
+menu export was inspected read-only; no live third-party action is claimed.
+
+Independently accepted Qt candidate `bf5d9c965c79c6c261413898a3fe0a6f7a3c9e68`
+is integrated through `746645f4`. The additive Qt platform theme shares the
+existing palette, fonts and icon theme with standard Qt applications, preserving
+explicit application and user overrides. Existing first-party skins, QSS,
+layout, compositor and backend dependencies are unchanged. Five focused Qt and
+session gates pass, including a relocated plugin, live Settings1 changes and
+preservation of Qt-owned native service delegation. This does not qualify every
+third-party custom UI or Qt 5 application.
+
+The combined production shell and Qt platform plugin build and all 31 tray,
+shared-menu, Qt platform and session-environment gates pass on `746645f4`. Strict MkDocs and
+the 218-document link checker pass.
+
+The user's current direction is to preserve the desktop they already like and
+repair specific problems. Useful targeted KDE dependencies, including PowerDevil,
+remain authorized. A compositor fork, dependency purge and broad application
+reskin are outside this delivery. The separate unfinished QWidget styling
+candidate `f6115476` is not integrated. Host installation of these repairs is
+pending the combined Portage package; no session restart has been performed.
+
 ## File Manager browsing comfort (September 8)
 
 Independently accepted candidate `3117fedd4854849b7411942bd836f32bc7638de3`
