@@ -1,5 +1,13 @@
 # Integration handoff
 
+## Installed idle preference verified
+
+The private installed-session writer check passed Settings1 default 10 → user
+override 11 → default 10, revisions 0 → 1 → 2. The installed desktop-controls
+process changed all three PowerDevil profile timeouts 600 → 660 → 600 seconds
+without a diagnostic refresh call. The earlier real inhibition checks remain
+separate evidence; this writer diagnostic does not exercise inhibition.
+
 ## Installed service refresh
 
 The real KDE privilege prompt appeared in session 39 and was corroborated by
