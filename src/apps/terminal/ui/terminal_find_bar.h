@@ -21,6 +21,9 @@ public:
   void setQuery(const TerminalSearchQuery &query);
   void presentResult(const TerminalSearchResult &result);
   void focusEditor();
+  // Refresh GUI-created symbolic pixmaps after icon-theme changes, even when
+  // the semantic palette is unchanged.
+  void refreshIcons();
 
 signals:
   void searchRequested(QindaQt::Apps::Terminal::TerminalSearchDirection direction);
@@ -31,7 +34,6 @@ protected:
   void changeEvent(QEvent *event) override;
 
 private:
-  void refreshIcons();
   QToolButton *m_close = nullptr;
   QLineEdit *m_editor = nullptr;
   QToolButton *m_caseSensitive = nullptr;

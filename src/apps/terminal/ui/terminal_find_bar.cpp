@@ -93,6 +93,7 @@ void TerminalFindBar::refreshIcons() {
   if (!m_previous || !m_next || !m_close) return;
   const auto icon = [this](const QString &name) {
     QPixmap pixmap = QindaQt::Controls::applicationIcon(name).pixmap(48, 48);
+    if (pixmap.isNull()) return QIcon{};
     // Essential icon-only controls use semantic ink in every custom theme.
     // Keep the SVG silhouette while avoiding a fixed decorative hue at 2:1.
     QPainter painter(&pixmap);
