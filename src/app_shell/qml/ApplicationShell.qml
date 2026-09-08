@@ -22,6 +22,25 @@ ApplicationWindow {
     title: coordinator.windowTitle.length > 0
            ? coordinator.windowTitle : coordinator.applicationName
     color: Tokens.bg.base
+    // Native Qt menus/dialog controls inherit this complete semantic palette;
+    // styling only custom labels leaves their popup text on the host palette.
+    palette.window: Tokens.bg.base
+    palette.base: Tokens.bg.base
+    palette.alternateBase: Tokens.bg.raised
+    palette.button: Tokens.bg.raised
+    palette.text: Tokens.fg.default
+    palette.windowText: Tokens.fg.default
+    palette.buttonText: Tokens.fg.default
+    palette.placeholderText: Tokens.fg.muted
+    palette.toolTipBase: Tokens.bg.highest
+    palette.toolTipText: Tokens.fg.default
+    palette.highlight: Tokens.accent.default
+    palette.highlightedText: Tokens.accent.fg
+    palette.light: Tokens.outline.strong
+    palette.mid: Tokens.outline.divider
+    palette.dark: Tokens.outline.strong
+    font.family: Tokens.type.fontFamily
+    font.pointSize: Tokens.type.body
 
     // AGENT-CONTRACT: Closing asks the owning application for a decision. The
     // coordinator and this surface never call QCoreApplication::quit or infer

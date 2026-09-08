@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 #include <QQuickPaintedItem>
+#include <QImage>
 #include <QtQml/qqmlregistration.h>
 
 namespace QindaQt::Controls {
@@ -20,11 +21,13 @@ public:
     void setColor(const QColor &color);
     void paint(QPainter *painter) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void updatePolish() override;
 Q_SIGNALS:
     void nameChanged();
     void colorChanged();
 private:
     QString m_name;
     QColor m_color;
+    QImage m_image;
 };
 }

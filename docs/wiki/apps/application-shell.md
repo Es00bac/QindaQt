@@ -4,7 +4,8 @@
 applications. It standardizes application-owned lifecycle decisions, stable
 action/menu projection, opt-in global-menu export, optional Settings/session readiness, file-portal request
 mediation, bounded typed errors, focus reporting, and one accessible QST-themed
-window surface. It is not a route registry, domain framework, service client,
+window surface. Native menus and dialogs inherit the same semantic palette
+and font as custom content, including live theme updates. It is not a route registry, domain framework, service client,
 or process supervisor.
 
 The durable extraction decision and prohibited responsibilities are recorded
