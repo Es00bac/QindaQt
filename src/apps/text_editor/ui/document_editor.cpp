@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document_editor.h"
+#include "qindaqt/design_tokens/token_deriver.h"
 #include <KSyntaxHighlighting/Definition>
 #include <KSyntaxHighlighting/Format>
 #include <KSyntaxHighlighting/Repository>
@@ -14,7 +15,8 @@ namespace QindaQt::Apps::TextEditor {
 namespace {
 class ReadableSyntaxHighlighter final : public KSyntaxHighlighting::SyntaxHighlighter {
 public:
-  explicit ReadableSyntaxHighlighter(QTextDocument *document) : SyntaxHighlighter(document) {}
+  explicit ReadableSyntaxHighlighter(QPlainTextEdit *editor)
+      : SyntaxHighlighter(editor->document()), m_editor(editor) {}
   void setHighContrast(bool enabled) {
     m_highContrast = enabled;
     rehighlight();
@@ -23,17 +25,26 @@ protected:
   void applyFormat(int offset, int length, const KSyntaxHighlighting::Format &syntax) override {
     SyntaxHighlighter::applyFormat(offset, length, syntax);
     auto value = QSyntaxHighlighter::format(offset);
-    // AGENT-GUARD: Some Markdown heading definitions yield a transparent brush.
-    // A text editor must show every character; invisible syntax text defeats
-    // review/editing. Keep semantic text color and preserve weight/emphasis.
-    if (m_highContrast || (value.foreground().style() != Qt::NoBrush &&
-                           value.foreground().color().alpha() == 0)) {
+    // AGENT-GUARD: Upstream syntax colors are not fitted to QindaQt themes.
+    // Transparent headings or low-contrast tokens must retain readable semantic
+    // ink, including against the current-line surface, while keeping emphasis.
+    const auto &palette = m_editor->palette();
+    const QColor foreground = value.foreground().style() == Qt::NoBrush
+        ? palette.color(QPalette::Text) : value.foreground().color();
+    const QColor background = value.background().style() == Qt::NoBrush
+        ? palette.color(QPalette::Base) : value.background().color();
+    using QindaQt::DesignTokens::DesignTokenDeriver;
+    const bool unreadable = foreground.alpha() < 255 ||
+        DesignTokenDeriver::contrastRatio(foreground, background) < 4.5 ||
+        DesignTokenDeriver::contrastRatio(foreground, palette.color(QPalette::AlternateBase)) < 4.5;
+    if (m_highContrast || unreadable) {
       value.clearForeground();
-      if (m_highContrast) value.clearBackground();
+      value.clearBackground();
       setFormat(offset, length, value);
     }
   }
 private:
+  QPlainTextEdit *m_editor;
   bool m_highContrast = false;
 };
 class LineNumberGutter final : public QWidget {
@@ -53,10 +64,10 @@ private:
 struct DocumentEditor::Syntax {
   KSyntaxHighlighting::Repository repository;
   ReadableSyntaxHighlighter highlighter;
-  explicit Syntax(QTextDocument *document) : highlighter(document) {}
+  explicit Syntax(QPlainTextEdit *editor) : highlighter(editor) {}
 };
 DocumentEditor::DocumentEditor(QWidget *parent)
-    : QPlainTextEdit(parent), m_syntax(std::make_unique<Syntax>(document())),
+    : QPlainTextEdit(parent), m_syntax(std::make_unique<Syntax>(this)),
       m_gutter(new LineNumberGutter(this)), m_baseFont(font()) {
   connect(this, &QPlainTextEdit::blockCountChanged, this,
           &DocumentEditor::updateGutter);
@@ -161,6 +172,7 @@ void DocumentEditor::changeEvent(QEvent *event) {
         palette().base().color().lightness() < 128
             ? KSyntaxHighlighting::Repository::DarkTheme
             : KSyntaxHighlighting::Repository::LightTheme));
+    m_syntax->highlighter.rehighlight();
     highlightCurrentLine();
   }
 }
