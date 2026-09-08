@@ -117,6 +117,7 @@ add_subdirectory(apps/settings_center)
 add_subdirectory(apps/text_editor)
 add_subdirectory(apps/file_manager)
 add_subdirectory(apps/terminal)
+add_subdirectory(apps/system_monitor)
 
 if(TARGET qindaqt_session_supervisor_support)
     add_subdirectory(session_supervisor)

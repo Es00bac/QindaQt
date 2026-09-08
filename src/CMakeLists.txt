@@ -107,6 +107,7 @@ add_subdirectory(apps/settings_center)
 add_subdirectory(apps/text_editor)
 add_subdirectory(apps/file_manager)
 add_subdirectory(apps/terminal)
+add_subdirectory(apps/system_monitor)
 add_subdirectory(apps/welcome)
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
