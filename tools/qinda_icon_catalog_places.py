@@ -11,7 +11,14 @@ GROUP = "places"
 
 
 def _folder(mark_symbolic: str, mark_color: str) -> Icon:
-    return Icon(GROUP, stroke(FOLDER_D) + mark_symbolic, filled(FOLDER_D, fill=APRICOT) + mark_color)
+    material = (f'<defs><linearGradient id="folder-material" x2="0" y2="1">'
+                f'<stop stop-color="{PORCELAIN}"/><stop offset="1" stop-color="{APRICOT}"/>'
+                f'</linearGradient></defs>')
+    return Icon(GROUP, stroke(FOLDER_D) + mark_symbolic,
+                material + filled(FOLDER_D, fill=APRICOT)
+                + rect(11, 23, 42, 28, rx=7, fill="url(#folder-material)")
+                + stroke("M16 27h32", color=PORCELAIN, width=2)
+                + mark_color)
 
 
 CANON = {
