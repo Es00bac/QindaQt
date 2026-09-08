@@ -105,6 +105,7 @@ nav:
       - Gentoo app installation: development/gentoo-apps.md
       - Gentoo desktop installation: development/gentoo-desktop.md
       - Release procedure: development/releases.md
+      - September 7 checkpoint: development/release-checkpoint-2026-09-07.md
       - KWin upgrades: development/kwin-upgrades.md
       - Testing harness: development/testing-harness.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
