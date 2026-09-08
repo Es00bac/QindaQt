@@ -49,6 +49,19 @@ own Wayland platform. Use a short, private `TMPDIR` on a filesystem with free
 space: Unix display and bus socket paths must fit within 108 bytes. Do not
 clear another session's temporary files to make room for tests.
 
+## File Manager browsing comfort
+
+The focused File Manager suite includes an injected production-window input
+row (`qindaqt.file-manager-browsing-ui`) at 480×360/light, 1280×800/dark and
+1920×1080/high contrast, plus `qindaqt.file-manager-viewport` for scrollbar
+thumb drag, keyboard paging/type selection, plain-wheel scrolling and
+Ctrl-wheel zoom. Fixtures remain below private temporary roots and use a
+recording file launcher; input is delivered to the test window, never uinput.
+The model rows check bounded filename filtering and icon zoom without relisting
+or replacing selected file/preview identities. These rows complement native
+material captures; they do not qualify file clipboard exchange or remote
+filesystem workflows.
+
 ## Backend roles
 
 | Backend | Use |

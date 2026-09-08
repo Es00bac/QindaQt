@@ -8,7 +8,7 @@ and one-level recovery. S2 adds the core browsing surface: an editable
 location bar, multi-select with serialized batch operations, configurable
 sorting with size/kind/modified columns, a hidden-file toggle, a list/grid
 view switch, and a places/bookmarks sidebar persisted in an app-local state
-file. The visual browsing revision adds catalog icons and bounded local raster previews. Search, drag-and-drop, per-volume Trash, mounts, and network
+file. The visual browsing revision adds catalog icons and bounded local raster previews. Recursive search, drag-and-drop, per-volume Trash, mounts, and network
 locations remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -54,8 +54,10 @@ manager window composes with it like any other application window.
 A single compact toolbar combines icon buttons for Back, Up, New Folder and
 view mode with clickable breadcrumbs. The current folder and at most two
 ancestors are shown (one ancestor at compact widths); a leading parent-folders
-menu retains the full hierarchy. `Ctrl+L` always reveals the complete path. Forward is also shown above 680 pixels;
-its keyboard/menu action remains available at compact widths. Folder Options
+menu retains the full hierarchy. `Ctrl+L` always reveals the complete path.
+Back and Forward remain visible at compact widths, and mouse Back/Forward
+buttons use the same history actions. Toolbar and sidebar use flat semantic
+surfaces with thin dividers; no gradient is painted behind navigation controls. Folder Options
 holds direct location entry, hidden files, refresh, sorting and Trash recovery.
 `Ctrl+L` replaces the breadcrumbs with a themed location field; Enter uses the
 same normalized navigation boundary, and Escape restores the breadcrumbs.
@@ -76,7 +78,9 @@ filtered out of the published listing by default; `Ctrl+H` or the toolbar
 toggle shows them at their sorted positions, and the status notice reports
 the filtered count ("3 hidden"). List mode shows preformatted size, kind, and
 modified columns; grid mode shows the same entries as catalog/MIME icons with local image previews. Both modes
-share one selection contract. Original folder artwork adds a decorative empty
+share one selection contract. Both views and the bookmarks list have draggable
+vertical scrollbars that remain visible while content overflows. Their reserved
+gutters prevent icons or filenames from sitting beneath the thumb. Original folder artwork adds a decorative empty
 state at roomy sizes, while compact windows retain the accessible state card.
 
 | Action identity | Shortcut | Meaning |
@@ -87,11 +91,36 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `view.refresh` / `refreshButton` | `F5`, `Ctrl+R` | Re-read the current folder |
 | `view.focus-location` | `Ctrl+L` | Swap the breadcrumb for the editable location field |
 | `view.show-hidden` | `Ctrl+H` | Show or hide dot-name entries (checkable) |
-| `view.grid-mode` | `Ctrl+2` | Switch between details and icon presentation (checkable) |
+| `view.details-mode` / `view.grid-mode` | `Ctrl+1` / `Ctrl+2` | Select Details / Icon view directly (checkable) |
+| `view.zoom-in` / `view.zoom-out` | `Ctrl++` (`Ctrl+=` also accepted) / `Ctrl+-`, or `Ctrl+wheel` | Increase / decrease icon size in the current view |
+| `view.zoom-reset` | `Ctrl+0` | Restore the default icon size |
+| `view.filter` | `Ctrl+F` | Focus the current-folder filename filter |
 | `edit.select-all` | `Ctrl+A` | Select every visible entry |
 | `go.home` | `Alt+Home` | Open the home folder |
 | `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
 | `entryListView` / `entryGridView` | `Return`/`Enter` | Open the selected entry |
+
+The status bar reports the visible item or selection count and provides zoom
+buttons plus a reset percentage. Zoom uses five bounded, session-local icon
+sizes (32, 48, 64, 96, 128 logical pixels; 64 is the default). Details rows scale
+their icons and height proportionally. Zoom leaves the view mode unchanged;
+`Ctrl+1`/`Ctrl+2` select a mode explicitly. Plain wheel input scrolls, while
+Ctrl+wheel accumulates fine wheel/trackpad deltas into zoom steps and does not
+also scroll. Resizing or zooming keeps the current item visible without
+changing its selection identity. Keyboard focus starts in the file view when
+the folder is ready; Page Up/Down move by the visible page, and typing a name
+selects a matching item (repeated initial letters cycle matches).
+
+`Ctrl+F` opens **Filter this folder by name**. It performs a case-insensitive
+literal substring match over the current loaded listing, including visible
+hidden names only when Show Hidden Files is enabled. It performs no recursive
+search or new I/O. No matches remains a ready, usable folder with an explicit
+"No matching items" notice; listing truncation and failure diagnostics remain
+visible. Input is bounded to 256 UTF-16 units without splitting a surrogate
+pair. Refresh, sorting, and view changes retain the filter; navigating to a
+different folder clears it. Enter returns focus to browsing, and Escape clears
+and closes the filter. File identity and preview generations are retained;
+filtered-out entries cannot stay invisibly selected for a file operation.
 
 Selection is shared between list and grid views. Ctrl-click toggles individual
 files; Shift-click and Shift+arrows select a range; Ctrl+A selects all visible
@@ -413,7 +442,8 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   serialized batch mutation, configurable sorting with size/kind/modified
   columns, hidden-file toggle, list/grid view switch, places/bookmarks
   sidebar with app-local persistence (ADR-0090).
-- **S3** — power features: drag-and-drop, in-app search and a
+- **S3** — daily-use completion: standard file clipboard cut/copy/paste,
+  drag-and-drop, recursive search and a
   preview pane, a properties dialog, an open-with chooser (requires widening
   ADR-0029's launch contract through a new ADR), optional permanent deletion,
   refinement beyond the shipped public Controls icon boundary (ADR-0111).
@@ -426,13 +456,13 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 
 ## Bounded deferrals
 
-- Sort column/direction, hidden visibility, and list/grid mode are
-  session-local; persisting them is a Settings1 schema decision deferred per
+- Sort column/direction, hidden visibility, list/grid mode, icon zoom, and
+  filename filtering are session-local; persisting them is a Settings1 schema decision deferred per
   ADR-0090.
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  search, additional preview formats, portal-mediated paths, drag-and-drop,
+  recursive search, additional preview formats, portal-mediated paths, drag-and-drop,
   open-with, and network locations remain explicit later outcomes (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
@@ -441,3 +471,11 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   fatal-warning cleanliness, and the fixture-local identity-carrying mutation
   path. Nested screenshots and whole-application
   assistive-technology qualification remain later release evidence.
+
+The browsing-comfort regressions include `qindaqt.file-manager-name-filter`,
+`qindaqt.file-manager-icon-zoom`, `qindaqt.file-manager-viewport`, and
+`qindaqt.file-manager-browsing-ui`. The last loads real File Manager controllers
+and production QML with temporary local files, then delivers keyboard and wheel
+input at compact, desktop and 1080p sizes under light, dark and high-contrast
+tokens. It does not validate clipboard exchange, mounted volumes or network
+browsing; those remain explicit S3–S5 work.

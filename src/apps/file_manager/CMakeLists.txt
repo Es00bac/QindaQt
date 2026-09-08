@@ -5,6 +5,8 @@ target_sources(
     qindaqt_file_manager_support
     PRIVATE
         app_shell/file_manager_action_catalog.cpp
+        app_shell/file_manager_browsing_actions.cpp
+        app_shell/file_manager_browsing_actions.h
         mutation/device_resolver.cpp
         mutation/home_trash.cpp
         mutation/local_mutation_backend.cpp
@@ -74,12 +76,17 @@ qt_add_qml_module(
         ui/PlaceButton.qml
         ui/Main.qml
         ui/Toolbar.qml
+        ui/FilterBar.qml
+        ui/FolderStatusBar.qml
         ui/Breadcrumb.qml
         ui/LocationBar.qml
         ui/PlacesSidebar.qml
         ui/EntrySelection.qml
         ui/EntryList.qml
         ui/EntryGrid.qml
+        ui/ViewportScrollBar.qml
+        ui/ViewportNavigation.qml
+        ui/ZoomWheelHandler.qml
         ui/StatePane.qml
         ui/MutationDialogs.qml
 )

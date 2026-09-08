@@ -5,9 +5,9 @@ import QtQuick.Layouts
 import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Qinda
 
-Qinda.MaterialSurface {
+Rectangle {
     id: root
-    radius: 0
+    objectName: "fileManagerToolbar"
     required property var navigationController
     required property var mutationController
     required property var appCoordinator
@@ -31,7 +31,6 @@ Qinda.MaterialSurface {
             objectName: "navigateForwardButton"
             iconName: "go-next"
             text: qsTr("Forward")
-            visible: root.width >= 680
             available: root.navigationController.canGoForward
             onClicked: root.appCoordinator.activateAction("go.forward")
         }
@@ -69,7 +68,14 @@ Qinda.MaterialSurface {
             objectName: "toggleViewModeButton"
             iconName: root.navigationController.viewMode === "grid" ? "view-list-details" : "view-grid"
             text: root.navigationController.viewMode === "grid" ? qsTr("Details View") : qsTr("Icon View")
-            onClicked: root.appCoordinator.activateAction("view.grid-mode")
+            onClicked: root.appCoordinator.activateAction(root.navigationController.viewMode === "grid"
+                ? "view.details-mode" : "view.grid-mode")
+        }
+        IconButton {
+            objectName: "filterFolderButton"
+            iconName: "edit-find"
+            text: qsTr("Filter this folder (Ctrl+F)")
+            onClicked: root.appCoordinator.activateAction("view.filter")
         }
         IconButton {
             iconName: "application-menu"
@@ -93,6 +99,33 @@ Qinda.MaterialSurface {
                     objectName: "refreshButton"
                     text: qsTr("Refresh")
                     onTriggered: root.appCoordinator.activateAction("view.refresh")
+                }
+                T.MenuSeparator {}
+                T.MenuItem {
+                    text: qsTr("Details View")
+                    checkable: true
+                    checked: root.navigationController.viewMode === "list"
+                    onTriggered: root.appCoordinator.activateAction("view.details-mode")
+                }
+                T.MenuItem {
+                    text: qsTr("Icon View")
+                    checkable: true
+                    checked: root.navigationController.viewMode === "grid"
+                    onTriggered: root.appCoordinator.activateAction("view.grid-mode")
+                }
+                T.MenuItem {
+                    text: qsTr("Zoom In")
+                    enabled: root.navigationController.canZoomIn
+                    onTriggered: root.appCoordinator.activateAction("view.zoom-in")
+                }
+                T.MenuItem {
+                    text: qsTr("Zoom Out")
+                    enabled: root.navigationController.canZoomOut
+                    onTriggered: root.appCoordinator.activateAction("view.zoom-out")
+                }
+                T.MenuItem {
+                    text: qsTr("Reset Zoom")
+                    onTriggered: root.appCoordinator.activateAction("view.zoom-reset")
                 }
                 T.MenuSeparator {}
                 T.Menu {
