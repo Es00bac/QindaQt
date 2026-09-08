@@ -5,7 +5,14 @@ media-key volume and brightness with visible feedback, the Print screenshot
 action, the session-started polkit authentication agent, and the configurable
 idle display-off policy. Its current maturity is **EXECUTABLE (focused
 evidence)**: the resident process, supervisor startup, Settings Power section,
-and focused tests are implemented and green in Debug builds. Live brightness hardware and real idle/DPMS behavior remain later installed-session evidence. The installed private `desktop.daily-controls.live` row defines qualification for `VolumeUp` and `Print` through the production session, KGlobalAccel, Audio1/PipeWire, notification host, shell, and Spectacle; it remains lane-gated until the manager grants the single nested runtime slot.
+and focused tests are implemented and green in Debug builds. The private
+installed-session row passed real `VolumeUp`, one production-shell feedback
+popup, and a decoded Spectacle region capture. The real KDE polkit agent also
+presented an authentication dialog in installed QindaQt session 39, corroborated
+by the user; terminating the unapproved request removed the dialog and left
+the session healthy. No credential was entered or privileged command run.
+Private PowerDevil inhibition/display-off evidence is recorded below; physical
+brightness hardware and the final installed idle-preference check remain open.
 
 The durable choice of a separate supervised process over shell or compositor
 integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-process.md).

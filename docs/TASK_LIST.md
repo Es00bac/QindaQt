@@ -831,8 +831,10 @@ September 7 controls follow-up: reviewed Print delegation and the real private
 installed-session capture/volume proof are integrated (`a5f1fdd8`, `f8f0b504`).
 The integrated controls build, shortcut gate, three runner contracts, and strict
 documentation build pass. The host package still uses `d1232e75`; final package
-refresh, workspace save/reopen acceptance, privilege-prompt acceptance, and
-native CI boot results remain open.
+refresh, workspace save/reopen acceptance, installed idle-preference verification,
+and native CI boot results remain open. The real KDE privilege prompt appeared
+in installed session 39; the user corroborated it, and canceling the pending
+request left the agent and desktop healthy.
 
 - Preserve named layouts and application intent across logout; provide Save
   workspace and Reopen workspace with missing-app reporting and explicit window
