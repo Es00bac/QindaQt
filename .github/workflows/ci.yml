@@ -403,6 +403,11 @@ jobs:
 
       # Keep compositor processes serialized. Both rows require the plugin's
       # live service; the second also proves relocated installed discovery.
+      - name: Prepare the private X11 socket directory
+        run: |
+          install -d -m 1777 /tmp/.X11-unix
+          test "$(stat -c '%a' /tmp/.X11-unix)" = 1777
+
       - name: Boot the plugin under nested KWin
         run: |
           ctest --test-dir build/ci-native-release \

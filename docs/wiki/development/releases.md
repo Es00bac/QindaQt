@@ -84,6 +84,10 @@ this build lane avoids pulling Plasma Workspace and Plasma login sessions into
 a desktop that installs its own session entry. It does not reduce the package
 contract: the full-desktop ebuild still requires release-matched KScreenLocker,
 KWin `lock,shortcuts`, portals, hardware providers, and session utilities.
+Before the two serialized native boot checks, CI creates its container-private
+`/tmp/.X11-unix` directory with mode `1777`. Minimal container images may omit
+this standard X11 socket path; both checks still require working XWayland.
+
 For no-lock test sessions, `qindaqt-wm` inspects the selected KWin executable's
 help and omits `--no-lockscreen` when the complete screen-locker feature was
 compiled out; build-tree and installed-discovery boots therefore exercise the
