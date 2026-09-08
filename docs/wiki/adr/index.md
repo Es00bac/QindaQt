@@ -127,3 +127,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0112: terminal protocol palette](0112-terminal-protocol-palette.md)
 
 - [ADR-0114: actionable status notifier menus](0114-status-notifier-actionable-menus.md)
+- [ADR-0115: share appearance through Qt platform theme](0115-share-appearance-through-qt-platform-theme.md)
