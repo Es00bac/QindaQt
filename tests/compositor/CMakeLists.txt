@@ -117,6 +117,7 @@ add_test(
         -DQINDAQT_SOURCE_DIR=${CMAKE_CURRENT_LIST_DIR}/../..
         -DQINDAQT_TEST_BINARY_ROOT=${CMAKE_CURRENT_BINARY_DIR}/kwin-dependency-contract
         -DQINDAQT_TEST_GENERATOR=${CMAKE_GENERATOR}
+        -DQINDAQT_TEST_AUDIO_LIVE_RUNTIME=${QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS}
         "-DQINDAQT_TEST_CMAKE_PREFIX_PATH=${_qindaqt_test_cmake_prefix_path}"
         -P "${CMAKE_CURRENT_LIST_DIR}/verify_kwin_plugin_dependency.cmake"
 )

@@ -102,9 +102,10 @@ Both Arch jobs keep `QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS=ON` and install the
 PipeWire daemon and CLI, WirePlumber daemon, and `pw-cat`. Gentoo's official
 binhost does not provide the PipeWire `extra` variant that contains `pw-cat`,
 so the native plugin lane sets this option `OFF`. The audio service and its unit
-test still compile there. The complete production tree, static KWin ABI rows,
-staged install, live plugin service boot, and installed-plugin discovery boot
-remain mandatory.
+test still compile there. Configuration-contract sub-builds inherit the same
+live-runtime selection, so they do not re-enable unavailable process-launching
+audio rows. The complete production tree, static KWin ABI rows, staged install,
+live plugin service boot, and installed-plugin discovery boot remain mandatory.
 
 ## Record and publish
 
