@@ -32,22 +32,21 @@ resolver's mandatory `hicolor` fallback.
 
 ## Visual language
 
-The palette is the icon-side spelling of the accepted QindaPunk identity in
-[Visual identity](visual-identity.md): ink night (`#111E2C`), porcelain
-(`#F5F7F3`), and amber (`#D98A32`), joined by blue (`#739EBB`), violet
-(`#A69AC5`), jade (`#70BFA5`), and apricot (`#E8AE84`).
+The palette is the icon-side spelling of the Pearl / Smoked Plum identity in
+[Visual identity](visual-identity.md): smoked plum (`#211D27`), pearl
+(`#FAF5F0`), and apricot (`#EAB391`), joined by heather (`#9C86AA`), violet
+(`#B9A2CC`), jade (`#70BFA5`), and apricot (`#E8AE84`).
 
 | Color | Icon role |
 | --- | --- |
-| Blue | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings dial, File Manager folder, clock, notifications bell, executable), the `preferences-system-*` family, and neutral action frames; the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
-| Amber | At most one accent per first-party icon, placed where it meets the surface rather than on top of a blue body: the launcher Q tail, the Settings dial ticks, the Text Editor pen, the Terminal prompt, and the Welcome (`help-about`) question mark |
+| Heather (legacy `BLUE` generator constant) | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings dial, File Manager folder, clock, notifications bell, executable), the `preferences-system-*` family, and neutral action frames; the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
+| Apricot (legacy `AMBER` generator constant) | At most one accent per first-party icon, placed where it meets the surface rather than on top of a blue body: the launcher Q tail, the Settings dial ticks, the Text Editor pen, the Terminal prompt, and the Welcome (`help-about`) question mark |
 | Porcelain | Light bodies (Text Editor page) and marks painted on a blue or ink body |
 | Jade | Semantic success or positive state only: battery charge, `emblem-ok`/`dialog-ok`, `security-high`, upload/update arrows, media glyphs; never a brand or application color |
 | Apricot | Warning, off, and destructive overlays (`dialog-warning`, `dialog-error`, offline slashes, muted audio), place folders, and small status badges |
 | Violet | Audio, input, and storage devices, sleep, and media MIME types |
 
-Amber and blue have nearly equal luminance, so an amber mark on a blue body
-would survive only by hue; keep on-body marks porcelain or ink. Application and
+Keep small on-body marks pearl or ink so they remain recognizable without hue. Application and
 category icons use rounded forms with restrained layering. Actions, status,
 devices, and places retain clear silhouettes so they remain recognizable after
 symbolic recoloring on both light and dark surfaces.
@@ -100,3 +99,14 @@ Render representative SVGs with `rsvg-convert` for visual review. Generated
 contact sheets are local review artifacts and are not committed.
 
 Palette and wallpaper guidance live in [Visual identity](visual-identity.md).
+
+## Application consumption
+
+Controls supplies `QindaQt::Controls::applicationIcon(name)` and `Qinda.Icon`
+(`name`, optional `color`, item width/height). Lookup is GUI-thread confined;
+returned QIcon values own their engine. Invalid/path-like names and unknown
+names return null. Qt's selected icon theme is consulted with an embedded
+catalog fallback, so an app does not import shell private headers or rely on
+ambient icon installation. A valid QML color preserves alpha and tints the
+silhouette. Symbolic names should be used for command glyphs. Composition
+selects the validated theme's iconTheme through public Qt APIs.

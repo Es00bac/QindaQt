@@ -166,8 +166,8 @@ correction or a token revision.
 
 ## WCAG pair scope
 
-The built-in-data gate covers exactly QindaPunk Porcelain, QindaPunk Dusk,
-QindaPunk Nightfall, Qinda High Contrast, and Qinda macOS. QST-1 uses the
+The built-in-data gate covers exactly QindaQt Pearl, QindaQt Velvet,
+QindaQt Smoked Plum, Qinda High Contrast, and Qinda macOS. QST-1 uses the
 WCAG 2.2 contrast algorithm and requires:
 
 | Foreground/background pair | Minimum |
@@ -215,3 +215,14 @@ investigate material regressions. On the repaired S1 candidate host,
 or 0.0285 ms and 0.0108 ms per complete five-theme batch. This is
 derivation evidence only—not a Settings Center startup, repaint, memory, live
 accessibility bridge, or physical-display claim.
+
+## First-party readability composition
+
+AppAppearance exposes confirmed `accessibilityInputs()` and overlays confirmed
+font families on its resolved theme. Consumers explicitly subscribe to
+`fonts.family`, `fonts.monospaceFamily`, `fonts.pointSize`, and
+`accessibility.textScale`, `highContrast`, `reducedMotion`, `reducedTransparency`.
+QML `publishTokens()` consumes those values; Widgets adapters accept the same
+inputs. Missing optional keys and owner loss retain the prior confirmed values;
+malformed values do not replace them. An explicit theme override locks the
+palette, while user readability preferences still apply.

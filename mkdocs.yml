@@ -223,6 +223,7 @@ nav:
       - "ADR-0095: Editor syntax highlighting": adr/0095-use-ksyntaxhighlighting-for-editor-presentation.md
       - "0096: Package bundled applications with Portage": adr/0096-package-bundled-apps-with-portage.md
       - "0097: Separate workspace slots from live windows": adr/0097-separate-workspace-slots-from-live-windows.md
+      - "ADR-0098: Pearl and Smoked Plum materials": wiki/adr/0098-use-pearl-and-smoked-plum-app-materials.md
       - "ADR-0098: Exact native release gate": adr/0098-gate-releases-on-the-exact-native-compositor-stack.md
       - "ADR-0099: Shade containers by hiding member content": adr/0099-shade-whole-containers-by-hiding-member-content.md
       - "ADR-0100: Desktop essentials in a session process": adr/0100-own-desktop-essentials-in-a-session-process.md

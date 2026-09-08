@@ -11,7 +11,12 @@ qt_add_qml_module(
     VERSION 1.0
     OUTPUT_DIRECTORY "${QINDAQT_CONTROLS_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_controls.qmltypes
+    SOURCES
+        src/icon_item.h
+        src/icon_item.cpp
+        src/application_icon.cpp
     QML_FILES
+        qml/MaterialSurface.qml
         qml/Button.qml
         qml/CheckBox.qml
         qml/ComboBox.qml
@@ -116,3 +121,19 @@ install(
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
     COMPONENT TextEditor
 )
+
+# Public app icon lookup is separate from shell discovery and ships a fallback
+# catalog in the existing Controls runtime, so staged installs remain complete.
+file(GLOB_RECURSE qindaqt_control_icon_assets CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/data/icons/QindaQt/scalable/*.svg")
+qt_add_resources(qindaqt_controls_qml qindaqt_application_icons
+    PREFIX "/qindaqt/icons"
+    BASE "${PROJECT_SOURCE_DIR}/data/icons/QindaQt/scalable"
+    FILES ${qindaqt_control_icon_assets})
+target_include_directories(qindaqt_controls_qml PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+install(FILES include/qindaqt/controls/application_icon.h
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qindaqt/controls"
+    COMPONENT Development)

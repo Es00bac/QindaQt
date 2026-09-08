@@ -179,3 +179,16 @@ These are compiled QML, software-renderer, packaging, and process-memory
 checks. They do not qualify live assistive technology, compositor focus,
 physical DPI/output behavior, GPU rendering, application navigation, Settings1
 composition, service availability, or a complete Settings Center.
+
+## Application material and icon primitives
+
+`Icon` presents a bounded named icon from the public application catalog seam;
+set `name`, `width`/`height`, and optional semantic `color`. It preserves aspect
+ratio and tints alpha when a color is supplied. The containing command supplies
+its accessible name; decorative icons are ignored by accessibility.
+
+`MaterialSurface` is a rounded semantic rectangle with a `raised` Boolean. It
+adds local translucent highlights over its opaque background. High contrast
+and reduced transparency remove those highlights. It does not request backdrop
+capture or compositor blur. See [Icon theme](icon-theme.md) and
+[ADR-0098](../adr/0098-use-pearl-and-smoked-plum-app-materials.md).

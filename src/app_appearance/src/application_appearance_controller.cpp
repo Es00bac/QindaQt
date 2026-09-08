@@ -11,6 +11,7 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QStyleHints>
+#include <cmath>
 
 namespace QindaQt::AppAppearance {
 namespace {
@@ -112,13 +113,49 @@ bool ApplicationAppearanceController::selectTheme(const QString &themeId,
   if (loaded.theme.id == m_theme.id)
     return true;
   m_theme = loaded.theme;
+  if (!m_fontFamily.isEmpty()) m_theme.fontFamily = m_fontFamily;
+  if (!m_monoFontFamily.isEmpty()) m_theme.monoFontFamily = m_monoFontFamily;
   emit appearanceChanged();
   return true;
 }
 
 void ApplicationAppearanceController::applySnapshot() {
-  if (!m_explicitThemeOverride.isEmpty() || !m_settings.snapshot())
-    return;
+  if (!m_settings.snapshot()) return;
+  const auto &values = m_settings.snapshot()->values;
+  auto inputs = m_accessibility;
+  const auto number = [&values](const char *key, double &target) {
+    const auto value = values.value(QLatin1String(key));
+    if (value.typeId() != QMetaType::Double && value.typeId() != QMetaType::Int
+        && value.typeId() != QMetaType::LongLong) return;
+    const double n = value.toDouble();
+    if (std::isfinite(n)) target = n;
+  };
+  const auto flag = [&values](const char *key, bool &target) {
+    const auto value = values.value(QLatin1String(key));
+    if (value.typeId() == QMetaType::Bool) target = value.toBool();
+  };
+  number("fonts.pointSize", inputs.basePointSize);
+  number("accessibility.textScale", inputs.textScale);
+  flag("accessibility.reducedMotion", inputs.reducedMotion);
+  flag("accessibility.reducedTransparency", inputs.reducedTransparency);
+  flag("accessibility.highContrast", inputs.highContrast);
+  inputs = inputs.normalized();
+  bool changed = inputs != m_accessibility;
+  m_accessibility = inputs;
+  const auto family = [&values, &changed](const char *key, QString &stored, QString &themeValue) {
+    const auto value = values.value(QLatin1String(key));
+    if (value.typeId() != QMetaType::QString) return;
+    const QString name = value.toString().trimmed();
+    if (name.isEmpty() || name.size() > 256 || name == stored) return;
+    stored = name;
+    themeValue = name;
+    changed = true;
+  };
+  family("fonts.family", m_fontFamily, m_theme.fontFamily);
+  family("fonts.monospaceFamily", m_monoFontFamily, m_theme.monoFontFamily);
+  // A theme override locks palette choice, not the user's readability needs.
+  if (changed) emit appearanceChanged();
+  if (!m_explicitThemeOverride.isEmpty()) return;
   const QString requested = m_settings.snapshot()
                                 ->values.value(QString::fromLatin1(ThemeKey))
                                 .toString();

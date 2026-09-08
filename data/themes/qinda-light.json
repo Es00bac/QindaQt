@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
   "id": "qinda-light",
-  "name": "QindaPunk Porcelain",
+  "name": "QindaQt Pearl",
   "variant": "light",
   "iconTheme": "QindaQt",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
-  "cornerRadius": 10,
+  "cornerRadius": 12,
   "motionDuration": 150,
   "blurEnabled": false,
   "colors": {
-    "canvas": "#DDE7E8",
-    "surface": "#F5F7F3",
-    "surfaceRaised": "#FFFFFF",
-    "border": "#AAB7B7",
-    "text": "#17242A",
-    "textMuted": "#526066",
-    "accent": "#9B4D12",
-    "accentText": "#FFFFFF",
-    "danger": "#A63D35"
+    "canvas": "#EDE6E3",
+    "surface": "#FAF5F0",
+    "surfaceRaised": "#FFFCF8",
+    "border": "#9A8795",
+    "text": "#302633",
+    "textMuted": "#695869",
+    "accent": "#8C4D38",
+    "accentText": "#FFF8F1",
+    "danger": "#A22F4B"
   }
 }

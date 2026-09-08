@@ -44,6 +44,8 @@ CANON = {
 }
 
 ALIASES = {
+    "application-x-archive": ("application-zip", None),
+    "application-octet-stream": ("text-x-generic", None),
     "text-plain": ("text-x-generic", None),
     "inode-directory": ("folder", "mimetypes"),
 }
