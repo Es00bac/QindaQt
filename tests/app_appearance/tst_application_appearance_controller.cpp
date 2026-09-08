@@ -89,26 +89,29 @@ void ApplicationAppearanceControllerTest::
   QTRY_COMPARE(client.state(), ClientState::Ready);
   QVERIFY(client.snapshot().has_value());
   Q_EMIT hints->colorSchemeChanged(Qt::ColorScheme::Light);
-  QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
-  QCOMPARE(changes.count(), 1);
+  // System preserves the selected installed theme (ADR-0080); ambient host
+  // palette changes must not replace the user's QindaQt theme.
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
+  QCOMPARE(changes.count(), 0);
   const quint64 baselineToken = transport.lastToken;
   transport.invalidate(2);
   QTRY_VERIFY(transport.lastToken != baselineToken);
-  transport.reply(QStringLiteral("qinda-dark"), QStringLiteral("system"), 2);
+  transport.reply(QStringLiteral("qinda-dark"), QStringLiteral("light"), 2);
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
   QCOMPARE(changes.count(), 1);
   Q_EMIT hints->colorSchemeChanged(Qt::ColorScheme::Dark);
-  QTRY_COMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
+  QTRY_COMPARE(controller.themeId(), QStringLiteral("qinda-light"));
   const quint64 duplicateToken = transport.lastToken;
   transport.invalidate(3);
   QTRY_VERIFY(transport.lastToken != duplicateToken);
   transport.reply(QStringLiteral("missing"), QStringLiteral("dark"), 3);
-  QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
   const quint64 missingToken = transport.lastToken;
   transport.invalidate(4);
   QTRY_VERIFY(transport.lastToken != missingToken);
   transport.reply(QStringLiteral("qinda-light"), QStringLiteral("sepia"), 4);
-  QCOMPARE(controller.themeId(), QStringLiteral("qinda-dark"));
-  QCOMPARE(changes.count(), 2);
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-light"));
+  QCOMPARE(changes.count(), 1);
 }
 
 void ApplicationAppearanceControllerTest::explicitOverrideIgnoresSettings() {
