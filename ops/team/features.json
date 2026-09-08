@@ -1346,6 +1346,11 @@
             "kind": "source",
             "reference": "docs/wiki/development/implementation-roadmap.md",
             "summary": "The public roadmap records QST-1, Controls, Text Editor S1, File Manager S0, and Terminal S0 as implemented within the incomplete First-party experience milestone."
+          },
+          {
+            "kind": "commit",
+            "reference": "67314971fd0ac0a764154341e9275b365afd5ba8",
+            "summary": "System Monitor is integrated, independently reviewed, and installed through Portage as gui-apps/qindaqt-system-monitor-0.1.0_pre20260908. Strict build, focused 5/5, compact/wide renders, installed live counters, library ownership and private Wayland launch pass. NVIDIA/Intel live hardware remains unverified."
           }
         ]
       },

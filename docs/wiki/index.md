@@ -197,6 +197,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party terminal
   with one shell per window. Containers provide tabs and splits; Terminal owns
   shell launch, PTY lifetime, profiles, scrollback search, and text rendering.
+- [System Monitor](apps/system-monitor.md) describes the native monitoring
+  application under development and its independent view windows.
 - [Settings Center](apps/settings-center.md) documents the typed bounded route
   registry, responsive wide/compact navigation, route lifetime, keyboard and
   accessibility behavior, and sanitized package proof.
