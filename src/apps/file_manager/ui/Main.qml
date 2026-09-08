@@ -12,12 +12,14 @@ ApplicationShell {
     required property var mutationController
     required property var placesController
 
-    initialFocusItem: toolbar.primaryFocusItem
+    initialFocusItem: root.navigationController.statusKey === "ready"
+        ? root.activeView().focusItem : toolbar.primaryFocusItem
     width: 900
     height: 600
     minimumWidth: 480
     minimumHeight: 320
 
+    Shortcut { sequence: "Ctrl+="; onActivated: root.coordinator.activateAction("view.zoom-in") }
     Shortcut { sequence: "Ctrl+R"; onActivated: root.coordinator.activateAction("view.refresh") }
 
     EntrySelection {
@@ -45,7 +47,18 @@ ApplicationShell {
             } else if (actionId === "view.show-hidden") {
                 navigation.setShowHidden(!navigation.showHidden)
             } else if (actionId === "view.grid-mode") {
-                navigation.setViewMode(navigation.viewMode === "grid" ? "list" : "grid")
+                navigation.setViewMode("grid")
+            } else if (actionId === "view.details-mode") {
+                navigation.setViewMode("list")
+            } else if (actionId === "view.zoom-in") {
+                navigation.zoomBy(1)
+            } else if (actionId === "view.zoom-out") {
+                navigation.zoomBy(-1)
+            } else if (actionId === "view.zoom-reset") {
+                navigation.resetZoom()
+            } else if (actionId === "view.filter") {
+                filterBar.visible = true
+                filterBar.activate()
             } else if (actionId === "view.focus-location") {
                 toolbar.locationBar.visible = true
                 toolbar.locationBar.activate()
@@ -92,6 +105,19 @@ ApplicationShell {
                 appCoordinator: root.coordinator
             }
 
+            FilterBar {
+                id: filterBar
+                Layout.fillWidth: true
+                visible: false
+                navigationController: root.navigationController
+                onClosed: {
+                    root.navigationController.setNameFilter("")
+                    visible = false
+                    root.activeView().focusView()
+                }
+                onBrowseRequested: root.activeView().focusView()
+            }
+
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -115,6 +141,8 @@ ApplicationShell {
 
                         EntryList {
                             id: entryList
+                            iconSize: root.navigationController.iconSize
+                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
                             selection: entrySelection
                             navigationController: root.navigationController
                             appCoordinator: root.coordinator
@@ -122,6 +150,8 @@ ApplicationShell {
 
                         EntryGrid {
                             id: entryGrid
+                            iconSize: root.navigationController.iconSize
+                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
                             selection: entrySelection
                             navigationController: root.navigationController
                             appCoordinator: root.coordinator
@@ -134,6 +164,13 @@ ApplicationShell {
                         onRetryRequested: root.navigationController.refresh()
                     }
                 }
+            }
+
+            FolderStatusBar {
+                Layout.fillWidth: true
+                navigationController: root.navigationController
+                selection: entrySelection
+                appCoordinator: root.coordinator
             }
 
             Qinda.StateCard {
@@ -197,6 +234,14 @@ ApplicationShell {
                 actionText: qsTr("Dismiss")
                 onActionTriggered: root.placesController.clearStoreError()
             }
+        }
+
+        // Extra mouse buttons share the same history actions as toolbar/menu.
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.BackButton | Qt.ForwardButton
+            onClicked: (event) => root.coordinator.activateAction(
+                event.button === Qt.BackButton ? "go.back" : "go.forward")
         }
 
         MutationDialogs {

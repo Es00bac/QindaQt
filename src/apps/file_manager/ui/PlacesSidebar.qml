@@ -8,7 +8,7 @@ import QindaQt.Controls 1.0 as Qinda
 // Fixed places plus the user's persisted bookmarks. Activation only routes a
 // path into NavigationController::navigateTo; a vanished bookmark therefore
 // lands on the ordinary navigation state card.
-Qinda.MaterialSurface {
+Rectangle {
     id: root
     radius: 0
     objectName: "placesSidebar"
@@ -19,6 +19,14 @@ Qinda.MaterialSurface {
 
     implicitWidth: 196
     color: Tokens.bg.raised
+
+    Rectangle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: 1
+        color: Tokens.outline.divider
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -67,42 +75,57 @@ Qinda.MaterialSurface {
             }
         }
 
-        ListView {
-            id: bookmarkList
-            objectName: "bookmarkList"
+        Item {
+            id: bookmarkViewport
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-            model: root.placesController.bookmarks
 
-            Accessible.role: Accessible.List
-            Accessible.name: qsTr("Bookmarks")
+            ListView {
+                id: bookmarkList
+                objectName: "bookmarkList"
+                anchors.fill: parent
+                anchors.rightMargin: 16
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
+                model: root.placesController.bookmarks
 
-            delegate: RowLayout {
-                id: bookmarkRow
-
-                required property var modelData
-
-                width: bookmarkList.width
-                spacing: Tokens.space["1"]
-
-                PlaceButton {
-                    iconName: "folder"
-                    objectName: "bookmarkButton_" + bookmarkRow.modelData.index
-                    Layout.fillWidth: true
-                    text: bookmarkRow.modelData.name
-                    emphasized: root.navigationController.currentPath === bookmarkRow.modelData.path
-                    accessibleDescription: qsTr("Open %1").arg(bookmarkRow.modelData.path)
-                    onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
+                T.ScrollBar.vertical: ViewportScrollBar {
+                    objectName: "bookmarkScrollBar"
+                    parent: bookmarkViewport
+                    x: bookmarkList.width + 4
+                    height: bookmarkList.height
+                    Accessible.name: qsTr("Scroll bookmarks")
                 }
-                IconButton {
-                    iconName: "edit-delete"
-                    implicitWidth: 28
-                    objectName: "removeBookmark_" + bookmarkRow.modelData.index
-                    text: qsTr("Remove bookmark")
-                    emphasized: false
-                    accessibleDescription: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
-                    onClicked: root.placesController.removeBookmark(bookmarkRow.modelData.index)
+
+                Accessible.role: Accessible.List
+                Accessible.name: qsTr("Bookmarks")
+
+                delegate: RowLayout {
+                    id: bookmarkRow
+
+                    required property var modelData
+
+                    width: bookmarkList.width
+                    spacing: Tokens.space["1"]
+
+                    PlaceButton {
+                        iconName: "folder"
+                        objectName: "bookmarkButton_" + bookmarkRow.modelData.index
+                        Layout.fillWidth: true
+                        text: bookmarkRow.modelData.name
+                        emphasized: root.navigationController.currentPath === bookmarkRow.modelData.path
+                        accessibleDescription: qsTr("Open %1").arg(bookmarkRow.modelData.path)
+                        onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
+                    }
+                    IconButton {
+                        iconName: "edit-delete"
+                        implicitWidth: 28
+                        objectName: "removeBookmark_" + bookmarkRow.modelData.index
+                        text: qsTr("Remove bookmark")
+                        emphasized: false
+                        accessibleDescription: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
+                        onClicked: root.placesController.removeBookmark(bookmarkRow.modelData.index)
+                    }
                 }
             }
         }

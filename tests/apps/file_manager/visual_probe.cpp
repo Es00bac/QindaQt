@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
+#include "app_shell/file_manager_browsing_actions.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
@@ -46,6 +47,12 @@ int main(int argc, char **argv) {
       return 4;
     file.write("A little room for something new.\n");
   }
+  const int extraItems = qBound(0, qEnvironmentVariableIntValue("QINDAQT_FILES_PROBE_ITEMS"), 400);
+  for (int i = 0; i < extraItems; ++i) {
+    QFile file(folder + QStringLiteral("/Document-%1.txt").arg(i, 3, 10, QLatin1Char('0')));
+    if (!file.open(QIODevice::WriteOnly)) return 4;
+    file.write("A local file for the scrolling fixture.\n");
+  }
   QFile::copy(sourceRoot + "/data/artwork/empty-folder.png",
               folder + "/Little duck.png");
   NavigationController navigation(std::make_unique<LocalDirectoryLister>(),
@@ -59,6 +66,7 @@ int main(int argc, char **argv) {
   coordinator.setWindowTitle("Little projects");
   if (!coordinator.replaceActions(fileManagerActionCatalog()).ok())
     return 5;
+  bindFileManagerBrowsingActions(coordinator, navigation);
   QQmlApplicationEngine engine;
   QQmlComponent registration(&engine);
   registration.setData("import QtQuick\nimport QindaQt.Tokens 1.0\nQtObject { "
@@ -86,6 +94,8 @@ int main(int argc, char **argv) {
       &navigation, &NavigationController::entriesChanged, &engine,
       [&] { provider->setGeneration(navigation.listingGeneration()); });
   navigation.navigateTo(folder);
+  navigation.setViewMode(qEnvironmentVariable("QINDAQT_FILES_PROBE_VIEW", "grid"));
+  navigation.zoomBy(qEnvironmentVariableIntValue("QINDAQT_FILES_PROBE_ZOOM_STEPS"));
   engine.setInitialProperties(
       {{"navigationController",
         QVariant::fromValue(static_cast<QObject *>(&navigation))},

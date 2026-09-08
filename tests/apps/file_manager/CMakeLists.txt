@@ -238,3 +238,42 @@ qt_add_resources(qindaqt_file_manager_visual_probe file_manager_probe_artwork
 # dependency; even a pure action-catalog test needs a display-less backend.
 set_tests_properties(qindaqt.file-manager-action-catalog PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
+
+# Exercise actual window shortcuts and wheel delivery against local fixtures.
+qindaqt_add_file_manager_test(qindaqt_file_manager_browsing_ui_tests
+    tst_browsing_ui.cpp qindaqt.file-manager-browsing-ui)
+target_link_libraries(qindaqt_file_manager_browsing_ui_tests PRIVATE
+    QindaQt::TokensQml qindaqt_themes Qt6::Quick)
+target_compile_definitions(qindaqt_file_manager_browsing_ui_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
+add_dependencies(qindaqt_file_manager_browsing_ui_tests
+    qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin qindaqt_app_shellplugin)
+set_tests_properties(qindaqt.file-manager-browsing-ui PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
+qindaqt_add_file_manager_test(qindaqt_file_manager_name_filter_tests
+    tst_name_filter.cpp qindaqt.file-manager-name-filter)
+qindaqt_add_file_manager_test(qindaqt_file_manager_icon_zoom_tests
+    tst_icon_zoom.cpp qindaqt.file-manager-icon-zoom)
+
+find_package(Qt6 6.11 REQUIRED COMPONENTS QuickTest)
+qt_add_executable(qindaqt_file_manager_viewport_tests viewport_quick_test.cpp)
+target_link_libraries(qindaqt_file_manager_viewport_tests PRIVATE
+    Qt6::QuickTest Qt6::Quick QindaQt::TokensQml qindaqt_themes)
+target_compile_definitions(qindaqt_file_manager_viewport_tests PRIVATE
+    QINDAQT_SOURCE_ROOT="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
+add_dependencies(qindaqt_file_manager_viewport_tests qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin)
+add_test(NAME qindaqt.file-manager-viewport
+    COMMAND qindaqt_file_manager_viewport_tests
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_viewport.qml")
+set_tests_properties(qindaqt.file-manager-viewport PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+    LABELS "file-manager;offscreen;accessibility")
+
+qt_add_resources(qindaqt_file_manager_browsing_ui_tests file_manager_browsing_artwork
+    PREFIX /qindaqt/file-manager
+    FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")

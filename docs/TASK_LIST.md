@@ -7,6 +7,20 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Make File Manager comfortable for everyday browsing (September 8)
+
+**Browsing slice integrated; host installation pending.** Draggable scrollbars,
+Ctrl+wheel and keyboard zoom, explicit Details/Icon views, keyboard paging and
+type-to-select, mouse Back/Forward, and current-folder name filtering are
+implemented with flat toolbar/sidebar surfaces. The independently reviewed
+candidate `3117fedd4854849b7411942bd836f32bc7638de3` passes all 28 File Manager
+tests and twelve private native layout captures across three observed scales.
+See [Handoff](HANDOFF.md) for evidence and qualification limits.
+
+The user's broader daily-driver requirement remains active. File clipboard
+operations, drag-and-drop, properties and recursive search still need delivery;
+this slice does not complete the full File Manager roadmap.
+
 ### Make first-party applications visual and container-native (September 8)
 
 **Installed and verified through Portage.** Editor uses ordinary

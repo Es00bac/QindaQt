@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
+#include "app_shell/file_manager_browsing_actions.h"
 #include "model/bookmarks_store.h"
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
@@ -159,28 +160,14 @@ private:
   coordinator.setApplicationName(QStringLiteral("QindaQt File Manager"));
   coordinator.setWindowTitle(
       QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
-  coordinator.setInitialFocusObjectName(QStringLiteral("newFolderButton"));
+  coordinator.setInitialFocusObjectName(navigation.statusKey() == QStringLiteral("ready")
+      ? QStringLiteral("entryGridView") : QStringLiteral("newFolderButton"));
   const auto catalogResult = coordinator.replaceActions(
       QindaQt::Apps::FileManager::fileManagerActionCatalog());
   if (!catalogResult.ok()) {
     return catalogResult.message;
   }
-  QObject::connect(&navigation,
-                   &QindaQt::Apps::FileManager::NavigationController::navigationChanged,
-                   &coordinator, [&coordinator, &navigation]() {
-    coordinator.setWindowTitle(
-        QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
-  });
-  QObject::connect(&navigation,
-                   &QindaQt::Apps::FileManager::NavigationController::presentationChanged,
-                   &coordinator, [&coordinator, &navigation]() {
-    const auto hiddenResult = coordinator.setActionChecked(
-        QStringLiteral("view.show-hidden"), navigation.showHidden());
-    const auto gridResult = coordinator.setActionChecked(
-        QStringLiteral("view.grid-mode"), navigation.viewMode() == QStringLiteral("grid"));
-    Q_UNUSED(hiddenResult);
-    Q_UNUSED(gridResult);
-  });
+  QindaQt::Apps::FileManager::bindFileManagerBrowsingActions(coordinator, navigation);
   QObject::connect(
       &mutation, &QindaQt::Apps::FileManager::MutationController::stateChanged,
       &coordinator, [&coordinator, &mutation]() {
@@ -221,9 +208,6 @@ private:
   Q_UNUSED(undoDisabled);
   Q_UNUSED(restoreDisabled);
   Q_UNUSED(cancelDisabled);
-  const auto initialGrid = coordinator.setActionChecked(
-      QStringLiteral("view.grid-mode"), navigation.viewMode() == QStringLiteral("grid"));
-  Q_UNUSED(initialGrid);
   return {};
 }
 

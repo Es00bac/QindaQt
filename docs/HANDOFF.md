@@ -1,5 +1,29 @@
 # Integration handoff
 
+## File Manager browsing comfort (September 8)
+
+Independently accepted candidate `3117fedd4854849b7411942bd836f32bc7638de3`
+adds draggable overflow scrollbars, Ctrl+wheel and keyboard icon zoom, direct
+Details/Icon view shortcuts, keyboard paging and type-to-select, mouse history
+buttons, and a current-folder name filter. Toolbar and Places surfaces are flat;
+compact windows retain Forward navigation. Selection identity survives filtering,
+zoom and view changes. Zoom and filtering remain session-local presentation of
+the existing directory listing, without introducing filesystem or persistence
+contracts. Repeated view commands remain idempotent.
+
+All 28 File Manager CTest rows pass, including the disposable installed-runtime
+and private-bus menu tests. Twelve private native captures cover compact, light,
+dark, high-contrast, Details and large-icon layouts at observed 100%, 125% and
+150% output scales. Strict MkDocs and the 215-page documentation link check pass.
+The exact candidate received independent source, regression and visual review.
+These changes have not been installed into the host desktop.
+
+The broader daily-driver request remains open: standard file clipboard
+operations, drag-and-drop, properties, recursive search and the remaining
+mount/network roadmap are not completed by this browsing slice. See the
+[File Manager contract](wiki/apps/file-manager.md) and
+[testing harness](wiki/development/testing-harness.md).
+
 ## Dock container identity repair (September 8)
 
 Accepted candidate `a14ec749e1cfbd8ef548f49a098b530c115d22a4` gives grouped
