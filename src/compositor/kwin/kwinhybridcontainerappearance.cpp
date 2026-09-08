@@ -29,6 +29,9 @@ bool KWinHybridSession::renameContainer(
         return false;
     }
     synchronizeChrome();
+    // AGENT-CONTRACT: The task-facts publisher also reads this override.
+    // Chrome repaint alone need not change any watched native window state.
+    Q_EMIT shellVisibilityStateChanged();
     return true;
 }
 
@@ -45,6 +48,7 @@ bool KWinHybridSession::setContainerColor(
         return false;
     }
     synchronizeChrome();
+    Q_EMIT shellVisibilityStateChanged();
     return true;
 }
 

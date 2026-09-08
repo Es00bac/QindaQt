@@ -143,7 +143,8 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
   QString iconError;
   QVERIFY2(QindaQt::Tests::installResolvedIconFixture(
                engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
-               {QStringLiteral("application-x-executable")}, &iconError),
+               {QStringLiteral("application-x-executable"),
+                QStringLiteral("window-restore-symbolic")}, &iconError),
            qPrintable(iconError));
   QString tokenError;
   QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
@@ -191,7 +192,7 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
       QStringLiteral("taskListEntryIcon"));
   QVERIFY(entryIcon != nullptr);
   QVERIFY(QindaQt::Tests::hasResolvedProviderSource(
-      entryIcon, QStringLiteral("application-x-executable")));
+      entryIcon, QStringLiteral("window-restore-symbolic")));
   auto *countBadge =
       containerButton->findChild<QQuickItem *>(
           QStringLiteral("taskListEntryCountBadge"));

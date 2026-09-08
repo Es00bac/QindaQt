@@ -69,8 +69,11 @@ QVariantList TaskListAppletController::entryRows() const {
     map.insert(QStringLiteral("applicationName"), row.applicationName);
     map.insert(QStringLiteral("iconText"), row.iconText);
     map.insert(QStringLiteral("colorHex"), row.colorHex);
-    const QString iconName = m_iconNameResolver
-        ? m_iconNameResolver(row.applicationId) : QString{};
+    // AGENT-GUARD: A group keeps its own icon when its active member changes;
+    // application artwork also cannot honor the container's symbolic tint.
+    const QString iconName = row.kind == ShellTaskList::TaskEntryKind::Container
+        ? QStringLiteral("window-restore-symbolic")
+        : (m_iconNameResolver ? m_iconNameResolver(row.applicationId) : QString{});
     map.insert(QStringLiteral("iconName"), iconName);
     map.insert(QStringLiteral("iconResolved"),
                !iconName.isEmpty() && m_iconResolvedResolver
