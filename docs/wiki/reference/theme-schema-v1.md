@@ -47,8 +47,8 @@ value and never reopens the selected JSON document. It installs that theme
 before panel QML and always retains `hicolor` as the final fallback. An invalid
 hint rejects the catalog at startup and never becomes a path.
 
-The built-in catalog currently supplies QindaPunk Porcelain, QindaPunk Dusk,
-QindaPunk Nightfall, Qinda High Contrast, and Qinda macOS. The default
+The built-in catalog currently supplies QindaQt Pearl, QindaQt Velvet,
+QindaQt Smoked Plum, Qinda High Contrast, and Qinda macOS. The default
 Nightfall/Porcelain pair draws its dark surfaces from graphite and ink-blue
 night tones and its action role from restrained amber; the light counterpart
 uses cool porcelain surfaces with a dark burnt-amber action. The wallpaper

@@ -31,7 +31,7 @@ names; file grids emphasize MIME icons and image previews. Tooltips and accessib
 names explain icon buttons without permanent paragraphs of instruction.
 
 A small original glass-folder illustration adds personality to empty directories;
-its generation provenance is in [ARTWORK.md](../../../data/artwork/ARTWORK.md).
+its generation provenance is in `data/artwork/ARTWORK.md` in the source tree.
 Mascot artwork is an accent, never a substitute for actionable UI.
 
 One document, directory or shell session occupies one ordinary app window.
