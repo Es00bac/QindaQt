@@ -47,7 +47,8 @@ struct ProcessCounters final {
   bool memoryAvailable = false;
   quint64 readBytes = 0;
   quint64 writeBytes = 0;
-  bool ioAvailable = false;
+  bool readBytesAvailable = false;
+  bool writeBytesAvailable = false;
   QString user;
   QString state;
   int threads = 0;

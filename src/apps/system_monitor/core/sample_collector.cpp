@@ -195,9 +195,11 @@ QVector<ProcessSample> projectProcesses(const RawSample &current,
         published.cpuPercent = std::clamp(
             100.0 * *cpuRate / double(ticksPerSecond * capacity), 0.0, 100.0);
       }
-      if (process.ioAvailable && found->ioAvailable) {
+      if (process.readBytesAvailable && found->readBytesAvailable) {
         published.readRate =
             counterRate(process.readBytes, found->readBytes, elapsed);
+      }
+      if (process.writeBytesAvailable && found->writeBytesAvailable) {
         published.writeRate =
             counterRate(process.writeBytes, found->writeBytes, elapsed);
       }

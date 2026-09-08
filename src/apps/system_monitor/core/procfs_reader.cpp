@@ -152,14 +152,23 @@ std::optional<ProcessCounters> parseProcess(const QString &procRoot, qint64 pid,
     }
   }
   if (const auto io = readFile(directory + QStringLiteral("/io"))) {
-    process.ioAvailable = true;
     for (const auto &line : io->split('\n')) {
       if (line.startsWith("read_bytes:")) {
-        process.readBytes =
-            unsignedValue(line.mid(sizeof("read_bytes:") - 1).trimmed());
+        bool converted = false;
+        const quint64 value = unsignedValue(
+            line.mid(sizeof("read_bytes:") - 1).trimmed(), &converted);
+        if (converted) {
+          process.readBytes = value;
+          process.readBytesAvailable = true;
+        }
       } else if (line.startsWith("write_bytes:")) {
-        process.writeBytes =
-            unsignedValue(line.mid(sizeof("write_bytes:") - 1).trimmed());
+        bool converted = false;
+        const quint64 value = unsignedValue(
+            line.mid(sizeof("write_bytes:") - 1).trimmed(), &converted);
+        if (converted) {
+          process.writeBytes = value;
+          process.writeBytesAvailable = true;
+        }
       }
     }
   }

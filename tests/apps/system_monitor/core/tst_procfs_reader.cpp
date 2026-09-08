@@ -102,9 +102,17 @@ void ProcfsReaderTest::readsHostAndRichProcessFixture() {
   QCOMPARE(process.nice, 5);
   QCOMPARE(process.memoryBytes, quint64(64 * 1024));
   QVERIFY(process.memoryAvailable);
-  QVERIFY(process.ioAvailable);
+  QVERIFY(process.readBytesAvailable);
+  QVERIFY(process.writeBytesAvailable);
   QCOMPARE(process.readBytes, quint64(4096));
   QCOMPARE(process.command, QStringLiteral("worker --task"));
+
+  writeFile(root + "/123/io", "read_bytes: 12288\n");
+  const auto partial = ProcfsReader(root).readProcess(123, &error);
+  QVERIFY2(partial, qPrintable(error));
+  QVERIFY(partial->readBytesAvailable);
+  QVERIFY(!partial->writeBytesAvailable);
+  QCOMPARE(partial->readBytes, quint64(12288));
 }
 
 void ProcfsReaderTest::rejectsMalformedProcessIdentity() {
