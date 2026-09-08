@@ -2,8 +2,7 @@
 
 System Monitor is a native QindaQt application for understanding resource use
 and managing processes. It belongs alongside the bundled editor, terminal,
-and file manager. Source integration and focused verification are complete;
-Portage installation is being qualified.
+and file manager.
 
 ## A workspace for watching your system
 
@@ -94,3 +93,17 @@ cannot stall collection. Disk activity still describes the local block devices.
 Process I/O can be unavailable when the current account cannot read another
 process's counters. Process actions use your account's permissions and show the
 operating system's error when an action is denied.
+
+## Verified installation
+
+The September 8 package `0.1.0_pre20260908` uses reviewed source
+`67314971fd0ac0a764154341e9275b365afd5ba8`. It was built and installed through
+Portage on Gentoo. The installed executable resolved every library, returned
+live counters for 24 logical CPUs, five disks, and three interfaces, and opened
+its Hardware view in a private Wayland session successfully.
+
+The combined strict build and all five focused test rows passed. Tests include
+real disposable-process actions, PID-churn selection retention, counter resets,
+partial I/O availability, hardware parsing, and detached-window behavior.
+Compact and wide renders were inspected. AMD telemetry was exercised on this
+machine; NVIDIA and Intel hardware were not available for live verification.

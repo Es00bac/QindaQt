@@ -7,18 +7,20 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
-### System Monitor (September 8, in progress)
+### System Monitor (September 8, complete)
 
-Deliver a native QindaQt system monitor with usable Overview, Processes, CPU,
-Memory, Disks, Network, and Hardware views. Each view can become an independent
-window for ordinary QindaQt tiling/tabbing. Include live history graphs,
-process filtering/sorting/details and actions, real GPU/sensor capabilities,
-and proper Gentoo/Portage installation. Preserve the concurrent app-redesign
-and Calendar work. Completion requires the integrated app to run, its focused
-checks and visual review to pass, and its Portage-managed installed version to
-work. Strict integrated build, five focused test rows, compact/wide visual
-review, documentation validation, and source-shape checks passed. Portage
-installation remains. See [System Monitor](wiki/apps/system-monitor.md).
+Native Overview, Processes, CPU, Memory, Disks, Network, and Hardware views are
+implemented and installed as `gui-apps/qindaqt-system-monitor-0.1.0_pre20260908`.
+Views open as ordinary independent windows for QindaQt containers. Live graphs,
+process search/sorting/details/actions, GPU/sensors, and Gentoo dependencies are
+included. Reviewed source: `67314971fd0ac0a764154341e9275b365afd5ba8`.
+
+Strict integrated build, five focused test rows, compact/wide visual review,
+213-document validation, strict MkDocs, source-shape, package checks, Portage
+installation, installed counters/library ownership, and an installed Wayland
+launch passed. NVIDIA/Intel live hardware coverage remains unavailable.
+Concurrent app-redesign and Calendar work were preserved.
+See [System Monitor](wiki/apps/system-monitor.md).
 
 ### Let containers manage Terminal tabs and splits (September 7)
 
