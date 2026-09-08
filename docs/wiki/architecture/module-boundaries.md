@@ -374,3 +374,11 @@ are separate from the shell icon runtime. `MaterialSurface` uses local layers,
 not backdrop capture. AppAppearance projects explicitly subscribed, confirmed
 font/accessibility preferences through public QST inputs. See
 [ADR-0109](../adr/0109-use-pearl-and-smoked-plum-app-materials.md).
+
+The [Qt platform theme](qt-platform-theme.md) owns only standard palette, font,
+icon and scheme projection for ordinary Qt consumers. Its pure projection uses
+public ThemeSpec/QST; only the QPA plugin links matching `Qt6::GuiPrivate` and
+observes the existing public Settings1 client. It writes no configuration,
+implements no QStyle and adds no KDE appearance dependency. Platform services
+remain delegated to Qt's generic base theme. See
+[ADR-0115](../adr/0115-share-appearance-through-qt-platform-theme.md).

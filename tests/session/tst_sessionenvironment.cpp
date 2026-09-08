@@ -43,6 +43,7 @@ private slots:
     void enablesDevelopmentControlForExplicitScenario();
     void clearsInheritedDevelopmentControlForProductionSession();
     void prependsExplicitPluginRoot();
+    void defaultsToSharedQtThemeWithoutOverwritingUserChoice();
 };
 
 void SessionEnvironmentTest::enablesDevelopmentControlForExplicitScenario()
@@ -96,6 +97,25 @@ void SessionEnvironmentTest::prependsExplicitPluginRoot()
     const QString expected = options.pluginRoot + QDir::listSeparator()
         + QStringLiteral("/system/qt/plugins");
     QCOMPARE(QString::fromUtf8(qgetenv("QT_PLUGIN_PATH")), expected);
+}
+
+void SessionEnvironmentTest::defaultsToSharedQtThemeWithoutOverwritingUserChoice()
+{
+    EnvironmentRestore platform("QT_QPA_PLATFORMTHEME");
+    EnvironmentRestore quickStyle("QT_QUICK_CONTROLS_STYLE");
+    EnvironmentRestore widgetStyle("QT_STYLE_OVERRIDE");
+    qunsetenv("QT_QPA_PLATFORMTHEME");
+    qunsetenv("QT_QUICK_CONTROLS_STYLE");
+    qputenv("QT_STYLE_OVERRIDE", "Windows");
+    SessionEnvironment::apply(SessionOptions{});
+    QCOMPARE(qgetenv("QT_QPA_PLATFORMTHEME"), QByteArray("qindaqt"));
+    QCOMPARE(qgetenv("QT_QUICK_CONTROLS_STYLE"), QByteArray("Fusion"));
+    QCOMPARE(qgetenv("QT_STYLE_OVERRIDE"), QByteArray("Windows"));
+    qputenv("QT_QPA_PLATFORMTHEME", "custom");
+    qputenv("QT_QUICK_CONTROLS_STYLE", "Basic");
+    SessionEnvironment::apply(SessionOptions{});
+    QCOMPARE(qgetenv("QT_QPA_PLATFORMTHEME"), QByteArray("custom"));
+    QCOMPARE(qgetenv("QT_QUICK_CONTROLS_STYLE"), QByteArray("Basic"));
 }
 
 QTEST_APPLESS_MAIN(SessionEnvironmentTest)

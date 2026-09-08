@@ -1,12 +1,12 @@
 # File Manager viewport worker
 
 - Identity: file-manager-viewport (OpenAI Codex)
-- Status: working — implement scrollbars, zoom gestures, and browsing keyboard comfort
-- Base: 9b7ea39e10468811d04ee9921aca40b2715d25b0
-- Worktree: .cache/file-manager-viewport
-- Ownership: EntryGrid.qml, EntryList.qml, PlacesSidebar.qml, new viewport helpers and tests
+- Status: waiting — Qt-only adapter candidate ready for independent review
+- Base: 3dd1f924c46d04ee20074207d368b8bc468aa8d6
+- Worktree: .cache/native-qt-theme / fix/native-qt-theme
+- Ownership: src/platform/qt_theme, tests/platform/qt_theme, session appearance environment, ADR0115/platform wiki
 
 ## Updates
 
-- 2026-09-08T12:09:52-06:00 — Claimed isolated viewport implementation; read application and workflow contracts. No host desktop, bus, or input fixtures.
-- 2026-09-08T12:16:27-06:00 — Implemented reserved-gutter draggable scrollbars, zoom intent accumulation, PageUp/PageDown and type-to-select. First real Controls/Tokens offscreen run passes 8/8 with fatal warnings enabled; expanding sidebar/theme verification.
+- 2026-09-08T13:32:39-06:00 — User explicitly rejected KDE appearance authority; earlier audit recommendation superseded. Implemented ordinary Qt QPA palette/font/icon adapter backed by existing Settings1/AppAppearance/QST, with built-in Fusion style and Qt generic platform service delegation. No QStyle, native-dialog, tray or KDE configuration reimplementation. Focused isolated Qt-only build underway.
+- 2026-09-08T13:43:57-06:00 — Qt-only focused build and five CTest rows pass; native Widgets/Quick live palette/font, explicit style, relocated plugin, native-service delegation and session overrides. MkDocs strict plus 217-document link/navigation gate pass using parent registry overlay. Existing skins untouched; native Wayland interaction is a bounded combined-session caveat.

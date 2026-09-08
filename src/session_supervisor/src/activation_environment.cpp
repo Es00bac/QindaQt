@@ -15,9 +15,13 @@ void publishActivationEnvironment(const QDBusConnection &bus,
     const QStringList names{QStringLiteral("DBUS_SESSION_BUS_ADDRESS"),
                             QStringLiteral("WAYLAND_DISPLAY"), QStringLiteral("DISPLAY"),
                             QStringLiteral("XDG_RUNTIME_DIR"), QStringLiteral("XDG_SESSION_TYPE"),
-                            QStringLiteral("XDG_CURRENT_DESKTOP"), QStringLiteral("XDG_SESSION_DESKTOP")};
+                            QStringLiteral("XDG_CURRENT_DESKTOP"), QStringLiteral("XDG_SESSION_DESKTOP"),
+                            QStringLiteral("QT_QPA_PLATFORMTHEME"), QStringLiteral("QT_QUICK_CONTROLS_STYLE"),
+                            QStringLiteral("QT_STYLE_OVERRIDE")};
     for (const QString &name : names) {
-        if (!environment.value(name).isEmpty()) {
+        // Empty Qt overrides clear stale values left in the user manager by
+        // an earlier desktop; an explicitly empty user override is preserved.
+        if (name.startsWith(QStringLiteral("QT_")) || !environment.value(name).isEmpty()) {
             values.insert(name, environment.value(name));
             assignments.append(name + QLatin1Char('=') + environment.value(name));
         }
