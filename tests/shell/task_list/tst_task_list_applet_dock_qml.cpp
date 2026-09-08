@@ -263,8 +263,6 @@ void TaskListAppletDockQmlTests::groupingReplacesApplicationsWithOneColoredConta
     }
     return false;
   }());
-  if (dockMode && !vertical)
-    QVERIFY(window.grabWindow().save(QStringLiteral(QINDAQT_SOURCE_DIR "/build/dock-container.png")));
   QVERIFY(!controller.activateTask(firefox.windowId, beforeMerge));
   QVERIFY(!controller.activateTask(member.windowId, source.revision()));
   QVERIFY(port.calls.isEmpty());
