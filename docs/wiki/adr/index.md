@@ -29,7 +29,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0021](0021-isolate-controls-visual-rows.md) | Accepted | Isolate every Controls visual row in its own process |
 | [ADR-0022](0022-keep-text-documents-local-and-atomic.md) | Accepted | Keep Text Editor documents local, optimistic, and atomically persisted |
 | [ADR-0023](0023-split-power-authority-across-service-and-shell.md) | Accepted | Split platform power observation from shell-owned session-action authority |
-| [ADR-0024](0024-route-brightness-through-power1.md) | Accepted; write route superseded by ADR-0056 | Route fail-closed internal brightness through a Power1 provider |
+| [ADR-0024](0024-route-brightness-through-power1.md) | Accepted; write route superseded by ADR-0024 | Route fail-closed internal brightness through a Power1 provider |
 | [ADR-0025](0025-arbitrate-session-bound-power1-activation.md) | Accepted | Arbitrate session-bound Power1 activation without reciprocal takeover |
 | [ADR-0026](0026-contain-virtual-desktop-qualification.md) | Accepted | Contain integrated virtual desktop qualification in a private namespace and exact stage |
 | [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md) | Accepted | Extract a narrow first-party application shell without domain or platform authority |
@@ -43,7 +43,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0033](0033-canonical-menu-model-and-authenticated-menu-ownership.md) | Proposed | Own a canonical menu model with authenticated active-window menu ownership |
 | [ADR-0032](0032-status-notifier-exact-owner-foundation.md) | Accepted | Key the status-notifier tray on exact unique-name owners |
 | [ADR-0047](0047-pure-font-catalog-and-preference-boundary.md) | Accepted | Pure Font F0 catalog, preference, and bootstrap boundary |
-| [ADR-0030](0030-confine-qtermwidget-behind-terminal-adapter.md) | Superseded by ADR-0040 | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
+| [ADR-0030](0030-confine-qtermwidget-behind-terminal-adapter.md) | Superseded by ADR-0030 | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
 | [ADR-0040](0040-own-terminal-child-pty-and-bridge-through-teletype.md) | Accepted | Own the Terminal child PTY and bridge it through the qtermwidget teletype |
 | [ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) | Accepted | Keep Bluetooth pairing and trust authority in BlueZ; defer Agent1 pairing |
 | [ADR-0045](0045-fence-network1-pure-boundary.md) | Accepted | Fence Network1 owner, lineage, lease, secret, and pure-module contracts |
@@ -121,4 +121,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0106: Accept an equivalent Gentoo Power Profiles provider](0106-accept-equivalent-power-profiles-provider.md)
 - [ADR-0107: Delegate Print to Spectacle](0107-delegate-print-to-spectacle.md)
 
-- [ADR-0098: Pearl and Smoked Plum materials](0098-use-pearl-and-smoked-plum-app-materials.md)
+- [ADR-0109: Pearl and Smoked Plum materials](0109-use-pearl-and-smoked-plum-app-materials.md)
+- [ADR-0110: Ordinary editor windows](0110-own-editor-documents-in-ordinary-windows.md)
+- [ADR-0111: bound file previews and consume public icons](0111-bound-file-previews-and-consume-public-icons.md)
+- [ADR-0112: terminal protocol palette](0112-terminal-protocol-palette.md)

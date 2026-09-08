@@ -1,4 +1,4 @@
-# ADR-0101: Keep Terminal protocol colors independent of status badges
+# ADR-0112: Keep Terminal protocol colors independent of status badges
 
 - Status: Accepted
 - Date: 2026-09-08

@@ -328,7 +328,7 @@ controller. The first shell and every restarted renderer receive the retained
 appearance before the prompt can paint.
 
 ANSI is a terminal protocol palette rather than a reuse of status-badge text
-roles. [ADR-0101](../adr/0101-terminal-protocol-palette.md) defines independent
+roles. [ADR-0112](../adr/0112-terminal-protocol-palette.md) defines independent
 red, green, ochre/yellow, blue, orchid/magenta and cyan hues, neutral slots and
 separately fitted intense partners. Lightness is adjusted against the actual
 opaque content background to achieve 4.5:1, or 7:1 with high contrast. If a

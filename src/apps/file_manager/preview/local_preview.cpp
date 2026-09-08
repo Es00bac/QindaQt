@@ -54,8 +54,8 @@ QImage LocalPreviewDecoder::decode(const DirectoryEntry &entry,
   if (!bytes.open(QIODevice::ReadOnly))
     return {};
   QImageReader reader(&bytes);
-  // AGENT-GUARD: Only bounded raster decoders enter previews. SVG and animated
-  // documents retain catalog icons; see ADR-0100 for the resource contract.
+  // AGENT-GUARD: Only bounded raster decoders enter previews. SVG retains its
+  // catalog icon; supported multi-frame raster files show their first frame; see ADR-0111 for the resource contract.
   const QByteArray format = reader.format().toLower();
   if (format != "png" && format != "jpeg" && format != "jpg" &&
       format != "bmp" && format != "webp")

@@ -122,9 +122,9 @@ void DerivationTests::mapsEveryQstRoleFromSchemaV1()
     QCOMPARE(tokens.accent().foreground, theme.colors.value(QStringLiteral("accentText")));
     QCOMPARE(tokens.divider(), theme.colors.value(QStringLiteral("border")));
     QCOMPARE(tokens.danger().defaultColor, theme.colors.value(QStringLiteral("danger")));
-    QCOMPARE(tokens.radius().small, 5.0);
-    QCOMPARE(tokens.radius().medium, 10.0);
-    QCOMPARE(tokens.radius().large, 15.0);
+    QCOMPARE(tokens.radius().small, 6.0);
+    QCOMPARE(tokens.radius().medium, 12.0);
+    QCOMPARE(tokens.radius().large, 18.0);
     QCOMPARE(tokens.spacing().one, 2.0);
     QCOMPARE(tokens.spacing().six, 24.0);
     QCOMPARE(tokens.typeScale().body, 15.0);

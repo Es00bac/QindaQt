@@ -3,7 +3,7 @@
 QindaQt's Pearl and Smoked Plum identity pairs warm ceramic surfaces with
 rounded plum glass and restrained apricot highlights. Velvet is the dusk
 variant. The character comes from shape, material and useful pictograms;
-working surfaces remain calm and readable. [ADR-0098](../adr/0098-use-pearl-and-smoked-plum-app-materials.md)
+working surfaces remain calm and readable. [ADR-0109](../adr/0109-use-pearl-and-smoked-plum-app-materials.md)
 supersedes the former mandatory blue/amber QindaPunk palette.
 
 ## Palette and form

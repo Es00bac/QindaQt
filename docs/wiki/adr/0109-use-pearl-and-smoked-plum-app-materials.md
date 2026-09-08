@@ -1,4 +1,4 @@
-# ADR-0098: Use Pearl and Smoked Plum application materials
+# ADR-0109: Use Pearl and Smoked Plum application materials
 
 - Status: Accepted
 - Date: 2026-09-08

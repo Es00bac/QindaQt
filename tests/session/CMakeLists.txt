@@ -188,8 +188,12 @@ add_test(
         "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
         "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
-        "${CMAKE_CURRENT_SOURCE_DIR}/test_daily_controls_live_unit.py"
 )
+add_test(NAME session.daily-controls-runner-unit
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_daily_controls_live_unit.py")
+set_tests_properties(session.daily-controls-runner-unit PROPERTIES
+    ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" LABELS unit)
+
 set_tests_properties(
     session.nested-scenario-parser
     session.notification-live-driver-unit
@@ -265,7 +269,6 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
-        "${CMAKE_CURRENT_SOURCE_DIR}/test_daily_controls_live_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
@@ -609,3 +612,13 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/GabbeeTests.cmake")
+
+# The real app fixtures render on a private native Wayland compositor; this
+# supplements offscreen visual rows and the full desktop grouping/profile gate.
+add_test(NAME qindaqt.apps-native-material-matrix
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_app_material_native.py"
+        --source-root "${PROJECT_SOURCE_DIR}" --build-root "${CMAKE_BINARY_DIR}")
+set_tests_properties(qindaqt.apps-native-material-matrix PROPERTIES
+    LABELS "integration;wayland;visual;apps"
+    RUN_SERIAL TRUE RESOURCE_LOCK qindaqt-private-session
+    TIMEOUT 240 SKIP_RETURN_CODE 77)

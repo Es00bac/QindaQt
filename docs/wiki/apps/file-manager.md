@@ -18,7 +18,7 @@ and Trash authority is recorded in
 the S2 bookmark persistence contract is recorded in
 [ADR-0090](../adr/0090-keep-file-manager-bookmarks-app-local.md).
 Bounded local previews and public icon composition follow
-[ADR-0100](../adr/0100-bound-file-previews-and-consume-public-icons.md).
+[ADR-0111](../adr/0111-bound-file-previews-and-consume-public-icons.md).
 
 S2 composes `QindaQt.Tokens 1.0`, `QindaQt.Controls 1.0`, and the public
 `QindaQt.AppShell 1.0` window/action/lifecycle boundary. File Manager retains
@@ -416,7 +416,7 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - **S3** — power features: drag-and-drop, in-app search and a
   preview pane, a properties dialog, an open-with chooser (requires widening
   ADR-0029's launch contract through a new ADR), optional permanent deletion,
-  refinement beyond the shipped public Controls icon boundary (ADR-0100).
+  refinement beyond the shipped public Controls icon boundary (ADR-0111).
 - **S4** — volumes: mount enumeration and per-volume Trash (supersedes the
   ADR-0064 deferral with its own ADR; coordinate polkit/udisks boundaries
   through the Program Manager thread first).

@@ -1,4 +1,4 @@
-# ADR-0099: Own editor documents in ordinary windows
+# ADR-0110: Own editor documents in ordinary windows
 
 - **Status:** Accepted
 - **Date:** 2026-09-08

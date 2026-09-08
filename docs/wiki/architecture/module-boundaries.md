@@ -373,4 +373,4 @@ GUI-thread asset lookup/presentation, with an embedded catalog fallback. They
 are separate from the shell icon runtime. `MaterialSurface` uses local layers,
 not backdrop capture. AppAppearance projects explicitly subscribed, confirmed
 font/accessibility preferences through public QST inputs. See
-[ADR-0098](../adr/0098-use-pearl-and-smoked-plum-app-materials.md).
+[ADR-0109](../adr/0109-use-pearl-and-smoked-plum-app-materials.md).
