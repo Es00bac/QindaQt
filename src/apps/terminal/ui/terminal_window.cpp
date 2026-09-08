@@ -5,6 +5,7 @@
 #include "profiles/terminal_profile_settings.h"
 #include "session/terminal_launch_policy.h"
 #include "ui/terminal_find_bar.h"
+#include "qindaqt/controls/application_icon.h"
 
 #include <QAction>
 #include <QApplication>
@@ -29,8 +30,10 @@ TerminalWindow::TerminalWindow(
   setAccessibleDescription(
       QStringLiteral("Terminal sessions running the configured shell"));
   setWindowTitle(QStringLiteral("QindaQt Terminal"));
+  setWindowIcon(QindaQt::Controls::applicationIcon(QStringLiteral("utilities-terminal")));
   setPalette(m_appearance.windowPalette);
   setFont(m_appearance.interfaceFont);
+  setStyleSheet(m_appearance.chromeStyleSheet);
 
   auto *container = new QWidget(this);
   container->setObjectName(QStringLiteral("qindaqtTerminalContainer"));
@@ -70,6 +73,7 @@ void TerminalWindow::applyAppearance(const TerminalViewAppearance &appearance) {
   m_appearance = appearance;
   setPalette(appearance.windowPalette);
   setFont(appearance.interfaceFont);
+  setStyleSheet(appearance.chromeStyleSheet);
   const auto children = findChildren<QWidget *>();
   for (QWidget *child : children) {
     child->setPalette(appearance.windowPalette);
@@ -106,7 +110,8 @@ void TerminalWindow::buildStatusBar() {
   m_statusLabel = new QLabel(QStringLiteral("No session"), this);
   m_statusLabel->setObjectName(QStringLiteral("qindaqtTerminalStatus"));
   m_statusLabel->setAccessibleName(QStringLiteral("Session status"));
-  statusBar()->addPermanentWidget(m_statusLabel);
+  statusBar()->addWidget(m_statusLabel, 1);
+  statusBar()->setSizeGripEnabled(false);
   statusBar()->setAccessibleName(QStringLiteral("Terminal status bar"));
 }
 
@@ -241,6 +246,9 @@ void TerminalWindow::attachSessionView(TerminalSession *session) {
   if (widget == nullptr) {
     return;
   }
+  // Apply the retained live appearance before the first prompt, including
+  // when a restart constructs a fresh renderer after the settings snapshot.
+  session->setAppearance(m_appearance);
   m_terminalLayout->addWidget(widget);
   m_terminalView = widget;
   widget->setAccessibleName(QStringLiteral("Terminal session"));

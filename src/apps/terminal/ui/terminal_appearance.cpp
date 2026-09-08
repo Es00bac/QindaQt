@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/terminal_appearance.h"
+#include "ui/terminal_chrome.h"
+#include "ui/terminal_ansi_palette.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
@@ -13,12 +15,6 @@ QString colorArgument(const QColor &color) {
       color.blue());
 }
 
-QColor intenseVariant(const QColor &color) {
-  // One mechanical derivation for the eight "bright" ANSI slots; kept
-  // deliberate and documented rather than silently invented per app.
-  return color.lighter(125);
-}
-
 void appendSection(QString &document, const char *name, const QColor &color) {
   document += QStringLiteral("[%1]\nColor=%2\n")
                   .arg(QLatin1String(name), colorArgument(color));
@@ -27,9 +23,10 @@ void appendSection(QString &document, const char *name, const QColor &color) {
 } // namespace
 
 AppearanceResult TerminalAppearanceAdapter::fromTheme(
-    const QindaQt::Themes::ThemeSpec &theme) {
-  QindaQt::DesignTokens::AccessibilityInputs accessibility;
-  accessibility.highContrast = theme.variant == QStringLiteral("high-contrast");
+    const QindaQt::Themes::ThemeSpec &theme,
+    QindaQt::DesignTokens::AccessibilityInputs accessibility) {
+  accessibility.highContrast = accessibility.highContrast ||
+      theme.variant == QStringLiteral("high-contrast");
   const auto derived =
       QindaQt::DesignTokens::DesignTokenDeriver::derive(theme, accessibility);
   if (!derived.ok()) {
@@ -41,6 +38,13 @@ AppearanceResult TerminalAppearanceAdapter::fromTheme(
   palette.setColor(QPalette::Window, tokens.background().base);
   palette.setColor(QPalette::WindowText, tokens.foreground().defaultColor);
   palette.setColor(QPalette::Base, tokens.background().base);
+  palette.setColor(QPalette::AlternateBase, tokens.background().raised);
+  palette.setColor(QPalette::PlaceholderText, tokens.foreground().muted);
+  palette.setColor(QPalette::Light, tokens.background().highest);
+  palette.setColor(QPalette::Midlight, tokens.background().raised);
+  palette.setColor(QPalette::Mid, tokens.strongOutline());
+  palette.setColor(QPalette::Dark, tokens.strongOutline());
+  palette.setColor(QPalette::Shadow, tokens.strongOutline());
   palette.setColor(QPalette::Text, tokens.foreground().defaultColor);
   palette.setColor(QPalette::Button, tokens.background().raised);
   palette.setColor(QPalette::ButtonText, tokens.foreground().defaultColor);
@@ -60,37 +64,33 @@ AppearanceResult TerminalAppearanceAdapter::fromTheme(
   terminalFont.setStyleHint(QFont::Monospace);
   terminalFont.setFixedPitch(true);
 
-  // ANSI mapping is a bounded adaptation of public QST roles (ADR-0030):
-  // QST publishes red/green/yellow/blue semantics and no distinct magenta or
-  // cyan hue, so magenta maps to the accent's subtle role and every "bright"
-  // slot uses the same mechanical lighten step. A full palette profile is a
-  // later, settings-backed slice and is not silently invented here.
   TerminalViewAppearance appearance{
       .windowPalette = palette,
       .interfaceFont = interfaceFont,
       .terminalFont = terminalFont,
       .focusRing = tokens.focusRing(),
-      .statusWarningForeground = tokens.status().warning.foreground,
-      .statusDangerForeground = tokens.danger().defaultColor,
+      .statusWarningForeground = terminalReadableColor(
+          tokens.status().warning.foreground, tokens.background().raised,
+          accessibility.highContrast ? 7.0 : 4.5),
+      .statusDangerForeground = terminalReadableColor(
+          tokens.danger().defaultColor, tokens.background().raised,
+          accessibility.highContrast ? 7.0 : 4.5),
       .terminalBackground = tokens.background().base,
       .terminalForeground = tokens.foreground().defaultColor,
       .ansi = {},
       .sourceThemeId = tokens.sourceThemeId(),
+      .chromeStyleSheet = terminalChromeStyleSheet(tokens),
+      .highContrast = accessibility.highContrast,
+      .textScale = tokens.inputs().textScale,
   };
-  const QColor ansiBase[8] = {
-      tokens.background().base,          // 0 black
-      tokens.danger().defaultColor,      // 1 red
-      tokens.status().success.foreground, // 2 green
-      tokens.status().warning.foreground, // 3 yellow
-      tokens.accent().defaultColor,      // 4 blue
-      tokens.accent().subtle,            // 5 magenta (no QST hue; see above)
-      tokens.status().info.foreground,   // 6 cyan
-      tokens.foreground().defaultColor,  // 7 white
-  };
-  for (int index = 0; index < 8; ++index) {
-    appearance.ansi[index] = ansiBase[index];
-    appearance.ansi[index + 8] = intenseVariant(ansiBase[index]);
-  }
+  appearance.terminalBackground.setAlpha(255);
+  appearance.terminalForeground = terminalReadableColor(
+      appearance.terminalForeground, appearance.terminalBackground,
+      accessibility.highContrast ? 7.0 : 4.5);
+  const auto ansi = terminalAnsiPalette(appearance.terminalBackground,
+                                       accessibility.highContrast);
+  for (int index = 0; index < 16; ++index)
+    appearance.ansi[index] = ansi[static_cast<std::size_t>(index)];
   return {.appearance = appearance, .diagnostic = {}};
 }
 
@@ -99,10 +99,10 @@ QString TerminalColorSchemeDocument::render(
   QString document;
   appendSection(document, "Background", appearance.terminalBackground);
   appendSection(document, "BackgroundIntense",
-                intenseVariant(appearance.terminalBackground));
+                appearance.terminalBackground);
   appendSection(document, "Foreground", appearance.terminalForeground);
   appendSection(document, "ForegroundIntense",
-                intenseVariant(appearance.terminalForeground));
+                appearance.terminalForeground);
   // AGENT-CONTRACT (qtermwidget 2.4 ColorScheme::colorNames): Konsole scheme
   // files encode bright ANSI slots as Color0Intense..Color7Intense. Groups
   // named Color8..Color15 are ignored and fall back to upstream defaults.

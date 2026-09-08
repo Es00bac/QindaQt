@@ -2,6 +2,8 @@
 #include "ui/terminal_appearance.h"
 
 #include "qindaqt/themes/theme_loader.h"
+#include "qindaqt/design_tokens/token_deriver.h"
+#include "ui/terminal_ansi_palette.h"
 
 #include <QTest>
 
@@ -36,7 +38,9 @@ private slots:
   void derivesCompleteAppearanceFromPublicTokens();
   void everyThemeDerivesAllSixteenAnsiSlots();
   void colorSchemeDocumentHasKonsoleSectionsForEveryTheme();
-  void schemeColorsNeverInventHexConstants();
+  void schemeColorsUseDecimalTriples();
+  void customSurfaceKeepsReadableDistinctHues();
+  void accessibilityInputsReachFontsAndContrast();
   void monospaceFontIsFixedPitchAndSized();
 };
 
@@ -64,9 +68,25 @@ void TerminalAppearanceTest::everyThemeDerivesAllSixteenAnsiSlots() {
                qPrintable(QStringLiteral("%1 slot %2").arg(themeId)
                               .arg(index)));
     }
-    // AGENT-NOTE: Bright slots are mechanical lighten steps; on themes whose
-    // base colors sit at the scale's floor the result can legitimately equal
-    // the base slot, so only validity is asserted here, not distinctness.
+    using QindaQt::DesignTokens::DesignTokenDeriver;
+    const double minimum = themeId == QStringLiteral("qinda-high-contrast") ? 7.0 : 4.5;
+    for (int index = 0; index < 16; ++index) {
+      QCOMPARE(appearance.ansi[index].alpha(), 255);
+      QVERIFY2(DesignTokenDeriver::contrastRatio(appearance.ansi[index],
+                    appearance.terminalBackground) >= minimum,
+               qPrintable(QStringLiteral("%1 slot %2 lacks contrast").arg(themeId).arg(index)));
+      if (index < 8)
+        QVERIFY(appearance.ansi[index] != appearance.ansi[index + 8]);
+    }
+    QVERIFY(DesignTokenDeriver::contrastRatio(appearance.terminalForeground,
+                 appearance.terminalBackground) >= minimum);
+    QCOMPARE(appearance.terminalBackground.alpha(), 255);
+    QVERIFY(DesignTokenDeriver::contrastRatio(
+        appearance.windowPalette.color(QPalette::PlaceholderText),
+        appearance.windowPalette.color(QPalette::Base)) >= 4.5);
+    const QColor statusSurface = appearance.windowPalette.color(QPalette::Button);
+    QVERIFY(DesignTokenDeriver::contrastRatio(appearance.statusWarningForeground, statusSurface) >= minimum);
+    QVERIFY(DesignTokenDeriver::contrastRatio(appearance.statusDangerForeground, statusSurface) >= minimum);
   }
 }
 
@@ -101,7 +121,7 @@ void TerminalAppearanceTest::
   }
 }
 
-void TerminalAppearanceTest::schemeColorsNeverInventHexConstants() {
+void TerminalAppearanceTest::schemeColorsUseDecimalTriples() {
   // Documents render decimal triples only; no hex literals can slip in.
   const auto document =
       TerminalColorSchemeDocument::render(
@@ -131,6 +151,40 @@ void TerminalAppearanceTest::monospaceFontIsFixedPitchAndSized() {
   QVERIFY(appearance.terminalFont.pointSizeF() > 0.0);
   QCOMPARE(appearance.terminalFont.styleHint(), QFont::Monospace);
   QVERIFY(appearance.interfaceFont.pointSizeF() > 0.0);
+}
+
+void TerminalAppearanceTest::customSurfaceKeepsReadableDistinctHues() {
+  using namespace QindaQt::Apps::Terminal;
+  using QindaQt::DesignTokens::DesignTokenDeriver;
+  for (const QColor background : {QColor("#15292a"), QColor("#fff0dd"), QColor("#777777")}) {
+    const auto palette = terminalAnsiPalette(background, false);
+    for (int index = 0; index < 16; ++index)
+      QVERIFY(DesignTokenDeriver::contrastRatio(palette[static_cast<std::size_t>(index)], background) >= 4.5);
+    for (int index = 1; index <= 6; ++index) {
+      QVERIFY(palette[static_cast<std::size_t>(index)] != palette[static_cast<std::size_t>(index + 8)]);
+      // Distinct protocol hues must survive custom theme accent choices.
+      for (int other = index + 1; other <= 6; ++other)
+        QVERIFY(palette[static_cast<std::size_t>(index)] != palette[static_cast<std::size_t>(other)]);
+    }
+  }
+}
+
+void TerminalAppearanceTest::accessibilityInputsReachFontsAndContrast() {
+  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
+      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-light.json"));
+  QVERIFY(theme.ok);
+  QindaQt::DesignTokens::AccessibilityInputs inputs;
+  inputs.basePointSize = 12;
+  inputs.textScale = 1.5;
+  inputs.highContrast = true;
+  inputs.reducedTransparency = true;
+  const auto adapted = TerminalAppearanceAdapter::fromTheme(theme.theme, inputs);
+  QVERIFY(adapted.ok());
+  QCOMPARE(adapted.appearance->terminalFont.pointSizeF(), 18.0);
+  QCOMPARE(adapted.appearance->interfaceFont.pointSizeF(), 18.0);
+  QVERIFY(QindaQt::DesignTokens::DesignTokenDeriver::contrastRatio(
+      adapted.appearance->terminalForeground,
+      adapted.appearance->terminalBackground) >= 7.0);
 }
 
 QTEST_MAIN(TerminalAppearanceTest)

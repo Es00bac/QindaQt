@@ -445,7 +445,7 @@ void TerminalProfileSettingsTest::
   QVERIFY(outcomeText.contains(expectedSummary, Qt::CaseInsensitive));
   QVERIFY(outcomeText.contains(QLatin1String("Profiles:")));
   QVERIFY(outcomeText.contains(QLatin1String("Default profile:")));
-  QVERIFY(outcomeText.contains(QLatin1String("Restore tabs:")));
+  QVERIFY(outcomeText.contains(QLatin1String("Compatibility preference:")));
   QVERIFY(!outcomeText.contains(QLatin1String("Saving")));
   QCOMPARE(accessibleText, outcomeText);
 

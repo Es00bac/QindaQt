@@ -5,7 +5,6 @@
 
 #include <QWidget>
 
-class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QToolButton;
@@ -29,11 +28,14 @@ signals:
 
 protected:
   void keyPressEvent(QKeyEvent *event) override;
+  void changeEvent(QEvent *event) override;
 
 private:
+  void refreshIcons();
+  QToolButton *m_close = nullptr;
   QLineEdit *m_editor = nullptr;
-  QCheckBox *m_caseSensitive = nullptr;
-  QCheckBox *m_regularExpression = nullptr;
+  QToolButton *m_caseSensitive = nullptr;
+  QToolButton *m_regularExpression = nullptr;
   QToolButton *m_previous = nullptr;
   QToolButton *m_next = nullptr;
   QLabel *m_status = nullptr;

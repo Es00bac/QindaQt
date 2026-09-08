@@ -67,10 +67,7 @@ public:
   void clearView() override;
   [[nodiscard]] bool hasSelectedText() const override;
   void sendTextToSession(const QString &text) override;
-  void setAppearance(const TerminalViewAppearance &appearance) override {
-    m_appearance = appearance;
-    applyAppearance();
-  }
+  void setAppearance(const TerminalViewAppearance &appearance) override;
   [[nodiscard]] TerminalSearchResult
   searchScrollback(const TerminalSearchQuery &query,
                    TerminalSearchDirection direction) override;
@@ -102,6 +99,7 @@ private:
 
   QTermWidget *m_widget = nullptr;
   TerminalViewAppearance m_appearance;
+  const TerminalViewAppearance m_profileAppearance;
   int m_zoomSteps = 0;
   TerminalProfile m_profile;
   QString m_schemePath;

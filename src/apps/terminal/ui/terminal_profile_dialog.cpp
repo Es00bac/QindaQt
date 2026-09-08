@@ -15,6 +15,7 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QSplitter>
+#include "qindaqt/controls/application_icon.h"
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -41,8 +42,10 @@ TerminalProfileDialog::TerminalProfileDialog(
     : QDialog(parent), m_userProfiles(userProfiles),
       m_defaultProfileId(defaultProfileId), m_restoreTabs(restoreTabs) {
   setObjectName(QStringLiteral("terminalProfileDialog"));
+  setAttribute(Qt::WA_WindowPropagation, true);
   setWindowTitle(QStringLiteral("Terminal Profiles"));
   setAccessibleName(QStringLiteral("Terminal profile settings"));
+  resize(720, 480);
   buildUi(themeIds);
   refreshList();
   if (m_list->count() > 0) {
@@ -60,24 +63,31 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   m_list = new QListWidget(listSide);
   m_list->setObjectName(QStringLiteral("terminalProfileList"));
   m_list->setAccessibleName(QStringLiteral("Profiles"));
+  m_list->setSpacing(4);
+  m_list->setMinimumWidth(190);
   listLayout->addWidget(m_list);
   auto *listButtons = new QHBoxLayout();
   auto *addButton = new QPushButton(QStringLiteral("Add"), listSide);
+  addButton->setIcon(QindaQt::Controls::applicationIcon(QStringLiteral("list-add")));
   addButton->setObjectName(QStringLiteral("profileAddButton"));
   auto *removeButton = new QPushButton(QStringLiteral("Remove"), listSide);
+  removeButton->setIcon(QindaQt::Controls::applicationIcon(QStringLiteral("list-remove")));
   removeButton->setObjectName(QStringLiteral("profileRemoveButton"));
   auto *defaultButton =
       new QPushButton(QStringLiteral("Set as Default"), listSide);
   defaultButton->setObjectName(QStringLiteral("profileDefaultButton"));
   listButtons->addWidget(addButton);
   listButtons->addWidget(removeButton);
-  listButtons->addWidget(defaultButton);
+  listLayout->addWidget(defaultButton);
   listButtons->addStretch(1);
   listLayout->addLayout(listButtons);
   splitter->addWidget(listSide);
 
   auto *formSide = new QWidget(splitter);
   auto *formLayout = new QFormLayout(formSide);
+  formLayout->setContentsMargins(16, 8, 0, 8);
+  formLayout->setVerticalSpacing(12);
+  formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
   m_name = new QLineEdit(formSide);
   m_name->setObjectName(QStringLiteral("profileNameEdit"));
   m_name->setAccessibleName(QStringLiteral("Profile name"));
@@ -91,7 +101,7 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   m_shellArguments->setAccessibleName(
       QStringLiteral("Shell arguments, one per line"));
   m_shellArguments->setPlaceholderText(
-      QStringLiteral("One argument per line; never shell-interpreted"));
+      QStringLiteral("One argument per line"));
   m_shellArguments->setMaximumBlockCount(TerminalLaunchPolicy::kMaxArguments +
                                          1);
   m_shellArguments->setMaximumHeight(90);
@@ -216,10 +226,12 @@ void TerminalProfileDialog::refreshList() {
   m_list->clear();
   auto *builtinItem = new QListWidgetItem(
       profileLabel(builtinDefaultProfile(), m_defaultProfileId), m_list);
+  builtinItem->setIcon(QindaQt::Controls::applicationIcon(QStringLiteral("utilities-terminal")));
   builtinItem->setData(kBuiltinRole, true);
   for (int index = 0; index < m_userProfiles.size(); ++index) {
     auto *item = new QListWidgetItem(
         profileLabel(m_userProfiles.at(index), m_defaultProfileId), m_list);
+    item->setIcon(QindaQt::Controls::applicationIcon(QStringLiteral("utilities-terminal")));
     item->setData(kBuiltinRole, false);
   }
   if (m_list->count() > 0) {

@@ -322,16 +322,33 @@ with confirmed Settings1 theme and color-scheme changes updating the running
 window through [ADR-0080](../adr/0080-resolve-first-party-appearance-from-settings.md).
 An explicit `--theme` locks a validated schema-v1 theme and `--theme-directory` extends discovery,
 and `--check-theme` providing the packaging diagnostic that exits before any
-window exists. The adapter renders the sixteen ANSI slots from public token
-roles into a Konsole-format scheme document: red/green/yellow/blue map to
-QST danger/success/warning/accent foregrounds, magenta maps to the accent's
-subtle role (QST publishes no magenta hue), and the eight bright slots use one
-mechanical lighten step because QST has no distinct intense roles. This is
-bounded presentation adaptation; terminal profiles remain the persistence
-authority for their explicit per-profile choices.
+window exists. Live font size, text scale, high contrast, reduced motion and
+reduced transparency preferences travel through the same public appearance
+controller. The first shell and every restarted renderer receive the retained
+appearance before the prompt can paint.
+
+ANSI is a terminal protocol palette rather than a reuse of status-badge text
+roles. [ADR-0101](../adr/0101-terminal-protocol-palette.md) defines independent
+red, green, ochre/yellow, blue, orchid/magenta and cyan hues, neutral slots and
+separately fitted intense partners. Lightness is adjusted against the actual
+opaque content background to achieve 4.5:1, or 7:1 with high contrast. If a
+custom mid-tone background cannot achieve 7:1 with any ink, the adapter selects
+the mathematically strongest black or white instead of claiming compliance.
+Default bold text retains its default foreground and background; terminal output
+never becomes translucent. Application-emitted truecolor and 256-color values
+remain the child's explicit choices.
+
+An explicit saved-profile scheme survives ordinary desktop appearance changes.
+High contrast temporarily overrides it; disabling high contrast restores the
+original scheme. Font overrides retain their chosen base size, accessibility
+text scale multiplies that base, and local zoom remains independent. Compact search
+uses arrow/close controls with accessible names and tooltips, a clearable field,
+and a second row for search options and wrapping result text. Profile forms and
+status chrome consume QST surfaces, rounded outlines and explicit focus rings;
+the renderer's own text and selection styling stay confined to its adapter.
 
 The production adapter installs that document under a unique atomic
-`.colorscheme` cache path, the suffix required by qtermwidget 2.4's custom-file
+`.colorscheme` cache path (replacing and removing the prior live file), the suffix required by qtermwidget 2.4's custom-file
 loader. Its eight bright groups use the upstream
 `Color0Intense`..`Color7Intense` names. A real-adapter offscreen regression
 renders the selected theme's terminal background and rejects qtermwidget's
@@ -347,8 +364,9 @@ backends.
 the executable, desktop entry, built-in theme data, and AppShell's linked
 AppShell/Controls/Tokens backing libraries. `qtermwidget6`
 remains an external dynamically linked package dependency. The staged metadata
-gate resolves that dependency from the exact CMake-imported library file while
-clearing ambient loader and theme roots; a build-tree RPATH or caller-specific
+gate copies only that exact CMake-imported library into a private dependency
+directory while clearing ambient loader and theme roots; direct AppShell and
+Controls runtime paths resolve their staged libraries. A build-tree RPATH or caller-specific
 `LD_LIBRARY_PATH` cannot satisfy the installed-prefix proof.
 
 The focused selector is:
@@ -378,8 +396,9 @@ quit-on-last-window-closed flip, no early `aboutToQuit`, and the main-source
 wiring binding), window action identity and action-state truth across
 Running→Exited, readline-safe shortcuts, exit-status severity rendering,
 accessibility and focus metadata, hostile-resize clamping, QST scheme
-documents for all five themes, real-adapter custom-scheme rendering and blank
-selection truth; one-shell window launch, separate-process New Terminal
+documents for all five themes, real-adapter custom-scheme rendering, all sixteen painted ANSI colors through
+live light/dark/high-contrast changes, explicit-profile palette preservation,
+startup/restart retained appearance, and blank selection truth; one-shell window launch, separate-process New Terminal
 dispatch, close-all, and forced destruction; title sanitization; hostile profile values, canonical
 round trips, and unchanged empty-argument preservation; Settings1 baseline,
 sequential apply, conflict, fail-closed loss, uncertain no-replay behavior, and
@@ -423,8 +442,9 @@ host-compositor interaction remain outside S2.
   rendering-performance claim is made.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
-- A QindaQt-branded icon waits for a later branding slice. The global-menu
-  export is composed through the shared first-party AppShell entry and proven
+- The branded application and command SVGs use the public Controls icon
+  catalog, with semantic tint for essential icon-only search controls. The
+  global-menu export is composed through the shared first-party AppShell entry and proven
   by private-bus rows only; an installed nested-session qualification remains
   unbuilt.
 - Whole-application assistive-technology proof, the nested screenshot matrix,

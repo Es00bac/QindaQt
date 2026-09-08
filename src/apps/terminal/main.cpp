@@ -181,7 +181,14 @@ public:
                             const QString &explicitTheme)
       : transport(QDBusConnection::sessionBus()),
         client(transport, {QStringLiteral("appearance.theme"),
-                           QStringLiteral("appearance.colorScheme")}),
+                           QStringLiteral("appearance.colorScheme"),
+                           QStringLiteral("fonts.family"),
+                           QStringLiteral("fonts.monospaceFamily"),
+                           QStringLiteral("fonts.pointSize"),
+                           QStringLiteral("accessibility.textScale"),
+                           QStringLiteral("accessibility.highContrast"),
+                           QStringLiteral("accessibility.reducedMotion"),
+                           QStringLiteral("accessibility.reducedTransparency")}),
         controller(client, directories, QStringLiteral("qinda-dark"),
                    explicitTheme),
         application(app), window(terminalWindow) {
@@ -199,7 +206,8 @@ public:
 private:
   void apply() {
     const auto adapted =
-        TerminalAppearanceAdapter::fromTheme(controller.theme());
+        TerminalAppearanceAdapter::fromTheme(controller.theme(),
+                                              controller.accessibilityInputs());
     if (!adapted.ok())
       return;
     application.setPalette(adapted.appearance->windowPalette);
