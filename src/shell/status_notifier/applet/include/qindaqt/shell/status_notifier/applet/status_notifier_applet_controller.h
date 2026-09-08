@@ -77,16 +77,28 @@ public:
 
     Q_INVOKABLE bool activateItem(const QString &uniqueName,
                                   const QString &objectPath,
-                                  quint64 generation);
+                                  quint64 generation, int x = 0, int y = 0);
     Q_INVOKABLE bool secondaryActivateItem(const QString &uniqueName,
                                            const QString &objectPath,
-                                           quint64 generation);
+                                           quint64 generation, int x = 0, int y = 0);
     Q_INVOKABLE bool openContextMenu(const QString &uniqueName,
                                      const QString &objectPath,
-                                     quint64 generation);
-    // AGENT-NOTE: read-only menu preview. The flattened rows are bounded and
-    // depth-capped for presentation only; dispatching a dbusmenu entry's own
-    // activation is the Global Menu composition lane, not this controller.
+                                     quint64 generation, int x = 0, int y = 0);
+    // The menu revision is an opaque decimal string in QML: JavaScript numbers
+    // cannot exactly represent every transport publication serial.
+    Q_INVOKABLE bool itemIsMenu(const QString &uniqueName, const QString &objectPath,
+                               quint64 generation) const;
+    Q_INVOKABLE bool hasExportedMenu(const QString &uniqueName, const QString &objectPath,
+                                    quint64 generation) const;
+    Q_INVOKABLE QVariantMap menuStateFor(const QString &uniqueName, const QString &objectPath,
+                                        quint64 generation) const;
+    Q_INVOKABLE bool invokeMenu(const QString &uniqueName, const QString &objectPath,
+                               quint64 generation, const QString &revision, int itemId);
+    Q_INVOKABLE bool aboutToShowMenu(const QString &uniqueName, const QString &objectPath,
+                                    quint64 generation, const QString &revision, int itemId);
+    Q_INVOKABLE bool scrollItem(const QString &uniqueName, const QString &objectPath,
+                               quint64 generation, int delta, const QString &orientation);
+    // Compatibility-only descriptor projection; the live popup uses menuStateFor.
     Q_INVOKABLE QVariantList menuRowsFor(const QString &uniqueName,
                                          const QString &objectPath,
                                          quint64 generation);
@@ -103,6 +115,7 @@ public:
 Q_SIGNALS:
     void stateReprojected();
     void feedbackChanged();
+    void menuChanged();
 
 private:
     enum class IntentKind {
@@ -111,6 +124,13 @@ private:
         ContextMenu,
     };
 
+    [[nodiscard]] bool admitAction(const QString &uniqueName, const QString &objectPath,
+                                   quint64 generation);
+    [[nodiscard]] bool liveTarget(const QString &uniqueName, const QString &objectPath,
+                                  quint64 generation) const;
+    [[nodiscard]] bool dispatchMenu(const QString &uniqueName, const QString &objectPath,
+                                    quint64 generation, const QString &revision, int itemId,
+                                    bool opening);
     void reproject();
     void setFeedback(const QString &message, const QString &status = QStringLiteral("error"));
     [[nodiscard]] const StatusNotifierItemRow *findRow(const QString &uniqueName,
@@ -119,7 +139,7 @@ private:
     [[nodiscard]] bool dispatchIntent(IntentKind kind,
                                       const QString &uniqueName,
                                       const QString &objectPath,
-                                      quint64 generation);
+                                      quint64 generation, int x, int y);
 
     StatusNotifierSourceInterface *m_source = nullptr;
     bool m_readGranted = false;

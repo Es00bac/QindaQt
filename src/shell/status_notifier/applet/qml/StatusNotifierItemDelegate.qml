@@ -19,9 +19,7 @@ T.Control {
     required property var access
     property int iconSize: 22
 
-    // Flattened read-only menu preview rows captured when the context popup
-    // opens; dbusmenu entry activation itself is a later composition lane.
-    property var menuRows: []
+    property var menuState: ({status: "none", revision: "0", entries: []})
 
     readonly property bool hasAccess: access !== null && access !== undefined
 
@@ -49,17 +47,45 @@ T.Control {
     focusPolicy: Qt.StrongFocus
     hoverEnabled: true
 
+    function anchorPosition() {
+        return mapToGlobal(width / 2, height / 2)
+    }
+
     function activate() {
-        if (hasAccess && item) {
-            access.activateItem(item.uniqueName, item.objectPath, item.generation)
+        if (!hasAccess || !item)
+            return
+        if (access.itemIsMenu(item.uniqueName, item.objectPath, item.generation)) {
+            openContextPopup()
+        } else {
+            const point = anchorPosition()
+            access.activateItem(item.uniqueName, item.objectPath, item.generation,
+                                Math.round(point.x), Math.round(point.y))
         }
+    }
+
+    function updateMenu() {
+        if (hasAccess && item)
+            menuState = access.menuStateFor(item.uniqueName, item.objectPath, item.generation)
     }
 
     function openContextPopup() {
         if (!hasAccess || !item)
             return
-        menuRows = access.menuRowsFor(item.uniqueName, item.objectPath, item.generation)
-        contextPopup.open()
+        const exported = access.hasExportedMenu(item.uniqueName, item.objectPath, item.generation)
+        const point = anchorPosition()
+        if (!access.openContextMenu(item.uniqueName, item.objectPath, item.generation,
+                                    Math.round(point.x), Math.round(point.y)))
+            return
+        // Items without an exported menu render their own native context menu.
+        if (exported) {
+            updateMenu()
+            contextPopup.popup(0, height)
+        }
+    }
+
+    Connections {
+        target: delegateRoot.hasAccess ? delegateRoot.access : null
+        function onMenuChanged() { delegateRoot.updateMenu() }
     }
 
     Keys.onReturnPressed: activate()
@@ -137,7 +163,7 @@ T.Control {
 
     background: Rectangle {
         radius: Tokens.radius.m
-        color: delegateRoot.down ? Tokens.state.pressed
+        color: clickArea.pressed ? Tokens.state.pressed
              : delegateRoot.hovered ? Tokens.state.hover
              : "transparent"
         border.width: delegateRoot.activeFocus ? Tokens.space["1"] : 0
@@ -152,16 +178,36 @@ T.Control {
            : delegateRoot.item.identity)
         : ""
 
-    // AGENT-GUARD: the pointer area sits BELOW the content item (z: -1) so
-    // real input-handling children keep precedence; clipboard's P1 defect was
-    // a default-stacked MouseArea swallowing every child click.
+    // AGENT-GUARD: this icon-only control has no interactive content children.
+    // Put its input area above the Control background: a negative z value lets
+    // the background swallow primary/middle clicks before the area sees them.
     MouseArea {
         id: clickArea
         objectName: "statusNotifierItemClickArea"
         anchors.fill: parent
-        z: -1
-        acceptedButtons: Qt.LeftButton
-        onClicked: delegateRoot.activate()
+        z: 1
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.MiddleButton && delegateRoot.hasAccess && delegateRoot.item) {
+                const point = delegateRoot.anchorPosition()
+                delegateRoot.access.secondaryActivateItem(delegateRoot.item.uniqueName,
+                    delegateRoot.item.objectPath, delegateRoot.item.generation,
+                    Math.round(point.x), Math.round(point.y))
+            } else {
+                delegateRoot.activate()
+            }
+        }
+        onWheel: (wheel) => {
+            if (!delegateRoot.hasAccess || !delegateRoot.item)
+                return
+            const horizontal = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y)
+            const delta = horizontal ? wheel.angleDelta.x : wheel.angleDelta.y
+            if (delta !== 0) {
+                wheel.accepted = delegateRoot.access.scrollItem(delegateRoot.item.uniqueName,
+                    delegateRoot.item.objectPath, delegateRoot.item.generation,
+                    delta, horizontal ? "horizontal" : "vertical")
+            }
+        }
     }
 
     TapHandler {
@@ -169,97 +215,13 @@ T.Control {
         onTapped: delegateRoot.openContextPopup()
     }
 
-    T.Popup {
+    StatusNotifierMenu {
         id: contextPopup
         objectName: "statusNotifierContextPopup"
-        padding: Tokens.space["2"]
-        // AGENT-GUARD: RuntimePanel rejects focus by design
-        // (Qt.WindowDoesNotAcceptFocus), so an item-backed popup strands
-        // Escape on the layer-shell dock. This independent popup window is
-        // the keyboard-capable surface; do not downgrade it to an item popup.
-        popupType: T.Popup.Window
-        modal: false
-        // Focus lets the popup receive Escape for CloseOnEscape and keeps
-        // keyboard dismissal real instead of pointer-only.
-        focus: true
-        closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
-
-        // AGENT-NOTE: T.Popup is not an Item, so the Accessible attached
-        // property cannot attach to the popup itself (it fatals under
-        // QT_FATAL_WARNINGS); the content item carries the menu semantics.
-        contentItem: ColumnLayout {
-            spacing: Tokens.space["1"]
-
-            Accessible.role: Accessible.PopupMenu
-            Accessible.name: delegateRoot.item
-                ? qsTr("Context menu for %1").arg(delegateRoot.item.accessibleName)
-                : qsTr("Context menu")
-
-            Repeater {
-                model: delegateRoot.menuRows
-
-                delegate: Item {
-                    required property var modelData
-                    objectName: "statusNotifierMenuPreviewRow"
-
-                    readonly property int indent:
-                        modelData.depth * Tokens.space["4"]
-
-                    implicitWidth: separator.visible
-                        ? 120
-                        : previewLabel.implicitWidth + indent
-                    implicitHeight: separator.visible
-                        ? separator.height + Tokens.space["2"]
-                        : previewLabel.implicitHeight
-
-                    Accessible.role: Accessible.StaticText
-                    Accessible.name: modelData.kind === "separator" ? "" : modelData.label
-                    Accessible.ignored: modelData.kind === "separator"
-
-                    Rectangle {
-                        id: separator
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        height: 1
-                        color: Tokens.outline.divider
-                        visible: modelData.kind === "separator"
-                    }
-
-                    C.Label {
-                        id: previewLabel
-                        anchors.left: parent.left
-                        anchors.leftMargin: parent.indent
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: modelData.kind !== "separator"
-                        enabled: modelData.enabled
-                        muted: !modelData.enabled
-                        text: modelData.kind === "submenu" && modelData.hasChildren
-                              ? modelData.label + " ›"
-                              : modelData.label
-                    }
-                }
-            }
-
-            C.Button {
-                id: openMenuButton
-                objectName: "statusNotifierOpenMenuButton"
-                Layout.fillWidth: true
-                text: qsTr("Open menu")
-                emphasized: false
-                available: delegateRoot.hasAccess
-                           && delegateRoot.access.activateGranted === true
-                accessibleDescription: qsTr("Ask the application to open its context menu")
-                onClicked: {
-                    if (delegateRoot.hasAccess && delegateRoot.item) {
-                        delegateRoot.access.openContextMenu(
-                            delegateRoot.item.uniqueName,
-                            delegateRoot.item.objectPath,
-                            delegateRoot.item.generation)
-                    }
-                    contextPopup.close()
-                }
-            }
-        }
+        access: delegateRoot.access
+        targetItem: delegateRoot.item
+        menuData: ({ entries: delegateRoot.menuState.entries ?? [] })
+        revision: String(delegateRoot.menuState.revision ?? "0")
+        status: String(delegateRoot.menuState.status ?? "none")
     }
 }

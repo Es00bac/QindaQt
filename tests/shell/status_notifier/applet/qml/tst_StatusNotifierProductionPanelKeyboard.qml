@@ -50,6 +50,19 @@ Item {
         property var lastActivateArgs: null
         property var scriptedMenuRows: []
 
+        signal menuChanged()
+        function itemIsMenu(owner, path, generation) { return false }
+        function hasExportedMenu(owner, path, generation) { return true }
+        function menuStateFor(owner, path, generation) {
+            menuRowsFor(owner, path, generation)
+            return {status: "ready", revision: "1", entries: [
+                {id: 4, kind: "action", label: "Configuration…", enabled: true}
+            ]}
+        }
+        function invokeMenu(owner, path, generation, revision, itemId) { return true }
+        function aboutToShowMenu(owner, path, generation, revision, itemId) { return true }
+        function scrollItem(owner, path, generation, delta, orientation) { return true }
+
         function activateItem(uniqueName, objectPath, generation) {
             ++activateCalls
             lastActivateArgs = [uniqueName, objectPath, generation]
@@ -209,7 +222,7 @@ Item {
 
             keyClick(Qt.Key_Escape)
             tryCompare(popup, "opened", false)
-            compare(fakeAccess.openContextMenuCalls, 0)
+            compare(fakeAccess.openContextMenuCalls, 1)
             compare(fakeAccess.activateCalls, 0)
         }
     }

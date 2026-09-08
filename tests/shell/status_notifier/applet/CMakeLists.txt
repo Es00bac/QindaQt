@@ -50,6 +50,17 @@ set_tests_properties(
     PROPERTIES LABELS "shell;status-notifier"
 )
 
+qt_add_executable(qindaqt_status_notifier_applet_menu_tests
+    tst_status_notifier_applet_menu.cpp status_notifier_applet_test_fakes.h)
+target_link_libraries(qindaqt_status_notifier_applet_menu_tests PRIVATE
+    QindaQt::ShellStatusNotifierAppletRuntime QindaQt::StatusNotifierIcon Qt6::Test)
+qindaqt_enable_warnings(qindaqt_status_notifier_applet_menu_tests)
+add_test(NAME qindaqt.status-notifier-applet-menu-controller
+         COMMAND qindaqt_status_notifier_applet_menu_tests)
+set_tests_properties(qindaqt.status-notifier-applet-menu-controller PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    LABELS "shell;status-notifier")
+
 # 3. Adapter tests: real registry + monitor + watcher composition over a
 # private session bus (never the host bus).
 qt_add_executable(
@@ -202,6 +213,11 @@ qindaqt_add_status_notifier_applet_qml_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_StatusNotifierAppletAccessibility.qml"
 )
 
+qindaqt_add_status_notifier_applet_qml_test(
+    qindaqt.status-notifier-applet-menus-offscreen
+    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_StatusNotifierMenus.qml"
+)
+
 # Production dispatcher rows: the real source PanelAppletRow/AppletChip/
 # BuiltinAppletContent chain hosting the compiled module, under fatal warnings
 # with the host display and bus variables unset. The harness must link every
@@ -283,6 +299,8 @@ add_test(
         "-DQINDAQT_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_tokens_qml>"
         "-DQINDAQT_STATUS_NOTIFIER_LIBRARY=$<TARGET_FILE:qindaqt_status_notifier>"
         "-DQINDAQT_STATUS_NOTIFIER_ITEM_CLIENT_LIBRARY=$<TARGET_FILE:qindaqt_status_notifier_item_client>"
+        "-DQINDAQT_DBUSMENU_LIBRARY=$<TARGET_FILE:qindaqt_global_menu_dbusmenu>"
+        "-DQINDAQT_MENU_PROTOCOL_LIBRARY=$<TARGET_FILE:qindaqt_global_menu_protocol>"
         "-DQINDAQT_STATUS_NOTIFIER_ICON_LIBRARY=$<TARGET_FILE:qindaqt_status_notifier_icon>"
         "-DQINDAQT_THEMES_LIBRARY=$<TARGET_FILE:qindaqt_themes>"
         "-DQINDAQT_DESIGN_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_design_tokens>"
@@ -328,3 +346,25 @@ set_tests_properties(
     qindaqt.status-notifier-applet-runtime-installed-package
     PROPERTIES LABELS "shell;status-notifier;installed;poison" RUN_SERIAL TRUE TIMEOUT 90
 )
+
+# Private native interaction probe. The runner provisions its own compositor;
+# never synthesize input against the user's session.
+qt_add_executable(qindaqt_tray_native_probe tray_native_probe.cpp
+    ../status_notifier_fake_item_test_support.h ../status_notifier_private_bus_test_support.h)
+target_include_directories(qindaqt_tray_native_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_link_libraries(qindaqt_tray_native_probe PRIVATE
+    QindaQt::ShellStatusNotifierAppletRuntime qindaqt_shell_status_notifier_applet_runtimeplugin
+    QindaQt::StatusNotifierWatcher QindaQt::GlobalMenuDbusMenu QindaQt::TokensQml
+    qindaqt_themes qindaqt_shell_iconsplugin Qt6::Test Qt6::Quick)
+target_compile_definitions(qindaqt_tray_native_probe PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}" QINDAQT_TRAY_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
+add_dependencies(qindaqt_tray_native_probe qindaqt_controls_qmlplugin
+    qindaqt_tokens_qmlplugin qindaqt_shell_iconsplugin)
+qindaqt_enable_warnings(qindaqt_tray_native_probe)
+qt_import_qml_plugins(qindaqt_tray_native_probe)
+add_test(NAME qindaqt.status-notifier-applet-menu-integration-offscreen
+         COMMAND qindaqt_tray_native_probe)
+set_tests_properties(qindaqt.status-notifier-applet-menu-integration-offscreen PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QPA_PLATFORMTHEME=generic;QINDAQT_TRAY_CAPTURE_DIR=${CMAKE_CURRENT_BINARY_DIR}/tray-offscreen-proof;QML_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT_MODIFICATION "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:"
+    TIMEOUT 60 LABELS "shell;status-notifier;private-bus;offscreen")
