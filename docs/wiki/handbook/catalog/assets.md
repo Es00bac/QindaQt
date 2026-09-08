@@ -115,45 +115,45 @@ Default theme: `qinda-dusk`. Workflow: `{"overview":"optional","workspacePolicy"
 
 ### qinda-dark — QindaQt Smoked Plum
 
-Source: `data/themes/qinda-dark.json`. 
+Source: `data/themes/qinda-dark.json`.
 
 | Field | Packaged value |
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"dark"` |
-| iconTheme | `"breeze-dark"` |
+| iconTheme | `"QindaQt"` |
 | fontFamily | `"Inter"` |
 | monoFontFamily | `"JetBrains Mono"` |
-| cornerRadius | `10` |
+| cornerRadius | `12` |
 | motionDuration | `160` |
 | blurEnabled | `false` |
-| colors | `{"canvas":"#111E2C","surface":"#192939","surfaceRaised":"#273746","border":"#526170","text":"#F2EFE8","textMuted":"#B0B6B7","accent":"#D98A32","accentText":"#1B1309","danger":"#E86F62"}` |
+| colors | `{"canvas":"#211D27","surface":"#2B2633","surfaceRaised":"#393140","border":"#746779","text":"#F6EFF2","textMuted":"#C3B5C3","accent":"#EAB391","accentText":"#30201C","danger":"#F18E98"}` |
 
 ### qinda-dusk — QindaQt Velvet
 
-Source: `data/themes/qinda-dusk.json`. 
+Source: `data/themes/qinda-dusk.json`.
 
 | Field | Packaged value |
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"dusk"` |
-| iconTheme | `"breeze-dark"` |
+| iconTheme | `"QindaQt"` |
 | fontFamily | `"Inter"` |
 | monoFontFamily | `"JetBrains Mono"` |
-| cornerRadius | `10` |
+| cornerRadius | `12` |
 | motionDuration | `160` |
 | blurEnabled | `true` |
-| colors | `{"canvas":"#192634","surface":"#243443","surfaceRaised":"#304355","border":"#5B6B7C","text":"#F4F0E8","textMuted":"#B9C0C3","accent":"#E19A3C","accentText":"#1B1309","danger":"#EC786B"}` |
+| colors | `{"canvas":"#29212D","surface":"#352A39","surfaceRaised":"#433549","border":"#83708A","text":"#FCF1F5","textMuted":"#CFBDD0","accent":"#EABC9C","accentText":"#30201C","danger":"#F39CAA"}` |
 
 ### qinda-high-contrast — Qinda High Contrast
 
-Source: `data/themes/qinda-high-contrast.json`. 
+Source: `data/themes/qinda-high-contrast.json`.
 
 | Field | Packaged value |
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"high-contrast"` |
-| iconTheme | `"breeze-dark"` |
+| iconTheme | `"QindaQt"` |
 | fontFamily | `"Noto Sans"` |
 | monoFontFamily | `"Noto Sans Mono"` |
 | cornerRadius | `4` |
@@ -163,35 +163,35 @@ Source: `data/themes/qinda-high-contrast.json`.
 
 ### qinda-light — QindaQt Pearl
 
-Source: `data/themes/qinda-light.json`. 
+Source: `data/themes/qinda-light.json`.
 
 | Field | Packaged value |
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"light"` |
-| iconTheme | `"breeze"` |
+| iconTheme | `"QindaQt"` |
 | fontFamily | `"Inter"` |
 | monoFontFamily | `"JetBrains Mono"` |
-| cornerRadius | `10` |
+| cornerRadius | `12` |
 | motionDuration | `150` |
 | blurEnabled | `false` |
-| colors | `{"canvas":"#DDE7E8","surface":"#F5F7F3","surfaceRaised":"#FFFFFF","border":"#AAB7B7","text":"#17242A","textMuted":"#526066","accent":"#9B4D12","accentText":"#FFFFFF","danger":"#A63D35"}` |
+| colors | `{"canvas":"#EDE6E3","surface":"#FAF5F0","surfaceRaised":"#FFFCF8","border":"#9A8795","text":"#302633","textMuted":"#695869","accent":"#8C4D38","accentText":"#FFF8F1","danger":"#A22F4B"}` |
 
 ### qinda-macos — Qinda macOS
 
-Source: `data/themes/qinda-macos.json`. 
+Source: `data/themes/qinda-macos.json`.
 
 | Field | Packaged value |
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"light"` |
-| iconTheme | `"breeze"` |
+| iconTheme | `"QindaQt"` |
 | fontFamily | `"Inter"` |
 | monoFontFamily | `"JetBrains Mono"` |
 | cornerRadius | `12` |
 | motionDuration | `180` |
 | blurEnabled | `true` |
-| colors | `{"canvas":"#9FB8B2","surface":"#E7EFEC","surfaceRaised":"#F7FAF9","border":"#9DAFA9","text":"#17231F","textMuted":"#60716C","accent":"#4DAF98","accentText":"#0A2921","danger":"#FF5F57"}` |
+| colors | `{"canvas":"#9FB8B2","surface":"#E7EFEC","surfaceRaised":"#F7FAF9","border":"#9DAFA9","text":"#17231F","textMuted":"#35433E","accent":"#4DAF98","accentText":"#0A2921","danger":"#FF5F57"}` |
 | decoration | `{"buttonPlacement":"left","tabDirection":"right-to-left","buttonStyle":"traffic-lights","hoverGlyphs":true,"closeColor":"#FF5F57","minimizeColor":"#FEBC2E","maximizeColor":"#28C840"}` |
 
 ## Applet manifests (11)

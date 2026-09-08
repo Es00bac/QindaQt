@@ -69,6 +69,7 @@ endforeach()
 
 target_link_libraries(
     qindaqt_controls_qml
+    PUBLIC Qt6::Gui
     PRIVATE
         QindaQt::TokensQml
         Qt6::Core

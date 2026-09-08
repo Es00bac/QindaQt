@@ -61,7 +61,7 @@ next time (never unsaved contents).
 
 Line numbers, automatic syntax highlighting, and `Ctrl+G` to jump to a line
 help with scripts and configuration files. Tab and Shift+Tab indent selected
-lines; Enter carries indentation forward. The View menu gives each tab its own
+lines; Enter carries indentation forward. The View menu gives each document its own
 word-wrap switch and text zoom (`Ctrl++`, `Ctrl+-`, and `Ctrl+0` to reset).
 
 ## File Manager
