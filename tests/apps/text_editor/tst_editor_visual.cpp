@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document/local_document_store.h"
+#include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/themes/theme_loader.h"
 #include "ui/editor_application.h"
 #include "ui/editor_window.h"
@@ -63,12 +64,32 @@ private slots:
     QVERIFY(window->findChild<QToolBar *>()->isVisible());
     QVERIFY(window->editor()->width() > 300);
     QCOMPARE(window->editor()->toPlainText(), QString::fromUtf8(contents));
-    for (const auto &format :
-         window->editor()->document()->begin().layout()->formats()) {
-      QVERIFY(format.format.foreground().style() == Qt::NoBrush ||
-              format.format.foreground().color().alpha() > 0);
-      if (theme == QStringLiteral("qinda-high-contrast"))
-        QCOMPARE(format.format.foreground().style(), Qt::NoBrush);
+    const double minimum =
+        theme == QStringLiteral("qinda-high-contrast") ? 7.0 : 4.5;
+    const auto &palette = window->editor()->palette();
+    QVERIFY(QindaQt::DesignTokens::DesignTokenDeriver::contrastRatio(
+                palette.color(QPalette::Text), palette.color(QPalette::Base)) >=
+            minimum);
+    QVERIFY(QindaQt::DesignTokens::DesignTokenDeriver::contrastRatio(
+                palette.color(QPalette::Text),
+                palette.color(QPalette::AlternateBase)) >= minimum);
+    for (auto block = window->editor()->document()->begin(); block.isValid();
+         block = block.next()) {
+      for (const auto &format : block.layout()->formats()) {
+        const auto &brush = format.format.foreground();
+        QVERIFY(brush.style() == Qt::NoBrush || brush.color().alpha() == 255);
+        if (theme == QStringLiteral("qinda-high-contrast"))
+          QCOMPARE(brush.style(), Qt::NoBrush);
+        if (brush.style() != Qt::NoBrush) {
+          using QindaQt::DesignTokens::DesignTokenDeriver;
+          QVERIFY(DesignTokenDeriver::contrastRatio(
+                      brush.color(), window->editor()->palette().color(
+                                         QPalette::Base)) >= 4.5);
+          QVERIFY(DesignTokenDeriver::contrastRatio(
+                      brush.color(), window->editor()->palette().color(
+                                         QPalette::AlternateBase)) >= 4.5);
+        }
+      }
     }
     const auto directory = QDir(QStringLiteral(QINDAQT_EDITOR_CAPTURE_DIR));
     QVERIFY(QDir().mkpath(directory.path()));

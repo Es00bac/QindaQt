@@ -233,8 +233,9 @@ and applied live to every window and document view. Confirmed interface and
 monospace font families, point size, text scaling and accessibility preferences
 reach the same QST adapter. High contrast and reduced transparency preserve
 opaque reading surfaces and explicit focus outlines. High contrast retains
-syntax weight and emphasis while using semantic text colors. Transparent syntax
-foregrounds are rejected so Markdown headings never disappear. `--theme` locks a validated
+syntax weight and emphasis while using semantic text colors. Transparent or
+low-contrast syntax foregrounds fall back to semantic ink; syntax accents must
+reach 4.5:1 against both the canvas and current-line surface. `--theme` locks a validated
 schema-v1 theme; `--theme-directory` extends discovery. `--check-theme` verifies installed theme/QST identity and exits
 before Settings1 or user-state composition. `--report-startup` reports only
 after the real top-level window's first paint.
