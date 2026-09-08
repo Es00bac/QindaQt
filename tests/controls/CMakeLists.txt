@@ -284,3 +284,11 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT ControlsQmlModules
 )
+
+qt_add_executable(qindaqt_application_icons_tests tst_application_icons.cpp)
+target_link_libraries(qindaqt_application_icons_tests PRIVATE QindaQt::ControlsQml Qt6::Test)
+qindaqt_enable_warnings(qindaqt_application_icons_tests)
+add_test(NAME qindaqt.controls-application-icons COMMAND qindaqt_application_icons_tests)
+set_tests_properties(qindaqt.controls-application-icons PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    LABELS "controls;offscreen")

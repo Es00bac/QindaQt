@@ -32,9 +32,12 @@ public:
                           QStringLiteral("appearance.colorScheme")});
   }
   void reply(QString theme, QString scheme, quint64 revision = 1) {
-    const QVariantMap values{
+    QVariantMap values{
         {QStringLiteral("appearance.theme"), theme},
         {QStringLiteral("appearance.colorScheme"), scheme}};
+    for (auto it = extra.cbegin(); it != extra.cend(); ++it) values.insert(it.key(), it.value());
+    QVariantMap sources;
+    for (auto it = values.cbegin(); it != values.cend(); ++it) sources.insert(it.key(), QStringLiteral("user-overrides"));
     const QVariantMap wire{
         {QLatin1StringView(WC::WireContract::FieldStatus),
          quint32(WC::SettingsWireStatus::Applied)},
@@ -47,13 +50,11 @@ public:
         {QLatin1StringView(WC::WireContract::FieldRevision), revision},
         {QLatin1StringView(WC::WireContract::FieldValues), values},
         {QLatin1StringView(WC::WireContract::FieldSourceLayers),
-         QVariantMap{{QStringLiteral("appearance.theme"),
-                      QStringLiteral("user-overrides")},
-                     {QStringLiteral("appearance.colorScheme"),
-                      QStringLiteral("user-overrides")}}},
+         sources},
         {QLatin1StringView(WC::WireContract::FieldMessage), QString{}}};
     emit snapshotReceived(lastToken, lastOwner, wire);
   }
+  QVariantMap extra;
   quint64 lastToken = 0;
   QString lastOwner;
 };
@@ -63,6 +64,7 @@ class ApplicationAppearanceControllerTest final : public QObject {
 private slots:
   void snapshotUpdatesInvalidRetainsAndSystemRefreshes();
   void explicitOverrideIgnoresSettings();
+  void explicitPaletteStillHonorsReadability();
 };
 
 static QStringList themeDirectories() {
@@ -125,6 +127,36 @@ void ApplicationAppearanceControllerTest::explicitOverrideIgnoresSettings() {
   QTRY_COMPARE(client.state(), ClientState::Ready);
   QCOMPARE(controller.themeId(), QStringLiteral("qinda-dusk"));
   QCOMPARE(changes.count(), 0);
+}
+
+void ApplicationAppearanceControllerTest::explicitPaletteStillHonorsReadability() {
+  FakeTransport transport;
+  const QStringList keys{QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"),
+    QStringLiteral("fonts.family"), QStringLiteral("fonts.monospaceFamily"),
+    QStringLiteral("fonts.pointSize"), QStringLiteral("accessibility.textScale"),
+    QStringLiteral("accessibility.reducedTransparency"), QStringLiteral("accessibility.highContrast")};
+  SettingsClient client(transport, keys);
+  ApplicationAppearanceController controller(client, themeDirectories(),
+    QStringLiteral("qinda-dark"), QStringLiteral("qinda-dusk"));
+  QVERIFY(client.start());
+  transport.announce(QStringLiteral(":1.25"));
+  QTRY_VERIFY(transport.lastToken != 0);
+  transport.extra = {{QStringLiteral("fonts.family"), QStringLiteral("Noto Sans")},
+    {QStringLiteral("fonts.monospaceFamily"), QStringLiteral("Noto Sans Mono")},
+    {QStringLiteral("fonts.pointSize"), 14.0}, {QStringLiteral("accessibility.textScale"), 1.5},
+    {QStringLiteral("accessibility.reducedTransparency"), true},
+    {QStringLiteral("accessibility.highContrast"), true}};
+  transport.reply(QStringLiteral("qinda-light"), QStringLiteral("light"));
+  QTRY_COMPARE(client.state(), ClientState::Ready);
+  QCOMPARE(controller.themeId(), QStringLiteral("qinda-dusk"));
+  QCOMPARE(controller.theme().fontFamily, QStringLiteral("Noto Sans"));
+  QCOMPARE(controller.theme().monoFontFamily, QStringLiteral("Noto Sans Mono"));
+  QCOMPARE(controller.accessibilityInputs().basePointSize, 14.0);
+  QCOMPARE(controller.accessibilityInputs().textScale, 1.5);
+  QVERIFY(controller.accessibilityInputs().reducedTransparency);
+  QVERIFY(controller.accessibilityInputs().highContrast);
+  transport.announce(QString());
+  QCOMPARE(controller.accessibilityInputs().basePointSize, 14.0);
 }
 
 QTEST_MAIN(ApplicationAppearanceControllerTest)
