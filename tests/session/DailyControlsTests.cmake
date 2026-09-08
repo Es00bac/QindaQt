@@ -18,6 +18,8 @@ if(TARGET qindaqt-desktop-controls
    AND QINDAQT_PIPEWIRE
    AND QINDAQT_WIREPLUMBER
    AND QINDAQT_PW_CLI
+   AND QINDAQT_WPCTL
+   AND QINDAQT_KBUILDSYCOCA
    AND QINDAQT_SPECTACLE)
     qt_add_executable(
         qindaqt-daily-controls-live-probe
@@ -55,6 +57,8 @@ if(TARGET qindaqt-desktop-controls
             --pipewire "${QINDAQT_PIPEWIRE}"
             --wireplumber "${QINDAQT_WIREPLUMBER}"
             --pw-cli "${QINDAQT_PW_CLI}"
+            --wpctl "${QINDAQT_WPCTL}"
+            --kbuildsycoca "${QINDAQT_KBUILDSYCOCA}"
             --spectacle "${QINDAQT_SPECTACLE}"
             --pipewire-config "${QINDAQT_PIPEWIRE_TEST_CONFIG}"
             --probe "$<TARGET_FILE:qindaqt-daily-controls-live-probe>"

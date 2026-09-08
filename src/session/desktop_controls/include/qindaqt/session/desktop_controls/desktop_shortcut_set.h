@@ -32,8 +32,10 @@ struct DesktopShortcutTriggers final {
 };
 
 struct DesktopShortcutRegistrationOptions final {
-    // PowerDevil owns the monitor-brightness keys in the resident process.
+    // PowerDevil owns monitor-brightness and Spectacle owns Print in production.
+    // Tests and embedders can opt in when they provide those owners themselves.
     bool registerBrightness = true;
+    bool registerScreenshot = true;
 };
 
 // One QAction per media key, registered through the injected registrar with

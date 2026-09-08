@@ -231,3 +231,4 @@ nav:
       - "0104: Serialize production shell rendering": adr/0104-serialize-shell-rendering.md
       - ADR-0105 PowerDevil idle display-off: adr/0105-delegate-idle-display-off-to-powerdevil.md
       - "0106: Accept an equivalent Gentoo Power Profiles provider": adr/0106-accept-equivalent-power-profiles-provider.md
+      - ADR-0107 Delegate Print to Spectacle: adr/0107-delegate-print-to-spectacle.md

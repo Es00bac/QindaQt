@@ -5,7 +5,7 @@ media-key volume and brightness with visible feedback, the Print screenshot
 action, the session-started polkit authentication agent, and the configurable
 idle display-off policy. Its current maturity is **EXECUTABLE (focused
 evidence)**: the resident process, supervisor startup, Settings Power section,
-and focused tests are implemented and green in Debug builds. Live brightness hardware and real idle/DPMS behavior remain later installed-session evidence. The installed private `desktop.daily-controls.live` row now qualifies `VolumeUp` and `Print` through the production session, KGlobalAccel, Audio1/PipeWire, notification host, shell, and Spectacle; it remains lane-gated until the manager grants the single nested runtime slot.
+and focused tests are implemented and green in Debug builds. Live brightness hardware and real idle/DPMS behavior remain later installed-session evidence. The installed private `desktop.daily-controls.live` row defines qualification for `VolumeUp` and `Print` through the production session, KGlobalAccel, Audio1/PipeWire, notification host, shell, and Spectacle; it remains lane-gated until the manager grants the single nested runtime slot.
 
 The durable choice of a separate supervised process over shell or compositor
 integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-process.md).
@@ -18,7 +18,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Volume and mute mutation | resident `Audio1` | public `AudioClient` on the default output |
 | Brightness media keys | PowerDevil 6.6.6 `ScreenBrightnessAgent` | PowerDevil's registered shortcuts |
 | Internal/external brightness mutation | PowerDevil `org.kde.ScreenBrightness` | session-owned PowerDevil |
-| Print screenshot | `org.kde.KWin.ScreenShot2` (Spectacle) | detached `spectacle -b -r` launch |
+| Print screenshot | Spectacle desktop action | installed Spectacle owns Print and its capture UI |
 | Visible media-key feedback | resident notification host | `org.freedesktop.Notifications` with per-category replaces-id |
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
@@ -46,13 +46,14 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `VolumeKeyController` | ±5% steps and mute toggle on the snapshot's default output, capability-gated, optimistic feedback, honest unavailable reasons |
 | `PowerDevilBrightnessFeedbackObserver` | filters PowerDevil keyboard feedback, reads the public per-display maximum, and emits normalized notifier feedback |
 | `BrightnessKeyController` | retained sysfs fixture seam for migration coverage; not instantiated or registered by production |
-| `ScreenshotLauncher` | sibling-then-PATH resolution, detached launch, honest failure feedback |
+| `ScreenshotLauncher` | retained launch-fixture seam; it is not instantiated by the resident process because Spectacle owns Print |
 | `FreedesktopFeedbackNotifier` | one replaceable notification per feedback category, bounded text, fail-quiet on host loss |
 | `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
 
-The production process keeps `KGlobalAccelRegistrar` for volume, mute, and
-screenshot actions. PowerDevil owns monitor-brightness shortcut registration
+The production process keeps `KGlobalAccelRegistrar` for volume and mute only.
+Spectacle owns the installed Print action, preserving its own user remapping and
+capture-mode choices. PowerDevil owns monitor-brightness shortcut registration
 and the idle display-off policy; QindaQt only observes its documented public
 brightness signal and binds its idle preference. The retained KIdleTime,
 DPMS, and sysfs classes are migration seams for focused tests and are not
@@ -96,7 +97,7 @@ Focused executable evidence covers: volume/mute/screenshot shortcut ids and
 dispatch; PowerDevil brightness feedback filtering, range normalization, and
 owner absence; sysfs fixture brightness stepping remains migration coverage;
 idle-preference mapping and PowerDevil binding coalescing/recovery/failure
-boundaries; screenshot resolution and detached launch against a fixture helper;
+boundaries; the retained screenshot launcher helper against a fixture;
 notifier wire shape and replaces-id reuse against a private
 `dbus-run-session` fake; supervisor optional-child startup, one-restart budget,
 and skip-on-absence; and the Settings Power model and page behavior for the
@@ -105,8 +106,14 @@ new section.
 Focused rows use fixtures, fake transports, and private buses only. The separate
 `desktop.daily-controls.live` installed row accepts only a manager-granted private
 namespace: it verifies the real `VolumeUp` global shortcut changes Audio1’s
-private PipeWire default output and makes a production shell feedback popup, then
-requires `Print` to show a visible Spectacle capture surface. It does not claim a
+private PipeWire default output and makes exactly one production shell feedback popup (the existing read-only shell
+evidence reports counts but not notification text), then waits for Spectacle's
+actual capture surface, completes a region selection, and requires its normal
+`Print` action to save a decoded, non-uniform image in a disposable private
+output directory. Because KWin 6.6.6's screenshot plugin requires an EGL
+backend, this private capture row requests llvmpipe OpenGL and verifies KWin's
+public compositing type before Print. The row configures only that disposable
+Spectacle profile; it never changes an installed user's capture-mode or save preferences. It does not claim a
 physical media key, a real PowerDevil brightness operation, a polkit prompt on
 installed packages, or real idle/display cycling on the host desktop. The nested
 inhibition matrix (native, portal, and ScreenSaver inhibition suppresses
