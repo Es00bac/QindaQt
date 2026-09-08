@@ -35,7 +35,8 @@ RawSample sampleAt(qint64 nanoseconds, quint64 scale,
   process.memoryAvailable = true;
   process.readBytes = 100 * scale;
   process.writeBytes = 200 * scale;
-  process.ioAvailable = true;
+  process.readBytesAvailable = true;
+  process.writeBytesAvailable = true;
   process.user = QStringLiteral("tester");
   process.state = QStringLiteral("R");
   process.threads = 2;
@@ -85,9 +86,10 @@ void SampleCollectorTest::computesDeltasAndResetsInvalidBaselines() {
   QCOMPARE(*second.processes[0].cpuPercent, expectedCpu);
 
   RawSample unavailable = sampleAt(3'000'000'000, 3);
-  unavailable.processes[0].ioAvailable = false;
+  unavailable.processes[0].readBytesAvailable = false;
   const PublishedSample third = collector.publish(std::move(unavailable));
   QVERIFY(!third.processes[0].readRate);
+  QCOMPARE(*third.processes[0].writeRate, 200.0);
 
   RawSample reset = sampleAt(4'000'000'000, 1, 51);
   const PublishedSample fourth = collector.publish(std::move(reset));
