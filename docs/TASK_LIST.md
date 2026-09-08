@@ -183,6 +183,11 @@ replace earlier work:
   entries, and route activation/minimize/restoration through the container.
   Detaching restores a standalone task; verify transfers, member exit, and
   normalization against the existing task-list contract.
+  September 8 source repair gives the group a stable chosen-color symbolic
+  icon and invalidates dock facts on name/color edits. Independent review and
+  21/21 focused task-list checks pass, including injected group/member changes
+  and stale member-action refusal. The reported extra live member rows still
+  require native reproduction; this does not close that runtime acceptance.
 - Remove competing default corner/edge tiling and make Alt-Tab visually fit
   QindaQt window containers. Private run `5f700906669c498ab4889da621667fc7`
   passes native QindaQt TabBox forward/reverse selection and activation with

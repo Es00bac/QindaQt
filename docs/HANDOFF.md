@@ -1,5 +1,22 @@
 # Integration handoff
 
+## Dock container identity repair (September 8)
+
+Accepted candidate `a14ec749e1cfbd8ef548f49a098b530c115d22a4` gives grouped
+task entries a stable symbolic stacked-window icon in the chosen container
+color. Successful container rename/color edits now invalidate shell task facts,
+so a chrome-only repaint cannot leave stale dock appearance. Independent review
+accepted the exact candidate after both fixture findings were repaired; all
+21 focused task-list CTest rows and strict MkDocs/link checks pass.
+
+The compiled QML regression injects grouped facts and verifies four dock/taskbar
+orientations, rendered color pixels, representative changes, detach projection,
+and stale/suppressed member action rejection. It does not execute real tab/tile
+merges. The user-reported extra live member entries remain unconfirmed: source
+grouping already suppresses them, the running shell matches its installed
+executable, and the production session has no development snapshot endpoint.
+No host installation/restart or native-session convergence is claimed.
+
 ## First-party material and window ownership checkpoint (September 8)
 
 Runtime source `c1952e90a84005aa3ce3aee07cea1b6d89b6a35c` implements the

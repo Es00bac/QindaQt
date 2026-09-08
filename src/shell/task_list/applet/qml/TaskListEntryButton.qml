@@ -98,7 +98,7 @@ T.ToolButton {
                 name: String(button.entry.iconName ?? "")
                 size: 18
                 color: button.resolvedIconColor
-                symbolic: false
+                symbolic: button.entry.kind === "container"
                 fallbackText: button.entry.applicationName
                 Accessible.ignored: true
             }
@@ -149,7 +149,7 @@ T.ToolButton {
             name: String(button.entry.iconName ?? "")
             size: 40
             color: button.resolvedIconColor
-            symbolic: false
+            symbolic: button.entry.kind === "container"
             fallbackText: button.entry.applicationName
             scale: button.hovered && !button.reducedMotion ? 1.08 : 1.0
             transformOrigin: Item.Center
