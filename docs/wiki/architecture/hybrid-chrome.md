@@ -213,7 +213,10 @@ shared row's outer-title drag region and the collapsed dock/task entry's
 title; the color replaces the shared row's resolved accent (active-tab
 underline, rename text, and other accent-derived cues) for that container
 only. Neither is part of `Core::WindowContainer`/`TopologyCommand` and
-neither persists across a compositor restart yet. The menu's remaining live,
+neither persists across a compositor restart yet. Each accepted name or color
+edit also invalidates the shell task facts through `shellVisibilityStateChanged`,
+so the dock refreshes the override even when native geometry, focus, and task
+flags are unchanged. Rejected edits publish no invalidation. The menu's remaining live,
 stable-ID actions cover Keep Above, Keep Below, pinning to all workspaces,
 individual workspace membership, all or individual activities, and moving the
 group to an output. These context actions mutate one current representative;
