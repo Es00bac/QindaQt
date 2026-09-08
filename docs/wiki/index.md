@@ -194,10 +194,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   ICC assignment surface: Display1 inventory, C1 discovery/import catalog,
   Settings1 draft/apply truth with conflict/no-replay fencing, and the
   explicit compositor-application boundary.
-- [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
-  terminal with up to eight tabs: launch policy, PTY/session lifecycle and
-  teardown, profiles and Settings1 persistence, the qtermwidget rendering
-  adapter, and keyboard/accessibility boundaries.
+- [QindaQt Terminal](apps/terminal.md) documents the first-party terminal
+  with one shell per window. Containers provide tabs and splits; Terminal owns
+  shell launch, PTY lifetime, profiles, scrollback search, and text rendering.
 - [Settings Center](apps/settings-center.md) documents the typed bounded route
   registry, responsive wide/compact navigation, route lifetime, keyboard and
   accessibility behavior, and sanitized package proof.
