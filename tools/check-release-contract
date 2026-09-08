@@ -19,7 +19,7 @@ ADR = ROOT / "docs/wiki/adr/0001-use-kwin-as-compositor-base.md"
 DESKTOP_EBUILD = (
     ROOT
     / "packaging/gentoo/gui-wm/qindaqt-desktop"
-    / "qindaqt-desktop-0.1.0_pre20260907.ebuild"
+    / "qindaqt-desktop-0.1.0_pre20260908.ebuild"
 )
 OBJECT_ID = re.compile(r"[0-9a-f]{40}")
 POWER_PROFILE_PROVIDER = re.compile(

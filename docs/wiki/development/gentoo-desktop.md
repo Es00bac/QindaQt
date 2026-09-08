@@ -5,9 +5,22 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260907-r1`, pinned to Git
-commit `8486e0588e8dd8c21f176be162b53d81ee73a5b6`. Regenerate the package
-Manifest whenever this immutable pin changes.
+The current dated package checkpoint is `0.1.0_pre20260908`, pinned to Git
+commit `c1952e90a84005aa3ce3aee07cea1b6d89b6a35c`. Regenerate the package
+Manifest whenever this immutable pin changes. This September8 checkpoint is a
+local reviewed snapshot and has not been pushed to the public remote. Its ebuild
+uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
+in Portage's DISTDIR:
+
+```sh
+qq_source_commit=c1952e90a84005aa3ce3aee07cea1b6d89b6a35c
+git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
+    gzip -n > qindaqt-desktop-0.1.0_pre20260908.tar.gz
+```
+
+Portage verifies the maintained Manifest before unpacking. The ebuild installs
+the complete image through Portage; do not copy executables into the installed
+runtime by hand.
 
 The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
 runtime closure follows the production process contracts:
@@ -49,7 +62,7 @@ Copy `packaging/gentoo/gui-wm/qindaqt-desktop/` into a configured local overlay,
 regenerate the Manifest, run the repository's package QA, and inspect the plan:
 
 ```sh
-ebuild /path/to/qindaqt-desktop-0.1.0_pre20260907-r1.ebuild manifest
+ebuild /path/to/qindaqt-desktop-0.1.0_pre20260908.ebuild manifest
 pkgcheck scan --repo your-overlay gui-wm/qindaqt-desktop
 emerge --pretend --verbose gui-wm/qindaqt-desktop
 ```

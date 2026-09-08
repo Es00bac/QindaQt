@@ -1148,7 +1148,7 @@
           "title": "QindaQt Text Editor",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge. S2 adds bounded multi-document hosting with independent per-document persistence and external-change truth, bounded find/replace, and a Settings1-governed paths-only restore policy (ADR-0065). The September 7 daily-use update adds line numbers, filename-based syntax highlighting, line navigation, indentation, per-tab wrapping and zoom.",
+          "summary": "Editor now owns one document per ordinary window, with independent menus, restore and close consent. Compact themed icons, live font/accessibility updates and readable syntax are qualified by the September 8 app checkpoint. The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge. S2 adds bounded multi-document hosting with independent per-document persistence and external-change truth, bounded find/replace, and a Settings1-governed paths-only restore policy (ADR-0065). The September 7 daily-use update adds line numbers, filename-based syntax highlighting, line navigation, indentation, per-tab wrapping and zoom.",
           "evidence": [
             {
               "kind": "commit",
@@ -1174,16 +1174,21 @@
               "kind": "commit",
               "reference": "44fff730",
               "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+            },
+            {
+              "kind": "commit",
+              "reference": "c1952e90a84005aa3ce3aee07cea1b6d89b6a35c",
+              "summary": "Reviewed ordinary-window and material implementation; the integrated candidate passes 121/121 focused app/shared rows and four observed-scale native app capture rows. See docs/HANDOFF.md for broader suite failures and pending Portage host merge; no full desktop release claim."
             }
           ],
-          "caveat": "Portals, print, extensions, rich text, a nested display screenshot matrix, and whole-application assistive-technology qualification remain."
+          "caveat": "Portals, print, extensions, rich text and whole-application assistive-technology qualification remain; host installation of the September 8 checkpoint is pending."
         },
         {
           "id": "QQ-006.07",
           "title": "QindaQt File Manager",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime. S1 adds recoverable local mutation (new folder, rename, copy, move, trash, restore, empty trash) with freedesktop Trash records, atomic no-replace primitives, changed-underneath identity checks, off-GUI-thread execution with cancellation, and keyboard/accessible confirmations through the AppShell action catalog. S2 adds the editable path bar, identity-stable multi-selection and batch operations, sorting, hidden-file toggle, shared list/grid selection and bookmarks; primary-assistant repairs resolve the original selection review findings.",
+          "summary": "The September 8 visual surface defaults to an icon grid with bounded asynchronous local raster thumbnails, concise breadcrumbs and original empty-folder artwork. The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime. S1 adds recoverable local mutation (new folder, rename, copy, move, trash, restore, empty trash) with freedesktop Trash records, atomic no-replace primitives, changed-underneath identity checks, off-GUI-thread execution with cancellation, and keyboard/accessible confirmations through the AppShell action catalog. S2 adds the editable path bar, identity-stable multi-selection and batch operations, sorting, hidden-file toggle, shared list/grid selection and bookmarks; primary-assistant repairs resolve the original selection review findings.",
           "evidence": [
             {
               "kind": "commit",
@@ -1204,16 +1209,21 @@
               "kind": "commit",
               "reference": "44fff730",
               "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+            },
+            {
+              "kind": "commit",
+              "reference": "c1952e90a84005aa3ce3aee07cea1b6d89b6a35c",
+              "summary": "Reviewed ordinary-window and material implementation; the integrated candidate passes 121/121 focused app/shared rows and four observed-scale native app capture rows. See docs/HANDOFF.md for broader suite failures and pending Portage host merge; no full desktop release claim."
             }
           ],
-          "caveat": "Mounts, search, previews, portals, nested screenshots, and whole-application assistive-technology qualification remain later slices."
+          "caveat": "Mounts, search, network previews, portals and whole-application assistive-technology qualification remain; host installation of the September 8 checkpoint is pending."
         },
         {
           "id": "QQ-006.08",
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The no-tabs interface is integrated; the installed package still contains the prior interface pending the combined release.",
+          "summary": "The September 8 checkpoint adds independent ANSI contrast, readable search and native profile dialogs, live themed icons and font/accessibility updates. Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The no-tabs interface is integrated; the installed package still contains the prior interface pending the combined release.",
           "evidence": [
             {
               "kind": "commit",
@@ -1249,9 +1259,14 @@
               "kind": "commit",
               "reference": "06979dfe",
               "summary": "Integrate reviewed and repaired e92243f0. Root reran six focused candidate window/action/container/private-bus rows, all passing, and verified integrated Terminal source identity. One newly detected main-function size violation is assigned for helper extraction; combined build and installation remain pending."
+            },
+            {
+              "kind": "commit",
+              "reference": "c1952e90a84005aa3ce3aee07cea1b6d89b6a35c",
+              "summary": "Reviewed ordinary-window and material implementation; the integrated candidate passes 121/121 focused app/shared rows and four observed-scale native app capture rows. See docs/HANDOFF.md for broader suite failures and pending Portage host merge; no full desktop release claim."
             }
           ],
-          "caveat": "GPU rendering, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain."
+          "caveat": "GPU rendering, later terminal capabilities, whole-application assistive-technology and physical display/input qualification remain; host installation of the September 8 checkpoint is pending."
         },
         {
           "id": "QQ-006.09",

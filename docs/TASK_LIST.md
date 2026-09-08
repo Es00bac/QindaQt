@@ -7,6 +7,19 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Make first-party applications visual and container-native (September 8)
+
+**Implemented and app-qualified; Portage delivery pending.** Editor uses ordinary
+single-document windows and independent menus/consent; Terminal retains one shell
+per window. File Manager defaults to an icon grid with bounded real thumbnails,
+concise navigation and original artwork. Pearl/Smoked Plum materials, branded
+SVGs and readable light/dark/high-contrast controls are shared across the apps.
+The native build with 24 jobs build,121 focused tests and four observed-scale native app
+capture rows pass. Broader desktop failures and installation state are recorded
+in [Handoff](HANDOFF.md); this does not declare the full desktop roadmap complete.
+The September 7 per-tab descriptions below are historical checkpoints superseded
+by this ordinary-window behavior.
+
 ### Let containers manage Terminal tabs and splits (September 7)
 
 **Integrated, installation pending:** one shell per Terminal window. Removed Terminal's
