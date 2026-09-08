@@ -109,10 +109,13 @@ void TrayNativeProbe::exportedMenuOpensWindow_data()
 
 void TrayNativeProbe::exportedMenuOpensWindow()
 {
-    // AGENT-GUARD: A private Wayland runner must opt in. QApplication/QPA can
-    // otherwise inherit the host display before this fixture creates its bus.
-    QVERIFY(qEnvironmentVariable("QINDAQT_TRAY_NATIVE_PROBE") == QStringLiteral("1"));
-    QCOMPARE(QGuiApplication::platformName(), QStringLiteral("wayland"));
+    // AGENT-GUARD: Offscreen exercises real transport/QML without a host
+    // display. Native execution requires explicit private-runner opt-in and
+    // compositor input; direct QTest events alone cannot grant a Wayland grab.
+    const QString platform = QGuiApplication::platformName();
+    QVERIFY(platform == QStringLiteral("offscreen")
+        || (platform == QStringLiteral("wayland")
+            && qEnvironmentVariable("QINDAQT_TRAY_NATIVE_PROBE") == QStringLiteral("1")));
     QFETCH(bool, vertical);
     const QString artifactRoot = qEnvironmentVariable("QINDAQT_TRAY_CAPTURE_DIR");
     QVERIFY(!artifactRoot.isEmpty());
