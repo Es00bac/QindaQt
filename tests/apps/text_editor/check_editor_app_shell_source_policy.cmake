@@ -17,7 +17,9 @@ if(editor_bridge_file_count EQUAL 0)
     message(FATAL_ERROR "Text Editor AppShell policy found no bridge/adapter files")
 endif()
 file(GLOB editor_window_files
-     "${QINDAQT_EDITOR_WINDOW_SOURCE_DIR}/editor_window*.cpp")
+     "${QINDAQT_EDITOR_WINDOW_SOURCE_DIR}/editor_window*.cpp"
+     "${QINDAQT_EDITOR_WINDOW_SOURCE_DIR}/editor_application*.cpp"
+     "${QINDAQT_EDITOR_WINDOW_SOURCE_DIR}/editor_application.h")
 list(APPEND editor_app_shell_files
      "${QINDAQT_EDITOR_WINDOW_HEADER}" ${editor_window_files})
 list(REMOVE_DUPLICATES editor_app_shell_files)

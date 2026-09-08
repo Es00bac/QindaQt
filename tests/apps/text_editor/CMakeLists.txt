@@ -300,3 +300,20 @@ qindaqt_add_editor_test(qindaqt_editor_editing_tools_tests
 set_tests_properties(qindaqt.editor-editing-tools-offscreen PROPERTIES
     LABELS "editor"
     ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
+
+qindaqt_add_editor_test(qindaqt_editor_application_tests
+    tst_editor_application.cpp qindaqt.editor-application-offscreen)
+target_compile_definitions(qindaqt_editor_application_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+set_tests_properties(qindaqt.editor-application-offscreen PROPERTIES
+    LABELS "editor"
+    ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
+
+qindaqt_add_editor_test(qindaqt_editor_visual_tests
+    tst_editor_visual.cpp qindaqt.editor-visual-offscreen)
+target_compile_definitions(qindaqt_editor_visual_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_EDITOR_CAPTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/captures")
+set_tests_properties(qindaqt.editor-visual-offscreen PROPERTIES
+    LABELS "editor;visual"
+    ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")

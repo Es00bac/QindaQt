@@ -5,6 +5,7 @@
 #include "app_shell/file_selection_adapter.h"
 #include "document/document_collection.h"
 #include "editor_appearance.h"
+#include "document_dialogs.h"
 #include "find/find_replace_engine.h"
 
 #include <QHash>
@@ -19,19 +20,18 @@ class QDragEnterEvent;
 class QDropEvent;
 class QPaintEvent;
 class QPlainTextEdit;
-class QTabWidget;
+class QVBoxLayout;
 
 namespace QindaQt::Apps::TextEditor {
 
 class EditorDocumentView;
 class FindReplaceBar;
-class RestoreStateStore;
+class EditorApplication;
 class TextEditorRestorePolicy;
 
-// Presentation owns tabs, dialogs, consent, focus, and command routing. The
-// injected collection factory creates one store/controller per document; the
-// optional policy and state-store pointers are non-owning and must outlive the
-// window. No filesystem work occurs here except through those collaborators.
+// GUI-thread presentation owns one document, its view, dialogs and actions.
+// The optional application owner and restore policy are borrowed and must
+// outlive the window. New/Open cross the application window-inventory boundary.
 class EditorWindow final : public QMainWindow {
   Q_OBJECT
 
@@ -40,23 +40,26 @@ public:
       DocumentStoreFactory storeFactory, EditorAppearance appearance,
       std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter = nullptr,
       TextEditorRestorePolicy *restorePolicy = nullptr,
-      RestoreStateStore *restoreStore = nullptr, QWidget *parent = nullptr);
+      EditorApplication *application = nullptr,
+      std::unique_ptr<DocumentDialogs> dialogs = nullptr, QWidget *parent = nullptr);
 
   [[nodiscard]] DocumentController *controller() const;
   [[nodiscard]] QPlainTextEdit *editor() const;
-  [[nodiscard]] DocumentCollection *documents() const { return m_documents; }
-  [[nodiscard]] QTabWidget *tabs() const { return m_tabs; }
   [[nodiscard]] FindReplaceBar *findBar() const { return m_findBar; }
   [[nodiscard]] QindaQt::AppShell::ApplicationCoordinator &
   appShellCoordinator();
 
   [[nodiscard]] bool openDocuments(const QStringList &paths,
                                    QString *diagnostic = nullptr);
-  void restoreIfEnabled();
   void applyAppearance(const EditorAppearance &appearance);
+  void announceStatus(const QString &message);
+  // Retained export is destroyed before the coordinator it observes.
+  void setMenuExport(std::unique_ptr<QObject> menuExport);
 
 signals:
   void firstFramePainted();
+  void closeAccepted();
+  void documentInventoryChanged();
 
 protected:
   void closeEvent(QCloseEvent *event) override;
@@ -70,26 +73,24 @@ private:
   void createCentralSurface();
   void createActions();
   void createMenus();
+  void createToolbar();
+  void applyChrome();
   void createEditingActions();
   void createViewMenu();
   void publishAppShellProjection();
-  void connectCollection();
+  void connectDocument();
   void connectRestorePolicy();
-  void addDocumentView(DocumentController *controller, int index);
-  void removeDocumentView(DocumentController *controller, int index);
+  void createDocumentView();
   void updateDocumentPresentation(DocumentController *controller = nullptr);
   void updateActionStates();
-  void selectRelativeTab(int delta);
-  void selectTab(int index);
 
-  [[nodiscard]] PendingAction confirmDocumentClose(int index);
+  [[nodiscard]] PendingAction confirmDocumentClose();
   [[nodiscard]] PendingAction confirmWindowClose();
-  [[nodiscard]] bool saveDocument(int index);
-  [[nodiscard]] bool saveDocumentAs(int index);
-  void closeTab(int index);
+  [[nodiscard]] bool saveDocument();
+  [[nodiscard]] bool saveDocumentAs();
   void openInteractively();
   void newInteractively();
-  void reloadInteractively(int index);
+  void reloadInteractively();
   void showOperationError(const QString &title,
                           const DocumentOperation &result);
 
@@ -101,12 +102,11 @@ private:
 
   [[nodiscard]] bool addPath(const QString &path, QString *diagnostic);
   void persistRestoreState();
-  void announceStatus(const QString &message);
 
   struct Actions final {
     QAction *fileNew = nullptr;
     QAction *fileOpen = nullptr;
-    QAction *fileCloseTab = nullptr;
+    QAction *fileCloseWindow = nullptr;
     QAction *fileSave = nullptr;
     QAction *fileSaveAs = nullptr;
     QAction *fileQuit = nullptr;
@@ -121,28 +121,26 @@ private:
     QAction *editFindNext = nullptr;
     QAction *editFindPrevious = nullptr;
     QAction *editFindClose = nullptr;
-    QAction *tabNext = nullptr;
-    QAction *tabPrevious = nullptr;
-    QList<QAction *> tabSelect;
     QAction *restoreDocuments = nullptr;
     QList<QAction *> editingTools;
     QList<QAction *> viewTools;
   };
 
-  DocumentCollection *m_documents = nullptr;
+  DocumentController *m_document = nullptr;
   EditorAppearance m_appearance;
   Actions m_actions;
   QHash<QString, QAction *> m_appShellActionIds;
-  QHash<DocumentController *, EditorDocumentView *> m_views;
+  EditorDocumentView *m_view = nullptr;
   EditorAppShellBridge m_appShellBridge;
   TextEditorRestorePolicy *m_restorePolicy = nullptr;
-  RestoreStateStore *m_restoreStore = nullptr;
-  QTabWidget *m_tabs = nullptr;
+  EditorApplication *m_application = nullptr;
+  QVBoxLayout *m_surfaceLayout = nullptr;
   FindReplaceBar *m_findBar = nullptr;
   bool m_firstFramePublished = false;
   bool m_pendingCloseApproved = false;
-  bool m_explicitStartupPaths = false;
-  bool m_restoreAttempted = false;
+  std::unique_ptr<DocumentDialogs> m_dialogs;
+  std::unique_ptr<QObject> m_menuExport;
+
 };
 
 } // namespace QindaQt::Apps::TextEditor

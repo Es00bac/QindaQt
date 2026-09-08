@@ -18,7 +18,7 @@ DocumentStorePtr DocumentCollection::createStore() const {
 AddDocumentResult DocumentCollection::capacityFailure() const {
   return {.operation = {
               .error = DocumentError::CapacityExceeded,
-              .diagnostic = QStringLiteral("Document limit reached (%1 tabs)")
+              .diagnostic = QStringLiteral("Document limit reached (%1 documents)")
                                 .arg(maximumDocuments),
           }};
 }
@@ -93,7 +93,7 @@ DocumentOperation DocumentCollection::saveAs(const int index,
   if (existing >= 0 && existing != index) {
     return {.error = DocumentError::AlreadyOpen,
             .diagnostic =
-                QStringLiteral("That file is already open in another tab")};
+                QStringLiteral("That file is already open in another window")};
   }
   const DocumentOperation result =
       controller->saveAs(normalized, replaceExisting);

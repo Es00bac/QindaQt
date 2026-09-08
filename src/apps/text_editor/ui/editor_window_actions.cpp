@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "editor_window.h"
+#include "editor_application.h"
 
 #include "app_shell/editor_action_catalog.h"
 #include "restore/text_editor_restore_policy.h"
@@ -12,7 +13,6 @@
 #include <QKeySequence>
 #include <QMenu>
 #include <QMenuBar>
-#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QStatusBar>
 
@@ -36,18 +36,18 @@ void EditorWindow::createActions() {
   m_actions.fileOpen =
       add(QStringLiteral("fileOpenAction"), tr("&Open…"),
           QKeySequence(QKeySequence::Open), [this] { openInteractively(); });
-  m_actions.fileCloseTab =
-      add(QStringLiteral("fileCloseTabAction"), tr("&Close Tab"),
+  m_actions.fileCloseWindow =
+      add(QStringLiteral("fileCloseWindowAction"), tr("&Close Window"),
           QKeySequence(QStringLiteral("Ctrl+W")),
-          [this] { closeTab(m_tabs->currentIndex()); });
+          [this] { close(); });
   m_actions.fileSave = add(QStringLiteral("fileSaveAction"), tr("&Save"),
                            QKeySequence(QKeySequence::Save), [this] {
-                             (void)saveDocument(m_tabs->currentIndex());
+                             (void)saveDocument();
                            });
   m_actions.fileSaveAs =
       add(QStringLiteral("fileSaveAsAction"), tr("Save &As…"),
           QKeySequence(QKeySequence::SaveAs),
-          [this] { (void)saveDocumentAs(m_tabs->currentIndex()); });
+          [this] { (void)saveDocumentAs(); });
   m_actions.fileQuit =
       add(QStringLiteral("fileQuitAction"), tr("&Quit"),
           QKeySequence(QKeySequence::Quit), [this] { close(); });
@@ -103,21 +103,6 @@ void EditorWindow::createActions() {
             }
           });
 
-  m_actions.tabNext = add(QStringLiteral("tabNextAction"), tr("Next Tab"),
-                          QKeySequence(QStringLiteral("Ctrl+Tab")),
-                          [this] { selectRelativeTab(1); });
-  m_actions.tabPrevious =
-      add(QStringLiteral("tabPreviousAction"), tr("Previous Tab"),
-          QKeySequence(QStringLiteral("Ctrl+Shift+Tab")),
-          [this] { selectRelativeTab(-1); });
-  for (int index = 0; index < 9; ++index) {
-    m_actions.tabSelect.append(
-        add(QStringLiteral("tabSelect%1Action").arg(index + 1),
-            tr("Select Tab %1").arg(index + 1),
-            QKeySequence(QStringLiteral("Ctrl+%1").arg(index + 1)),
-            [this, index] { selectTab(index); }));
-  }
-
   m_actions.restoreDocuments = add(
       QStringLiteral("restoreDocumentsAction"), tr("Restore Open &Documents"),
       QKeySequence(QStringLiteral("Ctrl+Alt+R")), [this] {
@@ -142,8 +127,8 @@ void EditorWindow::createActions() {
   m_appShellActionIds = {
       {QString::fromLatin1(AppShellActionIds::FileNew), m_actions.fileNew},
       {QString::fromLatin1(AppShellActionIds::FileOpen), m_actions.fileOpen},
-      {QString::fromLatin1(AppShellActionIds::FileCloseTab),
-       m_actions.fileCloseTab},
+      {QString::fromLatin1(AppShellActionIds::FileCloseWindow),
+       m_actions.fileCloseWindow},
       {QString::fromLatin1(AppShellActionIds::FileSave), m_actions.fileSave},
       {QString::fromLatin1(AppShellActionIds::FileSaveAs),
        m_actions.fileSaveAs},
@@ -164,16 +149,9 @@ void EditorWindow::createActions() {
        m_actions.editFindPrevious},
       {QString::fromLatin1(AppShellActionIds::EditFindClose),
        m_actions.editFindClose},
-      {QString::fromLatin1(AppShellActionIds::TabNext), m_actions.tabNext},
-      {QString::fromLatin1(AppShellActionIds::TabPrevious),
-       m_actions.tabPrevious},
       {QString::fromLatin1(AppShellActionIds::RestoreDocuments),
        m_actions.restoreDocuments},
   };
-  for (int index = 0; index < m_actions.tabSelect.size(); ++index) {
-    m_appShellActionIds.insert(QStringLiteral("tabs.select-%1").arg(index + 1),
-                               m_actions.tabSelect.at(index));
-  }
   createEditingActions();
   updateActionStates();
 }
@@ -182,7 +160,7 @@ void EditorWindow::createMenus() {
   auto *file = menuBar()->addMenu(tr("&File"));
   file->setObjectName(QStringLiteral("fileMenu"));
   file->addActions(
-      {m_actions.fileNew, m_actions.fileOpen, m_actions.fileCloseTab});
+      {m_actions.fileNew, m_actions.fileOpen, m_actions.fileCloseWindow});
   file->addSeparator();
   file->addActions({m_actions.fileSave, m_actions.fileSaveAs});
   file->addSeparator();
@@ -201,12 +179,6 @@ void EditorWindow::createMenus() {
   edit->addSeparator();
   edit->addActions(m_actions.editingTools);
   createViewMenu();
-
-  auto *tabs = menuBar()->addMenu(tr("&Tabs"));
-  tabs->setObjectName(QStringLiteral("tabsMenu"));
-  tabs->addActions({m_actions.tabNext, m_actions.tabPrevious});
-  tabs->addSeparator();
-  tabs->addActions(m_actions.tabSelect);
 
   auto *settings = menuBar()->addMenu(tr("&Settings"));
   settings->setObjectName(QStringLiteral("settingsMenu"));
@@ -242,7 +214,7 @@ void EditorWindow::updateActionStates() {
   QPlainTextEdit *activeEditor = editor();
   DocumentController *activeDocument = controller();
   const bool hasDocument = activeEditor && activeDocument;
-  m_actions.fileCloseTab->setEnabled(hasDocument);
+  m_actions.fileCloseWindow->setEnabled(hasDocument);
   m_actions.fileSave->setEnabled(hasDocument &&
                                  activeDocument->state().isDirty());
   m_actions.fileSaveAs->setEnabled(hasDocument);
@@ -264,33 +236,10 @@ void EditorWindow::updateActionStates() {
   for (auto *action : m_actions.viewTools) action->setEnabled(hasDocument);
   if (!m_actions.viewTools.isEmpty())
     m_actions.viewTools.first()->setChecked(hasDocument && activeEditor->lineWrapMode() != QPlainTextEdit::NoWrap);
-  const bool multiple = m_documents->count() > 1;
-  m_actions.tabNext->setEnabled(multiple);
-  m_actions.tabPrevious->setEnabled(multiple);
-  for (int index = 0; index < m_actions.tabSelect.size(); ++index) {
-    m_actions.tabSelect.at(index)->setEnabled(index < m_documents->count());
-  }
-}
-
-void EditorWindow::selectRelativeTab(const int delta) {
-  if (m_tabs->count() < 2) {
-    return;
-  }
-  selectTab((m_tabs->currentIndex() + delta + m_tabs->count()) %
-            m_tabs->count());
-}
-
-void EditorWindow::selectTab(const int index) {
-  if (index >= 0 && index < m_tabs->count()) {
-    m_tabs->setCurrentIndex(index);
-  }
 }
 
 void EditorWindow::newInteractively() {
-  const AddDocumentResult result = m_documents->addUntitled();
-  if (!result.ok()) {
-    showOperationError(tr("Could not create document"), result.operation);
-  }
+  if (m_application) (void)m_application->newWindow();
 }
 
 void EditorWindow::openInteractively() {
@@ -308,13 +257,13 @@ void EditorWindow::openInteractively() {
   persistRestoreState();
 }
 
-bool EditorWindow::saveDocument(const int index) {
-  DocumentController *document = m_documents->at(index);
+bool EditorWindow::saveDocument() {
+  DocumentController *document = m_document;
   if (!document) {
     return false;
   }
   if (document->state().isUntitled()) {
-    return saveDocumentAs(index);
+    return saveDocumentAs();
   }
   const DocumentOperation result = document->save();
   if (!result.ok()) {
@@ -328,8 +277,8 @@ bool EditorWindow::saveDocument(const int index) {
   return true;
 }
 
-bool EditorWindow::saveDocumentAs(const int index) {
-  DocumentController *document = m_documents->at(index);
+bool EditorWindow::saveDocumentAs() {
+  DocumentController *document = m_document;
   if (!document) {
     return false;
   }
@@ -342,16 +291,19 @@ bool EditorWindow::saveDocumentAs(const int index) {
   if (!path) {
     return false;
   }
-  DocumentOperation result = m_documents->saveAs(index, *path, false);
+  if (m_application && m_application->windowForPath(*path) &&
+      m_application->windowForPath(*path) != this) {
+    showOperationError(tr("Could not save document"),
+        {.error = DocumentError::AlreadyOpen,
+         .diagnostic = tr("That file is already open in another window")});
+    return false;
+  }
+  DocumentOperation result = document->saveAs(*path, false);
   if (result.error == DocumentError::DestinationExists) {
-    const auto answer = QMessageBox::question(
-        this, tr("Replace existing file?"),
-        tr("A file with this name already exists. Replace its contents?"),
-        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-    if (answer != QMessageBox::Yes) {
+    if (!m_dialogs->confirmReplace()) {
       return false;
     }
-    result = m_documents->saveAs(index, *path, true);
+    result = document->saveAs(*path, true);
   }
   if (!result.ok()) {
     showOperationError(tr("Could not save document"), result);
@@ -362,9 +314,9 @@ bool EditorWindow::saveDocumentAs(const int index) {
   return true;
 }
 
-void EditorWindow::reloadInteractively(const int index) {
-  DocumentController *document = m_documents->at(index);
-  if (!document || confirmDocumentClose(index) == PendingAction::Cancel) {
+void EditorWindow::reloadInteractively() {
+  DocumentController *document = m_document;
+  if (!document || confirmDocumentClose() == PendingAction::Cancel) {
     return;
   }
   const DocumentOperation result = document->openPath(document->state().path());
@@ -375,7 +327,7 @@ void EditorWindow::reloadInteractively(const int index) {
 
 void EditorWindow::showOperationError(const QString &title,
                                       const DocumentOperation &result) {
-  QMessageBox::critical(this, title,
+  m_dialogs->operationError(title,
                         result.diagnostic.isEmpty() ? tr("The operation failed")
                                                     : result.diagnostic);
 }

@@ -61,6 +61,7 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   m_editor->setTabChangesFocus(false);
   m_editor->setLineWrapMode(QPlainTextEdit::WidgetWidth);
   static_cast<DocumentEditor *>(m_editor)->setBaseFont(m_appearance.editorFont);
+  static_cast<DocumentEditor *>(m_editor)->setHighContrast(m_appearance.highContrast);
   layout->addWidget(m_externalBanner);
   layout->addWidget(m_editor, 1);
   setTabOrder(m_editor, m_reloadButton);
@@ -81,7 +82,11 @@ void EditorDocumentView::applyAppearance(const EditorAppearance &appearance) {
   setPalette(appearance.palette);
   setFont(appearance.interfaceFont);
   static_cast<DocumentEditor *>(m_editor)->setBaseFont(appearance.editorFont);
-  updateExternalBanner(m_renderedExternalState);
+  static_cast<DocumentEditor *>(m_editor)->setHighContrast(appearance.highContrast);
+  // Repaint an unchanged warning when live appearance changes.
+  const auto external = m_renderedExternalState;
+  m_renderedExternalState = ExternalState::InSync;
+  updateExternalBanner(external);
 }
 
 void EditorDocumentView::connectState() {

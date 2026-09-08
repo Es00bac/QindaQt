@@ -33,6 +33,9 @@ signals:
   void replaceAllRequested();
   void closed();
 
+protected:
+  void changeEvent(QEvent *event) override;
+
 private:
   QWidget *m_replaceFields = nullptr;
   QLineEdit *m_find = nullptr;

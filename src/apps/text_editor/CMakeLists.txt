@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(KF6SyntaxHighlighting REQUIRED)
+find_package(KF6SyntaxHighlighting REQUIRED GLOBAL)
 qt_add_library(qindaqt_editor_support STATIC)
 target_sources(
     qindaqt_editor_support
@@ -19,9 +19,13 @@ target_sources(
         restore/text_editor_restore_policy.cpp
         ui/document_title.cpp
         ui/document_editor.cpp
+        ui/document_dialogs.cpp
         ui/editor_appearance.cpp
         ui/editor_document_view.cpp
         ui/find_replace_bar.cpp
+        ui/editor_application.cpp
+        ui/editor_application_restore.cpp
+        ui/editor_window_chrome.cpp
         ui/editor_window_actions.cpp
         ui/editor_window_editing.cpp
         ui/editor_window_find.cpp
@@ -45,9 +49,12 @@ target_sources(
         restore/text_editor_restore_policy.h
         ui/document_title.h
         ui/document_editor.h
+        ui/document_dialogs.h
         ui/editor_appearance.h
         ui/editor_document_view.h
         ui/find_replace_bar.h
+        ui/editor_icon.h
+        ui/editor_application.h
         ui/editor_window.h
 )
 target_link_libraries(qindaqt_editor_support PRIVATE qindaqt_settings_client KF6::SyntaxHighlighting)
@@ -56,6 +63,7 @@ target_link_libraries(
     qindaqt_editor_support
     PUBLIC
         QindaQt::AppShell
+        QindaQt::ControlsQml
         QindaQt::DesignTokens
         qindaqt_themes
         Qt6::Core
@@ -102,7 +110,7 @@ set_target_properties(
     qindaqt-editor
     PROPERTIES
         CXX_EXTENSIONS OFF
-        INSTALL_RPATH "$ORIGIN/${qindaqt_editor_qml_relative_path}/QindaQt/AppShell"
+        INSTALL_RPATH "$ORIGIN/${qindaqt_editor_qml_relative_path}/QindaQt/AppShell;$ORIGIN/${qindaqt_editor_qml_relative_path}/QindaQt/Controls"
 )
 qindaqt_enable_warnings(qindaqt-editor)
 

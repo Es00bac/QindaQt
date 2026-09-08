@@ -12,10 +12,10 @@ class QPushButton;
 
 namespace QindaQt::Apps::TextEditor {
 
-// One tab's presentation. The view owns one QTextDocument/undo stack and
+// One document's presentation. The view owns one QTextDocument/undo stack and
 // projects exactly one controller; it never chooses close/save consent or
-// touches storage. Switching tabs therefore cannot exchange edit history or
-// external-change truth between documents.
+// touches storage. Ordinary windows cannot exchange edit history or external
+// change truth through this view.
 class EditorDocumentView final : public QWidget {
   Q_OBJECT
 

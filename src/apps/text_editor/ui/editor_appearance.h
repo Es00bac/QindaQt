@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/design_tokens/accessibility_inputs.h"
+
 #include <QColor>
 #include <QFont>
 #include <QPalette>
@@ -19,10 +21,14 @@ struct EditorAppearance final {
   QFont interfaceFont;
   QFont editorFont;
   QColor focusRing;
+  QColor divider;
+  QColor hover;
+  QColor pressed;
   QColor warningBackground;
   QColor warningForeground;
   QColor dangerBackground;
   QColor dangerForeground;
+  bool highContrast = false;
   double mediumRadius = 0.0;
   QString sourceThemeId;
 };
@@ -40,7 +46,8 @@ struct AppearanceResult final {
 class EditorAppearanceAdapter final {
 public:
   [[nodiscard]] static AppearanceResult
-  fromTheme(const QindaQt::Themes::ThemeSpec &theme);
+  fromTheme(const QindaQt::Themes::ThemeSpec &theme,
+            QindaQt::DesignTokens::AccessibilityInputs accessibility = {});
 };
 
 } // namespace QindaQt::Apps::TextEditor

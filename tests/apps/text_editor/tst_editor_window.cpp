@@ -2,6 +2,7 @@
 #include "document/local_document_store.h"
 #include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
+#include "ui/editor_application.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
@@ -87,8 +88,8 @@ private slots:
   void externalChangeShowsNonDestructiveBanner();
   void announcementsFollowExternalTransitionsOnly();
   void hidingBannerRestoresEditorFocus();
-  void tabsKeepUndoAndSelectionIndependent();
-  void tabActionsTraverseAndExposeAccessibility();
+  void windowsKeepUndoAndSelectionIndependent();
+  void windowHasNoTabControls();
   void firstFrameSignalIsOneShot();
 };
 
@@ -149,25 +150,25 @@ void EditorWindowTest::appearanceTracksAllBuiltinThemes() {
 }
 
 void EditorWindowTest::viewToolsStayWithTheirDocument() {
-  EditorWindow window(localFactory(), appearance());
-  auto *first = window.editor();
-  auto *wrap = window.findChild<QAction *>(QStringLiteral("viewWordWrapAction"));
-  auto *zoom = window.findChild<QAction *>(QStringLiteral("viewZoomInAction"));
+  EditorApplication application(localFactory(), appearance(), nullptr, nullptr, {}, false);
+  QVERIFY(application.start());
+  auto *window = application.windows().first();
+  auto *first = window->editor();
+  auto *wrap = window->findChild<QAction *>(QStringLiteral("viewWordWrapAction"));
+  auto *zoom = window->findChild<QAction *>(QStringLiteral("viewZoomInAction"));
   QVERIFY(wrap); QVERIFY(zoom);
   const auto size = first->font().pointSizeF();
   wrap->trigger(); zoom->trigger();
   QCOMPARE(first->lineWrapMode(), QPlainTextEdit::NoWrap);
   QCOMPARE(first->font().pointSizeF(), size + 1);
   QVERIFY(!first->document()->isModified());
-  window.findChild<QAction *>(QStringLiteral("fileNewAction"))->trigger();
-  QVERIFY(window.editor() != first);
-  QCOMPARE(window.editor()->lineWrapMode(), QPlainTextEdit::WidgetWidth);
-  QCOMPARE(window.editor()->font().pointSizeF(), size);
-  QVERIFY(wrap->isChecked());
-  window.tabs()->setCurrentIndex(0);
+  window->findChild<QAction *>(QStringLiteral("fileNewAction"))->trigger();
+  QCOMPARE(application.windows().size(), 2);
+  auto *second = application.windows().last()->editor();
+  QCOMPARE(second->lineWrapMode(), QPlainTextEdit::WidgetWidth);
+  QCOMPARE(second->font().pointSizeF(), size);
   QVERIFY(!wrap->isChecked());
-  QCOMPARE(window.editor(), first);
-  window.applyAppearance(appearance());
+  application.applyAppearance(appearance());
   QCOMPARE(first->font().pointSizeF(), size + 1);
 }
 
@@ -352,7 +353,7 @@ void EditorWindowTest::hidingBannerRestoresEditorFocus() {
   QTRY_VERIFY(window.editor()->hasFocus());
 }
 
-void EditorWindowTest::tabsKeepUndoAndSelectionIndependent() {
+void EditorWindowTest::windowsKeepUndoAndSelectionIndependent() {
   QTemporaryDir directory;
   QVERIFY(directory.isValid());
   const QString first = directory.filePath(QStringLiteral("first.txt"));
@@ -366,66 +367,33 @@ void EditorWindowTest::tabsKeepUndoAndSelectionIndependent() {
   QCOMPARE(file.write("second"), qint64(6));
   file.close();
 
-  EditorWindow window(localFactory(), appearance());
-  QVERIFY(window.openDocuments({first, second, first}));
-  QCOMPARE(window.tabs()->count(), 2);
-  QCOMPARE(window.tabs()->currentIndex(), 0);
-  window.editor()->moveCursor(QTextCursor::End);
-  window.editor()->insertPlainText(QStringLiteral(" one"));
-  window.tabs()->setCurrentIndex(1);
-  window.editor()->moveCursor(QTextCursor::End);
-  window.editor()->insertPlainText(QStringLiteral(" two"));
-  window.editor()->undo();
-  QCOMPARE(window.editor()->toPlainText(), QStringLiteral("second"));
-  window.tabs()->setCurrentIndex(0);
-  QCOMPARE(window.editor()->toPlainText(), QStringLiteral("first one"));
-  window.editor()->undo();
-  QCOMPARE(window.editor()->toPlainText(), QStringLiteral("first"));
+  EditorApplication application(localFactory(), appearance(), nullptr, nullptr, {}, false);
+  QVERIFY(application.start({first, second, first}));
+  QCOMPARE(application.windows().size(), 2);
+  auto *one = application.windowForPath(first)->editor();
+  auto *two = application.windowForPath(second)->editor();
+  one->moveCursor(QTextCursor::End);
+  one->insertPlainText(QStringLiteral(" one"));
+  two->moveCursor(QTextCursor::End);
+  two->insertPlainText(QStringLiteral(" two"));
+  two->undo();
+  QCOMPARE(two->toPlainText(), QStringLiteral("second"));
+  QCOMPARE(one->toPlainText(), QStringLiteral("first one"));
+  one->undo();
+  QCOMPARE(one->toPlainText(), QStringLiteral("first"));
 }
 
-void EditorWindowTest::tabActionsTraverseAndExposeAccessibility() {
-  QTemporaryDir directory;
-  QVERIFY(directory.isValid());
-  const QString first = directory.filePath(QStringLiteral("first.txt"));
-  const QString second = directory.filePath(QStringLiteral("second.txt"));
-  for (const QString &path : {first, second}) {
-    QFile file(path);
-    QVERIFY(file.open(QIODevice::WriteOnly));
-    QCOMPARE(file.write("content"), qint64(7));
-  }
+void EditorWindowTest::windowHasNoTabControls() {
   EditorWindow window(localFactory(), appearance());
-  QVERIFY(window.openDocuments({first, second}));
-  window.tabs()->setCurrentIndex(0);
-  auto *tabBar = window.tabs()->tabBar();
-  QCOMPARE(tabBar->accessibleName(), QStringLiteral("Document tabs"));
-  QVERIFY(!tabBar->accessibleDescription().isEmpty());
-  QAccessibleInterface *tabList =
-      QAccessible::queryAccessibleInterface(tabBar);
-  QVERIFY(tabList != nullptr);
-  QCOMPARE(tabList->role(), QAccessible::PageTabList);
-  QVERIFY(tabList->childCount() >= 2);
-  QAccessibleInterface *firstAccessibleTab = tabList->child(0);
-  QVERIFY(firstAccessibleTab != nullptr);
-  QCOMPARE(firstAccessibleTab->role(), QAccessible::PageTab);
-  QVERIFY(!firstAccessibleTab->text(QAccessible::Name).isEmpty());
-  QVERIFY(firstAccessibleTab->state().selectable);
-  QVERIFY(firstAccessibleTab->state().selected);
-  auto *next = window.findChild<QAction *>(QStringLiteral("tabNextAction"));
-  auto *previous =
-      window.findChild<QAction *>(QStringLiteral("tabPreviousAction"));
-  auto *secondTab =
-      window.findChild<QAction *>(QStringLiteral("tabSelect2Action"));
-  QCOMPARE(next->shortcut(), QKeySequence(QStringLiteral("Ctrl+Tab")));
-  QCOMPARE(previous->shortcut(),
-           QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
-  QCOMPARE(secondTab->shortcut(), QKeySequence(QStringLiteral("Ctrl+2")));
-  next->trigger();
-  QCOMPARE(window.tabs()->currentIndex(), 1);
-  QVERIFY(!firstAccessibleTab->state().selected);
-  next->trigger();
-  QCOMPARE(window.tabs()->currentIndex(), 0);
-  secondTab->trigger();
-  QCOMPARE(window.tabs()->currentIndex(), 1);
+  QVERIFY(window.findChildren<QTabWidget *>().isEmpty());
+  QVERIFY(window.findChildren<QTabBar *>().isEmpty());
+  QVERIFY(!window.findChild<QMenu *>(QStringLiteral("tabsMenu")));
+  QVERIFY(!window.findChild<QAction *>(QStringLiteral("tabNextAction")));
+  QVERIFY(!window.findChild<QAction *>(QStringLiteral("fileCloseTabAction")));
+  auto *close = window.findChild<QAction *>(QStringLiteral("fileCloseWindowAction"));
+  QVERIFY(close);
+  QCOMPARE(close->shortcut(), QKeySequence(QStringLiteral("Ctrl+W")));
+  QVERIFY(!window.editor()->accessibleName().isEmpty());
 }
 
 void EditorWindowTest::firstFrameSignalIsOneShot() {

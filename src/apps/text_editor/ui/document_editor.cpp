@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document_editor.h"
 #include <KSyntaxHighlighting/Definition>
+#include <KSyntaxHighlighting/Format>
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/SyntaxHighlighter>
 #include <KSyntaxHighlighting/Theme>
@@ -11,6 +12,30 @@
 
 namespace QindaQt::Apps::TextEditor {
 namespace {
+class ReadableSyntaxHighlighter final : public KSyntaxHighlighting::SyntaxHighlighter {
+public:
+  explicit ReadableSyntaxHighlighter(QTextDocument *document) : SyntaxHighlighter(document) {}
+  void setHighContrast(bool enabled) {
+    m_highContrast = enabled;
+    rehighlight();
+  }
+protected:
+  void applyFormat(int offset, int length, const KSyntaxHighlighting::Format &syntax) override {
+    SyntaxHighlighter::applyFormat(offset, length, syntax);
+    auto value = QSyntaxHighlighter::format(offset);
+    // AGENT-GUARD: Some Markdown heading definitions yield a transparent brush.
+    // A text editor must show every character; invisible syntax text defeats
+    // review/editing. Keep semantic text color and preserve weight/emphasis.
+    if (m_highContrast || (value.foreground().style() != Qt::NoBrush &&
+                           value.foreground().color().alpha() == 0)) {
+      value.clearForeground();
+      if (m_highContrast) value.clearBackground();
+      setFormat(offset, length, value);
+    }
+  }
+private:
+  bool m_highContrast = false;
+};
 class LineNumberGutter final : public QWidget {
 public:
   explicit LineNumberGutter(DocumentEditor *editor)
@@ -27,7 +52,7 @@ private:
 } // namespace
 struct DocumentEditor::Syntax {
   KSyntaxHighlighting::Repository repository;
-  KSyntaxHighlighting::SyntaxHighlighter highlighter;
+  ReadableSyntaxHighlighter highlighter;
   explicit Syntax(QTextDocument *document) : highlighter(document) {}
 };
 DocumentEditor::DocumentEditor(QWidget *parent)
@@ -44,12 +69,14 @@ DocumentEditor::DocumentEditor(QWidget *parent)
           });
   connect(this, &QPlainTextEdit::cursorPositionChanged, this,
           &DocumentEditor::highlightCurrentLine);
+  setFrameShape(QFrame::NoFrame);
+  document()->setDocumentMargin(12);
   setBaseFont(font());
   highlightCurrentLine();
 }
 DocumentEditor::~DocumentEditor() = default;
 int DocumentEditor::gutterWidth() const {
-  return 16 + fontMetrics().horizontalAdvance(QLatin1Char('9')) *
+  return 24 + fontMetrics().horizontalAdvance(QLatin1Char('9')) *
                   static_cast<int>(QString::number(blockCount()).size());
 }
 void DocumentEditor::updateGutter() {
@@ -107,6 +134,10 @@ QString DocumentEditor::syntaxName() const {
   const auto definition = m_syntax->highlighter.definition();
   return definition.isValid() ? definition.translatedName() : tr("Plain text");
 }
+void DocumentEditor::setHighContrast(bool enabled) {
+  m_syntax->highlighter.setHighContrast(enabled);
+}
+
 void DocumentEditor::setBaseFont(const QFont &value) {
   m_baseFont = value;
   QFont scaled = value;

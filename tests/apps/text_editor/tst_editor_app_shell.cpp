@@ -153,14 +153,14 @@ private slots:
 
 void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
   const QList<ActionSpec> catalog = editorActionCatalog();
-  QCOMPARE(catalog.size(), 36);
+  QCOMPARE(catalog.size(), 25);
 
   QSet<QString> expectedIds{
       QStringLiteral("edit.go-to-line"), QStringLiteral("edit.indent"), QStringLiteral("edit.unindent"),
       QStringLiteral("view.word-wrap"), QStringLiteral("view.zoom-in"), QStringLiteral("view.zoom-out"), QStringLiteral("view.zoom-reset"),
       QString::fromLatin1(AppShellActionIds::FileNew),
       QString::fromLatin1(AppShellActionIds::FileOpen),
-      QString::fromLatin1(AppShellActionIds::FileCloseTab),
+      QString::fromLatin1(AppShellActionIds::FileCloseWindow),
       QString::fromLatin1(AppShellActionIds::FileSave),
       QString::fromLatin1(AppShellActionIds::FileSaveAs),
       QString::fromLatin1(AppShellActionIds::FileQuit),
@@ -175,13 +175,8 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
       QString::fromLatin1(AppShellActionIds::EditFindNext),
       QString::fromLatin1(AppShellActionIds::EditFindPrevious),
       QString::fromLatin1(AppShellActionIds::EditFindClose),
-      QString::fromLatin1(AppShellActionIds::TabNext),
-      QString::fromLatin1(AppShellActionIds::TabPrevious),
       QString::fromLatin1(AppShellActionIds::RestoreDocuments),
   };
-  for (int index = 1; index <= 9; ++index) {
-    expectedIds.insert(QStringLiteral("tabs.select-%1").arg(index));
-  }
   QSet<QString> actualIds;
   for (const ActionSpec &action : catalog) {
     actualIds.insert(action.id);
@@ -189,7 +184,6 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
     QVERIFY(action.menuId == QStringLiteral("file") ||
             action.menuId == QStringLiteral("edit") ||
             action.menuId == QStringLiteral("view") ||
-            action.menuId == QStringLiteral("tabs") ||
             action.menuId == QStringLiteral("settings"));
   }
   QCOMPARE(actualIds, expectedIds);
@@ -219,7 +213,7 @@ void EditorAppShellTest::
   EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   const QVariantList menus = window.appShellCoordinator().menus();
-  QCOMPARE(menus.size(), 5);
+  QCOMPARE(menus.size(), 4);
 
   const QVariantMap fileNew =
       findAction(menus, QStringLiteral("file"),
