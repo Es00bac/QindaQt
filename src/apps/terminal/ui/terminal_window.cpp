@@ -79,6 +79,8 @@ void TerminalWindow::applyAppearance(const TerminalViewAppearance &appearance) {
     child->setPalette(appearance.windowPalette);
     child->setFont(appearance.interfaceFont);
   }
+  setWindowIcon(QindaQt::Controls::applicationIcon(QStringLiteral("utilities-terminal")));
+  m_findBar->refreshIcons();
   // Restore renderer-owned fonts after styling the surrounding widgets.
   m_sessions->setAppearance(appearance);
   if (m_activeSession)

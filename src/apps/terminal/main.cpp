@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QIcon>
 #include <QMenuBar>
 #include <QProcessEnvironment>
 #include <QRegularExpression>
@@ -205,6 +206,7 @@ public:
 
 private:
   void apply() {
+    QIcon::setThemeName(controller.theme().iconTheme);
     const auto adapted =
         TerminalAppearanceAdapter::fromTheme(controller.theme(),
                                               controller.accessibilityInputs());
@@ -269,6 +271,7 @@ int main(int argc, char **argv) {
                  qPrintable(appearance.diagnostic));
     return 3;
   }
+  QIcon::setThemeName(theme.theme.iconTheme);
   application.setPalette(appearance.appearance->windowPalette);
   application.setFont(appearance.appearance->interfaceFont);
   if (parser.isSet(QStringLiteral("check-theme"))) {

@@ -443,7 +443,8 @@ host-compositor interaction remain outside S2.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
 - The branded application and command SVGs use the public Controls icon
-  catalog, with semantic tint for essential icon-only search controls. The
+  catalog, honoring the selected theme’s icon catalog on startup and live
+  changes, with semantic tint for essential icon-only search controls. The
   global-menu export is composed through the shared first-party AppShell entry and proven
   by private-bus rows only; an installed nested-session qualification remains
   unbuilt.
