@@ -119,3 +119,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0104: Serialize production shell rendering](0104-serialize-shell-rendering.md)
 - [ADR-0105: Delegate idle display-off to PowerDevil](0105-delegate-idle-display-off-to-powerdevil.md)
 - [ADR-0106: Accept an equivalent Gentoo Power Profiles provider](0106-accept-equivalent-power-profiles-provider.md)
+- [ADR-0107: Delegate Print to Spectacle](0107-delegate-print-to-spectacle.md)

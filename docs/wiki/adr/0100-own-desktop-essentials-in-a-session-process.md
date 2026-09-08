@@ -4,7 +4,7 @@
 - **Date:** 2026-09-07
 - **Owners:** Session supervision and platform
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0106](0106-delegate-print-to-spectacle.md) (Print ownership only)
 
 ## Context
 

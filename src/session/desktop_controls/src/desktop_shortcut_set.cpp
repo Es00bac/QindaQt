@@ -69,12 +69,14 @@ DesktopShortcutSet::DesktopShortcutSet(ShortcutRegistrar &registrar,
                         callback();
                     }
                 });
-        if (!options.registerBrightness
-            && (action == DesktopShortcutAction::BrightnessUp
-                || action == DesktopShortcutAction::BrightnessDown)) {
-            // AGENT-GUARD: PowerDevil owns these keys and emits the public
-            // brightness feedback signal; registering a second KGlobalAccel
-            // action would make activation and OSD ownership ambiguous.
+        if ((!options.registerBrightness
+             && (action == DesktopShortcutAction::BrightnessUp
+                 || action == DesktopShortcutAction::BrightnessDown))
+            || (!options.registerScreenshot
+                && action == DesktopShortcutAction::TakeScreenshot)) {
+            // AGENT-GUARD: PowerDevil owns brightness and Spectacle owns Print
+            // in the production session. A second KGlobalAccel action silently
+            // loses a user or provider binding and makes ownership ambiguous.
             continue;
         }
         const auto registration = registrar.registerShortcut(
