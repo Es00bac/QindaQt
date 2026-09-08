@@ -346,6 +346,9 @@ uses arrow/close controls with accessible names and tooltips, a clearable field,
 and a second row for search options and wrapping result text. Profile forms and
 status chrome consume QST surfaces, rounded outlines and explicit focus rings;
 the renderer's own text and selection styling stay confined to its adapter.
+A newly opened profile modal explicitly takes its owning window's palette and
+font, including native list and form controls; this prevents mixed light/dark
+roles before the next global appearance update.
 
 The production adapter installs that document under a unique atomic
 `.colorscheme` cache path (replacing and removing the prior live file), the suffix required by qtermwidget 2.4's custom-file

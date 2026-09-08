@@ -31,6 +31,7 @@ QString terminalChromeStyleSheet(const QindaQt::DesignTokens::DesignTokens &t) {
       "QWidget#terminalFindBar QToolButton:focus { border: 1px solid %5; }"
       "QDialog#terminalProfileDialog QListWidget { border: none; background: %1; padding: 6px; }"
       "QDialog#terminalProfileDialog QListWidget::item { padding: 10px; border-radius: %7px; }"
+      "QDialog#terminalProfileDialog QListWidget::item:selected { background: %8; color: %9; }"
       "QDialog#terminalProfileDialog QPushButton { padding: 6px 12px; }")
       .arg(raised, base, text, outline, focus, hover, radius, accent, accentInk);
 }
