@@ -1,5 +1,54 @@
 # Integration handoff
 
+## First-party material and window ownership checkpoint (September 8)
+
+Runtime source `c1952e90a84005aa3ce3aee07cea1b6d89b6a35c` implements the
+reviewed redesign. Editor owns one document per ordinary window, with independent
+close consent, restore inventory and exported menus. File Manager defaults to a
+visual grid with bounded asynchronous image thumbnails, concise breadcrumbs and
+original artwork. Terminal retains one PTY per window and now has independently
+readable ANSI, search and profile-dialog colors. All three use themed icons;
+QindaQt containers retain exclusive ownership of grouping, tabs and splits.
+
+Pearl, Smoked Plum and Velvet replace the built-in palette values while keeping
+persisted theme IDs. Shared icons, opaque reading surfaces with translucent
+highlights, confirmed font/accessibility inputs and high-contrast fallbacks are
+covered by ADR 0109–0112. Existing accepted ADR 0098–0107 remain unchanged.
+
+The full native Debug build passed with 24 parallel jobs. The final application
+and shared-runtime selection passes 121/121. Fresh native app fixtures pass all
+four observed output rows: 1080p 100%, WUXGA 100%, 1440p 125%, 1080p 150%, including
+compact, light/dark/high-contrast views and actual Terminal PTY input. Independent
+reviews accepted the exact app candidates and inspected the repaired captures.
+These artifacts live in the ignored `.cache/qq-material/build/dev` tree.
+
+Broader verification is **not** a clean release-suite claim. TTY and socket-path
+failures were rerun with offscreen defaults and a short private TMPDIR. Five
+Settings installed-route poison checks discover ambient host QML modules; six
+notification-live rows fail during isolated session qualification. Fractional
+full-desktop topology checks reject mismatched geometry. These gates remain
+separate from the passing app matrix; do not mark the entire desktop release
+qualified from this checkpoint. Source-shape checks, 310 SVG validation, strict
+MkDocs and the 215-page link checker pass.
+
+The dated `gui-wm/qindaqt-desktop-0.1.0_pre20260908` recipe pins the exact runtime
+source above. Its local source archive is Manifest-verified; no public source
+push is implied. Portage's plan resolves one upgrade on this systemd host.
+A signed rollback gpkg of the installed September 7 revision is retained using
+the existing local signing key. The new package built successfully with 24 jobs. Portage's gpkg reader verified
+its required signatures and extracted its payload for inspection. SHA256:
+`a8a18ee6b8a87682f9ba3daf41d5359b489f123cf3c243525b89b53d8bd923a8`.
+The extracted image passes the exact KWin build/install release contract;
+Editor/Terminal resolve their installed themes and File Manager's production
+mutation UI probe succeeds. The actual packaged Terminal shell confirms a real
+PTY on stdin/stdout on private native Wayland, and the packaged Editor keeps a
+fixture document window live. Normal-scale desktop 1080p/WUXGA/dual interaction and
+both panel-visibility rows pass after the reviewed Gentoo `lib64` harness repair.
+Host merge and fresh-login acceptance remain pending; the inactive tty7 session
+still owns Firefox, Thunderbird and other Codex workers and must not be killed
+as automatic test cleanup. Follow the [Gentoo install procedure](wiki/development/gentoo-desktop.md).
+
+
 ## September 7 checkpoint complete
 
 The installed Gentoo r1 checkpoint is released as `v0.1.0-pre.20260907`.

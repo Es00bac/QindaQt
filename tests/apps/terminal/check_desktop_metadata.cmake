@@ -4,7 +4,7 @@ foreach(required
         "Name=QindaQt Terminal"
         "GenericName=Terminal Emulator"
         "Exec=qindaqt-terminal"
-        "Icon=utilities-terminal"
+        "Icon=org.qindaqt.Terminal"
         "Categories=Qt;System;TerminalEmulator;"
         "Terminal=false"
         "StartupWMClass=qindaqt-terminal")
