@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 19);
+  QCOMPARE(actions.size(), 24);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -38,6 +38,9 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("file.empty-trash"), QStringLiteral("edit.undo"),
       QStringLiteral("operation.cancel"), QStringLiteral("edit.select-all"),
       QStringLiteral("view.show-hidden"), QStringLiteral("view.grid-mode"),
+      QStringLiteral("view.details-mode"), QStringLiteral("view.zoom-in"),
+      QStringLiteral("view.zoom-out"), QStringLiteral("view.zoom-reset"),
+      QStringLiteral("view.filter"),
       QStringLiteral("view.focus-location"), QStringLiteral("go.home"),
       QStringLiteral("bookmark.add"), QStringLiteral("go.back"),
       QStringLiteral("go.forward"), QStringLiteral("go.up"), QStringLiteral("view.refresh")};
@@ -70,7 +73,7 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QVERIFY(!selectAll->checkable);
   QVERIFY(!selectAll->destructive);
 
-  // AGENT-CONTRACT: The two checkable view actions mirror
+  // AGENT-CONTRACT: The checkable view actions mirror
   // NavigationController's showHidden/viewMode state; main.cpp syncs their
   // checked flags on presentationChanged, so the checkable bit and shortcut
   // here are part of the UI contract the S2 UI probe drives.

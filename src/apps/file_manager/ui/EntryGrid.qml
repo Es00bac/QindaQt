@@ -27,6 +27,8 @@ Item {
     }
     onIconSizeChanged: keyboardNavigation.scheduleReveal()
 
+    readonly property alias focusItem: gridView
+
     function focusView() { gridView.forceActiveFocus() }
 
     function currentEntry() {

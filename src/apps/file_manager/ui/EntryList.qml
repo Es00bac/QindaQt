@@ -28,6 +28,8 @@ Item {
     }
     onIconSizeChanged: keyboardNavigation.scheduleReveal()
 
+    readonly property alias focusItem: listView
+
     function focusView() { listView.forceActiveFocus() }
 
     function currentEntry() {
