@@ -833,8 +833,10 @@ The integrated controls build, shortcut gate, three runner contracts, and strict
 documentation build pass. The final `0.1.0_pre20260907-r1` package is installed
 from source `8486e058`. The actual installed launcher/plugin passed two-session
 Save/Reopen, exact layout and manual window assignment, and identity re-save.
-Native CI boot results and the release tag remain open. Installed idle-preference verification passes: Settings1 reports ten
-minutes and the active PowerDevil profile enables display-off after 600 seconds. The real KDE privilege prompt appeared
+Native CI boot results and the release tag remain open. Installed idle-preference
+verification passes: changing 10 → 11 → default 10 through Settings1 updates
+PowerDevil profiles 600 → 660 → 600 seconds through the production binding.
+The real KDE privilege prompt appeared
 in installed session 39; the user corroborated it, and canceling the pending
 request left the agent and desktop healthy.
 

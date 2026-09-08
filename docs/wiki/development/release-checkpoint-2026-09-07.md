@@ -40,9 +40,11 @@ tests also cover correcting duplicate choices.
 
 A private installed-session check exercised real volume changes, shell
 feedback, and a decoded Spectacle capture. The real desktop session showed its
-privilege prompt, and its Settings1 idle value matched PowerDevil's active
-profile. Separate private checks exercised real PowerDevil idle inhibition
-and display-off after inhibition ended. This evidence does not claim a hardware
+privilege prompt. A private installed-session check changed the idle setting
+from 10 to 11 minutes and removed the override: the real desktop-controls
+process updated all PowerDevil profiles from 600 to 660 and back to 600 seconds
+without a diagnostic refresh call. Separate private checks exercised real
+PowerDevil idle inhibition and display-off after inhibition ended. This evidence does not claim a hardware
 matrix or unrestricted automatic application-session restoration.
 
 See [Gentoo installation](gentoo-desktop.md), the [release procedure](releases.md),
