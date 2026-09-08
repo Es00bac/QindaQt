@@ -99,6 +99,22 @@ def _stop(processes: list[subprocess.Popen[str]]) -> None:
                 process.wait(timeout=2)
 
 
+def _prepare_service_cache(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
+    """Expose staged desktop entries through the private KService cache."""
+    menus = Path(environment["XDG_CONFIG_HOME"]) / "menus"
+    menus.mkdir(parents=True, exist_ok=True)
+    (menus / "applications.menu").write_text(
+        '<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN" '
+        '"http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">'
+        "<Menu><Name>Applications</Name><DefaultAppDirs/><Include><All/></Include></Menu>",
+        encoding="utf-8")
+    cache = subprocess.run([str(arguments.kbuildsycoca), "--noincremental"],
+                           env=environment, capture_output=True, text=True,
+                           check=False, timeout=15)
+    if cache.returncode:
+        raise RuntimeError("private KService cache setup failed: " + cache.stderr)
+
+
 def _inner(arguments: argparse.Namespace) -> int:
     if os.environ.get("QINDAQT_DAILY_CONTROLS_PRIVATE_BUS") != "1":
         raise SandboxContractError("inner runner refused a non-private daily-controls bus")
@@ -142,17 +158,7 @@ def _inner(arguments: argparse.Namespace) -> int:
         # KWin resolves restricted interfaces through KApplicationTrader. The
         # private root deliberately omits host /etc, so provide the smallest
         # normal XDG applications menu before rebuilding the private cache.
-        menus = Path(environment["XDG_CONFIG_HOME"]) / "menus"
-        menus.mkdir(parents=True, exist_ok=True)
-        (menus / "applications.menu").write_text(
-            '<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN" '
-            '"http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">'
-            "<Menu><Name>Applications</Name><DefaultAppDirs/><Include><All/></Include></Menu>",
-            encoding="utf-8")
-        cache = subprocess.run([str(arguments.kbuildsycoca), "--noincremental"],
-                               env=environment, capture_output=True, text=True, check=False, timeout=15)
-        if cache.returncode:
-            raise RuntimeError("private KService cache setup failed: " + cache.stderr)
+        _prepare_service_cache(arguments, environment)
         processes.append(_run([str(stage.executables["settings-service"])], environment, "settings"))
         processes.append(_run([str(stage.executables["audio-service"])], environment, "audio"))
         time.sleep(0.2)
