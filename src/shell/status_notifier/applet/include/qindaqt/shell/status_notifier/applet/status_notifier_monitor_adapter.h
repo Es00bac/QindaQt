@@ -61,6 +61,18 @@ public:
     [[nodiscard]] QindaQt::StatusNotifier::RegistryOutcome contextMenu(
         const QindaQt::StatusNotifier::OwnerKey &target, int x, int y) override;
 
+    [[nodiscard]] bool itemIsMenu(const QindaQt::StatusNotifier::OwnerKey &target) const override;
+    [[nodiscard]] bool hasExportedMenu(const QindaQt::StatusNotifier::OwnerKey &target) const override;
+    [[nodiscard]] QVariantMap menuState(const QindaQt::StatusNotifier::OwnerKey &target) const override;
+    [[nodiscard]] QindaQt::StatusNotifier::RegistryOutcome openMenu(
+        const QindaQt::StatusNotifier::OwnerKey &target, int x, int y) override;
+    [[nodiscard]] QindaQt::StatusNotifier::RegistryOutcome aboutToShowMenu(
+        const QindaQt::StatusNotifier::OwnerKey &target, quint64 revision, int id) override;
+    [[nodiscard]] QindaQt::StatusNotifier::RegistryOutcome invokeMenu(
+        const QindaQt::StatusNotifier::OwnerKey &target, quint64 revision, int id) override;
+    [[nodiscard]] QindaQt::StatusNotifier::RegistryOutcome scroll(
+        const QindaQt::StatusNotifier::OwnerKey &target, int delta, const QString &orientation) override;
+
     // The contract-prescribed acknowledgement transition: clears a pending
     // registry degradation marker and emits changed(); a no-op (with no
     // notification) when the registry is not degraded.

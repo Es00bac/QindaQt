@@ -47,12 +47,20 @@ void DbusMenuClientTest::privateBusFencesRevisionsAndDoesNotReplayEvents()
     QTRY_COMPARE_WITH_TIMEOUT(changed.size(), 1, 5'000);
     QTRY_VERIFY_WITH_TIMEOUT(client.metadata().valid, 5'000);
     QCOMPARE(client.remoteRevision(), quint32{1});
+    QVERIFY(client.isLayoutCurrent());
+    client.aboutToShow(0);
+    QVERIFY(!client.isLayoutCurrent());
+    QTRY_COMPARE_WITH_TIMEOUT(exporter.lastAboutToShowId(), 0, 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(client.isLayoutCurrent(), 5'000);
+    client.refreshLayout();
+    QVERIFY(!client.isLayoutCurrent());
+    QTRY_VERIFY_WITH_TIMEOUT(client.isLayoutCurrent(), 5'000);
     QCOMPARE(client.snapshot().tree.items.first().text, QStringLiteral("File"));
 
     client.requestGroupProperties({1});
     client.aboutToShow(10);
     QTRY_COMPARE_WITH_TIMEOUT(exporter.groupPropertiesCallCount(), 1, 5'000);
-    QTRY_COMPARE_WITH_TIMEOUT(exporter.aboutToShowCallCount(), 1, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(exporter.aboutToShowCallCount(), 2, 5'000);
     const int callsBeforePropertiesSignal = exporter.layoutCallCount();
     Q_EMIT exporter.ItemsPropertiesUpdated(
         {{.id = 1, .properties = {{QStringLiteral("enabled"), false}}}}, {});
@@ -62,6 +70,7 @@ void DbusMenuClientTest::privateBusFencesRevisionsAndDoesNotReplayEvents()
     exporter.announceLayout(2);
     QTRY_VERIFY_WITH_TIMEOUT(!rejected.isEmpty(), 5'000);
     QCOMPARE(client.snapshot().tree.items.first().text, QStringLiteral("File"));
+    QVERIFY(!client.isLayoutCurrent());
 
     exporter.setLayout(2, Test::menuLayout(QStringLiteral("_Changed")));
     exporter.announceLayout(2);
@@ -79,6 +88,7 @@ void DbusMenuClientTest::privateBusFencesRevisionsAndDoesNotReplayEvents()
     provider = QDBusConnection(QStringLiteral("qindaqt-retired-dbusmenu-provider"));
     QTRY_COMPARE_WITH_TIMEOUT(unavailable.size(), 1, 5'000);
     QVERIFY(!client.isStarted());
+    QVERIFY(!client.isLayoutCurrent());
     QDBusConnection::disconnectFromBus(clientConnectionName);
 }
 

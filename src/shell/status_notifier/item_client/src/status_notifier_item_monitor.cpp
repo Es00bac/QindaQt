@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <qindaqt/shell/status_notifier/item_client/status_notifier_item_monitor.h>
+#include "status_notifier_item_menu.h"
 
 #include <qindaqt/shell/status_notifier/status_notifier_limits.h>
 #include <qindaqt/shell/status_notifier/status_notifier_validation.h>
@@ -212,6 +213,7 @@ void StatusNotifierItemMonitor::handleItemUnregistered(const QString &serviceId)
     if (iterator->populationPending) {
         m_populationOutstanding--;
     }
+    delete iterator->menu;
     delete iterator->client;
     m_slots.erase(iterator);
     completePopulationIfDrained();
@@ -246,6 +248,7 @@ void StatusNotifierItemMonitor::handleNameOwnerChanged(const QString &name,
             if (iterator->populationPending) {
                 m_populationOutstanding--;
             }
+            delete iterator->menu;
             delete iterator->client;
             iterator = m_slots.erase(iterator);
         } else {
@@ -368,7 +371,12 @@ void StatusNotifierItemMonitor::handleDescriptorFetched(const ItemDescriptorFetc
     // when the descriptor is invalid or the reply never arrived; the registry
     // counts a rejected current-epoch admission as observing the exact live
     // key and keeps the last-known-good descriptor presented.
-    m_sink->registerItem(m_epoch, iterator->key, result.descriptor);
+    const auto outcome = m_sink->registerItem(m_epoch, iterator->key, result.descriptor);
+    if (outcome.accepted() && result.replyReceived && result.validation.accepted) {
+        iterator->menu->update(result.wire, result.descriptor.identity);
+    } else {
+        iterator->menu->rejectDescriptor();
+    }
     if (iterator->populationPending) {
         iterator->populationPending = false;
         m_populationOutstanding--;
@@ -422,6 +430,23 @@ void StatusNotifierItemMonitor::watchItemOwner(const QString &uniqueName,
             return m_registry.currentGeneration(uniqueName) == generationToCheck;
         },
         m_fetchTimeoutMs, this);
+    slot.menu = new StatusNotifierItemMenu(m_connection, key, m_fetchTimeoutMs,
+        [this, key](const QString &identity) {
+            const ItemSlot *current = nullptr;
+            const auto outcome = validateIntentForDispatch(key, RequestKind::ContextMenu, &current);
+            if (!outcome.accepted()) {
+                return outcome;
+            }
+            const auto descriptor = m_registry.find(key);
+            if (!descriptor || descriptor->identity != identity) {
+                return RegistryOutcome{RegistryStatus::InvalidRequest, QStringLiteral("menu-identity-changed")};
+            }
+            return outcome;
+        }, [this] { return nextMenuRevision(); }, this);
+    connect(slot.menu, &StatusNotifierItemMenu::changed, this,
+            &StatusNotifierItemMonitor::menuChanged);
+    connect(slot.client, &StatusNotifierItemClient::menuDetailsInvalidated,
+            slot.menu, &StatusNotifierItemMenu::invalidateDescriptor);
     connect(slot.client, &StatusNotifierItemClient::descriptorFetched, this,
             &StatusNotifierItemMonitor::handleDescriptorFetched);
     m_slots.insert(slotKey, slot);
@@ -453,6 +478,7 @@ RegistryOutcome StatusNotifierItemMonitor::validateIntentForDispatch(
 void StatusNotifierItemMonitor::resetEpochState()
 {
     for (auto iterator = m_slots.begin(); iterator != m_slots.end(); ++iterator) {
+        delete iterator->menu;
         delete iterator->client;
     }
     m_slots.clear();
