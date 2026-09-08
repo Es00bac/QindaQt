@@ -3476,3 +3476,13 @@ inferring renderer selection from environment settings.
 Workspace adoption policy tests are registered in `tests/compositor/WorkspaceTests.cmake`,
 included from the compositor test directory so relative sources and test properties
 retain the same scope.
+
+## Saved workspace lifecycle
+
+Run `ctest --test-dir build/dev -R '^shell\.workspace-reopen\.two-session$'
+with the native plugin enabled. The runner owns a temporary XDG data root and
+a fresh private session bus for each of its two compositor sessions. It drives
+the native dialogs through the development input device and verifies the
+stored document and resulting live layout. Its fixed 1080p coordinates are
+intentional; it does not establish a resolution matrix or host-session logout
+coverage. See [workspace acceptance](../architecture/workspaces.md#two-session-acceptance).
