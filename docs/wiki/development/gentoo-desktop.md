@@ -44,6 +44,15 @@ and no load cap after preserving completed objects. Existing Portage QA notices
 for `/usr/Tokens` and `/usr/bin/agent_input` also occur in the previous installed
 package; their placement remains a separate packaging cleanup.
 
+A later authorized shell-only refresh adopted the newly installed shell while
+preserving the compositor, supervisor and terminal/Codex processes. The running
+supervisor was verified against its signed package before targeting the exact
+shell PID, and its normal recovery launched the installed replacement. The tray
+watcher returned and Gabbee re-registered. This operation does not reload KWin
+plugins, existing application code or inherited session environment. Those
+boundaries still require application restart or a later login; never restart the
+compositor to refresh panels while applications must remain connected.
+
 The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
 runtime closure follows the production process contracts:
 

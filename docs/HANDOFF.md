@@ -1,5 +1,27 @@
 # Integration handoff
 
+## Live shell refresh without logout (September 8)
+
+After the verified r1 installation, the user requested a refresh while keeping
+the current desktop, terminals and another Codex session alive. The running
+supervisor was first matched byte-for-byte to the retained signed prior package;
+its source includes the paced shell recovery contract. A PID-fenced SIGTERM was
+sent only to the shell. The supervisor replaced shell `3481253` with `3892384`,
+whose executable matches the newly installed package. Supervisor `3481239` and
+compositor `3481176` retained their identities; all 52 captured terminal/Codex/
+related processes survived unchanged at the immediate check. The new shell owns
+the tray watcher, and Gabbee re-registered its existing item.
+
+This refresh adopts the new shell/tray UI without logout. It does not reload the
+compositor plugin, restart existing applications or replace the inherited
+session environment. New File Manager processes load their installed browsing
+changes. Compositor changes and session-wide Qt theme defaults still require a
+later login. Evidence lives in `.cache/hot-shell-refresh/`.
+
+The user clarified that Settings, widgets and panels should retain their
+current appearance. The remaining appearance/usability criticism is specific to
+File Manager; do not infer authorization for a broad Qt control reskin.
+
 ## Verified Portage delivery (September 8, r1)
 
 **Installed:** `gui-wm/qindaqt-desktop-0.1.0_pre20260908-r1`, built from immutable
