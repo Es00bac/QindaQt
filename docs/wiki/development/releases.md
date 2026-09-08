@@ -38,7 +38,7 @@ cmake -S . -B build/release-checkpoint -G Ninja \
   -DQINDAQT_BUILD_SHELL=ON \
   -DQINDAQT_BUILD_PRODUCTION_SHELL=ON \
   -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
-cmake --build build/release-checkpoint --parallel 2 \
+cmake --build build/release-checkpoint --parallel "$(nproc)" \
   --target src/all qindaqt-session-probe
 cmake --install build/release-checkpoint \
   --prefix "$PWD/build/release-checkpoint-stage"
