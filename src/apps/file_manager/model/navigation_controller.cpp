@@ -9,10 +9,13 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <array>
 
 namespace QindaQt::Apps::FileManager {
 
 namespace {
+
+constexpr std::array iconSizes{32, 48, 64, 96, 128};
 
 [[nodiscard]] NavigationStatus statusFor(const ListingResult &result) {
   if (result.ok()) {
@@ -78,14 +81,14 @@ void NavigationController::navigateTo(const QString &path) {
   const QString normalized = QDir::cleanPath(path);
   if (!m_history.hasCurrent()) {
     m_history.reset(normalized);
-    reload();
+    reload(true);
     emit navigationChanged();
     return;
   }
   if (!m_history.navigateTo(normalized)) {
     return; // already there: no reload, no history churn
   }
-  reload();
+  reload(true);
   emit navigationChanged();
 }
 
@@ -93,7 +96,7 @@ void NavigationController::goBack() {
   if (!m_history.goBack()) {
     return;
   }
-  reload();
+  reload(true);
   emit navigationChanged();
 }
 
@@ -101,7 +104,7 @@ void NavigationController::goForward() {
   if (!m_history.goForward()) {
     return;
   }
-  reload();
+  reload(true);
   emit navigationChanged();
 }
 
@@ -201,6 +204,32 @@ void NavigationController::setViewMode(const QString &mode) {
   emit presentationChanged();
 }
 
+void NavigationController::setNameFilter(const QString &filter) {
+  QString bounded = filter.left(maximumNameFilterLength);
+  if (bounded.size() < filter.size() && !bounded.isEmpty() &&
+      bounded.back().isHighSurrogate() && filter.at(bounded.size()).isLowSurrogate()) {
+    bounded.chop(1);
+  }
+  if (m_nameFilter == bounded) {
+    return;
+  }
+  m_nameFilter = bounded;
+  rebuildVisibleEntries();
+  emit presentationChanged();
+  emit entriesChanged();
+}
+
+void NavigationController::zoomBy(int steps) {
+  const int next = std::clamp(m_iconSizeIndex + std::clamp(steps, -4, 4), 0, 4);
+  if (next == m_iconSizeIndex) {
+    return;
+  }
+  m_iconSizeIndex = next;
+  emit presentationChanged();
+}
+
+void NavigationController::resetZoom() { zoomBy(2 - m_iconSizeIndex); }
+
 QString NavigationController::currentPath() const {
   return m_history.currentPath();
 }
@@ -287,6 +316,16 @@ bool NavigationController::showHidden() const { return m_showHidden; }
 
 QString NavigationController::viewMode() const { return m_viewMode; }
 
+QString NavigationController::nameFilter() const { return m_nameFilter; }
+
+int NavigationController::iconSize() const {
+  return iconSizes.at(static_cast<std::size_t>(m_iconSizeIndex));
+}
+
+bool NavigationController::canZoomIn() const { return m_iconSizeIndex < 4; }
+
+bool NavigationController::canZoomOut() const { return m_iconSizeIndex > 0; }
+
 int NavigationController::entryCount() const {
   return static_cast<int>(m_entries.size());
 }
@@ -300,7 +339,11 @@ const DirectoryEntry *NavigationController::entryAt(int index) const {
 
 NavigationStatus NavigationController::status() const { return m_status; }
 
-void NavigationController::reload() {
+void NavigationController::reload(bool resetFilter) {
+  const bool filterChanged = resetFilter && !m_nameFilter.isEmpty();
+  if (filterChanged) {
+    m_nameFilter.clear();
+  }
   ++m_listingGeneration;
   const ListingResult result = m_lister->list(m_history.currentPath());
   m_status = statusFor(result);
@@ -309,6 +352,9 @@ void NavigationController::reload() {
   rebuildVisibleEntries();
   if (!result.ok()) {
     m_statusMessage = result.diagnostic;
+  }
+  if (filterChanged) {
+    emit presentationChanged();
   }
   emit entriesChanged();
 }
@@ -322,13 +368,29 @@ void NavigationController::rebuildVisibleEntries() {
       ++m_hiddenFilteredCount;
       continue;
     }
+    if (!m_nameFilter.isEmpty() &&
+        !entry.name.contains(m_nameFilter, Qt::CaseInsensitive)) {
+      continue;
+    }
     m_entries.append(entry);
   }
   std::sort(m_entries.begin(), m_entries.end(),
             [this](const DirectoryEntry &a, const DirectoryEntry &b) {
               return listingEntryLessThan(a, b, m_order);
             });
+  // AGENT-GUARD: Presentation-only changes must retain a failed listing's
+  // diagnostic. No matches is a Ready projection, never an empty directory.
+  if (m_status != NavigationStatus::Ready && m_status != NavigationStatus::Empty) {
+    return;
+  }
   QStringList notices;
+  if (!m_nameFilter.isEmpty() && m_status == NavigationStatus::Ready) {
+    notices.append(m_entries.isEmpty()
+                       ? QStringLiteral("No matching items")
+                       : m_entries.size() == 1
+                             ? QStringLiteral("1 matching item")
+                             : QStringLiteral("%1 matching items").arg(m_entries.size()));
+  }
   if (m_truncated) {
     notices.append(
         QStringLiteral("Showing the first %1 entries").arg(m_listedEntries.size()));
