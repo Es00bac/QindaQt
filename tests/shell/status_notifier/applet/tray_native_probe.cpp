@@ -249,12 +249,14 @@ Window { width: 480; height: 240; color: "#f7f3ee"; title: "Fixture configuratio
     // the compositor delivering hover/enter events to the popup window.
     clickItem(submenu);
     QTRY_VERIFY_WITH_TIMEOUT(visibleMenuItem(QStringLiteral("Command Studio…")), 5'000);
+    QTRY_VERIFY(visibleMenuItem(QStringLiteral("Command Studio…"))->isEnabled());
     auto *submenuWindow = visibleMenuItem(QStringLiteral("Command Studio…"))->window();
     QVERIFY(insideScreen(submenuWindow));
     QVERIFY(capture(submenuWindow, directory + "/submenu.png"));
     QTest::keyClick(submenuWindow, Qt::Key_Escape);
     QTRY_VERIFY(visibleMenuItem(QStringLiteral("Configuration…")));
     configurationAction = visibleMenuItem(QStringLiteral("Configuration…"));
+    QTRY_VERIFY(configurationAction->isEnabled());
     clickItem(configurationAction);
     QTRY_COMPARE(configurationRequests, 1);
     QTRY_VERIFY(configuration->isExposed());
