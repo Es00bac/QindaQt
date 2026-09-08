@@ -75,6 +75,8 @@ target_link_libraries(
         "${applet_lib_dir}/libqindaqt_shell_status_notifier_applet.a"
         "${applet_lib_dir}/libqindaqt_status_notifier.a"
         "${applet_lib_dir}/libqindaqt_status_notifier_item_client.a"
+        "${applet_lib_dir}/libqindaqt_global_menu_dbusmenu.a"
+        "${applet_lib_dir}/libqindaqt_global_menu_protocol.a"
         "${applet_lib_dir}/libqindaqt_status_notifier_icon.a"
         "${applet_lib_dir}/libqindaqt_themes.a"
         "${applet_lib_dir}/libqindaqt_design_tokens.a"

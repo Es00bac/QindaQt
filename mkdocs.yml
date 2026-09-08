@@ -237,3 +237,4 @@ nav:
       - "ADR-0110: Ordinary editor windows": adr/0110-own-editor-documents-in-ordinary-windows.md
       - "ADR-0111 bound file previews and consume public icons": adr/0111-bound-file-previews-and-consume-public-icons.md
       - "ADR-0112 terminal protocol palette": adr/0112-terminal-protocol-palette.md
+      - "ADR-0114 actionable status notifier menus": adr/0114-status-notifier-actionable-menus.md

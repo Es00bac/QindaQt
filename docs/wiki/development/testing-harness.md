@@ -3533,3 +3533,25 @@ the native dialogs through the development input device and verifies the
 stored document and resulting live layout. Its fixed 1080p coordinates are
 intentional; it does not establish a resolution matrix or host-session logout
 coverage. See [workspace acceptance](../architecture/workspaces.md#two-session-acceptance).
+
+## Tray application-menu interaction
+
+The StatusNotifier controller and compiled QML fixtures cover real pointer
+primary/secondary/context gestures, signed horizontal and vertical wheel input,
+global logical anchor coordinates, menu-only primary activation, native fallback,
+keyboard submenus, checkbox truth, and captured revision fencing. Exported-menu
+transport tests use private D-Bus fixtures; no test targets the host watcher.
+
+`qindaqt.status-notifier-applet-menu-integration-offscreen` composes the production
+watcher, adapter, controller and compiled tray with a real private-bus exporter.
+Its two orientation fixtures exercise menu actions, checkbox updates, submenus
+and opening a fixture configuration window. Captures stay in the ignored test
+build directory and report the actual platform.
+
+The same `qindaqt_tray_native_probe` can be explicitly enabled on private Wayland
+with `QINDAQT_TRAY_NATIVE_PROBE=1`, but direct QTest mouse events do not supply a
+compositor popup-grab serial. The attempted native fixture therefore did not
+qualify menu capture or configuration activation; native menu/grab evidence
+requires compositor-delivered input. Do not report offscreen captures as native
+Wayland proof. No fixture changes Gabbee, mouse hardware preferences or the host
+session.
