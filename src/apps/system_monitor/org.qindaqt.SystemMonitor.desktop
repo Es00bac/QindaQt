@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt System Monitor
+Comment=Inspect live system resources and processes
+Exec=qindaqt-system-monitor
+Icon=org.qindaqt.SystemMonitor
+Categories=System;Monitor;
+StartupNotify=true
