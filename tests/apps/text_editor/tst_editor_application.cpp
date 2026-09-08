@@ -37,13 +37,14 @@ void write(const QString &path, const QByteArray &contents = "text") {
 struct DialogState {
   DocumentCloseDecision close = DocumentCloseDecision::Cancel;
   int errors = 0;
+  std::function<bool()> replace = [] { return false; };
 };
 class ScriptedDialogs final : public DocumentDialogs {
 public:
   explicit ScriptedDialogs(std::shared_ptr<DialogState> state)
       : m_state(std::move(state)) {}
   DocumentCloseDecision confirmClose() override { return m_state->close; }
-  bool confirmReplace() override { return false; }
+  bool confirmReplace() override { return m_state->replace(); }
   void operationError(const QString &, const QString &) override {
     ++m_state->errors;
   }
@@ -86,6 +87,7 @@ private slots:
   void multiFileDropCreatesOrdinaryWindows();
   void saveAsRefusesAnotherWindowPath();
   void boundsWindowInventory();
+  void saveAsRechecksOwnerAfterReplacementConsent();
 };
 void EditorApplicationTest::reusesPristineWindowAndCanonicalPaths() {
   QTemporaryDir root;
@@ -239,6 +241,33 @@ void EditorApplicationTest::saveAsRefusesAnotherWindowPath() {
   QVERIFY(file.open(QIODevice::ReadOnly));
   QCOMPARE(file.readAll(), QByteArray("disk truth"));
 }
+void EditorApplicationTest::saveAsRechecksOwnerAfterReplacementConsent() {
+  QTemporaryDir root;
+  const auto path = root.filePath("destination.txt");
+  write(path, "disk truth");
+  const auto state = std::make_shared<DialogState>();
+  EditorApplication app(
+      stores(), appearance(), nullptr, nullptr,
+      [path] { return std::make_unique<SaveChooser>(path); }, false,
+      dialogs(state));
+  QVERIFY(app.start());
+  auto *untitled = app.windows().first();
+  untitled->editor()->insertPlainText("must not overwrite");
+  // Mirrors a Settings1 restore or Open admitted by the native prompt's nested
+  // loop.
+  state->replace = [&app, path] { return app.openDocuments({path}); };
+  QVERIFY(untitled->appShellCoordinator().activateAction(
+      QStringLiteral("file.save-as")));
+  QCOMPARE(state->errors, 1);
+  QCOMPARE(app.windows().size(), 2);
+  QVERIFY(untitled->controller()->state().isUntitled());
+  QCOMPARE(app.windowForPath(path)->editor()->toPlainText(),
+           QStringLiteral("disk truth"));
+  QFile file(path);
+  QVERIFY(file.open(QIODevice::ReadOnly));
+  QCOMPARE(file.readAll(), QByteArray("disk truth"));
+}
+
 void EditorApplicationTest::boundsWindowInventory() {
   EditorApplication app(stores(), appearance(), nullptr, nullptr, {}, false);
   for (int i = 0; i < DocumentCollection::maximumDocuments; ++i)

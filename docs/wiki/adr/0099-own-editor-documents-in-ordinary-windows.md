@@ -23,6 +23,9 @@ a pristine untitled window. Save As rejects another window's canonical path.
 The window manager alone provides tabs and splits.
 
 Every shown window receives a separate menu export tied to its platform window.
+Each export owns a distinct named session-bus connection: the shared exporter’s
+fixed object path cannot be registered twice on one connection. Disconnect only
+after withdrawing the export; other document windows retain their endpoints.
 The export is destroyed before the coordinator it observes. Closing a window
 runs that document's Save/Discard/Cancel consent and leaves other windows alive.
 `file.close-window` / `fileCloseWindowAction` replace the retired tab-close IDs;

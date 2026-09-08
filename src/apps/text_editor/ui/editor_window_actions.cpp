@@ -291,18 +291,24 @@ bool EditorWindow::saveDocumentAs() {
   if (!path) {
     return false;
   }
-  if (m_application && m_application->windowForPath(*path) &&
-      m_application->windowForPath(*path) != this) {
+  const auto ownedElsewhere = [this, &path] {
+    EditorWindow *owner = m_application ? m_application->windowForPath(*path) : nullptr;
+    if (!owner || owner == this) return false;
     showOperationError(tr("Could not save document"),
         {.error = DocumentError::AlreadyOpen,
          .diagnostic = tr("That file is already open in another window")});
-    return false;
-  }
+    return true;
+  };
+  if (ownedElsewhere()) return false;
   DocumentOperation result = document->saveAs(*path, false);
   if (result.error == DocumentError::DestinationExists) {
     if (!m_dialogs->confirmReplace()) {
       return false;
     }
+    // AGENT-GUARD: Native consent runs a nested event loop. Restore/Open may
+    // admit this destination while the prompt is visible, so recheck ownership
+    // immediately before authorizing replacement.
+    if (ownedElsewhere()) return false;
     result = document->saveAs(*path, true);
   }
   if (!result.ok()) {

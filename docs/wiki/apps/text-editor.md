@@ -54,7 +54,8 @@ The CLI and desktop entry accept multiple local paths. For example,
 `qindaqt-editor a.txt b.txt` opens two windows. Open, drag-and-drop and CLI
 admission canonicalize each path through the document boundary. A canonical
 path already open in this process activates its window. Save As refuses a
-path owned by another window. A pristine untitled window may accept a document;
+path owned by another window, rechecking after replacement consent because
+the native prompt can admit other windows through its nested event loop. A pristine untitled window may accept a document;
 a dirty untitled window keeps its contents and opens the new file separately.
 Invalid, unreadable, non-UTF-8 or oversized targets fail without changing
 successfully admitted documents. The CLI reports partial failures and keeps
@@ -104,7 +105,10 @@ After each window is shown, the executable composes the first-party global-menu
 export through the shared
 `QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport` entry with its
 coordinator, the window's platform `QWindow`, and its session-bus connection;
-the export is retained by its window and destroyed before its coordinator.
+each window uses a distinct named session-bus connection because the shared
+exporter publishes a fixed object path. The export is retained by its window
+and destroyed before its coordinator; its bus connection is disconnected after
+endpoint withdrawal.
 The composition, lifecycle, and fail-closed rules are owned by
 [the global-menu page](../shell/global-menu.md). A missing session bus or
 registrar leaves the export disabled/waiting, and the local `QMenuBar` stays
@@ -217,7 +221,8 @@ The compact icon toolbar provides New, Open, Save, Save As and Find with
 keyboard focus, tooltips and accessible names. A softly layered chrome gradient
 frames the opaque document canvas and roomy line-number gutter. Search uses
 icon buttons with accessible names and compact options; errors appear only
-when recovery is needed. The shared icon catalog supplies branded assets.
+when recovery is needed. The shared icon catalog supplies branded assets. The selected theme’s
+`iconTheme` applies at startup and live, including cached search glyphs.
 
 The Qt Widgets presentation derives its palette, fonts, focus ring, semantic
 surfaces, and text colors from public QST-1 values. It imports no shell or

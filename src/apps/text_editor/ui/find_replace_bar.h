@@ -18,6 +18,7 @@ class FindReplaceBar final : public QWidget {
 public:
   explicit FindReplaceBar(QWidget *parent = nullptr);
 
+  void refreshIcons();
   [[nodiscard]] FindOptions options() const;
   [[nodiscard]] QString replacement() const;
   [[nodiscard]] QLineEdit *findEditor() const;
