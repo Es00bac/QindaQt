@@ -245,8 +245,9 @@ Window { width: 480; height: 240; color: "#f7f3ee"; title: "Fixture configuratio
     QVERIFY(capture(visibleMenuItem(QStringLiteral("Battery-color mouse LED"))->window(), directory + "/checkbox-menu.png"));
     auto *submenu = visibleMenuItem(QStringLiteral("Tools"), true);
     QVERIFY(submenu);
-    const auto point = submenu->mapToScene(QPointF(submenu->width() / 2, submenu->height() / 2)).toPoint();
-    QTest::mouseMove(submenu->window(), point);
+    // A click is deterministic under offscreen QPA; it does not depend on
+    // the compositor delivering hover/enter events to the popup window.
+    clickItem(submenu);
     QTRY_VERIFY_WITH_TIMEOUT(visibleMenuItem(QStringLiteral("Command Studio…")), 5'000);
     auto *submenuWindow = visibleMenuItem(QStringLiteral("Command Studio…"))->window();
     QVERIFY(insideScreen(submenuWindow));
