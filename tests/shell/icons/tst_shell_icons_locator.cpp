@@ -39,6 +39,7 @@ private slots:
     void escapingDirectoryEntriesRefused();
     void symlinkEscapeRefused();
     void oversizedIndexIgnored();
+    void standardHicolorDirectoryInventoryIsCovered();
     void lookupsAreDeterministic();
     void cacheBoundKeepsLookupCorrect();
 
@@ -237,6 +238,42 @@ void ShellIconsLocatorTest::oversizedIndexIgnored()
     // The index exceeds the byte ceiling, so bigtheme contributes no
     // directories and the icon fails closed to unresolved.
     QVERIFY(big.locate(QStringLiteral("big"), 32).isEmpty());
+}
+
+void ShellIconsLocatorTest::standardHicolorDirectoryInventoryIsCovered()
+{
+    // Current freedesktop hicolor indexes can declare 649 directories. Keep
+    // the fixture host-independent, but put the application icon at that
+    // real-world position so the former 128-directory truncation fails.
+    const QString root = ShellIconsTest::fixtureRoot()
+        + QStringLiteral("/wide-hicolor/icons");
+    QVERIFY(QDir().mkpath(root + QStringLiteral("/hicolor/scalable/apps")));
+
+    QStringList directories;
+    QString sections;
+    constexpr int standardDirectoryCount = 649;
+    directories.reserve(standardDirectoryCount);
+    for (int index = 0; index < standardDirectoryCount - 1; ++index) {
+        const QString name = QStringLiteral("synthetic/%1").arg(index);
+        directories.append(name);
+        sections += QStringLiteral("\n[%1]\nSize=32\nType=Fixed\n").arg(name);
+    }
+    directories.append(QStringLiteral("scalable/apps"));
+    sections += QStringLiteral(
+        "\n[scalable/apps]\nSize=48\nType=Scalable\nMinSize=1\nMaxSize=512\n");
+    const QString index = QStringLiteral(
+        "[Icon Theme]\nName=Wide hicolor\nDirectories=%1\n%2")
+        .arg(directories.join(QLatin1Char(',')), sections);
+    QVERIFY(index.toUtf8().size() <= kMaxThemeIndexBytes);
+    QVERIFY(ShellIconsTest::writeTextFile(
+        root + QStringLiteral("/hicolor/index.theme"), index));
+    QVERIFY(ShellIconsTest::writeTextFile(
+        root + QStringLiteral("/hicolor/scalable/apps/late-app.svg"),
+        QString::fromUtf8(ShellIconsTest::kGreenCircleSvg)));
+
+    IconThemeLocator hicolorOnly(QStringList{root}, QStringList{});
+    QCOMPARE(hicolorOnly.locate(QStringLiteral("late-app"), 40),
+             root + QStringLiteral("/hicolor/scalable/apps/late-app.svg"));
 }
 
 void ShellIconsLocatorTest::lookupsAreDeterministic()

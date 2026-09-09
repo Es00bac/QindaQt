@@ -27,7 +27,8 @@ rules without modifying that module.
   are refused before parsing and never reach the cache, whose keys are the
   parsed, bounded request tuple — name, size, scale, color, symbolic — so
   retained key bytes stay bounded regardless of the request's spelling), a
-  256 KiB index ceiling, 128 directories per index, 8 levels of `Inherits`
+  256 KiB index ceiling, 1,024 directories per index (covering the current
+  649-directory system `hicolor` catalog), 8 levels of `Inherits`
   recursion with a cycle guard, a 16-entry flattened theme chain, a 64-entry
   parsed-index cache, a 64-entry provider image LRU, a 256 KiB SVG source
   payload ceiling (`kMaxSvgSourceBytes`), a 64 KiB per-desktop-entry ceiling,
@@ -73,7 +74,11 @@ is a plain icon name — absolute paths and traversal values are refused.
 `iconNameForAppId` resolves a compositor app id by exact id, case-insensitive
 id, then case-insensitive reverse-DNS tail (`org.kde.dolphin` answers
 `dolphin`), with a trailing `.desktop` ignored. This is the seam the task
-list will use to show window icons from the compositor's app id.
+list uses to show window icons from the compositor's app id. The icon-theme
+directory ceiling covers standard `hicolor` inventories whose later entries
+hold common application sizes such as `48x48`, `128x128`, `512x512`, and
+`scalable/apps`; those entries must not degrade into typed placeholders merely
+because they follow a large set of earlier theme directories.
 
 ## IconImageProvider and the `image://qindaqt-icon/` URL scheme
 
@@ -166,7 +171,7 @@ ctest --test-dir build/dev \
 
 | Test | Scope |
 | --- | --- |
-| `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, oversized-index refusal, index-cache bound. |
+| `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, a 649-directory hicolor-shaped inventory with an application icon beyond the former truncation point, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, oversized-index refusal, index-cache bound. |
 | `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
 | `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, over-long-id refusal before cache access, canonical cache-key sharing, hostile-id flood cache-key-byte and RSS bounds, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |
