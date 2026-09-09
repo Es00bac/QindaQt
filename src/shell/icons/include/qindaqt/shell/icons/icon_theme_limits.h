@@ -18,9 +18,12 @@ namespace QindaQt::Shell::Icons
 inline constexpr qsizetype kMaxIconNameUtf8Bytes = 128;
 
 // index.theme parsing ceilings. An oversized index contributes no directories;
-// a directory list longer than the cap is truncated in declared order.
+// a directory list longer than the cap is truncated in declared order. The
+// freedesktop hicolor index shipped by current distributions already declares
+// 649 directories, so this bound must cover that ordinary interoperability
+// baseline while remaining independent of hostile index size.
 inline constexpr qint64 kMaxThemeIndexBytes = qint64(256) * 1024;
-inline constexpr int kMaxThemeDirectories = 128;
+inline constexpr int kMaxThemeDirectories = 1024;
 
 // SVG source payload ceiling: the image provider bounds QSvgRenderer input to
 // this many bytes; larger vectors fail closed to the placeholder. Same
