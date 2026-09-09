@@ -5,51 +5,50 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260908-r1`, pinned to Git
-commit `44d83ff53399d42df7ad30338515b72cf04acc67`. Regenerate the package
-Manifest whenever this immutable pin changes. This September 8 checkpoint is a
+The current dated package checkpoint is `0.1.0_pre20260909`, pinned to Git
+commit `76ad8435f8bbcc29e4ba7ffb6fdc7a1c28bb9bba`. Regenerate the package
+Manifest whenever this immutable pin changes. This September 9 checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. Its ebuild
 uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
 in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=44d83ff53399d42df7ad30338515b72cf04acc67
+qq_source_commit=76ad8435f8bbcc29e4ba7ffb6fdc7a1c28bb9bba
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260908-r1.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260909.tar.gz
 ```
 
 Portage verifies the maintained Manifest before unpacking. The ebuild installs
 the complete image through Portage; do not copy executables into the installed
 runtime by hand.
 
-The September 8 revision is installed as this package. It includes the reviewed
-File Manager browsing improvements, exported tray menus and additive native Qt
-appearance adapter; existing application skins remain intact. Portage's signed
-binary verification and binary-only merge passed. All 1,070 installed payload
-files match the signed package and its ownership record. The installed Qt
-platform plugin passed five private-bus tests covering live Widgets/Quick
-appearance changes, invalid input and owner replacement.
+The September 9 revision extends the bounded shell icon-theme inventory to
+cover the 649 directories declared by the host's standard `hicolor` index.
+Application icons stored in later `48x48`, `128x128`, `512x512`, or
+`scalable/apps` directories therefore resolve in the dock instead of falling
+back to letter tiles. Portage verified and installed the signed binary package;
+`qcheck` reports all 1,250 installed files intact. The earlier signed September
+8 package remains available for rollback with the unchanged KWin ABI.
 
-The user explicitly requested installation while the desktop and terminal
-remained running. The session, shell, compositor and seven captured terminal
-processes retained their original process identities and start times. No
-application or service was restarted. Already running applications continue
-using their loaded code until the user's later restart; this installation does
-not claim a fresh desktop login. The previous signed September 8 package and
-source archive remain available for rollback with the unchanged KWin ABI.
+The user explicitly requested installation while the desktop and applications
+remained running. KWin PID 1390 and session supervisor PID 1478 retained their
+original identities and start times. Only the old shell PID 1490 received
+`SIGTERM`; the supervisor launched installed shell PID 85067. A live desktop
+capture then showed application artwork in every affected dock entry and no
+remaining letter tiles. Existing applications were not restarted, and this
+installation does not claim a fresh desktop login.
 
-The build used the site's existing signing key and recorded noninteractive
-signing command without changing trust policy. Compilation resumed with 24 jobs
-and no load cap after preserving completed objects. Existing Portage QA notices
+The build used 24 jobs and the site's existing signing subkey. Its first package
+attempt completed compilation but produced an unsigned gpkg, which the host's
+`binpkg-request-signature` policy correctly rejected. Packaging resumed over the
+preserved build with Portage's documented signing variables and the existing
+protected passphrase file. The resulting gpkg passed signature verification and
+the binary-only merge without changing trust policy. Existing Portage QA notices
 for `/usr/Tokens` and `/usr/bin/agent_input` also occur in the previous installed
 package; their placement remains a separate packaging cleanup.
 
-A later authorized shell-only refresh adopted the newly installed shell while
-preserving the compositor, supervisor and terminal/Codex processes. The running
-supervisor was verified against its signed package before targeting the exact
-shell PID, and its normal recovery launched the installed replacement. The tray
-watcher returned and Gabbee re-registered. This operation does not reload KWin
-plugins, existing application code or inherited session environment. Those
+The shell-only refresh adopts the fixed task list without reloading KWin
+plugins, existing application code, or inherited session environment. Those
 boundaries still require application restart or a later login; never restart the
 compositor to refresh panels while applications must remain connected.
 
@@ -93,7 +92,7 @@ Copy `packaging/gentoo/gui-wm/qindaqt-desktop/` into a configured local overlay,
 regenerate the Manifest, run the repository's package QA, and inspect the plan:
 
 ```sh
-ebuild /path/to/qindaqt-desktop-0.1.0_pre20260908-r1.ebuild manifest
+ebuild /path/to/qindaqt-desktop-0.1.0_pre20260909.ebuild manifest
 pkgcheck scan --repo your-overlay gui-wm/qindaqt-desktop
 emerge --pretend --verbose gui-wm/qindaqt-desktop
 ```
