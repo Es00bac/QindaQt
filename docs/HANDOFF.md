@@ -1027,7 +1027,12 @@ through `b4453452`, with the plugin build and seven focused input/policy gates
 passing. Late Shift added during an already-started native drag remains open.
 The private gesture probe failed during window arrangement before reaching its
 behavior assertions; no successful nested qualification is claimed for this
-change yet.
+change yet. `e0c7ff78` repairs the takeover's drag-source identity (the
+adopted window is now KWin's interactive-move owner, not a pointer hit-test
+taken after the cancelled move snaps the window back), alongside the
+minimized-container resurrection, stale-focus raise, and tab-drag
+self-targeting defects; nested live qualification of the full gesture is still
+outstanding.
 
 Actual private desktop run `4c6f5c162db04a23adbe5a785af8b300` captured all ten
 Settings routes from the refreshed stage. It exposed clipped Customize panels,
