@@ -39,9 +39,21 @@ KWin object lifetime.
 Normal title-bar dragging moves a floating window. With the configured docking
 modifier held, hovering over a window or container reveals targets:
 
-- dropping on an edge creates a split at that target;
-- dropping at the center or tab strip creates a page/tab; and
+- dropping on an edge creates a split at that target. Near a container's own
+  edge (a band inside its content frame, 15% of the shorter side and never
+  more than 64 logical pixels) the split wraps the whole active page, so the
+  dropped window spans the full container beside the existing layout; deeper
+  inside, the edge of the member tile under the pointer splits only that tile;
+- dropping at the center of a member tile or on the tab strip creates a
+  page/tab; and
 - dropping outside a valid target leaves the source floating.
+
+A completed drop activates the dropped window — or, when it landed as a
+background tab, the receiving container's visible active-page member — so the
+container under the pointer ends raised, never the one the window was dragged
+out of. A tab drag never resolves its own page's members as targets: the
+chrome press raises the source container, and without that exclusion the
+dragged page's tiles would shadow the container underneath them.
 
 Tabs, leaves, and split dividers are rearrangeable by pointer and keyboard. A
 tab owns one complete page tree: it may reorder, move between containers,
@@ -62,6 +74,11 @@ item, not a native overlay window.
 
 - Move, minimize, maximize, pin, workspace assignment, and output movement on
   the outer title bar affect the whole container.
+- Whole-container minimize is session state, not derived page state: a
+  topology mutation re-plans every container but never resurrects a minimized
+  one, and only an explicit restore (task list, group menu, or chrome) brings
+  it back. Without this rule a dropped window could target or raise a
+  container the user had minimized away.
 - A maximized container tracks KWin's current maximize area. A mapped,
   work-area-reserving panel reduces the group frame; releasing that reservation
   for an auto-hidden panel expands the group to the usable output. Revealing or
@@ -80,9 +97,16 @@ item, not a native overlay window.
   split tree. Member fullscreen temporarily occupies its output, then restores
   the container exactly. Alt-Tab or an outside panel may take focus while that
   native fullscreen remains active; leaving fullscreen preserves that outside
-  focus. If KWin reports a competing member maximize/fullscreen request while
-  one member already owns temporary focus presentation, the compositor rejects
-  that request and restores only the requesting member's committed frame/state.
+  focus. Focus presentation is owned per container: each container may present
+  one member alone, and a request inside one container never rejects, restores,
+  hides, or activates anything in another. Whole-container actions from the
+  shared chrome, task list, or group menu (maximize, restore, minimize, shade,
+  raise) leave only that container's own focus presentation; a topology
+  mutation, which re-plans every group, restores every container first. If
+  KWin reports a competing member maximize/fullscreen request while another
+  member of the same container already owns temporary focus presentation, the
+  compositor rejects that request and restores only the requesting member's
+  committed frame/state.
   That one rejection also reactivates the accepted owner, because KWin may have
   activated the requester before reporting its native state change. This is not
   a focus lock: later Alt-Tab, panel, and outside-window focus remain unchanged;

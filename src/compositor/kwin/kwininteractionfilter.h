@@ -27,12 +27,20 @@ class KWinInteractionFilter final
 public:
     using IntentSink = std::function<void(const HybridInput::InteractionIntent &)>;
     using ChromeDecisionSink = std::function<void(const ChromePointerDecision &)>;
+    // Maps KWin's interactive-move owner at late-Shift takeover (ADR-0085) to
+    // the drag source identity the controller adopts. Must be exact: after the
+    // native move is cancelled the window snaps back to its pre-drag frame, so
+    // hit-testing the pointer would adopt whichever stranger window the drag
+    // was hovering. An unset resolver keeps the legacy pointer hit-test.
+    using TakeoverSourceResolver =
+        std::function<HybridInput::HitTarget(KWin::Window *window)>;
 
     KWinInteractionFilter(KWin::InputRedirection *input,
                           HybridInput::InteractionController &controller,
                           IntentSink sink,
                           HybridChromePointerRouter *chromeRouter = nullptr,
-                          ChromeDecisionSink chromeSink = {});
+                          ChromeDecisionSink chromeSink = {},
+                          TakeoverSourceResolver takeoverSource = {});
     ~KWinInteractionFilter();
 
     KWinInteractionFilter(const KWinInteractionFilter &) = delete;
@@ -82,6 +90,7 @@ private:
     IntentSink m_sink;
     HybridChromePointerRouter *m_chromeRouter = nullptr;
     ChromeDecisionSink m_chromeSink;
+    TakeoverSourceResolver m_takeoverSource;
     std::unique_ptr<Filter> m_filter;
     std::unique_ptr<EarlyTakeoverFilter> m_earlyFilter;
     HybridInput::LateShiftTakeoverDetector m_lateShiftDetector;

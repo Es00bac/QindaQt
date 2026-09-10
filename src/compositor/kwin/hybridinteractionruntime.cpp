@@ -298,12 +298,31 @@ HybridRuntimeResult HybridInteractionRuntime::commitIndependentDock(
                     structuralId(QLatin1StringView("page")), insertion},
             });
         }
-        if (intent.target.memberId.isEmpty()) {
-            return rejected(QStringLiteral("split target member is missing"));
-        }
         const auto split = splitPlacement(intent.target.zone);
         if (!split) {
             return rejected(QStringLiteral("dock zone cannot create a split"));
+        }
+        if (intent.target.memberId.isEmpty()) {
+            // AGENT-CONTRACT: An edge target without a member anchor is a
+            // container-level drop (KWinInteractionTargetResolver's container
+            // edge band). It wraps the active page's complete tree so the new
+            // window spans the whole container beside the existing layout,
+            // rather than splitting the member tile nearest the pointer.
+            if (target->activePageId().isEmpty()) {
+                return rejected(QStringLiteral("target container has no active page"));
+            }
+            return execute(Hybrid::InsertIndependentWindow{
+                .targetContainerId = targetPlacement.containerId,
+                .windowId = intent.source.memberId,
+                .leafNodeId = structuralId(QLatin1StringView("source-leaf")),
+                .destination = Hybrid::MoveAsRootSplit{
+                    .pageId = target->activePageId(),
+                    .splitNodeId = structuralId(QLatin1StringView("split")),
+                    .orientation = split->orientation,
+                    .ratio = 0.5,
+                    .position = split->position,
+                },
+            });
         }
         return execute(Hybrid::InsertIndependentWindow{
             .targetContainerId = targetPlacement.containerId,
@@ -413,74 +432,6 @@ HybridRuntimeResult HybridInteractionRuntime::commitGroupedDock(
     return commitAcrossContainers(intent,
                                   sourceContainerId,
                                   targetPlacement.containerId);
-}
-
-HybridRuntimeResult HybridInteractionRuntime::commitWithinContainer(
-    const HybridInput::InteractionIntent &intent, const QString &containerId)
-{
-    if (intent.target.memberId.isEmpty()) {
-        return simpleResult(HybridRuntimeStatus::NoChange,
-                            QStringLiteral("container target has no member anchor"));
-    }
-    if (intent.target.zone != HybridInput::DockZone::Tab) {
-        if (intent.source.kind == HybridInput::HitKind::Tab) {
-            return rejected(QStringLiteral("tabs can only move to a tab destination"));
-        }
-        const auto split = splitPlacement(intent.target.zone);
-        if (!split) {
-            return rejected(QStringLiteral("dock zone cannot create a split"));
-        }
-        return execute(Hybrid::ReparentMember{
-            .containerId = containerId,
-            .windowId = intent.source.memberId,
-            .targetWindowId = intent.target.memberId,
-            .splitNodeId = structuralId(QLatin1StringView("split")),
-            .orientation = split->orientation,
-            .ratio = 0.5,
-            .position = split->position,
-        });
-    }
-
-    const auto sourcePage = pageLocation(containerId, intent.source.memberId);
-    const auto targetPage = pageLocation(containerId, intent.target.memberId);
-    if (!sourcePage || !targetPage) {
-        return rejected(QStringLiteral("same-container page anchor is missing"));
-    }
-    if (intent.source.kind == HybridInput::HitKind::Tab
-        && (intent.source.pageId.isEmpty()
-            || intent.source.pageId != sourcePage->pageId)) {
-        return rejected(QStringLiteral("dragged tab page identity is stale"));
-    }
-    if (sourcePage->pageId == targetPage->pageId) {
-        if (intent.source.kind == HybridInput::HitKind::Tab) {
-            return simpleResult(HybridRuntimeStatus::NoChange,
-                                QStringLiteral("tab already occupies the target page"));
-        }
-        return execute(Hybrid::ReorderMembers{containerId,
-                                              intent.source.memberId,
-                                              intent.target.memberId});
-    }
-
-    if (intent.source.kind != HybridInput::HitKind::Tab) {
-        return execute(Hybrid::MoveMemberToPage{
-            .containerId = containerId,
-            .windowId = intent.source.memberId,
-            .newPageId = structuralId(QLatin1StringView("page")),
-            .targetPageId = targetPage->pageId,
-        });
-    }
-
-    const auto *container = topology().container(containerId);
-    const qsizetype lastIndex = container->pages().size() - 1;
-    const qsizetype afterTarget = sourcePage->index < targetPage->index
-        ? targetPage->index
-        : targetPage->index + 1;
-    const qsizetype destination = std::min(afterTarget, lastIndex);
-    if (destination == sourcePage->index) {
-        return simpleResult(HybridRuntimeStatus::NoChange,
-                            QStringLiteral("source page is already after target page"));
-    }
-    return execute(Hybrid::ReorderPage{containerId, sourcePage->pageId, destination});
 }
 
 HybridRuntimeResult HybridInteractionRuntime::execute(Hybrid::TopologyCommand command)

@@ -5,7 +5,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 bool sceneChromeExposed(
     const QString &anchorWindowId,
-    const QString &excludedWindowId,
+    const QSet<QString> &excludedWindowIds,
     const QVector<HybridChromeExposureEntry> &stackBottomToTop)
 {
     if (anchorWindowId.isEmpty()) {
@@ -26,9 +26,7 @@ bool sceneChromeExposed(
     for (qsizetype index = anchorIndex + 1;
          index < stackBottomToTop.size(); ++index) {
         const auto &entry = stackBottomToTop[index];
-        const bool excluded = !excludedWindowId.isEmpty()
-            && entry.windowId == excludedWindowId;
-        if (entry.ownsPoint && !excluded) {
+        if (entry.ownsPoint && !excludedWindowIds.contains(entry.windowId)) {
             return false;
         }
     }

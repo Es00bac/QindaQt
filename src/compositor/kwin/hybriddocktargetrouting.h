@@ -3,7 +3,23 @@
 
 #include "qindaqt/hybrid_input/interactiontypes.h"
 
+#include <QPointF>
+#include <QRectF>
+
 namespace QindaQt::Compositor::KWinIntegration {
+
+// Container-level drop discovery. A pointer within this band of a container's
+// content frame targets the whole container (its active page root, expressed
+// as a DockTarget with an empty memberId) instead of the member tile under the
+// pointer, so an edge drop adds a full-height or full-width tile beside the
+// existing layout. Returns None outside the band or for an invalid frame;
+// callers then fall back to the member-tile zones.
+[[nodiscard]] HybridInput::DockZone containerEdgeDockZone(
+    const QRectF &contentFrame, const QPointF &position);
+// Band thickness in logical pixels for one content frame: a fraction of the
+// shorter side, clamped so large containers keep a reachable member zone and
+// small ones keep a reachable interior.
+[[nodiscard]] qreal containerEdgeBand(const QRectF &contentFrame);
 
 // Converts a shared-chrome tab hit into the semantic docking target consumed
 // by HybridInteractionRuntime. Other chrome regions deliberately fall through

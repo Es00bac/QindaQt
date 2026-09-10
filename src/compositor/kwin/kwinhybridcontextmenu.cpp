@@ -264,7 +264,7 @@ void KWinHybridSession::initializeGroupContextMenu()
                     containerId, HybridChrome::WindowAction::Minimize, error);
             }
             case GroupContextMenuCommandKind::ToggleShadeGroup: {
-                if (!restoreMemberFocusForInteraction(error)) {
+                if (!restoreMemberFocusForContainerAction(containerId, error)) {
                     return false;
                 }
                 return isContainerShaded(containerId)
@@ -363,7 +363,7 @@ bool KWinHybridSession::dispatchContainerControl(
         return true;
     }
     case HybridChrome::ContainerControl::ToggleShade: {
-        if (!restoreMemberFocusForInteraction(error)) {
+        if (!restoreMemberFocusForContainerAction(containerId, error)) {
             return false;
         }
         return isContainerShaded(containerId)

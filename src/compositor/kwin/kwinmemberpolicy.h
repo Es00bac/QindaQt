@@ -60,13 +60,22 @@ public:
     [[nodiscard]] bool synchronize(const Hybrid::WindowTopology &topology,
                                    const KWinHybridSceneFactory &scene,
                                    QString *error = nullptr);
-    [[nodiscard]] std::optional<MemberFocusState> focusState() const;
+    [[nodiscard]] std::optional<MemberFocusState> focusState(
+        const QString &containerId) const;
+    // Every container presenting one member alone, in stable container order.
+    [[nodiscard]] QVector<MemberFocusState> focusStates() const;
     [[nodiscard]] bool chromeVisible(const QString &containerId) const;
     // Reassert after the chrome manager republishes/re-shows overlays.
     void enforceChromeVisibility() const;
-    // Idempotently restores member focus presentation while the current
-    // topology and committed scene baseline still agree.
+    // Idempotently restores member focus presentation in every container
+    // while the current topology and committed scene baseline still agree.
+    // Required before any coordinator scene transaction.
     [[nodiscard]] bool restoreForTopologyMutation(QString *error = nullptr);
+    // Restores one container only, for placement-only actions on it (group
+    // maximize/restore/minimize/shade/raise). Other containers keep their
+    // presentation; see HybridMemberPolicy::restoreForContainerAction.
+    [[nodiscard]] bool restoreForContainerAction(const QString &containerId,
+                                                 QString *error = nullptr);
     [[nodiscard]] bool restoreForLifecycleMutation(QString *error = nullptr);
     // Phase one of plugin teardown. Idempotently clears temporary focus-mode
     // presentation while the grouped scene baseline is still authoritative,

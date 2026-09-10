@@ -52,6 +52,72 @@ QHash<QString, QString> ownerPlan(const Hybrid::WindowTopology &topology)
 QString forgottenWindow(const Hybrid::TopologyCommand &command)
 { const auto *forget = std::get_if<Hybrid::ForgetWindow>(&command); return forget ? forget->windowId : QString{}; }
 
+[[nodiscard]] QString firstPageWindow(const Hybrid::WindowTopology &topology,
+                                      const QString &containerId,
+                                      const QString &pageId)
+{
+    const auto *container = topology.container(containerId);
+    const auto *page = container ? container->page(pageId) : nullptr;
+    if (!page) {
+        return {};
+    }
+    const auto ids = nodeWindows(page->root());
+    return ids.isEmpty() ? QString{} : ids.constFirst();
+}
+
+// AGENT-NOTE: Post-mutation focus policy. The command's physical subject (the
+// dropped/dragged window or page) owns activation when it survives visible:
+// the user is holding it, and re-activating the previously active window
+// instead raises that window's container above the actual drop target.
+// Commands named here come from pointer/keyboard/menu mutations; restore and
+// release paths deliberately return empty so the pre-existing focus rules
+// below keep applying. Dock/group commands name the *stationary* target as
+// firstWindowId (it anchors the frame), so the dragged subject is secondWindowId.
+[[nodiscard]] QString commandFocusSubject(const Hybrid::TopologyCommand &command,
+                                          const Hybrid::WindowTopology &candidate)
+{
+    if (const auto *value = std::get_if<Hybrid::InsertIndependentWindow>(&command)) {
+        return value->windowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::DockIndependentWindows>(&command)) {
+        return value->secondWindowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::GroupIndependentWindowsAsPages>(&command)) {
+        return value->secondWindowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::RegroupMemberWithIndependent>(&command)) {
+        return value->memberWindowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::MoveMember>(&command)) {
+        return value->windowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::MoveMemberToPage>(&command)) {
+        return value->windowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::DetachMember>(&command)) {
+        return value->windowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::ReparentMember>(&command)) {
+        return value->windowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::ReparentMemberToPageRoot>(&command)) {
+        return value->windowId;
+    }
+    if (const auto *value = std::get_if<Hybrid::MovePage>(&command)) {
+        return firstPageWindow(candidate, value->targetContainerId, value->pageId);
+    }
+    if (const auto *value = std::get_if<Hybrid::DetachPage>(&command)) {
+        return firstPageWindow(candidate, value->newContainerId, value->pageId);
+    }
+    if (const auto *value = std::get_if<Hybrid::RegroupPageWithIndependent>(&command)) {
+        return firstPageWindow(candidate, value->newContainerId, value->pageId);
+    }
+    if (const auto *value = std::get_if<Hybrid::ActivatePage>(&command)) {
+        return firstPageWindow(candidate, value->containerId, value->pageId);
+    }
+    return {};
+}
+
 QString commandAnchor(const Hybrid::TopologyCommand &command, const QString &containerId) {
     if (const auto *value = std::get_if<Hybrid::DockIndependentWindows>(&command);
         value && value->containerId == containerId)
@@ -188,6 +254,12 @@ bool KWinHybridSceneTransaction::planContainers(
 
     for (const auto &containerId : candidateContainers) {
         const auto *container = candidate.container(containerId);
+        // AGENT-GUARD: A user-minimized container stays minimized through
+        // unrelated mutations. Deriving member state from page activity alone
+        // resurrects it (and reconcileMinimizedContainers then drops it from
+        // the session's minimized set permanently), after which its restored
+        // frame wins drop hit-tests it should never have entered.
+        const bool userMinimized = m_factory->containerUserMinimized(containerId);
         const auto frame = outerFrame(before, *container, command, error);
         if (!frame) {
             return false;
@@ -240,7 +312,8 @@ bool KWinHybridSceneTransaction::planContainers(
                  iterator != solution->members.cend(); ++iterator) {
                 auto state = current.value(iterator.key());
                 state.geometry = iterator->windowFrame;
-                state.minimized = page.id() != container->activePageId();
+                state.minimized = userMinimized
+                    || page.id() != container->activePageId();
                 state.maximizedAxes = {};
                 state.quickTileEdges = {};
                 state.fullscreen = false;
@@ -355,6 +428,34 @@ Hybrid::SceneStepResult KWinHybridSceneTransaction::prepare(
         }
     }
 
+    const auto subject = commandFocusSubject(command, candidate);
+    QString subjectFocus;
+    if (!subject.isEmpty()) {
+        if (visible.contains(subject)
+            || (desired.contains(subject) && !desired.value(subject).minimized)) {
+            subjectFocus = subject;
+        } else {
+            // The subject landed as a background tab of the receiving
+            // container. Raise that container instead of re-activating (and
+            // raising) the container the subject was dragged out of. Prefer
+            // the container's own current focus representative so scene focus
+            // and the collapsed taskbar identity stay on the same member.
+            const auto owner = afterOwners.value(subject);
+            if (!owner.isEmpty()) {
+                if (afterOwners.value(m_originalActiveWindow) == owner
+                    && visible.contains(m_originalActiveWindow)) {
+                    subjectFocus = m_originalActiveWindow;
+                } else if (const auto *container = candidate.container(owner)) {
+                    for (const auto &id : activeWindows(*container)) {
+                        if (visible.contains(id)) {
+                            subjectFocus = id;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
     if (preservesExternalOrIndependentFocus(
             m_originalActiveWindow, m_candidateOwners, current, desired)) {
         // AGENT-GUARD: An independent or non-topology active window is outside
@@ -362,6 +463,10 @@ Hybrid::SceneStepResult KWinHybridSceneTransaction::prepare(
         // Add/Forget and releaseAll routinely re-plan other groups and must
         // remain focus-transparent to the untouched KWin window.
         m_targetActiveWindow.clear();
+    } else if (!subjectFocus.isEmpty()) {
+        // The window or page the command physically moved takes focus; a
+        // subject restored to its minimized independent snapshot does not.
+        m_targetActiveWindow = subjectFocus;
     } else if (visible.contains(m_originalActiveWindow)) {
         m_targetActiveWindow = m_originalActiveWindow;
     } else if (desired.contains(m_originalActiveWindow)
@@ -474,6 +579,16 @@ KWinHybridSceneFactory::KWinHybridSceneFactory(
 }
 
 KWinHybridSceneFactory::~KWinHybridSceneFactory() = default;
+
+void KWinHybridSceneFactory::setMinimizedContainerProbe(MinimizedContainerProbe probe)
+{
+    m_minimizedContainerProbe = std::move(probe);
+}
+
+bool KWinHybridSceneFactory::containerUserMinimized(const QString &containerId) const
+{
+    return m_minimizedContainerProbe && m_minimizedContainerProbe(containerId);
+}
 
 std::unique_ptr<Hybrid::SceneTransaction> KWinHybridSceneFactory::create() { return std::make_unique<KWinHybridSceneTransaction>(*this); }
 

@@ -79,12 +79,14 @@ KWinInteractionFilter::KWinInteractionFilter(KWin::InputRedirection *input,
                                              HybridInput::InteractionController &controller,
                                              IntentSink sink,
                                              HybridChromePointerRouter *chromeRouter,
-                                             ChromeDecisionSink chromeSink)
+                                             ChromeDecisionSink chromeSink,
+                                             TakeoverSourceResolver takeoverSource)
     : m_input(input)
     , m_controller(controller)
     , m_sink(std::move(sink))
     , m_chromeRouter(chromeRouter)
     , m_chromeSink(std::move(chromeSink))
+    , m_takeoverSource(std::move(takeoverSource))
     , m_lateShiftDetector(controller.pointerModifiers())
 {
     if (!m_input) {
@@ -276,7 +278,18 @@ bool KWinInteractionFilter::observeLateShiftTakeover(Qt::KeyboardModifiers modif
     // unconditional `wasMove && Shift` check therefore reads the frozen
     // (pre-takeover) value and never applies Custom-tile.
     competingMove->cancelInteractiveMoveResize();
-    static_cast<void>(dispatch(m_controller.adoptDrag(position)));
+    if (m_takeoverSource) {
+        // The genuinely moving window is the drag source. Its identity must
+        // come from KWin's move owner, never from a pointer hit-test: the
+        // cancel above snapped it back to its pre-drag frame, so the pointer
+        // now usually hovers the intended *target* container - adopting that
+        // window would dock or detach a stranger (observed as "the drop kicks
+        // a window out of the wrong container").
+        static_cast<void>(dispatch(
+            m_controller.adoptDrag(m_takeoverSource(competingMove), position)));
+    } else {
+        static_cast<void>(dispatch(m_controller.adoptDrag(position)));
+    }
     return true;
 }
 

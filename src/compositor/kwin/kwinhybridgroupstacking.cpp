@@ -428,7 +428,7 @@ bool KWinHybridGroupStacking::raiseContainer(
 bool KWinHybridGroupStacking::chromeExposedAt(
     const QString &containerId,
     const QPointF &position,
-    const QString &excludedWindowId) const
+    const QSet<QString> &excludedWindowIds) const
 {
     const auto members = m_membersBottomToTop.value(containerId);
     if (members.isEmpty()) {
@@ -445,7 +445,7 @@ bool KWinHybridGroupStacking::chromeExposedAt(
     for (auto *window : liveStack) {
         stack.append({stackId(window), inputEligibleAt(window, position)});
     }
-    return sceneChromeExposed(anchorId, excludedWindowId, stack);
+    return sceneChromeExposed(anchorId, excludedWindowIds, stack);
 }
 
 QString KWinHybridGroupStacking::anchorMemberId(const QString &containerId) const

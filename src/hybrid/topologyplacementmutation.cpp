@@ -46,6 +46,16 @@ bool addIndependentToContainer(Core::WindowContainer &target,
                     || target.movePage(placement.pageId,
                                        placement.destinationPageIndex,
                                        error);
+            } else if constexpr (std::is_same_v<Placement, MoveAsRootSplit>) {
+                return target.splitPage(
+                    {.pageId = placement.pageId,
+                     .newWindowId = windowId,
+                     .newLeafNodeId = leafNodeId,
+                     .splitNodeId = placement.splitNodeId,
+                     .orientation = placement.orientation,
+                     .ratio = placement.ratio,
+                     .position = placement.position},
+                    error);
             } else {
                 return target.splitWindow(
                     {.targetWindowId = placement.targetWindowId,
@@ -100,6 +110,20 @@ bool containerHasDirectSiblingNoOp(const Core::WindowContainer &container,
         }
     }
     return false;
+}
+
+bool isRootSiblingNoOp(const Core::LayoutNode &root,
+                       const ReparentMemberToPageRoot &command)
+{
+    if (!root.isSplit()) {
+        return false;
+    }
+    const auto *requestedSide = command.position == Core::InsertPosition::First
+        ? root.firstChild()
+        : root.secondChild();
+    return isLeafWindow(requestedSide, command.windowId)
+        && root.orientation() == command.orientation
+        && root.ratio() == command.ratio;
 }
 
 } // namespace
@@ -391,6 +415,59 @@ bool TopologyPlacementMutation::apply(WindowTopology &candidate,
     // split. Scene adapters and restore-state caches may retain that leaf ID.
     return container->splitWindow(
         {.targetWindowId = command.targetWindowId,
+         .newWindowId = detached->windowId,
+         .newLeafNodeId = detached->leafNodeId,
+         .splitNodeId = command.splitNodeId,
+         .orientation = command.orientation,
+         .ratio = command.ratio,
+         .position = command.position},
+        error);
+}
+
+bool TopologyPlacementMutation::apply(WindowTopology &candidate,
+                                      const ReparentMemberToPageRoot &command,
+                                      QString *error)
+{
+    auto *container = mutableContainer(candidate, command.containerId);
+    if (!container) {
+        return fail(error,
+                    QStringLiteral("unknown container ID '%1'")
+                        .arg(command.containerId));
+    }
+    const auto *page = container->page(command.pageId);
+    if (!page) {
+        return fail(error, QStringLiteral("unknown page ID '%1'").arg(command.pageId));
+    }
+    if (!container->findWindow(command.windowId)) {
+        return fail(error, QStringLiteral("unknown window ID '%1'").arg(command.windowId));
+    }
+    if (container->findNode(command.splitNodeId)) {
+        return fail(error,
+                    QStringLiteral("split node ID '%1' already exists")
+                        .arg(command.splitNodeId));
+    }
+    if (page->root().isLeaf() && page->root().windowId() == command.windowId) {
+        return fail(error,
+                    QStringLiteral("member is the only window on page '%1'")
+                        .arg(command.pageId));
+    }
+    if (isRootSiblingNoOp(page->root(), command)) {
+        return fail(error, QStringLiteral("member already has the requested placement"));
+    }
+
+    const auto detached = container->detachWindow(command.windowId, error);
+    if (!detached) {
+        return false;
+    }
+    // AGENT-GUARD: detachWindow removes a page whose only leaf was the member.
+    // The target page cannot be that page (checked above), but re-resolve it
+    // instead of trusting the pre-detach pointer across the mutation.
+    if (!container->page(command.pageId)) {
+        return fail(error, QStringLiteral("target page disappeared during extraction"));
+    }
+    // The moved leaf keeps its ID for the same reason as ReparentMember.
+    return container->splitPage(
+        {.pageId = command.pageId,
          .newWindowId = detached->windowId,
          .newLeafNodeId = detached->leafNodeId,
          .splitNodeId = command.splitNodeId,

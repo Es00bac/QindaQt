@@ -66,7 +66,7 @@ void KWinHybridSession::initializeTaskIdentityAndShortcuts()
                 }
                 return false;
             }
-            if (!restoreMemberFocusForInteraction(error)) {
+            if (!restoreMemberFocusForContainerAction(containerId, error)) {
                 return false;
             }
             minimizeContainer(containerId);

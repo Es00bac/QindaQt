@@ -36,10 +36,14 @@ bool manageableNormalWindow(const KWin::Window *window)
 KWinInteractionTargetResolver::KWinInteractionTargetResolver(
     const ManagedWindowRegistry &registry,
     const ChromeHitProvider *chrome,
-    ChromeExposureResolver chromeExposure)
+    ChromeExposureResolver chromeExposure,
+    ContainerContentFrameResolver containerContentFrame,
+    DraggedPageMembersResolver draggedPageMembers)
     : m_registry(registry)
     , m_chrome(chrome)
     , m_chromeExposure(std::move(chromeExposure))
+    , m_containerContentFrame(std::move(containerContentFrame))
+    , m_draggedPageMembers(std::move(draggedPageMembers))
 {
 }
 
@@ -86,10 +90,11 @@ HybridInput::HitTarget KWinInteractionTargetResolver::hitTest(
 HybridInput::DockTarget KWinInteractionTargetResolver::pointerDockTarget(
     const HybridInput::HitTarget &source, const QPointF &position) const
 {
+    const auto exclusions = sourceExclusions(source);
     const auto chromeHit = m_chrome
         ? m_chrome->hitTestChrome(position) : HybridInput::HitTarget{};
     const auto chromeTarget = tabDockTargetFromChromeHit(chromeHit);
-    auto *window = topmostInputOwnerAt(position, source.memberId);
+    auto *window = topmostInputOwnerAt(position, exclusions);
     HybridInput::DockTarget nativeTarget;
     QString nativeOwner;
     if (manageableNormalWindow(window)) {
@@ -98,12 +103,31 @@ HybridInput::DockTarget KWinInteractionTargetResolver::pointerDockTarget(
             nativeOwner = m_registry.owner(id);
             nativeTarget = targetFor(
                 window, zoneAt(window->frameGeometry(), position));
+            // AGENT-CONTRACT: A grouped member's tile is only part of its
+            // container. Near the container's own edges the drop targets the
+            // whole container (memberId empty) so the dropped window spans
+            // the full container beside the existing layout;
+            // HybridInteractionRuntime maps that to MoveAsRootSplit or
+            // ReparentMemberToPageRoot. Deeper inside, the member-tile zones
+            // above keep nested splits and per-member tab drops reachable.
+            // Without this band every edge drop split the member tile nearest
+            // the pointer, so a window could never be added beside a
+            // multi-member layout.
+            if (!nativeOwner.isEmpty() && m_containerContentFrame) {
+                const auto contentFrame = m_containerContentFrame(nativeOwner);
+                const auto edge = contentFrame
+                    ? containerEdgeDockZone(*contentFrame, position)
+                    : HybridInput::DockZone::None;
+                if (edge != HybridInput::DockZone::None) {
+                    nativeTarget = {nativeOwner, {}, edge};
+                }
+            }
         }
     }
     const bool sameContainer = chromeTarget.isValid() && !nativeOwner.isEmpty()
         && nativeOwner == chromeTarget.containerId;
     return dockTargetRespectingChromeExposure(
-        chromeExposed(chromeHit, position, source.memberId), sameContainer,
+        chromeExposed(chromeHit, position, exclusions), sameContainer,
         chromeTarget, nativeTarget);
 }
 
@@ -129,7 +153,7 @@ HybridInput::DockTarget KWinInteractionTargetResolver::containerDirectionalTarge
 }
 
 KWin::Window *KWinInteractionTargetResolver::topmostInputOwnerAt(
-    const QPointF &position, const QString &excludedWindowId) const
+    const QPointF &position, const QSet<QString> &excludedWindowIds) const
 {
     const auto &stack = KWin::workspace()->stackingOrder();
     for (auto iterator = stack.crbegin(); iterator != stack.crend(); ++iterator) {
@@ -138,7 +162,7 @@ KWin::Window *KWinInteractionTargetResolver::topmostInputOwnerAt(
             continue;
         }
         const auto id = m_registry.windowId(window);
-        if (!excludedWindowId.isEmpty() && id == excludedWindowId) {
+        if (excludedWindowIds.contains(id)) {
             continue;
         }
         // AGENT-CONTRACT: Stop at the first actual KWin input owner. If it is
@@ -152,13 +176,34 @@ KWin::Window *KWinInteractionTargetResolver::topmostInputOwnerAt(
 bool KWinInteractionTargetResolver::chromeExposed(
     const HybridInput::HitTarget &hit,
     const QPointF &position,
-    const QString &excludedWindowId) const
+    const QSet<QString> &excludedWindowIds) const
 {
     if (!hit.isValid()) {
         return false;
     }
     return !m_chromeExposure
-        || m_chromeExposure(hit.containerId, position, excludedWindowId);
+        || m_chromeExposure(hit.containerId, position, excludedWindowIds);
+}
+
+QSet<QString> KWinInteractionTargetResolver::sourceExclusions(
+    const HybridInput::HitTarget &source) const
+{
+    QSet<QString> excluded;
+    if (!source.memberId.isEmpty()) {
+        excluded.insert(source.memberId);
+    }
+    // Only chrome tab drags carry a page identity (HybridChromeDragTranslator
+    // sets it); a member drag must keep its own container's other tiles
+    // reachable for within-container rearrangement.
+    if (!source.pageId.isEmpty() && m_draggedPageMembers) {
+        const auto members = m_draggedPageMembers(source.containerId, source.pageId);
+        for (const auto &id : members) {
+            if (!id.isEmpty()) {
+                excluded.insert(id);
+            }
+        }
+    }
+    return excluded;
 }
 
 KWin::Window *KWinInteractionTargetResolver::directionalWindow(

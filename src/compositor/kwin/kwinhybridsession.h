@@ -148,8 +148,16 @@ private:
         const QString &containerId,
         HybridChrome::ContainerControl control,
         QString *error = nullptr);
+    // Every-container gate for interactions that run a coordinator scene
+    // transaction (dock, page moves, release, keyboard grabs).
     [[nodiscard]] bool restoreMemberFocusForInteraction(
         QString *error = nullptr);
+    // One-container gate for placement-only actions (group maximize/restore/
+    // minimize/shade/raise) that never run a scene transaction. Using the
+    // every-container gate here made a shared-chrome button on one container
+    // restore and re-activate another container's focused member.
+    [[nodiscard]] bool restoreMemberFocusForContainerAction(
+        const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool restoreMemberFocusForLifecycleChange(
         QString *error = nullptr);
     void handleTabActivation(const QString &containerId, const QString &pageId);

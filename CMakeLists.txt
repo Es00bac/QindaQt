@@ -72,6 +72,7 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widg
 if(BUILD_TESTING)
     find_package(Qt6 6.11 REQUIRED COMPONENTS Test)
 endif()
+find_package(KF6CalendarCore CONFIG REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.11)
 

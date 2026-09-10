@@ -50,6 +50,9 @@ public:
     [[nodiscard]] static bool apply(WindowTopology &candidate,
                                     const ReparentMember &command,
                                     QString *error);
+    [[nodiscard]] static bool apply(WindowTopology &candidate,
+                                    const ReparentMemberToPageRoot &command,
+                                    QString *error);
 };
 
 // Private candidate editor. The coordinator is the only supported public

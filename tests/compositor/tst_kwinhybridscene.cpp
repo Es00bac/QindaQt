@@ -60,6 +60,8 @@ private Q_SLOTS:
     void reflowFinalizeFailureRollsBackStateFocusAndLayout();
     void reflowFailureRestoresUnfocusedWorkspace();
     void pageActivationMinimizesOldPageAndMovesFocus();
+    void minimizedContainerSurvivesUnrelatedMutation();
+    void droppedWindowOwnsFocusNotTheSourceContainer();
 };
 
 void KWinHybridSceneTest::prepareFailurePreservesExistingFocus()
@@ -334,6 +336,9 @@ void KWinHybridSceneTest::reflowUpdatesMembersAndCommittedLayout()
     Hybrid::TopologyCoordinator coordinator(repository, factory);
     QVERIFY(coordinator.execute(dock(QStringLiteral("c"), QStringLiteral("a"),
                                      QStringLiteral("b"))).committed());
+    // The dock activates the dropped window "b"; return focus to "a" so the
+    // post-release comparison against the original states covers focus too.
+    QVERIFY(platform.activateWindow(QStringLiteral("a"), nullptr));
     const int finalizeCalls = platform.finalizeCalls;
     const QRect requestedOuter(50, 60, 900, 400);
 
@@ -406,6 +411,9 @@ void KWinHybridSceneTest::reflowFinalizeFailureRollsBackStateFocusAndLayout()
     Hybrid::TopologyCoordinator coordinator(repository, factory);
     QVERIFY(coordinator.execute(dock(QStringLiteral("c"), QStringLiteral("a"),
                                      QStringLiteral("b"))).committed());
+    // The dock activates the dropped window "b"; the rollback check below
+    // expects the pre-reflow active window, so restore "a" explicitly.
+    QVERIFY(platform.activateWindow(QStringLiteral("a"), nullptr));
     const auto beforeLayout = factory.committedLayout(QStringLiteral("c"));
     const auto beforeFirst = platform.windows.value(QStringLiteral("a")).state;
     const auto beforeSecond = platform.windows.value(QStringLiteral("b")).state;
@@ -488,6 +496,131 @@ void KWinHybridSceneTest::pageActivationMinimizesOldPageAndMovesFocus()
     const auto committed = factory.committedLayout(QStringLiteral("c"));
     QVERIFY(committed.has_value());
     QCOMPARE(committed->activePage.members.keys(), QStringList{QStringLiteral("b")});
+}
+
+void KWinHybridSceneTest::minimizedContainerSurvivesUnrelatedMutation()
+{
+    Test::FakeHybridScenePlatform platform;
+    const auto first = Test::richState(QRectF(20, 30, 600, 400),
+                                       QStringLiteral("output-a"), true);
+    const auto second = Test::richState(QRectF(640, 30, 600, 400),
+                                        QStringLiteral("output-a"));
+    const auto third = Test::richState(QRectF(20, 500, 600, 400),
+                                       QStringLiteral("output-a"));
+    const auto fourth = Test::richState(QRectF(640, 500, 600, 400),
+                                        QStringLiteral("output-a"));
+    platform.addWindow(QStringLiteral("a"), Test::fakeWindow(first, first.geometry));
+    platform.addWindow(QStringLiteral("b"), Test::fakeWindow(second, second.geometry));
+    platform.addWindow(QStringLiteral("x"), Test::fakeWindow(third, third.geometry));
+    platform.addWindow(QStringLiteral("y"), Test::fakeWindow(fourth, fourth.geometry));
+    Hybrid::TopologyRepository repository(topology({QStringLiteral("a"),
+                                                    QStringLiteral("b"),
+                                                    QStringLiteral("x"),
+                                                    QStringLiteral("y")}));
+    KWinIntegration::KWinHybridSceneFactory factory(platform);
+    Hybrid::TopologyCoordinator coordinator(repository, factory);
+    QVERIFY(coordinator.execute(dock(QStringLiteral("c"), QStringLiteral("a"),
+                                     QStringLiteral("b"))).committed());
+
+    // The user minimizes the whole container: the session records it in its
+    // minimized set (here: the injected probe) and every member is minimized.
+    factory.setMinimizedContainerProbe(
+        [](const QString &containerId) {
+            return containerId == QStringLiteral("c");
+        });
+    platform.windows[QStringLiteral("a")].state.minimized = true;
+    platform.windows[QStringLiteral("b")].state.minimized = true;
+
+    // Regression: an unrelated dock re-plans every container, and must not
+    // resurrect the minimized one (which would also make its frame win later
+    // drop hit-tests and drop it from the session's minimized set for good).
+    QVERIFY(coordinator.execute(dock(QStringLiteral("d"), QStringLiteral("x"),
+                                     QStringLiteral("y"))).committed());
+    QVERIFY(platform.windows.value(QStringLiteral("a")).state.minimized);
+    QVERIFY(platform.windows.value(QStringLiteral("b")).state.minimized);
+}
+
+void KWinHybridSceneTest::droppedWindowOwnsFocusNotTheSourceContainer()
+{
+    Test::FakeHybridScenePlatform platform;
+    const auto first = Test::richState(QRectF(20, 30, 600, 400),
+                                       QStringLiteral("output-a"), true);
+    const auto second = Test::richState(QRectF(20, 30, 600, 400),
+                                        QStringLiteral("output-a"));
+    const auto third = Test::richState(QRectF(700, 30, 600, 400),
+                                       QStringLiteral("output-a"));
+    const auto fourth = Test::richState(QRectF(700, 30, 600, 400),
+                                        QStringLiteral("output-a"));
+    platform.addWindow(QStringLiteral("a"), Test::fakeWindow(first, first.geometry));
+    platform.addWindow(QStringLiteral("b"), Test::fakeWindow(second, second.geometry));
+    platform.addWindow(QStringLiteral("x"), Test::fakeWindow(third, third.geometry));
+    platform.addWindow(QStringLiteral("y"), Test::fakeWindow(fourth, fourth.geometry));
+    Hybrid::TopologyRepository repository(topology({QStringLiteral("a"),
+                                                    QStringLiteral("b"),
+                                                    QStringLiteral("x"),
+                                                    QStringLiteral("y")}));
+    KWinIntegration::KWinHybridSceneFactory factory(platform);
+    Hybrid::TopologyCoordinator coordinator(repository, factory);
+    QVERIFY(coordinator.execute(dock(QStringLiteral("left"), QStringLiteral("a"),
+                                     QStringLiteral("b"))).committed());
+    QVERIFY(coordinator.execute(dock(QStringLiteral("right"), QStringLiteral("x"),
+                                     QStringLiteral("y"))).committed());
+
+    // The user focuses the source container, then drags "b" out of it onto
+    // the "right" container's tab strip. The dropped member lands on a
+    // background page, so focus must move to the *receiving* container's
+    // visible representative - never back to the source container, whose
+    // re-activation raised it above the actual drop target.
+    QVERIFY(platform.activateWindow(QStringLiteral("a"), nullptr));
+    const Hybrid::MoveMember move{
+        .sourceContainerId = QStringLiteral("left"),
+        .targetContainerId = QStringLiteral("right"),
+        .windowId = QStringLiteral("b"),
+        .destination = Hybrid::MoveAsPage{QStringLiteral("page-b"), 1},
+    };
+    QVERIFY2(coordinator.execute(move).committed(), "cross-container move");
+    QVERIFY(platform.windows.value(QStringLiteral("b")).state.minimized);
+    QCOMPARE(platform.activeWindowId(), QStringLiteral("x"));
+
+    // A split drop lands the dragged window on the target's active page, so
+    // the dragged window itself takes focus. Fresh fixture: the tab move
+    // above reduced "left" to a single member, and emptying a container is
+    // correctly rejected.
+    {
+        Test::FakeHybridScenePlatform splitPlatform;
+        for (const auto &id : {QStringLiteral("m"), QStringLiteral("n"),
+                               QStringLiteral("u"), QStringLiteral("v")}) {
+            const auto state = Test::richState(QRectF(20, 30, 600, 400),
+                                               QStringLiteral("output-a"));
+            splitPlatform.addWindow(id, Test::fakeWindow(state, state.geometry));
+        }
+        Hybrid::TopologyRepository splitRepository(
+            topology({QStringLiteral("m"), QStringLiteral("n"),
+                      QStringLiteral("u"), QStringLiteral("v")}));
+        KWinIntegration::KWinHybridSceneFactory splitFactory(splitPlatform);
+        Hybrid::TopologyCoordinator splitCoordinator(splitRepository, splitFactory);
+        QVERIFY(splitCoordinator.execute(dock(QStringLiteral("left"), QStringLiteral("m"),
+                                              QStringLiteral("n"))).committed());
+        QVERIFY(splitCoordinator.execute(dock(QStringLiteral("right"), QStringLiteral("u"),
+                                              QStringLiteral("v"))).committed());
+        QVERIFY(splitPlatform.activateWindow(QStringLiteral("m"), nullptr));
+
+        const Hybrid::MoveMember splitMove{
+            .sourceContainerId = QStringLiteral("left"),
+            .targetContainerId = QStringLiteral("right"),
+            .windowId = QStringLiteral("n"),
+            .destination = Hybrid::MoveAsSplit{
+                .targetWindowId = QStringLiteral("u"),
+                .splitNodeId = QStringLiteral("split-nu"),
+                .orientation = Core::SplitOrientation::Horizontal,
+                .ratio = 0.5,
+                .position = Core::InsertPosition::Second,
+            },
+        };
+        QVERIFY2(splitCoordinator.execute(splitMove).committed(), "split move");
+        QVERIFY(!splitPlatform.windows.value(QStringLiteral("n")).state.minimized);
+        QCOMPARE(splitPlatform.activeWindowId(), QStringLiteral("n"));
+    }
 }
 
 QTEST_GUILESS_MAIN(KWinHybridSceneTest)

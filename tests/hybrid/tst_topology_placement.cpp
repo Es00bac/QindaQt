@@ -18,6 +18,8 @@ private slots:
     void movesIndividualMembersAcrossPages();
     void regroupsWholePageWithIndependentTarget();
     void reparentsMemberPreservingLeafAndRejectsNoOps();
+    void insertsIndependentWindowAtPageRoot();
+    void reparentsMemberToPageRootAndRejectsNoOps();
 };
 
 void TopologyPlacementTest::insertsIndependentWindowAsSplitAndPage()
@@ -308,6 +310,161 @@ void TopologyPlacementTest::reparentsMemberPreservingLeafAndRejectsNoOps()
              QStringList({QStringLiteral("window-c"),
                           QStringLiteral("window-a"),
                           QStringLiteral("window-b")}));
+}
+
+void TopologyPlacementTest::insertsIndependentWindowAtPageRoot()
+{
+    auto target = splitContainer(QStringLiteral("target"),
+                                 QStringLiteral("target"),
+                                 QStringLiteral("window-a"),
+                                 QStringLiteral("window-b"));
+    TopologyRepository repository(topology({QStringLiteral("window-c"),
+                                            QStringLiteral("window-d")},
+                                           {target}));
+    AlwaysReadyFactory scene;
+    TopologyCoordinator coordinator(repository, scene);
+
+    // A container-edge drop wraps the whole [a | b] page: the new window
+    // spans the full page height on the left instead of splitting one tile.
+    const auto rootSplit = coordinator.execute(InsertIndependentWindow{
+        .targetContainerId = QStringLiteral("target"),
+        .windowId = QStringLiteral("window-c"),
+        .leafNodeId = QStringLiteral("inserted-leaf-c"),
+        .destination = MoveAsRootSplit{
+            .pageId = QStringLiteral("target-page"),
+            .splitNodeId = QStringLiteral("root-split"),
+            .orientation = Core::SplitOrientation::Horizontal,
+            .ratio = 0.3,
+            .position = Core::InsertPosition::First,
+        },
+    });
+    QVERIFY2(rootSplit.committed(), qPrintable(rootSplit.message));
+    QCOMPARE(rootSplit.kind, TopologyCommandKind::InsertIndependentWindow);
+    const auto *container = repository.topology().container(QStringLiteral("target"));
+    QVERIFY(container);
+    const auto &root = container->page(QStringLiteral("target-page"))->root();
+    QCOMPARE(root.id(), QStringLiteral("root-split"));
+    QCOMPARE(root.firstChild()->id(), QStringLiteral("inserted-leaf-c"));
+    QCOMPARE(root.firstChild()->windowId(), QStringLiteral("window-c"));
+    QCOMPARE(root.secondChild()->id(), QStringLiteral("target-split"));
+    QCOMPARE(root.secondChild()->firstChild()->windowId(), QStringLiteral("window-a"));
+    QCOMPARE(root.secondChild()->secondChild()->windowId(), QStringLiteral("window-b"));
+    QCOMPARE(repository.topology().independentWindowIds(),
+             QStringList{QStringLiteral("window-d")});
+
+    const auto unknownPage = coordinator.execute(InsertIndependentWindow{
+        .targetContainerId = QStringLiteral("target"),
+        .windowId = QStringLiteral("window-d"),
+        .leafNodeId = QStringLiteral("inserted-leaf-d"),
+        .destination = MoveAsRootSplit{
+            .pageId = QStringLiteral("missing-page"),
+            .splitNodeId = QStringLiteral("unused-split"),
+        },
+    });
+    QCOMPARE(unknownPage.error, TopologyCommandError::InvalidCommand);
+    QCOMPARE(repository.topology().revision(), quint64{1});
+    QVERIFY(repository.topology().isIndependent(QStringLiteral("window-d")));
+}
+
+void TopologyPlacementTest::reparentsMemberToPageRootAndRejectsNoOps()
+{
+    auto container = splitContainer(QStringLiteral("container"),
+                                    QStringLiteral("tree"),
+                                    QStringLiteral("window-a"),
+                                    QStringLiteral("window-b"));
+    QString error;
+    QVERIFY(container.splitWindow(
+        {.targetWindowId = QStringLiteral("window-b"),
+         .newWindowId = QStringLiteral("window-c"),
+         .newLeafNodeId = QStringLiteral("leaf-c"),
+         .splitNodeId = QStringLiteral("inner-split"),
+         .orientation = Core::SplitOrientation::Vertical,
+         .ratio = 0.6,
+         .position = Core::InsertPosition::Second},
+        &error));
+    QVERIFY(container.addPage(QStringLiteral("solo-page"),
+                              QStringLiteral("leaf-d"),
+                              QStringLiteral("window-d"),
+                              &error));
+    TopologyRepository repository(topology({}, {container}, 5));
+    AlwaysReadyFactory scene;
+    TopologyCoordinator coordinator(repository, scene);
+
+    // [a | [b / c]] with c dragged to the container's top band becomes
+    // [c / [a | b]]: c keeps its leaf ID and the pruned tree stays intact.
+    const auto reparented = coordinator.execute(ReparentMemberToPageRoot{
+        .containerId = QStringLiteral("container"),
+        .windowId = QStringLiteral("window-c"),
+        .pageId = QStringLiteral("tree-page"),
+        .splitNodeId = QStringLiteral("root-split"),
+        .orientation = Core::SplitOrientation::Vertical,
+        .ratio = 0.4,
+        .position = Core::InsertPosition::First,
+    });
+    QVERIFY2(reparented.committed(), qPrintable(reparented.message));
+    QCOMPARE(reparented.kind, TopologyCommandKind::ReparentMemberToPageRoot);
+    const auto *after = repository.topology().container(QStringLiteral("container"));
+    QVERIFY(after);
+    const auto &root = after->page(QStringLiteral("tree-page"))->root();
+    QCOMPARE(root.id(), QStringLiteral("root-split"));
+    QCOMPARE(root.orientation(), std::optional(Core::SplitOrientation::Vertical));
+    QCOMPARE(root.ratio(), std::optional(0.4));
+    QCOMPARE(root.firstChild()->id(), QStringLiteral("leaf-c"));
+    QCOMPARE(root.secondChild()->id(), QStringLiteral("tree-split"));
+    QCOMPARE(root.secondChild()->firstChild()->windowId(), QStringLiteral("window-a"));
+    QCOMPARE(root.secondChild()->secondChild()->windowId(), QStringLiteral("window-b"));
+    QVERIFY(!after->findNode(QStringLiteral("inner-split")));
+
+    const auto noOp = coordinator.execute(ReparentMemberToPageRoot{
+        .containerId = QStringLiteral("container"),
+        .windowId = QStringLiteral("window-c"),
+        .pageId = QStringLiteral("tree-page"),
+        .splitNodeId = QStringLiteral("unused-split"),
+        .orientation = Core::SplitOrientation::Vertical,
+        .ratio = 0.4,
+        .position = Core::InsertPosition::First,
+    });
+    QCOMPARE(noOp.error, TopologyCommandError::InvalidCommand);
+    QVERIFY(noOp.message.contains(QStringLiteral("already has")));
+    const auto onlyMember = coordinator.execute(ReparentMemberToPageRoot{
+        .containerId = QStringLiteral("container"),
+        .windowId = QStringLiteral("window-d"),
+        .pageId = QStringLiteral("solo-page"),
+        .splitNodeId = QStringLiteral("unused-split"),
+    });
+    QCOMPARE(onlyMember.error, TopologyCommandError::InvalidCommand);
+    QVERIFY(onlyMember.message.contains(QStringLiteral("only window")));
+    const auto collision = coordinator.execute(ReparentMemberToPageRoot{
+        .containerId = QStringLiteral("container"),
+        .windowId = QStringLiteral("window-b"),
+        .pageId = QStringLiteral("tree-page"),
+        .splitNodeId = QStringLiteral("root-split"),
+    });
+    QCOMPARE(collision.error, TopologyCommandError::InvalidCommand);
+    QCOMPARE(repository.topology().revision(), quint64{6});
+
+    // A member from another page may join this page's root; its own solo
+    // page disappears through ordinary detach normalization.
+    const auto crossPage = coordinator.execute(ReparentMemberToPageRoot{
+        .containerId = QStringLiteral("container"),
+        .windowId = QStringLiteral("window-d"),
+        .pageId = QStringLiteral("tree-page"),
+        .splitNodeId = QStringLiteral("cross-split"),
+        .orientation = Core::SplitOrientation::Horizontal,
+        .ratio = 0.5,
+        .position = Core::InsertPosition::Second,
+    });
+    QVERIFY2(crossPage.committed(), qPrintable(crossPage.message));
+    after = repository.topology().container(QStringLiteral("container"));
+    QCOMPARE(after->pages().size(), qsizetype{1});
+    QCOMPARE(after->page(QStringLiteral("tree-page"))->root().id(),
+             QStringLiteral("cross-split"));
+    QCOMPARE(after->findWindow(QStringLiteral("window-d"))->id(), QStringLiteral("leaf-d"));
+    QCOMPARE(repository.topology().windowIds(QStringLiteral("container")),
+             QStringList({QStringLiteral("window-c"),
+                          QStringLiteral("window-a"),
+                          QStringLiteral("window-b"),
+                          QStringLiteral("window-d")}));
 }
 
 QTEST_APPLESS_MAIN(TopologyPlacementTest)

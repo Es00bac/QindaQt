@@ -196,6 +196,9 @@ void KWinHybridTaskIdentityTest::primaryCloseNormalizesAndRestoresSurvivor()
                                       QStringLiteral("b"))).committed());
     verifyPrimary(platform, {QStringLiteral("a"), QStringLiteral("b")},
                   QStringLiteral("a"));
+    // The dock activates the dropped window "b" by policy; the close below is
+    // meant for the focused primary, so return focus to "a" first.
+    QVERIFY(platform.activateWindow(QStringLiteral("a"), nullptr));
 
     platform.removeWindow(QStringLiteral("a"));
     const auto closed = coordinator.execute(Hybrid::ForgetWindow{QStringLiteral("a")});
@@ -234,11 +237,15 @@ void KWinHybridTaskIdentityTest::pageMoveKeepsInactiveExcludedAndRestoresEveryBa
     });
     QVERIFY2(moved.committed(), qPrintable(moved.message));
     QVERIFY(repository.topology().isIndependent(QStringLiteral("a")));
-    QCOMPARE(platform.windows.value(QStringLiteral("a")).state,
-             originals.value(QStringLiteral("a")));
+    // The drop raises the receiving container through its visible active-page
+    // member "c", so the now-independent "a" loses the focus it held.
+    auto expectedA = originals.value(QStringLiteral("a"));
+    expectedA.focused = false;
+    QCOMPARE(platform.windows.value(QStringLiteral("a")).state, expectedA);
+    QCOMPARE(platform.activeWindowId(), QStringLiteral("d"));
     verifyPrimary(platform,
                   {QStringLiteral("b"), QStringLiteral("c"), QStringLiteral("d")},
-                  QStringLiteral("c"));
+                  QStringLiteral("d"));
     QVERIFY(platform.windows.value(QStringLiteral("b")).state.minimized);
 
     QVERIFY(coordinator.execute(Hybrid::ActivatePage{
@@ -251,8 +258,11 @@ void KWinHybridTaskIdentityTest::pageMoveKeepsInactiveExcludedAndRestoresEveryBa
 
     QVERIFY(coordinator.execute(
         Hybrid::ReleaseContainer{QStringLiteral("target")}).committed());
-    for (const auto &id : {QStringLiteral("b"), QStringLiteral("c"),
-                           QStringLiteral("d")}) {
+    // "b" was active when the group dissolved and keeps focus across release.
+    auto expectedB = originals.value(QStringLiteral("b"));
+    expectedB.focused = true;
+    QCOMPARE(platform.windows.value(QStringLiteral("b")).state, expectedB);
+    for (const auto &id : {QStringLiteral("c"), QStringLiteral("d")}) {
         QCOMPARE(platform.windows.value(id).state, originals.value(id));
     }
 }

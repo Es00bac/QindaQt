@@ -52,6 +52,16 @@ HybridChrome::ChromeMetrics chromeMetrics()
     return {};
 }
 
+void collectPageWindowIds(const Core::LayoutNode &node, QStringList *windowIds)
+{
+    if (node.isLeaf()) {
+        windowIds->append(node.windowId());
+        return;
+    }
+    collectPageWindowIds(*node.firstChild(), windowIds);
+    collectPageWindowIds(*node.secondChild(), windowIds);
+}
+
 HybridConstraints::LayoutMetrics sceneMetrics()
 {
     const auto chrome = chromeMetrics();
@@ -79,6 +89,10 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
     , m_registry(registry)
 {
     m_sceneFactory = std::make_unique<KWinHybridSceneFactory>(registry, sceneMetrics());
+    m_sceneFactory->setMinimizedContainerProbe(
+        [this](const QString &containerId) {
+            return m_minimizedContainers.contains(containerId);
+        });
     m_runtime = std::make_unique<HybridInteractionRuntime>(
         registry.windowIds(), *m_sceneFactory,
         HybridRuntimeCallbacks{
@@ -154,10 +168,27 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
         registry, m_chromeManager.get(),
         [this](const QString &containerId,
                const QPointF &position,
-               const QString &excludedWindowId) {
+               const QSet<QString> &excludedWindowIds) {
             return m_groupStacking
                 && m_groupStacking->chromeExposedAt(
-                    containerId, position, excludedWindowId);
+                    containerId, position, excludedWindowIds);
+        },
+        [this](const QString &containerId) -> std::optional<QRectF> {
+            const auto layout = m_sceneFactory->committedLayout(containerId);
+            if (!layout) {
+                return std::nullopt;
+            }
+            return QRectF(layout->activePage.contentFrame);
+        },
+        [this](const QString &containerId, const QString &pageId) -> QStringList {
+            const auto *container = m_runtime->topology().container(containerId);
+            const auto *page = container ? container->page(pageId) : nullptr;
+            if (!page) {
+                return {};
+            }
+            QStringList members;
+            collectPageWindowIds(page->root(), &members);
+            return members;
         });
     m_dragTranslator = std::make_unique<HybridChromeDragTranslator>(*m_targetResolver);
     m_placement = std::make_unique<HybridContainerPlacementController>(
@@ -201,6 +232,15 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
         m_chromePointerRouter.get(),
         [this](const ChromePointerDecision &decision) {
             dispatchChromePointerDecision(decision);
+        },
+        [this](KWin::Window *window) -> HybridInput::HitTarget {
+            const auto id = window ? m_registry.windowId(window) : QString{};
+            if (id.isEmpty() || m_registry.window(id) != window) {
+                // An unmanaged move owner adopts the swallowed no-target
+                // grab; the takeover still consumes so KWin never resumes it.
+                return {};
+            }
+            return {HybridInput::HitKind::MemberTitle, m_registry.owner(id), id, {}};
         });
     initializeTaskIdentityAndShortcuts();
     initializeSavedWorkspaces();
@@ -380,8 +420,11 @@ std::optional<QRectF> KWinHybridSession::dockTargetFrame(
         if (!layout) {
             return std::nullopt;
         }
-        if (target.zone != HybridInput::DockZone::Tab
-            && !target.memberId.isEmpty()) {
+        if (target.zone != HybridInput::DockZone::Tab) {
+            if (target.memberId.isEmpty()) {
+                // Container-edge drop: preview half of the whole content area.
+                return QRectF(layout->activePage.contentFrame);
+            }
             const auto member = layout->activePage.members.constFind(target.memberId);
             if (member != layout->activePage.members.cend()) {
                 return QRectF(member->windowFrame);

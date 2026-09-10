@@ -72,6 +72,10 @@ struct Fixture final
         const auto grouped = coordinator.execute(dockCommand());
         Q_ASSERT_X(grouped.committed(), "group context fixture",
                    qPrintable(grouped.message));
+        // The dock activates the dropped window "b" by policy; these tests
+        // compare against the pre-group originals, which have "a" focused.
+        const bool reactivated = platform.activateWindow(QStringLiteral("a"), nullptr);
+        Q_ASSERT_X(reactivated, "group context fixture", "could not refocus a");
     }
 
     Test::FakeHybridScenePlatform platform;

@@ -50,7 +50,7 @@ of low-level tree operations.
 | `AddIndependentWindow` | Adds one newly managed, unowned client to the docking inventory. |
 | `ForgetWindow` | Removes a closed/unmanaged client from independent placement or its container without retaining the dead ID. |
 | `DockIndependentWindows` | Removes two independent windows and creates one split container. |
-| `InsertIndependentWindow` | Inserts one independent window into an existing container as a new page or as a split relative to a member. |
+| `InsertIndependentWindow` | Inserts one independent window into an existing container as a new page, as a split relative to a member, or (`MoveAsRootSplit`) as a split beside a page's complete root tree. |
 | `GroupIndependentWindowsAsPages` | Removes two independent windows and creates one two-page container. |
 | `RegroupMemberWithIndependent` | Detaches one owned member and combines it with an independent window in a new split or paged container while normalizing the source. |
 | `MergeContainers` | Inserts all source pages, in order, at a target page index and removes the source container. The target active page is preserved. |
@@ -58,12 +58,13 @@ of low-level tree operations.
 | `DetachPage` | Removes one page from a multi-page container. A leaf page becomes an independent window; a split page becomes a new one-page container with its complete tree. |
 | `MoveMemberToPage` | Extracts one member, preserving its leaf ID, into a new page immediately after a stable target page in the same container. |
 | `RegroupPageWithIndependent` | Creates a new two-page container with an independent target first and one complete source page second. The source page and tree IDs survive. |
-| `MoveMember` | Detaches one source member and inserts it in another container as a page or split. Its leaf ID is preserved. |
+| `MoveMember` | Detaches one source member and inserts it in another container as a page, a member split, or a page-root split. Its leaf ID is preserved. |
 | `ReorderPage` | Moves a page to an explicit final index. |
 | `ActivatePage` | Selects a different existing page without changing logical page order. |
 | `ResizeSplit` | Applies an adapter-computed finite divider ratio to an existing split. |
 | `ReorderMembers` | Swaps two leaf payloads without changing stable node IDs or split geometry. |
 | `ReparentMember` | Detaches and reinserts a member relative to another member in the same container, preserving the moved leaf ID and creating one requested split. |
+| `ReparentMemberToPageRoot` | Detaches a member and reinserts it beside the complete remaining tree of one page in the same container, preserving the moved leaf ID and creating one requested split. The member may not be that page's only window. |
 | `DetachMember` | Returns a member to independent placement and normalizes its source. |
 | `ReleaseContainer` | Returns every member to independent placement and removes the container. |
 | `AdoptIndependentLayout` | Adopts one complete Core layout from currently independent windows through a single scene transaction. |
@@ -86,7 +87,12 @@ before submitting the command.
 
 `HybridInteractionRuntime` translates one committed pointer intent to exactly
 one semantic command. Edge docking maps to a split orientation and insertion
-side; tab docking maps to page insertion or grouping. A tab is a complete page,
+side; tab docking maps to page insertion or grouping. An edge target that names
+a container but no member is a container-edge drop that wraps the target's
+active page root: an independent source uses `InsertIndependentWindow` with
+`MoveAsRootSplit`, a member from another container uses `MoveMember` with
+`MoveAsRootSplit`, and a member of the same container uses
+`ReparentMemberToPageRoot`. A tab is a complete page,
 not its representative member: a cross-container tab drop uses `MovePage`, an
 empty drop uses `DetachPage`, and a tab dropped on an independent window's tab
 target uses `RegroupPageWithIndependent`. Within one container a tab drop after
@@ -174,10 +180,14 @@ custom-tile default only ever applies to a move) for the exact instant the
 docking chord's modifiers newly become fully held that were not a moment
 before, consumes that one event so KWin's own filter never updates its tracked
 modifiers past that point, cancels the native move with those now-frozen
-modifiers, and adopts the current pointer position directly into the same
+modifiers, and adopts the drag into the same
 exact-modifier controller the Decoration-order filter already drives - skipping
 the drag-threshold state a fresh press would otherwise need, since the
 threshold was already exceeded by the native move it is taking over from. The
+adopted source is the window KWin reports as its interactive-move owner, never
+a pointer hit-test: cancelling the native move snaps that window back to its
+pre-drag frame, so the cursor usually sits over the intended drop target, and
+a hit-test would silently dock or detach that stranger instead. The
 adopted window visibly settles back to its pre-drag position for one frame
 before the dock preview resumes from the current cursor point; a plain drag
 that never has Shift added is untouched and stays fully native from start to
@@ -190,7 +200,10 @@ only when its current member anchor is paintable and no eligible native input
 owner above that anchor covers the point. The resolver stops at the first real
 owner even when it is an internal window, popup, dialog, or other non-topology
 window; it never tunnels to a manageable client below. Exact docking may ignore
-only its dragged source so that source can target chrome beneath itself.
+only its dragged source so that source can target chrome beneath itself; a tab
+drag excludes its page's complete membership the same way, because the chrome
+press raises the source container and its tiles would otherwise win the
+hit-test over the intended target underneath.
 
 An ordinary right-button press and matching release on `OuterTitleDrag` emits
 one stable-ID context-menu request. Member-title right clicks remain native.
@@ -233,7 +246,14 @@ manageable normal window. KWin layer-shell windows are explicitly ineligible
 even when their window type is reported as normal: panels, notifications, and
 other shell overlays retain protocol-owned placement and can never become
 container members. For a valid window, the center 40% of each axis is the tab
-target; otherwise the nearest edge wins. Keyboard edge selection ranks
+target; otherwise the nearest edge wins. When that window is a grouped member,
+a band inside its container's committed content frame (15% of the shorter
+side, clamped between 16 and 64 logical pixels and never more than a quarter
+of that side) first claims the drop for the container itself: the nearest
+content-frame edge becomes a member-less container target and the dock preview
+shows half of the content frame. Only outside that band do the member-tile
+rules above apply, which keeps nested splits and per-member tab drops
+reachable. Keyboard edge selection ranks
 directional manageable windows by forward distance and perpendicular distance.
 Stale source ownership or a target that vanished before commit rejects without
 advancing the topology revision.
@@ -311,7 +331,18 @@ The production scene transaction captures every affected live window before
 mutation, solves every page, validates every desired state, and stages copied
 restore/layout maps. Its commit then applies member state in stable window-ID
 order, applies focus once, atomically finalizes registry ownership plus target
-frames, and swaps the staged maps. A cross-container move therefore has one
+frames, and swaps the staged maps. Focus selection prefers the command's
+physical subject - the dropped or dragged window, resolved through the
+receiving container's visible active-page member when the subject landed as a
+background tab - so the container under the pointer ends raised rather than
+the one the subject was dragged out of. Only when no visible subject exists
+does the previous rule apply: preserve an untouched external or independent
+active window, otherwise keep the original active window while it survives
+visible, otherwise fall back to the first visible window in stable ID order. A
+container the user minimized is session window-action state, not topology: the
+scene learns it through an injected probe and keeps every member of such a
+container minimized across unrelated mutations instead of resurrecting it from
+page-activity state. A cross-container move therefore has one
 owner finalization rather than an observable release followed by acquisition.
 If any application or finalization fails, rollback reapplies earlier live
 states in reverse order and restores the original focus; the coordinator keeps

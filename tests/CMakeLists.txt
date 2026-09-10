@@ -117,6 +117,7 @@ add_subdirectory(shell/clipboard_applet)
 add_subdirectory(apps/settings_center)
 add_subdirectory(apps/text_editor)
 add_subdirectory(apps/file_manager)
+add_subdirectory(apps/calendar)
 add_subdirectory(apps/terminal)
 
 if(TARGET qindaqt_session_supervisor_support)

@@ -282,6 +282,9 @@ Hybrid::SceneStepResult KWinHybridSceneFactory::reflowContainerWithContext(
     QHash<QString, WindowRestoreState> desired;
     QSet<QString> visible;
     std::optional<HybridConstraints::ConstraintSolution> activeSolution;
+    // A user-minimized container keeps every member minimized through reflow;
+    // only KWinHybridSession::unminimizeContainer may restore it.
+    const bool userMinimized = containerUserMinimized(container.id());
     for (const auto &page : container.pages()) {
         const auto solution = ConstraintSolver::solve(
             page.root(), outerFrame, constraints, m_metrics, &error);
@@ -296,7 +299,7 @@ Hybrid::SceneStepResult KWinHybridSceneFactory::reflowContainerWithContext(
              iterator != solution->members.cend(); ++iterator) {
             auto state = current.value(iterator.key());
             state.geometry = iterator->windowFrame;
-            state.minimized = !activePage;
+            state.minimized = userMinimized || !activePage;
             state.maximizedAxes = {};
             state.quickTileEdges = {};
             state.fullscreen = false;

@@ -381,22 +381,26 @@ bool KWinMemberPolicyManager::synchronize(const Hybrid::WindowTopology &topology
     return true;
 }
 
-std::optional<MemberFocusState> KWinMemberPolicyManager::focusState() const
+std::optional<MemberFocusState> KWinMemberPolicyManager::focusState(
+    const QString &containerId) const
 {
-    return m_policy->focusState();
+    return m_policy->focusState(containerId);
+}
+
+QVector<MemberFocusState> KWinMemberPolicyManager::focusStates() const
+{
+    return m_policy->focusStates();
 }
 
 bool KWinMemberPolicyManager::chromeVisible(const QString &containerId) const
 {
-    const auto state = focusState();
-    return !state || state->containerId != containerId;
+    return !m_policy->focusState(containerId);
 }
 
 void KWinMemberPolicyManager::enforceChromeVisibility() const
 {
-    const auto state = focusState();
-    if (state) {
-        m_platform->setChromeVisible(state->containerId, false);
+    for (const auto &state : m_policy->focusStates()) {
+        m_platform->setChromeVisible(state.containerId, false);
     }
 }
 
@@ -409,6 +413,18 @@ bool KWinMemberPolicyManager::restoreForTopologyMutation(QString *error)
         return false;
     }
     return m_policy->restoreForTopologyMutation(error);
+}
+
+bool KWinMemberPolicyManager::restoreForContainerAction(const QString &containerId,
+                                                        QString *error)
+{
+    if (m_shutdown) {
+        if (error) {
+            *error = QStringLiteral("member policy manager is shut down");
+        }
+        return false;
+    }
+    return m_policy->restoreForContainerAction(containerId, error);
 }
 
 bool KWinMemberPolicyManager::restoreForLifecycleMutation(QString *error)
@@ -428,7 +444,11 @@ void KWinMemberPolicyManager::restorePresentationForShutdown() noexcept
         return;
     }
     QSet<QString> missing;
-    if (const auto baseline = m_policy->focusBaseline()) {
+    for (const auto &state : m_policy->focusStates()) {
+        const auto baseline = m_policy->focusBaseline(state.containerId);
+        if (!baseline) {
+            continue;
+        }
         for (const auto &member : baseline->members) {
             if (!m_registry.window(member.windowId)) {
                 missing.insert(member.windowId);
