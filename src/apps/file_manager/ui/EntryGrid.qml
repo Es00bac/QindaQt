@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "EntryDrag.js" as EntryDrag
 
 // Visual browsing shares the exact selection policy with the details view.
 Control {
@@ -10,6 +11,10 @@ Control {
     required property var navigationController
     required property var selection
     required property var appCoordinator
+    // Optional drop dispatch targets; Main always passes the real controllers,
+    // fixture tests may leave them null (drops then refuse politely).
+    property var mutationController: null
+    property var clipboardController: null
 
     property int iconSize: 64
     signal zoomRequested(int steps)
@@ -58,6 +63,23 @@ Control {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
+            // Background drop target: dropping on empty view space drops into
+            // the browsed folder. Folder delegates carry their own DropArea,
+            // which sits above this one and wins when both cover the cursor.
+            DropArea {
+                anchors.fill: parent
+                onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
+                onDropped: (drop) => {
+                    const action = EntryDrag.dispatch(
+                        drop, root.navigationController.currentPath,
+                        root.mutationController, root.clipboardController)
+                    if (action !== Qt.IgnoreAction)
+                        drop.accept(action)
+                    else
+                        drop.accepted = false
+                }
+            }
+
             GridView {
                 id: gridView
                 objectName: "entryGridView"
@@ -87,9 +109,9 @@ Control {
                 Accessible.role: Accessible.List
                 Accessible.name: qsTr("Folder contents")
 
-                Keys.onReturnPressed: root.activateCurrent()
-                Keys.onEnterPressed: root.activateCurrent()
-                Keys.onPressed: (event) => keyboardNavigation.handle(event)
+                Keys.onReturnPressed: { root.activateCurrent(); }
+                Keys.onEnterPressed: { root.activateCurrent(); }
+                Keys.onPressed: (event) => { keyboardNavigation.handle(event); }
 
                 delegate: Rectangle {
                     id: delegateRoot
@@ -104,6 +126,18 @@ Control {
                     radius: 8
                     color: delegateRoot.entrySelected ? root.palette.highlight
                          : hoverArea.containsMouse ? root.palette.alternateBase : "transparent"
+
+                    Drag.active: dragHandler.active
+                    Drag.dragType: Drag.Automatic
+                    Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
+                    Drag.mimeData: EntryDrag.mimeFor(
+                        delegateRoot.entrySelected ? root.selection.selectedEntries()
+                                                   : [delegateRoot.modelData])
+
+                    DragHandler {
+                        id: dragHandler
+                        target: null
+                    }
 
                     Accessible.role: Accessible.ListItem
                     Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
@@ -197,6 +231,21 @@ Control {
                             root.activateCurrent()
                         }
                     }
+
+                    DropArea {
+                        anchors.fill: parent
+                        enabled: delegateRoot.modelData.isDirectory
+                        onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
+                        onDropped: (drop) => {
+                            const action = EntryDrag.dispatch(
+                                drop, delegateRoot.modelData.path,
+                                root.mutationController, root.clipboardController)
+                            if (action !== Qt.IgnoreAction)
+                                drop.accept(action)
+                            else
+                                drop.accepted = false
+                        }
+                    }
                 }
             }
 
@@ -205,6 +254,18 @@ Control {
         Menu {
             id: contextMenu
 
+            MenuItem {
+                text: qsTr("Cut")
+                onTriggered: root.appCoordinator.activateAction("edit.cut")
+            }
+            MenuItem {
+                text: qsTr("Copy")
+                onTriggered: root.appCoordinator.activateAction("edit.copy")
+            }
+            MenuItem {
+                text: qsTr("Paste")
+                onTriggered: root.appCoordinator.activateAction("edit.paste")
+            }
             MenuItem {
                 text: qsTr("Rename")
                 onTriggered: root.appCoordinator.activateAction("file.rename")
@@ -220,6 +281,10 @@ Control {
             MenuItem {
                 text: qsTr("Move to Trash")
                 onTriggered: root.appCoordinator.activateAction("file.trash")
+            }
+            MenuItem {
+                text: qsTr("Properties")
+                onTriggered: root.appCoordinator.activateAction("file.properties")
             }
         }
 

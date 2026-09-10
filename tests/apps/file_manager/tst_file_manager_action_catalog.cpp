@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 24);
+  QCOMPARE(actions.size(), 28);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -35,8 +35,11 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("file.new-folder"), QStringLiteral("file.rename"),
       QStringLiteral("file.copy"), QStringLiteral("file.move"),
       QStringLiteral("file.trash"), QStringLiteral("file.restore-last"),
-      QStringLiteral("file.empty-trash"), QStringLiteral("edit.undo"),
+      QStringLiteral("file.empty-trash"), QStringLiteral("file.properties"),
+      QStringLiteral("edit.undo"),
       QStringLiteral("operation.cancel"), QStringLiteral("edit.select-all"),
+      QStringLiteral("edit.cut"), QStringLiteral("edit.copy"),
+      QStringLiteral("edit.paste"),
       QStringLiteral("view.show-hidden"), QStringLiteral("view.grid-mode"),
       QStringLiteral("view.details-mode"), QStringLiteral("view.zoom-in"),
       QStringLiteral("view.zoom-out"), QStringLiteral("view.zoom-reset"),
@@ -68,10 +71,33 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QVERIFY(selectAll != actions.cend());
   QCOMPARE(selectAll->menuId, QStringLiteral("edit"));
   QCOMPARE(selectAll->menuOrder, 1);
-  QCOMPARE(selectAll->order, 2);
+  QCOMPARE(selectAll->order, 5);
   QCOMPARE(selectAll->shortcut, QKeySequence(QStringLiteral("Ctrl+A")));
   QVERIFY(!selectAll->checkable);
   QVERIFY(!selectAll->destructive);
+
+  // S3 clipboard and properties actions sit in the closed catalog with
+  // platform-standard shortcuts; enabled state is driven by the transfer
+  // binding, not the catalog.
+  const auto cut = find("edit.cut");
+  QVERIFY(cut != actions.cend());
+  QCOMPARE(cut->menuId, QStringLiteral("edit"));
+  QCOMPARE(cut->menuOrder, 1);
+  QCOMPARE(cut->shortcut, QKeySequence(QStringLiteral("Ctrl+X")));
+  const auto copy = find("edit.copy");
+  QVERIFY(copy != actions.cend());
+  QCOMPARE(copy->menuId, QStringLiteral("edit"));
+  QCOMPARE(copy->shortcut, QKeySequence(QStringLiteral("Ctrl+C")));
+  const auto paste = find("edit.paste");
+  QVERIFY(paste != actions.cend());
+  QCOMPARE(paste->menuId, QStringLiteral("edit"));
+  QCOMPARE(paste->shortcut, QKeySequence(QStringLiteral("Ctrl+V")));
+  const auto properties = find("file.properties");
+  QVERIFY(properties != actions.cend());
+  QCOMPARE(properties->menuId, QStringLiteral("file"));
+  QCOMPARE(properties->menuOrder, 0);
+  QCOMPARE(properties->order, 7);
+  QCOMPARE(properties->shortcut, QKeySequence(QStringLiteral("Alt+Return")));
 
   // Hidden files is a toggle; explicit view selections are idempotent commands.
   // A checkable Qt Action would toggle itself off when selecting the same view.

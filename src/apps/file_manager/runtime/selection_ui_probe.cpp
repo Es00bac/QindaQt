@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QFile>
 #include <QJSValue>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QKeyEvent>
 #include <QVariant>
 
@@ -29,13 +31,23 @@ bool verifySelectionUi(QObject *root, NavigationController *navigation,
     const auto call = [selection](const char *method, int index) {
         return QMetaObject::invokeMethod(selection, method, Q_ARG(QVariant, QVariant(index)));
     };
+    // Read the authoritative selected-identity map directly and parse the
+    // identity keys (["name","device","inode"] JSON). Invoking the QML
+    // selectedEntries() function — or converting the map's nested entry
+    // objects — proved unreliable through the QJSValue-to-QVariant seam on
+    // this Qt build (keys arrive intact, nested value objects do not); the
+    // key parse checks the same identity-retention contract.
     const auto names = [selection]() {
-        QVariant result;
-        if (!QMetaObject::invokeMethod(selection, "selectedEntries", Q_RETURN_ARG(QVariant, result)))
-            return QStringList{QStringLiteral("invoke failed")};
-        if (result.canConvert<QJSValue>()) result = result.value<QJSValue>().toVariant();
+        QVariant selected = selection->property("selected");
+        if (selected.canConvert<QJSValue>()) selected = selected.value<QJSValue>().toVariant();
         QStringList value;
-        for (const auto &entry : result.toList()) value.append(entry.toMap().value(QStringLiteral("name")).toString());
+        const QVariantMap entries = selected.toMap();
+        for (auto it = entries.constBegin(); it != entries.constEnd(); ++it) {
+            const QJsonArray identity = QJsonDocument::fromJson(it.key().toUtf8()).array();
+            if (!identity.isEmpty()) {
+                value.append(identity.first().toString());
+            }
+        }
         value.sort();
         return value;
     };
@@ -52,7 +64,8 @@ bool verifySelectionUi(QObject *root, NavigationController *navigation,
     call("toggle", navigation->indexOfName(QStringLiteral("d")));
     navigation->setSortColumn(QStringLiteral("size")); pump();
     if (names() != QStringList{QStringLiteral("b"),QStringLiteral("d")})
-        return reject(QStringLiteral("sort changed selected identities"));
+        return reject(QStringLiteral("sort changed selected identities: %1")
+                          .arg(names().join(QStringLiteral(","))));
     navigation->refresh(); pump();
     if (names() != QStringList{QStringLiteral("b"),QStringLiteral("d")})
         return reject(QStringLiteral("refresh changed selected identities"));

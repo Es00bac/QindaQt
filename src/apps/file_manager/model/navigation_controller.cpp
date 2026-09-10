@@ -339,11 +339,34 @@ const DirectoryEntry *NavigationController::entryAt(int index) const {
 
 NavigationStatus NavigationController::status() const { return m_status; }
 
+void NavigationController::showGuestListing(
+    const QVector<DirectoryEntry> &entries, const QString &statusText) {
+  ++m_listingGeneration;
+  m_guestActive = true;
+  m_guestStatusText = statusText;
+  m_status = NavigationStatus::Ready;
+  m_truncated = false;
+  m_listedEntries = entries;
+  rebuildVisibleEntries();
+  emit entriesChanged();
+}
+
+void NavigationController::clearGuestListing() {
+  if (!m_guestActive) {
+    return;
+  }
+  m_guestActive = false;
+  m_guestStatusText.clear();
+  reload();
+}
+
 void NavigationController::reload(bool resetFilter) {
   const bool filterChanged = resetFilter && !m_nameFilter.isEmpty();
   if (filterChanged) {
     m_nameFilter.clear();
   }
+  m_guestActive = false;
+  m_guestStatusText.clear();
   ++m_listingGeneration;
   const ListingResult result = m_lister->list(m_history.currentPath());
   m_status = statusFor(result);
@@ -381,6 +404,12 @@ void NavigationController::rebuildVisibleEntries() {
   // AGENT-GUARD: Presentation-only changes must retain a failed listing's
   // diagnostic. No matches is a Ready projection, never an empty directory.
   if (m_status != NavigationStatus::Ready && m_status != NavigationStatus::Empty) {
+    return;
+  }
+  if (m_guestActive) {
+    // Guest (search-result) listings carry their producer's status text; the
+    // hidden/name-filter/sort projection above still applies unchanged.
+    m_statusMessage = m_guestStatusText;
     return;
   }
   QStringList notices;

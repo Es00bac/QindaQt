@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QDateTime>
+#include <QMetaType>
 #include <QString>
 #include <QVector>
 
@@ -49,3 +50,8 @@ struct ListingResult final {
 };
 
 } // namespace QindaQt::Apps::FileManager
+
+// DirectoryEntry vectors cross the SearchController worker boundary as queued
+// signal payloads.
+Q_DECLARE_METATYPE(QindaQt::Apps::FileManager::DirectoryEntry)
+Q_DECLARE_METATYPE(QVector<QindaQt::Apps::FileManager::DirectoryEntry>)

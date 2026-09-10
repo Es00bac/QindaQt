@@ -2,10 +2,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "EntryDrag.js" as EntryDrag
 
 // Fixed places plus the user's persisted bookmarks. Activation only routes a
 // path into NavigationController::navigateTo; a vanished bookmark therefore
-// lands on the ordinary navigation state pane.
+// lands on the ordinary navigation state pane. Place and bookmark rows are
+// drop targets for the identity-checked mutation pipeline; the Trash place is
+// not, because a direct move into the Trash files directory would bypass the
+// .trashinfo metadata the Trash contract requires.
 Control {
     id: root
     objectName: "placesSidebar"
@@ -13,6 +17,10 @@ Control {
     required property var navigationController
     required property var placesController
     required property var appCoordinator
+    // Optional drop dispatch targets; Main always passes the real controllers,
+    // fixture tests may leave them null (drops then refuse politely).
+    property var mutationController: null
+    property var clipboardController: null
 
     implicitWidth: 196
     padding: 8
@@ -50,6 +58,21 @@ Control {
                 emphasized: root.navigationController.currentPath === modelData.path
                 Accessible.description: qsTr("Open %1").arg(modelData.path)
                 onClicked: root.navigationController.navigateTo(modelData.path)
+
+                DropArea {
+                    anchors.fill: parent
+                    enabled: modelData.id !== "trash"
+                    onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
+                    onDropped: (drop) => {
+                        const action = EntryDrag.dispatch(
+                            drop, modelData.path,
+                            root.mutationController, root.clipboardController)
+                        if (action !== Qt.IgnoreAction)
+                            drop.accept(action)
+                        else
+                            drop.accepted = false
+                    }
+                }
             }
         }
 
@@ -113,6 +136,20 @@ Control {
                         emphasized: root.navigationController.currentPath === bookmarkRow.modelData.path
                         Accessible.description: qsTr("Open %1").arg(bookmarkRow.modelData.path)
                         onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
+
+                        DropArea {
+                            anchors.fill: parent
+                            onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
+                            onDropped: (drop) => {
+                                const action = EntryDrag.dispatch(
+                                    drop, bookmarkRow.modelData.path,
+                                    root.mutationController, root.clipboardController)
+                                if (action !== Qt.IgnoreAction)
+                                    drop.accept(action)
+                                else
+                                    drop.accepted = false
+                            }
+                        }
                     }
                     IconButton {
                         iconName: "edit-delete"

@@ -7,10 +7,13 @@ target_sources(
         app_shell/file_manager_action_catalog.cpp
         app_shell/file_manager_browsing_actions.cpp
         app_shell/file_manager_browsing_actions.h
+        app_shell/file_manager_transfer_actions.cpp
+        app_shell/file_manager_transfer_actions.h
         mutation/device_resolver.cpp
         mutation/home_trash.cpp
         mutation/local_mutation_backend.cpp
         mutation/mutation_controller.cpp
+        mutation/mutation_controller_foreign.cpp
         mutation/mutation_types.cpp
         mutation/safe_path_operations.cpp
         mutation/safe_tree_operations.cpp
@@ -18,12 +21,15 @@ target_sources(
         preview/preview_provider.cpp
         preview/theme_icon_provider.cpp
         model/bookmarks_store.cpp
+        model/clipboard_controller.cpp
+        model/entry_properties.cpp
         model/launch_intent.cpp
         model/listing_order.cpp
         model/local_directory_lister.cpp
         model/navigation_controller.cpp
         model/navigation_history.cpp
         model/places_controller.cpp
+        model/search_controller.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
         mutation/device_resolver.h
@@ -38,7 +44,9 @@ target_sources(
         preview/preview_provider.h
         preview/theme_icon_provider.h
         model/bookmarks_store.h
+        model/clipboard_controller.h
         model/directory_lister.h
+        model/entry_properties.h
         model/file_manager_types.h
         model/launch_intent.h
         model/listing_order.h
@@ -46,6 +54,7 @@ target_sources(
         model/navigation_controller.h
         model/navigation_history.h
         model/places_controller.h
+        model/search_controller.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
@@ -84,12 +93,15 @@ qt_add_qml_module(
         ui/PlacesSidebar.qml
         ui/EntrySelection.qml
         ui/EntryList.qml
+        ui/EntryListDelegate.qml
         ui/EntryGrid.qml
         ui/ViewportScrollBar.qml
         ui/ViewportNavigation.qml
         ui/ZoomWheelHandler.qml
         ui/StatePane.qml
         ui/MutationDialogs.qml
+        ui/PropertiesDialog.qml
+        ui/EntryDrag.js
 )
 
 # ADR-0116: File Manager renders with stock Qt Quick Controls; it links only

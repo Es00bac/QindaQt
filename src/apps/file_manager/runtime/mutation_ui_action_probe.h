@@ -10,6 +10,7 @@ class ApplicationCoordinator;
 }
 
 namespace QindaQt::Apps::FileManager {
+class ClipboardController;
 class MutationController;
 class NavigationController;
 
@@ -19,6 +20,6 @@ class NavigationController;
 [[nodiscard]] bool verifyMutationUiActions(
     QObject *root, QindaQt::AppShell::ApplicationCoordinator *coordinator,
     NavigationController *navigation, MutationController *mutation,
-    const QString &fixtureRoot, QString *error);
+    ClipboardController *clipboard, const QString &fixtureRoot, QString *error);
 
 } // namespace QindaQt::Apps::FileManager
