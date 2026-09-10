@@ -105,3 +105,29 @@ set_tests_properties(
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
+
+# AGENT-CONTRACT: This row stages only the Calendar component and clears
+# ambient build/import/library lookup. Its probes must therefore load the
+# executable and the real QML root solely from the disposable relocatable
+# prefix. ADR-0116: the component carries no importable Tokens/Controls QML
+# modules or theme catalog; the row asserts their absence and requires the
+# AppShell/Controls/Tokens backing shared libraries the executable's dynamic
+# dependency chain still needs. It exists because the pre-fix package shipped
+# a calendar whose RUNPATH could not resolve libqindaqt_app_shell.so.
+add_test(
+    NAME qindaqt.calendar-installed-runtime
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
+        "-DQINDAQT_BUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
+        "-DQINDAQT_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-calendar-stage"
+        "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
+        "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+        "-DQINDAQT_QML_INSTALL_DIR=${QT6_INSTALL_QML}"
+        "-DQINDAQT_CONFIGURATION=$<CONFIG>"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_calendar.cmake"
+)
+set_tests_properties(
+    qindaqt.calendar-installed-runtime
+    PROPERTIES LABELS "calendar;package" RUN_SERIAL TRUE TIMEOUT 180
+)
