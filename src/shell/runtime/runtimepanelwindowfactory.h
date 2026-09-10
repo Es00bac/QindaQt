@@ -82,6 +82,13 @@ public:
     // panel window's theme property. QML panel maps are plain (non-readonly)
     // properties precisely so this confirmed-preference update path works.
     void setTheme(const QVariantMap &theme);
+    // Replaces the resolved panel inventory for future windows and pushes the
+    // updated maps onto live windows whose panel survived the adoption. Live
+    // layout adoption (ADR-0122) calls this before reconciling so windows for
+    // newly introduced panel ids can be created.
+    void adoptProfile(const Profiles::LayoutProfile &profile,
+                      const Applets::ManifestCatalog &applets,
+                      const AppletHost::CapabilityPolicy &policy);
     // Desktop controls composite facade (docs/wiki/shell/desktop-controls.md).
     // Set after construction so the existing runtime call site keeps
     // compiling; a null value leaves panel QML untouched. The window receives
@@ -95,8 +102,8 @@ private:
     [[nodiscard]] bool ensureComponent(QString *error);
 
     QQmlEngine &m_engine;
-    QHash<QString, QVariantMap> m_panels;
     QVariantMap m_theme;
+    QHash<QString, QVariantMap> m_panels;
     // AGENT-NOTE: Live windows are tracked weakly only so setTheme can reach
     // them; ownership stays with the surface backend that took the unique_ptr.
     QList<QPointer<QQuickWindow>> m_liveWindows;

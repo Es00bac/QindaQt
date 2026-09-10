@@ -81,6 +81,38 @@ bool isDockPanel(const QVariantMap &panel)
 
 } // namespace
 
+namespace {
+
+// One resolution pass over a profile's panels: applet instances are matched
+// against the manifest catalog and capability policy exactly as at startup,
+// so an adopted layout creates windows with the same truth a fresh shell
+// would use.
+QHash<QString, QVariantMap> resolvePanelInventory(
+    const Profiles::LayoutProfile &profile,
+    const Applets::ManifestCatalog &applets,
+    const AppletHost::CapabilityPolicy &policy)
+{
+    const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
+    QHash<QString, QVariantMap> inventory;
+    for (const auto &panel : profile.panels) {
+        QVariantMap resolvedPanel = panel.toVariantMap();
+        QVariantList resolvedApplets;
+        resolvedApplets.reserve(panel.applets.size());
+        for (const auto &applet :
+             RuntimePanelAppletCompatibility::normalize(panel.applets)) {
+            resolvedApplets.append(
+                AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                    applet, panel.edge, applets, policy, registry)
+                    .toVariantMap());
+        }
+        resolvedPanel.insert(QStringLiteral("applets"), resolvedApplets);
+        inventory.insert(panel.id, std::move(resolvedPanel));
+    }
+    return inventory;
+}
+
+} // namespace
+
 RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      const Profiles::LayoutProfile &profile,
                                                      QVariantMap theme,
@@ -97,6 +129,7 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
+    , m_panels(resolvePanelInventory(profile, applets, policy))
     , m_notificationCenterAccess(notificationCenterAccess)
     , m_audioAppletAccess(audioAppletAccess)
     , m_bluetoothAppletAccess(bluetoothAppletAccess)
@@ -107,20 +140,29 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
     , m_taskListAppletAccess(taskListAppletAccess)
     , m_statusNotifierAppletAccess(statusNotifierAppletAccess)
 {
-    const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
-    for (const auto &panel : profile.panels) {
-        QVariantMap resolvedPanel = panel.toVariantMap();
-        QVariantList resolvedApplets;
-        resolvedApplets.reserve(panel.applets.size());
-        for (const auto &applet :
-             RuntimePanelAppletCompatibility::normalize(panel.applets)) {
-            resolvedApplets.append(
-                AppletRuntime::AppletInstanceResolver::resolveBuiltin(
-                    applet, panel.edge, applets, policy, registry)
-                    .toVariantMap());
+}
+
+void RuntimePanelWindowFactory::adoptProfile(
+    const Profiles::LayoutProfile &profile,
+    const Applets::ManifestCatalog &applets,
+    const AppletHost::CapabilityPolicy &policy)
+{
+    m_panels = resolvePanelInventory(profile, applets, policy);
+    // Kept panels adopt their edited applet set in place; windows whose panel
+    // disappeared are torn down by the following surface reconciliation, so
+    // their stale map is irrelevant.
+    for (const auto &window : std::as_const(m_liveWindows)) {
+        if (window == nullptr) {
+            continue;
         }
-        resolvedPanel.insert(QStringLiteral("applets"), resolvedApplets);
-        m_panels.insert(panel.id, std::move(resolvedPanel));
+        const QString panelId = window->property("panel")
+                                    .toMap()
+                                    .value(QStringLiteral("id"))
+                                    .toString();
+        const auto replacement = m_panels.constFind(panelId);
+        if (replacement != m_panels.cend()) {
+            window->setProperty("panel", replacement.value());
+        }
     }
 }
 
