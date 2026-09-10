@@ -32,6 +32,9 @@ public:
   void newDocument();
   [[nodiscard]] DocumentOperation openPath(const QString &path);
   void setText(const QString &text);
+  // Adopts crash-recovered content as dirty unsaved text: the saved-text
+  // baseline, byte revision, and path stay exactly as opened from disk.
+  void restoreRecoveredText(const QString &text);
   void applyTextEdit(qsizetype position, qsizetype charsRemoved,
                      QString insertedText);
   [[nodiscard]] DocumentOperation save();

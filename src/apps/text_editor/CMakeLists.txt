@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(KF6SyntaxHighlighting REQUIRED GLOBAL)
+find_package(Qt6 REQUIRED COMPONENTS PrintSupport)
 qt_add_library(qindaqt_editor_support STATIC)
 target_sources(
     qindaqt_editor_support
@@ -16,6 +17,8 @@ target_sources(
         document/local_document_store.cpp
         find/find_replace_engine.cpp
         restore/restore_state_store.cpp
+        restore/recovery_journal_store.cpp
+        restore/state_directory.cpp
         restore/text_editor_restore_policy.cpp
         ui/document_title.cpp
         ui/document_editor.cpp
@@ -28,6 +31,8 @@ target_sources(
         ui/editor_window_actions.cpp
         ui/editor_window_editing.cpp
         ui/editor_window_find.cpp
+        ui/editor_window_printing.cpp
+        ui/editor_window_recovery.cpp
         ui/editor_window_restore.cpp
         ui/editor_window.cpp
     PUBLIC
@@ -45,6 +50,7 @@ target_sources(
         document/local_document_store.h
         find/find_replace_engine.h
         restore/restore_state_store.h
+        restore/recovery_journal_store.h
         restore/text_editor_restore_policy.h
         ui/document_title.h
         ui/document_editor.h
@@ -55,7 +61,7 @@ target_sources(
         ui/editor_application.h
         ui/editor_window.h
 )
-target_link_libraries(qindaqt_editor_support PRIVATE qindaqt_settings_client KF6::SyntaxHighlighting)
+target_link_libraries(qindaqt_editor_support PRIVATE qindaqt_settings_client KF6::SyntaxHighlighting Qt6::PrintSupport)
 target_include_directories(qindaqt_editor_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
     qindaqt_editor_support

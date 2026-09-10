@@ -128,7 +128,7 @@ void EditorWindowTest::windowFollowsPlatformAppearance() {
 }
 
 void EditorWindowTest::viewToolsStayWithTheirDocument() {
-  EditorApplication application(localFactory(), nullptr, nullptr, {}, false);
+  EditorApplication application(localFactory(), nullptr, nullptr, nullptr, {}, false);
   QVERIFY(application.start());
   auto *window = application.windows().first();
   auto *first = window->editor();
@@ -347,7 +347,7 @@ void EditorWindowTest::windowsKeepUndoAndSelectionIndependent() {
   QCOMPARE(file.write("second"), qint64(6));
   file.close();
 
-  EditorApplication application(localFactory(), nullptr, nullptr, {}, false);
+  EditorApplication application(localFactory(), nullptr, nullptr, nullptr, {}, false);
   QVERIFY(application.start({first, second, first}));
   QCOMPARE(application.windows().size(), 2);
   auto *one = application.windowForPath(first)->editor();

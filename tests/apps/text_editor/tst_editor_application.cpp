@@ -31,6 +31,7 @@ struct DialogState {
   DocumentCloseDecision close = DocumentCloseDecision::Cancel;
   int errors = 0;
   std::function<bool()> replace = [] { return false; };
+  RecoveryDecision recovery = RecoveryDecision::Discard;
 };
 class ScriptedDialogs final : public DocumentDialogs {
 public:
@@ -40,6 +41,9 @@ public:
   bool confirmReplace() override { return m_state->replace(); }
   void operationError(const QString &, const QString &) override {
     ++m_state->errors;
+  }
+  RecoveryDecision recoverUnsaved(const QString &, bool) override {
+    return m_state->recovery;
   }
 
 private:
@@ -89,7 +93,7 @@ void EditorApplicationTest::reusesPristineWindowAndCanonicalPaths() {
   write(one);
   write(two);
   QVERIFY(QFile::link(one, alias));
-  EditorApplication app(stores(), nullptr, nullptr, {}, false);
+  EditorApplication app(stores(), nullptr, nullptr, nullptr, {}, false);
   QVERIFY(app.start());
   auto *initial = app.windows().first();
   QVERIFY(app.openDocuments({one, two, alias}, initial));
@@ -107,7 +111,7 @@ void EditorApplicationTest::failedOpenPreservesDirtyWindow() {
   QTemporaryDir root;
   const auto good = root.filePath("good.txt");
   write(good);
-  EditorApplication app(stores(), nullptr, nullptr, {}, false);
+  EditorApplication app(stores(), nullptr, nullptr, nullptr, {}, false);
   QVERIFY(app.start());
   auto *initial = app.windows().first();
   initial->editor()->insertPlainText("keep me");
@@ -122,7 +126,7 @@ void EditorApplicationTest::failedOpenPreservesDirtyWindow() {
 }
 void EditorApplicationTest::dirtyCloseCancelThenDiscardIsWindowLocal() {
   const auto state = std::make_shared<DialogState>();
-  EditorApplication app(stores(), nullptr, nullptr, {}, false,
+  EditorApplication app(stores(), nullptr, nullptr, nullptr, {}, false,
                         dialogs(state));
   QVERIFY(app.start());
   auto *one = app.windows().first();
@@ -148,7 +152,7 @@ void EditorApplicationTest::saveConsentWritesOnlyClosingDocument() {
   QTemporaryDir root;
   const auto path = root.filePath("saved.txt");
   EditorApplication app(
-      stores(), nullptr, nullptr,
+      stores(), nullptr, nullptr, nullptr,
       [path] { return std::make_unique<SaveChooser>(path); }, false,
       dialogs(state));
   QVERIFY(app.start());
@@ -172,7 +176,7 @@ void EditorApplicationTest::saveConsentWritesOnlyClosingDocument() {
 }
 
 void EditorApplicationTest::menuCommandsRemainWindowLocal() {
-  EditorApplication app(stores(), nullptr, nullptr, {}, false);
+  EditorApplication app(stores(), nullptr, nullptr, nullptr, {}, false);
   QVERIFY(app.start());
   auto *one = app.windows().first();
   QVERIFY(
@@ -197,7 +201,7 @@ void EditorApplicationTest::multiFileDropCreatesOrdinaryWindows() {
   const auto one = root.filePath("one.txt"), two = root.filePath("two.txt");
   write(one);
   write(two);
-  EditorApplication app(stores(), nullptr, nullptr, {}, false);
+  EditorApplication app(stores(), nullptr, nullptr, nullptr, {}, false);
   QVERIFY(app.start());
   auto *window = app.windows().first();
   QMimeData data;
@@ -219,7 +223,7 @@ void EditorApplicationTest::saveAsRefusesAnotherWindowPath() {
   const auto path = root.filePath("owned.txt");
   write(path, "disk truth");
   EditorApplication app(
-      stores(), nullptr, nullptr,
+      stores(), nullptr, nullptr, nullptr,
       [path] { return std::make_unique<SaveChooser>(path); }, false,
       dialogs(state));
   QVERIFY(app.start({path}));
@@ -240,7 +244,7 @@ void EditorApplicationTest::saveAsRechecksOwnerAfterReplacementConsent() {
   write(path, "disk truth");
   const auto state = std::make_shared<DialogState>();
   EditorApplication app(
-      stores(), nullptr, nullptr,
+      stores(), nullptr, nullptr, nullptr,
       [path] { return std::make_unique<SaveChooser>(path); }, false,
       dialogs(state));
   QVERIFY(app.start());
@@ -262,7 +266,7 @@ void EditorApplicationTest::saveAsRechecksOwnerAfterReplacementConsent() {
 }
 
 void EditorApplicationTest::boundsWindowInventory() {
-  EditorApplication app(stores(), nullptr, nullptr, {}, false);
+  EditorApplication app(stores(), nullptr, nullptr, nullptr, {}, false);
   for (int i = 0; i < DocumentCollection::maximumDocuments; ++i)
     QVERIFY(app.newWindow());
   QVERIFY(!app.newWindow());

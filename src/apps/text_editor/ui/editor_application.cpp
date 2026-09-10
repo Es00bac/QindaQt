@@ -11,11 +11,13 @@ namespace QindaQt::Apps::TextEditor {
 EditorApplication::EditorApplication(
     DocumentStoreFactory stores,
     TextEditorRestorePolicy *policy, RestoreStateStore *restoreStore,
+    RecoveryJournalStore *journalStore,
     FileSelectionFactory choosers, bool showWindows,
     DocumentDialogFactory dialogs, QObject *parent)
     : QObject(parent), m_stores(std::move(stores)),
       m_policy(policy),
-      m_restoreStore(restoreStore), m_choosers(std::move(choosers)),
+      m_restoreStore(restoreStore), m_journalStore(journalStore),
+      m_choosers(std::move(choosers)),
       m_dialogs(std::move(dialogs)), m_showWindows(showWindows) {
   if (m_policy)
     connect(m_policy, &TextEditorRestorePolicy::policyChanged, this,
@@ -67,7 +69,8 @@ EditorWindow *EditorApplication::createWindow() {
   }
   auto *window = new EditorWindow(m_stores,
                                   m_choosers ? m_choosers() : nullptr, m_policy,
-                                  this, m_dialogs ? m_dialogs() : nullptr);
+                                  this, m_dialogs ? m_dialogs() : nullptr,
+                                  m_journalStore);
   window->setAttribute(Qt::WA_DeleteOnClose);
   m_windows.append(window);
   window->installEventFilter(this);
@@ -111,6 +114,7 @@ bool EditorApplication::start(const QStringList &paths, QString *diagnostic) {
   if (windows().isEmpty())
     (void)newWindow();
   policyChanged();
+  sweepUntitledRecoveryJournals();
   return opened;
 }
 
@@ -165,6 +169,7 @@ bool EditorApplication::openDocuments(const QStringList &paths,
       continue;
     }
     present(target);
+    target->offerRecoveryIfPresent();
   }
   m_admitting = previousAdmission;
   persistRestoreState();
@@ -198,5 +203,31 @@ void EditorApplication::report(const QString &message) {
   emit diagnosticReported(bounded);
   if (m_activeWindow)
     m_activeWindow->announceStatus(bounded);
+}
+
+void EditorApplication::sweepUntitledRecoveryJournals() {
+  if (!m_journalStore)
+    return;
+  const auto entries = m_journalStore->entries();
+  for (const auto &entry : entries) {
+    // Path journals are offered when their document opens; only orphan
+    // untitled buffers need the startup sweep to be discoverable.
+    if (entry.path.has_value())
+      continue;
+    if (windows().size() >= DocumentCollection::maximumDocuments) {
+      report(tr("Recovery journals remain for more untitled documents than "
+                "can be opened; they were left untouched"));
+      break;
+    }
+    EditorWindow *window = createWindow();
+    if (!window)
+      break;
+    if (window->offerUntitledRecovery(entry)) {
+      present(window);
+    } else {
+      m_windows.removeAll(window);
+      delete window;
+    }
+  }
 }
 } // namespace QindaQt::Apps::TextEditor

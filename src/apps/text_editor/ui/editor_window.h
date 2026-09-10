@@ -6,10 +6,12 @@
 #include "document/document_collection.h"
 #include "document_dialogs.h"
 #include "find/find_replace_engine.h"
+#include "restore/recovery_journal_store.h"
 
 #include <QHash>
 #include <QList>
 #include <QMainWindow>
+#include <QTimer>
 
 #include <memory>
 
@@ -19,6 +21,7 @@ class QDragEnterEvent;
 class QDropEvent;
 class QPaintEvent;
 class QPlainTextEdit;
+class QPrinter;
 class QVBoxLayout;
 
 namespace QindaQt::Apps::TextEditor {
@@ -26,6 +29,7 @@ namespace QindaQt::Apps::TextEditor {
 class EditorDocumentView;
 class FindReplaceBar;
 class EditorApplication;
+class RecoveryJournalStore;
 class TextEditorRestorePolicy;
 
 // GUI-thread presentation owns one document, its view, dialogs and actions.
@@ -43,7 +47,9 @@ public:
       std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter = nullptr,
       TextEditorRestorePolicy *restorePolicy = nullptr,
       EditorApplication *application = nullptr,
-      std::unique_ptr<DocumentDialogs> dialogs = nullptr, QWidget *parent = nullptr);
+      std::unique_ptr<DocumentDialogs> dialogs = nullptr,
+      RecoveryJournalStore *journalStore = nullptr, QWidget *parent = nullptr);
+  ~EditorWindow() override;
 
   [[nodiscard]] DocumentController *controller() const;
   [[nodiscard]] QPlainTextEdit *editor() const;
@@ -53,7 +59,17 @@ public:
 
   [[nodiscard]] bool openDocuments(const QStringList &paths,
                                    QString *diagnostic = nullptr);
+  // Offers explicit Restore/Discard consent when a recovery journal exists
+  // for this window's document; a no-op when none exists or none is wanted.
+  void offerRecoveryIfPresent();
+  // Startup sweep seam for an orphan untitled-buffer journal: returns true
+  // when this pristine window adopted the content (Restore); on Discard the
+  // journal is cleared and the caller retires the window.
+  [[nodiscard]] bool offerUntitledRecovery(const RecoveryJournalEntry &entry);
   void announceStatus(const QString &message);
+  // Dialog-free render of the current document to a PDF file: the test seam
+  // for the print pipeline, and the entry for any non-interactive caller.
+  [[nodiscard]] bool printDocumentToPdfFile(const QString &outputPath);
   // Retained export is destroyed before the coordinator it observes.
   void setMenuExport(std::unique_ptr<QObject> menuExport);
 
@@ -90,6 +106,9 @@ private:
   [[nodiscard]] PendingAction confirmWindowClose();
   [[nodiscard]] bool saveDocument();
   [[nodiscard]] bool saveDocumentAs();
+  void printDocument();
+  void printPreview();
+  [[nodiscard]] bool renderDocumentForPrint(QPrinter *printer);
   void openInteractively();
   void newInteractively();
   void reloadInteractively();
@@ -105,12 +124,22 @@ private:
   [[nodiscard]] bool addPath(const QString &path, QString *diagnostic);
   void persistRestoreState();
 
+  // Crash-recovery journaling (bounded; see restore/recovery_journal_store.h).
+  void connectRecoveryJournal();
+  void scheduleRecoveryWrite();
+  void writeRecoveryJournal();
+  void clearRecoveryJournal();
+  [[nodiscard]] QString currentRecoveryKey() const;
+  void recoveryConsentFor(const RecoveryJournalEntry &entry);
+
   struct Actions final {
     QAction *fileNew = nullptr;
     QAction *fileOpen = nullptr;
     QAction *fileCloseWindow = nullptr;
     QAction *fileSave = nullptr;
     QAction *fileSaveAs = nullptr;
+    QAction *filePrint = nullptr;
+    QAction *filePrintPreview = nullptr;
     QAction *fileQuit = nullptr;
     QAction *editUndo = nullptr;
     QAction *editRedo = nullptr;
@@ -135,6 +164,13 @@ private:
   EditorAppShellBridge m_appShellBridge;
   TextEditorRestorePolicy *m_restorePolicy = nullptr;
   EditorApplication *m_application = nullptr;
+  RecoveryJournalStore *m_journalStore = nullptr;
+  QString m_untitledJournalKey;
+  QTimer m_recoveryDebounce;
+  bool m_recoveryDenied = false;
+  bool m_journalWritten = false;
+  bool m_journalOversize = false;
+  bool m_lastDirtyState = false;
   QVBoxLayout *m_surfaceLayout = nullptr;
   FindReplaceBar *m_findBar = nullptr;
   bool m_firstFramePublished = false;

@@ -52,6 +52,23 @@ visited, no symlink descent, guest result listing). All 31
 and the production-QML clipboard action stage. Per-volume Trash, mounts, and
 network locations remain open (S4–S5).
 
+Text Editor progress (September 10): **the Text Editor portion is done** —
+presentation converted to stock Qt 6 Widgets per ADR-0116 (no token→palette
+projection and no application QSS; palette, fonts, and icon theme come from
+the Qt platform theme with Fusion, and `--theme`/`--theme-directory` remain
+accepted as deprecated no-ops), native printing and print preview
+(`Ctrl+P`/`Ctrl+Shift+P`, plain-text pages in the base font without syntax
+colors, with a dialog-free PDF seam for tests), and crash-recovery autosave:
+bounded per-document content journals (4 MiB each, 32 entries, atomic
+owner-only writes beneath the same `openat`/`O_NOFOLLOW` state root as the
+restore inventory) written on the first dirty edit and debounced at two
+seconds, retired on every dirty-to-clean transition, with explicit
+Restore/Discard consent when a journal exists and a startup sweep that adopts
+untitled orphans. All 27 `qindaqt.editor*` rows pass, including the new
+printing and recovery rows; the [Text Editor wiki
+page](wiki/apps/text-editor.md) documents the contracts. Terminal's portion
+remains pending.
+
 ### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
 
 **Built, installed and verified through Portage r1.** The tray uses real

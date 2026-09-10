@@ -31,13 +31,15 @@ EditorWindow::EditorWindow(
     DocumentStoreFactory storeFactory,
     std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter,
     TextEditorRestorePolicy *restorePolicy, EditorApplication *application,
-    std::unique_ptr<DocumentDialogs> dialogs, QWidget *parent)
+    std::unique_ptr<DocumentDialogs> dialogs, RecoveryJournalStore *journalStore,
+    QWidget *parent)
     : QMainWindow(parent),
       m_appShellBridge(fileSelectionAdapter
                            ? std::move(fileSelectionAdapter)
                            : std::make_unique<NativeFileSelectionAdapter>(this),
                        this),
       m_restorePolicy(restorePolicy), m_application(application),
+      m_journalStore(journalStore),
       m_dialogs(dialogs ? std::move(dialogs) : std::make_unique<NativeDocumentDialogs>(this)) {
   setObjectName(QStringLiteral("qindaqtEditorWindow"));
   setAccessibleName(tr("QindaQt Text Editor"));
@@ -56,6 +58,7 @@ EditorWindow::EditorWindow(
   publishAppShellProjection();
   updateDocumentPresentation();
   connectRestorePolicy();
+  connectRecoveryJournal();
   if (editor()) {
     editor()->setFocus(Qt::OtherFocusReason);
   }
@@ -157,6 +160,12 @@ EditorWindow::confirmDocumentClose() {
       (choice == DocumentCloseDecision::Save && !saveDocument())) {
     return PendingAction::Cancel;
   }
+  if (choice == DocumentCloseDecision::Discard) {
+    // The user explicitly abandoned these unsaved changes; no crash recovery
+    // may resurrect them, and this window must not re-journal them.
+    m_recoveryDenied = true;
+    clearRecoveryJournal();
+  }
   return PendingAction::Continue;
 }
 
@@ -174,6 +183,7 @@ bool EditorWindow::addPath(const QString &path, QString *diagnostic) {
   }
   const auto result = m_document->openPath(path);
   if (!result.ok() && diagnostic) *diagnostic = result.diagnostic.left(512);
+  if (result.ok()) offerRecoveryIfPresent();
   return result.ok();
 }
 

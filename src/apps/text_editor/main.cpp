@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document/local_document_store.h"
+#include "restore/recovery_journal_store.h"
 #include "restore/restore_state_store.h"
 #include "restore/text_editor_restore_policy.h"
 #include "ui/editor_window.h"
@@ -110,7 +111,7 @@ int main(int argc, char **argv) {
     // The CLI admission proof needs document policy only. Exiting before
     // Settings1 composition guarantees the isolated row cannot discover or
     // activate an ambient session-bus service.
-    EditorApplication editor(factory, nullptr, nullptr, {}, false);
+    EditorApplication editor(factory, nullptr, nullptr, nullptr, {}, false);
     QString diagnostic;
     if (!editor.start(paths, &diagnostic)) {
       std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
@@ -135,7 +136,12 @@ int main(int argc, char **argv) {
   }
   TextEditorRestorePolicy restorePolicy(settingsClient);
   RestoreStateStore restoreStore(editorStateDirectory());
-  EditorApplication editor(factory, &restorePolicy, &restoreStore);
+  // Crash-recovery journals are app-local recovery state beside the
+  // paths-only inventory, confined by the same openat/O_NOFOLLOW walk.
+  RecoveryJournalStore journalStore(
+      QDir(editorStateDirectory()).filePath(QStringLiteral("recovery")));
+  EditorApplication editor(factory, &restorePolicy, &restoreStore,
+                           &journalStore);
   bool startupReported = false;
   QObject::connect(&editor, &EditorApplication::windowCreated, &editor,
       [&](EditorWindow *window) {

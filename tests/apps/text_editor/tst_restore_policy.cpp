@@ -240,7 +240,7 @@ void RestorePolicyTest::startupDropsUnavailablePathsWithoutContentState() {
   QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
 
-  EditorApplication application(localFactory(), &policy, &store, {}, false);
+  EditorApplication application(localFactory(), &policy, &store, nullptr, {}, false);
   QVERIFY(application.start());
   auto &window = *application.windows().first();
   QCOMPARE(application.openPaths(), QStringList{valid});
@@ -265,7 +265,7 @@ void RestorePolicyTest::delayedInitialPolicyPreservesInventory() {
   SettingsClient client(transport, TextEditorKeys::scopedKeys(), {100, 0, {10}});
   TextEditorRestorePolicy policy(client);
   QVERIFY(client.start());
-  EditorApplication app(localFactory(), &policy, &store, {}, false);
+  EditorApplication app(localFactory(), &policy, &store, nullptr, {}, false);
   QVERIFY(app.start());
   QCOMPARE(store.load().state->paths, QStringList{path});
   QVERIFY(app.openPaths().isEmpty());
@@ -292,7 +292,7 @@ void RestorePolicyTest::explicitPathsSuppressAlreadyEnabledRestore() {
   TextEditorRestorePolicy policy(client);
   QVERIFY(client.start()); QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
-  EditorApplication application(localFactory(), &policy, &store, {}, false);
+  EditorApplication application(localFactory(), &policy, &store, nullptr, {}, false);
   QVERIFY(application.start({explicitPath}));
   QCOMPARE(application.openPaths(), QStringList{explicitPath});
   QCOMPARE(store.load().state->paths, QStringList{explicitPath});
@@ -312,7 +312,7 @@ void RestorePolicyTest::windowInventoryTracksCloseAndPreferredActivePath() {
   TextEditorRestorePolicy policy(client);
   QVERIFY(client.start()); QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
-  EditorApplication application(localFactory(), &policy, &store, {}, false);
+  EditorApplication application(localFactory(), &policy, &store, nullptr, {}, false);
   QVERIFY(application.start());
   QCOMPARE(application.windows().size(), 2);
   QCOMPARE(store.load().state->activeIndex, 0);

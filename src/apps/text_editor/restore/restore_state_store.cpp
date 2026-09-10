@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "restore_state_store.h"
+#include "state_directory.h"
 
 #include <QDir>
 #include <QFile>
@@ -31,59 +32,6 @@ RestoreLoadResult loadFailure(const RestoreStateError error,
 RestoreWriteResult writeFailure(const RestoreStateError error,
                                 const QString &diagnostic) {
   return {.error = error, .diagnostic = diagnostic.left(256)};
-}
-
-int openStateDirectory(const QString &path, const bool create,
-                       int *errorNumber) {
-  if (!QDir::isAbsolutePath(path) || !path.isValidUtf16() ||
-      path.contains(QChar::Null)) {
-    *errorNumber = EINVAL;
-    return -1;
-  }
-  int current = ::open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-  if (current < 0) {
-    *errorNumber = errno;
-    return -1;
-  }
-  const QStringList components =
-      QDir::cleanPath(path).split(u'/', Qt::SkipEmptyParts);
-  for (const QString &component : components) {
-    const QByteArray name = QFile::encodeName(component);
-    int next = ::openat(current, name.constData(),
-                        O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    if (next < 0 && errno == ENOENT && create) {
-      if (::mkdirat(current, name.constData(), 0700) != 0 && errno != EEXIST) {
-        *errorNumber = errno;
-        ::close(current);
-        return -1;
-      }
-      next = ::openat(current, name.constData(),
-                      O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    }
-    if (next < 0) {
-      *errorNumber = errno;
-      ::close(current);
-      return -1;
-    }
-    ::close(current);
-    current = next;
-  }
-  return current;
-}
-
-QString descriptorFilePath(const int directoryDescriptor) {
-  return QStringLiteral("/proc/self/fd/%1/%2")
-      .arg(directoryDescriptor)
-      .arg(QString::fromLatin1(stateFileName));
-}
-
-bool finalEntryIsRegularOrAbsent(const int directoryDescriptor) {
-  struct stat status{};
-  if (::fstatat(directoryDescriptor, stateFileName, &status,
-                AT_SYMLINK_NOFOLLOW) == 0) {
-    return S_ISREG(status.st_mode);
-  }
-  return errno == ENOENT;
 }
 
 } // namespace
@@ -127,7 +75,7 @@ bool RestoreStateStore::validate(const RestoreState &state,
 RestoreLoadResult RestoreStateStore::load() const {
   int directoryError = 0;
   const int directoryDescriptor =
-      openStateDirectory(m_stateDirectory, false, &directoryError);
+      StateDirectory::open(m_stateDirectory, false, &directoryError);
   if (directoryDescriptor < 0) {
     return loadFailure(directoryError == ENOENT
                            ? RestoreStateError::Absent
@@ -232,7 +180,7 @@ RestoreWriteResult RestoreStateStore::store(const RestoreState &state) const {
   }
   int directoryError = 0;
   const int directoryDescriptor =
-      openStateDirectory(m_stateDirectory, true, &directoryError);
+      StateDirectory::open(m_stateDirectory, true, &directoryError);
   if (directoryDescriptor < 0) {
     return writeFailure(
         RestoreStateError::InvalidRoot,
@@ -257,12 +205,12 @@ RestoreWriteResult RestoreStateStore::store(const RestoreState &state) const {
   // AGENT-GUARD: The directory descriptor is reached component-by-component
   // with O_NOFOLLOW. Keep it open through commit so a symlinked ancestor can
   // never redirect the paths-only inventory outside the selected state root.
-  if (!finalEntryIsRegularOrAbsent(directoryDescriptor)) {
+  if (!StateDirectory::finalEntryIsRegularOrAbsent(directoryDescriptor, stateFileName)) {
     ::close(directoryDescriptor);
     return writeFailure(RestoreStateError::InvalidRoot,
                         QStringLiteral("Restore state target is unsafe"));
   }
-  QSaveFile file(descriptorFilePath(directoryDescriptor));
+  QSaveFile file(StateDirectory::descriptorFilePath(directoryDescriptor, stateFileName));
   file.setDirectWriteFallback(false);
   if (!file.open(QIODevice::WriteOnly) ||
       !file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner) ||
@@ -282,12 +230,12 @@ RestoreWriteResult RestoreStateStore::store(const RestoreState &state) const {
 RestoreWriteResult RestoreStateStore::clear() const {
   int directoryError = 0;
   const int directoryDescriptor =
-      openStateDirectory(m_stateDirectory, false, &directoryError);
+      StateDirectory::open(m_stateDirectory, false, &directoryError);
   if (directoryDescriptor < 0 && directoryError == ENOENT) {
     return {};
   }
   if (directoryDescriptor < 0 ||
-      !finalEntryIsRegularOrAbsent(directoryDescriptor)) {
+      !StateDirectory::finalEntryIsRegularOrAbsent(directoryDescriptor, stateFileName)) {
     if (directoryDescriptor >= 0) {
       ::close(directoryDescriptor);
     }

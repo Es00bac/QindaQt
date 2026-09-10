@@ -27,7 +27,7 @@ line's leading whitespace onto the next line. Each indentation command is one
 undo step. Find and Replace remain available with `Ctrl+F` and `Ctrl+H`.
 
 The **View** menu controls word wrapping and text size. `Ctrl++` and `Ctrl+-`
-zoom; `Ctrl+0` restores the theme's size. Wrapping and zoom belong to each open
+zoom; `Ctrl+0` restores the platform font's size. Wrapping and zoom belong to each open
 window and do not change the file or survive closing it.
 
 `DocumentEditor` owns these presentation and input behaviors. Its confined
@@ -80,6 +80,8 @@ same local action.
 | `fileCloseWindowAction` | `file.close-window` | `Ctrl+W` | Close this window with document consent |
 | `fileSaveAction` | `file.save` | `Ctrl+S` | Save against the active byte revision |
 | `fileSaveAsAction` | `file.save-as` | `Ctrl+Shift+S` | Choose a distinct local target |
+| `filePrintAction` | `file.print` | `Ctrl+P` | Print through the native dialog |
+| `filePrintPreviewAction` | `file.print-preview` | `Ctrl+Shift+P` | Preview the printed page |
 | `fileQuitAction` | `file.quit` | `Ctrl+Q` | Close the window with bounded consent |
 | `editUndoAction`, `editRedoAction` | `edit.undo`, `edit.redo` | Qt standard | Traverse only the window's history |
 | `editCutAction`, `editCopyAction`, `editPasteAction` | `edit.cut`, `edit.copy`, `edit.paste` | Qt standard | Edit the active selection |
@@ -135,6 +137,21 @@ Replace changes one match. Replace All calculates the bounded match inventory
 before mutation, applies replacements from the end, and wraps the complete
 operation in one `QTextCursor` edit block, so one Undo restores the document.
 
+## Printing
+
+**File → Print** (`Ctrl+P`) opens the native `QPrintDialog`; **File → Print
+Preview** (`Ctrl+Shift+P`) opens the native preview. Both actions are enabled
+only while the document has content, and both render the same pipeline: a
+fresh `QTextDocument` holding the controller's current plain text, set in the
+editor's base (monospace) font.
+
+Printing deliberately drops syntax-highlighting colors. The highlight palette
+is fitted to the on-screen canvas, not to a white page, so the printed page
+uses the document's own default ink. Zoom, wrapping, and gutter chrome are
+view-local and never reach the page. `printDocumentToPdfFile` is the public
+dialog-free seam over the same renderer; focused tests and any
+non-interactive caller print to a PDF file through it.
+
 ## Restore policy and state
 
 `services.textEditorRestoreDocuments` is a schema-v1/v2 Boolean with default
@@ -175,9 +192,47 @@ removes its path from the inventory. The final close retains the last window’s
 path for the next launch. Unchanged inventories are not rewritten on every edit.
 
 The inventory contains no text, dirty flag, selection, history, byte revision,
-or other content-bearing value. Therefore restore can reopen only current disk
-content and can never restore dirty content. Autosave, content journals, crash
-recovery, and revision history remain excluded.
+or other content-bearing value. Restore can therefore reopen only current disk
+content; unsaved-content recovery belongs to the crash-recovery journal below.
+Revision history remains excluded.
+
+## Crash-recovery autosave
+
+Unsaved work is journaled continuously so a crash or kill does not lose it.
+`RecoveryJournalStore` keeps one JSON journal per document beneath
+`$XDG_STATE_HOME/qindaqt/text-editor/recovery`, reached through the same
+`openat`/`O_NOFOLLOW` directory walk as the restore inventory (shared as
+`StateDirectory`) and written atomically through `QSaveFile` with owner-only
+permissions. The schema is:
+
+```json
+{"version":1,"path":"/absolute/a.txt","text":"unsaved content"}
+```
+
+`path` is `null` for an untitled buffer. Keys name the journal files:
+`file-<sha256 of the canonical path>` for disk-backed documents and
+`untitled-<pid>-<sequence>` for untitled ones. A journal holds at most 4 MiB
+of text and the store holds at most 32 journals. An oversized document is
+never truncated into its journal: the store keeps the stale earlier journal,
+so recovery still offers the last bounded state.
+
+Writes hook the editor's `textChanged`. The first dirty edit journals
+immediately; later churn is debounced at two seconds. A dirty-to-clean
+transition — a successful save, a reload, or undo back to the saved state —
+clears the journal, because disk and memory agree again. Close consent that
+discards unsaved changes also clears it: a discarded document is deleted and
+never re-journaled by the same window.
+
+Recovery is never silent and never automatic. When a window opens a document
+whose journal exists, it offers an explicit **Restore**/**Discard** choice;
+Restore is the default and never touches disk, Discard clears the journal and
+ends journaling for that window. A journal whose text matches the disk
+content is retired without prompting. Journals for untitled buffers left by a
+dead process are offered once per launch by a startup sweep: adopting one
+re-journals the content under the new window's own key before the orphan file
+is retired, so no crash window leaves the text in neither journal. Malformed
+or foreign journals are skipped, left in place, and inert. Across concurrent
+editor processes the last writer wins; no locking is implied.
 
 ## Per-document persistence and failures
 
@@ -208,6 +263,9 @@ Expected errors cross boundaries as typed values plus bounded diagnostics:
 - `FindReplaceEngine` owns pure bounded search policy.
 - `RestoreStateStore` owns only the injected state directory and paths-only
   JSON; `TextEditorRestorePolicy` owns only confirmed Settings1 policy.
+- `RecoveryJournalStore` owns bounded content journals beneath the same state
+  root; `StateDirectory` owns the shared `openat`/`O_NOFOLLOW` confinement
+  both stores build on.
 - `EditorWindow` owns one controller/view, actions, focus, dialogs, accessibility, and command
   routing; it never imports shell/compositor internals or Settings1 transport.
 
@@ -215,30 +273,32 @@ The internal support headers are not installed or ABI-stable. The executable,
 desktop ID, multi-file launch contract, documented shortcuts, widget action
 names, and AppShell IDs are the compatibility surface.
 
-## Theme, packaging, and verification
+## Appearance, packaging, and verification
 
 The compact icon toolbar provides New, Open, Save, Save As and Find with
-keyboard focus, tooltips and accessible names. A softly layered chrome gradient
-frames the opaque document canvas and roomy line-number gutter. Search uses
-icon buttons with accessible names and compact options; errors appear only
-when recovery is needed. The shared icon catalog supplies branded assets. The selected theme’s
-`iconTheme` applies at startup and live, including cached search glyphs.
+keyboard focus, tooltips and accessible names. The window chrome — menu, tool
+bar, status bar, and the search bar — is drawn by the stock Qt Widgets style.
+Search uses icon buttons with accessible names and compact options; errors
+appear only when recovery is needed. The shared icon catalog supplies branded
+assets, and the platform theme's icon theme applies at startup and live.
 
-The Qt Widgets presentation derives its palette, fonts, focus ring, semantic
-surfaces, and text colors from public QST-1 values. It imports no shell or
-Controls internals and has no fallback brand palette. `qinda-dark` is the
-fallback. Without an explicit `--theme`, confirmed Settings1 theme and color
-scheme changes are resolved by [ADR-0080](../adr/0080-resolve-first-party-appearance-from-settings.md)
-and applied live to every window and document view. Confirmed interface and
-monospace font families, point size, text scaling and accessibility preferences
-reach the same QST adapter. High contrast and reduced transparency preserve
-opaque reading surfaces and explicit focus outlines. High contrast retains
-syntax weight and emphasis while using semantic text colors. Transparent or
-low-contrast syntax foregrounds fall back to semantic ink; syntax accents must
-reach 4.5:1 against both the canvas and current-line surface. `--theme` locks a validated
-schema-v1 theme; `--theme-directory` extends discovery. `--check-theme` verifies installed theme/QST identity and exits
-before Settings1 or user-state composition. `--report-startup` reports only
-after the real top-level window's first paint.
+Per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md) the
+application installs no application stylesheet, no per-app palette, and no
+QST token projection: palette, interface and monospace fonts, and contrast
+hints come from the Qt platform theme
+([ADR-0115](../adr/0115-share-appearance-through-qt-platform-theme.md)) with
+Fusion as the widget style, and live updates reach every window. The one
+palette-derived presentation the window keeps is its symbolic action icons,
+tinted with the live window-text role. The document text uses the platform
+fixed font. The syntax-highlighter contrast guard
+remains content semantics rather than chrome: transparent or low-contrast
+syntax foregrounds fall back to palette ink, and syntax accents must reach
+4.5:1 against the canvas and current-line surfaces; the platform's
+high-contrast preference clears syntax colors while keeping their weight and
+emphasis. `--theme` and
+`--theme-directory` remain accepted as deprecated no-ops so older harnesses
+keep running; no per-app theme catalog is read. `--report-startup` reports
+only after the real top-level window's first paint.
 
 `org.qindaqt.TextEditor.desktop` registers `text/plain` with `%F`. The focused
 selector is:
@@ -255,7 +315,12 @@ hostile regex rejection, single-step Replace All, restore-state schema and
 final/ancestor-symlink and oversize rejection, Settings1
 baseline/conflict/uncertainty, multi-path and hostile CLI admission, desktop
 metadata, source-boundary poison, and a clean installed-prefix offscreen
-launch. The global-menu export slice adds real-process private-bus rows under
+launch. The printing row renders through the dialog-free PDF seam and proves
+the page carries plain text in the base font with no syntax colors. The
+recovery rows prove journal round-trip, key and size bounds, symlink
+confinement, first-edit/debounced writes, save/discard clearing,
+kill-without-save restore consent, discard-deny, and the untitled orphan
+sweep. The global-menu export slice adds real-process private-bus rows under
 the selector documented in [the global-menu page](../shell/global-menu.md):
 exact-identity export with one shell activation and provider-exit clearing,
 mismatched PID/window variants, registrar-absent late binding, and
@@ -273,8 +338,8 @@ global-menu transport, or assistive-technology qualification.
 
 ## Bounded deferrals
 
-Portals beyond the injected file-selection seam, printing, extensions, rich
-text, remote URLs, content journaling/autosave, collaborative locking or merge,
+Portals beyond the injected file-selection seam, extensions, rich
+text, remote URLs, collaborative locking or merge,
 a nested display screenshot matrix, and whole-application assistive-technology
 qualification remain later outcomes. Dirty-save and destination-replacement consent use a window-owned native
 `DocumentDialogs` adapter backed by `QMessageBox`; focused tests inject explicit
@@ -295,7 +360,8 @@ also verifies that wrapping and zoom follow their document across separate windo
 independent per-window actions, close Save/Discard/Cancel, safe Save As collisions,
 local multi-file drops, first-window lifetime and the 32-window bound.
 `qindaqt.editor-visual-offscreen` captures actual wide and compact application
-windows, with search open and closed, under light, dark and high-contrast themes.
+windows, with search open and closed, under light, dark and high-contrast
+palette fixtures standing in for platform-theme palettes.
 Captures remain in the ignored build tree. It checks window geometry, document
 content and visible heading formats; screenshots require visual review and do
 not claim compositor/nested qualification.
