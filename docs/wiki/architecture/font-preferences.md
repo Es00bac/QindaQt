@@ -134,10 +134,15 @@ with the public Settings1 client, following the ADR-0028 recovery contract:
 
 `FontSessionBootstrap` (`font_session_bootstrap.h`, module
 `src/services/font_discovery`) is the F1 production composition root. Each
-first-party application (Settings Center, Text Editor, File Manager,
-Terminal) calls `FontSessionBootstrap::applyFromSessionSettings()` exactly
-once as a single guarded line **before `QGuiApplication` construction**.
-This placement is possible and safe on Qt 6.11 because
+first-party application that keeps the QindaQt font bootstrap (Settings
+Center, File Manager, Calendar) calls
+`FontSessionBootstrap::applyFromSessionSettings()` exactly once as a single
+guarded line **before `QGuiApplication` construction**. The stock-Qt6 widget
+applications (Text Editor, Terminal) do not call it: per
+[ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md) their fonts
+and palette come from the Qt platform theme (ADR-0115), which itself consumes
+the confirmed Settings1 preferences. This placement is possible and safe on
+Qt 6.11 because
 `QGuiApplication::setFont()` invoked pre-construction persists as the
 application default font, and blocking D-Bus calls work without an
 application object (an event loop does not, so the read never uses one).
@@ -169,12 +174,10 @@ The composition:
 
 Every failure path returns `false` with a bounded diagnostic and leaves
 platform/theme defaults untouched; the call sites deliberately ignore the
-result. In the QML applications (Settings Center, File Manager) the applied
-font becomes the application font before the QML engine exists. In the
-widget applications (Text Editor, Terminal) the theme baseline
-`application.setFont(...)` runs after construction and remains the
-deliberate widgets baseline; the confirmed preference is then the
-pre-window platform default underneath it. The shell is deliberately
+result. In the QML applications (Settings Center, File Manager, Calendar) the
+applied font becomes the application font before the QML engine exists. In
+the stock-Qt6 widget applications (Text Editor, Terminal) the platform theme
+supplies the interface and fixed fonts directly. The shell is deliberately
 untouched.
 
 The monospace family and logical DPI are persisted and validated but not
