@@ -1,30 +1,38 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QindaQt.Controls 1.0 as Qinda
-import QindaQt.Tokens 1.0
-Qinda.Button {
+
+// Sidebar button with a themed leading icon and an elided label. "emphasized"
+// marks the currently open folder with the palette's alternate base.
+ToolButton {
     id: control
     required property string iconName
-    leftPadding: Tokens.space["2"]
-    rightPadding: Tokens.space["2"]
+    property bool emphasized: false
+    padding: 8
+    flat: true
     implicitWidth: 120
     implicitHeight: 44
+    display: AbstractButton.TextBesideIcon
     background: Rectangle {
-        radius: Tokens.radius.m
-        color: control.down ? Tokens.state.pressed : control.hovered ? Tokens.state.hover
-             : control.emphasized ? Tokens.state.pressed : "transparent"
+        radius: 6
+        color: control.down ? control.palette.mid
+             : control.hovered ? control.palette.alternateBase
+             : control.emphasized ? control.palette.alternateBase
+             : "transparent"
         border.width: control.activeFocus ? 2 : 0
-        border.color: Tokens.focus.ring
+        border.color: control.palette.highlight
     }
     contentItem: RowLayout {
-        spacing: Tokens.space["2"]
-        Qinda.Icon {
+        spacing: 8
+        Image {
             Layout.preferredWidth: 24
             Layout.preferredHeight: 24
-            name: control.iconName
+            source: "image://theme-icons/" + control.iconName
+            sourceSize: Qt.size(24, 24)
+            Accessible.ignored: true
         }
-        Qinda.Label {
+        Label {
             Layout.fillWidth: true
             text: control.text
             elide: Text.ElideRight

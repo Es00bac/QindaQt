@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
-Item {
+Control {
     id: root
 
     required property var navigationController
@@ -52,9 +50,9 @@ Item {
     }
 
     // Listing notices remain outside the scrolling entries.
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Tokens.space["2"]
+    padding: 8
+
+    contentItem: ColumnLayout {
         spacing: 0
 
         RowLayout {
@@ -69,17 +67,17 @@ Item {
             // --check-ui-contract gate and the UI action probe resolve
             // sortHeader_* by objectName. The column set is fixed by
             // ListingOrder (model/listing_order.h).
-            component SortHeaderButton: Qinda.Button {
+            component SortHeaderButton: Button {
                 required property string key
                 required property string label
                 property bool stretch: false
 
                 Layout.fillWidth: stretch
                 Layout.preferredWidth: stretch ? -1 : 112
+                flat: root.navigationController.sortColumn !== key
                 text: label + (root.navigationController.sortColumn === key
                     ? (root.navigationController.sortDirection === "ascending" ? " ▲" : " ▼") : "")
-                emphasized: root.navigationController.sortColumn === key
-                accessibleDescription: qsTr("Sort by %1").arg(label)
+                Accessible.description: qsTr("Sort by %1").arg(label)
                 onClicked: root.navigationController.setSortColumn(key)
             }
 
@@ -129,7 +127,7 @@ Item {
                 function selectEntry(index) { root.selection.selectOnly(index) }
                 model: root.navigationController.entries
 
-                T.ScrollBar.vertical: ViewportScrollBar {
+                ScrollBar.vertical: ViewportScrollBar {
                     objectName: "entryListScrollBar"
                     parent: viewport
                     x: listView.width + 4
@@ -155,55 +153,59 @@ Item {
                     width: listView.width
                     height: root.rowHeight
                     radius: 8
-                    color: delegateRoot.entrySelected ? Tokens.state.pressed
-                         : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
+                    color: delegateRoot.entrySelected ? root.palette.highlight
+                         : hoverArea.containsMouse ? root.palette.alternateBase : "transparent"
 
                     Accessible.role: Accessible.ListItem
                     Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                         ? qsTr(", folder") : qsTr(", file"))
                     Accessible.selected: delegateRoot.entrySelected
                     border.width: ListView.isCurrentItem && listView.activeFocus ? 2 : 0
-                    border.color: Tokens.accent.default
+                    border.color: root.palette.highlight
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: Tokens.space["3"]
-                        anchors.rightMargin: Tokens.space["3"]
-                        spacing: Tokens.space["2"]
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        spacing: 8
 
-                        Qinda.Icon {
+                        Image {
                             Layout.preferredWidth: root.rowIconSize
                             Layout.preferredHeight: root.rowIconSize
-                            name: delegateRoot.modelData.iconName || "application-octet-stream"
+                            sourceSize: Qt.size(root.rowIconSize, root.rowIconSize)
+                            source: "image://theme-icons/" + (delegateRoot.modelData.iconName || "application-octet-stream")
+                            Accessible.ignored: true
                         }
-                        Qinda.Label {
+                        Label {
                             Layout.fillWidth: true
                             text: delegateRoot.modelData.name
-                            muted: delegateRoot.modelData.isHidden
+                            color: delegateRoot.entrySelected ? root.palette.highlightedText
+                                 : delegateRoot.modelData.isHidden ? root.palette.placeholderText
+                                 : root.palette.text
                             elide: Text.ElideMiddle
                             Accessible.ignored: true
                         }
-                        Qinda.Label {
+                        Label {
                             Layout.preferredWidth: 102
                             horizontalAlignment: Text.AlignRight
                             text: delegateRoot.modelData.sizeText
-                            muted: true
+                            color: delegateRoot.entrySelected ? root.palette.highlightedText : root.palette.placeholderText
                             elide: Text.ElideRight
                             Accessible.ignored: true
                         }
-                        Qinda.Label {
+                        Label {
                             Layout.preferredWidth: 102
                             visible: root.width > 580
                             text: delegateRoot.modelData.kindText
-                            muted: true
+                            color: delegateRoot.entrySelected ? root.palette.highlightedText : root.palette.placeholderText
                             elide: Text.ElideRight
                             Accessible.ignored: true
                         }
-                        Qinda.Label {
+                        Label {
                             Layout.preferredWidth: 102
                             visible: root.width > 440
                             text: delegateRoot.modelData.modifiedText
-                            muted: true
+                            color: delegateRoot.entrySelected ? root.palette.highlightedText : root.palette.placeholderText
                             elide: Text.ElideRight
                             Accessible.ignored: true
                         }
@@ -217,17 +219,14 @@ Item {
                         onClicked: (mouse) => {
                             listView.forceActiveFocus()
                             if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
-                                selection.focusIndex(delegateRoot.index)
                             } else if (mouse.modifiers & Qt.ControlModifier) {
                                 selection.toggle(delegateRoot.index)
-                                selection.focusIndex(delegateRoot.index)
                             } else if (mouse.modifiers & Qt.ShiftModifier) {
                                 selection.rangeTo(delegateRoot.index)
-                                selection.focusIndex(delegateRoot.index)
                             } else {
                                 selection.selectOnly(delegateRoot.index)
-                                selection.focusIndex(delegateRoot.index)
                             }
+                            selection.focusIndex(delegateRoot.index)
                             if (mouse.button === Qt.RightButton)
                                 contextMenu.popup()
                         }
@@ -244,39 +243,39 @@ Item {
 
         }
 
-        T.Menu {
+        Menu {
             id: contextMenu
             objectName: "entryContextMenu"
 
-            T.MenuItem {
+            MenuItem {
                 objectName: "contextRenameAction"
                 text: qsTr("Rename")
                 onTriggered: root.appCoordinator.activateAction("file.rename")
             }
-            T.MenuItem {
+            MenuItem {
                 objectName: "contextCopyAction"
                 text: qsTr("Copy To…")
                 onTriggered: root.appCoordinator.activateAction("file.copy")
             }
-            T.MenuItem {
+            MenuItem {
                 objectName: "contextMoveAction"
                 text: qsTr("Move To…")
                 onTriggered: root.appCoordinator.activateAction("file.move")
             }
-            T.MenuItem {
+            MenuItem {
                 objectName: "contextTrashAction"
                 text: qsTr("Move to Trash")
                 onTriggered: root.appCoordinator.activateAction("file.trash")
             }
         }
 
-        Qinda.Label {
+        Label {
             objectName: "truncationNotice"
             Layout.fillWidth: true
-            Layout.topMargin: Tokens.space["1"]
+            Layout.topMargin: 4
             visible: root.navigationController.statusMessage.length > 0
             text: root.navigationController.statusMessage
-            muted: true
+            color: root.palette.placeholderText
         }
     }
 }

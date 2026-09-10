@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
+import QtQuick.Controls
 
 Item {
     id: root
@@ -51,18 +50,18 @@ Item {
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: newFolderDialog
         objectName: "newFolderDialog"
         anchors.centerIn: parent
-        width: Math.min(440, root.width - Tokens.space["4"] * 2)
+        width: Math.min(440, root.width - 32)
         modal: true
         title: qsTr("Create a new folder")
-        standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+        standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: root.mutationController.createFolder(
             root.navigationController.currentPath, newFolderName.text)
 
-        T.TextField {
+        TextField {
             id: newFolderName
             objectName: "newFolderNameField"
             width: parent.width
@@ -71,21 +70,21 @@ Item {
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: renameDialog
         objectName: "renameDialog"
         anchors.centerIn: parent
-        width: Math.min(440, root.width - Tokens.space["4"] * 2)
+        width: Math.min(440, root.width - 32)
         modal: true
         title: qsTr("Rename selected item")
-        standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+        standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: {
             if (root.selectedEntry)
                 root.mutationController.renameItem(root.selectedEntry.path,
                     renameName.text, root.selectedEntry)
         }
 
-        T.TextField {
+        TextField {
             id: renameName
             objectName: "renameNameField"
             width: parent.width
@@ -93,11 +92,11 @@ Item {
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: destinationDialog
         objectName: "destinationDialog"
         anchors.centerIn: parent
-        width: Math.min(560, root.width - Tokens.space["4"] * 2)
+        width: Math.min(560, root.width - 32)
         modal: true
         title: root.selectedItems.length > 1
             ? (root.destinationKind === "copy"
@@ -105,7 +104,7 @@ Item {
                : qsTr("Move %1 items into folder").arg(root.selectedItems.length))
             : (root.destinationKind === "copy" ? qsTr("Copy to local path")
                                                : qsTr("Move to local path"))
-        standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+        standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: {
             if (root.selectedItems.length > 1) {
                 if (root.destinationKind === "copy")
@@ -125,7 +124,7 @@ Item {
                     destinationPath.text, root.selectedEntry)
         }
 
-        T.TextField {
+        TextField {
             id: destinationPath
             objectName: "destinationPathField"
             width: parent.width
@@ -134,16 +133,16 @@ Item {
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: trashConfirmationDialog
         objectName: "trashConfirmationDialog"
         anchors.centerIn: parent
-        width: Math.min(560, root.width - Tokens.space["4"] * 2)
+        width: Math.min(560, root.width - 32)
         modal: true
         title: root.selectedItems.length > 1
             ? qsTr("Move %1 selected items to Trash?").arg(root.selectedItems.length)
             : qsTr("Move selected item to Trash?")
-        standardButtons: T.Dialog.Yes | T.Dialog.Cancel
+        standardButtons: Dialog.Yes | Dialog.Cancel
         onAccepted: {
             if (root.selectedItems.length > 1) {
                 root.mutationController.trashItems(root.selectedItems)
@@ -153,7 +152,7 @@ Item {
             }
         }
 
-        T.Label {
+        Label {
             text: root.selectedItems.length > 1
                 ? qsTr("Move %1 selected items to the recoverable home Trash. Batch trash is not covered by Restore Last.")
                       .arg(root.selectedItems.length) + "\n\n"
@@ -167,17 +166,17 @@ Item {
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: emptyTrashConfirmationDialog
         objectName: "emptyTrashConfirmationDialog"
         anchors.centerIn: parent
-        width: Math.min(560, root.width - Tokens.space["4"] * 2)
+        width: Math.min(560, root.width - 32)
         modal: true
         title: qsTr("Permanently empty Trash?")
-        standardButtons: T.Dialog.Yes | T.Dialog.Cancel
+        standardButtons: Dialog.Yes | Dialog.Cancel
         onAccepted: root.mutationController.emptyTrash()
 
-        T.Label {
+        Label {
             text: qsTr("Every item in the home Trash will be permanently removed. This cannot be undone.")
             wrapMode: Text.Wrap
             Accessible.name: text

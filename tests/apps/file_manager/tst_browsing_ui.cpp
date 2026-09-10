@@ -8,20 +8,19 @@
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 #include "preview/preview_provider.h"
+#include "preview/theme_icon_provider.h"
 
 #include <QFile>
 #include <QDir>
 #include <QWheelEvent>
 #include <QIcon>
 #include <QQmlApplicationEngine>
-#include <QQmlComponent>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QStyleHints>
 #include <QTemporaryDir>
 #include <QtTest>
 #include <qindaqt/app_shell/application_coordinator.h>
-#include <qindaqt/design_tokens/token_facade.h>
-#include <qindaqt/themes/theme_loader.h>
 
 using namespace QindaQt::Apps::FileManager;
 
@@ -34,15 +33,18 @@ private slots:
 
 void BrowsingUiTests::keyboardWheelAndFilter_data() {
   QTest::addColumn<QSize>("windowSize");
-  QTest::addColumn<QString>("themeName");
-  QTest::newRow("compact-light") << QSize(480, 360) << QStringLiteral("qinda-light");
-  QTest::newRow("desktop-dark") << QSize(1280, 800) << QStringLiteral("qinda-dark");
-  QTest::newRow("1080p-high-contrast") << QSize(1920, 1080) << QStringLiteral("qinda-high-contrast");
+  QTest::addColumn<Qt::ColorScheme>("scheme");
+  QTest::newRow("compact-light") << QSize(480, 360) << Qt::ColorScheme::Light;
+  QTest::newRow("desktop-dark") << QSize(1280, 800) << Qt::ColorScheme::Dark;
+  QTest::newRow("1080p-dark") << QSize(1920, 1080) << Qt::ColorScheme::Dark;
 }
 
 void BrowsingUiTests::keyboardWheelAndFilter() {
   QFETCH(QSize, windowSize);
-  QFETCH(QString, themeName);
+  QFETCH(Qt::ColorScheme, scheme);
+  // ADR-0116: appearance comes from the platform theme; the declarative color
+  // scheme stands in for the session palette under the generic test theme.
+  QGuiApplication::styleHints()->setColorScheme(scheme);
   const QString sourceRoot = QStringLiteral(QINDAQT_SOURCE_DIR);
   QTemporaryDir temporary;
   QVERIFY(temporary.isValid());
@@ -63,25 +65,13 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   navigation.navigateTo(folder);
 
   QQmlApplicationEngine engine;
-  engine.addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
-  QQmlComponent registration(&engine);
-  registration.setData("import QtQuick\nimport QindaQt.Tokens 1.0\nQtObject {}", QUrl("inline:tokens.qml"));
-  QTRY_VERIFY(!registration.isLoading());
-  std::unique_ptr<QObject> tokenObject(registration.create());
-  QVERIFY2(tokenObject, qPrintable(registration.errorString()));
-  auto *tokens = engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>("QindaQt.Tokens", "Tokens");
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(sourceRoot + "/data/themes/" + themeName + ".json");
-  QVERIFY2(theme.ok, qPrintable(theme.error));
-  QindaQt::DesignTokens::AccessibilityInputs accessibility;
-  accessibility.highContrast = themeName.contains("high-contrast");
-  QString error;
-  QVERIFY2(tokens && tokens->publish(theme.theme, accessibility, &error), qPrintable(error));
   QIcon::setThemeSearchPaths({sourceRoot + "/data/icons"});
-  QIcon::setThemeName(theme.theme.iconTheme);
+  QIcon::setThemeName(QStringLiteral("QindaQt"));
   QVERIFY(QIcon::hasThemeIcon(QStringLiteral("list-add-symbolic")));
   QVERIFY(QIcon::hasThemeIcon(QStringLiteral("list-remove-symbolic")));
   auto *previews = new PreviewProvider(std::make_unique<LocalPreviewDecoder>());
   engine.addImageProvider("previews", previews);
+  engine.addImageProvider("theme-icons", new ThemeIconProvider());
   previews->setGeneration(navigation.listingGeneration());
   engine.setInitialProperties({
       {"navigationController", QVariant::fromValue(static_cast<QObject *>(&navigation))},
@@ -109,8 +99,8 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   QTRY_VERIFY(list->hasActiveFocus());
   QCOMPARE(list->property("currentIndex").toInt(), 159);
   QTest::keyClick(window, Qt::Key_2, Qt::ControlModifier);
-  QTRY_COMPARE(navigation.viewMode(), QStringLiteral("grid"));
   QTRY_VERIFY(grid->hasActiveFocus());
+  QTRY_COMPARE(navigation.viewMode(), QStringLiteral("grid"));
   QTest::keyClick(window, Qt::Key_2, Qt::ControlModifier);
   QCOMPARE(navigation.viewMode(), QStringLiteral("grid"));
   QObject *gridAction = nullptr;

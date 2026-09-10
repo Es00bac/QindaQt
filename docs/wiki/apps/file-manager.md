@@ -19,11 +19,15 @@ the S2 bookmark persistence contract is recorded in
 [ADR-0090](../adr/0090-keep-file-manager-bookmarks-app-local.md).
 Bounded local previews and public icon composition follow
 [ADR-0111](../adr/0111-bound-file-previews-and-consume-public-icons.md).
+The stock Qt 6 presentation surface follows
+[ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md).
 
-S2 composes `QindaQt.Tokens 1.0`, `QindaQt.Controls 1.0`, and the public
-`QindaQt.AppShell 1.0` window/action/lifecycle boundary. File Manager retains
-all navigation and filesystem policy; AppShell owns only the standard menu,
-shortcut dispatch, focus reporting, and close-decision protocol (see
+File Manager's presentation is stock Qt 6 QML (`QtQuick`, `QtQuick.Controls`,
+`QtQuick.Layouts`) styled by the platform theme palette; it no longer imports
+`QindaQt.Tokens` or `QindaQt.Controls` (ADR-0116). It still composes the
+public `QindaQt.AppShell 1.0` window/action/lifecycle boundary. File Manager
+retains all navigation and filesystem policy; AppShell owns only the standard
+menu, shortcut dispatch, focus reporting, and close-decision protocol (see
 [Module boundaries](../architecture/module-boundaries.md)).
 
 ## First-party global-menu export
@@ -59,7 +63,7 @@ Back and Forward remain visible at compact widths, and mouse Back/Forward
 buttons use the same history actions. Toolbar and sidebar use flat semantic
 surfaces with thin dividers; no gradient is painted behind navigation controls. Folder Options
 holds direct location entry, hidden files, refresh, sorting and Trash recovery.
-`Ctrl+L` replaces the breadcrumbs with a themed location field; Enter uses the
+`Ctrl+L` replaces the breadcrumbs with an editable location field; Enter uses the
 same normalized navigation boundary, and Escape restores the breadcrumbs.
 Tooltips and accessible labels explain every icon action.
 
@@ -143,8 +147,8 @@ Opening a directory entry navigates into it. Opening a file entry requests a
 bounded local launch (see below); the list selection and current folder never
 change just because a launch failed. A folder that cannot be listed (missing,
 not a folder, permission denied, or an unclassified read failure) or that
-lists cleanly but has no children presents one accessible
-`QindaQt.Controls` `StateCard` instead of an empty or frozen-looking list. A
+lists cleanly but has no children presents one accessible state card built
+from stock Qt Quick Controls instead of an empty or frozen-looking list. A
 ready folder whose entries are all hidden stays in the Ready state with an
 empty list and the "N hidden" notice rather than claiming the folder is
 empty.
@@ -336,30 +340,27 @@ implementation surfaces and are not installed or ABI-stable. The executable
 name, desktop ID, folder-launch-argument contract, and documented action
 object names/shortcuts form the compatibility surface.
 
-## QST-1 theme and accessibility boundary
+## Stock-controls presentation and accessibility boundary
 
-Confirmed Settings1 theme and color-scheme changes publish live QST generations
-through [ADR-0080](../adr/0080-resolve-first-party-appearance-from-settings.md).
-An explicit `--theme` locks the process theme; `--theme-directory` extends the
-validated schema-v1 theme search, using the same
-search order (explicit directory, then `XDG_DATA_DIRS`-discovered
-`qindaqt/themes`, then the install-relative theme directory). The resolved
-`ThemeSpec` is derived into one QST-1 generation and published into the QML
-engine's `QindaQt.Tokens 1.0` singleton before the real root QML is created,
-so every `QindaQt.Controls` binding observes a complete generation on its
-first evaluation; see the `AGENT-CONTRACT` comment in `main.cpp` and
-`token_facade.h` for the exact publish-before-construct ordering this
-depends on. `--check-theme` resolves the selected theme, prints its
-identifier and QST revision, and exits before constructing a window, matching
-the Text Editor's packaging-proof diagnostic.
+Per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md), every
+`ui/` file imports only `QtQuick`, `QtQuick.Controls`, and `QtQuick.Layouts`.
+Colors, fonts, and control metrics come from the Qt platform theme: QML
+components read their `Control` root's `palette`, and `main.cpp` publishes no
+QST generation, loads no theme catalog, and binds no appearance controller.
+`--theme` and `--theme-directory` remain accepted as deprecated no-ops so
+external harnesses that still pass them keep working; `--check-theme` is
+removed. Entry icons resolve through the application-owned
+`image://theme-icons/` provider, which asks the active `QIcon` theme and
+returns a transparent placeholder rather than a warning when a name is
+missing.
 
 The folder list and grid, sort headers, breadcrumb buttons, location field,
 places and bookmark rows, toolbar buttons, and every state card expose
 accessible names/roles/descriptions through `Accessible.role`/`.name` on each
-QML item and through `QindaQt.Controls`' own accessible contracts (`Button`,
-`Label`, `StateCard`). List entries additionally state whether they are a
-folder or a file in their accessible name so a screen reader user does not
-have to rely on icon shape or color alone.
+QML item and the stock Qt Quick Controls accessibility contracts. List entries
+additionally state whether they are a folder or a file in their accessible
+name so a screen reader user does not have to rely on icon shape or color
+alone.
 
 ## Desktop integration and verification
 
@@ -368,7 +369,8 @@ for resource admission, corrupt input, cancellation, two-job concurrency,
 generation fencing, cache identity rechecks and listing refresh. A test-only
 `qindaqt_file_manager_visual_probe` instantiates production QML and real local
 controllers, creates its own browsing fixture, and saves an offscreen capture.
-It accepts source root, theme ID, output path, width and height; an optional
+It accepts source root, theme ID (mapped onto a light/dark platform color
+scheme), output path, width and height; an optional
 last argument enables reduced transparency. Output belongs under ignored build
 or cache directories. This probe does not add a production screenshot API.
 
@@ -377,8 +379,8 @@ or cache directories. This probe does not add a production screenshot API.
 for `inode/directory` with one `%u` local-folder argument. Multiple folder
 arguments, and a positional argument that is not a folder, are both rejected
 rather than silently opening the wrong location. Positional validation occurs
-before theme discovery so the documented exit and diagnostic remain stable in
-a minimal or deliberately sanitized package environment.
+before any QML or icon setup so the documented exit and diagnostic remain
+stable in a minimal or deliberately sanitized package environment.
 
 The focused selector is:
 
@@ -397,17 +399,17 @@ field, and view-mode behavior, the pure `ListingOrder` policy across every
 column and direction, the `BookmarksStore` round-trip/bounds/symlink-poison
 contract and `PlacesController` policy, desktop metadata, and CLI arity/
 argument validation. The package row stages only the `FileManager` component
-in a clean disposable prefix. That component intentionally carries its required Tokens
-and Controls backing libraries, plugins, metadata, and Controls QML sources.
-With ambient QML and library paths cleared, the gate rejects an executable
-that embeds the build QML directory, validates every built-in theme through
-`--check-theme`, and constructs the real File Manager QML root offscreen
-through `--check-qml-root` before exiting deterministically. The executable's
-QML import root and Tokens loader path are relative to its installed location,
-so the same component remains usable after staging or relocation. Token import
-resolution may complete asynchronously even for a local installed module; the
-startup boundary waits at most five seconds and reports either the QML error or
-an explicit timeout before it attempts singleton publication.
+in a clean disposable prefix. That component carries the executable, its
+desktop metadata, and the AppShell/Controls/Tokens backing shared libraries
+the executable's dynamic dependency chain still needs; it deliberately carries
+no importable QindaQt QML module metadata or QML sources and no per-app theme
+catalog (ADR-0116), and the row asserts both shapes. With ambient QML and
+library paths cleared, the gate rejects an executable that embeds the build
+QML directory and constructs the real File Manager QML root offscreen through
+`--check-qml-root` — with the deprecated `--theme`/`--theme-directory` options
+present to prove they stay accepted no-ops — before exiting deterministically.
+The executable's library lookup is relative to its installed location, so the
+same component remains usable after staging or relocation.
 
 S1 adds mutation, Trash, controller, action-catalog, UI-contract, UI-action, and
 boundary-policy rows. S2 extends them: the UI-contract row also requires the
@@ -478,6 +480,6 @@ The browsing-comfort regressions include `qindaqt.file-manager-name-filter`,
 `qindaqt.file-manager-icon-zoom`, `qindaqt.file-manager-viewport`, and
 `qindaqt.file-manager-browsing-ui`. The last loads real File Manager controllers
 and production QML with temporary local files, then delivers keyboard and wheel
-input at compact, desktop and 1080p sizes under light, dark and high-contrast
-tokens. It does not validate clipboard exchange, mounted volumes or network
+input at compact, desktop and 1080p sizes under light and dark platform color
+schemes. It does not validate clipboard exchange, mounted volumes or network
 browsing; those remain explicit S3–S5 work.

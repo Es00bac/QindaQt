@@ -29,6 +29,17 @@ registered `calendar`-labelled test rows (all green), the
 `gui-apps/qindaqt-apps` with `kde-frameworks/kcalendarcore:6` declared. File
 Manager, Text Editor, and Terminal portions remain pending.
 
+File Manager progress (September 9): **presentation converted to stock Qt
+Quick Controls** per ADR-0116 — the `ui/` files import only `QtQuick`,
+`QtQuick.Controls`, and `QtQuick.Layouts` with palette, fonts, and control
+metrics from the Qt platform theme (ADR-0115); the QST publish machinery and
+`--check-theme` are removed, while `--theme`/`--theme-directory` stay accepted
+as deprecated no-ops for external harnesses. The `FileManager` component drops
+the importable QindaQt QML module metadata/sources and the per-app theme
+catalog, retaining only the AppShell seam's backing shared libraries. All 28
+`qindaqt.file-manager*` test rows pass. Clipboard cut/copy/paste,
+drag-and-drop, properties, and recursive search land next.
+
 ### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
 
 **Built, installed and verified through Portage r1.** The tray uses real

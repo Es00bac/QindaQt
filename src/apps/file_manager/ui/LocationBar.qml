@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
 // Editable direct-path surface, swapped in over the breadcrumb by Ctrl+L or
 // the toolbar toggle. Navigation itself stays in NavigationController; a
 // rejected path keeps this bar active and surfaces through the existing
-// status cards.
+// status banners.
 Rectangle {
     id: root
 
@@ -23,23 +21,16 @@ Rectangle {
     }
 
     implicitHeight: 40
-    color: Tokens.bg.base
+    color: "transparent"
 
     RowLayout {
-        id: row
         anchors.fill: parent
-        anchors.margins: 0
-        spacing: Tokens.space["2"]
+        spacing: 8
 
-        T.TextField {
+        TextField {
             id: field
             objectName: "locationField"
             Layout.fillWidth: true
-            color: Tokens.fg.default
-            selectionColor: Tokens.accent.default
-            selectedTextColor: Tokens.accent.fg
-            placeholderTextColor: Tokens.fg.muted
-            background: Rectangle { radius: 8; color: Tokens.bg.base; border.color: field.activeFocus ? Tokens.accent.default : Tokens.outline.divider }
             placeholderText: qsTr("Type a folder path")
             Accessible.name: qsTr("Location")
 
@@ -56,8 +47,7 @@ Rectangle {
             iconName: "go-next"
             objectName: "locationGoButton"
             text: qsTr("Go")
-            emphasized: false
-            accessibleDescription: qsTr("Open the typed folder path")
+            Accessible.description: qsTr("Open the typed folder path")
             onClicked: field.accepted()
         }
     }

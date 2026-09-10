@@ -6,12 +6,7 @@ foreach(required IN ITEMS
         QINDAQT_INSTALL_PREFIX
         QINDAQT_INSTALL_BINDIR
         QINDAQT_INSTALL_DATADIR
-        QINDAQT_QML_INSTALL_DIR
-        QINDAQT_TOKENS_LIBRARY_NAME
-        QINDAQT_TOKENS_PLUGIN_NAME
-        QINDAQT_CONTROLS_LIBRARY_NAME
-        QINDAQT_CONTROLS_PLUGIN_NAME
-        QINDAQT_EXPECTED_CONTROLS_PATHS)
+        QINDAQT_QML_INSTALL_DIR)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed File Manager input: ${required}")
     endif()
@@ -52,36 +47,53 @@ set(desktop
 )
 set(theme_root "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt/themes")
 set(qml_root "${install_prefix}/${QINDAQT_QML_INSTALL_DIR}")
-set(tokens_root "${qml_root}/QindaQt/Tokens")
-set(controls_root "${qml_root}/QindaQt/Controls")
 
-set(theme_ids
-    qinda-dark
-    qinda-light
-    qinda-dusk
-    qinda-macos
-    qinda-high-contrast
-)
-set(required_payload
-    "${file_manager}"
-    "${desktop}"
-    "${tokens_root}/qmldir"
-    "${tokens_root}/qindaqt_tokens.qmltypes"
-    "${tokens_root}/${QINDAQT_TOKENS_LIBRARY_NAME}"
-    "${tokens_root}/${QINDAQT_TOKENS_PLUGIN_NAME}"
-    "${controls_root}/qmldir"
-    "${controls_root}/qindaqt_controls.qmltypes"
-    "${controls_root}/${QINDAQT_CONTROLS_LIBRARY_NAME}"
-    "${controls_root}/${QINDAQT_CONTROLS_PLUGIN_NAME}"
-)
-foreach(theme_id IN LISTS theme_ids)
-    list(APPEND required_payload "${theme_root}/${theme_id}.json")
-endforeach()
-foreach(required IN LISTS required_payload)
+foreach(required IN ITEMS "${file_manager}" "${desktop}")
     if(NOT EXISTS "${required}")
         message(FATAL_ERROR "Installed File Manager payload is missing: ${required}")
     endif()
 endforeach()
+
+# ADR-0116: the FileManager component no longer carries importable QindaQt
+# Tokens / Controls / AppShell QML modules (no qmldir, typeinfo, or QML
+# sources) or the per-app theme catalog; the app renders with stock Qt Quick
+# Controls themed by the platform theme. The executable still dynamically
+# links the AppShell C++ seam, so the component must ship the three backing
+# shared libraries that chain requires.
+foreach(required_library IN ITEMS
+        "${qml_root}/QindaQt/AppShell/libqindaqt_app_shell.so"
+        "${qml_root}/QindaQt/Controls/libqindaqt_controls_qml.so"
+        "${qml_root}/QindaQt/Tokens/libqindaqt_tokens_qml.so")
+    if(NOT EXISTS "${required_library}")
+        message(FATAL_ERROR
+            "Installed FileManager component is missing the backing library: ${required_library}"
+        )
+    endif()
+endforeach()
+foreach(retired IN ITEMS
+        "${qml_root}/QindaQt/Tokens/qmldir"
+        "${qml_root}/QindaQt/Controls/qmldir"
+        "${qml_root}/QindaQt/AppShell/qmldir"
+        "${theme_root}")
+    if(EXISTS "${retired}")
+        message(FATAL_ERROR
+            "Installed FileManager component still carries the retired payload: ${retired}"
+        )
+    endif()
+endforeach()
+file(GLOB_RECURSE retired_qml_sources
+    "${qml_root}/QindaQt/Tokens/*.qml"
+    "${qml_root}/QindaQt/Controls/*.qml"
+    "${qml_root}/QindaQt/AppShell/*.qml"
+    "${qml_root}/QindaQt/Tokens/*.qmltypes"
+    "${qml_root}/QindaQt/Controls/*.qmltypes"
+    "${qml_root}/QindaQt/AppShell/*.qmltypes"
+)
+if(retired_qml_sources)
+    message(FATAL_ERROR
+        "Installed FileManager component still carries QML module sources: ${retired_qml_sources}"
+    )
+endif()
 
 file(READ "${desktop}" desktop_contents)
 foreach(required_entry IN ITEMS
@@ -97,20 +109,6 @@ foreach(required_entry IN ITEMS
         )
     endif()
 endforeach()
-
-string(REPLACE "|" ";" expected_controls_paths "${QINDAQT_EXPECTED_CONTROLS_PATHS}")
-list(SORT expected_controls_paths)
-file(GLOB_RECURSE installed_controls_paths
-    RELATIVE "${controls_root}"
-    "${controls_root}/*.qml"
-)
-list(SORT installed_controls_paths)
-if(NOT installed_controls_paths STREQUAL expected_controls_paths)
-    message(FATAL_ERROR
-        "Installed FileManager Controls inventory does not match Qt's module paths:\n"
-        "expected=${expected_controls_paths}\ninstalled=${installed_controls_paths}"
-    )
-endif()
 
 # The test host may still have a valid build tree. Reject any executable that
 # embeds that escape hatch before exercising the sanitized staged prefix.
@@ -145,6 +143,8 @@ set(probe_environment
     --unset=DYLD_LIBRARY_PATH
     QT_QPA_PLATFORM=offscreen
     QT_QUICK_BACKEND=software
+    QT_QUICK_CONTROLS_STYLE=Fusion
+    QT_QPA_PLATFORMTHEME=generic
     QML_DISABLE_DISK_CACHE=1
     "HOME=${private_root}"
     "XDG_CONFIG_HOME=${private_root}/config"
@@ -153,32 +153,14 @@ set(probe_environment
     "XDG_RUNTIME_DIR=${private_runtime}"
 )
 
-foreach(theme_id IN LISTS theme_ids)
-    execute_process(
-        COMMAND ${probe_environment}
-                "${file_manager}" --theme "${theme_id}" --check-theme
-        WORKING_DIRECTORY "${private_root}"
-        RESULT_VARIABLE theme_status
-        OUTPUT_VARIABLE theme_output
-        ERROR_VARIABLE theme_error
-    )
-    if(NOT theme_status STREQUAL "0")
-        message(FATAL_ERROR
-            "Installed File Manager ${theme_id} check failed:\n"
-            "${theme_output}${theme_error}"
-        )
-    endif()
-    string(STRIP "${theme_output}" theme_output)
-    if(NOT theme_output STREQUAL "${theme_id} qst-1")
-        message(FATAL_ERROR
-            "Installed File Manager ${theme_id} returned '${theme_output}'"
-        )
-    endif()
-endforeach()
-
+# The deprecated per-app theme options stay accepted (no-ops) so external
+# harnesses that still pass them keep working; the root probe must succeed
+# with them present.
 execute_process(
     COMMAND ${probe_environment}
-            "${file_manager}" --theme qinda-dark --check-qml-root
+            "${file_manager}" --theme qinda-dark
+            --theme-directory "${private_root}/no-such-themes"
+            --check-qml-root
             "${private_folder}"
     WORKING_DIRECTORY "${private_root}"
     RESULT_VARIABLE root_status
@@ -199,6 +181,6 @@ if(NOT root_output STREQUAL "qml-root-loaded")
 endif()
 
 message(STATUS
-    "Installed FileManager component passed exact payload, build-isolation, "
-    "five-theme, and offscreen QML-root checks"
+    "Installed FileManager component passed exact payload, retired-payload, "
+    "build-isolation, and offscreen QML-root checks"
 )

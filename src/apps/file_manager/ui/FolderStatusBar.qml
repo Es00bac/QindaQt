@@ -1,27 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QindaQt.Controls 1.0 as Qinda
-import QindaQt.Tokens 1.0
 
-Rectangle {
+Control {
     id: root
     required property var navigationController
     required property var selection
     required property var appCoordinator
     objectName: "folderStatusBar"
-    color: Tokens.bg.raised
     implicitHeight: 40
+    leftPadding: 12
+    rightPadding: 8
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: Tokens.space["3"]
-        anchors.rightMargin: Tokens.space["2"]
-        spacing: Tokens.space["1"]
-        Qinda.Label {
+    background: Rectangle {
+        color: root.palette.window
+        Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: root.palette.mid }
+    }
+
+    contentItem: RowLayout {
+        spacing: 4
+        Label {
             objectName: "folderSelectionCount"
             Layout.fillWidth: true
-            muted: true
+            color: root.palette.placeholderText
             text: root.selection.count() > 0
                 ? qsTr("%1 selected").arg(root.selection.count())
                 : qsTr("%1 items").arg(root.navigationController.entries.length)
@@ -36,11 +38,11 @@ Rectangle {
             implicitHeight: 32
             onClicked: root.appCoordinator.activateAction("view.zoom-out")
         }
-        Qinda.Button {
+        Button {
             objectName: "resetZoomButton"
+            flat: true
             text: Math.round(root.navigationController.iconSize / 64 * 100) + "%"
-            emphasized: false
-            accessibleDescription: qsTr("Reset icon size (Ctrl+0)")
+            Accessible.description: qsTr("Reset icon size (Ctrl+0)")
             onClicked: root.appCoordinator.activateAction("view.zoom-reset")
         }
         IconButton {
@@ -53,5 +55,4 @@ Rectangle {
             onClicked: root.appCoordinator.activateAction("view.zoom-in")
         }
     }
-    Rectangle { width: parent.width; height: 1; color: Tokens.outline.divider }
 }
