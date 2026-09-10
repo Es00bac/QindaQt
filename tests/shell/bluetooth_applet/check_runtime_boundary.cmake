@@ -8,6 +8,7 @@ set(runtime_root "${SOURCE_ROOT}/src/shell/bluetooth_applet")
 set(applet_runtime_sources
     "${runtime_root}/src/bluetooth_applet_controller.h"
     "${runtime_root}/src/bluetooth_applet_controller.cpp"
+    "${runtime_root}/src/bluetooth_applet_device_ops.cpp"
     "${runtime_root}/qml/BluetoothAdapterRow.qml"
     "${runtime_root}/qml/BluetoothApplet.qml"
     "${runtime_root}/qml/BluetoothDeviceRow.qml")
@@ -18,6 +19,7 @@ set(runtime_sources ${applet_runtime_sources} ${composition_sources})
 set(runtime_cpp_sources
     "${runtime_root}/src/bluetooth_applet_controller.h"
     "${runtime_root}/src/bluetooth_applet_controller.cpp"
+    "${runtime_root}/src/bluetooth_applet_device_ops.cpp"
     ${composition_sources})
 list(LENGTH runtime_sources runtime_source_count)
 

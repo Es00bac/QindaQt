@@ -102,6 +102,11 @@ QVariantList BluetoothAppletController::deviceRows() const
             {QStringLiteral("canConnect"), row.canConnect && !operationPending()},
             {QStringLiteral("canDisconnect"),
              row.canDisconnect && !operationPending()},
+            {QStringLiteral("canPair"), row.canPair && !operationPending()},
+            {QStringLiteral("canRemove"), row.canRemove && !operationPending()},
+            {QStringLiteral("canSetTrusted"),
+             row.canSetTrusted && !operationPending()},
+            {QStringLiteral("trusted"), row.trusted},
             {QStringLiteral("pending"), operationPending()
                  && deviceRowId(m_request.operation.target) == row.id},
             {QStringLiteral("accessibleName"), row.accessibleName},
@@ -186,6 +191,16 @@ bool BluetoothAppletController::dispatch(const RequestState &request)
         break;
     case Bluetooth::OperationKind::Disconnect:
         requestId = m_client->disconnectDevice(request.operation.target);
+        break;
+    case Bluetooth::OperationKind::Pair:
+        requestId = m_client->pairDevice(request.operation.target);
+        break;
+    case Bluetooth::OperationKind::RemoveDevice:
+        requestId = m_client->removeDevice(request.operation.target);
+        break;
+    case Bluetooth::OperationKind::SetTrusted:
+        requestId = m_client->setTrusted(request.operation.target,
+                                         request.operation.trusted);
         break;
     default:
         break;

@@ -133,10 +133,47 @@ RequestState beginBluetoothRequest(
         }
         break;
     }
-    case Bluetooth::OperationKind::Pair:
+    case Bluetooth::OperationKind::Pair: {
+        const Bluetooth::Device *device = findDevice(snapshot, operation.target);
+        const Bluetooth::Adapter *adapter = device == nullptr
+            ? nullptr : findAdapter(snapshot, device->adapterHandle);
+        if (!snapshot.capabilities.testFlag(Bluetooth::Capability::Pair)
+            || device == nullptr || device->paired || adapter == nullptr
+            || !adapter->powered) {
+            return rejected(operation,
+                            QStringLiteral("That device cannot be paired now."));
+        }
+        break;
+    }
     case Bluetooth::OperationKind::CancelPairing:
-    case Bluetooth::OperationKind::RemoveDevice:
-    case Bluetooth::OperationKind::SetTrusted:
+        // AGENT-NOTE: The client serializes this kind on its prompt-reply
+        // lane, so the controller additionally requires its own in-flight
+        // Pair and a free prompt lane before dispatch. Admission here mirrors
+        // only the public-client preflight.
+        if (findDevice(snapshot, operation.target) == nullptr) {
+            return rejected(operation,
+                            QStringLiteral("That pairing cannot be canceled now."));
+        }
+        break;
+    case Bluetooth::OperationKind::RemoveDevice: {
+        const Bluetooth::Device *device = findDevice(snapshot, operation.target);
+        if (!snapshot.capabilities.testFlag(Bluetooth::Capability::RemoveDevice)
+            || device == nullptr || !device->paired) {
+            return rejected(operation,
+                            QStringLiteral("That device cannot be removed now."));
+        }
+        break;
+    }
+    case Bluetooth::OperationKind::SetTrusted: {
+        const Bluetooth::Device *device = findDevice(snapshot, operation.target);
+        if (!snapshot.capabilities.testFlag(Bluetooth::Capability::SetTrusted)
+            || device == nullptr || !device->paired
+            || device->trusted == operation.trusted) {
+            return rejected(operation,
+                            QStringLiteral("That trust change is not available now."));
+        }
+        break;
+    }
     case Bluetooth::OperationKind::ReplyConfirmation:
     case Bluetooth::OperationKind::ReplyPasskey:
     case Bluetooth::OperationKind::ReplyPin:

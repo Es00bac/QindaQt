@@ -26,6 +26,20 @@ bool BluetoothAppletController::pairingConfirmationAvailable() const noexcept
         || kind == Bluetooth::PairingPromptKind::AuthorizeService;
 }
 
+bool BluetoothAppletController::pairingPasskeyEntryAvailable() const noexcept
+{
+    return pairingPromptVisible()
+        && m_client->snapshot().pairingPrompt.kind
+            == Bluetooth::PairingPromptKind::EnterPasskey;
+}
+
+bool BluetoothAppletController::pairingPinEntryAvailable() const noexcept
+{
+    return pairingPromptVisible()
+        && m_client->snapshot().pairingPrompt.kind
+            == Bluetooth::PairingPromptKind::EnterPin;
+}
+
 QString BluetoothAppletController::pairingPromptText() const
 {
     if (!pairingPromptVisible()) {
@@ -44,9 +58,9 @@ QString BluetoothAppletController::pairingPromptText() const
     case Bluetooth::PairingPromptKind::ConfirmPasskey:
         return tr("Confirm passkey %1 for %2.").arg(prompt.detail, label);
     case Bluetooth::PairingPromptKind::EnterPasskey:
-        return tr("%1 needs a passkey. Open Bluetooth Settings to enter it.").arg(label);
+        return tr("Enter the six-digit passkey for %1.").arg(label);
     case Bluetooth::PairingPromptKind::EnterPin:
-        return tr("%1 needs a PIN. Open Bluetooth Settings to enter it.").arg(label);
+        return tr("Enter the PIN for %1.").arg(label);
     case Bluetooth::PairingPromptKind::DisplayPasskey:
         return tr("Type passkey %1 on %2 (%3 of 6 digits entered).")
             .arg(prompt.detail, label).arg(prompt.entered);
@@ -89,6 +103,47 @@ bool BluetoothAppletController::cancelPrompt()
     }
     m_promptRequestId = pairingConfirmationAvailable()
         ? m_client->replyConfirmation(false) : m_client->cancelPrompt();
+    if (m_promptRequestId == 0) {
+        publishFeedback(tr("The pairing response could not be sent."));
+        return false;
+    }
+    m_promptOwner = m_client->owner();
+    m_promptEpoch = m_client->snapshot().epoch;
+    publishFeedback({});
+    Q_EMIT stateChanged();
+    return true;
+}
+
+bool BluetoothAppletController::submitPasskey(const QString &text)
+{
+    // AGENT-GUARD: Entry replies share the confirm/cancel fences: exact
+    // prompt kind, a free prompt lane, control grant, and owner/epoch pinning.
+    // Input shape is validated again by the public client and service.
+    if (!pairingPasskeyEntryAvailable() || pairingReplyPending()
+        || !m_bluetoothControlGranted) {
+        publishFeedback(tr("That pairing request cannot be answered here."));
+        return false;
+    }
+    m_promptRequestId = m_client->replyPasskey(text);
+    if (m_promptRequestId == 0) {
+        publishFeedback(tr("The pairing response could not be sent."));
+        return false;
+    }
+    m_promptOwner = m_client->owner();
+    m_promptEpoch = m_client->snapshot().epoch;
+    publishFeedback({});
+    Q_EMIT stateChanged();
+    return true;
+}
+
+bool BluetoothAppletController::submitPin(const QString &text)
+{
+    if (!pairingPinEntryAvailable() || pairingReplyPending()
+        || !m_bluetoothControlGranted) {
+        publishFeedback(tr("That pairing request cannot be answered here."));
+        return false;
+    }
+    m_promptRequestId = m_client->replyPin(text);
     if (m_promptRequestId == 0) {
         publishFeedback(tr("The pairing response could not be sent."));
         return false;

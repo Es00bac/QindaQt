@@ -87,6 +87,8 @@ QString deviceDescription(const Bluetooth::Device &device)
     QStringList states;
     states.append(device.paired ? QStringLiteral("paired")
                                 : QStringLiteral("not paired"));
+    states.append(device.trusted ? QStringLiteral("trusted")
+                                 : QStringLiteral("not trusted"));
     states.append(device.connected ? QStringLiteral("connected")
                                    : QStringLiteral("disconnected"));
     if (device.batteryKnown) {
@@ -207,6 +209,12 @@ BluetoothAppletModel projectBluetoothApplet(
         && snapshot.capabilities.testFlag(Bluetooth::Capability::ConnectPaired);
     const bool disconnectCapability = controlGranted
         && snapshot.capabilities.testFlag(Bluetooth::Capability::DisconnectPaired);
+    const bool pairCapability = controlGranted
+        && snapshot.capabilities.testFlag(Bluetooth::Capability::Pair);
+    const bool removeCapability = controlGranted
+        && snapshot.capabilities.testFlag(Bluetooth::Capability::RemoveDevice);
+    const bool trustCapability = controlGranted
+        && snapshot.capabilities.testFlag(Bluetooth::Capability::SetTrusted);
     model.devices.reserve(devices.size());
     for (const Bluetooth::Device &device : devices) {
         const Bluetooth::Adapter *adapter = adapterFor(adapters, device.adapterHandle);
@@ -234,6 +242,10 @@ BluetoothAppletModel projectBluetoothApplet(
             .canConnect = connectCapability && device.paired
                 && !device.connected && adapter->powered,
             .canDisconnect = disconnectCapability && device.connected,
+            .canPair = pairCapability && !device.paired && adapter->powered,
+            .canRemove = removeCapability && device.paired,
+            .canSetTrusted = trustCapability && device.paired,
+            .trusted = device.trusted,
             .accessibleName = QStringLiteral("Bluetooth device %1").arg(label),
             .accessibleDescription = deviceDescription(device),
         });

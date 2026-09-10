@@ -94,6 +94,7 @@ class BluetoothAppletQmlTests final : public QObject
 private Q_SLOTS:
     void compiledAppletSupportsKeyboardAccessibilityAndLeaseClose();
     void pairingPromptHasKeyboardAccessibleActions();
+    void pairingPromptAcceptsPasskeyEntry();
 };
 
 void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeaseClose()
@@ -289,6 +290,114 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
     QCOMPARE(transport.submissions.constLast().request.kind,
              Bluetooth::OperationKind::ReplyConfirmation);
     QVERIFY(!transport.submissions.constLast().request.accepted);
+    QTRY_VERIFY(!root->findChild<QObject *>(
+        QStringLiteral("bluetoothAppletPopup"))->property("opened").toBool());
+}
+
+void BluetoothAppletQmlTests::pairingPromptAcceptsPasskeyEntry()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    Bluetooth::Snapshot prompt = bluetoothClientSnapshot();
+    prompt.pairingPrompt = {
+        .promptId = 106,
+        .kind = Bluetooth::PairingPromptKind::EnterPasskey,
+        .device = prompt.devices.constFirst().handle,
+        .detail = {},
+        .serviceUuid = {},
+        .entered = 0,
+    };
+    client.start();
+    transport.setOwner(kOwner);
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, prompt);
+
+    QQmlEngine engine;
+    engine.addImportPath(QStringLiteral(QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH));
+    QQmlComponent component(&engine);
+    component.loadFromModule(QStringLiteral("QindaQt.Shell.BluetoothApplet"),
+                             QStringLiteral("BluetoothApplet"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> owned(component.createWithInitialProperties(
+        {{QStringLiteral("access"), QVariant::fromValue(&controller)},
+         {QStringLiteral("theme"), testTheme()}}));
+    QVERIFY2(owned != nullptr, qPrintable(component.errorString()));
+    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    QVERIFY(root != nullptr);
+    QQuickWindow window;
+    window.setGeometry(0, 0, 480, 600);
+    root->setParentItem(window.contentItem());
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+    auto *summary = root->findChild<QQuickItem *>(
+        QStringLiteral("bluetoothAppletSummary"));
+    summary->forceActiveFocus();
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
+    QTRY_VERIFY(root->findChild<QObject *>(
+        QStringLiteral("bluetoothAppletPopup"))->property("opened").toBool());
+
+    auto *promptLabel = root->findChild<QQuickItem *>(
+        QStringLiteral("bluetoothAppletPairingText"));
+    QVERIFY(promptLabel != nullptr);
+    const QString promptString = promptLabel->property("text").toString();
+    QVERIFY(promptString.contains(QStringLiteral("passkey")));
+    QVERIFY(promptString.contains(QStringLiteral("Keyboard")));
+
+    auto *entry = root->findChild<QQuickItem *>(
+        QStringLiteral("bluetoothAppletPairingEntry"));
+    QVERIFY(entry != nullptr);
+    QTRY_VERIFY(entry->isVisible());
+    QAccessibleInterface *entryInterface =
+        QAccessible::queryAccessibleInterface(entry);
+    QVERIFY(entryInterface != nullptr);
+    QCOMPARE(entryInterface->role(), QAccessible::EditableText);
+    QCOMPARE(entryInterface->text(QAccessible::Name),
+             QStringLiteral("Bluetooth passkey"));
+    entry->forceActiveFocus();
+    QVERIFY(entry->hasActiveFocus());
+
+    // The passkey validator rejects non-digit key input.
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_A);
+    QCOMPARE(entry->property("text").toString(), QString());
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_1);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_2);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_3);
+    QCOMPARE(entry->property("text").toString(), QStringLiteral("123"));
+
+    auto *submit = root->findChild<QQuickItem *>(
+        QStringLiteral("bluetoothAppletPairingSubmit"));
+    QVERIFY(submit != nullptr);
+    QVERIFY(submit->isVisible());
+    QVERIFY(submit->property("available").toBool());
+    submit->forceActiveFocus();
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
+    QTRY_COMPARE(transport.submissions.size(), 1);
+    const auto reply = transport.submissions.constFirst();
+    QCOMPARE(reply.request.kind, Bluetooth::OperationKind::ReplyPasskey);
+    QCOMPARE(Bluetooth::pairingInputString(reply.request.input,
+                                           reply.request.inputSize),
+             QStringLiteral("123"));
+    QCOMPARE(entry->property("text").toString(), QString());
+    QVERIFY(controller.pairingReplyPending());
+
+    transport.emitOperationReply(
+        kOwner, reply.requestId, true,
+        resultFor(reply, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("prompt-replied"), 6));
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot replacement = bluetoothClientSnapshot(61, 6);
+    replacement.pairingPrompt = prompt.pairingPrompt;
+    replacement.pairingPrompt.promptId = 107;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, replacement);
+    QTRY_VERIFY(!controller.pairingReplyPending());
+
+    // Escape still cancels the exact active entry prompt and closes the popup.
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
+    QTRY_COMPARE(transport.submissions.size(), 2);
+    QCOMPARE(transport.submissions.constLast().request.kind,
+             Bluetooth::OperationKind::CancelPrompt);
     QTRY_VERIFY(!root->findChild<QObject *>(
         QStringLiteral("bluetoothAppletPopup"))->property("opened").toBool());
 }
