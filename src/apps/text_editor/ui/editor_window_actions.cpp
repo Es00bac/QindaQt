@@ -48,6 +48,13 @@ void EditorWindow::createActions() {
       add(QStringLiteral("fileSaveAsAction"), tr("Save &As…"),
           QKeySequence(QKeySequence::SaveAs),
           [this] { (void)saveDocumentAs(); });
+  m_actions.filePrint =
+      add(QStringLiteral("filePrintAction"), tr("&Print…"),
+          QKeySequence(QKeySequence::Print), [this] { printDocument(); });
+  m_actions.filePrintPreview =
+      add(QStringLiteral("filePrintPreviewAction"), tr("Print Pre&view…"),
+          QKeySequence(QStringLiteral("Ctrl+Shift+P")),
+          [this] { printPreview(); });
   m_actions.fileQuit =
       add(QStringLiteral("fileQuitAction"), tr("&Quit"),
           QKeySequence(QKeySequence::Quit), [this] { close(); });
@@ -132,6 +139,9 @@ void EditorWindow::createActions() {
       {QString::fromLatin1(AppShellActionIds::FileSave), m_actions.fileSave},
       {QString::fromLatin1(AppShellActionIds::FileSaveAs),
        m_actions.fileSaveAs},
+      {QString::fromLatin1(AppShellActionIds::FilePrint), m_actions.filePrint},
+      {QString::fromLatin1(AppShellActionIds::FilePrintPreview),
+       m_actions.filePrintPreview},
       {QString::fromLatin1(AppShellActionIds::FileQuit), m_actions.fileQuit},
       {QString::fromLatin1(AppShellActionIds::EditUndo), m_actions.editUndo},
       {QString::fromLatin1(AppShellActionIds::EditRedo), m_actions.editRedo},
@@ -163,6 +173,8 @@ void EditorWindow::createMenus() {
       {m_actions.fileNew, m_actions.fileOpen, m_actions.fileCloseWindow});
   file->addSeparator();
   file->addActions({m_actions.fileSave, m_actions.fileSaveAs});
+  file->addSeparator();
+  file->addActions({m_actions.filePrint, m_actions.filePrintPreview});
   file->addSeparator();
   file->addAction(m_actions.fileQuit);
 
@@ -218,6 +230,12 @@ void EditorWindow::updateActionStates() {
   m_actions.fileSave->setEnabled(hasDocument &&
                                  activeDocument->state().isDirty());
   m_actions.fileSaveAs->setEnabled(hasDocument);
+  // Printing an empty document would emit a blank page; both actions stay
+  // disabled until there is content.
+  const bool printable =
+      hasDocument && !activeEditor->document()->isEmpty();
+  m_actions.filePrint->setEnabled(printable);
+  m_actions.filePrintPreview->setEnabled(printable);
   m_actions.editUndo->setEnabled(hasDocument &&
                                  activeEditor->document()->isUndoAvailable());
   m_actions.editRedo->setEnabled(hasDocument &&

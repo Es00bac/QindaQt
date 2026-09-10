@@ -106,6 +106,16 @@ void DocumentController::setText(const QString &text) {
   }
 }
 
+void DocumentController::restoreRecoveredText(const QString &text) {
+  if (!m_state.setText(text)) {
+    return;
+  }
+  // Unlike setText, recovery must repaint the view even when the document was
+  // already dirty, and dirty almost always flips here anyway.
+  emit contentsReplacementRequested(m_state.text());
+  emit stateChanged();
+}
+
 DocumentOperation DocumentController::fromSaveResult(const SaveResult &result) {
   return {.error = result.error, .diagnostic = result.diagnostic};
 }

@@ -137,7 +137,7 @@ private slots:
 
 void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
   const QList<ActionSpec> catalog = editorActionCatalog();
-  QCOMPARE(catalog.size(), 25);
+  QCOMPARE(catalog.size(), 27);
 
   QSet<QString> expectedIds{
       QStringLiteral("edit.go-to-line"), QStringLiteral("edit.indent"), QStringLiteral("edit.unindent"),
@@ -147,6 +147,8 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
       QString::fromLatin1(AppShellActionIds::FileCloseWindow),
       QString::fromLatin1(AppShellActionIds::FileSave),
       QString::fromLatin1(AppShellActionIds::FileSaveAs),
+      QString::fromLatin1(AppShellActionIds::FilePrint),
+      QString::fromLatin1(AppShellActionIds::FilePrintPreview),
       QString::fromLatin1(AppShellActionIds::FileQuit),
       QString::fromLatin1(AppShellActionIds::EditUndo),
       QString::fromLatin1(AppShellActionIds::EditRedo),

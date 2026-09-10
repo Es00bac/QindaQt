@@ -82,7 +82,7 @@ private slots:
     QCOMPARE(file.write(contents), contents.size());
     file.close();
     EditorApplication app([] { return std::make_unique<LocalDocumentStore>(); },
-                          nullptr, nullptr, {}, true);
+                          nullptr, nullptr, nullptr, {}, true);
     QVERIFY(app.start({path}));
     auto *window = app.windows().first();
     if (theme == QStringLiteral("high-contrast")) {

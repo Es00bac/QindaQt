@@ -12,6 +12,7 @@
 namespace QindaQt::Apps::TextEditor {
 class EditorWindow;
 class FileSelectionAdapter;
+class RecoveryJournalStore;
 class TextEditorRestorePolicy;
 
 // GUI-thread owner of ordinary document windows and the process-local path
@@ -29,6 +30,7 @@ public:
   explicit EditorApplication(DocumentStoreFactory stores,
                              TextEditorRestorePolicy *policy = nullptr,
                              RestoreStateStore *restoreStore = nullptr,
+                             RecoveryJournalStore *journalStore = nullptr,
                              FileSelectionFactory choosers = {},
                              bool showWindows = true,
                              DocumentDialogFactory dialogs = {},
@@ -61,12 +63,14 @@ private:
   void present(EditorWindow *window);
   void policyChanged();
   void restoreIfEnabled();
+  void sweepUntitledRecoveryJournals();
   void windowClosed(EditorWindow *window);
   void report(const QString &message);
 
   DocumentStoreFactory m_stores;
   TextEditorRestorePolicy *m_policy;
   RestoreStateStore *m_restoreStore;
+  RecoveryJournalStore *m_journalStore = nullptr;
   FileSelectionFactory m_choosers;
   DocumentDialogFactory m_dialogs;
   QList<QPointer<EditorWindow>> m_windows;

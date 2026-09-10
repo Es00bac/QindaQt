@@ -296,6 +296,24 @@ set_tests_properties(qindaqt.editor-application-offscreen PROPERTIES
     LABELS "editor"
     ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
 
+qindaqt_add_editor_test(qindaqt_editor_printing_tests
+    tst_editor_printing.cpp qindaqt.editor-printing-offscreen)
+set_tests_properties(qindaqt.editor-printing-offscreen PROPERTIES
+    LABELS "editor"
+    ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
+
+qindaqt_add_editor_test(qindaqt_editor_recovery_journal_tests
+    tst_recovery_journal.cpp qindaqt.editor-recovery-journal)
+set_tests_properties(qindaqt.editor-recovery-journal PROPERTIES
+    LABELS "editor"
+    ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}")
+
+qindaqt_add_editor_test(qindaqt_editor_recovery_tests
+    tst_editor_recovery.cpp qindaqt.editor-recovery-offscreen)
+set_tests_properties(qindaqt.editor-recovery-offscreen PROPERTIES
+    LABELS "editor"
+    ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
+
 qindaqt_add_editor_test(qindaqt_editor_visual_tests
     tst_editor_visual.cpp qindaqt.editor-visual-offscreen)
 target_compile_definitions(qindaqt_editor_visual_tests PRIVATE
