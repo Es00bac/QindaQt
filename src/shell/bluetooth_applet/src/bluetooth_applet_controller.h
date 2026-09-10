@@ -40,6 +40,8 @@ class BluetoothAppletController final : public QObject
     Q_PROPERTY(bool pairingPromptVisible READ pairingPromptVisible NOTIFY stateChanged)
     Q_PROPERTY(QString pairingPromptText READ pairingPromptText NOTIFY stateChanged)
     Q_PROPERTY(bool pairingConfirmationAvailable READ pairingConfirmationAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool pairingPasskeyEntryAvailable READ pairingPasskeyEntryAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool pairingPinEntryAvailable READ pairingPinEntryAvailable NOTIFY stateChanged)
     Q_PROPERTY(bool pairingReplyPending READ pairingReplyPending NOTIFY stateChanged)
 
 public:
@@ -75,6 +77,8 @@ public:
     [[nodiscard]] bool pairingPromptVisible() const noexcept;
     [[nodiscard]] QString pairingPromptText() const;
     [[nodiscard]] bool pairingConfirmationAvailable() const noexcept;
+    [[nodiscard]] bool pairingPasskeyEntryAvailable() const noexcept;
+    [[nodiscard]] bool pairingPinEntryAvailable() const noexcept;
     [[nodiscard]] bool pairingReplyPending() const noexcept {
         return m_promptRequestId != 0;
     }
@@ -83,8 +87,14 @@ public:
     Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);
     Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);
     Q_INVOKABLE bool requestDeviceConnection(const QString &deviceId, bool connected);
+    Q_INVOKABLE bool requestPairing(const QString &deviceId);
+    Q_INVOKABLE bool requestPairingCancel();
+    Q_INVOKABLE bool requestRemoval(const QString &deviceId);
+    Q_INVOKABLE bool requestTrusted(const QString &deviceId, bool trusted);
     Q_INVOKABLE bool confirmPrompt();
     Q_INVOKABLE bool cancelPrompt();
+    Q_INVOKABLE bool submitPasskey(const QString &text);
+    Q_INVOKABLE bool submitPin(const QString &text);
     Q_INVOKABLE void clearFeedback();
 
     // Shell composition calls this before stopping the client. The release is

@@ -79,10 +79,19 @@ private Q_SLOTS:
 
 void BluetoothRequestStateTests::admitsOnlyCurrentCapableOperations()
 {
-    const Bluetooth::Snapshot snapshot = readySnapshot();
+    Bluetooth::Snapshot snapshot = readySnapshot();
+    snapshot.devices.append({.handle = {.epoch = 71, .serial = 10},
+                             .adapterHandle = {.epoch = 71, .serial = 4},
+                             .address = QStringLiteral("AA:BB:CC:33:44:77"),
+                             .name = QStringLiteral("Mouse"),
+                             .deviceClass = Bluetooth::DeviceClass::Mouse,
+                             .paired = false,
+                             .connected = false,
+                             .trusted = false});
     const Bluetooth::Handle adapter{.epoch = 71, .serial = 4};
     const Bluetooth::Handle connected{.epoch = 71, .serial = 8};
     const Bluetooth::Handle disconnected{.epoch = 71, .serial = 9};
+    const Bluetooth::Handle unpaired{.epoch = 71, .serial = 10};
 
     QVERIFY(beginBluetoothRequest(snapshot,
                                   {.kind = Bluetooth::OperationKind::SetAdapterPower,
@@ -98,11 +107,76 @@ void BluetoothRequestStateTests::admitsOnlyCurrentCapableOperations()
                                   {.kind = Bluetooth::OperationKind::Disconnect,
                                    .target = connected}, true).pending());
 
+    // Pair requires the capability, an unpaired current device, and a powered
+    // adapter for that device. A Ready snapshot always carries every known
+    // capability bit, so capability-off rejection is pinned through the
+    // projector tests instead.
+    QVERIFY(beginBluetoothRequest(snapshot,
+                                  {.kind = Bluetooth::OperationKind::Pair,
+                                   .target = unpaired}, true).pending());
+    QCOMPARE(beginBluetoothRequest(snapshot,
+                                   {.kind = Bluetooth::OperationKind::Pair,
+                                    .target = connected}, true).phase,
+             RequestPhase::Failed);
+    Bluetooth::Snapshot unpowered = snapshot;
+    unpowered.adapters[0].powered = false;
+    unpowered.devices[0].connected = false;
+    QCOMPARE(beginBluetoothRequest(unpowered,
+                                   {.kind = Bluetooth::OperationKind::Pair,
+                                    .target = unpaired}, true).phase,
+             RequestPhase::Failed);
+
+    // CancelPairing mirrors the public-client preflight: the target device
+    // must be current; the in-flight Pair fence lives in the controller.
+    QVERIFY(beginBluetoothRequest(snapshot,
+                                  {.kind = Bluetooth::OperationKind::CancelPairing,
+                                   .target = unpaired}, true).pending());
+    QCOMPARE(beginBluetoothRequest(snapshot,
+                                   {.kind = Bluetooth::OperationKind::CancelPairing,
+                                    .target = {.epoch = 71, .serial = 99}}, true).phase,
+             RequestPhase::Failed);
+
+    // Removal requires the capability and a current paired device.
+    QVERIFY(beginBluetoothRequest(snapshot,
+                                  {.kind = Bluetooth::OperationKind::RemoveDevice,
+                                   .target = disconnected}, true).pending());
+    QCOMPARE(beginBluetoothRequest(snapshot,
+                                   {.kind = Bluetooth::OperationKind::RemoveDevice,
+                                    .target = unpaired}, true).phase,
+             RequestPhase::Failed);
+    QCOMPARE(beginBluetoothRequest(snapshot,
+                                   {.kind = Bluetooth::OperationKind::RemoveDevice,
+                                    .target = {.epoch = 71, .serial = 99}}, true).phase,
+             RequestPhase::Failed);
+
+    // Trust changes require the capability, a current paired device, and a
+    // requested state that differs.
+    QVERIFY(beginBluetoothRequest(snapshot,
+                                  {.kind = Bluetooth::OperationKind::SetTrusted,
+                                   .target = disconnected,
+                                   .trusted = true}, true).pending());
+    QCOMPARE(beginBluetoothRequest(snapshot,
+                                   {.kind = Bluetooth::OperationKind::SetTrusted,
+                                    .target = disconnected,
+                                    .trusted = false}, true).phase,
+             RequestPhase::Failed);
+    QCOMPARE(beginBluetoothRequest(snapshot,
+                                   {.kind = Bluetooth::OperationKind::SetTrusted,
+                                    .target = unpaired,
+                                    .trusted = true}, true).phase,
+             RequestPhase::Failed);
+
     const RequestState denied = beginBluetoothRequest(
         snapshot, {.kind = Bluetooth::OperationKind::Connect,
                    .target = disconnected}, false);
     QCOMPARE(denied.phase, RequestPhase::Failed);
     QVERIFY(denied.feedback.contains(QStringLiteral("not allowed")));
+
+    const RequestState deniedPair = beginBluetoothRequest(
+        snapshot, {.kind = Bluetooth::OperationKind::Pair,
+                   .target = unpaired}, false);
+    QCOMPARE(deniedPair.phase, RequestPhase::Failed);
+    QVERIFY(deniedPair.feedback.contains(QStringLiteral("not allowed")));
 
     const RequestState duplicate = beginBluetoothRequest(
         snapshot, {.kind = Bluetooth::OperationKind::Connect,

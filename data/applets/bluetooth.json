@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "bluetooth",
   "name": "Bluetooth",
-  "description": "Shows bounded Bluetooth1 adapter and device truth and offers policy-gated power, discovery, connect, and disconnect controls.",
+  "description": "Shows bounded Bluetooth adapter and device truth and offers policy-gated power, discovery, pairing with PIN/passkey entry, trust, connect, disconnect, and forget controls.",
   "apiVersion": "1.0",
   "entryPoint": {
     "kind": "builtin",

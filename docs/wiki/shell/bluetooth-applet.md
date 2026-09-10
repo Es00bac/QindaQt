@@ -22,12 +22,16 @@ consumer does not advance platform hardware maturity by itself.
 The service authority and pairing ownership remain those of
 [Bluetooth service](../architecture/bluetooth-service.md) and
 [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). The applet
-does not initiate pairing or accept PIN/passkey entry, but presents the one
-current prompt and may confirm or cancel it.
+initiates and cancels pairing, answers PIN/passkey entry prompts in place,
+toggles trust, and forgets paired devices through the same bounded Bluetooth2
+client surface the Settings route uses; BlueZ remains the only authority for
+device records, keys, and authorization.
 
-Pairing Confirm and Cancel use the shared [QindaQt.Controls button](controls.md),
-so their appearance follows the selected desktop theme. Their availability still
-follows the current prompt and pending reply; styling adds no pairing authority.
+Pairing Confirm, Submit, and Cancel use the shared
+[QindaQt.Controls button](controls.md), and PIN/passkey entry uses the shared
+text field, so their appearance follows the selected desktop theme. Their
+availability still follows the current prompt and pending reply; styling adds
+no pairing authority.
 
 ## Exact-owner projection
 
@@ -73,14 +77,19 @@ QML.
 | Stop discovery | `DiscoveryLease` and the exact applet-owned adapter lease |
 | Connect | `ConnectPaired`, current paired/disconnected device, and powered current adapter |
 | Disconnect | `DisconnectPaired` and current connected device |
+| Pair | `Pair`, current unpaired device, and its current adapter powered |
+| Cancel pairing | The applet's own in-flight Pair, a current device, and a free prompt-reply lane (the client serializes this kind on the prompt lane) |
+| Forget device | `RemoveDevice` and a current paired device |
+| Trust/untrust | `SetTrusted`, a current paired device, and a requested state that differs |
 | Confirm prompt | `PairingPrompt`, current confirmation/authorization prompt, and no prompt reply pending |
+| Enter passkey/PIN | `PairingPrompt`, current matching entry prompt, and no prompt reply pending |
 | Cancel prompt | `PairingPrompt`, any current prompt, and no prompt reply pending |
 
-The applet exposes no pair initiation, trust, untrust, removal, key, PIN or
-passkey entry, or audio-routing action. An unpaired device remains
-inventory-only. A confirmation or authorization prompt has Confirm and Cancel;
-entry and display prompts truthfully direct the user to Settings and retain a
-Cancel action.
+The applet exposes no adapter/device rename, key management, or audio-routing
+action; no operation kind exists for rename anywhere in the stack, and audio
+routing remains in the PipeWire/audio domain per ADR-0037. Entry and display
+prompts are answered or shown in place; the applet never redirects the user to
+Settings for a pairing response.
 
 Only one ordinary operation and one prompt reply may be live at a time. Each request pins the unique owner,
 operation kind, target handle, initiating epoch, initiating revision, and, for
@@ -147,10 +156,13 @@ and enum is the negative control for the shared comparison path.
 ## Compiled interaction
 
 `BluetoothApplet.qml` renders a tab-focusable summary button and a non-modal
-details popup. Adapter power/discovery and paired-device
-connect/disconnect are ordinary keyboard-operable buttons with complete
-accessible names and descriptions. An inline prompt has complete accessible
-text and keyboard-operable Confirm/Cancel actions; a popup-window Escape
+details popup. Adapter power/discovery, paired-device
+connect/disconnect, unpaired-device pairing (with in-progress cancel), the
+trust switch, and the destructive forget action are keyboard-operable controls
+with complete accessible names and descriptions. An inline prompt has complete
+accessible text, keyboard-operable Confirm/Cancel actions, and a focusable
+validated PIN/passkey entry with a Submit action for entry prompts; a
+popup-window Escape
 shortcut cancels the exact active prompt, when its reply lane is free, before
 closing the popup. Failure/uncertainty feedback is exposed as an
 accessible alert. Horizontal and vertical panels use the same controller and
@@ -195,13 +207,13 @@ ctest --test-dir build/dev \
 
 | Test | Scope |
 | --- | --- |
-| `qindaqt.bluetooth-applet-presentation` | Owner/read failure, bounded deterministic non-address rows, fallbacks, complete accessibility, and action projection |
-| `qindaqt.bluetooth-applet-request-state` | All five B0 operations, capability/state admission, exact kind/lineage completion, terminal failure/uncertainty, and no replay |
-| `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, ordinary/prompt lane fencing, exact-owner replacement, typed feedback, prompt confirmation/cancellation, and discovery close teardown |
-| `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons and prompt, real controller dispatch, and deferred close release |
+| `qindaqt.bluetooth-applet-presentation` | Owner/read failure, bounded deterministic non-address rows, fallbacks, complete accessibility incl. trust state, and pair/remove/trust action projection with grant-off clearing |
+| `qindaqt.bluetooth-applet-request-state` | All nine admitted operations, capability/state admission, exact kind/lineage completion, terminal failure/uncertainty, and no replay |
+| `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, ordinary/prompt lane fencing, pair initiation and prompt-lane cancel, trust toggle, removal, exact-owner replacement, typed feedback, prompt confirmation/cancellation, and discovery close teardown |
+| `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons and prompt, validated passkey entry and submit, real controller dispatch, and deferred close release |
 | `qindaqt.bluetooth-applet-surface` | Ordered post-moc property/method/enumerator contract, non-vacuous expanded-surface rejection, and offscreen QML-visible name equality |
 | `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
-| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and forbidden-symbol policy; eleven manifest/registry/profile/QML/composition presence tokens; five dependency poisons plus a profile-and-QML composition-removal poison |
+| `qindaqt.bluetooth-applet-runtime-boundary` | Exact eight-file/header and forbidden-symbol policy; eleven manifest/registry/profile/QML/composition presence tokens; five dependency poisons plus a profile-and-QML composition-removal poison |
 | `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 and Controls/Tokens loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
@@ -218,7 +230,7 @@ cmake -DSOURCE_ROOT="$PWD" \
 ## Non-claims
 
 This slice proves no host-radio discovery, hotplug, suspend/resume, physical
-device pairing interoperability, PIN/passkey entry, trust or key management,
+device pairing interoperability, key management,
 Bluetooth audio correlation/routing, multi-user policy,
 AT-SPI bridge behavior, memory/CPU budget, or nested-compositor interaction.
 The installed test proves a relocatable composition boundary, not live radio

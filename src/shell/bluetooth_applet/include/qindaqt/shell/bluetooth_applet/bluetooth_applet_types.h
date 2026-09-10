@@ -43,6 +43,10 @@ struct DeviceRow {
     int signalDbm = 0;
     bool canConnect = false;
     bool canDisconnect = false;
+    bool canPair = false;
+    bool canRemove = false;
+    bool canSetTrusted = false;
+    bool trusted = false;
     QString accessibleName;
     QString accessibleDescription;
 

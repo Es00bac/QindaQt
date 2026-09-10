@@ -36,6 +36,7 @@ target_sources(
     PRIVATE
         src/bluetooth_applet_controller.cpp
         src/bluetooth_applet_controller.h
+        src/bluetooth_applet_device_ops.cpp
         src/bluetooth_applet_pairing.cpp
 )
 qt_add_qml_module(

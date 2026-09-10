@@ -179,9 +179,12 @@ plus the activation artifacts. The production
 [Bluetooth applet](../shell/bluetooth-applet.md) receives only a narrow
 shell-private facade over the public client: it projects bounded inventory and
 exposes adapter power, one caller-scoped discovery lease, paired-device
-connect/disconnect, and bounded prompt confirmation/cancellation under exact
-lineage and manifest grants. It receives no address, PIN/passkey entry, key,
-BlueZ object, or service-implementation surface.
+connect/disconnect, pairing initiation with prompt-lane cancellation,
+trust/untrust, removal, and bounded prompt confirmation/cancellation plus
+PIN/passkey entry replies under exact
+lineage and manifest grants. It receives no address, key,
+BlueZ object, or service-implementation surface; entered PIN/passkey text is
+forwarded as a typed reply and never persisted by QindaQt.
 The [Bluetooth Settings route](../apps/bluetooth-settings.md) owns the stable
 route ID `bluetooth`, exact-lineage action projection, and its own bounded
 discovery lease. Consumers link only public boundaries and never see backend

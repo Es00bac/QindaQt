@@ -60,7 +60,7 @@ struct SurfaceContract {
     std::span<const EnumeratorContract> enumerators;
 };
 
-constexpr std::array<PropertyContract, 17> kProperties{{
+constexpr std::array<PropertyContract, 19> kProperties{{
     {"phase", "QString", true, false, false, "stateChanged()", false, false},
     {"diagnostic", "QString", true, false, false, "stateChanged()", false, false},
     {"summaryLabel", "QString", true, false, false, "stateChanged()", false, false},
@@ -77,10 +77,12 @@ constexpr std::array<PropertyContract, 17> kProperties{{
     {"pairingPromptVisible", "bool", true, false, false, "stateChanged()", false, false},
     {"pairingPromptText", "QString", true, false, false, "stateChanged()", false, false},
     {"pairingConfirmationAvailable", "bool", true, false, false, "stateChanged()", false, false},
+    {"pairingPasskeyEntryAvailable", "bool", true, false, false, "stateChanged()", false, false},
+    {"pairingPinEntryAvailable", "bool", true, false, false, "stateChanged()", false, false},
     {"pairingReplyPending", "bool", true, false, false, "stateChanged()", false, false},
 }};
 
-constexpr std::array<MethodContract, 9> kMethods{{
+constexpr std::array<MethodContract, 15> kMethods{{
     {"stateChanged()", "void", QMetaMethod::Signal, QMetaMethod::Public, 0},
     {"feedbackChanged()", "void", QMetaMethod::Signal, QMetaMethod::Public, 0},
     {"setExpanded(bool)", "void", QMetaMethod::Method, QMetaMethod::Public, 0},
@@ -90,8 +92,19 @@ constexpr std::array<MethodContract, 9> kMethods{{
      QMetaMethod::Public, 0},
     {"requestDeviceConnection(QString,bool)", "bool", QMetaMethod::Method,
      QMetaMethod::Public, 0},
+    {"requestPairing(QString)", "bool", QMetaMethod::Method,
+     QMetaMethod::Public, 0},
+    {"requestPairingCancel()", "bool", QMetaMethod::Method,
+     QMetaMethod::Public, 0},
+    {"requestRemoval(QString)", "bool", QMetaMethod::Method,
+     QMetaMethod::Public, 0},
+    {"requestTrusted(QString,bool)", "bool", QMetaMethod::Method,
+     QMetaMethod::Public, 0},
     {"confirmPrompt()", "bool", QMetaMethod::Method, QMetaMethod::Public, 0},
     {"cancelPrompt()", "bool", QMetaMethod::Method, QMetaMethod::Public, 0},
+    {"submitPasskey(QString)", "bool", QMetaMethod::Method,
+     QMetaMethod::Public, 0},
+    {"submitPin(QString)", "bool", QMetaMethod::Method, QMetaMethod::Public, 0},
     {"clearFeedback()", "void", QMetaMethod::Method, QMetaMethod::Public, 0},
 }};
 

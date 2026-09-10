@@ -45,6 +45,21 @@ Bluetooth::OperationResult resultFor(
             .wireValid = true};
 }
 
+Bluetooth::Snapshot snapshotWithUnpaired(const quint64 epoch = 61,
+                                         const quint64 revision = 5)
+{
+    Bluetooth::Snapshot snapshot = bluetoothClientSnapshot(epoch, revision);
+    snapshot.devices.append({.handle = {.epoch = epoch, .serial = 701},
+                             .adapterHandle = {.epoch = epoch, .serial = 400},
+                             .address = QStringLiteral("AA:BB:CC:33:44:66"),
+                             .name = QStringLiteral("Trackball"),
+                             .deviceClass = Bluetooth::DeviceClass::Mouse,
+                             .paired = false,
+                             .connected = false,
+                             .trusted = false});
+    return snapshot;
+}
+
 } // namespace
 
 class BluetoothAppletControllerTests final : public QObject
@@ -63,6 +78,10 @@ private Q_SLOTS:
     void ownerReplacementClearsTruthLeaseAndRequestWithoutReplay();
     void pairingConfirmationRoundTrip_data();
     void pairingConfirmationRoundTrip();
+    void pairInitiationWaitsForSnapshotConvergence();
+    void pairingCancelRunsOnPromptLane();
+    void removalAndTrustToggleRoundTrip();
+    void ownerReplacementDuringPairEndsRequestWithoutReplay();
 };
 
 void BluetoothAppletControllerTests::projectsOnlyOpaqueBoundedRows()
@@ -459,6 +478,201 @@ void BluetoothAppletControllerTests::pairingConfirmationRoundTrip()
     transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
                                 true, bluetoothClientSnapshot(61, 6));
     QTRY_VERIFY(!controller.pairingPromptVisible());
+}
+
+void BluetoothAppletControllerTests::pairInitiationWaitsForSnapshotConvergence()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport, snapshotWithUnpaired());
+
+    const QVariantMap unpairedRow = controller.deviceRows().constLast().toMap();
+    QCOMPARE(unpairedRow.value(QStringLiteral("id")).toString(),
+             QStringLiteral("device-61-701"));
+    QVERIFY(!unpairedRow.value(QStringLiteral("paired")).toBool());
+    QVERIFY(unpairedRow.value(QStringLiteral("canPair")).toBool());
+    QVERIFY(!unpairedRow.value(QStringLiteral("canRemove")).toBool());
+    QVERIFY(!unpairedRow.value(QStringLiteral("canSetTrusted")).toBool());
+
+    QVERIFY(controller.requestPairing(QStringLiteral("device-61-701")));
+    QCOMPARE(transport.submissions.size(), 1);
+    const auto pair = transport.submissions.constFirst();
+    QCOMPARE(pair.request.kind, Bluetooth::OperationKind::Pair);
+    QCOMPARE(pair.request.target, (Bluetooth::Handle{.epoch = 61, .serial = 701}));
+    QVERIFY(controller.operationPending());
+    const QVariantMap pendingRow = controller.deviceRows().constLast().toMap();
+    QVERIFY(pendingRow.value(QStringLiteral("pending")).toBool());
+    QVERIFY(!pendingRow.value(QStringLiteral("canPair")).toBool());
+
+    // The serialized fence refuses a duplicate pair for the same device.
+    QVERIFY(!controller.requestPairing(QStringLiteral("device-61-701")));
+    QCOMPARE(transport.submissions.size(), 1);
+
+    transport.emitOperationReply(
+        kOwner, pair.requestId, true,
+        resultFor(pair, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("paired"), 6));
+    // Success alone does not unfence controls; the snapshot must converge.
+    QTRY_VERIFY(controller.operationPending());
+    QVERIFY(!controller.requestRemoval(QStringLiteral("device-61-701")));
+    QCOMPARE(transport.submissions.size(), 1);
+
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot converged = snapshotWithUnpaired(61, 6);
+    converged.devices[1].paired = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, converged);
+    QTRY_VERIFY(!controller.operationPending());
+    const QVariantMap pairedRow = controller.deviceRows().constLast().toMap();
+    QVERIFY(pairedRow.value(QStringLiteral("paired")).toBool());
+    QVERIFY(!pairedRow.value(QStringLiteral("canPair")).toBool());
+    QVERIFY(pairedRow.value(QStringLiteral("canRemove")).toBool());
+    QVERIFY(pairedRow.value(QStringLiteral("canSetTrusted")).toBool());
+}
+
+void BluetoothAppletControllerTests::pairingCancelRunsOnPromptLane()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport, snapshotWithUnpaired());
+
+    // No cancel exists without this applet's own in-flight pairing.
+    QVERIFY(!controller.requestPairingCancel());
+    QVERIFY(transport.submissions.isEmpty());
+
+    QVERIFY(controller.requestPairing(QStringLiteral("device-61-701")));
+    QCOMPARE(transport.submissions.size(), 1);
+    const auto pair = transport.submissions.constFirst();
+
+    QVERIFY(controller.requestPairingCancel());
+    QVERIFY(controller.pairingReplyPending());
+    QVERIFY(controller.operationPending());
+    QCOMPARE(transport.submissions.size(), 2);
+    const auto cancel = transport.submissions.constLast();
+    QCOMPARE(cancel.request.kind, Bluetooth::OperationKind::CancelPairing);
+    QCOMPARE(cancel.request.target, pair.request.target);
+
+    // The prompt lane stays fenced until the cancel completes.
+    QVERIFY(!controller.requestPairingCancel());
+    QCOMPARE(transport.submissions.size(), 2);
+
+    transport.emitOperationReply(
+        kOwner, cancel.requestId, true,
+        resultFor(cancel, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("pairing-canceled"), 6));
+    QTRY_VERIFY(!controller.pairingReplyPending());
+    // The ordinary-lane pair still ends with its own typed completion.
+    QVERIFY(controller.operationPending());
+    transport.emitOperationReply(
+        kOwner, pair.requestId, true,
+        resultFor(pair, Bluetooth::OperationStatus::Failed,
+                  QStringLiteral("pairing-canceled"), 6));
+    QTRY_VERIFY(!controller.operationPending());
+    QVERIFY(controller.feedback().contains(QStringLiteral("canceled")));
+
+    QVERIFY(!controller.requestPairingCancel());
+    QCOMPARE(transport.submissions.size(), 2);
+}
+
+void BluetoothAppletControllerTests::removalAndTrustToggleRoundTrip()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport);
+
+    const QVariantMap device = controller.deviceRows().constFirst().toMap();
+    QVERIFY(device.value(QStringLiteral("canSetTrusted")).toBool());
+    QVERIFY(device.value(QStringLiteral("canRemove")).toBool());
+    QVERIFY(!device.value(QStringLiteral("trusted")).toBool());
+
+    QVERIFY(controller.requestTrusted(QStringLiteral("device-61-700"), true));
+    QCOMPARE(transport.submissions.size(), 1);
+    const auto trust = transport.submissions.constFirst();
+    QCOMPARE(trust.request.kind, Bluetooth::OperationKind::SetTrusted);
+    QVERIFY(trust.request.trusted);
+    QCOMPARE(trust.request.target, (Bluetooth::Handle{.epoch = 61, .serial = 700}));
+    transport.emitOperationReply(
+        kOwner, trust.requestId, true,
+        resultFor(trust, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("trusted"), 6));
+    QTRY_VERIFY(controller.operationPending());
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot trustedSnapshot = bluetoothClientSnapshot(61, 6);
+    trustedSnapshot.devices[0].trusted = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, trustedSnapshot);
+    QTRY_VERIFY(!controller.operationPending());
+    const QVariantMap trustedRow = controller.deviceRows().constFirst().toMap();
+    QVERIFY(trustedRow.value(QStringLiteral("trusted")).toBool());
+
+    // Re-requesting the current trust state is rejected at admission.
+    QVERIFY(!controller.requestTrusted(QStringLiteral("device-61-700"), true));
+    QCOMPARE(transport.submissions.size(), 1);
+
+    QVERIFY(controller.requestTrusted(QStringLiteral("device-61-700"), false));
+    QCOMPARE(transport.submissions.size(), 2);
+    const auto untrust = transport.submissions.constLast();
+    QCOMPARE(untrust.request.kind, Bluetooth::OperationKind::SetTrusted);
+    QVERIFY(!untrust.request.trusted);
+    transport.emitOperationReply(
+        kOwner, untrust.requestId, true,
+        resultFor(untrust, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("trust-cleared"), 7, 6));
+    QTRY_VERIFY(controller.operationPending());
+    QTRY_COMPARE(transport.fetches.size(), 3);
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, bluetoothClientSnapshot(61, 7));
+    QTRY_VERIFY(!controller.operationPending());
+
+    QVERIFY(controller.requestRemoval(QStringLiteral("device-61-700")));
+    QCOMPARE(transport.submissions.size(), 3);
+    const auto removal = transport.submissions.constLast();
+    QCOMPARE(removal.request.kind, Bluetooth::OperationKind::RemoveDevice);
+    QCOMPARE(removal.request.target, (Bluetooth::Handle{.epoch = 61, .serial = 700}));
+    transport.emitOperationReply(
+        kOwner, removal.requestId, true,
+        resultFor(removal, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("removed"), 8, 7));
+    QTRY_VERIFY(controller.operationPending());
+    QTRY_COMPARE(transport.fetches.size(), 4);
+    Bluetooth::Snapshot removed = bluetoothClientSnapshot(61, 8);
+    removed.devices.clear();
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, removed);
+    QTRY_VERIFY(!controller.operationPending());
+    QVERIFY(controller.deviceRows().isEmpty());
+
+    // A forgotten device id no longer resolves to an operation.
+    QVERIFY(!controller.requestPairing(QStringLiteral("device-61-700")));
+    QCOMPARE(transport.submissions.size(), 3);
+}
+
+void BluetoothAppletControllerTests::ownerReplacementDuringPairEndsRequestWithoutReplay()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport, snapshotWithUnpaired());
+
+    QVERIFY(controller.requestPairing(QStringLiteral("device-61-701")));
+    QCOMPARE(transport.submissions.size(), 1);
+    QVERIFY(controller.operationPending());
+
+    transport.setOwner(QStringLiteral(":1.99"));
+    QVERIFY(!controller.operationPending());
+    QCOMPARE(controller.phase(), QStringLiteral("loading"));
+    QVERIFY(controller.deviceRows().isEmpty());
+    QVERIFY(controller.feedback().contains(QStringLiteral("authority changed")));
+
+    transport.emitSnapshotReply(QStringLiteral(":1.99"),
+                                transport.fetches.constLast().requestId,
+                                true, bluetoothClientSnapshot(62, 1));
+    QCOMPARE(controller.phase(), QStringLiteral("ready"));
+    QCoreApplication::processEvents();
+    QCOMPARE(transport.submissions.size(), 1);
 }
 
 QTEST_GUILESS_MAIN(BluetoothAppletControllerTests)

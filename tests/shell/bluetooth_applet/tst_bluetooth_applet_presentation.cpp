@@ -76,6 +76,7 @@ private Q_SLOTS:
     void failsClosedWithoutExactOwnerOrReadGrant();
     void rejectsMalformedAndUnavailableTruth();
     void controlGrantAndLeaseGateEveryAction();
+    void projectsPairTrustAndRemovalCapabilities();
 };
 
 void BluetoothAppletPresentationTests::projectsBoundedNonSecretRowsAndAccessibility()
@@ -107,13 +108,19 @@ void BluetoothAppletPresentationTests::projectsBoundedNonSecretRowsAndAccessibil
     QCOMPARE(keyboard.id, QStringLiteral("device-44-100"));
     QVERIFY(keyboard.canDisconnect);
     QVERIFY(!keyboard.canConnect);
-    QVERIFY(keyboard.accessibleDescription.contains(QStringLiteral("battery 73")));
-    QVERIFY(keyboard.accessibleDescription.contains(QStringLiteral("signal -41")));
+    QVERIFY(keyboard.canRemove);
+    QVERIFY(keyboard.canSetTrusted);
+    QVERIFY(!keyboard.canPair);
+    QVERIFY(!keyboard.trusted);
+    QCOMPARE(keyboard.accessibleDescription,
+             QStringLiteral("paired, not trusted, connected, battery 73 percent, signal -41 dBm"));
     QVERIFY(!keyboard.label.contains(QStringLiteral("AA:BB")));
 
     const DeviceRow &headphones = model.devices.constLast();
     QCOMPARE(headphones.label, QStringLiteral("Headphones"));
     QVERIFY(headphones.canConnect);
+    QVERIFY(headphones.accessibleDescription.contains(
+        QStringLiteral("paired, not trusted, disconnected")));
     QVERIFY(!headphones.accessibleName.isEmpty());
     QVERIFY(!headphones.accessibleDescription.isEmpty());
 }
@@ -183,7 +190,8 @@ void BluetoothAppletPresentationTests::controlGrantAndLeaseGateEveryAction()
             || row.canReleaseDiscovery;
     }));
     QVERIFY(std::ranges::none_of(readOnly.devices, [](const DeviceRow &row) {
-        return row.canConnect || row.canDisconnect;
+        return row.canConnect || row.canDisconnect || row.canPair
+            || row.canRemove || row.canSetTrusted;
     }));
 
     const BluetoothAppletModel controlled = projectBluetoothApplet(
@@ -191,6 +199,59 @@ void BluetoothAppletPresentationTests::controlGrantAndLeaseGateEveryAction()
     QVERIFY(controlled.adapters[0].canAcquireDiscovery);
     QVERIFY(controlled.adapters[0].canSetPowered);
     QVERIFY(!controlled.adapters[1].canAcquireDiscovery);
+}
+
+void BluetoothAppletPresentationTests::projectsPairTrustAndRemovalCapabilities()
+{
+    Bluetooth::Snapshot snapshot = readySnapshot();
+    snapshot.devices[0].trusted = true;
+    snapshot.devices.append({.handle = {.epoch = 44, .serial = 300},
+                             .adapterHandle = {.epoch = 44, .serial = 10},
+                             .address = QStringLiteral("AA:BB:CC:44:55:88"),
+                             .name = QStringLiteral("Trackball"),
+                             .deviceClass = Bluetooth::DeviceClass::Mouse,
+                             .paired = false,
+                             .connected = false,
+                             .trusted = false});
+
+    const BluetoothAppletModel model = projectBluetoothApplet(
+        snapshot, true, true, true);
+    QCOMPARE(model.phase, ServicePhase::Ready);
+    QCOMPARE(model.devices.size(), 3);
+
+    const DeviceRow &keyboard = model.devices.constFirst();
+    QVERIFY(keyboard.trusted);
+    QVERIFY(keyboard.accessibleDescription.contains(
+        QStringLiteral("paired, trusted, connected")));
+
+    const DeviceRow &trackball = model.devices.constLast();
+    QCOMPARE(trackball.id, QStringLiteral("device-44-300"));
+    QVERIFY(!trackball.paired);
+    QVERIFY(trackball.canPair);
+    QVERIFY(!trackball.canRemove);
+    QVERIFY(!trackball.canSetTrusted);
+    QVERIFY(!trackball.trusted);
+    QVERIFY(trackball.accessibleDescription.contains(
+        QStringLiteral("not paired, not trusted")));
+
+    // Grant-off clearing covers the new flags even though the entity state
+    // would otherwise allow them.
+    const BluetoothAppletModel readOnly = projectBluetoothApplet(
+        snapshot, true, true, false);
+    QVERIFY(!readOnly.devices.constLast().canPair);
+    QVERIFY(!readOnly.devices.constFirst().canRemove);
+    QVERIFY(!readOnly.devices.constFirst().canSetTrusted);
+    QVERIFY(readOnly.devices.constFirst().trusted);
+
+    // An unpowered adapter keeps the device listed but withdraws pairing.
+    Bluetooth::Snapshot unpowered = snapshot;
+    unpowered.adapters[0].powered = false;
+    unpowered.adapters[0].discovering = false;
+    unpowered.devices[0].connected = false;
+    const BluetoothAppletModel offModel = projectBluetoothApplet(
+        unpowered, true, true, true);
+    QCOMPARE(offModel.phase, ServicePhase::Ready);
+    QVERIFY(!offModel.devices.constLast().canPair);
 }
 
 QTEST_GUILESS_MAIN(BluetoothAppletPresentationTests)

@@ -38,6 +38,39 @@ Rectangle {
             Accessible.name: text
         }
 
+        C.TextField {
+            id: pairingEntry
+            objectName: "bluetoothAppletPairingEntry"
+            readonly property bool passkeyEntry: root.access !== null
+                && root.access.pairingPasskeyEntryAvailable
+            Layout.fillWidth: true
+            visible: root.access !== null
+                     && (root.access.pairingPasskeyEntryAvailable
+                         || root.access.pairingPinEntryAvailable)
+            enabled: root.access !== null && !root.access.pairingReplyPending
+            maximumLength: passkeyEntry ? 6 : 16
+            validator: passkeyEntry ? passkeyValidator : pinValidator
+            inputMethodHints: passkeyEntry ? Qt.ImhDigitsOnly
+                                           : Qt.ImhNoPredictiveText
+            accessibleName: passkeyEntry ? qsTr("Bluetooth passkey")
+                                         : qsTr("Bluetooth PIN")
+            accessibleDescription: qsTr("Required pairing response for the current Bluetooth request")
+            onAccepted: {
+                if (pairingEntry.acceptableInput)
+                    submitEntry.clicked()
+            }
+        }
+
+        RegularExpressionValidator {
+            id: passkeyValidator
+            regularExpression: /^[0-9]{1,6}$/
+        }
+
+        RegularExpressionValidator {
+            id: pinValidator
+            regularExpression: /^[A-Za-z0-9]{1,16}$/
+        }
+
         RowLayout {
             Layout.fillWidth: true
 
@@ -51,6 +84,25 @@ Rectangle {
                 text: qsTr("Confirm")
                 accessibleDescription: qsTr("Confirm this Bluetooth pairing request")
                 onClicked: root.access.confirmPrompt()
+            }
+
+            C.Button {
+                id: submitEntry
+                objectName: "bluetoothAppletPairingSubmit"
+                visible: pairingEntry.visible
+                available: root.access !== null
+                           && !root.access.pairingReplyPending
+                           && pairingEntry.acceptableInput
+                focusPolicy: Qt.StrongFocus
+                text: qsTr("Submit")
+                accessibleDescription: qsTr("Submit this Bluetooth pairing response")
+                onClicked: {
+                    if (pairingEntry.passkeyEntry)
+                        root.access.submitPasskey(pairingEntry.text)
+                    else
+                        root.access.submitPin(pairingEntry.text)
+                    pairingEntry.clear()
+                }
             }
 
             C.Button {
