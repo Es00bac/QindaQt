@@ -311,6 +311,14 @@ ApplicationWindow {
                     occurrenceModel: root.occurrenceModel
                 }
             }
+
+            // Details pane for the selected event; Edit performs a
+            // uid-stable in-place update, Delete removes the event.
+            EventDetailsPane {
+                Layout.fillHeight: true
+                calendarController: root.calendarController
+                onEditRequested: eventEditor.openForEdit()
+            }
         }
     }
 

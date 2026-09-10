@@ -3,8 +3,9 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Create-only event editor for Milestone 1. Editing an existing event is
-// delete + recreate; recurrence/reminder editing after creation lands later.
+// Create and edit event editor. Editing performs an in-place, uid-stable
+// update through CalendarController.updateEvent (RFC 5545 revision bump);
+// recurrence and reminder edits replace the stored rule/alarms wholesale.
 Dialog {
     id: root
     objectName: "eventEditorDialog"
@@ -12,6 +13,8 @@ Dialog {
     required property var calendarController
 
     property alias summaryText: summaryField.text
+    // Empty in create mode; the edited event's stable uid in edit mode.
+    property string editingUid: ""
     property string calendarId: root.calendarController.defaultCalendarId
     property string startIso: ""
     property string endIso: ""
@@ -21,7 +24,10 @@ Dialog {
     property string recurrenceRule: ""
     property int reminderMinutes: -1
 
-    title: qsTr("New Event")
+    readonly property var recurrenceRules: ["", "daily", "weekly", "monthly", "yearly"]
+    readonly property var reminderChoices: [-1, 5, 10, 15, 30, 60]
+
+    title: editingUid.length === 0 ? qsTr("New Event") : qsTr("Edit Event")
     modal: true
     standardButtons: Dialog.Ok | Dialog.Cancel
     anchors.centerIn: parent
@@ -32,6 +38,7 @@ Dialog {
     }
 
     function openForCreate() {
+        root.editingUid = ""
         summaryField.text = ""
         locationField.text = ""
         descriptionField.text = ""
@@ -44,16 +51,51 @@ Dialog {
         root.open()
     }
 
+    // Loads the controller's selectedEvent map; call only when an event is
+    // selected. All-day end dates stay inclusive (KCalendarCore convention).
+    function openForEdit() {
+        const details = root.calendarController.selectedEvent
+        if (!details.uid || details.uid.length === 0)
+            return
+        root.editingUid = details.uid
+        summaryField.text = details.summary
+        locationField.text = details.location
+        descriptionField.text = details.description
+        startField.text = details.startIso
+        endField.text = details.endIso
+        allDayCheck.checked = details.allDay
+        recurrenceCombo.currentIndex = Math.max(0, root.recurrenceRules.indexOf(details.recurrenceRule))
+        reminderCombo.currentIndex = Math.max(0, root.reminderChoices.indexOf(details.reminderMinutes))
+        root.calendarId = details.calendarId
+        const calendars = root.calendarController.calendars
+        for (let i = 0; i < calendars.length; ++i) {
+            if (calendars[i].id === details.calendarId) {
+                calendarCombo.currentIndex = i
+                break
+            }
+        }
+        root.open()
+    }
+
     onAccepted: {
         const calendars = root.calendarController.calendars
         const targetId = calendars.length > 0 && calendarCombo.currentIndex >= 0
                 && calendarCombo.currentIndex < calendars.length
                 ? calendars[calendarCombo.currentIndex].id
                 : root.calendarController.defaultCalendarId
-        root.calendarController.createEvent(
-            targetId, summaryField.text, startField.text, endField.text,
-            allDayCheck.checked, locationField.text, descriptionField.text,
-            root.recurrenceRule, root.reminderMinutes)
+        if (root.editingUid.length === 0) {
+            root.calendarController.createEvent(
+                targetId, summaryField.text, startField.text, endField.text,
+                allDayCheck.checked, locationField.text, descriptionField.text,
+                root.recurrenceRule, root.reminderMinutes)
+        } else {
+            // The calendar is not movable in this milestone: the combo is
+            // disabled in edit mode, so the stored calendar is kept.
+            root.calendarController.updateEvent(
+                root.editingUid, summaryField.text, startField.text, endField.text,
+                allDayCheck.checked, locationField.text, descriptionField.text,
+                root.recurrenceRule, root.reminderMinutes)
+        }
     }
 
     contentItem: ColumnLayout {
@@ -71,6 +113,7 @@ Dialog {
         ComboBox {
             id: calendarCombo
             Layout.fillWidth: true
+            enabled: root.editingUid.length === 0
             Accessible.description: qsTr("Calendar the event belongs to")
             model: root.calendarController.calendars
             textRole: "displayName"
@@ -118,7 +161,7 @@ Dialog {
             model: [qsTr("None"), qsTr("Daily"), qsTr("Weekly"),
                     qsTr("Monthly"), qsTr("Yearly")]
             onCurrentIndexChanged:
-                root.recurrenceRule = ["", "daily", "weekly", "monthly", "yearly"][currentIndex]
+                root.recurrenceRule = root.recurrenceRules[currentIndex]
         }
 
         Label { text: qsTr("Reminder") }
@@ -129,7 +172,7 @@ Dialog {
             model: [qsTr("None"), qsTr("5 minutes"), qsTr("10 minutes"),
                     qsTr("15 minutes"), qsTr("30 minutes"), qsTr("60 minutes")]
             onCurrentIndexChanged:
-                root.reminderMinutes = [-1, 5, 10, 15, 30, 60][currentIndex]
+                root.reminderMinutes = root.reminderChoices[currentIndex]
         }
     }
 }

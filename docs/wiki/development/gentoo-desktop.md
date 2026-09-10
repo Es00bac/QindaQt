@@ -5,27 +5,45 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260909-r1`, pinned to Git
-commit `e0c7ff7855c96684a86d447cc0bee64367a424bd`. Regenerate the package
+The current dated package checkpoint is `0.1.0_pre20260909-r2`, pinned to Git
+commit `6c8707df1a64bdbbb45f936cbc385a80b52acce4`. Regenerate the package
 Manifest whenever this immutable pin changes. This September 9 checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. Its ebuild
 uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
 in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=e0c7ff7855c96684a86d447cc0bee64367a424bd
+qq_source_commit=6c8707df1a64bdbbb45f936cbc385a80b52acce4
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260909-r1.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260909-r2.tar.gz
 ```
+
+The `-r2` revision makes the panel Bluetooth applet self-sufficient: pairing
+initiation with prompt-lane cancel, in-popup PIN/passkey entry, trust toggles,
+and device removal ride the existing Bluetooth2 client surface, all rendered
+with QindaQt.Controls on the Tokens theme; BlueZ remains the pairing/trust
+authority per ADR-0037. Installed over the live session: only the old shell
+PID received `SIGTERM`, and the session supervisor relaunched the installed
+shell while KWin and existing applications kept their identities. A live
+capture showed the applet popup discovering real devices with the new Pair,
+Trust, and Forget controls. The first `-r2` merge still applied the calendar
+skip patch; after the calendar lane dropped it from the ebuild, the same
+pinned commit was re-merged to the complete tree and `qcheck` reports all
+1,252 installed files intact, including `qindaqt-calendar`.
 
 The `-r1` revision carries the container drop-targeting fix: user-minimized
 containers stay minimized across unrelated scene mutations, a committed drop
 activates the moved window instead of the source container, late-Shift
 takeover adopts the genuinely moving window rather than the pointer hit, and
-every member of a dragged tab page is excluded from drop hit-testing. Its
-ebuild applies a prepare-time patch that skips the in-flight calendar app,
-whose sources at this commit do not compile yet; drop that patch once the
-calendar lane lands a compiling candidate.
+every member of a dragged tab page is excluded from drop hit-testing.
+
+Both revisions originally applied a prepare-time patch that skipped the
+in-flight calendar app, whose sources did not compile at their pinned commit.
+Once the calendar lane landed a compiling candidate on stock Qt Quick
+Controls (ADR-0116), the patch was dropped from both ebuilds and the patch
+files removed; the complete-tree package now builds `qindaqt-calendar` and
+declares `kde-frameworks/kcalendarcore:6`. Both ebuilds therefore require a
+source commit that contains the compiling calendar app.
 
 Portage verifies the maintained Manifest before unpacking. The ebuild installs
 the complete image through Portage; do not copy executables into the installed

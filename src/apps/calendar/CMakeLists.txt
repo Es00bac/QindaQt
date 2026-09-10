@@ -61,6 +61,7 @@ qt_add_qml_module(
         ui/WeekView.qml
         ui/DayView.qml
         ui/CalendarSidebar.qml
+        ui/EventDetailsPane.qml
         ui/EventEditorDialog.qml
         ui/ImportExportDialog.qml
 )

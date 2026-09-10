@@ -21,6 +21,14 @@ Text Editor gains printing and crash-recovery autosave; Terminal gains bounded
 session restore and OSC-8 links. kimi-bundled-apps owns the lane; progress and
 evidence land in [Handoff](HANDOFF.md).
 
+Calendar progress (September 10): **the Calendar portion is done** — stock
+Qt Quick Controls presentation, uid-stable in-place event editing with
+recurrence/reminder edits, an event details pane with Edit/Delete, 12
+registered `calendar`-labelled test rows (all green), the
+[Calendar wiki page](wiki/apps/calendar.md), and the `Calendar` component in
+`gui-apps/qindaqt-apps` with `kde-frameworks/kcalendarcore:6` declared. File
+Manager, Text Editor, and Terminal portions remain pending.
+
 ### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
 
 **Built, installed and verified through Portage r1.** The tray uses real

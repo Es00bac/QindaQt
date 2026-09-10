@@ -8,8 +8,9 @@ namespace QindaQt::Apps::Calendar {
 
 // Metadata for one user-visible calendar. `id` is the stable storage key: it
 // names the per-calendar .ics file and calendars.json entry, so it must stay
-// path-safe (see EventStore's identifier validation). `colorToken` references
-// a QST-1 semantic token, never a literal color, so QML stays theme-driven.
+// path-safe (see EventStore's identifier validation). `colorToken` is a
+// semantic name stored as data; per ADR-0116 the stock-controls presentation
+// does not resolve it to a color (the platform theme owns the palette).
 struct CalendarInfo final {
   QString id;
   QString displayName;

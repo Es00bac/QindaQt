@@ -7,6 +7,8 @@
 
 #include "qindaqt/app_shell/application_coordinator.h"
 
+#include <KCalendarCore/Event>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QEventLoop>
@@ -49,6 +51,24 @@ void pumpEvents() {
     return nullptr;
   }
   return model;
+}
+
+// Reloads the probe's disposable store from disk and returns the target
+// calendar's events, failing with a step-tagged diagnostic on load errors.
+[[nodiscard]] bool reloadStoredEvents(
+    const QString &dataRoot, const QString &calendarId, const QString &step,
+    KCalendarCore::Event::List *events, QString *error) {
+  EventStore reloaded(dataRoot);
+  const EventStoreLoadResult loadResult =
+      reloaded.loadAll({{.id = calendarId,
+                         .displayName = QStringLiteral("Personal"),
+                         .colorToken = QStringLiteral("accent"),
+                         .enabled = true}});
+  if (!loadResult.ok()) {
+    return fail(error, QStringLiteral("reload after %1 failed").arg(step));
+  }
+  *events = reloaded.events(calendarId);
+  return true;
 }
 
 [[nodiscard]] bool checkViewAction(
@@ -95,7 +115,9 @@ QString missingUiContractObject(QObject *qmlRoot) {
       QStringLiteral("dayView"),            QStringLiteral("calendarSidebar"),
       QStringLiteral("calendarList"),       QStringLiteral("newCalendarButton"),
       QStringLiteral("eventEditorDialog"),  QStringLiteral("importDialog"),
-      QStringLiteral("exportDialog"),       QStringLiteral("reminderBanner")};
+      QStringLiteral("exportDialog"),       QStringLiteral("reminderBanner"),
+      QStringLiteral("eventDetailsPane"),   QStringLiteral("editEventButton"),
+      QStringLiteral("deleteEventButton")};
   for (const QString &objectName : requiredObjects) {
     if (!qmlRoot->findChild<QObject *>(objectName)) {
       return objectName;
@@ -130,16 +152,11 @@ bool verifyCalendarUiActions(
   pumpEvents();
 
   {
-    EventStore reloaded(dataRoot);
-    const EventStoreLoadResult loadResult =
-        reloaded.loadAll({{.id = controller->defaultCalendarId(),
-                           .displayName = QStringLiteral("Personal"),
-                           .colorToken = QStringLiteral("accent"),
-                           .enabled = true}});
-    if (!loadResult.ok()) {
-      return fail(error, QStringLiteral("reload after create failed"));
+    KCalendarCore::Event::List events;
+    if (!reloadStoredEvents(dataRoot, controller->defaultCalendarId(),
+                            QStringLiteral("create"), &events, error)) {
+      return false;
     }
-    const auto events = reloaded.events(controller->defaultCalendarId());
     if (events.size() != 1 ||
         events.constFirst()->summary() != QLatin1String("Probe Event")) {
       return fail(error,
@@ -147,7 +164,9 @@ bool verifyCalendarUiActions(
     }
   }
 
-  // (b) The occurrence is visible in the model for the current range.
+  // (a2) Editing through the production dialog is a uid-stable in-place
+  // update: the summary change plus a weekly recurrence and a 10-minute
+  // reminder must persist with the RFC 5545 revision bumped to 1.
   OccurrenceListModel *model = occurrenceModelOf(qmlRoot, error);
   if (!model) {
     return false;
@@ -158,6 +177,89 @@ bool verifyCalendarUiActions(
   const QString createdUid =
       model->data(model->index(0, 0), OccurrenceListModel::EventUidRole)
           .toString();
+  controller->selectEvent(createdUid);
+  pumpEvents();
+  if (!QMetaObject::invokeMethod(dialog, "openForEdit", Qt::DirectConnection)) {
+    return fail(error, QStringLiteral("could not open eventEditorDialog for edit"));
+  }
+  pumpEvents();
+  if (!dialog->property("visible").toBool()) {
+    return fail(error, QStringLiteral("openForEdit did not open eventEditorDialog"));
+  }
+  if (dialog->property("summaryText").toString() !=
+      QLatin1String("Probe Event")) {
+    return fail(error, QStringLiteral("editor did not load the stored summary"));
+  }
+  if (!dialog->setProperty("summaryText", QStringLiteral("Edited Probe Event")) ||
+      !dialog->setProperty("recurrenceRule", QStringLiteral("weekly")) ||
+      !dialog->setProperty("reminderMinutes", 10)) {
+    return fail(error, QStringLiteral("could not set edit fields"));
+  }
+  if (!QMetaObject::invokeMethod(dialog, "accept", Qt::DirectConnection)) {
+    return fail(error, QStringLiteral("could not accept the edit"));
+  }
+  pumpEvents();
+  {
+    KCalendarCore::Event::List events;
+    if (!reloadStoredEvents(dataRoot, controller->defaultCalendarId(),
+                            QStringLiteral("edit"), &events, error)) {
+      return false;
+    }
+    if (events.size() != 1) {
+      return fail(error, QStringLiteral("edit changed the event count"));
+    }
+    const KCalendarCore::Event::Ptr &edited = events.constFirst();
+    if (edited->uid() != createdUid) {
+      return fail(error, QStringLiteral("edit changed the event uid"));
+    }
+    if (edited->summary() != QLatin1String("Edited Probe Event")) {
+      return fail(error, QStringLiteral("edited summary was not persisted"));
+    }
+    if (edited->revision() != 1) {
+      return fail(error, QStringLiteral("edit did not bump the RFC 5545 revision"));
+    }
+    if (!edited->recurs()) {
+      return fail(error, QStringLiteral("recurrence edit did not persist"));
+    }
+    if (edited->alarms().size() != 1) {
+      return fail(error, QStringLiteral("reminder edit did not persist"));
+    }
+  }
+
+  // (a3) Clearing recurrence and the reminder through the editor persists as
+  // a second uid-stable update.
+  if (!QMetaObject::invokeMethod(dialog, "openForEdit", Qt::DirectConnection)) {
+    return fail(error, QStringLiteral("could not reopen eventEditorDialog"));
+  }
+  pumpEvents();
+  if (!dialog->setProperty("recurrenceRule", QString()) ||
+      !dialog->setProperty("reminderMinutes", -1)) {
+    return fail(error, QStringLiteral("could not clear edit fields"));
+  }
+  if (!QMetaObject::invokeMethod(dialog, "accept", Qt::DirectConnection)) {
+    return fail(error, QStringLiteral("could not accept the second edit"));
+  }
+  pumpEvents();
+  {
+    KCalendarCore::Event::List events;
+    if (!reloadStoredEvents(dataRoot, controller->defaultCalendarId(),
+                            QStringLiteral("clearing edit"), &events, error)) {
+      return false;
+    }
+    if (events.size() != 1 ||
+        events.constFirst()->uid() != createdUid ||
+        events.constFirst()->revision() != 2 ||
+        events.constFirst()->recurs() ||
+        !events.constFirst()->alarms().isEmpty()) {
+      return fail(error,
+                  QStringLiteral("clearing recurrence/reminder did not persist"));
+    }
+  }
+
+  // (b) The occurrence is visible in the model for the current range.
+  if (model->rowCount({}) != 1) {
+    return fail(error, QStringLiteral("occurrence model does not show the edited event"));
+  }
 
   // (c) View actions drive the controller and coordinator checked states.
   if (!checkViewAction(coordinator, controller, QStringLiteral("view.week"),
@@ -176,16 +278,12 @@ bool verifyCalendarUiActions(
   }
   pumpEvents();
   {
-    EventStore reloaded(dataRoot);
-    if (!reloaded
-             .loadAll({{.id = controller->defaultCalendarId(),
-                        .displayName = QStringLiteral("Personal"),
-                        .colorToken = QStringLiteral("accent"),
-                        .enabled = true}})
-             .ok()) {
-      return fail(error, QStringLiteral("reload after delete failed"));
+    KCalendarCore::Event::List events;
+    if (!reloadStoredEvents(dataRoot, controller->defaultCalendarId(),
+                            QStringLiteral("delete"), &events, error)) {
+      return false;
     }
-    if (!reloaded.events(controller->defaultCalendarId()).isEmpty()) {
+    if (!events.isEmpty()) {
       return fail(error, QStringLiteral("deleted event is still persisted"));
     }
   }

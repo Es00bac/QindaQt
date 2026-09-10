@@ -42,6 +42,11 @@ qindaqt_add_calendar_test(
     qindaqt.calendar-action-catalog
 )
 qindaqt_add_calendar_test(
+    qindaqt_calendar_event_update_tests
+    tst_event_update.cpp
+    qindaqt.calendar-event-update
+)
+qindaqt_add_calendar_test(
     qindaqt_calendar_ics_import_export_tests
     tst_ics_import_export.cpp
     qindaqt.calendar-ics-import-export
@@ -68,4 +73,35 @@ add_test(
 set_tests_properties(
     qindaqt.calendar-cli-rejects-multiple-paths
     PROPERTIES LABELS "calendar" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+# Offscreen UI gates mirror the file-manager rows: they drive the production
+# QML against a disposable data root with no session bus and fatal warnings.
+add_test(
+    NAME qindaqt.calendar-ui-contract-offscreen
+    COMMAND $<TARGET_FILE:qindaqt-calendar> --check-ui-contract
+)
+set_tests_properties(
+    qindaqt.calendar-ui-contract-offscreen
+    PROPERTIES
+        LABELS "calendar"
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+
+add_test(
+    NAME qindaqt.calendar-ui-actions-offscreen
+    COMMAND $<TARGET_FILE:qindaqt-calendar>
+            --check-ui-actions "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+)
+set_tests_properties(
+    qindaqt.calendar-ui-actions-offscreen
+    PROPERTIES
+        LABELS "calendar"
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-action-data"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
