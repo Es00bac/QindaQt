@@ -4,7 +4,7 @@
 - **Date:** 2026-08-27
 - **Owners:** Design-system working group
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0116](0116-build-bundled-applications-on-stock-qt6.md) for bundled-application surfaces only; QST-1 remains normative for shell, Settings, and Welcome surfaces
 
 ## Context
 

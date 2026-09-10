@@ -1,9 +1,16 @@
 # QindaQt.Controls 1.0
 
-`QindaQt.Controls 1.0` is the reusable presentation vocabulary for first-party
-QindaQt shell and application interfaces. It supplies token-styled Qt Quick
-Controls primitives plus the small Qinda-specific components needed for forms,
-state, degraded capability, theme choice, and semantic-color presentation.
+`QindaQt.Controls 1.0` is the reusable presentation vocabulary for QindaQt
+**system surfaces**: the shell, panels, Settings, Settings Center, and Welcome.
+It supplies token-styled Qt Quick Controls primitives plus the small
+Qinda-specific components needed for forms, state, degraded capability, theme
+choice, and semantic-color presentation.
+
+Bundled applications (Calendar, File Manager, Terminal, Text Editor) do not
+consume this module; they use stock Qt 6 controls themed through the Qt
+platform theme per
+[ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md). The gates
+and baselines on this page apply to system surfaces only.
 
 The module imports [QST-1](../architecture/design-tokens.md) as its only
 palette, typography, spacing, radius, motion, elevation, contrast, and

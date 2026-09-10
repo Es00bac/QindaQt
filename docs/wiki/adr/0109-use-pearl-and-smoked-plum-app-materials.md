@@ -1,6 +1,6 @@
 # ADR-0109: Use Pearl and Smoked Plum application materials
 
-- Status: Accepted
+- Status: Superseded by [ADR-0116](0116-build-bundled-applications-on-stock-qt6.md) for bundled applications; materials remain available to system surfaces
 - Date: 2026-09-08
 
 ## Context

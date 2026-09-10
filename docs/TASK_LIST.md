@@ -7,6 +7,20 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Finish the bundled applications on stock Qt 6 (September 9)
+
+**In progress.** The product owner retired the custom token UI for bundled
+applications; [ADR-0116](wiki/adr/0116-build-bundled-applications-on-stock-qt6.md)
+scopes QST-1/`QindaQt.Controls` to system surfaces (shell, panels, Settings,
+Welcome) and puts Calendar, File Manager, Terminal, and Text Editor on stock
+Qt 6 themed through the Qt platform theme (ADR-0115). Each app converts its
+presentation first, then finishes its missing features: Calendar gains real
+event editing, registered tests, documentation, and packaging; File Manager
+gains clipboard operations, drag-and-drop, properties, and recursive search;
+Text Editor gains printing and crash-recovery autosave; Terminal gains bounded
+session restore and OSC-8 links. kimi-bundled-apps owns the lane; progress and
+evidence land in [Handoff](HANDOFF.md).
+
 ### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
 
 **Built, installed and verified through Portage r1.** The tray uses real

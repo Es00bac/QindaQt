@@ -1,6 +1,6 @@
 # ADR-0027: Extract a narrow first-party application shell
 
-- Status: Accepted
+- Status: Accepted (bundled-application presentation superseded by [ADR-0116](0116-build-bundled-applications-on-stock-qt6.md); the AppShell lifecycle/action seams still apply)
 - Date: 2026-08-28
 - Deciders: QindaQt first-party application and architecture maintainers
 - Technical area: native applications, QML presentation, lifecycle, portals
