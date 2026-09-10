@@ -3,13 +3,17 @@
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QAccessible>
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QtTest>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using QindaQt::Apps::SettingsCustomize::TestSupport::StubCustomizeSettingsModel;
 
@@ -66,6 +70,13 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     QString publishError;
     QVERIFY2(facade->publish(theme.theme, {}, &publishError),
              qPrintable(publishError));
+    // The route renders real applet glyphs; the harness resolves the shipped
+    // icon theme so the row proves resolved iconography, not placeholders.
+    QVERIFY2(QindaQt::Shell::Icons::IconRuntime::install(
+                 *view.engine(),
+                 {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
+                 {QStringLiteral("QindaQt")}),
+             "icon runtime install");
     view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.setInitialProperties({{QStringLiteral("customizeSettings"),
                                 QVariant::fromValue(static_cast<QObject *>(&model))}});
@@ -87,6 +98,18 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     auto *paletteButton = item(compact, "customizePalette_clock");
     auto *panelButton = item(compact, "customizeOutlinePanel_bar");
     auto *zoneButton = item(compact, "customizeOutlineZone_bar_end");
+
+    // The layout gallery is the route's primary switcher: every catalog
+    // profile renders a visible miniature card with an accessible name.
+    auto *profileCard = item(view.rootObject(),
+                             "customizeProfileCard_fixture");
+    QVERIFY(profileCard != nullptr);
+    QVERIFY(profileCard->isVisible());
+    QVERIFY2(accessibleName(profileCard)
+                 .contains(QStringLiteral("layout profile"),
+                           Qt::CaseInsensitive),
+             qPrintable(accessibleName(profileCard)));
+
     QVERIFY2(accessibleName(paletteButton).contains(QStringLiteral("clock applet"),
                                                     Qt::CaseInsensitive),
              qPrintable(accessibleName(paletteButton)));

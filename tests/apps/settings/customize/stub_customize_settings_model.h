@@ -54,9 +54,22 @@ public:
     }
     [[nodiscard]] QVariantList profiles() const
     {
+        // The gallery renders a miniature desktop per profile from the same
+        // panel summary shape the production projection publishes.
+        const QVariantList fixturePanels{QVariantMap{
+            {QStringLiteral("id"), QStringLiteral("bar")},
+            {QStringLiteral("edge"), QStringLiteral("top")},
+            {QStringLiteral("alignment"), QStringLiteral("fill")},
+            {QStringLiteral("layer"), QStringLiteral("above")},
+            {QStringLiteral("hideMode"), QStringLiteral("never")},
+            {QStringLiteral("thickness"), 32},
+            {QStringLiteral("length"), 1.0},
+            {QStringLiteral("appletCount"), 1},
+        }};
         return {QVariantMap{{QStringLiteral("id"), QStringLiteral("fixture")},
                             {QStringLiteral("name"), QStringLiteral("Fixture")},
-                            {QStringLiteral("description"), QStringLiteral("Test")}}};
+                            {QStringLiteral("description"), QStringLiteral("Test")},
+                            {QStringLiteral("panels"), fixturePanels}}};
     }
     [[nodiscard]] QVariantList palette() const
     {

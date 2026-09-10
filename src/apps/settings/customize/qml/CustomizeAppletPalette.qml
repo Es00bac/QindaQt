@@ -7,14 +7,21 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
+// Applet palette: an icon grid (a horizontal strip in compact layouts).
+// Tiles carry the plugin glyph; names and descriptions live on tooltips and
+// accessible names, keeping the palette visual instead of a text list.
 T.Control {
     id: root
 
     required property var customizeSettings
     property bool compact: false
-    readonly property Item firstFocusTarget: paletteView.count > 0
-                                                  ? paletteView.itemAtIndex(0)
-                                                  : null
+    readonly property Item firstFocusTarget: root.compact
+                                                  ? stripView.count > 0
+                                                    ? stripView.itemAtIndex(0)
+                                                    : null
+                                                  : gridView.count > 0
+                                                    ? gridView.itemAtIndex(0)
+                                                    : null
 
     padding: Tokens.space["3"]
     Accessible.role: Accessible.Grouping
@@ -30,60 +37,67 @@ T.Control {
     contentItem: ColumnLayout {
         spacing: Tokens.space["2"]
 
-        SectionHeader {
+        Label {
             Layout.fillWidth: true
-            title: qsTr("Applets")
-            description: qsTr("Drag an applet to a highlighted panel zone, or focus it and press Enter")
+            text: root.compact ? qsTr("Add applets")
+                               : qsTr("Drag an applet onto the desktop preview")
+            muted: true
+            font.pointSize: Tokens.type.caption
+            wrapMode: Text.Wrap
+            visible: !root.compact
+            Accessible.name: text
         }
 
-        ListView {
-            id: paletteView
+        // Wide: two columns of icon tiles.
+        GridView {
+            id: gridView
+
             objectName: "customizePalette"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            implicitHeight: root.compact ? 64 : 220
-            orientation: root.compact ? ListView.Horizontal : ListView.Vertical
+            visible: !root.compact
+            clip: true
+            cellWidth: width / 2
+            cellHeight: 92
+            model: root.customizeSettings.palette
+            Accessible.role: Accessible.List
+            Accessible.name: qsTr("Available applets")
+
+            delegate: CustomizePaletteTile {
+                customizeSettings: root.customizeSettings
+                tileSize: 84
+                glyphSize: 28
+            }
+
+            T.ScrollBar.vertical: T.ScrollBar {
+                policy: T.ScrollBar.AsNeeded
+                activeFocusOnTab: false
+                Accessible.name: qsTr("Available applets scroll position")
+            }
+        }
+
+        // Compact: a single-row strip of smaller tiles.
+        ListView {
+            id: stripView
+
+            objectName: "customizePaletteStrip"
+            Layout.fillWidth: true
+            Layout.preferredHeight: 76
+            visible: root.compact
+            orientation: ListView.Horizontal
             spacing: Tokens.space["2"]
             clip: true
             model: root.customizeSettings.palette
             Accessible.role: Accessible.List
             Accessible.name: qsTr("Available applets")
 
-            delegate: Button {
-                id: paletteButton
-                required property var modelData
-
-                objectName: "customizePalette_" + paletteButton.modelData.id
-                width: root.compact ? Math.max(140, implicitWidth) : paletteView.width
-                text: paletteButton.modelData.name
-                available: root.customizeSettings.canEdit
-                emphasized: false
-                accessibleDescription: paletteButton.modelData.description
-                Accessible.role: Accessible.ListItem
-                Accessible.name: qsTr("%1 applet").arg(text)
-                onClicked: {
-                    const panels = root.customizeSettings.panels
-                    if (panels.length > 0) {
-                        root.customizeSettings.keyboardInsert(
-                            paletteButton.modelData.id, panels[0].id, "start", "")
-                    }
-                }
-
-                readonly property string dragPluginId: modelData.id
-                readonly property string dragPanelId: ""
-                readonly property string dragAppletId: ""
-
+            delegate: CustomizePaletteTile {
+                customizeSettings: root.customizeSettings
+                tileSize: 64
+                glyphSize: 22
             }
 
             T.ScrollBar.horizontal: T.ScrollBar {
-                visible: root.compact
-                policy: T.ScrollBar.AsNeeded
-                activeFocusOnTab: false
-                Accessible.name: qsTr("Available applets scroll position")
-            }
-
-            T.ScrollBar.vertical: T.ScrollBar {
-                visible: !root.compact
                 policy: T.ScrollBar.AsNeeded
                 activeFocusOnTab: false
                 Accessible.name: qsTr("Available applets scroll position")

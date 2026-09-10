@@ -6,15 +6,19 @@
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QQmlComponent>
+#include <QQmlExtensionPlugin>
 #include <QQmlEngine>
 #include <QQmlPropertyMap>
 #include <QQuickWindow>
 #include <QtTest>
 
 #include <memory>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using QindaQt::Apps::SettingsCenter::SettingsNavigationController;
 using QindaQt::Apps::SettingsCenter::SettingsRouteRegistry;
@@ -58,6 +62,12 @@ public:
             QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
         if (!theme.ok || !facade->publish(theme.theme, {}, &error)) {
             failure = theme.ok ? error : theme.error;
+            return;
+        }
+        if (!QindaQt::Shell::Icons::IconRuntime::install(
+                engine, {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
+                {QStringLiteral("QindaQt")})) {
+            failure = QStringLiteral("icon runtime install");
             return;
         }
 

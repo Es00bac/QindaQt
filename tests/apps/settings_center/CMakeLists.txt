@@ -56,6 +56,7 @@ qt_add_executable(qindaqt_settings_navigation_layout_test
 )
 target_include_directories(qindaqt_settings_navigation_layout_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(qindaqt_settings_navigation_layout_test PRIVATE
+    QindaQt::ShellIcons qindaqt_shell_iconsplugin
     QindaQt::SettingsNavigation qindaqt_settings_appearance qindaqt_settings_display
     qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
@@ -103,6 +104,7 @@ qt_add_executable(qindaqt_settings_navigation_interaction_test
 )
 target_include_directories(qindaqt_settings_navigation_interaction_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(qindaqt_settings_navigation_interaction_test PRIVATE
+    QindaQt::ShellIcons qindaqt_shell_iconsplugin
     QindaQt::SettingsNavigation qindaqt_settings_appearance qindaqt_settings_display
     qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml

@@ -7,6 +7,8 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
+// Commit bar: Undo, Redo, and Discard are icon tools with tooltips; Apply is
+// the single prominent action. Draft truth stays visible as one short line.
 ColumnLayout {
     id: root
 
@@ -27,38 +29,46 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Tokens.space["2"]
 
-        Button {
+        CustomizeIconButton {
             id: undoButton
+
             objectName: "customizeUndoButton"
-            text: qsTr("Undo")
-            emphasized: false
+            iconName: "edit-undo"
+            toolTip: qsTr("Undo the last change")
             available: root.customizeSettings.canUndo
             onClicked: root.customizeSettings.undo()
         }
-        Button {
+
+        CustomizeIconButton {
             objectName: "customizeRedoButton"
-            text: qsTr("Redo")
-            emphasized: false
+            iconName: "edit-redo"
+            toolTip: qsTr("Redo the undone change")
             available: root.customizeSettings.canRedo
             onClicked: root.customizeSettings.redo()
         }
+
         Item { Layout.fillWidth: true }
+
         Label {
             objectName: "customizeDraftSummary"
             text: root.customizeSettings.dirty
                   ? qsTr("Changes have not been applied")
                   : qsTr("Layout is up to date")
             muted: !root.customizeSettings.dirty
+            font.pointSize: Tokens.type.caption
+            elide: Text.ElideRight
             Accessible.name: text
         }
+
         Button {
             objectName: "customizeDiscardButton"
-            text: qsTr("Discard changes")
+            text: qsTr("Discard")
             emphasized: false
             available: root.customizeSettings.canEdit
                        && root.customizeSettings.dirty
             onClicked: discardDialog.open()
         }
+
         Button {
             objectName: "customizeApplyButton"
             text: qsTr("Apply layout")

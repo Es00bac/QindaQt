@@ -41,12 +41,14 @@ target_compile_definitions(
 )
 target_link_libraries(
     qindaqt_settings_customize_page_tests
-    PRIVATE qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    PRIVATE QindaQt::ShellIcons qindaqt_shell_iconsplugin
+            qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
             qindaqt_settings_appearance qindaqt_themes QindaQt::TokensQml
             Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
 add_dependencies(
     qindaqt_settings_customize_page_tests
+    qindaqt_shell_iconsplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_page_tests)
@@ -77,12 +79,14 @@ target_compile_definitions(
 )
 target_link_libraries(
     qindaqt_settings_customize_pointer_tests
-    PRIVATE qindaqt_settings_customize qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    PRIVATE QindaQt::ShellIcons qindaqt_shell_iconsplugin
+            qindaqt_settings_customize qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
             qindaqt_settings_appearance qindaqt_themes QindaQt::TokensQml
             Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
 add_dependencies(
     qindaqt_settings_customize_pointer_tests
+    qindaqt_shell_iconsplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_pointer_tests)
@@ -115,6 +119,7 @@ target_compile_definitions(
 target_link_libraries(
     qindaqt_settings_customize_window_lifecycle_tests
     PRIVATE
+        QindaQt::ShellIcons qindaqt_shell_iconsplugin
         QindaQt::SettingsNavigation
         qindaqt_settings_appearance
         qindaqt_settings_display
@@ -135,6 +140,7 @@ target_link_libraries(
 )
 add_dependencies(
     qindaqt_settings_customize_window_lifecycle_tests
+    qindaqt_shell_iconsplugin
     qindaqt_settings_appearance_qmlplugin
     qindaqt_settings_display_qmlplugin
     qindaqt_settings_network_qmlplugin

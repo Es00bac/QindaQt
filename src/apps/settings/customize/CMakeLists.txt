@@ -40,28 +40,40 @@ qt_add_qml_module(
     CLASS_NAME QindaQtSettingsCustomizePlugin
     OUTPUT_DIRECTORY "${QINDAQT_CUSTOMIZE_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_customize.qmltypes
+    DEPENDENCIES
+        TARGET qindaqt_shell_icons
     SOURCES
         customize_route_composition.h
         customize_route_composition.cpp
     QML_FILES
+        qml/CustomizeAppletIcon.qml
         qml/CustomizeAppletPalette.qml
         qml/CustomizeAppletProperties.qml
         qml/CustomizeActionBar.qml
         qml/CustomizeCanvas.qml
-        qml/CustomizePointerGestures.qml
+        qml/CustomizeIconButton.qml
         qml/CustomizeOutline.qml
         qml/CustomizePage.qml
+        qml/CustomizePaletteTile.qml
         qml/CustomizePanelPositionProperties.qml
+        qml/CustomizePanelPreview.qml
         qml/CustomizePanelSizeProperties.qml
         qml/CustomizePanelVisibilityProperties.qml
+        qml/CustomizePointerGestures.qml
+        qml/CustomizeProfileCard.qml
         qml/CustomizeProperties.qml
         qml/CustomizeRoute.qml
+        qml/CustomizeWindowMock.qml
 )
 target_link_libraries(
     qindaqt_settings_customize_qml
     PRIVATE
-        qindaqt_settings_customize QindaQt::TokensQml
+        qindaqt_settings_customize QindaQt::TokensQml QindaQt::ShellIcons
         Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
+)
+add_dependencies(
+    qindaqt_settings_customize_qml
+    qindaqt_shell_iconsplugin
 )
 target_compile_definitions(
     qindaqt_settings_customize_qml PRIVATE
@@ -95,21 +107,31 @@ install(
 )
 install(
     FILES
+        qml/CustomizeAppletIcon.qml
         qml/CustomizeAppletPalette.qml
         qml/CustomizeAppletProperties.qml
         qml/CustomizeActionBar.qml
         qml/CustomizeCanvas.qml
-        qml/CustomizePointerGestures.qml
+        qml/CustomizeIconButton.qml
         qml/CustomizeOutline.qml
         qml/CustomizePage.qml
+        qml/CustomizePaletteTile.qml
         qml/CustomizePanelPositionProperties.qml
+        qml/CustomizePanelPreview.qml
         qml/CustomizePanelSizeProperties.qml
         qml/CustomizePanelVisibilityProperties.qml
+        qml/CustomizePointerGestures.qml
+        qml/CustomizeProfileCard.qml
         qml/CustomizeProperties.qml
         qml/CustomizeRoute.qml
+        qml/CustomizeWindowMock.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Customize"
     COMPONENT SettingsAppearanceRuntime
 )
+# Stage the confined icon module beside the route so an installed Settings
+# package can resolve QindaQt.Shell.Icons without a shell install.
+include("${PROJECT_SOURCE_DIR}/src/shell/IconRuntimeInstall.cmake")
+qindaqt_install_shell_icons_runtime(SettingsAppearanceRuntime)
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/profiles/"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
