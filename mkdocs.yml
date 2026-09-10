@@ -113,6 +113,7 @@ nav:
   - Applications:
       - QindaQt.AppShell 1.0: apps/application-shell.md
       - Welcome to QindaQt: apps/welcome.md
+      - Calendar: apps/calendar.md
       - Text Editor: apps/text-editor.md
       - File Manager: apps/file-manager.md
       - Settings Center: apps/settings-center.md

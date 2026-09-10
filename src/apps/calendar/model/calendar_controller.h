@@ -43,6 +43,10 @@ class CalendarController final : public QObject {
                  reminderBannerTextChanged)
   Q_PROPERTY(QString periodTitle READ periodTitle NOTIFY currentDateChanged)
   Q_PROPERTY(QString loadError READ loadError CONSTANT)
+  // Details of the selected event as a plain map (empty when nothing is
+  // selected); re-evaluated whenever the selection or the store changes.
+  Q_PROPERTY(QVariantMap selectedEvent READ selectedEvent NOTIFY
+                 selectedEventChanged)
 
 public:
   // preferences and occurrenceModel are non-owning and must outlive the
@@ -61,6 +65,7 @@ public:
   [[nodiscard]] QString reminderBannerText() const;
   [[nodiscard]] QString periodTitle() const;
   [[nodiscard]] QString loadError() const;
+  [[nodiscard]] QVariantMap selectedEvent() const;
 
   [[nodiscard]] Q_INVOKABLE bool setViewMode(const QString &viewMode);
   Q_INVOKABLE void goToday();
@@ -76,6 +81,17 @@ public:
   // end date is inclusive (KCalendarCore convention).
   [[nodiscard]] Q_INVOKABLE bool
   createEvent(const QString &calendarId, const QString &summary,
+              const QString &startIso, const QString &endIso, bool allDay,
+              const QString &location, const QString &description,
+              const QString &recurrenceRule, int reminderMinutes);
+  // In-place edit of the event with the given uid: the uid stays stable, the
+  // RFC 5545 revision/lastModified are bumped, and recurrence and reminders
+  // are replaced wholesale with the given values (recurrenceRule "" clears
+  // recurrence, reminderMinutes -1 removes all alarms). This is NOT
+  // delete+recreate, so reminder scheduling and occurrence expansion keep
+  // their identity invariants.
+  [[nodiscard]] Q_INVOKABLE bool
+  updateEvent(const QString &eventUid, const QString &summary,
               const QString &startIso, const QString &endIso, bool allDay,
               const QString &location, const QString &description,
               const QString &recurrenceRule, int reminderMinutes);
@@ -96,6 +112,7 @@ signals:
   void viewModeChanged();
   void calendarsChanged();
   void selectedEventUidChanged();
+  void selectedEventChanged();
   void weekStartChanged();
   void occurrencesChanged();
   void reminderBannerTextChanged();

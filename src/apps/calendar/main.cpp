@@ -137,6 +137,12 @@ int main(int argc, char **argv) {
       QDir(QStandardPaths::writableLocation(
                QStandardPaths::GenericDataLocation))
           .filePath(QStringLiteral("qindaqt/calendar"));
+  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
+    // AGENT-CONTRACT: --check-ui-actions is documented as driving "a
+    // disposable data root". ctest reuses the row's XDG_DATA_HOME across
+    // runs, so the probe resets the root itself to stay idempotent.
+    QDir(dataRoot).removeRecursively();
+  }
   auto preferences =
       std::make_unique<QindaQt::Apps::Calendar::CalendarPreferences>();
   auto occurrenceModel =

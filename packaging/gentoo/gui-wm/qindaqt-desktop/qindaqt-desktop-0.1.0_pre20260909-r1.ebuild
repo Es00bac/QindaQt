@@ -19,12 +19,6 @@ KEYWORDS="~amd64"
 # The operator generates its archive from the exact reviewed Git commit.
 RESTRICT="fetch"
 
-# The pinned commit contains the calendar app mid-implementation; it does not
-# compile yet. Skip its subdirectories until that lane lands a candidate.
-PATCHES=(
-	"${FILESDIR}/${PF}-skip-inflight-calendar.patch"
-)
-
 # This package installs the complete tree, including the bundled apps. Keep
 # ownership unambiguous for users who previously selected the apps-only package.
 RDEPEND="
@@ -32,6 +26,7 @@ RDEPEND="
 	>=dev-qt/qtbase-6.11:6=[dbus,gui,network,wayland,widgets]
 	>=dev-qt/qtdeclarative-6.11:6=[widgets]
 	>=dev-qt/qtsvg-6.11:6=
+	>=kde-frameworks/kcalendarcore-6.0:6=
 	=kde-plasma/kwin-6.6.6*:6=[lock,shortcuts]
 	=kde-plasma/kdecoration-6.6.6*:6=
 	=kde-plasma/kscreenlocker-6.6.6*:6=

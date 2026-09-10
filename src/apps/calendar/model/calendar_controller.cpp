@@ -49,6 +49,98 @@ namespace {
   return slug.left(60);
 }
 
+// Validates and applies the editor field set to an event: summary, times,
+// all-day flag, location, description, recurrence (replaced wholesale, ""
+// clears it), and reminder alarms (replaced wholesale, -1 removes them).
+// Shared by createEvent (fresh event) and updateEvent (uid-stable clone), so
+// both paths enforce identical validation and KCalendarCore conventions.
+[[nodiscard]] bool applyEventFields(
+    const KCalendarCore::Event::Ptr &event, const QString &summary,
+    const QString &startIso, const QString &endIso, const bool allDay,
+    const QString &location, const QString &description,
+    const QString &recurrenceRule, const int reminderMinutes, QString *error) {
+  if (summary.trimmed().isEmpty()) {
+    *error = QStringLiteral("event summary is empty");
+    return false;
+  }
+  const QDateTime start = QDateTime::fromString(startIso, Qt::ISODate);
+  const QDateTime end = QDateTime::fromString(endIso, Qt::ISODate);
+  if (!start.isValid() || !end.isValid()) {
+    *error = QStringLiteral("event start or end is invalid");
+    return false;
+  }
+  if ((!allDay && end <= start) || (allDay && end.date() < start.date())) {
+    *error = QStringLiteral("event end must not precede its start");
+    return false;
+  }
+  if (recurrenceRule != QLatin1String("daily") &&
+      recurrenceRule != QLatin1String("weekly") &&
+      recurrenceRule != QLatin1String("monthly") &&
+      recurrenceRule != QLatin1String("yearly") &&
+      !recurrenceRule.isEmpty()) {
+    *error = QStringLiteral("unknown recurrence rule %1").arg(recurrenceRule);
+    return false;
+  }
+
+  event->setSummary(summary.trimmed());
+  event->setLocation(location);
+  event->setDescription(description);
+  event->setDtStart(allDay ? QDateTime(start.date(), QTime(0, 0)) : start);
+  event->setDtEnd(allDay ? QDateTime(end.date(), QTime(0, 0)) : end);
+  event->setAllDay(allDay);
+
+  event->clearRecurrence();
+  if (recurrenceRule == QLatin1String("daily")) {
+    event->recurrence()->setDaily(1);
+  } else if (recurrenceRule == QLatin1String("weekly")) {
+    event->recurrence()->setWeekly(1);
+  } else if (recurrenceRule == QLatin1String("monthly")) {
+    event->recurrence()->setMonthly(1);
+  } else if (recurrenceRule == QLatin1String("yearly")) {
+    event->recurrence()->setYearly(1);
+  }
+
+  event->clearAlarms();
+  if (reminderMinutes >= 0) {
+    KCalendarCore::Alarm::Ptr alarm(new KCalendarCore::Alarm(event.data()));
+    alarm->setDisplayAlarm(summary.trimmed());
+    alarm->setStartOffset(KCalendarCore::Duration(-reminderMinutes * 60));
+    alarm->setEnabled(true);
+    event->addAlarm(alarm);
+  }
+  return true;
+}
+
+// Editor-facing recurrence preset for a stored event.
+[[nodiscard]] QString recurrenceRuleString(const KCalendarCore::Event &event) {
+  switch (event.recurrence()->recurrenceType()) {
+  case KCalendarCore::Recurrence::rDaily:
+    return QStringLiteral("daily");
+  case KCalendarCore::Recurrence::rWeekly:
+    return QStringLiteral("weekly");
+  case KCalendarCore::Recurrence::rMonthlyDay:
+  case KCalendarCore::Recurrence::rMonthlyPos:
+    return QStringLiteral("monthly");
+  case KCalendarCore::Recurrence::rYearlyMonth:
+  case KCalendarCore::Recurrence::rYearlyDay:
+  case KCalendarCore::Recurrence::rYearlyPos:
+    return QStringLiteral("yearly");
+  default:
+    return QString();
+  }
+}
+
+// Minutes-before-start of the first enabled display alarm, or -1 when the
+// event has no reminder.
+[[nodiscard]] int reminderMinutesOf(const KCalendarCore::Event &event) {
+  for (const KCalendarCore::Alarm::Ptr &alarm : event.alarms()) {
+    if (alarm && alarm->enabled() && alarm->startOffset().asSeconds() < 0) {
+      return -alarm->startOffset().asSeconds() / 60;
+    }
+  }
+  return -1;
+}
+
 } // namespace
 
 CalendarController::CalendarController(QString dataRoot,
@@ -150,6 +242,48 @@ QString CalendarController::reminderBannerText() const {
 
 QString CalendarController::loadError() const { return m_loadError; }
 
+QVariantMap CalendarController::selectedEvent() const {
+  if (m_selectedEventUid.isEmpty()) {
+    return {};
+  }
+  const QString calendarId = calendarIdForEvent(m_selectedEventUid);
+  if (calendarId.isEmpty()) {
+    return {};
+  }
+  const auto calendar = m_store->calendar(calendarId);
+  const KCalendarCore::Event::Ptr event =
+      calendar ? calendar->event(m_selectedEventUid) : nullptr;
+  if (!event) {
+    return {};
+  }
+  QString calendarName = calendarId;
+  for (const CalendarInfo &info : m_collection->calendars()) {
+    if (info.id == calendarId) {
+      calendarName = info.displayName;
+      break;
+    }
+  }
+  // For all-day events dtEnd is the INCLUSIVE end date; the editor text
+  // fields take "yyyy-MM-ddTHH:mm" in local time, and T00:00 round-trips
+  // that convention exactly.
+  const auto editorIso = [](const QDateTime &value) {
+    return value.toString(QStringLiteral("yyyy-MM-ddTHH:mm"));
+  };
+  return {{QStringLiteral("uid"), event->uid()},
+          {QStringLiteral("calendarId"), calendarId},
+          {QStringLiteral("calendarName"), calendarName},
+          {QStringLiteral("summary"), event->summary()},
+          {QStringLiteral("location"), event->location()},
+          {QStringLiteral("description"), event->description()},
+          {QStringLiteral("allDay"), event->allDay()},
+          {QStringLiteral("startIso"), editorIso(event->dtStart())},
+          {QStringLiteral("endIso"), editorIso(event->dtEnd())},
+          {QStringLiteral("recurring"), event->recurs()},
+          {QStringLiteral("recurrenceRule"), recurrenceRuleString(*event)},
+          {QStringLiteral("reminderMinutes"), reminderMinutesOf(*event)},
+          {QStringLiteral("revision"), event->revision()}};
+}
+
 QString CalendarController::periodTitle() const {
   const QLocale locale;
   if (m_viewMode == QLatin1String("day")) {
@@ -239,6 +373,7 @@ void CalendarController::selectEvent(const QString &eventUid) {
   }
   m_selectedEventUid = eventUid;
   emit selectedEventUidChanged();
+  emit selectedEventChanged();
 }
 
 bool CalendarController::createEvent(
@@ -246,60 +381,58 @@ bool CalendarController::createEvent(
     const QString &endIso, const bool allDay, const QString &location,
     const QString &description, const QString &recurrenceRule,
     const int reminderMinutes) {
-  if (summary.trimmed().isEmpty()) {
-    emit operationFailed(QStringLiteral("event summary is empty"));
-    return false;
-  }
   if (!m_store->hasCalendar(calendarId)) {
     emit operationFailed(
         QStringLiteral("unknown calendar %1").arg(calendarId));
     return false;
   }
-  const QDateTime start = QDateTime::fromString(startIso, Qt::ISODate);
-  const QDateTime end = QDateTime::fromString(endIso, Qt::ISODate);
-  if (!start.isValid() || !end.isValid()) {
-    emit operationFailed(QStringLiteral("event start or end is invalid"));
-    return false;
-  }
-  if ((!allDay && end <= start) || (allDay && end.date() < start.date())) {
-    emit operationFailed(
-        QStringLiteral("event end must not precede its start"));
-    return false;
-  }
-
   KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
   event->setUid(QUuid::createUuid().toString(QUuid::WithoutBraces) +
                 QStringLiteral("@qindaqt.local"));
-  event->setSummary(summary.trimmed());
-  event->setLocation(location);
-  event->setDescription(description);
-  event->setDtStart(allDay ? QDateTime(start.date(), QTime(0, 0)) : start);
-  event->setDtEnd(allDay ? QDateTime(end.date(), QTime(0, 0)) : end);
-  event->setAllDay(allDay);
-
-  if (recurrenceRule == QLatin1String("daily")) {
-    event->recurrence()->setDaily(1);
-  } else if (recurrenceRule == QLatin1String("weekly")) {
-    event->recurrence()->setWeekly(1);
-  } else if (recurrenceRule == QLatin1String("monthly")) {
-    event->recurrence()->setMonthly(1);
-  } else if (recurrenceRule == QLatin1String("yearly")) {
-    event->recurrence()->setYearly(1);
-  } else if (!recurrenceRule.isEmpty()) {
-    emit operationFailed(
-        QStringLiteral("unknown recurrence rule %1").arg(recurrenceRule));
+  QString error;
+  if (!applyEventFields(event, summary, startIso, endIso, allDay, location,
+                        description, recurrenceRule, reminderMinutes,
+                        &error)) {
+    emit operationFailed(error);
     return false;
   }
 
-  if (reminderMinutes >= 0) {
-    KCalendarCore::Alarm::Ptr alarm(new KCalendarCore::Alarm(event.data()));
-    alarm->setDisplayAlarm(summary.trimmed());
-    alarm->setStartOffset(KCalendarCore::Duration(-reminderMinutes * 60));
-    alarm->setEnabled(true);
-    event->addAlarm(alarm);
-  }
-
   const EventStoreResult stored = m_store->addEvent(calendarId, event);
+  if (!stored.ok()) {
+    emit operationFailed(stored.diagnostic);
+    return false;
+  }
+  refreshOccurrences();
+  return true;
+}
+
+bool CalendarController::updateEvent(
+    const QString &eventUid, const QString &summary, const QString &startIso,
+    const QString &endIso, const bool allDay, const QString &location,
+    const QString &description, const QString &recurrenceRule,
+    const int reminderMinutes) {
+  const QString calendarId = calendarIdForEvent(eventUid);
+  if (calendarId.isEmpty()) {
+    emit operationFailed(QStringLiteral("unknown event %1").arg(eventUid));
+    return false;
+  }
+  const auto calendar = m_store->calendar(calendarId);
+  const KCalendarCore::Event::Ptr previous = calendar->event(eventUid);
+  KCalendarCore::Event::Ptr event(previous->clone());
+  QString error;
+  if (!applyEventFields(event, summary, startIso, endIso, allDay, location,
+                        description, recurrenceRule, reminderMinutes,
+                        &error)) {
+    emit operationFailed(error);
+    return false;
+  }
+  // RFC 5545: a changed instance keeps its UID and bumps SEQUENCE +
+  // LAST-MODIFIED. AGENT-GUARD: never re-mint the uid on edit — reminder
+  // scheduling and occurrence expansion key off it.
+  event->setRevision(previous->revision() + 1);
+  event->setLastModified(QDateTime::currentDateTimeUtc());
+
+  const EventStoreResult stored = m_store->updateEvent(calendarId, event);
   if (!stored.ok()) {
     emit operationFailed(stored.diagnostic);
     return false;
@@ -334,6 +467,7 @@ bool CalendarController::deleteEvent(const QString &eventUid) {
   if (m_selectedEventUid == eventUid) {
     m_selectedEventUid.clear();
     emit selectedEventUidChanged();
+    emit selectedEventChanged();
   }
   refreshOccurrences();
   return true;
@@ -483,6 +617,8 @@ void CalendarController::refreshOccurrences() {
   m_occurrenceModel->resetOccurrences(occurrences, colorTokens);
   m_scheduler->reschedule(reminders);
   emit occurrencesChanged();
+  // The selected event may have been edited or removed underneath the pane.
+  emit selectedEventChanged();
 }
 
 void CalendarController::handleReminderDue(const QString &eventUid,
