@@ -70,6 +70,33 @@ qt_add_qml_module(
 # non-visual seams (AppShell coordinator/catalog, menu export, Settings1,
 # F1 font bootstrap). No QindaQt.Tokens/Controls QML modules, no theme
 # catalog, no per-app palette.
+set(qindaqt_calendar_install_bindir "${CMAKE_INSTALL_BINDIR}")
+cmake_path(
+    ABSOLUTE_PATH qindaqt_calendar_install_bindir
+    BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+    NORMALIZE
+    OUTPUT_VARIABLE qindaqt_calendar_install_bindir_absolute
+)
+set(qindaqt_calendar_install_qmldir "${QT6_INSTALL_QML}")
+cmake_path(
+    ABSOLUTE_PATH qindaqt_calendar_install_qmldir
+    BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+    NORMALIZE
+    OUTPUT_VARIABLE qindaqt_calendar_install_qmldir_absolute
+)
+cmake_path(
+    RELATIVE_PATH qindaqt_calendar_install_qmldir_absolute
+    BASE_DIRECTORY "${qindaqt_calendar_install_bindir_absolute}"
+    OUTPUT_VARIABLE qindaqt_calendar_qml_relative_path
+)
+
+# AGENT-CONTRACT: The executable dynamically links libqindaqt_app_shell.so
+# (the non-visual coordinator seam), whose backing library in turn needs the
+# Controls/Tokens backing libraries. The staged Calendar component resolves
+# that chain solely from its own payload: the executable's RPATH reaches the
+# AppShell backing library, and the backing libraries' own INSTALL_RPATHs
+# ($ORIGIN/../Tokens, $ORIGIN/../Controls) reach their siblings. Keep the
+# install(TARGETS) rules below and this RPATH in sync.
 target_link_libraries(
     qindaqt-calendar
     PRIVATE
@@ -84,7 +111,13 @@ target_link_libraries(
         Qt6::QuickControls2
 )
 target_compile_features(qindaqt-calendar PRIVATE cxx_std_20)
-set_target_properties(qindaqt-calendar PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(
+    qindaqt-calendar
+    PROPERTIES
+        CXX_EXTENSIONS OFF
+        INSTALL_RPATH
+            "$ORIGIN/${qindaqt_calendar_qml_relative_path}/QindaQt/AppShell"
+)
 qindaqt_enable_warnings(qindaqt-calendar)
 
 install(
@@ -95,5 +128,28 @@ install(
 install(
     FILES org.qindaqt.Calendar.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+    COMPONENT Calendar
+)
+
+# ADR-0116: the Calendar component ships no importable QindaQt QML modules
+# (no qmldir, typeinfo, or QML sources) and no theme catalog. It still repeats
+# the three backing shared libraries named by the executable's dynamic
+# dependency chain so a component-only staged install resolves
+# libqindaqt_app_shell.so and its Controls/Tokens siblings without the rest of
+# the shell install. The chain relies on each library's own INSTALL_RPATH; see
+# the AGENT-CONTRACT above.
+install(
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT Calendar
+)
+install(
+    TARGETS qindaqt_controls_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    COMPONENT Calendar
+)
+install(
+    TARGETS qindaqt_tokens_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT Calendar
 )
