@@ -10,6 +10,7 @@
 #include <QQuickWindow>
 #include <QtTest>
 
+#include <functional>
 #include <memory>
 
 #include "task_list_applet_qml_theme_fixture.h"
@@ -22,6 +23,7 @@ Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskListApplet;
+using TaskListAppletTest::FakePreviewPort;
 using TaskListAppletTest::FakeTaskListOperationPort;
 using TaskListOperationTest::FakeOperationAuthority;
 
@@ -83,6 +85,10 @@ class TaskListAppletDockQmlTests final : public QObject {
 private slots:
     void dockModeReservesInteractiveTiles();
     void emptyDockDoesNotReserveATile();
+    void overflowBeyondTaskbarCapScrollsInDockMode();
+    void pointerMagnificationSwellsTilesWithoutMovingLayout();
+    void dragStateCommitsReorderThroughTheController();
+    void hoverPreviewShowsImageCardOrTitleFallback();
     void groupingReplacesApplicationsWithOneColoredContainer_data();
     void groupingReplacesApplicationsWithOneColoredContainer();
 };
@@ -145,6 +151,298 @@ void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
   QTest::keyClick(&window, Qt::Key_Return);
   QCOMPARE(port.calls.size(), 1);
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("w1"));
+}
+
+void TaskListAppletDockQmlTests::overflowBeyondTaskbarCapScrollsInDockMode()
+{
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port, {true, true, true});
+
+  // One window past the taskbar presentation cap: the taskbar strip would
+  // truncate with "+N more"; a dock host raises the bound and the zone
+  // viewport scrolls instead.
+  QVector<TaskWindowFact> facts;
+  facts.reserve(size_t(kMaxPresentedTaskEntries) + 1);
+  for (int index = 0; index <= kMaxPresentedTaskEntries; ++index) {
+    facts.append(TaskListTest::standalone(
+        QStringLiteral("w-%1").arg(index, 4, 10, QLatin1Char('0')),
+        QStringLiteral("app.%1").arg(index, 4, 10, QLatin1Char('0'))));
+  }
+  QVERIFY(source.publishGeneration(facts).ok());
+  authority.revision = source.revision();
+  authority.sourceStatus = TaskListSourceStatus::Ready;
+  authority.owner = QStringLiteral(":1.1");
+  Q_EMIT authority.stateChanged();
+
+  QCOMPARE(controller.entryCount(), kMaxPresentedTaskEntries);
+  QCOMPARE(controller.overflowCount(), 1);
+  controller.setPresentationLimit(kMaxPresentedDockEntries);
+  QCOMPARE(controller.entryCount(), kMaxPresentedTaskEntries + 1);
+  QCOMPARE(controller.overflowCount(), 0);
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  QString error;
+  auto owned = createDockApplet(engine, controller, &error);
+  QVERIFY2(owned != nullptr, qPrintable(error));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+
+  // Every raised-limit row is projected into the strip: no overflow truth
+  // remains, so the "+N more" indicator never appears and the host viewport
+  // scrolls instead.
+  QCOMPARE(controller.entryRows().size(), kMaxPresentedTaskEntries + 1);
+  QCOMPARE(controller.overflowCount(), 0);
+  auto *indicator = root->findChild<QQuickItem *>(
+      QStringLiteral("taskListOverflowIndicator"));
+  QVERIFY(indicator != nullptr && !indicator->isVisible());
+  QTRY_VERIFY(dockEntry(root) != nullptr);
+}
+
+void TaskListAppletDockQmlTests::pointerMagnificationSwellsTilesWithoutMovingLayout()
+{
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port, {true, true, true});
+
+  QVector<TaskWindowFact> facts;
+  for (int index = 0; index < 5; ++index) {
+    facts.append(TaskListTest::standalone(
+        QStringLiteral("w-%1").arg(index),
+        QStringLiteral("app.%1").arg(index)));
+  }
+  QVERIFY(source.publishGeneration(facts).ok());
+  authority.revision = source.revision();
+  authority.sourceStatus = TaskListSourceStatus::Ready;
+  authority.owner = QStringLiteral(":1.1");
+  Q_EMIT authority.stateChanged();
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  QString error;
+  auto owned = createDockApplet(engine, controller, &error);
+  QVERIFY2(owned != nullptr, qPrintable(error));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+
+  QQuickWindow window;
+  window.setGeometry(0, 0, 900, 220);
+  root->setParentItem(window.contentItem());
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+  QTRY_VERIFY(dockEntry(root) != nullptr);
+
+  // The strip layout is the AGENT-GUARD truth: magnification must never move
+  // delegate bounds, so the tiles keep their exact positions under hover.
+  const qreal firstRestX = dockEntry(root)->x();
+  const qreal tileWidth = dockEntry(root)->width();
+  const qreal stripRestWidth = root->implicitWidth();
+
+  const auto tileAt = [&root](int index) {
+    // Repeater delegates are visual children rather than QObject children,
+    // so enumerate the QQuickItem tree in strip order.
+    int seen = 0;
+    std::function<QQuickItem *(QQuickItem *)> walk =
+        [&](QQuickItem *item) -> QQuickItem * {
+      if (item->objectName() == QLatin1StringView("taskListEntryButton")) {
+        if (seen++ == index) {
+          return item;
+        }
+      }
+      for (QQuickItem *child : item->childItems()) {
+        if (QQuickItem *hit = walk(child); hit != nullptr) {
+          return hit;
+        }
+      }
+      return nullptr;
+    };
+    return walk(root);
+  };
+
+  // Pointer at the first tile's center (the strip-local x the HoverHandler
+  // would report): that tile peaks and its neighbor participates with a
+  // smaller falloff. The falloff contract is driven through dockPointerX
+  // directly, because synthetic cross-test pointer state makes raw
+  // QTest::mouseMove delivery nondeterministic in the offscreen harness.
+  QQuickItem *first = tileAt(0);
+  QQuickItem *second = tileAt(1);
+  QVERIFY(first != nullptr && second != nullptr);
+  auto *firstIcon =
+      first->findChild<QQuickItem *>(QStringLiteral("taskListDockEntryIcon"));
+  auto *secondIcon =
+      second->findChild<QQuickItem *>(QStringLiteral("taskListDockEntryIcon"));
+  QVERIFY(firstIcon != nullptr && secondIcon != nullptr);
+
+  root->setProperty("dockPointerX", first->x() + first->width() / 2);
+  // The magnification factor is the tile's own binding (the icon renders it
+  // through its transform); the rendered scale animates, so exactness is
+  // asserted on dockZoomScale.
+  QTRY_COMPARE(first->property("dockZoomScale").toDouble(), 1.5);
+  const qreal neighborScale = second->property("dockZoomScale").toDouble();
+  QVERIFY(neighborScale > 1.0);
+  QVERIFY(neighborScale < 1.5);
+  QCOMPARE(first->width(), tileWidth);
+  QCOMPARE(first->x(), firstRestX);
+  QCOMPARE(root->implicitWidth(), stripRestWidth);
+
+  // Pointer outside the strip (-1): every tile returns to rest scale.
+  root->setProperty("dockPointerX", -1.0);
+  QTRY_COMPARE(first->property("dockZoomScale").toDouble(), 1.0);
+  QCOMPARE(second->property("dockZoomScale").toDouble(), 1.0);
+
+  // The host quick setting disables the zoom entirely: a pointer value alone
+  // never swells a tile, and the strip layout stays untouched.
+  root->setProperty("dockZoomEnabled", false);
+  root->setProperty("dockPointerX", first->x() + first->width() / 2);
+  QTRY_COMPARE(first->property("dockZoomScale").toDouble(), 1.0);
+  QCOMPARE(second->property("dockZoomScale").toDouble(), 1.0);
+  QCOMPARE(root->implicitWidth(), stripRestWidth);
+}
+
+void TaskListAppletDockQmlTests::dragStateCommitsReorderThroughTheController()
+{
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port, {true, true, true});
+  QVector<TaskWindowFact> facts;
+  for (int index = 1; index <= 3; ++index) {
+    facts.append(TaskListTest::standalone(
+        QStringLiteral("w%1").arg(index),
+        QStringLiteral("app.%1").arg(index)));
+  }
+  QVERIFY(source.publishGeneration(facts).ok());
+  authority.revision = source.revision();
+  authority.sourceStatus = TaskListSourceStatus::Ready;
+  authority.owner = QStringLiteral(":1.1");
+  Q_EMIT authority.stateChanged();
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  QString error;
+  auto owned = createDockApplet(engine, controller, &error);
+  QVERIFY2(owned != nullptr, qPrintable(error));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  QTRY_VERIFY(dockEntry(root) != nullptr);
+
+  // Drive the strip's drag state machine directly: pressing tile 2 (w3) and
+  // dropping it into the gap before tile 0 commits reorderTask with the
+  // displayed revision. Reorder is presentation preference: no compositor
+  // operation may dispatch, so the port stays silent.
+  const qreal slotExtent = root->property("dockSlotExtent").toReal();
+  QVERIFY(slotExtent > 0);
+  QVERIFY(QMetaObject::invokeMethod(root, "dockDragBegin", Q_ARG(QVariant, 2)));
+  QVERIFY(root->property("dockDragActive").toBool());
+  QVERIFY(QMetaObject::invokeMethod(root, "dockDragUpdate",
+                                    Q_ARG(QVariant, slotExtent * 1.0)));
+  QCOMPARE(root->property("dockDragTo").toInt(), 1);
+  QVERIFY(QMetaObject::invokeMethod(root, "dockDragEnd"));
+  QVERIFY(!root->property("dockDragActive").toBool());
+  QCOMPARE(port.calls.size(), 0);
+  // Slot 1 is the gap between w1 and w2, so w3 lands between them.
+  QTRY_COMPARE(controller.entryRows().at(0).toMap().value(QStringLiteral("taskId")),
+               QVariant(QStringLiteral("w1")));
+  QCOMPARE(controller.entryRows().at(1).toMap().value(QStringLiteral("taskId")),
+               QVariant(QStringLiteral("w3")));
+  QCOMPARE(controller.entryRows().at(2).toMap().value(QStringLiteral("taskId")),
+               QVariant(QStringLiteral("w2")));
+  QCOMPARE(controller.userTaskOrder(),
+           (QStringList{QStringLiteral("w1"), QStringLiteral("w3"),
+                        QStringLiteral("w2")}));
+
+  // Dropping a tile back into its own slot commits nothing.
+  QVERIFY(QMetaObject::invokeMethod(root, "dockDragBegin", Q_ARG(QVariant, 0)));
+  QVERIFY(QMetaObject::invokeMethod(root, "dockDragUpdate", Q_ARG(QVariant, 0.0)));
+  QVERIFY(QMetaObject::invokeMethod(root, "dockDragEnd"));
+  QCOMPARE(controller.userTaskOrder().size(), 3);
+  QCOMPARE(port.calls.size(), 0);
+  QVERIFY(!controller.feedbackPresent());
+}
+
+void TaskListAppletDockQmlTests::hoverPreviewShowsImageCardOrTitleFallback()
+{
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port, {true, true, true});
+  FakePreviewPort previewPort;
+  controller.setPreviewPort(&previewPort);
+  QVector<TaskWindowFact> facts;
+  for (int index = 1; index <= 2; ++index) {
+    facts.append(TaskListTest::standalone(
+        QStringLiteral("w%1").arg(index),
+        QStringLiteral("app.%1").arg(index)));
+  }
+  QVERIFY(source.publishGeneration(facts).ok());
+  authority.revision = source.revision();
+  authority.sourceStatus = TaskListSourceStatus::Ready;
+  authority.owner = QStringLiteral(":1.1");
+  Q_EMIT authority.stateChanged();
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  controller.installPreviewProvider(&engine);
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  QString error;
+  auto owned = createDockApplet(engine, controller, &error);
+  QVERIFY2(owned != nullptr, qPrintable(error));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  QQuickWindow window;
+  window.setGeometry(0, 0, 400, 120);
+  root->setParentItem(window.contentItem());
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+  QTRY_VERIFY(dockEntry(root) != nullptr);
+
+  // Hovering the first tile requests a preview through the port.
+  QVERIFY(QMetaObject::invokeMethod(root, "previewHover",
+                                    Q_ARG(QVariant, 0), Q_ARG(QVariant, true)));
+  QCOMPARE(previewPort.calls.size(), 1);
+  QCOMPARE(previewPort.calls.last().windowId, QStringLiteral("w1"));
+  QVERIFY(root->property("previewVisible").toBool());
+
+  // An available capture decorates the card through the provider token.
+  previewPort.autoReply = true;
+  previewPort.replyImage = QImage(64, 48, QImage::Format_ARGB32);
+  QVERIFY(QMetaObject::invokeMethod(root, "requestPreviewNow"));
+  QTRY_VERIFY(root->property("previewToken").toInt() > 0);
+
+  // Leaving the tile closes the card and cancels the in-flight request.
+  QVERIFY(QMetaObject::invokeMethod(root, "previewHover",
+                                    Q_ARG(QVariant, 0),
+                                    Q_ARG(QVariant, false)));
+  QCOMPARE(root->property("previewVisible").toBool(), false);
+
+  // Hovering again with an unavailable capture keeps the title-only card.
+  previewPort.autoReply = false;
+  QVERIFY(QMetaObject::invokeMethod(root, "previewHover",
+                                    Q_ARG(QVariant, 1), Q_ARG(QVariant, true)));
+  // The 500 ms refresh timer may add in-flight refresh requests for the
+  // same tile while the test waits; only the newest tile identity matters.
+  QVERIFY(previewPort.calls.size() >= 2);
+  QCOMPARE(previewPort.calls.last().windowId, QStringLiteral("w2"));
+  QVERIFY(root->property("previewVisible").toBool());
+  Q_EMIT previewPort.previewFinished(
+      TaskListAppletTest::FakePreviewPort::makeResult(
+          QStringLiteral("w2"), static_cast<quint64>(source.revision()), false));
+  QVERIFY(root->property("previewVisible").toBool());
+  QCOMPARE(root->property("previewToken").toInt(), 0);
 }
 
 void TaskListAppletDockQmlTests::emptyDockDoesNotReserveATile()

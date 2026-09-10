@@ -77,6 +77,7 @@ nav:
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
+      - Dock interactions: shell/dock-interactions.md
       - Global application menu: shell/global-menu.md
       - Notification presentation: shell/notification-presentation.md
       - Power applet presentation: shell/power-applet.md

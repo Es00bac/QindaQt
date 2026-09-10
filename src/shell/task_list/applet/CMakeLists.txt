@@ -22,6 +22,9 @@ target_sources(
         src/task_list_applet_operation_bridge.cpp
         src/task_list_applet_controller.cpp
         src/task_list_applet_controller_intents.cpp
+        src/task_list_applet_controller_order.cpp
+        src/task_list_applet_controller_preview.cpp
+        src/task_list_preview_provider.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -30,6 +33,8 @@ target_sources(
             include/qindaqt/shell/task_list/applet/task_list_applet_projection.h
             include/qindaqt/shell/task_list/applet/task_list_applet_operation_port.h
             include/qindaqt/shell/task_list/applet/task_list_applet_operation_bridge.h
+            include/qindaqt/shell/task_list/applet/task_list_applet_preview_port.h
+            include/qindaqt/shell/task_list/applet/task_list_preview_provider.h
             include/qindaqt/shell/task_list/applet/task_list_applet_controller.h
 )
 qt_add_qml_module(
@@ -41,6 +46,7 @@ qt_add_qml_module(
     QML_FILES
         qml/TaskListApplet.qml
         qml/TaskListEntryButton.qml
+        qml/TaskListPreviewPopup.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons
 )

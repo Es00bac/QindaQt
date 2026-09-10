@@ -2,6 +2,7 @@
 
 add_subdirectory(profiles)
 add_subdirectory(shell_layout)
+add_subdirectory(panel_blur)
 add_subdirectory(shell/launcher)
 add_subdirectory(shell/icons)
 add_subdirectory(shell/task_list)

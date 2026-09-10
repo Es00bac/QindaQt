@@ -71,6 +71,27 @@ add_test(
     COMMAND qindaqt_notification_quieting_bridge_tests
 )
 
+qt_add_executable(
+    qindaqt_panel_blur_tests
+    tst_panel_blur.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/panel_blur/src/panel_surface_blur.cpp"
+)
+target_include_directories(
+    qindaqt_panel_blur_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/panel_blur/include"
+            "${CMAKE_BINARY_DIR}/src/panel_blur"
+)
+target_link_libraries(
+    qindaqt_panel_blur_tests
+    PRIVATE
+        QindaQt::PanelBlur
+        Qt6::Gui
+        Qt6::Quick
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_panel_blur_tests)
+add_test(NAME qindaqt.panel-blur COMMAND qindaqt_panel_blur_tests)
+
 qt_add_executable(qindaqt_shell_capture_tests tst_shell_capture.cpp)
 
 target_link_libraries(

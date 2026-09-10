@@ -26,7 +26,22 @@ T.ToolButton {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    // Dock magnification factor for this tile (1.0 = rest). The strip computes
+    // it from pointer proximity; transforms never touch layout bounds.
+    property real dockZoomScale: 1.0
+    // Strip-owned hover preview hooks (ADR-0119): the strip hosts the single
+    // preview popup and supersedes hover state centrally.
+    property var stripPreviewHover: null
+    property var stripClosePreview: null
+    // Drag-reorder visuals, driven by the strip's DragHandler state.
+    property var stripMove: null
+    property bool dragHeld: false
+    property real dragShiftX: 0
+    property real dragFollowX: 0
     readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
+    transform: Translate {
+        x: button.dragShiftX + button.dragFollowX
+    }
     // A container's user-chosen accent color (see ContainerAppearance)
     // recolors its dock/panel icon; empty for every standalone window and
     // every container that never picked a color, in which case the icon
@@ -55,7 +70,18 @@ T.ToolButton {
             access.activateTask(entry.taskId, entry.generationRevision)
     }
 
-    onClicked: activate()
+    onHoveredChanged: {
+        if (stripPreviewHover !== null) {
+            stripPreviewHover(index, hovered)
+        }
+    }
+
+    onClicked: {
+        if (stripClosePreview !== null) {
+            stripClosePreview()
+        }
+        activate()
+    }
     Accessible.onPressAction: activate()
 
     // QQC2's Basic ToolButton handles Space but ignores Return/Enter; wire
@@ -73,7 +99,11 @@ T.ToolButton {
     T.ToolTip {
         id: dockTooltip
         objectName: "taskListEntryTooltip"
+        // The hover preview card replaces the tooltip when the preview seam
+        // is present; an unavailable capture degrades to the preview card's
+        // title-only form, never to a duplicate floating label.
         visible: button.dockMode && button.hovered
+                 && !(button.access !== null && button.access.previewsEnabled)
         text: button.entry.accessibleName
         delay: Tokens.motion.short
         popupType: T.Popup.Window
@@ -151,8 +181,15 @@ T.ToolButton {
             color: button.resolvedIconColor
             symbolic: button.entry.kind === "container"
             fallbackText: button.entry.applicationName
-            scale: button.hovered && !button.reducedMotion ? 1.08 : 1.0
-            transformOrigin: Item.Center
+            // AGENT-GUARD: bottom-anchored swell inside the tile's reserved
+            // envelope — the icon grows upward from its rest bottom edge and
+            // never shifts the delegate's layout bounds or hit target. The
+            // hovered tile is also the falloff peak, so dockZoomScale
+            // subsumes the former flat 1.08 hover bump.
+            transformOrigin: Item.Bottom
+            scale: button.reducedMotion ? 1.0
+                  : button.dockMode ? Math.max(1.0, button.dockZoomScale)
+                  : button.hovered ? 1.08 : 1.0
             property real hoverLift: button.hovered && !button.reducedMotion ? -3 : 0
             transform: Translate { y: dockIcon.hoverLift }
             Accessible.ignored: true
@@ -244,8 +281,6 @@ T.ToolButton {
             visible: button.entry.kind === "container"
         }
         T.MenuItem {
-            // The Ungroup arm of the shell-owned container close policy; it
-            // maps to the T1 releaseContainer operation.
             objectName: "taskListContextUngroup"
             visible: button.entry.kind === "container"
             text: qsTr("Ungroup")
@@ -253,6 +288,25 @@ T.ToolButton {
                      && !button.entry.pending
             onTriggered: button.access.ungroupContainer(
                              button.entry.taskId, button.entry.generationRevision)
+        }
+        T.MenuSeparator {
+            visible: button.dockMode && button.stripMove !== null
+        }
+        T.MenuItem {
+            // Keyboard parity for the drag-reorder gesture (dock mode).
+            objectName: "taskListContextMoveLeft"
+            visible: button.dockMode && button.stripMove !== null
+            text: qsTr("Move left")
+            enabled: button.stripMove !== null && button.index > 0
+            onTriggered: button.stripMove(button.index, -1)
+        }
+        T.MenuItem {
+            objectName: "taskListContextMoveRight"
+            visible: button.dockMode && button.stripMove !== null
+            text: qsTr("Move right")
+            enabled: button.stripMove !== null && button.access !== null
+                     && button.index < button.access.entryCount - 1
+            onTriggered: button.stripMove(button.index, 1)
         }
     }
 }

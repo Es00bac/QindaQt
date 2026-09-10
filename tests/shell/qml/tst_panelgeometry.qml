@@ -7,6 +7,26 @@ Item {
     id: root
     width: 900
     height: 500
+
+    // Deterministic double of the PanelQuickConfig facade: same surface the
+    // production shell injects, with an in-memory store instead of Settings1.
+    QtObject {
+        id: fakePanelConfig
+        property var store: ({})
+        property int openCalls: 0
+        signal panelSettingsChanged()
+        function panelSettings(panelId) { return store[panelId] ?? {} }
+        function setPanelSetting(panelId, key, value) {
+            const entry = Object.assign({}, store[panelId] ?? {})
+            entry[key] = value
+            const next = Object.assign({}, store)
+            next[panelId] = entry
+            store = next
+            panelSettingsChanged()
+            return true
+        }
+        function openCustomize() { openCalls++; return true }
+    }
     function spec(id, zone) {
         return { id: id, plugin: "task-list", settings: { zone: zone },
             runtime: { ready: true, entryPoint: "qindaqt.applets.task-list" } }
@@ -206,7 +226,8 @@ Item {
         }
 
         // Overflow still reports itself: the bar appears on the overflowing
-        // axis only, so the documented scroll affordance is not lost.
+        // axis only, so the documented scroll affordance is not lost. The
+        // bars carry their documented object names.
         function test_overflowingZoneStillShowsItsScrollBar() {
             panel.width = 400
             panel.height = 32
@@ -215,17 +236,19 @@ Item {
                 items.push(root.spec("task" + i, "end"))
             panel.panel = { edge: "top", rows: 1, applets: items }
             wait(20)
+            const barNames = ["panelZoneHorizontalOverflowBar",
+                              "panelZoneVerticalOverflowBar"]
             const end = findChild(panel, "panelZoneEnd")
             verify(end.contentWidth > end.width)
-            const bars = root.named(end, "").filter(
-                item => String(item).indexOf("ScrollBar") !== -1)
+            const bars = root.named(end, barNames[0])
+                .concat(root.named(end, barNames[1]))
             const visibleBars = bars.filter(item => item.visible)
             compare(visibleBars.length, 1)
             verify(!visibleBars[0].interactive)
             const start = findChild(panel, "panelZoneStart")
-            compare(root.named(start, "").filter(
-                item => String(item).indexOf("ScrollBar") !== -1
-                        && item.visible).length, 0)
+            compare(root.named(start, barNames[0])
+                    .concat(root.named(start, barNames[1]))
+                    .filter(item => item.visible).length, 0)
         }
 
         function test_centeredDockPaintAndInputBoundsHugContent() {
@@ -261,6 +284,102 @@ Item {
             wait(20)
             verify(material.width > initialMaterialWidth)
             verify(panel.inputBounds.width >= material.width)
+        }
+
+        // The dock window may span the full output width: the painted shelf
+        // hugs content while it fits, fills the window once content exceeds
+        // it, and overflow scrolls through the zone viewport instead of
+        // truncating rows (wiki: panel-surfaces, centered dock presentation).
+        function test_fullWidthDockGrowsThenScrollsOnOverflow() {
+            panel.width = 400
+            panel.height = 80
+            const applets = [{ id: "launcher", plugin: "launcher",
+                settings: { zone: "center", dockMode: true } }]
+            applets.push(root.spec("task-a", "center"),
+                         root.spec("task-b", "center"))
+            panel.panel = { id: "d", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80, applets: applets }
+            for (const applet of panel.panel.applets)
+                applet.settings.dockMode = true
+            wait(20)
+            const material = findChild(panel, "panelMaterial")
+            const center = findChild(panel, "panelZoneCenter")
+            verify(panel.dockMode)
+            verify(material.width < panel.width)
+            verify(center.contentWidth <= center.width + 0.01)
+
+            for (let i = 0; i < 40; ++i)
+                applets.push(root.spec("overflow" + i, "center"))
+            panel.panel = { id: "d", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80, applets: applets }
+            for (const applet of panel.panel.applets)
+                applet.settings.dockMode = true
+            wait(20)
+            verify(material.width >= panel.width - 1)
+            verify(panel.inputBounds.width >= material.width)
+            verify(center.contentWidth > center.width)
+            const bars = root.named(center, "panelZoneHorizontalOverflowBar")
+            compare(bars.length, 1)
+            verify(bars[0].visible)
+            verify(!bars[0].interactive)
+
+            // Scrolling the overflowing dock viewport reaches the tail rows;
+            // the overflow bar tracks the scrolled position.
+            verify(center.contentX === 0)
+            center.contentX = center.contentWidth - center.width
+            tryVerify(() => center.contentX > 0)
+        }
+
+        // The right-click panel menu persists quick settings through the
+        // facade; dock-only entries appear only on a dock panel.
+        function test_panelQuickSettingsPersistThroughFacade() {
+            panel.width = 400
+            panel.height = 80
+            panel.panelQuickConfig = fakePanelConfig
+            // dockMode travels inside the resolved settings (the shape that
+            // survives profile duplication), not as a post-assignment mutation.
+            panel.panel = { id: "test-dock", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80,
+                applets: [{ id: "tasks", plugin: "task-list",
+                    settings: { zone: "center", dockMode: true },
+                    runtime: { ready: true,
+                               entryPoint: "qindaqt.applets.task-list" } }] }
+            wait(20)
+            verify(panel.dockMode)
+            compare(panel.dockZoom, true)
+            compare(panel.dockTileSize, 60)
+            compare(panel.panelTransparency, true)
+
+            verify(panel.applyPanelSetting("dockTileSize", 64))
+            tryCompare(panel, "dockTileSize", 64)
+            compare(fakePanelConfig.store["test-dock"].dockTileSize, 64)
+            verify(panel.applyPanelSetting("transparency", false))
+            tryCompare(panel, "panelTransparency", false)
+            // The published translucency follows the quick setting.
+            tryCompare(panel, "materialTranslucent", false)
+            verify(panel.applyPanelSetting("transparency", true))
+            tryCompare(panel, "materialTranslucent", true)
+            compare(fakePanelConfig.openCalls, 0)
+
+            // Item visibility reads through only while the menu is open.
+            const menu = findChild(panel, "panelConfigMenu")
+            verify(menu !== null)
+            menu.popup()
+            tryVerify(() => menu.opened)
+            verify(findChild(panel, "panelConfigDockZoom").visible)
+            verify(findChild(panel, "panelConfigTileSize").visible)
+            menu.close()
+
+            // Non-dock panels hide the dock-only entries.
+            panel.panel = { id: "top-bar", edge: "top", rows: 1, applets: [] }
+            wait(20)
+            menu.popup()
+            tryVerify(() => menu.opened)
+            verify(!findChild(panel, "panelConfigDockZoom").visible)
+            verify(!findChild(panel, "panelConfigTileSize").visible)
+            menu.close()
+            compare(fakePanelConfig.openCalls, 0)
+            panel.panelQuickConfig = null
         }
     }
 }

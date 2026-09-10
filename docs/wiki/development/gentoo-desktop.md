@@ -5,12 +5,11 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260909-r3`, pinned to Git
-commit `0eda78efe5fafd4b7b8b592d2fa9d08d398015c5`. Regenerate the package
-Manifest whenever this immutable pin changes. This September 9 checkpoint is a
-local reviewed snapshot and has not been pushed to the public remote. Its ebuild
-uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
-in Portage's DISTDIR:
+The current dated package checkpoint is `0.1.0_pre20260910-r1`. Regenerate the
+package Manifest whenever this immutable pin changes. Each checkpoint is a
+local reviewed snapshot and has not been pushed to the public remote. The
+ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
+the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
 qq_source_commit=0eda78efe5fafd4b7b8b592d2fa9d08d398015c5

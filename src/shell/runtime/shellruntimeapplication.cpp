@@ -26,6 +26,8 @@
 #include "shellstartuppreferences.h"
 #include "settingsroutelauncher.h"
 #include "tasklistappletcomposition.h"
+#include "taskorderpersistence.h"
+#include "panelquickconfig.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/services/notification_presentation/presentation_token_channel.h"
@@ -437,6 +439,12 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_taskListApplet->access(),
             m_statusNotifierApplet->access());
     m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
+    // The panel right-click configuration facade composes over the shared
+    // Settings1 client and the Settings route launcher (both owned above).
+    m_panelQuickConfig = std::make_unique<PanelQuickConfig>(*m_settingsClient,
+                                                            m_settingsRouteLauncher.get());
+    m_panelQuickConfig->start();
+    m_windowFactory->setPanelQuickConfig(m_panelQuickConfig.get());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -524,6 +532,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_globalShortcutRegistrar.reset();
     m_shellDevelopmentEvidence.reset();
     m_notificationWindows.reset();
+    m_panelQuickConfig.reset();
     m_settingsRouteLauncher.reset();
     m_quietingSettingsBridge.reset();
     m_outputAuthority.reset();

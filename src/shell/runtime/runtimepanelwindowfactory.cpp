@@ -16,6 +16,8 @@
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
 #include "qindaqt/applets/manifest_catalog.h"
+#include <qindaqt/panel_blur/panel_surface_blur.h>
+#include <QQuickWindow>
 
 #include <QPointer>
 #include <QMetaProperty>
@@ -47,6 +49,34 @@ void applyInputBounds(QQuickWindow *window, const QVariant &value)
     const QRect bounds = value.toRectF().toAlignedRect()
         .intersected(QRect(QPoint(), window->size()));
     window->setMask(QRegion(bounds));
+}
+
+// Mirrors PanelContent's dockMode predicate: a centered bottom panel whose
+// resolved applets request dockMode, or a legacy dock panel id. The factory
+// uses it to raise the shared task-list controller's presentation bound so a
+// dock scrolls instead of truncating rows.
+bool isDockPanel(const QVariantMap &panel)
+{
+    if (panel.value(QStringLiteral("edge")).toString() != QLatin1String("bottom")
+        || panel.value(QStringLiteral("alignment")).toString()
+               != QLatin1String("center")) {
+        return false;
+    }
+    const QString panelId = panel.value(QStringLiteral("id")).toString();
+    if (panelId == QLatin1String("dock")
+        || panelId == QLatin1String("smart-shelf")) {
+        return true;
+    }
+    const QVariantList applets =
+        panel.value(QStringLiteral("applets")).toList();
+    for (const QVariant &value : applets) {
+        const QVariantMap applet = value.toMap();
+        if (applet.value(QStringLiteral("settings")).toMap().value(
+                QStringLiteral("dockMode")).toBool()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -132,6 +162,11 @@ void RuntimePanelWindowFactory::setTheme(const QVariantMap &theme)
 void RuntimePanelWindowFactory::setDesktopControlsAccess(QObject *access) noexcept
 {
     m_desktopControlsAccess = access;
+}
+
+void RuntimePanelWindowFactory::setPanelQuickConfig(QObject *access) noexcept
+{
+    m_panelQuickConfig = access;
 }
 
 bool RuntimePanelWindowFactory::ensureComponent(QString *error)
@@ -220,23 +255,54 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         window->setProperty("desktopControlsAccess",
                             QVariant::fromValue(m_desktopControlsAccess));
     }
+    if (m_panelQuickConfig != nullptr) {
+        window->setProperty("panelQuickConfig",
+                            QVariant::fromValue(m_panelQuickConfig));
+    }
     window->setObjectName(QStringLiteral("qindaqt-panel-%1").arg(surfaceId));
+    // The dock presents every task row (the zone viewport scrolls) instead of
+    // truncating at the taskbar cap. The controller is shared shell-wide, so
+    // this raise is monotonic and idempotent: a non-dock panel window never
+    // lowers it, and today's profiles host one task list instance.
+    if (m_taskListAppletAccess != nullptr && isDockPanel(panel.value())) {
+        m_taskListAppletAccess->setPresentationLimit(
+            QindaQt::ShellTaskListApplet::kMaxPresentedDockEntries);
+    }
     if (auto *content = window->findChild<QObject *>(QStringLiteral("runtimePanelContent"));
         content != nullptr) {
         // AGENT-GUARD: a centered dock has transparent solver-allocated
         // margins. Its QWindow mask must track the painted shelf plus hover
         // allowance, otherwise that invisible region blocks desktop input.
         applyInputBounds(window, content->property("inputBounds"));
+        auto *blur = new QindaQt::PanelBlur::PanelSurfaceBlur(window);
+        blur->attach(window);
+        // One effects pass per published QML change: the mask and the blur
+        // region consume the same painted bounds, and the blur additionally
+        // honors the materialTranslucent truth (quick setting plus the
+        // accessibility projection) so it never outlives its material.
+        const auto pushEffects = [window, blur, content] {
+            applyInputBounds(window, content->property("inputBounds"));
+            const bool translucent =
+                content->property("materialTranslucent").toBool();
+            blur->setRegion(translucent
+                ? content->property("inputBounds").toRectF() : QRectF());
+        };
         QObject::connect(content, &QObject::destroyed, window, [window] {
             window->setMask(QRegion());
         });
-        const int propertyIndex = content->metaObject()->indexOfProperty("inputBounds");
-        if (propertyIndex >= 0) {
-            const QMetaProperty property = content->metaObject()->property(propertyIndex);
-            QMetaObject::connect(content, property.notifySignal(), window, [window, content] {
-                applyInputBounds(window, content->property("inputBounds"));
-            });
+        for (const QString &propertyName :
+             {QStringLiteral("inputBounds"),
+              QStringLiteral("materialTranslucent")}) {
+            const int propertyIndex =
+                content->metaObject()->indexOfProperty(propertyName.toLatin1().constData());
+            if (propertyIndex >= 0) {
+                const QMetaProperty property =
+                    content->metaObject()->property(propertyIndex);
+                QMetaObject::connect(content, property.notifySignal(), window,
+                                     [pushEffects] { pushEffects(); });
+            }
         }
+        pushEffects();
     }
     m_liveWindows.append(QPointer<QQuickWindow>(window));
     return std::unique_ptr<QQuickWindow>(window);

@@ -16,6 +16,7 @@ target_sources(
     PRIVATE
         src/task_list_filter.cpp
         src/task_list_grouping.cpp
+        src/task_list_order.cpp
         src/task_list_presentation.cpp
         src/task_list_source.cpp
         src/task_list_validation.cpp
@@ -25,6 +26,7 @@ target_sources(
         FILES
             include/qindaqt/shell/task_list/task_list_filter.h
             include/qindaqt/shell/task_list/task_list_intent.h
+            include/qindaqt/shell/task_list/task_list_order.h
             include/qindaqt/shell/task_list/task_list_presentation.h
             include/qindaqt/shell/task_list/task_list_source.h
             include/qindaqt/shell/task_list/task_list_types.h

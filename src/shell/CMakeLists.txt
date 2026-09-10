@@ -208,6 +208,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/wallpapercontroller.cpp
         runtime/wallpapercontroller.h
         runtime/tasklistappletcomposition.cpp
+        runtime/taskorderpersistence.cpp
+        runtime/panelquickconfig.cpp
         runtime/tasklistappletcomposition.h
         runtime/statusnotifierappletcomposition.cpp
         runtime/statusnotifierappletcomposition.h
@@ -282,6 +284,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellWorkspacesDBus
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
+            QindaQt::PanelBlur
             qindaqt_shell_panel_visibility_producers
             qindaqt_themes
             KF6::GlobalAccel

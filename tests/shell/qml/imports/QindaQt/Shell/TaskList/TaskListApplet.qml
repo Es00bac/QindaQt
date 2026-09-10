@@ -14,6 +14,7 @@ Item {
     property int dockTileSize: 60
     property bool dockHasLauncherGroup: false
     property bool reducedMotion: false
+    property bool dockZoomEnabled: true
 
     objectName: "taskListApplet"
     implicitWidth: 96

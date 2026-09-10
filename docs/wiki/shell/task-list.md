@@ -96,8 +96,14 @@ Entries are the module's canonical projection:
 - rows are ordered deterministically: application id, then standalone windows
   before collapsed containers, then task identity.
 
-That canonical order is also the keyboard traversal order, so identical fact
-batches always produce identical generations regardless of producer order.
+That canonical order is the default, and identical fact batches still produce
+identical generations regardless of producer order. A persisted user-order
+overlay ([ADR-0118](../adr/0118-user-task-order-overlay-and-panel-quick-settings.md))
+takes precedence for the displayed order — which is also the keyboard
+traversal order: overlayed ids come first in stored order, and every other
+entry keeps canonical order behind them. Keyboard indices are renumbered
+along the displayed order, so traversal is always the order the strip
+presents.
 
 ## Request intents
 
@@ -315,8 +321,11 @@ silently), `ready`, `empty` (nothing visible in scope, even while degraded),
 every intent is refused — a failed first refresh with no accepted generation
 is also `degraded`, never `empty`), and `unavailable` (read capability
 denied). The
-strip presents at most 64 rows in canonical order — also the Tab and arrow
-traversal order — and reports the exact hidden count as overflow truth. Every
+strip presents at most 64 rows in displayed order — also the Tab and arrow
+traversal order — and reports the exact hidden count as overflow truth. A
+dock host raises the presentation bound so every row is projected and the
+zone viewport scrolls instead of truncating
+([Dock interactions](dock-interactions.md)). Every
 row carries its generation revision and echoes it into each intent, so the T0
 arbitration refuses actions against a generation the user no longer sees.
 Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
@@ -345,6 +354,13 @@ Degraded truth is an accessible warning glyph rather than a “Limited” badge,
 and loading/empty/unavailable phases use one compact phase icon without panel
 text.
 
+Dock presentation adds interaction surfaces owned by
+[Dock interactions](dock-interactions.md): full-width growth with zone
+scrolling, pointer magnification, drag-and-drop reorder through the fenced
+user-order overlay, hover thumbnail cards over the authenticated preview
+seam ([ADR-0119](../adr/0119-authenticated-window-preview-channel.md)), and
+the panel right-click configuration menu.
+
 The compiled module follows the first-party presentation rule from
 [Module boundaries](../architecture/module-boundaries.md): both QML files
 import `QindaQt.Controls 1.0` explicitly (labels, the dismiss button, and the
@@ -363,6 +379,10 @@ the applet presents refused or uncertain outcomes truthfully as feedback.
 The authenticated active-window identity
 ([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md))
 remains a separate single-client concern the applet never touches.
+
+The user-order overlay, reorder fencing, and the hover-preview seam add
+focused rows (`qindaqt.task-list-order`, `qindaqt.task-order-persistence`,
+and the dock/offscreen rows under `qindaqt.task-list-applet-*`).
 
 Focused rows are selected with `ctest -R '^qindaqt\.task-list-applet-'`:
 pure projection bounds/overflow, controller fencing over fake seams (cold

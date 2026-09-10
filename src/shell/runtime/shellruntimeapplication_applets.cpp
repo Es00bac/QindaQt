@@ -9,6 +9,9 @@
 #include "launcher_persistence.h"
 #include "powerappletcomposition.h"
 #include "tasklistappletcomposition.h"
+#include "taskorderpersistence.h"
+
+#include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -40,6 +43,7 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
             QDBusConnection::sessionBus());
     QStringList shellScope{QStringLiteral("accessibility.reducedMotion"),
                            QStringLiteral("panels.autoHideDelayMs"),
+                           QStringLiteral("panels.configuration"),
                            QStringLiteral("services.clipboardHistory"),
                            Launcher::LauncherPersistenceController::pinnedKey(),
                            Launcher::LauncherPersistenceController::recentKey()};
@@ -107,6 +111,15 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     if (!m_taskListApplet->start(&taskListError)) {
         qWarning().noquote()
             << "QindaQt shell could not start Task List facts:" << taskListError;
+    }
+    // Borrowed settings/controller wiring for the persisted user task order;
+    // both collaborators are owned above and outlive this helper.
+    if (m_taskListApplet->access() != nullptr) {
+        m_taskListApplet->access()->installPreviewProvider(&m_engine);
+        m_taskOrderPersistence =
+            std::make_unique<TaskOrderPersistence>(*m_settingsClient,
+                                                   *m_taskListApplet->access());
+        m_taskOrderPersistence->start();
     }
 
     // The tray's icon-theme lookup roots are the freedesktop icon locations

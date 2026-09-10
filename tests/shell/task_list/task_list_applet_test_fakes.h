@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/shell/task_list/applet/task_list_applet_operation_port.h"
+#include "qindaqt/shell/task_list/applet/task_list_applet_preview_port.h"
 
 #include <QVector>
 
@@ -133,6 +134,47 @@ private:
     }
     return token;
   }
+};
+
+class FakePreviewPort final : public TaskListAppletPreviewPort {
+  Q_OBJECT
+public:
+  struct Call {
+    QString windowId;
+    quint64 revision = 0;
+    QSize maxSize;
+  };
+  QList<Call> calls;
+
+  void requestPreview(const TaskListPreviewRequest &request) override {
+    Call call;
+    call.windowId = request.windowId;
+    call.revision = request.revision;
+    call.maxSize = request.maxSize;
+    calls.append(call);
+    if (autoReply) {
+      Q_EMIT previewFinished(makeResult(request.windowId, request.revision,
+                                       replyOk, replyImage));
+    }
+  }
+
+  static TaskListPreviewResult makeResult(const QString &windowId,
+                                          quint64 revision, bool ok,
+                                          const QImage &image = {}) {
+    TaskListPreviewResult result;
+    result.windowId = windowId;
+    result.revision = revision;
+    result.ok = ok;
+    result.image = image;
+    if (!ok) {
+      result.reason = QStringLiteral("preview-unavailable");
+    }
+    return result;
+  }
+
+  bool autoReply = false;
+  bool replyOk = true;
+  QImage replyImage;
 };
 
 } // namespace TaskListAppletTest

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls as T
+import QindaQt.Tokens 1.0
 
 Flickable {
     id: root
@@ -25,6 +26,7 @@ Flickable {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    property bool dockZoomEnabled: true
     readonly property int lanes: Math.max(1, Number(panel.rows ?? 1))
     readonly property var zoneApplets: (panel.applets ?? []).filter(
         applet => appletZone(applet) === zone)
@@ -45,14 +47,42 @@ Flickable {
     // zone remains scrollable by flick, wheel and keyboard reveal, which is
     // the documented overflow contract.
     T.ScrollBar.horizontal: T.ScrollBar {
+        id: horizontalOverflowBar
+        objectName: "panelZoneHorizontalOverflowBar"
         policy: T.ScrollBar.AsNeeded
         interactive: false
         visible: !root.vertical && root.contentWidth > root.width
+        // Thin rounded token indicator: paints inside the zone's own trailing
+        // padding instead of the Basic style's full-depth groove.
+        implicitHeight: 4
+        background: Item {}
+        contentItem: Rectangle {
+            implicitHeight: 4
+            radius: height / 2
+            color: Tokens.ready ? Tokens.fg.default
+                                : (root.theme.colors ?? ({})).foreground ?? "#dddddd"
+            opacity: horizontalOverflowBar.pressed ? 0.9 : 0.45
+            visible: horizontalOverflowBar.size < 1
+            Accessible.ignored: true
+        }
     }
     T.ScrollBar.vertical: T.ScrollBar {
+        id: verticalOverflowBar
+        objectName: "panelZoneVerticalOverflowBar"
         policy: T.ScrollBar.AsNeeded
         interactive: false
         visible: root.vertical && root.contentHeight > root.height
+        implicitWidth: 4
+        background: Item {}
+        contentItem: Rectangle {
+            implicitWidth: 4
+            radius: width / 2
+            color: Tokens.ready ? Tokens.fg.default
+                                : (root.theme.colors ?? ({})).foreground ?? "#dddddd"
+            opacity: verticalOverflowBar.pressed ? 0.9 : 0.45
+            visible: verticalOverflowBar.size < 1
+            Accessible.ignored: true
+        }
     }
 
     // Keyboard navigation must reveal the focused control inside overflow,
@@ -138,6 +168,7 @@ Flickable {
                 dockMode: root.dockMode
                 dockTileSize: root.dockTileSize
                 reducedMotion: root.reducedMotion
+                dockZoomEnabled: root.dockZoomEnabled
                 dockHasLauncherGroup: root.dockMode
                     && root.dockHasVisibleLauncherBefore(modelData)
             }

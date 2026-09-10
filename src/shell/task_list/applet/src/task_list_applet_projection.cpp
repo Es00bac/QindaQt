@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/shell/task_list/applet/task_list_applet_projection.h"
 
+#include <algorithm>
+
 namespace QindaQt::ShellTaskListApplet {
 
 namespace {
@@ -21,7 +23,7 @@ QString placeholderFrom(const QString &identity) {
 TaskListAppletProjection TaskListAppletProjectionModel::project(
     const ShellTaskList::TaskListPresentation &presentation,
     const QSet<QString> &pendingTaskIds, bool windowsReadGranted,
-    quint64 generationRevision) {
+    quint64 generationRevision, int maxPresentedEntries) {
   TaskListAppletProjection projection;
   if (!windowsReadGranted) {
     // AGENT-GUARD: read denial withholds observation entirely — no row data,
@@ -52,8 +54,11 @@ TaskListAppletProjection TaskListAppletProjectionModel::project(
 
   const auto &entries = presentation.entries;
   projection.totalCount = static_cast<int>(entries.size());
-  const int presented =
-      qMin(static_cast<int>(entries.size()), kMaxPresentedTaskEntries);
+  // AGENT-GUARD: the bound must stay within the fact ceiling even for a
+  // hostile caller; 1 is the floor so overflow truth can never go negative.
+  const int presentedLimit =
+      std::clamp(maxPresentedEntries, 1, kMaxPresentedDockEntries);
+  const int presented = qMin(static_cast<int>(entries.size()), presentedLimit);
   projection.rows.reserve(presented);
   for (int index = 0; index < presented; ++index) {
     const ShellTaskList::TaskEntry &entry = entries.at(index);

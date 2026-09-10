@@ -219,11 +219,14 @@ center-bottom panel retains the treatment when its applets retain that setting;
 the `dock` and `smart-shelf` IDs remain legacy fallbacks only.
 
 Dock tiles receive a 60-logical-pixel presentation budget inside a 72-pixel
-surface with token spacing for a bottom gap and hover allowance. The painted
-rounded shelf hugs its occupied center content instead of filling the solved
-fractional window. If a customization places dock content in a start or end
-zone, the material expands to cover that real content rather than leaving a
-clickable unpainted control. Reduced motion disables dock lift in the owning
+surface with token spacing for a bottom gap and hover allowance. Dock panels
+solve at full edge length: the painted rounded shelf hugs its occupied center
+content while it fits, grows to the full output width as dock content grows,
+and overflow beyond full width scrolls inside the center zone instead of
+truncating rows (see [Dock interactions](dock-interactions.md)). If a
+customization places dock content in a start or end zone, the material
+expands to cover that real content rather than leaving a clickable unpainted
+control. Reduced motion disables dock lift in the owning
 applets; reduced transparency and high contrast select opaque material from
 the published QST accessibility projection.
 
