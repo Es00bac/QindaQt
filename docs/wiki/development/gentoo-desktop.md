@@ -5,18 +5,27 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260909`, pinned to Git
-commit `76ad8435f8bbcc29e4ba7ffb6fdc7a1c28bb9bba`. Regenerate the package
+The current dated package checkpoint is `0.1.0_pre20260909-r1`, pinned to Git
+commit `e0c7ff7855c96684a86d447cc0bee64367a424bd`. Regenerate the package
 Manifest whenever this immutable pin changes. This September 9 checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. Its ebuild
 uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
 in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=76ad8435f8bbcc29e4ba7ffb6fdc7a1c28bb9bba
+qq_source_commit=e0c7ff7855c96684a86d447cc0bee64367a424bd
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260909.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260909-r1.tar.gz
 ```
+
+The `-r1` revision carries the container drop-targeting fix: user-minimized
+containers stay minimized across unrelated scene mutations, a committed drop
+activates the moved window instead of the source container, late-Shift
+takeover adopts the genuinely moving window rather than the pointer hit, and
+every member of a dragged tab page is excluded from drop hit-testing. Its
+ebuild applies a prepare-time patch that skips the in-flight calendar app,
+whose sources at this commit do not compile yet; drop that patch once the
+calendar lane lands a compiling candidate.
 
 Portage verifies the maintained Manifest before unpacking. The ebuild installs
 the complete image through Portage; do not copy executables into the installed
