@@ -116,6 +116,15 @@ item, not a native overlay window.
 - Minimum and maximum client sizes constrain divider movement. If the available
   area cannot satisfy all members, the container enters an explicit recoverable
   overflow state rather than clipping silently or corrupting saved ratios.
+- A grouped member's frame changes only through tile-border (divider)
+  operations and container reflow (outer resize, work-area reconciliation,
+  keyboard divider resize). Native interactive resize on a member — decoration
+  edge drag, `Alt`+right-drag, or the keyboard resize shortcut — is vetoed at
+  move/resize start, and grouped members carry no resize-only decoration
+  borders, so no affordance advertises the blocked capability
+  ([ADR-0117](../adr/0117-veto-native-resize-for-container-members.md)).
+  Without the veto, the member's real geometry diverges from its tile until
+  the next reflow snaps it back.
 - Task lists and Alt-Tab expose exactly one primary active-page member as the
   container identity. The dock renders that identity with a stacked-window
   icon in the user-chosen container color, rather than the primary application

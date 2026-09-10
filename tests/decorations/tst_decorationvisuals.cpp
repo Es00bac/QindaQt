@@ -18,6 +18,7 @@ class DecorationVisualsTest final : public QObject
     void framePaintsOnlyTheOuterRing();
     void shadowHasBoundedNinePatchGeometry();
     void maximizedStyleHasNoOuterMaterial();
+    void groupedMembersHaveNoResizeOnlyBorders();
 };
 
 void DecorationVisualsTest::normalStyleUsesThemeBoundary()
@@ -88,6 +89,17 @@ void DecorationVisualsTest::maximizedStyleHasNoOuterMaterial()
             QCOMPARE(image.pixelColor(x, y), QColor(Qt::transparent));
         }
     }
+}
+
+void DecorationVisualsTest::groupedMembersHaveNoResizeOnlyBorders()
+{
+    // Membership reaches the decoration through the qindaqtContainerMember
+    // property; the compositor vetoes native member resize, so the grip is
+    // removed instead of advertising a capability that cannot work.
+    QCOMPARE(decorationResizeOnlyBorders(false, false), QMarginsF(5.0, 5.0, 5.0, 5.0));
+    QCOMPARE(decorationResizeOnlyBorders(false, true), QMarginsF{});
+    QCOMPARE(decorationResizeOnlyBorders(true, false), QMarginsF{});
+    QCOMPARE(decorationResizeOnlyBorders(true, true), QMarginsF{});
 }
 
 QTEST_GUILESS_MAIN(DecorationVisualsTest)

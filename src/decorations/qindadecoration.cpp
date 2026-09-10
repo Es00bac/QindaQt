@@ -108,6 +108,8 @@ bool QindaDecoration::event(QEvent *event)
         const auto *change = static_cast<QDynamicPropertyChangeEvent *>(event);
         if (change->propertyName() == QByteArrayLiteral("qindaqtChromePalette")) {
             updateVisualStyle();
+        } else if (change->propertyName() == QByteArrayLiteral("qindaqtContainerMember")) {
+            updateGeometry();
         }
     }
     return handled;
@@ -270,12 +272,17 @@ void QindaDecoration::showContextMenu(const QPointF &position)
 void QindaDecoration::updateGeometry()
 {
     const bool maximized = window()->isMaximized();
+    // AGENT-CONTRACT: The compositor's member policy owns this process-local
+    // marker (qindaqtContainerMember). Grouped members expose no resize grip
+    // because their frames change only through container reflow; the veto in
+    // KWinMemberPolicyManager is the enforcement side of the same contract.
+    const bool containerMember = property("qindaqtContainerMember").toBool();
     // Grouped leaves retain a native title for ordinary detach and per-window
     // controls, but it is intentionally a compact strip below shared chrome.
     const qreal titleHeight = 24.0;
     setBorders(maximized ? QMarginsF(0.0, titleHeight, 0.0, 0.0)
                          : QMarginsF(1.0, titleHeight, 1.0, 1.0));
-    setResizeOnlyBorders(maximized ? QMarginsF{} : QMarginsF(5.0, 5.0, 5.0, 5.0));
+    setResizeOnlyBorders(decorationResizeOnlyBorders(maximized, containerMember));
     setTitleBar(QRectF(0.0, 0.0, size().width(), titleHeight));
     setBorderRadius(KDecoration3::BorderRadius(maximized ? 0.0 : 10.0));
 

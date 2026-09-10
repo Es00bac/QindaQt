@@ -18,6 +18,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 class KWinChromeManager;
 class KWinHybridSceneFactory;
+class KWinMemberPolicyPlatform;
 class ManagedWindowRegistry;
 
 using NativeMemberDetach = std::function<bool(
@@ -86,8 +87,6 @@ public:
     void shutdown() noexcept;
 
 private:
-    class Platform;
-
     void reconnectGroupedWindows(const QVector<MemberGroupBaseline> &groups);
     [[nodiscard]] bool eventsAreSuppressed() const;
     void handleClosed(const QString &windowId);
@@ -97,7 +96,7 @@ private:
 
     ManagedWindowRegistry &m_registry;
     KWinChromeManager &m_chrome;
-    std::unique_ptr<Platform> m_platform;
+    std::unique_ptr<KWinMemberPolicyPlatform> m_platform;
     std::unique_ptr<HybridMemberPolicy> m_policy;
     MemberEventSuppression m_eventsSuppressed;
     NativeMemberQuickTile m_quickTileRequest;

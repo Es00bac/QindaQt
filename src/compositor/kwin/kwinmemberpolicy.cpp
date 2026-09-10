@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinmemberpolicy.h"
 
-#include "kwinchromemanager.h"
 #include "kwinhybridscene.h"
+#include "kwinmemberpolicyplatform.h"
 #include "managedwindowregistry.h"
 
 #include <KDecoration3/Decoration>
 
 #include <window.h>
-#include <workspace.h>
-
-#include <QPointer>
 
 #include <optional>
 #include <utility>
@@ -18,7 +15,7 @@
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
 
-constexpr auto MemberFocusProperty = "qindaqtMemberFocusMode";
+constexpr auto ContainerMemberProperty = "qindaqtContainerMember";
 
 void collectWindowIds(const Core::LayoutNode &node, QStringList *result)
 {
@@ -34,19 +31,18 @@ void collectWindowIds(const Core::LayoutNode &node, QStringList *result)
     }
 }
 
-void setFocusProperty(KWin::Window *window, MemberFocusMode mode, bool enabled)
+void setContainerMemberProperty(KWin::Window *window, bool member)
 {
     auto *decoration = window ? window->decoration() : nullptr;
     if (!decoration) {
         return;
     }
-    const auto value = !enabled ? QString{}
-        : mode == MemberFocusMode::Maximized ? QStringLiteral("maximized")
-                                             : QStringLiteral("fullscreen");
-    // AGENT-CONTRACT: QindaDecoration reads this process-local property only
-    // for its maximize/restore glyph. KWin's real maximize bit stays clear so
-    // the temporary group presentation cannot acquire independent geometry.
-    decoration->setProperty(MemberFocusProperty, value);
+    // AGENT-CONTRACT: QindaDecoration reads this process-local property to
+    // drop its resize-only borders on grouped members: native member resize
+    // is vetoed (ADR-0117), so the decoration must not advertise it. Written
+    // on every membership change in reconnectGroupedWindows()/shutdown() so
+    // it cannot go stale relative to the committed group set.
+    decoration->setProperty(ContainerMemberProperty, member);
     decoration->update();
 }
 
@@ -72,214 +68,7 @@ std::optional<NativeQuickTileEdge> pureQuickTileEdge(KWin::QuickTileMode mode)
     return std::nullopt;
 }
 
-bool preflight(const ManagedWindowRegistry &registry,
-               const MemberGroupBaseline &baseline,
-               const QSet<QString> &missing,
-               QString *error)
-{
-    for (const auto &member : baseline.members) {
-        if (missing.contains(member.windowId)) {
-            continue;
-        }
-        if (!registry.window(member.windowId)) {
-            if (error) {
-                *error = QStringLiteral("group member '%1' is no longer managed")
-                             .arg(member.windowId);
-            }
-            return false;
-        }
-    }
-    return true;
-}
-
 } // namespace
-
-class KWinMemberPolicyManager::Platform final : public HybridMemberPolicyPlatform
-{
-public:
-    Platform(ManagedWindowRegistry &registry,
-             KWinChromeManager &chrome,
-             NativeMemberDetach detach)
-        : m_registry(registry)
-        , m_chrome(chrome)
-        , m_detach(std::move(detach))
-    {
-    }
-
-    bool detachMember(const QString &containerId,
-                      const QString &windowId,
-                      const MemberGroupBaseline *focusBaseline,
-                      QString *error) override
-    {
-        if (!m_detach) {
-            if (error) {
-                *error = QStringLiteral("native member detach callback is unavailable");
-            }
-            return false;
-        }
-        // The topology scene transaction restores the detached client and
-        // reflows survivors atomically. Only clear presentation metadata after
-        // it commits, so a rejected mutation leaves focus mode untouched.
-        if (!m_detach(containerId, windowId, error)) {
-            return false;
-        }
-        if (focusBaseline) {
-            for (const auto &member : focusBaseline->members) {
-                if (auto *window = m_registry.window(member.windowId)) {
-                    setFocusProperty(window, MemberFocusMode::Maximized, false);
-                    window->setHidden(member.hidden);
-                }
-            }
-            setChromeVisible(containerId, true);
-        }
-        return true;
-    }
-
-    bool enterFocus(const MemberGroupBaseline &baseline,
-                    const QString &windowId,
-                    MemberFocusMode mode,
-                    QString *error) override
-    {
-        if (!preflight(m_registry, baseline, {}, error)) {
-            return false;
-        }
-        auto *focused = m_registry.window(windowId);
-        if (!focused || !baseline.member(windowId)) {
-            if (error) {
-                *error = QStringLiteral("focus member is not in the committed group");
-            }
-            return false;
-        }
-
-        setChromeVisible(baseline.containerId, false);
-        for (const auto &member : baseline.members) {
-            auto *window = m_registry.window(member.windowId);
-            setFocusProperty(window, mode, member.windowId == windowId);
-            if (member.windowId != windowId) {
-                window->setHidden(true);
-                continue;
-            }
-            window->setHidden(false);
-            window->setMinimized(false);
-            if (mode == MemberFocusMode::Fullscreen) {
-                if (!window->isFullScreen()) {
-                    window->setFullScreen(true);
-                }
-            } else {
-                if (window->isFullScreen()) {
-                    window->setFullScreen(false);
-                }
-                if (window->maximizeMode() != KWin::MaximizeRestore) {
-                    window->maximize(KWin::MaximizeRestore);
-                }
-                window->moveResize(baseline.outerFrame);
-            }
-        }
-        KWin::workspace()->activateWindow(focused);
-        return true;
-    }
-
-    bool restoreRejectedPresentation(const MemberGroupBaseline &baseline,
-                                     const QString &windowId,
-                                     const QString &focusOwnerWindowId,
-                                     MemberFocusMode mode,
-                                     QString *error) override
-    {
-        const auto *member = baseline.member(windowId);
-        auto *window = m_registry.window(windowId);
-        auto *focusOwner = m_registry.window(focusOwnerWindowId);
-        if (!member || !window || !baseline.member(focusOwnerWindowId) || !focusOwner) {
-            if (error) {
-                *error = QStringLiteral(
-                    "rejected focus member or accepted owner is absent from the committed group");
-            }
-            return false;
-        }
-
-        // AGENT-GUARD: A native peer fullscreen request can activate the peer
-        // before KWin emits fullScreenChanged. Undo only that request and
-        // immediately restore the accepted owner; do not install an
-        // active-window observer, because Alt-Tab and outside focus must stay
-        // free once this correction completes. HybridMemberPolicy keeps its
-        // applying guard active while these KWin setters emit state signals.
-        if (mode == MemberFocusMode::Fullscreen && window->isFullScreen()) {
-            window->setFullScreen(false);
-        }
-        if (window->maximizeMode() != KWin::MaximizeRestore) {
-            window->maximize(KWin::MaximizeRestore);
-        }
-        if (window->requestedQuickTileMode()
-                != KWin::QuickTileMode(KWin::QuickTileFlag::None)
-            || window->quickTileMode()
-                != KWin::QuickTileMode(KWin::QuickTileFlag::None)) {
-            window->setQuickTileMode(KWin::QuickTileFlag::None,
-                                     member->frame.center());
-        }
-        window->moveResize(member->frame);
-        if (focusOwner != window) {
-            KWin::workspace()->activateWindow(focusOwner);
-        }
-        return true;
-    }
-
-    bool restoreGroup(const MemberGroupBaseline &baseline,
-                      const QString &minimizeWindowId,
-                      const QSet<QString> &missingWindowIds,
-                      MemberRestoreActivation activationMode,
-                      QString *error) override
-    {
-        if (!preflight(m_registry, baseline, missingWindowIds, error)) {
-            return false;
-        }
-        QPointer<KWin::Window> preservedActivation;
-        if (activationMode == MemberRestoreActivation::PreserveCurrent) {
-            preservedActivation = KWin::workspace()->activeWindow();
-        }
-        KWin::Window *baselineActivation = nullptr;
-        for (const auto &member : baseline.members) {
-            if (missingWindowIds.contains(member.windowId)) {
-                continue;
-            }
-            auto *window = m_registry.window(member.windowId);
-            setFocusProperty(window, MemberFocusMode::Maximized, false);
-            if (window->isFullScreen()) {
-                window->setFullScreen(false);
-            }
-            if (window->maximizeMode() != KWin::MaximizeRestore) {
-                window->maximize(KWin::MaximizeRestore);
-            }
-            window->setHidden(member.hidden);
-            window->moveResize(member.frame);
-            window->setMinimized(member.minimized
-                                 || member.windowId == minimizeWindowId);
-            if (member.active && member.windowId != minimizeWindowId
-                && !member.minimized && !member.hidden) {
-                baselineActivation = window;
-            }
-        }
-        setChromeVisible(baseline.containerId, true);
-        if (activationMode == MemberRestoreActivation::PreserveCurrent) {
-            if (preservedActivation && !preservedActivation->isDeleted()
-                && !preservedActivation->isMinimized()
-                && !preservedActivation->isHidden()) {
-                KWin::workspace()->activateWindow(preservedActivation);
-            }
-        } else if (baselineActivation) {
-            KWin::workspace()->activateWindow(baselineActivation);
-        }
-        return true;
-    }
-
-    void setChromeVisible(const QString &containerId, bool visible) const
-    {
-        m_chrome.setOverlayVisible(containerId, visible);
-    }
-
-private:
-    ManagedWindowRegistry &m_registry;
-    KWinChromeManager &m_chrome;
-    NativeMemberDetach m_detach;
-};
 
 KWinMemberPolicyManager::KWinMemberPolicyManager(
     ManagedWindowRegistry &registry,
@@ -291,7 +80,8 @@ KWinMemberPolicyManager::KWinMemberPolicyManager(
     : QObject(parent)
     , m_registry(registry)
     , m_chrome(chrome)
-    , m_platform(std::make_unique<Platform>(registry, chrome, std::move(detach)))
+    , m_platform(std::make_unique<KWinMemberPolicyPlatform>(registry, chrome,
+                                                            std::move(detach)))
     , m_policy(std::make_unique<HybridMemberPolicy>(*m_platform))
     , m_eventsSuppressed(std::move(eventsSuppressed))
     , m_quickTileRequest(std::move(quickTileRequest))
@@ -472,8 +262,12 @@ void KWinMemberPolicyManager::shutdown() noexcept
     // AGENT-GUARD: This phase is disconnect-only. The session has already
     // restored independent WindowRestoreState; replaying m_focusBaseline here
     // would replace exact independent frames with obsolete grouped frames.
-    for (const auto &connections : std::as_const(m_windowConnections)) {
-        for (const auto &connection : connections) {
+    for (auto entry = m_windowConnections.cbegin();
+         entry != m_windowConnections.cend(); ++entry) {
+        // Former members regain their native resize borders with their
+        // independent frames; a stale marker would keep suppressing them.
+        setContainerMemberProperty(m_registry.window(entry.key()), false);
+        for (const auto &connection : entry.value()) {
             disconnect(connection);
         }
     }
@@ -485,8 +279,18 @@ void KWinMemberPolicyManager::shutdown() noexcept
 void KWinMemberPolicyManager::reconnectGroupedWindows(
     const QVector<MemberGroupBaseline> &groups)
 {
-    for (const auto &connections : std::as_const(m_windowConnections)) {
-        for (const auto &connection : connections) {
+    QSet<QString> currentMembers;
+    for (const auto &group : groups) {
+        for (const auto &member : group.members) {
+            currentMembers.insert(member.windowId);
+        }
+    }
+    for (auto entry = m_windowConnections.cbegin();
+         entry != m_windowConnections.cend(); ++entry) {
+        if (!currentMembers.contains(entry.key())) {
+            setContainerMemberProperty(m_registry.window(entry.key()), false);
+        }
+        for (const auto &connection : entry.value()) {
             disconnect(connection);
         }
     }
@@ -498,6 +302,7 @@ void KWinMemberPolicyManager::reconnectGroupedWindows(
             if (!window) {
                 continue;
             }
+            setContainerMemberProperty(window, true);
             auto &connections = m_windowConnections[member.windowId];
             connections.append(connect(
                 window, &KWin::Window::requestedTileChanged, this,
@@ -543,6 +348,21 @@ void KWinMemberPolicyManager::reconnectGroupedWindows(
                 window, &KWin::Window::interactiveMoveResizeStarted, this,
                 [this, id = member.windowId, window] {
                     if (eventsAreSuppressed()) {
+                        return;
+                    }
+                    if (!window->isInteractiveMove()
+                        && m_policy->blocksInteractiveResize(id)) {
+                        // AGENT-GUARD: A grouped member's frame changes only
+                        // through container reflow (divider drags, outer
+                        // resize, keyboard divider resize). Removing this
+                        // veto lets a native member resize desynchronize the
+                        // window from its tile until the next reflow. The
+                        // direct cancel is reentrancy-safe on the pinned KWin
+                        // (6.6): finishInteractiveMoveResize(cancel=true)
+                        // replays the untouched initial geometry, and the
+                        // emission tail in startInteractiveMoveResize() only
+                        // reserves desktop-switching screen edges.
+                        window->cancelInteractiveMoveResize();
                         return;
                     }
                     QString error;

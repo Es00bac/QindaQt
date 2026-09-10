@@ -44,6 +44,12 @@ DecorationVisualStyle decorationVisualStyle(const QColor &border,
     return style;
 }
 
+QMarginsF decorationResizeOnlyBorders(bool maximized, bool containerMember)
+{
+    return maximized || containerMember ? QMarginsF{}
+                                        : QMarginsF(5.0, 5.0, 5.0, 5.0);
+}
+
 void paintDecorationFrame(QPainter &painter, const QRectF &bounds,
                           const DecorationVisualStyle &style)
 {
