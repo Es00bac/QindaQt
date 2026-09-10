@@ -13,6 +13,7 @@ QtObject {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    property bool dockZoomEnabled: true
 
     function facade(name) {
         if (access === null || access === undefined)
@@ -114,6 +115,7 @@ QtObject {
             dockMode: root.dockMode
             dockTileSize: root.dockTileSize
             reducedMotion: root.reducedMotion
+            dockZoomEnabled: root.dockZoomEnabled
         }
     }
 

@@ -75,6 +75,12 @@ endif()
 find_package(KF6CalendarCore CONFIG REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.11)
+# AGENT-NOTE: qt_standard_project_setup enables AUTOMOC_PATH_PREFIX, which
+# emits source-relative includes in generated moc files. With a symlinked
+# build directory (build -> ../builds/<target>) the compiler resolves those
+# includes through the real path and fails. Absolute-ish behavior restores
+# determinism for every build-tree location.
+set(CMAKE_AUTOMOC_PATH_PREFIX OFF)
 
 add_subdirectory(src)
 

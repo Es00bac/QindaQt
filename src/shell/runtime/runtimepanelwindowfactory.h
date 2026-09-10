@@ -89,6 +89,7 @@ public:
     // no-op while RuntimePanel.qml has not yet declared the property, so the
     // C++ and QML halves of this wiring may land in either order.
     void setDesktopControlsAccess(QObject *access) noexcept;
+    void setPanelQuickConfig(QObject *access) noexcept;
 
 private:
     [[nodiscard]] bool ensureComponent(QString *error);
@@ -109,6 +110,7 @@ private:
     ShellTaskListApplet::TaskListAppletController *m_taskListAppletAccess = nullptr;
     StatusNotifierApplet::StatusNotifierAppletController *m_statusNotifierAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
+    QObject *m_panelQuickConfig = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

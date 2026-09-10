@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls as T
 import QindaQt.Tokens 1.0
 
 Item {
@@ -7,6 +8,9 @@ Item {
 
     required property var panel
     required property var theme
+    // PanelQuickConfig facade (optional): backs the right-click panel menu
+    // and the persisted per-panel quick settings in panels.configuration.
+    property var panelQuickConfig: null
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
@@ -28,9 +32,43 @@ Item {
                 const settings = applet.settings ?? ({});
                 return settings.dockMode === true;
             }) || panel.id === "dock" || panel.id === "smart-shelf")
-    readonly property int dockTileSize: 60
+    // Bumping panelConfigVersion marks the resolved-settings cache stale when
+    // the facade publishes new Settings1 truth.
+    property int panelConfigVersion: 0
+    onPanelQuickConfigChanged: {
+        if (panelQuickConfig !== null
+            && panelQuickConfig.panelSettingsChanged !== undefined) {
+            panelQuickConfig.panelSettingsChanged.connect(
+                () => panelConfigVersion++)
+            panelConfigVersion++
+        }
+    }
+    readonly property var panelConfig: {
+        void panelConfigVersion
+        if (panelQuickConfig === null
+            || panelQuickConfig.panelSettings === undefined) {
+            return {}
+        }
+        return panelQuickConfig.panelSettings(String(panel.id ?? ""))
+    }
+    // Effective quick settings: schema defaults first, persisted values win.
+    readonly property bool panelTransparency:
+        panelConfig.transparency !== undefined ? panelConfig.transparency : true
+    readonly property bool dockZoom:
+        panelConfig.dockZoom !== undefined ? panelConfig.dockZoom : true
+    readonly property int dockTileSize:
+        panelConfig.dockTileSize !== undefined ? panelConfig.dockTileSize : 60
     readonly property bool reducedMotion: Tokens.ready
         && Boolean(Tokens.accessibility.reducedMotion)
+    // AGENT-CONTRACT: translucency is one published truth for the whole
+    // surface. The accessibility projection always wins (reduced transparency
+    // and high contrast flatten to opaque), and the per-panel quick setting
+    // can switch the effect off. PanelSurfaceBlur consumes the same value, so
+    // the blur region can never outlive its translucent material.
+    readonly property bool materialTranslucent:
+        Tokens.ready && panelTransparency
+        && !Boolean(Tokens.accessibility.reducedTransparency)
+        && !Boolean(Tokens.accessibility.highContrast)
     readonly property real contentInset: Tokens.space["2"]
     // AGENT-CONTRACT: the along-axis inset (contentInset) keeps zones off the
     // panel's short edges. The cross-axis inset is independent and stays
@@ -66,19 +104,98 @@ Item {
         radius: root.panel.alignment === "fill" ? 0
             : root.dockMode ? Tokens.radius.l : Tokens.radius.m
         // QST supplies flattened opaque backgrounds whenever accessibility
-        // disables transparency. No local blur effect is created.
+        // disables transparency or the per-panel quick setting is off. The
+        // translucent material pairs with the blur-behind request driven by
+        // the shell's PanelSurfaceBlur (ADR-0120): one flag, one contract.
         color: Tokens.ready ? (root.dockMode ? Tokens.bg.raised : Tokens.bg.base)
                             : (root.colors.surface ?? "#222624")
-        opacity: root.dockMode && !root.dockUsesSideZones && Tokens.ready
-                 && !Boolean(Tokens.accessibility.reducedTransparency)
-                 && !Boolean(Tokens.accessibility.highContrast) ? 0.88 : 1
+        opacity: root.materialTranslucent ? 0.8 : 1
         border.color: Tokens.ready ? Tokens.outline.divider
                                    : (root.colors.border ?? "#3c433f")
         border.width: root.dockMode ? 1 : root.panel.alignment === "fill" ? 0 : 1
+
+        // Right-click on the panel's own surface (behind every applet chip)
+        // opens the panel configuration menu. Left clicks pass through; the
+        // input mask keeps the transparent margins click-proof already.
+        MouseArea {
+            id: panelConfigArea
+            objectName: "panelConfigArea"
+            anchors.fill: parent
+            acceptedButtons: Qt.RightButton
+            enabled: root.panelQuickConfig !== null
+            onClicked: panelConfigMenu.popup()
+        }
+    }
+
+    // Panel configuration menu (QQC2 style palette; Controls ships no menu
+    // primitive yet — task-list context menu precedent). Every quick setting
+    // persists through the PanelQuickConfig facade into Settings1.
+    T.Menu {
+        id: panelConfigMenu
+        objectName: "panelConfigMenu"
+        popupType: T.Popup.Window
+
+        T.MenuItem {
+            objectName: "panelConfigCustomize"
+            text: qsTr("Customize Panel…")
+            enabled: root.panelQuickConfig !== null
+            onTriggered: root.panelQuickConfig.openCustomize()
+        }
+        T.MenuSeparator {}
+        T.MenuItem {
+            objectName: "panelConfigTransparency"
+            text: qsTr("Transparency")
+            checkable: true
+            checked: root.panelTransparency
+            enabled: Tokens.ready && !Boolean(Tokens.accessibility.reducedTransparency)
+                     && !Boolean(Tokens.accessibility.highContrast)
+            onTriggered: root.applyPanelSetting("transparency", checked)
+        }
+        T.MenuItem {
+            objectName: "panelConfigDockZoom"
+            visible: root.dockMode
+            text: qsTr("Magnification")
+            checkable: true
+            checked: root.dockZoom
+            enabled: Tokens.ready && !Boolean(Tokens.accessibility.reducedMotion)
+            onTriggered: root.applyPanelSetting("dockZoom", checked)
+        }
+        T.Menu {
+            objectName: "panelConfigTileSize"
+            title: qsTr("Tile size")
+            visible: root.dockMode
+
+            T.MenuItem {
+                text: qsTr("Compact (56)")
+                checkable: true
+                checked: root.dockTileSize === 56
+                onTriggered: root.applyPanelSetting("dockTileSize", 56)
+            }
+            T.MenuItem {
+                text: qsTr("Default (60)")
+                checkable: true
+                checked: root.dockTileSize === 60
+                onTriggered: root.applyPanelSetting("dockTileSize", 60)
+            }
+            T.MenuItem {
+                text: qsTr("Large (64)")
+                checkable: true
+                checked: root.dockTileSize === 64
+                onTriggered: root.applyPanelSetting("dockTileSize", 64)
+            }
+        }
     }
 
     // AGENT-GUARD: zones receive disjoint viewport budgets. Natural content
     // may scroll within its zone, but cannot obscure another zone's controls.
+    function applyPanelSetting(key, value) {
+        if (panelQuickConfig !== null) {
+            return panelQuickConfig.setPanelSetting(String(panel.id ?? ""),
+                                                    key, value)
+        }
+        return false
+    }
+
     readonly property real extent: Math.max(0, (horizontal ? width : height) - contentInset * 2)
     function zoneExtent(zone) {
         const zones = [startZone, centerZone, endZone]
@@ -123,6 +240,7 @@ Item {
         dockMode: root.dockMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
+        dockZoomEnabled: root.dockZoom
     }
     PanelAppletRow {
         id: centerZone
@@ -149,6 +267,7 @@ Item {
         dockMode: root.dockMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
+        dockZoomEnabled: root.dockZoom
     }
     PanelAppletRow {
         id: endZone
@@ -175,5 +294,6 @@ Item {
         dockMode: root.dockMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
+        dockZoomEnabled: root.dockZoom
     }
 }

@@ -9,11 +9,18 @@
 
 namespace QindaQt::ShellTaskListApplet {
 
-// AGENT-CONTRACT: the panel strip presents at most this many rows. The
-// compositor-bound fact ceiling (kMaxWindowFacts) is far larger than a usable
-// strip, so the controller caps presentation here and reports the exact
-// overflow count; the cap must never silently drop a row without that truth.
+// AGENT-CONTRACT: the panel strip presents at most this many rows by
+// default. The compositor-bound fact ceiling (kMaxWindowFacts) is far larger
+// than a usable strip, so the controller caps presentation here and reports
+// the exact overflow count; the cap must never silently drop a row without
+// that truth. A scrolling dock host (no overflow indicator; the strip scrolls
+// inside the zone viewport instead) raises the controller's
+// presentationLimit property up to kMaxPresentedDockEntries; the cap contract
+// and exact overflow truth are unchanged for every other host.
 inline constexpr int kMaxPresentedTaskEntries = 64;
+// Dock-mode presentation ceiling: all rows remain projected so the zone
+// viewport scrolls instead of truncating; bounded by the fact ceiling.
+inline constexpr int kMaxPresentedDockEntries = 4096;
 
 // Presentation phases. Degraded keeps the retained generation visible but
 // refuses every intent; Unavailable means observation itself is withheld

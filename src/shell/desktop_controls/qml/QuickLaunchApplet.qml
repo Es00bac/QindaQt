@@ -20,6 +20,9 @@ Item {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    // Host quick setting: dock magnification (same contract as the task
+    // strip's). reducedMotion always wins over it.
+    property bool dockZoomEnabled: true
     readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
 
     readonly property bool ready: access !== null && Tokens.ready
@@ -27,6 +30,33 @@ Item {
     readonly property bool showRows: ready && rows.length > 0
     readonly property int iconExtent: dockMode ? 40
                                                : Math.max(0, Math.min(20, (vertical ? width : height) - Tokens.space["2"]))
+    // AGENT-GUARD: magnification transforms tile visuals only — delegate
+    // sizes, layout bounds, and hit targets never change. Tiles are pinned to
+    // Layout preferred sizes, so the swell cannot move the strip.
+    readonly property bool dockZoomActive:
+        dockMode && dockZoomEnabled && !reducedMotion && showRows
+    // Pointer x in strip coordinates while hovered; -1 when zoom is inactive.
+    property real dockPointerX: -1
+    readonly property real dockZoomPeak: 1.5
+
+    function dockZoomFor(centerX) {
+        if (!dockZoomActive || dockPointerX < 0) {
+            return 1.0
+        }
+        const sigma = resolvedDockTileSize * 1.5
+        const distance = centerX - dockPointerX
+        return 1.0 + (dockZoomPeak - 1.0)
+            * Math.exp(-0.5 * (distance / sigma) * (distance / sigma))
+    }
+
+    HoverHandler {
+        id: dockZoomHover
+        enabled: root.dockZoomActive
+        onPointChanged:
+            root.dockPointerX = hovered ? point.position.x : -1
+        onHoveredChanged:
+            root.dockPointerX = hovered ? point.position.x : -1
+    }
     property string contextEntryId: ""
 
     objectName: "quickLaunchApplet"
@@ -148,8 +178,16 @@ Item {
                         color: entryButton.enabled ? Tokens.fg.default : Tokens.fg.disabled
                         symbolic: false
                         fallbackText: String(entryButton.modelData.displayText)
-                        scale: root.dockMode && entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0
-                        transformOrigin: Item.Center
+                        // Bottom-anchored swell inside the tile's reserved
+                        // envelope; the hovered tile is the falloff peak, so
+                        // the zoom subsumes the former flat hover bump.
+                        transformOrigin: Item.Bottom
+                        scale: !root.dockMode
+                               ? (entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0)
+                               : (root.reducedMotion ? 1.0
+                                                     : Math.max(1.0, root.dockZoomFor(
+                                                           entryButton.x
+                                                           + entryButton.width / 2)))
                         property real hoverLift: root.dockMode && entryButton.hovered && !root.reducedMotion ? -3 : 0
                         transform: Translate { y: entryIcon.hoverLift }
                         Accessible.ignored: true

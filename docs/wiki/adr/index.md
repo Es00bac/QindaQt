@@ -130,3 +130,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0115: share appearance through Qt platform theme](0115-share-appearance-through-qt-platform-theme.md)
 - [ADR-0116: build bundled applications on stock Qt 6](0116-build-bundled-applications-on-stock-qt6.md)
 - [ADR-0117: veto native resize for container members](0117-veto-native-resize-for-container-members.md)
+- [ADR-0118: user task-order overlay and panel quick settings](0118-user-task-order-overlay-and-panel-quick-settings.md)
+- [ADR-0119: authenticated window-preview channel](0119-authenticated-window-preview-channel.md)
+- [ADR-0120: panel translucency and blur](0120-panel-translucency-and-blur.md)

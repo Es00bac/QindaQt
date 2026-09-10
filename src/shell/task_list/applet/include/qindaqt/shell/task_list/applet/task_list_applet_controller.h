@@ -3,6 +3,10 @@
 
 #include "qindaqt/shell/task_list/applet/task_list_applet_types.h"
 #include "qindaqt/shell/task_list/operations/task_list_operations.h"
+
+#include <QImage>
+
+class QQmlEngine;
 #include "qindaqt/shell/task_list/task_list_filter.h"
 #include "qindaqt/shell/task_list/task_list_source.h"
 
@@ -21,6 +25,7 @@ class TaskListOperationAuthority;
 namespace QindaQt::ShellTaskListApplet {
 
 class TaskListAppletOperationPort;
+class TaskListAppletPreviewPort;
 
 // AGENT-CONTRACT: shell-composed facade exposed to the compiled
 // QindaQt.Shell.TaskList module as `access`. It borrows the T0 source (owned
@@ -44,6 +49,12 @@ class TaskListAppletController : public QObject {
   Q_PROPERTY(int entryCount READ entryCount NOTIFY stateReprojected)
   Q_PROPERTY(int totalEntryCount READ totalEntryCount NOTIFY stateReprojected)
   Q_PROPERTY(int overflowCount READ overflowCount NOTIFY stateReprojected)
+  // Presentation bound for the strip projection (default
+  // kMaxPresentedTaskEntries). A scrolling dock host raises it (up to
+  // kMaxPresentedDockEntries) so overflow scrolls instead of truncating;
+  // overflow truth and the cap contract are otherwise unchanged.
+  Q_PROPERTY(int presentationLimit READ presentationLimit
+                 WRITE setPresentationLimit NOTIFY stateReprojected)
   Q_PROPERTY(bool windowsReadGranted READ windowsReadGranted CONSTANT)
   Q_PROPERTY(bool windowsActivateGranted READ windowsActivateGranted CONSTANT)
   Q_PROPERTY(bool windowsManageGranted READ windowsManageGranted CONSTANT)
@@ -55,6 +66,13 @@ class TaskListAppletController : public QObject {
   Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)
   Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
   Q_PROPERTY(QString feedbackStatus READ feedbackStatus NOTIFY feedbackChanged)
+  // Hover preview seam (ADR-0119). Null port = previews unavailable and
+  // presentation keeps the text tooltip.
+  Q_PROPERTY(bool previewsEnabled READ previewsEnabled NOTIFY previewPortChanged)
+  // Persisted user-order overlay over the canonical order (ADR-0118).
+  // Settings feeds it at startup and on change; drags go through reorderTask.
+  Q_PROPERTY(QStringList userTaskOrder READ userTaskOrder WRITE
+                 setUserTaskOrder NOTIFY userTaskOrderChanged)
 
 public:
   using IconNameResolver = std::function<QString(const QString &applicationId)>;
@@ -87,6 +105,8 @@ public:
   // ShellDevelopment1 uses this count to prove compositor windows reached T1.
   [[nodiscard]] int totalWindowCount() const noexcept;
   [[nodiscard]] int overflowCount() const noexcept;
+  [[nodiscard]] int presentationLimit() const noexcept;
+  void setPresentationLimit(int limit);
   [[nodiscard]] bool windowsReadGranted() const noexcept;
   [[nodiscard]] bool windowsActivateGranted() const noexcept;
   [[nodiscard]] bool windowsManageGranted() const noexcept;
@@ -129,9 +149,48 @@ public:
 
   Q_INVOKABLE void clearFeedback();
 
+  // User reorder gesture (drag-and-drop or the keyboard "move" actions).
+  // movedTaskId must be a displayed row and the revision must be the
+  // displayed generationRevision; beforeTaskId is the row the moved task is
+  // inserted before, or empty to append. This is presentation preference
+  // only — no compositor operation is dispatched and no pending marker is
+  // set. On success the committed order is emitted for persistence.
+  Q_INVOKABLE bool reorderTask(const QString &movedTaskId,
+                               const QString &beforeTaskId, quint64 revision);
+
+  [[nodiscard]] QStringList userTaskOrder() const;
+  void setUserTaskOrder(const QStringList &order);
+
+  // Hover-preview observation (ADR-0119). Requests are bounded and
+  // superseded: at most one capture is in flight, a newer request drops the
+  // older one, and results are matched against the requested (taskId,
+  // revision) so a stale capture can never decorate a newer generation.
+  // Emitted with an empty image when the compositor cannot provide a
+  // preview; presentation falls back to the text tooltip.
+  Q_INVOKABLE void requestTaskPreview(const QString &taskId, quint64 revision,
+                                      int maxWidth, int maxHeight);
+  Q_INVOKABLE void cancelTaskPreview();
+  void setPreviewPort(TaskListAppletPreviewPort *port);
+  [[nodiscard]] bool previewsEnabled() const noexcept;
+  // Registers the QML image provider backing preview tokens. The engine
+  // owns the provider; the controller only feeds it. One engine, once.
+  void installPreviewProvider(QQmlEngine *engine);
+
+Q_SIGNALS:
+  // imageToken addresses the provider image ("image://qindaqt-task-preview/
+  // <token>"); 0 means the compositor could not provide a preview and
+  // presentation falls back to the text tooltip.
+  void previewArrived(const QString &taskId, quint64 revision, int imageToken);
+  void previewPortChanged();
+
 Q_SIGNALS:
   void stateReprojected();
   void feedbackChanged();
+  // Emitted only for a user-initiated order change (reorderTask), carrying
+  // the exact order to persist. Settings-driven setUserTaskOrder echoes do
+  // not emit it, so the runtime write path cannot loop.
+  void taskOrderCommitted(const QStringList &orderedTaskIds);
+  void userTaskOrderChanged();
 
 private Q_SLOTS:
   void handleAuthorityStateChanged();
@@ -173,11 +232,19 @@ private:
   ShellTaskList::TaskListSource &m_source;
   ShellTaskList::Producer::TaskListOperationAuthority &m_authority;
   TaskListAppletOperationPort &m_operations;
+  TaskListAppletPreviewPort *m_previewPort = nullptr;
+  class TaskListPreviewProvider *m_previewProvider = nullptr;
+  QString m_previewTaskId;
+  QString m_previewWindowId;
+  quint64 m_previewRevision = 0;
+  int m_previewGeneration = 0;
   TaskListAppletGrants m_grants;
   IconNameResolver m_iconNameResolver;
   IconResolvedResolver m_iconResolvedResolver;
   ShellTaskList::TaskListScope m_scope;
   TaskListAppletProjection m_projection;
+  int m_presentationLimit = kMaxPresentedTaskEntries;
+  QStringList m_userTaskOrder;
 
   QHash<quint64, PendingOperation> m_pendingByToken;
   QSet<QString> m_pendingTasks;

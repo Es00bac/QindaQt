@@ -87,6 +87,8 @@ class SettingsRouteLauncher;
 class ShellTokenPublisher;
 class WallpaperController;
 class TaskListAppletComposition;
+class TaskOrderPersistence;
+class PanelQuickConfig;
 
 class ShellRuntimeApplication final : public QObject {
     Q_OBJECT
@@ -204,6 +206,8 @@ private:
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
+    std::unique_ptr<TaskOrderPersistence> m_taskOrderPersistence;
+    std::unique_ptr<PanelQuickConfig> m_panelQuickConfig;
     std::unique_ptr<StatusNotifierAppletComposition> m_statusNotifierApplet;
     std::unique_ptr<DesktopControlsComposition> m_desktopControls;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;

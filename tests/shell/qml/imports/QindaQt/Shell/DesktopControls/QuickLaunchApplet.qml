@@ -11,6 +11,7 @@ Item {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    property bool dockZoomEnabled: true
 
     objectName: "quickLaunchApplet"
     implicitWidth: 48

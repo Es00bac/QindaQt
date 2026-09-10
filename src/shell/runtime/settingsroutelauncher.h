@@ -20,11 +20,15 @@ public:
     ~SettingsRouteLauncher() override;
     [[nodiscard]] const QString &errorText() const noexcept { return m_error; }
     Q_INVOKABLE bool openNotifications();
+    // Opens the Settings app's Customize (panel editing) route.
+    Q_INVOKABLE bool openCustomize();
+    Q_INVOKABLE bool openRoute(const QString &page);
 Q_SIGNALS:
     void errorTextChanged();
 private:
     Launch m_launch;
     std::unique_ptr<QProcess> m_containedProcess;
+    QString m_containedPage;
     QString m_error;
 };
 

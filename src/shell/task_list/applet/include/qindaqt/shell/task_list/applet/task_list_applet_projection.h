@@ -15,9 +15,10 @@ namespace QindaQt::ShellTaskListApplet {
 // controller enforces that no intent dispatches while the source is degraded.
 //
 // AGENT-CONTRACT: row order is exactly the T0 canonical order (also the
-// keyboard traversal order). The cap truncates the tail only; overflowCount
-// must always equal totalCount - rows.size() so the strip's overflow truth
-// cannot drift from the actual projection.
+// keyboard traversal order). The maxPresentedEntries bound truncates the tail
+// only; overflowCount must always equal totalCount - rows.size() so the
+// strip's overflow truth cannot drift from the actual projection. Hosts that
+// scroll instead of truncating pass kMaxPresentedDockEntries.
 class TaskListAppletProjectionModel final {
 public:
   TaskListAppletProjectionModel() = delete;
@@ -25,7 +26,8 @@ public:
   [[nodiscard]] static TaskListAppletProjection
   project(const ShellTaskList::TaskListPresentation &presentation,
           const QSet<QString> &pendingTaskIds, bool windowsReadGranted,
-          quint64 generationRevision);
+          quint64 generationRevision,
+          int maxPresentedEntries = kMaxPresentedTaskEntries);
 
   // Deterministic icon placeholder: the first alphanumeric character of the
   // application name (then id) uppercased, or "?". Never derived from the

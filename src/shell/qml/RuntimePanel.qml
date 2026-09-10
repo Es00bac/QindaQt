@@ -7,6 +7,7 @@ Window {
     required property var panel
     required property var theme
     required property string surfaceId
+    property var panelQuickConfig: null
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
@@ -28,6 +29,7 @@ Window {
         anchors.fill: parent
         panel: root.panel
         theme: root.theme
+        panelQuickConfig: root.panelQuickConfig
         liveApplets: true
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess

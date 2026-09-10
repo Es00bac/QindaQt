@@ -145,14 +145,19 @@ cannot inflate the panel and their controls remain reachable from a
 non-focusable layer-shell panel. Escape closes these detail surfaces through the focused popup window.
 
 Centered bottom panels whose resolved applets request `dockMode` paint a
-content-hugging rounded shelf inside their solver-owned surface. The runtime
+content-hugging rounded shelf inside their solver-owned surface, which solves
+at full edge length so the shelf can grow with dock content and scroll beyond
+full width ([Dock interactions](dock-interactions.md)). The runtime
 window factory tracks the QML-painted bounds and applies a `QWindow` input mask
 that includes the token hover allowance. This makes the transparent planned
 margins pass desktop input through while retaining hover magnification inside
 the bounded dock surface. The mask returns to the full surface for non-dock
 panels. QML uses only published QST colors and the read-only accessibility
-projection: reduced transparency or high contrast produces opaque material;
-there is no local blur effect.
+projection. A panel material is translucent only when the theme, the
+accessibility projection, and the per-panel quick setting all allow it, and
+the shell then requests compositor blur-behind (`org_kde_kwin_blur`) for
+exactly the painted region ([ADR-0120](../adr/0120-panel-translucency-and-blur.md));
+reduced transparency or high contrast produces opaque material.
 Edge reveal/hold producers, hide animation, applet process hosting, and
 settings preview subscription remain later acceptance work.
 
@@ -186,7 +191,7 @@ adversarial layouts. Bounded per-role protocol evidence requires the exact
 output association, initial role layer, and committed layer, anchor mask,
 exclusive edge/zone, and desired size for a deterministic two-panel proof
 profile under nested KWin at 1080p, WUXGA, and 1440p. The fixture retains the
-QindaQt profile's top-bar and centered 52%-width shelf geometry but gives both
+QindaQt profile's top-bar and a centered shelf of the fixture's own 52% length but gives both
 panels `never` hide mode, preventing the probe's maximized client from racing
 the separate intelligent-hide policy. The matching configure must have
 observed that committed epoch and then

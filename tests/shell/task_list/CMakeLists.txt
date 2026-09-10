@@ -109,6 +109,11 @@ qindaqt_add_task_list_test(
     tst_task_list_presentation.cpp
     qindaqt.task-list-presentation
 )
+qindaqt_add_task_list_test(
+    qindaqt_task_list_order_tests
+    tst_task_list_order.cpp
+    qindaqt.task-list-order
+)
 
 qindaqt_add_task_list_transport_test(
     qindaqt_task_list_wire_tests
@@ -396,6 +401,38 @@ if(TARGET qindaqt-shell)
 
     find_program(QINDAQT_TASK_LIST_DBUS_RUN_SESSION dbus-run-session REQUIRED)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime")
+
+    # Settings1 round-trip for the persisted user task order over a fake
+    # transport: no bus, no service, and no user configuration is touched.
+    qt_add_executable(
+        qindaqt_task_order_persistence_tests
+        tst_task_order_persistence.cpp
+        task_list_applet_test_fakes.h
+        task_list_operation_test_support.h
+        task_list_test_support.h
+        "${task_list_boundary_source_root}/src/shell/runtime/taskorderpersistence.cpp"
+        "${task_list_boundary_source_root}/src/shell/runtime/taskorderpersistence.h"
+    )
+    target_include_directories(
+        qindaqt_task_order_persistence_tests
+        PRIVATE "${task_list_boundary_source_root}/src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_task_order_persistence_tests
+        PRIVATE
+            QindaQt::SettingsClient
+            QindaQt::SettingsProtocol
+            QindaQt::ShellTaskListApplet
+            Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_task_order_persistence_tests)
+    add_test(NAME qindaqt.task-order-persistence
+             COMMAND $<TARGET_FILE:qindaqt_task_order_persistence_tests>)
+    set_tests_properties(
+        qindaqt.task-order-persistence
+        PROPERTIES LABELS "shell;task-list;pure"
+    )
+
     qt_add_executable(
         qindaqt_task_list_applet_composition_private_bus_tests
         tst_task_list_applet_composition_private_bus.cpp

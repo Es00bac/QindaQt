@@ -52,6 +52,7 @@ private slots:
   void readyPhaseCarriesNoReason();
   void degradedPhaseKeepsRetainedRows();
   void overflowTruthIsExactAndKeepsTheCanonicalHead();
+  void dockBoundPresentsEveryRowWithoutOverflow();
   void rowFieldsMirrorTheEntryAndStampTheRevision();
   void pendingMarkersFlagOnlyNamedTasks();
   void iconPlaceholderIsDeterministicWithFallbacks();
@@ -135,6 +136,42 @@ void TaskListAppletProjectionTests::overflowTruthIsExactAndKeepsTheCanonicalHead
   QCOMPARE(projection.rows.constLast().taskId, QStringLiteral("w-0063"));
   QCOMPARE(projection.rows.constLast().keyboardIndex,
            kMaxPresentedTaskEntries);
+}
+
+void TaskListAppletProjectionTests::dockBoundPresentsEveryRowWithoutOverflow() {
+  // A scrolling dock host raises the bound past the taskbar cap: every row
+  // stays projected, so the zone viewport scrolls instead of truncating and
+  // overflow truth drops to zero.
+  QVector<TaskEntry> entries;
+  entries.reserve(kMaxPresentedTaskEntries + 40);
+  for (int index = 0; index < kMaxPresentedTaskEntries + 40; ++index) {
+    entries.append(makeEntry(QStringLiteral("w-%1").arg(index, 4, 10,
+                                                         QLatin1Char('0')),
+                             kAppOne));
+  }
+  const auto docked = TaskListAppletProjectionModel::project(
+      presentationOf(TaskListState::Ready, entries), {}, true, quint64(13),
+      kMaxPresentedDockEntries);
+  QCOMPARE(docked.rows.size(), entries.size());
+  QCOMPARE(docked.overflowCount, 0);
+  QCOMPARE(docked.rows.constFirst().taskId, QStringLiteral("w-0000"));
+  QCOMPARE(docked.rows.constLast().keyboardIndex, entries.size());
+
+  // The bound is clamped into the documented range, so a hostile value can
+  // neither disable presentation nor exceed the fact ceiling.
+  const auto clampedLow = TaskListAppletProjectionModel::project(
+      presentationOf(TaskListState::Ready,
+                     {makeEntry(QStringLiteral("w-1"), kAppOne),
+                      makeEntry(QStringLiteral("w-2"), kAppTwo)}),
+      {}, true, quint64(13), 0);
+  QCOMPARE(clampedLow.rows.size(), 1);
+  QCOMPARE(clampedLow.overflowCount, 1);
+  const auto clampedHigh = TaskListAppletProjectionModel::project(
+      presentationOf(TaskListState::Ready,
+                     {makeEntry(QStringLiteral("w-1"), kAppOne)}),
+      {}, true, quint64(13), kMaxPresentedDockEntries * 4);
+  QCOMPARE(clampedHigh.rows.size(), 1);
+  QCOMPARE(clampedHigh.overflowCount, 0);
 }
 
 void TaskListAppletProjectionTests::rowFieldsMirrorTheEntryAndStampTheRevision() {

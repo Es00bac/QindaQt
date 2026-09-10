@@ -19,6 +19,7 @@ SettingsRouteLauncher::SettingsRouteLauncher(Launch launch, QObject *parent)
             && !containedProgram.isEmpty();
         if (containedDevelopmentLaunch) {
             m_containedProcess = std::make_unique<QProcess>();
+            m_containedPage = QStringLiteral("notifications");
             m_launch = [this, containedProgram](QString *error) {
                 if (m_containedProcess->state() != QProcess::NotRunning) {
                     return true;
@@ -34,7 +35,7 @@ SettingsRouteLauncher::SettingsRouteLauncher(Launch launch, QObject *parent)
                 }
                 m_containedProcess->setProgram(program.absoluteFilePath());
                 m_containedProcess->setArguments(
-                    {QStringLiteral("--page"), QStringLiteral("notifications")});
+                    {QStringLiteral("--page"), m_containedPage});
                 m_containedProcess->setProcessChannelMode(QProcess::ForwardedChannels);
                 m_containedProcess->start();
                 if (!m_containedProcess->waitForStarted(3'000)) {
@@ -76,8 +77,29 @@ SettingsRouteLauncher::~SettingsRouteLauncher()
 
 bool SettingsRouteLauncher::openNotifications()
 {
+    return openRoute(QStringLiteral("notifications"));
+}
+
+bool SettingsRouteLauncher::openCustomize()
+{
+    return openRoute(QStringLiteral("customize"));
+}
+
+bool SettingsRouteLauncher::openRoute(const QString &page)
+{
     QString error;
-    const bool started = m_launch(&error);
+    bool started = false;
+    m_containedPage = page;
+    if (m_launch) {
+        started = m_launch(&error);
+    } else {
+        started = QProcess::startDetached(
+            QStringLiteral("qindaqt-settings"),
+            {QStringLiteral("--page"), page});
+        if (!started) {
+            error = QStringLiteral("Could not open settings page %1").arg(page);
+        }
+    }
     error = error.left(512);
     if (m_error != error) {
         m_error = std::move(error);

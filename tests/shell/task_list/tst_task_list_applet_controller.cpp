@@ -2,6 +2,7 @@
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
 #include <QSignalSpy>
+#include <QQmlEngine>
 #include <QtTest>
 
 #include "task_list_applet_test_fakes.h"
@@ -13,6 +14,7 @@ using namespace QindaQt::ShellTaskList::Operations;
 using namespace QindaQt::ShellTaskListApplet;
 using TaskListOperationTest::FakeOperationAuthority;
 using TaskListAppletTest::FakeTaskListOperationPort;
+using TaskListAppletTest::FakePreviewPort;
 
 namespace {
 
@@ -68,6 +70,11 @@ private slots:
   void containerOperationsFenceMembershipAndRevision();
   void dockWindowsResolvesPrimariesAndFences();
   void scopeSettersReprojectAndClearFeedbackDismisses();
+  void presentationLimitRaisesDockBoundAndClamps();
+  void userOrderOverlayReordersDisplayedRowsWithoutCommitting();
+  void reorderTaskFencesStaleRevisionAndUnknownIds();
+  void reorderTaskCommitsAndPersistsAcrossGenerations();
+  void previewRequestsAreFencedBoundedAndSuperseded();
   void iconEvidenceRequiresBothMetadataAndThemeResolution();
 };
 
@@ -557,6 +564,259 @@ void TaskListAppletControllerTests::iconEvidenceRequiresBothMetadataAndThemeReso
            QVariant(QStringLiteral("preferences-system")));
   QCOMPARE(rows[0].toMap().value(QStringLiteral("iconResolved")), QVariant(true));
   QCOMPARE(rows[1].toMap().value(QStringLiteral("iconResolved")), QVariant(false));
+}
+
+void TaskListAppletControllerTests::presentationLimitRaisesDockBoundAndClamps() {
+  ControllerFixture fixture;
+  TaskListAppletController controller(fixture.source, fixture.authority,
+                                      fixture.port, allGrants());
+  QCOMPARE(controller.presentationLimit(), kMaxPresentedTaskEntries);
+
+  // One window past the taskbar cap, so overflow truth is exact in both modes.
+  QVector<TaskWindowFact> facts;
+  facts.reserve(kMaxPresentedTaskEntries + 1);
+  for (int index = 0; index <= kMaxPresentedTaskEntries; ++index) {
+    facts.append(TaskListTest::standalone(
+        QStringLiteral("w-%1").arg(index, 4, 10, QLatin1Char('0')),
+        QStringLiteral("app.%1").arg(index, 4, 10, QLatin1Char('0'))));
+  }
+  publishReady(fixture, facts);
+  QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+  QCOMPARE(controller.entryCount(), kMaxPresentedTaskEntries);
+  QCOMPARE(controller.overflowCount(), 1);
+
+  // Raising the bound (dock host) presents every row; overflow truth follows.
+  QSignalSpy reprojectedSpy(&controller,
+                            &TaskListAppletController::stateReprojected);
+  controller.setPresentationLimit(kMaxPresentedDockEntries);
+  QCOMPARE(controller.presentationLimit(), kMaxPresentedDockEntries);
+  QCOMPARE(controller.entryCount(), kMaxPresentedTaskEntries + 1);
+  QCOMPARE(controller.overflowCount(), 0);
+  QCOMPARE(reprojectedSpy.size(), 1);
+
+  // The bound is clamped into [1, kMaxPresentedDockEntries]; a lower bound
+  // truncates again with exact overflow truth.
+  controller.setPresentationLimit(0);
+  QCOMPARE(controller.presentationLimit(), 1);
+  QCOMPARE(controller.entryCount(), 1);
+  QCOMPARE(controller.overflowCount(), kMaxPresentedTaskEntries);
+
+  // Setting the same value is a no-op without a reprojection.
+  QSignalSpy reprojectedAgain(&controller,
+                              &TaskListAppletController::stateReprojected);
+  controller.setPresentationLimit(1);
+  QCOMPARE(reprojectedAgain.size(), 0);
+}
+
+void TaskListAppletControllerTests::userOrderOverlayReordersDisplayedRowsWithoutCommitting() {
+  ControllerFixture fixture;
+  TaskListAppletController controller(fixture.source, fixture.authority,
+                                      fixture.port, allGrants());
+  publishReady(fixture,
+               {TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.1")),
+                TaskListTest::standalone(QStringLiteral("w2"), QStringLiteral("app.2")),
+                TaskListTest::standalone(QStringLiteral("w3"), QStringLiteral("app.3"))});
+  QCOMPARE(controller.entryRows().at(0).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w1")));
+
+  // Settings-fed overlay: the displayed (and traversal) order changes, but
+  // no commit is emitted — settings is the source, not the user gesture.
+  // Normalization drops the blanks and the duplicate before retaining.
+  QSignalSpy committedSpy(
+      &controller, &TaskListAppletController::taskOrderCommitted);
+  controller.setUserTaskOrder({QStringLiteral("w3"), QString{},
+                               QStringLiteral("w3"), QStringLiteral("   ")});
+  const auto rows = controller.entryRows();
+  QCOMPARE(rows.size(), 3);
+  QCOMPARE(rows.at(0).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w3")));
+  QCOMPARE(rows.at(0).toMap().value(QStringLiteral("keyboardIndex")),
+           QVariant(1));
+  QCOMPARE(rows.at(1).toMap().value(QStringLiteral("keyboardIndex")),
+           QVariant(2));
+  QCOMPARE(controller.userTaskOrder(),
+           (QStringList{QStringLiteral("w3")}));
+  QCOMPARE(committedSpy.size(), 0);
+
+  // An exact echo (the settings snapshot observing its own write) is a
+  // no-op: no reprojection and no property notification.
+  QSignalSpy changedSpy(&controller,
+                        &TaskListAppletController::userTaskOrderChanged);
+  QSignalSpy reprojectedSpy(&controller,
+                            &TaskListAppletController::stateReprojected);
+  controller.setUserTaskOrder({QStringLiteral("w3")});
+  QCOMPARE(changedSpy.size(), 0);
+  QCOMPARE(reprojectedSpy.size(), 0);
+}
+
+void TaskListAppletControllerTests::reorderTaskFencesStaleRevisionAndUnknownIds() {
+  ControllerFixture fixture;
+  TaskListAppletController controller(fixture.source, fixture.authority,
+                                      fixture.port, allGrants());
+  publishReady(fixture,
+               {TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.1")),
+                TaskListTest::standalone(QStringLiteral("w2"), QStringLiteral("app.2")),
+                TaskListTest::standalone(QStringLiteral("w3"), QStringLiteral("app.3"))});
+  const quint64 revision = fixture.source.revision();
+  QSignalSpy committedSpy(
+      &controller, &TaskListAppletController::taskOrderCommitted);
+
+  // A stale revision is refused exactly like every other intent: the user
+  // can only reorder the generation they actually see.
+  QVERIFY(!controller.reorderTask(QStringLiteral("w2"), QString{},
+                                  revision + 1));
+  QVERIFY(controller.feedbackPresent());
+  QCOMPARE(committedSpy.size(), 0);
+  controller.clearFeedback();
+
+  // Unknown moved/drop targets are refused without touching state.
+  QVERIFY(!controller.reorderTask(QStringLiteral("w-gone"), QString{},
+                                  revision));
+  QVERIFY(!controller.reorderTask(QStringLiteral("w1"),
+                                  QStringLiteral("w-gone"), revision));
+  QVERIFY(!controller.reorderTask(QStringLiteral("w1"), QStringLiteral("w1"),
+                                  revision));
+  QCOMPARE(controller.entryRows().at(0).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w1")));
+  QCOMPARE(committedSpy.size(), 0);
+
+  // Read denial refuses reorder before anything else.
+  ControllerFixture deniedFixture;
+  TaskListAppletController denied(deniedFixture.source, deniedFixture.authority,
+                                  deniedFixture.port, {false, true, true});
+  publishReady(deniedFixture,
+               {TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.1"))});
+  QVERIFY(!denied.reorderTask(QStringLiteral("w1"), QString{}, 1));
+  QVERIFY(denied.feedbackPresent());
+}
+
+void TaskListAppletControllerTests::reorderTaskCommitsAndPersistsAcrossGenerations() {
+  ControllerFixture fixture;
+  TaskListAppletController controller(fixture.source, fixture.authority,
+                                      fixture.port, allGrants());
+  publishReady(fixture,
+               {TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.1")),
+                TaskListTest::standalone(QStringLiteral("w2"), QStringLiteral("app.2")),
+                TaskListTest::standalone(QStringLiteral("w3"), QStringLiteral("app.3"))});
+  const quint64 revision = fixture.source.revision();
+  QSignalSpy committedSpy(
+      &controller, &TaskListAppletController::taskOrderCommitted);
+
+  // Drag w3 into the gap before w2: the committed order is the exact list to
+  // persist, and the displayed order follows.
+  QVERIFY(controller.reorderTask(QStringLiteral("w3"),
+                                 QStringLiteral("w2"), revision));
+  QCOMPARE(committedSpy.size(), 1);
+  QCOMPARE(committedSpy.first().at(0).value<QStringList>(),
+           (QStringList{QStringLiteral("w1"), QStringLiteral("w3"),
+                        QStringLiteral("w2")}));
+  QCOMPARE(controller.userTaskOrder(),
+           (QStringList{QStringLiteral("w1"), QStringLiteral("w3"),
+                        QStringLiteral("w2")}));
+  const auto rows = controller.entryRows();
+  QCOMPARE(rows.at(1).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w3")));
+  QCOMPARE(rows.at(1).toMap().value(QStringLiteral("keyboardIndex")),
+           QVariant(2));
+
+  // A new generation (w4 arrives) re-projects canonically; the stored
+  // overlay still wins for the known ids and w4 joins at its canonical tail.
+  publishReady(fixture,
+               {TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.1")),
+                TaskListTest::standalone(QStringLiteral("w2"), QStringLiteral("app.2")),
+                TaskListTest::standalone(QStringLiteral("w3"), QStringLiteral("app.3")),
+                TaskListTest::standalone(QStringLiteral("w4"), QStringLiteral("app.4"))});
+  QCOMPARE(controller.entryRows().at(0).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w1")));
+  QCOMPARE(controller.entryRows().at(1).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w3")));
+  QCOMPARE(controller.entryRows().at(2).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w2")));
+  QCOMPARE(controller.entryRows().at(3).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w4")));
+
+  // Append semantics against the fresh generation: an empty drop target
+  // moves the task to the end. The stored order is the full displayed order,
+  // so w4 joins it too.
+  const quint64 nextRevision = fixture.source.revision();
+  QVERIFY(controller.reorderTask(QStringLiteral("w1"), QString{}, nextRevision));
+  QCOMPARE(controller.userTaskOrder(),
+           (QStringList{QStringLiteral("w3"), QStringLiteral("w2"),
+                        QStringLiteral("w4"), QStringLiteral("w1")}));
+  QCOMPARE(controller.entryRows().at(3).toMap().value(QStringLiteral("taskId")),
+           QVariant(QStringLiteral("w1")));
+  QCOMPARE(controller.entryRows().at(3).toMap().value(QStringLiteral("keyboardIndex")),
+           QVariant(4));
+}
+
+void TaskListAppletControllerTests::previewRequestsAreFencedBoundedAndSuperseded() {
+  ControllerFixture fixture;
+  TaskListAppletController controller(fixture.source, fixture.authority,
+                                      fixture.port, allGrants());
+  // No port: previews are disabled and requests are inert no-ops.
+  QCOMPARE(controller.previewsEnabled(), false);
+  controller.requestTaskPreview(QStringLiteral("w1"), 1, 320, 200);
+
+  FakePreviewPort previewPort;
+  controller.setPreviewPort(&previewPort);
+  QCOMPARE(controller.previewsEnabled(), true);
+  publishReady(fixture,
+               {TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.1")),
+                TaskListTest::standalone(QStringLiteral("w2"), QStringLiteral("app.2"))});
+  const quint64 revision = fixture.source.revision();
+
+  QQmlEngine engine;
+  controller.installPreviewProvider(&engine);
+
+  QSignalSpy arrivedSpy(&controller,
+                        &TaskListAppletController::previewArrived);
+  controller.requestTaskPreview(QStringLiteral("w1"), revision, 320, 200);
+  QCOMPARE(previewPort.calls.size(), 1);
+  QCOMPARE(previewPort.calls.last().windowId, QStringLiteral("w1"));
+  QCOMPARE(previewPort.calls.last().revision, revision);
+  QCOMPARE(previewPort.calls.last().maxSize, QSize(320, 200));
+
+  // A stale revision request never reaches the port.
+  controller.requestTaskPreview(QStringLiteral("w1"), revision + 1, 320, 200);
+  QCOMPARE(previewPort.calls.size(), 1);
+
+  // An unavailable capture surfaces as a zero token (tooltip fallback).
+  previewPort.replyOk = false;
+  previewPort.autoReply = true;
+  controller.requestTaskPreview(QStringLiteral("w2"), revision, 320, 200);
+  QCOMPARE(arrivedSpy.size(), 1);
+  QCOMPARE(arrivedSpy.at(0).at(0).toString(), QStringLiteral("w2"));
+  QCOMPARE(arrivedSpy.at(0).at(2).toInt(), 0);
+
+  // A capture for a superseded request is dropped: only the newest
+  // (taskId, revision) pair may decorate the strip.
+  arrivedSpy.clear();
+  previewPort.autoReply = false;
+  previewPort.replyImage = QImage(64, 48, QImage::Format_ARGB32);
+  controller.requestTaskPreview(QStringLiteral("w1"), revision, 320, 200);
+  const auto superseded = previewPort.calls.takeLast();
+  controller.requestTaskPreview(QStringLiteral("w2"), revision, 320, 200);
+  Q_EMIT previewPort.previewFinished(
+      TaskListAppletTest::FakePreviewPort::makeResult(
+          superseded.windowId, superseded.revision, true,
+          QImage(64, 48, QImage::Format_ARGB32)));
+  QCOMPARE(arrivedSpy.size(), 0);
+  Q_EMIT previewPort.previewFinished(
+      TaskListAppletTest::FakePreviewPort::makeResult(
+          QStringLiteral("w2"), revision, true,
+          QImage(64, 48, QImage::Format_ARGB32)));
+  QCOMPARE(arrivedSpy.size(), 1);
+  QVERIFY(arrivedSpy.at(0).at(2).toInt() > 0);
+
+  // Cancel drops the in-flight attribution.
+  controller.requestTaskPreview(QStringLiteral("w1"), revision, 320, 200);
+  controller.cancelTaskPreview();
+  arrivedSpy.clear();
+  Q_EMIT previewPort.previewFinished(
+      TaskListAppletTest::FakePreviewPort::makeResult(
+          QStringLiteral("w1"), revision, true,
+          QImage(64, 48, QImage::Format_ARGB32)));
+  QCOMPARE(arrivedSpy.size(), 0);
 }
 
 QTEST_GUILESS_MAIN(TaskListAppletControllerTests)

@@ -24,6 +24,7 @@ Rectangle {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    property bool dockZoomEnabled: true
     property bool dockHasLauncherGroup: false
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
@@ -148,6 +149,7 @@ Rectangle {
         dockMode: root.dockMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
+        dockZoomEnabled: root.dockZoomEnabled
         dockHasLauncherGroup: root.dockHasLauncherGroup
     }
 

@@ -4,6 +4,9 @@
 #include "qindaqt/shell/task_list/applet/task_list_applet_projection.h"
 #include "qindaqt/shell/task_list/applet/task_list_applet_operation_port.h"
 #include "qindaqt/shell/task_list/producer/task_list_operation_authority.h"
+#include "qindaqt/shell/task_list/task_list_order.h"
+
+#include <algorithm>
 
 namespace QindaQt::ShellTaskListApplet {
 
@@ -118,6 +121,20 @@ int TaskListAppletController::overflowCount() const noexcept {
   return m_projection.overflowCount;
 }
 
+int TaskListAppletController::presentationLimit() const noexcept {
+  return m_presentationLimit;
+}
+
+void TaskListAppletController::setPresentationLimit(int limit) {
+  const int clamped =
+      std::clamp(limit, 1, kMaxPresentedDockEntries);
+  if (clamped == m_presentationLimit) {
+    return;
+  }
+  m_presentationLimit = clamped;
+  reproject();
+}
+
 bool TaskListAppletController::windowsReadGranted() const noexcept {
   return m_grants.windowsRead;
 }
@@ -204,11 +221,17 @@ void TaskListAppletController::handleAuthorityStateChanged() {
 }
 
 void TaskListAppletController::reproject() {
-  const ShellTaskList::TaskListPresentation presentation =
+  ShellTaskList::TaskListPresentation presentation =
       ShellTaskList::TaskListPresentationModel::project(
           m_source.status(), m_source.generation(), m_scope);
+  // AGENT-CONTRACT: the user-order overlay permutes entries and identities
+  // together and re-numbers keyboardIndex along the displayed order, so
+  // traversal order is always the order the strip presents.
+  ShellTaskList::TaskListOrder::applyOverlay(
+      m_userTaskOrder, presentation.entries, presentation.identities);
   m_projection = TaskListAppletProjectionModel::project(
-      presentation, m_pendingTasks, m_grants.windowsRead, m_source.revision());
+      presentation, m_pendingTasks, m_grants.windowsRead, m_source.revision(),
+      m_presentationLimit);
   // AGENT-NOTE: the T0 presentation flattens any degraded projection with no
   // visible entries to Empty. The accepted contract (task-list.md,
   // "Presentation") distinguishes a failed FIRST refresh — Degraded with no
