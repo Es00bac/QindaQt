@@ -1,5 +1,59 @@
 # Integration handoff
 
+## Bundled applications on stock Qt 6 (September 10)
+
+[ADR-0116](wiki/adr/0116-build-bundled-applications-on-stock-qt6.md) retired
+the custom token UI for bundled applications and scoped QST-1/`QindaQt.Controls`
+to system surfaces (shell, panels, Settings, Settings Center, Welcome). All
+four bundled apps now render with stock Qt 6: the QML apps (Calendar, File
+Manager) use stock QtQuick.Controls over the platform-theme palette; the
+widget apps (Terminal, Text Editor) take palette/fonts from the Qt platform
+theme (ADR-0115) with no token projection or application QSS. AppShell
+lifecycle, action catalogs, and the fail-closed global-menu export are
+unchanged seams.
+
+Commits on `main`, each verified at its own tree:
+
+| Lane | Commits | Content | Focused rows |
+| --- | --- | --- | --- |
+| Decision record | `40bd202c` | ADR-0116 + re-scoped coding-practices, module boundaries, controls gate docs | docs gates only |
+| Calendar | `737ebf27`, `34013338` | untracked app stabilized and committed; stock-Controls conversion; real event editing (RFC 5545 revision, stable UID) + details pane; orphaned tests registered; wiki page; ebuild component + kcalendarcore | 12/12 |
+| File Manager | `337edf3a`, `5d54c653` | stock-Controls conversion; clipboard cut/copy/paste, drag-and-drop, properties dialog, bounded recursive search through the identity-checked mutation layer | 31/31 |
+| Text Editor | `504ff587`, `942b13e3` | chrome de-projection (platform theme + Fusion); printing (dialog-free PDF seam for tests); bounded crash-recovery autosave with explicit Restore/Discard consent | 27/27 |
+| Terminal | `b8cfa02a`, `92cd4575` | chrome de-projection; opt-in session restore (profile id + cwd only, consume-on-launch); OSC-8 pinned unsupported with qtermwidget 2.4.0 header evidence | 24/24 |
+| Gate fix-ups | `dc992d63` | font-bootstrap wiring gate re-scoped to ADR-0116 call set; Terminal `main()` decomposed under the source-shape limit | 25/25 (terminal + font wiring) |
+
+Full Debug build passes under `-Werror`. `mkdocs build --strict`,
+`tools/docs_validation.py` (221 documents), and `check-source-shape` pass with
+no findings in the program's paths.
+
+### Coverage limits at handoff
+
+- The five `qindaqt.settings-*-installed-route` package rows fail in this
+  checkout for an environmental reason that predates the program: the
+  system-wide Portage installs (September 8/9) placed `QindaQt/SettingsApp`
+  modules in `/usr/lib64/qt6/qml`, so the relocation-poison stage borrows the
+  host-installed module instead of failing closed on the staged prefix
+  (proven by `QML_IMPORT_TRACE`: `locateLocalQmldir ... found at
+  "/usr/lib64/qt6/qml/QindaQt/SettingsApp/Color/qmldir"`). The staged package
+  itself is unchanged; the harness assumption "only the staged prefix can
+  provide the module" no longer holds on this host. Release/settings lane
+  should run these rows in a host-unset environment or teach the check to
+  mask the system QML root.
+- Display-dependent rows (fonts coordinator, display-settings-model,
+  clipboard-applet) require the session socket (`WAYLAND_DISPLAY=qindaqt-0`)
+  and pass with it set.
+- Editor printing claims the dialog-free PDF seam and offscreen rows only;
+  physical printers are unqualified. Terminal restore persists profile id and
+  working directory only — never scrollback or command content. Calendar
+  reminders fire only while the app runs; no CalDAV/tasks/attendees. File
+  Manager per-volume Trash, mounts, network locations, preview pane, and
+  open-with remain open (S4–S5).
+- The r1/r3 desktop ebuilds pin pre-program commits; re-pin at or after
+  `dc992d63` and rebuild through Portage to ship these apps. The calendar
+  lane already updated the apps ebuild component set and the ADR-0096
+  component list.
+
 ## Live shell refresh without logout (September 8)
 
 After the verified r1 installation, the user requested a refresh while keeping
