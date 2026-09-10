@@ -40,6 +40,15 @@ void ShellAppearanceBridge::applySnapshot() {
             << decodeError;
         return;
     }
+    // The first confirmed snapshot only latches the layout baseline (the
+    // startup read already resolved it); later changes are adoption events.
+    if (!m_layoutProfileLatched) {
+        m_layoutProfileLatched = true;
+        m_lastLayoutProfileId = values->layoutProfileId;
+    } else if (values->layoutProfileId != m_lastLayoutProfileId) {
+        m_lastLayoutProfileId = values->layoutProfileId;
+        emit layoutProfilePreferenceChanged(values->layoutProfileId);
+    }
     m_lastConfirmed = *values;
     m_tokens.setFontFamilyOverride(values->fontFamily);
     m_tokens.setAccessibilityInputs(values->accessibility);

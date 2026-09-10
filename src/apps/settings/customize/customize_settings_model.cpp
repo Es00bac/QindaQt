@@ -132,7 +132,7 @@ QString CustomizeSettingsModel::statusText() const
         return QStringLiteral("Unapplied layout changes");
     }
     return QStringLiteral(
-        "Your applied layout will be used the next time you start your desktop");
+        "The running desktop follows each applied layout change");
 }
 
 QString CustomizeSettingsModel::errorText() const

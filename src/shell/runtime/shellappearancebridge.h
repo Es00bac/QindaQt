@@ -26,9 +26,9 @@ class ShellTokenPublisher;
 // quieting bridge). An explicit --theme command-line selection outranks the
 // appearance.theme preference for the process lifetime.
 //
-// Layout profile changes are deliberately not applied live; the Customize
-// route promises adoption at the next shell start, which the startup read in
-// shellstartuppreferences.h performs.
+// Layout profile changes are surfaced as layoutProfilePreferenceChanged for
+// the runtime to adopt through surface reconciliation; the initial snapshot
+// only latches the baseline and never re-triggers adoption.
 class ShellAppearanceBridge final : public QObject {
     Q_OBJECT
 
@@ -50,6 +50,11 @@ signals:
     // hold raw theme maps use this to refresh existing and future surfaces.
     void confirmedPreferencesChanged();
 
+    // Emitted only when a newly confirmed snapshot names a different
+    // panels.layoutProfile than the last confirmed one. The runtime owns the
+    // adoption policy (catalog reload, precedence, reconciliation).
+    void layoutProfilePreferenceChanged(const QString &profileId);
+
 private:
     void applySnapshot();
 
@@ -57,6 +62,8 @@ private:
     Themes::ThemeCatalog &m_themes;
     ShellTokenPublisher &m_tokens;
     std::optional<ShellPreferenceValues> m_lastConfirmed;
+    QString m_lastLayoutProfileId;
+    bool m_layoutProfileLatched = false;
     bool m_themeLockedByCli = false;
 };
 

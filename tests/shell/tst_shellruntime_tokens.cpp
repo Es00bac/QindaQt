@@ -16,6 +16,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QSignalSpy>
 #include <QTest>
 
 #include <memory>
@@ -153,6 +154,7 @@ private slots:
     void accessibilityInputsRepublishTokens();
     void appearanceBridgeAppliesConfirmedSnapshots();
     void appearanceBridgeCliThemeLockRetainsAccessibility();
+    void layoutPreferenceChangeIsSurfacedOnceLatched();
 };
 
 void ShellRuntimeTokenTests::productionPublisherPrecedesHostedApplet()
@@ -405,6 +407,79 @@ void ShellRuntimeTokenTests::appearanceBridgeCliThemeLockRetainsAccessibility()
     QTRY_COMPARE_WITH_TIMEOUT(
         publisher.facade()->type().value(QStringLiteral("body")).toDouble(),
         24.0, 2'000);
+}
+
+void ShellRuntimeTokenTests::layoutPreferenceChangeIsSurfacedOnceLatched()
+{
+    using namespace QindaQt::Services::SettingsClient;
+
+    QindaQt::Themes::ThemeCatalog themes;
+    QString error;
+    QVERIFY2(themes.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"), &error),
+             qPrintable(error));
+    QVERIFY(themes.selectById(QStringLiteral("qinda-dark")));
+
+    QQmlEngine engine;
+    engine.addImportPath(QStringLiteral(QINDAQT_QML_BUILD_DIR));
+    QindaQt::Shell::ShellTokenPublisher publisher(engine, themes);
+    QVERIFY2(publisher.start(&error), qPrintable(error));
+
+    BridgeTransport transport;
+    SettingsClient client(transport, QindaQt::Shell::ShellPreferenceValues::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 100,
+                           .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    QindaQt::Shell::ShellAppearanceBridge bridge(client, themes, publisher,
+                                                 /*themeLockedByCli=*/false);
+    QSignalSpy layoutSpy(
+        &bridge, &QindaQt::Shell::ShellAppearanceBridge::
+                     layoutProfilePreferenceChanged);
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.50"));
+    QTRY_VERIFY_WITH_TIMEOUT(!transport.requests.isEmpty(), 2'000);
+
+    // The first confirmed snapshot only latches the baseline; the startup
+    // read already resolved it, so it must not surface as an adoption event.
+    auto first = transport.requests.takeFirst();
+    Q_EMIT transport.snapshotReceived(
+        first.token, first.owner,
+        preferenceSnapshot(preferenceValues(), QStringLiteral("epoch-a"), 0));
+    QTest::qWait(50);
+    QCOMPARE(layoutSpy.count(), 0);
+
+    // A different saved layout is surfaced exactly once.
+    Q_EMIT transport.ownerChanged(QString{});
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.51"));
+    QTRY_VERIFY_WITH_TIMEOUT(!transport.requests.isEmpty(), 2'000);
+    auto changed = transport.requests.takeFirst();
+    Q_EMIT transport.snapshotReceived(
+        changed.token, changed.owner,
+        preferenceSnapshot(
+            preferenceValues(QStringLiteral("minimal"),
+                             QStringLiteral("qinda-dark"),
+                             QStringLiteral("Inter"), 10.0, 1.0, false,
+                             false, false),
+            QStringLiteral("epoch-b"), 1));
+    QTRY_COMPARE_WITH_TIMEOUT(layoutSpy.count(), 1, 2'000);
+    QCOMPARE(layoutSpy.first().first().toString(),
+             QStringLiteral("minimal"));
+
+    // A re-confirmation of the same layout stays silent.
+    Q_EMIT transport.ownerChanged(QString{});
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.52"));
+    QTRY_VERIFY_WITH_TIMEOUT(!transport.requests.isEmpty(), 2'000);
+    auto repeated = transport.requests.takeFirst();
+    Q_EMIT transport.snapshotReceived(
+        repeated.token, repeated.owner,
+        preferenceSnapshot(
+            preferenceValues(QStringLiteral("minimal"),
+                             QStringLiteral("qinda-dark"),
+                             QStringLiteral("Inter"), 10.0, 1.0, false,
+                             false, false),
+            QStringLiteral("epoch-c"), 2));
+    QTest::qWait(50);
+    QCOMPARE(layoutSpy.count(), 1);
 }
 
 QTEST_MAIN(ShellRuntimeTokenTests)

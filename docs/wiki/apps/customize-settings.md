@@ -179,16 +179,19 @@ They do not contact a host session bus, compositor, hardware, or input device.
 
 ## Stopping point
 
-Apply makes the profile durable and changes the Settings1 selection; the
-desktop uses that choice the next time it starts through the bounded
-Settings1 startup read in
-[ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md)
-(an explicit `--profile` still outranks it). Provisional live
-shell binding, the always-hidden reveal affordance, installed-session behavior,
-and the nested rendered matrix are separate later slices. This route therefore
-makes no claim that an open shell follows its previews or applied draft live.
+Apply makes the profile durable and changes the Settings1 selection, and the
+running desktop adopts it live: the shell reloads the catalog from its
+captured directories (user store last), re-selects with the startup
+precedence rules (an explicit `--profile` still outranks the saved
+selection; an unknown id fails closed), refreshes the visibility inventory,
+and reconciles the surface set incrementally — the same path output hotplug
+uses, with no shell or compositor restart
+([ADR-0122](../adr/0122-adopt-saved-layout-preferences-live.md)). The
+always-hidden reveal affordance and the nested rendered matrix remain
+separate later slices.
 
 See [Customization editor domain](../shell/customization-editor.md),
 [Layout profiles](../shell/layout-profiles.md),
-[ADR-0043](../adr/0043-isolate-the-customization-editor-domain.md), and
-[ADR-0121](../adr/0121-real-iconography-in-the-settings-customize-route.md).
+[ADR-0043](../adr/0043-isolate-the-customization-editor-domain.md),
+[ADR-0121](../adr/0121-real-iconography-in-the-settings-customize-route.md),
+and [ADR-0122](../adr/0122-adopt-saved-layout-preferences-live.md).

@@ -505,3 +505,31 @@ if(TARGET qindaqt-shell)
             PASS_REGULAR_EXPRESSION "notification-center - Notification Center"
     )
 endif()
+
+qt_add_executable(
+    qindaqt_shell_runtime_layout_adoption_tests
+    tst_runtimelayoutadoption.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/runtime_layout_adoption.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/runtime_layout_adoption.h"
+)
+target_include_directories(
+    qindaqt_shell_runtime_layout_adoption_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_shell_runtime_layout_adoption_tests
+    PRIVATE qindaqt_profiles Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_shell_runtime_layout_adoption_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_shell_runtime_layout_adoption_tests)
+add_test(
+    NAME qindaqt.shell-runtime-layout-adoption
+    COMMAND qindaqt_shell_runtime_layout_adoption_tests
+)
+set_tests_properties(
+    qindaqt.shell-runtime-layout-adoption PROPERTIES
+    LABELS "shell;runtime;customize"
+)

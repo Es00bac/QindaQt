@@ -92,11 +92,9 @@ PanelVisibilityRuntime::PanelVisibilityRuntime(
     , m_private(new Private(application, interactions, shortcutRegistrar))
 {
     m_private->themeMotionDuration = std::clamp(themeMotionDuration, 0, 1'000);
-    for (const auto &panel : profile.panels) {
-        if (panel.hideMode != Profiles::HideMode::Never) {
-            m_private->hideablePanelIds.insert(panel.id);
-        }
-    }
+    // The hide-mode inventory is owned by applyProfile; construction adopts
+    // the startup profile through the same path a live layout switch uses.
+    applyProfile(profile);
     connect(&settings,
             &Services::SettingsClient::SettingsClient::snapshotChanged,
             this, [this, &settings] {
@@ -158,6 +156,16 @@ bool PanelVisibilityRuntime::synchronize(
         error->clear();
     }
     return true;
+}
+
+void PanelVisibilityRuntime::applyProfile(const Profiles::LayoutProfile &profile)
+{
+    m_private->hideablePanelIds.clear();
+    for (const auto &panel : profile.panels) {
+        if (panel.hideMode != Profiles::HideMode::Never) {
+            m_private->hideablePanelIds.insert(panel.id);
+        }
+    }
 }
 
 void PanelVisibilityRuntime::applySettings(const QVariantMap &values)

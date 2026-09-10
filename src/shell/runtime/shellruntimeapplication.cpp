@@ -15,6 +15,7 @@
 #include "launcher_persistence.h"
 #include "notificationcenterappletaccess.h"
 #include "notificationcentershortcut.h"
+#include "runtime_layout_adoption.h"
 #include "notificationwindowcontroller.h"
 #include "notificationquietingsettingsbridge.h"
 #include "panelvisibilityruntime.h"
@@ -52,6 +53,8 @@
 #include <QDBusConnection>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QGuiApplication>
 #include <QProcessEnvironment>
 #include <QScreen>
@@ -81,6 +84,21 @@ ShellRuntimeApplication::ShellRuntimeApplication(QGuiApplication &application)
     m_windowActionsRetry.setInterval(2'500);
     connect(&m_windowActionsRetry, &QTimer::timeout, this,
             &ShellRuntimeApplication::restartWindowActionsIdentity);
+    m_profileAdoptDebounce.setSingleShot(true);
+    m_profileAdoptDebounce.setInterval(250);
+    connect(&m_profileAdoptDebounce, &QTimer::timeout, this,
+            [this] { adoptLayoutProfile(QString()); });
+    // The Customize route writes the user-store copy before committing the
+    // Settings1 selection, so content edits surface as store changes while
+    // selection edits surface through the preference bridge.
+    connect(&m_profileStoreWatch, &QFileSystemWatcher::directoryChanged,
+            &m_profileAdoptDebounce, [this](const QString &) {
+                m_profileAdoptDebounce.start();
+            });
+    connect(&m_profileStoreWatch, &QFileSystemWatcher::fileChanged,
+            &m_profileAdoptDebounce, [this](const QString &) {
+                m_profileAdoptDebounce.start();
+            });
 }
 
 ShellRuntimeApplication::~ShellRuntimeApplication()
@@ -166,6 +184,8 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
         QINDAQT_SOURCE_PROFILE_DIR, QINDAQT_SHELL_BUILD_EXECUTABLE_PATH);
     const QStringList profileDirectories = resolveProfileCatalogDirectories(
         options.profileDirectory, sourceProfileDirectory);
+    m_profileCatalogDirectories = profileDirectories;
+    m_profileLockedByCli = !options.profileId.isEmpty();
     const QString themeDirectory = resolveCatalogDataDirectory(options.themeDirectory,
                                                                "QINDAQT_THEME_DIR",
                                                                QINDAQT_SOURCE_THEME_DIR,
@@ -234,7 +254,79 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
     }
     m_dataRoots = ShellIconConfiguration::dataRoots(
         QProcessEnvironment::systemEnvironment(), QDir::homePath());
+    refreshProfileStoreWatch();
     return true;
+}
+
+void ShellRuntimeApplication::adoptLayoutProfile(
+    const QString &preferredProfileId)
+{
+    QString diagnostic;
+    const auto outcome = RuntimeLayoutAdoption::reloadAndSelect(
+        m_profiles, m_profileCatalogDirectories, preferredProfileId,
+        m_profileLockedByCli, &diagnostic);
+    refreshProfileStoreWatch();
+    if (outcome == RuntimeLayoutAdoption::Outcome::Failed) {
+        qWarning().noquote()
+            << "QindaQt shell kept its prior layout:" << diagnostic;
+        return;
+    }
+    if (outcome == RuntimeLayoutAdoption::Outcome::LockedByCommandLine) {
+        qWarning().noquote()
+            << "QindaQt shell ignored a saved layout change:" << diagnostic;
+        return;
+    }
+    if (outcome == RuntimeLayoutAdoption::Outcome::KeptPriorSelection) {
+        qWarning().noquote()
+            << "QindaQt shell kept its prior layout:" << diagnostic;
+    }
+    const int index = m_profiles.currentIndex();
+    if (index < 0
+        || static_cast<qsizetype>(index) >= m_profiles.profiles().size()) {
+        return;
+    }
+    const auto &profile = m_profiles.profiles().at(index);
+    if (m_panelVisibility) {
+        m_panelVisibility->applyProfile(profile);
+    }
+    qInfo().noquote() << "QindaQt shell adopted layout profile" << profile.id;
+    scheduleOutputReconcile();
+}
+
+void ShellRuntimeApplication::refreshProfileStoreWatch()
+{
+    const QString userProfiles =
+        QDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))
+            .filePath(QStringLiteral("qindaqt/profiles"));
+    QStringList paths;
+    if (QFileInfo::exists(userProfiles)) {
+        // Watch the directory and each stored profile: a rewrite in place
+        // only reports through fileChanged, an add or rename through
+        // directoryChanged.
+        paths.append(userProfiles);
+        const auto entries = QDir(userProfiles).entryInfoList(
+            {QStringLiteral("*.json")}, QDir::Files);
+        for (const auto &entry : entries) {
+            paths.append(entry.absoluteFilePath());
+        }
+    } else {
+        // The store directory appears with the first Apply; until then watch
+        // its parent so adoption starts with the first saved layout.
+        const QString parent = QFileInfo(userProfiles).absolutePath();
+        if (QFileInfo::exists(parent)) {
+            paths.append(parent);
+        }
+    }
+    if (m_profileStoreWatch.directories() != paths) {
+        const auto previous = m_profileStoreWatch.files()
+            + m_profileStoreWatch.directories();
+        if (!previous.isEmpty()) {
+            m_profileStoreWatch.removePaths(previous);
+        }
+        if (!paths.isEmpty()) {
+            m_profileStoreWatch.addPaths(paths);
+        }
+    }
 }
 
 void ShellRuntimeApplication::printCatalog() const
@@ -526,6 +618,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
 void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
+    m_profileAdoptDebounce.stop();
     m_wallpaper.reset();
     m_windowActionsRetry.stop();
     m_notificationCenterShortcut.reset();
