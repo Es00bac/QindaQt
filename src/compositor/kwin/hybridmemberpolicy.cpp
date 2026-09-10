@@ -151,6 +151,15 @@ QString HybridMemberPolicy::focusedContainerOf(const QString &windowId) const
     return {};
 }
 
+bool HybridMemberPolicy::blocksInteractiveResize(const QString &windowId) const
+{
+    // AGENT-CONTRACT: This predicate is the only authority the KWin adapter
+    // consults before vetoing a native member resize (ADR-0117). It stays
+    // true for the whole membership lifetime, focus presentation included,
+    // because a grouped member's frame is always container-owned.
+    return locate(windowId).isValid() && !m_detaching.contains(windowId);
+}
+
 bool HybridMemberPolicy::interactiveMoveStarted(const QString &windowId,
                                                 bool interactiveMove,
                                                 QString *error)

@@ -358,6 +358,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridshade.cpp
             kwin/kwinmemberpolicy.cpp
             kwin/kwinmemberpolicy.h
+            kwin/kwinmemberpolicyplatform.cpp
+            kwin/kwinmemberpolicyplatform.h
             kwin/kwintaskidentitymanager.cpp
             kwin/kwintaskidentitymanager.h
             kwin/kwintransientmanager.cpp

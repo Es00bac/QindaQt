@@ -13,6 +13,7 @@ class HybridMemberPolicyTest final : public QObject
 private Q_SLOTS:
     void rejectsInvalidAndAmbiguousBaselines();
     void detachesOnlyGroupedNativeTitleMoves();
+    void vetoesInteractiveResizeOnOwnedMembersOnly();
     void redockedWindowCanDetachAgainAfterSynchronousRefresh();
     void focusedDetachOwnsSynchronousRefreshAndKeepsCallbackValuesAlive();
     void maximizeTogglesFocusAndRestoresExactBaseline();
@@ -58,7 +59,6 @@ void HybridMemberPolicyTest::detachesOnlyGroupedNativeTitleMoves()
     HybridMemberPolicy policy(platform);
     QVERIFY(policy.synchronize({group()}));
 
-    QVERIFY(!policy.interactiveMoveStarted(QStringLiteral("left"), false));
     QVERIFY(!policy.interactiveMoveStarted(QStringLiteral("independent"), true));
     QCOMPARE(platform.calls.size(), 0);
 
@@ -68,6 +68,32 @@ void HybridMemberPolicyTest::detachesOnlyGroupedNativeTitleMoves()
     QCOMPARE(platform.calls[0].baseline.containerId, QStringLiteral("group"));
     QCOMPARE(platform.calls[0].windowId, QStringLiteral("left"));
     QVERIFY(!policy.interactiveMoveStarted(QStringLiteral("left"), true));
+    QCOMPARE(platform.calls.size(), 1);
+}
+
+void HybridMemberPolicyTest::vetoesInteractiveResizeOnOwnedMembersOnly()
+{
+    FakePlatform platform;
+    HybridMemberPolicy policy(platform);
+    QVERIFY(policy.synchronize({group()}));
+
+    // The adapter cancels native resize when this predicate holds, so an
+    // owned member's frame can only change through container reflow. Active-
+    // and inactive-page members are owned alike; non-members stay untouched.
+    QVERIFY(policy.blocksInteractiveResize(QStringLiteral("left")));
+    QVERIFY(policy.blocksInteractiveResize(QStringLiteral("other-page")));
+    QVERIFY(!policy.blocksInteractiveResize(QStringLiteral("independent")));
+    QVERIFY(!policy.blocksInteractiveResize(QStringLiteral("")));
+    QCOMPARE(platform.calls.size(), 0);
+
+    // A mid-detach member is already owned by the native detach transaction
+    // and must not be vetoed: KWin continues that move to the drop.
+    QVERIFY(policy.interactiveMoveStarted(QStringLiteral("left"), true));
+    QVERIFY(!policy.blocksInteractiveResize(QStringLiteral("left")));
+
+    // Once the committed refresh drops it, it is simply not a member anymore.
+    QVERIFY(policy.synchronize({}));
+    QVERIFY(!policy.blocksInteractiveResize(QStringLiteral("left")));
     QCOMPARE(platform.calls.size(), 1);
 }
 

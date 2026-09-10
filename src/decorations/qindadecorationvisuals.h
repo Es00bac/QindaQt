@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QColor>
+#include <QMarginsF>
 #include <QRectF>
 
 #include <memory>
@@ -27,6 +28,11 @@ struct DecorationVisualStyle {
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
                                                           const QColor &surface,
                                                           bool maximized);
+// Resize-only borders extend the interactive resize grip outside the frame.
+// A grouped container member gets none: its frame is container-owned and
+// native member resize is vetoed by the compositor (ADR-0117).
+[[nodiscard]] QMarginsF decorationResizeOnlyBorders(bool maximized,
+                                                    bool containerMember);
 void paintDecorationFrame(QPainter &painter, const QRectF &bounds,
                           const DecorationVisualStyle &style);
 [[nodiscard]] std::shared_ptr<KDecoration3::DecorationShadow>

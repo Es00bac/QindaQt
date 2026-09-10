@@ -116,6 +116,10 @@ public:
     [[nodiscard]] bool interactiveMoveStarted(const QString &windowId,
                                               bool interactiveMove,
                                               QString *error = nullptr);
+    // True while windowId is an owned member that is not mid-detach. The
+    // adapter vetoes native interactive resize when this holds; a mid-detach
+    // member is already owned by the detach transaction and is excluded.
+    [[nodiscard]] bool blocksInteractiveResize(const QString &windowId) const;
     [[nodiscard]] bool maximizedChanged(const QString &windowId,
                                         bool maximized,
                                         QString *error = nullptr);
