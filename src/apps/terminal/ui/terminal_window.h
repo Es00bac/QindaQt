@@ -3,6 +3,7 @@
 
 #include "links/terminal_link.h"
 #include "profiles/terminal_profile.h"
+#include "restore/terminal_restore_store.h"
 #include "search/terminal_search.h"
 #include "session/terminal_session_collection.h"
 #include "session/terminal_session_types.h"
@@ -18,6 +19,7 @@
 #include <QVariantList>
 #include <functional>
 #include <memory>
+#include <optional>
 
 class QMenu;
 
@@ -82,6 +84,17 @@ public:
   }
   // The window's sole session; null before initial launch or after teardown.
   [[nodiscard]] TerminalSession *session() const { return m_activeSession; }
+
+  // AGENT-CONTRACT: restorable launch state (profile id + working directory,
+  // never content) snapshotted when close teardown BEGINS. By the time
+  // closeShutdownFinished fires the sessions are removed and session() is
+  // null, so main() reads this snapshot for the opt-in restore persistence
+  // instead. Empty when no session was running or nothing restorable was
+  // known; the window itself never consumes it.
+  [[nodiscard]] const std::optional<TerminalRestoreEntry> &
+  restoreEntryAtClose() const {
+    return m_restoreEntryAtClose;
+  }
 
   // AGENT-CONTRACT: the application-side composition seam for the first-party
   // global-menu export. main() reads this coordinator after show() and hands
@@ -188,6 +201,7 @@ private:
   QHash<const TerminalSession *, TerminalSearchResult> m_searchResultBySession;
   QHash<const TerminalSession *, bool> m_findVisibleBySession;
   QHash<const TerminalSession *, TerminalLinkSelection> m_linkBySession;
+  std::optional<TerminalRestoreEntry> m_restoreEntryAtClose;
   bool m_quitRequested = false;
 };
 

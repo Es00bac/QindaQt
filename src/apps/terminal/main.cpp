@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "links/terminal_link_opener.h"
 #include "profiles/terminal_profile_settings.h"
+#include "restore/terminal_restore_store.h"
 #include "session/process_liveness.h"
 #include "session/terminal_launch_policy.h"
 #include "session/terminal_session.h"
@@ -17,6 +18,7 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDBusConnection>
+#include <QDir>
 #include <QFontDatabase>
 #include <QMenuBar>
 #include <QProcessEnvironment>
@@ -24,6 +26,7 @@
 #include <QTimer>
 #include <QWindow>
 
+#include <algorithm>
 #include <cstdio>
 #include <memory>
 
@@ -166,6 +169,17 @@ int main(int argc, char **argv) {
   }
   TerminalProfileSettings profileSettings(settingsClient);
 
+  // Session-restore persistence (opt-in via services.terminalRestoreWindows).
+  // The store holds only profile ids + working directories beneath the
+  // XDG state root (same convention as the Text Editor's inventory); see
+  // restore/terminal_restore_store.h for the contract.
+  QString stateRoot = qEnvironmentVariable("XDG_STATE_HOME");
+  if (stateRoot.isEmpty()) {
+    stateRoot = QDir::home().filePath(QStringLiteral(".local/state"));
+  }
+  TerminalRestoreStore restoreStore(
+      QDir(stateRoot).filePath(QStringLiteral("qindaqt/terminal")));
+
   PosixProcessMonitor monitor;
   const auto factory = makeBackendFactory();
 
@@ -206,7 +220,8 @@ int main(int argc, char **argv) {
   const QString requestedProfileId = parser.value(QStringLiteral("profile"));
   const auto startFirstSession = [&window, &profileSettings, &settingsClient,
                                   &settingsStarted, &firstSessionStarted,
-                                  &requestedProfileId] {
+                                  &requestedProfileId, &parser, &restoreStore,
+                                  &launchAnotherTerminal] {
     if (firstSessionStarted) {
       return;
     }
@@ -220,12 +235,72 @@ int main(int argc, char **argv) {
       return;
     }
     firstSessionStarted = true;
-    QString unavailableProfile;
-    const TerminalProfile profile = initialSessionProfile(
-        profileSettings, requestedProfileId, &unavailableProfile);
-    if (!unavailableProfile.isEmpty()) {
-      std::fprintf(stderr, "qindaqt-terminal: saved profile is unavailable: %s\n",
-                   qPrintable(unavailableProfile));
+    TerminalProfile profile;
+    bool profileChosen = false;
+    // Explicit launch inputs always win over the recorded restore inventory;
+    // the deprecated theme no-ops are not launch inputs. The policy accessor
+    // is only truthful now, after the baseline gate above.
+    const bool explicitLaunch =
+        parser.isSet(QStringLiteral("profile")) ||
+        parser.isSet(QStringLiteral("shell")) ||
+        parser.isSet(QStringLiteral("working-directory")) ||
+        parser.isSet(QStringLiteral("arg"));
+    if (profileSettings.restoreWindowsPolicy() && !explicitLaunch) {
+      const auto loaded = restoreStore.load();
+      // Consume-on-launch: the inventory is cleared before any session
+      // starts, so a crash mid-session cannot replay stale entries forever.
+      static_cast<void>(restoreStore.clear());
+      const auto knownProfileId = [&profileSettings](const QString &id) {
+        if (id == builtinDefaultProfileId()) {
+          return true;
+        }
+        const auto profiles = profileSettings.userProfiles();
+        return std::any_of(profiles.begin(), profiles.end(),
+                           [&id](const TerminalProfile &candidate) {
+                             return candidate.id == id;
+                           });
+      };
+      // planTerminalRestore already excluded unknown ids; the fallback here
+      // is unreachable but keeps the mapping total.
+      const auto profileForId = [&profileSettings](const QString &id) {
+        if (id == builtinDefaultProfileId()) {
+          return builtinDefaultProfile();
+        }
+        const auto profiles = profileSettings.userProfiles();
+        for (const TerminalProfile &candidate : profiles) {
+          if (candidate.id == id) {
+            return candidate;
+          }
+        }
+        return builtinDefaultProfile();
+      };
+      const auto plan = planTerminalRestore(
+          loaded.entries, knownProfileId,
+          [](const QString &directory) { return QDir(directory).exists(); });
+      if (plan.hasPrimary) {
+        profile = profileForId(plan.primary.profileId);
+        profileChosen = true;
+        window.sessions()->setFallbackWorkingDirectory(
+            plan.primary.workingDirectory);
+        for (const TerminalRestoreEntry &entry : plan.dispatched) {
+          const QString error = launchAnotherTerminal(
+              profileForId(entry.profileId), entry.workingDirectory);
+          if (!error.isEmpty()) {
+            std::fprintf(stderr,
+                         "qindaqt-terminal: could not restore a window: %s\n",
+                         qPrintable(error));
+          }
+        }
+      }
+    }
+    if (!profileChosen) {
+      QString unavailableProfile;
+      profile = initialSessionProfile(profileSettings, requestedProfileId,
+                                      &unavailableProfile);
+      if (!unavailableProfile.isEmpty()) {
+        std::fprintf(stderr, "qindaqt-terminal: saved profile is unavailable: %s\n",
+                     qPrintable(unavailableProfile));
+      }
     }
     window.startSession(profile);
     if (auto *active = window.session();
@@ -244,6 +319,29 @@ int main(int argc, char **argv) {
       &settingsClient,
       &QindaQt::Services::SettingsClient::SettingsClient::stateChanged, &window,
       scheduleFirstSession);
+  // Persist the restorable launch state on a CLEAN exit only:
+  // closeShutdownFinished never fires while a teardown survivor exists, and
+  // the window snapshotted the entry when teardown began (sessions are gone
+  // here). This direct connection runs before the queued quit below. A crash
+  // leaves nothing new behind because the launch already consumed the
+  // inventory; concurrent exits of several windows merge best-effort through
+  // load -> append -> atomic store.
+  QObject::connect(&window, &TerminalWindow::closeShutdownFinished,
+                   &application, [&window, &profileSettings, &restoreStore] {
+                     if (!profileSettings.restoreWindowsPolicy()) {
+                       return;
+                     }
+                     const auto &entry = window.restoreEntryAtClose();
+                     if (!entry.has_value()) {
+                       return;
+                     }
+                     const auto loaded = restoreStore.load();
+                     const auto merged = terminalRestoreWithExitAppended(
+                         loaded.ok ? loaded.entries
+                                   : QList<TerminalRestoreEntry>{},
+                         *entry);
+                     static_cast<void>(restoreStore.store(merged));
+                   });
   window.connectQuitAfterCloseShutdown(application);
   // AGENT-GUARD: realize the window layout before the first PTY can publish
   // its prompt. TerminalSession attaches the backend before child start, but

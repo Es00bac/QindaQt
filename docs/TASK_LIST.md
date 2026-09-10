@@ -69,6 +69,29 @@ printing and recovery rows; the [Text Editor wiki
 page](wiki/apps/text-editor.md) documents the contracts. Terminal's portion
 remains pending.
 
+Terminal progress (September 10): **presentation converted to stock Qt 6
+Widgets per ADR-0116, session restore landed, and the OSC-8 investigation
+concluded.** De-chrome: no QST token projection, application QSS, or per-app
+theme catalog remains; palette, fonts, and icon theme come from the Qt
+platform theme, `--theme`/`--theme-directory` are deprecated no-ops, and
+status severity is conveyed by text and the accessible announcement, never
+color. Terminal content keeps the ADR-0112 exception: the ANSI protocol
+palette is derived from the live platform palette, the profile's
+`system`/`light`/`dark` scheme (legacy `qinda-*` ids mapped at decode), the
+accessibility contrast preference, and the platform FixedFont. Session restore
+is opt-in via the renamed `services.terminalRestoreWindows` key (default
+false): a clean exit appends the window's profile id + `/proc`-observed
+working directory to an atomic, owner-only, 16-entry/64 KiB state file under
+`$XDG_STATE_HOME/qindaqt/terminal`; the next plain launch consumes the
+inventory on load (crash-safe) and replays admissible entries, dispatching the
+rest as separate Terminal processes. Session content, scrollback, argv, and
+environment are never persisted. OSC-8 hyperlinks are pinned **unsupported**:
+qtermwidget 2.4.x discards attribute 8 in `Session::setUserTitle`, so no
+hidden link target exists and detection sees printed text only (locked by the
+`osc8SequencesExposeNoHiddenLinkTarget` real-adapter row). All 24
+`qindaqt.terminal*` rows pass, including the new `terminal-restore-policy`
+row; the [Terminal wiki page](wiki/apps/terminal.md) documents the contracts.
+
 ### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
 
 **Built, installed and verified through Portage r1.** The tray uses real
@@ -115,6 +138,8 @@ opens a separate window with the current working directory/profile behavior;
 QindaQt containers provide grouping, tabs, and splits. Keep search, copy/paste,
 font, zoom, and the verified interactive PTY/prompt behavior. Install the change
 through the maintained Gentoo package after focused regression checks.
+(Installation completed: the September 8 Portage r1 rebuild above superseded
+the pending note.)
 
 ### Correct the interactive Terminal and Gentoo installation (September 7)
 

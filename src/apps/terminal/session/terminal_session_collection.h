@@ -95,6 +95,14 @@ public:
   [[nodiscard]] const TerminalSessionContext &context() const {
     return m_context;
   }
+  // AGENT-CONTRACT: session restore rewrites the inherited working directory
+  // exactly once, after the Settings1 baseline and before the first
+  // addSession. Calling it afterwards silently changes what a later session
+  // (Restart, New Window inheritance) would use, so it is not a per-session
+  // override and presentation code must never call it.
+  void setFallbackWorkingDirectory(const QString &workingDirectory) {
+    m_context.workingDirectory = workingDirectory;
+  }
 
 signals:
   void sessionAdded(QindaQt::Apps::Terminal::TerminalSession *session);

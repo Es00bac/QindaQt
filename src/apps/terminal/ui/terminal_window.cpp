@@ -334,6 +334,23 @@ void TerminalWindow::requestCloseShutdown() {
   // guarantee. Hiding the window and waiting for allSessionsClosed is what
   // keeps close deterministic under the bounded escalation; a failed
   // escalation re-shows the window and refuses the quit.
+  //
+  // Snapshot the restorable launch state now: when closeShutdownFinished
+  // fires the sessions are already removed, and workingDirectory() reads the
+  // live child cwd through the process monitor only while the session runs.
+  // The first snapshot wins; a re-entry (Restart close racing a user close)
+  // must not overwrite it with a mid-shutdown state.
+  if (!m_restoreEntryAtClose.has_value() && m_activeSession != nullptr) {
+    TerminalRestoreEntry entry;
+    entry.profileId = m_activeSession->profile().id;
+    entry.workingDirectory = m_activeSession->workingDirectory();
+    if (entry.workingDirectory.isEmpty()) {
+      entry.workingDirectory = m_sessions->context().workingDirectory;
+    }
+    if (!entry.profileId.isEmpty() && !entry.workingDirectory.isEmpty()) {
+      m_restoreEntryAtClose = entry;
+    }
+  }
   m_quitRequested = true;
   hide();
   m_sessions->requestCloseAll();
