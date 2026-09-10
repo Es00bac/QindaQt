@@ -89,7 +89,7 @@ All **48 keys** in active `data/settings/schema-v2.json` are listed below. JSON 
 | `services.xwaylandOnDemand` | boolean | `true` | None beyond type |
 | `services.terminalProfiles` | string | `"[]"` | None beyond type |
 | `services.terminalDefaultProfile` | string | `"builtin-default"` | None beyond type |
-| `services.terminalRestoreTabs` | boolean | `false` | None beyond type |
+| `services.terminalRestoreWindows` | boolean | `false` | None beyond type |
 | `services.textEditorRestoreDocuments` | boolean | `false` | None beyond type |
 
 ## Packaged profile overrides

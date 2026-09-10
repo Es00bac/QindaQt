@@ -30,9 +30,9 @@ ready.
 
 Use **View → Zoom In / Zoom Out** (`Ctrl+Shift++` / `Ctrl+Shift+-`) to adjust
 text size for this window. `Ctrl+Shift+0` restores its profile size. Zoom
-survives a live theme change or restarting the shell, but is not a saved profile
-change. Applying a theme preserves the terminal's monospace font independently
-of the menu font.
+survives a live platform-theme change or restarting the shell, but is not a
+saved profile change. A live theme change re-derives content colors while
+preserving the profile's monospace font choice.
 
 ## Shell launch and the no-shell-string contract
 
@@ -77,8 +77,9 @@ generation; generations are never reused.
 
 Exit reporting is typed: `exited (code N)`, `terminated by SIGxxx`, `exited
 (status unknown)` when another reaper consumed the `waitpid` status, or a
-bounded start-failure diagnostic shown in the status bar with QST danger or
-warning colors. Restart tears the current generation down and starts a fresh
+bounded start-failure diagnostic shown in the status bar. Severity is conveyed
+by the message text and the accessible status announcement, never by color
+alone. Restart tears the current generation down and starts a fresh
 one; restarts are rejected while a shutdown is already in flight or while a
 SIGKILL survivor is owned.
 
@@ -131,8 +132,11 @@ The immutable `builtin-default` profile is always available. At most 16 user
 profiles may be persisted. A profile contains a stable safe identifier; a
 trimmed printable name (maximum 64 characters); an optional absolute shell
 program and at most 64 verbatim arguments under the existing launch-policy
-byte limits; an optional font family and either the theme font size or 6–48
-points; a safe QindaQt theme identifier; 0–100,000 scrollback lines; and a
+byte limits; an optional font family and either the platform monospace font
+size or 6–48
+points; a terminal content scheme identifier (`system`, `light`, or `dark` —
+legacy `qinda-*` identifiers are mapped to this vocabulary when a stored
+profile is decoded); 0–100,000 scrollback lines; and a
 `silent` or `audible` bell policy. Both preserve all PTY bytes. Silent ignores
 parsed bell notifications; Audible requests a GUI beep. A user profile never changes the
 shell contract: its program and argv go through `TerminalLaunchPolicy`, never
@@ -146,7 +150,7 @@ The terminal reads and writes this exact Settings1 scope:
 | --- | --- | --- |
 | `services.terminalProfiles` | string / `[]` | Canonical JSON array of validated user profiles |
 | `services.terminalDefaultProfile` | string / `builtin-default` | Profile used by a new Terminal window |
-| `services.terminalRestoreTabs` | Boolean / `false` | Legacy compatibility value; Terminal does not restore internal tabs |
+| `services.terminalRestoreWindows` | Boolean / `false` | Opt-in policy: persist the open window inventory (profile id + working directory each) on clean exit and restore it on the next plain launch |
 
 The three values form one logical draft but use the public v1 client's
 single-key writes in the fixed table order. Each commit waits for the automatic
@@ -167,10 +171,50 @@ confirmed rejection names failed and not-attempted keys, and transport loss or
 timeout is labeled uncertain and explicitly not replayed.
 
 Session content, scrollback bytes, child environment, argv history, titles,
-and process identifiers are never persisted. The legacy restore-tabs value is
-retained only for settings compatibility and has no UI or runtime effect;
-startup opens one shell using the confirmed default profile (or the built-in
-default after a definitive Settings1 failure).
+and process identifiers are never persisted — including when session restore
+below is enabled. Startup otherwise opens one shell using the confirmed
+default profile (or the built-in default after a definitive Settings1
+failure).
+
+## Session restore
+
+Session restore is opt-in through `services.terminalRestoreWindows` (default
+`false`, changeable in the Manage Profiles dialog). When enabled, a CLEAN
+window exit appends one bounded record — the session's profile id and its
+working directory observed from `/proc/<pid>/cwd` at teardown, falling back to
+the launch directory — to an application-owned state file beneath
+`$XDG_STATE_HOME/qindaqt/terminal`. A refused close (SIGKILL survivor) and a
+crash persist nothing new. The window snapshots the record when teardown
+begins because the sessions are already removed by the time clean shutdown is
+published.
+
+On the next launch the restore decision waits for the Settings1 baseline, so
+the policy value is authoritative. Restore is skipped whenever any explicit
+launch input is present (`--profile`, `--shell`, `--working-directory`, or
+`--arg`; the deprecated theme no-ops do not count). An eligible launch loads
+the inventory, clears it immediately (consume-on-launch, so a crash cannot
+replay stale entries), and then replays it: the first admissible entry opens
+in this process with its recorded profile and directory, and every further
+admissible entry is dispatched as a separate Terminal process through the
+same New Terminal launcher. Entries whose profile id is unknown or whose
+directory no longer exists are skipped.
+
+The state file is deliberately content-free and hostile-input tolerant:
+
+- Only profile ids and absolute working directories are stored — never
+  scrollback, command text, argv, titles, or environment — so a crash-stale
+  file carries no session content.
+- The file is a compact JSON array capped at 16 entries and 64 KiB, written
+  atomically (`QSaveFile` same-directory replacement) with owner-only
+  permissions. An absent file is a normal first run, not an error; an
+  unreadable, oversized, or malformed file is treated as "nothing to
+  restore".
+- Decoding is fail-closed on a malformed document and drops individually
+  hostile entries (unsafe profile id characters, relative or oversized or
+  NUL-bearing paths); unknown JSON fields are ignored.
+- Several windows closing concurrently merge best-effort through
+  load → append → atomic store; a lost update under a hard race is accepted
+  and never corrupts the file.
 
 ## Per-session scrollback search
 
@@ -213,6 +257,16 @@ terminal punctuation and unmatched closing delimiters are excluded, and
 quoted absolute paths may contain spaces. URL/path text is otherwise never
 normalized: Unicode homoglyphs, IDNs, and punycode remain exactly as printed,
 and the tooltip says that hostname spelling was not normalized.
+
+OSC-8 hyperlinks (printed text wrapping a hidden target) are NOT supported:
+qtermwidget 2.4.x parses the numeric OSC attribute in
+`Vt102Emulation::processWindowAttributeChange` but routes it to
+`Session::setUserTitle`, which ignores every attribute except 0, 1, and 2 —
+attribute 8 is discarded entirely, and no public qtermwidget API exposes the
+hidden target. Detection therefore sees only the printed text, and a hostile
+OSC-8 sequence cannot smuggle a different open target past the confirmation
+dialog; this is pinned by a real-adapter regression row
+(`osc8SequencesExposeNoHiddenLinkTarget`).
 
 Nothing auto-activates. Copy and Open re-read the current viewport immediately
 before acting; if the traversed selection disappeared or changed, that request
@@ -258,8 +312,9 @@ the retained Exited session must not spin. Each
 descriptor has exactly one writer, buffers are bounded (64 KiB) with
 drop-newest backpressure, and the adapter keeps fork/exec, reaping, and view
 disposal. `qindaqt-terminal` links the adapter; the support library with
-policy, PTY bridge, session, search/link values, and presentation links Qt and
-QST only, making the boundary enforceable at link time. The S2 adapter public
+policy, PTY bridge, session, restore, search/link values, and presentation
+links Qt, the AppShell boundary, and the private Settings1 client, making the
+qtermwidget boundary enforceable at link time. The S2 adapter public
 boundary contains only typed search and link values, never qtermwidget types.
 
 ## Keyboard and accessibility semantics
@@ -313,19 +368,28 @@ the composition, lifecycle, and fail-closed rules are owned by
 registrar leaves the export disabled/waiting, and the local `QMenuBar` stays
 visible and authoritative.
 
-## QST-1 theme and appearance
+## Platform theme and terminal content appearance
 
-The appearance adapter derives the complete window palette, interface font,
-monospace terminal font, focus ring, and status colors from the public QST-1
-boundary, exactly as the Text Editor does; `qinda-dark` is the launch default,
-with confirmed Settings1 theme and color-scheme changes updating the running
-window through [ADR-0080](../adr/0080-resolve-first-party-appearance-from-settings.md).
-An explicit `--theme` locks a validated schema-v1 theme and `--theme-directory` extends discovery,
-and `--check-theme` providing the packaging diagnostic that exits before any
-window exists. Live font size, text scale, high contrast, reduced motion and
-reduced transparency preferences travel through the same public appearance
-controller. The first shell and every restarted renderer receive the retained
-appearance before the prompt can paint.
+Window chrome — palette, interface font, icon theme, and contrast hints —
+comes from the Qt platform theme, per
+[ADR-0115](../adr/0115-share-appearance-through-qt-platform-theme.md) and
+[ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md). There is
+deliberately no QST token projection, per-app theme load, or font bootstrap:
+the application is an ordinary stock Qt 6 Widgets client. `--theme` and
+`--theme-directory` are accepted as deprecated no-ops because external
+harnesses still pass them. Live platform changes reach the window through its
+`changeEvent` (palette, font, style) and through the `colorSchemeChanged` /
+`contrastPreferenceChanged` signals, which re-derive the desktop-scheme
+content appearance; the first shell and every restarted renderer receive the
+retained appearance before the prompt can paint.
+
+Terminal CONTENT keeps its own derivation (the ADR-0112 exception to the
+platform theme): the ANSI protocol palette fitted to the opaque content
+surface. A profile pins `system` (follow the live desktop), `light`, or
+`dark`; the appearance adapter derives the sixteen ANSI colors, content
+background and foreground, and the monospace font (platform FixedFont or the
+profile's family/size) from the live `QGuiApplication::palette()` plus the
+accessibility contrast preference.
 
 ANSI is a terminal protocol palette rather than a reuse of status-badge text
 roles. [ADR-0112](../adr/0112-terminal-protocol-palette.md) defines independent
@@ -343,8 +407,8 @@ High contrast temporarily overrides it; disabling high contrast restores the
 original scheme. Font overrides retain their chosen base size, accessibility
 text scale multiplies that base, and local zoom remains independent. Compact search
 uses arrow/close controls with accessible names and tooltips, a clearable field,
-and a second row for search options and wrapping result text. Profile forms and
-status chrome consume QST surfaces, rounded outlines and explicit focus rings;
+and a second row for search options and wrapping result text. Profile forms,
+status chrome, and dialogs are ordinary platform-styled Widgets;
 the renderer's own text and selection styling stay confined to its adapter.
 A newly opened profile modal explicitly takes its owning window's palette and
 font, including native list and form controls; this prevents mixed light/dark
@@ -354,7 +418,7 @@ The production adapter installs that document under a unique atomic
 `.colorscheme` cache path (replacing and removing the prior live file), the suffix required by qtermwidget 2.4's custom-file
 loader. Its eight bright groups use the upstream
 `Color0Intense`..`Color7Intense` names. A real-adapter offscreen regression
-renders the selected theme's terminal background and rejects qtermwidget's
+renders the selected scheme's terminal background and rejects qtermwidget's
 synthetic LF-only selection for a pristine grid, so scheme and Copy
 availability claims are not inferred from document generation or fake
 backends.
@@ -364,8 +428,9 @@ backends.
 `org.qindaqt.Terminal.desktop` registers the ordinary Wayland application with
 `Categories=Qt;System;TerminalEmulator;`, no `MimeType`, and
 `StartupWMClass=qindaqt-terminal`. The installed `Terminal` component contains
-the executable, desktop entry, built-in theme data, and AppShell's linked
-AppShell/Controls/Tokens backing libraries. `qtermwidget6`
+the executable, desktop entry, and AppShell's linked
+AppShell/Controls/Tokens backing libraries; no per-app theme catalog is
+installed (ADR-0116). `qtermwidget6`
 remains an external dynamically linked package dependency. The staged metadata
 gate copies only that exact CMake-imported library into a private dependency
 directory while clearing ambient loader and theme roots; direct AppShell and
@@ -398,20 +463,22 @@ replacement, view-disposal ordering, the close/quit wiring contract (the
 quit-on-last-window-closed flip, no early `aboutToQuit`, and the main-source
 wiring binding), window action identity and action-state truth across
 Running→Exited, readline-safe shortcuts, exit-status severity rendering,
-accessibility and focus metadata, hostile-resize clamping, QST scheme
-documents for all five themes, real-adapter custom-scheme rendering, all sixteen painted ANSI colors through
+accessibility and focus metadata, hostile-resize clamping, content scheme
+documents for system/light/dark, real-adapter custom-scheme rendering, all sixteen painted ANSI colors through
 live light/dark/high-contrast changes, explicit-profile palette preservation,
 startup/restart retained appearance, and blank selection truth; one-shell window launch, separate-process New Terminal
 dispatch, close-all, and forced destruction; title sanitization; hostile profile values, canonical
-round trips, and unchanged empty-argument preservation; Settings1 baseline,
+round trips, and unchanged empty-argument preservation; session-restore codec
+round trips and fail-closed hostile/oversized/malformed state handling,
+exit-append dedupe and bound eviction, launch-plan admission through injected
+predicates, and owner-only state-file permissions; Settings1 baseline,
 sequential apply, conflict, fail-closed loss, uncertain no-replay behavior, and
 the production Manage Profiles modal remaining visible, enabled, and
 accessibly descriptive after conflict, rejection, transport loss, owner loss,
 or timeout while the all-applied control closes it; no internal tab widget or
 tab-navigation actions under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
 activation routing; desktop metadata; positional-argument
-rejection, and staged installed metadata with installed-prefix theme
-resolution. The global-menu export slice adds real-process private-bus rows
+rejection, and staged installed metadata resolution from a clean prefix. The global-menu export slice adds real-process private-bus rows
 under the shared selector documented in
 [the global-menu page](../shell/global-menu.md): exact-identity export with
 one shell activation and provider-exit clearing, mismatched PID/window
@@ -437,16 +504,22 @@ host-compositor interaction remain outside S2.
 
 ## Bounded S2 exclusions
 
-- The legacy restore-tabs value is retained for Settings1 compatibility but is
-  ignored; Terminal restores no prior session bytes or argv.
-- OSC-8 semantic hyperlinks are not interpreted; S2 detects only printed
-  `http(s)` text and absolute local paths, and never click-to-opens them.
+- Session restore persists profile id + working directory only, and only on
+  clean exit with the opt-in policy enabled; Terminal never restores session
+  bytes, scrollback, argv, or environment, and a launch-time OSC-8 link row
+  quirk (the first screen row is skipped when the scrollback is empty, an
+  off-by-one in the tail-slice) is recorded for the links owner rather than
+  silently patched here.
+- OSC-8 semantic hyperlinks are unsupported: qtermwidget 2.4.x discards the
+  attribute (see the links section), so only printed `http(s)` text and
+  absolute local paths are detected, and nothing is click-to-open without
+  confirmation.
 - The GPU/scrolling optimizations of the widget are upstream concerns; no
   rendering-performance claim is made.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
 - The branded application and command SVGs use the public Controls icon
-  catalog, honoring the selected theme’s icon catalog on startup and live
+  catalog, honoring the platform theme’s icon catalog on startup and live
   changes, with semantic tint for essential icon-only search controls. The
   global-menu export is composed through the shared first-party AppShell entry and proven
   by private-bus rows only; an installed nested-session qualification remains
@@ -458,7 +531,7 @@ host-compositor interaction remain outside S2.
 
 The real-widget adapter row drives an owned shell through a directory change,
 text input and output, and clean exit. It also checks independent profile-based
-zoom and theme changes. The collection row verifies active-directory inheritance,
+zoom and content-scheme changes. The collection row verifies active-directory inheritance,
 fallback when observation is unavailable, and rejection of a foreign session as
 a directory source. The window row checks the published zoom shortcuts.
 
@@ -472,6 +545,6 @@ stream is byte-preserving in both modes. QTermWidget 2.4 uses notification mode
 for this public signal ([upstream implementation](https://github.com/lxqt/qtermwidget/blob/2.4.0/lib/qtermwidget.cpp)).
 
 The real-widget test now creates the complete TerminalWindow with an isolated
-interactive Bash, a BEL-terminated title prompt, keyboard input, theme refresh,
+interactive Bash, a BEL-terminated title prompt, keyboard input, appearance refresh,
 searchable command output and a pixel check of the terminal viewport. This
 reproduces the previously missed normal-shell failure without host shell files.

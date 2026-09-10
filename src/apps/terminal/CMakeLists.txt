@@ -17,6 +17,7 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     links/terminal_link_opener.cpp
     profiles/terminal_profile.cpp
     profiles/terminal_profile_settings.cpp
+    restore/terminal_restore_store.cpp
     session/process_liveness.cpp
     session/pty_bridge.cpp
     session/terminal_launch_policy.cpp
@@ -43,6 +44,7 @@ set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     links/terminal_link_opener.h
     profiles/terminal_profile.h
     profiles/terminal_profile_settings.h
+    restore/terminal_restore_store.h
     session/process_liveness.h
     session/pty_bridge.h
     session/terminal_launch_policy.h

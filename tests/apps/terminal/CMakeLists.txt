@@ -68,6 +68,12 @@ target_link_libraries(
 )
 
 qindaqt_add_terminal_test(
+    qindaqt_terminal_restore_tests
+    tst_terminal_restore.cpp
+    qindaqt.terminal-restore-policy
+)
+
+qindaqt_add_terminal_test(
     qindaqt_terminal_window_tests
     tst_terminal_window.cpp
     qindaqt.terminal-window-offscreen
