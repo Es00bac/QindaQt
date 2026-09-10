@@ -64,6 +64,17 @@ public:
                                const QString &destinationDirectory);
   Q_INVOKABLE bool moveItemsTo(const QVariantList &items,
                                const QString &destinationDirectory);
+  // Foreign payloads (another application's clipboard text/uri-list or DnD
+  // URLs) carry no listing-time identity. Each source is stat'ed fresh at
+  // dispatch and the backend re-verifies that identity before mutating, so
+  // the identity-checked contract is preserved end to end. Batch semantics
+  // match copyItemsTo/moveItemsTo (serialized, stop-on-first-failure, no
+  // undo/restore tokens). Bounded to maximumForeignPaths per dispatch.
+  static constexpr int maximumForeignPaths = 4096;
+  Q_INVOKABLE bool copyForeignPathsTo(const QStringList &sourcePaths,
+                                      const QString &destinationDirectory);
+  Q_INVOKABLE bool moveForeignPathsTo(const QStringList &sourcePaths,
+                                      const QString &destinationDirectory);
   Q_INVOKABLE bool restoreLast();
   Q_INVOKABLE bool emptyTrash();
   Q_INVOKABLE bool undo();
@@ -83,6 +94,11 @@ private:
   // when any item is invalid or another operation is running.
   [[nodiscard]] bool submitBatch(MutationKind kind, const QVariantList &items,
                                  const QString &destinationDirectory = {});
+  // Resolves a fresh identity for each foreign source path and forwards the
+  // resulting item maps to submitBatch.
+  [[nodiscard]] bool submitForeignBatch(MutationKind kind,
+                                        const QStringList &sourcePaths,
+                                        const QString &destinationDirectory);
   void finish(const MutationResult &result);
   void fail(MutationError error, const QString &message);
 

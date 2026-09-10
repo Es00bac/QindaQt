@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_browsing_actions.h"
+#include "app_shell/file_manager_transfer_actions.h"
 #include "model/bookmarks_store.h"
+#include "model/clipboard_controller.h"
+#include "model/entry_properties.h"
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
+#include "model/search_controller.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
 #include "runtime/mutation_ui_action_probe.h"
@@ -15,6 +19,7 @@
 #include "qindaqt/app_shell/application_coordinator.h"
 #include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 
+#include <QClipboard>
 #include <QCommandLineParser>
 #include <QDir>
 #include <QFileInfo>
@@ -33,7 +38,8 @@ namespace {
 [[nodiscard]] QString configureAppShell(
     QindaQt::AppShell::ApplicationCoordinator &coordinator,
     QindaQt::Apps::FileManager::NavigationController &navigation,
-    QindaQt::Apps::FileManager::MutationController &mutation) {
+    QindaQt::Apps::FileManager::MutationController &mutation,
+    QindaQt::Apps::FileManager::ClipboardController &clipboard) {
   coordinator.setApplicationName(QStringLiteral("QindaQt File Manager"));
   coordinator.setWindowTitle(
       QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
@@ -45,6 +51,8 @@ namespace {
     return catalogResult.message;
   }
   QindaQt::Apps::FileManager::bindFileManagerBrowsingActions(coordinator, navigation);
+  QindaQt::Apps::FileManager::bindFileManagerTransferActions(coordinator, clipboard,
+                                                             mutation);
   QObject::connect(
       &mutation, &QindaQt::Apps::FileManager::MutationController::stateChanged,
       &coordinator, [&coordinator, &mutation]() {
@@ -158,7 +166,9 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
       QStringLiteral("mutationResultCard"), QStringLiteral("newFolderDialog"),
       QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
       QStringLiteral("trashConfirmationDialog"),
-      QStringLiteral("emptyTrashConfirmationDialog")};
+      QStringLiteral("emptyTrashConfirmationDialog"),
+      QStringLiteral("propertiesDialog"),
+      QStringLiteral("filterSubfoldersToggle")};
   for (const QString &objectName : requiredObjects) {
     if (!root->findChild<QObject *>(objectName)) {
       return objectName;
@@ -246,6 +256,13 @@ int main(int argc, char **argv) {
   auto mutationController =
       std::make_unique<QindaQt::Apps::FileManager::MutationController>(
           std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(trashRoot));
+  auto clipboardController =
+      std::make_unique<QindaQt::Apps::FileManager::ClipboardController>(
+          *mutationController, *QGuiApplication::clipboard());
+  auto propertiesController =
+      std::make_unique<QindaQt::Apps::FileManager::EntryPropertiesController>();
+  auto searchController =
+      std::make_unique<QindaQt::Apps::FileManager::SearchController>();
   auto placesController =
       std::make_unique<QindaQt::Apps::FileManager::PlacesController>(
           std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(
@@ -254,18 +271,39 @@ int main(int argc, char **argv) {
                   .filePath(QStringLiteral("qindaqt-file-manager"))));
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
   const QString appShellError = configureAppShell(
-      *appCoordinator, *controller, *mutationController);
+      *appCoordinator, *controller, *mutationController, *clipboardController);
   if (!appShellError.isEmpty()) {
     std::fprintf(stderr, "qindaqt-file-manager: %s\n",
                  qPrintable(appShellError));
     return 3;
   }
 
+  // A search result set only becomes the visible listing while the window
+  // still shows the folder the search started in; otherwise the stale results
+  // would masquerade as the new location's contents.
+  QObject::connect(
+      searchController.get(),
+      &QindaQt::Apps::FileManager::SearchController::searchReady, controller.get(),
+      [search = searchController.get(), navigation = controller.get()](
+          quint64, const QVector<QindaQt::Apps::FileManager::DirectoryEntry> &entries,
+          const QString &statusText) {
+        if (search->rootPath() != navigation->currentPath()) {
+          return;
+        }
+        navigation->showGuestListing(entries, statusText);
+      });
+
   engine.setInitialProperties(
       {{QStringLiteral("navigationController"),
         QVariant::fromValue(static_cast<QObject *>(controller.get()))},
        {QStringLiteral("mutationController"),
         QVariant::fromValue(static_cast<QObject *>(mutationController.get()))},
+       {QStringLiteral("clipboardController"),
+        QVariant::fromValue(static_cast<QObject *>(clipboardController.get()))},
+       {QStringLiteral("propertiesController"),
+        QVariant::fromValue(static_cast<QObject *>(propertiesController.get()))},
+       {QStringLiteral("searchController"),
+        QVariant::fromValue(static_cast<QObject *>(searchController.get()))},
        {QStringLiteral("placesController"),
         QVariant::fromValue(static_cast<QObject *>(placesController.get()))},
        {QStringLiteral("coordinator"),
@@ -305,8 +343,8 @@ int main(int argc, char **argv) {
     QString actionError;
     if (!QindaQt::Apps::FileManager::verifyMutationUiActions(
             engine.rootObjects().constFirst(), appCoordinator.get(),
-            controller.get(), mutationController.get(), startPath,
-            &actionError)) {
+            controller.get(), mutationController.get(), clipboardController.get(),
+            startPath, &actionError)) {
       std::fprintf(stderr, "qindaqt-file-manager: %s\n",
                    qPrintable(actionError));
       destroyRoots();

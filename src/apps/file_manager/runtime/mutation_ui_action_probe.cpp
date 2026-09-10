@@ -2,6 +2,7 @@
 #include "mutation_ui_action_probe.h"
 #include "selection_ui_probe.h"
 
+#include "model/clipboard_controller.h"
 #include "model/navigation_controller.h"
 #include "mutation/mutation_controller.h"
 
@@ -113,17 +114,109 @@ namespace {
   return std::nullopt;
 }
 
+[[nodiscard]] std::optional<bool> actionEnabled(
+    QindaQt::AppShell::ApplicationCoordinator *coordinator, const QString &actionId) {
+  const auto actions = coordinator->actionRegistry().actions();
+  for (const auto &action : actions) {
+    if (action.id == actionId) {
+      return action.enabled;
+    }
+  }
+  return std::nullopt;
+}
+
+// S3 stage: clipboard copy/paste and cut/paste through the production
+// action seam. Fresh seeds keep the stage independent of the S1/S2 fixture
+// state. Paste destination follows the focused folder entry, exactly
+// as Main.qml routes it.
+[[nodiscard]] bool verifyClipboardActionStage(
+    QObject *list, QindaQt::AppShell::ApplicationCoordinator *coordinator,
+    NavigationController *navigation, MutationController *mutation,
+    ClipboardController *clipboard, const QString &fixtureRoot, QString *error) {
+  const QString clipFolder = QDir(fixtureRoot).filePath(QStringLiteral("qml-dest"));
+  const QString clipSource = QDir(fixtureRoot).filePath(QStringLiteral("qml-clip.txt"));
+  const QString clipNested = QDir(clipFolder).filePath(QStringLiteral("qml-clip.txt"));
+  if (!QDir().mkpath(clipFolder)) {
+    return fail(error, QStringLiteral("could not create the S3 fixture folder"));
+  }
+  QFile clipSeed(clipSource);
+  if (!clipSeed.open(QIODevice::WriteOnly) ||
+      clipSeed.write(QByteArray("fixture-clip")) != qint64(12)) {
+    return fail(error, QStringLiteral("could not seed the S3 fixture file"));
+  }
+  clipSeed.close();
+  navigation->refresh();
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+
+  const auto enabledIs = [coordinator](const QString &id, bool expected) {
+    return actionEnabled(coordinator, id) == std::optional<bool>(expected);
+  };
+  if (!enabledIs(QStringLiteral("edit.paste"), false) ||
+      !selectEntry(list, navigation, QStringLiteral("qml-clip.txt"), error) ||
+      !coordinator->activateAction(QStringLiteral("edit.copy"))) {
+    return fail(error, QStringLiteral("could not dispatch the production Copy action"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (!clipboard->canPaste() || clipboard->mode() != QLatin1String("copy") ||
+      clipboard->count() != 1 ||
+      !enabledIs(QStringLiteral("edit.paste"), true)) {
+    return fail(error, QStringLiteral("the Copy action did not arm Paste"));
+  }
+  if (!selectEntry(list, navigation, QStringLiteral("qml-dest"), error) ||
+      !coordinator->activateAction(QStringLiteral("edit.paste")) ||
+      !waitForIdle(mutation, error) ||
+      readAll(clipNested) != QByteArray("fixture-clip") ||
+      readAll(clipSource) != QByteArray("fixture-clip")) {
+    return fail(error, QStringLiteral("production QML copy-paste did not commit"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (clipboard->mode() != QLatin1String("copy") ||
+      !enabledIs(QStringLiteral("edit.paste"), true)) {
+    return fail(error, QStringLiteral("a copy-paste must keep its clipboard snapshot"));
+  }
+
+  // Clear the copy-paste payload so the cut stage exercises a clean move.
+  if (!QFile::remove(clipNested)) {
+    return fail(error, QStringLiteral("could not reset the S3 paste destination"));
+  }
+
+  if (!selectEntry(list, navigation, QStringLiteral("qml-clip.txt"), error) ||
+      !coordinator->activateAction(QStringLiteral("edit.cut"))) {
+    return fail(error, QStringLiteral("could not dispatch the production Cut action"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (clipboard->mode() != QLatin1String("cut")) {
+    return fail(error,
+                QStringLiteral("the Cut action did not arm a cut paste (mode %1, rejection: %2, selectionCount %3)")
+                    .arg(clipboard->mode(), clipboard->lastRejection())
+                    .arg(clipboard->selectionCount()));
+  }
+  if (!selectEntry(list, navigation, QStringLiteral("qml-dest"), error) ||
+      !coordinator->activateAction(QStringLiteral("edit.paste")) ||
+      !waitForIdle(mutation, error) ||
+      QFileInfo::exists(clipSource) ||
+      readAll(clipNested) != QByteArray("fixture-clip")) {
+    return fail(error, QStringLiteral("production QML cut-paste did not move the file"));
+  }
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+  if (clipboard->canPaste() ||
+      !enabledIs(QStringLiteral("edit.paste"), false)) {
+    return fail(error, QStringLiteral("a committed cut-paste must clear the clipboard"));
+  }
+  return true;
+}
+
 } // namespace
 
 bool verifyMutationUiActions(
     QObject *root, QindaQt::AppShell::ApplicationCoordinator *coordinator,
     NavigationController *navigation, MutationController *mutation,
-    const QString &fixtureRoot, QString *error) {
+    ClipboardController *clipboard, const QString &fixtureRoot, QString *error) {
   // AGENT-NOTE: This is the end-to-end regression for review P1-1. It must
   // retain the production AppShell -> Main.qml -> MutationDialogs.qml ->
   // MutationController path so 64-bit identity marshalling cannot regress
   // behind controller-only tests.
-  if (!root || !coordinator || !navigation || !mutation) {
+  if (!root || !coordinator || !navigation || !mutation || !clipboard) {
     return fail(error, QStringLiteral("the UI action probe is missing a collaborator"));
   }
   if (!verifySelectionUi(root, navigation, fixtureRoot, error)) return false;
@@ -249,7 +342,11 @@ bool verifyMutationUiActions(
       mutation->canUndo() || mutation->canRestore()) {
     return fail(error, QStringLiteral("production QML batch Trash did not commit"));
   }
-  return true;
+
+  // S3 stage: clipboard copy/paste and cut/paste through the production
+  // action seam, verified in its own function for the source-shape budget.
+  return verifyClipboardActionStage(list, coordinator, navigation, mutation,
+                                    clipboard, fixtureRoot, error);
 }
 
 } // namespace QindaQt::Apps::FileManager

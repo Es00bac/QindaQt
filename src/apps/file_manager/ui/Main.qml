@@ -15,6 +15,9 @@ ApplicationWindow {
     required property var coordinator
     required property var navigationController
     required property var mutationController
+    required property var clipboardController
+    required property var propertiesController
+    required property var searchController
     required property var placesController
 
     property bool closeAuthorized: false
@@ -68,10 +71,20 @@ ApplicationWindow {
         id: entrySelection
         objectName: "entrySelection"
         navigationController: root.navigationController
+        onSelectedChanged: root.clipboardController.selectionCount = count()
     }
 
     function activeView() {
         return root.navigationController.viewMode === "grid" ? entryGrid : entryList
+    }
+
+    // Paste lands inside the focused folder entry when one exists, otherwise
+    // in the folder being browsed.
+    function pasteDestination() {
+        const entry = root.activeView().currentEntry()
+        if (entry && entry.isDirectory)
+            return entry.path
+        return root.navigationController.currentPath
     }
 
     Connections {
@@ -106,6 +119,16 @@ ApplicationWindow {
                 toolbar.locationBar.activate()
             } else if (actionId === "edit.select-all") {
                 root.activeView().selectAll()
+            } else if (actionId === "edit.cut") {
+                root.clipboardController.cutSelection(root.activeView().selectedEntries())
+            } else if (actionId === "edit.copy") {
+                root.clipboardController.copySelection(root.activeView().selectedEntries())
+            } else if (actionId === "edit.paste") {
+                root.clipboardController.pasteInto(root.pasteDestination())
+            } else if (actionId === "file.properties") {
+                root.propertiesController.inspect(root.activeView().selectedEntries())
+                if (root.propertiesController.active)
+                    propertiesDialog.open()
             } else if (actionId === "go.home") {
                 const places = root.placesController.places
                 if (places.length > 0)
@@ -128,7 +151,13 @@ ApplicationWindow {
     Connections {
         target: root.mutationController
         function onMutationCommitted() {
-            root.navigationController.refresh()
+            // While search results are on screen, re-run the bounded search
+            // instead of refreshing: a plain refresh would silently drop the
+            // guest listing the user is acting on.
+            if (root.navigationController.guestListingActive)
+                root.searchController.restart()
+            else
+                root.navigationController.refresh()
         }
     }
 
@@ -206,7 +235,11 @@ ApplicationWindow {
             Layout.fillWidth: true
             visible: false
             navigationController: root.navigationController
+            searchController: root.searchController
             onClosed: {
+                root.searchController.cancel()
+                if (root.navigationController.guestListingActive)
+                    root.navigationController.clearGuestListing()
                 root.navigationController.setNameFilter("")
                 visible = false
                 root.activeView().focusView()
@@ -225,6 +258,8 @@ ApplicationWindow {
                 navigationController: root.navigationController
                 placesController: root.placesController
                 appCoordinator: root.coordinator
+                mutationController: root.mutationController
+                clipboardController: root.clipboardController
             }
 
             StackLayout {
@@ -242,6 +277,8 @@ ApplicationWindow {
                         selection: entrySelection
                         navigationController: root.navigationController
                         appCoordinator: root.coordinator
+                        mutationController: root.mutationController
+                        clipboardController: root.clipboardController
                     }
 
                     EntryGrid {
@@ -251,6 +288,8 @@ ApplicationWindow {
                         selection: entrySelection
                         navigationController: root.navigationController
                         appCoordinator: root.coordinator
+                        mutationController: root.mutationController
+                        clipboardController: root.clipboardController
                     }
                 }
 
@@ -339,5 +378,11 @@ ApplicationWindow {
         anchors.fill: parent
         navigationController: root.navigationController
         mutationController: root.mutationController
+    }
+
+    PropertiesDialog {
+        id: propertiesDialog
+        objectName: "propertiesDialog"
+        controller: root.propertiesController
     }
 }

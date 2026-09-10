@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "EntryDrag.js" as EntryDrag
 
 Control {
     id: root
@@ -9,6 +10,10 @@ Control {
     required property var navigationController
     required property var selection
     required property var appCoordinator
+    // Optional drop dispatch targets; Main always passes the real controllers,
+    // fixture tests may leave them null (drops then refuse politely).
+    property var mutationController: null
+    property var clipboardController: null
 
     property int iconSize: 64
     readonly property int rowIconSize: Math.max(20, Math.round(iconSize * 0.4375))
@@ -111,6 +116,23 @@ Control {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
+            // Background drop target: dropping on empty view space drops into
+            // the browsed folder. Folder delegates carry their own DropArea,
+            // which sits above this one and wins when both cover the cursor.
+            DropArea {
+                anchors.fill: parent
+                onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
+                onDropped: (drop) => {
+                    const action = EntryDrag.dispatch(
+                        drop, root.navigationController.currentPath,
+                        root.mutationController, root.clipboardController)
+                    if (action !== Qt.IgnoreAction)
+                        drop.accept(action)
+                    else
+                        drop.accepted = false
+                }
+            }
+
             ListView {
                 id: listView
                 objectName: "entryListView"
@@ -142,102 +164,16 @@ Control {
                 Keys.onEnterPressed: root.activateCurrent()
                 Keys.onPressed: (event) => keyboardNavigation.handle(event)
 
-                delegate: Rectangle {
-                    id: delegateRoot
-
-                    required property var modelData
-                    required property int index
-
-                    property bool entrySelected: selection.isSelected(delegateRoot.index)
-
-                    width: listView.width
-                    height: root.rowHeight
-                    radius: 8
-                    color: delegateRoot.entrySelected ? root.palette.highlight
-                         : hoverArea.containsMouse ? root.palette.alternateBase : "transparent"
-
-                    Accessible.role: Accessible.ListItem
-                    Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
-                        ? qsTr(", folder") : qsTr(", file"))
-                    Accessible.selected: delegateRoot.entrySelected
-                    border.width: ListView.isCurrentItem && listView.activeFocus ? 2 : 0
-                    border.color: root.palette.highlight
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
-                        spacing: 8
-
-                        Image {
-                            Layout.preferredWidth: root.rowIconSize
-                            Layout.preferredHeight: root.rowIconSize
-                            sourceSize: Qt.size(root.rowIconSize, root.rowIconSize)
-                            source: "image://theme-icons/" + (delegateRoot.modelData.iconName || "application-octet-stream")
-                            Accessible.ignored: true
-                        }
-                        Label {
-                            Layout.fillWidth: true
-                            text: delegateRoot.modelData.name
-                            color: delegateRoot.entrySelected ? root.palette.highlightedText
-                                 : delegateRoot.modelData.isHidden ? root.palette.placeholderText
-                                 : root.palette.text
-                            elide: Text.ElideMiddle
-                            Accessible.ignored: true
-                        }
-                        Label {
-                            Layout.preferredWidth: 102
-                            horizontalAlignment: Text.AlignRight
-                            text: delegateRoot.modelData.sizeText
-                            color: delegateRoot.entrySelected ? root.palette.highlightedText : root.palette.placeholderText
-                            elide: Text.ElideRight
-                            Accessible.ignored: true
-                        }
-                        Label {
-                            Layout.preferredWidth: 102
-                            visible: root.width > 580
-                            text: delegateRoot.modelData.kindText
-                            color: delegateRoot.entrySelected ? root.palette.highlightedText : root.palette.placeholderText
-                            elide: Text.ElideRight
-                            Accessible.ignored: true
-                        }
-                        Label {
-                            Layout.preferredWidth: 102
-                            visible: root.width > 440
-                            text: delegateRoot.modelData.modifiedText
-                            color: delegateRoot.entrySelected ? root.palette.highlightedText : root.palette.placeholderText
-                            elide: Text.ElideRight
-                            Accessible.ignored: true
-                        }
-                    }
-
-                    MouseArea {
-                        id: hoverArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        onClicked: (mouse) => {
-                            listView.forceActiveFocus()
-                            if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
-                            } else if (mouse.modifiers & Qt.ControlModifier) {
-                                selection.toggle(delegateRoot.index)
-                            } else if (mouse.modifiers & Qt.ShiftModifier) {
-                                selection.rangeTo(delegateRoot.index)
-                            } else {
-                                selection.selectOnly(delegateRoot.index)
-                            }
-                            selection.focusIndex(delegateRoot.index)
-                            if (mouse.button === Qt.RightButton)
-                                contextMenu.popup()
-                        }
-                        onDoubleClicked: (mouse) => {
-                            if (mouse.modifiers !== Qt.NoModifier)
-                                return
-                            selection.selectOnly(delegateRoot.index)
-                            selection.focusIndex(delegateRoot.index)
-                            root.activateCurrent()
-                        }
-                    }
+                delegate: EntryListDelegate {
+                    selection: root.selection
+                    viewPalette: root.palette
+                    rowHeight: root.rowHeight
+                    rowIconSize: root.rowIconSize
+                    viewWidth: root.width
+                    mutationController: root.mutationController
+                    clipboardController: root.clipboardController
+                    onActivated: { root.activateCurrent(); }
+                    onContextMenuRequested: { contextMenu.popup(); }
                 }
             }
 
@@ -247,6 +183,21 @@ Control {
             id: contextMenu
             objectName: "entryContextMenu"
 
+            MenuItem {
+                objectName: "contextCutAction"
+                text: qsTr("Cut")
+                onTriggered: root.appCoordinator.activateAction("edit.cut")
+            }
+            MenuItem {
+                objectName: "contextClipboardCopyAction"
+                text: qsTr("Copy")
+                onTriggered: root.appCoordinator.activateAction("edit.copy")
+            }
+            MenuItem {
+                objectName: "contextPasteAction"
+                text: qsTr("Paste")
+                onTriggered: root.appCoordinator.activateAction("edit.paste")
+            }
             MenuItem {
                 objectName: "contextRenameAction"
                 text: qsTr("Rename")
@@ -266,6 +217,11 @@ Control {
                 objectName: "contextTrashAction"
                 text: qsTr("Move to Trash")
                 onTriggered: root.appCoordinator.activateAction("file.trash")
+            }
+            MenuItem {
+                objectName: "contextPropertiesAction"
+                text: qsTr("Properties")
+                onTriggered: root.appCoordinator.activateAction("file.properties")
             }
         }
 

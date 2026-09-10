@@ -31,6 +31,25 @@ qindaqt_add_file_manager_test(
     tst_mutation_controller.cpp
     qindaqt.file-manager-mutation-controller
 )
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_clipboard_controller_tests
+    tst_clipboard_controller.cpp
+    qindaqt.file-manager-clipboard-controller
+)
+# QClipboard requires a QGuiApplication; run it display-less.
+set_tests_properties(qindaqt.file-manager-clipboard-controller PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_recursive_search_tests
+    tst_search_controller.cpp
+    qindaqt.file-manager-recursive-search
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_entry_properties_tests
+    tst_entry_properties.cpp
+    qindaqt.file-manager-entry-properties
+)
 
 add_library(qindaqt_file_manager_race_writer SHARED race_writer_shim.cpp)
 target_link_libraries(qindaqt_file_manager_race_writer PRIVATE ${CMAKE_DL_LIBS})

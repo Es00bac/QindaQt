@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_browsing_actions.h"
+#include "model/clipboard_controller.h"
+#include "model/entry_properties.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
+#include "model/search_controller.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
+#include <QClipboard>
 #include <QDir>
 #include <QFile>
 #include <QGuiApplication>
@@ -61,6 +65,9 @@ int main(int argc, char **argv) {
                                   std::make_unique<DesktopFileLauncher>());
   MutationController mutation(
       std::make_unique<LocalMutationBackend>(temporary.filePath("Trash")));
+  ClipboardController clipboard(mutation, *QGuiApplication::clipboard());
+  EntryPropertiesController properties;
+  SearchController search;
   PlacesController places(
       std::make_unique<BookmarksStore>(temporary.filePath("state")));
   QindaQt::AppShell::ApplicationCoordinator coordinator;
@@ -86,6 +93,12 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(&navigation))},
        {"mutationController",
         QVariant::fromValue(static_cast<QObject *>(&mutation))},
+       {"clipboardController",
+        QVariant::fromValue(static_cast<QObject *>(&clipboard))},
+       {"propertiesController",
+        QVariant::fromValue(static_cast<QObject *>(&properties))},
+       {"searchController",
+        QVariant::fromValue(static_cast<QObject *>(&search))},
        {"placesController",
         QVariant::fromValue(static_cast<QObject *>(&places))},
        {"coordinator",

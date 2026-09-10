@@ -48,6 +48,7 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool showHidden READ showHidden NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString viewMode READ viewMode NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString nameFilter READ nameFilter NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(bool guestListingActive READ guestListingActive NOTIFY entriesChanged FINAL)
   Q_PROPERTY(int maximumNameFilterLength READ nameFilterLengthLimit CONSTANT FINAL)
   Q_PROPERTY(int iconSize READ iconSize NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool canZoomIn READ canZoomIn NOTIFY presentationChanged FINAL)
@@ -64,6 +65,15 @@ public:
   Q_INVOKABLE void goForward();
   Q_INVOKABLE void goUp();
   Q_INVOKABLE void refresh();
+  // Publishes an externally produced result set (recursive search) as the
+  // visible listing of the current folder. Guest entries flow through the
+  // same hidden/name-filter/sort projection as listed entries; activate()
+  // uses their absolute paths, so they open from anywhere in the tree.
+  // refresh() and every navigation drop the guest listing and re-read the
+  // real folder. The controller never produces guest entries itself.
+  Q_INVOKABLE void showGuestListing(const QVector<DirectoryEntry> &entries,
+                                    const QString &statusText);
+  Q_INVOKABLE void clearGuestListing();
   // Opens the entry at index: navigates into a directory, or requests a
   // bounded launch for a file. Out-of-range indexes are ignored.
   Q_INVOKABLE void activate(int index);
@@ -105,6 +115,7 @@ public:
   [[nodiscard]] bool showHidden() const;
   [[nodiscard]] QString viewMode() const;
   [[nodiscard]] QString nameFilter() const;
+  [[nodiscard]] bool guestListingActive() const { return m_guestActive; }
   [[nodiscard]] int nameFilterLengthLimit() const { return maximumNameFilterLength; }
   [[nodiscard]] int iconSize() const;
   [[nodiscard]] bool canZoomIn() const;
@@ -146,6 +157,8 @@ private:
   quint64 m_listingGeneration = 0;
   QString m_viewMode = QStringLiteral("grid");
   QString m_nameFilter;
+  bool m_guestActive = false;
+  QString m_guestStatusText;
   int m_iconSizeIndex = 2;
 };
 

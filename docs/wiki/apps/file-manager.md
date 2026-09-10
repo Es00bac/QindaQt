@@ -8,7 +8,9 @@ and one-level recovery. S2 adds the core browsing surface: an editable
 location bar, multi-select with serialized batch operations, configurable
 sorting with size/kind/modified columns, a hidden-file toggle, a list/grid
 view switch, and a places/bookmarks sidebar persisted in an app-local state
-file. The visual browsing revision adds catalog icons and bounded local raster previews. Recursive search, drag-and-drop, per-volume Trash, mounts, and network
+file. The visual browsing revision adds catalog icons and bounded local raster previews. S3 adds the daily-use
+file clipboard (cut/copy/paste), drag-and-drop, a bounded recursive search,
+and a properties dialog. Per-volume Trash, mounts, and network
 locations remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -99,6 +101,10 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `view.zoom-in` / `view.zoom-out` | `Ctrl++` (`Ctrl+=` also accepted) / `Ctrl+-`, or `Ctrl+wheel` | Increase / decrease icon size in the current view |
 | `view.zoom-reset` | `Ctrl+0` | Restore the default icon size |
 | `view.filter` | `Ctrl+F` | Focus the current-folder filename filter |
+| `edit.cut` | `Ctrl+X` | Cut the selected entries to the file clipboard |
+| `edit.copy` | `Ctrl+C` | Copy the selected entries to the file clipboard |
+| `edit.paste` | `Ctrl+V` | Paste clipboard files into the current or focused folder |
+| `file.properties` | `Alt+Return` | Open the properties dialog for the selection |
 | `edit.select-all` | `Ctrl+A` | Select every visible entry |
 | `go.home` | `Alt+Home` | Open the home folder |
 | `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
@@ -119,14 +125,22 @@ selects a matching item (repeated initial letters cycle matches).
 
 `Ctrl+F` opens **Filter this folder by name**. It performs a case-insensitive
 literal substring match over the current loaded listing, including visible
-hidden names only when Show Hidden Files is enabled. It performs no recursive
-search or new I/O. No matches remains a ready, usable folder with an explicit
-"No matching items" notice; listing truncation and failure diagnostics remain
-visible. Input is bounded to 256 UTF-16 units without splitting a surrogate
+hidden names only when Show Hidden Files is enabled. Input is bounded to 256 UTF-16 units without splitting a surrogate
 pair. Refresh, sorting, and view changes retain the filter; navigating to a
 different folder clears it. Enter returns focus to browsing, and Escape clears
 and closes the filter. File identity and preview generations are retained;
 filtered-out entries cannot stay invisibly selected for a file operation.
+
+The filter bar's **Subfolders** toggle widens the same literal substring match
+into a bounded recursive search rooted at the current folder
+(`SearchController`): one worker thread, at most 2000 results, 24 levels deep,
+and 100000 visited entries, never descending through symbolic links. Results
+replace the listing as a guest result set (the status text reports the match
+count or the reached limit); the window's current folder does not change, and
+any navigation, refresh, or filter close discards it. A committed file
+operation restarts the in-flight search so the result set reflects the new
+tree state. Case-insensitivity, hidden-file opt-in, and input bounds match the
+plain filter.
 
 Selection is shared between list and grid views. Ctrl-click toggles individual
 files; Shift-click and Shift+arrows select a range; Ctrl+A selects all visible
@@ -254,6 +268,39 @@ Per-volume Trash remains deferred to the volumes slice. Empty Trash removes
 entries below `files/` and `info/` without following links and retains those
 two directories.
 
+## File clipboard, drag-and-drop, and properties
+
+`ClipboardController` owns the File Manager clipboard policy
+(`edit.cut`/`edit.copy`/`edit.paste`, the view context menus, and drops). An
+own cut/copy snapshot keeps the listing-time identity maps, so a paste is
+dispatched through the same identity-checked batch contract as a context-menu
+copy or move; a committed cut paste clears the snapshot so dangling sources
+are never pasted twice, while a failed one keeps it for retry. Paste targets
+the focused folder entry when there is one, else the current folder; pasting
+an entry onto itself, its own parent, or its own descendant is refused before
+dispatch. The controller also publishes the standard
+`text/uri-list`/`x-special/gnome-copied-files`/KDE cut markers, and adopts
+foreign clipboard content (another application's payload, re-stat'ed at
+dispatch through `MutationController::copyForeignPathsTo`, at most 4096
+paths). Foreign content is only ever copied — a foreign cut marker is
+deliberately not honored, so another application's files are never moved out
+from under it.
+
+Drag-and-drop moves the selection within the window by default (Ctrl switches
+to copy): onto folder delegates, onto the view background (the current
+folder), and onto places/bookmark rows in the sidebar. The Trash place is
+excluded — a direct drop would bypass the `.trashinfo` record the Trash
+contract requires. Internal drags carry the JSON identity snapshot under a
+private MIME type and reuse the same self/descendant guards as paste; foreign
+URL drops enter as bounded copy-only `dropUrlsInto` dispatches.
+
+`Alt+Return`, the File menu, and the context menus open a stock-Controls
+properties dialog (`EntryPropertiesController`). A single entry shows name,
+kind, MIME type, size, modification time, symbolic permissions, and full path;
+a folder or multi selection shows the count plus a combined total size walked
+on one bounded worker thread (at most 20000 visited entries, 32 levels, no
+symlink descent, cancelled on re-inspect, close, or destruction).
+
 ## Bounded local file launch
 
 Opening a file entry validates it synchronously before requesting a launch:
@@ -313,7 +360,22 @@ rationale and boundary.
 - `MutationController` owns backend lifetime, worker scheduling, progress,
   cancellation, typed presentation state, serialized batch execution, and
   one-level recovery. It never lists folders, shows dialogs, or acquires
-  shell/service authority.
+  shell/service authority. Foreign-path batches (clipboard/DnD payloads
+  without a listing snapshot) are stat'ed at dispatch and capped at
+  `MutationController::maximumForeignPaths`.
+- `ClipboardController` (`model/clipboard_controller.h`) owns only clipboard
+  policy: the own cut/copy snapshot, foreign payload adoption, paste/drop
+  destination validation, and the paste-into-self guards. All mutation goes
+  through the injected `MutationController`; it never touches the filesystem
+  itself.
+- `SearchController` (`model/search_controller.h`) owns one bounded
+  recursive-search worker. Results cross to the GUI thread by value in one
+  token-fenced signal; cancel/restart/destruction invalidate the token before
+  joining and disposing the worker, so a queued late delivery is dropped
+  rather than dereferencing disposed state.
+- `EntryPropertiesController` (`model/entry_properties.h`) owns the
+  properties-dialog state and the bounded total-size worker with the same
+  generation-fenced disposal contract. It never mutates the filesystem.
 - `fileManagerActionCatalog()` contributes the closed mutation, view, edit,
   and navigation action set to AppShell. `ApplicationCoordinator` transports
   activation and close requests but never examines a path or decides whether
@@ -446,11 +508,12 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   serialized batch mutation, configurable sorting with size/kind/modified
   columns, hidden-file toggle, list/grid view switch, places/bookmarks
   sidebar with app-local persistence (ADR-0090).
-- **S3** — daily-use completion: standard file clipboard cut/copy/paste,
-  drag-and-drop, recursive search and a
-  preview pane, a properties dialog, an open-with chooser (requires widening
-  ADR-0029's launch contract through a new ADR), optional permanent deletion,
-  refinement beyond the shipped public Controls icon boundary (ADR-0111).
+- **S3 (partly landed)** — daily-use completion: the file clipboard
+  cut/copy/paste, drag-and-drop, bounded recursive search, and the properties
+  dialog are delivered. Still open: a preview pane, an open-with chooser
+  (requires widening ADR-0029's launch contract through a new ADR), optional
+  permanent deletion, and refinement beyond the shipped public Controls icon
+  boundary (ADR-0111).
 - **S4** — volumes: mount enumeration and per-volume Trash (supersedes the
   ADR-0064 deferral with its own ADR; coordinate polkit/udisks boundaries
   through the Program Manager thread first).
@@ -466,7 +529,7 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  recursive search, additional preview formats, portal-mediated paths, drag-and-drop,
+  additional preview formats, portal-mediated paths,
   open-with, and network locations remain explicit later outcomes (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
@@ -481,5 +544,19 @@ The browsing-comfort regressions include `qindaqt.file-manager-name-filter`,
 `qindaqt.file-manager-browsing-ui`. The last loads real File Manager controllers
 and production QML with temporary local files, then delivers keyboard and wheel
 input at compact, desktop and 1080p sizes under light and dark platform color
-schemes. It does not validate clipboard exchange, mounted volumes or network
-browsing; those remain explicit S3–S5 work.
+schemes. It validates the file clipboard only through the production action seam
+(see below); mounted volumes and network
+browsing remain explicit S4–S5 work.
+
+The S3 daily-use rows are `qindaqt.file-manager-clipboard-controller`,
+`qindaqt.file-manager-recursive-search`, and
+`qindaqt.file-manager-entry-properties`. They prove the own-snapshot cut/copy
+interplay with the offscreen clipboard (including the no-ownership-report
+regression), copy-vs-move dispatch, cut-paste clearing after commit, foreign
+copy-only adoption, drop URL filtering/deduplication, and paste-into-self
+refusals; the recursive matcher across depth/hidden/symlink bounds, cancel and
+supersede fencing, and restart; and the properties fields, bounded total-size
+walk, and stale-worker fencing. The UI-actions row drives `edit.copy`/
+`edit.cut`/`edit.paste` through the production QML action seam against
+on-disk fixtures, proving menu-armed enabled state, copy-paste commit,
+cut-paste move, and post-commit clipboard clearing end to end.

@@ -36,9 +36,21 @@ metrics from the Qt platform theme (ADR-0115); the QST publish machinery and
 `--check-theme` are removed, while `--theme`/`--theme-directory` stay accepted
 as deprecated no-ops for external harnesses. The `FileManager` component drops
 the importable QindaQt QML module metadata/sources and the per-app theme
-catalog, retaining only the AppShell seam's backing shared libraries. All 28
-`qindaqt.file-manager*` test rows pass. Clipboard cut/copy/paste,
-drag-and-drop, properties, and recursive search land next.
+catalog, retaining only the AppShell seam's backing shared libraries.
+
+File Manager progress (September 10): **daily-use completion landed** —
+clipboard cut/copy/paste (`Ctrl+X`/`Ctrl+C`/`Ctrl+V`, context menus, Edit
+menu) with identity-checked own snapshots, copy-only foreign adoption, and
+cut clearing after a committed paste; drag-and-drop of the selection within
+the view, onto folder entries, and onto places/bookmarks (move by default,
+Ctrl copies; the Trash place is excluded); an `Alt+Return` properties dialog
+with a bounded, cancellable total-size walk; and a bounded recursive search
+behind the filter bar's Subfolders toggle (2000 results / 24 levels / 100000
+visited, no symlink descent, guest result listing). All 31
+`qindaqt.file-manager*` test rows pass, including the new
+`clipboard-controller`, `recursive-search`, and `entry-properties` unit rows
+and the production-QML clipboard action stage. Per-volume Trash, mounts, and
+network locations remain open (S4–S5).
 
 ### Repair tray interaction and share appearance with ordinary Qt apps (September 8)
 
@@ -60,8 +72,10 @@ tests and twelve private native layout captures across three observed scales.
 See [Handoff](HANDOFF.md) for evidence and qualification limits.
 
 The user's broader daily-driver requirement remains active. File clipboard
-operations, drag-and-drop, properties and recursive search still need delivery;
-this slice does not complete the full File Manager roadmap.
+operations, drag-and-drop, properties and recursive search are delivered as of
+September 10 (see the ADR-0116 entry above); per-volume Trash, mounts and
+network locations still need delivery, so the full File Manager roadmap is not
+complete.
 
 ### Make first-party applications visual and container-native (September 8)
 

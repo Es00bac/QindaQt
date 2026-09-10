@@ -2,14 +2,18 @@
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_browsing_actions.h"
 #include "fakes.h"
+#include "model/clipboard_controller.h"
+#include "model/entry_properties.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
+#include "model/search_controller.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
 
+#include <QClipboard>
 #include <QFile>
 #include <QDir>
 #include <QWheelEvent>
@@ -58,6 +62,9 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   NavigationController navigation(std::make_unique<LocalDirectoryLister>(),
                                   std::make_unique<Test::FakeFileLauncher>());
   MutationController mutation(std::make_unique<LocalMutationBackend>(temporary.filePath("Trash")));
+  ClipboardController clipboard(mutation, *QGuiApplication::clipboard());
+  EntryPropertiesController properties;
+  SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
@@ -76,6 +83,9 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   engine.setInitialProperties({
       {"navigationController", QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {"mutationController", QVariant::fromValue(static_cast<QObject *>(&mutation))},
+      {"clipboardController", QVariant::fromValue(static_cast<QObject *>(&clipboard))},
+      {"propertiesController", QVariant::fromValue(static_cast<QObject *>(&properties))},
+      {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
       {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
