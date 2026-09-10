@@ -14,12 +14,15 @@
 #include <QFont>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
+#include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSignalSpy>
 #include <memory>
 #include <QTest>
 #include <QUrl>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::Apps::SettingsCenter;
 using namespace QindaQt::Apps::SettingsCenter::TestSupport;

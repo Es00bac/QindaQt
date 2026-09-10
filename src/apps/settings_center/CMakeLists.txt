@@ -50,6 +50,7 @@ target_link_libraries(
     QindaQt::AudioClient
     QindaQt::BluetoothClient
     QindaQt::SettingsNavigation
+    QindaQt::ShellIcons
     qindaqt_settings_appearance
     qindaqt_settings_display
     qindaqt_settings_network
@@ -75,6 +76,8 @@ target_compile_definitions(
     QINDAQT_INSTALL_QML_RELATIVE_PATH="../${QT6_INSTALL_QML}"
     QINDAQT_INSTALL_THEME_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
     QINDAQT_INSTALL_WALLPAPER_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt/wallpapers"
+    QINDAQT_INSTALL_ICON_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/icons"
+    QINDAQT_SOURCE_ICON_DIRECTORY="${PROJECT_SOURCE_DIR}/data/icons"
 )
 set_target_properties(
     qindaqt-settings PROPERTIES

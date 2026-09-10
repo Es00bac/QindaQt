@@ -23,6 +23,7 @@
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -59,6 +60,30 @@ namespace {
                              QINDAQT_INSTALL_THEME_RELATIVE_PATH)));
   directories.removeDuplicates();
   return directories;
+}
+
+// Confined icon-theme roots for the Customize route's preview glyphs: the
+// standard per-user and system data locations first, then the relocated
+// layout beside an installed executable, and the source catalog only for the
+// exact build executable (same guard as the developer QML import path).
+[[nodiscard]] QStringList iconThemeRoots() {
+  QStringList roots = QindaQt::Shell::Icons::IconRuntime::freedesktopIconRoots(
+      QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation),
+      QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation));
+  roots.append(QDir(QCoreApplication::applicationDirPath())
+                   .absoluteFilePath(QStringLiteral(
+                       QINDAQT_INSTALL_ICON_RELATIVE_PATH)));
+  const QFileInfo applicationFile(QCoreApplication::applicationFilePath());
+  const QString applicationPath = applicationFile.canonicalFilePath();
+  const QString buildExecutablePath =
+      QFileInfo(QStringLiteral(QINDAQT_BUILD_EXECUTABLE_PATH))
+          .canonicalFilePath();
+  if (!buildExecutablePath.isEmpty() &&
+      applicationPath == buildExecutablePath) {
+    roots.append(QStringLiteral(QINDAQT_SOURCE_ICON_DIRECTORY));
+  }
+  roots.removeDuplicates();
+  return roots;
 }
 
 void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
@@ -129,6 +154,14 @@ int main(int argc, char **argv) {
   // Never add the compiled build path to a relocated installed executable,
   // or a staged package can pass by importing uninstalled developer files.
   addSettingsQmlImportPaths(engine);
+
+  // The Customize route renders real applet glyphs through the confined
+  // public icon module. Install the provider before any route component
+  // exists; a failed install degrades those glyphs to typed placeholders
+  // and never blocks Settings.
+  const bool iconsInstalled = QindaQt::Shell::Icons::IconRuntime::install(
+      engine, iconThemeRoots(), {QStringLiteral("QindaQt")});
+  Q_UNUSED(iconsInstalled)
 
   // AGENT-GUARD: Each SettingsClient needs an independent transport. Client
   // request tokens are scoped to one client and begin at the same value; two

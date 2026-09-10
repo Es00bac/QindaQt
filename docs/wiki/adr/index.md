@@ -133,3 +133,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0118: user task-order overlay and panel quick settings](0118-user-task-order-overlay-and-panel-quick-settings.md)
 - [ADR-0119: authenticated window-preview channel](0119-authenticated-window-preview-channel.md)
 - [ADR-0120: panel translucency and blur](0120-panel-translucency-and-blur.md)
+- [ADR-0121: real iconography in the Settings Customize route](0121-real-iconography-in-the-settings-customize-route.md)

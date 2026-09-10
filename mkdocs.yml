@@ -244,3 +244,4 @@ nav:
       - "ADR-0115 share appearance through Qt platform theme": adr/0115-share-appearance-through-qt-platform-theme.md
       - "ADR-0116 build bundled applications on stock Qt 6": adr/0116-build-bundled-applications-on-stock-qt6.md
       - "ADR-0117 veto native resize for container members": adr/0117-veto-native-resize-for-container-members.md
+      - "ADR-0121: real iconography in the Settings Customize route": adr/0121-real-iconography-in-the-settings-customize-route.md

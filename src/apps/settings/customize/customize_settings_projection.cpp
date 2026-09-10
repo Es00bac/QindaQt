@@ -80,10 +80,29 @@ QVariantList CustomizeSettingsModel::profiles() const
     QVariantList result;
     result.reserve(m_profiles.size());
     for (const auto &profile : m_profiles) {
+        // The gallery draws every profile as a miniature desktop, not just
+        // the selected one, so switching layouts is a visual choice. The
+        // summary carries exactly the fields a miniature needs; applet-level
+        // truth stays on the selected profile's full projection.
+        QVariantList panelSummaries;
+        panelSummaries.reserve(profile.panels.size());
+        for (const auto &panel : profile.panels) {
+            panelSummaries.append(QVariantMap{
+                {QStringLiteral("id"), panel.id},
+                {QStringLiteral("edge"), Profiles::toString(panel.edge)},
+                {QStringLiteral("alignment"), Profiles::toString(panel.alignment)},
+                {QStringLiteral("layer"), Profiles::toString(panel.layer)},
+                {QStringLiteral("hideMode"), Profiles::toString(panel.hideMode)},
+                {QStringLiteral("thickness"), panel.thickness},
+                {QStringLiteral("length"), panel.length},
+                {QStringLiteral("appletCount"), panel.applets.size()},
+            });
+        }
         result.append(QVariantMap{
             {QStringLiteral("id"), profile.id},
             {QStringLiteral("name"), profile.name},
             {QStringLiteral("description"), profile.description},
+            {QStringLiteral("panels"), panelSummaries},
         });
     }
     return result;

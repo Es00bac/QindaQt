@@ -5,11 +5,15 @@
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 #include "qindaqt/themes/theme_loader.h"
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QtTest>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
 using namespace QindaQt::Apps::SettingsCustomize;
@@ -84,6 +88,11 @@ void CustomizePointerTests::pointerDeliverySurvivesPreviewReconstruction()
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
     QVERIFY2(theme.ok, qPrintable(theme.error));
     QVERIFY2(facade->publish(theme.theme, {}, &error), qPrintable(error));
+    QVERIFY2(QindaQt::Shell::Icons::IconRuntime::install(
+                 *view.engine(),
+                 {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
+                 {QStringLiteral("QindaQt")}),
+             "icon runtime install");
     view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.setInitialProperties({{QStringLiteral("customizeSettings"),
                                QVariant::fromValue(static_cast<QObject *>(&model))}});

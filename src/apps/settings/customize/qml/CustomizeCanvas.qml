@@ -5,10 +5,17 @@ import QtQuick
 import QtQuick.Controls as T
 import QindaQt.Tokens 1.0
 
+// The WYSIWYG work area: a monitor whose screen renders the edited layout
+// with the same design tokens the live desktop uses, so the preview tracks
+// the active QindaQt theme. Panel rectangles come from the repository
+// projection; only the cross-axis thickness gets a legibility floor so the
+// preview stays clickable at representative scale (the desktop concept
+// preview applies the same floor).
 T.Control {
     id: root
 
     required property var customizeSettings
+
     padding: Tokens.space["4"]
     Accessible.ignored: true
 
@@ -22,135 +29,87 @@ T.Control {
     contentItem: Item {
         id: canvasHost
 
+        // Monitor bezel keeps a 16:9 screen inside any column shape.
         Rectangle {
-            id: outputFrame
-            objectName: "customizeOutputCanvas"
+            id: bezel
+
             anchors.centerIn: parent
             width: Math.min(parent.width, parent.height * 16 / 9)
             height: width * 9 / 16
-            color: Tokens.bg.base
-            border.width: Tokens.space["1"] / 2
+            radius: Tokens.radius.l
+            color: Tokens.bg.highest
+            border.width: Tokens.space["1"]
             border.color: Tokens.outline.strong
-            radius: Tokens.radius.s
 
-            Text {
-                anchors.centerIn: parent
-                text: qsTr("Desktop preview · 1920 × 1080")
-                color: Tokens.fg.muted
-                font.family: Tokens.type.fontFamily
-                font.pointSize: Tokens.type.caption
-            }
+            Item {
+                id: screen
 
-            Repeater {
-                model: root.customizeSettings.panels
+                objectName: "customizeOutputCanvas"
+                anchors.fill: parent
+                anchors.margins: Tokens.space["3"]
 
-                delegate: Rectangle {
-                    id: panelSurface
-                    required property var modelData
-
-                    readonly property real canvasScale: outputFrame.width / 1920
-                    readonly property bool horizontal:
-                        panelSurface.modelData.edge === "top"
-                        || panelSurface.modelData.edge === "bottom"
-
-                    objectName: "customizeCanvasPanel_" + panelSurface.modelData.id
-                    x: panelSurface.modelData.x * canvasScale
-                    y: panelSurface.modelData.y * canvasScale
-                    width: panelSurface.modelData.width * canvasScale
-                    height: panelSurface.modelData.height * canvasScale
-                    color: Tokens.bg.highest
-                    border.width: root.customizeSettings.visualDragActive
-                                  ? Tokens.space["1"] : Tokens.space["1"] / 2
-                    border.color: root.customizeSettings.dropAccepted
-                                  ? Tokens.status.success.foreground
-                                  : Tokens.accent.default
+                // Themed backdrop: the same vertical light falloff the
+                // desktop concept preview paints, driven entirely by the
+                // live token facade. The stops stay deliberately lighter
+                // than the panel material so a dark panel bar reads
+                // against its wallpaper the way the real desktop does.
+                Rectangle {
+                    anchors.fill: parent
                     radius: Tokens.radius.s
-
-                    TapHandler {
-                        onTapped: root.customizeSettings.selectPanel(
-                                      panelSurface.modelData.id)
-                    }
-
-                    Repeater {
-                        model: ["start", "center", "end"]
-
-                        delegate: Item {
-                            id: zone
-                            required property string modelData
-                            required property int index
-
-                            readonly property var zoneApplets:
-                                panelSurface.modelData.applets.filter(
-                                    item => item.zone === zone.modelData)
-
-                            x: panelSurface.horizontal
-                               ? index * panelSurface.width / 3 : 0
-                            y: panelSurface.horizontal
-                               ? 0 : index * panelSurface.height / 3
-                            width: panelSurface.horizontal
-                                   ? panelSurface.width / 3 : panelSurface.width
-                            height: panelSurface.horizontal
-                                    ? panelSurface.height : panelSurface.height / 3
-
-                            Rectangle {
-                                anchors.fill: parent
-                                anchors.margins: Tokens.space["1"] / 2
-                                radius: Tokens.radius.s
-                                color: root.customizeSettings.visualDragActive
-                                       ? Tokens.state.hover : "transparent"
-                                border.width: root.customizeSettings.visualDragActive
-                                              ? Tokens.space["1"] / 2 : 0
-                                border.color: Tokens.outline.strong
-                            }
-
-                            readonly property string targetPanelId: panelSurface.modelData.id
-                            readonly property string targetZone: modelData
-                            objectName: "customizeDrop_" + targetPanelId + "_" + targetZone
-
-                            Flow {
-                                anchors.fill: parent
-                                anchors.margins: Tokens.space["1"]
-                                spacing: Tokens.space["1"]
-                                clip: true
-
-                                Repeater {
-                                    model: zone.zoneApplets
-
-                                    delegate: Rectangle {
-                                        id: chip
-                                        required property var modelData
-
-                                        // A representative panel is scaled from a real
-                                        // 1920px output. Full applet labels do not fit in
-                                        // its thin strips and used to leak over the preview.
-                                        // Markers preserve panel flow while the palette and
-                                        // outline carry the readable names.
-                                        width: Math.max(4, Math.min(12, zone.width - 2))
-                                        height: Math.max(3, Math.min(8, zone.height - 2))
-                                        color: Tokens.accent.subtle
-                                        border.width: Tokens.space["1"] / 2
-                                        border.color: Tokens.outline.strong
-                                        radius: Math.min(width, height) / 2
-                                        Accessible.role: Accessible.ListItem
-                                        Accessible.name: qsTr("%1 applet").arg(chip.modelData.name)
-                                        Accessible.description: qsTr("Shown in the %1 zone")
-                                                                    .arg(zone.modelData)
-
-                                        TapHandler {
-                                            onTapped: root.customizeSettings.selectApplet(
-                                                panelSurface.modelData.id,
-                                                chip.modelData.id)
-                                        }
-                                        readonly property string dragPluginId: modelData.pluginId
-                                        readonly property string dragPanelId: panelSurface.modelData.id
-                                        readonly property string dragAppletId: modelData.id
-                                        objectName: "customizeChip_" + dragAppletId
-
-                                    }
-                                }
-                            }
+                    clip: true
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.0
+                            color: Qt.lighter(Tokens.bg.base, 1.32)
+                        }
+                        GradientStop {
+                            position: 0.62
+                            color: Qt.lighter(Tokens.bg.base, 1.12)
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: Tokens.bg.base
                         }
                     }
+
+                    Rectangle {
+                        width: parent.width * 0.46
+                        height: width
+                        radius: width / 2
+                        x: parent.width * 0.38
+                        y: parent.height * 0.1
+                        color: Tokens.accent.default
+                        opacity: 0.06
+                    }
+                }
+
+                // A quiet window mock keeps the preview reading as a desktop
+                // and gives floating panels a believable backdrop.
+                CustomizeWindowMock {
+                    width: Math.min(parent.width * 0.66, 900 * screen.width / 1920)
+                    height: Math.min(parent.height * 0.52, 520 * screen.width / 1920)
+                    anchors.centerIn: parent
+                }
+
+                Repeater {
+                    model: root.customizeSettings.panels
+
+                    delegate: CustomizePanelPreview {
+                        required property var modelData
+
+                        panelData: modelData
+                        customizeSettings: root.customizeSettings
+                        canvasScale: screen.width / 1920
+                    }
+                }
+
+                Text {
+                    visible: root.customizeSettings.panels.length === 0
+                    anchors.centerIn: parent
+                    text: qsTr("This layout has no panels yet")
+                    color: Tokens.fg.muted
+                    font.family: Tokens.type.fontFamily
+                    font.pointSize: Tokens.type.body
                 }
             }
         }

@@ -15,12 +15,13 @@ T.Page {
     signal closeCancelled()
 
     // The Settings Center sidebar leaves about 760px to a route in its normal
-    // 960px window. Use a task switcher there instead of three narrow columns
-    // so the desktop preview remains the primary, usable work area.
+    // 960px window. Compact layouts stack the work areas behind tabs so the
+    // preview keeps a usable size; wide layouts show palette and inspector
+    // beside the monitor.
     readonly property bool compact: width < 1000
     property int compactSection: 0
-    readonly property Item firstFocusTarget: profileView.count > 0
-                                                  ? profileView.itemAtIndex(0)
+    readonly property Item firstFocusTarget: profileGallery.count > 0
+                                                  ? profileGallery.itemAtIndex(0)
                                                   : actionBar.firstFocusTarget
     readonly property bool dirty: customizeSettings.dirty
 
@@ -94,15 +95,15 @@ T.Page {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Tokens.space["4"]
-        spacing: Tokens.space["2"]
+        spacing: Tokens.space["3"]
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Tokens.space["2"]
+            spacing: Tokens.space["3"]
 
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Panel layout")
+                text: qsTr("Customize")
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.title
                 font.weight: Font.DemiBold
@@ -110,53 +111,20 @@ T.Page {
                 Accessible.name: text
             }
 
-            ListView {
-                id: profileView
-                objectName: "customizeProfileSelector"
-                Layout.preferredWidth: Math.min(420, root.width / 2)
-                Layout.preferredHeight: 44
-                orientation: ListView.Horizontal
-                spacing: Tokens.space["1"]
-                clip: true
-                model: root.customizeSettings.profiles
-                Accessible.role: Accessible.List
-                Accessible.name: qsTr("Layout profiles")
-
-                delegate: Button {
-                    required property var modelData
-                    text: modelData.name
-                    checkable: true
-                    autoExclusive: true
-                    checked: modelData.id === root.customizeSettings.selectedProfileId
-                    emphasized: checked
-                    available: root.customizeSettings.canEdit
-                    Accessible.role: Accessible.RadioButton
-                    Accessible.checked: checked
-                    onClicked: root.customizeSettings.selectProfile(modelData.id)
-                }
+            Label {
+                objectName: "customizeStatus"
+                Layout.maximumWidth: root.width / 2
+                text: root.customizeSettings.statusText
+                wrapMode: Text.Wrap
+                color: root.customizeSettings.conflict
+                       ? Tokens.fg.default : Tokens.fg.muted
+                font.pointSize: Tokens.type.caption
+                horizontalAlignment: Text.AlignRight
+                Accessible.role: root.customizeSettings.conflict
+                                 || root.customizeSettings.unavailable
+                                 ? Accessible.AlertMessage : Accessible.StaticText
+                Accessible.name: text
             }
-        }
-
-        Label {
-            objectName: "customizePagePurpose"
-            Layout.fillWidth: true
-            text: qsTr("Choose a layout, arrange applets in the preview, then apply your changes.")
-            muted: true
-            wrapMode: Text.Wrap
-            Accessible.name: text
-        }
-
-        Label {
-            objectName: "customizeStatus"
-            Layout.fillWidth: true
-            text: root.customizeSettings.statusText
-            wrapMode: Text.Wrap
-            color: root.customizeSettings.conflict
-                   ? Tokens.fg.default : Tokens.fg.muted
-            Accessible.role: root.customizeSettings.conflict
-                             || root.customizeSettings.unavailable
-                             ? Accessible.AlertMessage : Accessible.StaticText
-            Accessible.name: text
         }
 
         Label {
@@ -180,40 +148,58 @@ T.Page {
                     : qsTr("Layout editing is temporarily unavailable. Try again when Settings reconnects.")
         }
 
+        // Layout gallery: one visual card per catalog profile. Choosing a
+        // layout is a visual decision — every miniature renders the panels
+        // the desktop would place, and selection updates the monitor below
+        // as a draft until Apply.
+        Label {
+            Layout.fillWidth: true
+            visible: !root.customizeSettings.unavailable
+            text: qsTr("Layout profile")
+            muted: true
+            font.pointSize: Tokens.type.caption
+            Accessible.name: text
+        }
+
+        ListView {
+            id: profileGallery
+
+            objectName: "customizeProfileSelector"
+            Layout.fillWidth: true
+            Layout.preferredHeight: 100
+            visible: !root.customizeSettings.unavailable
+            orientation: ListView.Horizontal
+            spacing: Tokens.space["2"]
+            clip: true
+            model: root.customizeSettings.profiles
+            Accessible.role: Accessible.List
+            Accessible.name: qsTr("Layout profiles")
+
+            delegate: CustomizeProfileCard {
+                required property var modelData
+
+                profile: modelData
+                selected: modelData.id === root.customizeSettings.selectedProfileId
+                available: root.customizeSettings.canEdit
+                customizeSettings: root.customizeSettings
+            }
+        }
+
         RowLayout {
             objectName: "customizeWideLayout"
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: !root.compact && !root.customizeSettings.unavailable
-            spacing: Tokens.space["2"]
+            spacing: Tokens.space["3"]
 
-            ColumnLayout {
-                // Keep supporting tools secondary to the live layout preview.
-                // Without a maximum, long palette/outline text can claim the
-                // row's spare width and collapse the representative output.
-                Layout.minimumWidth: 220
-                Layout.preferredWidth: 240
-                Layout.maximumWidth: 240
+            CustomizeAppletPalette {
+                Layout.minimumWidth: 204
+                Layout.preferredWidth: 212
+                Layout.maximumWidth: 232
                 Layout.fillHeight: true
-                Label {
-                    text: qsTr("Add and arrange")
-                    font.weight: Font.DemiBold
-                    Accessible.role: Accessible.Heading
-                    Accessible.name: text
-                }
-                CustomizeAppletPalette {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 250
-                    customizeSettings: root.customizeSettings
-                }
-                CustomizeOutline {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    customizeSettings: root.customizeSettings
-                }
+                customizeSettings: root.customizeSettings
             }
             CustomizeCanvas {
-                Layout.topMargin: Tokens.space["4"]
                 Layout.minimumWidth: 360
                 Layout.preferredWidth: 520
                 Layout.fillWidth: true
@@ -221,10 +207,9 @@ T.Page {
                 customizeSettings: root.customizeSettings
             }
             CustomizeProperties {
-                Layout.topMargin: Tokens.space["4"]
-                Layout.minimumWidth: 220
-                Layout.preferredWidth: 240
-                Layout.maximumWidth: 240
+                Layout.minimumWidth: 224
+                Layout.preferredWidth: 260
+                Layout.maximumWidth: 288
                 Layout.fillHeight: true
                 customizeSettings: root.customizeSettings
             }
@@ -271,7 +256,6 @@ T.Page {
 
                     CustomizeAppletPalette {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 118
                         compact: true
                         customizeSettings: root.customizeSettings
                     }

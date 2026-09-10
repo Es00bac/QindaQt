@@ -149,6 +149,14 @@ filesystem parse. Absent hints choose `breeze-dark` for dark canvases and
 `breeze` for light canvases, while the locator always appends `hicolor`.
 Invalid hints reject the catalog before icon installation.
 
+The Settings application installs the same runtime for the Customize route's
+preview glyphs, chaining the bundled `QindaQt` theme over freedesktop roots,
+the relocated `../share/icons` layout beside an installed executable, and the
+source catalog for the exact build executable
+([ADR-0121](../adr/0121-real-iconography-in-the-settings-customize-route.md)).
+Installed Settings packages stage the icon module beside the route through the
+shared `IconRuntimeInstall.cmake` closure.
+
 Panel summaries use the compiled `Icon` element and preserve their prior
 accessible names on the surrounding buttons. Task-list composition owns one
 `DesktopEntryIconResolver` and projects its result from the compositor's

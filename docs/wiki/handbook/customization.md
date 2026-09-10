@@ -61,20 +61,25 @@ setting.
 
 ## Changing the layout
 
-Open **System Settings → Customize**. You start from a preset — the default
-QindaQt layout, a minimal one, or layouts inspired by GNOME, Unity, MATE,
-XFCE, NeXTSTEP, macOS, and classic or modern Windows. These are
-starting-points in the spirit of those desktops, not recreations of them.
+Open **System Settings → Customize**. The page opens with a gallery of layout
+previews — small monitor thumbnails that show where each preset puts its
+panels. Pick the one that looks right: the default QindaQt layout, a minimal
+one, or layouts inspired by GNOME, Unity, MATE, XFCE, NeXTSTEP, macOS, and
+classic or modern Windows. These are starting-points in the spirit of those
+desktops, not recreations of them, and the preview below updates the moment
+you pick one.
 
-From there the canvas lets you rework the layout directly:
+From there the monitor lets you rework the layout directly — it mirrors what
+your desktop will look like, in your current theme:
 
 - **Move things.** Drag an applet between panels or between the start,
-  middle, and end zones of a panel; a live preview shows the result before
-  you let go.
-- **Add and remove.** Add applets from the palette, duplicate a selected
-  applet (`Ctrl+D`), or remove it (`Delete`).
-- **Reshape a panel.** Select it to change its screen edge, alignment,
-  thickness, length, and visibility behavior.
+  middle, and end zones of a panel; the target lights up before you let go.
+- **Add and remove.** Add applets from the icon palette (hover a tile to see
+  what it is), duplicate a selected applet (`Ctrl+D`), or remove it
+  (`Delete`).
+- **Reshape a panel.** Click it on the monitor and the side panel offers a
+  compass for the screen edge, alignment buttons, thickness and length
+  sliders, and a visibility choice — icons with tooltips, not walls of text.
 - **Stay safe.** Every gesture is one **Undo** step; **Redo** walks forward
   again. `Ctrl+Return` applies the draft, `Ctrl+Shift+Return` throws it away,
   and closing the window with unsaved changes asks first. A cancelled drag
