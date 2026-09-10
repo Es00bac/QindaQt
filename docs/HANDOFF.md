@@ -29,6 +29,11 @@ no findings in the program's paths.
 
 ### Coverage limits at handoff
 
+- Full-suite close-out (804 rows, `WAYLAND_DISPLAY=qindaqt-0`): 789 pass.
+  The 15 failures decompose as: one stale harness expectation in
+  `qindaqt.apps-native-material-matrix` caused by the editor capture rename —
+  **fixed and passing in `931d2ddd`** — and 14 rows outside the program's
+  ownership, all environmental:
 - The five `qindaqt.settings-*-installed-route` package rows fail in this
   checkout for an environmental reason that predates the program: the
   system-wide Portage installs (September 8/9) placed `QindaQt/SettingsApp`
@@ -40,6 +45,14 @@ no findings in the program's paths.
   provide the module" no longer holds on this host. Release/settings lane
   should run these rows in a host-unset environment or teach the check to
   mask the system QML root.
+- `compositor.kwin-shell-window-actions`, `compositor.kwin-plugin-dependency-contract`,
+  and `session.parent-wayland.weston-headless` need a live installed
+  compositor D-Bus service or a full nested stack on this host — the same
+  environmental class commit `e0c7ff78` documented for the compositor lane.
+- The seven `shell.notification-live.*` rows fail inside the nested session
+  harness (`org.qindaqt.Display1` exits status 3, `org.freedesktop.systemd1`
+  activation unavailable); the program touched no notification, shell, or
+  display-service code. Routed to the shell lane with this evidence.
 - Display-dependent rows (fonts coordinator, display-settings-model,
   clipboard-applet) require the session socket (`WAYLAND_DISPLAY=qindaqt-0`)
   and pass with it set.
