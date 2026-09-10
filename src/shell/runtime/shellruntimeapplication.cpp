@@ -289,6 +289,13 @@ void ShellRuntimeApplication::adoptLayoutProfile(
     if (m_panelVisibility) {
         m_panelVisibility->applyProfile(profile);
     }
+    // The window factory's resolved inventory must follow the adopted
+    // profile before reconciliation: new panel ids cannot create windows
+    // from the startup inventory, and kept panels pick up edited applet
+    // sets through their live panel maps.
+    if (m_windowFactory) {
+        m_windowFactory->adoptProfile(profile, m_applets, m_appletPolicy);
+    }
     qInfo().noquote() << "QindaQt shell adopted layout profile" << profile.id;
     scheduleOutputReconcile();
 }
