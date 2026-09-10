@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
 // Milestone 1 keeps path entry as plain text fields; portal file chooser
 // integration is a documented follow-up.
@@ -24,12 +22,12 @@ Item {
         exportDialog.open()
     }
 
-    T.Dialog {
+    Dialog {
         id: importDialog
         objectName: "importDialog"
         title: qsTr("Import Calendar")
         modal: true
-        standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: parent
 
         onAccepted: {
@@ -47,25 +45,25 @@ Item {
         }
 
         contentItem: ColumnLayout {
-            spacing: Tokens.space["2"]
+            spacing: 4
 
-            Qinda.Label { text: qsTr("File path (.ics)") }
-            Qinda.TextField {
+            Label { text: qsTr("File path (.ics)") }
+            TextField {
                 id: importPathField
                 Layout.fillWidth: true
-                accessibleName: qsTr("iCalendar file to import")
+                Accessible.name: qsTr("iCalendar file to import")
             }
 
-            Qinda.Label { text: qsTr("Into calendar") }
-            Qinda.ComboBox {
+            Label { text: qsTr("Into calendar") }
+            ComboBox {
                 id: importCalendarCombo
                 Layout.fillWidth: true
-                accessibleDescription: qsTr("Target calendar for imported events")
+                Accessible.description: qsTr("Target calendar for imported events")
                 model: root.calendarController.calendars
                 textRole: "displayName"
             }
 
-            Qinda.Label {
+            Label {
                 id: importResultLabel
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
@@ -73,12 +71,12 @@ Item {
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: exportDialog
         objectName: "exportDialog"
         title: qsTr("Export Calendar")
         modal: true
-        standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: parent
 
         onAccepted: {
@@ -96,20 +94,20 @@ Item {
         }
 
         contentItem: ColumnLayout {
-            spacing: Tokens.space["2"]
+            spacing: 4
 
-            Qinda.Label { text: qsTr("File path (.ics)") }
-            Qinda.TextField {
+            Label { text: qsTr("File path (.ics)") }
+            TextField {
                 id: exportPathField
                 Layout.fillWidth: true
-                accessibleName: qsTr("Destination iCalendar file")
+                Accessible.name: qsTr("Destination iCalendar file")
             }
 
-            Qinda.Label { text: qsTr("Calendar") }
-            Qinda.ComboBox {
+            Label { text: qsTr("Calendar") }
+            ComboBox {
                 id: exportCalendarCombo
                 Layout.fillWidth: true
-                accessibleDescription: qsTr("Calendar to export")
+                Accessible.description: qsTr("Calendar to export")
                 model: {
                     const entries = [qsTr("All calendars")]
                     const calendars = root.calendarController.calendars
@@ -119,7 +117,7 @@ Item {
                 }
             }
 
-            Qinda.Label {
+            Label {
                 id: exportResultLabel
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap

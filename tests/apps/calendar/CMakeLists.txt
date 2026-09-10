@@ -32,6 +32,16 @@ qindaqt_add_calendar_test(
     qindaqt.calendar-reminder-scheduler
 )
 qindaqt_add_calendar_test(
+    qindaqt_calendar_reminder_delivery_tests
+    tst_reminder_delivery.cpp
+    qindaqt.calendar-reminder-delivery
+)
+qindaqt_add_calendar_test(
+    qindaqt_calendar_action_catalog_tests
+    tst_calendar_action_catalog.cpp
+    qindaqt.calendar-action-catalog
+)
+qindaqt_add_calendar_test(
     qindaqt_calendar_ics_import_export_tests
     tst_ics_import_export.cpp
     qindaqt.calendar-ics-import-export
@@ -48,3 +58,14 @@ add_test(
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_desktop_metadata.cmake"
 )
 set_tests_properties(qindaqt.calendar-desktop-metadata PROPERTIES LABELS "calendar")
+
+add_test(
+    NAME qindaqt.calendar-cli-rejects-multiple-paths
+    COMMAND "${CMAKE_COMMAND}"
+            "-DCALENDAR_EXECUTABLE=$<TARGET_FILE:qindaqt-calendar>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_cli_rejection.cmake"
+)
+set_tests_properties(
+    qindaqt.calendar-cli-rejects-multiple-paths
+    PROPERTIES LABELS "calendar" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

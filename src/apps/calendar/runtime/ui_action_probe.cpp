@@ -17,7 +17,7 @@
 namespace QindaQt::Apps::Calendar {
 namespace {
 
-[[nodiscard]] bool fail(QString *error, const QString &message) {
+bool fail(QString *error, const QString &message) {
   if (error) {
     *error = message;
   }

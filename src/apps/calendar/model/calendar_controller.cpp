@@ -488,6 +488,9 @@ void CalendarController::refreshOccurrences() {
 void CalendarController::handleReminderDue(const QString &eventUid,
                                            const QString &summary,
                                            const QDateTime &occurrenceStart) {
+  // The uid is part of the scheduler's signal contract but the banner and
+  // delivery only need summary + start; a future details action will need it.
+  Q_UNUSED(eventUid);
   const QString text =
       QStringLiteral("%1 — %2")
           .arg(summary, occurrenceStart.toString(QStringLiteral("HH:mm")));
