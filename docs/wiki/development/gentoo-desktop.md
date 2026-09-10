@@ -5,17 +5,32 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r1`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r2`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=0eda78efe5fafd4b7b8b592d2fa9d08d398015c5
+qq_source_commit=c37fb136c01954d74232b8e6a10148e505f37445
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260909-r3.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r2.tar.gz
 ```
+
+The `-r2` revision redesigns the Settings Customize route into a visual layout
+editor (ADR-0121): a layout gallery of miniature desktops, a WYSIWYG monitor
+that reproduces the live panel materials from the active theme tokens, an
+icon palette, and an icon-first inspector with real applet glyphs through
+the confined public iconography module. The change is confined to the
+Settings application, its QML modules, the route's tests, and documentation;
+no compositor, KWin plugin, or shell-runtime code changed, so the new
+Customize page is visible the next time `qindaqt-settings` starts, and a
+live shell refresh adopts the reinstalled files without touching KWin or
+running applications.
+
+The September 10 `-r1` checkpoint before it pins the dock-experience work:
+panel translucency and blur (ADR-0120), panel quick configuration, and the
+dock interaction upgrades.
 
 The `-r3` revision vetoes native interactive resize for container members and
 removes their resize-only decoration borders (ADR-0117): a grouped member's
