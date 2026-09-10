@@ -32,7 +32,7 @@ namespace {
 
 void TerminalWindow::updateStatusForState(TerminalSession::State state) {
   QString text;
-  QPalette palette = m_appearance.windowPalette;
+  bool danger = false;
   switch (state) {
   case TerminalSession::State::Idle:
     text = QStringLiteral("No session");
@@ -60,16 +60,16 @@ void TerminalWindow::updateStatusForState(TerminalSession::State state) {
     break;
   case TerminalSession::State::ShutdownFailed:
     text = QStringLiteral("Session close failed");
-    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
+    danger = true;
     break;
   }
-  showStatusMessage(text, false, palette);
+  showStatusMessage(text, danger);
   updateViewActionStates();
 }
 
 void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
   QString text;
-  QPalette palette = m_appearance.windowPalette;
+  bool danger = false;
   switch (status.kind) {
   case TerminalExitStatus::Kind::Normal:
     text = QStringLiteral("Session exited (code %1)").arg(status.code);
@@ -77,52 +77,38 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
   case TerminalExitStatus::Kind::Signal:
     text =
         QStringLiteral("Session terminated by %1").arg(signalName(status.code));
-    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
+    danger = true;
     break;
   case TerminalExitStatus::Kind::UnknownExit:
     // Another reaper consumed the status; the truth is "exited, code
     // unknown", never a fabricated normal status.
     text = QStringLiteral("Session exited (status unknown)");
-    palette.setColor(QPalette::WindowText,
-                     m_appearance.statusWarningForeground);
     break;
   case TerminalExitStatus::Kind::StartFailed:
     text = QStringLiteral("Error: %1").arg(status.diagnostic);
-    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
+    danger = true;
     break;
   case TerminalExitStatus::Kind::None:
     return;
   }
-  showStatusMessage(text, false, palette);
+  showStatusMessage(text, danger);
 }
 
 void TerminalWindow::presentProfileApplyResult(const QVariantList &ledger) {
   const TerminalProfileApplyStatus status = terminalProfileApplyStatus(ledger);
-  QPalette palette = m_appearance.windowPalette;
-  if (status.severity == TerminalProfileApplySeverity::Warning) {
-    palette.setColor(QPalette::WindowText,
-                     m_appearance.statusWarningForeground);
-  } else if (status.severity == TerminalProfileApplySeverity::Error) {
-    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
-  }
-  showStatusMessage(status.text, false, palette);
+  showStatusMessage(status.text,
+                    status.severity == TerminalProfileApplySeverity::Error);
 }
 
-void TerminalWindow::showStatusMessage(const QString &text, bool danger) {
-  QPalette palette = m_appearance.windowPalette;
-  if (danger) {
-    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
-  }
-  showStatusMessage(text, danger, palette);
-}
-
-void TerminalWindow::showStatusMessage(const QString &text, bool,
-                                       const QPalette &palette) {
+void TerminalWindow::showStatusMessage(const QString &text, bool /*danger*/) {
   if (m_statusLabel == nullptr) {
     return;
   }
+  // AGENT-CONTRACT (ADR-0116): severity is carried by the status text (the
+  // "Error:" prefix and the typed exit wording) and the accessible
+  // announcement, never by a recolored palette; the label inherits the
+  // platform theme like every other chrome element.
   m_statusLabel->setText(text);
-  m_statusLabel->setPalette(palette);
   // AGENT-CONTRACT: Every visible status change updates and announces the
   // screen-reader name; search and selected-link truth must not rely on color.
   m_statusLabel->setAccessibleName(

@@ -5,6 +5,8 @@
 #include <QString>
 #include <QStringList>
 
+#include <optional>
+
 namespace QindaQt::Apps::Terminal {
 
 // AGENT-CONTRACT: A TerminalProfile is the complete, validated description of
@@ -26,14 +28,15 @@ struct TerminalProfile final {
   QString shellProgram;
   // Verbatim arguments, bounded exactly like the CLI --arg contract.
   QStringList shellArguments;
-  // Empty selects the theme projection's monospace font; otherwise an
+  // Empty selects the platform theme's monospace font; otherwise an
   // installed font family name (QFont performs runtime matching).
   QString fontFamily;
-  // 0 selects the theme projection's size; otherwise kMinFontSize..
+  // 0 selects the platform monospace font's size; otherwise kMinFontSize..
   // kMaxFontSize.
   int fontSize = 0;
-  // QindaQt theme identifier whose QST projection renders the terminal
-  // surface (the Konsole scheme document). Default "qinda-dark".
+  // Terminal content scheme identifier ("system", "light", "dark") selecting
+  // the ANSI protocol palette and content surface (ADR-0112/ADR-0116). Window
+  // chrome never follows it. Default "system".
   QString colorSchemeId;
   // Bounded scrollback in lines, 0..kMaxScrollbackLines.
   int scrollbackLines = kDefaultScrollbackLines;
@@ -55,6 +58,25 @@ struct TerminalProfile final {
   // this limit.
   static constexpr int kMaxUserProfiles = 16;
 };
+
+// AGENT-CONTRACT: Terminal content schemes are the profile's terminal color
+// scheme selection (ADR-0112/ADR-0116). They select ANSI protocol palettes and
+// the content surface only; window chrome always follows the Qt platform
+// theme and Fusion. The persisted ids ("system"/"light"/"dark") are the
+// profile codec vocabulary.
+enum class TerminalContentScheme { System, Light, Dark };
+
+[[nodiscard]] QString terminalContentSchemeId(TerminalContentScheme scheme);
+// True only for the canonical persisted ids ("system"/"light"/"dark"); legacy
+// QST ids are NOT admitted here — decode maps them through
+// terminalContentSchemeForId before validation runs.
+[[nodiscard]] bool isTerminalContentSchemeId(const QString &id);
+// Resolves a persisted id. Legacy QST theme ids map by variant
+// (qinda-dark/qinda-dusk/qinda-high-contrast -> dark,
+// qinda-light/qinda-macos -> light) so profiles written before ADR-0116 stay
+// loadable; anything else returns nullopt and callers fail closed.
+[[nodiscard]] std::optional<TerminalContentScheme>
+terminalContentSchemeForId(const QString &id);
 
 struct ProfileValidation final {
   bool ok = false;

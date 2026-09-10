@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "links/terminal_link.h"
 #include "ui/terminal_appearance.h"
+#include "ui/terminal_ansi_palette.h"
 #include "ui/terminal_window.h"
 #include "ui/terminal_profile_dialog.h"
 #include "session/process_liveness.h"
 #include "ui/terminal_widget_adapter.h"
 
-#include "qindaqt/themes/theme_loader.h"
-#include "qindaqt/design_tokens/token_deriver.h"
-
 #include <qtermwidget.h>
 #include <QCoreApplication>
 #include <QAction>
+#include <QFontDatabase>
 #include <QListWidget>
 #include <QElapsedTimer>
 #include <QImage>
@@ -23,6 +23,7 @@
 
 using QindaQt::Apps::Terminal::builtinDefaultProfile;
 using QindaQt::Apps::Terminal::TerminalAppearanceAdapter;
+using QindaQt::Apps::Terminal::TerminalContentScheme;
 using QindaQt::Apps::Terminal::TerminalSessionBackend;
 using QindaQt::Apps::Terminal::TerminalLaunchRequest;
 using QindaQt::Apps::Terminal::TerminalSearchDirection;
@@ -32,18 +33,20 @@ using QindaQt::Apps::Terminal::TerminalWidgetAdapter;
 
 namespace {
 
+QFont testMonoFont() {
+  return QFontDatabase::systemFont(QFontDatabase::FixedFont);
+}
+
 TerminalViewAppearance darkAppearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!theme.ok) {
-    qFatal("Could not load qinda-dark: %s", qPrintable(theme.error));
-  }
-  const auto appearance = TerminalAppearanceAdapter::fromTheme(theme.theme);
-  if (!appearance.ok()) {
-    qFatal("Could not derive Terminal appearance: %s",
-           qPrintable(appearance.diagnostic));
-  }
-  return *appearance.appearance;
+  return TerminalAppearanceAdapter::derive(QPalette(),
+                                           TerminalContentScheme::Dark, false,
+                                           testMonoFont());
+}
+
+TerminalViewAppearance lightAppearance() {
+  return TerminalAppearanceAdapter::derive(QPalette(),
+                                           TerminalContentScheme::Light, false,
+                                           testMonoFont());
 }
 
 } // namespace
@@ -53,61 +56,44 @@ class TerminalWidgetAdapterTest final : public QObject {
 
 private slots:
   void productionWindowPaintsInteractivePrompt();
-  void profilesInheritReadableWindowPalette();
+  void profilesDialogUsesStockPlatformChrome();
   void liveShellDirectoryAndKeyboardInput();
-  void ansiColorsPaintAcrossLiveThemeChanges();
+  void ansiColorsPaintAcrossLiveSchemeChanges();
   void explicitProfileSchemeSurvivesDesktopRefresh();
   void zoomIsLocalAndSurvivesAppearance();
   void blankGridDoesNotPublishCopyAvailability();
   void customSchemePaintsRequestedTerminalBackground();
   void realPtyOutputSupportsBoundedSearchAndVisibleLinks();
+  void osc8SequencesExposeNoHiddenLinkTarget();
 };
 
-void TerminalWidgetAdapterTest::profilesInheritReadableWindowPalette() {
+void TerminalWidgetAdapterTest::profilesDialogUsesStockPlatformChrome() {
   using namespace QindaQt::Apps::Terminal;
-  using QindaQt::DesignTokens::DesignTokenDeriver;
-  for (const auto &name : {"qinda-dark", "qinda-light", "qinda-high-contrast"}) {
-    const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + name + ".json");
-    QVERIFY(theme.ok);
-    const auto adapted = TerminalAppearanceAdapter::fromTheme(theme.theme);
-    QVERIFY(adapted.ok());
-    const auto &appearance = *adapted.appearance;
-    // Keep the QApplication palette unchanged: a new modal must inherit the
-    // owning window even before another desktop-wide appearance notification.
-    QWidget parent;
-    parent.setPalette(appearance.windowPalette);
-    parent.setFont(appearance.interfaceFont);
-    parent.setStyleSheet(appearance.chromeStyleSheet);
-    TerminalProfileDialog dialog({}, {}, false, {}, &parent);
-    dialog.show();
-    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
-    auto *list = dialog.findChild<QListWidget *>(QStringLiteral("terminalProfileList"));
-    QVERIFY(list);
-    list->clearSelection();
-    list->clearFocus();
-    QTest::qWait(20);
-    const auto image = list->viewport()->grab().toImage();
-    QVERIFY(!image.isNull());
-    const auto background = image.pixelColor(image.width()/2, image.height()-3);
-    QVERIFY2(DesignTokenDeriver::contrastRatio(list->palette().color(QPalette::Text),
-                                             background) >= 4.5, name);
-    list->setCurrentRow(0);
-    list->clearFocus();
-    QTest::qWait(20);
-    const auto selected = list->viewport()->grab().toImage();
-    const auto rectangle = list->visualItemRect(list->item(0));
-    const qreal scale = selected.devicePixelRatio();
-    const auto selectedBackground = selected.pixelColor(
-        qRound((rectangle.right()-8)*scale), qRound(rectangle.center().y()*scale));
-    QVERIFY2(DesignTokenDeriver::contrastRatio(
-        list->palette().color(QPalette::HighlightedText), selectedBackground) >= 4.5, name);
-    QCOMPARE(dialog.palette().color(QPalette::Window),
-             appearance.windowPalette.color(QPalette::Window));
-    QCOMPARE(dialog.palette().color(QPalette::WindowText),
-             appearance.windowPalette.color(QPalette::WindowText));
-    QCOMPARE(dialog.font(), appearance.interfaceFont);
-  }
+  // ADR-0116: the dialog installs no palette, font, or stylesheet of its own;
+  // it and its native list child track the application palette, which is the
+  // platform theme's product. No Terminal code seeds or re-derives them.
+  const QPalette previous = QGuiApplication::palette();
+  QPalette distinct(previous);
+  distinct.setColor(QPalette::Window, QColor("#33442f"));
+  distinct.setColor(QPalette::WindowText, QColor("#f2f2f2"));
+  distinct.setColor(QPalette::Base, QColor("#22311f"));
+  distinct.setColor(QPalette::Text, QColor("#f2f2f2"));
+  QGuiApplication::setPalette(distinct);
+  TerminalProfileDialog dialog({}, {}, false);
+  dialog.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+  QVERIFY(dialog.styleSheet().isEmpty());
+  QCOMPARE(dialog.palette().color(QPalette::Window),
+           distinct.color(QPalette::Window));
+  auto *list = dialog.findChild<QListWidget *>(QStringLiteral("terminalProfileList"));
+  QVERIFY(list);
+  QCOMPARE(list->palette().color(QPalette::Base), distinct.color(QPalette::Base));
+  QCOMPARE(dialog.font(), QGuiApplication::font());
+
+  // A live desktop palette change propagates to the open dialog on its own.
+  QGuiApplication::setPalette(previous);
+  QTRY_COMPARE(dialog.palette().color(QPalette::Window),
+               previous.color(QPalette::Window));
 }
 
 void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
@@ -132,7 +118,7 @@ void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
         auto result = std::make_unique<TerminalWidgetAdapter>(darkAppearance(), profile);
         adapter = result.get(); return result;
       }, &monitor, TeardownBounds{});
-  TerminalWindow window(std::move(collection), darkAppearance(), {}, nullptr);
+  TerminalWindow window(std::move(collection), darkAppearance(), nullptr);
   window.resize(800, 500); window.show();
   QVERIFY(QTest::qWaitForWindowExposed(&window));
   QTest::qWait(75);
@@ -168,8 +154,7 @@ void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
     auto profile = builtinDefaultProfile();
     profile.id = QStringLiteral("capture-local");
     profile.name = QStringLiteral("Local shell");
-    TerminalProfileDialog profiles({profile}, profile.id, false,
-        {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light")}, &window);
+    TerminalProfileDialog profiles({profile}, profile.id, false, &window);
     profiles.findChild<QListWidget *>(QStringLiteral("terminalProfileList"))->setCurrentRow(1);
     profiles.show();
     QTest::qWait(60);
@@ -180,14 +165,10 @@ void TerminalWidgetAdapterTest::productionWindowPaintsInteractivePrompt() {
 void TerminalWidgetAdapterTest::explicitProfileSchemeSurvivesDesktopRefresh() {
   auto profile = builtinDefaultProfile();
   profile.id = QStringLiteral("custom-profile");
-  profile.colorSchemeId = QStringLiteral("qinda-light");
-  const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-light.json"));
-  QVERIFY(loaded.ok);
-  const auto light = TerminalAppearanceAdapter::fromTheme(loaded.theme);
-  QVERIFY(light.ok());
+  profile.colorSchemeId = QStringLiteral("light");
+  const auto light = lightAppearance();
   QWidget host;
-  TerminalWidgetAdapter adapter(*light.appearance, profile);
+  TerminalWidgetAdapter adapter(light, profile);
   auto *layout = new QVBoxLayout(&host);
   layout->addWidget(adapter.terminalWidget());
   host.resize(500, 300); host.show();
@@ -196,17 +177,21 @@ void TerminalWidgetAdapterTest::explicitProfileSchemeSurvivesDesktopRefresh() {
     const QImage image = adapter.terminalWidget()->grab().toImage();
     return image.pixelColor(image.width() / 2, image.height() / 2).rgb() == background.rgb();
   };
+  // A desktop-scheme refresh does not overwrite the profile's pinned scheme.
   adapter.setAppearance(darkAppearance());
-  QTRY_VERIFY(backgroundPainted(light.appearance->terminalBackground));
-  auto high = darkAppearance();
-  high.highContrast = true;
+  QTRY_VERIFY(backgroundPainted(light.terminalBackground));
+  // High contrast temporarily takes precedence over the pinned scheme…
+  const auto high =
+      TerminalAppearanceAdapter::derive(QPalette(), TerminalContentScheme::Dark,
+                                        true, testMonoFont());
   adapter.setAppearance(high);
   QTRY_VERIFY(backgroundPainted(high.terminalBackground));
+  // …and disabling it restores the profile's choice without a shell restart.
   adapter.setAppearance(darkAppearance());
-  QTRY_VERIFY(backgroundPainted(light.appearance->terminalBackground));
+  QTRY_VERIFY(backgroundPainted(light.terminalBackground));
 }
 
-void TerminalWidgetAdapterTest::ansiColorsPaintAcrossLiveThemeChanges() {
+void TerminalWidgetAdapterTest::ansiColorsPaintAcrossLiveSchemeChanges() {
   using namespace QindaQt::Apps::Terminal;
   QWidget host;
   TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
@@ -238,24 +223,22 @@ void TerminalWidgetAdapterTest::ansiColorsPaintAcrossLiveThemeChanges() {
   QTRY_VERIFY(adapter.searchScrollback({.pattern = QStringLiteral("slot15")},
                                      TerminalSearchDirection::Initial).found);
   adapter.clearScrollbackSearch();
-  for (const QString &themeId : {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light"),
-                                 QStringLiteral("qinda-high-contrast")}) {
-    const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + themeId + QStringLiteral(".json"));
-    QVERIFY(loaded.ok);
-    const auto appearance = TerminalAppearanceAdapter::fromTheme(loaded.theme);
-    QVERIFY(appearance.ok());
-    adapter.setAppearance(*appearance.appearance);
+  const QList<TerminalViewAppearance> appearances{
+      darkAppearance(), lightAppearance(),
+      TerminalAppearanceAdapter::derive(QPalette(), TerminalContentScheme::Dark,
+                                        true, testMonoFont())};
+  for (const auto &appearance : appearances) {
+    adapter.setAppearance(appearance);
     QTest::qWait(60);
     const QImage image = adapter.terminalWidget()->grab().toImage();
     for (int index = 0; index < 16; ++index) {
       int painted = 0;
       for (int y = 0; y < image.height(); ++y)
         for (int x = 0; x < image.width(); ++x)
-          if (image.pixelColor(x, y).rgb() == appearance.appearance->ansi[index].rgb())
+          if (image.pixelColor(x, y).rgb() == appearance.ansi[index].rgb())
             ++painted;
       QVERIFY2(painted > 10, qPrintable(QStringLiteral("%1 ANSI %2 was not painted")
-                                      .arg(themeId).arg(index)));
+                                      .arg(appearance.schemeId).arg(index)));
     }
   }
 }
@@ -300,15 +283,72 @@ void TerminalWidgetAdapterTest::zoomIsLocalAndSurvivesAppearance() {
   QCOMPARE(widget->getTerminalFont().pointSize(), 15);
   first.setZoomSteps(0);
   QCOMPARE(widget->getTerminalFont().pointSize(), 12);
-  auto scaled = darkAppearance();
-  scaled.textScale = 1.5;
-  first.setAppearance(scaled);
-  QCOMPARE(widget->getTerminalFont().pointSize(), 18);
+  // A different profile size applies directly; zoom stays per-window.
+  auto resizedProfile = profile;
+  resizedProfile.fontSize = 18;
+  TerminalWidgetAdapter third(darkAppearance(), resizedProfile);
+  auto *thirdWidget = qobject_cast<QTermWidget *>(third.terminalWidget());
+  QVERIFY(thirdWidget);
+  QCOMPARE(thirdWidget->getTerminalFont().pointSize(), 18);
   QCOMPARE(other->getTerminalFont().pointSize(), 12);
 }
 
-void TerminalWidgetAdapterTest::blankGridDoesNotPublishCopyAvailability() {
+void TerminalWidgetAdapterTest::osc8SequencesExposeNoHiddenLinkTarget() {
+  // AGENT-CONTRACT (pinned behavior): qtermwidget 2.4.x parses OSC-8 sequences
+  // only as far as processWindowAttributeChange(), which routes attribute 8
+  // into Session::setUserTitle; that ignores every attribute other than 0/1/2,
+  // so no hyperlink target or cell association is ever exposed
+  // (lib/Vt102Emulation.cpp, lib/Session.cpp at 2.4.0). The link layer
+  // therefore acts on printed text only, and an OSC-8 sequence can neither
+  // create a link nor smuggle a hidden target behind printed text.
+  QWidget host;
+  auto *layout = new QVBoxLayout(&host);
+  layout->setContentsMargins(0, 0, 0, 0);
+  host.resize(720, 320);
+  host.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&host));
+  // Match the proven production ordering: let the top-level settle before the
+  // adapter attaches, so the renderer's first grid is the real layout.
+  QTest::qWait(75);
   TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
+  layout->addWidget(adapter.terminalWidget());
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+  const TerminalLaunchRequest request{
+      .program = QStringLiteral("/bin/sh"),
+      .arguments = {QStringLiteral("-c"),
+                    QStringLiteral("printf 'osc8 probe line\\n"
+                                   "\\033]8;;https://hidden.example\\a"
+                                   "https://printed.example"
+                                   "\\033]8;;\\a\\n'")},
+      .workingDirectory = {},
+      .environment = {QStringLiteral("PATH=/usr/bin:/bin"),
+                      QStringLiteral("LANG=C.UTF-8"),
+                      QStringLiteral("TERM=xterm-256color")},
+      .title = {}};
+  const auto started = adapter.start(request);
+  QVERIFY2(started.ok, qPrintable(started.diagnostic));
+  QSignalSpy titleSpy(&adapter, &TerminalSessionBackend::titleChanged);
+  QTest::qWait(150);
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+  adapter.clearScrollbackSearch();
+
+  // The printed text is what the link layer traverses; the OSC-8 target
+  // "https://hidden.example" must never become the actionable target.
+  QTRY_VERIFY(adapter.currentVisibleLink().found);
+  const auto link = adapter.currentVisibleLink();
+  QCOMPARE(link.total, 1);
+  QCOMPARE(link.link.target, QStringLiteral("https://printed.example"));
+
+  // The OSC-8 attribute was dropped by the emulation: no title update fired.
+  QVERIFY(titleSpy.isEmpty());
+
+  int status = 0;
+  QCOMPARE(::waitpid(static_cast<pid_t>(adapter.shellProcessId()), &status, 0),
+           static_cast<pid_t>(adapter.shellProcessId()));
+  QVERIFY(WIFEXITED(status));
+}
+
+void TerminalWidgetAdapterTest::blankGridDoesNotPublishCopyAvailability() {  TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
   QSignalSpy selectionSpy(&adapter, &TerminalSessionBackend::selectionChanged);
 
   adapter.selectAllInView();

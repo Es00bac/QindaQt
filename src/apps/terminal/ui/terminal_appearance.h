@@ -1,57 +1,45 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include "qindaqt/design_tokens/accessibility_inputs.h"
-
 #include <QColor>
 #include <QFont>
 #include <QPalette>
 #include <QString>
 
-#include <optional>
-
-namespace QindaQt::Themes {
-class ThemeSpec;
-}
+#include "profiles/terminal_profile.h"
 
 namespace QindaQt::Apps::Terminal {
 
+// Content-only appearance for one terminal surface. Chrome roles (window
+// palette, interface font, focus ring, QSS) were retired by ADR-0116: they
+// belong to the Qt platform theme and are deliberately absent here.
 struct TerminalViewAppearance final {
-  QPalette windowPalette;
-  QFont interfaceFont;
   QFont terminalFont;
-  QColor focusRing;
-  QColor statusWarningForeground;
-  QColor statusDangerForeground;
-  // Terminal surface colors for the colorscheme document below.
   QColor terminalBackground;
   QColor terminalForeground;
   // ANSI is a terminal protocol palette, independently contrast-fitted to
-  // the opaque QST content surface (ADR-0112).
+  // the opaque content surface (ADR-0112).
   QColor ansi[16];
-  QString sourceThemeId;
-  QString chromeStyleSheet;
+  QString schemeId;
   bool highContrast = false;
-  double textScale = 1.0;
 };
 
-struct AppearanceResult final {
-  std::optional<TerminalViewAppearance> appearance;
-  QString diagnostic;
-
-  [[nodiscard]] bool ok() const { return appearance.has_value(); }
-};
-
-// AGENT-CONTRACT: This adapter consumes only public ThemeSpec and QST-1
-// values (see ADR-0013 and the Text Editor precedent). It introduces no
-// theme-selection policy or settings dependency; a
-// complete appearance is returned or nothing is.
+// Derives the terminal content appearance from the active application palette
+// plus the selected scheme and the platform high-contrast hint — never from
+// QST tokens. System follows the palette's Base/Text roles; Light and Dark
+// are the explicit content choices a profile can pin. Pure function.
 class TerminalAppearanceAdapter final {
 public:
-  [[nodiscard]] static AppearanceResult
-  fromTheme(const QindaQt::Themes::ThemeSpec &theme,
-            QindaQt::DesignTokens::AccessibilityInputs inputs = {});
+  [[nodiscard]] static TerminalViewAppearance
+  derive(const QPalette &applicationPalette, TerminalContentScheme scheme,
+         bool highContrast, const QFont &monospaceFont);
 };
+
+// Live platform state readers (ADR-0115): the platform theme's high-contrast
+// preference and the System-scheme content appearance derived from the active
+// QGuiApplication palette and FixedFont. GUI-thread only.
+[[nodiscard]] bool terminalPlatformHighContrast();
+[[nodiscard]] TerminalViewAppearance terminalDesktopContentAppearance();
 
 // Renders the appearance as a Konsole-format .colorscheme document, which the
 // qtermwidget adapter installs through its colorscheme loader. Pure function;

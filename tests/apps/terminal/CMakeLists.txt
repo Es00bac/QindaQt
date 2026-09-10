@@ -47,10 +47,6 @@ qindaqt_add_terminal_test(
     tst_terminal_appearance.cpp
     qindaqt.terminal-appearance
 )
-target_compile_definitions(
-    qindaqt_terminal_appearance_tests
-    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
 
 qindaqt_add_terminal_test(
     qindaqt_terminal_profiles_tests
@@ -100,10 +96,6 @@ qindaqt_add_terminal_test(
     tst_terminal_search_links_ui.cpp
     qindaqt.terminal-search-links-offscreen
 )
-target_compile_definitions(
-    qindaqt_terminal_search_links_ui_tests
-    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
 set_tests_properties(
     qindaqt.terminal-search-links-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
@@ -117,10 +109,6 @@ qindaqt_add_terminal_test(
     qindaqt_terminal_container_tests
     tst_terminal_container.cpp
     qindaqt.terminal-container-offscreen
-)
-target_compile_definitions(
-    qindaqt_terminal_container_tests
-    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
 set_tests_properties(
     qindaqt.terminal-container-offscreen
@@ -144,10 +132,6 @@ set_target_properties(
     qindaqt_terminal_widget_adapter_tests PROPERTIES CXX_EXTENSIONS OFF
 )
 qindaqt_enable_warnings(qindaqt_terminal_widget_adapter_tests)
-target_compile_definitions(
-    qindaqt_terminal_widget_adapter_tests
-    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
 add_test(
     NAME qindaqt.terminal-widget-adapter-offscreen
     COMMAND qindaqt_terminal_widget_adapter_tests

@@ -271,12 +271,12 @@ void TerminalWindow::manageProfiles() {
   }
   TerminalProfileDialog dialog(
       m_profileSettings->userProfiles(), m_profileSettings->defaultProfileId(),
-      m_profileSettings->restoreTabsPolicy(), m_themeIds, this);
+      m_profileSettings->restoreWindowsPolicy(), this);
   connect(&dialog, &TerminalProfileDialog::applyRequested, &dialog,
           [this, &dialog] {
             if (!m_profileSettings->applyProfiles(dialog.userProfiles(),
                                                   dialog.defaultProfileId(),
-                                                  dialog.restoreTabs())) {
+                                                  dialog.restoreWindows())) {
               const QString failure = QStringLiteral(
                   "Error: Profiles could not be saved right now; Settings1 "
                   "is unavailable or a save is in progress");

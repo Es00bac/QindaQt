@@ -75,12 +75,15 @@ void TerminalWidgetAdapter::applyAppearance() {
 
 void TerminalWidgetAdapter::applyFont() {
   if (!m_widget) return;
+  // The base is the platform monospace font (ADR-0115/ADR-0116); profile
+  // family/size overrides and the local zoom are reapplied on top, so a live
+  // platform font change never discards them.
   QFont terminalFont = m_appearance.terminalFont;
   if (!m_profile.fontFamily.isEmpty()) {
     terminalFont.setFamily(m_profile.fontFamily);
   }
   if (m_profile.fontSize > 0) {
-    terminalFont.setPointSizeF(m_profile.fontSize * m_appearance.textScale);
+    terminalFont.setPointSizeF(m_profile.fontSize);
   }
   terminalFont.setPointSizeF(std::clamp(terminalFont.pointSizeF() + m_zoomSteps, 6.0, 48.0));
   m_widget->setTerminalFont(terminalFont);

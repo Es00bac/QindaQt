@@ -29,8 +29,7 @@ class TerminalProfileDialog final : public QDialog {
 
 public:
   TerminalProfileDialog(const QList<TerminalProfile> &userProfiles,
-                        const QString &defaultProfileId, bool restoreTabs,
-                        const QStringList &themeIds,
+                        const QString &defaultProfileId, bool restoreWindows,
                         QWidget *parent = nullptr);
 
   // Valid only after Accepted; the caller commits these through the
@@ -41,7 +40,7 @@ public:
   [[nodiscard]] QString defaultProfileId() const {
     return m_defaultProfileId;
   }
-  [[nodiscard]] bool restoreTabs() const { return m_restoreTabs; }
+  [[nodiscard]] bool restoreWindows() const { return m_restoreWindows; }
 
   // Completes the pending caller-owned Settings1 operation. Success closes
   // the dialog only after the asynchronous result is known; every other
@@ -56,7 +55,7 @@ protected:
   void accept() override;
 
 private:
-  void buildUi(const QStringList &themeIds);
+  void buildUi();
   void refreshList();
   void loadSelectedIntoFields();
   void writeFieldsToSelected();
@@ -65,7 +64,7 @@ private:
 
   QList<TerminalProfile> m_userProfiles;
   QString m_defaultProfileId;
-  bool m_restoreTabs = false;
+  bool m_restoreWindows = false;
 
   QListWidget *m_list = nullptr;
   QLineEdit *m_name = nullptr;

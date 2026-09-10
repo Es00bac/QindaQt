@@ -10,24 +10,17 @@
 #include "ui/terminal_widget_adapter.h"
 #include "ui/terminal_window.h"
 
-#include "qindaqt/app_appearance/application_appearance_controller.h"
-#include "qindaqt/design_tokens/design_tokens.h"
-#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
-#include "qindaqt/themes/theme_loader.h"
 
+#include <QAccessibilityHints>
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDBusConnection>
-#include <QDebug>
-#include <QDir>
-#include <QFileInfo>
-#include <QIcon>
+#include <QFontDatabase>
 #include <QMenuBar>
 #include <QProcessEnvironment>
-#include <QRegularExpression>
-#include <QStandardPaths>
+#include <QStyleHints>
 #include <QTimer>
 #include <QWindow>
 
@@ -39,80 +32,24 @@
 namespace QindaQt::Apps::Terminal {
 namespace {
 
-// AGENT-NOTE: Duplicated from the Text Editor S1 launcher on purpose: the
-// shared application-shell seam is owned by a different lane, and this
-// launcher must not reach into another module's private code. When that seam
-// is part of this branch's integration base, both launchers should consume
-// it instead of duplicating the lookup.
-[[nodiscard]] QStringList
-themeSearchDirectories(const QString &explicitDirectory) {
-  QStringList directories;
-  if (!explicitDirectory.isEmpty()) {
-    directories.append(QFileInfo(explicitDirectory).absoluteFilePath());
-  }
-  directories.append(QStandardPaths::locateAll(
-      QStandardPaths::GenericDataLocation, QStringLiteral("qindaqt/themes"),
-      QStandardPaths::LocateDirectory));
-  directories.append(
-      QDir(QCoreApplication::applicationDirPath())
-          .absoluteFilePath(QStringLiteral("../share/qindaqt/themes")));
-  directories.removeDuplicates();
-  return directories;
-}
-
-[[nodiscard]] QindaQt::Themes::LoadResult
-loadTheme(const QString &themeId, const QStringList &directories) {
-  static const QRegularExpression safeId(
-      QStringLiteral("^[a-z0-9][a-z0-9-]{0,63}$"));
-  if (!safeId.match(themeId).hasMatch()) {
-    return {.ok = false,
-            .theme = {},
-            .error = QStringLiteral("Invalid theme identifier")};
-  }
-  for (const QString &directory : directories) {
-    const QString path =
-        QDir(directory).filePath(themeId + QStringLiteral(".json"));
-    if (QFileInfo::exists(path)) {
-      return QindaQt::Themes::ThemeLoader::fromFile(path);
-    }
-  }
-  return {.ok = false,
-          .theme = {},
-          .error = QStringLiteral("Theme '%1' was not found").arg(themeId)};
-}
-
-// Every installed, schema-valid theme id, for the profile dialog's color
-// scheme selection. Load failures are skipped: a theme that cannot be
-// validated is never offered to a profile.
-[[nodiscard]] QStringList availableThemeIds(const QStringList &directories) {
-  QStringList ids;
-  for (const QString &directory : directories) {
-    const QFileInfoList entries = QDir(directory).entryInfoList(
-        {QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-    for (const QFileInfo &entry : entries) {
-      const QString id = entry.completeBaseName();
-      if (ids.contains(id)) {
-        continue;
-      }
-      if (QindaQt::Themes::ThemeLoader::fromFile(entry.absoluteFilePath()).ok) {
-        ids.append(id);
-      }
-    }
-  }
-  ids.sort();
-  return ids;
-}
-
+// AGENT-CONTRACT (ADR-0115/ADR-0116): palette, interface/monospace fonts,
+// icon theme, and contrast hints come from the Qt platform theme; there is
+// deliberately no QST token projection, per-app theme load, or font
+// bootstrap here. Terminal CONTENT keeps its own derivation (ADR-0112): the
+// ANSI protocol palette fitted to the content surface.
 void configureCommandLine(QCommandLineParser &parser) {
   parser.setApplicationDescription(
       QStringLiteral("QindaQt terminal for the configured shell"));
   parser.addHelpOption();
   parser.addVersionOption();
+  // AGENT-NOTE: --theme/--theme-directory are accepted and ignored. ADR-0116
+  // retired per-app QST themes, but external harnesses (the global-menu
+  // private-bus rows) still pass them.
   parser.addOption({QStringLiteral("theme"),
-                    QStringLiteral("QindaQt theme identifier"),
-                    QStringLiteral("id"), QStringLiteral("qinda-dark")});
+                    QStringLiteral("Deprecated no-op (ADR-0116): the Qt platform theme styles the app"),
+                    QStringLiteral("id")});
   parser.addOption({QStringLiteral("theme-directory"),
-                    QStringLiteral("Additional local theme directory"),
+                    QStringLiteral("Deprecated no-op (ADR-0116): no per-app theme catalog is read"),
                     QStringLiteral("path")});
   parser.addOption({QStringLiteral("shell"),
                     QStringLiteral("Absolute shell executable path"),
@@ -123,9 +60,6 @@ void configureCommandLine(QCommandLineParser &parser) {
   parser.addOption({QStringLiteral("profile"),
                     QStringLiteral("Saved profile identifier"),
                     QStringLiteral("id")});
-  parser.addOption(
-      {QStringLiteral("check-theme"),
-       QStringLiteral("Validate the selected theme through QST-1 and exit")});
   parser.addOption({QStringLiteral("arg"),
                     QStringLiteral("Argument passed verbatim to the shell "
                                    "(repeatable, never shell-interpreted)"),
@@ -148,80 +82,24 @@ composeTerminalMenuExport(TerminalWindow &window) {
       [&window](bool visible) { window.menuBar()->setVisible(visible); });
 }
 
-// The factory resolves the profile's color scheme to its own QST generation
-// per session; an unresolvable theme yields a null backend, which the session
-// reports as a typed StartFailed exit (fail-closed). Captured by value: the
-// factory outlives this call inside TerminalSessionCollection.
-[[nodiscard]] TerminalSession::BackendFactory
-makeBackendFactory(const QStringList &themeDirectories,
-                   const QString &launchThemeId) {
-  return [themeDirectories, launchThemeId](const TerminalProfile &profile) {
-    // Preserve the S0 --theme contract for the immutable built-in profile.
-    // User profiles carry their own Settings1-backed QST theme.
-    const QString themeId = profile.id == builtinDefaultProfileId()
-                                ? launchThemeId
-                                                : profile.colorSchemeId;
-    const auto profileTheme = loadTheme(themeId, themeDirectories);
-    if (!profileTheme.ok) {
-      return std::unique_ptr<TerminalSessionBackend>(nullptr);
-    }
-    const auto profileAppearance =
-        TerminalAppearanceAdapter::fromTheme(profileTheme.theme);
-    if (!profileAppearance.ok()) {
-      return std::unique_ptr<TerminalSessionBackend>(nullptr);
-    }
-    return std::unique_ptr<TerminalSessionBackend>(
-        new TerminalWidgetAdapter(*profileAppearance.appearance, profile));
+// The factory resolves the profile's content scheme against the live platform
+// palette per session. An unknown scheme id cannot reach here (profiles are
+// validated), but a defensive System fallback keeps creation total.
+// Captured by value: the factory outlives this call inside
+// TerminalSessionCollection.
+[[nodiscard]] TerminalSession::BackendFactory makeBackendFactory() {
+  return [](const TerminalProfile &profile) {
+    const auto scheme =
+        terminalContentSchemeForId(profile.colorSchemeId)
+            .value_or(TerminalContentScheme::System);
+    const auto highContrast = terminalPlatformHighContrast();
+    return std::unique_ptr<TerminalSessionBackend>(new TerminalWidgetAdapter(
+        TerminalAppearanceAdapter::derive(
+            QGuiApplication::palette(), scheme, highContrast,
+            QFontDatabase::systemFont(QFontDatabase::FixedFont)),
+        profile));
   };
 }
-
-class TerminalAppearanceBinding final {
-public:
-  TerminalAppearanceBinding(QApplication &app, TerminalWindow &terminalWindow,
-                            const QStringList &directories,
-                            const QString &explicitTheme)
-      : transport(QDBusConnection::sessionBus()),
-        client(transport, {QStringLiteral("appearance.theme"),
-                           QStringLiteral("appearance.colorScheme"),
-                           QStringLiteral("fonts.family"),
-                           QStringLiteral("fonts.monospaceFamily"),
-                           QStringLiteral("fonts.pointSize"),
-                           QStringLiteral("accessibility.textScale"),
-                           QStringLiteral("accessibility.highContrast"),
-                           QStringLiteral("accessibility.reducedMotion"),
-                           QStringLiteral("accessibility.reducedTransparency")}),
-        controller(client, directories, QStringLiteral("qinda-dark"),
-                   explicitTheme),
-        application(app), window(terminalWindow) {
-    QObject::connect(&controller,
-                     &QindaQt::AppAppearance::ApplicationAppearanceController::
-                         appearanceChanged,
-                     &terminalWindow, [this] { apply(); });
-    apply();
-    QString error;
-    if (!client.start(&error))
-      qWarning().noquote()
-          << "QindaQt Terminal appearance settings unavailable:" << error;
-  }
-
-private:
-  void apply() {
-    QIcon::setThemeName(controller.theme().iconTheme);
-    const auto adapted =
-        TerminalAppearanceAdapter::fromTheme(controller.theme(),
-                                              controller.accessibilityInputs());
-    if (!adapted.ok())
-      return;
-    application.setPalette(adapted.appearance->windowPalette);
-    application.setFont(adapted.appearance->interfaceFont);
-    window.applyAppearance(*adapted.appearance);
-  }
-  QindaQt::Services::SettingsClient::QtSettingsTransport transport;
-  QindaQt::Services::SettingsClient::SettingsClient client;
-  QindaQt::AppAppearance::ApplicationAppearanceController controller;
-  QApplication &application;
-  TerminalWindow &window;
-};
 
 } // namespace
 } // namespace QindaQt::Apps::Terminal
@@ -229,12 +107,6 @@ private:
 int main(int argc, char **argv) {
   using namespace QindaQt::Apps::Terminal;
 
-  // AGENT-CONTRACT: F1 font bootstrap runs before QApplication construction.
-  // Missing or unresolvable preference truth leaves platform defaults intact;
-  // the later theme setFont remains the deliberate widgets baseline. See
-  // docs/wiki/architecture/font-preferences.md.
-  QindaQt::Services::FontDiscovery::FontSessionBootstrap::
-      applyFromSessionSettings();
   QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-terminal"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt Terminal"));
@@ -258,28 +130,6 @@ int main(int argc, char **argv) {
     return 2;
   }
 
-  const auto theme = loadTheme(
-      parser.value(QStringLiteral("theme")),
-      themeSearchDirectories(parser.value(QStringLiteral("theme-directory"))));
-  if (!theme.ok) {
-    std::fprintf(stderr, "qindaqt-terminal: %s\n", qPrintable(theme.error));
-    return 3;
-  }
-  const auto appearance = TerminalAppearanceAdapter::fromTheme(theme.theme);
-  if (!appearance.ok()) {
-    std::fprintf(stderr, "qindaqt-terminal: %s\n",
-                 qPrintable(appearance.diagnostic));
-    return 3;
-  }
-  QIcon::setThemeName(theme.theme.iconTheme);
-  application.setPalette(appearance.appearance->windowPalette);
-  application.setFont(appearance.appearance->interfaceFont);
-  if (parser.isSet(QStringLiteral("check-theme"))) {
-    std::printf("%s qst-%d\n", qPrintable(appearance.appearance->sourceThemeId),
-                QindaQt::DesignTokens::DesignTokens::qstRevision);
-    return 0;
-  }
-
   const QStringList baseEnvironment =
       QProcessEnvironment::systemEnvironment().toStringList();
   const auto environment =
@@ -299,14 +149,9 @@ int main(int argc, char **argv) {
     return 4;
   }
 
-  const QStringList themeDirectories =
-      themeSearchDirectories(parser.value(QStringLiteral("theme-directory")));
-  const QString launchThemeId = parser.value(QStringLiteral("theme"));
-
-  // Settings1 persistence (profiles, default profile, restore flag). The
-  // client is constructed after the --check-theme exit above so this row
-  // never touches a bus. A start failure is fail-closed: the profile
-  // controller serves built-in defaults until a baseline arrives.
+  // Settings1 persistence (profiles, default profile, restore preference).
+  // A start failure is fail-closed: the profile controller serves built-in
+  // defaults until a baseline arrives.
   QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(
       QDBusConnection::sessionBus());
   QindaQt::Services::SettingsClient::SettingsClient settingsClient(
@@ -322,7 +167,7 @@ int main(int argc, char **argv) {
   TerminalProfileSettings profileSettings(settingsClient);
 
   PosixProcessMonitor monitor;
-  const auto factory = makeBackendFactory(themeDirectories, launchThemeId);
+  const auto factory = makeBackendFactory();
 
   TerminalSessionContext context;
   context.baseEnvironment = baseEnvironment;
@@ -340,14 +185,21 @@ int main(int argc, char **argv) {
 
   const auto launchAnotherTerminal = makeNewTerminalLauncher(parser);
 
-  TerminalWindow window(std::move(collection), *appearance.appearance,
-                        availableThemeIds(themeDirectories), &profileSettings,
-                        &linkOpener, launchAnotherTerminal);
-  TerminalAppearanceBinding appearanceBinding(
-      application, window, themeDirectories,
-      parser.isSet(QStringLiteral("theme"))
-          ? parser.value(QStringLiteral("theme"))
-          : QString());
+  TerminalWindow window(std::move(collection),
+                        terminalDesktopContentAppearance(),
+                        &profileSettings, &linkOpener, launchAnotherTerminal);
+  // Live desktop changes re-derive the desktop-scheme content appearance;
+  // palette/font/style changes reach the window through its changeEvent, and
+  // profile-pinned schemes and local zoom survive inside the adapter.
+  if (auto *styleHints = QGuiApplication::styleHints()) {
+    QObject::connect(styleHints, &QStyleHints::colorSchemeChanged, &window,
+                     [&window] { window.refreshDesktopContentAppearance(); });
+  }
+  if (auto *hints = QGuiApplication::styleHints()->accessibility()) {
+    QObject::connect(hints, &QAccessibilityHints::contrastPreferenceChanged,
+                     &window,
+                     [&window] { window.refreshDesktopContentAppearance(); });
+  }
 
   window.resize(800, 500);
   bool firstSessionStarted = false;

@@ -312,7 +312,7 @@
       "default": "builtin-default"
     },
     {
-      "key": "services.terminalRestoreTabs",
+      "key": "services.terminalRestoreWindows",
       "domain": "services",
       "type": "boolean",
       "default": false

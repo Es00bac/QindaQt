@@ -25,7 +25,6 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     session/terminal_session_collection.cpp
     search/terminal_search.cpp
     ui/terminal_ansi_palette.cpp
-    ui/terminal_chrome.cpp
     ui/terminal_appearance.cpp
     ui/terminal_profile_apply_status.cpp
     ui/terminal_profile_dialog.cpp
@@ -53,7 +52,6 @@ set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     session/terminal_session_types.h
     search/terminal_search.h
     ui/terminal_ansi_palette.h
-    ui/terminal_chrome.h
     ui/terminal_appearance.h
     ui/terminal_profile_apply_status.h
     ui/terminal_profile_dialog.h
@@ -74,11 +72,12 @@ target_include_directories(
 # coordinator and action catalog are public, the QML surface stays unused.
 # The Settings1 client is a private implementation dependency of the
 # profile persistence controller (ADR-0028); its headers stay out of the
-# support library's public include surface.
+# support library's public include surface. ADR-0116: no DesignTokens/Themes
+# linkage — chrome follows the Qt platform theme; ControlsQml supplies only
+# the platform-theme-first applicationIcon lookup.
 target_link_libraries(
     qindaqt_terminal_support
-    PUBLIC QindaQt::AppShell QindaQt::DesignTokens qindaqt_themes Qt6::Core
-           Qt6::Gui Qt6::Widgets
+    PUBLIC QindaQt::AppShell Qt6::Core Qt6::Gui Qt6::Widgets
 )
 target_link_libraries(
     qindaqt_terminal_support
@@ -119,8 +118,7 @@ qindaqt_enable_warnings(qindaqt_terminal_adapter)
 qt_add_executable(qindaqt-terminal main.cpp)
 target_link_libraries(
     qindaqt-terminal PRIVATE qindaqt_terminal_adapter qindaqt_settings_client
-                             QindaQt::AppAppearance
-                             QindaQt::AppShellMenuExport QindaQt::FontDiscovery
+                             QindaQt::AppShellMenuExport
 )
 target_compile_features(qindaqt-terminal PRIVATE cxx_std_20)
 
@@ -162,10 +160,13 @@ install(
     COMPONENT Terminal
 )
 # The Terminal component is self-contained: its C++ AppShell action catalog
-# dependency and AppShell's linked Controls/Tokens backing libraries are
-# installed in their established sibling module directories. Declaring the
-# component mappings here keeps this application-owned packaging rule out of
-# the shared modules.
+# dependency and AppShell's linked Controls backing library are installed in
+# their established sibling module directories. Declaring the component
+# mappings here keeps this application-owned packaging rule out of the shared
+# modules. qindaqt_tokens_qml ships only because libqindaqt_controls_qml.so
+# links it ($ORIGIN/../Tokens RPATH); the Terminal itself consumes no Tokens
+# API. ADR-0116: no per-app theme catalog is installed; appearance is the Qt
+# platform theme's contract.
 install(
     TARGETS qindaqt_app_shell
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
@@ -184,10 +185,5 @@ install(
 install(
     FILES org.qindaqt.Terminal.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
-    COMPONENT Terminal
-)
-install(
-    DIRECTORY "${PROJECT_SOURCE_DIR}/data/themes/"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
     COMPONENT Terminal
 )

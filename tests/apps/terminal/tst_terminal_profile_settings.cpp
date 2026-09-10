@@ -12,6 +12,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QFontDatabase>
 #include <QDialogButtonBox>
 #include <QLabel>
 #include <QSignalSpy>
@@ -75,7 +76,7 @@ QVariantMap settingsValues(const QList<TerminalProfile> &profiles = {},
   Q_ASSERT(ok);
   return {{QString(TerminalKeys::Profiles), encoded},
           {QString(TerminalKeys::DefaultProfile), defaultId},
-          {QString(TerminalKeys::RestoreTabs), restore}};
+          {QString(TerminalKeys::RestoreWindows), restore}};
 }
 
 QVariantMap snapshotWire(const QString &epoch, quint64 revision,
@@ -174,12 +175,11 @@ makePresentationWindow(TerminalProfileSettings &settings,
   };
   auto sessions = std::make_unique<TerminalSessionCollection>(
       context, std::move(noBackend), &monitor, TeardownBounds{});
-  TerminalViewAppearance appearance;
-  appearance.statusWarningForeground = QColor(Qt::darkYellow);
-  appearance.statusDangerForeground = QColor(Qt::red);
-  return std::make_unique<TerminalWindow>(
-      std::move(sessions), appearance,
-      QStringList{QStringLiteral("qinda-dark")}, &settings);
+  const TerminalViewAppearance appearance = TerminalAppearanceAdapter::derive(
+      QPalette(), TerminalContentScheme::Dark, false,
+      QFontDatabase::systemFont(QFontDatabase::FixedFont));
+  return std::make_unique<TerminalWindow>(std::move(sessions), appearance,
+                                          &settings);
 }
 
 } // namespace
@@ -208,13 +208,13 @@ void TerminalProfileSettingsTest::baselineRoundTripAndLossFailClosed() {
   QTRY_VERIFY(settings.baselineReceived());
   QCOMPARE(settings.userProfiles(), QList<TerminalProfile>{userProfile()});
   QCOMPARE(settings.defaultProfile(), userProfile());
-  QVERIFY(settings.restoreTabsPolicy());
+  QVERIFY(settings.restoreWindowsPolicy());
 
   emit transport.ownerChanged(QString{});
   QTRY_VERIFY(!settings.baselineReceived());
   QVERIFY(settings.userProfiles().isEmpty());
   QCOMPARE(settings.defaultProfile(), builtinDefaultProfile());
-  QVERIFY(!settings.restoreTabsPolicy());
+  QVERIFY(!settings.restoreWindowsPolicy());
 
   emit transport.ownerChanged(QStringLiteral(":1.701"));
   QTRY_VERIFY(!transport.snapshots.isEmpty());
@@ -229,7 +229,7 @@ void TerminalProfileSettingsTest::baselineRoundTripAndLossFailClosed() {
   QVERIFY(!settings.baselineReceived());
   QVERIFY(settings.userProfiles().isEmpty());
   QCOMPARE(settings.defaultProfile(), builtinDefaultProfile());
-  QVERIFY(!settings.restoreTabsPolicy());
+  QVERIFY(!settings.restoreWindowsPolicy());
 }
 
 void TerminalProfileSettingsTest::applyCommitsEveryKeyAgainstFreshAuthority() {
@@ -265,7 +265,7 @@ void TerminalProfileSettingsTest::applyCommitsEveryKeyAgainstFreshAuthority() {
   QTRY_COMPARE(finished.count(), 1);
   QCOMPARE(settings.userProfiles(), QList<TerminalProfile>{userProfile()});
   QCOMPARE(settings.defaultProfileId(), QStringLiteral("work"));
-  QVERIFY(settings.restoreTabsPolicy());
+  QVERIFY(settings.restoreWindowsPolicy());
   const QVariantList ledger = finished.first().first().toList();
   QCOMPARE(ledger.size(), 3);
   for (const QVariant &entry : ledger) {

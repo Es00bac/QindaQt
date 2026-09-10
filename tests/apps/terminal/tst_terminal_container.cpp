@@ -4,7 +4,7 @@
 #include "ui/terminal_appearance.h"
 #include "ui/terminal_window.h"
 
-#include "qindaqt/themes/theme_loader.h"
+#include <QFontDatabase>
 
 #include <QAction>
 #include <QTabBar>
@@ -18,12 +18,9 @@ using namespace QindaQt::Apps::Terminal;
 namespace {
 
 TerminalViewAppearance testAppearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!theme.ok) qFatal("Could not load test theme: %s", qPrintable(theme.error));
-  const auto appearance = TerminalAppearanceAdapter::fromTheme(theme.theme);
-  if (!appearance.ok()) qFatal("Could not derive test appearance");
-  return *appearance.appearance;
+  return TerminalAppearanceAdapter::derive(
+      QPalette(), TerminalContentScheme::Dark, false,
+      QFontDatabase::systemFont(QFontDatabase::FixedFont));
 }
 
 class RunningMonitor final : public ProcessMonitor {
@@ -83,8 +80,7 @@ void TerminalContainerTest::
   QString launchedDirectory;
   int launchCount = 0;
   TerminalWindow window(
-      std::move(sessions), testAppearance(),
-      QStringList{QStringLiteral("qinda-dark")}, nullptr, nullptr,
+      std::move(sessions), testAppearance(), nullptr, nullptr,
       [&launchedProfile, &launchedDirectory, &launchCount](
           const TerminalProfile &profile, const QString &directory) {
         launchedProfile = profile;
