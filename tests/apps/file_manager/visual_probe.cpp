@@ -7,32 +7,34 @@
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 #include "preview/preview_provider.h"
+#include "preview/theme_icon_provider.h"
 #include <QDir>
 #include <QFile>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
-#include <QQmlComponent>
 #include <QQuickWindow>
+#include <QStyleHints>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <cstdio>
 #include <qindaqt/app_shell/application_coordinator.h>
-#include <qindaqt/design_tokens/token_facade.h>
-#include <qindaqt/themes/theme_loader.h>
 using namespace QindaQt::Apps::FileManager;
 // Test-only capture of production QML and real injected controllers. Fixtures
 // remain private to this process; no session settings or user files are
-// changed.
+// changed. ADR-0116: appearance comes from the platform theme; the argv[2]
+// theme name is retained for harness compatibility and now only selects the
+// declarative color scheme (qinda-light -> Light, anything else -> Dark) plus
+// reduced transparency when a seventh argument is present.
 int main(int argc, char **argv) {
   QGuiApplication app(argc, argv);
   if (argc < 6)
     return 2;
   const QString sourceRoot = QString::fromLocal8Bit(argv[1]);
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      sourceRoot + "/data/themes/" + QString::fromLocal8Bit(argv[2]) + ".json");
-  if (!theme.ok)
-    return 3;
+  const QString appearance = QString::fromLocal8Bit(argv[2]);
+  QGuiApplication::styleHints()->setColorScheme(
+      appearance.contains(QStringLiteral("light")) ? Qt::ColorScheme::Light
+                                                   : Qt::ColorScheme::Dark);
   QTemporaryDir temporary;
   if (!temporary.isValid())
     return 4;
@@ -67,29 +69,12 @@ int main(int argc, char **argv) {
   if (!coordinator.replaceActions(fileManagerActionCatalog()).ok())
     return 5;
   bindFileManagerBrowsingActions(coordinator, navigation);
-  QQmlApplicationEngine engine;
-  QQmlComponent registration(&engine);
-  registration.setData("import QtQuick\nimport QindaQt.Tokens 1.0\nQtObject { "
-                       "property int revision: Tokens.qstRevision }",
-                       QUrl("inline:tokens.qml"));
-  while (registration.isLoading())
-    QCoreApplication::processEvents();
-  std::unique_ptr<QObject> tokenObject(registration.create());
-  if (!tokenObject)
-    return 6;
-  auto *facade = engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
-      "QindaQt.Tokens", "Tokens");
-  QString error;
-  QindaQt::DesignTokens::AccessibilityInputs access;
-  access.highContrast = theme.theme.variant == "high-contrast";
-  if (argc > 6)
-    access.reducedTransparency = true;
-  if (!facade || !facade->publish(theme.theme, access, &error))
-    return 6;
   QIcon::setThemeSearchPaths({sourceRoot + "/data/icons"});
-  QIcon::setThemeName(theme.theme.iconTheme);
+  QIcon::setThemeName(QStringLiteral("QindaQt"));
+  QQmlApplicationEngine engine;
   auto *provider = new PreviewProvider(std::make_unique<LocalPreviewDecoder>());
   engine.addImageProvider("previews", provider);
+  engine.addImageProvider("theme-icons", new ThemeIconProvider());
   QObject::connect(
       &navigation, &NavigationController::entriesChanged, &engine,
       [&] { provider->setGeneration(navigation.listingGeneration()); });

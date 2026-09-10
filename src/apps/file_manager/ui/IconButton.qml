@@ -1,33 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
+import QtQuick.Controls
 
-Qinda.Button {
+// Icon-only toolbar button. Themed icons come through the engine's
+// "theme-icons" image provider (platform icon theme, ADR-0115); "available"
+// maps to the ordinary stock enabled state.
+ToolButton {
     id: control
     required property string iconName
+    property bool available: true
+    enabled: available
     implicitWidth: 40
     implicitHeight: 40
-    leftPadding: Tokens.space["2"]
-    rightPadding: Tokens.space["2"]
-    topPadding: Tokens.space["2"]
-    bottomPadding: Tokens.space["2"]
-    emphasized: false
-    background: Rectangle {
-        radius: Tokens.radius.m
-        color: control.down ? Tokens.state.pressed : control.hovered ? Tokens.state.hover
-             : control.emphasized ? Tokens.state.pressed : "transparent"
-        border.width: control.activeFocus ? 2 : 0
-        border.color: Tokens.focus.ring
+    padding: 8
+    flat: true
+    display: AbstractButton.IconOnly
+    contentItem: Image {
+        source: "image://theme-icons/" + control.iconName + "-symbolic"
+        sourceSize: Qt.size(20, 20)
+        opacity: control.enabled ? 1.0 : 0.45
+        Accessible.ignored: true
     }
-    contentItem: Qinda.Icon {
-        name: control.iconName + "-symbolic"
-        color: control.enabled ? Tokens.fg.default : Tokens.fg.muted
-        implicitWidth: 20
-        implicitHeight: 20
-    }
-    T.ToolTip.visible: hovered || activeFocus
-    T.ToolTip.delay: 600
-    T.ToolTip.text: text
+    ToolTip.visible: hovered || activeFocus
+    ToolTip.delay: 600
+    ToolTip.text: control.text
+    Accessible.name: control.text
 }

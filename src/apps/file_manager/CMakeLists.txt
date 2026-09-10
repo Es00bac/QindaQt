@@ -16,6 +16,7 @@ target_sources(
         mutation/safe_tree_operations.cpp
         preview/local_preview.cpp
         preview/preview_provider.cpp
+        preview/theme_icon_provider.cpp
         model/bookmarks_store.cpp
         model/launch_intent.cpp
         model/listing_order.cpp
@@ -35,6 +36,7 @@ target_sources(
         mutation/safe_tree_operations.h
         preview/local_preview.h
         preview/preview_provider.h
+        preview/theme_icon_provider.h
         model/bookmarks_store.h
         model/directory_lister.h
         model/file_manager_types.h
@@ -59,8 +61,6 @@ qt_add_executable(qindaqt-file-manager
     runtime/mutation_ui_action_probe.cpp
     runtime/selection_ui_probe.cpp
     runtime/mutation_ui_action_probe.h
-    runtime/qml_component_ready.cpp
-    runtime/qml_component_ready.h
 )
 set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png"
     PROPERTIES QT_RESOURCE_ALIAS empty-folder.png)
@@ -74,6 +74,7 @@ qt_add_qml_module(
     QML_FILES
         ui/IconButton.qml
         ui/PlaceButton.qml
+        ui/StatusBanner.qml
         ui/Main.qml
         ui/Toolbar.qml
         ui/FilterBar.qml
@@ -91,6 +92,10 @@ qt_add_qml_module(
         ui/MutationDialogs.qml
 )
 
+# ADR-0116: File Manager renders with stock Qt Quick Controls; it links only
+# the non-visual seams (AppShell coordinator/catalog, menu export, F1 font
+# bootstrap). No QindaQt.Tokens/Controls QML modules, no theme catalog, no
+# per-app palette.
 set(qindaqt_file_manager_install_bindir "${CMAKE_INSTALL_BINDIR}")
 cmake_path(
     ABSOLUTE_PATH qindaqt_file_manager_install_bindir
@@ -111,25 +116,19 @@ cmake_path(
     OUTPUT_VARIABLE qindaqt_file_manager_qml_relative_path
 )
 
-# AGENT-CONTRACT: Production import and loader discovery must remain relative
-# to the executable's installed location. Embedding ${CMAKE_BINARY_DIR}/qml
-# lets a staged test pass by importing a developer tree that a packaged user
-# does not have; see docs/wiki/apps/file-manager.md.
-target_compile_definitions(
-    qindaqt-file-manager
-    PRIVATE
-        QINDAQT_INSTALL_QML_RELATIVE_PATH="${qindaqt_file_manager_qml_relative_path}"
-)
+# AGENT-CONTRACT: The executable dynamically links libqindaqt_app_shell.so
+# (the non-visual coordinator seam), whose backing library in turn needs the
+# Controls/Tokens backing libraries. The staged FileManager component resolves
+# that chain solely from its own payload: the executable's RPATH reaches the
+# AppShell backing library, and the backing libraries' own INSTALL_RPATHs
+# ($ORIGIN/../Tokens, $ORIGIN/../Controls) reach their siblings. Keep the
+# install(TARGETS) rules below and this RPATH in sync.
 target_link_libraries(
     qindaqt-file-manager
     PRIVATE
         qindaqt_file_manager_support
-        QindaQt::DesignTokens
-        QindaQt::AppAppearance
         QindaQt::AppShell
         QindaQt::FontDiscovery
-        QindaQt::TokensQml
-        qindaqt_themes
         Qt6::Core
         Qt6::DBus
         Qt6::Gui
@@ -137,19 +136,13 @@ target_link_libraries(
         Qt6::Quick
         Qt6::QuickControls2
 )
-add_dependencies(
-    qindaqt-file-manager
-    qindaqt_app_shellplugin
-    qindaqt_tokens_qmlplugin
-    qindaqt_controls_qmlplugin
-)
 target_compile_features(qindaqt-file-manager PRIVATE cxx_std_20)
 set_target_properties(
     qindaqt-file-manager
     PROPERTIES
         CXX_EXTENSIONS OFF
         INSTALL_RPATH
-            "$ORIGIN/${qindaqt_file_manager_qml_relative_path}/QindaQt/AppShell;$ORIGIN/${qindaqt_file_manager_qml_relative_path}/QindaQt/Tokens"
+            "$ORIGIN/${qindaqt_file_manager_qml_relative_path}/QindaQt/AppShell"
 )
 qindaqt_enable_warnings(qindaqt-file-manager)
 
@@ -163,103 +156,26 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
     COMPONENT FileManager
 )
-install(
-    DIRECTORY "${PROJECT_SOURCE_DIR}/data/themes/"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-    COMPONENT FileManager
-)
 
-# FileManager is a usable package component, not merely an executable payload.
-# Repeat its three public QML runtime dependencies into the same component so
-# component-only staging and downstream packages cannot omit a backing library,
-# plugin, qmldir, or QML source named by qmldir.
-qt_query_qml_module(
-    qindaqt_tokens_qml
-    QMLDIR qindaqt_file_manager_tokens_qmldir
-    TYPEINFO qindaqt_file_manager_tokens_typeinfo
-)
-qt_query_qml_module(
-    qindaqt_app_shell
-    QMLDIR qindaqt_file_manager_app_shell_qmldir
-    TYPEINFO qindaqt_file_manager_app_shell_typeinfo
-    QML_FILES qindaqt_file_manager_app_shell_qml_files
-    QML_FILES_DEPLOY_PATHS qindaqt_file_manager_app_shell_deploy_paths
-)
-qt_query_qml_module(
-    qindaqt_controls_qml
-    QMLDIR qindaqt_file_manager_controls_qmldir
-    TYPEINFO qindaqt_file_manager_controls_typeinfo
-    QML_FILES qindaqt_file_manager_controls_qml_files
-    QML_FILES_DEPLOY_PATHS qindaqt_file_manager_controls_deploy_paths
-)
+# ADR-0116: the FileManager component ships no importable QindaQt QML modules
+# (no qmldir, typeinfo, or QML sources) and no theme catalog. It still repeats
+# the three backing shared libraries named by the executable's dynamic
+# dependency chain — the same layout the pre-ADR-0116 component used — so a
+# component-only staged install resolves libqindaqt_app_shell.so and its
+# Controls/Tokens siblings without the rest of the shell install. The chain
+# relies on each library's own INSTALL_RPATH; see the AGENT-CONTRACT above.
 install(
-    TARGETS
-        qindaqt_app_shell
-        qindaqt_app_shellplugin
-    RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell" COMPONENT FileManager
-    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell" COMPONENT FileManager
-    ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell" COMPONENT FileManager
-)
-install(
-    FILES
-        "${qindaqt_file_manager_app_shell_qmldir}"
-        "${qindaqt_file_manager_app_shell_typeinfo}"
-    DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
     COMPONENT FileManager
 )
-foreach(qml_file deploy_path IN ZIP_LISTS
-        qindaqt_file_manager_app_shell_qml_files
-        qindaqt_file_manager_app_shell_deploy_paths)
-    cmake_path(GET deploy_path PARENT_PATH deploy_directory)
-    cmake_path(GET deploy_path FILENAME deploy_name)
-    install(
-        FILES "${qml_file}"
-        DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell/${deploy_directory}"
-        RENAME "${deploy_name}"
-        COMPONENT FileManager
-    )
-endforeach()
-
 install(
-    TARGETS
-        qindaqt_tokens_qml
-        qindaqt_tokens_qmlplugin
-    RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens" COMPONENT FileManager
-    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens" COMPONENT FileManager
-    ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens" COMPONENT FileManager
-)
-install(
-    FILES
-        "${qindaqt_file_manager_tokens_qmldir}"
-        "${qindaqt_file_manager_tokens_typeinfo}"
-    DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+    TARGETS qindaqt_controls_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
     COMPONENT FileManager
 )
-
 install(
-    TARGETS
-        qindaqt_controls_qml
-        qindaqt_controls_qmlplugin
-    RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls" COMPONENT FileManager
-    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls" COMPONENT FileManager
-    ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls" COMPONENT FileManager
-)
-install(
-    FILES
-        "${qindaqt_file_manager_controls_qmldir}"
-        "${qindaqt_file_manager_controls_typeinfo}"
-    DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    TARGETS qindaqt_tokens_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT FileManager
 )
-foreach(qml_file deploy_path IN ZIP_LISTS
-        qindaqt_file_manager_controls_qml_files
-        qindaqt_file_manager_controls_deploy_paths)
-    cmake_path(GET deploy_path PARENT_PATH deploy_directory)
-    cmake_path(GET deploy_path FILENAME deploy_name)
-    install(
-        FILES "${qml_file}"
-        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls/${deploy_directory}"
-        RENAME "${deploy_name}"
-        COMPONENT FileManager
-    )
-endforeach()

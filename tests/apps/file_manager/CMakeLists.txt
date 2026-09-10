@@ -110,7 +110,6 @@ set_tests_properties(
 add_test(
     NAME qindaqt.file-manager-mutation-ui-offscreen
     COMMAND $<TARGET_FILE:qindaqt-file-manager>
-            --theme-directory "${PROJECT_SOURCE_DIR}/data/themes"
             --check-ui-contract "${CMAKE_BINARY_DIR}"
 )
 set_tests_properties(
@@ -118,7 +117,7 @@ set_tests_properties(
     PROPERTIES
         LABELS "file-manager"
         ENVIRONMENT
-            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
@@ -129,7 +128,6 @@ set_tests_properties(
 add_test(
     NAME qindaqt.file-manager-mutation-ui-actions-offscreen
     COMMAND $<TARGET_FILE:qindaqt-file-manager>
-            --theme-directory "${PROJECT_SOURCE_DIR}/data/themes"
             --check-ui-actions "${CMAKE_BINARY_DIR}"
 )
 set_tests_properties(
@@ -137,7 +135,7 @@ set_tests_properties(
     PROPERTIES
         LABELS "file-manager"
         ENVIRONMENT
-            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-action-data"
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-action-data"
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
@@ -164,18 +162,13 @@ set_tests_properties(
     PROPERTIES LABELS "file-manager" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
-get_target_property(
-    qindaqt_file_manager_expected_controls_paths
-    qindaqt_controls_qml
-    QINDAQT_QML_DEPLOY_PATHS
-)
-string(REPLACE ";" "|" qindaqt_file_manager_expected_controls_paths
-       "${qindaqt_file_manager_expected_controls_paths}")
-
 # AGENT-CONTRACT: This row stages only the FileManager component and clears
-# ambient build/import/library lookup. Its two probes must therefore load the
-# executable, themes, Tokens, Controls, and the real QML root solely from the
-# disposable relocatable prefix.
+# ambient build/import/library lookup. Its probes must therefore load the
+# executable and the real QML root solely from the disposable relocatable
+# prefix. ADR-0116: the component no longer carries importable Tokens/Controls
+# QML modules or the per-app theme catalog; the row asserts their absence and
+# requires the AppShell/Controls/Tokens backing shared libraries the
+# executable's dynamic dependency chain still needs.
 add_test(
     NAME qindaqt.file-manager-installed-runtime
     COMMAND
@@ -187,11 +180,6 @@ add_test(
         "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
         "-DQINDAQT_QML_INSTALL_DIR=${QT6_INSTALL_QML}"
         "-DQINDAQT_CONFIGURATION=$<CONFIG>"
-        "-DQINDAQT_TOKENS_LIBRARY_NAME=$<TARGET_FILE_NAME:qindaqt_tokens_qml>"
-        "-DQINDAQT_TOKENS_PLUGIN_NAME=$<TARGET_FILE_NAME:qindaqt_tokens_qmlplugin>"
-        "-DQINDAQT_CONTROLS_LIBRARY_NAME=$<TARGET_FILE_NAME:qindaqt_controls_qml>"
-        "-DQINDAQT_CONTROLS_PLUGIN_NAME=$<TARGET_FILE_NAME:qindaqt_controls_qmlplugin>"
-        "-DQINDAQT_EXPECTED_CONTROLS_PATHS=${qindaqt_file_manager_expected_controls_paths}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_file_manager.cmake"
 )
 set_tests_properties(
@@ -204,7 +192,7 @@ add_test(NAME qindaqt.file-manager-selection-qml
         -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_selection.qml")
 set_tests_properties(qindaqt.file-manager-selection-qml PROPERTIES
     LABELS "file-manager"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Fusion"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
 
 qindaqt_add_file_manager_test(
@@ -224,10 +212,9 @@ set_tests_properties(qindaqt.file-manager-preview-provider PROPERTIES
 
 qt_add_executable(qindaqt_file_manager_visual_probe visual_probe.cpp)
 target_link_libraries(qindaqt_file_manager_visual_probe PRIVATE
-    qindaqt_file_manager_support QindaQt::TokensQml qindaqt_themes Qt6::Quick)
+    qindaqt_file_manager_support Qt6::Quick)
 target_compile_features(qindaqt_file_manager_visual_probe PRIVATE cxx_std_20)
 qindaqt_enable_warnings(qindaqt_file_manager_visual_probe)
-add_dependencies(qindaqt_file_manager_visual_probe qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin qindaqt_app_shellplugin)
 set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png"
     PROPERTIES QT_RESOURCE_ALIAS empty-folder.png)
 qt_add_resources(qindaqt_file_manager_visual_probe file_manager_probe_artwork
@@ -242,15 +229,11 @@ set_tests_properties(qindaqt.file-manager-action-catalog PROPERTIES
 # Exercise actual window shortcuts and wheel delivery against local fixtures.
 qindaqt_add_file_manager_test(qindaqt_file_manager_browsing_ui_tests
     tst_browsing_ui.cpp qindaqt.file-manager-browsing-ui)
-target_link_libraries(qindaqt_file_manager_browsing_ui_tests PRIVATE
-    QindaQt::TokensQml qindaqt_themes Qt6::Quick)
+target_link_libraries(qindaqt_file_manager_browsing_ui_tests PRIVATE Qt6::Quick)
 target_compile_definitions(qindaqt_file_manager_browsing_ui_tests PRIVATE
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
-add_dependencies(qindaqt_file_manager_browsing_ui_tests
-    qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin qindaqt_app_shellplugin)
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 set_tests_properties(qindaqt.file-manager-browsing-ui PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
 
 qindaqt_add_file_manager_test(qindaqt_file_manager_name_filter_tests
@@ -261,16 +244,14 @@ qindaqt_add_file_manager_test(qindaqt_file_manager_icon_zoom_tests
 find_package(Qt6 6.11 REQUIRED COMPONENTS QuickTest)
 qt_add_executable(qindaqt_file_manager_viewport_tests viewport_quick_test.cpp)
 target_link_libraries(qindaqt_file_manager_viewport_tests PRIVATE
-    Qt6::QuickTest Qt6::Quick QindaQt::TokensQml qindaqt_themes)
+    Qt6::QuickTest Qt6::Quick qindaqt_file_manager_support)
 target_compile_definitions(qindaqt_file_manager_viewport_tests PRIVATE
-    QINDAQT_SOURCE_ROOT="${PROJECT_SOURCE_DIR}"
-    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
-add_dependencies(qindaqt_file_manager_viewport_tests qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin)
+    QINDAQT_SOURCE_ROOT="${PROJECT_SOURCE_DIR}")
 add_test(NAME qindaqt.file-manager-viewport
     COMMAND qindaqt_file_manager_viewport_tests
         -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_viewport.qml")
 set_tests_properties(qindaqt.file-manager-viewport PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QUICK_CONTROLS_STYLE=Fusion"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
     LABELS "file-manager;offscreen;accessibility")
 

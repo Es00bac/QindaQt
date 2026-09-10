@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
 // Visual browsing shares the exact selection policy with the details view.
-Item {
+Control {
     id: root
 
     required property var navigationController
@@ -50,9 +48,9 @@ Item {
         }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Tokens.space["2"]
+    padding: 8
+
+    contentItem: ColumnLayout {
         spacing: 0
 
         Item {
@@ -78,7 +76,7 @@ Item {
                 cellHeight: root.iconSize + 80
                 model: root.navigationController.entries
 
-                T.ScrollBar.vertical: ViewportScrollBar {
+                ScrollBar.vertical: ViewportScrollBar {
                     objectName: "entryGridScrollBar"
                     parent: viewport
                     x: gridView.width + 4
@@ -101,34 +99,36 @@ Item {
 
                     property bool entrySelected: selection.isSelected(delegateRoot.index)
 
-                    width: gridView.cellWidth - Tokens.space["1"]
-                    height: gridView.cellHeight - Tokens.space["1"]
-                    radius: 12
-                    color: delegateRoot.entrySelected ? Tokens.state.pressed
-                         : hoverArea.containsMouse ? Tokens.state.hover : "transparent"
+                    width: gridView.cellWidth - 4
+                    height: gridView.cellHeight - 4
+                    radius: 8
+                    color: delegateRoot.entrySelected ? root.palette.highlight
+                         : hoverArea.containsMouse ? root.palette.alternateBase : "transparent"
 
                     Accessible.role: Accessible.ListItem
                     Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
                         ? qsTr(", folder") : qsTr(", file"))
                     Accessible.selected: delegateRoot.entrySelected
                     border.width: GridView.isCurrentItem && gridView.activeFocus ? 2 : 0
-                    border.color: Tokens.accent.default
+                    border.color: root.palette.highlight
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: Tokens.space["2"]
-                        spacing: Tokens.space["1"]
+                        anchors.margins: 8
+                        spacing: 4
 
                         Item {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: root.iconSize + 16
                             Layout.preferredHeight: root.iconSize + 16
-                            Qinda.Icon {
+                            Image {
                                 anchors.centerIn: parent
                                 width: root.iconSize
                                 height: root.iconSize
-                                name: delegateRoot.modelData.iconName || "application-octet-stream"
+                                sourceSize: Qt.size(root.iconSize, root.iconSize)
+                                source: "image://theme-icons/" + (delegateRoot.modelData.iconName || "application-octet-stream")
                                 visible: previewImage.status !== Image.Ready || previewImage.implicitWidth <= 1
+                                Accessible.ignored: true
                             }
                             Image {
                                 id: previewImage
@@ -140,23 +140,26 @@ Item {
                                 smooth: true
                                 Accessible.ignored: true
                             }
-                            Qinda.Icon {
+                            Image {
                                 visible: delegateRoot.modelData.isSymlink
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
                                 width: 20
                                 height: 20
-                                name: "emblem-symbolic-link"
-                                color: Tokens.fg.default
+                                sourceSize: Qt.size(20, 20)
+                                source: "image://theme-icons/emblem-symbolic-link"
+                                Accessible.ignored: true
                             }
                             Accessible.ignored: true
                         }
 
-                        Qinda.Label {
+                        Label {
                             Layout.fillWidth: true
                             horizontalAlignment: Text.AlignHCenter
                             text: delegateRoot.modelData.name
-                            muted: delegateRoot.modelData.isHidden
+                            color: delegateRoot.entrySelected ? root.palette.highlightedText
+                                 : delegateRoot.modelData.isHidden ? root.palette.placeholderText
+                                 : root.palette.text
                             elide: Text.ElideMiddle
                             maximumLineCount: 2
                             wrapMode: Text.Wrap
@@ -199,33 +202,33 @@ Item {
 
         }
 
-        T.Menu {
+        Menu {
             id: contextMenu
 
-            T.MenuItem {
+            MenuItem {
                 text: qsTr("Rename")
                 onTriggered: root.appCoordinator.activateAction("file.rename")
             }
-            T.MenuItem {
+            MenuItem {
                 text: qsTr("Copy To…")
                 onTriggered: root.appCoordinator.activateAction("file.copy")
             }
-            T.MenuItem {
+            MenuItem {
                 text: qsTr("Move To…")
                 onTriggered: root.appCoordinator.activateAction("file.move")
             }
-            T.MenuItem {
+            MenuItem {
                 text: qsTr("Move to Trash")
                 onTriggered: root.appCoordinator.activateAction("file.trash")
             }
         }
 
-        Qinda.Label {
+        Label {
             Layout.fillWidth: true
-            Layout.topMargin: Tokens.space["1"]
+            Layout.topMargin: 4
             visible: root.navigationController.statusMessage.length > 0
             text: root.navigationController.statusMessage
-            muted: true
+            color: root.palette.placeholderText
         }
     }
 }

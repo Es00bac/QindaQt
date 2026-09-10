@@ -1,4 +1,6 @@
 execute_process(
+    # ADR-0116: --theme is a deprecated no-op; this call doubles as the
+    # regression that the retained option does not break CLI validation.
     COMMAND "${FILE_MANAGER_EXECUTABLE}"
             --theme qindaqt-deliberately-missing-theme
             "${CMAKE_CURRENT_LIST_FILE}"

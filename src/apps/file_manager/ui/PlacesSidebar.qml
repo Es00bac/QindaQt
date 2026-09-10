@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
 // Fixed places plus the user's persisted bookmarks. Activation only routes a
 // path into NavigationController::navigateTo; a vanished bookmark therefore
-// lands on the ordinary navigation state card.
-Rectangle {
+// lands on the ordinary navigation state pane.
+Control {
     id: root
-    radius: 0
     objectName: "placesSidebar"
 
     required property var navigationController
@@ -18,24 +15,25 @@ Rectangle {
     required property var appCoordinator
 
     implicitWidth: 196
-    color: Tokens.bg.raised
+    padding: 8
 
-    Rectangle {
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        width: 1
-        color: Tokens.outline.divider
+    background: Rectangle {
+        color: root.palette.window
+        Rectangle {
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            width: 1
+            color: root.palette.mid
+        }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Tokens.space["2"]
-        spacing: Tokens.space["1"]
+    contentItem: ColumnLayout {
+        spacing: 4
 
-        Qinda.Label {
+        Label {
             text: qsTr("Places")
-            muted: true
+            color: root.palette.placeholderText
             Accessible.ignored: true
         }
 
@@ -50,27 +48,26 @@ Rectangle {
                 Layout.fillWidth: true
                 text: modelData.name
                 emphasized: root.navigationController.currentPath === modelData.path
-                accessibleDescription: qsTr("Open %1").arg(modelData.path)
+                Accessible.description: qsTr("Open %1").arg(modelData.path)
                 onClicked: root.navigationController.navigateTo(modelData.path)
             }
         }
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.topMargin: Tokens.space["2"]
+            Layout.topMargin: 8
 
-            Qinda.Label {
+            Label {
                 Layout.fillWidth: true
                 text: qsTr("Bookmarks")
-                muted: true
+                color: root.palette.placeholderText
                 Accessible.ignored: true
             }
             IconButton {
                 iconName: "bookmark-new"
                 objectName: "addBookmarkButton"
                 text: qsTr("Bookmark this folder")
-                emphasized: false
-                accessibleDescription: qsTr("Bookmark the current folder")
+                Accessible.description: qsTr("Bookmark the current folder")
                 onClicked: root.appCoordinator.activateAction("bookmark.add")
             }
         }
@@ -89,7 +86,7 @@ Rectangle {
                 clip: true
                 model: root.placesController.bookmarks
 
-                T.ScrollBar.vertical: ViewportScrollBar {
+                ScrollBar.vertical: ViewportScrollBar {
                     objectName: "bookmarkScrollBar"
                     parent: bookmarkViewport
                     x: bookmarkList.width + 4
@@ -106,7 +103,7 @@ Rectangle {
                     required property var modelData
 
                     width: bookmarkList.width
-                    spacing: Tokens.space["1"]
+                    spacing: 4
 
                     PlaceButton {
                         iconName: "folder"
@@ -114,7 +111,7 @@ Rectangle {
                         Layout.fillWidth: true
                         text: bookmarkRow.modelData.name
                         emphasized: root.navigationController.currentPath === bookmarkRow.modelData.path
-                        accessibleDescription: qsTr("Open %1").arg(bookmarkRow.modelData.path)
+                        Accessible.description: qsTr("Open %1").arg(bookmarkRow.modelData.path)
                         onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
                     }
                     IconButton {
@@ -122,8 +119,7 @@ Rectangle {
                         implicitWidth: 28
                         objectName: "removeBookmark_" + bookmarkRow.modelData.index
                         text: qsTr("Remove bookmark")
-                        emphasized: false
-                        accessibleDescription: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
+                        Accessible.description: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
                         onClicked: root.placesController.removeBookmark(bookmarkRow.modelData.index)
                     }
                 }

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
+import QtQuick.Controls
 
 // AGENT-GUARD: Keep the gutter reserved even when content fits. Toggling it
 // with overflow can repeatedly reflow the grid across its overflow threshold.
-T.ScrollBar {
+ScrollBar {
     id: control
     width: 12
     orientation: Qt.Vertical
-    policy: T.ScrollBar.AlwaysOn
+    policy: ScrollBar.AlwaysOn
     visible: size < 1
     minimumSize: height > 0 ? Math.min(1, 28 / height) : 1
     hoverEnabled: true
@@ -18,11 +17,11 @@ T.ScrollBar {
     contentItem: Rectangle {
         implicitWidth: 8
         radius: width / 2
-        color: control.pressed ? Tokens.accent.default
-             : control.hovered ? Tokens.fg.default : Tokens.fg.muted
+        color: control.pressed ? control.palette.highlight
+             : control.hovered ? control.palette.text : control.palette.placeholderText
     }
     background: Rectangle {
         radius: width / 2
-        color: control.hovered || control.pressed ? Tokens.state.hover : "transparent"
+        color: control.hovered || control.pressed ? control.palette.alternateBase : "transparent"
     }
 }

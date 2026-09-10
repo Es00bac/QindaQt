@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QindaQt.Controls 1.0 as Qinda
-import QindaQt.Tokens 1.0
 
-Rectangle {
+Control {
     id: root
     required property var navigationController
     signal closed()
     signal browseRequested()
     objectName: "folderFilterBar"
-    color: Tokens.bg.raised
     implicitHeight: 48
+    leftPadding: 12
+    rightPadding: 8
 
     function activate() { field.forceActiveFocus(); field.selectAll() }
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: Tokens.space["3"]
-        anchors.rightMargin: Tokens.space["2"]
-        spacing: Tokens.space["2"]
-        Qinda.TextField {
+    background: Rectangle {
+        color: root.palette.window
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.palette.mid }
+    }
+
+    contentItem: RowLayout {
+        spacing: 8
+        TextField {
             id: field
             objectName: "folderFilterField"
             Layout.fillWidth: true
@@ -40,5 +42,4 @@ Rectangle {
             onClicked: root.closed()
         }
     }
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Tokens.outline.divider }
 }

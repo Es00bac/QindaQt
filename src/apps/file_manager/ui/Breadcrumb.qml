@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
-Item {
+Control {
     id: root
     required property var navigationController
     readonly property int segmentLimit: width < 350 ? 2 : 3
@@ -13,13 +11,13 @@ Item {
     readonly property var hiddenSegments: navigationController.breadcrumb.slice(0,
         Math.max(0, navigationController.breadcrumb.length - segmentLimit))
     implicitHeight: 40
+    padding: 0
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Current folder: %1").arg(navigationController.currentPath)
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: Tokens.space["1"]
+    contentItem: RowLayout {
+        spacing: 4
         IconButton {
             objectName: "breadcrumbAncestorsButton"
             Layout.preferredWidth: 32
@@ -27,11 +25,11 @@ Item {
             iconName: "view-more"
             text: qsTr("Parent folders")
             onClicked: ancestors.popup()
-            T.Menu {
+            Menu {
                 id: ancestors
                 Instantiator {
                     model: root.hiddenSegments
-                    delegate: T.MenuItem {
+                    delegate: MenuItem {
                         required property var modelData
                         text: modelData.name
                         Accessible.description: modelData.path
@@ -44,7 +42,7 @@ Item {
         }
         Repeater {
             model: root.visibleSegments
-            Qinda.Button {
+            Button {
                 id: segment
                 required property var modelData
                 required property int index
@@ -53,12 +51,10 @@ Item {
                 Layout.maximumWidth: 180
                 Layout.minimumWidth: 24
                 implicitWidth: Math.min(180, implicitContentWidth + 16)
-                leftPadding: Tokens.space["2"]
-                rightPadding: Tokens.space["2"]
+                flat: true
                 text: modelData.name
-                emphasized: false
-                accessibleDescription: qsTr("Open %1").arg(modelData.path)
-                contentItem: Qinda.Label {
+                Accessible.description: qsTr("Open %1").arg(modelData.path)
+                contentItem: Label {
                     text: segment.text
                     elide: Text.ElideMiddle
                     wrapMode: Text.NoWrap
@@ -68,11 +64,13 @@ Item {
                     Accessible.ignored: true
                 }
                 background: Rectangle {
-                    radius: Tokens.radius.m
-                    color: segment.down ? Tokens.state.pressed : segment.hovered ? Tokens.state.hover
-                         : segment.index === root.visibleSegments.length - 1 ? Tokens.state.pressed : "transparent"
+                    radius: 6
+                    color: segment.down ? segment.palette.mid
+                         : segment.hovered ? segment.palette.alternateBase
+                         : segment.index === root.visibleSegments.length - 1
+                           ? segment.palette.alternateBase : "transparent"
                     border.width: segment.activeFocus ? 2 : 0
-                    border.color: Tokens.focus.ring
+                    border.color: segment.palette.highlight
                 }
                 onClicked: root.navigationController.navigateTo(modelData.path)
             }

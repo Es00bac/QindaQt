@@ -1,23 +1,65 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QindaQt.AppShell 1.0
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
-ApplicationShell {
+// ADR-0116: stock Qt Quick Controls only — no QindaQt.Tokens/Controls imports
+// and no palette literals; appearance comes from the Qt platform theme
+// (ADR-0115) with QT_QUICK_CONTROLS_STYLE=Fusion set by the session.
+// The AppShell seams stay non-visual: the window binds the injected
+// ApplicationCoordinator for the action catalog, in-window menus, quit
+// arbitration, focus reporting, and the degraded-integration notice.
+ApplicationWindow {
     id: root
 
+    required property var coordinator
     required property var navigationController
     required property var mutationController
     required property var placesController
 
-    initialFocusItem: root.navigationController.statusKey === "ready"
-        ? root.activeView().focusItem : toolbar.primaryFocusItem
+    property bool closeAuthorized: false
+    property bool inWindowMenuVisible: true
+
+    visible: true
     width: 900
     height: 600
     minimumWidth: 480
     minimumHeight: 320
+    title: coordinator.windowTitle.length > 0
+           ? coordinator.windowTitle : coordinator.applicationName
+
+    // AGENT-CONTRACT: Closing asks the owning application for a decision. The
+    // coordinator and this surface never call QCoreApplication::quit or infer
+    // whether domain state (a running file operation) is safe to abandon.
+    onClosing: function(close) {
+        if (closeAuthorized) {
+            close.accepted = true
+            return
+        }
+        close.accepted = false
+        coordinator.requestQuit("window-close")
+    }
+
+    onActiveFocusItemChanged: {
+        const owner = activeFocusItem && activeFocusItem.objectName
+                    ? activeFocusItem.objectName : ""
+        coordinator.reportFocusOwner(owner)
+    }
+
+    Component.onCompleted: {
+        if (coordinator.initialFocusObjectName === toolbar.primaryFocusItem.objectName)
+            toolbar.primaryFocusItem.forceActiveFocus(Qt.TabFocusReason)
+        else
+            root.activeView().focusView()
+    }
+
+    Connections {
+        target: root.coordinator
+        function onQuitApproved(requestId) {
+            root.closeAuthorized = true
+            root.close()
+        }
+    }
 
     Shortcut { sequence: "Ctrl+="; onActivated: root.coordinator.activateAction("view.zoom-in") }
     Shortcut { sequence: "Ctrl+R"; onActivated: root.coordinator.activateAction("view.refresh") }
@@ -90,165 +132,212 @@ ApplicationShell {
         }
     }
 
-    Item {
+    // In-window menu authority, hidden when the global-menu export claims the
+    // window (composeFileManagerMenuExport flips inWindowMenuVisible).
+    menuBar: MenuBar {
+        id: exportedMenuBar
+        objectName: "appShellMenuBar"
+        visible: root.inWindowMenuVisible
+
+        Instantiator {
+            model: root.coordinator.menus
+
+            delegate: Menu {
+                id: exportedMenu
+                required property var modelData
+                title: modelData.label
+
+                Instantiator {
+                    model: exportedMenu.modelData.actions
+
+                    delegate: Action {
+                        required property var modelData
+                        text: modelData.label
+                        enabled: modelData.enabled
+                        checkable: modelData.checkable
+                        checked: modelData.checked
+                        shortcut: modelData.shortcut
+                        onTriggered: root.coordinator.activateAction(modelData.id)
+                    }
+
+                    onObjectAdded: function(index, object) {
+                        exportedMenu.insertAction(index, object)
+                    }
+                    onObjectRemoved: function(index, object) {
+                        exportedMenu.removeAction(object)
+                    }
+                }
+            }
+
+            onObjectAdded: function(index, object) {
+                exportedMenuBar.insertMenu(index, object)
+            }
+            onObjectRemoved: function(index, object) {
+                exportedMenuBar.removeMenu(object)
+            }
+        }
+    }
+
+    // Degraded AppShell integrations remain usable; keep the notice's title
+    // distinct for an unavailable integration.
+    ColumnLayout {
         anchors.fill: parent
+        spacing: 0
 
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 0
-
-            Toolbar {
-                id: toolbar
-                Layout.fillWidth: true
-                navigationController: root.navigationController
-                mutationController: root.mutationController
-                appCoordinator: root.coordinator
-            }
-
-            FilterBar {
-                id: filterBar
-                Layout.fillWidth: true
-                visible: false
-                navigationController: root.navigationController
-                onClosed: {
-                    root.navigationController.setNameFilter("")
-                    visible = false
-                    root.activeView().focusView()
-                }
-                onBrowseRequested: root.activeView().focusView()
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: 0
-
-                PlacesSidebar {
-                    Layout.preferredWidth: root.width < 680 ? 148 : 196
-                    Layout.fillHeight: true
-                    navigationController: root.navigationController
-                    placesController: root.placesController
-                    appCoordinator: root.coordinator
-                }
-
-                StackLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
-
-                    StackLayout {
-                        currentIndex: root.navigationController.viewMode === "grid" ? 1 : 0
-
-                        EntryList {
-                            id: entryList
-                            iconSize: root.navigationController.iconSize
-                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
-                            selection: entrySelection
-                            navigationController: root.navigationController
-                            appCoordinator: root.coordinator
-                        }
-
-                        EntryGrid {
-                            id: entryGrid
-                            iconSize: root.navigationController.iconSize
-                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
-                            selection: entrySelection
-                            navigationController: root.navigationController
-                            appCoordinator: root.coordinator
-                        }
-                    }
-
-                    StatePane {
-                        statusKey: root.navigationController.statusKey
-                        statusMessage: root.navigationController.statusMessage
-                        onRetryRequested: root.navigationController.refresh()
-                    }
-                }
-            }
-
-            FolderStatusBar {
-                Layout.fillWidth: true
-                navigationController: root.navigationController
-                selection: entrySelection
-                appCoordinator: root.coordinator
-            }
-
-            Qinda.StateCard {
-                objectName: "mutationProgressCard"
-                Layout.fillWidth: true
-                visible: root.mutationController.busy
-                status: Qinda.StateCard.Busy
-                title: qsTr("File operation in progress")
-                message: root.mutationController.progressText
-                actionText: qsTr("Cancel")
-                accessibleDescription: qsTr("%1. Progress %2 percent")
-                    .arg(root.mutationController.progressText)
-                    .arg(root.mutationController.progressValue)
-                onActionTriggered: root.mutationController.cancel()
-            }
-
-            Qinda.StateCard {
-                objectName: "mutationFailureCard"
-                Layout.fillWidth: true
-                visible: root.mutationController.failureCode !== "none"
-                status: Qinda.StateCard.Error
-                title: qsTr("File operation failed: %1")
-                    .arg(root.mutationController.failureCode)
-                message: root.mutationController.failureMessage
-                actionText: qsTr("Dismiss")
-                onActionTriggered: root.mutationController.clearFailure()
-            }
-
-            Qinda.StateCard {
-                objectName: "mutationResultCard"
-                Layout.fillWidth: true
-                visible: !root.mutationController.busy
-                    && root.mutationController.failureCode === "none"
-                    && root.mutationController.resultText.length > 0
-                status: Qinda.StateCard.Success
-                title: root.mutationController.resultText
-                message: root.mutationController.canRestore
-                    ? qsTr("The most recently trashed item can be restored.") : ""
-                actionText: root.mutationController.canUndo ? qsTr("Undo") : ""
-                onActionTriggered: root.mutationController.undo()
-            }
-
-            Qinda.StateCard {
-                objectName: "launchErrorBanner"
-                Layout.fillWidth: true
-                visible: root.navigationController.launchError.length > 0
-                status: Qinda.StateCard.Warning
-                title: qsTr("Couldn't open the file")
-                message: root.navigationController.launchError
-                actionText: qsTr("Dismiss")
-                onActionTriggered: root.navigationController.clearLaunchError()
-            }
-
-            Qinda.StateCard {
-                objectName: "bookmarkStoreBanner"
-                Layout.fillWidth: true
-                visible: root.placesController.storeError.length > 0
-                status: Qinda.StateCard.Warning
-                title: qsTr("Bookmark storage problem")
-                message: root.placesController.storeError
-                actionText: qsTr("Dismiss")
-                onActionTriggered: root.placesController.clearStoreError()
-            }
+        StatusBanner {
+            objectName: "appShellDegradedNotice"
+            Layout.fillWidth: true
+            visible: root.coordinator.degraded
+            title: root.coordinator.hasUnavailableIntegration
+                ? qsTr("Feature unavailable") : qsTr("Limited capability")
+            message: root.coordinator.degradedMessage
         }
 
-        // Extra mouse buttons share the same history actions as toolbar/menu.
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.BackButton | Qt.ForwardButton
-            onClicked: (event) => root.coordinator.activateAction(
-                event.button === Qt.BackButton ? "go.back" : "go.forward")
-        }
-
-        MutationDialogs {
-            id: mutationDialogs
-            anchors.fill: parent
+        Toolbar {
+            id: toolbar
+            Layout.fillWidth: true
             navigationController: root.navigationController
             mutationController: root.mutationController
+            appCoordinator: root.coordinator
         }
+
+        FilterBar {
+            id: filterBar
+            Layout.fillWidth: true
+            visible: false
+            navigationController: root.navigationController
+            onClosed: {
+                root.navigationController.setNameFilter("")
+                visible = false
+                root.activeView().focusView()
+            }
+            onBrowseRequested: root.activeView().focusView()
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+            PlacesSidebar {
+                Layout.preferredWidth: root.width < 680 ? 148 : 196
+                Layout.fillHeight: true
+                navigationController: root.navigationController
+                placesController: root.placesController
+                appCoordinator: root.coordinator
+            }
+
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
+
+                StackLayout {
+                    currentIndex: root.navigationController.viewMode === "grid" ? 1 : 0
+
+                    EntryList {
+                        id: entryList
+                        iconSize: root.navigationController.iconSize
+                        onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
+                        selection: entrySelection
+                        navigationController: root.navigationController
+                        appCoordinator: root.coordinator
+                    }
+
+                    EntryGrid {
+                        id: entryGrid
+                        iconSize: root.navigationController.iconSize
+                        onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
+                        selection: entrySelection
+                        navigationController: root.navigationController
+                        appCoordinator: root.coordinator
+                    }
+                }
+
+                StatePane {
+                    statusKey: root.navigationController.statusKey
+                    statusMessage: root.navigationController.statusMessage
+                    onRetryRequested: root.navigationController.refresh()
+                }
+            }
+        }
+
+        FolderStatusBar {
+            Layout.fillWidth: true
+            navigationController: root.navigationController
+            selection: entrySelection
+            appCoordinator: root.coordinator
+        }
+
+        StatusBanner {
+            objectName: "mutationProgressCard"
+            Layout.fillWidth: true
+            visible: root.mutationController.busy
+            title: qsTr("File operation in progress")
+            message: qsTr("%1. Progress %2 percent")
+                .arg(root.mutationController.progressText)
+                .arg(root.mutationController.progressValue)
+            actionText: qsTr("Cancel")
+            onActionTriggered: root.mutationController.cancel()
+        }
+
+        StatusBanner {
+            objectName: "mutationFailureCard"
+            Layout.fillWidth: true
+            visible: root.mutationController.failureCode !== "none"
+            title: qsTr("File operation failed: %1")
+                .arg(root.mutationController.failureCode)
+            message: root.mutationController.failureMessage
+            actionText: qsTr("Dismiss")
+            onActionTriggered: root.mutationController.clearFailure()
+        }
+
+        StatusBanner {
+            objectName: "mutationResultCard"
+            Layout.fillWidth: true
+            visible: !root.mutationController.busy
+                && root.mutationController.failureCode === "none"
+                && root.mutationController.resultText.length > 0
+            title: root.mutationController.resultText
+            message: root.mutationController.canRestore
+                ? qsTr("The most recently trashed item can be restored.") : ""
+            actionText: root.mutationController.canUndo ? qsTr("Undo") : ""
+            onActionTriggered: root.mutationController.undo()
+        }
+
+        StatusBanner {
+            objectName: "launchErrorBanner"
+            Layout.fillWidth: true
+            visible: root.navigationController.launchError.length > 0
+            title: qsTr("Couldn't open the file")
+            message: root.navigationController.launchError
+            actionText: qsTr("Dismiss")
+            onActionTriggered: root.navigationController.clearLaunchError()
+        }
+
+        StatusBanner {
+            objectName: "bookmarkStoreBanner"
+            Layout.fillWidth: true
+            visible: root.placesController.storeError.length > 0
+            title: qsTr("Bookmark storage problem")
+            message: root.placesController.storeError
+            actionText: qsTr("Dismiss")
+            onActionTriggered: root.placesController.clearStoreError()
+        }
+    }
+
+    // Extra mouse buttons share the same history actions as toolbar/menu.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onClicked: (event) => root.coordinator.activateAction(
+            event.button === Qt.BackButton ? "go.back" : "go.forward")
+    }
+
+    MutationDialogs {
+        id: mutationDialogs
+        anchors.fill: parent
+        navigationController: root.navigationController
+        mutationController: root.mutationController
     }
 }
