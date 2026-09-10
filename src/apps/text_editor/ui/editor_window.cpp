@@ -28,11 +28,11 @@
 namespace QindaQt::Apps::TextEditor {
 
 EditorWindow::EditorWindow(
-    DocumentStoreFactory storeFactory, EditorAppearance appearance,
+    DocumentStoreFactory storeFactory,
     std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter,
     TextEditorRestorePolicy *restorePolicy, EditorApplication *application,
     std::unique_ptr<DocumentDialogs> dialogs, QWidget *parent)
-    : QMainWindow(parent), m_appearance(std::move(appearance)),
+    : QMainWindow(parent),
       m_appShellBridge(fileSelectionAdapter
                            ? std::move(fileSelectionAdapter)
                            : std::make_unique<NativeFileSelectionAdapter>(this),
@@ -44,8 +44,6 @@ EditorWindow::EditorWindow(
   resize(920, 680);
   setMinimumSize(420, 320);
   setAcceptDrops(true);
-  setPalette(m_appearance.palette);
-  setFont(m_appearance.interfaceFont);
 
   m_document = new DocumentController(storeFactory(), this);
   createCentralSurface();
@@ -65,14 +63,6 @@ EditorWindow::EditorWindow(
 
 void EditorWindow::setMenuExport(std::unique_ptr<QObject> menuExport) {
   m_menuExport = std::move(menuExport);
-}
-
-void EditorWindow::applyAppearance(const EditorAppearance &appearance) {
-  m_appearance = appearance;
-  setPalette(appearance.palette);
-  setFont(appearance.interfaceFont);
-  m_view->applyAppearance(appearance);
-  applyChrome();
 }
 
 DocumentController *EditorWindow::controller() const {
@@ -125,7 +115,7 @@ void EditorWindow::connectDocument() {
 }
 
 void EditorWindow::createDocumentView() {
-  m_view = new EditorDocumentView(m_document, m_appearance, centralWidget());
+  m_view = new EditorDocumentView(m_document, centralWidget());
   m_surfaceLayout->insertWidget(0, m_view, 1);
   connect(m_view, &EditorDocumentView::presentationChanged, this,
           [this] { updateDocumentPresentation(); });
@@ -250,6 +240,17 @@ void EditorWindow::paintEvent(QPaintEvent *event) {
   if (!m_firstFramePublished) {
     m_firstFramePublished = true;
     emit firstFramePainted();
+  }
+}
+
+void EditorWindow::changeEvent(QEvent *event) {
+  QMainWindow::changeEvent(event);
+  // Icon tints are the one palette-derived presentation the window keeps; the
+  // style itself reacts to palette/theme changes without any help.
+  if (m_findBar && (event->type() == QEvent::PaletteChange ||
+                    event->type() == QEvent::StyleChange ||
+                    event->type() == QEvent::ThemeChange)) {
+    applyChrome();
   }
 }
 

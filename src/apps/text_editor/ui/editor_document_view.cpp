@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QStyle>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QVBoxLayout>
@@ -16,16 +17,10 @@
 #include <utility>
 
 namespace QindaQt::Apps::TextEditor {
-namespace {
-
-QString colorCss(const QColor &color) { return color.name(QColor::HexArgb); }
-
-} // namespace
 
 EditorDocumentView::EditorDocumentView(DocumentController *controller,
-                                       const EditorAppearance &appearance,
                                        QWidget *parent)
-    : QWidget(parent), m_controller(controller), m_appearance(appearance) {
+    : QWidget(parent), m_controller(controller) {
   Q_ASSERT(m_controller);
   setObjectName(QStringLiteral("editorDocumentView"));
   auto *layout = new QVBoxLayout(this);
@@ -37,6 +32,8 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   m_externalBanner->setAccessibleName(tr("External file change warning"));
   auto *bannerLayout = new QHBoxLayout(m_externalBanner);
   bannerLayout->setContentsMargins(12, 8, 12, 8);
+  m_externalIcon = new QLabel(m_externalBanner);
+  m_externalIcon->setObjectName(QStringLiteral("externalChangeIcon"));
   m_externalLabel = new QLabel(m_externalBanner);
   m_externalLabel->setObjectName(QStringLiteral("externalChangeMessage"));
   m_externalLabel->setWordWrap(true);
@@ -48,6 +45,7 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   m_saveAsButton->setObjectName(QStringLiteral("saveAsExternalAction"));
   m_saveAsButton->setAccessibleName(
       tr("Save this document under a different name"));
+  bannerLayout->addWidget(m_externalIcon);
   bannerLayout->addWidget(m_externalLabel, 1);
   bannerLayout->addWidget(m_reloadButton);
   bannerLayout->addWidget(m_saveAsButton);
@@ -60,8 +58,6 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
       tr("Edit the current local UTF-8 plain-text document"));
   m_editor->setTabChangesFocus(false);
   m_editor->setLineWrapMode(QPlainTextEdit::WidgetWidth);
-  static_cast<DocumentEditor *>(m_editor)->setBaseFont(m_appearance.editorFont);
-  static_cast<DocumentEditor *>(m_editor)->setHighContrast(m_appearance.highContrast);
   layout->addWidget(m_externalBanner);
   layout->addWidget(m_editor, 1);
   setTabOrder(m_editor, m_reloadButton);
@@ -75,18 +71,6 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   static_cast<DocumentEditor *>(m_editor)->setDocumentPath(m_controller->state().path());
   connectState();
   updateExternalBanner(m_controller->state().externalState());
-}
-
-void EditorDocumentView::applyAppearance(const EditorAppearance &appearance) {
-  m_appearance = appearance;
-  setPalette(appearance.palette);
-  setFont(appearance.interfaceFont);
-  static_cast<DocumentEditor *>(m_editor)->setBaseFont(appearance.editorFont);
-  static_cast<DocumentEditor *>(m_editor)->setHighContrast(appearance.highContrast);
-  // Repaint an unchanged warning when live appearance changes.
-  const auto external = m_renderedExternalState;
-  m_renderedExternalState = ExternalState::InSync;
-  updateExternalBanner(external);
 }
 
 void EditorDocumentView::connectState() {
@@ -145,19 +129,10 @@ void EditorDocumentView::updateExternalBanner(const ExternalState state) {
     return;
   }
 
-  const bool warning = state == ExternalState::Changed;
-  const QColor background =
-      warning ? m_appearance.warningBackground : m_appearance.dangerBackground;
-  const QColor foreground =
-      warning ? m_appearance.warningForeground : m_appearance.dangerForeground;
-  m_externalBanner->setStyleSheet(
-      QStringLiteral("#externalChangeBanner { background: %1; border-bottom: "
-                     "1px solid %2; } #externalChangeMessage { color: %3; } "
-                     "#externalChangeBanner QPushButton:focus { border: 2px "
-                     "solid %4; border-radius: %5px; }")
-          .arg(colorCss(background), colorCss(foreground), colorCss(foreground),
-               colorCss(m_appearance.focusRing),
-               QString::number(m_appearance.mediumRadius)));
+  // AGENT-CONTRACT: The banner's severity is carried by the style's standard
+  // icon plus explicit text and accessibility announcements — never by a
+  // token-colored QSS surface (ADR-0116). Meaning never depends on color.
+  refreshExternalIcon();
   QString text;
   if (state == ExternalState::Changed) {
     text = tr("Warning: This file changed outside QindaQt Text Editor. Reload "
@@ -173,6 +148,24 @@ void EditorDocumentView::updateExternalBanner(const ExternalState state) {
   m_externalLabel->setAccessibleDescription(text);
   m_reloadButton->setEnabled(state == ExternalState::Changed);
   m_externalBanner->show();
+}
+
+void EditorDocumentView::refreshExternalIcon() {
+  const bool warning = m_renderedExternalState == ExternalState::Changed;
+  const auto icon = style()->standardIcon(
+      warning ? QStyle::SP_MessageBoxWarning : QStyle::SP_MessageBoxCritical);
+  const int size = style()->pixelMetric(QStyle::PM_SmallIconSize);
+  m_externalIcon->setPixmap(icon.pixmap(size, size));
+  m_externalIcon->setAccessibleName(warning ? tr("Warning") : tr("Error"));
+}
+
+void EditorDocumentView::changeEvent(QEvent *event) {
+  QWidget::changeEvent(event);
+  if (m_externalIcon && (event->type() == QEvent::StyleChange ||
+                         event->type() == QEvent::PaletteChange ||
+                         event->type() == QEvent::ThemeChange)) {
+    refreshExternalIcon();
+  }
 }
 
 void EditorDocumentView::announceExternalState(const ExternalState state) {

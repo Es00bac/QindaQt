@@ -16,23 +16,18 @@ endif()
 
 set(editor "${INSTALL_PREFIX}/${INSTALL_BINDIR}/qindaqt-editor")
 set(desktop "${INSTALL_PREFIX}/${INSTALL_DATADIR}/applications/org.qindaqt.TextEditor.desktop")
-set(theme_dir "${INSTALL_PREFIX}/${INSTALL_DATADIR}/qindaqt/themes")
-set(theme_ids
-    qinda-dark
-    qinda-light
-    qinda-dusk
-    qinda-macos
-    qinda-high-contrast
-)
-set(required_payload "${editor}" "${desktop}")
-foreach(theme_id IN LISTS theme_ids)
-    list(APPEND required_payload "${theme_dir}/${theme_id}.json")
-endforeach()
-foreach(required IN LISTS required_payload)
+# ADR-0116: the TextEditor component ships no per-app theme catalog; the Qt
+# platform theme owns appearance. The payload is the executable plus desktop
+# metadata only.
+foreach(required IN ITEMS "${editor}" "${desktop}")
     if(NOT EXISTS "${required}")
         message(FATAL_ERROR "installed editor payload missing: ${required}")
     endif()
 endforeach()
+if(EXISTS "${INSTALL_PREFIX}/${INSTALL_DATADIR}/qindaqt/themes")
+    message(FATAL_ERROR
+        "installed editor payload must not ship a per-app theme catalog (ADR-0116)")
+endif()
 
 file(READ "${desktop}" desktop_contents)
 foreach(required_entry
@@ -45,29 +40,6 @@ foreach(required_entry
     string(FIND "${desktop_contents}" "${required_entry}" entry_position)
     if(entry_position EQUAL -1)
         message(FATAL_ERROR "installed desktop metadata is missing: ${required_entry}")
-    endif()
-endforeach()
-
-foreach(theme_id IN LISTS theme_ids)
-    execute_process(
-        COMMAND "${CMAKE_COMMAND}" -E env
-                "QT_QPA_PLATFORM=offscreen"
-                "XDG_DATA_DIRS=${INSTALL_PREFIX}/${INSTALL_DATADIR}"
-                "${editor}" --theme "${theme_id}" --check-theme
-        RESULT_VARIABLE probe_result
-        OUTPUT_VARIABLE probe_output
-        ERROR_VARIABLE probe_error
-    )
-    if(NOT probe_result EQUAL 0)
-        message(FATAL_ERROR
-            "installed editor ${theme_id} probe failed: ${probe_output}${probe_error}"
-        )
-    endif()
-    string(STRIP "${probe_output}" probe_output)
-    if(NOT probe_output STREQUAL "${theme_id} qst-1")
-        message(FATAL_ERROR
-            "installed editor ${theme_id} probe returned '${probe_output}'"
-        )
     endif()
 endforeach()
 

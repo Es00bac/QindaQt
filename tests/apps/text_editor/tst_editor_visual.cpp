@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document/local_document_store.h"
 #include "qindaqt/design_tokens/token_deriver.h"
-#include "qindaqt/themes/theme_loader.h"
+#include "ui/document_editor.h"
 #include "ui/editor_application.h"
 #include "ui/editor_window.h"
 
@@ -17,6 +17,40 @@
 #include <QToolBar>
 
 using namespace QindaQt::Apps::TextEditor;
+namespace {
+
+// ADR-0116: the platform theme owns the palette. These fixtures stand in for
+// dark, light, and high-contrast platform palettes; the application must
+// render readably from palette roles alone, with no token authority.
+QPalette fixturePalette(const QString &kind) {
+  QPalette palette;
+  const QColor window = kind == QStringLiteral("light") ? QColor(245, 245, 247)
+      : kind == QStringLiteral("high-contrast")         ? QColor(0, 0, 0)
+                                                        : QColor(30, 30, 40);
+  const QColor base = kind == QStringLiteral("light") ? QColor(255, 255, 255)
+      : kind == QStringLiteral("high-contrast")       ? QColor(0, 0, 0)
+                                                      : QColor(20, 20, 28);
+  const QColor text = kind == QStringLiteral("light") ? QColor(26, 26, 32)
+                                                      : QColor(232, 230, 240);
+  const QColor alternate = kind == QStringLiteral("light")
+      ? QColor(236, 236, 240)
+      : kind == QStringLiteral("high-contrast") ? QColor(0, 0, 0)
+                                                : QColor(38, 38, 50);
+  palette.setColor(QPalette::Window, window);
+  palette.setColor(QPalette::WindowText, text);
+  palette.setColor(QPalette::Base, base);
+  palette.setColor(QPalette::AlternateBase, alternate);
+  palette.setColor(QPalette::Text, text);
+  palette.setColor(QPalette::Button, window);
+  palette.setColor(QPalette::ButtonText, text);
+  palette.setColor(QPalette::PlaceholderText, QColor(140, 140, 150));
+  palette.setColor(QPalette::Highlight, QColor(70, 110, 200));
+  palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255));
+  return palette;
+}
+
+} // namespace
+
 class EditorVisualTest final : public QObject {
   Q_OBJECT
 private slots:
@@ -24,8 +58,8 @@ private slots:
     QTest::addColumn<QString>("theme");
     QTest::addColumn<QSize>("size");
     for (const auto &theme :
-         {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light"),
-          QStringLiteral("qinda-high-contrast")}) {
+         {QStringLiteral("dark"), QStringLiteral("light"),
+          QStringLiteral("high-contrast")}) {
       QTest::newRow(qPrintable(theme + "-wide")) << theme << QSize(920, 680);
       QTest::newRow(qPrintable(theme + "-compact")) << theme << QSize(480, 360);
     }
@@ -33,13 +67,8 @@ private slots:
   void actualWindow() {
     QFETCH(QString, theme);
     QFETCH(QSize, size);
-    auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + theme + ".json");
-    QVERIFY(loaded.ok);
-    auto appearance = EditorAppearanceAdapter::fromTheme(loaded.theme);
-    QVERIFY(appearance.ok());
-    QApplication::setPalette(appearance.appearance->palette);
-    QApplication::setFont(appearance.appearance->interfaceFont);
+    const QPalette oldPalette = QApplication::palette();
+    QApplication::setPalette(fixturePalette(theme));
     QTemporaryDir files;
     const auto path = files.filePath("A little space.md");
     QFile file(path);
@@ -53,9 +82,12 @@ private slots:
     QCOMPARE(file.write(contents), contents.size());
     file.close();
     EditorApplication app([] { return std::make_unique<LocalDocumentStore>(); },
-                          *appearance.appearance, nullptr, nullptr, {}, true);
+                          nullptr, nullptr, {}, true);
     QVERIFY(app.start({path}));
     auto *window = app.windows().first();
+    if (theme == QStringLiteral("high-contrast")) {
+      static_cast<DocumentEditor *>(window->editor())->setHighContrast(true);
+    }
     window->resize(size);
     QTRY_VERIFY(window->isVisible());
     window->editor()->setFocus();
@@ -65,7 +97,7 @@ private slots:
     QVERIFY(window->editor()->width() > 300);
     QCOMPARE(window->editor()->toPlainText(), QString::fromUtf8(contents));
     const double minimum =
-        theme == QStringLiteral("qinda-high-contrast") ? 7.0 : 4.5;
+        theme == QStringLiteral("high-contrast") ? 7.0 : 4.5;
     const auto &palette = window->editor()->palette();
     QVERIFY(QindaQt::DesignTokens::DesignTokenDeriver::contrastRatio(
                 palette.color(QPalette::Text), palette.color(QPalette::Base)) >=
@@ -78,7 +110,7 @@ private slots:
       for (const auto &format : block.layout()->formats()) {
         const auto &brush = format.format.foreground();
         QVERIFY(brush.style() == Qt::NoBrush || brush.color().alpha() == 255);
-        if (theme == QStringLiteral("qinda-high-contrast"))
+        if (theme == QStringLiteral("high-contrast"))
           QCOMPARE(brush.style(), Qt::NoBrush);
         if (brush.style() != Qt::NoBrush) {
           using QindaQt::DesignTokens::DesignTokenDeriver;
@@ -100,6 +132,7 @@ private slots:
     QCOMPARE(window->size(), size);
     QVERIFY(window->grab().save(directory.filePath(
         QString::fromLatin1(QTest::currentDataTag()) + "-search.png")));
+    QApplication::setPalette(oldPalette);
   }
 };
 QTEST_MAIN(EditorVisualTest)

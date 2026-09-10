@@ -20,7 +20,6 @@ target_sources(
         ui/document_title.cpp
         ui/document_editor.cpp
         ui/document_dialogs.cpp
-        ui/editor_appearance.cpp
         ui/editor_document_view.cpp
         ui/find_replace_bar.cpp
         ui/editor_application.cpp
@@ -50,7 +49,6 @@ target_sources(
         ui/document_title.h
         ui/document_editor.h
         ui/document_dialogs.h
-        ui/editor_appearance.h
         ui/editor_document_view.h
         ui/find_replace_bar.h
         ui/editor_icon.h
@@ -64,8 +62,6 @@ target_link_libraries(
     PUBLIC
         QindaQt::AppShell
         QindaQt::ControlsQml
-        QindaQt::DesignTokens
-        qindaqt_themes
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
@@ -77,8 +73,7 @@ qindaqt_enable_warnings(qindaqt_editor_support)
 qt_add_executable(qindaqt-editor main.cpp)
 target_link_libraries(
     qindaqt-editor PRIVATE qindaqt_editor_support qindaqt_settings_client
-                           QindaQt::AppAppearance
-                           QindaQt::AppShellMenuExport QindaQt::FontDiscovery
+                           QindaQt::AppShellMenuExport
 )
 target_compile_features(qindaqt-editor PRIVATE cxx_std_20)
 
@@ -122,10 +117,5 @@ install(
 install(
     FILES org.qindaqt.TextEditor.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
-    COMPONENT TextEditor
-)
-install(
-    DIRECTORY "${PROJECT_SOURCE_DIR}/data/themes/"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
     COMPONENT TextEditor
 )

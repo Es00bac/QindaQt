@@ -16,7 +16,6 @@ void EditorWindow::createToolbar() {
   toolbar->setObjectName(QStringLiteral("documentToolbar"));
   toolbar->setMovable(false);
   toolbar->setFloatable(false);
-  toolbar->setIconSize(QSize(22, 22));
   toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
   const auto add = [toolbar](QAction *action, const char *icon) {
     action->setProperty("editorIconName", QString::fromLatin1(icon));
@@ -49,46 +48,16 @@ void EditorWindow::applyChrome() {
   m_findBar->refreshIcons();
   setWindowIcon(QindaQt::Controls::applicationIcon(
       QStringLiteral("org.qindaqt.TextEditor")));
+  // Symbolic action icons are masks tinted with the live window-text role;
+  // they are the one palette-derived presentation this window keeps.
   for (auto *action : findChildren<QAction *>()) {
     const auto name = action->property("editorIconName").toString();
     if (!name.isEmpty())
-      action->setIcon(
-          editorIcon(name, m_appearance.palette.color(QPalette::WindowText)));
+      action->setIcon(editorIcon(name, palette().color(QPalette::WindowText)));
   }
-  const auto css = [](const QColor &color) {
-    return color.name(QColor::HexArgb);
-  };
-  // AGENT-GUARD: The canvas remains opaque. Chrome colors, hover and focus
-  // consume semantic values; never derive a competing per-application palette.
-  setStyleSheet(
-      QStringLiteral(
-          "QToolBar#documentToolbar { border: 0; spacing: 4px; padding: 8px "
-          "12px; "
-          "background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 %1,stop:1 "
-          "%2); }"
-          "QToolBar#documentToolbar QToolButton { border: 2px solid "
-          "transparent; "
-          "border-radius: %3px; padding: 6px; }"
-          "QToolBar#documentToolbar QToolButton:hover { background: %4; }"
-          "QToolBar#documentToolbar QToolButton:pressed { background: %5; }"
-          "QToolBar#documentToolbar QToolButton:focus { border-color: %6; }"
-          "QStatusBar#editorStatusBar { border: 0; padding: 6px 12px; color: "
-          "%7; }"
-          "QStatusBar::item { border: 0; }"
-          "QWidget#findReplaceBar { border-top: 1px solid %8; }"
-          "QLineEdit { padding: 5px; border: 1px solid %8; border-radius: "
-          "%3px; }"
-          "QLineEdit:focus { border: 1px solid %6; }"
-          "QPlainTextEdit#documentEditor { border: 1px solid %8; "
-          "border-radius: %3px; }"
-          "QPlainTextEdit#documentEditor:focus { border: 1px solid %6; }")
-          .arg(css(m_appearance.palette.color(QPalette::AlternateBase)),
-               css(m_appearance.palette.color(QPalette::Window)),
-               QString::number(m_appearance.mediumRadius),
-               css(m_appearance.hover), css(m_appearance.pressed),
-               css(m_appearance.focusRing),
-               css(m_appearance.palette.color(QPalette::WindowText)),
-               css(m_appearance.divider)));
+  // AGENT-CONTRACT: The native QStyle (Fusion over the Qt platform theme)
+  // draws all chrome from the application palette. This window must never
+  // install a stylesheet or a per-application palette (ADR-0116).
   statusBar()->setSizeGripEnabled(false);
 }
 } // namespace QindaQt::Apps::TextEditor

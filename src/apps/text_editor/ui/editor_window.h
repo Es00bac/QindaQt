@@ -4,7 +4,6 @@
 #include "app_shell/editor_app_shell_bridge.h"
 #include "app_shell/file_selection_adapter.h"
 #include "document/document_collection.h"
-#include "editor_appearance.h"
 #include "document_dialogs.h"
 #include "find/find_replace_engine.h"
 
@@ -32,12 +31,15 @@ class TextEditorRestorePolicy;
 // GUI-thread presentation owns one document, its view, dialogs and actions.
 // The optional application owner and restore policy are borrowed and must
 // outlive the window. New/Open cross the application window-inventory boundary.
+// Palette, fonts, and chrome come from the Qt platform theme and Fusion
+// (ADR-0116); this window never installs an application stylesheet or a
+// token-derived palette.
 class EditorWindow final : public QMainWindow {
   Q_OBJECT
 
 public:
   explicit EditorWindow(
-      DocumentStoreFactory storeFactory, EditorAppearance appearance,
+      DocumentStoreFactory storeFactory,
       std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter = nullptr,
       TextEditorRestorePolicy *restorePolicy = nullptr,
       EditorApplication *application = nullptr,
@@ -51,7 +53,6 @@ public:
 
   [[nodiscard]] bool openDocuments(const QStringList &paths,
                                    QString *diagnostic = nullptr);
-  void applyAppearance(const EditorAppearance &appearance);
   void announceStatus(const QString &message);
   // Retained export is destroyed before the coordinator it observes.
   void setMenuExport(std::unique_ptr<QObject> menuExport);
@@ -64,6 +65,7 @@ signals:
 protected:
   void closeEvent(QCloseEvent *event) override;
   void paintEvent(QPaintEvent *event) override;
+  void changeEvent(QEvent *event) override;
   void dragEnterEvent(QDragEnterEvent *event) override;
   void dropEvent(QDropEvent *event) override;
 
@@ -127,7 +129,6 @@ private:
   };
 
   DocumentController *m_document = nullptr;
-  EditorAppearance m_appearance;
   Actions m_actions;
   QHash<QString, QAction *> m_appShellActionIds;
   EditorDocumentView *m_view = nullptr;
