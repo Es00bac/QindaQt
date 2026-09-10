@@ -5,18 +5,24 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260909-r2`, pinned to Git
-commit `6c8707df1a64bdbbb45f936cbc385a80b52acce4`. Regenerate the package
+The current dated package checkpoint is `0.1.0_pre20260909-r3`, pinned to Git
+commit `0eda78efe5fafd4b7b8b592d2fa9d08d398015c5`. Regenerate the package
 Manifest whenever this immutable pin changes. This September 9 checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. Its ebuild
 uses `RESTRICT=fetch`. Generate the exact source archive locally, then place it
 in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=6c8707df1a64bdbbb45f936cbc385a80b52acce4
+qq_source_commit=0eda78efe5fafd4b7b8b592d2fa9d08d398015c5
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260909-r2.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260909-r3.tar.gz
 ```
+
+The `-r3` revision vetoes native interactive resize for container members and
+removes their resize-only decoration borders (ADR-0117): a grouped member's
+frame now changes only through tile-border operations and container reflow.
+Because this code runs inside `kwin_wayland`, the fix takes effect on the next
+session login after installation, not through a shell-only refresh.
 
 The `-r2` revision makes the panel Bluetooth applet self-sufficient: pairing
 initiation with prompt-lane cancel, in-popup PIN/passkey entry, trust toggles,
