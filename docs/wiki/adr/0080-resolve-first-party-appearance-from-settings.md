@@ -1,6 +1,6 @@
 # ADR-0080: Resolve first-party appearance from confirmed Settings1 preferences
 
-- Status: Accepted
+- Status: Accepted (bundled-application surfaces superseded by [ADR-0116](0116-build-bundled-applications-on-stock-qt6.md): they resolve appearance through the Qt platform theme instead of per-app token adapters)
 - Date: 2026-09-05
 
 ## Context
