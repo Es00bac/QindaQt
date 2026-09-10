@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document/local_document_store.h"
-#include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 #include "ui/editor_application.h"
-
-#include "qindaqt/design_tokens/design_tokens.h"
-#include "qindaqt/design_tokens/token_deriver.h"
-#include "qindaqt/themes/theme_loader.h"
 
 #include <QAccessible>
 #include <QAccessibleAnnouncementEvent>
@@ -14,6 +9,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFontDatabase>
 #include <QLabel>
 #include <QMenu>
 #include <QPlainTextEdit>
@@ -76,12 +72,8 @@ private:
 class EditorWindowTest final : public QObject {
   Q_OBJECT
 
-private:
-  [[nodiscard]] static EditorAppearance appearance();
-
 private slots:
-  void appearanceTracksAllBuiltinThemes_data();
-  void appearanceTracksAllBuiltinThemes();
+  void windowFollowsPlatformAppearance();
   void viewToolsStayWithTheirDocument();
   void standardActionsAndAccessibility();
   void editingPublishesDirtyState();
@@ -93,64 +85,50 @@ private slots:
   void firstFrameSignalIsOneShot();
 };
 
-EditorAppearance EditorWindowTest::appearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!theme.ok) {
-    qFatal("Could not load test theme: %s", qPrintable(theme.error));
+void EditorWindowTest::windowFollowsPlatformAppearance() {
+  // ADR-0116: the window installs no palette, font, or stylesheet of its own;
+  // the Qt platform theme (faked here through QApplication) is the authority.
+  const QPalette oldPalette = QApplication::palette();
+  const QFont oldFont = QApplication::font();
+  QPalette platformPalette = oldPalette;
+  platformPalette.setColor(QPalette::Window, QColor(QStringLiteral("#26374a")));
+  platformPalette.setColor(QPalette::Base, QColor(QStringLiteral("#192634")));
+  QApplication::setPalette(platformPalette);
+  QFont platformFont = oldFont;
+  platformFont.setPointSizeF(oldFont.pointSizeF() + 3);
+  QApplication::setFont(platformFont);
+  {
+    EditorWindow window(localFactory());
+    window.ensurePolished();
+    QCOMPARE(window.palette().color(QPalette::Window),
+             platformPalette.color(QPalette::Window));
+    QVERIFY(!window.testAttribute(Qt::WA_SetPalette));
+    QVERIFY(!window.testAttribute(Qt::WA_SetFont));
+    QVERIFY(window.styleSheet().isEmpty());
+    for (auto *widget : window.findChildren<QWidget *>()) {
+      QVERIFY2(widget->styleSheet().isEmpty(), qPrintable(widget->objectName()));
+    }
+    // The document font is the platform fixed font, not the UI font.
+    QCOMPARE(window.editor()->font().family(),
+             QFontDatabase::systemFont(QFontDatabase::FixedFont).family());
+
+    QPalette changed = platformPalette;
+    changed.setColor(QPalette::Window, QColor(QStringLiteral("#3a2744")));
+    changed.setColor(QPalette::Base, QColor(QStringLiteral("#241a2c")));
+    QApplication::setPalette(changed);
+    QTRY_COMPARE(window.palette().color(QPalette::Window),
+                 changed.color(QPalette::Window));
+    QTRY_COMPARE(window.editor()->palette().color(QPalette::Base),
+                 changed.color(QPalette::Base));
+    QCOMPARE(window.editor()->font().family(),
+             QFontDatabase::systemFont(QFontDatabase::FixedFont).family());
   }
-  const auto result = EditorAppearanceAdapter::fromTheme(theme.theme);
-  if (!result.ok()) {
-    qFatal("Could not derive test appearance: %s",
-           qPrintable(result.diagnostic));
-  }
-  return *result.appearance;
-}
-
-void EditorWindowTest::appearanceTracksAllBuiltinThemes_data() {
-  QTest::addColumn<QString>("themeId");
-  for (const QString &themeId : {
-           QStringLiteral("qinda-dark"),
-           QStringLiteral("qinda-light"),
-           QStringLiteral("qinda-dusk"),
-           QStringLiteral("qinda-macos"),
-           QStringLiteral("qinda-high-contrast"),
-       }) {
-    QTest::newRow(qPrintable(themeId)) << themeId;
-  }
-}
-
-void EditorWindowTest::appearanceTracksAllBuiltinThemes() {
-  QFETCH(QString, themeId);
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + themeId +
-      QStringLiteral(".json"));
-  QVERIFY2(theme.ok, qPrintable(theme.error));
-
-  QindaQt::DesignTokens::AccessibilityInputs inputs;
-  inputs.highContrast = theme.theme.variant == QStringLiteral("high-contrast");
-  const auto expected =
-      QindaQt::DesignTokens::DesignTokenDeriver::derive(theme.theme, inputs);
-  QVERIFY2(expected.ok(), qPrintable(expected.diagnostic));
-  const auto result = EditorAppearanceAdapter::fromTheme(theme.theme);
-  QVERIFY2(result.ok(), qPrintable(result.diagnostic));
-
-  QCOMPARE(result.appearance->sourceThemeId, themeId);
-  QCOMPARE(result.appearance->focusRing, expected.tokens->focusRing());
-  QCOMPARE(result.appearance->warningBackground,
-           expected.tokens->status().warning.background);
-  QCOMPARE(result.appearance->warningForeground,
-           expected.tokens->status().warning.foreground);
-  QCOMPARE(result.appearance->dangerBackground,
-           expected.tokens->danger().defaultColor);
-  QCOMPARE(result.appearance->dangerForeground,
-           expected.tokens->danger().foreground);
-  QCOMPARE(expected.tokens->inputs().highContrast,
-           theme.theme.variant == QStringLiteral("high-contrast"));
+  QApplication::setPalette(oldPalette);
+  QApplication::setFont(oldFont);
 }
 
 void EditorWindowTest::viewToolsStayWithTheirDocument() {
-  EditorApplication application(localFactory(), appearance(), nullptr, nullptr, {}, false);
+  EditorApplication application(localFactory(), nullptr, nullptr, {}, false);
   QVERIFY(application.start());
   auto *window = application.windows().first();
   auto *first = window->editor();
@@ -168,17 +146,14 @@ void EditorWindowTest::viewToolsStayWithTheirDocument() {
   QCOMPARE(second->lineWrapMode(), QPlainTextEdit::WidgetWidth);
   QCOMPARE(second->font().pointSizeF(), size);
   QVERIFY(!wrap->isChecked());
-  application.applyAppearance(appearance());
-  QCOMPARE(first->font().pointSizeF(), size + 1);
 }
 
 void EditorWindowTest::standardActionsAndAccessibility() {
-  const EditorAppearance style = appearance();
-  QCOMPARE(style.sourceThemeId, QStringLiteral("qinda-dark"));
-  EditorWindow window(localFactory(), style);
+  EditorWindow window(localFactory());
   QCOMPARE(window.palette().color(QPalette::Window),
-           style.palette.color(QPalette::Window));
-  QCOMPARE(window.editor()->font().family(), style.editorFont.family());
+           QApplication::palette().color(QPalette::Window));
+  QCOMPARE(window.editor()->font().family(),
+           QFontDatabase::systemFont(QFontDatabase::FixedFont).family());
   const QList<QPair<QString, QKeySequence::StandardKey>> expectedActions{
       {QStringLiteral("fileNewAction"), QKeySequence::New},
       {QStringLiteral("fileOpenAction"), QKeySequence::Open},
@@ -218,7 +193,7 @@ void EditorWindowTest::standardActionsAndAccessibility() {
 }
 
 void EditorWindowTest::editingPublishesDirtyState() {
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   window.show();
   window.editor()->setFocus();
   QTest::keyClicks(window.editor(), QStringLiteral("hello"));
@@ -249,7 +224,7 @@ void EditorWindowTest::externalChangeShowsNonDestructiveBanner() {
   QCOMPARE(file.write("baseline"), qint64(8));
   file.close();
 
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   QVERIFY(window.controller()->openPath(path).ok());
   file.setFileName(path);
   QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
@@ -261,12 +236,17 @@ void EditorWindowTest::externalChangeShowsNonDestructiveBanner() {
       window.findChild<QWidget *>(QStringLiteral("externalChangeBanner"));
   const auto *message =
       window.findChild<QLabel *>(QStringLiteral("externalChangeMessage"));
+  const auto *icon =
+      window.findChild<QLabel *>(QStringLiteral("externalChangeIcon"));
   QVERIFY(banner != nullptr);
   QVERIFY(!banner->isHidden());
+  // Severity is text + the style's standard icon, never token-colored QSS.
+  QVERIFY(banner->styleSheet().isEmpty());
+  QVERIFY(icon != nullptr);
+  QVERIFY(!icon->pixmap().isNull());
+  QCOMPARE(icon->accessibleName(), QStringLiteral("Warning"));
   QVERIFY(message->text().contains(QStringLiteral("changed outside")));
   QVERIFY(message->text().startsWith(QStringLiteral("Warning:")));
-  QVERIFY(banner->styleSheet().contains(
-      appearance().warningBackground.name(QColor::HexArgb)));
   QCOMPARE(window.statusBar()->currentMessage(),
            QStringLiteral("File changed outside the editor"));
   QCOMPARE(window.controller()->state().text(), QStringLiteral("baseline"));
@@ -275,16 +255,16 @@ void EditorWindowTest::externalChangeShowsNonDestructiveBanner() {
   window.controller()->refreshExternalState();
   QVERIFY(message->text().contains(QStringLiteral("was removed")));
   QVERIFY(message->text().startsWith(QStringLiteral("Error:")));
-  QVERIFY(banner->styleSheet().contains(
-      appearance().dangerBackground.name(QColor::HexArgb)));
+  QVERIFY(banner->styleSheet().isEmpty());
+  QCOMPARE(icon->accessibleName(), QStringLiteral("Error"));
   QCOMPARE(window.statusBar()->currentMessage(),
            QStringLiteral("File was removed outside the editor"));
 
   QVERIFY(QDir().mkdir(path));
   window.controller()->refreshExternalState();
   QVERIFY(message->text().contains(QStringLiteral("can no longer be checked")));
-  QVERIFY(banner->styleSheet().contains(
-      appearance().dangerBackground.name(QColor::HexArgb)));
+  QVERIFY(banner->styleSheet().isEmpty());
+  QCOMPARE(icon->accessibleName(), QStringLiteral("Error"));
   QCOMPARE(window.statusBar()->currentMessage(),
            QStringLiteral("File can no longer be checked"));
 }
@@ -298,7 +278,7 @@ void EditorWindowTest::announcementsFollowExternalTransitionsOnly() {
   QCOMPARE(file.write("baseline"), qint64(8));
   file.close();
 
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   QVERIFY(window.controller()->openPath(path).ok());
   QVector<AnnouncementRecord> announcements;
   AccessibilityAnnouncementCapture capture(announcements);
@@ -334,7 +314,7 @@ void EditorWindowTest::hidingBannerRestoresEditorFocus() {
   QCOMPARE(file.write("baseline"), qint64(8));
   file.close();
 
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   window.show();
   QVERIFY(window.controller()->openPath(path).ok());
   QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
@@ -367,7 +347,7 @@ void EditorWindowTest::windowsKeepUndoAndSelectionIndependent() {
   QCOMPARE(file.write("second"), qint64(6));
   file.close();
 
-  EditorApplication application(localFactory(), appearance(), nullptr, nullptr, {}, false);
+  EditorApplication application(localFactory(), nullptr, nullptr, {}, false);
   QVERIFY(application.start({first, second, first}));
   QCOMPARE(application.windows().size(), 2);
   auto *one = application.windowForPath(first)->editor();
@@ -384,7 +364,7 @@ void EditorWindowTest::windowsKeepUndoAndSelectionIndependent() {
 }
 
 void EditorWindowTest::windowHasNoTabControls() {
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   QVERIFY(window.findChildren<QTabWidget *>().isEmpty());
   QVERIFY(window.findChildren<QTabBar *>().isEmpty());
   QVERIFY(!window.findChild<QMenu *>(QStringLiteral("tabsMenu")));
@@ -397,7 +377,7 @@ void EditorWindowTest::windowHasNoTabControls() {
 }
 
 void EditorWindowTest::firstFrameSignalIsOneShot() {
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   QSignalSpy firstFrame(&window, &EditorWindow::firstFramePainted);
   window.show();
   QTRY_COMPARE(firstFrame.count(), 1);

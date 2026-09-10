@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document/local_document_store.h"
 #include "find/find_replace_engine.h"
-#include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 #include "ui/find_replace_bar.h"
 
-#include "qindaqt/themes/theme_loader.h"
 
 #include <QElapsedTimer>
 #include <QLabel>
@@ -20,15 +18,6 @@ namespace {
 
 DocumentStoreFactory localFactory() {
   return [] { return std::make_unique<LocalDocumentStore>(); };
-}
-
-EditorAppearance appearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  Q_ASSERT(theme.ok);
-  const auto result = EditorAppearanceAdapter::fromTheme(theme.theme);
-  Q_ASSERT(result.ok());
-  return *result.appearance;
 }
 
 } // namespace
@@ -87,7 +76,7 @@ void FindReplaceTest::hostilePatternsFailWithinBound() {
 }
 
 void FindReplaceTest::replaceAllIsOneUndoStep() {
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   window.editor()->setPlainText(QStringLiteral("cat and cat"));
   window.findBar()->open(true);
   window.findBar()->findEditor()->setText(QStringLiteral("cat"));
@@ -102,7 +91,7 @@ void FindReplaceTest::replaceAllIsOneUndoStep() {
 }
 
 void FindReplaceTest::noMatchHasTextStatus() {
-  EditorWindow window(localFactory(), appearance());
+  EditorWindow window(localFactory());
   window.show();
   window.editor()->setPlainText(QStringLiteral("alpha"));
   window.findBar()->open(false);

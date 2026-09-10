@@ -56,9 +56,6 @@ qindaqt_add_editor_test(
     tst_find_replace.cpp
     qindaqt.editor-find-replace-offscreen
 )
-target_compile_definitions(
-    qindaqt_editor_find_replace_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
 set_tests_properties(
     qindaqt.editor-find-replace-offscreen
     PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
@@ -76,9 +73,6 @@ qindaqt_add_editor_test(
 target_link_libraries(
     qindaqt_editor_restore_policy_tests PRIVATE qindaqt_settings_client
 )
-target_compile_definitions(
-    qindaqt_editor_restore_policy_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
 set_tests_properties(
     qindaqt.editor-restore-policy-offscreen
     PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
@@ -87,9 +81,6 @@ qindaqt_add_editor_test(
     qindaqt_editor_window_tests
     tst_editor_window.cpp
     qindaqt.editor-window-offscreen
-)
-target_compile_definitions(
-    qindaqt_editor_window_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
 set_tests_properties(
     qindaqt.editor-window-offscreen
@@ -100,9 +91,6 @@ qindaqt_add_editor_test(
     qindaqt_editor_app_shell_tests
     tst_editor_app_shell.cpp
     qindaqt.editor-app-shell-offscreen
-)
-target_compile_definitions(
-    qindaqt_editor_app_shell_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
 set_tests_properties(
     qindaqt.editor-app-shell-offscreen
@@ -161,10 +149,11 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 
-# AGENT-CONTRACT: This row resolves themes and metadata only from a clean staged
-# prefix; build-tree RPATHs or source data cannot satisfy the acceptance gate.
+# AGENT-CONTRACT: This row resolves the payload and metadata only from a clean
+# staged prefix; build-tree RPATHs or source data cannot satisfy the acceptance
+# gate. Per ADR-0116 the component must not install a per-app theme catalog.
 add_test(
-    NAME qindaqt.editor-installed-theme-and-metadata
+    NAME qindaqt.editor-installed-metadata-and-runtime
     COMMAND "${CMAKE_COMMAND}"
             "-DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
             "-DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-editor-stage"
@@ -177,7 +166,7 @@ add_test(
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_editor.cmake"
 )
 set_tests_properties(
-    qindaqt.editor-installed-theme-and-metadata
+    qindaqt.editor-installed-metadata-and-runtime
     PROPERTIES
         LABELS "package;editor"
         RUN_SERIAL TRUE
@@ -303,8 +292,6 @@ set_tests_properties(qindaqt.editor-editing-tools-offscreen PROPERTIES
 
 qindaqt_add_editor_test(qindaqt_editor_application_tests
     tst_editor_application.cpp qindaqt.editor-application-offscreen)
-target_compile_definitions(qindaqt_editor_application_tests PRIVATE
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 set_tests_properties(qindaqt.editor-application-offscreen PROPERTIES
     LABELS "editor"
     ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")
@@ -312,8 +299,10 @@ set_tests_properties(qindaqt.editor-application-offscreen PROPERTIES
 qindaqt_add_editor_test(qindaqt_editor_visual_tests
     tst_editor_visual.cpp qindaqt.editor-visual-offscreen)
 target_compile_definitions(qindaqt_editor_visual_tests PRIVATE
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     QINDAQT_EDITOR_CAPTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/captures")
+# The app never links DesignTokens (ADR-0116); this row borrows only the pure
+# WCAG contrast ratio to qualify palette-driven rendering.
+target_link_libraries(qindaqt_editor_visual_tests PRIVATE QindaQt::DesignTokens)
 set_tests_properties(qindaqt.editor-visual-offscreen PROPERTIES
     LABELS "editor;visual"
     ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1")

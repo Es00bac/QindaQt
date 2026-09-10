@@ -1,18 +1,74 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document_editor.h"
-#include "qindaqt/design_tokens/token_deriver.h"
 #include <KSyntaxHighlighting/Definition>
 #include <KSyntaxHighlighting/Format>
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/SyntaxHighlighter>
 #include <KSyntaxHighlighting/Theme>
+#include <QAccessibilityHints>
+#include <QFontDatabase>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QPainter>
+#include <QStyleHints>
 #include <QTextBlock>
 #include <algorithm>
+#include <cmath>
 
 namespace QindaQt::Apps::TextEditor {
 namespace {
+
+// AGENT-CONTRACT: Content readability math mirrors the WCAG relative-luminance
+// contrast ratio that QST's DesignTokenDeriver::contrastRatio implements. The
+// editor must not link DesignTokens (ADR-0116), so the pure ratio lives here;
+// keep the formulas behaviorally identical with src/design_tokens/src.
+QColor compositeOver(const QColor &foreground, const QColor &background) {
+  const double foregroundAlpha = foreground.alphaF();
+  const double backgroundAlpha = background.alphaF();
+  const double outputAlpha =
+      foregroundAlpha + backgroundAlpha * (1.0 - foregroundAlpha);
+  if (outputAlpha <= 0.0)
+    return QColor::fromRgbF(0.0, 0.0, 0.0, 0.0);
+  const double red = (foreground.redF() * foregroundAlpha +
+                      background.redF() * backgroundAlpha * (1.0 - foregroundAlpha)) /
+                     outputAlpha;
+  const double green = (foreground.greenF() * foregroundAlpha +
+                        background.greenF() * backgroundAlpha * (1.0 - foregroundAlpha)) /
+                       outputAlpha;
+  const double blue = (foreground.blueF() * foregroundAlpha +
+                       background.blueF() * backgroundAlpha * (1.0 - foregroundAlpha)) /
+                      outputAlpha;
+  return QColor::fromRgbF(
+      static_cast<float>(std::clamp(red, 0.0, 1.0)),
+      static_cast<float>(std::clamp(green, 0.0, 1.0)),
+      static_cast<float>(std::clamp(blue, 0.0, 1.0)), 1.0F);
+}
+
+double relativeLuminance(const QColor &color) {
+  const auto channel = [](double value) {
+    return value <= 0.03928 ? value / 12.92
+                            : std::pow((value + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(color.redF()) + 0.7152 * channel(color.greenF()) +
+         0.0722 * channel(color.blueF());
+}
+
+double contrastRatio(const QColor &foreground, const QColor &background) {
+  const QColor opaqueBackground = background.alphaF() < 1.0
+      ? compositeOver(background, QColor(Qt::white))
+      : background;
+  const QColor opaqueForeground = foreground.alphaF() < 1.0
+      ? compositeOver(foreground, opaqueBackground)
+      : foreground;
+  const double fg = relativeLuminance(opaqueForeground);
+  const double bg = relativeLuminance(opaqueBackground);
+  return (std::max(fg, bg) + 0.05) / (std::min(fg, bg) + 0.05);
+}
+
+QFont platformDocumentFont() {
+  return QFontDatabase::systemFont(QFontDatabase::FixedFont);
+}
+
 class ReadableSyntaxHighlighter final : public KSyntaxHighlighting::SyntaxHighlighter {
 public:
   explicit ReadableSyntaxHighlighter(QPlainTextEdit *editor)
@@ -25,18 +81,18 @@ protected:
   void applyFormat(int offset, int length, const KSyntaxHighlighting::Format &syntax) override {
     SyntaxHighlighter::applyFormat(offset, length, syntax);
     auto value = QSyntaxHighlighter::format(offset);
-    // AGENT-GUARD: Upstream syntax colors are not fitted to QindaQt themes.
+    // AGENT-GUARD: Upstream syntax colors are not fitted to the platform theme.
     // Transparent headings or low-contrast tokens must retain readable semantic
     // ink, including against the current-line surface, while keeping emphasis.
+    // Truth is the widget's live palette(), never a QST token (ADR-0116).
     const auto &palette = m_editor->palette();
     const QColor foreground = value.foreground().style() == Qt::NoBrush
         ? palette.color(QPalette::Text) : value.foreground().color();
     const QColor background = value.background().style() == Qt::NoBrush
         ? palette.color(QPalette::Base) : value.background().color();
-    using QindaQt::DesignTokens::DesignTokenDeriver;
     const bool unreadable = foreground.alpha() < 255 ||
-        DesignTokenDeriver::contrastRatio(foreground, background) < 4.5 ||
-        DesignTokenDeriver::contrastRatio(foreground, palette.color(QPalette::AlternateBase)) < 4.5;
+        contrastRatio(foreground, background) < 4.5 ||
+        contrastRatio(foreground, palette.color(QPalette::AlternateBase)) < 4.5;
     if (m_highContrast || unreadable) {
       value.clearForeground();
       value.clearBackground();
@@ -68,7 +124,8 @@ struct DocumentEditor::Syntax {
 };
 DocumentEditor::DocumentEditor(QWidget *parent)
     : QPlainTextEdit(parent), m_syntax(std::make_unique<Syntax>(this)),
-      m_gutter(new LineNumberGutter(this)), m_baseFont(font()) {
+      m_gutter(new LineNumberGutter(this)),
+      m_baseFont(platformDocumentFont()) {
   connect(this, &QPlainTextEdit::blockCountChanged, this,
           &DocumentEditor::updateGutter);
   connect(this, &QPlainTextEdit::updateRequest, this,
@@ -80,9 +137,19 @@ DocumentEditor::DocumentEditor(QWidget *parent)
           });
   connect(this, &QPlainTextEdit::cursorPositionChanged, this,
           &DocumentEditor::highlightCurrentLine);
+  // High-contrast truth is the platform theme's contrast preference
+  // (ADR-0115); it is a content-readability input, not chrome.
+  if (auto *hints = QGuiApplication::styleHints()->accessibility()) {
+    setHighContrast(hints->contrastPreference() ==
+                    Qt::ContrastPreference::HighContrast);
+    connect(hints, &QAccessibilityHints::contrastPreferenceChanged, this,
+            [this](Qt::ContrastPreference preference) {
+              setHighContrast(preference == Qt::ContrastPreference::HighContrast);
+            });
+  }
   setFrameShape(QFrame::NoFrame);
   document()->setDocumentMargin(12);
-  setBaseFont(font());
+  setBaseFont(m_baseFont);
   highlightCurrentLine();
 }
 DocumentEditor::~DocumentEditor() = default;
@@ -167,13 +234,24 @@ void DocumentEditor::resetZoom() {
 }
 void DocumentEditor::changeEvent(QEvent *event) {
   QPlainTextEdit::changeEvent(event);
-  if (event->type() == QEvent::PaletteChange && m_syntax) {
+  if (!m_syntax)
+    return;
+  if (event->type() == QEvent::PaletteChange ||
+      event->type() == QEvent::ThemeChange) {
     m_syntax->highlighter.setTheme(m_syntax->repository.defaultTheme(
         palette().base().color().lightness() < 128
             ? KSyntaxHighlighting::Repository::DarkTheme
             : KSyntaxHighlighting::Repository::LightTheme));
     m_syntax->highlighter.rehighlight();
     highlightCurrentLine();
+  }
+  // The document font pins WA_SetFont for zoom, so it cannot follow the
+  // platform theme implicitly; re-derive the fixed font on application font
+  // changes while preserving this window's zoom offset.
+  if (event->type() == QEvent::ApplicationFontChange) {
+    const QFont platformFont = platformDocumentFont();
+    if (platformFont != m_baseFont)
+      setBaseFont(platformFont);
   }
 }
 void DocumentEditor::goToLine(int line) {

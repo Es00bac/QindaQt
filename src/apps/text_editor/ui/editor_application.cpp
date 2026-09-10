@@ -9,12 +9,12 @@
 
 namespace QindaQt::Apps::TextEditor {
 EditorApplication::EditorApplication(
-    DocumentStoreFactory stores, EditorAppearance appearance,
+    DocumentStoreFactory stores,
     TextEditorRestorePolicy *policy, RestoreStateStore *restoreStore,
     FileSelectionFactory choosers, bool showWindows,
     DocumentDialogFactory dialogs, QObject *parent)
     : QObject(parent), m_stores(std::move(stores)),
-      m_appearance(std::move(appearance)), m_policy(policy),
+      m_policy(policy),
       m_restoreStore(restoreStore), m_choosers(std::move(choosers)),
       m_dialogs(std::move(dialogs)), m_showWindows(showWindows) {
   if (m_policy)
@@ -24,7 +24,7 @@ EditorApplication::EditorApplication(
 
 EditorApplication::~EditorApplication() {
   // QApplication remains alive while the composition owner tears down. Delete
-  // views before their injected policy/appearance collaborators leave scope.
+  // views before their injected policy/store collaborators leave scope.
   const auto owned = windows();
   for (auto *window : owned)
     delete window;
@@ -65,7 +65,7 @@ EditorWindow *EditorApplication::createWindow() {
                .arg(DocumentCollection::maximumDocuments));
     return nullptr;
   }
-  auto *window = new EditorWindow(m_stores, m_appearance,
+  auto *window = new EditorWindow(m_stores,
                                   m_choosers ? m_choosers() : nullptr, m_policy,
                                   this, m_dialogs ? m_dialogs() : nullptr);
   window->setAttribute(Qt::WA_DeleteOnClose);
@@ -169,12 +169,6 @@ bool EditorApplication::openDocuments(const QStringList &paths,
   m_admitting = previousAdmission;
   persistRestoreState();
   return complete;
-}
-
-void EditorApplication::applyAppearance(const EditorAppearance &appearance) {
-  m_appearance = appearance;
-  for (auto *window : windows())
-    window->applyAppearance(appearance);
 }
 
 bool EditorApplication::eventFilter(QObject *watched, QEvent *event) {

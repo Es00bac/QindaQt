@@ -2,14 +2,12 @@
 #include "document/local_document_store.h"
 #include "restore/restore_state_store.h"
 #include "restore/text_editor_restore_policy.h"
-#include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 #include "ui/editor_application.h"
 
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
-#include "qindaqt/themes/theme_loader.h"
 
 #include <QFile>
 #include <QStatusBar>
@@ -108,15 +106,6 @@ bool establish(PolicyTransport &transport, const QVariant &value,
 
 DocumentStoreFactory localFactory() {
   return [] { return std::make_unique<LocalDocumentStore>(); };
-}
-
-EditorAppearance appearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  Q_ASSERT(theme.ok);
-  const auto result = EditorAppearanceAdapter::fromTheme(theme.theme);
-  Q_ASSERT(result.ok());
-  return *result.appearance;
 }
 
 } // namespace
@@ -251,7 +240,7 @@ void RestorePolicyTest::startupDropsUnavailablePathsWithoutContentState() {
   QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
 
-  EditorApplication application(localFactory(), appearance(), &policy, &store, {}, false);
+  EditorApplication application(localFactory(), &policy, &store, {}, false);
   QVERIFY(application.start());
   auto &window = *application.windows().first();
   QCOMPARE(application.openPaths(), QStringList{valid});
@@ -276,7 +265,7 @@ void RestorePolicyTest::delayedInitialPolicyPreservesInventory() {
   SettingsClient client(transport, TextEditorKeys::scopedKeys(), {100, 0, {10}});
   TextEditorRestorePolicy policy(client);
   QVERIFY(client.start());
-  EditorApplication app(localFactory(), appearance(), &policy, &store, {}, false);
+  EditorApplication app(localFactory(), &policy, &store, {}, false);
   QVERIFY(app.start());
   QCOMPARE(store.load().state->paths, QStringList{path});
   QVERIFY(app.openPaths().isEmpty());
@@ -303,7 +292,7 @@ void RestorePolicyTest::explicitPathsSuppressAlreadyEnabledRestore() {
   TextEditorRestorePolicy policy(client);
   QVERIFY(client.start()); QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
-  EditorApplication application(localFactory(), appearance(), &policy, &store, {}, false);
+  EditorApplication application(localFactory(), &policy, &store, {}, false);
   QVERIFY(application.start({explicitPath}));
   QCOMPARE(application.openPaths(), QStringList{explicitPath});
   QCOMPARE(store.load().state->paths, QStringList{explicitPath});
@@ -323,7 +312,7 @@ void RestorePolicyTest::windowInventoryTracksCloseAndPreferredActivePath() {
   TextEditorRestorePolicy policy(client);
   QVERIFY(client.start()); QVERIFY(establish(transport, true));
   QTRY_VERIFY(policy.enabled());
-  EditorApplication application(localFactory(), appearance(), &policy, &store, {}, false);
+  EditorApplication application(localFactory(), &policy, &store, {}, false);
   QVERIFY(application.start());
   QCOMPARE(application.windows().size(), 2);
   QCOMPARE(store.load().state->activeIndex, 0);

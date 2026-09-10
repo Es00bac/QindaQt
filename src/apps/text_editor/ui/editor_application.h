@@ -3,7 +3,6 @@
 
 #include "document/document_collection.h"
 #include "document_dialogs.h"
-#include "editor_appearance.h"
 #include "restore/restore_state_store.h"
 
 #include <QObject>
@@ -28,7 +27,6 @@ public:
   using DocumentDialogFactory =
       std::function<std::unique_ptr<DocumentDialogs>()>;
   explicit EditorApplication(DocumentStoreFactory stores,
-                             EditorAppearance appearance,
                              TextEditorRestorePolicy *policy = nullptr,
                              RestoreStateStore *restoreStore = nullptr,
                              FileSelectionFactory choosers = {},
@@ -48,7 +46,6 @@ public:
   [[nodiscard]] QList<EditorWindow *> windows() const;
   [[nodiscard]] EditorWindow *windowForPath(const QString &path) const;
   [[nodiscard]] QStringList openPaths() const;
-  void applyAppearance(const EditorAppearance &appearance);
   void persistRestoreState();
 
 signals:
@@ -68,7 +65,6 @@ private:
   void report(const QString &message);
 
   DocumentStoreFactory m_stores;
-  EditorAppearance m_appearance;
   TextEditorRestorePolicy *m_policy;
   RestoreStateStore *m_restoreStore;
   FileSelectionFactory m_choosers;

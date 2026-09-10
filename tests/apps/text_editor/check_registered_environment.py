@@ -11,7 +11,7 @@ import subprocess
 REQUIRED_ROWS = {
     "qindaqt.editor-cli-multiple-paths",
     "qindaqt.editor-cli-hostile-argv",
-    "qindaqt.editor-installed-theme-and-metadata",
+    "qindaqt.editor-installed-metadata-and-runtime",
 }
 
 

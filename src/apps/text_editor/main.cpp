@@ -2,27 +2,18 @@
 #include "document/local_document_store.h"
 #include "restore/restore_state_store.h"
 #include "restore/text_editor_restore_policy.h"
-#include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 #include "ui/editor_application.h"
 
-#include "qindaqt/app_appearance/application_appearance_controller.h"
-#include "qindaqt/design_tokens/design_tokens.h"
-#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
-#include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDBusConnection>
 #include <QDir>
 #include <QElapsedTimer>
-#include <QFileInfo>
-#include <QIcon>
 #include <QMenuBar>
-#include <QRegularExpression>
-#include <QStandardPaths>
 #include <QWindow>
 
 #include <cstdio>
@@ -56,42 +47,6 @@ private:
   std::unique_ptr<QObject> m_export;
 };
 
-QStringList themeSearchDirectories(const QString &explicitDirectory) {
-  QStringList directories;
-  if (!explicitDirectory.isEmpty()) {
-    directories.append(QFileInfo(explicitDirectory).absoluteFilePath());
-  }
-  directories.append(QStandardPaths::locateAll(
-      QStandardPaths::GenericDataLocation, QStringLiteral("qindaqt/themes"),
-      QStandardPaths::LocateDirectory));
-  directories.append(
-      QDir(QCoreApplication::applicationDirPath())
-          .absoluteFilePath(QStringLiteral("../share/qindaqt/themes")));
-  directories.removeDuplicates();
-  return directories;
-}
-
-QindaQt::Themes::LoadResult loadTheme(const QString &themeId,
-                                      const QStringList &directories) {
-  static const QRegularExpression safeId(
-      QStringLiteral("^[a-z0-9][a-z0-9-]{0,63}$"));
-  if (!safeId.match(themeId).hasMatch()) {
-    return {.ok = false,
-            .theme = {},
-            .error = QStringLiteral("Invalid theme identifier")};
-  }
-  for (const QString &directory : directories) {
-    const QString path =
-        QDir(directory).filePath(themeId + QStringLiteral(".json"));
-    if (QFileInfo::exists(path)) {
-      return QindaQt::Themes::ThemeLoader::fromFile(path);
-    }
-  }
-  return {.ok = false,
-          .theme = {},
-          .error = QStringLiteral("Theme '%1' was not found").arg(themeId)};
-}
-
 QString editorStateDirectory() {
   QString root = qEnvironmentVariable("XDG_STATE_HOME");
   if (root.isEmpty()) {
@@ -108,15 +63,10 @@ int main(int argc, char **argv) {
 
   QElapsedTimer startupTimer;
   startupTimer.start();
-  // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
-  // call runs before QApplication construction (pre-construction
-  // QGuiApplication::setFont persists as the application default font). A
-  // missing, unavailable, or unresolvable preference source leaves platform
-  // defaults untouched (fail-closed). The theme baseline setFont below
-  // remains the deliberate widgets baseline. See
-  // docs/wiki/architecture/font-preferences.md.
-  QindaQt::Services::FontDiscovery::FontSessionBootstrap::
-      applyFromSessionSettings();
+  // AGENT-CONTRACT: Palette, interface and monospace fonts, icon theme, and
+  // contrast hints come from the Qt platform theme (ADR-0115); there is
+  // deliberately no QST token projection, per-app theme load, or font
+  // bootstrap here (ADR-0116).
   QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-editor"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt Text Editor"));
@@ -127,15 +77,15 @@ int main(int argc, char **argv) {
   parser.setApplicationDescription(QStringLiteral("QindaQt UTF-8 text editor"));
   parser.addHelpOption();
   parser.addVersionOption();
+  // AGENT-NOTE: --theme/--theme-directory are accepted and ignored. ADR-0116
+  // retired per-app QST themes, but external harnesses (the global-menu
+  // private-bus rows, the installed runtime probe) still pass them.
   parser.addOption({QStringLiteral("theme"),
-                    QStringLiteral("QindaQt theme identifier"),
-                    QStringLiteral("id"), QStringLiteral("qinda-dark")});
+                    QStringLiteral("Deprecated no-op (ADR-0116): the Qt platform theme styles the app"),
+                    QStringLiteral("id")});
   parser.addOption({QStringLiteral("theme-directory"),
-                    QStringLiteral("Additional local theme directory"),
+                    QStringLiteral("Deprecated no-op (ADR-0116): no per-app theme catalog is read"),
                     QStringLiteral("path")});
-  parser.addOption(
-      {QStringLiteral("check-theme"),
-       QStringLiteral("Validate the selected theme through QST-1 and exit")});
   parser.addOption(
       {QStringLiteral("report-startup"),
        QStringLiteral("Print milliseconds to the first painted frame")});
@@ -153,28 +103,6 @@ int main(int argc, char **argv) {
     return 2;
   }
 
-  const auto theme = loadTheme(
-      parser.value(QStringLiteral("theme")),
-      themeSearchDirectories(parser.value(QStringLiteral("theme-directory"))));
-  if (!theme.ok) {
-    std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(theme.error));
-    return 3;
-  }
-  const auto appearance = EditorAppearanceAdapter::fromTheme(theme.theme);
-  if (!appearance.ok()) {
-    std::fprintf(stderr, "qindaqt-editor: %s\n",
-                 qPrintable(appearance.diagnostic));
-    return 3;
-  }
-  QIcon::setThemeName(theme.theme.iconTheme);
-  application.setPalette(appearance.appearance->palette);
-  application.setFont(appearance.appearance->interfaceFont);
-  if (parser.isSet(QStringLiteral("check-theme"))) {
-    std::printf("%s qst-%d\n", qPrintable(appearance.appearance->sourceThemeId),
-                QindaQt::DesignTokens::DesignTokens::qstRevision);
-    return 0;
-  }
-
   const DocumentStoreFactory factory = [] {
     return std::make_unique<LocalDocumentStore>();
   };
@@ -182,7 +110,7 @@ int main(int argc, char **argv) {
     // The CLI admission proof needs document policy only. Exiting before
     // Settings1 composition guarantees the isolated row cannot discover or
     // activate an ambient session-bus service.
-    EditorApplication editor(factory, *appearance.appearance, nullptr, nullptr, {}, false);
+    EditorApplication editor(factory, nullptr, nullptr, {}, false);
     QString diagnostic;
     if (!editor.start(paths, &diagnostic)) {
       std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
@@ -196,8 +124,7 @@ int main(int argc, char **argv) {
   }
 
   // Settings1 owns only the Boolean policy. The editor-owned state file below
-  // contains paths and active index only; check-theme exits before either
-  // collaborator can touch a bus or user-state path.
+  // contains paths and active index only.
   QtSettingsTransport settingsTransport(QDBusConnection::sessionBus());
   SettingsClient settingsClient(settingsTransport,
                                 TextEditorKeys::scopedKeys());
@@ -208,50 +135,7 @@ int main(int argc, char **argv) {
   }
   TextEditorRestorePolicy restorePolicy(settingsClient);
   RestoreStateStore restoreStore(editorStateDirectory());
-  EditorApplication editor(factory, *appearance.appearance, &restorePolicy,
-                           &restoreStore);
-  QtSettingsTransport appearanceTransport(QDBusConnection::sessionBus());
-  SettingsClient appearanceClient(appearanceTransport,
-                                  {QStringLiteral("appearance.theme"),
-                                   QStringLiteral("appearance.colorScheme"),
-                                   QStringLiteral("fonts.family"),
-                                   QStringLiteral("fonts.monospaceFamily"),
-                                   QStringLiteral("fonts.pointSize"),
-                                   QStringLiteral("accessibility.textScale"),
-                                   QStringLiteral("accessibility.reducedMotion"),
-                                   QStringLiteral("accessibility.reducedTransparency"),
-                                   QStringLiteral("accessibility.highContrast")});
-  QindaQt::AppAppearance::ApplicationAppearanceController appearanceController(
-      appearanceClient,
-      QindaQt::AppAppearance::standardThemeDirectories(
-          parser.value(QStringLiteral("theme-directory"))),
-      QStringLiteral("qinda-dark"),
-      parser.isSet(QStringLiteral("theme"))
-          ? parser.value(QStringLiteral("theme"))
-          : QString());
-  const auto applyLiveAppearance = [&application, &editor,
-                                    &appearanceController] {
-    const auto adapted =
-        EditorAppearanceAdapter::fromTheme(appearanceController.theme(),
-                                           appearanceController.accessibilityInputs());
-    if (!adapted.ok())
-      return;
-    QIcon::setThemeName(appearanceController.theme().iconTheme);
-    application.setPalette(adapted.appearance->palette);
-    application.setFont(adapted.appearance->interfaceFont);
-    editor.applyAppearance(*adapted.appearance);
-  };
-  QObject::connect(&appearanceController,
-                   &QindaQt::AppAppearance::ApplicationAppearanceController::
-                       appearanceChanged,
-                   &editor, applyLiveAppearance);
-  applyLiveAppearance();
-  QString appearanceSettingsError;
-  if (!appearanceClient.start(&appearanceSettingsError)) {
-    std::fprintf(stderr,
-                 "qindaqt-editor: appearance settings unavailable (%s)\n",
-                 qPrintable(appearanceSettingsError));
-  }
+  EditorApplication editor(factory, &restorePolicy, &restoreStore);
   bool startupReported = false;
   QObject::connect(&editor, &EditorApplication::windowCreated, &editor,
       [&](EditorWindow *window) {

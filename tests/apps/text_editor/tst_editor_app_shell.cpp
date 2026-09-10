@@ -3,11 +3,9 @@
 #include "app_shell/fail_closed_file_selection_adapter.h"
 #include "app_shell/file_selection_adapter.h"
 #include "document/local_document_store.h"
-#include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 
 #include "qindaqt/app_shell/application_coordinator.h"
-#include "qindaqt/themes/theme_loader.h"
 
 #include <QAction>
 #include <QFile>
@@ -100,20 +98,6 @@ public:
 private:
   QString m_exactPath;
 };
-
-[[nodiscard]] EditorAppearance appearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!theme.ok) {
-    qFatal("Could not load test theme: %s", qPrintable(theme.error));
-  }
-  const auto result = EditorAppearanceAdapter::fromTheme(theme.theme);
-  if (!result.ok()) {
-    qFatal("Could not derive test appearance: %s",
-           qPrintable(result.diagnostic));
-  }
-  return *result.appearance;
-}
 
 [[nodiscard]] QVariantMap findAction(const QVariantList &menus,
                                      const QString &menuId,
@@ -210,7 +194,7 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
 
 void EditorAppShellTest::
     publishesAtomicMenuSnapshotWithSyncedInitialProjection() {
-  EditorWindow window(localFactory(), appearance(),
+  EditorWindow window(localFactory(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   const QVariantList menus = window.appShellCoordinator().menus();
   QCOMPARE(menus.size(), 4);
@@ -235,7 +219,7 @@ void EditorAppShellTest::
 }
 
 void EditorAppShellTest::dirtyStateProjectsFileSaveEnabled() {
-  EditorWindow window(localFactory(), appearance(),
+  EditorWindow window(localFactory(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   window.show();
   window.editor()->setFocus();
@@ -249,7 +233,7 @@ void EditorAppShellTest::dirtyStateProjectsFileSaveEnabled() {
 }
 
 void EditorAppShellTest::activatingKnownActionTriggersTheLocalCommand() {
-  EditorWindow window(localFactory(), appearance(),
+  EditorWindow window(localFactory(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   window.editor()->insertPlainText(QStringLiteral("select me"));
   QVERIFY(!window.editor()->textCursor().hasSelection());
@@ -262,7 +246,7 @@ void EditorAppShellTest::activatingKnownActionTriggersTheLocalCommand() {
 }
 
 void EditorAppShellTest::closeRoutesThroughAppShellQuitConsent() {
-  EditorWindow window(localFactory(), appearance(),
+  EditorWindow window(localFactory(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   window.show();
   QSignalSpy approved(&window.appShellCoordinator(),
@@ -276,7 +260,7 @@ void EditorAppShellTest::closeRoutesThroughAppShellQuitConsent() {
 }
 
 void EditorAppShellTest::fileSelectionFailsClosedWithoutARealDialog() {
-  EditorWindow window(localFactory(), appearance(),
+  EditorWindow window(localFactory(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   QSignalSpy finished(&window.appShellCoordinator(),
                       &ApplicationCoordinator::portalFinished);
@@ -295,7 +279,7 @@ void EditorAppShellTest::
     cancelledFileSelectionPreservesStateAndAllowsNextRequest() {
   auto adapter = std::make_unique<CancellingFileSelectionAdapter>();
   auto *adapterProbe = adapter.get();
-  EditorWindow window(localFactory(), appearance(), std::move(adapter));
+  EditorWindow window(localFactory(), std::move(adapter));
   QSignalSpy finished(&window.appShellCoordinator(),
                       &ApplicationCoordinator::portalFinished);
 
@@ -349,7 +333,7 @@ void EditorAppShellTest::stalePortalReplyIsFencedBeforeExactRecovery() {
 
   auto adapter = std::make_unique<StaleThenExactFileSelectionAdapter>(path);
   auto *adapterProbe = adapter.get();
-  EditorWindow window(localFactory(), appearance(), std::move(adapter));
+  EditorWindow window(localFactory(), std::move(adapter));
   QSignalSpy finished(&window.appShellCoordinator(),
                       &ApplicationCoordinator::portalFinished);
 
@@ -378,7 +362,7 @@ void EditorAppShellTest::injectedAdapterResolvesAnOpenRequest() {
   QCOMPARE(file.write("picked by the fixed adapter"), qint64(27));
   file.close();
 
-  EditorWindow window(localFactory(), appearance(),
+  EditorWindow window(localFactory(),
                       std::make_unique<FixedFileSelectionAdapter>(path));
   QVERIFY(window.appShellCoordinator().activateAction(
       QString::fromLatin1(AppShellActionIds::FileOpen)));

@@ -6,6 +6,8 @@
 namespace QindaQt::Apps::TextEditor {
 // Per-document text presentation; persistence and document identity stay in
 // DocumentController. All edits use QTextCursor and the existing undo pipeline.
+// Appearance follows the widget's own palette()/font() (Qt platform theme and
+// Fusion per ADR-0116); this class never reads QST tokens or theme files.
 class DocumentEditor final : public QPlainTextEdit {
   Q_OBJECT
 public:
@@ -13,6 +15,9 @@ public:
   ~DocumentEditor() override;
   void setDocumentPath(const QString &path);
   void setBaseFont(const QFont &font);
+  [[nodiscard]] QFont baseFont() const { return m_baseFont; }
+  // Test and future-composition override; production truth is the platform
+  // theme's Qt::ContrastPreference, tracked internally.
   void setHighContrast(bool enabled);
   void zoomText(int steps);
   void resetZoom();
