@@ -5,7 +5,7 @@
 #include "ui/terminal_appearance.h"
 #include "ui/terminal_window.h"
 
-#include "qindaqt/themes/theme_loader.h"
+#include <QFontDatabase>
 
 #include <QAction>
 #include <QToolButton>
@@ -21,12 +21,9 @@ using namespace QindaQt::Apps::Terminal;
 namespace {
 
 TerminalViewAppearance appearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!theme.ok) {
-    qFatal("Could not load test theme");
-  }
-  return *TerminalAppearanceAdapter::fromTheme(theme.theme).appearance;
+  return TerminalAppearanceAdapter::derive(
+      QPalette(), TerminalContentScheme::Dark, false,
+      QFontDatabase::systemFont(QFontDatabase::FixedFont));
 }
 
 class UiBackend final : public TerminalSessionBackend {
@@ -175,7 +172,7 @@ struct Harness final {
     auto sessions = std::make_unique<TerminalSessionCollection>(
         context, factory, &monitor, TeardownBounds{10, 10, 10, 1});
     auto result = std::make_unique<TerminalWindow>(
-        std::move(sessions), appearance(), QStringList{}, nullptr, &opener);
+        std::move(sessions), appearance(), nullptr, &opener);
     result->newSessionWithDefaultProfile();
     return result;
   }

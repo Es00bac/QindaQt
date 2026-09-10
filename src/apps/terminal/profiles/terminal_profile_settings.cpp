@@ -36,7 +36,7 @@ QVariantMap ledgerEntry(const QString &result, const QString &message) {
 struct DecodedSettings final {
   QList<TerminalProfile> profiles;
   QString defaultProfileId;
-  bool restoreTabs = false;
+  bool restoreWindows = false;
 };
 
 std::optional<DecodedSettings> decodeSettings(const QVariantMap &values) {
@@ -44,7 +44,7 @@ std::optional<DecodedSettings> decodeSettings(const QVariantMap &values) {
   const QVariant defaultValue =
       values.value(QString(TerminalKeys::DefaultProfile));
   const QVariant restoreValue =
-      values.value(QString(TerminalKeys::RestoreTabs));
+      values.value(QString(TerminalKeys::RestoreWindows));
   if (profilesValue.metaType().id() != QMetaType::QString ||
       defaultValue.metaType().id() != QMetaType::QString ||
       restoreValue.metaType().id() != QMetaType::Bool) {
@@ -74,7 +74,7 @@ std::optional<DecodedSettings> decodeSettings(const QVariantMap &values) {
 } // namespace
 
 QStringList TerminalKeys::scopedKeys() {
-  return {QString(Profiles), QString(DefaultProfile), QString(RestoreTabs)};
+  return {QString(Profiles), QString(DefaultProfile), QString(RestoreWindows)};
 }
 
 TerminalProfileSettings::TerminalProfileSettings(SettingsClient &client,
@@ -109,7 +109,7 @@ TerminalProfile TerminalProfileSettings::defaultProfile() const {
 
 bool TerminalProfileSettings::applyProfiles(
     const QList<TerminalProfile> &profiles, const QString &defaultProfileId,
-    bool restoreTabs) {
+    bool restoreWindows) {
   if (m_ledgerActive || !m_baselineReceived ||
       m_client.state() != ClientState::Ready ||
       !m_client.snapshot().has_value() || m_client.writeInFlight()) {
@@ -137,10 +137,10 @@ bool TerminalProfileSettings::applyProfiles(
 
   m_intendedValues = {{QString(TerminalKeys::Profiles), encoded},
                       {QString(TerminalKeys::DefaultProfile), defaultProfileId},
-                      {QString(TerminalKeys::RestoreTabs), restoreTabs}};
+                      {QString(TerminalKeys::RestoreWindows), restoreWindows}};
   m_queue = {{QString(TerminalKeys::Profiles), encoded},
              {QString(TerminalKeys::DefaultProfile), defaultProfileId},
-             {QString(TerminalKeys::RestoreTabs), QVariant(restoreTabs)}};
+             {QString(TerminalKeys::RestoreWindows), QVariant(restoreWindows)}};
   m_ledgerEntries.clear();
   m_ledgerActive = true;
   m_waitingForSnapshot = false;
@@ -158,7 +158,7 @@ void TerminalProfileSettings::handleSnapshot() {
   if (!decoded.has_value()) {
     resetToBuiltins();
     if (m_ledgerActive && m_pendingKey.isEmpty()) {
-      const QString key = m_queue.isEmpty() ? QString(TerminalKeys::RestoreTabs)
+      const QString key = m_queue.isEmpty() ? QString(TerminalKeys::RestoreWindows)
                                             : m_queue.first().key;
       abortLedger(key, QStringLiteral("failed"),
                   QStringLiteral("Settings snapshot contains invalid "
@@ -173,10 +173,10 @@ void TerminalProfileSettings::handleSnapshot() {
   const bool changed = !m_baselineReceived ||
                        decoded->profiles != m_userProfiles ||
                        decoded->defaultProfileId != m_defaultProfileId ||
-                       decoded->restoreTabs != m_restoreTabs;
+                       decoded->restoreWindows != m_restoreWindows;
   m_userProfiles = decoded->profiles;
   m_defaultProfileId = decoded->defaultProfileId;
-  m_restoreTabs = decoded->restoreTabs;
+  m_restoreWindows = decoded->restoreWindows;
   m_baselineReceived = true;
   m_confirmedOwner = snapshot->owner;
   m_confirmedEpoch = snapshot->epoch;
@@ -184,7 +184,7 @@ void TerminalProfileSettings::handleSnapshot() {
     emit profilesChanged();
   }
   if (lineageChanged && m_ledgerActive) {
-    const QString key = m_queue.isEmpty() ? QString(TerminalKeys::RestoreTabs)
+    const QString key = m_queue.isEmpty() ? QString(TerminalKeys::RestoreWindows)
                                           : m_queue.first().key;
     abortLedger(key, QStringLiteral("conflict"),
                 QStringLiteral("Settings authority changed; explicit "
@@ -365,10 +365,10 @@ void TerminalProfileSettings::finalizeLedger() {
 void TerminalProfileSettings::resetToBuiltins() {
   const bool changed = m_baselineReceived || !m_userProfiles.isEmpty() ||
                        m_defaultProfileId != builtinDefaultProfileId() ||
-                       m_restoreTabs;
+                       m_restoreWindows;
   m_userProfiles.clear();
   m_defaultProfileId = builtinDefaultProfileId();
-  m_restoreTabs = false;
+  m_restoreWindows = false;
   m_baselineReceived = false;
   if (changed) {
     emit profilesChanged();

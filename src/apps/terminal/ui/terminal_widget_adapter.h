@@ -41,8 +41,8 @@ public:
   // opens the bridge after the caller has attached the widget to its final
   // visible layout, then owns child creation so failures stay typed.
   // The profile bounds scrollback, applies font family/size overrides on
-  // top of the QST-derived appearance, selects the bell policy, and names
-  // the theme whose projection produced the appearance.
+  // top of the palette-derived content appearance, selects the bell policy,
+  // and names the content scheme that produced the appearance.
   explicit TerminalWidgetAdapter(const TerminalViewAppearance &appearance,
                                  const TerminalProfile &profile,
                                  QObject *parent = nullptr);

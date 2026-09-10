@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/terminal_appearance.h"
-#include "ui/terminal_chrome.h"
 #include "ui/terminal_ansi_palette.h"
 
-#include "qindaqt/design_tokens/design_tokens.h"
-#include "qindaqt/design_tokens/token_deriver.h"
-#include "qindaqt/themes/theme_spec.h"
+#include <QAccessibilityHints>
+#include <QFontDatabase>
+#include <QGuiApplication>
+#include <QStyleHints>
 
 namespace QindaQt::Apps::Terminal {
 namespace {
@@ -22,76 +22,58 @@ void appendSection(QString &document, const char *name, const QColor &color) {
 
 } // namespace
 
-AppearanceResult TerminalAppearanceAdapter::fromTheme(
-    const QindaQt::Themes::ThemeSpec &theme,
-    QindaQt::DesignTokens::AccessibilityInputs accessibility) {
-  accessibility.highContrast = accessibility.highContrast ||
-      theme.variant == QStringLiteral("high-contrast");
-  const auto derived =
-      QindaQt::DesignTokens::DesignTokenDeriver::derive(theme, accessibility);
-  if (!derived.ok()) {
-    return {.appearance = std::nullopt, .diagnostic = derived.diagnostic};
+TerminalViewAppearance TerminalAppearanceAdapter::derive(
+    const QPalette &applicationPalette, TerminalContentScheme scheme,
+    bool highContrast, const QFont &monospaceFont) {
+  QColor background;
+  QColor foreground;
+  switch (scheme) {
+  case TerminalContentScheme::Light:
+    background = QColor(Qt::white);
+    foreground = QColor(Qt::black);
+    break;
+  case TerminalContentScheme::Dark:
+    background = QColor(Qt::black);
+    foreground = QColor(Qt::white);
+    break;
+  case TerminalContentScheme::System:
+    background = applicationPalette.color(QPalette::Base);
+    foreground = applicationPalette.color(QPalette::Text);
+    break;
   }
-  const auto &tokens = *derived.tokens;
-
-  QPalette palette;
-  palette.setColor(QPalette::Window, tokens.background().base);
-  palette.setColor(QPalette::WindowText, tokens.foreground().defaultColor);
-  palette.setColor(QPalette::Base, tokens.background().base);
-  palette.setColor(QPalette::AlternateBase, tokens.background().raised);
-  palette.setColor(QPalette::PlaceholderText, tokens.foreground().muted);
-  palette.setColor(QPalette::Light, tokens.background().highest);
-  palette.setColor(QPalette::Midlight, tokens.background().raised);
-  palette.setColor(QPalette::Mid, tokens.strongOutline());
-  palette.setColor(QPalette::Dark, tokens.strongOutline());
-  palette.setColor(QPalette::Shadow, tokens.strongOutline());
-  palette.setColor(QPalette::Text, tokens.foreground().defaultColor);
-  palette.setColor(QPalette::Button, tokens.background().raised);
-  palette.setColor(QPalette::ButtonText, tokens.foreground().defaultColor);
-  palette.setColor(QPalette::Highlight, tokens.accent().defaultColor);
-  palette.setColor(QPalette::HighlightedText, tokens.accent().foreground);
-  palette.setColor(QPalette::ToolTipBase, tokens.background().highest);
-  palette.setColor(QPalette::ToolTipText, tokens.foreground().defaultColor);
-  palette.setColor(QPalette::Disabled, QPalette::Text,
-                   tokens.foreground().disabled);
-  palette.setColor(QPalette::Disabled, QPalette::WindowText,
-                   tokens.foreground().disabled);
-
-  QFont interfaceFont(tokens.typeScale().fontFamily);
-  interfaceFont.setPointSizeF(tokens.typeScale().body);
-  QFont terminalFont(tokens.typeScale().monoFontFamily);
-  terminalFont.setPointSizeF(tokens.typeScale().body);
+  const double contrast = highContrast ? 7.0 : 4.5;
+  background.setAlpha(255);
+  foreground = terminalReadableColor(foreground, background, contrast);
+  QFont terminalFont(monospaceFont);
   terminalFont.setStyleHint(QFont::Monospace);
   terminalFont.setFixedPitch(true);
-
   TerminalViewAppearance appearance{
-      .windowPalette = palette,
-      .interfaceFont = interfaceFont,
       .terminalFont = terminalFont,
-      .focusRing = tokens.focusRing(),
-      .statusWarningForeground = terminalReadableColor(
-          tokens.status().warning.foreground, tokens.background().raised,
-          accessibility.highContrast ? 7.0 : 4.5),
-      .statusDangerForeground = terminalReadableColor(
-          tokens.danger().defaultColor, tokens.background().raised,
-          accessibility.highContrast ? 7.0 : 4.5),
-      .terminalBackground = tokens.background().base,
-      .terminalForeground = tokens.foreground().defaultColor,
+      .terminalBackground = background,
+      .terminalForeground = foreground,
       .ansi = {},
-      .sourceThemeId = tokens.sourceThemeId(),
-      .chromeStyleSheet = terminalChromeStyleSheet(tokens),
-      .highContrast = accessibility.highContrast,
-      .textScale = tokens.inputs().textScale,
+      .schemeId = terminalContentSchemeId(scheme),
+      .highContrast = highContrast,
   };
-  appearance.terminalBackground.setAlpha(255);
-  appearance.terminalForeground = terminalReadableColor(
-      appearance.terminalForeground, appearance.terminalBackground,
-      accessibility.highContrast ? 7.0 : 4.5);
-  const auto ansi = terminalAnsiPalette(appearance.terminalBackground,
-                                       accessibility.highContrast);
+  const auto ansi = terminalAnsiPalette(background, highContrast);
   for (int index = 0; index < 16; ++index)
     appearance.ansi[index] = ansi[static_cast<std::size_t>(index)];
-  return {.appearance = appearance, .diagnostic = {}};
+  return appearance;
+}
+
+bool terminalPlatformHighContrast() {
+  if (auto *hints = QGuiApplication::styleHints()->accessibility()) {
+    return hints->contrastPreference() ==
+           Qt::ContrastPreference::HighContrast;
+  }
+  return false;
+}
+
+TerminalViewAppearance terminalDesktopContentAppearance() {
+  return TerminalAppearanceAdapter::derive(
+      QGuiApplication::palette(), TerminalContentScheme::System,
+      terminalPlatformHighContrast(),
+      QFontDatabase::systemFont(QFontDatabase::FixedFont));
 }
 
 QString TerminalColorSchemeDocument::render(

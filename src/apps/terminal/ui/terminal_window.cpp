@@ -18,22 +18,22 @@ namespace QindaQt::Apps::Terminal {
 
 TerminalWindow::TerminalWindow(
     std::unique_ptr<TerminalSessionCollection> sessions,
-    const TerminalViewAppearance &appearance, const QStringList &themeIds,
+    const TerminalViewAppearance &appearance,
     TerminalProfileSettings *profileSettings, TerminalLinkOpener *linkOpener,
     NewTerminalLauncher newTerminalLauncher, QWidget *parent)
     : QMainWindow(parent), m_sessions(std::move(sessions)),
       m_profileSettings(profileSettings), m_linkOpener(linkOpener),
-      m_themeIds(themeIds), m_appearance(appearance),
+      m_appearance(appearance),
       m_newTerminalLauncher(std::move(newTerminalLauncher)) {
   setObjectName(QStringLiteral("qindaqtTerminalWindow"));
   setAccessibleName(QStringLiteral("QindaQt Terminal"));
   setAccessibleDescription(
       QStringLiteral("Terminal sessions running the configured shell"));
   setWindowTitle(QStringLiteral("QindaQt Terminal"));
+  // AGENT-CONTRACT (ADR-0116): no palette, font, or stylesheet is installed
+  // here. Window chrome, menus, dialogs, the status bar, and the find bar
+  // inherit the Qt platform theme palette and Fusion.
   setWindowIcon(QindaQt::Controls::applicationIcon(QStringLiteral("utilities-terminal")));
-  setPalette(m_appearance.windowPalette);
-  setFont(m_appearance.interfaceFont);
-  setStyleSheet(m_appearance.chromeStyleSheet);
 
   auto *container = new QWidget(this);
   container->setObjectName(QStringLiteral("qindaqtTerminalContainer"));
@@ -71,20 +71,36 @@ TerminalWindow::~TerminalWindow() = default;
 
 void TerminalWindow::applyAppearance(const TerminalViewAppearance &appearance) {
   m_appearance = appearance;
-  setPalette(appearance.windowPalette);
-  setFont(appearance.interfaceFont);
-  setStyleSheet(appearance.chromeStyleSheet);
-  const auto children = findChildren<QWidget *>();
-  for (QWidget *child : children) {
-    child->setPalette(appearance.windowPalette);
-    child->setFont(appearance.interfaceFont);
-  }
   setWindowIcon(QindaQt::Controls::applicationIcon(QStringLiteral("utilities-terminal")));
+  // The find bar tints its icons from its own palette, which already tracks
+  // the platform theme; only the icon re-resolution needs a nudge.
   m_findBar->refreshIcons();
-  // Restore renderer-owned fonts after styling the surrounding widgets.
+  // Content owns its profile font and ANSI palette; chrome inherits Qt.
   m_sessions->setAppearance(appearance);
   if (m_activeSession)
     updateStatusForState(m_activeSession->state());
+}
+
+void TerminalWindow::refreshDesktopContentAppearance() {
+  applyAppearance(terminalDesktopContentAppearance());
+}
+
+void TerminalWindow::changeEvent(QEvent *event) {
+  QMainWindow::changeEvent(event);
+  switch (event->type()) {
+  // Live platform palette/font/style changes: chrome repaints on its own;
+  // only the terminal content derivation consumes the new platform truth.
+  case QEvent::ApplicationPaletteChange:
+  case QEvent::PaletteChange:
+  case QEvent::ApplicationFontChange:
+  case QEvent::FontChange:
+  case QEvent::StyleChange:
+  case QEvent::ThemeChange:
+    refreshDesktopContentAppearance();
+    break;
+  default:
+    break;
+  }
 }
 
 QindaQt::AppShell::ApplicationCoordinator &

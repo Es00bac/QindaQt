@@ -6,11 +6,10 @@
 #include "ui/terminal_appearance.h"
 #include "ui/terminal_window.h"
 
-#include "qindaqt/themes/theme_loader.h"
-
 #include <QAction>
 #include <QCoreApplication>
 #include <QFile>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QLabel>
 #include <QLineEdit>
@@ -27,17 +26,9 @@ using namespace QindaQt::Apps::Terminal;
 namespace {
 
 TerminalViewAppearance testAppearance() {
-  const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!theme.ok) {
-    qFatal("Could not load test theme: %s", qPrintable(theme.error));
-  }
-  const auto appearance = TerminalAppearanceAdapter::fromTheme(theme.theme);
-  if (!appearance.ok()) {
-    qFatal("Could not derive appearance: %s",
-           qPrintable(appearance.diagnostic));
-  }
-  return *appearance.appearance;
+  return TerminalAppearanceAdapter::derive(
+      QPalette(), TerminalContentScheme::Dark, false,
+      QFontDatabase::systemFont(QFontDatabase::FixedFont));
 }
 
 // Offscreen stand-in for the qtermwidget adapter: counts routed operations
@@ -133,8 +124,7 @@ struct WindowHarness final {
         std::move(context), std::move(factory), monitor,
         TeardownBounds{30, 30, 30, 1});
     auto window = std::make_unique<TerminalWindow>(
-        std::move(collection), testAppearance(),
-        QStringList{QStringLiteral("qinda-dark")}, nullptr);
+        std::move(collection), testAppearance(), nullptr);
     if (startSession) {
       window->newSessionWithDefaultProfile();
     }
@@ -155,6 +145,8 @@ private slots:
   }
   void windowEmbedsOnlyPublishedWidgets();
   void startupAndRestartUseRetainedAppearance();
+  void windowChromeFollowsThePlatformTheme();
+  void monospaceContentFontSurvivesLiveFontChange();
   void actionsCarryStableIdentityAndShiftModifiedShortcuts();
   void noWindowShortcutUsesPlainReadlineControlSequences();
   void clipboardAndSelectionActionsRouteThroughSession();
@@ -310,6 +302,12 @@ void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
   auto *status =
       window->findChild<QLabel *>(QStringLiteral("qindaqtTerminalStatus"));
   QVERIFY(status != nullptr);
+  // ADR-0116: severity is text plus the accessible announcement, never a
+  // recolored palette. The status label inherits the window palette in every
+  // state below.
+  const auto inheritedInk = [&window] {
+    return window->palette().color(QPalette::WindowText);
+  };
 
   // Exit events reach the window through the session signal; emitting the
   // signal directly is the moc-supported way to drive one subscriber.
@@ -317,16 +315,15 @@ void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
   QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
                                     Q_ARG(TerminalExitStatus, normal)));
   QCOMPARE(status->text(), QStringLiteral("Session exited (code 3)"));
-  QCOMPARE(status->palette().color(QPalette::WindowText),
-           testAppearance().windowPalette.color(QPalette::WindowText));
+  QCOMPARE(status->palette().color(QPalette::WindowText), inheritedInk());
 
   const TerminalExitStatus crash{
       TerminalExitStatus::Kind::Signal, int{SIGKILL}, {}};
   QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
                                     Q_ARG(TerminalExitStatus, crash)));
   QVERIFY(status->text().contains(QLatin1String("SIGKILL")));
-  QCOMPARE(status->palette().color(QPalette::WindowText),
-           testAppearance().statusDangerForeground);
+  QVERIFY(status->accessibleName().contains(QLatin1String("SIGKILL")));
+  QCOMPARE(status->palette().color(QPalette::WindowText), inheritedInk());
 
   const TerminalExitStatus failed{TerminalExitStatus::Kind::StartFailed, 0,
                                   QStringLiteral("channel unavailable")};
@@ -334,6 +331,7 @@ void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
                                     Q_ARG(TerminalExitStatus, failed)));
   QVERIFY(status->text().startsWith(QLatin1String("Error:")));
   QVERIFY(status->text().contains(QLatin1String("channel unavailable")));
+  QCOMPARE(status->palette().color(QPalette::WindowText), inheritedInk());
 
   // P2-5: an unknown exit is surfaced as its own truth, never as success.
   const TerminalExitStatus unknown{
@@ -341,8 +339,66 @@ void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
   QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
                                     Q_ARG(TerminalExitStatus, unknown)));
   QCOMPARE(status->text(), QStringLiteral("Session exited (status unknown)"));
-  QCOMPARE(status->palette().color(QPalette::WindowText),
-           testAppearance().statusWarningForeground);
+  QCOMPARE(status->palette().color(QPalette::WindowText), inheritedInk());
+}
+
+void TerminalWindowTest::windowChromeFollowsThePlatformTheme() {
+  // ADR-0116: the window installs no palette, font, or QSS of its own, and a
+  // live platform palette change reaches chrome without any app projection.
+  WindowHarness harness;
+  auto window = harness.makeWindow();
+  QVERIFY(window->styleSheet().isEmpty());
+  QVERIFY(window->testAttribute(Qt::WA_SetPalette) == false);
+  QCOMPARE(window->palette(), QGuiApplication::palette());
+  auto *status =
+      window->findChild<QLabel *>(QStringLiteral("qindaqtTerminalStatus"));
+  QVERIFY(status != nullptr);
+  QVERIFY(status->styleSheet().isEmpty());
+
+  const QPalette previous = QGuiApplication::palette();
+  QPalette replacement = previous;
+  const QColor marker = previous.color(QPalette::Window).lightnessF() > 0.5
+                            ? QColor("#223344")
+                            : QColor("#ddccbb");
+  replacement.setColor(QPalette::Window, marker);
+  QGuiApplication::setPalette(replacement);
+  QTRY_COMPARE(window->palette().color(QPalette::Window), marker);
+  // Content derivation follows the new palette through the changeEvent seam.
+  QTRY_COMPARE(harness.stub->appearance.schemeId, QStringLiteral("system"));
+  QGuiApplication::setPalette(previous);
+  QTRY_COMPARE(window->palette().color(QPalette::Window),
+               previous.color(QPalette::Window));
+}
+
+void TerminalWindowTest::monospaceContentFontSurvivesLiveFontChange() {
+  // ADR-0116/ADR-0115: the terminal content font is the platform FixedFont;
+  // an interface-font change re-derives content without breaking the
+  // monospace contract, and the window never pins an interface font itself.
+  WindowHarness harness;
+  auto window = harness.makeWindow();
+  QVERIFY(harness.stub != nullptr);
+  QVERIFY(harness.stub->appearance.terminalFont.fixedPitch());
+  QVERIFY(!window->testAttribute(Qt::WA_SetFont));
+
+  const QFont previous = QGuiApplication::font();
+  // Seed a sentinel so the live-change assertion cannot pass vacuously.
+  auto marker = harness.stub->appearance;
+  marker.terminalFont.setPointSizeF(marker.terminalFont.pointSizeF() + 7.0);
+  window->applyAppearance(marker);
+  QCOMPARE(harness.stub->appearance.terminalFont.pointSizeF(),
+           marker.terminalFont.pointSizeF());
+
+  QFont interfaceFont(previous);
+  interfaceFont.setPointSizeF(previous.pointSizeF() + 3);
+  interfaceFont.setFixedPitch(false);
+  QGuiApplication::setFont(interfaceFont);
+  QTRY_COMPARE(harness.stub->appearance.terminalFont.pointSizeF(),
+               QFontDatabase::systemFont(QFontDatabase::FixedFont)
+                   .pointSizeF());
+  QCOMPARE(harness.stub->appearance.terminalFont.styleHint(), QFont::Monospace);
+  QVERIFY(harness.stub->appearance.terminalFont.fixedPitch());
+  QVERIFY(!window->testAttribute(Qt::WA_SetFont));
+  QGuiApplication::setFont(previous);
 }
 
 void TerminalWindowTest::

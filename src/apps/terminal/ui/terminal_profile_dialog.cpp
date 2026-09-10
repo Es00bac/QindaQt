@@ -38,33 +38,21 @@ QString profileLabel(const TerminalProfile &profile,
 
 TerminalProfileDialog::TerminalProfileDialog(
     const QList<TerminalProfile> &userProfiles, const QString &defaultProfileId,
-    bool restoreTabs, const QStringList &themeIds, QWidget *parent)
+    bool restoreWindows, QWidget *parent)
     : QDialog(parent), m_userProfiles(userProfiles),
-      m_defaultProfileId(defaultProfileId), m_restoreTabs(restoreTabs) {
+      m_defaultProfileId(defaultProfileId), m_restoreWindows(restoreWindows) {
   setObjectName(QStringLiteral("terminalProfileDialog"));
-  setAttribute(Qt::WA_WindowPropagation, true);
   setWindowTitle(QStringLiteral("Terminal Profiles"));
   setAccessibleName(QStringLiteral("Terminal profile settings"));
   resize(720, 480);
-  buildUi(themeIds);
-  if (parent) {
-    // AGENT-GUARD: Stylesheet windows do not reliably propagate all native
-    // palette roles across a modal boundary. Seed this new dialog explicitly;
-    // TerminalWindow::applyAppearance also updates it during a live refresh.
-    setPalette(parent->palette());
-    setFont(parent->font());
-    for (auto *child : findChildren<QWidget *>()) {
-      child->setPalette(parent->palette());
-      child->setFont(parent->font());
-    }
-  }
+  buildUi();
   refreshList();
   if (m_list->count() > 0) {
     m_list->setCurrentRow(0);
   }
 }
 
-void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
+void TerminalProfileDialog::buildUi() {
   auto *splitter = new QSplitter(this);
   m_editingSurface = splitter;
 
@@ -119,16 +107,25 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   m_fontFamily = new QLineEdit(formSide);
   m_fontFamily->setObjectName(QStringLiteral("profileFontFamilyEdit"));
   m_fontFamily->setAccessibleName(QStringLiteral("Font family"));
-  m_fontFamily->setPlaceholderText(QStringLiteral("Theme default"));
+  m_fontFamily->setPlaceholderText(
+      QStringLiteral("Platform monospace default"));
   m_fontSize = new QSpinBox(formSide);
   m_fontSize->setObjectName(QStringLiteral("profileFontSizeSpin"));
   m_fontSize->setAccessibleName(QStringLiteral("Font size"));
   m_fontSize->setRange(0, TerminalProfile::kMaxFontSize);
-  m_fontSize->setSpecialValueText(QStringLiteral("Theme default"));
+  m_fontSize->setSpecialValueText(QStringLiteral("Platform default"));
   m_colorScheme = new QComboBox(formSide);
   m_colorScheme->setObjectName(QStringLiteral("profileColorSchemeCombo"));
   m_colorScheme->setAccessibleName(QStringLiteral("Color scheme"));
-  m_colorScheme->addItems(themeIds);
+  // AGENT-CONTRACT: the profile's terminal color scheme selection is the
+  // fixed content-scheme vocabulary (ADR-0112/ADR-0116), never a per-app QST
+  // theme. Item data carries the persisted canonical id.
+  m_colorScheme->addItem(QStringLiteral("Follow the desktop scheme"),
+                         terminalContentSchemeId(TerminalContentScheme::System));
+  m_colorScheme->addItem(QStringLiteral("Light"),
+                         terminalContentSchemeId(TerminalContentScheme::Light));
+  m_colorScheme->addItem(QStringLiteral("Dark"),
+                         terminalContentSchemeId(TerminalContentScheme::Dark));
   m_scrollback = new QSpinBox(formSide);
   m_scrollback->setObjectName(QStringLiteral("profileScrollbackSpin"));
   m_scrollback->setAccessibleName(QStringLiteral("Scrollback lines"));
@@ -266,7 +263,7 @@ void TerminalProfileDialog::loadSelectedIntoFields() {
   m_fontFamily->setEnabled(profile != nullptr);
   m_fontSize->setValue(effective.fontSize);
   m_fontSize->setEnabled(profile != nullptr);
-  const int schemeIndex = m_colorScheme->findText(effective.colorSchemeId);
+  const int schemeIndex = m_colorScheme->findData(effective.colorSchemeId);
   m_colorScheme->setCurrentIndex(qMax(0, schemeIndex));
   m_colorScheme->setEnabled(profile != nullptr);
   m_scrollback->setValue(effective.scrollbackLines);
@@ -295,7 +292,7 @@ void TerminalProfileDialog::writeFieldsToSelected() {
   }
   profile->fontFamily = m_fontFamily->text();
   profile->fontSize = m_fontSize->value();
-  profile->colorSchemeId = m_colorScheme->currentText();
+  profile->colorSchemeId = m_colorScheme->currentData().toString();
   profile->scrollbackLines = m_scrollback->value();
   profile->bellPolicy = m_bellPolicy->currentIndex() == 1
                             ? TerminalProfile::BellPolicy::Audible

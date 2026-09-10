@@ -18,18 +18,11 @@
 namespace QindaQt::Apps::Terminal {
 namespace {
 
-// Identifier formats are shared with the theme loader's safe-id rule and
-// the CLI validation: lowercase, digit/hyphen, bounded. Keep them identical
-// so a profile validated here is also accepted by theme resolution.
+// Identifier formats follow the CLI safe-id rule: lowercase, digit/hyphen,
+// bounded.
 const QRegularExpression &idPattern() {
   static const QRegularExpression pattern(
       QStringLiteral("^[a-z0-9][a-z0-9-]{0,31}$"));
-  return pattern;
-}
-
-const QRegularExpression &themeIdPattern() {
-  static const QRegularExpression pattern(
-      QStringLiteral("^[a-z0-9][a-z0-9-]{0,63}$"));
   return pattern;
 }
 
@@ -139,6 +132,14 @@ std::optional<TerminalProfile> profileFromJson(const QJsonValue &value) {
   }
   profile.colorSchemeId =
       object.value(QStringLiteral("colorSchemeId")).toString();
+  // Canonicalize legacy QST theme ids at the persistence boundary so the
+  // in-memory profile always carries a canonical content-scheme id.
+  if (!isTerminalContentSchemeId(profile.colorSchemeId)) {
+    if (const auto mapped =
+            terminalContentSchemeForId(profile.colorSchemeId)) {
+      profile.colorSchemeId = terminalContentSchemeId(*mapped);
+    }
+  }
   const QJsonValue scrollback = object.value(QStringLiteral("scrollbackLines"));
   if (scrollback.isDouble()) {
     const double lines = scrollback.toDouble();
@@ -166,6 +167,48 @@ std::optional<TerminalProfile> profileFromJson(const QJsonValue &value) {
 }
 
 } // namespace
+
+QString terminalContentSchemeId(TerminalContentScheme scheme) {
+  switch (scheme) {
+  case TerminalContentScheme::Light:
+    return QStringLiteral("light");
+  case TerminalContentScheme::Dark:
+    return QStringLiteral("dark");
+  case TerminalContentScheme::System:
+    break;
+  }
+  return QStringLiteral("system");
+}
+
+bool isTerminalContentSchemeId(const QString &id) {
+  return id == QLatin1String("system") || id == QLatin1String("light") ||
+         id == QLatin1String("dark");
+}
+
+std::optional<TerminalContentScheme>
+terminalContentSchemeForId(const QString &id) {
+  if (id == QLatin1String("system")) {
+    return TerminalContentScheme::System;
+  }
+  if (id == QLatin1String("light")) {
+    return TerminalContentScheme::Light;
+  }
+  if (id == QLatin1String("dark")) {
+    return TerminalContentScheme::Dark;
+  }
+  // AGENT-NOTE: Legacy QST theme ids persist in pre-ADR-0116 profiles. Map by
+  // the retired theme's variant so those profiles keep a recognizable surface
+  // instead of failing the whole profile list decode.
+  if (id == QLatin1String("qinda-dark") || id == QLatin1String("qinda-dusk") ||
+      id == QLatin1String("qinda-high-contrast")) {
+    return TerminalContentScheme::Dark;
+  }
+  if (id == QLatin1String("qinda-light") ||
+      id == QLatin1String("qinda-macos")) {
+    return TerminalContentScheme::Light;
+  }
+  return std::nullopt;
+}
 
 ProfileValidation validateTerminalProfile(const TerminalProfile &profile) {
   if (profile.id.isEmpty() || !idPattern().match(profile.id).hasMatch()) {
@@ -225,9 +268,9 @@ ProfileValidation validateTerminalProfile(const TerminalProfile &profile) {
                     .arg(TerminalProfile::kMinFontSize)
                     .arg(TerminalProfile::kMaxFontSize));
   }
-  if (!themeIdPattern().match(profile.colorSchemeId).hasMatch()) {
-    return fail(QStringLiteral("Color scheme identifier has an invalid "
-                               "format"));
+  if (!isTerminalContentSchemeId(profile.colorSchemeId)) {
+    return fail(QStringLiteral("Color scheme identifier is not a known "
+                               "terminal content scheme"));
   }
   if (profile.scrollbackLines < 0 ||
       profile.scrollbackLines > TerminalProfile::kMaxScrollbackLines) {
@@ -273,7 +316,7 @@ const TerminalProfile &builtinDefaultProfile() {
       .shellArguments = {},
       .fontFamily = {},
       .fontSize = 0,
-      .colorSchemeId = QStringLiteral("qinda-dark"),
+      .colorSchemeId = QStringLiteral("system"),
       .scrollbackLines = TerminalProfile::kDefaultScrollbackLines,
       .bellPolicy = TerminalProfile::BellPolicy::Silent,
   };

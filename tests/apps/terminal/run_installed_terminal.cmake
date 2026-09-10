@@ -1,9 +1,13 @@
 # AGENT-CONTRACT: This row proves the Terminal component's installed surface:
-# exact staged files, desktop entry, and that the installed executable
-# resolves themes from the installed prefix (not the source or build tree).
-# --check-theme exits before any window or session exists, so this gate never
-# opens a display or starts a PTY. Launch/PSS/first-frame qualification is
-# serialized compiler-lane work and is deliberately not claimed here.
+# exact staged files, desktop entry, no per-app theme catalog (ADR-0116), and
+# that the installed executable runs its argv gate from the staged prefix with
+# only the audited external qtermwidget dependency resolvable. The positional
+# rejection exits before any window, session, or bus access exists, so this
+# gate never opens a display or starts a PTY. Launch/PSS/first-frame
+# qualification is serialized compiler-lane work and is not claimed here.
+if(NOT INSTALL_PREFIX MATCHES "/installed-terminal-stage$")
+    message(FATAL_ERROR "refusing unsafe staged-install prefix: '${INSTALL_PREFIX}'")
+endif()
 set(STAGE_PREFIX "${INSTALL_PREFIX}")
 
 file(REMOVE_RECURSE "${STAGE_PREFIX}")
@@ -24,11 +28,20 @@ endif()
 set(required_paths
     "${INSTALL_BINDIR}/qindaqt-terminal"
     "${INSTALL_DATADIR}/applications/org.qindaqt.Terminal.desktop"
-    "${INSTALL_DATADIR}/qindaqt/themes/qinda-dark.json"
 )
 foreach(relative_path ${required_paths})
     if(NOT EXISTS "${STAGE_PREFIX}/${relative_path}")
         message(FATAL_ERROR "staged Terminal install is missing: ${relative_path}")
+    endif()
+endforeach()
+
+# ADR-0116: the Terminal component ships no per-app theme catalog and no
+# Tokens payload; the Qt platform theme owns appearance.
+foreach(forbidden_path
+        "${INSTALL_DATADIR}/qindaqt/themes")
+    if(EXISTS "${STAGE_PREFIX}/${forbidden_path}")
+        message(FATAL_ERROR
+            "staged Terminal install must not ship a per-app theme catalog: ${forbidden_path}")
     endif()
 endforeach()
 
@@ -50,7 +63,7 @@ file(COPY_FILE "${QTERMWIDGET_LIBRARY}"
      "${qtermwidget_library_directory}/libqtermwidget6.so.2")
 
 set(ENV{QT_QPA_PLATFORM} "offscreen")
-# Strip ambient theme roots so only the staged prefix can satisfy resolution.
+# Strip ambient data roots so only the staged prefix can satisfy resolution.
 set(ENV{XDG_DATA_HOME} "${STAGE_PREFIX}/empty-xdg-data-home")
 set(ENV{HOME} "${STAGE_PREFIX}/empty-home")
 # Strip ambient dynamic-loader state while retaining the one audited external
@@ -59,18 +72,21 @@ set(ENV{LD_LIBRARY_PATH} "${qtermwidget_library_directory}")
 file(MAKE_DIRECTORY "${STAGE_PREFIX}/empty-xdg-data-home")
 file(MAKE_DIRECTORY "${STAGE_PREFIX}/empty-home")
 
+# The argv gate proves the staged executable loads and runs with staged
+# libraries only; it exits before Settings1, any window, or any PTY.
 execute_process(
     COMMAND "${STAGE_PREFIX}/${INSTALL_BINDIR}/qindaqt-terminal"
-            --check-theme --theme qinda-dark
+            unexpected-positional
     RESULT_VARIABLE probe_result
     OUTPUT_VARIABLE probe_output
     ERROR_VARIABLE probe_error
 )
-if(NOT probe_result EQUAL 0)
-    message(FATAL_ERROR "staged --check-theme failed (${probe_result}): ${probe_output}${probe_error}")
+if(NOT probe_result EQUAL 2)
+    message(FATAL_ERROR
+        "staged argv rejection did not exit 2 (${probe_result}): ${probe_output}${probe_error}")
 endif()
-if(NOT probe_output MATCHES "qinda-dark qst-1")
-    message(FATAL_ERROR "staged theme identity mismatch: ${probe_output}")
+if(NOT probe_error MATCHES "unexpected positional arguments")
+    message(FATAL_ERROR "staged argv rejection diagnostic mismatch: ${probe_error}")
 endif()
 
 file(REMOVE_RECURSE "${STAGE_PREFIX}")

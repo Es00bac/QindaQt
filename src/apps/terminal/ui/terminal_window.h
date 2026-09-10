@@ -53,11 +53,10 @@ public:
   // The window takes ownership of the collection. profileSettings is
   // injected, not owned, and may be null (persistence unavailable: only the
   // built-in profile is offered). linkOpener is likewise borrowed, may be
-  // null, and must outlive the window. themeIds enumerates the installed
-  // QindaQt themes offered by the profile dialog.
+  // null, and must outlive the window. appearance is the initial terminal
+  // CONTENT appearance (ADR-0112); window chrome follows the platform theme.
   TerminalWindow(std::unique_ptr<TerminalSessionCollection> sessions,
                  const TerminalViewAppearance &appearance,
-                 const QStringList &themeIds,
                  TerminalProfileSettings *profileSettings,
                  TerminalLinkOpener *linkOpener = nullptr,
                  NewTerminalLauncher newTerminalLauncher = {},
@@ -98,6 +97,10 @@ public:
   // Like the default entry point, it starts at most one shell in this window.
   void startSession(const TerminalProfile &profile);
   void applyAppearance(const TerminalViewAppearance &appearance);
+  // Re-derives the System-scheme content appearance from live platform state
+  // (palette, monospace font, contrast hint) and applies it. main() calls this
+  // after construction; changeEvent keeps it current on live theme changes.
+  void refreshDesktopContentAppearance();
 
 signals:
   // Emitted when the close path requested shutdown of every session and all
@@ -109,6 +112,7 @@ signals:
 protected:
   void closeEvent(QCloseEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;
+  void changeEvent(QEvent *event) override;
 
 private:
   void buildActions();
@@ -141,8 +145,6 @@ private:
   void showExitStatus(const TerminalExitStatus &status);
   void presentProfileApplyResult(const QVariantList &ledger);
   void showStatusMessage(const QString &text, bool danger);
-  void showStatusMessage(const QString &text, bool danger,
-                         const QPalette &palette);
   void updateWindowTitle();
   [[nodiscard]] QString displayTitle(const TerminalSession *session) const;
   [[nodiscard]] TerminalProfile currentDefaultProfile() const;
@@ -151,7 +153,6 @@ private:
   std::unique_ptr<TerminalSessionCollection> m_sessions;
   TerminalProfileSettings *m_profileSettings = nullptr;
   TerminalLinkOpener *m_linkOpener = nullptr;
-  QStringList m_themeIds;
   TerminalViewAppearance m_appearance;
   TerminalAppShellBridge *m_appShellBridge = nullptr;
   NewTerminalLauncher m_newTerminalLauncher;

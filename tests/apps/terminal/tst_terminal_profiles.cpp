@@ -26,7 +26,7 @@ TerminalProfile userProfile(const QString &id = QStringLiteral("work")) {
   profile.shellArguments = {QStringLiteral("literal;$(never-executed)")};
   profile.fontFamily = QStringLiteral("Monospace");
   profile.fontSize = 12;
-  profile.colorSchemeId = QStringLiteral("qinda-light");
+  profile.colorSchemeId = QStringLiteral("light");
   profile.scrollbackLines = 4096;
   profile.bellPolicy = TerminalProfile::BellPolicy::Audible;
   return profile;
@@ -50,6 +50,7 @@ private slots:
   void hostileValuesAreRejected();
   void listBoundsAndIdentityAreAtomic();
   void codecRoundTripsAndRejectsHostileDocuments();
+  void legacyThemeSchemeIdsCanonicalizeAtDecode();
   void generatedIdentifiersMatchThePublishedContract();
   void launchResolutionKeepsArgumentsLiteralAndEnvironmentOwned();
   void unchangedDialogPreservesEmptyArgumentsUntilApplyFinishes();
@@ -154,6 +155,32 @@ void TerminalProfilesTest::codecRoundTripsAndRejectsHostileDocuments() {
   QVERIFY(!decodeTerminalProfiles(QStringLiteral("{}")).ok);
 }
 
+void TerminalProfilesTest::legacyThemeSchemeIdsCanonicalizeAtDecode() {
+  // Pre-ADR-0116 profiles persisted QST theme ids. Decode maps them by the
+  // retired theme's variant; encode only ever writes canonical ids.
+  QJsonObject legacy = encodedObject(userProfile());
+  legacy.insert(QStringLiteral("colorSchemeId"),
+                QStringLiteral("qinda-high-contrast"));
+  const auto decoded = decodeTerminalProfiles(
+      QString::fromUtf8(
+          QJsonDocument(QJsonArray{legacy}).toJson(QJsonDocument::Compact)));
+  QVERIFY(decoded.ok);
+  QCOMPARE(decoded.profiles.size(), 1);
+  QCOMPARE(decoded.profiles.first().colorSchemeId, QStringLiteral("dark"));
+  bool ok = false;
+  const QString reencoded = encodeTerminalProfiles(decoded.profiles, &ok);
+  QVERIFY(ok);
+  QVERIFY(reencoded.contains(QLatin1String("\"colorSchemeId\":\"dark\"")));
+
+  QJsonObject unknown = encodedObject(userProfile());
+  unknown.insert(QStringLiteral("colorSchemeId"),
+                 QStringLiteral("no-such-scheme"));
+  QVERIFY(!decodeTerminalProfiles(
+               QString::fromUtf8(QJsonDocument(QJsonArray{unknown})
+                                     .toJson(QJsonDocument::Compact)))
+               .ok);
+}
+
 void TerminalProfilesTest::generatedIdentifiersMatchThePublishedContract() {
   const QString first = generateProfileId();
   const QString second = generateProfileId();
@@ -194,8 +221,7 @@ void TerminalProfilesTest::
     unchangedDialogPreservesEmptyArgumentsUntilApplyFinishes() {
   TerminalProfile profile = userProfile();
   profile.shellArguments = {QString(), QStringLiteral("payload"), QString()};
-  TerminalProfileDialog dialog({profile}, profile.id, false,
-                               {QStringLiteral("qinda-light")});
+  TerminalProfileDialog dialog({profile}, profile.id, false);
   auto *list =
       dialog.findChild<QListWidget *>(QStringLiteral("terminalProfileList"));
   auto *arguments = dialog.findChild<QPlainTextEdit *>(

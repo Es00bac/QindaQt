@@ -24,8 +24,8 @@ inline constexpr QLatin1String Profiles{
     QLatin1String("services.terminalProfiles")};
 inline constexpr QLatin1String DefaultProfile{
     QLatin1String("services.terminalDefaultProfile")};
-inline constexpr QLatin1String RestoreTabs{
-    QLatin1String("services.terminalRestoreTabs")};
+inline constexpr QLatin1String RestoreWindows{
+    QLatin1String("services.terminalRestoreWindows")};
 [[nodiscard]] QStringList scopedKeys();
 } // namespace TerminalKeys
 
@@ -57,7 +57,7 @@ public:
     return m_userProfiles;
   }
   [[nodiscard]] QString defaultProfileId() const { return m_defaultProfileId; }
-  [[nodiscard]] bool restoreTabsPolicy() const { return m_restoreTabs; }
+  [[nodiscard]] bool restoreWindowsPolicy() const { return m_restoreWindows; }
   [[nodiscard]] bool baselineReceived() const { return m_baselineReceived; }
   // The default profile: the confirmed user default when set, otherwise
   // the built-in default. Always valid.
@@ -70,7 +70,7 @@ public:
   // "uncertain" | "not-attempted".
   [[nodiscard]] bool applyProfiles(const QList<TerminalProfile> &profiles,
                                    const QString &defaultProfileId,
-                                   bool restoreTabs);
+                                   bool restoreWindows);
 
 signals:
   // Confirmed state changed from a snapshot. During an apply this also
@@ -101,7 +101,7 @@ private:
 
   QList<TerminalProfile> m_userProfiles;
   QString m_defaultProfileId;
-  bool m_restoreTabs = false;
+  bool m_restoreWindows = false;
   bool m_baselineReceived = false;
   QString m_confirmedOwner;
   QString m_confirmedEpoch;
