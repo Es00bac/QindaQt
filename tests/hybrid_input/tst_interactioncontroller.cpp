@@ -21,6 +21,7 @@ private Q_SLOTS:
     void externalCancelKeepsCumulativeDelta();
     void exactChordWithoutTargetOwnsTheWholeGestureSilently();
     void adoptDragEntersActiveImmediatelyWithPreview();
+    void adoptDragWithExplicitSourceIgnoresPointerHit();
     void adoptDragWithNoTargetSwallowsSilently();
     void adoptDragRefusesWhenAlreadyActive();
     void pointerModifiersExposesConfiguredChord();
@@ -276,6 +277,47 @@ void InteractionControllerTest::adoptDragEntersActiveImmediatelyWithPreview()
     const auto released = controller.pointerRelease(releaseAt({60, 40}));
     QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);
     QCOMPARE(released.intents.constFirst().target.memberId, QStringLiteral("window-b"));
+    QVERIFY(!controller.active());
+}
+
+void InteractionControllerTest::adoptDragWithExplicitSourceIgnoresPointerHit()
+{
+    // ADR-0085 takeover: the caller knows the natively moving window. The
+    // cancelled move snapped it back to its pre-drag frame, so a pointer
+    // hit-test here would resolve the stranger now under the cursor; the
+    // explicit source must win and flow through Begin, preview, and Commit.
+    RecordingResolver resolver;
+    resolver.hit = {HitKind::MemberTitle, QStringLiteral("container-z"),
+                    QStringLiteral("stranger"), {}};
+    resolver.pointerTarget = {QStringLiteral("container-b"),
+                              QStringLiteral("window-b"), DockZone::Right};
+    InteractionController controller(resolver);
+
+    const HitTarget source{HitKind::MemberTitle, QStringLiteral("container-a"),
+                           QStringLiteral("window-a"), {}};
+    const auto adopted = controller.adoptDrag(source, {40, 40});
+    QVERIFY(adopted.consumed);
+    QCOMPARE(adopted.intents.size(), 2);
+    QCOMPARE(adopted.intents[0].phase, IntentPhase::Begin);
+    QCOMPARE(adopted.intents[0].source.memberId, QStringLiteral("window-a"));
+    QCOMPARE(adopted.intents[0].source.containerId,
+             QStringLiteral("container-a"));
+
+    const auto released = controller.pointerRelease(releaseAt({60, 40}));
+    QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);
+    QCOMPARE(released.intents.constFirst().source.memberId,
+             QStringLiteral("window-a"));
+    QCOMPARE(released.intents.constFirst().target.memberId,
+             QStringLiteral("window-b"));
+    QVERIFY(!controller.active());
+
+    // An invalid explicit source is the swallowed no-target adoption: the
+    // pre-empted native gesture never resumes, and release stays silent.
+    const auto swallowed = controller.adoptDrag(HitTarget{}, {5, 5});
+    QVERIFY(swallowed.consumed);
+    QVERIFY(swallowed.intents.isEmpty());
+    QVERIFY(controller.active());
+    QVERIFY(controller.pointerRelease(releaseAt({9, 9})).intents.isEmpty());
     QVERIFY(!controller.active());
 }
 

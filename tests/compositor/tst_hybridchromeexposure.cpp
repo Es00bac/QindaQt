@@ -13,6 +13,7 @@ private Q_SLOTS:
     void allowsOwnersBelowOrOutsideTheAnchor();
     void blocksAnOwnerAboveTheAnchor();
     void excludesOnlyTheDraggedSource();
+    void excludesEveryDraggedPageMember();
     void rejectsMissingOrEmptyAnchors();
 };
 
@@ -42,7 +43,7 @@ void HybridChromeExposureTest::excludesOnlyTheDraggedSource()
         {QStringLiteral("dragged"), true},
     };
     QVERIFY(sceneChromeExposed(QStringLiteral("anchor"),
-                               QStringLiteral("dragged"), sourceOnly));
+                               {QStringLiteral("dragged")}, sourceOnly));
 
     const QVector<HybridChromeExposureEntry> alsoCovered{
         {QStringLiteral("anchor"), false},
@@ -50,7 +51,24 @@ void HybridChromeExposureTest::excludesOnlyTheDraggedSource()
         {QStringLiteral("dragged"), true},
     };
     QVERIFY(!sceneChromeExposed(QStringLiteral("anchor"),
-                                QStringLiteral("dragged"), alsoCovered));
+                                {QStringLiteral("dragged")}, alsoCovered));
+}
+
+void HybridChromeExposureTest::excludesEveryDraggedPageMember()
+{
+    // A tab drag excludes its page's complete membership: any one of them may
+    // float above the destination anchor with the raised source container.
+    const QVector<HybridChromeExposureEntry> stack{
+        {QStringLiteral("anchor"), false},
+        {QStringLiteral("page-member-a"), true},
+        {QStringLiteral("page-member-b"), true},
+    };
+    QVERIFY(sceneChromeExposed(
+        QStringLiteral("anchor"),
+        {QStringLiteral("page-member-a"), QStringLiteral("page-member-b")},
+        stack));
+    QVERIFY(!sceneChromeExposed(QStringLiteral("anchor"),
+                                {QStringLiteral("page-member-a")}, stack));
 }
 
 void HybridChromeExposureTest::rejectsMissingOrEmptyAnchors()

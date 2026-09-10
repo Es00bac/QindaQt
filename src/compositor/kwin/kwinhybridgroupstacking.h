@@ -59,11 +59,13 @@ public:
         RaiseActivation activation = RaiseActivation::ActivateRepresentative,
         QString *error = nullptr);
     // Answers against KWin's live stack rather than chrome-plan geometry.
-    // excludedWindowId is used only while dragging that exact source window.
+    // excludedWindowIds is used only while dragging those exact source
+    // windows: a tab drag excludes its whole page, since every page member
+    // floats above the destination with the raised source container.
     [[nodiscard]] bool chromeExposedAt(
         const QString &containerId,
         const QPointF &position,
-        const QString &excludedWindowId = {}) const;
+        const QSet<QString> &excludedWindowIds = {}) const;
     [[nodiscard]] qsizetype publishedGroupCount() const noexcept;
     // The current chrome anchor (topmost member in the live stack) for a
     // published container, or empty if the container is not published.

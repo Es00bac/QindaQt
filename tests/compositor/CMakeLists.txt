@@ -370,27 +370,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         COMMAND qindaqt_hybrid_chrome_plan_builder_tests
     )
 
-    foreach(member_policy_test IN ITEMS hybridmemberpolicy hybridtransientpolicy)
-        qt_add_executable(
-            qindaqt_${member_policy_test}_tests
-            "tst_${member_policy_test}.cpp"
-            "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/${member_policy_test}.cpp"
-        )
-        target_include_directories(
-            qindaqt_${member_policy_test}_tests
-            PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
-        )
-        target_link_libraries(
-            qindaqt_${member_policy_test}_tests
-            PRIVATE Qt6::Core Qt6::Test
-        )
-        add_test(
-            NAME "compositor.${member_policy_test}"
-            COMMAND qindaqt_${member_policy_test}_tests
-        )
-    endforeach()
-    target_compile_features(qindaqt_hybridmemberpolicy_tests PRIVATE cxx_std_20)
-    target_compile_features(qindaqt_hybridtransientpolicy_tests PRIVATE cxx_std_20)
+    include("${CMAKE_CURRENT_LIST_DIR}/MemberPolicyTests.cmake")
 
     qt_add_executable(
         qindaqt_hybrid_chrome_drag_translator_tests
@@ -610,6 +590,7 @@ if(TARGET qindaqt_kwin_input_adapter)
     foreach(runtime_test IN ITEMS
             hybridinteractionruntime
             hybridinteractiontranslation
+            hybridinteractioncontaineredges
             hybridinteractionpages)
         qt_add_executable(
             qindaqt_${runtime_test}_tests

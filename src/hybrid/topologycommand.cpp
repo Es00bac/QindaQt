@@ -48,6 +48,8 @@ TopologyCommandKind commandKind(const TopologyCommand &command) noexcept
                 return TopologyCommandKind::ReorderMembers;
             } else if constexpr (std::is_same_v<Command, ReparentMember>) {
                 return TopologyCommandKind::ReparentMember;
+            } else if constexpr (std::is_same_v<Command, ReparentMemberToPageRoot>) {
+                return TopologyCommandKind::ReparentMemberToPageRoot;
             } else if constexpr (std::is_same_v<Command, DetachMember>) {
                 return TopologyCommandKind::DetachMember;
             } else {

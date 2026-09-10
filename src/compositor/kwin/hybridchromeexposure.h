@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <QSet>
 #include <QString>
 #include <QVector>
 
@@ -17,11 +18,12 @@ struct HybridChromeExposureEntry final
 
 // Scene chrome is painted with anchorWindowId. It is input-addressable only
 // when no eligible native input owner above that anchor covers the point.
-// excludedWindowId supports a dragged source: the source may float above the
-// destination while the user intentionally targets chrome underneath it.
+// excludedWindowIds supports a dragged source: the source (and, for a tab
+// drag, every member of its page) may float above the destination while the
+// user intentionally targets chrome underneath it.
 [[nodiscard]] bool sceneChromeExposed(
     const QString &anchorWindowId,
-    const QString &excludedWindowId,
+    const QSet<QString> &excludedWindowIds,
     const QVector<HybridChromeExposureEntry> &stackBottomToTop);
 
 } // namespace QindaQt::Compositor::KWinIntegration

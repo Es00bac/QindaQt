@@ -1,135 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "hybridmemberpolicy.h"
+#include "hybridmemberpolicy_testfixtures.h"
 
 #include <QtTest>
 
-#include <functional>
-
 using namespace QindaQt::Compositor::KWinIntegration;
-
-namespace {
-
-enum class CallKind {
-    Detach,
-    Enter,
-    Reject,
-    Restore,
-};
-
-struct PlatformCall final
-{
-    CallKind kind = CallKind::Detach;
-    MemberGroupBaseline baseline;
-    QString windowId;
-    QString focusOwnerWindowId;
-    std::optional<MemberFocusMode> mode;
-    QSet<QString> missing;
-    MemberRestoreActivation activation = MemberRestoreActivation::RestoreBaseline;
-};
-
-class FakePlatform final : public HybridMemberPolicyPlatform
-{
-public:
-    bool detachMember(const QString &containerId,
-                      const QString &windowId,
-                      const MemberGroupBaseline *focusBaseline,
-                      QString *error) override
-    {
-        MemberGroupBaseline identity;
-        identity.containerId = containerId;
-        calls.append({CallKind::Detach,
-                      focusBaseline ? *focusBaseline : identity,
-                      windowId, {}, {}, {}});
-        if (!accept(error)) {
-            return false;
-        }
-        if (onDetach) {
-            onDetach();
-        }
-        // Production consumes these borrowed values after its synchronous
-        // topology callback. Reading them here makes lifetime regressions
-        // deterministic under ASan instead of relying on allocator reuse.
-        postDetachContainerId = containerId;
-        if (focusBaseline) {
-            postDetachFocusBaseline = *focusBaseline;
-        }
-        return true;
-    }
-
-    bool enterFocus(const MemberGroupBaseline &baseline,
-                    const QString &windowId,
-                    MemberFocusMode mode,
-                    QString *error) override
-    {
-        calls.append({CallKind::Enter, baseline, windowId, {}, mode, {}});
-        return accept(error);
-    }
-
-    bool restoreRejectedPresentation(const MemberGroupBaseline &baseline,
-                                     const QString &windowId,
-                                     const QString &focusOwnerWindowId,
-                                     MemberFocusMode mode,
-                                     QString *error) override
-    {
-        calls.append({CallKind::Reject, baseline, windowId, focusOwnerWindowId, mode, {}});
-        if (onReject) {
-            onReject();
-        }
-        return accept(error);
-    }
-
-    bool restoreGroup(const MemberGroupBaseline &baseline,
-                      const QString &minimizeWindowId,
-                      const QSet<QString> &missingWindowIds,
-                      MemberRestoreActivation activation,
-                      QString *error) override
-    {
-        calls.append({CallKind::Restore, baseline, minimizeWindowId, {}, {},
-                      missingWindowIds, activation});
-        return accept(error);
-    }
-
-    bool accept(QString *error)
-    {
-        if (!failNext) {
-            return true;
-        }
-        failNext = false;
-        if (error) {
-            *error = QStringLiteral("injected platform failure");
-        }
-        return false;
-    }
-
-    QVector<PlatformCall> calls;
-    std::function<void()> onDetach;
-    std::function<void()> onReject;
-    QString postDetachContainerId;
-    std::optional<MemberGroupBaseline> postDetachFocusBaseline;
-    bool failNext = false;
-};
-
-MemberGroupBaseline group()
-{
-    return {
-        .containerId = QStringLiteral("group"),
-        .outerFrame = QRectF(10.0, 20.0, 1000.0, 700.0),
-        .members = {
-            {.windowId = QStringLiteral("left"),
-             .frame = QRectF(11.0, 89.0, 499.0, 630.0),
-             .active = true,
-             .activePage = true},
-            {.windowId = QStringLiteral("right"),
-             .frame = QRectF(512.0, 89.0, 497.0, 630.0),
-             .activePage = true},
-            {.windowId = QStringLiteral("other-page"),
-             .frame = QRectF(90.0, 110.0, 600.0, 400.0),
-             .minimized = true},
-        },
-    };
-}
-
-} // namespace
+using namespace QindaQt::Compositor::KWinIntegration::Test;
 
 class HybridMemberPolicyTest final : public QObject
 {
@@ -238,7 +113,7 @@ void HybridMemberPolicyTest::focusedDetachOwnsSynchronousRefreshAndKeepsCallback
 
     QVERIFY(transitionOwnedDuringRefresh);
     QVERIFY(!policy.ownsTransition());
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
     QCOMPARE(platform.postDetachContainerId, QStringLiteral("group"));
     QCOMPARE(platform.postDetachFocusBaseline, std::optional(original));
 }
@@ -251,7 +126,7 @@ void HybridMemberPolicyTest::maximizeTogglesFocusAndRestoresExactBaseline()
     QVERIFY(policy.synchronize({original}));
 
     QVERIFY(policy.maximizedChanged(QStringLiteral("left"), true));
-    QCOMPARE(policy.focusState(),
+    QCOMPARE(policy.focusState(QStringLiteral("group")),
              std::optional<MemberFocusState>({QStringLiteral("group"),
                                               QStringLiteral("left"),
                                               MemberFocusMode::Maximized}));
@@ -266,7 +141,7 @@ void HybridMemberPolicyTest::maximizeTogglesFocusAndRestoresExactBaseline()
     QVERIFY(policy.synchronize({focusedPresentation}));
     QVERIFY(!policy.maximizedChanged(QStringLiteral("left"), false));
     QVERIFY(policy.maximizedChanged(QStringLiteral("left"), true));
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
     QCOMPARE(platform.calls.constLast().kind, CallKind::Restore);
     QCOMPARE(platform.calls.constLast().baseline, original);
     QVERIFY(platform.calls.constLast().windowId.isEmpty());
@@ -280,7 +155,7 @@ void HybridMemberPolicyTest::fullscreenEntersAndExitsWithoutChangingLayout()
     QVERIFY(policy.synchronize({original}));
 
     QVERIFY(policy.fullscreenChanged(QStringLiteral("right"), true));
-    QCOMPARE(policy.focusState()->mode, MemberFocusMode::Fullscreen);
+    QCOMPARE(policy.focusState(QStringLiteral("group"))->mode, MemberFocusMode::Fullscreen);
     QCOMPARE(platform.calls.constLast().mode,
              std::optional<MemberFocusMode>(MemberFocusMode::Fullscreen));
     QVERIFY(policy.fullscreenChanged(QStringLiteral("right"), false));
@@ -288,7 +163,7 @@ void HybridMemberPolicyTest::fullscreenEntersAndExitsWithoutChangingLayout()
     QCOMPARE(platform.calls.constLast().baseline, original);
     QCOMPARE(platform.calls.constLast().activation,
              MemberRestoreActivation::PreserveCurrent);
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
 }
 
 void HybridMemberPolicyTest::rejectedCompetingPresentationRollsBackWithoutChangingFocus()
@@ -323,7 +198,7 @@ void HybridMemberPolicyTest::rejectedCompetingPresentationRollsBackWithoutChangi
         QCOMPARE(platform.calls.constLast().focusOwnerWindowId, QStringLiteral("left"));
         QCOMPARE(platform.calls.constLast().mode, std::optional(mode));
         QVERIFY(rollbackSignalsSuppressed);
-        QCOMPARE(policy.focusState(),
+        QCOMPARE(policy.focusState(QStringLiteral("group")),
                  std::optional<MemberFocusState>({QStringLiteral("group"),
                                                   QStringLiteral("left"), mode}));
     }
@@ -349,7 +224,7 @@ void HybridMemberPolicyTest::focusedMinimizeAndCloseRestoreCoherently()
     QCOMPARE(platform.calls.constLast().baseline, original);
     QCOMPARE(platform.calls.constLast().activation,
              MemberRestoreActivation::PreserveCurrent);
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
 
     QVERIFY(!policy.memberClosed(QStringLiteral("independent")));
 }
@@ -372,7 +247,7 @@ void HybridMemberPolicyTest::pageSwitchRestoresFocusBeforeTopologySynchronizatio
     switched.members[2].activePage = true;
     QVERIFY(policy.synchronize({switched}));
 
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
     QCOMPARE(platform.calls[1].kind, CallKind::Restore);
     QCOMPARE(platform.calls[1].baseline, original);
     QCOMPARE(platform.calls[1].activation,
@@ -407,7 +282,7 @@ void HybridMemberPolicyTest::crossContainerMoveRestoresFocusBeforeTopologySynchr
     };
     QVERIFY(policy.synchronize({source, destination}));
 
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
     QCOMPARE(platform.calls[1].kind, CallKind::Restore);
     QCOMPARE(platform.calls[1].baseline, original);
     QCOMPARE(platform.calls[1].activation,
@@ -428,7 +303,7 @@ void HybridMemberPolicyTest::unrelatedLifecycleMutationRestoresFocusBeforeSceneR
     QVERIFY(policy.restoreForLifecycleMutation());
     QVERIFY(policy.synchronize({original}));
 
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
     QCOMPARE(platform.calls[1].kind, CallKind::Restore);
     QCOMPARE(platform.calls[1].baseline, original);
     QCOMPARE(platform.calls[1].activation,
@@ -445,21 +320,21 @@ void HybridMemberPolicyTest::failedPlatformCallsDoNotPublishPolicyState()
     platform.failNext = true;
     QVERIFY(!policy.maximizedChanged(QStringLiteral("left"), true, &error));
     QCOMPARE(error, QStringLiteral("injected platform failure"));
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
 
     QVERIFY(policy.maximizedChanged(QStringLiteral("left"), true));
     platform.failNext = true;
     QVERIFY(!policy.maximizedChanged(QStringLiteral("left"), true, &error));
-    QVERIFY(policy.focusState());
+    QVERIFY(policy.focusState(QStringLiteral("group")));
 
     platform.failNext = true;
     QVERIFY(!policy.maximizedChanged(QStringLiteral("right"), true, &error));
     QCOMPARE(error, QStringLiteral("injected platform failure"));
-    QCOMPARE(policy.focusState()->windowId, QStringLiteral("left"));
+    QCOMPARE(policy.focusState(QStringLiteral("group"))->windowId, QStringLiteral("left"));
 
     platform.failNext = true;
     QVERIFY(!policy.interactiveMoveStarted(QStringLiteral("right"), true, &error));
-    QVERIFY(policy.focusState());
+    QVERIFY(policy.focusState(QStringLiteral("group")));
 }
 
 void HybridMemberPolicyTest::shutdownRestoresFocusExactlyAndIsIdempotent()
@@ -474,10 +349,10 @@ void HybridMemberPolicyTest::shutdownRestoresFocusExactlyAndIsIdempotent()
     platform.failNext = true;
     QVERIFY(!policy.restoreForShutdown({}, &error));
     QCOMPARE(error, QStringLiteral("injected platform failure"));
-    QVERIFY(policy.focusState());
+    QVERIFY(policy.focusState(QStringLiteral("group")));
 
     QVERIFY(policy.restoreForShutdown());
-    QVERIFY(!policy.focusState());
+    QVERIFY(!policy.focusState(QStringLiteral("group")));
     QCOMPARE(platform.calls.constLast().kind, CallKind::Restore);
     QCOMPARE(platform.calls.constLast().baseline, original);
     QCOMPARE(platform.calls.constLast().activation,

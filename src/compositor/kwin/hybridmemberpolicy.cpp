@@ -85,36 +85,41 @@ bool HybridMemberPolicy::synchronize(QVector<MemberGroupBaseline> groups, QStrin
         }
     }
 
-    bool focusStillValid = !m_focus;
-    if (m_focus) {
-        for (const auto &group : groups) {
-            const auto *member = group.containerId == m_focus->containerId
-                ? group.member(m_focus->windowId) : nullptr;
-            if (member && member->activePage) {
-                focusStillValid = true;
-                break;
-            }
-        }
-    }
-    const bool focusedDetachOwnsInvalidation = m_applying && m_focus
-        && m_detaching.contains(m_focus->windowId);
     // AGENT-GUARD: A focus transition owns the pre-action baseline. Geometry
     // and visibility signals emitted by its KWin writes must not replace that
-    // copy with temporary presentation. Native detach synchronizes topology
-    // inside its platform callback; that outer transition alone consumes the
-    // copied baseline and clears focus after the callback returns.
-    if (m_focus && !focusStillValid && !focusedDetachOwnsInvalidation) {
-        QSet<QString> missing;
-        if (m_focusBaseline) {
-            for (const auto &member : m_focusBaseline->members) {
+    // copy with temporary presentation, and a refresh nested inside a
+    // transition must not restore a container that transition is already
+    // unwinding (native detach synchronizes topology inside its platform
+    // callback and clears its own container's focus after the callback
+    // returns). Only a top-level refresh restores presentation whose owner
+    // left the active page or whose container disappeared.
+    if (!m_applying) {
+        QStringList invalidated;
+        for (auto entry = m_focus.cbegin(); entry != m_focus.cend(); ++entry) {
+            bool stillValid = false;
+            for (const auto &group : groups) {
+                const auto *member = group.containerId == entry.key()
+                    ? group.member(entry->state.windowId) : nullptr;
+                if (member && member->activePage) {
+                    stillValid = true;
+                    break;
+                }
+            }
+            if (!stillValid) {
+                invalidated.append(entry.key());
+            }
+        }
+        for (const auto &containerId : std::as_const(invalidated)) {
+            QSet<QString> missing;
+            for (const auto &member : m_focus.value(containerId).baseline.members) {
                 if (!windowIds.contains(member.windowId)) {
                     missing.insert(member.windowId);
                 }
             }
-        }
-        if (!restore({}, std::move(missing),
-                     MemberRestoreActivation::RestoreBaseline, error)) {
-            return false;
+            if (!restore(containerId, {}, missing,
+                         MemberRestoreActivation::RestoreBaseline, error)) {
+                return false;
+            }
         }
     }
     m_groups = std::move(groups);
@@ -131,6 +136,16 @@ HybridMemberPolicy::MemberLocation HybridMemberPolicy::locate(
             if (members[memberIndex].windowId == windowId) {
                 return {groupIndex, memberIndex};
             }
+        }
+    }
+    return {};
+}
+
+QString HybridMemberPolicy::focusedContainerOf(const QString &windowId) const
+{
+    for (auto entry = m_focus.cbegin(); entry != m_focus.cend(); ++entry) {
+        if (entry->state.windowId == windowId) {
+            return entry.key();
         }
     }
     return {};
@@ -153,9 +168,22 @@ bool HybridMemberPolicy::interactiveMoveStarted(const QString &windowId,
     // Both values cross a production callback that synchronously publishes a
     // new topology and replaces m_groups. They must not borrow policy storage.
     const QString containerId = m_groups[location.groupIndex].containerId;
-    const std::optional<MemberGroupBaseline> focusBaseline = m_focus
-            && m_focus->containerId == containerId && m_focusBaseline
-        ? m_focusBaseline : std::nullopt;
+    // AGENT-GUARD: The detach below is a scene transaction and re-plans every
+    // group, so every *other* container's focus presentation must leave first
+    // (PreserveCurrent keeps KWin's activation on the dragged window). The
+    // dragged member's own container is instead handed to the platform, which
+    // unwinds it together with the detach.
+    const auto focusedContainers = m_focus.keys();
+    for (const auto &focusedId : focusedContainers) {
+        if (focusedId != containerId
+            && !restore(focusedId, {}, {},
+                        MemberRestoreActivation::PreserveCurrent, error)) {
+            return false;
+        }
+    }
+    const std::optional<MemberGroupBaseline> focusBaseline = m_focus.contains(containerId)
+        ? std::optional<MemberGroupBaseline>(m_focus.value(containerId).baseline)
+        : std::nullopt;
     m_applying = true;
     const auto guard = qScopeGuard([this] { m_applying = false; });
     // AGENT-GUARD: Mark before the platform callback. Production detach
@@ -170,8 +198,7 @@ bool HybridMemberPolicy::interactiveMoveStarted(const QString &windowId,
         return false;
     }
     if (focusBaseline) {
-        m_focus.reset();
-        m_focusBaseline.reset();
+        m_focus.remove(containerId);
     }
     return true;
 }
@@ -191,44 +218,68 @@ bool HybridMemberPolicy::enter(const MemberLocation &location,
     if (!m_platform.enterFocus(group, member.windowId, mode, error)) {
         return false;
     }
-    m_focusBaseline = group;
-    m_focus = MemberFocusState{group.containerId, member.windowId, mode};
+    m_focus.insert(group.containerId,
+                   FocusEntry{MemberFocusState{group.containerId, member.windowId, mode},
+                              group});
     return true;
 }
 
-bool HybridMemberPolicy::restoreRejectedPresentation(
-    const QString &windowId, MemberFocusMode mode, QString *error)
+bool HybridMemberPolicy::restoreRejectedPresentation(const QString &containerId,
+                                                     const QString &windowId,
+                                                     MemberFocusMode mode,
+                                                     QString *error)
 {
-    if (!m_focus || !m_focusBaseline) {
+    const auto found = m_focus.constFind(containerId);
+    if (found == m_focus.cend()) {
         return fail(error, QStringLiteral(
                                "rejected member presentation has no focus baseline"));
     }
-    if (!m_focusBaseline->member(windowId)) {
+    if (!found->baseline.member(windowId)) {
         return fail(error, QStringLiteral(
                                "rejected member is not in the focus baseline"));
     }
+    // Copy: the platform may re-enter synchronize() while this runs.
+    const FocusEntry entry = *found;
     m_applying = true;
     const auto guard = qScopeGuard([this] { m_applying = false; });
     return m_platform.restoreRejectedPresentation(
-        *m_focusBaseline, windowId, m_focus->windowId, mode, error);
+        entry.baseline, windowId, entry.state.windowId, mode, error);
 }
 
-bool HybridMemberPolicy::restore(const QString &minimizeWindowId,
-                                 QSet<QString> missingWindowIds,
+bool HybridMemberPolicy::restore(const QString &containerId,
+                                 const QString &minimizeWindowId,
+                                 const QSet<QString> &missingWindowIds,
                                  MemberRestoreActivation activation,
                                  QString *error)
 {
-    if (!m_focus || !m_focusBaseline) {
+    const auto found = m_focus.constFind(containerId);
+    if (found == m_focus.cend()) {
         return false;
     }
+    // Copy both the baseline and the key: the platform may re-enter
+    // synchronize(), and the caller's containerId may reference this entry.
+    const MemberGroupBaseline baseline = found->baseline;
+    const QString key = containerId;
     m_applying = true;
     const auto guard = qScopeGuard([this] { m_applying = false; });
-    if (!m_platform.restoreGroup(*m_focusBaseline, minimizeWindowId,
+    if (!m_platform.restoreGroup(baseline, minimizeWindowId,
                                  missingWindowIds, activation, error)) {
         return false;
     }
-    m_focus.reset();
-    m_focusBaseline.reset();
+    m_focus.remove(key);
+    return true;
+}
+
+bool HybridMemberPolicy::restoreAll(const QSet<QString> &missingWindowIds,
+                                    MemberRestoreActivation activation,
+                                    QString *error)
+{
+    const auto focusedContainers = m_focus.keys();
+    for (const auto &containerId : focusedContainers) {
+        if (!restore(containerId, {}, missingWindowIds, activation, error)) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -246,20 +297,22 @@ bool HybridMemberPolicy::maximizedChanged(const QString &windowId,
     if (!location.isValid()) {
         return false;
     }
-    if (m_focus && m_focus->windowId == windowId
-        && m_focus->mode == MemberFocusMode::Maximized) {
-        // The adapter clears KWin's real maximize bit on entry. A second
-        // native-button request therefore arrives as another maximize=true;
-        // while policy state supplies the decoration's restore glyph.
-        return restore({}, {}, MemberRestoreActivation::RestoreBaseline, error);
-    }
-    if (m_focus && m_focus->windowId != windowId) {
-        if (!restoreRejectedPresentation(windowId, MemberFocusMode::Maximized, error)) {
+    const QString containerId = m_groups[location.groupIndex].containerId;
+    const auto owner = m_focus.constFind(containerId);
+    if (owner != m_focus.cend()) {
+        if (owner->state.windowId == windowId
+            && owner->state.mode == MemberFocusMode::Maximized) {
+            // The adapter clears KWin's real maximize bit on entry. A second
+            // native-button request therefore arrives as another maximize=true;
+            // while policy state supplies the decoration's restore glyph.
+            return restore(containerId, {}, {},
+                           MemberRestoreActivation::RestoreBaseline, error);
+        }
+        if (owner->state.windowId != windowId) {
+            static_cast<void>(restoreRejectedPresentation(
+                containerId, windowId, MemberFocusMode::Maximized, error));
             return false;
         }
-        return false;
-    }
-    if (m_focus) {
         return fail(error, QStringLiteral("member focus mode conflicts with existing owner"));
     }
     return enter(location, MemberFocusMode::Maximized, error);
@@ -276,22 +329,26 @@ bool HybridMemberPolicy::fullscreenChanged(const QString &windowId,
         return false;
     }
     if (!fullscreen) {
-        return m_focus && m_focus->windowId == windowId
-                && m_focus->mode == MemberFocusMode::Fullscreen
-            ? restore({}, {}, MemberRestoreActivation::PreserveCurrent, error)
-            : false;
+        const QString containerId = focusedContainerOf(windowId);
+        if (containerId.isEmpty()
+            || m_focus.value(containerId).state.mode != MemberFocusMode::Fullscreen) {
+            return false;
+        }
+        return restore(containerId, {}, {},
+                       MemberRestoreActivation::PreserveCurrent, error);
     }
     const auto location = locate(windowId);
     if (!location.isValid()) {
         return false;
     }
-    if (m_focus && m_focus->windowId != windowId) {
-        if (!restoreRejectedPresentation(windowId, MemberFocusMode::Fullscreen, error)) {
+    const QString containerId = m_groups[location.groupIndex].containerId;
+    const auto owner = m_focus.constFind(containerId);
+    if (owner != m_focus.cend()) {
+        if (owner->state.windowId != windowId) {
+            static_cast<void>(restoreRejectedPresentation(
+                containerId, windowId, MemberFocusMode::Fullscreen, error));
             return false;
         }
-        return false;
-    }
-    if (m_focus) {
         return fail(error, QStringLiteral("member focus mode conflicts with existing owner"));
     }
     return enter(location, MemberFocusMode::Fullscreen, error);
@@ -304,10 +361,15 @@ bool HybridMemberPolicy::minimizedChanged(const QString &windowId,
     if (error) {
         error->clear();
     }
-    if (m_applying || !minimized || !m_focus || m_focus->windowId != windowId) {
+    if (m_applying || !minimized) {
         return false;
     }
-    return restore(windowId, {}, MemberRestoreActivation::RestoreBaseline, error);
+    const QString containerId = focusedContainerOf(windowId);
+    if (containerId.isEmpty()) {
+        return false;
+    }
+    return restore(containerId, windowId, {},
+                   MemberRestoreActivation::RestoreBaseline, error);
 }
 
 bool HybridMemberPolicy::memberClosed(const QString &windowId, QString *error)
@@ -316,14 +378,22 @@ bool HybridMemberPolicy::memberClosed(const QString &windowId, QString *error)
         error->clear();
     }
     m_detaching.remove(windowId);
-    if (m_applying || !m_focus || !m_focusBaseline
-        || !m_focusBaseline->member(windowId)) {
+    if (m_applying) {
         return false;
     }
-    // KWin removes the client and selects its successor before the registry
-    // emits managedWindowClosed. Preserve that compositor-owned choice; a
-    // hidden peer closing must not reactivate the old group baseline.
-    return restore({}, {windowId}, MemberRestoreActivation::PreserveCurrent, error);
+    for (auto entry = m_focus.cbegin(); entry != m_focus.cend(); ++entry) {
+        if (!entry->baseline.member(windowId)) {
+            continue;
+        }
+        // KWin removes the client and selects its successor before the
+        // registry emits managedWindowClosed. Preserve that compositor-owned
+        // choice; a hidden peer closing must not reactivate the old group
+        // baseline.
+        const QString containerId = entry.key();
+        return restore(containerId, {}, {windowId},
+                       MemberRestoreActivation::PreserveCurrent, error);
+    }
+    return false;
 }
 
 bool HybridMemberPolicy::restoreForTopologyMutation(QString *error)
@@ -331,7 +401,18 @@ bool HybridMemberPolicy::restoreForTopologyMutation(QString *error)
     if (error) {
         error->clear();
     }
-    return !m_focus || restore({}, {}, MemberRestoreActivation::RestoreBaseline, error);
+    return restoreAll({}, MemberRestoreActivation::RestoreBaseline, error);
+}
+
+bool HybridMemberPolicy::restoreForContainerAction(const QString &containerId,
+                                                   QString *error)
+{
+    if (error) {
+        error->clear();
+    }
+    return !m_focus.contains(containerId)
+        || restore(containerId, {}, {},
+                   MemberRestoreActivation::RestoreBaseline, error);
 }
 
 bool HybridMemberPolicy::restoreForLifecycleMutation(QString *error)
@@ -339,8 +420,7 @@ bool HybridMemberPolicy::restoreForLifecycleMutation(QString *error)
     if (error) {
         error->clear();
     }
-    return !m_focus
-        || restore({}, {}, MemberRestoreActivation::PreserveCurrent, error);
+    return restoreAll({}, MemberRestoreActivation::PreserveCurrent, error);
 }
 
 bool HybridMemberPolicy::restoreForShutdown(QSet<QString> missingWindowIds,
@@ -349,9 +429,36 @@ bool HybridMemberPolicy::restoreForShutdown(QSet<QString> missingWindowIds,
     if (error) {
         error->clear();
     }
-    return !m_focus
-        || restore({}, std::move(missingWindowIds),
-                   MemberRestoreActivation::PreserveCurrent, error);
+    return restoreAll(missingWindowIds,
+                      MemberRestoreActivation::PreserveCurrent, error);
+}
+
+std::optional<MemberFocusState> HybridMemberPolicy::focusState(
+    const QString &containerId) const
+{
+    const auto found = m_focus.constFind(containerId);
+    return found == m_focus.cend()
+        ? std::nullopt
+        : std::optional<MemberFocusState>(found->state);
+}
+
+QVector<MemberFocusState> HybridMemberPolicy::focusStates() const
+{
+    QVector<MemberFocusState> result;
+    result.reserve(m_focus.size());
+    for (auto entry = m_focus.cbegin(); entry != m_focus.cend(); ++entry) {
+        result.append(entry->state);
+    }
+    return result;
+}
+
+std::optional<MemberGroupBaseline> HybridMemberPolicy::focusBaseline(
+    const QString &containerId) const
+{
+    const auto found = m_focus.constFind(containerId);
+    return found == m_focus.cend()
+        ? std::nullopt
+        : std::optional<MemberGroupBaseline>(found->baseline);
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

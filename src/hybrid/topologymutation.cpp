@@ -244,6 +244,16 @@ bool addMovedMember(Core::WindowContainer &target,
                     || target.movePage(placement.pageId,
                                        placement.destinationPageIndex,
                                        error);
+            } else if constexpr (std::is_same_v<Placement, MoveAsRootSplit>) {
+                return target.splitPage(
+                    {.pageId = placement.pageId,
+                     .newWindowId = detached.windowId,
+                     .newLeafNodeId = detached.leafNodeId,
+                     .splitNodeId = placement.splitNodeId,
+                     .orientation = placement.orientation,
+                     .ratio = placement.ratio,
+                     .position = placement.position},
+                    error);
             } else {
                 const Core::SplitRequest split{
                     .targetWindowId = placement.targetWindowId,
@@ -407,7 +417,8 @@ bool TopologyMutation::apply(WindowTopology &candidate,
                 return applyResizeSplit(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, ReorderMembers>) {
                 return applyReorderMembers(candidate, typedCommand, error);
-            } else if constexpr (std::is_same_v<Command, ReparentMember>) {
+            } else if constexpr (std::is_same_v<Command, ReparentMember>
+                                 || std::is_same_v<Command, ReparentMemberToPageRoot>) {
                 return TopologyPlacementMutation::apply(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, DetachMember>) {
                 return applyDetach(candidate, typedCommand, error);

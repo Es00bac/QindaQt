@@ -15,6 +15,7 @@
 #include <QString>
 #include <QStringList>
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -134,6 +135,16 @@ public:
     // Call only after normal release retries have failed.
     [[nodiscard]] Hybrid::SceneStepResult emergencyReleaseAll(
         const Hybrid::WindowTopology &topology);
+    // AGENT-CONTRACT: Whole-container minimize is session window-action state,
+    // not topology. Every transaction re-plans all containers, so without this
+    // probe a dock into one container would resurrect another the user
+    // minimized (the plan derives member minimized state from page activity
+    // only). The session injects the probe once; an empty probe means no
+    // container is user-minimized, which is also the test default.
+    using MinimizedContainerProbe = std::function<bool(const QString &containerId)>;
+    void setMinimizedContainerProbe(MinimizedContainerProbe probe);
+    [[nodiscard]] bool containerUserMinimized(const QString &containerId) const;
+
     // AGENT-CONTRACT: Chrome consumes a copied committed value. The scene
     // boundary never exposes a topology object, transaction, or KWin window.
     [[nodiscard]] std::optional<CommittedContainerLayout> committedLayout(
@@ -158,6 +169,7 @@ private:
     std::unique_ptr<KWinHybridScenePlatform> m_ownedPlatform;
     KWinHybridScenePlatform *m_platform = nullptr;
     HybridConstraints::LayoutMetrics m_metrics;
+    MinimizedContainerProbe m_minimizedContainerProbe;
     QHash<QString, HybridConstraints::WindowRestoreState> m_restoreStates;
     QHash<QString, CommittedContainerLayout> m_committedLayouts;
     qsizetype m_windowStateMutationDepth = 0;

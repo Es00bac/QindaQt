@@ -29,6 +29,18 @@ public:
     // threshold against.
     [[nodiscard]] InteractionDecision adoptDrag(const QPointF &position);
 
+    // Same adoption with an explicitly identified source. AGENT-CONTRACT: a
+    // caller that knows the dragged window's identity (the ADR-0085 late-Shift
+    // takeover knows KWin's interactive-move owner) must pass it here rather
+    // than let the position overload hit-test: cancelling the native move
+    // snaps the window back to its pre-drag frame, so the pointer usually
+    // sits over a different window - often the intended drop target's - and a
+    // hit-test would silently adopt (and later move or detach) that stranger.
+    // An invalid source adopts the swallowed no-target grab exactly like an
+    // unresolved hit-test.
+    [[nodiscard]] InteractionDecision adoptDrag(const HitTarget &source,
+                                                const QPointF &position);
+
     // The exact modifiers a pointer press/adopted drag must match. Exposed
     // so a caller watching for a competing native gesture to intercept knows
     // which chord to watch for without duplicating the bindings.

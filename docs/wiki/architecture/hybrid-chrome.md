@@ -190,7 +190,9 @@ occlude shared chrome without click-through; target discovery stops at the
 first real KWin input owner rather than tunneling to a manageable window below.
 During an explicit dock drag only the dragged source may be excluded from this
 test, allowing it to target chrome beneath itself while every other covering
-window still blocks the target.
+window still blocks the target. For a tab drag the exclusion covers the dragged
+page's complete membership, since the press raises the whole source container
+and every one of its page members floats above the destination.
 
 An unmodified right-button press and matching release on the shared outer title,
 a page tab, or a grouped native member title opens the same nonblocking QindaQt
@@ -269,11 +271,15 @@ and the selected member occupies the group outer frame or KWin fullscreen. The
 real maximize bit is cleared for maximize focus; `QindaDecoration` receives a
 process-local property so its button shows restore, and a second maximize or a
 fullscreen exit restores the exact group baseline. Fullscreen exit preserves a
-current outside-window focus chosen through Alt-Tab or a panel. A competing
-member focus request is rejected after the KWin adapter clears only that
-requesting member's native fullscreen, maximize, and quick-tile state and
-restores its committed frame. It never reveals a hidden peer, shared chrome, or
-changes activation while the accepted focus owner remains active. Minimizing
+current outside-window focus chosen through Alt-Tab or a panel. Focus
+presentation is tracked per container, so one container's shared chrome hides
+and reappears only with its own member's presentation, and a whole-container
+action on another container never restores it. A competing member focus
+request from the same container is rejected after the KWin adapter clears
+only that requesting member's native fullscreen, maximize, and quick-tile
+state and restores its committed frame. It never reveals a hidden peer,
+shared chrome, or changes activation while the accepted focus owner remains
+active. Minimizing
 the focused member restores the group then leaves that member minimized;
 closing it restores surviving members; native drag commits the topology detach
 before clearing temporary focus presentation; shutdown restores focus state

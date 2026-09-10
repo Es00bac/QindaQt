@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <QMap>
 #include <QRectF>
 #include <QSet>
 #include <QString>
@@ -75,9 +76,10 @@ public:
                                           MemberFocusMode mode,
                                           QString *error = nullptr) = 0;
     // KWin emits maximize/fullscreen notifications after applying a native
-    // request. When another member already owns temporary focus presentation,
-    // the adapter must unwind only that rejected member's native state against
-    // this committed baseline and return focus to `focusOwnerWindowId`.
+    // request. When another member of the same container already owns
+    // temporary focus presentation, the adapter must unwind only that
+    // rejected member's native state against this committed baseline and
+    // return focus to `focusOwnerWindowId`.
     // AGENT-CONTRACT: This is a single rejected-request correction, not an
     // active-window observer: ordinary Alt-Tab and outside-window focus remain
     // compositor-owned after the correction completes.
@@ -96,6 +98,14 @@ public:
 
 // Toolkit-neutral policy for native member-decoration actions. Synchronization
 // copies committed layouts; no topology, KWin, or QObject references escape.
+//
+// AGENT-CONTRACT: Focus presentation is owned per container. Each container
+// may present at most one member alone, and a request inside one container
+// never rejects, restores, hides, or activates anything in another. Only the
+// whole-session gates (topology/lifecycle/shutdown) touch every container,
+// because a coordinator scene transaction re-plans every group. A single
+// session-wide owner made shared-chrome maximize/minimize/restore on one
+// container silently restore and re-activate another container's member.
 class HybridMemberPolicy final
 {
 public:
@@ -117,28 +127,35 @@ public:
                                         QString *error = nullptr);
     [[nodiscard]] bool memberClosed(const QString &windowId,
                                     QString *error = nullptr);
-    // Leaves temporary member maximize/fullscreen presentation before a
-    // caller mutates topology or group placement. Call this before the scene
-    // transaction: restoring after a page/member move can replay obsolete
-    // hidden state over the newly committed layout.
+    // Leaves temporary member maximize/fullscreen presentation in every
+    // container before a caller mutates topology through a scene transaction.
+    // Transactions re-plan every group, so this gate cannot be narrowed to one
+    // container. Call it before the transaction: restoring after a page/member
+    // move can replay obsolete hidden state over the newly committed layout.
     [[nodiscard]] bool restoreForTopologyMutation(QString *error = nullptr);
+    // Leaves focus presentation for exactly one container before a
+    // placement-only action on it (group maximize/restore/minimize/shade/
+    // raise) that reflows or hides only that container and runs no scene
+    // transaction. Every other container keeps its presentation. Idempotent.
+    [[nodiscard]] bool restoreForContainerAction(const QString &containerId,
+                                                 QString *error = nullptr);
     // Add/Forget scene transactions also re-plan every group, but KWin may
     // already have activated a newly mapped window or a close successor. This
     // variant clears focus presentation without stealing that activation.
     [[nodiscard]] bool restoreForLifecycleMutation(QString *error = nullptr);
-    // Idempotent explicit lifecycle gate. A focused baseline must be restored
-    // before the owning compositor adapter or scene restoration is destroyed.
+    // Idempotent explicit lifecycle gate. Every focused baseline must be
+    // restored before the owning compositor adapter or scene restoration is
+    // destroyed.
     [[nodiscard]] bool restoreForShutdown(
         QSet<QString> missingWindowIds = {}, QString *error = nullptr);
 
-    [[nodiscard]] std::optional<MemberFocusState> focusState() const
-    {
-        return m_focus;
-    }
-    [[nodiscard]] std::optional<MemberGroupBaseline> focusBaseline() const
-    {
-        return m_focusBaseline;
-    }
+    [[nodiscard]] std::optional<MemberFocusState> focusState(
+        const QString &containerId) const;
+    // Every container currently presenting one member alone, in stable
+    // container-ID order.
+    [[nodiscard]] QVector<MemberFocusState> focusStates() const;
+    [[nodiscard]] std::optional<MemberGroupBaseline> focusBaseline(
+        const QString &containerId) const;
     [[nodiscard]] bool ownsTransition() const noexcept { return m_applying; }
 
 private:
@@ -153,22 +170,35 @@ private:
         }
     };
 
+    // The pre-action committed copy travels with the owner it restores.
+    struct FocusEntry final
+    {
+        MemberFocusState state;
+        MemberGroupBaseline baseline;
+    };
+
     [[nodiscard]] MemberLocation locate(const QString &windowId) const;
+    // Container whose focus presentation is owned by windowId, or empty.
+    [[nodiscard]] QString focusedContainerOf(const QString &windowId) const;
     [[nodiscard]] bool enter(const MemberLocation &location,
                              MemberFocusMode mode,
                              QString *error);
-    [[nodiscard]] bool restoreRejectedPresentation(const QString &windowId,
+    [[nodiscard]] bool restoreRejectedPresentation(const QString &containerId,
+                                                   const QString &windowId,
                                                    MemberFocusMode mode,
                                                    QString *error);
-    [[nodiscard]] bool restore(const QString &minimizeWindowId,
-                               QSet<QString> missingWindowIds,
+    [[nodiscard]] bool restore(const QString &containerId,
+                               const QString &minimizeWindowId,
+                               const QSet<QString> &missingWindowIds,
                                MemberRestoreActivation activation,
                                QString *error);
+    [[nodiscard]] bool restoreAll(const QSet<QString> &missingWindowIds,
+                                  MemberRestoreActivation activation,
+                                  QString *error);
 
     HybridMemberPolicyPlatform &m_platform;
     QVector<MemberGroupBaseline> m_groups;
-    std::optional<MemberGroupBaseline> m_focusBaseline;
-    std::optional<MemberFocusState> m_focus;
+    QMap<QString, FocusEntry> m_focus;
     QSet<QString> m_detaching;
     bool m_applying = false;
 };

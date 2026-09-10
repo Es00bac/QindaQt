@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Calendar
+GenericName=Calendar
+Comment=Manage calendars and events with ICS import and export
+Exec=qindaqt-calendar %u
+Icon=org.qindaqt.Calendar
+Terminal=false
+Categories=Office;Calendar;
+MimeType=text/calendar;
+StartupNotify=true
+StartupWMClass=qindaqt-calendar

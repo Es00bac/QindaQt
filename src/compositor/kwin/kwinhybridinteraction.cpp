@@ -16,6 +16,8 @@
 #include <window.h>
 #include <workspace.h>
 
+#include <QSet>
+
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
 
@@ -73,8 +75,12 @@ void KWinHybridSession::initializeGroupedGeometryReconciliation()
         std::make_unique<HybridGroupedGeometryReconciler>(
             [this] {
                 QVector<GroupedWindowGeometry> result;
-                const auto focus = m_memberPolicy
-                    ? m_memberPolicy->focusState() : std::nullopt;
+                QSet<QString> focusOwners;
+                if (m_memberPolicy) {
+                    for (const auto &state : m_memberPolicy->focusStates()) {
+                        focusOwners.insert(state.windowId);
+                    }
+                }
                 for (const auto &windowId : m_registry.windowIds()) {
                     auto *const window = m_registry.window(windowId);
                     if (!window) {
@@ -89,7 +95,7 @@ void KWinHybridSession::initializeGroupedGeometryReconciliation()
                                        m_minimizedContainers.contains(owner)
                                        || (m_placement
                                            && m_placement->isMaximized(owner))
-                                       || (focus && focus->windowId == windowId)});
+                                       || focusOwners.contains(windowId)});
                 }
                 return result;
             },

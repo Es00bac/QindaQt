@@ -38,6 +38,24 @@ struct SplitRequest final
     InsertPosition position = InsertPosition::Second;
 };
 
+// Wraps one page's complete root tree in a new split beside a new leaf. Every
+// existing node in that page keeps its ID; only the new split and leaf IDs are
+// introduced. This is the container-level counterpart of SplitRequest, used
+// when a window is docked at the edge of a whole container rather than at the
+// edge of one member tile.
+struct PageSplitRequest final
+{
+    QString pageId;
+    QString newWindowId;
+    QString newLeafNodeId;
+    QString splitNodeId;
+    SplitOrientation orientation = SplitOrientation::Horizontal;
+    // Proportion assigned to the first child after insertion, strictly (0, 1).
+    double ratio = 0.5;
+    // Side the new leaf occupies; the existing root tree takes the other side.
+    InsertPosition position = InsertPosition::Second;
+};
+
 struct DetachedWindow final
 {
     QString windowId;
@@ -79,6 +97,7 @@ public:
         const QString &pageId,
         QString *error = nullptr);
     [[nodiscard]] bool splitWindow(const SplitRequest &request, QString *error = nullptr);
+    [[nodiscard]] bool splitPage(const PageSplitRequest &request, QString *error = nullptr);
     [[nodiscard]] bool swapWindows(const QString &firstWindowId,
                                    const QString &secondWindowId,
                                    QString *error = nullptr);

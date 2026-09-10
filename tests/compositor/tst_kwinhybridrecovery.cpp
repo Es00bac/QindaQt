@@ -61,6 +61,9 @@ void KWinHybridRecoveryTest::emergencyReleaseRestoresStateAndOwnership()
     KWinIntegration::KWinHybridSceneFactory factory(platform);
     Hybrid::TopologyCoordinator coordinator(repository, factory);
     QVERIFY(coordinator.execute(dockCommand()).committed());
+    // The dock activates the dropped window "b"; restore the original focus
+    // so the emergency release can be compared against the full snapshots.
+    QVERIFY(platform.activateWindow(QStringLiteral("a"), nullptr));
 
     const auto result = factory.emergencyReleaseAll(repository.topology());
 

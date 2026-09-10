@@ -59,6 +59,13 @@ bool KWinHybridSession::restoreMemberFocusForInteraction(QString *error)
     return !m_memberPolicy || m_memberPolicy->restoreForTopologyMutation(error);
 }
 
+bool KWinHybridSession::restoreMemberFocusForContainerAction(
+    const QString &containerId, QString *error)
+{
+    return !m_memberPolicy
+        || m_memberPolicy->restoreForContainerAction(containerId, error);
+}
+
 bool KWinHybridSession::restoreMemberFocusForLifecycleChange(QString *error)
 {
     return !m_memberPolicy || m_memberPolicy->restoreForLifecycleMutation(error);
@@ -229,7 +236,11 @@ bool KWinHybridSession::dispatchGroupWindowAction(
         }
         return false;
     }
-    if (!restoreMemberFocusForInteraction(error)) {
+    // AGENT-GUARD: Every branch below is placement-only for this container
+    // (a reflow, a minimize, or the close prompt); none runs a scene
+    // transaction. Restore only this container's focus presentation so a
+    // button on one group's shared chrome never touches another group.
+    if (!restoreMemberFocusForContainerAction(containerId, error)) {
         return false;
     }
     switch (action) {
@@ -358,7 +369,9 @@ bool KWinHybridSession::executeShellWindowAction(
         }
         return false;
     }
-    if (!restoreMemberFocusForInteraction(error)) {
+    // Activate/raise/minimize/unminimize/close prompt never run a scene
+    // transaction, so only the addressed container leaves focus presentation.
+    if (!restoreMemberFocusForContainerAction(*owner, error)) {
         return false;
     }
     switch (action) {

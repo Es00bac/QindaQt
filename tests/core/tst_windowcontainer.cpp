@@ -13,6 +13,7 @@ class WindowContainerTest final : public QObject
 
 private slots:
     void addsPagesAndBuildsSplitTrees();
+    void splitsPageRootPreservingSubtree();
     void detachNormalizesTreeAndPreservesIds();
     void removingActivePageSelectsItsNeighbor();
     void detachesWholePageAndPreservesItsTree();
@@ -65,6 +66,103 @@ void WindowContainerTest::addsPagesAndBuildsSplitTrees()
     QVERIFY(container.setSplitRatio(QStringLiteral("split-ab"), 0.65, &error));
     QCOMPARE(container.findNode(QStringLiteral("split-ab"))->ratio().value(), 0.65);
     QVERIFY(container.validate().valid);
+}
+
+void WindowContainerTest::splitsPageRootPreservingSubtree()
+{
+    WindowContainer container(QStringLiteral("container-1"));
+    QString error;
+    QVERIFY(container.addPage(QStringLiteral("page-1"),
+                              QStringLiteral("leaf-a"),
+                              QStringLiteral("window-a"),
+                              &error));
+    QVERIFY(container.splitWindow(
+        {.targetWindowId = QStringLiteral("window-a"),
+         .newWindowId = QStringLiteral("window-b"),
+         .newLeafNodeId = QStringLiteral("leaf-b"),
+         .splitNodeId = QStringLiteral("split-ab"),
+         .orientation = SplitOrientation::Horizontal,
+         .ratio = 0.5,
+         .position = InsertPosition::Second},
+        &error));
+    QVERIFY(container.addPage(QStringLiteral("page-2"),
+                              QStringLiteral("leaf-z"),
+                              QStringLiteral("window-z"),
+                              &error));
+
+    // Docking at the edge of the whole page wraps the complete existing tree:
+    // the new window spans the full page beside [a | b] instead of splitting
+    // one member tile.
+    const PageSplitRequest request{
+        .pageId = QStringLiteral("page-1"),
+        .newWindowId = QStringLiteral("window-c"),
+        .newLeafNodeId = QStringLiteral("leaf-c"),
+        .splitNodeId = QStringLiteral("split-root"),
+        .orientation = SplitOrientation::Vertical,
+        .ratio = 0.3,
+        .position = InsertPosition::First,
+    };
+    QVERIFY2(container.splitPage(request, &error), qPrintable(error));
+    const auto &root = container.page(QStringLiteral("page-1"))->root();
+    QVERIFY(root.isSplit());
+    QCOMPARE(root.id(), QStringLiteral("split-root"));
+    QCOMPARE(root.orientation().value(), SplitOrientation::Vertical);
+    QCOMPARE(root.ratio().value(), 0.3);
+    QCOMPARE(root.firstChild()->id(), QStringLiteral("leaf-c"));
+    QCOMPARE(root.firstChild()->windowId(), QStringLiteral("window-c"));
+    QCOMPARE(root.secondChild()->id(), QStringLiteral("split-ab"));
+    QCOMPARE(root.secondChild()->firstChild()->id(), QStringLiteral("leaf-a"));
+    QCOMPARE(root.secondChild()->secondChild()->id(), QStringLiteral("leaf-b"));
+    QCOMPARE(container.page(QStringLiteral("page-2"))->root().id(),
+             QStringLiteral("leaf-z"));
+    QVERIFY(container.validate().valid);
+
+    // A leaf root is wrapped the same way, with the new leaf on the requested
+    // side, so a single-member page needs no special casing by callers.
+    QVERIFY2(container.splitPage(
+                 {.pageId = QStringLiteral("page-2"),
+                  .newWindowId = QStringLiteral("window-y"),
+                  .newLeafNodeId = QStringLiteral("leaf-y"),
+                  .splitNodeId = QStringLiteral("split-zy"),
+                  .orientation = SplitOrientation::Horizontal,
+                  .ratio = 0.5,
+                  .position = InsertPosition::Second},
+                 &error),
+             qPrintable(error));
+    const auto &second = container.page(QStringLiteral("page-2"))->root();
+    QCOMPARE(second.id(), QStringLiteral("split-zy"));
+    QCOMPARE(second.firstChild()->id(), QStringLiteral("leaf-z"));
+    QCOMPARE(second.secondChild()->id(), QStringLiteral("leaf-y"));
+
+    // Rejections leave the tree untouched.
+    const auto before = container.toJson();
+    auto unknownPage = request;
+    unknownPage.pageId = QStringLiteral("missing");
+    unknownPage.newWindowId = QStringLiteral("window-d");
+    unknownPage.newLeafNodeId = QStringLiteral("leaf-d");
+    unknownPage.splitNodeId = QStringLiteral("split-d");
+    QVERIFY(!container.splitPage(unknownPage, &error));
+    QVERIFY(error.contains(QStringLiteral("unknown page")));
+    auto duplicateWindow = request;
+    duplicateWindow.newWindowId = QStringLiteral("window-a");
+    duplicateWindow.newLeafNodeId = QStringLiteral("leaf-d");
+    duplicateWindow.splitNodeId = QStringLiteral("split-d");
+    QVERIFY(!container.splitPage(duplicateWindow, &error));
+    QVERIFY(error.contains(QStringLiteral("duplicate window")));
+    auto duplicateNode = request;
+    duplicateNode.newWindowId = QStringLiteral("window-d");
+    duplicateNode.newLeafNodeId = QStringLiteral("leaf-d");
+    duplicateNode.splitNodeId = QStringLiteral("leaf-a");
+    QVERIFY(!container.splitPage(duplicateNode, &error));
+    QVERIFY(error.contains(QStringLiteral("unique")));
+    auto badRatio = request;
+    badRatio.newWindowId = QStringLiteral("window-d");
+    badRatio.newLeafNodeId = QStringLiteral("leaf-d");
+    badRatio.splitNodeId = QStringLiteral("split-d");
+    badRatio.ratio = 1.0;
+    QVERIFY(!container.splitPage(badRatio, &error));
+    QVERIFY(error.contains(QStringLiteral("between 0 and 1")));
+    QCOMPARE(container.toJson(), before);
 }
 
 void WindowContainerTest::detachNormalizesTreeAndPreservesIds()

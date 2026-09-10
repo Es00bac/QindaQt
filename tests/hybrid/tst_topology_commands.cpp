@@ -19,6 +19,7 @@ private slots:
     void movesWholePageAcrossContainers();
     void detachesWholePagesWithoutDiscardingLayout();
     void movesMemberIntoSplitPreservingLeafId();
+    void movesMemberToTargetPageRoot();
     void activatesPagesAndResizesSplitsAtomically();
     void rejectsDuplicateOwnershipAndMergeCollisions();
 };
@@ -373,6 +374,46 @@ void TopologyCommandsTest::movesMemberIntoSplitPreservingLeafId()
              QStringLiteral("source-leaf-c"));
     QVERIFY(repository.topology().container(QStringLiteral("source")));
     QCOMPARE(repository.topology().windowIds(QStringLiteral("source")).size(), qsizetype{2});
+    QVERIFY(repository.topology().validate().valid);
+}
+
+void TopologyCommandsTest::movesMemberToTargetPageRoot()
+{
+    auto source = splitContainer(QStringLiteral("source"),
+                                 QStringLiteral("source"),
+                                 QStringLiteral("window-a"),
+                                 QStringLiteral("window-b"));
+    auto target = splitContainer(QStringLiteral("target"),
+                                 QStringLiteral("target"),
+                                 QStringLiteral("window-d"),
+                                 QStringLiteral("window-e"));
+    TopologyRepository repository(topology({}, {source, target}));
+    AlwaysReadyFactory scene;
+    TopologyCoordinator coordinator(repository, scene);
+
+    const auto moved = coordinator.execute(MoveMember{
+        .sourceContainerId = QStringLiteral("source"),
+        .targetContainerId = QStringLiteral("target"),
+        .windowId = QStringLiteral("window-b"),
+        .destination = MoveAsRootSplit{
+            .pageId = QStringLiteral("target-page"),
+            .splitNodeId = QStringLiteral("target-root-split"),
+            .orientation = Core::SplitOrientation::Vertical,
+            .ratio = 0.25,
+            .position = Core::InsertPosition::Second,
+        },
+    });
+    QVERIFY2(moved.committed(), qPrintable(moved.message));
+    const auto *targetAfter = repository.topology().container(QStringLiteral("target"));
+    QVERIFY(targetAfter);
+    const auto &root = targetAfter->page(QStringLiteral("target-page"))->root();
+    QCOMPARE(root.id(), QStringLiteral("target-root-split"));
+    QCOMPARE(root.firstChild()->id(), QStringLiteral("target-split"));
+    QCOMPARE(root.secondChild()->id(), QStringLiteral("source-leaf-b"));
+    QCOMPARE(root.secondChild()->windowId(), QStringLiteral("window-b"));
+    // The two-member source drops to one member and unwraps to independence.
+    QVERIFY(!repository.topology().container(QStringLiteral("source")));
+    QVERIFY(repository.topology().isIndependent(QStringLiteral("window-a")));
     QVERIFY(repository.topology().validate().valid);
 }
 

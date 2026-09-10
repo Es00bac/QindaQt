@@ -172,8 +172,16 @@ InteractionDecision InteractionController::adoptDrag(const QPointF &position)
     if (m_state != State::Idle) {
         return {};
     }
+    return adoptDrag(m_resolver.hitTest(position), position);
+}
 
-    const auto source = m_resolver.hitTest(position);
+InteractionDecision InteractionController::adoptDrag(const HitTarget &source,
+                                                     const QPointF &position)
+{
+    if (m_state != State::Idle) {
+        return {};
+    }
+
     const auto kind = kindForHit(source.kind);
     m_state = State::PointerActive;
     m_kind = source.isValid() ? kind : InteractionKind::None;

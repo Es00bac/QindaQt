@@ -222,6 +222,56 @@ bool WindowContainer::splitWindow(const SplitRequest &request, QString *error)
     return fail(error, QStringLiteral("target window disappeared during split"));
 }
 
+bool WindowContainer::splitPage(const PageSplitRequest &request, QString *error)
+{
+    const auto state = validate();
+    if (!state.valid) {
+        return fail(error, state.message);
+    }
+    const auto match = std::find_if(m_pages.begin(), m_pages.end(), [&](const auto &page) {
+        return page.id() == request.pageId;
+    });
+    if (match == m_pages.end()) {
+        return fail(error, QStringLiteral("unknown page ID '%1'").arg(request.pageId));
+    }
+    if (request.newWindowId.isEmpty() || request.newLeafNodeId.isEmpty()
+        || request.splitNodeId.isEmpty()) {
+        return fail(error, QStringLiteral("new window, leaf, and split IDs must be non-empty"));
+    }
+    if (findWindow(request.newWindowId)) {
+        return fail(error,
+                    QStringLiteral("duplicate window ID '%1'").arg(request.newWindowId));
+    }
+    if (request.newLeafNodeId == request.splitNodeId
+        || containsStructuralId(request.newLeafNodeId)
+        || containsStructuralId(request.splitNodeId)) {
+        return fail(error, QStringLiteral("new leaf and split IDs must be unique"));
+    }
+    if (!std::isfinite(request.ratio) || request.ratio <= 0.0 || request.ratio >= 1.0) {
+        return fail(error, QStringLiteral("split ratio must be between 0 and 1"));
+    }
+
+    // AGENT-GUARD: Move the existing root below the new split instead of
+    // rebuilding it. Every node ID in that subtree is an externally persisted
+    // stable handle (dividers, focus history, restore), exactly as in
+    // LayoutNode::splitWindow.
+    LayoutNode existingRoot(std::move(match->m_root));
+    LayoutNode newLeaf = LayoutNode::makeLeaf(request.newLeafNodeId, request.newWindowId);
+    match->m_root = request.position == InsertPosition::First
+        ? LayoutNode::makeSplit(request.splitNodeId,
+                                request.orientation,
+                                request.ratio,
+                                std::move(newLeaf),
+                                std::move(existingRoot))
+        : LayoutNode::makeSplit(request.splitNodeId,
+                                request.orientation,
+                                request.ratio,
+                                std::move(existingRoot),
+                                std::move(newLeaf));
+    Q_ASSERT(validate().valid);
+    return true;
+}
+
 bool WindowContainer::swapWindows(const QString &firstWindowId,
                                   const QString &secondWindowId,
                                   QString *error)

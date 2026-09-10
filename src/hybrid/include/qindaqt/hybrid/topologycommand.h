@@ -103,7 +103,21 @@ struct MoveAsSplit final
     Core::InsertPosition position = Core::InsertPosition::Second;
 };
 
-using MemberDestination = std::variant<MoveAsPage, MoveAsSplit>;
+// Wraps the complete root tree of one page in a new split beside the moved or
+// inserted window. Unlike MoveAsSplit, no member is named: the window takes a
+// whole side of that page. This is how an edge drop on a container (rather
+// than on one member tile) is expressed.
+struct MoveAsRootSplit final
+{
+    QString pageId;
+    QString splitNodeId;
+    Core::SplitOrientation orientation = Core::SplitOrientation::Horizontal;
+    double ratio = 0.5;
+    // Side the window occupies; the existing page tree takes the other side.
+    Core::InsertPosition position = Core::InsertPosition::Second;
+};
+
+using MemberDestination = std::variant<MoveAsPage, MoveAsSplit, MoveAsRootSplit>;
 
 struct InsertIndependentWindow final
 {
@@ -200,6 +214,21 @@ struct ReparentMember final
     Core::InsertPosition position = Core::InsertPosition::Second;
 };
 
+// Detaches a member and reinserts it beside the complete remaining tree of one
+// page in the same container: the container-level counterpart of
+// ReparentMember. The moved leaf ID is preserved and one new split is created.
+// The member may not be the only window on the named page.
+struct ReparentMemberToPageRoot final
+{
+    QString containerId;
+    QString windowId;
+    QString pageId;
+    QString splitNodeId;
+    Core::SplitOrientation orientation = Core::SplitOrientation::Horizontal;
+    double ratio = 0.5;
+    Core::InsertPosition position = Core::InsertPosition::Second;
+};
+
 struct DetachMember final
 {
     QString containerId;
@@ -236,6 +265,7 @@ using TopologyCommand = std::variant<AddIndependentWindow,
                                      ResizeSplit,
                                      ReorderMembers,
                                      ReparentMember,
+                                     ReparentMemberToPageRoot,
                                      DetachMember,
                                      ReleaseContainer,
                                      AdoptIndependentLayout>;
@@ -258,6 +288,7 @@ enum class TopologyCommandKind {
     ResizeSplit,
     ReorderMembers,
     ReparentMember,
+    ReparentMemberToPageRoot,
     DetachMember,
     ReleaseContainer,
     AdoptIndependentLayout,
