@@ -64,10 +64,11 @@ no findings in the program's paths.
   open-with remain open (S4–S5).
 - The r1/r3 desktop ebuilds pin pre-program commits.
   `packaging/gentoo/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260910.ebuild`
-  pins `0e44c65b` (the program close-out) and is ready for the operator's
-  archive/digest flow and a Portage rebuild to ship these apps. The calendar
-  lane already updated the apps ebuild component set and the ADR-0096
-  component list.
+  pins `80760ece` (`0e44c65b` plus the installed-calendar RPATH repair) and
+  is installed on the host: emerged 2026-09-10 after the operator
+  archive/digest flow; the first pin (`0e44c65b`) surfaced and fixed the
+  calendar's missing AppShell RUNPATH. The calendar lane already updated the
+  apps ebuild component set and the ADR-0096 component list.
 
 ## Live shell refresh without logout (September 8)
 
