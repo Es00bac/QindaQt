@@ -46,7 +46,7 @@ public:
     [[nodiscard]] QString statusText() const
     {
         return QStringLiteral(
-            "Your applied layout will be used the next time you start your desktop");
+            "The running desktop follows each applied layout change");
     }
     [[nodiscard]] QString selectedProfileId() const
     {

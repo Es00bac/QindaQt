@@ -116,6 +116,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/panelvisibilitypopup.h
         runtime/panelvisibilityruntime.cpp
         runtime/panelvisibilityruntime.h
+        runtime/runtime_layout_adoption.cpp
+        runtime/runtime_layout_adoption.h
         runtime/panelvisibilityshortcut.cpp
         runtime/panelvisibilityshortcut.h
         runtime/panelvisibilitytimer.cpp

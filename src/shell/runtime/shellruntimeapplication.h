@@ -14,6 +14,7 @@
 #include "qindaqt/themes/theme_catalog.h"
 
 #include <QObject>
+#include <QFileSystemWatcher>
 #include <QQmlEngine>
 #include <QTimer>
 
@@ -127,6 +128,11 @@ private:
     void propagateThemeToSurfaces();
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
+    // Live layout adoption: reloads the profile catalog and reconciles the
+    // surface set when the saved selection or the user-store copy changes.
+    // An empty preferred id adopts content only (keep the selection).
+    void adoptLayoutProfile(const QString &preferredProfileId);
+    void refreshProfileStoreWatch();
     void resetRuntime();
 
     QGuiApplication &m_application;
@@ -216,6 +222,12 @@ private:
     std::unique_ptr<NotificationCenterShortcut> m_notificationCenterShortcut;
     QTimer m_outputDebounce;
     QTimer m_windowActionsRetry;
+    // Catalog directories captured at startup for live layout adoption; the
+    // user store participates last, so Apply's saved copy wins on reload.
+    QStringList m_profileCatalogDirectories;
+    bool m_profileLockedByCli = false;
+    QFileSystemWatcher m_profileStoreWatch;
+    QTimer m_profileAdoptDebounce;
 };
 
 } // namespace QindaQt::Shell

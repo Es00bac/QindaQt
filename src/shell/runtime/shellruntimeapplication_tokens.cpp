@@ -69,6 +69,11 @@ void ShellRuntimeApplication::initializeAppearanceBridge(
     connect(m_appearanceBridge.get(),
             &ShellAppearanceBridge::confirmedPreferencesChanged, this,
             &ShellRuntimeApplication::propagateThemeToSurfaces);
+    // A saved layout selection change is adopted live: reload the catalog,
+    // honor the same precedence as startup, and reconcile the surface set.
+    connect(m_appearanceBridge.get(),
+            &ShellAppearanceBridge::layoutProfilePreferenceChanged, this,
+            &ShellRuntimeApplication::adoptLayoutProfile);
 }
 
 } // namespace QindaQt::Shell

@@ -48,6 +48,12 @@ public:
     [[nodiscard]] bool reducedMotion() const noexcept;
     [[nodiscard]] int animationDurationMilliseconds() const noexcept;
 
+    // Rebuilds the hide-mode inventory from a (possibly different) profile.
+    // Safe at any time: synchronize() re-derives every strategy from the next
+    // surface plan, so a profile switch refreshes which panels may hide
+    // without touching the producers or shortcuts.
+    void applyProfile(const Profiles::LayoutProfile &profile);
+
 private:
     class Private;
     Private *m_private = nullptr;
