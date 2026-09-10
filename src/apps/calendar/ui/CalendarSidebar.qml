@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
-Rectangle {
+Pane {
     id: root
     objectName: "calendarSidebar"
 
     required property var calendarController
 
     implicitWidth: 220
-    color: Tokens.bg.raised
+    padding: 8
 
     function openNewCalendarDialog() {
         newCalendarNameField.text = ""
@@ -21,12 +19,13 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.space["3"]
-        spacing: Tokens.space["2"]
+        spacing: 4
 
-        Qinda.SectionHeader {
+        Label {
             Layout.fillWidth: true
-            title: qsTr("Calendars")
+            text: qsTr("Calendars")
+            font.bold: true
+            Accessible.name: text
         }
 
         ListView {
@@ -42,12 +41,12 @@ Rectangle {
                 required property var modelData
 
                 width: calendarList.width
-                spacing: Tokens.space["2"]
+                spacing: 4
 
-                Qinda.CheckBox {
+                CheckBox {
                     checked: calendarRow.modelData.enabled
                     text: calendarRow.modelData.displayName
-                    accessibleDescription:
+                    Accessible.description:
                         qsTr("Show or hide the %1 calendar")
                             .arg(calendarRow.modelData.displayName)
                     onToggled: root.calendarController.setCalendarEnabled(
@@ -56,35 +55,34 @@ Rectangle {
             }
         }
 
-        Qinda.Button {
+        Button {
             id: newCalendarButton
             objectName: "newCalendarButton"
             Layout.fillWidth: true
             text: qsTr("New Calendar…")
-            emphasized: false
-            accessibleDescription: qsTr("Create a local calendar")
+            Accessible.description: qsTr("Create a local calendar")
             onClicked: root.openNewCalendarDialog()
         }
     }
 
-    T.Dialog {
+    Dialog {
         id: newCalendarDialog
         objectName: "newCalendarDialog"
         title: qsTr("New Calendar")
         modal: true
-        standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: parent
 
         onAccepted: root.calendarController.createCalendar(newCalendarNameField.text)
 
         contentItem: ColumnLayout {
-            spacing: Tokens.space["2"]
+            spacing: 4
 
-            Qinda.Label { text: qsTr("Name") }
-            Qinda.TextField {
+            Label { text: qsTr("Name") }
+            TextField {
                 id: newCalendarNameField
                 Layout.fillWidth: true
-                accessibleName: qsTr("Calendar name")
+                Accessible.name: qsTr("Calendar name")
             }
         }
     }

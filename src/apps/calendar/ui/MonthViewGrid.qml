@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
+// AGENT-NOTE: the month component is named MonthViewGrid, not MonthGrid —
+// QtQuick.Controls.Basic ships its own MonthGrid control and an unqualified
+// lookup resolves to it (silently breaking property assignment).
 Item {
     id: root
     objectName: "monthView"
@@ -59,7 +60,7 @@ Item {
 
             Repeater {
                 model: root.weekdayNames()
-                Qinda.Label {
+                Label {
                     required property string modelData
                     Layout.fillWidth: true
                     text: modelData
@@ -78,7 +79,7 @@ Item {
             Repeater {
                 model: root.monthCells()
 
-                delegate: T.AbstractButton {
+                delegate: AbstractButton {
                     id: dayCell
                     required property var modelData
 
@@ -94,9 +95,9 @@ Item {
                     }
 
                     contentItem: ColumnLayout {
-                        spacing: Tokens.space["1"]
+                        spacing: 2
 
-                        Qinda.Label {
+                        Label {
                             Layout.fillWidth: true
                             text: modelData.date.getDate()
                             opacity: modelData.inMonth ? 1.0 : 0.4
@@ -106,7 +107,7 @@ Item {
                         Repeater {
                             model: root.occurrenceModel.occurrencesForDay(modelData.key)
 
-                            delegate: T.AbstractButton {
+                            delegate: AbstractButton {
                                 id: occurrenceChip
                                 required property var modelData
 
@@ -115,7 +116,7 @@ Item {
                                 Accessible.name: modelData.summary
                                 onClicked: root.calendarController.selectEvent(modelData.eventUid)
 
-                                contentItem: Qinda.Label {
+                                contentItem: Label {
                                     text: (modelData.allDay
                                            ? modelData.summary
                                            : Qt.formatTime(modelData.start, "hh:mm")

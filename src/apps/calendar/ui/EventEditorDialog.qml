@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
 // Create-only event editor for Milestone 1. Editing an existing event is
 // delete + recreate; recurrence/reminder editing after creation lands later.
-T.Dialog {
+Dialog {
     id: root
     objectName: "eventEditorDialog"
 
@@ -25,7 +23,7 @@ T.Dialog {
 
     title: qsTr("New Event")
     modal: true
-    standardButtons: T.Dialog.Ok | T.Dialog.Cancel
+    standardButtons: Dialog.Ok | Dialog.Cancel
     anchors.centerIn: parent
 
     function defaultStart() {
@@ -59,75 +57,75 @@ T.Dialog {
     }
 
     contentItem: ColumnLayout {
-        spacing: Tokens.space["2"]
+        spacing: 4
 
-        Qinda.Label { text: qsTr("Summary") }
-        Qinda.TextField {
+        Label { text: qsTr("Summary") }
+        TextField {
             id: summaryField
             Layout.fillWidth: true
-            accessibleName: qsTr("Event summary")
+            Accessible.name: qsTr("Event summary")
             placeholderText: qsTr("Event title")
         }
 
-        Qinda.Label { text: qsTr("Calendar") }
-        Qinda.ComboBox {
+        Label { text: qsTr("Calendar") }
+        ComboBox {
             id: calendarCombo
             Layout.fillWidth: true
-            accessibleDescription: qsTr("Calendar the event belongs to")
+            Accessible.description: qsTr("Calendar the event belongs to")
             model: root.calendarController.calendars
             textRole: "displayName"
         }
 
-        Qinda.Label { text: qsTr("Start (yyyy-MM-ddTHH:mm)") }
-        Qinda.TextField {
+        Label { text: qsTr("Start (yyyy-MM-ddTHH:mm)") }
+        TextField {
             id: startField
             Layout.fillWidth: true
-            accessibleName: qsTr("Event start")
+            Accessible.name: qsTr("Event start")
         }
 
-        Qinda.Label { text: qsTr("End (yyyy-MM-ddTHH:mm)") }
-        Qinda.TextField {
+        Label { text: qsTr("End (yyyy-MM-ddTHH:mm)") }
+        TextField {
             id: endField
             Layout.fillWidth: true
-            accessibleName: qsTr("Event end")
+            Accessible.name: qsTr("Event end")
         }
 
-        Qinda.CheckBox {
+        CheckBox {
             id: allDayCheck
             text: qsTr("All day")
-            accessibleDescription: qsTr("The event lasts whole days")
+            Accessible.description: qsTr("The event lasts whole days")
         }
 
-        Qinda.Label { text: qsTr("Location") }
-        Qinda.TextField {
+        Label { text: qsTr("Location") }
+        TextField {
             id: locationField
             Layout.fillWidth: true
-            accessibleName: qsTr("Event location")
+            Accessible.name: qsTr("Event location")
         }
 
-        Qinda.Label { text: qsTr("Description") }
-        Qinda.TextField {
+        Label { text: qsTr("Description") }
+        TextField {
             id: descriptionField
             Layout.fillWidth: true
-            accessibleName: qsTr("Event description")
+            Accessible.name: qsTr("Event description")
         }
 
-        Qinda.Label { text: qsTr("Repeat") }
-        Qinda.ComboBox {
+        Label { text: qsTr("Repeat") }
+        ComboBox {
             id: recurrenceCombo
             Layout.fillWidth: true
-            accessibleDescription: qsTr("Recurrence rule")
+            Accessible.description: qsTr("Recurrence rule")
             model: [qsTr("None"), qsTr("Daily"), qsTr("Weekly"),
                     qsTr("Monthly"), qsTr("Yearly")]
             onCurrentIndexChanged:
                 root.recurrenceRule = ["", "daily", "weekly", "monthly", "yearly"][currentIndex]
         }
 
-        Qinda.Label { text: qsTr("Reminder") }
-        Qinda.ComboBox {
+        Label { text: qsTr("Reminder") }
+        ComboBox {
             id: reminderCombo
             Layout.fillWidth: true
-            accessibleDescription: qsTr("Reminder before the event starts")
+            Accessible.description: qsTr("Reminder before the event starts")
             model: [qsTr("None"), qsTr("5 minutes"), qsTr("10 minutes"),
                     qsTr("15 minutes"), qsTr("30 minutes"), qsTr("60 minutes")]
             onCurrentIndexChanged:

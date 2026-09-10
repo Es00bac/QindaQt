@@ -1,21 +1,62 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QindaQt.AppShell 1.0
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
-ApplicationShell {
+// ADR-0116: stock Qt Quick Controls only — no QindaQt.Tokens/Controls imports
+// and no palette literals; appearance comes from the Qt platform theme.
+// The AppShell seams stay non-visual: the window binds the injected
+// ApplicationCoordinator for the action catalog, in-window menus, quit
+// arbitration, focus reporting, and the degraded-integration notice.
+ApplicationWindow {
     id: root
 
+    required property var coordinator
     required property var calendarController
     required property var occurrenceModel
 
-    initialFocusItem: newEventButton
+    property bool closeAuthorized: false
+    property bool inWindowMenuVisible: true
+
+    visible: true
     width: 1024
     height: 640
     minimumWidth: 560
     minimumHeight: 360
+    title: coordinator.windowTitle.length > 0
+           ? coordinator.windowTitle : coordinator.applicationName
+
+    // AGENT-CONTRACT: Closing asks the owning application for a decision. The
+    // coordinator and this surface never call QCoreApplication::quit or infer
+    // whether domain state is safe to discard.
+    onClosing: function(close) {
+        if (closeAuthorized) {
+            close.accepted = true
+            return
+        }
+        close.accepted = false
+        coordinator.requestQuit("window-close")
+    }
+
+    onActiveFocusItemChanged: {
+        const owner = activeFocusItem && activeFocusItem.objectName
+                    ? activeFocusItem.objectName : ""
+        coordinator.reportFocusOwner(owner)
+    }
+
+    Component.onCompleted: {
+        if (coordinator.initialFocusObjectName.length === 0
+                || coordinator.initialFocusObjectName === newEventButton.objectName)
+            newEventButton.forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    Connections {
+        target: root.coordinator
+        function onQuitApproved(requestId) {
+            root.closeAuthorized = true
+            root.close()
+        }
+    }
 
     Connections {
         target: root.coordinator
@@ -48,100 +89,196 @@ ApplicationShell {
         }
     }
 
+    // In-window menu authority, hidden when the global-menu export claims the
+    // window (composeCalendarMenuExport flips inWindowMenuVisible).
+    menuBar: MenuBar {
+        id: exportedMenuBar
+        objectName: "appShellMenuBar"
+        visible: root.inWindowMenuVisible
+
+        Instantiator {
+            model: root.coordinator.menus
+
+            delegate: Menu {
+                id: exportedMenu
+                required property var modelData
+                title: modelData.label
+
+                Instantiator {
+                    model: exportedMenu.modelData.actions
+
+                    delegate: Action {
+                        required property var modelData
+                        text: modelData.label
+                        enabled: modelData.enabled
+                        checkable: modelData.checkable
+                        checked: modelData.checked
+                        shortcut: modelData.shortcut
+                        onTriggered: root.coordinator.activateAction(modelData.id)
+                    }
+
+                    onObjectAdded: function(index, object) {
+                        exportedMenu.insertAction(index, object)
+                    }
+                    onObjectRemoved: function(index, object) {
+                        exportedMenu.removeAction(object)
+                    }
+                }
+            }
+
+            onObjectAdded: function(index, object) {
+                exportedMenuBar.insertMenu(index, object)
+            }
+            onObjectRemoved: function(index, object) {
+                exportedMenuBar.removeMenu(object)
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: 8
+        spacing: 8
 
         RowLayout {
             id: toolbar
             Layout.fillWidth: true
-            Layout.margins: Tokens.space["3"]
-            spacing: Tokens.space["2"]
+            spacing: 4
 
-            Qinda.Button {
+            Button {
                 id: newEventButton
                 objectName: "newEventButton"
                 text: qsTr("New Event")
-                accessibleDescription: qsTr("Create an event in the default calendar")
+                Accessible.description: qsTr("Create an event in the default calendar")
                 onClicked: eventEditor.openForCreate()
             }
-            Qinda.Button {
+            Button {
                 id: todayButton
                 objectName: "todayButton"
                 text: qsTr("Today")
-                emphasized: false
-                accessibleDescription: qsTr("Return the view to the current date")
+                Accessible.description: qsTr("Return the view to the current date")
                 onClicked: root.calendarController.goToday()
             }
-            Qinda.Button {
+            Button {
                 id: previousPeriodButton
                 objectName: "previousPeriodButton"
                 text: qsTr("◀")
-                emphasized: false
-                accessibleDescription: qsTr("Show the previous month, week, or day")
+                Accessible.description: qsTr("Show the previous month, week, or day")
                 onClicked: root.calendarController.previousPeriod()
             }
-            Qinda.Button {
+            Button {
                 id: nextPeriodButton
                 objectName: "nextPeriodButton"
                 text: qsTr("▶")
-                emphasized: false
-                accessibleDescription: qsTr("Show the next month, week, or day")
+                Accessible.description: qsTr("Show the next month, week, or day")
                 onClicked: root.calendarController.nextPeriod()
             }
-            Qinda.Label {
+            Label {
                 text: root.calendarController.periodTitle
                 Accessible.name: root.calendarController.periodTitle
             }
             Item { Layout.fillWidth: true }
-            Qinda.Button {
+            Button {
                 objectName: "viewMonthButton"
                 text: qsTr("Month")
-                emphasized: false
                 checkable: true
                 checked: root.calendarController.viewMode === "month"
-                accessibleDescription: qsTr("Show one month of events")
+                Accessible.description: qsTr("Show one month of events")
                 onClicked: root.calendarController.setViewMode("month")
             }
-            Qinda.Button {
+            Button {
                 objectName: "viewWeekButton"
                 text: qsTr("Week")
-                emphasized: false
                 checkable: true
                 checked: root.calendarController.viewMode === "week"
-                accessibleDescription: qsTr("Show one week of events")
+                Accessible.description: qsTr("Show one week of events")
                 onClicked: root.calendarController.setViewMode("week")
             }
-            Qinda.Button {
+            Button {
                 objectName: "viewDayButton"
                 text: qsTr("Day")
-                emphasized: false
                 checkable: true
                 checked: root.calendarController.viewMode === "day"
-                accessibleDescription: qsTr("Show one day of events")
+                Accessible.description: qsTr("Show one day of events")
                 onClicked: root.calendarController.setViewMode("day")
             }
         }
 
-        Qinda.StateCard {
+        // Degraded AppShell integrations remain usable; keep the notice's
+        // title distinct for an unavailable integration.
+        Rectangle {
+            objectName: "appShellDegradedNotice"
+            Layout.fillWidth: true
+            visible: root.coordinator.degraded
+            implicitHeight: degradedLabel.implicitHeight + 12
+            radius: 4
+            color: root.palette.alternateBase
+            border.color: root.palette.mid
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: degradedLabel.text
+
+            Label {
+                id: degradedLabel
+                anchors.fill: parent
+                anchors.margins: 6
+                wrapMode: Text.WordWrap
+                text: (root.coordinator.hasUnavailableIntegration
+                       ? qsTr("Feature unavailable") : qsTr("Limited capability"))
+                      + " — " + root.coordinator.degradedMessage
+            }
+        }
+
+        // Fallback when the D-Bus reminder delivery fails (reminder_delivery).
+        Rectangle {
             id: reminderBanner
             objectName: "reminderBanner"
             Layout.fillWidth: true
             visible: root.calendarController.reminderBannerText.length > 0
-            status: Qinda.StateCard.Information
-            title: qsTr("Reminder")
-            message: root.calendarController.reminderBannerText
-            actionText: qsTr("Dismiss")
-            onActionTriggered: root.calendarController.dismissReminderBanner()
+            implicitHeight: reminderRow.implicitHeight + 12
+            radius: 4
+            color: root.palette.alternateBase
+            border.color: root.palette.mid
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: qsTr("Reminder: %1").arg(root.calendarController.reminderBannerText)
+
+            RowLayout {
+                id: reminderRow
+                anchors.fill: parent
+                anchors.margins: 6
+                spacing: 8
+
+                Label {
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    text: qsTr("Reminder") + " — " + root.calendarController.reminderBannerText
+                    Accessible.ignored: true
+                }
+                Button {
+                    text: qsTr("Dismiss")
+                    Accessible.description: qsTr("Dismiss the reminder")
+                    onClicked: root.calendarController.dismissReminderBanner()
+                }
+            }
         }
 
-        Qinda.StateCard {
+        Rectangle {
             objectName: "calendarLoadErrorCard"
             Layout.fillWidth: true
             visible: root.calendarController.loadError.length > 0
-            status: Qinda.StateCard.Error
-            title: qsTr("Calendar storage problem")
-            message: root.calendarController.loadError
+            implicitHeight: loadErrorLabel.implicitHeight + 12
+            radius: 4
+            color: root.palette.alternateBase
+            border.color: root.palette.mid
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: loadErrorLabel.text
+
+            Label {
+                id: loadErrorLabel
+                anchors.fill: parent
+                anchors.margins: 6
+                wrapMode: Text.WordWrap
+                text: qsTr("Calendar storage problem") + " — " + root.calendarController.loadError
+            }
         }
 
         RowLayout {
@@ -161,7 +298,7 @@ ApplicationShell {
                 currentIndex: root.calendarController.viewMode === "week" ? 1
                             : root.calendarController.viewMode === "day" ? 2 : 0
 
-                MonthGrid {
+                MonthViewGrid {
                     calendarController: root.calendarController
                     occurrenceModel: root.occurrenceModel
                 }

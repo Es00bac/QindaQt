@@ -20,7 +20,7 @@ constexpr auto keyDefaultCalendar = "services.calendarDefaultCalendar";
       value == QLatin1String("day")) {
     return value;
   }
-  return QStringLiteral(CalendarPreferences::defaultViewValue);
+  return QLatin1StringView(CalendarPreferences::defaultViewValue);
 }
 
 [[nodiscard]] int normalizeWeekStart(const QString &value) {
@@ -43,12 +43,12 @@ CalendarPreferences::CalendarPreferences(QObject *parent)
       m_client(
           std::make_unique<QindaQt::Services::SettingsClient::SettingsClient>(
               *m_transport,
-              QStringList{QStringLiteral(keyDefaultView),
-                          QStringLiteral(keyWeekStart),
-                          QStringLiteral(keyDefaultCalendar)})),
-      m_defaultView(QStringLiteral(defaultViewValue)),
+              QStringList{QLatin1StringView(keyDefaultView),
+                          QLatin1StringView(keyWeekStart),
+                          QLatin1StringView(keyDefaultCalendar)})),
+      m_defaultView(QLatin1StringView(defaultViewValue)),
       m_weekStart(normalizeWeekStart(QStringLiteral("locale"))),
-      m_defaultCalendarId(QStringLiteral(defaultCalendarIdValue)) {
+      m_defaultCalendarId(QLatin1StringView(defaultCalendarIdValue)) {
   connect(m_client.get(),
           &QindaQt::Services::SettingsClient::SettingsClient::snapshotChanged,
           this, &CalendarPreferences::applySnapshot);
@@ -83,7 +83,7 @@ void CalendarPreferences::applySnapshot() {
   const QString nextDefaultId =
       values.value(QLatin1String(keyDefaultCalendar)).toString();
   const QString resolvedDefaultId =
-      nextDefaultId.isEmpty() ? QStringLiteral(defaultCalendarIdValue)
+      nextDefaultId.isEmpty() ? QLatin1StringView(defaultCalendarIdValue)
                               : nextDefaultId;
   if (nextView == m_defaultView && nextWeekStart == m_weekStart &&
       resolvedDefaultId == m_defaultCalendarId) {

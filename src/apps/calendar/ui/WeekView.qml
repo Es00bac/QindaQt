@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls as T
-import QindaQt.Tokens 1.0
-import QindaQt.Controls 1.0 as Qinda
 
 Item {
     id: root
@@ -28,7 +26,7 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        spacing: Tokens.space["2"]
+        spacing: 4
 
         Repeater {
             model: root.weekDays()
@@ -39,9 +37,9 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: Tokens.space["1"]
+                spacing: 2
 
-                Qinda.Label {
+                Label {
                     Layout.fillWidth: true
                     text: Qt.formatDate(modelData.date, "ddd d")
                     horizontalAlignment: Text.AlignHCenter
@@ -50,7 +48,7 @@ Item {
                 Repeater {
                     model: root.occurrenceModel.occurrencesForDay(modelData.key)
 
-                    delegate: T.AbstractButton {
+                    delegate: AbstractButton {
                         id: occurrenceEntry
                         required property var modelData
 
@@ -59,7 +57,7 @@ Item {
                         Accessible.name: modelData.summary
                         onClicked: root.calendarController.selectEvent(modelData.eventUid)
 
-                        contentItem: Qinda.Label {
+                        contentItem: Label {
                             text: (modelData.allDay
                                    ? modelData.summary
                                    : Qt.formatTime(modelData.start, "hh:mm")
