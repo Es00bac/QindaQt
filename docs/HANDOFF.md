@@ -70,6 +70,39 @@ no findings in the program's paths.
   calendar's missing AppShell RUNPATH. The calendar lane already updated the
   apps ebuild component set and the ADR-0096 component list.
 
+## Bundled-apps installation and live shell refresh (September 10)
+
+`gui-wm/qindaqt-desktop-0.1.0_pre20260910` was emerged twice on the host with
+the user's sudo authority. The first merge (pin `0e44c65b`) installed the four
+stock-Qt6 apps, but the offscreen smoke probe caught `qindaqt-calendar`
+failing to resolve `libqindaqt_app_shell.so`: the calendar target carried the
+default `$ORIGIN:$ORIGIN/../lib64` RUNPATH, which cannot reach the AppShell
+backing library under the QML module directory. `80760ece` repaired the
+RPATH and backing-library component repeats and added the missing staged
+`qindaqt.calendar-installed-runtime` probe (calendar rows 13/13). The ebuild
+was re-pinned (`3534c12c`) and the second merge completed cleanly; all four
+installed binaries then printed usage and resolved their libraries
+offscreen, with the calendar's RUNPATH reaching
+`/usr/lib64/qt6/qml/QindaQt/AppShell`.
+
+With the package on disk, the running session was refreshed without logout:
+a PID-fenced SIGTERM to shell `1061879` (old deleted executable, parent
+supervisor `483526`) let the paced supervisor contract replace it with shell
+`1326414` on the new package about one second later. Compositor `483462` and
+supervisor `483526` retained their identities, all 15 terminal processes
+survived, and the stale file-manager instance `492310` was closed; new
+application launches pick up the installed binaries. The old "one recovery
+per session" constraint does not apply: the installed supervisor source
+(verified at `0eda78ef` and current `main`) schedules paced replacements
+with a backoff that resets after 30 stable seconds, with no per-session cap.
+
+Two environment-only test artifacts remain, both pre-existing and unrelated
+to the product payload: the `qindaqt.settings-*-installed-route` rows now
+fail in their staging harness on a >108-byte unix socket path under this
+checkout's build prefix (the relocation-poison borrowing that motivated
+their earlier failure is gone with the matching install), and the nested
+compositor/notification rows still need their live harness.
+
 ## Live shell refresh without logout (September 8)
 
 After the verified r1 installation, the user requested a refresh while keeping
