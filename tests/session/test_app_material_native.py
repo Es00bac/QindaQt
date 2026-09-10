@@ -210,7 +210,7 @@ def main() -> int:
                         run([str(build/'tests/apps/text_editor/qindaqt_editor_visual_tests')],
                             environment,row/'editor.log')
                         expected = {f'{theme}-{size}{suffix}.png'
-                                    for theme in ('qinda-dark', 'qinda-light', 'qinda-high-contrast')
+                                    for theme in ('dark', 'light', 'high-contrast')
                                     for size in ('wide', 'compact')
                                     for suffix in ('', '-search')}
                         actual = {path.name for path in editor_captures.glob('*.png')}
