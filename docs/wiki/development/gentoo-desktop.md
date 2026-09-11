@@ -5,17 +5,21 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r8`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r9`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=ca73689c5954a142a81554601dcce2acf11725d2
+qq_source_commit=47a3d5f6d10b97973e69a20bc7d080988192b1d0
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r8.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r9.tar.gz
 ```
+
+The `-r9` revision adds the three preference icons the Settings sidebar and
+Appearance tab strip name (accessibility, wallpaper, font) to the QindaQt
+icon theme; only data changes, so restarting `qindaqt-settings` adopts it.
 
 The `-r8` revision lands the Appearance overhaul (ADR-0127) and the
 Accessibility route (ADR-0128): the Themes tab shows a preview window whose
