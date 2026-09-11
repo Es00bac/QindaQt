@@ -21,6 +21,7 @@ The Display settings route provides comprehensive monitor and layout management:
 | Scale | Segmented presets (100% – 300% in fractional increments) with per-display guidance: the current preset's logical size, whether it divides into whole pixels, and the typical preset for the display's resolution | Validated against protocol scale constraints (1.0× to 3.0×); only the chosen preset carries the amber fill |
 | Transform | Orientation presets (0°, 90°, 180°, 270°) | Normal, 90°, 180°, 270° clockwise rotation |
 | Primary Output | "Make Primary" toggle / button | Designates primary output for default desktop surfaces and taskbars |
+| Night light | On/off switch, schedule choice (sunset to sunrise by automatic location or manual coordinates, custom times, always on), night and day temperature sliders (1000–6500 K, 100 K steps), transition length, and one status line (active now, current temperature, next change) | Live truth from `org.kde.KWin.NightLight`; drafts write `kwinrc [NightColor]` and `knighttimerc` through the [night light service](../architecture/night-light.md) (ADR-0136). The temperature slider previews live through KWin's 15-second preview, one debounced call per settled value, withdrawn on release-without-apply or page close. When the compositor service is absent the section says so and disables its controls; when the schedule daemon is absent the schedule rows disable while temperatures stay usable. Automatic location is used only when the user picks it — the route never sees positioning data |
 
 Output cards are Tab-focusable radio controls activated by pointer, Return,
 Enter, or Space. Coordinate text is an explicit edit session: Return, Enter,
@@ -29,6 +30,20 @@ Invalid input is rejected and resynchronized. Output selection and externally
 refreshed draft truth also resynchronize the fields, so stale text cannot be
 applied to another output or resurrect a configuration that the service
 reverted.
+
+### Night light composition
+
+The night light section is composed inside the Display QML module itself: a
+`DisplayNightLightRoute` QML singleton is the composition root — it resolves
+`$XDG_CONFIG_HOME/kwinrc` and `knighttimerc`, builds the one production
+config/state pair from the public night light service, and hands the section
+one model — because the Settings Center executable owns the route
+registration and this lane must not edit it. `DisplayPage.qml` gains exactly
+one import (the module's own URI, for the singleton) plus the section
+instance; `Main.qml` is untouched. The section decomposes into the location
+row, the custom-times rows, and a shared temperature row beside it. Manual
+coordinates and custom times resynchronize from the model whenever the user
+is not mid-edit, so an external writer and the text fields can never fight.
 
 A connected display that is currently disabled remains in this selector. Its
 card clearly states that state; selecting it exposes **Enable display**. Enabling
@@ -135,11 +150,12 @@ Focused test selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(display-settings-model|display-settings-model-adversarial|display-page|display-arrangement-canvas|display-arrangement-scale)$'
+  -R '^qindaqt\.(display-settings-model|display-settings-model-adversarial|display-page|display-arrangement-canvas|display-arrangement-scale|display-night-light-section|night-light-)'
 ```
 
 - `qindaqt.display-settings-model` verifies snapshot projection, connected-but-disabled output enable drafts and reset, scale/transform/position mutations, and full confirm/revert transaction cycles.
 - `qindaqt.display-settings-model-adversarial` verifies rejection of invalid topologies (all outputs disabled, overlapping outputs), stale lineage recovery, service crash handling, and stage rejection.
 - `qindaqt.display-page` verifies offscreen QML page rendering, including selecting and enabling a connected disabled display, output-card keyboard selection, control interaction, preview banner countdown actions, and degraded notice display.
+- `qindaqt.display-night-light-section` verifies the night light section offscreen against a stub model: status and draft bindings, the fail-closed unavailable state with disabled controls, one settle-debounced preview per drag with withdrawal on release and on close, and keyboard operation of switch, combo, and slider.
 - `qindaqt.display-arrangement-canvas` drives the real model over the fake transport with a 4K @ 200% and a 1080p @ 100% display: tiles at logical size with numbers matching the cards, a drag past the primary that snaps to a negative x and aligns the top edge, a drag that slides along the shared edge and one that cannot overlap, arrow-key nudges that keep focus and attachment, quick placement on all four sides, Revert, and the connected-but-disabled tile that selects but never drags. Set `QINDAQT_DISPLAY_ARRANGEMENT_RENDER_DIR` to keep PNG renders of each checkpoint.
 - `qindaqt.display-arrangement-scale` verifies the scale guidance text and preset descriptions, neighbour re-attachment after 100% / 150% / 200% with no drift, an untouched left neighbour and a rotation that keeps the arrangement valid, propagation along a row of three, and that Revert and a fresh service snapshot never trigger a repair.
