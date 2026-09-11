@@ -148,7 +148,7 @@ if(DEFINED QINDAQT_FRONTEND_TEST)
             message(FATAL_ERROR "Missing staged Portal P1 input: ${required}")
         endif()
     endforeach()
-    foreach(mode IN ITEMS selection toolkit)
+    function(run_staged_portal_proof test_binary mode label)
         execute_process(
             COMMAND "${QINDAQT_CMAKE}" -E env
                 --unset=DBUS_SESSION_BUS_ADDRESS
@@ -162,16 +162,24 @@ if(DEFINED QINDAQT_FRONTEND_TEST)
                 "QINDAQT_TEST_SETTINGS_SCHEMA_DIR=${QINDAQT_EXPECTED_SCHEMA_DIR}"
                 "QINDAQT_TEST_TOOLKIT_PROBE=${QINDAQT_TOOLKIT_PROBE}"
                 "${QINDAQT_DBUS_RUN_SESSION}" --
-                "${QINDAQT_FRONTEND_TEST}" "${mode}"
-            RESULT_VARIABLE frontend_status
-            OUTPUT_VARIABLE frontend_output
-            ERROR_VARIABLE frontend_error
+                "${test_binary}" "${mode}"
+            RESULT_VARIABLE proof_status
+            OUTPUT_VARIABLE proof_output
+            ERROR_VARIABLE proof_error
         )
-        if(NOT frontend_status EQUAL 0)
+        if(NOT proof_status EQUAL 0)
             message(FATAL_ERROR
-                "Staged Portal P1 ${mode} proof failed:\n${frontend_output}${frontend_error}")
+                "Staged Portal ${label} ${mode} proof failed:\n${proof_output}${proof_error}")
         endif()
+    endfunction()
+    foreach(mode IN ITEMS selection toolkit)
+        run_staged_portal_proof("${QINDAQT_FRONTEND_TEST}" "${mode}" "P1")
     endforeach()
+    if(DEFINED QINDAQT_ROUTING_TEST AND NOT QINDAQT_ROUTING_TEST STREQUAL "")
+        foreach(mode IN ITEMS routing routing-negative)
+            run_staged_portal_proof("${QINDAQT_ROUTING_TEST}" "${mode}" "routing")
+        endforeach()
+    endif()
 endif()
 
 execute_process(
