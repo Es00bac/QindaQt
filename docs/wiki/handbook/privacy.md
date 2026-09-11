@@ -21,6 +21,21 @@ production sessions do not acquire the harness's synthetic-input authority.
 Each exact authentication rule is defined in its focused architecture/protocol
 page in the [documentation catalog](catalog/reading.md).
 
+## Passwords and keys
+
+Applications keep passwords, tokens, and certificates in the `login` keyring,
+which login unlocks with your login password. Nothing in the session reads
+collection contents; the keyring starts on demand the first time an
+application asks for it. Browsers and Electron applications that would
+otherwise fall back to a plaintext-equivalent store are launched with
+`--password-store=gnome-libsecret`; Firefox and Thunderbird keep using their
+own encrypted password databases. If an application ever asks to unlock the
+keyring, a `gcr-prompter` dialog appears on the desktop; a cancelled dialog
+fails that application's operation only. Distribution images must ship the
+`pam_gnome_keyring.so` PAM lines described in the
+[Secret Service provider](../architecture/secret-service.md#login-unlock)
+architecture page, and `qindaqt-keyring-check` reports any gap.
+
 ## What persists
 
 | Data | Storage or lifecycle contract |
