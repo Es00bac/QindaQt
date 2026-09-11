@@ -1,6 +1,6 @@
 # gap-night-light handoff — 2026-09-11T13:05:00-06:00
 
-- Candidate commit: `719d3d47f6d60edc2c09542a749fce3a515181d8` (follow-up of `5a6d53fa01f7fceef4a19e2f6d8bbb283682ef7a`: announces owned-key writes with KConfigBase::Notify — without the flag KWin/knighttimed watchers never hear applied drafts; proven by the private proof)
+- Candidate commit: `719d3d47f6d60edc2c09542a749fce3a515181d8`)
 - Base commit: `7dad9e78f117d7fb492d381d631d7cec637ce1e5`
 - Branch `gap/night-light`, worktree
   `/home/cabewse/work_SPaC3/container-wm-workers/gap-night-light`.
