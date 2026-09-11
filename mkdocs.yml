@@ -256,3 +256,4 @@ nav:
       - "ADR-0128: add the Settings Accessibility route": adr/0128-accessibility-settings-route.md
       - "ADR-0129: configure window and container chrome through Appearance": adr/0129-configure-window-and-container-chrome.md
       - "ADR-0131: contained windows keep a handlebar; the wheel rolls chrome up": adr/0131-contained-window-handlebar-and-wheel-roll-up.md
+      - "ADR-0132: finish session locking on KWin's locker and PowerDevil's actions": adr/0132-finish-session-locking.md
