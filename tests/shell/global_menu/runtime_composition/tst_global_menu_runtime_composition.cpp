@@ -3,22 +3,28 @@
 #include "globalmenuappletcomposition.h"
 
 #include "fake_dbusmenu_exporter.h"
+#include "runtime_layout_adoption.h"
 
 #include <qindaqt/applet_host/capability_policy_loader.h>
 #include <qindaqt/applets/manifest_catalog.h>
 #include <qindaqt/compositor/shellwindowidentity.h>
+#include <qindaqt/profiles/profile_catalog.h>
 #include <qindaqt/shell/global_menu/applet/globalmenuappletaccess.h>
 #include <qindaqt/shell/global_menu/registrar/appmenu_registrar.h>
 #include <qindaqt/shell_window_actions_client/shell_window_actions_client.h>
 #include <qindaqt/shell_window_actions_client/shell_window_actions_transport.h>
 
 #include <QCoreApplication>
+#include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
+#include <QDBusServiceWatcher>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QProcess>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QtTest>
 
 using namespace QindaQt;
@@ -191,7 +197,151 @@ private Q_SLOTS:
     void hostileProviderPidMismatchNeverPublishesOrActivates();
     void hostileProviderStaleIdentityNeverPublishesOrActivates();
     void registrarCollisionPublishesDegraded();
+    void layoutHostingFollowsResolvedGlobalMenuInstances();
+    void registrarResidencyFollowsLayoutAdoption();
 };
+
+void GlobalMenuRuntimeCompositionTest::
+layoutHostingFollowsResolvedGlobalMenuInstances()
+{
+    // ADR-0130: only stock layouts that render a global-menu applet may own
+    // the registrar; every other layout leaves menus attached to windows.
+    CatalogFixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectories(
+                 {QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles")}, &error),
+             qPrintable(error));
+    const QSet<QString> hosting{QStringLiteral("macos-inspired"),
+                                QStringLiteral("qindaqt"),
+                                QStringLiteral("unity-inspired")};
+    const QSet<QString> windowAttached{
+        QStringLiteral("gnome-inspired"), QStringLiteral("mate-inspired"),
+        QStringLiteral("minimal"), QStringLiteral("nextstep-inspired"),
+        QStringLiteral("qinda-bliss"), QStringLiteral("windows-classic"),
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired")};
+    QSet<QString> seen;
+    const Profiles::LayoutProfile *defaultProfile = nullptr;
+    for (const auto &profile : profiles.profiles()) {
+        const bool hosts = Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+            profile, fixture.catalog, fixture.policy);
+        QVERIFY2(hosts == hosting.contains(profile.id), qPrintable(profile.id));
+        seen.insert(profile.id);
+        if (profile.id == QStringLiteral("qindaqt")) {
+            defaultProfile = &profile;
+        }
+    }
+    QVERIFY(seen.contains(hosting));
+    QVERIFY(seen.contains(windowAttached));
+    QVERIFY(defaultProfile != nullptr);
+
+    // Resolution decides, not the plugin id alone: the manifest admits only
+    // horizontal panel zones, so the same instance on a side edge never
+    // renders and must not claim the registrar either.
+    Profiles::LayoutProfile sideways = *defaultProfile;
+    for (auto &panel : sideways.panels) {
+        panel.edge = Profiles::Edge::Left;
+    }
+    QVERIFY(!Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+        sideways, fixture.catalog, fixture.policy));
+    QVERIFY(!Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+        Profiles::LayoutProfile{}, fixture.catalog, fixture.policy));
+}
+
+void GlobalMenuRuntimeCompositionTest::registrarResidencyFollowsLayoutAdoption()
+{
+    // ADR-0130 transitions over the same catalog reload the shell's live
+    // layout adoption performs (ADR-0122), observed from a separate peer.
+    auto shellBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, QStringLiteral("global-menu-residency-shell"));
+    auto observerBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, QStringLiteral("global-menu-residency-observer"));
+    QVERIFY(shellBus.isConnected());
+    QVERIFY(observerBus.isConnected());
+    const QString registrarName = QString::fromLatin1(
+        Shell::GlobalMenu::Registrar::kRegistrarServiceName);
+    const auto owner = [&observerBus, &registrarName] {
+        return observerBus.interface()->serviceOwner(registrarName).value();
+    };
+
+    CatalogFixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    QTemporaryDir builtin;
+    QVERIFY(builtin.isValid());
+    for (const QString &file : {QStringLiteral("qindaqt.json"),
+                                QStringLiteral("windows-modern.json")}) {
+        QVERIFY(QFile::copy(
+            QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/") + file,
+            builtin.filePath(file)));
+    }
+    const QStringList directories{builtin.path()};
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectories(directories, &error), qPrintable(error));
+    QVERIFY(profiles.selectById(QStringLiteral("qindaqt")));
+
+    FakeIdentityTransport transport;
+    ShellWindowActionsClient::ShellWindowActionsClient client(transport, 500);
+    QVERIFY(client.start());
+    Shell::GlobalMenuAppletComposition composition(
+        fixture.catalog, fixture.policy, shellBus, client);
+    const auto followSelection = [&] {
+        const auto &profile = profiles.profiles().at(profiles.currentIndex());
+        composition.followLayout(
+            Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+                profile, fixture.catalog, fixture.policy));
+    };
+    using Shell::RuntimeLayoutAdoption::Outcome;
+    using Shell::RuntimeLayoutAdoption::reloadAndSelect;
+    QDBusServiceWatcher watcher(registrarName, observerBus,
+                                QDBusServiceWatcher::WatchForOwnerChange);
+    QSignalSpy ownerChanges(&watcher, &QDBusServiceWatcher::serviceOwnerChanged);
+    // The synchronous query follows the watcher's match rule on the same
+    // connection, so every later owner change is observed.
+    QVERIFY(owner().isEmpty());
+
+    followSelection();
+    QVERIFY(composition.registrarResident());
+    QCOMPARE(static_cast<int>(composition.status()),
+             static_cast<int>(Shell::GlobalMenuRuntimeStatus::Ready));
+    QCOMPARE(owner(), shellBus.baseService());
+
+    QString diagnostic;
+    QCOMPARE(reloadAndSelect(profiles, directories, QString(), false, &diagnostic),
+             Outcome::AdoptedContent);
+    followSelection();
+    QCOMPARE(owner(), shellBus.baseService());
+
+    QCOMPARE(reloadAndSelect(profiles, directories,
+                             QStringLiteral("windows-modern"), false, &diagnostic),
+             Outcome::AdoptedSelection);
+    followSelection();
+    QVERIFY(!composition.registrarResident());
+    QVERIFY(owner().isEmpty());
+    QCOMPARE(static_cast<int>(composition.status()),
+             static_cast<int>(Shell::GlobalMenuRuntimeStatus::Unavailable));
+    QCOMPARE(composition.reasonCode(), QStringLiteral("global-menu-not-hosted"));
+    QVERIFY(!composition.access()->available());
+    followSelection();
+    QVERIFY(owner().isEmpty());
+
+    QCOMPARE(reloadAndSelect(profiles, directories, QStringLiteral("qindaqt"),
+                             false, &diagnostic),
+             Outcome::AdoptedSelection);
+    followSelection();
+    QVERIFY(composition.registrarResident());
+    QCOMPARE(owner(), shellBus.baseService());
+    // Claim, release, reclaim; the same-layout re-adoption never churned.
+    QTRY_COMPARE_WITH_TIMEOUT(ownerChanges.size(), 3, 5'000);
+    QTest::qWait(50);
+    QCOMPARE(ownerChanges.size(), 3);
+
+    composition.stop();
+    client.stop();
+    QDBusConnection::disconnectFromBus(QStringLiteral("global-menu-residency-shell"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("global-menu-residency-observer"));
+}
 
 void GlobalMenuRuntimeCompositionTest::
 composesAuthenticatedIdentityAndClearsOnOwnerLoss()

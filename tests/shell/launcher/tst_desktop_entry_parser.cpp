@@ -50,6 +50,7 @@ private Q_SLOTS:
   void blankNameIsRejected();
   void hiddenFlagsAreReportedNotRejected();
   void unknownKeysAndGroupsAreNotDecoded();
+  void startupWmClassIsDecodedAndBounded();
 };
 
 void DesktopEntryParserTest::parsesWellFormedEntryWithAction()
@@ -403,6 +404,29 @@ void DesktopEntryParserTest::unknownKeysAndGroupsAreNotDecoded()
   const auto result = parseText(entry.toText());
   QVERIFY2(result.ok(), qPrintable(result.error.message));
   QCOMPARE(result.entry->name, QStringLiteral("Fixture App"));
+}
+
+void DesktopEntryParserTest::startupWmClassIsDecodedAndBounded()
+{
+  // Shell presentation names X11 windows through StartupWMClass (ADR-0130
+  // naming follow-up); the value is decoded like any owned string key.
+  EntryTemplate entry;
+  entry.extraBody = QStringLiteral("StartupWMClass=qinda\\seditor");
+  const auto result = parseText(entry.toText());
+  QVERIFY2(result.ok(), qPrintable(result.error.message));
+  QCOMPARE(result.entry->startupWmClass, QStringLiteral("qinda editor"));
+
+  EntryTemplate absent;
+  const auto absentResult = parseText(absent.toText());
+  QVERIFY2(absentResult.ok(), qPrintable(absentResult.error.message));
+  QVERIFY(absentResult.entry->startupWmClass.isEmpty());
+
+  EntryTemplate oversized;
+  oversized.extraBody = QStringLiteral("StartupWMClass=")
+      + QString(Bounds::maxStartupWmClassLength + 1, QLatin1Char('W'));
+  const auto rejected = parseText(oversized.toText());
+  QVERIFY(!rejected.ok());
+  QCOMPARE(rejected.error.code, DesktopEntryErrorCode::FieldLimitExceeded);
 }
 
 QTEST_GUILESS_MAIN(DesktopEntryParserTest)

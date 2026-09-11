@@ -8,6 +8,7 @@ import QtQuick
 Item {
     required property var access
     property bool vertical: false
+    property bool luna: false
 
     objectName: "showDesktopApplet"
     implicitWidth: 48

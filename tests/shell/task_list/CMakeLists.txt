@@ -217,6 +217,14 @@ qindaqt_add_task_list_applet_test(
     task_list_operation_test_support.h
 )
 qindaqt_add_task_list_applet_test(
+    qindaqt_task_list_applet_ungrouped_tests
+    tst_task_list_applet_ungrouped.cpp
+    qindaqt.task-list-applet-ungrouped
+    "shell;task-list"
+    task_list_applet_test_fakes.h
+    task_list_operation_test_support.h
+)
+qindaqt_add_task_list_applet_test(
     qindaqt_task_list_applet_operations_tests
     tst_task_list_applet_operations.cpp
     qindaqt.task-list-applet-operation-dispatch
@@ -335,6 +343,10 @@ qindaqt_add_task_list_applet_qml_test(
 qindaqt_add_task_list_applet_qml_test(
     qindaqt.task-list-applet-qml-keyboard-offscreen
     keyboardTraversalAndContextMenuDispatch
+)
+qindaqt_add_task_list_applet_qml_test(
+    qindaqt.task-list-applet-qml-ungrouped-offscreen
+    neverGroupingGivesEveryWindowItsOwnButton
 )
 
 add_test(

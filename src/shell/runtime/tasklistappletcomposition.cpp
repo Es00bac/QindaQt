@@ -481,6 +481,11 @@ void TaskListAppletComposition::compose(
         [this](const QString &iconName) {
             return m_iconThemeLocator
                 && m_iconThemeLocator->hasIcon(iconName, 18, 1.0, false);
+        },
+        [this](const QString &applicationId, const QString &reportedName) {
+            return m_iconResolver
+                ? m_iconResolver->applicationDisplayName(applicationId, reportedName)
+                : reportedName;
         });
 }
 

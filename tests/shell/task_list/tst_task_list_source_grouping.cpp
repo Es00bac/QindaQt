@@ -209,6 +209,50 @@ private slots:
         QCOMPARE(fromShuffled.entries == fromFacts.entries, true);
     }
 
+    void containerEntryRetainsEachMembersOwnIdentity()
+    {
+        // Ungrouped presentations (`grouping: "never"`) list each member by
+        // its own identity, so the collapsed entry keeps every member's
+        // title, application, and urgency in memberWindowIds order,
+        // independent of the producer's fact order.
+        TaskListSource source;
+        auto urgentMember =
+            TaskListTest::member(QStringLiteral("w-m1"), QStringLiteral("c-1"));
+        urgentMember.urgent = true;
+        const auto evaluation = TaskListTest::publish(source, {
+            TaskListTest::member(QStringLiteral("w-m2"), QStringLiteral("c-1")),
+            TaskListTest::primary(QStringLiteral("w-p"), kFilesId, QStringLiteral("c-1")),
+            urgentMember,
+            TaskListTest::standalone(QStringLiteral("w-loose"), kEditorId),
+        });
+        QVERIFY(evaluation.ok());
+        const auto &entries = evaluation.generation.entries;
+        const auto container = std::find_if(
+            entries.cbegin(), entries.cend(),
+            [](const TaskEntry &entry) { return entry.kind == TaskEntryKind::Container; });
+        QVERIFY(container != entries.cend());
+        QCOMPARE(container->members.size(), qsizetype(3));
+        for (qsizetype index = 0; index < container->members.size(); ++index) {
+            QCOMPARE(container->members.at(index).windowId,
+                     container->memberWindowIds.at(index));
+        }
+        const TaskContainerMember &first = container->members.at(0);
+        QCOMPARE(first.windowId, QStringLiteral("w-m1"));
+        QCOMPARE(first.title, QStringLiteral("Title w-m1"));
+        QCOMPARE(first.applicationId, QStringLiteral("app.member"));
+        QCOMPARE(first.urgent, true);
+        const TaskContainerMember &primary = container->members.at(2);
+        QCOMPARE(primary.windowId, QStringLiteral("w-p"));
+        QCOMPARE(primary.applicationId, kFilesId);
+        QCOMPARE(primary.urgent, false);
+
+        const auto loose = std::find_if(
+            entries.cbegin(), entries.cend(),
+            [](const TaskEntry &entry) { return entry.kind == TaskEntryKind::Window; });
+        QVERIFY(loose != entries.cend());
+        QVERIFY(loose->members.isEmpty());
+    }
+
     void primaryOnlyContainerCountsItself()
     {
         // AGENT-GUARD: A container with no additional members must still count

@@ -39,8 +39,14 @@ Item {
         && desktopControlsAccess !== null && Tokens.ready
 
     objectName: "startMenuApplet"
-    // Manifest sizing: mainAxis preferred 56, crossAxis preferred 36.
-    implicitWidth: 56
+    // AGENT-GUARD: the width follows the rendered icon, label, and Luna
+    // padding. A fixed width let the label spill past its chip, where the
+    // next applet painted over it (the clipped "star" label). The 56 px floor
+    // matches the manifest's preferred extent; vertical panels show the icon
+    // alone inside it.
+    implicitWidth: Math.max(56, Math.ceil(button.implicitContentWidth
+                                          + button.leftPadding
+                                          + button.rightPadding))
     implicitHeight: 36
     opacity: available ? 1.0 : 0.5
 
@@ -110,29 +116,51 @@ Item {
         Keys.onEnterPressed: root.openPanel()
         Accessible.onPressAction: root.openPanel()
 
-        contentItem: Row {
-            spacing: 6
-            anchors.centerIn: parent
+        // Luna start button padding: a short lead before the icon and a
+        // longer tail after the label; vertical panels center the icon.
+        leftPadding: root.vertical ? 4 : 8
+        rightPadding: root.vertical ? 4 : 14
+        topPadding: 0
+        bottomPadding: 0
 
-            ShellIcons.Icon {
-                objectName: "startMenuButtonIcon"
-                anchors.verticalCenter: parent.verticalCenter
-                name: "start-here-kde"
-                size: 20
-                color: "#ffffff"
-                fallbackText: qsTr("Start")
-                Accessible.ignored: true
-            }
+        contentItem: Item {
+            implicitWidth: buttonContent.implicitWidth
+            implicitHeight: buttonContent.implicitHeight
 
-            Text {
+            Row {
+                id: buttonContent
+
+                objectName: "startMenuButtonContent"
                 anchors.verticalCenter: parent.verticalCenter
-                text: qsTr("start")
-                color: "#ffffff"
-                font.family: "Trebuchet MS"
-                font.pointSize: 11
-                font.bold: true
-                font.italic: false
-                Accessible.ignored: true
+                x: Math.round((parent.width - width) / 2)
+                spacing: 6
+
+                ShellIcons.Icon {
+                    objectName: "startMenuButtonIcon"
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: "start-here-kde"
+                    size: 20
+                    color: "#ffffff"
+                    fallbackText: qsTr("Start")
+                    Accessible.ignored: true
+                }
+
+                Text {
+                    objectName: "startMenuButtonLabel"
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !root.vertical
+                    text: qsTr("start")
+                    color: "#ffffff"
+                    // The Luna start label: bold italic white over a
+                    // one-pixel dark drop shadow.
+                    style: Text.Raised
+                    styleColor: Qt.rgba(0, 0, 0, 0.5)
+                    font.family: "Trebuchet MS"
+                    font.pointSize: 11
+                    font.bold: true
+                    font.italic: true
+                    Accessible.ignored: true
+                }
             }
         }
         background: Rectangle {

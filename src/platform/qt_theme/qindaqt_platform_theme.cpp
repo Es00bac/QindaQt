@@ -4,6 +4,8 @@
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/themes/theme_loader.h>
+#include <QDBusConnection>
+#include <QDBusConnectionInterface>
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
@@ -31,10 +33,12 @@ public:
 
 PlatformTheme::PlatformTheme()
     : PlatformTheme(std::unique_ptr<QPlatformTheme>(QGuiApplicationPrivate::platformIntegration()->createPlatformTheme(QStringLiteral("generic"))),
-                    AppAppearance::standardThemeDirectories()) {}
+                    AppAppearance::standardThemeDirectories(), &PlatformTheme::appMenuRegistrarOwned) {}
 
-PlatformTheme::PlatformTheme(std::unique_ptr<QPlatformTheme> base, QStringList directories)
-    : m_base(std::move(base)), m_directories(std::move(directories))
+PlatformTheme::PlatformTheme(std::unique_ptr<QPlatformTheme> base, QStringList directories,
+                             GlobalMenuHostProbe globalMenuHostPresent)
+    : m_base(std::move(base)), m_directories(std::move(directories)),
+      m_globalMenuHostPresent(std::move(globalMenuHostPresent))
 {
     if (!m_base) m_base = std::make_unique<QPlatformTheme>();
     for (const auto &directory : std::as_const(m_directories)) {
@@ -50,6 +54,14 @@ PlatformTheme::PlatformTheme(std::unique_ptr<QPlatformTheme> base, QStringList d
     QTimer::singleShot(0, this, &PlatformTheme::startSettings);
 }
 PlatformTheme::~PlatformTheme() = default;
+
+bool PlatformTheme::appMenuRegistrarOwned()
+{
+    const QDBusConnection bus = QDBusConnection::sessionBus();
+    const QDBusConnectionInterface *daemon = bus.isConnected() ? bus.interface() : nullptr;
+    return daemon != nullptr
+        && daemon->isServiceRegistered(QString::fromLatin1("com.canonical.AppMenu.Registrar")).value();
+}
 
 void PlatformTheme::startSettings()
 {
@@ -110,7 +122,18 @@ Qt::ContrastPreference PlatformTheme::contrastPreference() const
 QPlatformSystemTrayIcon *PlatformTheme::createPlatformSystemTrayIcon() const { return m_base->createPlatformSystemTrayIcon(); }
 QPlatformMenuItem *PlatformTheme::createPlatformMenuItem() const { return m_base->createPlatformMenuItem(); }
 QPlatformMenu *PlatformTheme::createPlatformMenu() const { return m_base->createPlatformMenu(); }
-QPlatformMenuBar *PlatformTheme::createPlatformMenuBar() const { return m_base->createPlatformMenuBar(); }
+// AGENT-GUARD: consult the generic theme only after a positive live probe.
+// QGenericUnixTheme caches its first registrar answer for the whole process,
+// and QDBusMenuBar is not exported for direct construction, so one unguarded
+// call while no host exists would pin every later menubar in its window.
+// A registrar that vanishes between the probe and Qt's own check leaves that
+// cache negative, which fails safe: in-window menus for this process.
+QPlatformMenuBar *PlatformTheme::createPlatformMenuBar() const
+{
+    if (!m_globalMenuHostPresent || !m_globalMenuHostPresent())
+        return nullptr;
+    return m_base->createPlatformMenuBar();
+}
 bool PlatformTheme::usePlatformNativeDialog(DialogType type) const { return m_base->usePlatformNativeDialog(type); }
 QPlatformDialogHelper *PlatformTheme::createPlatformDialogHelper(DialogType type) const { return m_base->createPlatformDialogHelper(type); }
 }

@@ -105,6 +105,14 @@ entry keeps canonical order behind them. Keyboard indices are renumbered
 along the displayed order, so traversal is always the order the strip
 presents.
 
+Each container entry also keeps its `members`, in `memberWindowIds` order,
+with their own application identity, title, and urgency. The applet
+manifest's `grouping` setting chooses the view: `never` presents every window
+as its own row, container members included and in displayed entry order,
+while `when-crowded` (the default) and `always` present one row per container.
+No crowding heuristic exists yet, so `when-crowded` currently collapses
+exactly like `always`, and dock strips keep container rows in every mode.
+
 ## Request intents
 
 The source turns a user action into a typed `TaskIntentRequest`
@@ -113,7 +121,12 @@ caller displayed. Stale-id rejection is checked in a fixed order: malformed
 request, no accepted generation, degraded source, revision mismatch
 (`StaleRevision`), then unknown task id. An accepted outcome reports the
 resolved entry kind, the primary window id, deterministic member list, and
-displayed minimized state. Activation and raise target the primary. The shell
+displayed minimized state. Activation and raise target the primary. A request
+may also name one `windowId` of the entry, as an ungrouped row does; a window
+outside the entry's members is `UnknownTask`. Such a request narrows Activate
+to that window, so activating a background member lets the compositor switch
+its container page, and Close to that window alone, while Minimize and Raise
+keep acting on the whole container. The shell
 composition maps Minimize to unminimize when that fenced state was minimized;
 container minimize/unminimize and Close All visit every member in canonical
 order. Ungroup remains an explicit `releaseContainer` action, while dismissing
@@ -322,7 +335,14 @@ every intent is refused — a failed first refresh with no accepted generation
 is also `degraded`, never `empty`), and `unavailable` (read capability
 denied). The
 strip presents at most 64 rows in displayed order — also the Tab and arrow
-traversal order — and reports the exact hidden count as overflow truth. A
+traversal order — and reports the exact hidden count as overflow truth. For
+`grouping: "never"` the strip binds the controller's `windowRows` instead of
+`entryRows`: one row per window under the same bound, with
+`windowOverflowCount` as its exact overflow truth. A member row keeps its
+container's `taskId` for arbitration and names its window in `windowId`, so
+its Activate and Close call `activateTaskWindow` and `closeTaskWindow` while
+Minimize and Raise address the whole container; member rows show no window
+count and no Ungroup action. A
 dock host raises the presentation bound so every row is projected and the
 zone viewport scrolls instead of truncating
 ([Dock interactions](dock-interactions.md)). Every
@@ -334,7 +354,11 @@ uses the hosted Close All policy. Shell composition injects one
 `DesktopEntryIconResolver` built from explicit freedesktop application roots
 and one `IconThemeLocator` over the icon roots used by QML. Standalone rows resolve
 the compositor-provided application id to the desktop entry's `Icon=` name;
-container rows use `window-restore-symbolic`. Both publish whether theme lookup
+container rows use `window-restore-symbolic`. Every row's `applicationName`
+and the application part of its `accessibleName` come from the same
+resolver's `applicationDisplayName`, so buttons, tooltips, command search, and
+the active application control show `Terminal` rather than a raw
+`org.qindaqt.Terminal` id. Both publish whether theme lookup
 succeeded. Changing the active tab or tile keeps the container icon and tint. Horizontal buttons show the icon plus an elided title
 inside an 84–168 by 28 logical-pixel bound; vertical buttons show only the
 icon. Missing and hostile mappings use the typed application placeholder.

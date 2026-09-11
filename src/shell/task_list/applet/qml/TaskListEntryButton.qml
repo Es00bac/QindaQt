@@ -44,6 +44,10 @@ T.ToolButton {
     property real dragShiftX: 0
     property real dragFollowX: 0
     readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
+    // Ungrouped rows (`grouping: "never"`) name the one container member they
+    // show: Activate and Close address that window, every other action the
+    // whole container. Empty on grouped rows.
+    readonly property string targetWindowId: String(entry.windowId ?? "")
     transform: Translate {
         x: button.dragShiftX + button.dragFollowX
     }
@@ -71,9 +75,17 @@ T.ToolButton {
     // honesty (busy/unavailable controls look disabled), never the gate.
     enabled: access !== null && access.phaseText === "ready" && !entry.pending
 
+    function dispatchActivate() {
+        if (targetWindowId.length > 0)
+            access.activateTaskWindow(entry.taskId, targetWindowId,
+                                      entry.generationRevision)
+        else
+            access.activateTask(entry.taskId, entry.generationRevision)
+    }
+
     function activate() {
         if (enabled)
-            access.activateTask(entry.taskId, entry.generationRevision)
+            dispatchActivate()
     }
 
     onHoveredChanged: {
@@ -290,8 +302,7 @@ T.ToolButton {
             text: qsTr("Activate")
             enabled: button.access !== null && button.access.canActivate
                      && !button.entry.pending
-            onTriggered: button.access.activateTask(
-                             button.entry.taskId, button.entry.generationRevision)
+            onTriggered: button.dispatchActivate()
         }
         T.MenuItem {
             objectName: "taskListContextMinimize"
@@ -306,8 +317,15 @@ T.ToolButton {
             text: qsTr("Close")
             enabled: button.access !== null && button.access.canManage
                      && !button.entry.pending
-            onTriggered: button.access.closeTask(
-                             button.entry.taskId, button.entry.generationRevision)
+            onTriggered: {
+                if (button.targetWindowId.length > 0)
+                    button.access.closeTaskWindow(button.entry.taskId,
+                                                  button.targetWindowId,
+                                                  button.entry.generationRevision)
+                else
+                    button.access.closeTask(button.entry.taskId,
+                                            button.entry.generationRevision)
+            }
         }
         T.MenuItem {
             objectName: "taskListContextRaise"

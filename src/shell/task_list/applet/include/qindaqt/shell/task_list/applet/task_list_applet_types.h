@@ -74,6 +74,10 @@ struct TaskListAppletRow {
   bool pending = false;
   // Sorted member windows for container rows; empty for standalone windows.
   QStringList memberWindowIds;
+  // Ungrouped rows only: the one container member this row shows. Its intents
+  // keep the container's taskId for arbitration and name this window; empty
+  // on every other row, whose intents address the whole entry.
+  QString windowId = {};
 
   friend bool operator==(const TaskListAppletRow &,
                          const TaskListAppletRow &) = default;
@@ -88,6 +92,15 @@ struct TaskListAppletProjection {
   int totalCount = 0;
   // totalCount minus presented rows; zero means no hidden entries.
   int overflowCount = 0;
+  // Ungrouped rows for strips whose profile sets `grouping: "never"`: every
+  // window in scope as its own row, in displayed entry order with each
+  // container's members in canonical member order, under the same
+  // presentation bound. totalWindowCount counts every window in scope, and
+  // windowOverflowCount == totalWindowCount - windowRows.size() carries the
+  // same exact overflow truth as overflowCount.
+  QVector<TaskListAppletRow> windowRows = {};
+  int totalWindowCount = 0;
+  int windowOverflowCount = 0;
 };
 
 [[nodiscard]] QString taskListAppletPhaseText(TaskListAppletPhase phase);

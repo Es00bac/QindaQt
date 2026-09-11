@@ -29,6 +29,15 @@ Item {
     // Instance-level worn Luna dressing (ADR-0124), set through this applet's
     // own profile settings; every other host renders token visuals.
     property bool luna: false
+    // Manifest `grouping`: "never" gives every window, container members
+    // included, its own button (controller windowRows); other values keep one
+    // button per container. Dock strips keep container rows: they reorder tasks.
+    property string grouping: "when-crowded"
+    readonly property bool ungrouped: grouping === "never" && !dockMode
+    readonly property var taskRows: access === null ? []
+        : ungrouped ? access.windowRows : access.entryRows
+    readonly property int presentedOverflowCount: access === null ? 0
+        : ungrouped ? access.windowOverflowCount : access.overflowCount
     property int dockTileSize: 60
     property bool dockHasLauncherGroup: false
     property bool reducedMotion: false
@@ -161,7 +170,7 @@ Item {
         if (access === null || !access.previewsEnabled) {
             return
         }
-        const rows = access.entryRows
+        const rows = root.taskRows
         if (index < 0 || index >= rows.length) {
             return
         }
@@ -178,7 +187,7 @@ Item {
         if (previewIndex < 0 || access === null) {
             return
         }
-        const rows = access.entryRows
+        const rows = root.taskRows
         if (previewIndex >= rows.length) {
             closePreview()
             return
@@ -361,7 +370,7 @@ Item {
 
         Repeater {
             id: entryRepeater
-            model: root.stripVisible ? root.access.entryRows : []
+            model: root.stripVisible ? root.taskRows : []
 
             delegate: TaskListEntryButton {
                 required property var modelData
@@ -422,12 +431,12 @@ Item {
         C.Label {
             id: overflowIndicator
             objectName: "taskListOverflowIndicator"
-            visible: root.access !== null && root.access.overflowCount > 0
-            text: visible ? qsTr("+%1 more").arg(root.access.overflowCount) : ""
+            visible: root.presentedOverflowCount > 0
+            text: visible ? qsTr("+%1 more").arg(root.presentedOverflowCount) : ""
             muted: true
             Accessible.name: visible
                 ? qsTr("%1 further windows are not shown")
-                      .arg(root.access !== null ? root.access.overflowCount : 0)
+                      .arg(root.presentedOverflowCount)
                 : ""
         }
 

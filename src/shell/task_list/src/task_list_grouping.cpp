@@ -20,6 +20,16 @@ bool entryLessThan(const TaskEntry &left, const TaskEntry &right) {
   return left.taskId < right.taskId;
 }
 
+TaskContainerMember memberOf(const TaskWindowFact &fact) {
+  TaskContainerMember member;
+  member.windowId = fact.windowId;
+  member.applicationId = fact.applicationId;
+  member.applicationName = fact.applicationName;
+  member.title = fact.title;
+  member.urgent = fact.urgent;
+  return member;
+}
+
 } // namespace
 
 QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
@@ -57,6 +67,7 @@ QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
       // container; adapters receive every member (including the primary) so
       // container close/minimize policy stays deterministic.
       entry.memberWindowIds = {fact.windowId};
+      entry.members = {memberOf(fact)};
       containerIndex.insert(entry.taskId,
                             static_cast<int>(containers.size()));
       containers.append(entry);
@@ -74,11 +85,19 @@ QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
     }
     TaskEntry &entry = containers[containerIndex.value(fact.containerId)];
     entry.memberWindowIds.append(fact.windowId);
+    entry.members.append(memberOf(fact));
     entry.urgent = entry.urgent || fact.urgent;
   }
 
   for (TaskEntry &entry : containers) {
     std::sort(entry.memberWindowIds.begin(), entry.memberWindowIds.end());
+    // Same key and order as memberWindowIds, so members[i] describes
+    // memberWindowIds[i] regardless of the producer's fact order.
+    std::sort(entry.members.begin(), entry.members.end(),
+              [](const TaskContainerMember &left,
+                 const TaskContainerMember &right) {
+                return left.windowId < right.windowId;
+              });
     entry.windowCount = quint32(entry.memberWindowIds.size());
   }
 

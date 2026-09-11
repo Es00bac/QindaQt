@@ -94,7 +94,8 @@ QString g_appletError;
 
 std::unique_ptr<QObject> createApplet(QQmlEngine &engine,
                                       TaskListAppletController &controller,
-                                      bool vertical) {
+                                      bool vertical,
+                                      const QVariantMap &extraProperties = {}) {
   QQmlComponent component(&engine);
   component.loadFromModule(QStringLiteral("QindaQt.Shell.TaskList"),
                            QStringLiteral("TaskListApplet"));
@@ -102,9 +103,12 @@ std::unique_ptr<QObject> createApplet(QQmlEngine &engine,
     g_appletError = component.errorString();
     return nullptr;
   }
-  std::unique_ptr<QObject> object(component.createWithInitialProperties(
-      {{QStringLiteral("access"), QVariant::fromValue(&controller)},
-       {QStringLiteral("vertical"), vertical}}));
+  QVariantMap initialProperties{
+      {QStringLiteral("access"), QVariant::fromValue(&controller)},
+      {QStringLiteral("vertical"), vertical}};
+  initialProperties.insert(extraProperties);
+  std::unique_ptr<QObject> object(
+      component.createWithInitialProperties(initialProperties));
   if (object == nullptr) {
     g_appletError = component.errorString();
   }
@@ -128,6 +132,7 @@ private slots:
   void phasesRenderWithTruthfulObjectNames();
   void arrowTraversalStopsAtStripEndpoints();
   void keyboardTraversalAndContextMenuDispatch();
+  void neverGroupingGivesEveryWindowItsOwnButton();
 };
 
 void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
@@ -513,6 +518,73 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.kind, TaskIntentKind::Raise);
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("w1"));
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
+}
+
+// The Bliss taskbar's `grouping: "never"`: every window, container members
+// included, gets its own button, and a member button activates that member.
+void TaskListAppletQmlTests::neverGroupingGivesEveryWindowItsOwnButton() {
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port,
+                                      {true, true, true});
+  const quint64 revision = publishFacts(source, authority, threeEntryFacts());
+  QVERIFY(revision > 0);
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  auto owned = createApplet(
+      engine, controller, false,
+      {{QStringLiteral("grouping"), QStringLiteral("never")}});
+  QVERIFY2(owned != nullptr, qPrintable(g_appletError));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  QQuickWindow window;
+  window.setGeometry(0, 0, 900, 220);
+  root->setParentItem(window.contentItem());
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+
+  // threeEntryFacts: w1 and w2 standalone; c1 = primary w3 + member w4.
+  const auto buttons =
+      visualItemsNamed(root, QStringLiteral("taskListEntryButton"));
+  QCOMPARE(buttons.size(), 4);
+  QQuickItem *memberButton = nullptr;
+  for (QQuickItem *button : buttons) {
+    const QVariantMap entry = button->property("entry").toMap();
+    if (entry.value(QStringLiteral("windowId")).toString()
+        == QStringLiteral("w4")) {
+      memberButton = button;
+    }
+    // No collapsed row remains, so no button shows a window-count badge.
+    auto *badge = button->findChild<QQuickItem *>(
+        QStringLiteral("taskListEntryCountBadge"));
+    QVERIFY(badge != nullptr);
+    QVERIFY(!badge->isVisible());
+  }
+  QVERIFY(memberButton != nullptr);
+  QCOMPARE(memberButton->property("entry")
+               .toMap()
+               .value(QStringLiteral("title"))
+               .toString(),
+           QStringLiteral("Title w4"));
+
+  clickCenter(window, memberButton);
+  QTRY_COMPARE(port.calls.size(), 1);
+  QCOMPARE(port.lastCall().method, QStringLiteral("executeTaskIntent"));
+  QCOMPARE(port.lastCall().request.taskId, QStringLiteral("c1"));
+  QCOMPARE(port.lastCall().request.windowId, QStringLiteral("w4"));
+  QCOMPARE(port.lastCall().request.kind, TaskIntentKind::Activate);
+  QCOMPARE(port.lastCall().request.expectedRevision, revision);
+  QCOMPARE(port.lastCall().outcome.primaryWindowId, QStringLiteral("w4"));
+
+  // The default grouping still collapses the container into one button.
+  root->setProperty("grouping", QStringLiteral("when-crowded"));
+  QTRY_COMPARE(
+      visualItemsNamed(root, QStringLiteral("taskListEntryButton")).size(), 3);
 }
 
 QTEST_MAIN(TaskListAppletQmlTests)

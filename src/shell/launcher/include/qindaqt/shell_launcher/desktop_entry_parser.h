@@ -47,6 +47,10 @@ struct ParsedDesktopEntry {
   QStringList categories;
   QStringList keywords;
   QVector<DesktopEntryAction> actions;
+  // StartupWMClass: the X11 WM_CLASS a launched window reports. Shell
+  // presentation matches it to name windows whose id differs from the
+  // desktop-entry id; it never authorizes or launches anything.
+  QString startupWmClass;
 
   friend bool operator==(const ParsedDesktopEntry &,
                          const ParsedDesktopEntry &) = default;

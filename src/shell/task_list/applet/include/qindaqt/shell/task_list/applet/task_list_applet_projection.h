@@ -18,7 +18,9 @@ namespace QindaQt::ShellTaskListApplet {
 // keyboard traversal order). The maxPresentedEntries bound truncates the tail
 // only; overflowCount must always equal totalCount - rows.size() so the
 // strip's overflow truth cannot drift from the actual projection. Hosts that
-// scroll instead of truncating pass kMaxPresentedDockEntries.
+// scroll instead of truncating pass kMaxPresentedDockEntries. windowRows is the
+// ungrouped expansion of the same entries under the same bound and the same
+// exact-overflow rule (windowOverflowCount).
 class TaskListAppletProjectionModel final {
 public:
   TaskListAppletProjectionModel() = delete;

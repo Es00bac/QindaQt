@@ -300,6 +300,7 @@ void ShellRuntimeApplication::adoptLayoutProfile(
     if (m_desktopSurface) {
         m_desktopSurface->adoptProfile(profile, m_applets, m_appletPolicy);
     }
+    followGlobalMenuLayout(profile);
     qInfo().noquote() << "QindaQt shell adopted layout profile" << profile.id;
     scheduleOutputReconcile();
 }
@@ -459,7 +460,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         resetRuntime();
         return false;
     }
-    initializeServiceAppletCompositions();
+    initializeServiceAppletCompositions(profile);
     initializeDesktopControls(options.compositorProcessId);
     if (m_presentationAccessToken) {
         // Options treat these values as one trust bundle. Fail closed here so

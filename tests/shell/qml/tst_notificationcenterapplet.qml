@@ -118,6 +118,43 @@ Item {
             compare(glyph.text, "☾");
         }
 
+        // Worn Luna dressing (ADR-0124): the real notifications glyph in
+        // white; Do Not Disturb keeps its crescent, and unavailable dims.
+        function test_lunaShowsTheWhiteNotificationsGlyph() {
+            const applet = createTemporaryObject(appletComponent, testRoot,
+                                                 { "luna": true });
+            verify(applet !== null);
+            const icon = findChild(applet, "notificationCenterAppletIcon");
+            const glyph = findChild(applet, "notificationCenterAppletGlyph");
+            verify(icon !== null && glyph !== null);
+            verify(icon.visible);
+            verify(!glyph.visible);
+            compare(icon.name, "notifications");
+            verify(icon.symbolic);
+            verify(Qt.colorEqual(icon.color, "white"));
+            compare(icon.opacity, 1.0);
+
+            fakeAccess.doNotDisturbEnabled = true;
+            tryVerify(() => glyph.visible);
+            verify(!icon.visible);
+            compare(glyph.text, "☾");
+            verify(Qt.colorEqual(glyph.color, "white"));
+
+            fakeAccess.doNotDisturbEnabled = false;
+            fakeAccess.privatePresentationAllowed = false;
+            tryVerify(() => icon.visible);
+            compare(icon.opacity, 0.5);
+        }
+
+        function test_standardPathKeepsTheTextGlyph() {
+            const applet = createTemporaryObject(appletComponent, testRoot);
+            verify(applet !== null);
+            verify(!findChild(applet, "notificationCenterAppletIcon").visible);
+            const glyph = findChild(applet, "notificationCenterAppletGlyph");
+            verify(glyph.visible);
+            compare(glyph.text, "◉");
+        }
+
         function test_nullAccessIsDisabled() {
             const applet = createTemporaryObject(
                                appletComponent, testRoot, { "access": null });

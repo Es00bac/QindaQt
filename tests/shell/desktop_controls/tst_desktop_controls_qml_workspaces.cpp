@@ -24,6 +24,7 @@ private Q_SLOTS:
     void workspaceSwitcherIsKeyboardOperableAndAccessible();
     void workspaceTilesShowNamesAndUnavailableStateStaysIconOnly();
     void showDesktopButtonTogglesThroughTheFacade();
+    void showDesktopLunaGlyphKeepsTheButtonAsInputSurface();
     void systemStatusOpensAWindowPopupWithLaneControls();
     void systemStatusSummaryIsClickableToItsLowerEdgeOnAStockPanelRow();
 };
@@ -137,6 +138,38 @@ void DesktopControlsQmlWorkspaceTests::showDesktopButtonTogglesThroughTheFacade(
     auto *disabled = detached.child<QQuickItem>(QStringLiteral("showDesktopButton"));
     QVERIFY(disabled != nullptr);
     QVERIFY(!disabled->isEnabled());
+}
+
+// Worn Luna dressing (ADR-0124): a white glyph is painted beneath the fully
+// transparent standard button, which stays the only input and accessibility
+// surface; without `luna` nothing of the dressing is visible.
+void DesktopControlsQmlWorkspaceTests::showDesktopLunaGlyphKeepsTheButtonAsInputSurface()
+{
+    WorkspaceStack workspaces;
+    workspaces.publishReady();
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("ShowDesktopApplet"), &workspaces.controller, &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    auto *button = host.child<QQuickItem>(QStringLiteral("showDesktopButton"));
+    auto *icon = host.child<QQuickItem>(QStringLiteral("showDesktopLunaIcon"));
+    QVERIFY(button != nullptr);
+    QVERIFY(icon != nullptr);
+    QVERIFY(!icon->isVisible());
+    QCOMPARE(button->opacity(), 1.0);
+
+    QVERIFY(host.root->setProperty("luna", true));
+    QTRY_VERIFY(icon->isVisible());
+    QCOMPARE(icon->property("name").toString(), QStringLiteral("user-desktop"));
+    QCOMPARE(icon->property("color").value<QColor>(), QColor(Qt::white));
+    QCOMPARE(button->opacity(), 0.0);
+
+    button->forceActiveFocus();
+    QVERIFY(button->hasActiveFocus());
+    QTest::keyClick(host.window.get(), Qt::Key_Return);
+    QCOMPARE(workspaces.transport.showDesktopRequests.size(), 1);
+    QCOMPARE(workspaces.transport.showDesktopRequests.constLast().showing, true);
 }
 
 void DesktopControlsQmlWorkspaceTests::systemStatusOpensAWindowPopupWithLaneControls()

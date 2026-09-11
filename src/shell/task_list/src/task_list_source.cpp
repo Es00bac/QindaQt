@@ -60,7 +60,9 @@ TaskListSource::requestIntent(const TaskIntentRequest &request) const {
                                   [&request](const TaskEntry &entry) {
                                     return entry.taskId == request.taskId;
                                   });
-  if (match == m_generation.entries.cend()) {
+  if (match == m_generation.entries.cend() ||
+      (!request.windowId.isEmpty() &&
+       !match->memberWindowIds.contains(request.windowId))) {
     outcome.code = TaskIntentErrorCode::UnknownTask;
     return outcome;
   }
@@ -69,6 +71,18 @@ TaskListSource::requestIntent(const TaskIntentRequest &request) const {
   outcome.primaryWindowId = match->primaryWindowId;
   outcome.memberWindowIds = match->memberWindowIds;
   outcome.minimized = match->minimized;
+  // AGENT-CONTRACT: a named member narrows only Activate and Close, the two
+  // per-window actions of an ungrouped strip; the shell router then acts on
+  // exactly that window (task-list.md, "Request intents"). Minimize and Raise
+  // keep the whole-entry targets because a container is one outer window.
+  if (!request.windowId.isEmpty() &&
+      (request.kind == TaskIntentKind::Activate ||
+       request.kind == TaskIntentKind::Close)) {
+    outcome.primaryWindowId = request.windowId;
+    if (request.kind == TaskIntentKind::Close) {
+      outcome.memberWindowIds = {request.windowId};
+    }
+  }
   return outcome;
 }
 

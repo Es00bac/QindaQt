@@ -35,6 +35,7 @@ inline constexpr int maxKeywordLength = 64;
 inline constexpr int maxActions = 8;
 inline constexpr int maxActionIdLength = 64;
 inline constexpr int maxActionNameLength = 256;
+inline constexpr int maxStartupWmClassLength = 256;
 
 // Query and collection bounds for the interaction model.
 inline constexpr int maxQueryLength = 128;

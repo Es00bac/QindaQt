@@ -62,7 +62,8 @@ Item {
     function measuredEntryWidth(item) {
         // Text can retain a fractional glyph advance after FontMetrics has
         // rounded its corresponding bound. Reserve one pixel for that edge.
-        return measuredTextWidth(String(item.text ?? "")) + 16
+        // An absent entry (see entryOffset) measures as empty text.
+        return measuredTextWidth(String(item?.text ?? "")) + 16
     }
 
     function measuredIndicatorWidth() {
@@ -150,9 +151,16 @@ Item {
         return Math.max(1, Math.min(height, 36))
     }
 
+    // AGENT-GUARD: a MenuBarItem whose menu is being retired still
+    // re-evaluates its geometry after visibleEntries shrinks (focus moving to
+    // an application with fewer menus, an unavailable publication, width
+    // pressure), and its stale sourceIndex then addresses no admitted entry.
+    // Clamp to the admitted entries: reading past them flooded the shell log
+    // with "TypeError: Value is undefined" from the delegate's x binding.
     function entryOffset(index) {
+        const admitted = Math.min(index, visibleEntries.length)
         let result = 0
-        for (let i = 0; i < index; ++i)
+        for (let i = 0; i < admitted; ++i)
             result += (vertical ? 24 : measuredEntryWidth(visibleEntries[i])) + entryGap
         return result
     }
@@ -249,7 +257,7 @@ Item {
             delegate: Basic.MenuBarItem {
                 id: menuEntry
                 objectName: "globalMenuTopLevelItem"
-                readonly property var entryData: menu !== null ? menu.menuData : ({})
+                readonly property var entryData: menu ? (menu.menuData ?? ({})) : ({})
                 readonly property int sourceIndex: menu !== null ? menu.sourceIndex : -1
                 readonly property bool itemEnabled: Boolean(entryData.enabled)
                     && (entryData.children ?? []).length > 0

@@ -113,7 +113,7 @@ private:
     [[nodiscard]] bool initializeTokens(QString *error);
     [[nodiscard]] bool initializeIcons(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
-    void initializeServiceAppletCompositions();
+    void initializeServiceAppletCompositions(const Profiles::LayoutProfile &profile);
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void initializeAppearanceBridge(bool explicitThemeSelection);
     void initializeWallpaper();
@@ -136,6 +136,9 @@ private:
     // surface set when the saved selection or the user-store copy changes.
     // An empty preferred id adopts content only (keep the selection).
     void adoptLayoutProfile(const QString &preferredProfileId);
+    // AppMenu registrar residency follows the resolved layout (ADR-0130);
+    // startup and every adoption call this once the selection has settled.
+    void followGlobalMenuLayout(const Profiles::LayoutProfile &profile);
     void refreshProfileStoreWatch();
     void resetRuntime();
 

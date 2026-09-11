@@ -27,6 +27,9 @@ Flickable {
     property int dockTileSize: 60
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
+    // Worn Luna taskbar (ADR-0124): PanelContent's panel-derived lunaMode,
+    // forwarded to every chip of this zone. PanelAppletColumn inherits it.
+    property bool lunaMode: false
     readonly property int lanes: Math.max(1, Number(panel.rows ?? 1))
     readonly property var zoneApplets: (panel.applets ?? []).filter(
         applet => appletZone(applet) === zone)
@@ -166,6 +169,7 @@ Flickable {
                 statusNotifierAppletAccess: root.statusNotifierAppletAccess
                 desktopControlsAccess: root.desktopControlsAccess
                 dockMode: root.dockMode
+                lunaMode: root.lunaMode
                 dockTileSize: root.dockTileSize
                 reducedMotion: root.reducedMotion
                 dockZoomEnabled: root.dockZoomEnabled

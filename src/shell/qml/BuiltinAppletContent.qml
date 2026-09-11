@@ -33,6 +33,12 @@ Item {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool dockHasLauncherGroup: false
+    // Worn Luna taskbar (ADR-0124): lunaMode is PanelContent's panel-derived
+    // dressing and `presentation: "luna"` the per-instance profile opt-in.
+    // Either one selects the Luna path of a renderer that has one.
+    property bool lunaMode: false
+    readonly property bool luna: lunaMode
+        || (applet.settings ?? ({})).presentation === "luna"
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string entryPoint: String(runtime.entryPoint ?? "")
     readonly property bool ready: liveApplets && runtime.ready === true
@@ -110,6 +116,20 @@ Item {
             : root.statusNotifierReady ? statusNotifierComponent
             : root.startMenuReady ? startMenuComponent
             : root.desktopControlComponent
+
+        // AGENT-NOTE: desktop-control renderers come from the separate
+        // DesktopControlsAppletComponents inventory, which binds only the
+        // settings-driven `presentation` opt-in. A loaded control that
+        // declares `luna` (show desktop, quick launch) is rebound to this
+        // dispatcher's `luna`, which adds the panel-derived lunaMode
+        // (ADR-0124) and equals the inventory's value everywhere else.
+        // AGENT-GUARD: test only the property's presence here. Reading its
+        // value in a declarative Binding target re-triggered that binding
+        // when it wrote `luna` (a binding loop).
+        onLoaded: {
+            if (root.desktopControlReady && item !== null && ("luna" in item))
+                item.luna = Qt.binding(() => root.luna)
+        }
     }
 
     Component {
@@ -120,6 +140,7 @@ Item {
             applet: root.applet
             theme: root.theme
             vertical: root.vertical
+            luna: root.luna
         }
     }
 
@@ -131,6 +152,7 @@ Item {
             access: root.notificationCenterAppletAccess
             theme: root.theme
             vertical: root.vertical
+            luna: root.luna
         }
     }
 
@@ -214,7 +236,9 @@ Item {
             dockHasLauncherGroup: root.dockHasLauncherGroup
             reducedMotion: root.reducedMotion
             dockZoomEnabled: root.dockZoomEnabled
-            luna: (root.applet.settings ?? ({})).presentation === "luna"
+            luna: root.luna
+            grouping: String((root.applet.settings ?? ({})).grouping
+                             ?? "when-crowded")
         }
     }
 
@@ -226,6 +250,7 @@ Item {
             access: root.statusNotifierAppletAccess
             theme: root.theme
             vertical: root.vertical
+            luna: root.luna
         }
     }
 

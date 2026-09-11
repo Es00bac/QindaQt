@@ -5,6 +5,7 @@
 #include "qindaqt/shell/task_list/applet/task_list_applet_operation_port.h"
 #include "qindaqt/shell/task_list/producer/task_list_operation_authority.h"
 #include "qindaqt/shell/task_list/task_list_order.h"
+#include "qindaqt/shell/task_list/task_list_presentation.h"
 
 #include <algorithm>
 
@@ -33,13 +34,26 @@ TaskListAppletController::TaskListAppletController(
     TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
     IconNameResolver iconNameResolver,
     IconResolvedResolver iconResolvedResolver, QObject *parent)
+    : TaskListAppletController(source, authority, operations, grants,
+                               std::move(iconNameResolver),
+                               std::move(iconResolvedResolver),
+                               ApplicationNameResolver{}, parent) {}
+
+TaskListAppletController::TaskListAppletController(
+    ShellTaskList::TaskListSource &source,
+    ShellTaskList::Producer::TaskListOperationAuthority &authority,
+    TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
+    IconNameResolver iconNameResolver,
+    IconResolvedResolver iconResolvedResolver,
+    ApplicationNameResolver applicationNameResolver, QObject *parent)
     : QObject(parent),
       m_source(source),
       m_authority(authority),
       m_operations(operations),
       m_grants(grants),
       m_iconNameResolver(std::move(iconNameResolver)),
-      m_iconResolvedResolver(std::move(iconResolvedResolver)) {
+      m_iconResolvedResolver(std::move(iconResolvedResolver)),
+      m_applicationNameResolver(std::move(applicationNameResolver)) {
   connect(&m_authority,
           &ShellTaskList::Producer::TaskListOperationAuthority::stateChanged,
           this, &TaskListAppletController::handleAuthorityStateChanged);
@@ -58,9 +72,18 @@ QString TaskListAppletController::phaseReasonText() const {
 }
 
 QVariantList TaskListAppletController::entryRows() const {
+  return rowsToVariant(m_projection.rows);
+}
+
+QVariantList TaskListAppletController::windowRows() const {
+  return rowsToVariant(m_projection.windowRows);
+}
+
+QVariantList TaskListAppletController::rowsToVariant(
+    const QVector<TaskListAppletRow> &projected) const {
   QVariantList rows;
-  rows.reserve(m_projection.rows.size());
-  for (const TaskListAppletRow &row : m_projection.rows) {
+  rows.reserve(projected.size());
+  for (const TaskListAppletRow &row : projected) {
     QVariantMap map;
     map.insert(QStringLiteral("taskId"), row.taskId);
     map.insert(QStringLiteral("kind"),
@@ -69,7 +92,13 @@ QVariantList TaskListAppletController::entryRows() const {
                    : QStringLiteral("window"));
     map.insert(QStringLiteral("title"), row.title);
     map.insert(QStringLiteral("applicationId"), row.applicationId);
-    map.insert(QStringLiteral("applicationName"), row.applicationName);
+    QString applicationName = m_applicationNameResolver
+        ? m_applicationNameResolver(row.applicationId, row.applicationName)
+        : QString{};
+    if (applicationName.isEmpty()) {
+      applicationName = row.applicationName;
+    }
+    map.insert(QStringLiteral("applicationName"), applicationName);
     map.insert(QStringLiteral("iconText"), row.iconText);
     map.insert(QStringLiteral("colorHex"), row.colorHex);
     // AGENT-GUARD: A group keeps its own icon when its active member changes;
@@ -86,10 +115,26 @@ QVariantList TaskListAppletController::entryRows() const {
     map.insert(QStringLiteral("minimized"), row.minimized);
     map.insert(QStringLiteral("urgent"), row.urgent);
     map.insert(QStringLiteral("keyboardIndex"), row.keyboardIndex);
-    map.insert(QStringLiteral("accessibleName"), row.accessibleName);
+    // The presentation model formats the accessible name; re-derive it with
+    // the resolved name instead of patching the formatted text.
+    if (applicationName == row.applicationName) {
+      map.insert(QStringLiteral("accessibleName"), row.accessibleName);
+    } else {
+      ShellTaskList::TaskEntry named;
+      named.kind = row.kind;
+      named.title = row.title;
+      named.applicationName = applicationName;
+      named.windowCount = row.windowCount;
+      named.active = row.active;
+      named.minimized = row.minimized;
+      named.urgent = row.urgent;
+      map.insert(QStringLiteral("accessibleName"),
+                 ShellTaskList::TaskListPresentationModel::accessibleName(named));
+    }
     map.insert(QStringLiteral("generationRevision"), row.generationRevision);
     map.insert(QStringLiteral("pending"), row.pending);
     map.insert(QStringLiteral("memberWindowIds"), row.memberWindowIds);
+    map.insert(QStringLiteral("windowId"), row.windowId);
     rows.append(std::move(map));
   }
   return rows;
@@ -119,6 +164,10 @@ int TaskListAppletController::totalWindowCount() const noexcept {
 
 int TaskListAppletController::overflowCount() const noexcept {
   return m_projection.overflowCount;
+}
+
+int TaskListAppletController::windowOverflowCount() const noexcept {
+  return m_projection.windowOverflowCount;
 }
 
 int TaskListAppletController::presentationLimit() const noexcept {
@@ -248,6 +297,9 @@ void TaskListAppletController::reproject() {
     m_projection.rows.clear();
     m_projection.totalCount = 0;
     m_projection.overflowCount = 0;
+    m_projection.windowRows.clear();
+    m_projection.totalWindowCount = 0;
+    m_projection.windowOverflowCount = 0;
   }
   Q_EMIT stateReprojected();
 }

@@ -207,6 +207,11 @@ QindaQt ships original layouts inspired by useful interaction patterns:
 - Windows classic, left-start, and centered taskbar arrangements;
 - minimal, keyboard-driven, multi-row, and monitoring-focused layouts.
 
+Only layouts that resolve a global-menu applet own the AppMenu registrar;
+every other layout keeps application menus inside their windows, and a live
+layout switch moves the registrar with it
+([ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md)).
+
 These profiles reproduce workflows with original QindaQt code and assets. They
 do not claim extension compatibility with those desktops or copy proprietary
 branding.
@@ -240,11 +245,22 @@ The Bliss profile's one bottom panel carries the id `bliss-taskbar`;
 presentation-derivation precedent as the dock `dockMode` setting — and
 selects an opaque Luna gradient material with a gloss line instead of the
 token material. As with the dock derivation, a copied or renamed panel keeps
-or loses the treatment together with its id. The panel's task-list, clock,
-and quick-launch instances additionally opt into the `presentation: "luna"`
-setting for Luna applet dressing; instances without that setting, in this or
-any other profile, keep the standard presentation
-([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)).
+or loses the treatment together with its id.
+
+`lunaMode` travels through `PanelAppletRow` to every `AppletChip`, so applets
+on the Luna bar sit directly on the gradient with no raised chip; hover and an
+open notification center show a translucent white tint. Behind the end zone a
+full-height notification-area well, a lighter blue band with a dark leading
+seam, frames the tray, notification button, clock, and show-desktop control.
+Hosted applets take their Luna path from either `lunaMode` or their own
+`presentation: "luna"` setting (declared by the task-list, clock, and
+quick-launch manifests): white glyphs, a plain white Tahoma clock, Luna task
+buttons, and the real `notifications` glyph. Applets outside a Luna bar and
+without that setting, in this or any other profile, keep the standard
+presentation ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md),
+"Luna taskbar rendering"). The Bliss task list also sets `grouping: "never"`,
+so every window, container members included, gets its own button
+([Task list](task-list.md#grouping-and-ordering)).
 
 The Bliss profile is also a deliberate stock-profile exception: it ships
 **no clipboard slot**, because the XP taskbar it reproduces has no utility

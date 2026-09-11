@@ -18,6 +18,55 @@ QString placeholderFrom(const QString &identity) {
   return {};
 }
 
+TaskListAppletRow entryRow(const ShellTaskList::TaskEntry &entry,
+                           const QSet<QString> &pendingTaskIds,
+                           quint64 generationRevision) {
+  TaskListAppletRow row;
+  row.taskId = entry.taskId;
+  row.kind = entry.kind;
+  row.title = entry.title;
+  row.applicationId = entry.applicationId;
+  row.applicationName = entry.applicationName;
+  row.iconText = TaskListAppletProjectionModel::iconPlaceholder(
+      entry.applicationName, entry.applicationId);
+  row.colorHex = entry.colorHex;
+  row.windowCount = entry.windowCount;
+  row.active = entry.active;
+  row.minimized = entry.minimized;
+  row.urgent = entry.urgent;
+  row.memberWindowIds = entry.memberWindowIds;
+  row.generationRevision = generationRevision;
+  row.pending = pendingTaskIds.contains(entry.taskId);
+  return row;
+}
+
+// One ungrouped row per container member. The container keeps the
+// arbitration identity (taskId, pending marker, minimized state); the member
+// supplies its own application identity, title, and urgency, and is active
+// only while it is the container's visible primary.
+TaskListAppletRow memberRow(const ShellTaskList::TaskEntry &container,
+                            const ShellTaskList::TaskContainerMember &member,
+                            const QSet<QString> &pendingTaskIds,
+                            quint64 generationRevision) {
+  ShellTaskList::TaskEntry window;
+  window.taskId = container.taskId;
+  window.kind = ShellTaskList::TaskEntryKind::Window;
+  window.applicationId = member.applicationId;
+  window.applicationName = member.applicationName;
+  window.title = member.title;
+  window.primaryWindowId = member.windowId;
+  window.memberWindowIds = {member.windowId};
+  window.active =
+      container.active && member.windowId == container.primaryWindowId;
+  window.minimized = container.minimized;
+  window.urgent = member.urgent;
+  TaskListAppletRow row = entryRow(window, pendingTaskIds, generationRevision);
+  row.windowId = member.windowId;
+  row.accessibleName =
+      ShellTaskList::TaskListPresentationModel::accessibleName(window);
+  return row;
+}
+
 } // namespace
 
 TaskListAppletProjection TaskListAppletProjectionModel::project(
@@ -61,29 +110,48 @@ TaskListAppletProjection TaskListAppletProjectionModel::project(
   const int presented = qMin(static_cast<int>(entries.size()), presentedLimit);
   projection.rows.reserve(presented);
   for (int index = 0; index < presented; ++index) {
-    const ShellTaskList::TaskEntry &entry = entries.at(index);
     const ShellTaskList::TaskEntryIdentity &identity =
         presentation.identities.at(index);
-    TaskListAppletRow row;
-    row.taskId = entry.taskId;
-    row.kind = entry.kind;
-    row.title = entry.title;
-    row.applicationId = entry.applicationId;
-    row.applicationName = entry.applicationName;
-    row.iconText = iconPlaceholder(entry.applicationName, entry.applicationId);
-    row.colorHex = entry.colorHex;
-    row.windowCount = entry.windowCount;
-    row.active = entry.active;
-    row.minimized = entry.minimized;
-    row.urgent = entry.urgent;
+    TaskListAppletRow row =
+        entryRow(entries.at(index), pendingTaskIds, generationRevision);
     row.keyboardIndex = identity.keyboardIndex;
     row.accessibleName = identity.accessibleName;
-    row.memberWindowIds = entry.memberWindowIds;
-    row.generationRevision = generationRevision;
-    row.pending = pendingTaskIds.contains(entry.taskId);
     projection.rows.append(std::move(row));
   }
   projection.overflowCount = projection.totalCount - presented;
+
+  // AGENT-CONTRACT: the ungrouped rows expand every entry in scope, not only
+  // the presented head, so the window bound and windowOverflowCount stay
+  // exact on their own. Keyboard indices follow the expanded order. A
+  // container without member identities (canonicalEntries never builds one)
+  // keeps its collapsed row instead of silently vanishing.
+  for (int index = 0; index < entries.size(); ++index) {
+    const ShellTaskList::TaskEntry &entry = entries.at(index);
+    if (entry.kind != ShellTaskList::TaskEntryKind::Container ||
+        entry.members.isEmpty()) {
+      ++projection.totalWindowCount;
+      if (projection.windowRows.size() < presentedLimit) {
+        TaskListAppletRow row =
+            entryRow(entry, pendingTaskIds, generationRevision);
+        row.accessibleName = presentation.identities.at(index).accessibleName;
+        row.keyboardIndex = static_cast<int>(projection.windowRows.size()) + 1;
+        projection.windowRows.append(std::move(row));
+      }
+      continue;
+    }
+    for (const ShellTaskList::TaskContainerMember &member : entry.members) {
+      ++projection.totalWindowCount;
+      if (projection.windowRows.size() < presentedLimit) {
+        TaskListAppletRow row =
+            memberRow(entry, member, pendingTaskIds, generationRevision);
+        row.keyboardIndex = static_cast<int>(projection.windowRows.size()) + 1;
+        projection.windowRows.append(std::move(row));
+      }
+    }
+  }
+  projection.windowOverflowCount =
+      projection.totalWindowCount -
+      static_cast<int>(projection.windowRows.size());
   return projection;
 }
 

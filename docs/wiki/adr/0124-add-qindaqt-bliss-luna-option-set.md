@@ -106,3 +106,42 @@ opt-in rendering paths that leave the five existing themes byte-identical.
   recolor the caption and buttons but never re-roll the wear pattern.
 - The Bliss profile's desktop icons ride the separate desktop-zone hosting
   decision in [ADR-0125](0125-host-desktop-zone-applets.md).
+
+## Amendment: Luna taskbar rendering (2026-09-11)
+
+The first installed Bliss taskbar still painted a raised token chip behind
+every applet, clipped the start label under quick launch, outlined the clock
+into illegibility, showed the notification button as a placeholder dot, and
+collapsed a window container into one button despite `grouping: "never"`.
+Decision 5 is refined as follows; every other profile and panel renders
+exactly as before.
+
+- `lunaMode` travels from `PanelContent` through `PanelAppletRow` to each
+  `AppletChip` and `BuiltinAppletContent`. A Luna chip paints no surface:
+  applets sit directly on the gradient, and hover or an open notification
+  center shows a translucent white tint. Strips with their own per-control
+  hover (start button, quick launch, task buttons, tray items) take no chip
+  tint.
+- Either the panel-derived `lunaMode` or an instance's
+  `presentation: "luna"` setting selects an applet's Luna path. The
+  notification-center button shows the icon theme's `notifications` glyph in
+  white (Do Not Disturb keeps its crescent glyph, in white); show-desktop and
+  the tray overflow glyph read white; the clock is plain white Tahoma at
+  normal weight, without an outline.
+- `PanelContent` paints a notification-area well behind the end zone: a
+  full-height band from just before the first end-zone applet to the trailing
+  edge, a `#0C59B9` to `#139EE9` vertical gradient with a dark leading seam
+  and a light inner highlight. It follows the solved end-zone geometry and
+  reserves no space.
+- The start button's width follows its icon and its bold italic label, which
+  carries a one-pixel dark drop shadow, so the label never spills under the
+  next applet.
+- The task list honors its manifest `grouping` setting: `never` gives every
+  window, container members included, its own button, whose Activate and
+  Close target that window through a window-targeted T0 intent;
+  `when-crowded` and `always` keep one button per container, and dock strips
+  keep container rows in every mode.
+
+The new color constants live in the files that already carry Luna dressing
+(`PanelContent.qml`, the start-menu module); no boundary guard or exemption
+changed.

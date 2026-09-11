@@ -73,7 +73,8 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     return m_launcherApplet->start(error);
 }
 
-void ShellRuntimeApplication::initializeServiceAppletCompositions()
+void ShellRuntimeApplication::initializeServiceAppletCompositions(
+    const Profiles::LayoutProfile &profile)
 {
     m_audioApplet =
         std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
@@ -134,7 +135,7 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     }
     m_statusNotifierApplet = std::make_unique<StatusNotifierAppletComposition>(
         m_applets, m_appletPolicy, sessionBus, statusNotifierIconRoots);
-    m_globalMenuApplet->start();
+    followGlobalMenuLayout(profile);
     connect(m_windowActionsClient.get(),
             &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
             this, [this] {
@@ -144,6 +145,27 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
                     m_windowActionsRetry.start();
                 }
             });
+}
+
+void ShellRuntimeApplication::followGlobalMenuLayout(
+    const Profiles::LayoutProfile &profile)
+{
+    if (!m_globalMenuApplet) {
+        return;
+    }
+    const bool wasResident = m_globalMenuApplet->registrarResident();
+    m_globalMenuApplet->followLayout(
+        GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+            profile, m_applets, m_appletPolicy));
+    const bool resident = m_globalMenuApplet->registrarResident();
+    if (resident != wasResident) {
+        qInfo().noquote()
+            << (resident
+                    ? "QindaQt shell owns the AppMenu registrar for layout"
+                    : "QindaQt shell released the AppMenu registrar;"
+                      " applications keep in-window menus in layout")
+            << profile.id;
+    }
 }
 
 void ShellRuntimeApplication::startSettingsClients()
