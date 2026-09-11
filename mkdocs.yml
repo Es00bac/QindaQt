@@ -128,6 +128,7 @@ nav:
       - Settings Power route: apps/power-settings.md
       - Settings Clipboard route: apps/clipboard-settings.md
       - Settings Color route: apps/color-settings.md
+      - Settings Accessibility route: apps/accessibility-settings.md
       - Terminal: apps/terminal.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -251,3 +252,5 @@ nav:
       - "ADR-0124: add the QindaQt Bliss Luna option set": adr/0124-add-qindaqt-bliss-luna-option-set.md
       - "ADR-0125: host desktop-zone applets on the desktop surface": adr/0125-host-desktop-zone-applets.md
       - "ADR-0126: ignore user-override entries the schema cannot normalize": adr/0126-ignore-user-overrides-the-schema-cannot-normalize.md
+      - "ADR-0127: preview window chrome and the Qt toolkit through one painter": adr/0127-preview-window-chrome-and-toolkit-through-one-painter.md
+      - "ADR-0128: add the Settings Accessibility route": adr/0128-accessibility-settings-route.md

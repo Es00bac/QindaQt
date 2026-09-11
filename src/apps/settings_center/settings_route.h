@@ -17,6 +17,7 @@ enum class SettingsRouteComponent {
   Power,
   Clipboard,
   Color,
+  Accessibility,
 };
 
 [[nodiscard]] QString

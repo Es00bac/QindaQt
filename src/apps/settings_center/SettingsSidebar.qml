@@ -102,6 +102,7 @@ Rectangle {
                         Layout.fillWidth: true
                         text: modelData.title
                         routeId: modelData.id
+                        iconName: modelData.iconName ?? ""
                         category: ""
                         routeDescription: modelData.description
                         unavailableReason: modelData.unavailableReason

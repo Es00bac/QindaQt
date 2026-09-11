@@ -1,27 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "chromeappearancepalette.h"
 
+#include "qindaqt/decoration_painter/decoration_painter.h"
 #include "qindaqt/themes/theme_spec.h"
 
 namespace QindaQt::Compositor::KWinIntegration {
 
 HybridChrome::ChromePalette
 chromePaletteForTheme(const Themes::ThemeSpec &theme) {
-  const auto color = [&theme](const char *key, QColor fallback) {
-    const auto candidate = theme.colors.value(QString::fromLatin1(key));
-    return candidate.isValid() ? candidate : fallback;
-  };
-  HybridChrome::ChromePalette palette;
-  palette.surface = color("surface", palette.surface);
-  palette.surfaceRaised = color("surfaceRaised", palette.surfaceRaised);
-  palette.border = color("border", palette.border);
-  palette.text = color("text", palette.text);
-  palette.textMuted = color("textMuted", palette.textMuted);
-  palette.accent = color("accent", palette.accent);
-  palette.close = theme.decoration.closeColor;
-  palette.minimize = theme.decoration.minimizeColor;
-  palette.maximize = theme.decoration.maximizeColor;
-  return palette;
+  // AGENT-CONTRACT: one derivation shared with the Settings preview
+  // (ADR-0127); the compositor never re-maps theme colors on its own.
+  return Decoration::chromePaletteForTheme(theme);
 }
 
 QPalette nativePaletteForTheme(const Themes::ThemeSpec &theme) {
@@ -57,30 +46,8 @@ QPalette nativePaletteForTheme(const Themes::ThemeSpec &theme) {
 QVariantMap
 decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
                             const Themes::ThemeSpec &theme) {
-  QVariantMap properties = {{QStringLiteral("surface"), palette.surface},
-          {QStringLiteral("surfaceRaised"), palette.surfaceRaised},
-          {QStringLiteral("border"), palette.border},
-          {QStringLiteral("text"), palette.text},
-          {QStringLiteral("textMuted"), palette.textMuted},
-          {QStringLiteral("close"), palette.close},
-          {QStringLiteral("minimize"), palette.minimize},
-          {QStringLiteral("maximize"), palette.maximize}};
-  // QindaDecoration switches to the worn Luna chrome only when the theme
-  // authors it; omitting the keys keeps the classic rendering byte-identical.
-  properties.insert(QStringLiteral("buttonStyle"), theme.decoration.buttonStyle);
-  if (theme.decoration.titleBarColor.isValid()) {
-    properties.insert(QStringLiteral("titleBar"),
-                      theme.decoration.titleBarColor);
-  }
-  if (theme.decoration.titleBarInactiveColor.isValid()) {
-    properties.insert(QStringLiteral("titleBarInactive"),
-                      theme.decoration.titleBarInactiveColor);
-  }
-  if (theme.decoration.restoreColor.isValid()) {
-    properties.insert(QStringLiteral("restore"),
-                      theme.decoration.restoreColor);
-  }
-  return properties;
+  return Decoration::DecorationChrome::fromChromePalette(palette, theme)
+      .toVariantMap();
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

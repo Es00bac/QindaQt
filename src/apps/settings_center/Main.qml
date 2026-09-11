@@ -15,6 +15,7 @@ import QindaQt.SettingsApp.PowerBackend
 import QindaQt.SettingsApp.Clipboard
 import QindaQt.SettingsApp.Color
 import QindaQt.SettingsApp.ColorBackend
+import QindaQt.SettingsApp.Accessibility
 
 T.ApplicationWindow {
     id: root
@@ -32,6 +33,7 @@ T.ApplicationWindow {
     property var idleDisplaySettings: PowerRouteComposition.idleDisplaySettings
     property var clipboardSettings: ClipboardRouteComposition.model
     property var colorSettings: ColorRouteComposition.model
+    property var accessibilitySettings: null
     property bool applicationClosePending: false
     property bool bluetoothClosePending: false
 
@@ -66,55 +68,16 @@ T.ApplicationWindow {
             close.accepted = false
     }
 
-    Shortcut {
-        sequence: "Ctrl+1"
-        onActivated: root.navigation.selectRoute("notifications")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+2"
-        onActivated: root.navigation.selectRoute("appearance")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+3"
-        onActivated: root.navigation.selectRoute("display")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+4"
-        onActivated: root.navigation.selectRoute("network")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+5"
-        onActivated: root.navigation.selectRoute("customize")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+6"
-        onActivated: root.navigation.selectRoute("audio")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+7"
-        onActivated: root.navigation.selectRoute("bluetooth")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+8"
-        onActivated: root.navigation.selectRoute("power")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+9"
-        onActivated: root.navigation.selectRoute("clipboard")
-    }
-
-    Shortcut {
-        sequence: "Ctrl+0"
-        onActivated: root.navigation.selectRoute("color")
-    }
+    Shortcut { sequence: "Ctrl+1"; onActivated: root.navigation.selectRoute("notifications") }
+    Shortcut { sequence: "Ctrl+2"; onActivated: root.navigation.selectRoute("appearance") }
+    Shortcut { sequence: "Ctrl+3"; onActivated: root.navigation.selectRoute("display") }
+    Shortcut { sequence: "Ctrl+4"; onActivated: root.navigation.selectRoute("network") }
+    Shortcut { sequence: "Ctrl+5"; onActivated: root.navigation.selectRoute("customize") }
+    Shortcut { sequence: "Ctrl+6"; onActivated: root.navigation.selectRoute("audio") }
+    Shortcut { sequence: "Ctrl+7"; onActivated: root.navigation.selectRoute("bluetooth") }
+    Shortcut { sequence: "Ctrl+8"; onActivated: root.navigation.selectRoute("power") }
+    Shortcut { sequence: "Ctrl+9"; onActivated: root.navigation.selectRoute("clipboard") }
+    Shortcut { sequence: "Ctrl+0"; onActivated: root.navigation.selectRoute("color") }
 
     Component.onCompleted: {
         if (root.bluetoothSettings !== null)
@@ -220,6 +183,7 @@ T.ApplicationWindow {
             idleDisplaySettings: root.idleDisplaySettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
+            accessibilitySettings: root.accessibilitySettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
@@ -229,6 +193,7 @@ T.ApplicationWindow {
             powerComponent: powerRouteComponent
             clipboardComponent: clipboardRouteComponent
             colorComponent: colorRouteComponent
+            accessibilityComponent: accessibilityRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -268,6 +233,7 @@ T.ApplicationWindow {
             idleDisplaySettings: root.idleDisplaySettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
+            accessibilitySettings: root.accessibilitySettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
@@ -277,6 +243,7 @@ T.ApplicationWindow {
             powerComponent: powerRouteComponent
             clipboardComponent: clipboardRouteComponent
             colorComponent: colorRouteComponent
+            accessibilityComponent: accessibilityRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -361,6 +328,15 @@ T.ApplicationWindow {
         ColorPage {
             objectName: "colorPage"
             colorSettings: root.colorSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: accessibilityRouteComponent
+        AccessibilityPage {
+            objectName: "accessibilityPage"
+            accessibilitySettings: root.accessibilitySettings
             onCloseRequested: root.close()
         }
     }

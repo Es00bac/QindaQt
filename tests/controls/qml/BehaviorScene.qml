@@ -183,5 +183,28 @@ Item {
             text: qsTr("Muted supporting label")
             muted: true
         }
+
+        C.TabBar {
+            id: tabBar
+            objectName: "tabBar"
+            Layout.fillWidth: true
+
+            C.TabButton {
+                objectName: "tabFirst"
+                text: qsTr("Themes")
+                accessibleDescription: qsTr("Colors and window style")
+            }
+            C.TabButton {
+                objectName: "tabSecond"
+                text: qsTr("Fonts")
+                accessibleDescription: qsTr("Text appearance")
+            }
+            C.TabButton {
+                objectName: "tabUnavailable"
+                text: qsTr("Locked")
+                available: false
+                accessibleDescription: qsTr("Not available in this session")
+            }
+        }
     }
 }

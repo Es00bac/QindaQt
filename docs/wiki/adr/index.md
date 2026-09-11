@@ -139,3 +139,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0124: add the QindaQt Bliss Luna option set](0124-add-qindaqt-bliss-luna-option-set.md)
 - [ADR-0125: host desktop-zone applets on the desktop surface](0125-host-desktop-zone-applets.md)
 - [ADR-0126: ignore user-override entries the schema cannot normalize](0126-ignore-user-overrides-the-schema-cannot-normalize.md)
+- [ADR-0127: preview window chrome and the Qt toolkit through one painter](0127-preview-window-chrome-and-toolkit-through-one-painter.md)
+- [ADR-0128: add the Settings Accessibility route](0128-accessibility-settings-route.md)

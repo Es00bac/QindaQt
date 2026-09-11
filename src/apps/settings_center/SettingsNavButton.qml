@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Controls
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 
 Controls.Button {
     id: control
@@ -12,6 +13,8 @@ Controls.Button {
     property string routeId: ""
     property string category: ""
     property string routeDescription: ""
+    // XDG icon name from the route descriptor; glyph-first navigation.
+    property string iconName: ""
     property string unavailableReason: ""
 
     objectName: routeId.length > 0 ? ("settingsNavButton_" + routeId) : "settingsNavButton"
@@ -35,6 +38,11 @@ Controls.Button {
         : qsTr("Unavailable. %1").arg(unavailableReason.length > 0
                                       ? unavailableReason : routeDescription)
     Accessible.selected: active
+    Controls.ToolTip {
+        text: control.routeAvailable ? control.routeDescription
+                                     : control.unavailableReason
+        visible: control.hovered && text.length > 0
+    }
 
     contentItem: RowLayout {
         spacing: Tokens.space["2"]
@@ -46,6 +54,21 @@ Controls.Button {
             radius: 1.5
             color: control.active ? Tokens.accent.default : "transparent"
             visible: control.active
+            Accessible.ignored: true
+        }
+
+        ShellIcons.Icon {
+            objectName: "settingsNavIcon"
+            visible: control.iconName.length > 0
+            name: control.iconName
+            size: 20
+            symbolic: true
+            // AGENT-GUARD: recolor must be fully opaque; the disabled state
+            // dims through opacity instead of a translucent token.
+            color: control.routeAvailable ? Tokens.fg.default : Tokens.fg.muted
+            opacity: control.routeAvailable ? 1.0 : 0.6
+            fallbackText: control.text
+            Layout.alignment: Qt.AlignVCenter
             Accessible.ignored: true
         }
 

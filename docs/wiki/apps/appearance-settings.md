@@ -18,7 +18,7 @@ One page covers the appearance preference set stored through Settings1:
 
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
-| Themes | Installed-theme previews, dark/light/system scheme preference, and the toolkit card showing the exact QPalette ordinary Qt applications receive for the previewed theme | `appearance.theme`, `appearance.colorScheme` |
+| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get; installed-theme cards; the system/light/dark scheme choice; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme` |
 | Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
@@ -26,20 +26,25 @@ Display scale belongs to the separate **Display** route, which owns the live
 output configuration. Appearance offers a direct route action rather than a
 second, stored-only scale control.
 
-The toolkit card is presentation-only: the projection is the same
-QST-token-to-QPalette mapping the QPA platform-theme plugin applies
-(ADR-0115), so the page shows the combined theme truth — QindaQt surfaces
-paint from tokens, stock Qt applications follow the platform theme with
-palette, fonts, and icons live — without giving the route write access to
-any Qt style state.
+The preview and the palette row are presentation-only. The preview's chrome
+is `DecorationChrome::fromTheme` (the derivation the compositor publishes to
+every decoration) painted by the shared decoration painter, and its client
+area is the Fusion `QStyle` painted with `nativeAppearance`'s palette and the
+draft font, so the page shows the combined theme truth — window chrome,
+QindaQt surfaces, and stock Qt applications — without giving the route write
+access to any decoration or Qt style state. The preview follows the draft:
+a theme card, scheme, or font change shows before Apply. Without a widgets
+application (headless tests) the client area degrades to flat palette rows.
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
 semantics for the scheme and enum choices, an explicit initial focus on the
 first theme card, and a visible focus chain through the draft action row. A
-single horizontal tab bar above the form selects Themes, Wallpaper, or Fonts
-at every width, so Appearance does not introduce a second vertical navigator
-beside the Settings Center's route sidebar. The form has a visible vertical
+single `QindaQt.Controls` tab strip above the form selects Themes, Wallpaper,
+or Fonts at every width — glyph-first tabs on one shared rule with an accent
+indicator, each explained by a tooltip and accessible description rather
+than a paragraph — so Appearance does not introduce a second vertical
+navigator beside the Settings Center's route sidebar. The form has a visible vertical
 scrollbar, Page Up/Page Down and Ctrl+Home/Ctrl+End scrolling, and automatic
 focus reveal; every forward and reverse Tab stop stays inside the compact
 420×320 viewport.

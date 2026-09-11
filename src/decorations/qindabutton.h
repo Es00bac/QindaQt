@@ -29,8 +29,6 @@ private:
                 QObject *parent);
 
     [[nodiscard]] QColor fillColor() const;
-    void paintGlyph(QPainter &painter, const QRectF &circle) const;
-    void paintGlyphChrome(QPainter &painter, const QRectF &circle) const;
 };
 
 } // namespace QindaQt::Decoration

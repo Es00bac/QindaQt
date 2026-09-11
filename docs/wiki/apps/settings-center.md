@@ -1,9 +1,10 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. It contains ten real routes: **Notifications**,
+modular settings routes. It contains eleven real routes: **Notifications**,
 **Appearance**, **Display**, **Network**, **Customize**, **Audio**, and
-**Bluetooth**, followed by **Power**, **Clipboard**, and **Color**. The shell owns route identity, selection, responsive
+**Bluetooth**, followed by **Power**, **Clipboard**, **Color**, and
+**Accessibility**. The shell owns route identity, selection, responsive
 presentation, and navigation accessibility. Each route continues to own its
 domain model, service scope, page state, and mutations.
 
@@ -17,7 +18,8 @@ the [Audio route](audio-settings.md); Bluetooth behavior is documented on the
 [Bluetooth route](bluetooth-settings.md); Power behavior is documented on the
 [Power route](power-settings.md); Clipboard behavior is documented on the
 [Clipboard route](clipboard-settings.md); Color behavior is documented on the
-[Color route](color-settings.md); notification quieting and its live
+[Color route](color-settings.md); Accessibility behavior is documented on the
+[Accessibility route](accessibility-settings.md); notification quieting and its live
 settings transaction remain documented under
 [notification presentation](../shell/notification-presentation.md).
 
@@ -38,12 +40,13 @@ icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
 must not hide one. The closed component kind is mapped to the compiled
 Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, Power,
-Clipboard, or Color
+Clipboard, Color, or Accessibility
 component. It is not a QML URL, plugin path, or service locator.
 
 The public command accepts `--page notifications`, `--page appearance`,
 `--page display`, `--page network`, `--page customize`, `--page audio`, and
-`--page bluetooth`, `--page power`, `--page clipboard`, and `--page color`.
+`--page bluetooth`, `--page power`, `--page clipboard`, `--page color`, and
+`--page accessibility`.
 Unknown, noncanonical, path-like, or otherwise hostile values exit 2 before any
 settings transport, route model, or QML root is constructed. Registry lookup
 also rejects unknown runtime selection without changing the active or previous
@@ -116,9 +119,18 @@ the discovered profile catalog; assignment intents apply through the store's
 conflict/no-replay truth and no compositor application exists. The
 [Color route](color-settings.md) defines its fencing and authority boundary.
 
+Accessibility owns one independent Settings1 transport and a client scoped to
+exactly the four consumed accessibility keys, constructed by the executable
+like Appearance and passed to QML as its route model. It edits a draft and
+applies per key from fresh snapshots; the reserved `accessibility.screenReader`
+key is never scoped. The [Accessibility route](accessibility-settings.md)
+defines its truth, no-replay, and reserved-key boundary (ADR-0128).
+
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
 hosts coexist so the window can cross the responsive threshold, but the
-inactive host's ten route Loaders are all inactive. Switching layouts or routes
+inactive host's eleven route Loaders are all inactive. The Accessibility
+Loader additionally requires its route model; a host composed without one
+shows the explicit unavailable notice instead of binding a page to null. Switching layouts or routes
 cannot duplicate a page, its focus side effects, or its settings bindings.
 Unknown component keys and unavailable descriptors select one explicit
 `DegradedNotice`; no route falls back to another domain page.
@@ -160,7 +172,8 @@ The interaction contract is:
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
   position; Ctrl+8 selects Power in its appended eighth position, and Ctrl+9
   selects Clipboard in its appended ninth position; Ctrl+0 selects Color in
-  its appended tenth position;
+  its appended tenth position; Accessibility, appended eleventh, has no digit
+  shortcut and is reached from the sidebar or compact tab list;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window unless
   Bluetooth must first release a discovery lease or Customize owns a dirty
@@ -202,19 +215,19 @@ ctest --test-dir build/dev --output-on-failure \
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
-- construction starts all ten route intents against an absent private bus and
-  requires each complete root to remain resident;
+- construction starts all eleven route intents against an absent private bus
+  and requires each complete root to remain resident;
 - the installed row stages only `SettingsAppearanceRuntime`, removes host
   display/Wayland/QML/library overrides, withholds its required Appearance QML
   module while the developer tree remains present and requires exit 3, then
-  repeats that poison for the Network module and the Audio module, then
-  reinstalls and proves all ten routes, including the Customize catalogs and
-  the Bluetooth, Power, Clipboard, and Color modules, from only the complete relocated
-  prefix; and
+  repeats that poison for the Network, Audio, and Accessibility modules, then
+  reinstalls and proves all eleven routes, including the Customize catalogs and
+  the Bluetooth, Power, Clipboard, Color, and Accessibility modules, from only
+  the complete relocated prefix; and
 - the same installed row repeats hostile-intent rejection.
 
 This is an offscreen software-renderer and sanitized package boundary. It does
 not claim live AT-SPI, compositor focus, screen-reader traversal, platform-
-service pages beyond the ten compiled routes, search, arbitrary deep links,
+service pages beyond the eleven compiled routes, search, arbitrary deep links,
 per-route process isolation, a nested-session screenshot matrix, or physical
 DPI/input behavior.

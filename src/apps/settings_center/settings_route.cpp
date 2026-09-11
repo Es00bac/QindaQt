@@ -32,6 +32,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Power:
   case SettingsRouteComponent::Clipboard:
   case SettingsRouteComponent::Color:
+  case SettingsRouteComponent::Accessibility:
     return true;
   }
   return false;
@@ -59,6 +60,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("clipboard");
   case SettingsRouteComponent::Color:
     return QStringLiteral("color");
+  case SettingsRouteComponent::Accessibility:
+    return QStringLiteral("accessibility");
   }
   return {};
 }

@@ -387,6 +387,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         qindaqt_compositor
         PRIVATE
             QindaQt::CompositorBridge
+            QindaQt::DecorationPainter
             QindaQt::CompositorShellActions
             QindaQt::Hybrid
             QindaQt::HybridChrome

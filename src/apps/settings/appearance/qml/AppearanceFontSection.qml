@@ -31,7 +31,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Fonts")
-        description: qsTr("Interface font preference for QindaQt applications")
+        description: ""
     }
 
     FormRow {

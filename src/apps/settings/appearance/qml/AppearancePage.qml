@@ -97,15 +97,9 @@ T.Page {
             textFormat: Text.PlainText
             Accessible.role: Accessible.Heading
             Accessible.name: text
-        }
-
-        Label {
-            objectName: "appearancePagePurpose"
-            Layout.fillWidth: true
-            text: qsTr("Choose how your desktop and QindaQt applications look.")
-            muted: true
-            wrapMode: Text.Wrap
-            Accessible.name: text
+            // The purpose sentence lives in the accessible description and the
+            // tab tooltips; the visible page stays preview-first.
+            Accessible.description: qsTr("Choose how your desktop and QindaQt applications look.")
         }
 
         Label {
@@ -162,35 +156,53 @@ T.Page {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: Tokens.space["2"]
+            spacing: Tokens.space["3"]
 
-            ListView {
+            // Destinations are tabs, not buttons: one shared rule with an
+            // accent indicator under the selected tab. Each tab carries a
+            // glyph and a short label; its explanation is the tooltip.
+            TabBar {
                 id: destinationList
                 objectName: "appearanceDestinationList"
                 Layout.fillWidth: true
-                Layout.preferredHeight: 42
-                orientation: ListView.Horizontal
-                clip: true
-                spacing: Tokens.space["1"]
-                model: [
-                    { id: "themes", title: qsTr("Themes"), description: qsTr("Color and window style") },
-                    { id: "wallpaper", title: qsTr("Wallpaper"), description: qsTr("Desktop background") },
-                    { id: "fonts", title: qsTr("Fonts"), description: qsTr("Text appearance") }
-                ]
-                Accessible.role: Accessible.PageTabList
                 Accessible.name: qsTr("Appearance settings")
 
-                delegate: Button {
-                    id: destinationButton
-                    required property var modelData
-                    objectName: "appearanceDestination_" + modelData.id
-                    width: Math.max(104, destinationList.width / destinationList.count)
-                    text: modelData.title
-                    emphasized: root.currentDestination === modelData.id
-                    accessibleDescription: modelData.description
-                    Accessible.role: Accessible.PageTab
-                    Accessible.selected: root.currentDestination === modelData.id
-                    onClicked: root.selectDestination(modelData.id)
+                readonly property var destinations: [
+                    { id: "themes", title: qsTr("Themes"), icon: "preferences-desktop-theme",
+                      description: qsTr("Window style, colors, and how applications look") },
+                    { id: "wallpaper", title: qsTr("Wallpaper"), icon: "preferences-desktop-wallpaper",
+                      description: qsTr("Desktop background picture") },
+                    { id: "fonts", title: qsTr("Fonts"), icon: "preferences-desktop-font",
+                      description: qsTr("Interface font, size, and rendering") }
+                ]
+
+                function iconUrl(name) {
+                    const dpr = root.Window.window !== null
+                        ? Math.max(1, Math.min(4, root.Window.window.devicePixelRatio)) : 1
+                    return "image://qindaqt-icon/" + name + "?size=18&scale=" + dpr
+                        + "&symbolic=1&color=" + encodeURIComponent(Tokens.fg.default.toString())
+                }
+
+                currentIndex: Math.max(0, destinations.findIndex(
+                                           entry => entry.id === root.currentDestination))
+                onCurrentIndexChanged: {
+                    const entry = destinations[currentIndex]
+                    if (entry !== undefined && entry.id !== root.currentDestination)
+                        root.selectDestination(entry.id)
+                }
+
+                Repeater {
+                    model: destinationList.destinations
+
+                    delegate: TabButton {
+                        id: destinationButton
+                        required property var modelData
+                        objectName: "appearanceDestination_" + modelData.id
+                        text: modelData.title
+                        iconSource: destinationList.iconUrl(modelData.icon)
+                        accessibleDescription: modelData.description
+                        onClicked: root.selectDestination(modelData.id)
+                    }
                 }
             }
 

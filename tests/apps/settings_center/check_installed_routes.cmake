@@ -137,6 +137,16 @@ if(NOT color_in_stage OR NOT IS_DIRECTORY "${color_module}")
         "${color_module}")
 endif()
 
+set(accessibility_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Accessibility")
+cmake_path(NORMAL_PATH accessibility_module OUTPUT_VARIABLE accessibility_module)
+cmake_path(IS_PREFIX install_prefix "${accessibility_module}" NORMALIZE accessibility_in_stage)
+if(NOT accessibility_in_stage OR NOT IS_DIRECTORY "${accessibility_module}")
+    message(FATAL_ERROR
+        "installed Settings Accessibility module is missing or outside stage: "
+        "${accessibility_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -163,13 +173,25 @@ if(NOT IS_DIRECTORY "${build_clipboard_module}")
     message(FATAL_ERROR
         "package relocation requires the developer Clipboard QML tree to remain present")
 endif()
+set(build_accessibility_module "${build_directory}/qml/QindaQt/SettingsApp/Accessibility")
+if(NOT IS_DIRECTORY "${build_accessibility_module}")
+    message(FATAL_ERROR
+        "package poison requires the developer Accessibility QML tree to remain present")
+endif()
 
 set(withheld_module "${appearance_module}.withheld")
 set(poison_sandbox "${install_prefix}/package-poison")
 file(MAKE_DIRECTORY "${poison_sandbox}/config" "${poison_sandbox}/data"
-                    "${poison_sandbox}/system-data" "${poison_sandbox}/cache"
-                    "${poison_sandbox}/runtime")
-file(CHMOD "${poison_sandbox}/runtime"
+                    "${poison_sandbox}/system-data" "${poison_sandbox}/cache")
+# AGENT-GUARD: The runtime directory must stay short: the session binds a
+# Wayland socket inside it and a sockaddr_un sun_path only holds 108 bytes.
+# Deep prefixes (this checkout's build path) overflow it and crash the staged
+# executable before it can report the poison failure this gate proves, so the
+# runtime root lives beside the build tree, not under the deep sandbox.
+set(poison_runtime_dir "${CMAKE_BINARY_DIR}/package-poison-runtime")
+file(REMOVE_RECURSE "${poison_runtime_dir}")
+file(MAKE_DIRECTORY "${poison_runtime_dir}")
+file(CHMOD "${poison_runtime_dir}"
      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 file(RENAME "${appearance_module}" "${withheld_module}")
 execute_process(
@@ -189,7 +211,7 @@ execute_process(
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
             XDG_CACHE_HOME=${poison_sandbox}/cache
-            XDG_RUNTIME_DIR=${poison_sandbox}/runtime
+            XDG_RUNTIME_DIR=${poison_runtime_dir}
             "${SETTINGS_EXECUTABLE}" --page appearance
     WORKING_DIRECTORY "${poison_sandbox}"
     TIMEOUT 3
@@ -228,7 +250,7 @@ execute_process(
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
             XDG_CACHE_HOME=${poison_sandbox}/cache
-            XDG_RUNTIME_DIR=${poison_sandbox}/runtime
+            XDG_RUNTIME_DIR=${poison_runtime_dir}
             "${SETTINGS_EXECUTABLE}" --page network
     WORKING_DIRECTORY "${poison_sandbox}"
     TIMEOUT 3
@@ -246,7 +268,7 @@ if(NOT network_poison_status EQUAL 3)
 endif()
 # Reinstall rather than trusting the rename restoration, then repeat the
 # developer-tree poison for the Audio route the same way, and finally prove
-# all ten complete routes below using only the staged prefix.
+# all eleven complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}
     RESULT_VARIABLE reinstall_status
@@ -278,7 +300,7 @@ execute_process(
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
             XDG_CACHE_HOME=${poison_sandbox}/cache
-            XDG_RUNTIME_DIR=${poison_sandbox}/runtime
+            XDG_RUNTIME_DIR=${poison_runtime_dir}
             "${SETTINGS_EXECUTABLE}" --page audio
     WORKING_DIRECTORY "${poison_sandbox}"
     TIMEOUT 3
@@ -304,6 +326,56 @@ if(NOT audio_reinstall_status EQUAL 0)
     message(FATAL_ERROR
         "staged Settings reinstall failed after Audio package poison:\n"
         "${audio_reinstall_output}${audio_reinstall_error}")
+endif()
+
+# Repeat the developer-tree poison for the Accessibility route: withholding
+# its installed module must fail root construction (exit 3) even though the
+# build tree still carries the module.
+set(withheld_accessibility_module "${accessibility_module}.withheld")
+file(RENAME "${accessibility_module}" "${withheld_accessibility_module}")
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env
+            --unset=DISPLAY
+            --unset=WAYLAND_DISPLAY
+            --unset=QML_IMPORT_PATH
+            --unset=QML2_IMPORT_PATH
+            --unset=LD_LIBRARY_PATH
+            --unset=QT_PLUGIN_PATH
+            --unset=QT_QPA_PLATFORM_PLUGIN_PATH
+            QT_QPA_PLATFORM=offscreen
+            QT_QUICK_BACKEND=software
+            QML_DISABLE_DISK_CACHE=1
+            DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            XDG_CONFIG_HOME=${poison_sandbox}/config
+            XDG_DATA_HOME=${poison_sandbox}/data
+            XDG_DATA_DIRS=${poison_sandbox}/system-data
+            XDG_CACHE_HOME=${poison_sandbox}/cache
+            XDG_RUNTIME_DIR=${poison_runtime_dir}
+            "${SETTINGS_EXECUTABLE}" --page accessibility
+    WORKING_DIRECTORY "${poison_sandbox}"
+    TIMEOUT 3
+    RESULT_VARIABLE accessibility_poison_status
+    OUTPUT_VARIABLE accessibility_poison_output
+    ERROR_VARIABLE accessibility_poison_error
+)
+file(RENAME "${withheld_accessibility_module}" "${accessibility_module}")
+if(NOT accessibility_poison_status EQUAL 3)
+    message(FATAL_ERROR
+        "incomplete installed Settings Accessibility package returned "
+        "${accessibility_poison_status}, expected root-construction failure 3 while "
+        "build QML remained present:\n"
+        "${accessibility_poison_output}${accessibility_poison_error}")
+endif()
+execute_process(
+    COMMAND ${install_command}
+    RESULT_VARIABLE accessibility_reinstall_status
+    OUTPUT_VARIABLE accessibility_reinstall_output
+    ERROR_VARIABLE accessibility_reinstall_error
+)
+if(NOT accessibility_reinstall_status EQUAL 0)
+    message(FATAL_ERROR
+        "staged Settings reinstall failed after Accessibility package poison:\n"
+        "${accessibility_reinstall_output}${accessibility_reinstall_error}")
 endif()
 
 set(SANDBOX_ROOT "${install_prefix}/route-runtime")

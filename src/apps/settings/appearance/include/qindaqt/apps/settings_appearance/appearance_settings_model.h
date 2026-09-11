@@ -6,6 +6,8 @@
 
 #include "qindaqt/design_tokens/token_facade.h"
 
+#include <QColor>
+#include <QFont>
 #include <QObject>
 #include <QPointer>
 #include <QSet>
@@ -62,6 +64,15 @@ class AppearanceSettingsModel final : public QObject {
     // choice themes both QindaQt surfaces and stock Qt applications.
     Q_PROPERTY(QVariantList previewQtPalette READ previewQtPalette
                    NOTIFY previewChanged)
+    // Window-chrome and toolkit projections for the Appearance preview
+    // window (ADR-0127): the compositor's flattened decoration chrome, the
+    // QPalette roles ordinary Qt applications receive, that palette's font,
+    // and the theme canvas the windows sit on.
+    Q_PROPERTY(QVariantMap previewChrome READ previewChrome NOTIFY previewChanged)
+    Q_PROPERTY(QVariantMap previewToolkitPalette READ previewToolkitPalette
+                   NOTIFY previewChanged)
+    Q_PROPERTY(QFont previewToolkitFont READ previewToolkitFont NOTIFY previewChanged)
+    Q_PROPERTY(QColor previewCanvasColor READ previewCanvasColor NOTIFY previewChanged)
 
 public:
     // AGENT-CONTRACT: Construct, call, and destroy this model on the GUI
@@ -101,6 +112,10 @@ public:
     [[nodiscard]] bool configuredThemeInstalled() const;
     [[nodiscard]] QString fallbackNotice() const;
     [[nodiscard]] QVariantList previewQtPalette() const;
+    [[nodiscard]] QVariantMap previewChrome() const;
+    [[nodiscard]] QVariantMap previewToolkitPalette() const;
+    [[nodiscard]] QFont previewToolkitFont() const;
+    [[nodiscard]] QColor previewCanvasColor() const;
 
     // Coerces and stores one draft field. Returns false without changing the
     // draft when the key is unknown or the value does not fit the field type.

@@ -50,7 +50,10 @@ if(TARGET QindaQt::HybridChrome)
     target_compile_definitions(qindaqt_chrome_appearance_palette_tests PRIVATE
         QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     target_link_libraries(qindaqt_chrome_appearance_palette_tests PRIVATE
-        QindaQt::HybridChrome qindaqt_themes Qt6::Test)
+        # The palette source derives chrome through the shared painter
+        # (ADR-0127); the test compiles that source directly, so it needs the
+        # same dependency as the compositor plugin.
+        QindaQt::HybridChrome QindaQt::DecorationPainter qindaqt_themes Qt6::Test)
     add_test(NAME compositor.chrome-appearance-palette
         COMMAND qindaqt_chrome_appearance_palette_tests)
 endif()
