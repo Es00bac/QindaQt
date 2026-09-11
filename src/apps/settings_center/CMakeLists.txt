@@ -65,6 +65,8 @@ target_link_libraries(
     qindaqt_settings_color_backend_qml
     qindaqt_settings_color_backend_qmlplugin
     qindaqt_settings_accessibility
+    qindaqt_settings_input_backend_qml
+    qindaqt_settings_input_backend_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -82,7 +84,7 @@ target_compile_definitions(
 )
 set_target_properties(
     qindaqt-settings PROPERTIES
-    INSTALL_RPATH "$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Tokens;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Controls;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Customize;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Bluetooth;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Power;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Accessibility"
+    INSTALL_RPATH "$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Tokens;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Controls;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Customize;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Bluetooth;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Power;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Accessibility;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Input"
 )
 add_dependencies(
     qindaqt-settings
@@ -98,6 +100,7 @@ add_dependencies(
     qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
     qindaqt_settings_color_qml qindaqt_settings_color_qmlplugin
     qindaqt_settings_accessibility_qml qindaqt_settings_accessibility_qmlplugin
+    qindaqt_settings_input_qml qindaqt_settings_input_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )

@@ -16,6 +16,8 @@ import QindaQt.SettingsApp.Clipboard
 import QindaQt.SettingsApp.Color
 import QindaQt.SettingsApp.ColorBackend
 import QindaQt.SettingsApp.Accessibility
+import QindaQt.SettingsApp.Input
+import QindaQt.SettingsApp.InputBackend
 
 T.ApplicationWindow {
     id: root
@@ -194,6 +196,7 @@ T.ApplicationWindow {
             clipboardComponent: clipboardRouteComponent
             colorComponent: colorRouteComponent
             accessibilityComponent: accessibilityRouteComponent
+            inputComponent: inputRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -244,6 +247,7 @@ T.ApplicationWindow {
             clipboardComponent: clipboardRouteComponent
             colorComponent: colorRouteComponent
             accessibilityComponent: accessibilityRouteComponent
+            inputComponent: inputRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -337,6 +341,15 @@ T.ApplicationWindow {
         AccessibilityPage {
             objectName: "accessibilityPage"
             accessibilitySettings: root.accessibilitySettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: inputRouteComponent
+        InputPage {
+            objectName: "inputPage"
+            inputSettings: InputRouteComposition
             onCloseRequested: root.close()
         }
     }
