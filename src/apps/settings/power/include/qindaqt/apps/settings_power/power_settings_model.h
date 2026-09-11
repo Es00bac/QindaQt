@@ -32,6 +32,10 @@ class PowerSettingsModel final : public QObject {
   Q_PROPERTY(bool retryAvailable READ retryAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool sessionActionsSupported READ sessionActionsSupported CONSTANT)
   Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
+  // ADR-0132: validated Power1 SourceTruth lid presence. The same admission
+  // predicate that gates every other displayed truth gates this flag, so an
+  // unadmitted or malformed snapshot hides the lid rows instead of trusting it.
+  Q_PROPERTY(bool lidPresent READ lidPresent NOTIFY viewChanged)
   Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText READ operationStatusText NOTIFY viewChanged)
@@ -57,6 +61,7 @@ public:
   [[nodiscard]] bool retryAvailable() const noexcept;
   [[nodiscard]] bool sessionActionsSupported() const noexcept;
   [[nodiscard]] QObject *sessionActions() const noexcept;
+  [[nodiscard]] bool lidPresent() const noexcept;
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] const QString &errorText() const noexcept { return m_errorText; }
   [[nodiscard]] const QString &operationStatusText() const noexcept {

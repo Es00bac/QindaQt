@@ -108,6 +108,14 @@ bool PowerSettingsModel::busy() const noexcept {
 
 bool PowerSettingsModel::retryAvailable() const noexcept { return !busy(); }
 
+bool PowerSettingsModel::lidPresent() const noexcept {
+  // AGENT-GUARD: keep the shared admission predicate in front of this read. A
+  // missing, malformed, stale, or unadmitted snapshot must hide the lid rows;
+  // nothing on this page may present unvalidated platform truth.
+  if (!snapshotAdmitsBase()) return false;
+  return m_client.snapshot().source.lidPresent;
+}
+
 QString PowerSettingsModel::statusText() const {
   if (loading()) return tr("Connecting to the power service…");
   if (ready()) return tr("Choose a power mode and check battery and brightness settings.");

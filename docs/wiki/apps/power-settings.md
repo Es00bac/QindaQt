@@ -24,7 +24,8 @@ The route presents only validated, bounded public snapshot copies:
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
 | Internal brightness | Normalized 0–10000 position and exact observed raw value/maximum | Read-only disabled slider because Power1 version 1 has no internal-display mutation |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
-| Screen lock | Saved automatic-idle-lock preference and timeout | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled |
+| Screen lock | Saved automatic-idle-lock preference and timeout, resume-lock preference, and unlock grace | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled; toggle lock-after-wake and choose the stored grace delay |
+| Lid presence | Validated Power1 `SourceTruth` lid-presence fact under the shared admission predicate | Read-only visibility input: the lid rows of the power policy section render only when admitted truth says a lid exists |
 | Display power | Purpose-scoped Settings1 `power.idleDisplayOffMinutes` truth (-1 = never, 1–240 minutes) | Enable/disable idle display-off; choose the retained timeout only while it is enabled; never locks and never touches the screen-lock preference |
 | Session | Typed availability for Lock, Log out, Suspend, Restart, and Shut down | Lock and Suspend dispatch directly; Log out, Restart, and Shut down require confirmation |
 
