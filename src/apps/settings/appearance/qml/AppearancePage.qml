@@ -6,6 +6,7 @@ import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 
 // Appearance is one Settings1 draft with several focused destinations. The
 // page navigator must never create separate drafts: Apply/Revert remain one
@@ -176,9 +177,13 @@ T.Page {
                       description: qsTr("Interface font, size, and rendering") }
                 ]
 
+                // Same guard as ShellIcons.Icon: no provider or no icon means
+                // no source, so a harness without the icon runtime never warns.
                 function iconUrl(name) {
                     const dpr = root.Window.window !== null
                         ? Math.max(1, Math.min(4, root.Window.window.devicePixelRatio)) : 1
+                    if (!ShellIcons.IconLookup.hasIcon(name, 18, dpr, true))
+                        return ""
                     return "image://qindaqt-icon/" + name + "?size=18&scale=" + dpr
                         + "&symbolic=1&color=" + encodeURIComponent(Tokens.fg.default.toString())
                 }
