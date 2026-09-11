@@ -41,6 +41,7 @@ add_subdirectory(applet_host)
 add_subdirectory(applet_runtime)
 add_subdirectory(shell/global_menu)
 add_subdirectory(session/powerdevil_idle)
+add_subdirectory(session/powerdevil_lid)
 add_subdirectory(session)
 # The Settings appearance route projects preview tokens into the QPalette
 # that ordinary Qt applications receive, so the platform-theme palette
