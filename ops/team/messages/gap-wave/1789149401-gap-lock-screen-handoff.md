@@ -1,6 +1,6 @@
 # gap-lock-screen handoff
 
-- **Candidate commit:** `d0af6528` (branch `gap/lock-screen`; last deliverable commit `a67faab0`, this message commit is the collection point)
+- **Candidate commit:** `73af7001` (branch `gap/lock-screen`; deliverable commits end at `a67faab0`, the two message commits after it are handoff bookkeeping)
 - **Base commit:** `7dad9e78f117d7fb492d381d631d7cec637ce1e5`
 - **Worker:** GLM 5.3 Flash in kimi-code, lane `gap-lock-screen`
 - **Date:** 2026-09-11T11:56:41-06:00
