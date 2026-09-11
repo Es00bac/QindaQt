@@ -59,6 +59,7 @@ nav:
       - Pure brightness model: architecture/brightness-model.md
       - Network service: architecture/network-service.md
       - Network secret agent: architecture/network-secret-agent.md
+      - Secret Service provider: architecture/secret-service.md
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
       - Font preferences: architecture/font-preferences.md
