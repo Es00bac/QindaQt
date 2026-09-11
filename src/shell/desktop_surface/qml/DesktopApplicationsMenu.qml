@@ -74,7 +74,9 @@ T.Popup {
 
                     required property var modelData
 
-                    width: parent.width
+                    // The delegate binds before the Repeater parents it;
+                    // guard the null parent or every row logs a TypeError.
+                    width: parent ? parent.width : 0
                     height: 32
                     text: String(appRow.modelData.displayText)
 
