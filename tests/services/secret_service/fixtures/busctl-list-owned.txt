@@ -1,0 +1,2 @@
+org.freedesktop.DBus 1 dbus-daemon root -
+org.freedesktop.secrets 12345 gnome-keyring-daemon user user@1000

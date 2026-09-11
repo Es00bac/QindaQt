@@ -144,3 +144,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0129: configure window and container chrome through Appearance](0129-configure-window-and-container-chrome.md)
 - [ADR-0130: attach menus to windows when the layout has no global menu](0130-window-attached-menus-without-a-global-menu.md)
 - [ADR-0131: contained windows keep a handlebar; the wheel rolls chrome up](0131-contained-window-handlebar-and-wheel-roll-up.md)
+- [ADR-0135: gnome-keyring is the Secret Service provider](0135-gnome-keyring-secret-service.md)
