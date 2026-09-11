@@ -21,6 +21,16 @@ add_test(NAME qindaqt.settings-screen-lock-model
 set_tests_properties(qindaqt.settings-screen-lock-model PROPERTIES
     LABELS "settings;power;screen-lock")
 
+qt_add_executable(qindaqt_screen_lock_resume_settings_tests
+    tst_screen_lock_resume_settings.cpp)
+target_link_libraries(qindaqt_screen_lock_resume_settings_tests
+    PRIVATE qindaqt_settings_power Qt6::Test)
+qindaqt_enable_warnings(qindaqt_screen_lock_resume_settings_tests)
+add_test(NAME qindaqt.settings-screen-lock-resume
+    COMMAND qindaqt_screen_lock_resume_settings_tests)
+set_tests_properties(qindaqt.settings-screen-lock-resume PROPERTIES
+    LABELS "settings;power;screen-lock")
+
 qt_add_executable(qindaqt_idle_display_settings_tests
     tst_idle_display_settings.cpp)
 target_link_libraries(qindaqt_idle_display_settings_tests
