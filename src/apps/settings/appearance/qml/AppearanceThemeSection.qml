@@ -49,10 +49,13 @@ ColumnLayout {
         objectName: "appearanceWindowPreview"
         Layout.fillWidth: true
         Layout.preferredHeight: Math.round(Math.min(340, Math.max(220, width * 0.56)))
-        chrome: root.appearanceSettings.previewChrome
-        toolkitPalette: root.appearanceSettings.previewToolkitPalette
+        // A duck-typed model without the preview projections (navigation
+        // harnesses) leaves the item at its defaults instead of warning.
+        chrome: root.appearanceSettings.previewChrome ?? ({})
+        toolkitPalette: root.appearanceSettings.previewToolkitPalette ?? ({})
         toolkitFont: root.appearanceSettings.previewToolkitFont
-        canvas: root.appearanceSettings.previewCanvasColor
+                     ?? Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.body })
+        canvas: root.appearanceSettings.previewCanvasColor ?? Tokens.bg.base
         caption: qsTr("QindaQt Settings")
         Accessible.role: Accessible.Graphic
         Accessible.name: qsTr("Preview of the %1 theme").arg(
