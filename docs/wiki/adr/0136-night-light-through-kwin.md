@@ -82,11 +82,26 @@ preview never substitutes for a write.
 
 **Inhibition.** `inhibit()` is connection-scoped by interface contract — the
 installed D-Bus XML states the lock is "released automatically when the
-service, which requested it, is unregistered" — and the private headless proof
-confirmed that the lock disappears when the caller disconnects. A Settings page
-process cannot hold a meaningful pause, so Settings offers no pause control. A
-resident shell quick-toggle is the recorded follow-up; it can hold an
-inhibition for its own process lifetime.
+service, which requested it, is unregistered" — so a Settings page process
+cannot hold a meaningful pause, and Settings offers no pause control. The
+private headless proof re-verified this against the real plugin: a helper
+held `inhibit()` over its own connection (`inhibited=true` on the bus) and
+the lock disappeared the moment the caller's connection closed, without any
+`uninhibit` call. A resident shell quick-toggle is the recorded follow-up; it
+can hold an inhibition for its own process lifetime.
+
+**Headless proof.** The proof (`tests/services/night_light/proof/`) ran a
+virtual KWin 6.6.6 on a private bus with a private config directory. A config
+pre-seeded through the production port — `Active=true`, `Mode=Constant`,
+`NightTemperature=3400` — produced, at compositor startup: `enabled=true`,
+`running=true`, `mode=0`, `currentTemperature=3400`,
+`targetTemperature=3400`; `preview(2700)` then animated the reported
+temperature 3400 → 2700 K over the bus and `stopPreview` ended it. One
+bounded caveat: a *changed* value written while the compositor ran did not
+converge in the sandbox even with an explicit KWin `reconfigure` — the
+in-sandbox watcher did not deliver the change to the plugin, so the
+startup-application evidence above stands in for live convergence. The shell
+quick-toggle follow-up should re-check live convergence on a real session.
 
 **Location privacy.** Automatic location is enabled only when the user chooses
 "sunset to sunrise (automatic location)"; that choice lets `knighttimed` use Qt
