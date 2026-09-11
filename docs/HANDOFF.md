@@ -1,5 +1,70 @@
 # Integration handoff
 
+## Desktop outage repaired; Bliss Luna installed (September 11)
+
+The user reported a dark desktop on the night of September 10: green
+wallpaper, a dock with only the launcher, no Appearance route, and no way to
+select the new Bliss Luna set. The session journal held the cause: every
+activation of `org.qindaqt.Settings1` ended with
+`corrupt-user-overrides: ~/.config/qindaqt/settings-v2.json:
+services.terminalRestoreTabs: setting is not defined by schema version 2` and
+exit status 3. That key is defined only by the terminal lane's worker trees
+and reached the shared user file at 19:36; the installed `-r4` service then
+refused to start, and because the shell, the KWin plugin, the appearance
+portal, the Settings application, and every bundled app activate Settings1 on
+demand, one entry took the whole desktop down. The file was backed up as
+`settings-v2.json.bak-20260910-terminalRestoreTabs`, the key removed, and the
+running shell recovered within seconds without a logout.
+
+Four package revisions followed, all merged with the user's passwordless
+sudo and adopted live:
+
+- `-r5` (pin `60b1b5e1`) ships the Bliss Luna option set (ADR-0124,
+  ADR-0125) and ADR-0126: Settings1 now loads the user document with
+  `DocumentValuePolicy::DropInvalidValues`, ignoring and logging entries its
+  schema cannot normalize (`ignored-user-override`) instead of exiting.
+  Structural corruption, the profile document, and transactions stay
+  strict. Seven settings suites cover both policies; the rebuilt binary
+  stays up on the exact host file that `-r4` rejected.
+- `-r6` (pin `e1afc941`) installs the `QindaQt.Shell.DesktopSurface` files,
+  which `-r5` compiled but never staged; the nested DesktopVirtual harness
+  inventory stages the same module.
+- `-r7` (pin `cd7b7b3b`) links the module's static plugin into the
+  production shell. Qt links a static QML module's plugin only when its
+  import scan sees an `import` in the target's QML files; the desktop
+  surface is reached solely from C++ (`QQmlComponent::loadFromModule`), so
+  neither the installed nor the build-tree shell ever carried the plugin
+  instance and adopting `qinda-bliss` logged `No module named
+  "QindaQt.Shell.DesktopSurface" found` on every output. The shell capture
+  matrix could not catch either defect: `qindaqt-shell-preview` is a
+  panel-only renderer that never links the desktop surface, so the
+  `qinda-bliss-1080p` row renders the Luna taskbar without desktop icons.
+  Covering desktop icons in a gate is open work.
+
+Live refresh followed the September 10 contract: only the shell PID received
+`SIGTERM` and the session supervisor (PID 2197351) replaced it (`-r5` shell
+2224953, `-r6` shell 2247624, `-r7` shell 2270066); the resident settings service and the
+appearance portal were killed so D-Bus reactivated them on the new binaries;
+the Settings application was relaunched with the session environment.
+Compositor 2197229 and every application kept their identities. A D-Bus
+transaction selecting `qinda-bliss` for theme, wallpaper, and layout was
+adopted live: the Luna taskbar with start button, quick launch, task buttons,
+tray, and clock replaced the dock without a restart. The user's own
+selection (`qindaqt` layout, `qinda-dusk`, `compile-club`) was restored
+afterwards.
+
+Two facts for whoever picks this up next. First, the appearance resolver only
+honors the chosen theme when it matches the preferred color scheme
+(`appearance_resolver.cpp`), so Bliss, a light theme, needs the scheme set to
+Light or System; with Dark selected a compatible dark theme is used silently.
+Second, the Luna window chrome lives in the KDecoration and KWin plugins and
+takes effect on the next session login, not through a shell-only refresh.
+What wrote `services.terminalRestoreTabs` at 19:36 was not identified; the
+ADR-0126 guard makes a recurrence harmless. The host stays on `-r7`; the
+follow-up that silences the desktop applications menu's startup
+`TypeError` (one line per application row per output) is committed on
+`main` and rides the next checkpoint.
+
 ## Bundled applications on stock Qt 6 (September 10)
 
 [ADR-0116](wiki/adr/0116-build-bundled-applications-on-stock-qt6.md) retired
