@@ -18,7 +18,10 @@ class AudioSettingsModelTest final : public QObject {
 
 private Q_SLOTS:
   void projectsBoundedAuthoritativeInventory();
+  void projectsChannelTruthAndVirtualProvenance();
   void dispatchesOnlyAdmittedIntents();
+  void forwardsChannelVolumeIntentOnceAndGatesIt();
+  void managesVirtualDevicesWithManagedOnlyRemoval();
   void availabilityEqualsClientAdmission();
   void reportsFailuresWithoutCredentialOrRadioSurface();
   void disablesActionsWhenCapabilitiesDisappear();
@@ -61,7 +64,7 @@ void AudioSettingsModelTest::projectsBoundedAuthoritativeInventory() {
   QCOMPARE(fixture.model.defaultInputName(), QStringLiteral("Desk Microphone"));
 
   const QVariantList outputs = fixture.model.outputDevices();
-  QCOMPARE(outputs.size(), 2);
+  QCOMPARE(outputs.size(), 3);
   const QVariantMap speakers = outputs.at(0).toMap();
   QCOMPARE(speakers.value(QStringLiteral("serial")), qulonglong(10));
   QCOMPARE(speakers.value(QStringLiteral("displayName")),
@@ -76,6 +79,8 @@ void AudioSettingsModelTest::projectsBoundedAuthoritativeInventory() {
   QVERIFY(!headphones.value(QStringLiteral("isDefault")).toBool());
   QCOMPARE(headphones.value(QStringLiteral("volumePercent")).toInt(), 25);
   QVERIFY(headphones.value(QStringLiteral("setDefaultAvailable")).toBool());
+  QCOMPARE(headphones.value(QStringLiteral("displayName")),
+           QStringLiteral("Surround Headphones"));
 
   const QVariantList inputs = fixture.model.inputDevices();
   QCOMPARE(inputs.size(), 1);
@@ -97,6 +102,192 @@ void AudioSettingsModelTest::projectsBoundedAuthoritativeInventory() {
   QVERIFY(capture.value(QStringLiteral("muted")).toBool());
   QCOMPARE(capture.value(QStringLiteral("targetName")),
            QStringLiteral("Desk Microphone"));
+}
+
+void AudioSettingsModelTest::projectsChannelTruthAndVirtualProvenance() {
+  Fixture fixture;
+  QVERIFY(fixture.model.canSetChannelVolumes());
+  QVERIFY(fixture.model.canManageVirtualDevices());
+
+  const QVariantList outputs = fixture.model.outputDevices();
+  const QVariantMap surround = outputs.at(1).toMap();
+  QVERIFY(surround.value(QStringLiteral("channelVolumeAvailable")).toBool());
+  QVERIFY(!surround.value(QStringLiteral("virtualDevice")).toBool());
+  const QVariantList channelRows =
+      surround.value(QStringLiteral("channelVolumes")).toList();
+  QCOMPARE(channelRows.size(), 6);
+  const QVariantMap frontLeft = channelRows.at(0).toMap();
+  QCOMPARE(frontLeft.value(QStringLiteral("index")).toInt(), 0);
+  QCOMPARE(frontLeft.value(QStringLiteral("position")),
+           QStringLiteral("FL"));
+  QCOMPARE(frontLeft.value(QStringLiteral("volumePercent")).toInt(), 25);
+  QCOMPARE(frontLeft.value(QStringLiteral("level01")).toDouble(), 0.25);
+  QCOMPARE(channelRows.at(5).toMap().value(QStringLiteral("position")),
+           QStringLiteral("SR"));
+
+  // A stereo layout is also a per-channel surface (FL/FR balance).
+  const QVariantMap stereo = outputs.at(0).toMap();
+  QVERIFY(stereo.value(QStringLiteral("channelVolumeAvailable")).toBool());
+  QCOMPARE(stereo.value(QStringLiteral("channelVolumes")).toList().size(), 2);
+  QCOMPARE(stereo.value(QStringLiteral("channelVolumes"))
+               .toList()
+               .at(0)
+               .toMap()
+               .value(QStringLiteral("position")),
+           QStringLiteral("FL"));
+
+  // The virtual inventory lists only service-managed devices, carrying the
+  // channel layout and the removal admission.
+  const QVariantList virtuals = fixture.model.virtualDevices();
+  QCOMPARE(virtuals.size(), 1);
+  const QVariantMap gameBus = virtuals.at(0).toMap();
+  QCOMPARE(gameBus.value(QStringLiteral("serial")), qulonglong(14));
+  QCOMPARE(gameBus.value(QStringLiteral("displayName")),
+           QStringLiteral("Game Bus"));
+  QCOMPARE(gameBus.value(QStringLiteral("kindText")),
+           QStringLiteral("Virtual output device"));
+  QCOMPARE(gameBus.value(QStringLiteral("channelCount")).toInt(), 2);
+  QVERIFY(gameBus.value(QStringLiteral("removeAvailable")).toBool());
+  QVERIFY(outputs.at(2).toMap().value(QStringLiteral("virtualDevice")).toBool());
+}
+
+void AudioSettingsModelTest::forwardsChannelVolumeIntentOnceAndGatesIt() {
+  Fixture fixture;
+
+  QVERIFY(fixture.model.setDeviceChannelVolume(12, 2, 0.4));
+  QCOMPARE(fixture.transport.operations.size(), 1);
+  const auto channelOp = fixture.transport.operations.constLast();
+  QCOMPARE(channelOp.request.kind, OperationKind::SetChannelVolumes);
+  QCOMPARE(channelOp.request.primary, (Handle{11, 12}));
+  // The dispatched vector is the full retained layout with exactly one
+  // replaced channel; nothing else moves.
+  QCOMPARE(channelOp.request.channelVolumes,
+           QVector<double>({0.25, 0.25, 0.4, 0.25, 0.25, 0.25}));
+  fixture.transport.finish(channelOp,
+                           audioResult(OperationKind::SetChannelVolumes,
+                                       OperationStatus::Succeeded, 11, 2));
+  QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+
+  // Hostile and stale intents are refused locally and never dispatched.
+  const qsizetype dispatched = fixture.transport.operations.size();
+  QVERIFY(!fixture.model.setDeviceChannelVolume(12, 6, 0.4));
+  QVERIFY(!fixture.model.setDeviceChannelVolume(12, -1, 0.4));
+  QVERIFY(!fixture.model.setDeviceChannelVolume(12, 2, 1.5));
+  QVERIFY(!fixture.model.setDeviceChannelVolume(
+      12, 2, std::numeric_limits<double>::quiet_NaN()));
+  QVERIFY(!fixture.model.setDeviceChannelVolume(999, 0, 0.4));
+  // A stereo layout admits its own two-channel balance intent.
+  QVERIFY(fixture.model.setDeviceChannelVolume(10, 1, 0.6));
+  QCOMPARE(fixture.transport.operations.size(), dispatched + 1);
+  QCOMPARE(fixture.transport.operations.constLast().request.channelVolumes,
+           QVector<double>({0.5, 0.6}));
+  fixture.transport.finish(
+      fixture.transport.operations.constLast(),
+      audioResult(OperationKind::SetChannelVolumes, OperationStatus::Succeeded,
+                  11, 2));
+  QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+
+  // Removing the capability disables the displayed strip and the dispatch.
+  Snapshot restricted = readyAudioSnapshot(11, 5);
+  restricted.capabilities &= ~Capabilities(Capability::SetChannelVolumes);
+  fixture.transport.invalidate(QStringLiteral(":1.7"), 11, 5);
+  QTRY_VERIFY(fixture.transport.fetches.size() >= 2);
+  fixture.transport.reply(fixture.transport.fetches.constLast(), restricted);
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.model.serviceRevision(), qulonglong(5),
+                            1'000);
+  QVERIFY(!fixture.model.canSetChannelVolumes());
+  QVERIFY(!rowFlag(fixture.model.outputDevices(), 1, "channelVolumeAvailable"));
+  QVERIFY(!fixture.model.setDeviceChannelVolume(12, 2, 0.4));
+  QCOMPARE(fixture.transport.operations.size(), dispatched + 1);
+}
+
+void AudioSettingsModelTest::managesVirtualDevicesWithManagedOnlyRemoval() {
+  Fixture fixture;
+
+  QVERIFY(fixture.model.createVirtualDevice(
+      QStringLiteral("output"), QStringLiteral("Stream Bus"), 2));
+  QCOMPARE(fixture.transport.operations.size(), 1);
+  const auto createOp = fixture.transport.operations.constLast();
+  QCOMPARE(createOp.request.kind, OperationKind::CreateVirtualDevice);
+  QCOMPARE(createOp.request.deviceKind, DeviceKind::Output);
+  QCOMPARE(createOp.request.displayName, QStringLiteral("Stream Bus"));
+  QCOMPARE(createOp.request.channels, quint32(2));
+  fixture.transport.finish(createOp,
+                           audioResult(OperationKind::CreateVirtualDevice,
+                                       OperationStatus::Succeeded, 11, 2));
+  QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+
+  QVERIFY(fixture.model.createVirtualDevice(
+      QStringLiteral("input"), QStringLiteral("Mic Bridge"), 8));
+  QCOMPARE(fixture.transport.operations.constLast().request.deviceKind,
+           DeviceKind::Input);
+  QCOMPARE(fixture.transport.operations.constLast().request.channels,
+           quint32(8));
+  fixture.transport.finish(
+      fixture.transport.operations.constLast(),
+      audioResult(OperationKind::CreateVirtualDevice,
+                  OperationStatus::Succeeded, 11, 2));
+  QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+
+  QVERIFY(fixture.model.removeVirtualDevice(14));
+  QCOMPARE(fixture.transport.operations.size(), 3);
+  const auto removeOp = fixture.transport.operations.constLast();
+  QCOMPARE(removeOp.request.kind, OperationKind::RemoveVirtualDevice);
+  QCOMPARE(removeOp.request.primary, (Handle{11, 14}));
+  fixture.transport.finish(removeOp,
+                           audioResult(OperationKind::RemoveVirtualDevice,
+                                       OperationStatus::Succeeded, 11, 2));
+  QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+
+  // Hardware is never removable through the route: refusal happens locally
+  // with nothing dispatched.
+  const qsizetype dispatched = fixture.transport.operations.size();
+  QVERIFY(!fixture.model.removeVirtualDevice(10));
+  QVERIFY(!fixture.model.removeVirtualDevice(12));
+  QVERIFY(!fixture.model.removeVirtualDevice(20));
+  QCOMPARE(fixture.transport.operations.size(), dispatched);
+  // Hardware refusals are "invalid target"; each refusal updates the error
+  // text, so assert before the stale-handle refusal below replaces it.
+  QVERIFY2(fixture.model.errorText().contains(
+               QStringLiteral("cannot be changed that way")),
+           qPrintable(fixture.model.errorText()));
+
+  // A serial absent from the snapshot is a stale handle instead.
+  QVERIFY(!fixture.model.removeVirtualDevice(999));
+  QCOMPARE(fixture.transport.operations.size(), dispatched);
+  QVERIFY2(fixture.model.errorText().contains(
+               QStringLiteral("changed; the list is being refreshed")),
+           qPrintable(fixture.model.errorText()));
+
+  // Hostile creation payloads are refused locally as well.
+  QVERIFY(!fixture.model.createVirtualDevice(
+      QStringLiteral("speaker"), QStringLiteral("Bad"), 2));
+  QVERIFY(!fixture.model.createVirtualDevice(
+      QStringLiteral("output"), QStringLiteral("   "), 2));
+  QVERIFY(!fixture.model.createVirtualDevice(
+      QStringLiteral("output"), QStringLiteral("Odd"), 3));
+  QVERIFY(!fixture.model.createVirtualDevice(
+      QStringLiteral("output"), QStringLiteral("Odd"), 0));
+  QCOMPARE(fixture.transport.operations.size(), dispatched);
+
+  // Without the capability the section's controls disappear from admission.
+  Snapshot restricted = readyAudioSnapshot(11, 6);
+  restricted.capabilities &= ~Capabilities(Capability::ManageVirtualDevices);
+  fixture.transport.invalidate(QStringLiteral(":1.7"), 11, 6);
+  QTRY_VERIFY(fixture.transport.fetches.size() >= 2);
+  fixture.transport.reply(fixture.transport.fetches.constLast(), restricted);
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.model.serviceRevision(), qulonglong(6),
+                            1'000);
+  QVERIFY(!fixture.model.canManageVirtualDevices());
+  QVERIFY(!fixture.model.virtualDevices()
+               .at(0)
+               .toMap()
+               .value(QStringLiteral("removeAvailable"))
+               .toBool());
+  QVERIFY(!fixture.model.createVirtualDevice(
+      QStringLiteral("output"), QStringLiteral("Late"), 2));
+  QVERIFY(!fixture.model.removeVirtualDevice(14));
+  QCOMPARE(fixture.transport.operations.size(), dispatched);
 }
 
 void AudioSettingsModelTest::dispatchesOnlyAdmittedIntents() {

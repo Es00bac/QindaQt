@@ -22,7 +22,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
         "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)"
-        "a((tt)ussdbbbbbb)a((tt)ussdbbbbbb)a((tt)uss(tt)bdbbbbbb))\" "
+        "a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)a((tt)uss(tt)bdbbbbbbadas))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -36,6 +36,16 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"MoveStream\"><arg name=\"stream\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/>"
         "<arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetChannelVolumes\"><arg name=\"target\" type=\"(tt)\" "
+        "direction=\"in\"/><arg name=\"volumes\" type=\"ad\" direction=\"in\"/>"
+        "<arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"CreateVirtualDevice\"><arg name=\"kind\" type=\"u\" "
+        "direction=\"in\"/><arg name=\"displayName\" type=\"s\" direction=\"in\"/>"
+        "<arg name=\"channels\" type=\"u\" direction=\"in\"/>"
+        "<arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"RemoveVirtualDevice\"><arg name=\"device\" type=\"(tt)\" "
+        "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
+        "direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
         "name=\"revision\" type=\"t\"/></signal></interface>")
 
@@ -51,6 +61,11 @@ public Q_SLOTS:
     Q_SCRIPTABLE void SetMute(const QindaQt::Audio::Handle &target, bool muted);
     Q_SCRIPTABLE void MoveStream(const QindaQt::Audio::Handle &stream,
                                 const QindaQt::Audio::Handle &device);
+    Q_SCRIPTABLE void SetChannelVolumes(const QindaQt::Audio::Handle &target,
+                                        const QVector<double> &volumes);
+    Q_SCRIPTABLE void CreateVirtualDevice(quint32 kind, const QString &displayName,
+                                          quint32 channels);
+    Q_SCRIPTABLE void RemoveVirtualDevice(const QindaQt::Audio::Handle &device);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);

@@ -6,9 +6,11 @@ the running PipeWire graph. The D-Bus-activated `qindaqt-audio-service` owns
 does not open devices, transport samples, install PipeWire configuration, or
 replace WirePlumber policy.
 
-The exact wire contract is in the [Audio1 reference](../reference/audio1-v1.md).
+The exact wire contract is in the [Audio1 reference](../reference/audio1-v2.md).
 The Qt/GLib ownership decision is recorded in
-[ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
+[ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md); the audio graph
+direction is recorded in
+[ADR-0123](../adr/0123-voicemeeter-class-audio-graph-on-pipewire.md).
 
 ## Module shape
 
@@ -80,9 +82,14 @@ The adapter loads WirePlumber 0.5's public default-nodes and mixer API modules.
 It observes nodes, links, clients, and default metadata. It uses:
 
 - `default-nodes-api` for current defaults and configured-default changes;
-- `mixer-api` for normalized volume and mute reads/writes; and
+- `mixer-api` for normalized volume, per-channel volumes, and mute
+  reads/writes — channel maps come from the node's `audio.position`, never
+  from the mixer dictionary, which can lag the negotiated layout;
 - default metadata `target.object` with type `Spa:Id` and a target
-  `object.serial` to move an application stream.
+  `object.serial` to move an application stream; and
+- the `adapter` factory with `support.null-audio-sink` for managed virtual
+  devices, and `wp_global_proxy_request_destroy` bounded by the
+  `qindaqt.virtual.` node-name prefix for their removal.
 
 Capabilities are explicit. A missing plugin or metadata object degrades or
 removes the corresponding capability; the service does not emulate it with
@@ -98,13 +105,15 @@ generic property map, Platform1 base class, or shared SDK availability type.
 Two accepted service clients must establish common availability fields before
 such a shared type is considered.
 
-`SetDefault`, `SetVolume`, `SetMute`, and `MoveStream` return a typed result.
-The service rejects unavailable state, stale/missing handles, incompatible move
-targets, nonfinite or out-of-range volume, unsupported capability, malformed
-enum values, and excess concurrency. A timeout, service-owner replacement,
-WirePlumber replacement, or PipeWire disconnect makes a dispatched operation
-uncertain because completion cannot be proven. Callers must refetch and show
-that uncertainty; they must not retry automatically.
+`SetDefault`, `SetVolume`, `SetMute`, `MoveStream`, `SetChannelVolumes`,
+`CreateVirtualDevice`, and `RemoveVirtualDevice` return a typed result. The
+service rejects unavailable state, stale/missing handles, incompatible move
+targets, channel-count mismatches against the retained layout, non-managed
+removal targets, nonfinite or out-of-range volume, unsupported capability,
+malformed enum values, and excess concurrency. A timeout, service-owner
+replacement, WirePlumber replacement, or PipeWire disconnect makes a dispatched
+operation uncertain because completion cannot be proven. Callers must refetch
+and show that uncertainty; they must not retry automatically.
 
 Backend operation outcomes are untrusted platform values. The coordinator
 accepts only known status values, bounded stable reason-code tokens, safe
@@ -161,11 +170,15 @@ The production adapter test launches disposable PipeWire and WirePlumber
 processes against a private runtime directory and an invalid private D-Bus
 address, creates only null sink/source fixtures, observes graph updates, changes
 default/volume/mute, moves a synthetic playback stream, restarts WirePlumber,
-and rejects the old handle. It never contacts the user's session bus or host
+and rejects the old handle. It also covers the version 2 slice: a six-position
+fixture publishes its channel map and per-channel volumes, `SetChannelVolumes`
+changes per-channel levels, `CreateVirtualDevice` publishes a managed virtual
+sink with virtual provenance, and `RemoveVirtualDevice` destroys it while
+refusing non-managed nodes. It never contacts the user's session bus or host
 audio graph.
 
-That evidence does not qualify USB, HDMI, Bluetooth, jack sensing,
-multichannel/channel-volume semantics, a physical microphone or speaker,
+That evidence does not qualify USB, HDMI, Bluetooth, jack sensing, multichannel
+semantics on physical hardware, a physical microphone or speaker,
 suspend/resume, hotplug churn, realtime scheduling, memory/CPU budgets, or
 either future UI. Those remain hardware and integrated-session gates.
 

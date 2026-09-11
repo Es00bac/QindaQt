@@ -4,10 +4,17 @@
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
+#include <QtCore/QProcess>
+#include <QtCore/QUuid>
+#include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusPendingReply>
 #include <QtDBus/QDBusMetaType>
 #include <QtTest>
 
 #include <limits>
+#include <memory>
 
 using namespace QindaQt::Audio;
 
@@ -22,7 +29,8 @@ Snapshot validSnapshot()
     snapshot.revision = 4;
     snapshot.availability = Availability::Ready;
     snapshot.capabilities = Capability::SetDefault | Capability::SetVolume
-        | Capability::SetMute | Capability::MoveStream;
+        | Capability::SetMute | Capability::MoveStream
+        | Capability::SetChannelVolumes | Capability::ManageVirtualDevices;
     snapshot.defaultOutput = {.epoch = 19, .serial = 100};
     snapshot.defaultInput = {.epoch = 19, .serial = 200};
     snapshot.outputs = {{.handle = {.epoch = 19, .serial = 100},
@@ -35,7 +43,26 @@ Snapshot validSnapshot()
                          .muteKnown = true,
                          .isDefault = true,
                          .canSetVolume = true,
-                         .canSetMute = true}};
+                         .canSetMute = true,
+                         .channelVolumes = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR"),
+                                        QStringLiteral("FC"), QStringLiteral("LFE"),
+                                        QStringLiteral("SL"), QStringLiteral("SR")},
+                         .virtualDevice = false},
+                        {.handle = {.epoch = 19, .serial = 101},
+                         .kind = DeviceKind::Output,
+                         .name = QStringLiteral("Virtual Bus"),
+                         .description = QStringLiteral("Managed null device"),
+                         .volume = 0.5,
+                         .volumeKnown = true,
+                         .muted = false,
+                         .muteKnown = true,
+                         .isDefault = false,
+                         .canSetVolume = true,
+                         .canSetMute = true,
+                         .channelVolumes = {0.5, 0.5},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                         .virtualDevice = true}};
     snapshot.inputs = {{.handle = {.epoch = 19, .serial = 200},
                         .kind = DeviceKind::Input,
                         .name = QStringLiteral("Microphone"),
@@ -46,7 +73,10 @@ Snapshot validSnapshot()
                         .muteKnown = true,
                         .isDefault = true,
                         .canSetVolume = true,
-                        .canSetMute = true}};
+                        .canSetMute = true,
+                        .channelVolumes = {0.75, 0.75},
+                        .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                        .virtualDevice = false}};
     snapshot.streams = {{.handle = {.epoch = 19, .serial = 300},
                          .direction = StreamDirection::Playback,
                          .applicationName = QStringLiteral("Player"),
@@ -59,8 +89,100 @@ Snapshot validSnapshot()
                          .muteKnown = true,
                          .canSetVolume = true,
                          .canSetMute = true,
-                         .canMove = true}};
+                         .canMove = true,
+                         .channelVolumes = {0.25, 0.25},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}}};
     return snapshot;
+}
+class PrivateBus final
+{
+public:
+    bool start()
+    {
+        process.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
+        process.setArguments({QStringLiteral("--session"), QStringLiteral("--nofork"),
+                              QStringLiteral("--nopidfile"),
+                              QStringLiteral("--print-address=1")});
+        process.start();
+        if (!process.waitForStarted() || !process.waitForReadyRead()) {
+            return false;
+        }
+        address = QString::fromUtf8(process.readLine()).trimmed();
+        name = QStringLiteral("qindaqt-audio-protocol-test-%1")
+                   .arg(QUuid::createUuid().toString(QUuid::Id128));
+        connection = QDBusConnection::connectToBus(address, name);
+        return !address.isEmpty() && connection.isConnected();
+    }
+
+    ~PrivateBus()
+    {
+        if (!name.isEmpty()) {
+            QDBusConnection::disconnectFromBus(name);
+        }
+        process.terminate();
+        if (!process.waitForFinished(1000)) {
+            process.kill();
+            process.waitForFinished();
+        }
+    }
+
+    QProcess process;
+    QString address;
+    QString name;
+    QDBusConnection connection{QStringLiteral("invalid")};
+};
+
+// Echoes snapshots back so the caller decodes what its own marshaller wrote,
+// or replies with a preset hostile payload to exercise fail-closed decoding.
+class EchoService final : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.AudioProtocolEcho")
+
+public:
+    explicit EchoService(const QDBusConnection &connection, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_connection(connection)
+    {
+        m_connection.registerService(QStringLiteral("org.qindaqt.AudioProtocolEcho"));
+        m_connection.registerObject(QStringLiteral("/org/qindaqt/AudioProtocolEcho"),
+                                    this, QDBusConnection::ExportAllSlots);
+    }
+
+    void setHostileReply(Snapshot hostile)
+    {
+        m_hostile = std::move(hostile);
+    }
+
+public Q_SLOTS:
+    Q_SCRIPTABLE QindaQt::Audio::Snapshot echo(const QindaQt::Audio::Snapshot &snapshot)
+    {
+        return m_hostile.has_value() ? *m_hostile : snapshot;
+    }
+
+private:
+    QDBusConnection m_connection;
+    std::optional<Snapshot> m_hostile;
+};
+
+std::optional<Snapshot> echoOverBus(const QDBusConnection &connection, const Snapshot &snapshot)
+{
+    QDBusMessage call =
+        QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.AudioProtocolEcho"),
+                                       QStringLiteral("/org/qindaqt/AudioProtocolEcho"),
+                                       QStringLiteral("org.qindaqt.AudioProtocolEcho"),
+                                       QStringLiteral("echo"));
+    call.setArguments({QVariant::fromValue(snapshot)});
+    QDBusPendingCallWatcher watcher(connection.asyncCall(call));
+    QSignalSpy finished(&watcher, &QDBusPendingCallWatcher::finished);
+    if (!finished.wait(5000)) {
+        return std::nullopt;
+    }
+    const QDBusPendingReply<Snapshot> reply = watcher;
+    if (reply.isError()) {
+        return std::nullopt;
+    }
+    return reply.value();
 }
 
 } // namespace
@@ -76,8 +198,11 @@ private Q_SLOTS:
     void rejectsUnsortedDuplicateAndStaleHandles();
     void rejectsInvalidLevelsAndText();
     void rejectsOversizedCollections();
+    void rejectsInvalidChannelTruth();
     void operationResultLineage();
     void rejectsInconsistentCapabilitiesDefaultsAndDiagnostics();
+    void snapshotRoundTripsOverDBus();
+    void hostileChannelArraysFailClosedOverDBus();
 };
 
 void AudioProtocolTests::fixedSignatures()
@@ -85,12 +210,12 @@ void AudioProtocolTests::fixedSignatures()
     registerDBusTypes();
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()), "(tt)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Device>()),
-             "((tt)ussdbbbbbb)");
+             "((tt)ussdbbbbbbadasb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Stream>()),
-             "((tt)uss(tt)bdbbbbbb)");
+             "((tt)uss(tt)bdbbbbbbadas)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
-             "(uttuuss(tt)(tt)a((tt)ussdbbbbbb)a((tt)ussdbbbbbb)"
-             "a((tt)uss(tt)bdbbbbbb))");
+             "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)"
+             "a((tt)uss(tt)bdbbbbbbadas))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }
@@ -176,9 +301,48 @@ void AudioProtocolTests::rejectsOversizedCollections()
     QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("oversized-payload"));
 }
 
+void AudioProtocolTests::rejectsInvalidChannelTruth()
+{
+    Snapshot snapshot = validSnapshot();
+    snapshot.outputs[0].channelVolumes[2] = 1.5;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.outputs[0].channelVolumes.push_back(0.1);
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.outputs[0].channelVolumes.resize(kMaxChannelsPerDevice + 1, 0.1);
+    snapshot.outputs[0].channelMap = QStringList(kMaxChannelsPerDevice + 1,
+                                                 QStringLiteral("AUX"));
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.outputs[0].channelMap[0] = QString(kMaxChannelNameUtf8Bytes + 1,
+                                                QLatin1Char('x'));
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.outputs[0].channelMap[0] = QString();
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.streams[0].channelVolumes[1] =
+        std::numeric_limits<double>::quiet_NaN();
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-stream"));
+
+    snapshot = validSnapshot();
+    snapshot.outputs[0].wireValid = false;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.streams[0].wireValid = false;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-stream"));
+}
+
 void AudioProtocolTests::operationResultLineage()
 {
-    OperationResult result{.kind = OperationKind::SetVolume,
+    OperationResult result{.kind = OperationKind::SetChannelVolumes,
                            .status = OperationStatus::Succeeded,
                            .initiatingEpoch = 3,
                            .initiatingRevision = 5,
@@ -188,6 +352,15 @@ void AudioProtocolTests::operationResultLineage()
                            .diagnostic = {},
                            .wireValid = true};
     QVERIFY(validateOperationResult(result).accepted);
+    result.kind = OperationKind::CreateVirtualDevice;
+    QVERIFY(validateOperationResult(result).accepted);
+    result.kind = OperationKind::RemoveVirtualDevice;
+    QVERIFY(validateOperationResult(result).accepted);
+    result.kind = static_cast<OperationKind>(
+        static_cast<quint32>(OperationKind::RemoveVirtualDevice) + 1);
+    QCOMPARE(validateOperationResult(result).reasonCode,
+             QStringLiteral("malformed-result"));
+    result.kind = OperationKind::SetVolume;
     result.observedEpoch++;
     QCOMPARE(validateOperationResult(result).reasonCode,
              QStringLiteral("invalid-success-lineage"));
@@ -213,7 +386,68 @@ void AudioProtocolTests::rejectsInconsistentCapabilitiesDefaultsAndDiagnostics()
              QStringLiteral("unexpected-stream-target"));
     snapshot = validSnapshot();
     snapshot.diagnostic = QString(QChar(0x0001));
-    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("oversized-text"));
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("oversized-text"));
+}
+
+void AudioProtocolTests::snapshotRoundTripsOverDBus()
+{
+    registerDBusTypes();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    EchoService echo(bus.connection);
+    const Snapshot original = validSnapshot();
+    const std::optional<Snapshot> echoed = echoOverBus(bus.connection, original);
+    QVERIFY(echoed.has_value());
+    QCOMPARE(*echoed, original);
+    QVERIFY(echoed->outputs[1].virtualDevice);
+    QCOMPARE(echoed->outputs[0].channelMap,
+             QStringList({QStringLiteral("FL"), QStringLiteral("FR"),
+                          QStringLiteral("FC"), QStringLiteral("LFE"),
+                          QStringLiteral("SL"), QStringLiteral("SR")}));
+    QCOMPARE(echoed->outputs[0].channelVolumes,
+             QVector<double>({0.1, 0.2, 0.3, 0.4, 0.5, 0.6}));
+    QVERIFY(echoed->wireValid);
+    QVERIFY(echoed->outputs[0].wireValid);
+    QVERIFY(echoed->streams[0].wireValid);
+}
+
+void AudioProtocolTests::hostileChannelArraysFailClosedOverDBus()
+{
+    registerDBusTypes();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    EchoService echo(bus.connection);
+
+    Snapshot hostile = validSnapshot();
+    hostile.outputs[0].channelVolumes =
+        QVector<double>(kMaxChannelsPerDevice + 8, 0.5);
+    echo.setHostileReply(hostile);
+    std::optional<Snapshot> echoed = echoOverBus(bus.connection, validSnapshot());
+    QVERIFY(echoed.has_value());
+    QVERIFY(!echoed->wireValid);
+    QVERIFY(!echoed->outputs[0].wireValid);
+    QCOMPARE(echoed->outputs[0].channelVolumes.size(), kMaxChannelsPerDevice);
+
+    hostile = validSnapshot();
+    hostile.outputs[0].channelMap =
+        QStringList(kMaxChannelsPerDevice + 3, QStringLiteral("FL"));
+    echo.setHostileReply(hostile);
+    echoed = echoOverBus(bus.connection, validSnapshot());
+    QVERIFY(echoed.has_value());
+    QVERIFY(!echoed->wireValid);
+    QCOMPARE(echoed->outputs[0].channelMap.size(), kMaxChannelsPerDevice);
+
+    hostile = validSnapshot();
+    hostile.streams[0].channelMap[0] =
+        QString(kMaxChannelNameUtf8Bytes + 10, QLatin1Char('x'));
+    echo.setHostileReply(hostile);
+    echoed = echoOverBus(bus.connection, validSnapshot());
+    QVERIFY(echoed.has_value());
+    QVERIFY(!echoed->wireValid);
+    QVERIFY(echoed->streams[0].channelMap.at(0).toUtf8().size()
+            <= kMaxChannelNameUtf8Bytes);
+    QVERIFY(!validateSnapshot(*echoed).accepted);
 }
 
 QTEST_GUILESS_MAIN(AudioProtocolTests)

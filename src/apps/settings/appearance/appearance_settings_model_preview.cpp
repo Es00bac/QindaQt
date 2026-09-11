@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 
+#include "native_palette.h"
+
 #include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/themes/theme_spec.h"
+
+#include <QPalette>
 
 namespace QindaQt::Apps::SettingsAppearance {
 
@@ -50,6 +54,45 @@ QString AppearanceSettingsModel::fallbackNotice() const
     return QStringLiteral(
                "Configured theme '%1' does not match the selected color scheme; previewing '%2'")
         .arg(m_draft.themeId, resolvedThemeId());
+}
+
+QVariantList AppearanceSettingsModel::previewQtPalette() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
+    const auto native = QtTheme::nativeAppearance(
+        theme, m_preview.accessibilityInputs(m_draft, theme));
+    if (!native.has_value()) {
+        return {};
+    }
+    static const struct {
+        QPalette::ColorRole role;
+        const char *label;
+    } kRoles[] = {
+        {QPalette::Window, "Window"},
+        {QPalette::WindowText, "Window text"},
+        {QPalette::Base, "Input fields"},
+        {QPalette::Text, "Text"},
+        {QPalette::Button, "Buttons"},
+        {QPalette::ButtonText, "Button text"},
+        {QPalette::Highlight, "Selection"},
+        {QPalette::HighlightedText, "Selected text"},
+        {QPalette::ToolTipBase, "Tooltips"},
+        {QPalette::Link, "Links"},
+    };
+    QVariantList entries;
+    entries.reserve(std::size(kRoles));
+    for (const auto &entry : kRoles) {
+        entries.append(QVariantMap{
+            {QStringLiteral("role"), QString::fromLatin1(entry.label)},
+            {QStringLiteral("color"),
+             native->palette.color(QPalette::Normal, entry.role).name()},
+        });
+    }
+    return entries;
 }
 
 QSet<QString> AppearanceSettingsModel::installedThemeIds() const

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -35,6 +35,12 @@ class StubAudioSettingsModel final : public QObject {
   Q_PROPERTY(QVariantList outputDevices MEMBER outputDevices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList inputDevices MEMBER inputDevices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList streams MEMBER streams NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList virtualDevices MEMBER virtualDevices NOTIFY
+                 viewChanged)
+  Q_PROPERTY(bool canSetChannelVolumes MEMBER canSetChannelVolumes NOTIFY
+                 viewChanged)
+  Q_PROPERTY(bool canManageVirtualDevices MEMBER canManageVirtualDevices NOTIFY
+                 viewChanged)
 
 public:
   bool loading = false;
@@ -55,6 +61,9 @@ public:
   QVariantList outputDevices;
   QVariantList inputDevices;
   QVariantList streams;
+  QVariantList virtualDevices;
+  bool canSetChannelVolumes = true;
+  bool canManageVirtualDevices = true;
   int reloadCount = 0;
   quint64 defaultSerial = 0;
   quint64 deviceVolumeSerial = 0;
@@ -65,6 +74,28 @@ public:
   double streamVolumeLevel = -1.0;
   quint64 streamMuteSerial = 0;
   bool streamMuted = false;
+  quint64 channelSerial = 0;
+  int channelIndex = -1;
+  double channelLevel = -1.0;
+  QString createKindToken;
+  QString createDisplayName;
+  int createChannels = 0;
+  int createCount = 0;
+  quint64 removeVirtualSerial = 0;
+
+  static QVariantList channelRows(const QStringList &positions,
+                                  const int volumePercent) {
+    QVariantList rows;
+    for (int index = 0; index < positions.size(); ++index) {
+      rows.append(QVariantMap{
+          {QStringLiteral("index"), index},
+          {QStringLiteral("position"), positions.at(index)},
+          {QStringLiteral("volumePercent"), volumePercent},
+          {QStringLiteral("level01"), volumePercent / 100.0},
+      });
+    }
+    return rows;
+  }
 
   explicit StubAudioSettingsModel(QObject *parent = nullptr)
       : QObject(parent) {
@@ -81,13 +112,17 @@ public:
             {QStringLiteral("setDefaultAvailable"), true},
             {QStringLiteral("volumeAvailable"), true},
             {QStringLiteral("muteAvailable"), true},
+            {QStringLiteral("channelVolumes"),
+             channelRows({QStringLiteral("FL"), QStringLiteral("FR")}, 50)},
+            {QStringLiteral("channelVolumeAvailable"), true},
+            {QStringLiteral("virtualDevice"), false},
             {QStringLiteral("stateText"), QStringLiteral("Default")},
         },
         QVariantMap{
             {QStringLiteral("serial"), qulonglong(12)},
             {QStringLiteral("kindText"), QStringLiteral("Output device")},
             {QStringLiteral("displayName"),
-             QStringLiteral("USB Headphones")},
+             QStringLiteral("Surround Headphones")},
             {QStringLiteral("volumePercent"), 25},
             {QStringLiteral("volumeKnown"), true},
             {QStringLiteral("muted"), false},
@@ -96,6 +131,13 @@ public:
             {QStringLiteral("setDefaultAvailable"), true},
             {QStringLiteral("volumeAvailable"), true},
             {QStringLiteral("muteAvailable"), true},
+            {QStringLiteral("channelVolumes"),
+             channelRows({QStringLiteral("FL"), QStringLiteral("FR"),
+                          QStringLiteral("FC"), QStringLiteral("LFE"),
+                          QStringLiteral("SL"), QStringLiteral("SR")},
+                         25)},
+            {QStringLiteral("channelVolumeAvailable"), true},
+            {QStringLiteral("virtualDevice"), false},
             {QStringLiteral("stateText"), QStringLiteral("Volume 25%")},
         },
     };
@@ -113,6 +155,10 @@ public:
             {QStringLiteral("setDefaultAvailable"), true},
             {QStringLiteral("volumeAvailable"), true},
             {QStringLiteral("muteAvailable"), true},
+            {QStringLiteral("channelVolumes"),
+             channelRows({QStringLiteral("FL"), QStringLiteral("FR")}, 75)},
+            {QStringLiteral("channelVolumeAvailable"), true},
+            {QStringLiteral("virtualDevice"), false},
             {QStringLiteral("stateText"), QStringLiteral("Default")},
         },
     };
@@ -145,6 +191,18 @@ public:
             {QStringLiteral("muteAvailable"), true},
         },
     };
+    virtualDevices = {
+        QVariantMap{
+            {QStringLiteral("serial"), qulonglong(14)},
+            {QStringLiteral("kindText"),
+             QStringLiteral("Virtual output device")},
+            {QStringLiteral("displayName"), QStringLiteral("Game Bus")},
+            {QStringLiteral("channelCount"), 2},
+            {QStringLiteral("channelMap"),
+             QStringLiteral("FL · FR")},
+            {QStringLiteral("removeAvailable"), true},
+        },
+    };
   }
 
   Q_INVOKABLE bool reload() {
@@ -173,6 +231,25 @@ public:
   Q_INVOKABLE bool setStreamMuted(quint64 serial, bool muted) {
     streamMuteSerial = serial;
     streamMuted = muted;
+    return true;
+  }
+  Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int index,
+                                          double level) {
+    channelSerial = serial;
+    channelIndex = index;
+    channelLevel = level;
+    return true;
+  }
+  Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName,
+                                       int channels) {
+    ++createCount;
+    createKindToken = kindToken;
+    createDisplayName = displayName;
+    createChannels = channels;
+    return true;
+  }
+  Q_INVOKABLE bool removeVirtualDevice(quint64 serial) {
+    removeVirtualSerial = serial;
     return true;
   }
 

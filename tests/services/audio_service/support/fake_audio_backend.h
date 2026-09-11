@@ -4,6 +4,8 @@
 
 #include <qindaqt/services/audio_service/audio_backend.h>
 
+#include <algorithm>
+
 namespace QindaQt::Tests
 {
 
@@ -73,7 +75,8 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
     snapshot.availability = Audio::Availability::Ready;
     snapshot.capabilities = Audio::Capability::SetDefault
         | Audio::Capability::SetVolume | Audio::Capability::SetMute
-        | Audio::Capability::MoveStream;
+        | Audio::Capability::MoveStream | Audio::Capability::SetChannelVolumes
+        | Audio::Capability::ManageVirtualDevices;
     snapshot.defaultOutput = {.epoch = epoch, .serial = 10};
     snapshot.defaultInput = {.epoch = epoch, .serial = 20};
     snapshot.outputs = {{.handle = {.epoch = epoch, .serial = 10},
@@ -86,7 +89,24 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                          .muteKnown = true,
                          .isDefault = true,
                          .canSetVolume = true,
-                         .canSetMute = true}};
+                         .canSetMute = true,
+                         .channelVolumes = {0.5, 0.5},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                         .virtualDevice = false},
+                        {.handle = {.epoch = epoch, .serial = 11},
+                         .kind = Audio::DeviceKind::Output,
+                         .name = QStringLiteral("Virtual Output"),
+                         .description = {},
+                         .volume = 0.5,
+                         .volumeKnown = true,
+                         .muted = false,
+                         .muteKnown = true,
+                         .isDefault = false,
+                         .canSetVolume = true,
+                         .canSetMute = true,
+                         .channelVolumes = {0.25, 0.75},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                         .virtualDevice = true}};
     snapshot.inputs = {{.handle = {.epoch = epoch, .serial = 20},
                         .kind = Audio::DeviceKind::Input,
                         .name = QStringLiteral("Input"),
@@ -97,7 +117,10 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                         .muteKnown = true,
                         .isDefault = true,
                         .canSetVolume = true,
-                        .canSetMute = true}};
+                        .canSetMute = true,
+                        .channelVolumes = {0.5, 0.5},
+                        .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                        .virtualDevice = false}};
     snapshot.streams = {{.handle = {.epoch = epoch, .serial = 30},
                          .direction = Audio::StreamDirection::Playback,
                          .applicationName = QStringLiteral("Player"),
@@ -110,8 +133,43 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                          .muteKnown = true,
                          .canSetVolume = true,
                          .canSetMute = true,
-                         .canMove = true}};
+                         .canMove = true,
+                         .channelVolumes = {0.75, 0.75},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}}};
     return snapshot;
+}
+
+// Simulates the backend completing a CreateVirtualDevice: emits the outcome
+// and publishes a snapshot with the newly created managed virtual device
+// appended, mirroring what the WirePlumber adapter observes after the fence.
+inline void fulfillVirtualDeviceCreation(FakeAudioBackend &backend,
+                                         const quint64 operationId, const quint64 epoch,
+                                         const quint64 revision, const quint64 serial)
+{
+    Audio::Snapshot snapshot = audioSnapshot(epoch, revision);
+    snapshot.outputs.push_back({.handle = {.epoch = epoch, .serial = serial},
+                                .kind = Audio::DeviceKind::Output,
+                                .name = QStringLiteral("Virtual Output 2"),
+                                .description = {},
+                                .volume = 1.0,
+                                .volumeKnown = true,
+                                .muted = false,
+                                .muteKnown = true,
+                                .isDefault = false,
+                                .canSetVolume = true,
+                                .canSetMute = true,
+                                .channelVolumes = {1.0, 1.0},
+                                .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                                .virtualDevice = true});
+    std::sort(snapshot.outputs.begin(), snapshot.outputs.end(),
+              [](const Audio::Device &left, const Audio::Device &right) {
+                  return left.handle.serial < right.handle.serial;
+              });
+    backend.finish(operationId,
+                   {.status = Audio::BackendOperationStatus::Succeeded,
+                    .reasonCode = QStringLiteral("ok"),
+                    .diagnostic = {}});
+    backend.publish(snapshot);
 }
 
 } // namespace QindaQt::Tests

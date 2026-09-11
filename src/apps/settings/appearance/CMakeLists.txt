@@ -32,8 +32,15 @@ target_link_libraries(
     qindaqt_settings_appearance
     # TokenFacade's implementation lives in the shared QindaQt.Tokens QML
     # module library; the static DesignTokens value library does not carry it.
+    # qindaqt_native_palette projects the same tokens into the QPalette that
+    # ordinary Qt applications receive, so the Themes section can reflect the
+    # combined QST + Qt6 platform-theme truth (ADR-0115).
     PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml QindaQt::AppAppearance
-           qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml
+           qindaqt_themes qindaqt_native_palette Qt6::Core Qt6::Gui Qt6::Qml
+)
+target_include_directories(
+    qindaqt_settings_appearance
+    PUBLIC ${PROJECT_SOURCE_DIR}/src/platform/qt_theme
 )
 target_compile_features(qindaqt_settings_appearance PUBLIC cxx_std_20)
 set_target_properties(

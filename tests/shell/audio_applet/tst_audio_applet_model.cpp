@@ -2,6 +2,8 @@
 
 #include "audio_applet_model.h"
 
+#include <qindaqt/services/audio_protocol/audio_limits.h>
+
 #include <QtTest>
 
 #include <algorithm>
@@ -70,7 +72,7 @@ Stream makeStream(quint64 serial, const QString &application,
 Snapshot snapshotWithCounts(int outputs, int inputs, int streams)
 {
     Snapshot snapshot;
-    snapshot.schemaVersion = 1;
+    snapshot.schemaVersion = QindaQt::Audio::kSchemaVersion;
     snapshot.epoch = kEpoch;
     snapshot.revision = kRevision;
     snapshot.availability = Availability::Ready;

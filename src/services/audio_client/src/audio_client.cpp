@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/audio_client/audio_client.h>
 
+#include "audio_client_preflight_p.h"
+
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
@@ -10,97 +12,6 @@
 
 namespace QindaQt::Audio
 {
-namespace
-{
-
-const Device *findDevice(const Snapshot &snapshot, const Handle &handle)
-{
-    for (const Device &device : snapshot.outputs) {
-        if (device.handle == handle) {
-            return &device;
-        }
-    }
-    for (const Device &device : snapshot.inputs) {
-        if (device.handle == handle) {
-            return &device;
-        }
-    }
-    return nullptr;
-}
-
-const Stream *findStream(const Snapshot &snapshot, const Handle &handle)
-{
-    for (const Stream &stream : snapshot.streams) {
-        if (stream.handle == handle) {
-            return &stream;
-        }
-    }
-    return nullptr;
-}
-
-QString preflightOperation(const Snapshot &snapshot, const OperationRequest &request)
-{
-    if (snapshot.availability != Availability::Ready
-        && snapshot.availability != Availability::Degraded) {
-        return QStringLiteral("unavailable");
-    }
-    if (!request.primary.isValid() || request.primary.epoch != snapshot.epoch) {
-        return QStringLiteral("stale-handle");
-    }
-    const Device *device = findDevice(snapshot, request.primary);
-    const Stream *stream = findStream(snapshot, request.primary);
-    switch (request.kind) {
-    case OperationKind::SetDefault:
-        if (!snapshot.capabilities.testFlag(Capability::SetDefault)) {
-            return QStringLiteral("unsupported");
-        }
-        return device == nullptr ? QStringLiteral("stale-handle") : QString{};
-    case OperationKind::SetVolume:
-        if (!std::isfinite(request.volume) || request.volume < 0.0
-            || request.volume > 1.0) {
-            return QStringLiteral("invalid-volume");
-        }
-        if (device == nullptr && stream == nullptr) {
-            return QStringLiteral("stale-handle");
-        }
-        if (!snapshot.capabilities.testFlag(Capability::SetVolume)
-            || (device != nullptr && !device->canSetVolume)
-            || (stream != nullptr && !stream->canSetVolume)) {
-            return QStringLiteral("unsupported");
-        }
-        return {};
-    case OperationKind::SetMute:
-        if (device == nullptr && stream == nullptr) {
-            return QStringLiteral("stale-handle");
-        }
-        if (!snapshot.capabilities.testFlag(Capability::SetMute)
-            || (device != nullptr && !device->canSetMute)
-            || (stream != nullptr && !stream->canSetMute)) {
-            return QStringLiteral("unsupported");
-        }
-        return {};
-    case OperationKind::MoveStream: {
-        if (!request.secondary.isValid() || request.secondary.epoch != snapshot.epoch) {
-            return QStringLiteral("stale-handle");
-        }
-        const Device *target = findDevice(snapshot, request.secondary);
-        if (stream == nullptr || target == nullptr) {
-            return QStringLiteral("stale-handle");
-        }
-        if (!snapshot.capabilities.testFlag(Capability::MoveStream)
-            || !stream->canMove) {
-            return QStringLiteral("unsupported");
-        }
-        const bool compatible = stream->direction == StreamDirection::Playback
-            ? target->kind == DeviceKind::Output
-            : target->kind == DeviceKind::Input;
-        return compatible ? QString{} : QStringLiteral("incompatible-target");
-    }
-    }
-    return QStringLiteral("malformed-request");
-}
-
-} // namespace
 
 AudioClient::AudioClient(AudioTransport *transport, QObject *parent)
     : QObject(parent)
@@ -427,6 +338,42 @@ quint64 AudioClient::moveStream(const Handle &stream, const Handle &device)
         {.kind = OperationKind::MoveStream,
          .primary = stream,
          .secondary = device,
+         .volume = 0.0,
+         .muted = false});
+}
+
+quint64 AudioClient::setChannelVolumes(const Handle &target, const QVector<double> &volumes)
+{
+    return beginOperation(
+        {.kind = OperationKind::SetChannelVolumes,
+         .primary = target,
+         .secondary = {},
+         .volume = 0.0,
+         .muted = false,
+         .channelVolumes = volumes});
+}
+
+quint64 AudioClient::createVirtualDevice(const DeviceKind kind, const QString &displayName,
+                                         const quint32 channels)
+{
+    return beginOperation(
+        {.kind = OperationKind::CreateVirtualDevice,
+         .primary = {},
+         .secondary = {},
+         .volume = 0.0,
+         .muted = false,
+         .channelVolumes = {},
+         .deviceKind = kind,
+         .displayName = displayName,
+         .channels = channels});
+}
+
+quint64 AudioClient::removeVirtualDevice(const Handle &device)
+{
+    return beginOperation(
+        {.kind = OperationKind::RemoveVirtualDevice,
+         .primary = device,
+         .secondary = {},
          .volume = 0.0,
          .muted = false});
 }

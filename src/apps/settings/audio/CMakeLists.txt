@@ -35,10 +35,13 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_AUDIO_SETTINGS_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_audio.qmltypes
     QML_FILES
+        qml/AudioChannelStrip.qml
         qml/AudioDeviceSection.qml
+        qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
         qml/AudioStreamSection.qml
+        qml/AudioVirtualDeviceSection.qml
 )
 target_link_libraries(
     qindaqt_settings_audio_qml
@@ -52,6 +55,12 @@ set_target_properties(
     INSTALL_RPATH "$ORIGIN/../../Tokens;$ORIGIN/../../Controls"
 )
 qindaqt_enable_warnings(qindaqt_settings_audio_qml)
+
+# Stage the confined icon module beside the route so an installed Settings
+# package can resolve QindaQt.Shell.Icons without a shell install, matching
+# the Customize route.
+include("${PROJECT_SOURCE_DIR}/src/shell/IconRuntimeInstall.cmake")
+qindaqt_install_shell_icons_runtime(SettingsAppearanceRuntime)
 
 install(
     TARGETS qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin
@@ -71,10 +80,13 @@ install(
 )
 install(
     FILES
+        qml/AudioChannelStrip.qml
         qml/AudioDeviceSection.qml
+        qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
         qml/AudioStreamSection.qml
+        qml/AudioVirtualDeviceSection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio"
     COMPONENT SettingsAppearanceRuntime
 )

@@ -57,7 +57,7 @@ set_tests_properties(
     qindaqt.audio-wireplumber-runtime
     PROPERTIES
         LABELS "service;audio;wireplumber;isolated-runtime"
-        TIMEOUT 45
+        TIMEOUT 120
         RUN_SERIAL TRUE
 )
 

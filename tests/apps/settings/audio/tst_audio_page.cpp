@@ -4,17 +4,21 @@
 
 #include <qindaqt/apps/settings_appearance/appearance_qml_composition.h>
 #include <qindaqt/apps/settings_audio/audio_settings_model.h>
+#include <qindaqt/shell/icons/icon_runtime.h>
 #include <qindaqt/themes/theme_loader.h>
 
 #include <QtGui/QAccessible>
 #include <QtGui/QAccessibleInterface>
 #include <QtCore/QMetaObject>
 #include <QtQml/QQmlComponent>
+#include <QtQml/QQmlExtensionPlugin>
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QQuickView>
 #include <QtTest>
 
 #include <memory>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using QindaQt::Apps::SettingsAudio::TestSupport::StubAudioSettingsModel;
 
@@ -51,6 +55,7 @@ class AudioPageTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void rendersInventoryAccessibly();
+  void rendersChannelStripsAndVirtualDevices();
   void routesDefaultVolumeMuteAndRetryIntents();
   void showsStaleTruthLabeledAndOwnerLossEmpty();
   void keepsCompactFocusVisibleWithoutAPageCloseAction();
@@ -78,6 +83,13 @@ void AudioPageTest::initTestCase() {
   QString publishError;
   QVERIFY2(facade->publish(loaded.theme, {}, &publishError),
            qPrintable(publishError));
+  // The virtual-device section renders real iconography; the harness
+  // resolves the shipped icon theme so the buttons prove resolved glyphs.
+  QVERIFY2(QindaQt::Shell::Icons::IconRuntime::install(
+               *m_view->engine(),
+               {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
+               {QStringLiteral("QindaQt")}),
+           "icon runtime install");
 }
 
 std::pair<std::unique_ptr<QObject>, QQuickItem *>
@@ -149,6 +161,90 @@ void AudioPageTest::rendersInventoryAccessibly() {
   QCOMPARE(volumeAccessible->role(), QAccessible::Slider);
   QVERIFY(setDefaultAccessible->text(QAccessible::Description)
               .contains(QStringLiteral("default")));
+}
+
+void AudioPageTest::rendersChannelStripsAndVirtualDevices() {
+  auto [guard, page] = createPage(QSize(900, 760));
+  QVERIFY(page != nullptr);
+
+  // The channel disclosure exists for the six-channel fixture and stays
+  // collapsed until opened; the strip then exposes one fader per channel.
+  auto *channelsToggle =
+      findItem(page, QStringLiteral("audioChannelsToggle_12"));
+  QVERIFY(channelsToggle != nullptr);
+  QVERIFY(channelsToggle->isVisible());
+  QVERIFY(channelsToggle->isEnabled());
+  QVERIFY(findItem(page, QStringLiteral("audioChannelVolume_12_2"))
+          == nullptr);
+  QVERIFY(QMetaObject::invokeMethod(channelsToggle, "clicked"));
+  QCoreApplication::processEvents();
+  auto *frontLeft = findItem(page, QStringLiteral("audioChannelVolume_12_0"));
+  auto *center = findItem(page, QStringLiteral("audioChannelVolume_12_2"));
+  auto *surroundText =
+      findItem(page, QStringLiteral("audioChannelVolumeText_12_5"));
+  QVERIFY(frontLeft != nullptr);
+  QVERIFY(center != nullptr);
+  QVERIFY(surroundText != nullptr);
+  QVERIFY(center->isEnabled());
+  QCOMPARE(surroundText->property("text").toString(), QStringLiteral("25%"));
+
+  auto *centerAccessible = QAccessible::queryAccessibleInterface(center);
+  QVERIFY(centerAccessible != nullptr);
+  QCOMPARE(centerAccessible->role(), QAccessible::Slider);
+  QVERIFY(centerAccessible->text(QAccessible::Description)
+              .contains(QStringLiteral("FC channel volume")));
+
+  center->setProperty("value", 0.4);
+  QVERIFY(QMetaObject::invokeMethod(center, "moved"));
+  QCOMPARE(m_model->channelSerial, qulonglong(12));
+  QCOMPARE(m_model->channelIndex, 2);
+  QVERIFY(m_model->channelLevel > 0.39);
+  QVERIFY(m_model->channelLevel < 0.41);
+
+  // The virtual-device section renders its managed inventory and never a
+  // remove action for hardware rows.
+  QVERIFY(findItem(page, QStringLiteral("audioVirtualAddOutput")) != nullptr);
+  QVERIFY(findItem(page, QStringLiteral("audioVirtualAddInput")) != nullptr);
+  QVERIFY(findItem(page, QStringLiteral("audioVirtualRemove_14")) != nullptr);
+  QVERIFY(findItem(page, QStringLiteral("audioVirtualRemove_10"))
+          == nullptr);
+  QVERIFY(findItem(page, QStringLiteral("audioVirtualRemove_12"))
+          == nullptr);
+
+  auto *addOutput = findItem(page, QStringLiteral("audioVirtualAddOutput"));
+  QVERIFY(addOutput->isEnabled());
+  QVERIFY(QMetaObject::invokeMethod(addOutput, "clicked"));
+  QCOMPARE(m_model->createCount, 1);
+  QCOMPARE(m_model->createKindToken, QStringLiteral("output"));
+  QCOMPARE(m_model->createDisplayName, QStringLiteral("Virtual output"));
+  QCOMPARE(m_model->createChannels, 2);
+
+  auto *addInput = findItem(page, QStringLiteral("audioVirtualAddInput"));
+  QVERIFY(QMetaObject::invokeMethod(addInput, "clicked"));
+  QCOMPARE(m_model->createCount, 2);
+  QCOMPARE(m_model->createKindToken, QStringLiteral("input"));
+
+  auto *removeBus = findItem(page, QStringLiteral("audioVirtualRemove_14"));
+  QVERIFY(QMetaObject::invokeMethod(removeBus, "clicked"));
+  QCOMPARE(m_model->removeVirtualSerial, qulonglong(14));
+
+  // Without the capabilities the section's controls are disabled and the
+  // channel disclosure disappears from every device row.
+  m_model->canManageVirtualDevices = false;
+  m_model->canSetChannelVolumes = false;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  QVERIFY(!findItem(page, QStringLiteral("audioVirtualAddOutput"))
+              ->isEnabled());
+  QVERIFY(!findItem(page, QStringLiteral("audioVirtualAddInput"))
+              ->isEnabled());
+  QVERIFY(!findItem(page, QStringLiteral("audioVirtualRemove_14"))
+              ->isEnabled());
+  auto *hiddenToggle =
+      findItem(page, QStringLiteral("audioChannelsToggle_12"));
+  QVERIFY(hiddenToggle == nullptr || !hiddenToggle->isVisible());
+  QVERIFY(!findItem(page, QStringLiteral("audioChannelVolume_12_2"))
+              ->isEnabled());
 }
 
 void AudioPageTest::routesDefaultVolumeMuteAndRetryIntents() {
@@ -284,6 +380,10 @@ void AudioPageTest::disabledDefaultFallsThroughToFirstAdmittedAction() {
   auto firstRow = outputDevices.at(0).toMap();
   firstRow[QStringLiteral("volumeAvailable")] = false;
   firstRow[QStringLiteral("muteAvailable")] = false;
+  // This case is about default/volume fallback only; clear the default
+  // row's channel strip so its disclosure cannot absorb the entry focus.
+  firstRow[QStringLiteral("channelVolumes")] = QVariantList{};
+  firstRow[QStringLiteral("channelVolumeAvailable")] = false;
   outputDevices[0] = firstRow;
   m_model->outputDevices = outputDevices;
   Q_EMIT m_model->viewChanged();

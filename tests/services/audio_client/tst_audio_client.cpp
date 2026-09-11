@@ -21,6 +21,14 @@ enum class LocalScenario {
     InvalidVolume,
     UnsupportedMute,
     IncompatibleMove,
+    ChannelCountMismatch,
+    ChannelBadLevel,
+    ChannelUnsupportedCapability,
+    CreateBadName,
+    CreateBadChannels,
+    CreateUnsupportedCapability,
+    RemoveNonVirtual,
+    RemoveStale,
 };
 
 quint64 invokeLocalScenario(AudioClient &client, const LocalScenario scenario)
@@ -38,6 +46,24 @@ quint64 invokeLocalScenario(AudioClient &client, const LocalScenario scenario)
     case LocalScenario::IncompatibleMove:
         return client.moveStream({.epoch = 11, .serial = 30},
                                  {.epoch = 11, .serial = 20});
+    case LocalScenario::ChannelCountMismatch:
+        return client.setChannelVolumes({.epoch = 11, .serial = 10}, {0.1});
+    case LocalScenario::ChannelBadLevel:
+        return client.setChannelVolumes({.epoch = 11, .serial = 10}, {0.1, 1.5});
+    case LocalScenario::ChannelUnsupportedCapability:
+        return client.setChannelVolumes({.epoch = 11, .serial = 30}, {0.1, 0.2});
+    case LocalScenario::CreateBadName:
+        return client.createVirtualDevice(DeviceKind::Output, QString(), 2);
+    case LocalScenario::CreateBadChannels:
+        return client.createVirtualDevice(DeviceKind::Output,
+                                          QStringLiteral("Studio Bus"), 3);
+    case LocalScenario::CreateUnsupportedCapability:
+        return client.createVirtualDevice(DeviceKind::Output,
+                                          QStringLiteral("Studio Bus"), 8);
+    case LocalScenario::RemoveNonVirtual:
+        return client.removeVirtualDevice({.epoch = 11, .serial = 10});
+    case LocalScenario::RemoveStale:
+        return client.removeVirtualDevice({.epoch = 11, .serial = 999});
     }
     return 0;
 }
@@ -64,6 +90,8 @@ private Q_SLOTS:
     void oldEpochSuccessBecomesUncertain();
     void localCompletionsAreQueued_data();
     void localCompletionsAreQueued();
+    void channelVolumeOperationReachesTransport();
+    void virtualDeviceOperationsReachTransport();
     void busyCompletionIsQueued();
     void stopCompletionAndCancellationAreLifetimeSafe();
 };
@@ -319,6 +347,30 @@ void AudioClientTests::localCompletionsAreQueued_data()
     QTest::newRow("move-stream-incompatible") << LocalScenario::IncompatibleMove
                                                << OperationStatus::Rejected
                                                << QStringLiteral("incompatible-target");
+    QTest::newRow("channel-count-mismatch") << LocalScenario::ChannelCountMismatch
+                                            << OperationStatus::Rejected
+                                            << QStringLiteral("invalid-target");
+    QTest::newRow("channel-bad-level") << LocalScenario::ChannelBadLevel
+                                       << OperationStatus::Rejected
+                                       << QStringLiteral("invalid-volume");
+    QTest::newRow("channel-unsupported-capability")
+        << LocalScenario::ChannelUnsupportedCapability << OperationStatus::Unsupported
+        << QStringLiteral("unsupported");
+    QTest::newRow("create-bad-name") << LocalScenario::CreateBadName
+                                     << OperationStatus::Rejected
+                                     << QStringLiteral("invalid-name");
+    QTest::newRow("create-bad-channels") << LocalScenario::CreateBadChannels
+                                         << OperationStatus::Rejected
+                                         << QStringLiteral("invalid-channel-count");
+    QTest::newRow("create-unsupported-capability")
+        << LocalScenario::CreateUnsupportedCapability << OperationStatus::Unsupported
+        << QStringLiteral("unsupported");
+    QTest::newRow("remove-non-virtual") << LocalScenario::RemoveNonVirtual
+                                        << OperationStatus::Rejected
+                                        << QStringLiteral("invalid-target");
+    QTest::newRow("remove-stale") << LocalScenario::RemoveStale
+                                  << OperationStatus::Rejected
+                                  << QStringLiteral("stale-handle");
 }
 
 void AudioClientTests::localCompletionsAreQueued()
@@ -333,8 +385,18 @@ void AudioClientTests::localCompletionsAreQueued()
     if (scenario != LocalScenario::Unavailable) {
         transport.announceOwner(QStringLiteral(":1.60"));
         Snapshot snapshot = clientSnapshot();
-        if (scenario == LocalScenario::UnsupportedMute) {
+        switch (scenario) {
+        case LocalScenario::UnsupportedMute:
             snapshot.outputs[0].canSetMute = false;
+            break;
+        case LocalScenario::ChannelUnsupportedCapability:
+            snapshot.capabilities &= ~Capabilities(Capability::SetChannelVolumes);
+            break;
+        case LocalScenario::CreateUnsupportedCapability:
+            snapshot.capabilities &= ~Capabilities(Capability::ManageVirtualDevices);
+            break;
+        default:
+            break;
         }
         transport.reply(transport.fetches[0], snapshot);
     }
@@ -349,6 +411,67 @@ void AudioClientTests::localCompletionsAreQueued()
     QCoreApplication::processEvents();
     QCOMPARE(completed.count(), 1);
     QVERIFY(transport.operations.isEmpty());
+}
+
+void AudioClientTests::channelVolumeOperationReachesTransport()
+{
+    FakeAudioTransport transport;
+    AudioClient client(&transport);
+    QSignalSpy completed(&client, &AudioClient::operationCompleted);
+    client.start();
+    transport.announceOwner(QStringLiteral(":1.64"));
+    transport.reply(transport.fetches[0], clientSnapshot());
+    const quint64 requestId =
+        client.setChannelVolumes({.epoch = 11, .serial = 10}, {0.15, 0.85});
+    QVERIFY(requestId != 0);
+    QCOMPARE(transport.operations.size(), 1);
+    QCOMPARE(transport.operations[0].request.kind, OperationKind::SetChannelVolumes);
+    QCOMPARE(transport.operations[0].request.primary.serial, quint64(10));
+    QCOMPARE(transport.operations[0].request.channelVolumes, QVector<double>({0.15, 0.85}));
+
+    // A second mutation while the first is transport-backed stays serialized.
+    const quint64 secondId =
+        client.setChannelVolumes({.epoch = 11, .serial = 30}, {0.2, 0.4});
+    QVERIFY(secondId != 0);
+    QCOMPARE(transport.operations.size(), 1);
+    QTRY_COMPARE(completed.count(), 1);
+    QCOMPARE(completed[0][0].toULongLong(), secondId);
+    QCOMPARE(completed[0][1].value<OperationResult>().status, OperationStatus::Busy);
+
+    transport.finish(transport.operations[0], successfulResult(transport.operations[0], 3));
+    QTRY_COMPARE(completed.count(), 2);
+    QCOMPARE(completed[1][0].toULongLong(), requestId);
+    QCOMPARE(completed[1][1].value<OperationResult>().status, OperationStatus::Succeeded);
+}
+
+void AudioClientTests::virtualDeviceOperationsReachTransport()
+{
+    FakeAudioTransport transport;
+    AudioClient client(&transport);
+    QSignalSpy completed(&client, &AudioClient::operationCompleted);
+    client.start();
+    transport.announceOwner(QStringLiteral(":1.65"));
+    transport.reply(transport.fetches[0], clientSnapshot());
+    const quint64 createdId = client.createVirtualDevice(DeviceKind::Output,
+                                                         QStringLiteral("Studio Bus"), 6);
+    QVERIFY(createdId != 0);
+    QCOMPARE(transport.operations.size(), 1);
+    const auto createRequest = transport.operations[0].request;
+    QCOMPARE(createRequest.kind, OperationKind::CreateVirtualDevice);
+    QCOMPARE(createRequest.deviceKind, DeviceKind::Output);
+    QCOMPARE(createRequest.displayName, QStringLiteral("Studio Bus"));
+    QCOMPARE(createRequest.channels, quint32(6));
+    transport.finish(transport.operations[0], successfulResult(transport.operations[0], 3));
+    QTRY_COMPARE(completed.count(), 1);
+
+    const quint64 removedId = client.removeVirtualDevice({.epoch = 11, .serial = 11});
+    QVERIFY(removedId != 0);
+    QCOMPARE(transport.operations.size(), 2);
+    QCOMPARE(transport.operations[1].request.kind, OperationKind::RemoveVirtualDevice);
+    QCOMPARE(transport.operations[1].request.primary.serial, quint64(11));
+    transport.finish(transport.operations[1], successfulResult(transport.operations[1], 3));
+    QTRY_COMPARE(completed.count(), 2);
+    QCOMPARE(completed[1][1].value<OperationResult>().status, OperationStatus::Succeeded);
 }
 
 void AudioClientTests::busyCompletionIsQueued()

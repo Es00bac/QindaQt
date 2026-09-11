@@ -45,6 +45,11 @@ class AudioSettingsModel final : public QObject {
   Q_PROPERTY(QVariantList outputDevices READ outputDevices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList inputDevices READ inputDevices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList streams READ streams NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList virtualDevices READ virtualDevices NOTIFY viewChanged)
+  Q_PROPERTY(bool canSetChannelVolumes READ canSetChannelVolumes NOTIFY
+                 viewChanged)
+  Q_PROPERTY(bool canManageVirtualDevices READ canManageVirtualDevices NOTIFY
+                 viewChanged)
 
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
@@ -71,6 +76,9 @@ public:
   [[nodiscard]] QVariantList outputDevices() const;
   [[nodiscard]] QVariantList inputDevices() const;
   [[nodiscard]] QVariantList streams() const;
+  [[nodiscard]] QVariantList virtualDevices() const;
+  [[nodiscard]] bool canSetChannelVolumes() const;
+  [[nodiscard]] bool canManageVirtualDevices() const;
 
   // Serials are the snapshot-unique Audio1 object identity; the model
   // re-resolves them against the current snapshot before dispatch, so a
@@ -84,6 +92,17 @@ public:
   Q_INVOKABLE bool setDeviceMuted(quint64 serial, bool muted);
   Q_INVOKABLE bool setStreamVolume(quint64 serial, double level);
   Q_INVOKABLE bool setStreamMuted(quint64 serial, bool muted);
+  // Per-channel volume is expressed as one channel of the device's retained
+  // layout; the full-layout vector is rebuilt from the same snapshot the
+  // client's preflight validates against.
+  Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex,
+                                          double level);
+  // kindToken is the closed route vocabulary "output" or "input". The display
+  // name is route-generated (never free user text) and channels is one of
+  // 2, 4, 6, or 8.
+  Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName,
+                                       int channels);
+  Q_INVOKABLE bool removeVirtualDevice(quint64 serial);
 
 Q_SIGNALS:
   void viewChanged();
@@ -93,7 +112,8 @@ private:
   // Intent kinds the route can express; MoveStream is deliberately not part
   // of this slice's surface.
   enum class Intent { SetDefault, DeviceVolume, DeviceMute, StreamVolume,
-                       StreamMute };
+                       StreamMute, DeviceChannelVolume, CreateVirtual,
+                       RemoveVirtual };
 
   struct PendingIntent {
     quint64 requestId = 0;

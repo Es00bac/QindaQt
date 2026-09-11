@@ -14,13 +14,14 @@ T.Page {
     signal closeRequested()
 
     // Focus entry follows visual traversal order: the first enabled,
-    // admitted control of the output, input, then stream sections, then
-    // Retry. Sections recompute their target from the live
+    // admitted control of the output, input, virtual-device, then stream
+    // sections, then Retry. Sections recompute their target from the live
     // projection, so a control the snapshot disabled is never nominated
     // (AGENT-GUARD: the Settings host forceActiveFocus()es this target).
     readonly property Item firstFocusTarget:
         outputSection.firstActionTarget !== null ? outputSection.firstActionTarget
         : inputSection.firstActionTarget !== null ? inputSection.firstActionTarget
+        : virtualSection.firstActionTarget !== null ? virtualSection.firstActionTarget
         : streamSection.firstActionTarget !== null ? streamSection.firstActionTarget
         : retryButton.visible ? retryButton
         : root
@@ -28,6 +29,7 @@ T.Page {
     // The last domain action follows the visible traversal order.
     readonly property Item lastActionTarget:
         streamSection.lastActionTarget !== null ? streamSection.lastActionTarget
+        : virtualSection.lastActionTarget !== null ? virtualSection.lastActionTarget
         : inputSection.lastActionTarget !== null ? inputSection.lastActionTarget
         : outputSection.lastActionTarget
 
@@ -207,6 +209,12 @@ T.Page {
                         deviceRows: root.audioSettings.inputDevices
                         emptyText: qsTr(
                             "No input devices are currently reported.")
+                    }
+
+                    AudioVirtualDeviceSection {
+                        id: virtualSection
+                        audioSettings: root.audioSettings
+                        virtualDeviceRows: root.audioSettings.virtualDevices
                     }
 
                     AudioStreamSection {

@@ -79,21 +79,32 @@ ColumnLayout {
             required property int index
             Layout.fillWidth: true
             padding: Tokens.space["3"]
+            // Per-row disclosure state for the channel strip; deliberately
+            // not projected truth (the projection always carries channels).
+            property bool channelsExpanded: false
             Accessible.name: qsTr("%1 %2, %3")
                 .arg(deviceRow.modelData.kindText)
                 .arg(deviceRow.modelData.displayName)
                 .arg(deviceRow.modelData.stateText)
 
-            // Traversal order inside a row is set-default, volume, mute; the
+            // Traversal order inside a row is set-default, volume, mute, the
+            // channel disclosure, then the expanded per-channel faders; the
             // enabled flag already folds in admission (Button derives it from
             // available && !busy) and the projection's can-set fences.
             readonly property Item firstEnabledAction:
                 setDefaultButton.visible && setDefaultButton.enabled
                     ? setDefaultButton
                     : levelRow.entryControl.enabled ? levelRow.entryControl
-                    : muteSwitch.enabled ? muteSwitch : null
+                    : muteSwitch.enabled ? muteSwitch
+                    : channelsToggle.visible && channelsToggle.enabled
+                      ? channelsToggle : null
             readonly property Item lastEnabledAction:
-                muteSwitch.enabled ? muteSwitch
+                channelLoader.item !== null
+                        && channelLoader.item.lastEnabledControl !== null
+                    ? channelLoader.item.lastEnabledControl
+                : channelsToggle.visible && channelsToggle.enabled
+                  ? channelsToggle
+                : muteSwitch.enabled ? muteSwitch
                 : levelRow.entryControl.enabled ? levelRow.entryControl
                 : setDefaultButton.visible && setDefaultButton.enabled
                   ? setDefaultButton : null
@@ -182,6 +193,55 @@ ColumnLayout {
                             .arg(deviceRow.modelData.displayName)
                         onToggled: root.audioSettings.setDeviceMuted(
                                        deviceRow.modelData.serial, checked)
+                    }
+                }
+
+                // The per-channel strip is opt-in per device row and only
+                // exists for an admitted multi-channel layout; hardware with
+                // one channel keeps the plain aggregate row.
+                Button {
+                    id: channelsToggle
+
+                    objectName: "audioChannelsToggle_"
+                                + deviceRow.modelData.serial
+                    visible: deviceRow.modelData.channelVolumeAvailable
+                             && root.audioSettings.canSetChannelVolumes
+                             && deviceRow.modelData.channelVolumes.length > 1
+                    available: deviceRow.modelData.channelVolumeAvailable
+                               && root.audioSettings.canSetChannelVolumes
+                    busy: root.audioSettings.busy
+                    emphasized: false
+                    checkable: true
+                    text: deviceRow.channelsExpanded
+                          ? qsTr("Hide channels")
+                          : qsTr("Channels")
+                    accessibleDescription: qsTr("Adjust %1 channels individually")
+                        .arg(deviceRow.modelData.displayName)
+                    onClicked: deviceRow.channelsExpanded
+                                = !deviceRow.channelsExpanded
+                }
+
+                // Deferral, not visibility: a collapsed strip must not
+                // instantiate its controls at all, so focus order and the
+                // a11y tree only meet it once the row is opened.
+                Loader {
+                    id: channelLoader
+
+                    Layout.fillWidth: true
+                    active: deviceRow.channelsExpanded
+                    visible: active
+                    sourceComponent: Component {
+                        AudioChannelStrip {
+                            targetName: deviceRow.modelData.displayName
+                            channelRows: deviceRow.modelData.channelVolumes
+                            available: deviceRow.modelData.channelVolumeAvailable
+                                       && root.audioSettings.canSetChannelVolumes
+                            serial: deviceRow.modelData.serial
+                            commit: (channelIndex, level) =>
+                                root.audioSettings.setDeviceChannelVolume(
+                                    deviceRow.modelData.serial, channelIndex,
+                                    level)
+                        }
                     }
                 }
             }

@@ -61,6 +61,24 @@ const Stream *findStream(const Snapshot &snapshot, const Handle &handle)
     return nullptr;
 }
 
+bool validRequestedVolumes(const QVector<double> &volumes)
+{
+    if (volumes.size() > kMaxChannelsPerDevice) {
+        return false;
+    }
+    for (const double level : volumes) {
+        if (!std::isfinite(level) || level < 0.0 || level > 1.0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool validVirtualDeviceChannelCount(const quint32 channels)
+{
+    return channels == 2 || channels == 4 || channels == 6 || channels == 8;
+}
+
 } // namespace
 
 AudioOperationCoordinator::AudioOperationCoordinator(AudioBackend *backend, QObject *parent)
@@ -154,7 +172,11 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
                        && m_snapshot.availability != Availability::Degraded)) {
         return QStringLiteral("unavailable");
     }
-    if (!request.primary.isValid() || request.primary.epoch != m_snapshot.epoch) {
+    // CreateVirtualDevice names no existing object; every other kind targets a
+    // handle from the retained snapshot.
+    const bool targeted = request.kind != OperationKind::CreateVirtualDevice;
+    if (targeted
+        && (!request.primary.isValid() || request.primary.epoch != m_snapshot.epoch)) {
         return QStringLiteral("stale-handle");
     }
 
@@ -183,6 +205,34 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
         if ((device != nullptr && !device->canSetVolume)
             || (stream != nullptr && !stream->canSetVolume)) {
             return QStringLiteral("unsupported");
+        }
+        break;
+    }
+    case OperationKind::SetChannelVolumes: {
+        if (!hasCapability(m_snapshot.capabilities, Capability::SetChannelVolumes)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(m_snapshot, request.primary);
+        const Stream *stream = findStream(m_snapshot, request.primary);
+        if (device == nullptr && stream == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if ((device != nullptr && !device->canSetVolume)
+            || (stream != nullptr && !stream->canSetVolume)) {
+            return QStringLiteral("unsupported");
+        }
+        if (!validRequestedVolumes(request.channelVolumes)) {
+            return QStringLiteral("invalid-volume");
+        }
+        // AGENT-GUARD: Per-channel writes must cover exactly the retained
+        // layout. A count mismatch means the request disagrees with the
+        // observed channel topology; fail closed instead of writing partial
+        // channel state to the mixer.
+        const qsizetype retainedChannels = device != nullptr
+            ? device->channelVolumes.size()
+            : stream->channelVolumes.size();
+        if (retainedChannels == 0 || request.channelVolumes.size() != retainedChannels) {
+            return QStringLiteral("invalid-target");
         }
         break;
     }
@@ -221,6 +271,39 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
             : target->kind == DeviceKind::Input;
         if (!compatible) {
             return QStringLiteral("incompatible-target");
+        }
+        break;
+    }
+    case OperationKind::CreateVirtualDevice: {
+        if (!hasCapability(m_snapshot.capabilities, Capability::ManageVirtualDevices)) {
+            return QStringLiteral("unsupported");
+        }
+        if (request.deviceKind != DeviceKind::Output
+            && request.deviceKind != DeviceKind::Input) {
+            return QStringLiteral("malformed-request");
+        }
+        if (request.displayName.isEmpty()
+            || !isBoundedText(request.displayName, kMaxVirtualNameUtf8Bytes)) {
+            return QStringLiteral("invalid-name");
+        }
+        if (!validVirtualDeviceChannelCount(request.channels)) {
+            return QStringLiteral("invalid-channel-count");
+        }
+        break;
+    }
+    case OperationKind::RemoveVirtualDevice: {
+        if (!hasCapability(m_snapshot.capabilities, Capability::ManageVirtualDevices)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(m_snapshot, request.primary);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        // AGENT-GUARD: Only devices carrying the managed virtual prefix may be
+        // destroyed. Removing this check would let a client destroy hardware
+        // nodes through the public API.
+        if (!device->virtualDevice) {
+            return QStringLiteral("invalid-target");
         }
         break;
     }

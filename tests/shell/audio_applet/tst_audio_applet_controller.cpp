@@ -3,6 +3,7 @@
 #include "audio_applet_controller.h"
 
 #include <qindaqt/services/audio_client/audio_client.h>
+#include <qindaqt/services/audio_protocol/audio_limits.h>
 
 #include <QSignalSpy>
 #include <QtTest>
@@ -63,7 +64,7 @@ Device makeDevice(quint64 serial, DeviceKind kind, const QString &description,
 Snapshot makeReadySnapshot()
 {
     Snapshot snapshot;
-    snapshot.schemaVersion = 1;
+    snapshot.schemaVersion = QindaQt::Audio::kSchemaVersion;
     snapshot.epoch = kEpoch;
     snapshot.revision = kRevision;
     snapshot.availability = Availability::Ready;
