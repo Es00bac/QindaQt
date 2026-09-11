@@ -160,11 +160,12 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     auto *popupContent = popup->property("contentItem").value<QQuickItem *>();
     QVERIFY(popupContent != nullptr);
 
-    // One slider per device with known volume (output and input) plus one
-    // stream slider; every control carries a complete accessible identity.
+    // One slider per device with known volume (two outputs — physical and a
+    // managed virtual device — plus one input) and one stream slider; every
+    // control carries a complete accessible identity.
     const auto deviceSliders = visualItemsNamed(
         popupContent, QStringLiteral("audioDeviceVolume"));
-    QCOMPARE(deviceSliders.size(), 2);
+    QCOMPARE(deviceSliders.size(), 3);
     const auto streamSliders = visualItemsNamed(
         popupContent, QStringLiteral("audioStreamVolume"));
     QCOMPARE(streamSliders.size(), 1);
@@ -198,7 +199,7 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     // The mute switch exposes an accessible role and description as well.
     const auto muteSwitches = visualItemsNamed(
         popupContent, QStringLiteral("audioDeviceMute"));
-    QCOMPARE(muteSwitches.size(), 2);
+    QCOMPARE(muteSwitches.size(), 3);
     QAccessibleInterface *muteInterface =
         QAccessible::queryAccessibleInterface(muteSwitches.constFirst());
     QVERIFY(muteInterface != nullptr);

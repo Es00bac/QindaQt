@@ -26,6 +26,9 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool setDeviceMuted(quint64 serial, bool muted)"
         "Q_INVOKABLE bool setStreamVolume(quint64 serial, double level)"
         "Q_INVOKABLE bool setStreamMuted(quint64 serial, bool muted)"
+        "Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex, double level)"
+        "Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels)"
+        "Q_INVOKABLE bool removeVirtualDevice(quint64 serial)"
     )
     foreach(invokable IN LISTS invokables)
         string(REGEX REPLACE "[ \t\r\n]+" " " normalized "${invokable}")

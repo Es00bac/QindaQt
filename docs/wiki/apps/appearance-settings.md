@@ -18,13 +18,20 @@ One page covers the appearance preference set stored through Settings1:
 
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
-| Themes | Installed-theme previews and dark/light/system scheme preference | `appearance.theme`, `appearance.colorScheme` |
+| Themes | Installed-theme previews, dark/light/system scheme preference, and the toolkit card showing the exact QPalette ordinary Qt applications receive for the previewed theme | `appearance.theme`, `appearance.colorScheme` |
 | Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
 Display scale belongs to the separate **Display** route, which owns the live
 output configuration. Appearance offers a direct route action rather than a
 second, stored-only scale control.
+
+The toolkit card is presentation-only: the projection is the same
+QST-token-to-QPalette mapping the QPA platform-theme plugin applies
+(ADR-0115), so the page shows the combined theme truth — QindaQt surfaces
+paint from tokens, stock Qt applications follow the platform theme with
+palette, fonts, and icons live — without giving the route write access to
+any Qt style state.
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
@@ -140,8 +147,8 @@ ctest --test-dir build/dev \
   exact shipped-schema key/default/constraint contracts.
 - `qindaqt.appearance-preview` — configured-theme precedence, scheme and
   platform fallbacks, complete preview maps for every built-in theme,
-  high-contrast QST input, and an exact five-ID inventory including
-  `qinda-macos`.
+  high-contrast QST input, and an exact six-ID inventory including
+  `qinda-macos` and `qinda-bliss`.
 - `qindaqt.appearance-settings-model` — baseline decode, per-key commit
   sequence with fresh-base snapshots, conflict stop/explicit re-apply,
   uncertain no-replay, owner-loss and reply-gap owner/epoch replacement abort,

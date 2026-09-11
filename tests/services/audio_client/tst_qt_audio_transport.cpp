@@ -121,8 +121,9 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
              qPrintable(introspectionReply.error().message()));
     const QString introspection = introspectionReply.value();
     QVERIFY(introspection.contains(
-        QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbb)")));
+        QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
+    QVERIFY(introspection.contains(QStringLiteral("type=\"ad\" direction=\"in\"")));
 
     QtAudioTransport transport(bus.connection, serviceName);
     AudioClient client(&transport);
@@ -142,6 +143,38 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
     QCOMPARE(completed[0][0].toULongLong(), requestId);
     QCOMPARE(completed[0][1].value<OperationResult>().status,
              OperationStatus::Succeeded);
+
+    // Schema v2 methods must marshal over the real bus: the per-channel array
+    // travels as "ad" and the virtual device request as (u, s, u).
+    const quint64 channelRequestId =
+        client.setChannelVolumes({.epoch = 41, .serial = 10}, {0.2, 0.8});
+    QVERIFY(channelRequestId != 0);
+    QTRY_COMPARE(firstBackendPtr->operations.size(), 2);
+    QCOMPARE(firstBackendPtr->operations[1].request.kind,
+             OperationKind::SetChannelVolumes);
+    QCOMPARE(firstBackendPtr->operations[1].request.channelVolumes,
+             QVector<double>({0.2, 0.8}));
+    firstBackendPtr->finish(firstBackendPtr->operations[1].operationId,
+                            {.status = BackendOperationStatus::Succeeded,
+                             .reasonCode = QStringLiteral("ok"),
+                             .diagnostic = {}});
+    QTRY_COMPARE(completed.count(), 2);
+
+    const quint64 createRequestId = client.createVirtualDevice(
+        DeviceKind::Output, QStringLiteral("Bus A"), 6);
+    QVERIFY(createRequestId != 0);
+    QTRY_COMPARE(firstBackendPtr->operations.size(), 3);
+    QCOMPARE(firstBackendPtr->operations[2].request.kind,
+             OperationKind::CreateVirtualDevice);
+    QCOMPARE(firstBackendPtr->operations[2].request.deviceKind, DeviceKind::Output);
+    QCOMPARE(firstBackendPtr->operations[2].request.displayName,
+             QStringLiteral("Bus A"));
+    QCOMPARE(firstBackendPtr->operations[2].request.channels, quint32(6));
+    firstBackendPtr->finish(firstBackendPtr->operations[2].operationId,
+                            {.status = BackendOperationStatus::Succeeded,
+                             .reasonCode = QStringLiteral("ok"),
+                             .diagnostic = {}});
+    QTRY_COMPARE(completed.count(), 3);
 
     const QString firstOwner = client.owner();
     firstHost->stop();

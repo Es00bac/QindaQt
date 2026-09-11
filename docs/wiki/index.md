@@ -140,8 +140,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings portal backend version 1](reference/portal-settings-backend-v1.md)
   fixes QindaQt's exact standard endpoint, signatures, values, bounds, and
   loss/replacement behavior.
-- [Audio1 protocol version 1](reference/audio1-v1.md) documents the fixed
-  device/stream snapshot, handle lineage, operation results, and bounds.
+- [Audio1 protocol version 2](reference/audio1-v2.md) documents the fixed
+  device/stream snapshot with per-channel truth, managed virtual devices,
+  handle lineage, operation results, and bounds; version 1 remains documented
+  as the historical contract.
 - [Display1 version 1](reference/display1-v1.md) documents display value bounds,
   identity/registry rules, topology projection, codecs, and transaction states.
 - [Power1 version 1](reference/power1-v1.md) documents bounded Power values,

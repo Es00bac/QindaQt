@@ -53,8 +53,9 @@ target_compile_definitions(
 target_link_libraries(
     qindaqt_settings_audio_page_tests
     PRIVATE qindaqt_settings_audio qindaqt_settings_appearance
-            QindaQt::TokensQml qindaqt_themes Qt6::Quick
-            Qt6::QuickControls2 Qt6::Test
+            QindaQt::TokensQml qindaqt_themes
+            QindaQt::ShellIcons qindaqt_shell_iconsplugin
+            Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_settings_audio_page_tests)
 add_dependencies(
@@ -62,6 +63,7 @@ add_dependencies(
     qindaqt_tokens_qmlplugin
     qindaqt_controls_qmlplugin
     qindaqt_settings_audio_qmlplugin
+    qindaqt_shell_iconsplugin
 )
 add_test(NAME qindaqt.settings-audio-page COMMAND qindaqt_settings_audio_page_tests)
 set_tests_properties(

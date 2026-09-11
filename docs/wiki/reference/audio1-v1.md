@@ -1,7 +1,12 @@
-# Audio1 protocol version 1
+# Audio1 protocol version 1 (historical)
 
-Audio1 is the bounded control and observation interface exported by
-`qindaqt-audio-service`.
+This page documents the schema version 1 wire contract as it shipped
+historically. The current contract is
+[Audio1 protocol version 2](audio1-v2.md), which added per-channel volumes and
+channel maps on devices and streams plus managed virtual devices
+([ADR-0123](../adr/0123-voicemeeter-class-audio-graph-on-pipewire.md)).
+Clients must not speak version 1 against a version 2 service; unknown versions
+fail closed.
 
 | Property | Value |
 | --- | --- |

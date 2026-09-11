@@ -252,6 +252,20 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         arguments = {QVariant::fromValue(request.primary),
                      QVariant::fromValue(request.secondary)};
         break;
+    case OperationKind::SetChannelVolumes:
+        method = QStringLiteral("SetChannelVolumes");
+        arguments = {QVariant::fromValue(request.primary),
+                     QVariant::fromValue(request.channelVolumes)};
+        break;
+    case OperationKind::CreateVirtualDevice:
+        method = QStringLiteral("CreateVirtualDevice");
+        arguments = {static_cast<quint32>(request.deviceKind), request.displayName,
+                     request.channels};
+        break;
+    case OperationKind::RemoveVirtualDevice:
+        method = QStringLiteral("RemoveVirtualDevice");
+        arguments = {QVariant::fromValue(request.primary)};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

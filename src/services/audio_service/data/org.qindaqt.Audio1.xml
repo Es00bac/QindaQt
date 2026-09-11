@@ -4,7 +4,7 @@
 <node name="/org/qindaqt/Audio1">
   <interface name="org.qindaqt.Audio1">
     <method name="GetSnapshot">
-      <arg name="snapshot" type="(uttuuss(tt)(tt)a((tt)ussdbbbbbb)a((tt)ussdbbbbbb)a((tt)uss(tt)bdbbbbbb))" direction="out"/>
+      <arg name="snapshot" type="(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)a((tt)uss(tt)bdbbbbbbadas))" direction="out"/>
     </method>
     <method name="SetDefault">
       <arg name="device" type="(tt)" direction="in"/>
@@ -22,6 +22,21 @@
     </method>
     <method name="MoveStream">
       <arg name="stream" type="(tt)" direction="in"/>
+      <arg name="device" type="(tt)" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="SetChannelVolumes">
+      <arg name="target" type="(tt)" direction="in"/>
+      <arg name="volumes" type="ad" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="CreateVirtualDevice">
+      <arg name="kind" type="u" direction="in"/>
+      <arg name="displayName" type="s" direction="in"/>
+      <arg name="channels" type="u" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="RemoveVirtualDevice">
       <arg name="device" type="(tt)" direction="in"/>
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>

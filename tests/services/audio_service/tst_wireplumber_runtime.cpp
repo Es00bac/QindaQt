@@ -12,6 +12,9 @@
 
 #include <optional>
 
+#include <algorithm>
+#include <cmath>
+
 using namespace QindaQt::Audio;
 
 namespace
@@ -300,6 +303,10 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
         "{ factory.name = support.null-audio-sink node.name = qindaqt.test.input.1 "
         "node.description = \"QindaQt Test Input 1\" media.class = Audio/Source "
         "object.linger = true audio.position = [ FL FR ] }"));
+    createNode(QStringLiteral(
+        "{ factory.name = support.null-audio-sink node.name = qindaqt.test.output.3 "
+        "node.description = \"QindaQt Test Surround\" media.class = Audio/Sink "
+        "object.linger = true audio.position = [ FL FR FC LFE SL SR ] }"));
 
     WirePlumberAudioBackend backend;
     QSignalSpy snapshots(&backend, &AudioBackend::snapshotReady);
@@ -350,6 +357,7 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                             {QStringLiteral("--playback"), QStringLiteral("--raw"),
                              QStringLiteral("--rate=48000"),
                              QStringLiteral("--channels=2"),
+                             QStringLiteral("--target=qindaqt.test.output.1"),
                              QStringLiteral("/dev/zero")},
                             environment),
              qPrintable(QString::fromUtf8(playback.process.readAll())));
@@ -367,6 +375,199 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
     QCOMPARE(outcomes.at(3).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Succeeded);
     playback.stop();
+
+    // Channel maps and per-channel volumes on a 6-position fixture.
+    ProcessGuard surroundPlayback;
+    QVERIFY2(surroundPlayback.start(QStringLiteral(QINDAQT_PW_CAT_EXECUTABLE),
+                                    {QStringLiteral("--playback"),
+                                     QStringLiteral("--raw"),
+                                     QStringLiteral("--rate=48000"),
+                                     QStringLiteral("--channels=6"),
+                                     QStringLiteral("--target=qindaqt.test.output.3"),
+                                     QStringLiteral("/dev/zero")},
+                                    environment),
+             qPrintable(QString::fromUtf8(surroundPlayback.process.readAll())));
+    QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value()
+                                 && [&] {
+                                         const Snapshot linking = *newestSnapshot(snapshots);
+                                         const Device *surround = findDevice(
+                                             linking,
+                                             QStringLiteral("QindaQt Test Surround"));
+                                         if (surround == nullptr) {
+                                             return false;
+                                         }
+                                         for (const Stream &candidate : linking.streams) {
+                                             if (candidate.targetKnown
+                                                 && candidate.target
+                                                        == surround->handle) {
+                                                 return true;
+                                             }
+                                         }
+                                         return false;
+                                     }(),
+                             10000);
+    QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value()
+                                 && [&] {
+                                         const Snapshot current = *newestSnapshot(snapshots);
+                                         const Device *surround = findDevice(
+                                             current,
+                                             QStringLiteral("QindaQt Test Surround"));
+                                         return surround != nullptr
+                                             && surround->channelMap.size() == 6
+                                             && surround->channelVolumes.size() == 6;
+                                     }(),
+                             10000);
+    {
+        const Snapshot current = *newestSnapshot(snapshots);
+        const Device *surround =
+            findDevice(current, QStringLiteral("QindaQt Test Surround"));
+        QCOMPARE(surround->channelMap,
+                 QStringList({QStringLiteral("FL"), QStringLiteral("FR"),
+                              QStringLiteral("FC"), QStringLiteral("LFE"),
+                              QStringLiteral("SL"), QStringLiteral("SR")}));
+        QVERIFY(!surround->virtualDevice);
+        const Handle surroundHandle = surround->handle;
+        const QVector<double> desired = {0.10, 0.20, 0.30, 0.40, 0.50, 0.60};
+
+        // Depending on when PipeWire re-sizes the sink's channel-volume
+        // array, the device read-back after a write is either the written
+        // prefix with padded tail or one uniform averaged level; both prove
+        // the write changed per-channel state away from the resting level.
+        const auto surroundValuesChanged = [&] {
+            const Snapshot updated = *newestSnapshot(snapshots);
+            const Device *device =
+                findDevice(updated, QStringLiteral("QindaQt Test Surround"));
+            return device != nullptr && device->channelVolumes.size() == 6
+                && std::abs(device->channelVolumes.at(0) - 1.0) > 0.05
+                && std::abs(device->channelVolumes.at(1) - 1.0) > 0.05;
+        };
+
+        backend.submit(10, {.kind = OperationKind::SetChannelVolumes,
+                            .primary = surroundHandle,
+                            .secondary = {},
+                            .volume = 0.0,
+                            .muted = false,
+                            .channelVolumes = desired});
+        QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 5, 5000);
+        QCOMPARE(outcomes.at(4).at(2).value<BackendOperationOutcome>().status,
+                 BackendOperationStatus::Succeeded);
+        QTRY_VERIFY_WITH_TIMEOUT(
+            newestSnapshot(snapshots).has_value() && surroundValuesChanged(), 20000);
+
+        // The playing stream owns a fully negotiated 6-channel layout, so its
+        // per-channel write lands each requested level exactly.
+        const Snapshot withStream = *newestSnapshot(snapshots);
+        const Stream *surroundStream = nullptr;
+        for (const Stream &candidate : withStream.streams) {
+            if (candidate.targetKnown && candidate.target == surroundHandle) {
+                surroundStream = &candidate;
+                break;
+            }
+        }
+        QVERIFY(surroundStream != nullptr);
+        QVERIFY(surroundStream->channelVolumes.size() == 6);
+        const Handle streamHandle = surroundStream->handle;
+        backend.submit(11, {.kind = OperationKind::SetChannelVolumes,
+                            .primary = streamHandle,
+                            .secondary = {},
+                            .volume = 0.0,
+                            .muted = false,
+                            .channelVolumes = desired});
+        QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 6, 5000);
+        QCOMPARE(outcomes.at(5).at(2).value<BackendOperationOutcome>().status,
+                 BackendOperationStatus::Succeeded);
+        QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value()
+                                     && [&] {
+                                             const Snapshot updated =
+                                                 *newestSnapshot(snapshots);
+                                             for (const Stream &candidate :
+                                                  updated.streams) {
+                                                 if (candidate.handle
+                                                     != streamHandle) {
+                                                     continue;
+                                                 }
+                                                 if (candidate.channelVolumes
+                                                         .size()
+                                                     != desired.size()) {
+                                                     return false;
+                                                 }
+                                                 for (int channel = 0;
+                                                      channel < desired.size();
+                                                      ++channel) {
+                                                     if (std::abs(
+                                                             candidate
+                                                                 .channelVolumes
+                                                                 .at(channel)
+                                                             - desired.at(
+                                                                 channel))
+                                                         > 0.02) {
+                                                         return false;
+                                                     }
+                                                 }
+                                                 return true;
+                                             }
+                                             return false;
+                                         }(),
+                                 20000);
+    }
+    surroundPlayback.stop();
+
+    // Removing a device the service does not manage is refused.
+    backend.submit(12, {.kind = OperationKind::RemoveVirtualDevice,
+                        .primary = firstHandle,
+                        .secondary = {},
+                        .volume = 0.0,
+                        .muted = false});
+    QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 7, 5000);
+    QCOMPARE(outcomes.at(6).at(2).value<BackendOperationOutcome>().status,
+             BackendOperationStatus::Failed);
+    QCOMPARE(outcomes.at(6).at(2).value<BackendOperationOutcome>().reasonCode,
+             QStringLiteral("invalid-target"));
+
+    // Managed virtual devices appear, are flagged as virtual, and disappear.
+    backend.submit(13, {.kind = OperationKind::CreateVirtualDevice,
+                        .primary = {},
+                        .secondary = {},
+                        .volume = 0.0,
+                        .muted = false,
+                        .channelVolumes = {},
+                        .deviceKind = DeviceKind::Output,
+                        .displayName = QStringLiteral("QindaQt Virtual Deck"),
+                        .channels = 2});
+    QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 8, 5000);
+    QCOMPARE(outcomes.at(7).at(2).value<BackendOperationOutcome>().status,
+             BackendOperationStatus::Succeeded);
+    QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value()
+                                 && [&] {
+                                         const Snapshot current = *newestSnapshot(snapshots);
+                                         const Device *deck = findDevice(
+                                             current,
+                                             QStringLiteral("QindaQt Virtual Deck"));
+                                         return deck != nullptr && deck->virtualDevice
+                                             && deck->channelMap.size() == 2;
+                                     }(),
+                             10000);
+    {
+        const Snapshot withDeck = *newestSnapshot(snapshots);
+        const Device *deck =
+            findDevice(withDeck, QStringLiteral("QindaQt Virtual Deck"));
+        const Handle deckHandle = deck->handle;
+
+        backend.submit(14, {.kind = OperationKind::RemoveVirtualDevice,
+                            .primary = deckHandle,
+                            .secondary = {},
+                            .volume = 0.0,
+                            .muted = false});
+        QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 9, 5000);
+        QCOMPARE(outcomes.at(8).at(2).value<BackendOperationOutcome>().status,
+                 BackendOperationStatus::Succeeded);
+        QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value()
+                                     && findDevice(*newestSnapshot(snapshots),
+                                                   QStringLiteral(
+                                                       "QindaQt Virtual Deck"))
+                                            == nullptr,
+                                 10000);
+    }
 
     wireplumber.stop();
     QTRY_VERIFY_WITH_TIMEOUT(
@@ -389,10 +590,10 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                        .secondary = {},
                        .volume = 0.0,
                        .muted = false});
-    QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 5, 5000);
-    QCOMPARE(outcomes.at(4).at(2).value<BackendOperationOutcome>().status,
+    QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 10, 5000);
+    QCOMPARE(outcomes.at(9).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Failed);
-    QCOMPARE(outcomes.at(4).at(2).value<BackendOperationOutcome>().reasonCode,
+    QCOMPARE(outcomes.at(9).at(2).value<BackendOperationOutcome>().reasonCode,
              QStringLiteral("stale-handle"));
 
     exerciseReconnectStress(backend, snapshots, outcomes, wireplumber, environment);

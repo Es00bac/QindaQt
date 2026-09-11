@@ -39,6 +39,54 @@ void readBoundedArray(const QDBusArgument &argument, QList<T> &values,
     argument.endArray();
 }
 
+void readChannelVolumes(const QDBusArgument &argument, QVector<double> &values,
+                        bool &wireValid)
+{
+    readBoundedArray<double>(argument, values, kMaxChannelsPerDevice, wireValid);
+}
+
+void writeChannelVolumes(QDBusArgument &argument, const QVector<double> &values)
+{
+    writeArray<double>(argument, values);
+}
+
+void readChannelMap(const QDBusArgument &argument, QStringList &labels,
+                    bool &wireValid)
+{
+    labels.clear();
+    argument.beginArray();
+    while (!argument.atEnd()) {
+        QString label;
+        argument >> label;
+        if (labels.size() >= kMaxChannelsPerDevice) {
+            wireValid = false;
+            continue;
+        }
+        if (label.toUtf8().size() > kMaxChannelNameUtf8Bytes) {
+            // Retain at most the bound; the invalid marker keeps the whole
+            // snapshot fail-closed even though the array was fully consumed.
+            QByteArray bytes = label.toUtf8();
+            bytes.truncate(kMaxChannelNameUtf8Bytes);
+            while (!QString::fromUtf8(bytes).toUtf8().startsWith(bytes) && !bytes.isEmpty()) {
+                bytes.chop(1);
+            }
+            label = QString::fromUtf8(bytes);
+            wireValid = false;
+        }
+        labels.push_back(std::move(label));
+    }
+    argument.endArray();
+}
+
+void writeChannelMap(QDBusArgument &argument, const QStringList &labels)
+{
+    argument.beginArray(QMetaType::fromType<QString>());
+    for (const QString &label : labels) {
+        argument << label;
+    }
+    argument.endArray();
+}
+
 } // namespace
 
 void registerDBusTypes()
@@ -78,6 +126,9 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
              << value.description << value.volume << value.volumeKnown << value.muted
              << value.muteKnown << value.isDefault << value.canSetVolume
              << value.canSetMute;
+    writeChannelVolumes(argument, value.channelVolumes);
+    writeChannelMap(argument, value.channelMap);
+    argument << value.virtualDevice;
     argument.endStructure();
     return argument;
 }
@@ -85,10 +136,14 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
 const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value)
 {
     quint32 kind = 0;
+    value.wireValid = true;
     argument.beginStructure();
     argument >> value.handle >> kind >> value.name >> value.description >> value.volume
         >> value.volumeKnown >> value.muted >> value.muteKnown >> value.isDefault
         >> value.canSetVolume >> value.canSetMute;
+    readChannelVolumes(argument, value.channelVolumes, value.wireValid);
+    readChannelMap(argument, value.channelMap, value.wireValid);
+    argument >> value.virtualDevice;
     argument.endStructure();
     value.kind = static_cast<DeviceKind>(kind);
     return argument;
@@ -101,6 +156,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Stream &value)
              << value.applicationName << value.mediaName << value.target
              << value.targetKnown << value.volume << value.volumeKnown << value.muted
              << value.muteKnown << value.canSetVolume << value.canSetMute << value.canMove;
+    writeChannelVolumes(argument, value.channelVolumes);
+    writeChannelMap(argument, value.channelMap);
     argument.endStructure();
     return argument;
 }
@@ -108,11 +165,14 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Stream &value)
 const QDBusArgument &operator>>(const QDBusArgument &argument, Stream &value)
 {
     quint32 direction = 0;
+    value.wireValid = true;
     argument.beginStructure();
     argument >> value.handle >> direction >> value.applicationName >> value.mediaName
         >> value.target >> value.targetKnown >> value.volume >> value.volumeKnown
         >> value.muted >> value.muteKnown >> value.canSetVolume >> value.canSetMute
         >> value.canMove;
+    readChannelVolumes(argument, value.channelVolumes, value.wireValid);
+    readChannelMap(argument, value.channelMap, value.wireValid);
     argument.endStructure();
     value.direction = static_cast<StreamDirection>(direction);
     return argument;
@@ -144,6 +204,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Snapshot &value)
     readBoundedArray(argument, value.outputs, kMaxOutputs, value.wireValid);
     readBoundedArray(argument, value.inputs, kMaxInputs, value.wireValid);
     readBoundedArray(argument, value.streams, kMaxStreams, value.wireValid);
+    for (const Device &device : value.outputs) {
+        value.wireValid = value.wireValid && device.wireValid;
+    }
+    for (const Device &device : value.inputs) {
+        value.wireValid = value.wireValid && device.wireValid;
+    }
+    for (const Stream &stream : value.streams) {
+        value.wireValid = value.wireValid && stream.wireValid;
+    }
     argument.endStructure();
     value.availability = static_cast<Availability>(availability);
     value.capabilities = Capabilities::fromInt(capabilities);

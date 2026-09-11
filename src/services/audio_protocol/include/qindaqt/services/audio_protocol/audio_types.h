@@ -2,10 +2,13 @@
 
 #pragma once
 
+#include <qindaqt/services/audio_protocol/audio_limits.h>
+
 #include <QtCore/QFlags>
 #include <QtCore/QList>
 #include <QtCore/QMetaType>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 
 namespace QindaQt::Audio
 {
@@ -33,6 +36,8 @@ enum class Capability : quint32 {
     SetVolume = 1U << 1U,
     SetMute = 1U << 2U,
     MoveStream = 1U << 3U,
+    SetChannelVolumes = 1U << 4U,
+    ManageVirtualDevices = 1U << 5U,
 };
 Q_DECLARE_FLAGS(Capabilities, Capability)
 
@@ -41,6 +46,9 @@ enum class OperationKind : quint32 {
     SetVolume = 1,
     SetMute = 2,
     MoveStream = 3,
+    SetChannelVolumes = 4,
+    CreateVirtualDevice = 5,
+    RemoveVirtualDevice = 6,
 };
 
 enum class OperationStatus : quint32 {
@@ -77,6 +85,21 @@ struct Device {
     bool canSetVolume = false;
     bool canSetMute = false;
 
+    // Per-channel truth projected onto the node's channel map. When the map is
+    // non-empty the adapter publishes exactly one volume per mapped channel;
+    // entries the mixer has not reported yet carry the aggregate level.
+    QVector<double> channelVolumes = {};
+    QStringList channelMap = {};
+    // True only for managed null devices whose node.name carries the virtual
+    // prefix; such devices may be removed through RemoveVirtualDevice.
+    bool virtualDevice = false;
+
+    // AGENT-GUARD: D-Bus decoding sets this false when a nested channel array
+    // exceeded its bound while still consuming the complete argument. Snapshot
+    // decoding folds it into Snapshot::wireValid; clients must validate before
+    // publishing any decoded value.
+    bool wireValid = true;
+
     friend bool operator==(const Device &, const Device &) = default;
 };
 
@@ -95,11 +118,16 @@ struct Stream {
     bool canSetMute = false;
     bool canMove = false;
 
+    QVector<double> channelVolumes = {};
+    QStringList channelMap = {};
+
+    bool wireValid = true;
+
     friend bool operator==(const Stream &, const Stream &) = default;
 };
 
 struct Snapshot {
-    quint32 schemaVersion = 1;
+    quint32 schemaVersion = kSchemaVersion;
     quint64 epoch = 0;
     quint64 revision = 0;
     Availability availability = Availability::Starting;
@@ -126,6 +154,14 @@ struct OperationRequest {
     Handle secondary;
     double volume = 0.0;
     bool muted = false;
+
+    // SetChannelVolumes: one volume per channel of the retained target layout.
+    // CreateVirtualDevice: deviceKind, displayName and the requested channel
+    // count (2, 4, 6 or 8). primary stays invalid for CreateVirtualDevice.
+    QVector<double> channelVolumes = {};
+    DeviceKind deviceKind = DeviceKind::Output;
+    QString displayName = {};
+    quint32 channels = 0;
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

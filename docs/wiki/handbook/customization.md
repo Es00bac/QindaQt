@@ -19,7 +19,7 @@ top, and everything you try is previewed live on the page before you save.
 
 ### Themes
 
-Five themes ship with QindaQt:
+Six themes ship with QindaQt:
 
 | Theme | Character |
 | --- | --- |
@@ -28,6 +28,7 @@ Five themes ship with QindaQt:
 | QindaQt Velvet | Between the two, for late evenings |
 | Qinda High Contrast | Maximum separation for readability |
 | Qinda macOS | A mist-and-sage take on the familiar Mac look |
+| QindaQt Bliss | An opt-in XP-era option: Tahoma, squared corners, XP-face surfaces, Luna blue accents, and a worn Luna title bar |
 
 Pick a card to preview it. The **Preferred color scheme** control on the same
 tab offers **System**, **Light**, and **Dark**. Light and Dark fix the scheme.
@@ -36,14 +37,19 @@ changes whenever that preference changes — it is not a clock or a day-and-nigh
 schedule. If the theme you picked is the wrong kind for the scheme in force
 (Nightfall under a light preference, say), QindaQt shows the matching built-in
 QindaPunk theme instead until it fits again; Qinda High Contrast fits both.
-When you **Apply**, the whole desktop follows — panels, controls, window
-frames, and container chrome — without a restart. **Revert** puts everything
-back to your saved choices.
+A theme in QindaQt is one choice with two reach: the panels, Settings, and
+bundled applications paint from the QST tokens, and ordinary Qt applications
+(anything built on stock Qt6) receive the same colors, fonts, and icons
+through the Qt platform theme — the **Applications and toolkits** card shows
+the exact palette they get. When you **Apply**, the whole desktop follows —
+panels, controls, window frames, and container chrome — without a restart.
+**Revert** puts everything back to your saved choices.
 
 ### Wallpaper
 
-Choose from the five bundled wallpapers — Jade Fold, Porcelain Dawn, Ink
-Tide, Qinda Punk, and Compile Club — or pick **any image on your disk**. A
+Choose from the six bundled wallpapers — Jade Fold, Porcelain Dawn, Ink
+Tide, Qinda Punk, Compile Club, and Qinda Bliss (rolling green hills under
+a blue sky) — or pick **any image on your disk**. A
 picture mode of scaled, centered, or tiled decides how the image fills the
 screen. After **Apply**, the wallpaper appears on every screen.
 
@@ -64,8 +70,9 @@ setting.
 Open **System Settings → Customize**. The page opens with a gallery of layout
 previews — small monitor thumbnails that show where each preset puts its
 panels. Pick the one that looks right: the default QindaQt layout, a minimal
-one, or layouts inspired by GNOME, Unity, MATE, XFCE, NeXTSTEP, macOS, and
-classic or modern Windows. These are starting-points in the spirit of those
+one, or layouts inspired by GNOME, Unity, MATE, XFCE, NeXTSTEP, macOS,
+classic or modern Windows, and an XP-inspired worn Luna taskbar. These are
+starting-points in the spirit of those
 desktops, not recreations of them, and the preview below updates the moment
 you pick one.
 

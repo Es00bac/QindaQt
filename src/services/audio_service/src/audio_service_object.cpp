@@ -63,6 +63,39 @@ void AudioServiceObject::MoveStream(const Handle &stream, const Handle &device)
          .muted = false});
 }
 
+void AudioServiceObject::SetChannelVolumes(const Handle &target, const QVector<double> &volumes)
+{
+    beginOperation({.kind = OperationKind::SetChannelVolumes,
+                    .primary = target,
+                    .secondary = {},
+                    .volume = 0.0,
+                    .muted = false,
+                    .channelVolumes = volumes});
+}
+
+void AudioServiceObject::CreateVirtualDevice(const quint32 kind, const QString &displayName,
+                                             const quint32 channels)
+{
+    beginOperation({.kind = OperationKind::CreateVirtualDevice,
+                    .primary = {},
+                    .secondary = {},
+                    .volume = 0.0,
+                    .muted = false,
+                    .channelVolumes = {},
+                    .deviceKind = static_cast<DeviceKind>(kind),
+                    .displayName = displayName,
+                    .channels = channels});
+}
+
+void AudioServiceObject::RemoveVirtualDevice(const Handle &device)
+{
+    beginOperation({.kind = OperationKind::RemoveVirtualDevice,
+                    .primary = device,
+                    .secondary = {},
+                    .volume = 0.0,
+                    .muted = false});
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

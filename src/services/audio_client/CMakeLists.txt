@@ -10,6 +10,8 @@ target_sources(
     PRIVATE
         src/audio_client.cpp
         src/audio_client_completion.cpp
+        src/audio_client_preflight.cpp
+        src/audio_client_preflight_p.h
         src/qt_audio_transport.cpp
     PUBLIC
         FILE_SET HEADERS

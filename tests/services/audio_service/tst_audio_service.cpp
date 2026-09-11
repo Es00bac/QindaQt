@@ -9,7 +9,6 @@
 #include <QtTest>
 
 #include <limits>
-
 using namespace QindaQt::Audio;
 using namespace QindaQt::Tests;
 
@@ -21,6 +20,8 @@ private Q_SLOTS:
     void publishesValidatedSnapshots();
     void appliesTypedOperations();
     void rejectsStaleMalformedAndIncompatibleRequests();
+    void admitsChannelVolumeOperations();
+    void admitsVirtualDeviceOperations();
     void authorityChangeMakesPendingUncertain();
     void malformedBackendFailsClosed();
     void rejectsStoppedSupersededAndRegressedBackendValues();
@@ -108,6 +109,151 @@ void AudioServiceTests::rejectsStaleMalformedAndIncompatibleRequests()
                                  .muted = true});
     QCOMPARE(result.immediateResult.status, OperationStatus::Unsupported);
     QVERIFY(backend.operations.isEmpty());
+}
+
+void AudioServiceTests::admitsChannelVolumeOperations()
+{
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    QSignalSpy completed(&coordinator, &AudioOperationCoordinator::operationCompleted);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+
+    auto result = coordinator.submit({.kind = OperationKind::SetChannelVolumes,
+                                      .primary = {.epoch = 7, .serial = 10},
+                                      .secondary = {},
+                                      .volume = 0.0,
+                                      .muted = false,
+                                      .channelVolumes = {0.1, 0.9}});
+    QVERIFY(result.pending);
+    QCOMPARE(backend.operations.size(), 1);
+    QCOMPARE(backend.operations[0].request.kind, OperationKind::SetChannelVolumes);
+    QCOMPARE(backend.operations[0].request.channelVolumes, QVector<double>({0.1, 0.9}));
+    backend.finish(result.operationId,
+                   {.status = BackendOperationStatus::Succeeded,
+                    .reasonCode = QStringLiteral("ok"),
+                    .diagnostic = {}});
+    QCOMPARE(completed.count(), 1);
+    QCOMPARE(completed.constLast()[1].value<OperationResult>().status,
+             OperationStatus::Succeeded);
+
+    result = coordinator.submit({.kind = OperationKind::SetChannelVolumes,
+                                 .primary = {.epoch = 7, .serial = 10},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false,
+                                 .channelVolumes = {0.5}});
+    QVERIFY(!result.pending);
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("invalid-target"));
+    QCOMPARE(result.immediateResult.status, OperationStatus::Rejected);
+
+    result = coordinator.submit({.kind = OperationKind::SetChannelVolumes,
+                                 .primary = {.epoch = 7, .serial = 10},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false,
+                                 .channelVolumes = {0.5, 1.5}});
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("invalid-volume"));
+
+    Snapshot channelless = audioSnapshot(7, 5);
+    channelless.outputs[0].channelVolumes.clear();
+    channelless.outputs[0].channelMap.clear();
+    backend.publish(channelless);
+    result = coordinator.submit({.kind = OperationKind::SetChannelVolumes,
+                                 .primary = {.epoch = 7, .serial = 10},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false,
+                                 .channelVolumes = {0.5, 0.5}});
+    QVERIFY(!result.pending);
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("invalid-target"));
+    QCOMPARE(backend.operations.size(), 1);
+}
+
+void AudioServiceTests::admitsVirtualDeviceOperations()
+{
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    QSignalSpy snapshots(&coordinator, &AudioOperationCoordinator::snapshotChanged);
+    QSignalSpy completed(&coordinator, &AudioOperationCoordinator::operationCompleted);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+
+    auto result = coordinator.submit({.kind = OperationKind::CreateVirtualDevice,
+                                      .primary = {},
+                                      .secondary = {},
+                                      .volume = 0.0,
+                                      .muted = false,
+                                      .channelVolumes = {},
+                                      .deviceKind = DeviceKind::Output,
+                                      .displayName = QStringLiteral("Studio Bus"),
+                                      .channels = 6});
+    QVERIFY(result.pending);
+    QCOMPARE(backend.operations.size(), 1);
+    QCOMPARE(backend.operations[0].request.displayName, QStringLiteral("Studio Bus"));
+    QCOMPARE(backend.operations[0].request.channels, quint32(6));
+    fulfillVirtualDeviceCreation(backend, result.operationId, 7, 4, 12);
+    QTRY_COMPARE(snapshots.count(), 2);
+    QCOMPARE(coordinator.snapshot().outputs.size(), 3);
+    QCOMPARE(completed.count(), 1);
+    QCOMPARE(completed.constLast()[1].value<OperationResult>().status,
+             OperationStatus::Succeeded);
+
+    result = coordinator.submit({.kind = OperationKind::CreateVirtualDevice,
+                                 .primary = {},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false,
+                                 .channelVolumes = {},
+                                 .deviceKind = DeviceKind::Input,
+                                 .displayName = QString(kMaxVirtualNameUtf8Bytes + 1,
+                                                        QLatin1Char('x')),
+                                 .channels = 2});
+    QVERIFY(!result.pending);
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("invalid-name"));
+
+    result = coordinator.submit({.kind = OperationKind::CreateVirtualDevice,
+                                 .primary = {},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false,
+                                 .channelVolumes = {},
+                                 .deviceKind = DeviceKind::Output,
+                                 .displayName = QStringLiteral("Studio Bus"),
+                                 .channels = 5});
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("invalid-channel-count"));
+
+    result = coordinator.submit({.kind = OperationKind::CreateVirtualDevice,
+                                 .primary = {},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false,
+                                 .channelVolumes = {},
+                                 .deviceKind = DeviceKind::Output,
+                                 .displayName = QStringLiteral("Studio Bus"),
+                                 .channels = 8});
+    QVERIFY(result.pending);
+
+    // Removing a device the service does not manage is refused before the
+    // backend can see it; the managed virtual device is dispatched.
+    result = coordinator.submit({.kind = OperationKind::RemoveVirtualDevice,
+                                 .primary = {.epoch = 7, .serial = 10},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false});
+    QVERIFY(!result.pending);
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("invalid-target"));
+
+    result = coordinator.submit({.kind = OperationKind::RemoveVirtualDevice,
+                                 .primary = {.epoch = 7, .serial = 11},
+                                 .secondary = {},
+                                 .volume = 0.0,
+                                 .muted = false});
+    QVERIFY(result.pending);
+    QCOMPARE(backend.operations.constLast().request.kind,
+             OperationKind::RemoveVirtualDevice);
+    QCOMPARE(backend.operations.constLast().request.primary.serial, quint64(11));
+    QCOMPARE(backend.operations.size(), 3);
 }
 
 void AudioServiceTests::authorityChangeMakesPendingUncertain()

@@ -49,6 +49,11 @@ public:
     [[nodiscard]] quint64 setVolume(const Handle &target, double volume);
     [[nodiscard]] quint64 setMute(const Handle &target, bool muted);
     [[nodiscard]] quint64 moveStream(const Handle &stream, const Handle &device);
+    [[nodiscard]] quint64 setChannelVolumes(const Handle &target,
+                                            const QVector<double> &volumes);
+    [[nodiscard]] quint64 createVirtualDevice(DeviceKind kind, const QString &displayName,
+                                              quint32 channels);
+    [[nodiscard]] quint64 removeVirtualDevice(const Handle &device);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);

@@ -43,6 +43,7 @@ public:
 private:
     struct ComponentLoad;
     struct DisconnectReset;
+    struct NodeActivation;
     struct OperationSync;
 
     void run();
@@ -59,9 +60,12 @@ private:
     void advanceEpoch();
     void invalidatePending(const QString &reasonCode);
     void submitOnWorker(quint64 operationId, const OperationRequest &request);
-    void beginSync(quint64 operationId);
+    void beginNodeActivation(quint64 operationId, WpNode *node);
+    void failPendingOperation(quint64 operationId, const QString &reasonCode);
+    void beginSync(quint64 operationId, GObject *hold = nullptr);
     void finishSync(quint64 operationId, quint64 operationEpoch, bool success);
     void cancelComponentLoads();
+    void cancelNodeActivations();
     void cancelOperationSyncs();
     void quitWhenCallbacksDrained();
     void invoke(std::function<void()> task);
@@ -73,6 +77,7 @@ private:
     static void onDefaultsChanged(WpPlugin *plugin, gpointer data);
     static void onCoreDisconnected(WpCore *core, gpointer data);
     static void onCoreSync(GObject *source, GAsyncResult *result, gpointer data);
+    static void onNodeActivated(GObject *source, GAsyncResult *result, gpointer data);
     static gboolean dispatchDisconnectReset(gpointer data);
     static void deleteDisconnectReset(gpointer data);
 
@@ -92,6 +97,7 @@ private:
     std::optional<Snapshot> m_lastSnapshot;
     std::unordered_map<quint64, quint64> m_pendingOperations;
     std::unordered_set<ComponentLoad *> m_componentLoads;
+    std::unordered_set<NodeActivation *> m_nodeActivations;
     std::unordered_set<OperationSync *> m_operationSyncs;
 
     GMainContext *m_context = nullptr;

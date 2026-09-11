@@ -51,6 +51,8 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(bool configuredThemeInstalled MEMBER configuredThemeInstalled
                    NOTIFY draftChanged)
     Q_PROPERTY(QString fallbackNotice MEMBER fallbackNotice NOTIFY draftChanged)
+    Q_PROPERTY(QVariantList previewQtPalette MEMBER previewQtPalette
+                   NOTIFY draftChanged)
 
 public:
     explicit StubAppearanceModel(QObject *parent = nullptr) : QObject(parent) {}
@@ -98,6 +100,7 @@ public:
     bool saveResultsHaveFailure = false;
     QString resolvedThemeId = QStringLiteral("qinda-dark");
     QString fallbackNotice;
+    QVariantList previewQtPalette;
     QVariantMap draft;
     QVariantMap fieldErrors;
     QVariantList installedThemes;
@@ -252,6 +255,7 @@ private slots:
     void statusFallbackAndAccessibilityTruth();
     void saveResultSummaryIsAccessibleAndTruthful();
     void focusedDestinationNavigationKeepsDraftAndControlsReachable();
+    void qtToolkitCardReflectsThePlatformThemeProjection();
     void fontTypingWallpaperPreviewAndKeyboardScrollingStayUsable();
 
 private:
@@ -373,6 +377,26 @@ void AppearancePageTests::toggleHandlersForwardAuthoritativeCheckedValues()
              QStringLiteral("appearance.colorScheme"));
     QCOMPARE(scene.model->draftValues.constLast().toString(),
              QStringLiteral("dark"));
+}
+
+void AppearancePageTests::qtToolkitCardReflectsThePlatformThemeProjection()
+{
+    const auto scene = createScene([](StubAppearanceModel &model) {
+        model.previewQtPalette = QVariantList{
+            QVariantMap{{QStringLiteral("role"), QStringLiteral("Window")},
+                        {QStringLiteral("color"), QStringLiteral("#211d27")}},
+            QVariantMap{{QStringLiteral("role"), QStringLiteral("Selection")},
+                        {QStringLiteral("color"), QStringLiteral("#eab391")}},
+        };
+    });
+    QVERIFY(activateDestination(scene, QStringLiteral("themes")) != nullptr);
+    QQuickItem *card = nullptr;
+    QTRY_VERIFY((card = item(scene.root, "appearanceQtToolkitCard")) != nullptr);
+    QVERIFY(card->isVisible());
+    const auto swatches = card->findChildren<QQuickItem *>(
+        QStringLiteral("appearanceQtPaletteSwatches"));
+    QVERIFY(!swatches.isEmpty());
+    QCOMPARE(swatches.first()->childItems().size(), 2);
 }
 
 void AppearancePageTests::textEditorsForwardOrdinaryUserInput()

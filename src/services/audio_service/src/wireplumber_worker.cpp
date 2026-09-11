@@ -59,6 +59,7 @@ Capabilities capabilitiesFor(WpPlugin *mixer, WpPlugin *defaultNodes,
     if (mixer != nullptr) {
         result |= Capability::SetVolume;
         result |= Capability::SetMute;
+        result |= Capability::SetChannelVolumes;
     }
     if (defaultNodes != nullptr && metadata != nullptr) {
         result |= Capability::SetDefault;
@@ -66,6 +67,9 @@ Capabilities capabilitiesFor(WpPlugin *mixer, WpPlugin *defaultNodes,
     if (metadata != nullptr) {
         result |= Capability::MoveStream;
     }
+    // Virtual device management needs only the connected core and object
+    // manager, both of which rebuild() has established before publishing.
+    result |= Capability::ManageVirtualDevices;
     return result;
 }
 
@@ -513,6 +517,7 @@ void WirePlumberWorker::cleanupCore()
 {
     cancelDisconnectReset();
     cancelComponentLoads();
+    cancelNodeActivations();
     cancelOperationSyncs();
     m_managerInstalled = false;
     if (m_mixer != nullptr) {

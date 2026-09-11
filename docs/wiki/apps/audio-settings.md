@@ -5,7 +5,7 @@ is a modular Settings Center route composed exclusively through the public
 Audio1 client boundary. The route observes bounded device and stream truth and
 offers only the actions that the current authoritative snapshot admits. The
 composition follows [ADR-0048](../adr/0048-settings-center-navigation-and-route-ownership.md);
-the Audio1 wire contract is in the [Audio1 reference](../reference/audio1-v1.md)
+the Audio1 wire contract is in the [Audio1 reference](../reference/audio1-v2.md)
 and the [Audio service architecture](../architecture/audio-service.md) owns the
 resident service boundary.
 

@@ -61,8 +61,9 @@ public:
   int stopCalls = 0;
 };
 
-// Protocol-valid ready snapshot: two outputs (serial 10 default, 12 spare),
-// one input (serial 20 default), a playback stream (30) targeting the default
+// Protocol-valid ready snapshot: two hardware outputs (serial 10 default
+// stereo, 12 six-channel surround), one managed virtual output (14), one
+// input (serial 20 default), a playback stream (30) targeting the default
 // output, and a capture stream (40) targeting the input. Serials are unique
 // and ascending per list, and every can-set flag satisfies the protocol's
 // known/capability preconditions.
@@ -73,7 +74,9 @@ inline Snapshot readyAudioSnapshot(const quint64 epoch = 11,
   snapshot.revision = revision;
   snapshot.availability = Availability::Ready;
   snapshot.capabilities = Capability::SetDefault | Capability::SetVolume
-                          | Capability::SetMute | Capability::MoveStream;
+                          | Capability::SetMute | Capability::MoveStream
+                          | Capability::SetChannelVolumes
+                          | Capability::ManageVirtualDevices;
   snapshot.defaultOutput = {.epoch = epoch, .serial = 10};
   snapshot.defaultInput = {.epoch = epoch, .serial = 20};
   snapshot.outputs = {
@@ -87,18 +90,40 @@ inline Snapshot readyAudioSnapshot(const quint64 epoch = 11,
        .muteKnown = true,
        .isDefault = true,
        .canSetVolume = true,
-       .canSetMute = true},
+       .canSetMute = true,
+       .channelVolumes = {0.5, 0.5},
+       .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+       .virtualDevice = false},
       {.handle = {.epoch = epoch, .serial = 12},
        .kind = DeviceKind::Output,
-       .name = QStringLiteral("headphones"),
-       .description = QStringLiteral("USB Headphones"),
+       .name = QStringLiteral("surround"),
+       .description = QStringLiteral("Surround Headphones"),
        .volume = 0.25,
        .volumeKnown = true,
        .muted = false,
        .muteKnown = true,
        .isDefault = false,
        .canSetVolume = true,
-       .canSetMute = true},
+       .canSetMute = true,
+       .channelVolumes = {0.25, 0.25, 0.25, 0.25, 0.25, 0.25},
+       .channelMap = {QStringLiteral("FL"), QStringLiteral("FR"),
+                      QStringLiteral("FC"), QStringLiteral("LFE"),
+                      QStringLiteral("SL"), QStringLiteral("SR")},
+       .virtualDevice = false},
+      {.handle = {.epoch = epoch, .serial = 14},
+       .kind = DeviceKind::Output,
+       .name = QStringLiteral("qindaqt.virtual.game-bus"),
+       .description = QStringLiteral("Game Bus"),
+       .volume = 1.0,
+       .volumeKnown = true,
+       .muted = false,
+       .muteKnown = true,
+       .isDefault = false,
+       .canSetVolume = true,
+       .canSetMute = true,
+       .channelVolumes = {1.0, 1.0},
+       .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+       .virtualDevice = true},
   };
   snapshot.inputs = {
       {.handle = {.epoch = epoch, .serial = 20},
@@ -111,7 +136,10 @@ inline Snapshot readyAudioSnapshot(const quint64 epoch = 11,
        .muteKnown = true,
        .isDefault = true,
        .canSetVolume = true,
-       .canSetMute = true},
+       .canSetMute = true,
+       .channelVolumes = {0.75, 0.75},
+       .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+       .virtualDevice = false},
   };
   snapshot.streams = {
       {.handle = {.epoch = epoch, .serial = 30},
@@ -126,7 +154,9 @@ inline Snapshot readyAudioSnapshot(const quint64 epoch = 11,
        .muteKnown = true,
        .canSetVolume = true,
        .canSetMute = true,
-       .canMove = true},
+       .canMove = true,
+       .channelVolumes = {0.75, 0.75},
+       .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}},
       {.handle = {.epoch = epoch, .serial = 40},
        .direction = StreamDirection::Capture,
        .applicationName = QStringLiteral("Talk"),
@@ -139,7 +169,9 @@ inline Snapshot readyAudioSnapshot(const quint64 epoch = 11,
        .muteKnown = true,
        .canSetVolume = true,
        .canSetMute = true,
-       .canMove = true},
+       .canMove = true,
+       .channelVolumes = {0.4, 0.4},
+       .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}},
   };
   return snapshot;
 }

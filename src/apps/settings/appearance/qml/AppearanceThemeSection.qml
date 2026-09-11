@@ -2,6 +2,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
@@ -108,6 +109,70 @@ ColumnLayout {
             descriptionPrefix: qsTr("Preferred color scheme")
             onChoicePicked: token => root.setDraft(
                                 "appearance.colorScheme", token)
+        }
+    }
+
+    // One theme choice, two consumers: QindaQt surfaces paint from QST
+    // tokens, and ordinary Qt applications receive the same colors, fonts,
+    // and icons through the Qt platform theme (ADR-0115). The swatches are
+    // the actual palette those applications get for the previewed theme.
+    FormSurface {
+        objectName: "appearanceQtToolkitCard"
+        Layout.fillWidth: true
+
+        ColumnLayout {
+            width: parent.width
+            spacing: Tokens.space["2"]
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Applications and toolkits")
+                font.weight: Font.DemiBold
+                Accessible.role: Accessible.Heading
+                Accessible.name: text
+            }
+
+            Label {
+                Layout.fillWidth: true
+                muted: true
+                text: qsTr("QindaQt surfaces follow QST tokens; ordinary Qt applications receive the same theme through the Qt platform theme — palette, fonts, and icons update live.")
+                wrapMode: Text.Wrap
+                Accessible.name: text
+            }
+
+            Flow {
+                objectName: "appearanceQtPaletteSwatches"
+                Layout.fillWidth: true
+                spacing: Tokens.space["2"]
+
+                Repeater {
+                    model: root.appearanceSettings.previewQtPalette
+
+                    delegate: Rectangle {
+                        id: swatch
+
+                        required property var modelData
+
+                        readonly property color swatchColor: modelData.color ?? "#000000"
+
+                        width: 92
+                        height: 56
+                        radius: Tokens.radius.s
+                        color: swatch.swatchColor
+                        border.width: Tokens.space["1"] / 2
+                        border.color: Tokens.outline.strong
+                        Accessible.role: Accessible.StaticText
+                        Accessible.name: qsTr("%1: %2").arg(
+                            swatch.modelData.role ?? "",
+                            swatch.swatchColor)
+                        T.ToolTip.visible: swatchHover.hovered
+                        T.ToolTip.delay: 500
+                        T.ToolTip.text: (swatch.modelData.role ?? "")
+                                        + " · " + swatch.swatchColor
+                        HoverHandler { id: swatchHover }
+                    }
+                }
+            }
         }
     }
 }

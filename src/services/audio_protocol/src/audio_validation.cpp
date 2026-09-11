@@ -60,6 +60,32 @@ bool validOptionalHandleForEpoch(const Handle &handle, const quint64 epoch)
     return (handle.epoch == 0 && handle.serial == 0) || validHandleForEpoch(handle, epoch);
 }
 
+bool validChannelLayout(const QVector<double> &channelVolumes, const QStringList &channelMap)
+{
+    if (channelVolumes.size() > kMaxChannelsPerDevice
+        || channelMap.size() > kMaxChannelsPerDevice) {
+        return false;
+    }
+    for (const double level : channelVolumes) {
+        if (!validLevel(level)) {
+            return false;
+        }
+    }
+    for (const QString &label : channelMap) {
+        if (label.isEmpty() || label.contains(QChar::Null)
+            || !isBoundedText(label, kMaxChannelNameUtf8Bytes)) {
+            return false;
+        }
+    }
+    // A known layout is the projection target for per-channel volumes: when
+    // both are present they must describe the same channel count.
+    if (!channelMap.isEmpty() && !channelVolumes.isEmpty()
+        && channelVolumes.size() != channelMap.size()) {
+        return false;
+    }
+    return true;
+}
+
 } // namespace
 
 bool isBoundedText(const QString &value, const qsizetype maxUtf8Bytes)
@@ -101,7 +127,9 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
     constexpr quint32 knownCapabilities = static_cast<quint32>(Capability::SetDefault)
         | static_cast<quint32>(Capability::SetVolume)
         | static_cast<quint32>(Capability::SetMute)
-        | static_cast<quint32>(Capability::MoveStream);
+        | static_cast<quint32>(Capability::MoveStream)
+        | static_cast<quint32>(Capability::SetChannelVolumes)
+        | static_cast<quint32>(Capability::ManageVirtualDevices);
     if ((static_cast<quint32>(snapshot.capabilities.toInt()) & ~knownCapabilities) != 0) {
         return rejected(QStringLiteral("invalid-capabilities"));
     }
@@ -134,9 +162,11 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
                 || device.handle.serial <= previous || serials.contains(device.handle.serial)) {
                 return rejected(QStringLiteral("invalid-device-order"));
             }
-            if (!isBoundedText(device.name, kMaxDisplayNameUtf8Bytes)
+            if (!device.wireValid
+                || !isBoundedText(device.name, kMaxDisplayNameUtf8Bytes)
                 || !isBoundedText(device.description, kMaxDisplayNameUtf8Bytes)
                 || !validLevel(device.volume)
+                || !validChannelLayout(device.channelVolumes, device.channelMap)
                 || (device.canSetVolume
                     && (!device.volumeKnown
                         || !snapshot.capabilities.testFlag(Capability::SetVolume)))
@@ -181,12 +211,14 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
 
     quint64 previousStream = 0;
     for (const Stream &stream : snapshot.streams) {
-        if (!validDirection(stream.direction)
+        if (!stream.wireValid
+            || !validDirection(stream.direction)
             || !validHandleForEpoch(stream.handle, snapshot.epoch)
             || stream.handle.serial <= previousStream || serials.contains(stream.handle.serial)
             || !isBoundedText(stream.applicationName, kMaxApplicationNameUtf8Bytes)
             || !isBoundedText(stream.mediaName, kMaxDisplayNameUtf8Bytes)
             || !validLevel(stream.volume)
+            || !validChannelLayout(stream.channelVolumes, stream.channelMap)
             || (stream.canSetVolume
                 && (!stream.volumeKnown
                     || !snapshot.capabilities.testFlag(Capability::SetVolume)))
@@ -221,7 +253,7 @@ ValidationResult validateOperationResult(const OperationResult &result)
     }
     const auto kind = static_cast<quint32>(result.kind);
     const auto status = static_cast<quint32>(result.status);
-    if (kind > static_cast<quint32>(OperationKind::MoveStream)
+    if (kind > static_cast<quint32>(OperationKind::RemoveVirtualDevice)
         || status > static_cast<quint32>(OperationStatus::Busy)) {
         return rejected(QStringLiteral("malformed-result"));
     }

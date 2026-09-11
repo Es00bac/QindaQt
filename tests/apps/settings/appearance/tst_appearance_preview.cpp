@@ -23,7 +23,8 @@ std::optional<QVector<ThemeSpec>> loadBuiltInThemes(QString *error)
                              "/data/themes/qinda-light.json",
                              "/data/themes/qinda-dusk.json",
                              "/data/themes/qinda-high-contrast.json",
-                             "/data/themes/qinda-macos.json"}) {
+                             "/data/themes/qinda-macos.json",
+                             "/data/themes/qinda-bliss.json"}) {
         const auto loaded =
             ThemeLoader::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR)
                                   + QLatin1String(file));
@@ -62,7 +63,7 @@ void AppearancePreviewTests::initTestCase()
     const auto loaded = loadBuiltInThemes(&error);
     QVERIFY2(loaded.has_value(), qPrintable(error));
     m_themes = *loaded;
-    QCOMPARE(m_themes.size(), 5);
+    QCOMPARE(m_themes.size(), 6);
     QSet<QString> ids;
     for (const ThemeSpec &theme : m_themes) {
         ids.insert(theme.id);
@@ -71,7 +72,8 @@ void AppearancePreviewTests::initTestCase()
                                 QStringLiteral("qinda-light"),
                                 QStringLiteral("qinda-dusk"),
                                 QStringLiteral("qinda-high-contrast"),
-                                QStringLiteral("qinda-macos")}));
+                                QStringLiteral("qinda-macos"),
+                                QStringLiteral("qinda-bliss")}));
 }
 
 void AppearancePreviewTests::configuredThemeWinsOverSchemePreference()

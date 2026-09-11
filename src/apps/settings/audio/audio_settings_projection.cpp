@@ -55,6 +55,13 @@ const Device *findDeviceBySerial(const Snapshot &snapshot,
   return nullptr;
 }
 
+QString channelPositionLabel(const Device &device, const int index) {
+  if (index >= 0 && index < device.channelMap.size()) {
+    return device.channelMap.at(index).toUpper();
+  }
+  return translateAudio("Channel %1").arg(index + 1);
+}
+
 } // namespace
 
 // Row availability combines the snapshot-admission fence with the target's
@@ -73,6 +80,20 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
                      ? translateAudio("Volume %1%").arg(
                            percentFor(device.volume, device.volumeKnown))
                      : translateAudio("Volume unknown"));
+  }
+  if (device.virtualDevice) {
+    state.append(translateAudio("Virtual"));
+  }
+  QVariantList channelRows;
+  for (int index = 0; index < device.channelVolumes.size(); ++index) {
+    channelRows.append(QVariantMap{
+        {QStringLiteral("index"), index},
+        {QStringLiteral("position"), channelPositionLabel(device, index)},
+        {QStringLiteral("volumePercent"),
+         percentFor(device.channelVolumes.at(index), device.volumeKnown)},
+        {QStringLiteral("level01"),
+         qBound(0.0, device.channelVolumes.at(index), 1.0)},
+    });
   }
   return QVariantMap{
       {QStringLiteral("serial"), device.handle.serial},
@@ -94,6 +115,14 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
       {QStringLiteral("muteAvailable"),
        device.canSetMute
            && snapshotAdmitsOperation(m_client, Capability::SetMute)},
+      {QStringLiteral("channelVolumes"), channelRows},
+      // A per-channel surface exists only for a multi-channel layout whose
+      // device admits volume writes; the dispatch path refuses exactly what
+      // this flag refuses (availability/admission equality).
+      {QStringLiteral("channelVolumeAvailable"),
+       device.canSetVolume && device.channelVolumes.size() > 1
+           && snapshotAdmitsOperation(m_client, Capability::SetChannelVolumes)},
+      {QStringLiteral("virtualDevice"), device.virtualDevice},
       {QStringLiteral("stateText"), state.join(QStringLiteral(" · "))},
   };
 }
@@ -216,6 +245,47 @@ QVariantList AudioSettingsModel::streams() const {
     rows.append(projectStreamRow(stream, target));
   }
   return rows;
+}
+
+QVariantList AudioSettingsModel::virtualDevices() const {
+  QVariantList rows;
+  if (!m_client.hasSnapshot()) {
+    return rows;
+  }
+  const Snapshot snapshot = m_client.snapshot();
+  const auto appendManaged = [&](const QList<Device> &devices) {
+    for (const Device &device : devices) {
+      if (!device.virtualDevice) {
+        continue;
+      }
+      rows.append(QVariantMap{
+          {QStringLiteral("serial"), device.handle.serial},
+          {QStringLiteral("kindText"),
+           device.kind == DeviceKind::Output
+               ? translateAudio("Virtual output device")
+               : translateAudio("Virtual input device")},
+          {QStringLiteral("displayName"), deviceDisplayName(device)},
+          {QStringLiteral("channelCount"),
+           device.channelVolumes.size()},
+          {QStringLiteral("channelMap"), device.channelMap.join(
+                                             QStringLiteral(" · "))},
+          {QStringLiteral("removeAvailable"),
+           snapshotAdmitsOperation(m_client,
+                                   Capability::ManageVirtualDevices)},
+      });
+    }
+  };
+  appendManaged(snapshot.outputs);
+  appendManaged(snapshot.inputs);
+  return rows;
+}
+
+bool AudioSettingsModel::canSetChannelVolumes() const {
+  return snapshotAdmitsOperation(m_client, Capability::SetChannelVolumes);
+}
+
+bool AudioSettingsModel::canManageVirtualDevices() const {
+  return snapshotAdmitsOperation(m_client, Capability::ManageVirtualDevices);
 }
 
 } // namespace QindaQt::Apps::SettingsAudio

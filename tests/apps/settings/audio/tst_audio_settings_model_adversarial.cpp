@@ -76,7 +76,7 @@ void AudioSettingsModelAdversarialTest::
   QTRY_VERIFY_WITH_TIMEOUT(fixture.model.ready(), 1'000);
   QCOMPARE(fixture.model.serviceOwner(), QStringLiteral(":1.42"));
   QCOMPARE(fixture.model.serviceEpoch(), qulonglong(12));
-  QCOMPARE(fixture.model.outputDevices().size(), 2);
+  QCOMPARE(fixture.model.outputDevices().size(), 3);
 }
 
 void AudioSettingsModelAdversarialTest::

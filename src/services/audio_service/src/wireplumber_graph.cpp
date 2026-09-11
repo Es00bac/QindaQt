@@ -7,10 +7,14 @@
 #include <pipewire/keys.h>
 
 #include <QtCore/QHash>
+#include <QtCore/QPair>
 #include <QtCore/QSet>
+#include <QtCore/QStringList>
+#include <QtCore/QVector>
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace QindaQt::Audio::WirePlumberGraph
 {
@@ -61,8 +65,48 @@ struct VolumeState {
     bool volumeKnown = false;
     bool muted = false;
     bool muteKnown = false;
+    QVector<double> channelVolumes;
     bool malformed = false;
 };
+
+// AGENT-CONTRACT: WirePlumber 0.5 mixer-api reports per-channel state as a
+// vardict keyed by decimal channel-index strings, each value carrying
+// {"volume": d, "channel": s, "monitorVolume": d}. The keys are not iteration
+// ordered, so entries are collected by index and emitted in index order.
+QVector<double> readChannelVolumes(GVariant *dictionary)
+{
+    QVector<double> result;
+    GVariantIter *iterator = nullptr;
+    if (dictionary == nullptr
+        || !g_variant_lookup(dictionary, "channelVolumes", "a{sv}", &iterator)) {
+        return result;
+    }
+    QList<QPair<quint32, double>> entries;
+    const gchar *key = nullptr;
+    GVariant *value = nullptr;
+    while (g_variant_iter_loop(iterator, "{&sv}", &key, &value)) {
+        if (key == nullptr || entries.size() >= kMaxChannelsPerDevice) {
+            continue;
+        }
+        gchar *end = nullptr;
+        const guint64 index = g_ascii_strtoull(key, &end, 10);
+        if (index >= static_cast<guint64>(kMaxChannelsPerDevice) || end == key
+            || end == nullptr || *end != '\0') {
+            continue;
+        }
+        gdouble level = 0.0;
+        if (g_variant_lookup(value, "volume", "d", &level) && std::isfinite(level)) {
+            entries.append({static_cast<quint32>(index), std::clamp(static_cast<double>(level), 0.0, 1.0)});
+        }
+    }
+    g_variant_iter_free(iterator);
+    std::sort(entries.begin(), entries.end(),
+              [](const auto &left, const auto &right) { return left.first < right.first; });
+    for (const auto &entry : entries) {
+        result.push_back(entry.second);
+    }
+    return result;
+}
 
 VolumeState readVolume(WpPlugin *mixer, const guint32 boundId)
 {
@@ -90,8 +134,64 @@ VolumeState readVolume(WpPlugin *mixer, const guint32 boundId)
         result.muted = muted != FALSE;
         result.muteKnown = true;
     }
+    result.channelVolumes = readChannelVolumes(dictionary);
     g_variant_unref(dictionary);
     return result;
+}
+
+// Parses the node's "audio.position" property (spa debug format, e.g.
+// "[ FL FR FC LFE SL SR ]") into bounded position labels. Empty or absent
+// positions yield an empty map; the mixer volume array is never trusted for
+// labels because it can lag the node's negotiated layout.
+QStringList channelMapOf(WpPipewireObject *node)
+{
+    QStringList labels;
+    const gchar *raw = wp_pipewire_object_get_property(node, "audio.position");
+    if (raw == nullptr) {
+        return labels;
+    }
+    const QString text = QString::fromLatin1(raw).simplified();
+    if (!text.startsWith(QLatin1Char('['))) {
+        return labels;
+    }
+    const qsizetype close = text.lastIndexOf(QLatin1Char(']'));
+    if (close < 0) {
+        return labels;
+    }
+    const QStringList parts = text.mid(1, close - 1).split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    for (const QString &part : parts) {
+        if (labels.size() >= kMaxChannelsPerDevice) {
+            break;
+        }
+        if (part.toUtf8().size() <= kMaxChannelNameUtf8Bytes && !part.contains(QChar::Null)) {
+            labels.push_back(part);
+        }
+    }
+    return labels;
+}
+
+// Per-channel truth is the mixer's array projected onto the node's channel
+// map: channels the mixer has not reported yet carry the aggregate level, so
+// a known layout always has exactly one volume per mapped channel.
+QVector<double> projectedChannelVolumes(const VolumeState &volume, const QStringList &channelMap)
+{
+    QVector<double> result = volume.channelVolumes;
+    if (volume.volumeKnown && !channelMap.isEmpty()
+        && result.size() < channelMap.size()) {
+        result.resize(channelMap.size(), volume.volume);
+    }
+    return result;
+}
+
+bool isManagedVirtualNode(WpPipewireObject *node)
+{
+    const gchar *nodeName = wp_pipewire_object_get_property(node, PW_KEY_NODE_NAME);
+    // A managed sink's monitor enumerates like any other source; it is a
+    // facet of the sink, not an independently managed device, and destroying
+    // it is not permitted through the remove operation.
+    return nodeName != nullptr
+        && g_str_has_prefix(nodeName, kVirtualDeviceNamePrefix)
+        && !g_str_has_suffix(nodeName, ".monitor");
 }
 
 QString preferredNodeName(WpPipewireObject *node)
@@ -274,6 +374,7 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
         boundToSerial.insert(boundId, *serial);
         retainedSerials.insert(*serial);
         const VolumeState volume = readVolume(mixer, boundId);
+        const QStringList channelMap = channelMapOf(node);
         result.truncatedOrMalformed = result.truncatedOrMalformed || volume.malformed;
 
         if (output || input) {
@@ -290,6 +391,9 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
                 == (device.kind == DeviceKind::Output ? defaultOutputId : defaultInputId);
             device.canSetVolume = volume.volumeKnown && mixer != nullptr;
             device.canSetMute = volume.muteKnown && mixer != nullptr;
+            device.channelVolumes = projectedChannelVolumes(volume, channelMap);
+            device.channelMap = channelMap;
+            device.virtualDevice = isManagedVirtualNode(node);
             if (device.kind == DeviceKind::Output) {
                 result.snapshot.outputs.push_back(std::move(device));
             } else {
@@ -309,6 +413,8 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
             stream.canSetVolume = volume.volumeKnown && mixer != nullptr;
             stream.canSetMute = volume.muteKnown && mixer != nullptr;
             stream.canMove = capabilities.testFlag(Capability::MoveStream);
+            stream.channelVolumes = projectedChannelVolumes(volume, channelMap);
+            stream.channelMap = channelMap;
             result.snapshot.streams.push_back(std::move(stream));
         }
         g_value_unset(&value);

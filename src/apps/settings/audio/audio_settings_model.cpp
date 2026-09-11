@@ -277,6 +277,117 @@ bool AudioSettingsModel::setStreamMuted(const quint64 serial,
   return dispatchStreamIntent(serial, Intent::StreamMute, 0.0, muted);
 }
 
+bool AudioSettingsModel::setDeviceChannelVolume(const quint64 serial,
+                                                const int channelIndex,
+                                                const double level) {
+  if (!snapshotAdmitsOperation(m_client, Capability::SetChannelVolumes)) {
+    rejectAction(QStringLiteral("unsupported"));
+    return false;
+  }
+  const std::optional<double> clamped = clampedLevel(level);
+  if (!clamped.has_value()) {
+    rejectAction(QStringLiteral("invalid-volume"));
+    return false;
+  }
+  const Snapshot snapshot = m_client.snapshot();
+  const Device *output =
+      findDevice(snapshot, serial, DeviceKind::Output);
+  const Device *input = findDevice(snapshot, serial, DeviceKind::Input);
+  const Device *device = output != nullptr ? output : input;
+  if (device == nullptr) {
+    rejectAction(QStringLiteral("stale-handle"));
+    return false;
+  }
+  // The client's preflight requires the full retained layout, so the route
+  // rebuilds the vector from the same snapshot and replaces exactly one
+  // channel. A single-channel device has no per-channel surface, and an
+  // out-of-range index can never be dispatched.
+  if (!device->canSetVolume || device->channelVolumes.size() < 2
+      || channelIndex < 0
+      || channelIndex >= device->channelVolumes.size()) {
+    rejectAction(QStringLiteral("invalid-target"));
+    return false;
+  }
+  QVector<double> volumes = device->channelVolumes;
+  volumes[channelIndex] = *clamped;
+  const quint64 requestId = m_client.setChannelVolumes(device->handle, volumes);
+  if (requestId == 0) {
+    rejectAction(QString());
+    return false;
+  }
+  trackPending(requestId, serial, Intent::DeviceChannelVolume);
+  beginIntentMessage(Intent::DeviceChannelVolume);
+  return true;
+}
+
+bool AudioSettingsModel::createVirtualDevice(QString kindToken,
+                                             QString displayName,
+                                             const int channels) {
+  if (!snapshotAdmitsOperation(m_client, Capability::ManageVirtualDevices)) {
+    rejectAction(QStringLiteral("unsupported"));
+    return false;
+  }
+  const QString token = kindToken.trimmed();
+  const QString name = displayName.trimmed();
+  const bool outputKind =
+      token.compare(QStringLiteral("output"), Qt::CaseInsensitive) == 0;
+  const bool inputKind =
+      token.compare(QStringLiteral("input"), Qt::CaseInsensitive) == 0;
+  if (!outputKind && !inputKind) {
+    rejectAction(QStringLiteral("invalid-target"));
+    return false;
+  }
+  const DeviceKind kind = outputKind ? DeviceKind::Output : DeviceKind::Input;
+  if (name.isEmpty()) {
+    rejectAction(QStringLiteral("invalid-name"));
+    return false;
+  }
+  if (channels != 2 && channels != 4 && channels != 6 && channels != 8) {
+    rejectAction(QStringLiteral("invalid-channel-count"));
+    return false;
+  }
+  const quint64 requestId = m_client.createVirtualDevice(
+      kind, name, static_cast<quint32>(channels));
+  if (requestId == 0) {
+    rejectAction(QString());
+    return false;
+  }
+  trackPending(requestId, 0, Intent::CreateVirtual);
+  beginIntentMessage(Intent::CreateVirtual);
+  return true;
+}
+
+bool AudioSettingsModel::removeVirtualDevice(const quint64 serial) {
+  if (!snapshotAdmitsOperation(m_client, Capability::ManageVirtualDevices)) {
+    rejectAction(QStringLiteral("unsupported"));
+    return false;
+  }
+  const Snapshot snapshot = m_client.snapshot();
+  const Device *output =
+      findDevice(snapshot, serial, DeviceKind::Output);
+  const Device *input = findDevice(snapshot, serial, DeviceKind::Input);
+  const Device *device = output != nullptr ? output : input;
+  if (device == nullptr) {
+    rejectAction(QStringLiteral("stale-handle"));
+    return false;
+  }
+  // AGENT-GUARD: the route never dispatches removal of a device the snapshot
+  // does not flag as service-managed; the service and backend enforce the
+  // same fence, so hardware can never be destroyed from Settings.
+  if (!device->virtualDevice) {
+    rejectAction(QStringLiteral("invalid-target"));
+    return false;
+  }
+  const quint64 requestId = m_client.removeVirtualDevice(device->handle);
+  if (requestId == 0) {
+    rejectAction(QString());
+    return false;
+  }
+  trackPending(requestId, serial, Intent::RemoveVirtual);
+  beginIntentMessage(Intent::RemoveVirtual);
+  return true;
+}
+
 void AudioSettingsModel::trackPending(const quint64 requestId,
                                       const quint64 serial,
                                       const Intent intent) {
@@ -300,6 +411,15 @@ void AudioSettingsModel::beginIntentMessage(const Intent intent) {
     break;
   case Intent::StreamMute:
     m_operationStatusText = translateAudio("Applying the application mute state…");
+    break;
+  case Intent::DeviceChannelVolume:
+    m_operationStatusText = translateAudio("Applying the channel volume…");
+    break;
+  case Intent::CreateVirtual:
+    m_operationStatusText = translateAudio("Creating the virtual device…");
+    break;
+  case Intent::RemoveVirtual:
+    m_operationStatusText = translateAudio("Removing the virtual device…");
     break;
   }
   Q_EMIT viewChanged();
@@ -348,6 +468,16 @@ QString AudioSettingsModel::actionFailureText(const QString &reason) const {
   }
   if (reason == QStringLiteral("invalid-volume")) {
     return translateAudio("That volume value was not accepted.");
+  }
+  if (reason == QStringLiteral("invalid-target")) {
+    return translateAudio(
+        "That audio item cannot be changed that way.");
+  }
+  if (reason == QStringLiteral("invalid-name")) {
+    return translateAudio("That virtual device name was not accepted.");
+  }
+  if (reason == QStringLiteral("invalid-channel-count")) {
+    return translateAudio("That channel layout is not supported.");
   }
   if (reason == QStringLiteral("operation-in-flight")) {
     return translateAudio("Another audio change is still in progress.");

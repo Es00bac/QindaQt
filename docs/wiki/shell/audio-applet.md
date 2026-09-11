@@ -4,7 +4,7 @@
 device and application-stream rows, default-device labels, and serialized
 volume/mute mutation lifecycles. A pure target projects bounded Audio1 values
 over the public
-[`audio_protocol`](../reference/audio1-v1.md); a separately linked
+[`audio_protocol`](../reference/audio1-v2.md); a separately linked
 shell-private runtime target borrows the public `AudioClient` and exposes
 only owned presentation values to compiled QML. Neither target reaches into
 the audio service, WirePlumber, PipeWire, or any service internal. The

@@ -77,7 +77,8 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
     snapshot.availability = Audio::Availability::Ready;
     snapshot.capabilities = Audio::Capability::SetDefault
         | Audio::Capability::SetVolume | Audio::Capability::SetMute
-        | Audio::Capability::MoveStream;
+        | Audio::Capability::MoveStream | Audio::Capability::SetChannelVolumes
+        | Audio::Capability::ManageVirtualDevices;
     snapshot.defaultOutput = {.epoch = epoch, .serial = 10};
     snapshot.defaultInput = {.epoch = epoch, .serial = 20};
     snapshot.outputs = {{.handle = {.epoch = epoch, .serial = 10},
@@ -90,7 +91,24 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
                          .muteKnown = true,
                          .isDefault = true,
                          .canSetVolume = true,
-                         .canSetMute = true}};
+                         .canSetMute = true,
+                         .channelVolumes = {0.5, 0.5},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                         .virtualDevice = false},
+                        {.handle = {.epoch = epoch, .serial = 11},
+                         .kind = Audio::DeviceKind::Output,
+                         .name = QStringLiteral("Virtual Output"),
+                         .description = {},
+                         .volume = 0.5,
+                         .volumeKnown = true,
+                         .muted = false,
+                         .muteKnown = true,
+                         .isDefault = false,
+                         .canSetVolume = true,
+                         .canSetMute = true,
+                         .channelVolumes = {0.25, 0.75},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                         .virtualDevice = true}};
     snapshot.inputs = {{.handle = {.epoch = epoch, .serial = 20},
                         .kind = Audio::DeviceKind::Input,
                         .name = QStringLiteral("Input"),
@@ -101,7 +119,10 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
                         .muteKnown = true,
                         .isDefault = true,
                         .canSetVolume = true,
-                        .canSetMute = true}};
+                        .canSetMute = true,
+                        .channelVolumes = {0.5, 0.5},
+                        .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                        .virtualDevice = false}};
     snapshot.streams = {{.handle = {.epoch = epoch, .serial = 30},
                          .direction = Audio::StreamDirection::Playback,
                          .applicationName = QStringLiteral("Player"),
@@ -114,18 +135,24 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
                          .muteKnown = true,
                          .canSetVolume = true,
                          .canSetMute = true,
-                         .canMove = true}};
+                         .canMove = true,
+                         .channelVolumes = {0.75, 0.75},
+                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}}};
     return snapshot;
 }
 
 inline Audio::OperationResult successfulResult(const FakeAudioTransport::Operation &op,
                                                 const quint64 observedRevision)
 {
+    // CreateVirtualDevice carries no target handle; those results report the
+    // snapshot lineage the client prefenced them with.
+    const quint64 epoch =
+        op.request.primary.epoch != 0 ? op.request.primary.epoch : 11;
     return {.kind = op.request.kind,
             .status = Audio::OperationStatus::Succeeded,
-            .initiatingEpoch = op.request.primary.epoch,
+            .initiatingEpoch = epoch,
             .initiatingRevision = 2,
-            .observedEpoch = op.request.primary.epoch,
+            .observedEpoch = epoch,
             .observedRevision = observedRevision,
             .reasonCode = QStringLiteral("ok"),
             .diagnostic = {},

@@ -56,6 +56,12 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(bool configuredThemeInstalled READ configuredThemeInstalled
                    NOTIFY previewChanged)
     Q_PROPERTY(QString fallbackNotice READ fallbackNotice NOTIFY previewChanged)
+    // The palette ordinary Qt6 applications receive for the previewed theme:
+    // QST tokens projected through the platform-theme mapping (ADR-0115) as
+    // {role, color} entries, so the Themes section can show that the same
+    // choice themes both QindaQt surfaces and stock Qt applications.
+    Q_PROPERTY(QVariantList previewQtPalette READ previewQtPalette
+                   NOTIFY previewChanged)
 
 public:
     // AGENT-CONTRACT: Construct, call, and destroy this model on the GUI
@@ -94,6 +100,7 @@ public:
     [[nodiscard]] QString resolvedThemeId() const;
     [[nodiscard]] bool configuredThemeInstalled() const;
     [[nodiscard]] QString fallbackNotice() const;
+    [[nodiscard]] QVariantList previewQtPalette() const;
 
     // Coerces and stores one draft field. Returns false without changing the
     // draft when the key is unknown or the value does not fit the field type.
