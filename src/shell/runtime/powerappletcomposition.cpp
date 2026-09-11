@@ -2,7 +2,6 @@
 
 #include "powerappletcomposition.h"
 
-#include "kglobalaccelshortcutregistrar.h"
 #include "power_applet_controller.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
@@ -13,9 +12,7 @@
 #include "qindaqt/services/power_client/qt_power_transport.h"
 #include "qindaqt/services/session_actions/session_actions_client.h"
 
-#include <QAction>
 #include <QDBusConnection>
-#include <QKeySequence>
 
 namespace QindaQt::Shell {
 namespace {
@@ -74,18 +71,6 @@ PowerAppletComposition::PowerAppletComposition(
             QDBusConnection::sessionBus(), QDBusConnection::systemBus());
     m_access = std::make_unique<PowerApplet::PowerAppletController>(
         m_client.get(), grants.read, grants.control, m_sessionActions.get());
-    m_lockAction = std::make_unique<QAction>();
-    m_lockAction->setObjectName(QStringLiteral("qindaqt_lock_session"));
-    m_lockAction->setText(QStringLiteral("Lock QindaQt session"));
-    QObject::connect(m_lockAction.get(), &QAction::triggered,
-                     m_sessionActions.get(), [this] {
-                         m_sessionActions->requestLock();
-                     });
-    KGlobalAccelShortcutRegistrar registrar;
-    const auto registration = registrar.registerShortcut(
-        *m_lockAction, QKeySequence(Qt::META | Qt::Key_L), *m_lockAction,
-        [](bool) {});
-    Q_UNUSED(registration)
     m_sessionActions->start();
     if (grants.read) {
         m_client->start();
