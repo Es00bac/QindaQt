@@ -5,17 +5,24 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r6`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r7`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=e1afc941820b88c5797bcd2d9a10fe97a6bc76ac
+qq_source_commit=cd7b7b3b09643d4295e60431fc1a6d6e8f6c1e0a
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r6.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r7.tar.gz
 ```
+
+The `-r7` revision links the `QindaQt.Shell.DesktopSurface` static plugin
+into the production shell. `-r6` staged the module's files, but Qt links a
+static QML module's plugin only when an `import` of it appears in the
+target's QML files, and the desktop surface is reached solely from C++, so
+the installed shell still reported the module missing. A shell-only refresh
+adopts the fix; the `qinda-bliss` profile then hosts desktop icons.
 
 The `-r6` revision installs the `QindaQt.Shell.DesktopSurface` QML module
 that `-r5` compiled but never staged. Without it the installed shell logged
