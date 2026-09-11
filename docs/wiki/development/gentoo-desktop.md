@@ -5,17 +5,33 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r4`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r5`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=f5a5659bb2de81654909714ca876ba93395fea83
+qq_source_commit=60b1b5e1c06d4246fbb8cf1d95a8057b9d03d5bd
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r4.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r5.tar.gz
 ```
+
+The `-r5` revision ships two things. First, the QindaQt Bliss Luna option set
+(ADR-0124, ADR-0125): the `qinda-bliss` theme and wallpaper, the
+`qinda-bliss` layout profile with its Luna taskbar and start menu, and the
+desktop-icons applet on the new per-output desktop surface. Both are opt-in:
+pick the theme and wallpaper on the Appearance page and the layout on the
+Customize page; the default `qindaqt` profile and `qinda-dark` theme are
+byte-identical to `-r4`. Second, Settings1 no longer refuses to start over a
+user-overrides entry its schema cannot normalize (ADR-0126); it ignores and
+logs the entry instead, so a key written by another build sharing
+`~/.config/qindaqt` can no longer take the shell, dock, wallpaper, and
+Appearance route down together. After merging, restart the resident
+`qindaqt-settings-service` process (it reactivates on demand) and refresh the
+shell; the Settings app adopts the new files on its next start. The Luna
+window chrome lives in the KDecoration and KWin plugins, so titlebars take
+the Bliss look on the next session login, not through a shell-only refresh.
 
 The `-r4` revision brings Audio1 schema version 2 (ADR-0123): per-channel
 volumes and channel maps on devices and streams, and managed virtual
