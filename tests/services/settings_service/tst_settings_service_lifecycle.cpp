@@ -142,6 +142,7 @@ class SettingsServiceLifecycleTests final : public QObject {
 private slots:
     void ownsRollsBackReleasesAndRestartsOnAPrivateBus();
     void validatesProfileAndUserCompatibilityDocuments();
+    void startsPastUserOverridesThisSchemaCannotNormalize();
 };
 
 void SettingsServiceLifecycleTests::ownsRollsBackReleasesAndRestartsOnAPrivateBus()
@@ -377,6 +378,86 @@ void SettingsServiceLifecycleTests::validatesProfileAndUserCompatibilityDocument
     const auto oversizedStart = oversizedUserService.start();
     QCOMPARE(oversizedStart.status, SettingsServiceStartStatus::CorruptUserOverrides);
     QVERIFY(oversizedStart.message.contains(QStringLiteral("UTF-8 bytes")));
+
+    QDBusConnection::disconnectFromBus(serviceConnection);
+    QDBusConnection::disconnectFromBus(clientConnection);
+    daemon.terminate();
+    QVERIFY(daemon.waitForFinished());
+}
+
+// ADR-0126: a user file written by a newer build (unknown key) or holding a
+// value outside this build's bounds must not keep the whole desktop from
+// starting; the stray entries are ignored and reported, the rest is served.
+void SettingsServiceLifecycleTests::startsPastUserOverridesThisSchemaCannotNormalize()
+{
+    QProcess daemon;
+    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
+                 {QStringLiteral("--session"), QStringLiteral("--nofork"),
+                  QStringLiteral("--print-address=1")});
+    QVERIFY2(daemon.waitForStarted(), qPrintable(daemon.errorString()));
+    QVERIFY2(daemon.waitForReadyRead(), qPrintable(daemon.errorString()));
+    const QString address = QString::fromUtf8(daemon.readLine()).trimmed();
+    const QString suffix = QString::number(QCoreApplication::applicationPid());
+    const QString serviceConnection = QStringLiteral("settings-stray-") + suffix;
+    const QString clientConnection = QStringLiteral("settings-stray-client-") + suffix;
+    auto bus = QDBusConnection::connectToBus(address, serviceConnection);
+    auto clientBus = QDBusConnection::connectToBus(address, clientConnection);
+    QVERIFY(bus.isConnected());
+    QVERIFY(clientBus.isConnected());
+
+    QString error;
+    auto active = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    auto legacy = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
+    QVERIFY2(active && legacy, qPrintable(error));
+    QTemporaryDir directory;
+    const QString profileDefaults = QStringLiteral(
+        QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json");
+    const QString path = directory.filePath(QStringLiteral("stray-user.json"));
+    QFile stray(path);
+    QVERIFY(stray.open(QIODevice::WriteOnly));
+    const QByteArray original = R"json({"schemaVersion":2,"layer":"user-overrides","values":{
+        "appearance.theme":"qinda-light",
+        "services.terminalRestoreTabs":false,
+        "windowManagement.snapDistance":999}})json";
+    QVERIFY(stray.write(original) > 0);
+    stray.close();
+
+    ResidentSettingsService service(bus, *active, *legacy, profileDefaults, path);
+    const auto started = service.start();
+    QVERIFY2(started.ok(), qPrintable(started.message));
+    QCOMPARE(started.ignoredUserOverrides.issues().size(), 2);
+    QStringList ignoredKeys;
+    for (const auto &issue : started.ignoredUserOverrides.issues()) {
+        ignoredKeys.append(issue.key);
+    }
+    ignoredKeys.sort();
+    QCOMPARE(ignoredKeys, (QStringList{QStringLiteral("services.terminalRestoreTabs"),
+                                       QStringLiteral("windowManagement.snapDistance")}));
+
+    QDBusPendingCallWatcher watcher(requestSnapshot(
+        clientBus, {QStringLiteral("appearance.theme"), QStringLiteral("windowManagement.snapDistance")}));
+    QTRY_VERIFY_WITH_TIMEOUT(watcher.isFinished(), 5'000);
+    const QDBusPendingReply<QVariantMap> snapshot(watcher);
+    QVERIFY2(snapshot.isValid(), qPrintable(snapshot.error().message()));
+    const auto values = QindaQt::Services::SettingsProtocol::decodeBoundedVariantMap(
+        snapshot.value().value(QStringLiteral("values")), 2);
+    QVERIFY(values);
+    QCOMPARE(QindaQt::Services::SettingsProtocol::decodeBoundedJsonValue(
+                 values->value(QStringLiteral("appearance.theme")))->toString(),
+             QStringLiteral("qinda-light"));
+    const auto sources = QindaQt::Services::SettingsProtocol::decodeBoundedVariantMap(
+        snapshot.value().value(QStringLiteral("sourceLayers")), 2);
+    QVERIFY(sources);
+    QCOMPARE(sources->value(QStringLiteral("windowManagement.snapDistance")).toString(),
+             QStringLiteral("system-defaults"));
+
+    // Startup ignores the entries without rewriting the user's file.
+    QFile after(path);
+    QVERIFY(after.open(QIODevice::ReadOnly));
+    QCOMPARE(after.readAll(), original);
+    service.stop();
 
     QDBusConnection::disconnectFromBus(serviceConnection);
     QDBusConnection::disconnectFromBus(clientConnection);

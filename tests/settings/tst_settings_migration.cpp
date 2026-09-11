@@ -23,6 +23,7 @@ private slots:
     void compatibilityLoaderMigratesALegacyFileWithoutMutatingIt();
     void compatibilityLoaderRejectsAnUnsupportedVersionWithoutMutating();
     void migrationIsIdempotentWhenAppliedTwice();
+    void compatibilityLoaderDropsInvalidActiveEntriesOnlyWhenAsked();
 
 private:
     std::optional<SettingsSchema> m_v1Schema;
@@ -214,6 +215,40 @@ void SettingsMigrationTests::migrationIsIdempotentWhenAppliedTwice()
     const auto reloaded = SettingsCompatibilityLoader::load(path, *m_v2Schema, *m_v1Schema);
     QVERIFY2(reloaded.ok, qPrintable(reloaded.error));
     QCOMPARE(reloaded.document.values, first.document.values);
+}
+
+void SettingsMigrationTests::compatibilityLoaderDropsInvalidActiveEntriesOnlyWhenAsked()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto path = directory.filePath(QStringLiteral("settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QVERIFY(file.write(R"json({"schemaVersion":2,"layer":"user-overrides",
+        "values":{"services.doNotDisturb":true,"services.fromANewerBuild":false}})json") > 0);
+    file.close();
+
+    const auto strict = SettingsCompatibilityLoader::load(path, *m_v2Schema, *m_v1Schema);
+    QVERIFY(!strict.ok);
+    QVERIFY(strict.error.contains(QStringLiteral("services.fromANewerBuild")));
+
+    const auto lenient = SettingsCompatibilityLoader::load(
+        path, *m_v2Schema, *m_v1Schema, DocumentValuePolicy::DropInvalidValues);
+    QVERIFY2(lenient.ok, qPrintable(lenient.error));
+    QCOMPARE(lenient.sourceSchemaVersion, 2);
+    QCOMPARE(lenient.document.values.size(), 1);
+    QCOMPARE(lenient.document.values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
+    QCOMPARE(lenient.validation.issues().size(), 1);
+    QCOMPARE(lenient.validation.issues().first().key, QStringLiteral("services.fromANewerBuild"));
+
+    // A legacy document is still migrated strictly: the policy does not
+    // widen what a v1 file may contain.
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(file.write(R"json({"schemaVersion":1,"layer":"user-overrides",
+        "values":{"appearance.theme":"qinda-light","services.fromANewerBuild":false}})json") > 0);
+    file.close();
+    QVERIFY(!SettingsCompatibilityLoader::load(path, *m_v2Schema, *m_v1Schema,
+                                              DocumentValuePolicy::DropInvalidValues).ok);
 }
 
 QTEST_GUILESS_MAIN(SettingsMigrationTests)

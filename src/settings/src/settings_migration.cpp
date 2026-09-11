@@ -61,7 +61,8 @@ DocumentLoadResult SettingsMigration::migrateV1ToV2(const QByteArray &v1Json,
 
 DocumentLoadResult SettingsCompatibilityLoader::load(const QString &path,
                                                       const SettingsSchema &activeSchema,
-                                                      const SettingsSchema &legacySchema)
+                                                      const SettingsSchema &legacySchema,
+                                                      DocumentValuePolicy policy)
 {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -78,7 +79,7 @@ DocumentLoadResult SettingsCompatibilityLoader::load(const QString &path,
 
     const int sniffedVersion = parsed.object().value(QStringLiteral("schemaVersion")).toInt(-1);
     if (sniffedVersion == activeSchema.version()) {
-        return SettingsDocumentCodec::fromJson(bytes, path, activeSchema);
+        return SettingsDocumentCodec::fromJson(bytes, path, activeSchema, policy);
     }
     if (sniffedVersion == legacySchema.version()) {
         return SettingsMigration::migrateV1ToV2(bytes, path, legacySchema, activeSchema);

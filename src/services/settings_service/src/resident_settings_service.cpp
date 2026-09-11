@@ -23,7 +23,7 @@ namespace {
 
 SettingsServiceStartResult failure(SettingsServiceStartStatus status, QString message)
 {
-    return {.status = status, .message = std::move(message)};
+    return {.status = status, .message = std::move(message), .ignoredUserOverrides = {}};
 }
 
 bool layerFitsWire(const QVariantMap &values, QString *error)
@@ -140,9 +140,16 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
     }
 
     bool migrationPending = false;
+    Settings::ValidationResult ignoredUserOverrides;
     if (storage.exists()) {
+        // AGENT-CONTRACT: the user file is the only document loaded with
+        // DropInvalidValues. A key this schema does not define or a value it
+        // cannot normalize is left out of the composed layer and reported;
+        // structural corruption, a wrong layer, or an unsupported version
+        // still fails startup without mutation (ADR-0126).
         const auto loaded = Settings::SettingsCompatibilityLoader::load(
-            d->userOverridesPath, d->activeSchema, d->legacySchema);
+            d->userOverridesPath, d->activeSchema, d->legacySchema,
+            Settings::DocumentValuePolicy::DropInvalidValues);
         if (!loaded.ok || loaded.document.layer != Settings::SettingLayer::UserOverrides) {
             return failure(SettingsServiceStartStatus::CorruptUserOverrides,
                            loaded.ok ? QStringLiteral("settings document is not user overrides")
@@ -158,6 +165,7 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
             return failure(SettingsServiceStartStatus::CorruptUserOverrides, applied.message);
         }
         migrationPending = loaded.sourceSchemaVersion == d->legacySchema.version();
+        ignoredUserOverrides = loaded.validation;
     }
 
     if (!d->connection.registerService(serviceName)) {
@@ -202,7 +210,8 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
                        d->connection.lastError().message());
     }
     d->object = std::move(object);
-    return {.status = SettingsServiceStartStatus::Started, .message = {}};
+    return {.status = SettingsServiceStartStatus::Started, .message = {},
+            .ignoredUserOverrides = ignoredUserOverrides};
 }
 
 void ResidentSettingsService::stop() noexcept

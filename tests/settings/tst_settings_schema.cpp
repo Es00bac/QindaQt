@@ -20,6 +20,7 @@ private slots:
     void rejectsObjectTextThatCannotRoundTripLosslessly();
     void doNotDisturbDefaultsToDisabled();
     void rejectsAnUnsupportedSchemaVersion();
+    void dropsUndefinableEntriesOnlyWhenAsked();
 };
 
 void SettingsSchemaTests::loadsBuiltInSchemaWithEveryDomain()
@@ -210,6 +211,33 @@ void SettingsSchemaTests::rejectsAnUnsupportedSchemaVersion()
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
     QVERIFY2(legacy.has_value(), qPrintable(error));
     QVERIFY(legacy->definition(QStringLiteral("services.doNotDisturb")) == nullptr);
+}
+
+void SettingsSchemaTests::dropsUndefinableEntriesOnlyWhenAsked()
+{
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+    const QVariantMap layer{{QStringLiteral("services.doNotDisturb"), true},
+                            {QStringLiteral("services.fromANewerBuild"), false},
+                            {QStringLiteral("windowManagement.snapDistance"), 999}};
+
+    ValidationResult strict;
+    QVERIFY(!schema->normalizedLayer(layer, &strict).has_value());
+    QCOMPARE(strict.issues().size(), 2);
+
+    ValidationResult dropped;
+    const auto kept = schema->normalizedLayerDroppingInvalid(layer, &dropped);
+    QCOMPARE(kept.size(), 1);
+    QCOMPARE(kept.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
+    QCOMPARE(dropped.issues().size(), 2);
+    QStringList codes;
+    for (const auto &issue : dropped.issues()) {
+        codes.append(issue.code);
+    }
+    codes.sort();
+    QCOMPARE(codes, (QStringList{QStringLiteral("invalid-value"), QStringLiteral("unknown-key")}));
 }
 
 QTEST_GUILESS_MAIN(SettingsSchemaTests)

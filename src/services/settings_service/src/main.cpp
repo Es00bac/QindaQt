@@ -67,5 +67,9 @@ int main(int argc, char **argv)
                      qPrintable(started.message));
         return 3;
     }
+    for (const auto &issue : started.ignoredUserOverrides.issues()) {
+        std::fprintf(stderr, "qindaqt-settings-service: ignored-user-override: %s: %s: %s\n",
+                     qPrintable(storage), qPrintable(issue.key), qPrintable(issue.message));
+    }
     return application.exec();
 }

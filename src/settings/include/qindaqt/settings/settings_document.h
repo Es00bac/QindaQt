@@ -15,6 +15,15 @@ struct SettingsDocument final {
     QVariantMap values;
 };
 
+// How a load treats entries the schema cannot normalize. RejectInvalidValues
+// fails the whole document; DropInvalidValues keeps every valid entry, omits
+// the rest, and reports them through DocumentLoadResult::validation while
+// ok stays true. Only user-owned documents may be loaded with the latter.
+enum class DocumentValuePolicy {
+    RejectInvalidValues,
+    DropInvalidValues,
+};
+
 struct DocumentLoadResult final {
     bool ok = false;
     SettingsDocument document;
@@ -28,9 +37,11 @@ struct DocumentLoadResult final {
 
 class SettingsDocumentCodec final {
 public:
-    [[nodiscard]] static DocumentLoadResult fromJson(const QByteArray &json,
-                                                     const QString &origin,
-                                                     const SettingsSchema &schema);
+    [[nodiscard]] static DocumentLoadResult fromJson(
+        const QByteArray &json,
+        const QString &origin,
+        const SettingsSchema &schema,
+        DocumentValuePolicy policy = DocumentValuePolicy::RejectInvalidValues);
     [[nodiscard]] static std::optional<QByteArray> toJson(const SettingsDocument &document,
                                                          const SettingsSchema &schema,
                                                          ValidationResult *validation = nullptr,

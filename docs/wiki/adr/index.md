@@ -138,3 +138,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0123: a Voicemeeter-class audio graph on PipeWire primitives](0123-voicemeeter-class-audio-graph-on-pipewire.md)
 - [ADR-0124: add the QindaQt Bliss Luna option set](0124-add-qindaqt-bliss-luna-option-set.md)
 - [ADR-0125: host desktop-zone applets on the desktop surface](0125-host-desktop-zone-applets.md)
+- [ADR-0126: ignore user-override entries the schema cannot normalize](0126-ignore-user-overrides-the-schema-cannot-normalize.md)
