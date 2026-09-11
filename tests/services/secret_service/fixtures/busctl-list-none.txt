@@ -1,0 +1,2 @@
+org.freedesktop.DBus 1 dbus-daemon root -
+org.freedesktop.portal.Desktop 999 xdg-desktop-port user user@1000
