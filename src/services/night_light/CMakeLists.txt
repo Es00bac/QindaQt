@@ -31,7 +31,8 @@ target_link_libraries(qindaqt_night_light
     PUBLIC Qt6::Core Qt6::DBus
     PRIVATE KF6::ConfigCore)
 target_compile_features(qindaqt_night_light PUBLIC cxx_std_20)
-set_target_properties(qindaqt_night_light PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_night_light
+    PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON)
 qindaqt_enable_warnings(qindaqt_night_light)
 
 install(

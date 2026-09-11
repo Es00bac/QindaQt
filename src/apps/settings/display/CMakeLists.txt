@@ -39,10 +39,19 @@ qt_add_qml_module(
     CLASS_NAME QindaQtSettingsDisplayPlugin
     OUTPUT_DIRECTORY "${QINDAQT_DISPLAY_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_display.qmltypes
+    SOURCES
+        include/qindaqt/apps/settings_display/display_night_light_route.h
+        include/qindaqt/apps/settings_display/display_night_light_model.h
+        display_night_light_route.cpp
+        display_night_light_model.cpp
     QML_FILES
         qml/DisplayArrangementSection.qml
         qml/DisplayCoordinateField.qml
         qml/DisplayModeSection.qml
+        qml/DisplayNightLightSection.qml
+        qml/DisplayNightLightTemperatureRow.qml
+        qml/DisplayNightLightLocationRow.qml
+        qml/DisplayNightLightTimesRows.qml
         qml/DisplayOutputCard.qml
         qml/DisplayOutputSection.qml
         qml/DisplayPage.qml
@@ -54,9 +63,18 @@ qt_add_qml_module(
         qml/DisplayArrangementTile.qml
         qml/DisplayPlacementControls.qml
 )
+# The generated QML type-registration unit includes the route header by its
+# file name (desktop-surface precedent); expose its directory privately.
+target_include_directories(
+    qindaqt_settings_display_qml
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/qindaqt/apps/settings_display"
+)
 target_link_libraries(
     qindaqt_settings_display_qml
-    PRIVATE QindaQt::TokensQml Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick
+    PRIVATE qindaqt_settings_display QindaQt::NightLight QindaQt::TokensQml
+            Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick
             Qt6::QuickControls2
 )
 set_target_properties(
@@ -88,6 +106,10 @@ install(
         qml/DisplayArrangementSection.qml
         qml/DisplayCoordinateField.qml
         qml/DisplayModeSection.qml
+        qml/DisplayNightLightSection.qml
+        qml/DisplayNightLightTemperatureRow.qml
+        qml/DisplayNightLightLocationRow.qml
+        qml/DisplayNightLightTimesRows.qml
         qml/DisplayOutputCard.qml
         qml/DisplayOutputSection.qml
         qml/DisplayPage.qml

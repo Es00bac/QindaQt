@@ -6,6 +6,7 @@ import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaQt.SettingsApp.Display
 
 // Display route composition: outputs inventory, active selection, resolution,
 // scaling, orientation, arrangement, and bounded reversible transaction preview.
@@ -231,6 +232,10 @@ T.Page {
                         id: transformSection
                         displaySettings: root.displaySettings
                         editorBusy: root.editorBusy
+                    }
+
+                    DisplayNightLightSection {
+                        nightLight: DisplayNightLightRoute.model
                     }
 
                 }
