@@ -29,6 +29,7 @@ Item {
     property Component clipboardComponent: null
     property Component colorComponent: null
     property Component accessibilityComponent: null
+    property Component inputComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -64,6 +65,8 @@ Item {
               ? colorLoader
             : navigation.activeRouteComponent === "accessibility"
               ? accessibilityLoader
+            : navigation.activeRouteComponent === "input"
+              ? inputLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -253,27 +256,33 @@ Item {
     }
 
     Loader {
+        id: inputLoader
+        objectName: host.objectNamePrefix + "InputLoader"
+        anchors.fill: parent
+        // AGENT-NOTE: The Input page takes its models from the
+        // InputRouteComposition backend singleton, which is always present
+        // when the module is imported and presents degraded truth itself
+        // when the input authorities are unreachable (ADR-0134).
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "input"
+                && host.inputComponent !== null
+        sourceComponent: host.inputComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
-        // An unrecognized component key is presentation-hostile even if a
-        // malformed producer claimed the route was otherwise available.
+        // AGENT-GUARD: currentLoader is the single loadability oracle. The
+        // fallback resolves to unavailableLoader exactly when no route
+        // loader above was chosen, so a route can never render both a page
+        // and the unavailable notice. Adding a route means extending the
+        // currentLoader chain and adding its loader above.
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && (!host.navigation.activeRouteAvailable
-                    || (host.navigation.activeRouteComponent !== "notifications"
-                        && host.navigation.activeRouteComponent !== "appearance"
-                        && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
-                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
-                        && host.navigation.activeRouteComponent !== "customize"
-                        && (host.navigation.activeRouteComponent !== "audio" || host.audioComponent === null)
-                        && (host.navigation.activeRouteComponent !== "bluetooth" || host.bluetoothComponent === null)
-                        && (host.navigation.activeRouteComponent !== "power" || host.powerComponent === null)
-                        && (host.navigation.activeRouteComponent !== "clipboard" || host.clipboardComponent === null)
-                        && (host.navigation.activeRouteComponent !== "color" || host.colorComponent === null)
-                        && (host.navigation.activeRouteComponent !== "accessibility"
-                            || host.accessibilityComponent === null
-                            || host.accessibilitySettings === null)))
+                && host.currentLoader === unavailableLoader
         sourceComponent: host.unavailableComponent
     }
 }
