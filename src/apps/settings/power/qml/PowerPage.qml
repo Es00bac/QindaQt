@@ -23,6 +23,8 @@ T.Page {
         ? (retryButton.visible && retryButton.enabled ? retryButton : root)
         : screenLockSection.firstActionTarget !== null
         ? screenLockSection.firstActionTarget
+        : lidPowerSection.firstActionTarget !== null
+        ? lidPowerSection.firstActionTarget
         : profileSection.firstActionTarget !== null
         ? profileSection.firstActionTarget
         : brightnessSection.firstActionTarget !== null
@@ -147,6 +149,11 @@ T.Page {
                     PowerScreenLockSection {
                         id: screenLockSection
                         screenLockSettings: root.screenLockSettings
+                    }
+                    PowerLidPowerButtonSection {
+                        id: lidPowerSection
+                        powerSettings: root.powerSettings
+                        lidPolicy: root.powerSettings.lidPolicy
                     }
                     PowerIdleDisplaySection {
                         id: idleDisplaySection

@@ -73,9 +73,11 @@ target_compile_definitions(qindaqt_power_page_tests PRIVATE
     QINDAQT_POWER_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/power/qml/PowerPage.qml")
 target_link_libraries(qindaqt_power_page_tests PRIVATE
     qindaqt_settings_power qindaqt_settings_appearance QindaQt::TokensQml
+    QindaQt::ShellIcons qindaqt_shell_iconsplugin
     qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 add_dependencies(qindaqt_power_page_tests qindaqt_tokens_qmlplugin
-    qindaqt_controls_qmlplugin qindaqt_settings_power_qmlplugin)
+    qindaqt_controls_qmlplugin qindaqt_settings_power_qmlplugin
+    qindaqt_shell_icons)
 qindaqt_enable_warnings(qindaqt_power_page_tests)
 add_test(NAME qindaqt.settings-power-page COMMAND qindaqt_power_page_tests)
 set_tests_properties(qindaqt.settings-power-page PROPERTIES

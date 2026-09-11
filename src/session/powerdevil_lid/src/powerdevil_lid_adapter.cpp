@@ -109,6 +109,21 @@ bool PowerDevilLidAdapter::applying() const noexcept
     return m_applying;
 }
 
+quint32 PowerDevilLidAdapter::lidAction() const noexcept
+{
+    return m_lidAction;
+}
+
+bool PowerDevilLidAdapter::inhibitLidActionWhenExternalMonitorPresent() const noexcept
+{
+    return m_inhibitLidActionWhenExternalMonitorPresent;
+}
+
+quint32 PowerDevilLidAdapter::powerButtonAction() const noexcept
+{
+    return m_powerButtonAction;
+}
+
 const QString &PowerDevilLidAdapter::error() const noexcept
 {
     return m_error;
@@ -148,6 +163,11 @@ bool PowerDevilLidAdapter::apply(const quint32 lidAction,
     }
 
     setError({});
+    m_lidAction = lidAction;
+    m_inhibitLidActionWhenExternalMonitorPresent =
+        inhibitLidActionWhenExternalMonitorPresent;
+    m_powerButtonAction = powerButtonAction;
+    Q_EMIT preferencesChanged();
     m_applying = true;
     Q_EMIT applyingChanged();
     requestRefresh(false);
@@ -156,7 +176,42 @@ bool PowerDevilLidAdapter::apply(const quint32 lidAction,
 
 void PowerDevilLidAdapter::refreshAvailability()
 {
-    setAvailable(!ownerFor(m_sessionBus).isEmpty());
+    const bool available = !ownerFor(m_sessionBus).isEmpty();
+    if (available) {
+        // A newly seen owner must reread the file: the daemon or another
+        // writer may have changed profile policy since the last read.
+        readPreferences();
+    }
+    setAvailable(available);
+}
+
+void PowerDevilLidAdapter::readPreferences()
+{
+    const KSharedConfig::Ptr config =
+        KSharedConfig::openConfig(QString::fromLatin1(PowerDevilConfig));
+    if (!config) {
+        return;
+    }
+    config->reparseConfiguration();
+    // All three profiles are written together, so any one of them describes
+    // the shared state; AC is the canonical first profile.
+    const KConfigGroup suspendAndShutdown =
+        config->group(QStringLiteral("AC"))
+            .group(QString::fromLatin1(SuspendAndShutdownGroup));
+    const quint32 storedLid = static_cast<quint32>(
+        suspendAndShutdown.readEntry(QString::fromLatin1(LidActionKey), 0));
+    const bool storedInhibit =
+        suspendAndShutdown.readEntry(QString::fromLatin1(InhibitLidKey), true);
+    const quint32 storedButton = static_cast<quint32>(
+        suspendAndShutdown.readEntry(QString::fromLatin1(PowerButtonActionKey), 0));
+    if (storedLid != m_lidAction
+        || storedInhibit != m_inhibitLidActionWhenExternalMonitorPresent
+        || storedButton != m_powerButtonAction) {
+        m_lidAction = storedLid;
+        m_inhibitLidActionWhenExternalMonitorPresent = storedInhibit;
+        m_powerButtonAction = storedButton;
+        Q_EMIT preferencesChanged();
+    }
 }
 
 void PowerDevilLidAdapter::ownerChanged(const QString &serviceName,
@@ -185,6 +240,9 @@ void PowerDevilLidAdapter::ownerChanged(const QString &serviceName,
 
     setAvailable(true);
     if (!m_applying) {
+        // A replacement owner may have rewritten the profile file; reread
+        // display truth before asking it to reload.
+        readPreferences();
         requestRefresh(true);
     }
 }
