@@ -26,6 +26,7 @@ explicit daemon.
 
 import argparse
 import os
+import re
 import pathlib
 import shutil
 import signal
@@ -65,9 +66,30 @@ def require_private_bus(environment):
         raise ScenarioError("private environment marker missing; refusing to run uncontained")
 
 
+BUS_CONFIG_TEMPLATE = """<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 2.0//EN"
+  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:runtime=yes</listen>
+  <!-- AGENT-GUARD: this empty servicedir is the bus's only activation
+       directory. The system org.freedesktop.secrets.service file must stay
+       invisible, otherwise a client call would auto-start an installed
+       provider instead of exercising this run's explicit daemon. -->
+  <servicedir>{servicedir}</servicedir>
+  <auth>EXTERNAL</auth>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+    <allow user="*"/>
+  </policy>
+</busconfig>
+"""
+
+
 def private_environment(work, case):
-    empty_data_dirs = work / "empty-data-dirs" / "dbus-1"
-    empty_data_dirs.mkdir(parents=True, exist_ok=True)
+    servicedir = work / "empty-data-dirs" / "dbus-1" / "services"
+    servicedir.mkdir(parents=True, exist_ok=True)
     for name in ("home", "config", "data", "cache", "state", "empty-etc"):
         (work / name).mkdir(parents=True, exist_ok=True)
     # AGENT-GUARD: rows run concurrently in one shared ctest invocation and
@@ -95,7 +117,9 @@ def private_environment(work, case):
         "QINDAQT_SECRET_SERVICE_PRIVATE": "1",
     })
     environment.pop("GNOME_KEYRING_CONTROL", None)
-    return environment
+    bus_config = work / "bus-session.conf"
+    bus_config.write_text(BUS_CONFIG_TEMPLATE.format(servicedir=servicedir))
+    return environment, bus_config
 
 
 def bounded(arguments, input=None, timeout=SECRET_TOOL_TIMEOUT, check=True):
@@ -113,9 +137,14 @@ def secrets_owned(timeout=OWNERSHIP_TIMEOUT):
     while time.monotonic() < deadline:
         result = bounded(["busctl", "--user", "list", "--no-legend", "--no-pager"],
                          check=False, timeout=5)
-        if any(line.split()[0:1] == ["org.freedesktop.secrets"]
-               for line in result.stdout.decode(errors="replace").splitlines()):
-            return True
+        # AGENT-GUARD: busctl list also prints activatable names with a "-"
+        # pid column; only a numeric pid proves the name is actually owned,
+        # otherwise the poll would pass while the name is merely activatable.
+        for line in result.stdout.decode(errors="replace").splitlines():
+            fields = line.split()
+            if fields and fields[0] == "org.freedesktop.secrets" \
+                    and len(fields) > 1 and fields[1].isdigit():
+                return True
         time.sleep(0.25)
     return False
 
@@ -125,8 +154,13 @@ def wait_name_gone(timeout=OWNERSHIP_TIMEOUT):
     while time.monotonic() < deadline:
         result = bounded(["busctl", "--user", "list", "--no-legend", "--no-pager"],
                          check=False, timeout=5)
-        if not any(line.split()[0:1] == ["org.freedesktop.secrets"]
-                   for line in result.stdout.decode(errors="replace").splitlines()):
+        owned = False
+        for line in result.stdout.decode(errors="replace").splitlines():
+            fields = line.split()
+            if fields and fields[0] == "org.freedesktop.secrets" \
+                    and len(fields) > 1 and fields[1].isdigit():
+                owned = True
+        if not owned:
             return True
         time.sleep(0.25)
     return False
@@ -160,7 +194,11 @@ def collection_locked(path):
         "org.freedesktop.Secret.Collection", "Locked")
     if result.returncode != 0:
         raise ScenarioError(f"reading Locked failed: {result.stderr!r}")
+    # AGENT-NOTE: Properties.Get wraps the value in a variant, so busctl
+    # prints "v b false" rather than a bare boolean.
     text = result.stdout.decode(errors="replace").strip()
+    if text.startswith("v "):
+        text = text[2:]
     if text == "b false":
         return False
     if text == "b true":
@@ -168,10 +206,24 @@ def collection_locked(path):
     raise ScenarioError(f"unexpected Locked reply: {text!r}")
 
 
-def start_daemon(password_file):
+def start_login_daemon(password_file):
+    # AGENT-NOTE: gnome-keyring 48 rejects `--start` together with `--unlock`
+    # or `--login`, and `--login` waits on its control socket for the
+    # initialize handshake before claiming org.freedesktop.secrets. The
+    # deployed PAM flow is two processes: a login daemon holding the password,
+    # then a `--start` daemon that sends the handshake over the control
+    # socket. Reproduce exactly that; a single process cannot bootstrap a
+    # fresh store with a known password.
     return subprocess.Popen(
-        [DAEMON, "--start", "--foreground", "--components=secrets", "--unlock"],
+        [DAEMON, "--foreground", "--components=secrets", "--login"],
         stdin=password_file.open("rb"), stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, preexec_fn=os.setsid)
+
+
+def start_session_daemon():
+    return subprocess.Popen(
+        [DAEMON, "--start", "--foreground", "--components=secrets"],
+        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, preexec_fn=os.setsid)
 
 
@@ -212,16 +264,19 @@ def lookup_locked_fails_closed():
 
 
 def lock_collection(path):
-    prompt = object_path_reply(busctl_call(
-        "org.freedesktop.secrets", path,
-        "org.freedesktop.Secret.Collection", "Lock"), "Lock")
-    if prompt != "/":
-        # AGENT-NOTE: locking never needs user interaction in gnome-keyring;
-        # a prompt Run that fails means the contract changed and must fail.
-        run = busctl_call("org.freedesktop.secrets", prompt,
-                          "org.freedesktop.Secret.Prompt", "Run", "u", "0")
-        if run.returncode != 0:
-            raise ScenarioError(f"Prompt.Run failed: {run.stderr!r}")
+    # AGENT-NOTE: gnome-keyring 48 implements no Collection.Lock method; the
+    # Service-level Lock(ao) is the supported route. A non-root prompt in the
+    # reply would mean locking started to require user interaction, which the
+    # no-prompting contract forbids, so fail instead of running the prompt.
+    result = busctl_call(
+        "org.freedesktop.secrets", "/org/freedesktop/secrets",
+        "org.freedesktop.Secret.Service", "Lock", "ao", "1", path)
+    if result.returncode != 0:
+        raise ScenarioError(f"Lock failed: {result.stderr!r}")
+    tokens = re.findall(r'"([^"]*)"', result.stdout.decode(errors="replace"))
+    prompts = tokens[1::2]
+    if any(prompt != "/" for prompt in prompts):
+        raise ScenarioError(f"Lock returned a real prompt: {prompts!r}")
 
 
 def write_password(work, name, value):
@@ -232,8 +287,9 @@ def write_password(work, name, value):
 
 
 def run_provider(work):
-    handle = start_daemon(write_password(work, "provider-password",
-                                         b"correct-horse-battery-staple"))
+    login = start_login_daemon(write_password(work, "provider-password",
+                                              b"correct-horse-battery-staple"))
+    starter = start_session_daemon()
     try:
         if not secrets_owned():
             raise ScenarioError("org.freedesktop.secrets never became owned")
@@ -247,12 +303,14 @@ def run_provider(work):
         lookup_locked_fails_closed()
         print("PROVIDER OK: owned, default unlocked, round-trip, lock fail-closed")
     finally:
-        stop_daemon(handle)
+        stop_daemon(starter)
+        stop_daemon(login)
 
 
 def run_wrong_password(work):
-    handle = start_daemon(write_password(work, "correct-password",
-                                         b"correct-horse-battery-staple"))
+    login = start_login_daemon(write_password(work, "correct-password",
+                                              b"correct-horse-battery-staple"))
+    starter = start_session_daemon()
     try:
         if not secrets_owned():
             raise ScenarioError("org.freedesktop.secrets never became owned on create run")
@@ -260,12 +318,14 @@ def run_wrong_password(work):
         if collection_locked(alias):
             raise ScenarioError("keyring created locked; fixture is invalid")
     finally:
-        stop_daemon(handle)
+        stop_daemon(starter)
+        stop_daemon(login)
     if not wait_name_gone():
         raise ScenarioError("org.freedesktop.secrets still owned after daemon stop")
 
-    handle = start_daemon(write_password(work, "wrong-password",
-                                         b"truly-wrong-password"))
+    login = start_login_daemon(write_password(work, "wrong-password",
+                                              b"truly-wrong-password"))
+    starter = start_session_daemon()
     try:
         if not secrets_owned():
             raise ScenarioError("org.freedesktop.secrets never became owned on wrong run")
@@ -275,7 +335,8 @@ def run_wrong_password(work):
         lookup_locked_fails_closed()
         print("WRONG-PASSWORD OK: collection stays locked and lookups fail closed")
     finally:
-        stop_daemon(handle)
+        stop_daemon(starter)
+        stop_daemon(login)
 
 
 def run_no_daemon(work):
@@ -326,10 +387,11 @@ def main():
 
     if not require_tools():
         return SKIP_EXIT
-    environment = private_environment(arguments.work, arguments.case)
+    environment, bus_config = private_environment(arguments.work, arguments.case)
     try:
         result = subprocess.run(
-            ["dbus-run-session", "--", sys.executable, os.path.abspath(__file__),
+            ["dbus-run-session", f"--config-file={bus_config}", "--",
+             sys.executable, os.path.abspath(__file__),
              "--case", arguments.case, "--work", str(arguments.work), "--inner"],
             env=environment, timeout=240, check=False)
         return result.returncode
