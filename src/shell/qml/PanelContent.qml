@@ -32,6 +32,11 @@ Item {
                 const settings = applet.settings ?? ({});
                 return settings.dockMode === true;
             }) || panel.id === "dock" || panel.id === "smart-shelf")
+    // Worn Luna taskbar dressing follows the same derivation rule as dock
+    // mode: a named fill taskbar panel opts in through its profile identity.
+    // Profiles without that panel id keep the token-driven material.
+    readonly property bool lunaMode: horizontal && panel.edge === "bottom"
+        && panel.alignment === "fill" && panel.id === "bliss-taskbar"
     // Bumping panelConfigVersion marks the resolved-settings cache stale when
     // the facade publishes new Settings1 truth.
     property int panelConfigVersion: 0
@@ -101,18 +106,44 @@ Item {
             : parent.width
         height: root.dockMode ? Math.max(0, parent.height - Tokens.space["2"]) : parent.height
         anchors.centerIn: parent
-        radius: root.panel.alignment === "fill" ? 0
+        radius: root.lunaMode ? 0
+            : root.panel.alignment === "fill" ? 0
             : root.dockMode ? Tokens.radius.l : Tokens.radius.m
         // QST supplies flattened opaque backgrounds whenever accessibility
         // disables transparency or the per-panel quick setting is off. The
         // translucent material pairs with the blur-behind request driven by
         // the shell's PanelSurfaceBlur (ADR-0120): one flag, one contract.
-        color: Tokens.ready ? (root.dockMode ? Tokens.bg.raised : Tokens.bg.base)
-                            : (root.colors.surface ?? "#222624")
-        opacity: root.materialTranslucent ? 0.8 : 1
-        border.color: Tokens.ready ? Tokens.outline.divider
-                                   : (root.colors.border ?? "#3c433f")
-        border.width: root.dockMode ? 1 : root.panel.alignment === "fill" ? 0 : 1
+        // The Luna taskbar paints its own weathered Luna gradient and stays
+        // opaque, so the blur contract never has to track a moving region.
+        color: root.lunaMode ? "transparent"
+            : Tokens.ready ? (root.dockMode ? Tokens.bg.raised : Tokens.bg.base)
+                           : (root.colors.surface ?? "#222624")
+        gradient: root.lunaMode ? lunaMaterialGradient : null
+        opacity: root.lunaMode ? 1 : (root.materialTranslucent ? 0.8 : 1)
+        border.color: root.lunaMode ? "transparent"
+            : Tokens.ready ? Tokens.outline.divider
+                           : (root.colors.border ?? "#3c433f")
+        border.width: root.lunaMode ? 0
+            : root.dockMode ? 1
+            : root.panel.alignment === "fill" ? 0 : 1
+
+        Gradient {
+            id: lunaMaterialGradient
+            GradientStop { position: 0.0; color: "#2050b4" }
+            GradientStop { position: 0.08; color: "#3b74dd" }
+            GradientStop { position: 0.62; color: "#2e68d6" }
+            GradientStop { position: 1.0; color: "#1b47a4" }
+        }
+
+        // Surviving gloss line along the taskbar's top seam.
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: "#6fa0f0"
+            visible: root.lunaMode
+        }
 
         // Right-click on the panel's own surface (behind every applet chip)
         // opens the panel configuration menu. Left clicks pass through; the

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-bliss",
+  "name": "QindaQt Bliss",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Tahoma",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 4,
+  "motionDuration": 140,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#ECE9D8",
+    "surface": "#F2F0E4",
+    "surfaceRaised": "#FFFFFF",
+    "border": "#857F6A",
+    "text": "#1F1D17",
+    "textMuted": "#5F5A4C",
+    "accent": "#245EDC",
+    "accentText": "#FFFFFF",
+    "danger": "#B03A2E"
+  },
+  "decoration": {
+    "buttonPlacement": "right",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "glyph",
+    "hoverGlyphs": true,
+    "titleBarColor": "#2B6FD4",
+    "titleBarInactiveColor": "#7E96B8",
+    "closeColor": "#2D6BE4",
+    "minimizeColor": "#E23B3B",
+    "maximizeColor": "#3DA53D",
+    "restoreColor": "#E87BD0"
+  }
+}

@@ -43,6 +43,12 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.system-status"),
         QStringLiteral("qindaqt.applets.workspace-switcher"),
         QStringLiteral("qindaqt.applets.workspace-tiles"),
+        // Worn Luna desktop experience (ADR-0124/ADR-0125): the start-menu
+        // entry renders from the compiled QindaQt.Shell.StartMenu module; the
+        // desktop-icons entry renders on the dedicated desktop surface from
+        // QindaQt.Shell.DesktopSurface.
+        QStringLiteral("qindaqt.applets.start-menu"),
+        QStringLiteral("qindaqt.applets.desktop-icons"),
     });
 }
 

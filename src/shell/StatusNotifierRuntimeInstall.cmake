@@ -35,7 +35,7 @@ function(qindaqt_install_status_notifier_shell_runtime)
     )
     install(
         TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
-                qindaqt_global_menu_qml
+                qindaqt_global_menu_qml qindaqt_start_menu_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT StatusNotifierAppletRuntime
     )

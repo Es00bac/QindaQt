@@ -5,6 +5,7 @@
 #include "qindaqt/profiles/profile_loader.h"
 
 #include <QFile>
+#include <QJsonDocument>
 #include <QSet>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -25,6 +26,8 @@ private slots:
     void catalogMergesDirectoriesWithLaterPrecedence();
     void catalogMergeRejectsDuplicatesWithinOneDirectory();
     void macosProfileUsesQindaMacosTheme();
+    void blissProfileCarriesDesktopSection();
+    void rejectsDuplicateIdsAcrossPanelsAndDesktop();
     void everyBuiltInProfileHasOneNotificationCenter();
 };
 
@@ -205,6 +208,56 @@ void ProfileTests::macosProfileUsesQindaMacosTheme()
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/macos-inspired.json"));
     QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
     QCOMPARE(result.profile.defaultTheme, QStringLiteral("qinda-macos"));
+}
+
+void ProfileTests::blissProfileCarriesDesktopSection()
+{
+    const auto result = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/qinda-bliss.json"));
+    QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+    QCOMPARE(result.profile.defaultTheme, QStringLiteral("qinda-bliss"));
+    QCOMPARE(result.profile.desktopApplets.size(), 1);
+    QCOMPARE(result.profile.desktopApplets.constFirst().plugin,
+             QStringLiteral("desktop-icons"));
+    QCOMPARE(result.profile.desktopApplets.constFirst()
+                 .settings.value(QStringLiteral("placement")).toString(),
+             QStringLiteral("left"));
+
+    // The desktop section round-trips through the strict serializer so user
+    // edits never silently drop it (ADR-0125).
+    const auto roundTrip = ProfileLoader::fromJson(
+        QJsonDocument(result.profile.toJson()).toJson(), QStringLiteral("round-trip"));
+    QVERIFY2(roundTrip.ok, qPrintable(roundTrip.error.diagnostic()));
+    QCOMPARE(roundTrip.profile.desktopApplets.size(), 1);
+    QCOMPARE(roundTrip.profile.desktopApplets.constFirst().id,
+             QStringLiteral("desktop-icons"));
+
+    // Profiles without the section serialize without the key at all.
+    const auto classic = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/windows-classic.json"));
+    QVERIFY2(classic.ok, qPrintable(classic.error.diagnostic()));
+    QVERIFY(!classic.profile.toJson().toVariantMap()
+                 .contains(QStringLiteral("desktop")));
+}
+
+void ProfileTests::rejectsDuplicateIdsAcrossPanelsAndDesktop()
+{
+    constexpr auto invalid = R"json({
+        "schemaVersion": 1,
+        "id": "dupe",
+        "name": "Dupe",
+        "panels": [{
+            "id": "bar",
+            "edge": "bottom",
+            "applets": [{"id": "tray", "plugin": "clock"}]
+        }],
+        "desktop": {
+            "applets": [{"id": "tray", "plugin": "desktop-icons"}]
+        }
+    })json";
+    const auto result = ProfileLoader::fromJson(invalid, QStringLiteral("fixture"));
+    QVERIFY(!result.ok);
+    QCOMPARE(result.error.code, ProfileErrorCode::DuplicateAppletId);
 }
 
 void ProfileTests::everyBuiltInProfileHasOneNotificationCenter()

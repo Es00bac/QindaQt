@@ -13,6 +13,7 @@ private slots:
     void loadsEveryBuiltInTheme();
     void requiresSemanticColorTokens();
     void qindaMacosDefinesDecorationFlow();
+    void qindaBlissDefinesWornLunaChrome();
     void rejectsInvalidDecorationValues();
     void catalogSwitchesTheme();
 };
@@ -20,11 +21,42 @@ private slots:
 void ThemeTests::loadsEveryBuiltInTheme()
 {
     const auto results = ThemeLoader::fromDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(results.size(), 5);
+    QCOMPARE(results.size(), 6);
     for (const auto &result : results) {
         QVERIFY2(result.ok, qPrintable(result.error));
         QVERIFY(result.theme.colors.value(QStringLiteral("text")).isValid());
     }
+}
+
+void ThemeTests::qindaBlissDefinesWornLunaChrome()
+{
+    const auto result = ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-bliss.json"));
+    QVERIFY2(result.ok, qPrintable(result.error));
+    QCOMPARE(result.theme.name, QStringLiteral("QindaQt Bliss"));
+    QCOMPARE(result.theme.decoration.buttonPlacement, QStringLiteral("right"));
+    QCOMPARE(result.theme.decoration.buttonStyle, QStringLiteral("glyph"));
+    QVERIFY(result.theme.decoration.titleBarColor.isValid());
+    QVERIFY(result.theme.decoration.titleBarInactiveColor.isValid());
+    QVERIFY(result.theme.decoration.restoreColor.isValid());
+    QCOMPARE(result.theme.decoration.closeColor,
+             QColor(QStringLiteral("#2d6be4")));
+    QCOMPARE(result.theme.decoration.minimizeColor,
+             QColor(QStringLiteral("#e23b3b")));
+    QCOMPARE(result.theme.decoration.maximizeColor,
+             QColor(QStringLiteral("#3da53d")));
+    QCOMPARE(result.theme.decoration.restoreColor,
+             QColor(QStringLiteral("#e87bd0")));
+
+    // Themes without authored Luna fields keep the classic rendering: the
+    // optional colors stay invalid and round-trip drops the absent keys.
+    const auto classic = ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-light.json"));
+    QVERIFY2(classic.ok, qPrintable(classic.error));
+    QVERIFY(!classic.theme.decoration.titleBarColor.isValid());
+    QVERIFY(!classic.theme.decoration.restoreColor.isValid());
+    QVERIFY(!classic.theme.decoration.toVariantMap()
+                 .contains(QStringLiteral("titleBarColor")));
 }
 
 void ThemeTests::qindaMacosDefinesDecorationFlow()

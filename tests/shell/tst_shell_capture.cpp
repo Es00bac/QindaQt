@@ -31,13 +31,19 @@ void ShellCaptureTest::capturesRequiredResolution_data()
     QTest::newRow("qinda-macos-wuxga") << QSize(1920, 1200)
                                        << QStringLiteral("macos-inspired")
                                        << QStringLiteral("qinda-macos");
+    // The Bliss pairing exercises the worn Luna taskbar presentation end to
+    // end: profile-selected taskbar dressing over the Bliss token palette.
+    QTest::newRow("qinda-bliss-1080p") << QSize(1920, 1080)
+                                       << QStringLiteral("qinda-bliss")
+                                       << QStringLiteral("qinda-bliss");
     // Dispatcher/layout changes affect every preset, including side panels
     // and legacy controls migrated into compiled applets.
     const QStringList otherProfiles{
         QStringLiteral("gnome-inspired"), QStringLiteral("mate-inspired"),
         QStringLiteral("minimal"), QStringLiteral("nextstep-inspired"),
         QStringLiteral("unity-inspired"), QStringLiteral("windows-classic"),
-        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired")};
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
+        QStringLiteral("qinda-bliss")};
     for (const auto &preset : otherProfiles) {
         QTest::newRow(qPrintable(preset)) << QSize(1920, 1080) << preset
                                         << QStringLiteral("qinda-dark");

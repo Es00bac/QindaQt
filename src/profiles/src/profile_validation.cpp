@@ -490,6 +490,30 @@ ProfileValidationResult ProfileValidator::validate(const LayoutProfile &profile)
             appletIds.insert(applet.id);
         }
     }
+
+    // Desktop-zone instances share the profile-global applet identity
+    // namespace (ADR-0006); no separate surface id space exists.
+    for (qsizetype appletIndex = 0; appletIndex < profile.desktopApplets.size();
+         ++appletIndex) {
+        const AppletSpec &applet = profile.desktopApplets.at(appletIndex);
+        const QString appletPath = jsonPointerIndex(
+            jsonPointerChild(QStringLiteral("/desktop"), QStringLiteral("applets")),
+            appletIndex);
+        const auto appletResult = validateApplet(applet, QStringLiteral("desktop"),
+                                                 appletPath);
+        if (!appletResult.succeeded()) {
+            return appletResult;
+        }
+        if (appletIds.contains(applet.id)) {
+            return failure(ProfileErrorCode::DuplicateAppletId,
+                           jsonPointerChild(appletPath, QStringLiteral("id")),
+                           QStringLiteral("applet id '%1' is already used by this profile")
+                               .arg(applet.id),
+                           QStringLiteral("desktop"),
+                           applet.id);
+        }
+        appletIds.insert(applet.id);
+    }
     return {};
 }
 

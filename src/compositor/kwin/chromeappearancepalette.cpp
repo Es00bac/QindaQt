@@ -55,8 +55,9 @@ QPalette nativePaletteForTheme(const Themes::ThemeSpec &theme) {
 }
 
 QVariantMap
-decorationPaletteProperties(const HybridChrome::ChromePalette &palette) {
-  return {{QStringLiteral("surface"), palette.surface},
+decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
+                            const Themes::ThemeSpec &theme) {
+  QVariantMap properties = {{QStringLiteral("surface"), palette.surface},
           {QStringLiteral("surfaceRaised"), palette.surfaceRaised},
           {QStringLiteral("border"), palette.border},
           {QStringLiteral("text"), palette.text},
@@ -64,6 +65,22 @@ decorationPaletteProperties(const HybridChrome::ChromePalette &palette) {
           {QStringLiteral("close"), palette.close},
           {QStringLiteral("minimize"), palette.minimize},
           {QStringLiteral("maximize"), palette.maximize}};
+  // QindaDecoration switches to the worn Luna chrome only when the theme
+  // authors it; omitting the keys keeps the classic rendering byte-identical.
+  properties.insert(QStringLiteral("buttonStyle"), theme.decoration.buttonStyle);
+  if (theme.decoration.titleBarColor.isValid()) {
+    properties.insert(QStringLiteral("titleBar"),
+                      theme.decoration.titleBarColor);
+  }
+  if (theme.decoration.titleBarInactiveColor.isValid()) {
+    properties.insert(QStringLiteral("titleBarInactive"),
+                      theme.decoration.titleBarInactiveColor);
+  }
+  if (theme.decoration.restoreColor.isValid()) {
+    properties.insert(QStringLiteral("restore"),
+                      theme.decoration.restoreColor);
+  }
+  return properties;
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

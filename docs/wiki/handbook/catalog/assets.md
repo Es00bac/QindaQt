@@ -4,7 +4,7 @@
 
 Profiles select workflow and panel composition; themes select appearance; applet manifests declare interfaces and requested authority. Presence in data does not establish a compiled implementation or platform qualification. Read [Applet runtime](../../shell/applet-runtime.md) before interpreting manifest or profile entries as live functionality.
 
-## Layout profiles (10)
+## Layout profiles (11)
 
 ### gnome-inspired — Overview
 
@@ -57,6 +57,18 @@ Default theme: `qinda-dark`. Workflow: `{"overview":"dock-grid","workspacePolicy
 | Panel | Geometry and policy | Ordered applet instances |
 | --- | --- | --- |
 | workspace-dock | edge=`"right"`; layer=`"above"`; hideMode=`"never"`; alignment=`"start"`; rows=`1`; thickness=`72`; length=`0.72` | `apps` → `application-tiles` (`{}`); `hosted-task-list` → `task-list` (`{}`); `workspaces` → `workspace-tiles` (`{}`); `clipboard` → `clipboard` (`{}`); `status-notifier` → `status-notifier` (`{}`); `notifications` → `notification-center` (`{}`); `clock` → `clock-tile` (`{}`); `applications` → `launcher` (`{}`) |
+
+### qinda-bliss — QindaQt Bliss
+
+Source: `data/profiles/qinda-bliss.json`. A worn Luna taskbar with a green start menu, quick launch, task buttons, tray, clock, and desktop icons.
+
+Default theme: `qinda-bliss`. Workflow: `{"overview":"disabled","workspacePolicy":"static","launcher":"start-menu","menu":"start-menu","taskList":"buttons","globalMenu":false}`.
+
+| Panel | Geometry and policy | Ordered applet instances |
+| --- | --- | --- |
+| bliss-taskbar | edge=`"bottom"`; layer=`"above"`; hideMode=`"never"`; alignment=`"fill"`; rows=`1`; thickness=`40`; length=`1.0` | `start` → `start-menu` (`{"zone":"start"}`); `quick-launch` → `quick-launch` (`{"zone":"start","presentation":"luna"}`); `tasks` → `task-list` (`{"zone":"center","presentation":"luna","grouping":"never"}`); `tray` → `status-notifier` (`{"zone":"end","presentation":"luna","iconSize":16}`); `notifications` → `notification-center` (`{"zone":"end"}`); `clock` → `clock` (`{"zone":"end","presentation":"luna","showDate":true}`); `show-desktop` → `show-desktop` (`{"zone":"end"}`) |
+
+Desktop applets (root `desktop` section): `desktop-icons` → `desktop-icons` (`{"placement":"left","contextMenuStyle":"windows","applicationsMenuModifier":"shift"}`). This profile deliberately ships no clipboard slot; it is the one stock exception to the one-clipboard-slot convention.
 
 ### qindaqt — QindaQt
 
@@ -111,7 +123,24 @@ Default theme: `qinda-dusk`. Workflow: `{"overview":"optional","workspacePolicy"
 | main-panel | edge=`"top"`; layer=`"above"`; hideMode=`"never"`; alignment=`"fill"`; rows=`1`; thickness=`28`; length=`1.0` | `menu` → `application-menu` (`{}`); `launchers` → `quick-launch` (`{}`); `tasks` → `task-list` (`{}`); `workspaces` → `workspace-switcher` (`{}`); `tray` → `system-tray` (`{}`); `clipboard` → `clipboard` (`{}`); `status-notifier` → `status-notifier` (`{}`); `notifications` → `notification-center` (`{}`); `clock` → `clock` (`{}`); `applications` → `launcher` (`{}`) |
 | launcher-dock | edge=`"bottom"`; layer=`"above"`; hideMode=`"always"`; alignment=`"center"`; rows=`1`; thickness=`46`; length=`0.34` | `favorites` → `quick-launch` (`{}`) |
 
-## Themes (5)
+## Themes (6)
+
+### qinda-bliss — QindaQt Bliss
+
+Source: `data/themes/qinda-bliss.json`.
+
+| Field | Packaged value |
+| --- | --- |
+| schemaVersion | `1` |
+| variant | `"light"` |
+| iconTheme | `"QindaQt"` |
+| fontFamily | `"Tahoma"` |
+| monoFontFamily | `"JetBrains Mono"` |
+| cornerRadius | `4` |
+| motionDuration | `140` |
+| blurEnabled | `false` |
+| colors | `{"canvas":"#ECE9D8","surface":"#F2F0E4","surfaceRaised":"#FFFFFF","border":"#857F6A","text":"#1F1D17","textMuted":"#5F5A4C","accent":"#245EDC","accentText":"#FFFFFF","danger":"#B03A2E"}` |
+| decoration | `{"buttonPlacement":"right","tabDirection":"left-to-right","buttonStyle":"glyph","hoverGlyphs":true,"titleBarColor":"#2B6FD4","titleBarInactiveColor":"#7E96B8","closeColor":"#2D6BE4","minimizeColor":"#E23B3B","maximizeColor":"#3DA53D","restoreColor":"#E87BD0"}` |
 
 ### qinda-dark — QindaQt Smoked Plum
 

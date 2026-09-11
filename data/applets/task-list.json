@@ -26,7 +26,8 @@
         "enum": ["never", "when-crowded", "always"],
         "default": "when-crowded"
       },
-      "rows": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1}
+      "rows": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1},
+      "presentation": {"type": "string", "enum": ["standard", "luna"], "default": "standard"}
     }
   }
 }

@@ -248,3 +248,5 @@ nav:
       - "ADR-0121: real iconography in the Settings Customize route": adr/0121-real-iconography-in-the-settings-customize-route.md
       - "ADR-0122: adopt saved layout preferences live": adr/0122-adopt-saved-layout-preferences-live.md
       - "ADR-0123: a Voicemeeter-class audio graph on PipeWire primitives": adr/0123-voicemeeter-class-audio-graph-on-pipewire.md
+      - "ADR-0124: add the QindaQt Bliss Luna option set": adr/0124-add-qindaqt-bliss-luna-option-set.md
+      - "ADR-0125: host desktop-zone applets on the desktop surface": adr/0125-host-desktop-zone-applets.md

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "start-menu",
+  "name": "Start Menu",
+  "description": "Opens the worn Luna start panel with applications, places, and system actions.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.start-menu"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 48, "preferred": 56, "maximum": 120, "stretch": false},
+    "crossAxis": {"minimum": 28, "preferred": 36, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["applications.launch"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

@@ -26,7 +26,7 @@ void DerivationBenchmark::deriveAllFiveBuiltIns()
 {
     const auto themes = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(themes.size(), 5);
+    QCOMPARE(themes.size(), 6);
     for (const auto &theme : themes) {
         QVERIFY2(theme.ok, qPrintable(theme.error));
     }

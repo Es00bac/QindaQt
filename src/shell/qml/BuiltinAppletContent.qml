@@ -9,6 +9,7 @@ import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.TaskList 1.0 as TaskListModule
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierModule
+import QindaQt.Shell.StartMenu 1.0 as StartMenuModule
 
 Item {
     id: root
@@ -63,6 +64,8 @@ Item {
         !liveApplets && String(applet.plugin ?? "") === "status-notifier"
     readonly property bool statusNotifierReady:
         (ready && entryPoint === "qindaqt.applets.status-notifier") || statusNotifierPreview
+    readonly property bool startMenuReady:
+        ready && entryPoint === "qindaqt.applets.start-menu"
     readonly property Component desktopControlComponent:
         ready ? desktopComponents.componentForEntryPoint(entryPoint) : null
     readonly property bool desktopControlReady: desktopControlComponent !== null
@@ -70,6 +73,7 @@ Item {
         clockReady || notificationCenterReady || audioReady || bluetoothReady
         || powerReady || clipboardReady || launcherReady || globalMenuReady
         || taskListReady || statusNotifierReady || desktopControlReady
+        || startMenuReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
@@ -88,6 +92,7 @@ Item {
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoomEnabled
+        appletSettings: root.applet.settings ?? ({})
     }
 
     Loader {
@@ -102,7 +107,9 @@ Item {
             : root.launcherReady ? launcherComponent
             : root.globalMenuReady ? globalMenuComponent
             : root.taskListReady ? taskListComponent
-            : root.statusNotifierReady ? statusNotifierComponent : root.desktopControlComponent
+            : root.statusNotifierReady ? statusNotifierComponent
+            : root.startMenuReady ? startMenuComponent
+            : root.desktopControlComponent
     }
 
     Component {
@@ -207,6 +214,7 @@ Item {
             dockHasLauncherGroup: root.dockHasLauncherGroup
             reducedMotion: root.reducedMotion
             dockZoomEnabled: root.dockZoomEnabled
+            luna: (root.applet.settings ?? ({})).presentation === "luna"
         }
     }
 
@@ -218,6 +226,19 @@ Item {
             access: root.statusNotifierAppletAccess
             theme: root.theme
             vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: startMenuComponent
+        StartMenuModule.StartMenuApplet {
+            anchors.fill: parent
+            visible: root.startMenuReady
+            applet: root.applet
+            theme: root.theme
+            vertical: root.vertical
+            launcherAppletAccess: root.launcherAppletAccess
+            desktopControlsAccess: root.desktopControlsAccess
         }
     }
 }

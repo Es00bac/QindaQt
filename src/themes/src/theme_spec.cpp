@@ -5,13 +5,25 @@ namespace QindaQt::Themes {
 
 QVariantMap DecorationSpec::toVariantMap() const
 {
-    return {{QStringLiteral("buttonPlacement"), buttonPlacement},
+    QVariantMap values = {{QStringLiteral("buttonPlacement"), buttonPlacement},
             {QStringLiteral("tabDirection"), tabDirection},
             {QStringLiteral("buttonStyle"), buttonStyle},
             {QStringLiteral("hoverGlyphs"), hoverGlyphs},
             {QStringLiteral("closeColor"), closeColor},
             {QStringLiteral("minimizeColor"), minimizeColor},
             {QStringLiteral("maximizeColor"), maximizeColor}};
+    // Optional authored Luna fields round-trip only when present so the
+    // strict JSON round-trip proof never grows keys the source file omits.
+    if (titleBarColor.isValid()) {
+        values.insert(QStringLiteral("titleBarColor"), titleBarColor);
+    }
+    if (titleBarInactiveColor.isValid()) {
+        values.insert(QStringLiteral("titleBarInactiveColor"), titleBarInactiveColor);
+    }
+    if (restoreColor.isValid()) {
+        values.insert(QStringLiteral("restoreColor"), restoreColor);
+    }
+    return values;
 }
 
 QVariantMap ThemeSpec::toVariantMap() const

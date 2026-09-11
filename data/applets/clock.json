@@ -23,7 +23,8 @@
     "properties": {
       "format": {"type": "string", "enum": ["locale", "12-hour", "24-hour"], "default": "locale"},
       "showSeconds": {"type": "boolean", "default": false},
-      "showDate": {"type": "boolean", "default": true}
+      "showDate": {"type": "boolean", "default": true},
+      "presentation": {"type": "string", "enum": ["standard", "luna"], "default": "standard"}
     }
   }
 }

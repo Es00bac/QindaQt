@@ -25,7 +25,7 @@ function(qindaqt_install_shell_applet_payload component applet_id)
     # libraries at the same relative loader paths as the complete package.
     install(
         TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
-                qindaqt_global_menu_qml
+                qindaqt_global_menu_qml qindaqt_start_menu_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT "${component}"
     )

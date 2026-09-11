@@ -265,6 +265,48 @@ bool readApplet(const QJsonObject &object,
     return true;
 }
 
+bool readAppletArray(const QJsonObject &object,
+                     const QString &field,
+                     const QString &path,
+                     const QString &origin,
+                     const QString &panelId,
+                     QVector<AppletSpec> *applets,
+                     ProfileError *error)
+{
+    const auto array = object.constFind(field);
+    if (array == object.constEnd()) {
+        return true;
+    }
+    if (!array->isArray()) {
+        *error = fieldError(ProfileErrorCode::InvalidFieldType,
+                            origin,
+                            jsonPointerChild(path, field),
+                            QStringLiteral("field must be an array when present"));
+        return false;
+    }
+    const QJsonArray entries = array->toArray();
+    applets->reserve(entries.size());
+    for (qsizetype index = 0; index < entries.size(); ++index) {
+        const QString appletPath =
+            jsonPointerIndex(jsonPointerChild(path, field), index);
+        const QJsonValue value = entries.at(index);
+        if (!value.isObject()) {
+            *error = fieldError(ProfileErrorCode::InvalidFieldType,
+                                origin,
+                                appletPath,
+                                QStringLiteral("applet entry must be an object"));
+            error->panelId = panelId;
+            return false;
+        }
+        AppletSpec applet;
+        if (!readApplet(value.toObject(), appletPath, origin, panelId, &applet, error)) {
+            return false;
+        }
+        applets->append(std::move(applet));
+    }
+    return true;
+}
+
 bool readPanel(const QJsonObject &object,
                const QString &path,
                const QString &origin,
@@ -332,40 +374,41 @@ bool readPanel(const QJsonObject &object,
         return false;
     }
 
-    const auto applets = object.constFind(QStringLiteral("applets"));
-    if (applets == object.constEnd()) {
+    return readAppletArray(object,
+                           QStringLiteral("applets"),
+                           path,
+                           origin,
+                           panel->id,
+                           &panel->applets,
+                           error);
+}
+
+bool readDesktopSection(const QJsonObject &root,
+                        const QString &origin,
+                        QVector<AppletSpec> *desktopApplets,
+                        ProfileError *error)
+{
+    const auto value = root.constFind(QStringLiteral("desktop"));
+    if (value == root.constEnd()) {
         return true;
     }
-    if (!applets->isArray()) {
+    const QString path = QStringLiteral("/desktop");
+    if (!value->isObject()) {
         *error = fieldError(ProfileErrorCode::InvalidFieldType,
                             origin,
-                            jsonPointerChild(path, QStringLiteral("applets")),
-                            QStringLiteral("field must be an array when present"));
-        error->panelId = panel->id;
+                            path,
+                            QStringLiteral("field must be an object when present"));
         return false;
     }
-
-    const QJsonArray array = applets->toArray();
-    panel->applets.reserve(array.size());
-    for (qsizetype index = 0; index < array.size(); ++index) {
-        const QString appletPath =
-            jsonPointerIndex(jsonPointerChild(path, QStringLiteral("applets")), index);
-        const QJsonValue value = array.at(index);
-        if (!value.isObject()) {
-            *error = fieldError(ProfileErrorCode::InvalidFieldType,
-                                origin,
-                                appletPath,
-                                QStringLiteral("applet entry must be an object"));
-            error->panelId = panel->id;
-            return false;
-        }
-        AppletSpec applet;
-        if (!readApplet(value.toObject(), appletPath, origin, panel->id, &applet, error)) {
-            return false;
-        }
-        panel->applets.append(std::move(applet));
-    }
-    return true;
+    // Desktop-zone instances carry no panel id; error annotation uses the
+    // section name so diagnostics still point at the offending entry.
+    return readAppletArray(value->toObject(),
+                           QStringLiteral("applets"),
+                           path,
+                           origin,
+                           QStringLiteral("desktop"),
+                           desktopApplets,
+                           error);
 }
 
 bool readWorkflow(const QJsonObject &root,
@@ -496,6 +539,11 @@ ProfileJsonReadResult readProfileObject(const QJsonObject &root, const QString &
             return result;
         }
         result.profile.panels.append(std::move(panel));
+    }
+
+    if (!readDesktopSection(root, origin, &result.profile.desktopApplets,
+                            &result.error)) {
+        return result;
     }
     return result;
 }

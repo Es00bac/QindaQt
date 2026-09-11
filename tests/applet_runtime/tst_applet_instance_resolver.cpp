@@ -58,6 +58,7 @@ private slots:
     void stockProfilesPlaceOneResolvedClipboardInUtilitySlot();
     void stockProfilesPlaceHostedTaskListWhereWorkflowExposesTasks();
     void stockProfilesPlaceOneResolvedStatusNotifier();
+    void resolvesDesktopZoneWithoutAPanelEdge();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
     void desktopControlsResolveReadyInEveryStockPlacement();
 };
@@ -88,6 +89,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.command-hud"),
         QStringLiteral("qindaqt.applets.command-palette"),
         QStringLiteral("qindaqt.applets.dashboard"),
+        // Worn Luna desktop experience (ADR-0124/ADR-0125); sorted position.
+        QStringLiteral("qindaqt.applets.desktop-icons"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
@@ -96,6 +99,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.power"),
         QStringLiteral("qindaqt.applets.quick-launch"),
         QStringLiteral("qindaqt.applets.show-desktop"),
+        QStringLiteral("qindaqt.applets.start-menu"),
         QStringLiteral("qindaqt.applets.status-notifier"),
         QStringLiteral("qindaqt.applets.system-menu"),
         QStringLiteral("qindaqt.applets.system-status"),
@@ -299,6 +303,32 @@ void AppletInstanceResolverTests::carriesDeniedCapabilitiesWithoutInventingAutho
     QVERIFY(launcher.grantedCapabilities.isEmpty());
 }
 
+void AppletInstanceResolverTests::resolvesDesktopZoneWithoutAPanelEdge()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+
+    // The desktop-icons instance anchors to the desktop surface (ADR-0125):
+    // it resolves without a panel edge through the dedicated desktop gate.
+    auto desktopInstance = instance(QStringLiteral("desktop-icons"));
+    desktopInstance.settings[QStringLiteral("zone")] = QStringLiteral("desktop");
+    const auto resolved = AppletRuntime::AppletInstanceResolver::resolveDesktopBuiltin(
+        desktopInstance, fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(resolved.ready(), qPrintable(resolved.diagnostic));
+    QCOMPARE(resolved.entryPoint, QStringLiteral("qindaqt.applets.desktop-icons"));
+    QCOMPARE(resolved.grantedCapabilities,
+             QStringList{QStringLiteral("applications.launch")});
+
+    // Fail closed: a panel applet has no desktop zone in its manifest, so the
+    // desktop resolver rejects it instead of hosting it on the surface.
+    const auto rejected = AppletRuntime::AppletInstanceResolver::resolveDesktopBuiltin(
+        instance(QStringLiteral("clock")), fixture.catalog, fixture.policy,
+        fixture.registry);
+    QCOMPARE(AppletRuntime::toString(rejected.status),
+             QStringLiteral("placement-rejected"));
+}
+
 void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
 {
     Fixture fixture;
@@ -308,16 +338,22 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
     QVERIFY2(profiles.loadDirectory(
                  QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
              qPrintable(error));
-    QCOMPARE(profiles.profiles().size(), 10);
+    QCOMPARE(profiles.profiles().size(), 11);
 
     for (const auto &profile : profiles.profiles()) {
-        int launcherCount = 0;
+        // AGENT-NOTE: the menu slot is the launcher by default, but the Bliss
+        // profile opts its menu instance into the start-menu presentation
+        // (ADR-0124). Exactly one resolved menu applet per stock profile.
+        int menuAppletCount = 0;
         for (const auto &panel : profile.panels) {
             for (const auto &applet : panel.applets) {
-                if (applet.plugin != QLatin1String("launcher")) {
+                const bool isMenuApplet =
+                    applet.plugin == QLatin1String("launcher")
+                    || applet.plugin == QLatin1String("start-menu");
+                if (!isMenuApplet) {
                     continue;
                 }
-                ++launcherCount;
+                ++menuAppletCount;
                 const auto resolved =
                     AppletRuntime::AppletInstanceResolver::resolveBuiltin(
                         applet, panel.edge, fixture.catalog, fixture.policy,
@@ -326,12 +362,15 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
                          qPrintable(profile.id + QStringLiteral(": ")
                                     + resolved.diagnostic));
                 QCOMPARE(resolved.entryPoint,
-                         QStringLiteral("qindaqt.applets.launcher"));
+                         QStringLiteral("qindaqt.applets.")
+                             + (applet.plugin == QLatin1String("launcher")
+                                    ? QStringLiteral("launcher")
+                                    : QStringLiteral("start-menu")));
                 QCOMPARE(resolved.grantedCapabilities,
                          QStringList{QStringLiteral("applications.launch")});
             }
         }
-        QCOMPARE(launcherCount, 1);
+        QCOMPARE(menuAppletCount, 1);
     }
 }
 
@@ -379,7 +418,12 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedClipboardInUtilit
                 QCOMPARE(clipboardZone, notificationZone);
             }
         }
-        QCOMPARE(clipboardCount, 1);
+        // AGENT-NOTE: qinda-bliss deliberately ships without a clipboard tray
+        // slot — the XP taskbar it reproduces has no utility chip there
+        // (ADR-0124). Every other stock profile keeps exactly one.
+        const int expectedClipboardCount =
+            profile.id == QLatin1String("qinda-bliss") ? 0 : 1;
+        QCOMPARE(clipboardCount, expectedClipboardCount);
     }
 }
 

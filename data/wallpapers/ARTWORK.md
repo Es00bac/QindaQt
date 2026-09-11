@@ -31,6 +31,16 @@ Use case: stylized-concept. Asset type: original QindaQt Linux desktop wallpaper
 
 Use case: stylized-concept. Asset type: original QindaQt Linux desktop wallpaper, landscape16:9, 3840x2160 if supported. Title metadata only: Porcelain Dawn. Refined minimalist abstract sculpture of broad soft folded porcelain-white and pale apricot sheets, one small sea-glass jade translucent plane, sweeping gentle arcs like a quiet folded landscape at dawn. Matte ceramic and fibrous mineral surfaces, tactile very fine grain, diffuse warm light, restrained shadows, sophisticated calm modern desktop aesthetic. Broad luminous ivory negative space in upper two thirds and left, overlapping sculptural forms low and toward right, quiet top and bottom edges for menus and dock. Palette warm porcelain#F3EFE5, pale peach#E8AE84, muted jade#70BFA5, subtle dusty blue shadows. Full bleed, no text, letters, logo, watermark, UI, monitor or objects. Original wallpaper only.
 
+### qinda-bliss
+
+Use case: user-supplied concept. Original generated landscape 16:9 desktop wallpaper provided by
+the project owner (native 1672 × 941 PNG). A QindaQt homage to the rolling-hills desktop
+tradition: bright jade-green hills under a deep blue sky with scattered cumulus, a futuristic
+city on the horizon, and the cyborg penguin mascot with his rubber-duck sidekick standing on a
+hill of reclaimed circuit boards and retired hardware. Composition keeps the upper-left sky and
+center hills calm for desktop work. Paired with the QindaQt Bliss theme and layout profile.
+No text, watermarks, or third-party branded artwork.
+
 ### ink-tide
 
 Use case: stylized-concept. Asset type: original QindaQt Linux desktop wallpaper, landscape16:9, 3840x2160 if supported. Title metadata only: Ink Tide. A quiet sculptural abstract nocturnal landscape of broad folded smoked mineral-glass planes and smooth curved matte slate ribbons, deep ink teal#172528 background, low sea-glass jade#70BFA5 reflections, a thin restrained dusty violet#A69AC5 rim of light, very subtle warm apricot reflected edge. Premium tactile refined desktop artwork, soft geometry and fine mineral grain, broad shadows with carefully separated layers, not black crushed detail. Curves sweep across the bottom third toward a raised fold on right. Keep upper left and center dark and restful with large negative space for work. Full bleed, no text, letters, logos, watermark, UI, mockup, stars, neon or glossy plastic. Single finished wallpaper with modern calm QindaQt visual identity.

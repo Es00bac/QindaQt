@@ -16,6 +16,13 @@ struct DecorationSpec {
     QColor closeColor = QColor(QStringLiteral("#f07c76"));
     QColor minimizeColor = QColor(QStringLiteral("#e8bf63"));
     QColor maximizeColor = QColor(QStringLiteral("#71bd8a"));
+    // Optional Luna-style title chrome. An invalid color means "not authored":
+    // the loader leaves these unset for every theme that does not declare
+    // them, and decoration consumers fall back to the classic surfaceRaised
+    // rendering, so the five original built-ins stay pixel-identical.
+    QColor titleBarColor;
+    QColor titleBarInactiveColor;
+    QColor restoreColor;
 
     [[nodiscard]] QVariantMap toVariantMap() const;
 };

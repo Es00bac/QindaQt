@@ -17,6 +17,7 @@ chromePaletteForTheme(const Themes::ThemeSpec &theme);
 [[nodiscard]] QPalette nativePaletteForTheme(const Themes::ThemeSpec &theme);
 
 [[nodiscard]] QVariantMap
-decorationPaletteProperties(const HybridChrome::ChromePalette &palette);
+decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
+                            const Themes::ThemeSpec &theme);
 
 } // namespace QindaQt::Compositor::KWinIntegration

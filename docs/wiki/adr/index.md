@@ -136,3 +136,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0121: real iconography in the Settings Customize route](0121-real-iconography-in-the-settings-customize-route.md)
 - [ADR-0122: adopt saved layout preferences live](0122-adopt-saved-layout-preferences-live.md)
 - [ADR-0123: a Voicemeeter-class audio graph on PipeWire primitives](0123-voicemeeter-class-audio-graph-on-pipewire.md)
+- [ADR-0124: add the QindaQt Bliss Luna option set](0124-add-qindaqt-bliss-luna-option-set.md)
+- [ADR-0125: host desktop-zone applets on the desktop surface](0125-host-desktop-zone-applets.md)

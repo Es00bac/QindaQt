@@ -40,6 +40,8 @@
   "settingsSchema": {
     "type": "object",
     "additionalProperties": false,
-    "properties": {}
+    "properties": {
+      "presentation": {"type": "string", "enum": ["standard", "luna"], "default": "standard"}
+    }
   }
 }

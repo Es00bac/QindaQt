@@ -242,7 +242,7 @@ reconciliation keeps its independent safe-visible policy.
 
 The popup **History** button opens the center while a popup is visible. A
 dedicated notification-center applet now appears exactly once in each of the
-ten stock profiles. Its manifest requests no capabilities; the production
+eleven stock profiles. Its manifest requests no capabilities; the production
 renderer receives only a shell-owned facade that requests a center toggle and
 mirrors open state plus read-only Do Not Disturb and privacy state. Notification
 records, dismiss/action operations, policy mutation, and the presentation

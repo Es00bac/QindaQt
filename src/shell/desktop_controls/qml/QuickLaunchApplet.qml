@@ -25,6 +25,8 @@ Item {
     property bool dockZoomEnabled: true
     readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
 
+    // Worn Luna dressing (ADR-0124): instance-level opt-in from the profile.
+    property bool luna: false
     readonly property bool ready: access !== null && Tokens.ready
     readonly property var rows: ready ? access.rows : []
     readonly property bool showRows: ready && rows.length > 0
@@ -205,8 +207,11 @@ Item {
 
                 background: Rectangle {
                     radius: root.dockMode ? Tokens.radius.l : Tokens.radius.m
-                    color: entryButton.down ? Tokens.state.pressed
-                         : entryButton.hovered ? Tokens.state.hover : "transparent"
+                    // Luna tiles keep a translucent white hover so the state
+                    // stays visible on the dark taskbar gradient.
+                    color: entryButton.down ? (root.luna ? "#33518f" : Tokens.state.pressed)
+                         : entryButton.hovered ? (root.luna ? "#3d6cb8" : Tokens.state.hover)
+                         : "transparent"
                     C.FocusRing { anchors.fill: parent; control: entryButton }
                 }
             }

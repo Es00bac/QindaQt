@@ -95,6 +95,8 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_shell_launcher_qml.so")
     set(global_menu
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_global_menu_qml.so")
+    set(start_menu
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_start_menu_qml.so")
     set(clipboard_module
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/ClipboardApplet")
     set(task_list_module
@@ -107,6 +109,7 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/DesktopControls")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
                                    "${launcher}" "${global_menu}"
+                                   "${start_menu}"
                                    "${clipboard_module}/qmldir"
                                    "${clipboard_module}/qml/ClipboardApplet.qml"
                                    "${clipboard_module}/qml/ClipboardEntryRow.qml"
@@ -189,6 +192,24 @@ foreach(component IN LISTS shell_components)
         message(FATAL_ERROR
             "${component} shell did not resolve staged Global Menu: expected "
             "${expected_global_menu}, resolved ${resolved_global_menu}")
+    endif()
+
+    set(resolved_start_menu "")
+    foreach(dependency IN LISTS shell_dependencies)
+        cmake_path(GET dependency FILENAME dependency_name)
+        if(dependency_name STREQUAL "libqindaqt_start_menu_qml.so")
+            if(NOT resolved_start_menu STREQUAL "")
+                message(FATAL_ERROR
+                    "${component} shell resolved duplicate Start Menu libraries")
+            endif()
+            file(REAL_PATH "${dependency}" resolved_start_menu)
+        endif()
+    endforeach()
+    file(REAL_PATH "${start_menu}" expected_start_menu)
+    if(NOT resolved_start_menu STREQUAL expected_start_menu)
+        message(FATAL_ERROR
+            "${component} shell did not resolve staged Start Menu: expected "
+            "${expected_start_menu}, resolved ${resolved_start_menu}")
     endif()
 
     file(GET_RUNTIME_DEPENDENCIES

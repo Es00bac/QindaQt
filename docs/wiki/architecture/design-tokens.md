@@ -167,7 +167,8 @@ correction or a token revision.
 ## WCAG pair scope
 
 The built-in-data gate covers exactly QindaQt Pearl, QindaQt Velvet,
-QindaQt Smoked Plum, Qinda High Contrast, and Qinda macOS. QST-1 uses the
+QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS, and QindaQt Bliss.
+QST-1 uses the
 WCAG 2.2 contrast algorithm and requires:
 
 | Foreground/background pair | Minimum |
@@ -197,22 +198,24 @@ ctest --test-dir build/dev \
 
 They cover schema/metric boundaries, deterministic input normalization,
 loader-valid translucent-theme flattening with exact values, complete QML
-maps, exact five-theme WCAG pairs, GUI-thread ownership, atomic change
+maps, exact six-theme WCAG pairs, GUI-thread ownership, atomic change
 publication, same-value suppression, and a clean staged-install C++ consumer
 that recompiles against installed headers/libraries and verifies exact role
 keys plus representative Qinda macOS accessibility values.
 The offscreen singleton test uses Qt's software renderer and never opens or
 controls a desktop surface.
 
-`qindaqt.design-tokens-benchmark` derives 1,000 all-five-built-in batches per
+`qindaqt.design-tokens-benchmark` derives 1,000 all-built-in batches (the
+six shipped themes) per
 timed iteration so sub-millisecond work remains visible in QtTest's stable
 reporter. Candidate handoffs divide the reported time by 1,000 and record the
-median against the target of less than 1 ms for one five-theme batch. CI
+median against the target of less than 1 ms for one six-theme batch. CI
 deliberately has no absolute wall-clock assertion because shared-runner jitter
 would make that gate unstable; reviewers compare recorded measurements and
 investigate material regressions. On the repaired S1 candidate host,
 20-iteration medians were 28.5 ms Debug and 10.8 ms Release per 1,000 batches,
-or 0.0285 ms and 0.0108 ms per complete five-theme batch. This is
+or 0.0285 ms and 0.0108 ms per complete six-theme batch (the catalog held
+five themes at measurement time). This is
 derivation evidence only—not a Settings Center startup, repaint, memory, live
 accessibility bridge, or physical-display claim.
 

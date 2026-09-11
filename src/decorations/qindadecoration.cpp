@@ -107,6 +107,9 @@ bool QindaDecoration::event(QEvent *event)
     if (m_initialized && event->type() == QEvent::DynamicPropertyChange) {
         const auto *change = static_cast<QDynamicPropertyChangeEvent *>(event);
         if (change->propertyName() == QByteArrayLiteral("qindaqtChromePalette")) {
+            // AGENT-NOTE: the palette map arrives after init(), so the glyph
+            // button group is (re)built here rather than in createButtons.
+            reconcileButtons();
             updateVisualStyle();
         } else if (change->propertyName() == QByteArrayLiteral("qindaqtContainerMember")) {
             updateGeometry();
@@ -126,18 +129,27 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
     painter->fillRect(rect(), Qt::transparent);
 
     const qreal radius = window()->isMaximized() ? 0.0 : 10.0;
-    QPainterPath titlePath;
-    titlePath.addRoundedRect(QRectF(0.0, 0.0, size().width(), borderTop() + radius),
-                             radius, radius);
-    painter->fillPath(titlePath, titleColor());
-    painter->fillRect(QRectF(0.0, borderTop() - radius,
-                             size().width(), radius), titleColor());
-    painter->setPen(QPen(paletteColor("border", QPalette::Mid,
-                                     window()->isActive() ? QPalette::Active
-                                                          : QPalette::Inactive),
-                         0.75));
-    painter->drawLine(QPointF(0.0, borderTop() - 0.5),
-                      QPointF(size().width(), borderTop() - 0.5));
+    const bool worn = wornLunaChrome();
+    if (worn) {
+        paintWornLunaTitle(*painter,
+                           QRectF(0.0, 0.0, size().width(), borderTop()),
+                           titleColor(), wearSeed());
+    } else {
+        QPainterPath titlePath;
+        titlePath.addRoundedRect(QRectF(0.0, 0.0, size().width(), borderTop() + radius),
+                                 radius, radius);
+        painter->fillPath(titlePath, titleColor());
+        painter->fillRect(QRectF(0.0, borderTop() - radius,
+                                 size().width(), radius), titleColor());
+    }
+    if (!worn) {
+        painter->setPen(QPen(paletteColor("border", QPalette::Mid,
+                                         window()->isActive() ? QPalette::Active
+                                                              : QPalette::Inactive),
+                             0.75));
+        painter->drawLine(QPointF(0.0, borderTop() - 0.5),
+                          QPointF(size().width(), borderTop() - 0.5));
+    }
     const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
     paintDecorationFrame(
         *painter, rect(),
@@ -148,21 +160,42 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
     if (m_leftButtons) {
         m_leftButtons->paint(painter, repaintArea);
     }
+    if (m_rightButtons) {
+        m_rightButtons->paint(painter, repaintArea);
+    }
 
-    const auto buttonRight = m_leftButtons
+    const qreal captionLeft = m_leftButtons
         ? m_leftButtons->geometry().right() + 18.0
-        : 18.0;
-    const QRectF captionRect(buttonRight, 0.0,
-                             qMax(0.0, size().width() - buttonRight - 18.0),
+        : 12.0;
+    const qreal captionRight = m_rightButtons
+        ? m_rightButtons->pos().x() - 10.0
+        : size().width() - 18.0;
+    const QRectF captionRect(captionLeft, 0.0,
+                             qMax(0.0, captionRight - captionLeft),
                              borderTop());
-    painter->setPen(textColor());
     auto font = settings()->font();
-    font.setWeight(QFont::DemiBold);
-    painter->setFont(font);
-    const QFontMetricsF metrics(font);
-    const auto caption = metrics.elidedText(window()->caption(), Qt::ElideRight,
-                                            qFloor(captionRect.width()));
-    painter->drawText(captionRect, Qt::AlignCenter, caption);
+    if (worn) {
+        // Luna captions carried the era's humanist title face; the family is
+        // advisory and falls back through fontconfig when it is not installed.
+        font.setFamily(QStringLiteral("Trebuchet MS"));
+        font.setWeight(QFont::Bold);
+        painter->setFont(font);
+        const QFontMetricsF metrics(font);
+        const auto caption = metrics.elidedText(window()->caption(), Qt::ElideRight,
+                                                qFloor(captionRect.width()));
+        painter->setPen(QPen(QColor(0, 0, 0, 140)));
+        painter->drawText(captionRect.translated(0.0, 1.0), Qt::AlignCenter, caption);
+        painter->setPen(QPen(captionColor()));
+        painter->drawText(captionRect, Qt::AlignCenter, caption);
+    } else {
+        painter->setPen(textColor());
+        font.setWeight(QFont::DemiBold);
+        painter->setFont(font);
+        const QFontMetricsF metrics(font);
+        const auto caption = metrics.elidedText(window()->caption(), Qt::ElideRight,
+                                                qFloor(captionRect.width()));
+        painter->drawText(captionRect, Qt::AlignCenter, caption);
+    }
     painter->restore();
 }
 
@@ -174,6 +207,11 @@ void QindaDecoration::updateControlHover()
             hovered = hovered || button->isHovered();
         }
     }
+    if (m_rightButtons) {
+        for (const auto *button : m_rightButtons->buttons()) {
+            hovered = hovered || button->isHovered();
+        }
+    }
     if (hovered != m_controlsHovered) {
         m_controlsHovered = hovered;
         update();
@@ -182,6 +220,20 @@ void QindaDecoration::updateControlHover()
 
 void QindaDecoration::createButtons()
 {
+    if (glyphChrome()) {
+        m_rightButtons = new KDecoration3::DecorationButtonGroup(
+            KDecoration3::DecorationButtonGroup::Position::Right,
+            this, &QindaButton::create);
+        // Luna order on the physical right: minimize, maximize, close.
+        for (const auto action : {KDecoration3::DecorationButtonType::Minimize,
+                                  KDecoration3::DecorationButtonType::Maximize,
+                                  KDecoration3::DecorationButtonType::Close}) {
+            if (auto *button = QindaButton::create(action, this, m_rightButtons)) {
+                m_rightButtons->addButton(button);
+            }
+        }
+        return;
+    }
     m_leftButtons = new KDecoration3::DecorationButtonGroup(
         KDecoration3::DecorationButtonGroup::Position::Left,
         this, &QindaButton::create);
@@ -195,6 +247,20 @@ void QindaDecoration::createButtons()
             m_leftButtons->addButton(button);
         }
     }
+}
+
+void QindaDecoration::reconcileButtons()
+{
+    const bool glyph = glyphChrome();
+    if (glyph == (m_rightButtons != nullptr)) {
+        return;
+    }
+    delete m_leftButtons;
+    m_leftButtons = nullptr;
+    delete m_rightButtons;
+    m_rightButtons = nullptr;
+    createButtons();
+    updateGeometry();
 }
 
 void QindaDecoration::createContextMenu()
@@ -293,6 +359,15 @@ void QindaDecoration::updateGeometry()
         }
         m_leftButtons->setPos(QPointF(12.0, 5.0));
     }
+    if (m_rightButtons) {
+        m_rightButtons->setSpacing(8.0);
+        for (auto *button : m_rightButtons->buttons()) {
+            button->setGeometry(QRectF(0.0, 0.0, 16.0, 16.0));
+        }
+        const qreal groupWidth = m_rightButtons->geometry().width();
+        m_rightButtons->setPos(QPointF(size().width() - groupWidth - 14.0,
+                                       (titleHeight - 16.0) / 2.0));
+    }
     updateVisualStyle();
 }
 
@@ -310,8 +385,31 @@ void QindaDecoration::updateVisualStyle()
 QColor QindaDecoration::titleColor() const
 {
     const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    if (window()->isActive()) {
+        if (const QColor authored = authoredColor("titleBar"); authored.isValid()) {
+            return authored;
+        }
+    } else {
+        if (const QColor authored = authoredColor("titleBarInactive");
+            authored.isValid()) {
+            return authored;
+        }
+    }
     return paletteColor(window()->isActive() ? "surfaceRaised" : "surface",
                         QPalette::Window, group);
+}
+
+QColor QindaDecoration::captionColor() const
+{
+    // White captions ride the dark Luna paint; light title surfaces keep the
+    // theme's own text color so contrast never regresses.
+    const QColor title = titleColor();
+    if (qGray(title.rgb()) < 128) {
+        return Qt::white;
+    }
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    return paletteColor(window()->isActive() ? "text" : "textMuted",
+                        QPalette::WindowText, group);
 }
 
 QColor QindaDecoration::textColor() const
@@ -319,6 +417,53 @@ QColor QindaDecoration::textColor() const
     const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
     return paletteColor(window()->isActive() ? "text" : "textMuted",
                         QPalette::WindowText, group);
+}
+
+bool QindaDecoration::glyphChrome() const
+{
+    return property("qindaqtChromePalette").toMap()
+               .value(QStringLiteral("buttonStyle"))
+               .toString() == QStringLiteral("glyph");
+}
+
+bool QindaDecoration::wornLunaChrome() const
+{
+    return authoredColor("titleBar").isValid();
+}
+
+QColor QindaDecoration::authoredColor(const char *key) const
+{
+    const auto map = property("qindaqtChromePalette").toMap();
+    const auto color = map.value(QString::fromLatin1(key)).value<QColor>();
+    return color.isValid() ? color : QColor();
+}
+
+QColor QindaDecoration::glyphChromeColor(
+    KDecoration3::DecorationButtonType type) const
+{
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    switch (type) {
+    case KDecoration3::DecorationButtonType::Close:
+        return paletteColor("close", QPalette::Button, group);
+    case KDecoration3::DecorationButtonType::Minimize:
+        return paletteColor("minimize", QPalette::Button, group);
+    case KDecoration3::DecorationButtonType::Maximize:
+        if ((window()->isMaximized() || memberFocusMaximized())) {
+            if (const QColor restore = authoredColor("restore"); restore.isValid()) {
+                return restore;
+            }
+        }
+        return paletteColor("maximize", QPalette::Button, group);
+    default:
+        return paletteColor("maximize", QPalette::Button, group);
+    }
+}
+
+quint32 QindaDecoration::wearSeed() const
+{
+    // AGENT-NOTE: focus state is deliberately excluded. The same window text
+    // and width always reproduce the same wear; only the palette dims.
+    return quint32(qHash(window()->caption()) ^ (quint64(size().width()) << 32));
 }
 
 QColor QindaDecoration::paletteColor(const char *key,

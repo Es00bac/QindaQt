@@ -16,7 +16,7 @@ constexpr const char *requiredColors[] = {
     "canvas", "surface", "surfaceRaised", "border", "text", "textMuted", "accent", "accentText", "danger"};
 constexpr const char *buttonPlacements[] = {"left", "right"};
 constexpr const char *tabDirections[] = {"left-to-right", "right-to-left"};
-constexpr const char *buttonStyles[] = {"symbols", "traffic-lights"};
+constexpr const char *buttonStyles[] = {"symbols", "traffic-lights", "glyph"};
 
 LoadResult failure(const QString &origin, const QString &message)
 {
@@ -142,6 +142,18 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
         || !readOptionalColor(decoration,
                               QStringLiteral("maximizeColor"),
                               &theme.decoration.maximizeColor,
+                              &decorationError)
+        || !readOptionalColor(decoration,
+                              QStringLiteral("titleBarColor"),
+                              &theme.decoration.titleBarColor,
+                              &decorationError)
+        || !readOptionalColor(decoration,
+                              QStringLiteral("titleBarInactiveColor"),
+                              &theme.decoration.titleBarInactiveColor,
+                              &decorationError)
+        || !readOptionalColor(decoration,
+                              QStringLiteral("restoreColor"),
+                              &theme.decoration.restoreColor,
                               &decorationError)) {
         return failure(origin, decorationError);
     }

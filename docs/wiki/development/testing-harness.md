@@ -513,7 +513,7 @@ later in-progress module makes the complete tree temporarily unbuildable. They
 cover built-in/catalog behavior, strict JSON syntax and field types, exact
 integer and range handling, global applet identity, deterministic structured
 errors, lossless JSON-native settings values, and exactly one
-notification-center instance in each of the ten stock profiles. The isolated
+notification-center instance in each of the eleven stock profiles. The isolated
 profile suite passed 3/3 in both Debug and Release for this contract revision.
 That evidence qualifies the persistence boundary only; it does not claim live
 shell surfaces or profile editing UI.
@@ -530,12 +530,12 @@ ctest --test-dir build/dev \
 The five tests cover schema-v1 and caller-input boundaries, property-style
 metric ranges, deterministic reduced-motion/reduced-transparency/high-contrast/
 text-scale transforms, exact opaque values for a loader-valid theme with alpha
-in every source color, exact WCAG pair scopes across all five built-in themes,
+in every source color, exact WCAG pair scopes across all six built-in themes,
 GUI-thread-only publication, same-value suppression, and an offscreen QML
 consumer observing one complete generation. The fifth gate performs a clean
 staged install, configures a standalone C++ consumer against only installed
 headers/static libraries, and verifies the exact QST-1 map plus representative
-Qinda macOS accessibility values. The benchmark records an all-five-theme
+Qinda macOS accessibility values. The benchmark records an all-six-theme
 derivation sample without an unstable absolute CI timing assertion.
 
 These are value and software-renderer checks. They do not prove visual control
@@ -559,7 +559,7 @@ actions, disabled/busy/error/degraded state, Information/Warning/Error/Success
 and Busy announcement transitions, same-status content announcements,
 status-before-content event-turn coalescing, required/error FormRow-to-editor
 association, full versus partial/hostile theme previews, compact long-text flow, exact RTL
-switch/slider geometry, all five built-in themes, and reduced motion and
+switch/slider geometry, all six built-in themes, and reduced motion and
 transparency. The source-policy gate rejects theme identities, palette hex
 literals, and forbidden layer/service/framework imports in production QML.
 
@@ -1409,7 +1409,7 @@ ctest --test-dir build/dev \
 ```
 
 The four Appearance rows cover strict typed values and enum metatypes, exact
-active-v2 defaults/constraints plus v1 migration fallback, all five built-in
+active-v2 defaults/constraints plus v1 migration fallback, all six built-in
 QST preview maps, per-key Settings1 sequencing, same-lineage conflict/Revert,
 clean and partially dirty external rebase, exact outbound keys, uncertain
 no-replay, owner loss, owner/epoch replacement in the reply-to-snapshot gap,
@@ -2638,7 +2638,7 @@ and shared library with `readelf`, resolves every `DT_NEEDED` edge through the
 artifact's installed RPATH/RUNPATH plus the configured system-library roots,
 and rejects source/build-tree fallback. The shell's linked Controls, Launcher,
 and Global Menu libraries must resolve inside that prefix. The row derives the
-five built-in applet imports from `BuiltinAppletContent.qml` and the production
+built-in applet imports from `BuiltinAppletContent.qml` and the production
 panel QML sources, and derives the complete Settings route inventory from
 `SettingsApp/Main.qml`; every non-embedded product import requires a regular
 staged `qmldir`. Customize, PowerBackend, and ColorBackend are explicit

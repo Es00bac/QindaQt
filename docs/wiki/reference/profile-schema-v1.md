@@ -43,6 +43,7 @@ does not make the layout module an owner of applet identity or settings.
 | `defaultTheme` | string | Optional theme ID; defaults to `qinda-dark`; non-empty with no surrounding whitespace |
 | `workflow` | object | Optional; absent subfields use the defaults below |
 | `panels` | array | Required and non-empty; panel IDs are profile-global and unique |
+| `desktop` | object | Optional desktop-zone applet declaration; defaults to no desktop applets |
 
 ## Workflow object
 
@@ -58,6 +59,25 @@ does not make the layout module an owner of applet identity or settings.
 Workflow strings must not be blank. They are presentation hints in the
 foundation implementation; their complete behavior will be specified as the
 corresponding controllers land.
+
+## Desktop object
+
+| Field | Type | Rule and absent-field default |
+| --- | --- | --- |
+| `applets` | array | Optional ordered desktop-zone applet instances; defaults to an empty array |
+
+Each desktop applet uses the same [applet object](#applet-object-and-settings)
+shape as a panel instance. Desktop-zone hosting — resolution without a panel
+edge and presentation on the per-output desktop surface — is the accepted
+decision in [ADR-0125](../adr/0125-host-desktop-zone-applets.md).
+
+Desktop instance IDs live in the same profile-global namespace as panel
+instances: validation rejects a duplicate across the panels and the desktop
+section as one pool, and a move between a panel and the desktop keeps one
+identity ([ADR-0006](../adr/0006-profile-global-applet-identity.md)). The
+`desktop` object round-trips only when it is non-empty; a profile without
+desktop applets serializes without the section, exactly as before the field
+existed.
 
 ## Panel object
 
@@ -115,5 +135,7 @@ The foundation panel renderer currently recognizes `settings.zone` values
 plugin-specific constraints belong to applet manifests and runtimes.
 
 Margins, opacity, exclusive zones, richer monitor matching, shortcuts, and
-user-derived profile metadata remain planned extensions. Adding them requires
+user-derived profile metadata remain planned extensions. The root `desktop`
+section is implemented schema-v1 persistence, not a planned extension.
+Adding further fields requires
 loader tests, migration policy, and a same-change update to this page.

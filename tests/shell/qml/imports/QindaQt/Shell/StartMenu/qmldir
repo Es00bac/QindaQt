@@ -1,0 +1,2 @@
+module QindaQt.Shell.StartMenu
+StartMenuApplet 1.0 StartMenuApplet.qml

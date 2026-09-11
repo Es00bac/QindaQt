@@ -99,7 +99,7 @@ crossing to a new daemon.
 ## Activation and package boundary
 
 The `QindaQtPortalP0` install component contains the resident executable,
-public policy/source headers and libraries, five built-in QST themes, the
+public policy/source headers and libraries, six built-in QST themes, the
 D-Bus activation descriptor, a hardened user systemd unit, `qindaqt.portal`,
 and `qindaqt-portals.conf`. The selector binds
 `org.freedesktop.impl.portal.Settings` only to `qindaqt`, explicitly orders

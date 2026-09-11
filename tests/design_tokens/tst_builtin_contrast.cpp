@@ -37,7 +37,7 @@ void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
 {
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 5);
+    QCOMPARE(loaded.size(), 6);
 
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));

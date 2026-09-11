@@ -440,7 +440,7 @@ Five-theme semantic derivation, accessibility transforms, installed C++ consumpt
 
 **State:** `QUALIFIED`. **Weight:** 15.
 
-The reusable token-only Controls component set, five-theme and three-scale visual matrix, keyboard/accessibility behavior, package consumer, source policy, and PSS measurement are integrated after exact independent review.
+The reusable token-only Controls component set, six-theme and three-scale visual matrix, keyboard/accessibility behavior, package consumer, source policy, and PSS measurement are integrated after exact independent review.
 
 **Caveat:** Whole-application assistive-technology and nested-session qualification remains a cross-app step. The visual baselines are pinned to vendored font bytes (ADR-0021 amendment); host font updates no longer drift them.
 

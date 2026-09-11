@@ -42,6 +42,9 @@ std::optional<Applets::PlacementZone> placementFor(const QVariantMap &settings)
     if (zone == QLatin1String("fill")) {
         return Applets::PlacementZone::PanelFill;
     }
+    if (zone == QLatin1String("desktop")) {
+        return Applets::PlacementZone::Desktop;
+    }
     return std::nullopt;
 }
 
@@ -51,6 +54,48 @@ ResolvedAppletInstance failure(const Profiles::AppletSpec &instance,
 {
     return {instance, std::move(displayName), std::move(entryPoint), {},
             AppletHost::HostMode::Rejected, status, std::move(diagnostic)};
+}
+
+// Shared audited-builtin pipeline behind resolveBuiltin and
+// resolveDesktopBuiltin: host selection, the compiled registry gate, and
+// capability evaluation run identically for every placement kind.
+ResolvedAppletInstance resolveManifest(
+    const Profiles::AppletSpec &instance, const Applets::AppletManifest &manifest,
+    const AppletHost::CapabilityPolicy &policy,
+    const BuiltinAppletRegistry &registry)
+{
+    const AppletHost::PackageIdentity package{
+        manifest.id, AppletHost::PackageTrust::AuditedBuiltin};
+    const auto host = AppletHost::HostSelector::select(manifest, package);
+    if (!host.accepted()) {
+        return failure(instance, Status::HostRejected, host.reason, manifest.name,
+                       manifest.entryPoint.value);
+    }
+    if (host.mode == AppletHost::HostMode::SandboxRequiredProcess) {
+        return {instance, manifest.name, manifest.entryPoint.value, {}, host.mode,
+                Status::SandboxUnavailable,
+                QStringLiteral("sandbox process hosting is not available")};
+    }
+    if (!registry.contains(manifest.entryPoint.value)) {
+        return {instance, manifest.name, manifest.entryPoint.value, {}, host.mode,
+                Status::ImplementationUnavailable,
+                QStringLiteral("builtin entry point is absent from the audited registry")};
+    }
+
+    const auto capabilities = policy.evaluate(manifest, package);
+    if (!capabilities.ok) {
+        return {instance, manifest.name, manifest.entryPoint.value, {}, host.mode,
+                Status::PolicyRejected, capabilities.error};
+    }
+    QStringList granted;
+    for (const auto &decision : capabilities.decisions) {
+        if (decision.granted()) {
+            granted.append(Applets::toString(decision.capability));
+        }
+    }
+    granted.sort();
+    return {instance, manifest.name, manifest.entryPoint.value,
+            std::move(granted), host.mode, Status::Ready, {}};
 }
 
 } // namespace
@@ -98,38 +143,31 @@ ResolvedAppletInstance AppletInstanceResolver::resolveBuiltin(
                        manifest->name, manifest->entryPoint.value);
     }
 
-    const AppletHost::PackageIdentity package{
-        manifest->id, AppletHost::PackageTrust::AuditedBuiltin};
-    const auto host = AppletHost::HostSelector::select(*manifest, package);
-    if (!host.accepted()) {
-        return failure(instance, Status::HostRejected, host.reason, manifest->name,
-                       manifest->entryPoint.value);
+    return resolveManifest(instance, *manifest, policy, registry);
+}
+
+ResolvedAppletInstance AppletInstanceResolver::resolveDesktopBuiltin(
+    const Profiles::AppletSpec &instance,
+    const Applets::ManifestCatalog &catalog,
+    const AppletHost::CapabilityPolicy &policy,
+    const BuiltinAppletRegistry &registry)
+{
+    const auto *manifest = catalog.findById(instance.plugin);
+    if (manifest == nullptr) {
+        return failure(instance, Status::MissingManifest,
+                       QStringLiteral("no validated manifest exists for '%1'")
+                           .arg(instance.plugin));
     }
-    if (host.mode == AppletHost::HostMode::SandboxRequiredProcess) {
-        return {instance, manifest->name, manifest->entryPoint.value, {}, host.mode,
-                Status::SandboxUnavailable,
-                QStringLiteral("sandbox process hosting is not available")};
-    }
-    if (!registry.contains(manifest->entryPoint.value)) {
-        return {instance, manifest->name, manifest->entryPoint.value, {}, host.mode,
-                Status::ImplementationUnavailable,
-                QStringLiteral("builtin entry point is absent from the audited registry")};
+    // Desktop-zone instances are anchored by the desktop surface rather than
+    // a panel edge, so the manifest must declare the desktop zone itself and
+    // the panel-orientation gate does not apply (ADR-0125).
+    if (!manifest->placementZones.contains(Applets::PlacementZone::Desktop)) {
+        return failure(instance, Status::PlacementRejected,
+                       QStringLiteral("applet placement is not supported by its manifest"),
+                       manifest->name, manifest->entryPoint.value);
     }
 
-    const auto capabilities = policy.evaluate(*manifest, package);
-    if (!capabilities.ok) {
-        return {instance, manifest->name, manifest->entryPoint.value, {}, host.mode,
-                Status::PolicyRejected, capabilities.error};
-    }
-    QStringList granted;
-    for (const auto &decision : capabilities.decisions) {
-        if (decision.granted()) {
-            granted.append(Applets::toString(decision.capability));
-        }
-    }
-    granted.sort();
-    return {instance, manifest->name, manifest->entryPoint.value,
-            std::move(granted), host.mode, Status::Ready, {}};
+    return resolveManifest(instance, *manifest, policy, registry);
 }
 
 QString toString(AppletResolutionStatus value)

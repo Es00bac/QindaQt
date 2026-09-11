@@ -47,11 +47,17 @@ do not build parallel task-management systems.
 | Ink Tide | Smoked glass, deep ink-blue, and restrained violet edge light |
 | Qinda Punk | A chibi cyborg penguin, rooftop neon, coffee, and a rubber-duck drone |
 | Compile Club | The same mascot in a warm hacker workshop; the duck cools a compiling machine |
+| Qinda Bliss | Bright jade-green hills under a deep blue sky, a futuristic horizon city, and the mascot pair on a hill of reclaimed hardware |
 
-All five leave quiet areas for windows and icons. They share a material and
+All six leave quiet areas for windows and icons. They share a material and
 shape vocabulary rather than merely recoloring one image. The original PNGs
 are 1672 × 941 pixels. Generation provenance and full prompts are preserved
 with the assets in `data/wallpapers/ARTWORK.md`.
+
+QindaQt Bliss is an opt-in XP-influenced option set, not a change to the
+default identity: its Tahoma-era theme, worn Luna title bar, and taskbar
+appear only when a user selects the Bliss theme or layout profile
+([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)).
 
 The packaged default theme pair uses `qinda-punk.png` as its companion
 wallpaper when the default appearance has no explicit wallpaper choice. Use
