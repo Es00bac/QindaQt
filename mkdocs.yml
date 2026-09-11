@@ -51,6 +51,7 @@ nav:
       - Display client: architecture/display-client.md
       - Display compositor writer: architecture/display-writer.md
       - Display color model: architecture/display-color-model.md
+      - Night light: architecture/night-light.md
       - Audio service: architecture/audio-service.md
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
@@ -261,3 +262,4 @@ nav:
       - "ADR-0132: finish session locking on KWin's locker and PowerDevil's actions": adr/0132-finish-session-locking.md
       - "ADR-0133: route every portal family explicitly": adr/0133-route-every-portal-family.md
       - "ADR-0135: gnome-keyring is the Secret Service provider": adr/0135-gnome-keyring-secret-service.md
+      - "ADR-0136: night light through KWin and knighttimed": adr/0136-night-light-through-kwin.md
