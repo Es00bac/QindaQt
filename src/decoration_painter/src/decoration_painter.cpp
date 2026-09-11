@@ -258,6 +258,8 @@ QColor decorationGlyphChromeColor(const DecorationChrome &chrome,
             return chrome.restore;
         }
         return chrome.maximize;
+    case DecorationButtonKind::More:
+        return chrome.textMuted;
     }
     return chrome.maximize;
 }

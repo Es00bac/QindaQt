@@ -40,6 +40,17 @@ struct ChromeContextMenuRequest final
                            const ChromeContextMenuRequest &) = default;
 };
 
+// A wheel over shared chrome or a member handlebar rolls the container up
+// (shade) or back down (unshade) (ADR-0131).
+struct ChromeShadeRequest final
+{
+    QString containerId;
+    bool shade = true;
+
+    friend bool operator==(const ChromeShadeRequest &,
+                           const ChromeShadeRequest &) = default;
+};
+
 // One normalized KWin event can clear hover and terminate an interrupted drag,
 // so routing returns an ordered value batch instead of invoking policy inline.
 struct ChromePointerDecision final
@@ -53,6 +64,7 @@ struct ChromePointerDecision final
     QVector<ChromePointerHit> activations;
     QVector<RoutedChromeDrag> drags;
     QVector<ChromeContextMenuRequest> contextMenus;
+    QVector<ChromeShadeRequest> shadeRequests;
 };
 
 // AGENT-CONTRACT: A consumed decision can carry a raise request without
@@ -80,6 +92,13 @@ public:
         const HybridInput::PointerEvent &event);
     [[nodiscard]] ChromePointerDecision pointerRelease(
         const HybridInput::PointerEvent &event);
+    // AGENT-CONTRACT: a modifier-free vertical wheel over the shared title
+    // row, its tabs and controls, or a member handlebar requests roll-up
+    // (positive delta, wheel turned away from the user) or roll-down. A held
+    // grab, modifiers, client content, and zero deltas pass through.
+    [[nodiscard]] ChromePointerDecision pointerWheel(const QPointF &position,
+                                                     Qt::KeyboardModifiers modifiers,
+                                                     qreal angleDelta);
     [[nodiscard]] ChromePointerDecision cancel();
     // Cancels a grab and forgets hover identity when a published topology or
     // overlay set is replaced. Unlike cancel(), this forces a paint clear.
@@ -104,6 +123,8 @@ private:
     [[nodiscard]] static bool isDragTarget(
         const HybridChrome::ChromeHitTarget &target) noexcept;
     [[nodiscard]] static bool isActivationTarget(
+        const HybridChrome::ChromeHitTarget &target) noexcept;
+    [[nodiscard]] static bool isRollTarget(
         const HybridChrome::ChromeHitTarget &target) noexcept;
 
     HitResolver m_resolver;

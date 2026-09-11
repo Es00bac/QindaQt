@@ -24,7 +24,7 @@ bool hasChromeDecisionOutput(const ChromePointerDecision &decision) noexcept
     return decision.hoverChanged
         || !decision.containerRaiseRequests.isEmpty()
         || !decision.activations.isEmpty() || !decision.drags.isEmpty()
-        || !decision.contextMenus.isEmpty();
+        || !decision.contextMenus.isEmpty() || !decision.shadeRequests.isEmpty();
 }
 
 HybridChromePointerRouter::HybridChromePointerRouter(HitResolver resolver,
@@ -250,6 +250,33 @@ ChromePointerDecision HybridChromePointerRouter::pointerRelease(
         decision.activations.append(pressed);
     }
     resetPointer();
+    return decision;
+}
+
+bool HybridChromePointerRouter::isRollTarget(
+    const HybridChrome::ChromeHitTarget &target) noexcept
+{
+    return target.kind == HybridChrome::HitKind::OuterTitleDrag
+        || target.kind == HybridChrome::HitKind::MemberTitleDrag
+        || target.kind == HybridChrome::HitKind::Tab
+        || target.kind == HybridChrome::HitKind::WindowButton
+        || target.kind == HybridChrome::HitKind::ContainerControl;
+}
+
+ChromePointerDecision HybridChromePointerRouter::pointerWheel(
+    const QPointF &position, Qt::KeyboardModifiers modifiers, qreal angleDelta)
+{
+    ChromePointerDecision decision;
+    if (m_pressed) {
+        return decision;
+    }
+    updateHover(position, &decision);
+    if (modifiers != Qt::NoModifier || qFuzzyIsNull(angleDelta) || !m_hovered
+        || !isRollTarget(m_hovered->target)) {
+        return decision;
+    }
+    decision.consumed = true;
+    decision.shadeRequests.append({m_hovered->containerId, angleDelta > 0.0});
     return decision;
 }
 

@@ -199,6 +199,9 @@ private:
                                       QString *error = nullptr);
     [[nodiscard]] bool unshadeContainer(const QString &containerId,
                                         QString *error = nullptr);
+    // Wheel roll-up from shared chrome or a member handlebar (ADR-0131); a
+    // no-op when the container already has the requested state.
+    void applyWheelShade(const QString &containerId, bool shade);
     void forgetShadedContainer(const QString &containerId);
     void restoreShadeForShutdown();
     void minimizeContainer(const QString &containerId);

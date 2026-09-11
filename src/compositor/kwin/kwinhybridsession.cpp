@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridsession.h"
 
+#include "qindaqt/decoration_painter/decoration_painter.h"
+
 #include "hybridchromedragtranslator.h"
 #include "hybridchromeaccessibilityregistry.h"
 #include "hybridchromepointerrouter.h"
@@ -49,7 +51,11 @@ namespace {
 
 HybridChrome::ChromeMetrics chromeMetrics()
 {
-    return {};
+    HybridChrome::ChromeMetrics metrics;
+    // Contained windows keep a handlebar, not a full title bar (ADR-0131), so
+    // member title regions match what the decoration draws.
+    metrics.memberTitleHeight = Decoration::DecorationMemberHandleHeight;
+    return metrics;
 }
 
 void collectPageWindowIds(const Core::LayoutNode &node, QStringList *windowIds)

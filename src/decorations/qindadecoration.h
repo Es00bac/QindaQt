@@ -14,6 +14,7 @@
 
 class QEvent;
 class QMouseEvent;
+class QWheelEvent;
 
 namespace KDecoration3 {
 class DecorationButtonGroup;
@@ -41,6 +42,9 @@ public:
         return m_controlsHovered;
     }
     [[nodiscard]] bool memberFocusMaximized() const;
+    // True while the compositor marks this window a container member; the
+    // decoration then draws the contained-window handlebar (ADR-0131).
+    [[nodiscard]] bool containerMember() const;
     // Worn Luna chrome is active only when the resolved theme authors a
     // titleBar color and selects the glyph button style; every other theme
     // takes the classic code paths unchanged.
@@ -64,6 +68,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     void createButtons();

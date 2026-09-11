@@ -71,6 +71,7 @@ private slots:
     void windowPreferencesArrangeButtonsAndCaptions();
     void paintsFlatButtonsAndLeftCaptions();
     void preferenceTokensAndContainerStylesRoundTrip();
+    void layoutsAndPaintsTheContainedWindowHandlebar();
 };
 
 void DecorationPainterTests::chromeRoundTripsThroughTheCompositorMap()
@@ -393,6 +394,56 @@ void DecorationPainterTests::preferenceTokensAndContainerStylesRoundTrip()
     QCOMPARE(back.hoverGlyphs, style.hoverGlyphs);
     QCOMPARE(back.palette.surface, style.palette.surface);
     QCOMPARE(back.palette.close, style.palette.close);
+}
+
+void DecorationPainterTests::layoutsAndPaintsTheContainedWindowHandlebar()
+{
+    const QSizeF size(320.0, 200.0);
+    const auto chrome = DecorationChrome::fromTheme(classicTheme());
+    auto buttons = layoutMemberHandleButtons(chrome, size);
+    // ADR-0131: classic chrome keeps stoplights on the left in miniature
+    // cells; the "more" control takes the opposite end.
+    QCOMPARE(buttons.size(), 4);
+    QCOMPARE(buttons.at(0).kind, DecorationButtonKind::Close);
+    QCOMPARE(buttons.at(0).geometry,
+             QRectF(DecorationMiniButtonInset, 1.0, DecorationMiniButtonCell,
+                    DecorationMiniButtonCell));
+    QCOMPARE(buttons.constLast().kind, DecorationButtonKind::More);
+    QCOMPARE(buttons.constLast().geometry.right(), size.width() - DecorationMiniButtonInset);
+    for (const auto &button : buttons) {
+        QVERIFY(button.geometry.bottom() <= DecorationMemberHandleHeight);
+    }
+
+    // Glyph chrome mirrors the arrangement, and the visible set applies.
+    ChromePreferences preferences;
+    preferences.windowButtons = QStringLiteral("close");
+    const auto luna = applyWindowPreferences(DecorationChrome::fromTheme(lunaTheme()), preferences);
+    buttons = layoutMemberHandleButtons(luna, size);
+    QCOMPARE(buttons.size(), 2);
+    QCOMPARE(buttons.at(0).kind, DecorationButtonKind::Close);
+    QCOMPARE(buttons.at(0).geometry.right(), size.width() - DecorationMiniButtonInset);
+    QCOMPARE(buttons.at(1).kind, DecorationButtonKind::More);
+    QCOMPARE(buttons.at(1).geometry.left(), DecorationMiniButtonInset);
+
+    QImage image(size.toSize(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        DecorationFrameVisual frame;
+        frame.size = size;
+        frame.active = true;
+        frame.memberHandle = true;
+        paintMemberHandle(painter, chrome, frame);
+        for (const auto &button : layoutMemberHandleButtons(chrome, size)) {
+            paintDecorationButton(painter, chrome, frame, button);
+        }
+    }
+    // The handle is title-colored, the client area below stays clear, the
+    // grip marks the center, and the close stoplight fills its dot.
+    QCOMPARE(QColor(image.pixel(80, 7)).name(), decorationTitleColor(chrome, true).name());
+    QCOMPARE(image.pixelColor(160, 100).alpha(), 0);
+    QVERIFY(QColor(image.pixel(160, 7)).name() != decorationTitleColor(chrome, true).name());
+    QCOMPARE(QColor(image.pixel(12, 7)).name(), chrome.close.name());
 }
 
 QTEST_MAIN(DecorationPainterTests)

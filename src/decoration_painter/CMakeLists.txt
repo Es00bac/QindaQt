@@ -14,6 +14,7 @@ target_sources(
         src/decoration_painter.cpp
         src/decoration_buttons.cpp
         src/chrome_preferences.cpp
+        src/member_handle.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

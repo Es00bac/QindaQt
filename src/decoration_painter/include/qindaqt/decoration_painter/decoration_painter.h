@@ -30,6 +30,14 @@ constexpr qreal DecorationCornerRadius = 10.0;
 constexpr qreal DecorationClassicButtonSize = 14.0;
 constexpr qreal DecorationGlyphButtonSize = 16.0;
 constexpr qreal DecorationButtonSpacing = 8.0;
+// Contained windows (ADR-0131): container members keep a compact handlebar
+// instead of a full title bar, tall enough to grab, with miniature stoplight
+// controls in 12 px hit cells and a quieter corner radius.
+constexpr qreal DecorationMemberHandleHeight = 14.0;
+constexpr qreal DecorationMemberCornerRadius = 6.0;
+constexpr qreal DecorationMiniButtonCell = 12.0;
+constexpr qreal DecorationMiniButtonSpacing = 3.0;
+constexpr qreal DecorationMiniButtonInset = 6.0;
 
 struct DecorationVisualStyle {
     QColor frameColor;
@@ -84,7 +92,8 @@ struct DecorationChrome {
 [[nodiscard]] HybridChrome::ChromePalette
 chromePaletteForTheme(const Themes::ThemeSpec &theme);
 
-enum class DecorationButtonKind { Close, Minimize, Maximize };
+// More opens the window menu; it exists only on contained-window handlebars.
+enum class DecorationButtonKind { Close, Minimize, Maximize, More };
 enum class DecorationButtonSide { Left, Right };
 
 struct DecorationButtonVisual {
@@ -105,6 +114,8 @@ struct DecorationFrameVisual {
     bool controlsHovered = false;
     // Maximize draws the restore glyph (window maximized or focus-maximized).
     bool restoreGlyph = false;
+    // Paint the contained-window handlebar instead of the full title bar.
+    bool memberHandle = false;
 };
 
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
@@ -210,5 +221,15 @@ resolveContainerStyle(const Themes::ThemeSpec &theme, const ChromePreferences &p
 [[nodiscard]] QVariantMap containerStyleToVariantMap(const HybridChrome::ChromeStyle &style);
 // Tolerant: absent or mistyped keys keep ChromeStyle's defaults.
 [[nodiscard]] HybridChrome::ChromeStyle containerStyleFromVariantMap(const QVariantMap &map);
+
+// Contained-window handlebar (ADR-0131): stoplights on the effective button
+// side with the visible set applied, and a "more" control that opens the
+// window menu at the opposite end, all in miniature hit cells.
+[[nodiscard]] QList<DecorationButtonVisual>
+layoutMemberHandleButtons(const DecorationChrome &chrome, const QSizeF &size);
+// Handle bar, seam, frame outline, and the centered grip. Its buttons paint
+// through paintDecorationButton with frame.memberHandle set.
+void paintMemberHandle(QPainter &painter, const DecorationChrome &chrome,
+                       const DecorationFrameVisual &frame);
 
 } // namespace QindaQt::Decoration

@@ -163,6 +163,22 @@ bool KWinHybridSession::unshadeContainer(const QString &containerId, QString *er
     return true;
 }
 
+void KWinHybridSession::applyWheelShade(const QString &containerId, bool shade)
+{
+    if (!ready() || !m_runtime->topology().container(containerId)
+        || isContainerShaded(containerId) == shade) {
+        return;
+    }
+    QString error;
+    const bool applied = restoreMemberFocusForContainerAction(containerId, &error)
+        && (shade ? shadeContainer(containerId, &error)
+                  : unshadeContainer(containerId, &error));
+    if (!applied) {
+        qWarning("QindaQt wheel roll-up failed for '%s': %s",
+                 qPrintable(containerId), qPrintable(error));
+    }
+}
+
 void KWinHybridSession::forgetShadedContainer(const QString &containerId)
 {
     if (!m_shadeController || !m_shadeController->isShaded(containerId)) {

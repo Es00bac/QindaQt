@@ -330,6 +330,18 @@ dropping to zero:
   chrome pointer router, dock/task-list window actions) chooses `RaiseOnly`
   for a shaded container and the ordinary activating behavior otherwise.
 
+## Contained window handlebar and wheel roll-up
+
+Container members draw a 14 px handlebar instead of a full native title bar:
+title color, a centered grip, miniature stoplights on the effective button
+side, and a "more" control that opens the window menu. The compositor's
+`memberTitleHeight` equals the handlebar height, so member title regions match
+the painted bar. A modifier-free vertical wheel over the container title row,
+a tab or control, or a member handlebar rolls the container up (wheel away
+from the user) or down. Over an ordinary window's title bar the decoration
+rolls that window. See
+[ADR-0131](../adr/0131-contained-window-handlebar-and-wheel-roll-up.md).
+
 ## Compositor scene restart
 
 Scene image ownership ends before KWin dismantles its `WindowItem` tree.
