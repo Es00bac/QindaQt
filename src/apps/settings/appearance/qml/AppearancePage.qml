@@ -171,6 +171,8 @@ T.Page {
                 readonly property var destinations: [
                     { id: "themes", title: qsTr("Themes"), icon: "preferences-desktop-theme",
                       description: qsTr("Window style, colors, and how applications look") },
+                    { id: "windows", title: qsTr("Windows"), icon: "preferences-system-windows",
+                      description: qsTr("Title bars and container chrome") },
                     { id: "wallpaper", title: qsTr("Wallpaper"), icon: "preferences-desktop-wallpaper",
                       description: qsTr("Desktop background picture") },
                     { id: "fonts", title: qsTr("Fonts"), icon: "preferences-desktop-font",
@@ -269,6 +271,7 @@ T.Page {
                     objectName: "appearanceDestinationPage_" + root.currentDestination
                     width: formViewport.width
                     sourceComponent: root.currentDestination === "themes" ? themesPage
+                        : root.currentDestination === "windows" ? windowsPage
                         : root.currentDestination === "wallpaper" ? wallpaperPage
                         : fontsPage
                 }
@@ -342,6 +345,13 @@ T.Page {
     Component {
         id: themesPage
         AppearanceThemeSection {
+            appearanceSettings: root.appearanceSettings
+            editorBusy: root.editorBusy
+        }
+    }
+    Component {
+        id: windowsPage
+        AppearanceWindowsSection {
             appearanceSettings: root.appearanceSettings
             editorBusy: root.editorBusy
         }

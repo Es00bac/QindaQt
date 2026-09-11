@@ -50,4 +50,14 @@ decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
       .toVariantMap();
 }
 
+QVariantMap
+decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
+                            const Themes::ThemeSpec &theme,
+                            const Decoration::ChromePreferences &preferences) {
+  return Decoration::applyWindowPreferences(
+             Decoration::DecorationChrome::fromChromePalette(palette, theme),
+             preferences)
+      .toVariantMap();
+}
+
 } // namespace QindaQt::Compositor::KWinIntegration

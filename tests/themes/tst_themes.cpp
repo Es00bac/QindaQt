@@ -39,6 +39,13 @@ void ThemeTests::qindaBlissDefinesWornLunaChrome()
     QVERIFY(result.theme.decoration.titleBarColor.isValid());
     QVERIFY(result.theme.decoration.titleBarInactiveColor.isValid());
     QVERIFY(result.theme.decoration.restoreColor.isValid());
+    // ADR-0129: a declared decoration object is authored; a theme without one
+    // keeps the Qinda macOS container arrangement.
+    QVERIFY(result.theme.decoration.authored);
+    const auto unauthored = ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+    QVERIFY2(unauthored.ok, qPrintable(unauthored.error));
+    QVERIFY(!unauthored.theme.decoration.authored);
     QCOMPARE(result.theme.decoration.closeColor,
              QColor(QStringLiteral("#2d6be4")));
     QCOMPARE(result.theme.decoration.minimizeColor,

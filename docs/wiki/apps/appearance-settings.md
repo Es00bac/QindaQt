@@ -19,6 +19,7 @@ One page covers the appearance preference set stored through Settings1:
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
 | Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get; installed-theme cards; the system/light/dark scheme choice; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme` |
+| Windows | Two live previews (ADR-0129): an application window whose title bar is painted by the shared decoration painter, and a two-window container laid out and painted by the compositor's own chrome engine with native member title bars. Each set has glyph-light rows for button style, side, visible buttons or tab order, and title alignment or symbol visibility; every default is `Theme`, which keeps the shipped chrome | `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
 | Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
@@ -40,8 +41,8 @@ The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
 semantics for the scheme and enum choices, an explicit initial focus on the
 first theme card, and a visible focus chain through the draft action row. A
-single `QindaQt.Controls` tab strip above the form selects Themes, Wallpaper,
-or Fonts at every width — glyph-first tabs on one shared rule with an accent
+single `QindaQt.Controls` tab strip above the form selects Themes, Windows,
+Wallpaper, or Fonts at every width — glyph-first tabs on one shared rule with an accent
 indicator, each explained by a tooltip and accessible description rather
 than a paragraph — so Appearance does not introduce a second vertical
 navigator beside the Settings Center's route sidebar. The form has a visible vertical

@@ -91,3 +91,16 @@ Every required `colors` entry accepts any valid Qt color, including alpha; v1
 does not require opacity. QST-1's reduced-transparency input therefore owns a
 total, deterministic opaque flattening of those existing values rather than
 narrowing this schema or asking controls to compensate.
+
+## Decoration block presence
+
+Declaring a `decoration` object marks the theme's decoration as authored,
+even when every field repeats a default. Container chrome follows an
+authored block: `buttonPlacement` sets the container button side,
+`tabDirection` sets the tab order, `buttonStyle` selects traffic lights
+(`traffic-lights`) or flat symbols (any other style), and `hoverGlyphs` keeps
+traffic-light symbols hidden until hover. A theme without the object keeps
+the Qinda macOS container arrangement. Users can override both chrome sets
+from Appearance
+([ADR-0129](../adr/0129-configure-window-and-container-chrome.md)).
+

@@ -64,6 +64,11 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
         next.wallpaperMode = *mode;
     } else if (key == QLatin1String(AppearanceKeys::UiScale)) {
         if (!requireDouble(&next.uiScale)) return false;
+    } else if (Decoration::ChromePreferences::settingsKeys().contains(key)) {
+        if (value.metaType().id() != QMetaType::QString
+            || !next.chrome.setToken(key, value.toString())) {
+            return false;
+        }
     } else {
         return false;
     }

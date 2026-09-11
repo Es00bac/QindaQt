@@ -82,6 +82,11 @@ DecorationChrome DecorationChrome::fromChromePalette(
     chrome.titleBar = theme.decoration.titleBarColor;
     chrome.titleBarInactive = theme.decoration.titleBarInactiveColor;
     chrome.restore = theme.decoration.restoreColor;
+    // An authored decoration block states its button side; unauthored themes
+    // keep the legacy rule so their published map stays byte-identical.
+    if (theme.decoration.authored) {
+        chrome.buttonSide = theme.decoration.buttonPlacement;
+    }
     return chrome;
 }
 
@@ -105,6 +110,19 @@ DecorationChrome DecorationChrome::fromVariantMap(const QVariantMap &map)
     if (style.metaType().id() == QMetaType::QString && !style.toString().isEmpty()) {
         chrome.buttonStyle = style.toString();
     }
+    const auto token = [&map](const char *name, const QStringList &allowed,
+                              const QString &fallback) {
+        const auto value = map.value(QString::fromLatin1(name));
+        return value.metaType().id() == QMetaType::QString && allowed.contains(value.toString())
+            ? value.toString() : fallback;
+    };
+    chrome.buttonSide = token("buttonSide", {QStringLiteral("left"), QStringLiteral("right")}, {});
+    chrome.buttons = token("buttons", {QStringLiteral("all"), QStringLiteral("minimize-close"),
+                                       QStringLiteral("close")},
+                           QStringLiteral("all"));
+    chrome.titleAlignment = token("titleAlignment",
+                                  {QStringLiteral("center"), QStringLiteral("left")},
+                                  QStringLiteral("center"));
     chrome.titleBar = mapColor(map, "titleBar");
     chrome.titleBarInactive = mapColor(map, "titleBarInactive");
     chrome.restore = mapColor(map, "restore");
@@ -122,6 +140,15 @@ QVariantMap DecorationChrome::toVariantMap() const
                     {QStringLiteral("minimize"), minimize},
                     {QStringLiteral("maximize"), maximize},
                     {QStringLiteral("buttonStyle"), buttonStyle}};
+    if (!buttonSide.isEmpty()) {
+        map.insert(QStringLiteral("buttonSide"), buttonSide);
+    }
+    if (buttons != QLatin1String("all")) {
+        map.insert(QStringLiteral("buttons"), buttons);
+    }
+    if (titleAlignment != QLatin1String("center")) {
+        map.insert(QStringLiteral("titleAlignment"), titleAlignment);
+    }
     if (titleBar.isValid()) {
         map.insert(QStringLiteral("titleBar"), titleBar);
     }
@@ -137,6 +164,11 @@ QVariantMap DecorationChrome::toVariantMap() const
 bool DecorationChrome::glyphChrome() const
 {
     return buttonStyle == QStringLiteral("glyph");
+}
+
+bool DecorationChrome::flatChrome() const
+{
+    return buttonStyle == QStringLiteral("flat");
 }
 
 bool DecorationChrome::wornLuna() const
@@ -165,54 +197,6 @@ QMarginsF decorationResizeOnlyBorders(bool maximized, bool containerMember)
 {
     return maximized || containerMember ? QMarginsF{}
                                         : QMarginsF(5.0, 5.0, 5.0, 5.0);
-}
-
-QList<DecorationButtonVisual> layoutDecorationButtons(const DecorationChrome &chrome,
-                                                      const QSizeF &size)
-{
-    QList<DecorationButtonVisual> buttons;
-    if (chrome.glyphChrome()) {
-        // Luna order on the physical right: minimize, maximize, close.
-        const qreal edge = DecorationGlyphButtonSize;
-        const qreal groupWidth = 3.0 * edge + 2.0 * DecorationButtonSpacing;
-        qreal x = size.width() - groupWidth - 14.0;
-        const qreal y = (DecorationTitleHeight - edge) / 2.0;
-        for (const auto kind : {DecorationButtonKind::Minimize,
-                                DecorationButtonKind::Maximize,
-                                DecorationButtonKind::Close}) {
-            buttons.append({kind, QRectF(x, y, edge, edge)});
-            x += edge + DecorationButtonSpacing;
-        }
-        return buttons;
-    }
-    const qreal edge = DecorationClassicButtonSize;
-    qreal x = 12.0;
-    for (const auto kind : {DecorationButtonKind::Close,
-                            DecorationButtonKind::Minimize,
-                            DecorationButtonKind::Maximize}) {
-        buttons.append({kind, QRectF(x, 5.0, edge, edge)});
-        x += edge + DecorationButtonSpacing;
-    }
-    return buttons;
-}
-
-QRectF decorationCaptionRect(const DecorationChrome &chrome, const QSizeF &size,
-                             const QList<DecorationButtonVisual> &buttons)
-{
-    qreal left = 12.0;
-    qreal right = size.width() - 18.0;
-    if (!buttons.isEmpty()) {
-        QRectF group = buttons.first().geometry;
-        for (const auto &button : buttons) {
-            group = group.united(button.geometry);
-        }
-        if (chrome.glyphChrome()) {
-            right = group.left() - 10.0;
-        } else {
-            left = group.right() + 18.0;
-        }
-    }
-    return QRectF(left, 0.0, qMax(0.0, right - left), DecorationTitleHeight);
 }
 
 QColor decorationTitleColor(const DecorationChrome &chrome, bool active)
@@ -429,141 +413,6 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
     painter.restore();
 }
 
-namespace {
-
-void paintClassicGlyph(QPainter &painter, const DecorationChrome &chrome,
-                       const DecorationFrameVisual &frame,
-                       const DecorationButtonVisual &button, const QRectF &circle)
-{
-    QPen pen(decorationButtonGlyphColor(chrome, button.kind, frame.active));
-    pen.setWidthF(1.15);
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setJoinStyle(Qt::RoundJoin);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    const auto center = circle.center();
-    const qreal radius = circle.width() * 0.20;
-    switch (button.kind) {
-    case DecorationButtonKind::Close:
-        painter.drawLine(center + QPointF(-radius, -radius),
-                         center + QPointF(radius, radius));
-        painter.drawLine(center + QPointF(radius, -radius),
-                         center + QPointF(-radius, radius));
-        break;
-    case DecorationButtonKind::Minimize:
-        painter.drawLine(center + QPointF(-radius, radius * 0.45),
-                         center + QPointF(radius, radius * 0.45));
-        break;
-    case DecorationButtonKind::Maximize:
-        if (frame.restoreGlyph) {
-            painter.drawRect(QRectF(center.x() - radius, center.y() - radius * 0.55,
-                                    radius * 1.45, radius * 1.45));
-            painter.drawRect(QRectF(center.x() - radius * 0.45, center.y() - radius,
-                                    radius * 1.45, radius * 1.45));
-        } else {
-            painter.drawRect(QRectF(center.x() - radius, center.y() - radius,
-                                    radius * 2.0, radius * 2.0));
-        }
-        break;
-    }
-}
-
-void paintGlyphChrome(QPainter &painter, const DecorationChrome &chrome,
-                      const DecorationFrameVisual &frame,
-                      const DecorationButtonVisual &button, const QRectF &circle)
-{
-    // AGENT-NOTE: glyph chrome draws the console-style outline glyphs in their
-    // own colors directly on the Luna paint. The dash-pattern stroke reads as
-    // chipped paint at 16 px; the shapes stay recognizable when eroded.
-    QColor stroke = decorationGlyphChromeColor(chrome, button.kind, frame.restoreGlyph);
-    if (!frame.active) {
-        auto dimmed = stroke.toHsl();
-        dimmed.setHslF(dimmed.hslHueF(),
-                       dimmed.saturationF() * 0.45f,
-                       qBound(0.0f, static_cast<float>(dimmed.lightnessF() * 0.9), 1.0f),
-                       stroke.alphaF());
-        stroke = dimmed;
-    }
-    if (button.pressed) {
-        stroke = stroke.darker(130);
-    } else if (button.hovered) {
-        stroke = stroke.lighter(115);
-    }
-
-    if (button.hovered || button.pressed) {
-        const QColor halo = button.pressed ? QColor(0, 0, 0, 60)
-                                           : QColor(255, 255, 255, 46);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(halo);
-        painter.drawRoundedRect(circle.adjusted(-1.0, -1.0, -1.0, -1.0), 3.5, 3.5);
-    }
-
-    QPen pen(QBrush(stroke), 1.8);
-    pen.setDashPattern({5.0, 1.6, 3.0, 1.2});
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setJoinStyle(Qt::RoundJoin);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    const auto center = circle.center();
-    const qreal radius = circle.width() * 0.30;
-    switch (button.kind) {
-    case DecorationButtonKind::Close:
-        painter.drawLine(center + QPointF(-radius, -radius),
-                         center + QPointF(radius, radius));
-        painter.drawLine(center + QPointF(radius, -radius),
-                         center + QPointF(-radius, radius));
-        break;
-    case DecorationButtonKind::Minimize:
-        painter.drawEllipse(center, radius, radius);
-        break;
-    case DecorationButtonKind::Maximize:
-        if (frame.restoreGlyph) {
-            painter.drawRect(QRectF(center.x() - radius, center.y() - radius,
-                                    radius * 2.0, radius * 2.0));
-        } else {
-            QPainterPath triangle;
-            triangle.moveTo(center + QPointF(0.0, -radius));
-            triangle.lineTo(center + QPointF(radius * 1.1, radius * 0.8));
-            triangle.lineTo(center + QPointF(-radius * 1.1, radius * 0.8));
-            triangle.closeSubpath();
-            painter.drawPath(triangle);
-        }
-        break;
-    }
-}
-
-} // namespace
-
-void paintDecorationButton(QPainter &painter, const DecorationChrome &chrome,
-                           const DecorationFrameVisual &frame,
-                           const DecorationButtonVisual &button)
-{
-    if (!button.visible || button.geometry.isEmpty()) {
-        return;
-    }
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    const QRectF circle = button.geometry.adjusted(1.0, 1.0, -1.0, -1.0);
-    if (chrome.glyphChrome()) {
-        paintGlyphChrome(painter, chrome, frame, button, circle);
-        painter.restore();
-        return;
-    }
-    QColor fill = decorationButtonFill(chrome, button.kind, frame.active);
-    if (button.pressed) {
-        fill = fill.darker(125);
-    } else if (button.hovered) {
-        fill = fill.lighter(108);
-    }
-    painter.setPen(QPen(fill.darker(118), 0.75));
-    painter.setBrush(fill);
-    painter.drawEllipse(circle);
-    if (frame.controlsHovered) {
-        paintClassicGlyph(painter, chrome, frame, button, circle);
-    }
-    painter.restore();
-}
-
 void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
                             const DecorationFrameVisual &frame,
                             const QRectF &captionRect)
@@ -572,6 +421,9 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
         return;
     }
     painter.save();
+    const int alignment = chrome.titleAlignment == QLatin1String("left")
+        ? static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter)
+        : static_cast<int>(Qt::AlignCenter);
     QFont font = frame.font;
     if (chrome.wornLuna()) {
         // Luna captions carried the era's humanist title face; the family is
@@ -583,9 +435,9 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
         const auto caption = metrics.elidedText(frame.caption, Qt::ElideRight,
                                                 qFloor(captionRect.width()));
         painter.setPen(QPen(QColor(0, 0, 0, 140)));
-        painter.drawText(captionRect.translated(0.0, 1.0), Qt::AlignCenter, caption);
+        painter.drawText(captionRect.translated(0.0, 1.0), alignment, caption);
         painter.setPen(QPen(decorationCaptionColor(chrome, frame.active)));
-        painter.drawText(captionRect, Qt::AlignCenter, caption);
+        painter.drawText(captionRect, alignment, caption);
     } else {
         painter.setPen(decorationTextColor(chrome, frame.active));
         font.setWeight(QFont::DemiBold);
@@ -593,7 +445,7 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
         const QFontMetricsF metrics(font);
         const auto caption = metrics.elidedText(frame.caption, Qt::ElideRight,
                                                 qFloor(captionRect.width()));
-        painter.drawText(captionRect, Qt::AlignCenter, caption);
+        painter.drawText(captionRect, alignment, caption);
     }
     painter.restore();
 }

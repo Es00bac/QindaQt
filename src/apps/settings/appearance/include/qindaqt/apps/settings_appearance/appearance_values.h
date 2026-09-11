@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/decoration_painter/decoration_painter.h"
+
 #include <QLatin1String>
 #include <QMetaType>
 #include <QSet>
@@ -29,6 +31,7 @@ inline constexpr QLatin1String FontHinting{"fonts.hinting"};
 inline constexpr QLatin1String FontSubpixelOrder{"fonts.subpixelOrder"};
 
 // Deterministic commit order; also the SettingsClient scope for the route.
+// The eight chrome arrangement keys (ADR-0129) follow the appearance keys.
 [[nodiscard]] QStringList scopedKeys();
 } // namespace AppearanceKeys
 
@@ -64,6 +67,8 @@ struct AppearanceValues final {
     bool fontAntialiasing = true;
     FontHinting fontHinting{FontHinting::Slight};
     SubpixelOrder fontSubpixelOrder{SubpixelOrder::Rgb};
+    // Window decoration and container chrome arrangement (ADR-0129).
+    Decoration::ChromePreferences chrome;
 
     [[nodiscard]] bool operator==(const AppearanceValues &) const = default;
 

@@ -5,6 +5,10 @@ target_link_libraries(
     qindaqt_decoration_painter_tests
     PRIVATE QindaQt::DecorationPainter Qt6::Gui Qt6::Test
 )
+target_compile_definitions(
+    qindaqt_decoration_painter_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
 qindaqt_enable_warnings(qindaqt_decoration_painter_tests)
 add_test(NAME qindaqt.decoration-painter COMMAND qindaqt_decoration_painter_tests)
 set_tests_properties(

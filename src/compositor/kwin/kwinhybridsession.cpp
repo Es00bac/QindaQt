@@ -74,11 +74,13 @@ HybridConstraints::LayoutMetrics sceneMetrics()
     };
 }
 
-HybridChromePlanOptions chromePlanOptions(const HybridChrome::ChromePalette &palette)
+HybridChromePlanOptions chromePlanOptions(const HybridChrome::ChromeStyle &style)
 {
     HybridChromePlanOptions options;
     options.metrics = chromeMetrics();
-    options.style = HybridChrome::ChromeStyle::qindaMacOS(palette);
+    // The resolved theme and chrome preferences own the arrangement
+    // (ADR-0129); an unauthored theme resolves to the Qinda macOS style.
+    options.style = style;
     return options;
 }
 
@@ -479,7 +481,7 @@ void KWinHybridSession::synchronizeChrome()
         m_inputFilter->invalidateChromeTargets();
     }
     KWinChromeManager::ChromePlanMap plans;
-    const auto optionsTemplate = chromePlanOptions(m_chromePalette);
+    const auto optionsTemplate = chromePlanOptions(m_chromeStyle);
     const QString activeWindowId = m_registry.windowId(
         KWin::workspace()->activeWindow());
     const auto activeOwner = m_runtime->topology().ownerOf(activeWindowId);

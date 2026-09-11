@@ -73,6 +73,10 @@ class AppearanceSettingsModel final : public QObject {
                    NOTIFY previewChanged)
     Q_PROPERTY(QFont previewToolkitFont READ previewToolkitFont NOTIFY previewChanged)
     Q_PROPERTY(QColor previewCanvasColor READ previewCanvasColor NOTIFY previewChanged)
+    // Container chrome arrangement and palette for the draft (ADR-0129), in
+    // the map shape AppearanceContainerPreview paints.
+    Q_PROPERTY(QVariantMap previewContainerStyle READ previewContainerStyle
+                   NOTIFY previewChanged)
 
 public:
     // AGENT-CONTRACT: Construct, call, and destroy this model on the GUI
@@ -116,6 +120,7 @@ public:
     [[nodiscard]] QVariantMap previewToolkitPalette() const;
     [[nodiscard]] QFont previewToolkitFont() const;
     [[nodiscard]] QColor previewCanvasColor() const;
+    [[nodiscard]] QVariantMap previewContainerStyle() const;
 
     // Coerces and stores one draft field. Returns false without changing the
     // draft when the key is unknown or the value does not fit the field type.

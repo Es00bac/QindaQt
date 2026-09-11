@@ -17,10 +17,14 @@ Row {
     required property bool editable
     required property string descriptionPrefix
     signal choicePicked(string token)
+    // The first choice button, for callers that seed keyboard focus.
+    readonly property Item firstChoice: choiceRepeater.count > 0
+                                        ? choiceRepeater.itemAt(0) : null
 
     spacing: Tokens.space["2"]
 
     Repeater {
+        id: choiceRepeater
         model: root.choices
 
         delegate: Button {

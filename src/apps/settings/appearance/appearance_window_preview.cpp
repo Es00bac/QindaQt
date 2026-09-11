@@ -61,6 +61,21 @@ struct ToolkitSampleContext {
     }
 };
 
+// AGENT-GUARD: QCommonStyle computes scroll bar and slider sub-control rects
+// from the widget origin and ignores option.rect's offset, so painting one at
+// an offset rect drops its slider and step buttons at the window's left edge.
+// Every complex control paints at the painter origin, translated into place.
+void drawComplexAtOrigin(QPainter &painter, const ToolkitSampleContext &context,
+                         QStyle::ComplexControl control, QStyleOptionComplex &option)
+{
+    const QPoint origin = option.rect.topLeft();
+    painter.save();
+    painter.translate(origin);
+    option.rect.moveTopLeft(QPoint(0, 0));
+    context.style->drawComplexControl(control, &option, &painter, nullptr);
+    painter.restore();
+}
+
 qreal paintMenuBarRow(QPainter &painter, const ToolkitSampleContext &context,
                       const QRectF &area, qreal y, int rowHeight)
 {
@@ -183,8 +198,14 @@ qreal paintTextRow(QPainter &painter, const ToolkitSampleContext &context,
     combo.editable = false;
     combo.frame = true;
     combo.subControls = QStyle::SC_All;
+    // The label pass reads the same origin-relative edit-field rect.
+    const QPoint comboOrigin = combo.rect.topLeft();
+    painter.save();
+    painter.translate(comboOrigin);
+    combo.rect.moveTopLeft(QPoint(0, 0));
     context.style->drawComplexControl(QStyle::CC_ComboBox, &combo, &painter, nullptr);
     context.style->drawControl(QStyle::CE_ComboBoxLabel, &combo, &painter, nullptr);
+    painter.restore();
     return y + rowHeight;
 }
 
@@ -199,7 +220,7 @@ void paintProgressRow(QPainter &painter, const ToolkitSampleContext &context,
     slider.sliderPosition = 40;
     slider.sliderValue = 40;
     slider.subControls = QStyle::SC_SliderGroove | QStyle::SC_SliderHandle;
-    context.style->drawComplexControl(QStyle::CC_Slider, &slider, &painter, nullptr);
+    drawComplexAtOrigin(painter, context, QStyle::CC_Slider, slider);
 
     QStyleOptionProgressBar progress;
     context.prepare(progress, QRectF(area.left() + area.width() * 0.52, y + 2.0,
@@ -228,7 +249,7 @@ void paintScrollBarColumn(QPainter &painter, const ToolkitSampleContext &context
     bar.sliderPosition = 20;
     bar.sliderValue = 20;
     bar.subControls = QStyle::SC_All;
-    context.style->drawComplexControl(QStyle::CC_ScrollBar, &bar, &painter, nullptr);
+    drawComplexAtOrigin(painter, context, QStyle::CC_ScrollBar, bar);
 }
 
 } // namespace
@@ -405,6 +426,9 @@ void AppearanceWindowPreview::paintWindow(QPainter &painter, const QRectF &frame
     painter.fillPath(body, palette.color(QPalette::Window));
     const QRectF client(1.0, DecorationTitleHeight, size.width() - 2.0,
                         size.height() - DecorationTitleHeight - 1.0);
+    painter.save();
+    painter.setClipPath(body, Qt::IntersectClip);
+    painter.setClipRect(client, Qt::IntersectClip);
     if (active) {
         paintToolkitSample(painter, client.adjusted(kBodyInset, kBodyInset - 2.0,
                                                     -kBodyInset, -kBodyInset), active);
@@ -422,6 +446,7 @@ void AppearanceWindowPreview::paintWindow(QPainter &painter, const QRectF &frame
             y += metrics.height() + 6.0;
         }
     }
+    painter.restore();
     DecorationFrameVisual state;
     state.size = size;
     state.caption = caption;
@@ -445,13 +470,16 @@ void AppearanceWindowPreview::paintToolkitSample(QPainter &painter, const QRectF
         m_style, palette, QFontMetrics(m_toolkitFont),
         QStyle::State_Enabled | (active ? QStyle::State_Active : QStyle::State_None)};
     const int rowHeight = qMax(24, context.metrics.height() + 10);
+    // Rows fill the client area top-down and stop at the first that no
+    // longer fits, so a short preview never spills past its window.
+    const auto fits = [&area, rowHeight](qreal top) { return top + rowHeight <= area.bottom(); };
     qreal y = area.top();
-    y = paintMenuBarRow(painter, context, area, y, rowHeight) + kRowGap;
-    y = paintTabRow(painter, context, area, y, rowHeight) + kRowGap;
-    y = paintButtonRow(painter, context, area, y, rowHeight) + kRowGap;
-    y = paintChoiceRow(painter, context, area, y, rowHeight) + kRowGap;
-    y = paintTextRow(painter, context, area, y, rowHeight) + kRowGap;
-    if (y + rowHeight <= area.bottom()) {
+    if (fits(y)) y = paintMenuBarRow(painter, context, area, y, rowHeight) + kRowGap;
+    if (fits(y)) y = paintTabRow(painter, context, area, y, rowHeight) + kRowGap;
+    if (fits(y)) y = paintButtonRow(painter, context, area, y, rowHeight) + kRowGap;
+    if (fits(y)) y = paintChoiceRow(painter, context, area, y, rowHeight) + kRowGap;
+    if (fits(y)) y = paintTextRow(painter, context, area, y, rowHeight) + kRowGap;
+    if (fits(y)) {
         paintProgressRow(painter, context, area, y, rowHeight);
     }
     paintScrollBarColumn(painter, context, area);

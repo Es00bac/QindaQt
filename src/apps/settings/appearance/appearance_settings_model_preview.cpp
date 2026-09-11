@@ -103,10 +103,21 @@ QVariantMap AppearanceSettingsModel::previewChrome() const
         || m_resolution.themeIndex >= m_preview.themes().size()) {
         return {};
     }
-    // The same derivation the compositor publishes to every decoration.
-    return Decoration::DecorationChrome::fromTheme(
-               m_preview.themes().at(m_resolution.themeIndex))
+    // The same resolution the compositor publishes to every decoration,
+    // including the draft's window arrangement (ADR-0129).
+    return Decoration::resolveWindowChrome(
+               m_preview.themes().at(m_resolution.themeIndex), m_draft.chrome)
         .toVariantMap();
+}
+
+QVariantMap AppearanceSettingsModel::previewContainerStyle() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    return Decoration::containerStyleToVariantMap(Decoration::resolveContainerStyle(
+        m_preview.themes().at(m_resolution.themeIndex), m_draft.chrome));
 }
 
 QVariantMap AppearanceSettingsModel::previewToolkitPalette() const

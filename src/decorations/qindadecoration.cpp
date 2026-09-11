@@ -217,41 +217,50 @@ void QindaDecoration::updateControlHover()
     }
 }
 
+namespace {
+
+QString buttonArrangementKey(const DecorationChrome &chrome)
+{
+    QStringList parts{effectiveButtonSide(chrome) == DecorationButtonSide::Right
+                          ? QStringLiteral("right") : QStringLiteral("left"),
+                      chrome.buttonStyle};
+    for (const auto kind : decorationButtonKinds(chrome)) {
+        parts.append(QString::number(static_cast<int>(kind)));
+    }
+    return parts.join(QLatin1Char(':'));
+}
+
+} // namespace
+
 void QindaDecoration::createButtons()
 {
-    if (glyphChrome()) {
-        m_rightButtons = new KDecoration3::DecorationButtonGroup(
-            KDecoration3::DecorationButtonGroup::Position::Right,
-            this, &QindaButton::create);
-        // Luna order on the physical right: minimize, maximize, close.
-        for (const auto action : {KDecoration3::DecorationButtonType::Minimize,
-                                  KDecoration3::DecorationButtonType::Maximize,
-                                  KDecoration3::DecorationButtonType::Close}) {
-            if (auto *button = QindaButton::create(action, this, m_rightButtons)) {
-                m_rightButtons->addButton(button);
-            }
-        }
-        return;
-    }
-    m_leftButtons = new KDecoration3::DecorationButtonGroup(
-        KDecoration3::DecorationButtonGroup::Position::Left,
+    const auto chrome = chromeState();
+    const bool right = effectiveButtonSide(chrome) == DecorationButtonSide::Right;
+    // AGENT-CONTRACT: the shared painter owns the arrangement (ADR-0129):
+    // side, physical order (Qinda macOS keeps close, minimize, maximize on
+    // the left; the right edge reads minimize, maximize, close), and the
+    // visible set. The outer-chrome model reverses only tab visual placement,
+    // never these actions or member identity.
+    auto *group = new KDecoration3::DecorationButtonGroup(
+        right ? KDecoration3::DecorationButtonGroup::Position::Right
+              : KDecoration3::DecorationButtonGroup::Position::Left,
         this, &QindaButton::create);
-    // AGENT-CONTRACT: Qinda macOS uses stable logical action order on the
-    // physical left. The separate outer-chrome model reverses only tab visual
-    // placement, never these actions or member identity.
-    for (const auto action : {KDecoration3::DecorationButtonType::Close,
-                              KDecoration3::DecorationButtonType::Minimize,
-                              KDecoration3::DecorationButtonType::Maximize}) {
-        if (auto *button = QindaButton::create(action, this, m_leftButtons)) {
-            m_leftButtons->addButton(button);
+    for (const auto kind : decorationButtonKinds(chrome)) {
+        if (auto *button = QindaButton::create(buttonType(kind), this, group)) {
+            group->addButton(button);
         }
     }
+    if (right) {
+        m_rightButtons = group;
+    } else {
+        m_leftButtons = group;
+    }
+    m_buttonArrangement = buttonArrangementKey(chrome);
 }
 
 void QindaDecoration::reconcileButtons()
 {
-    const bool glyph = glyphChrome();
-    if (glyph == (m_rightButtons != nullptr)) {
+    if (buttonArrangementKey(chromeState()) == m_buttonArrangement) {
         return;
     }
     delete m_leftButtons;
@@ -351,21 +360,24 @@ void QindaDecoration::updateGeometry()
     setTitleBar(QRectF(0.0, 0.0, size().width(), titleHeight));
     setBorderRadius(KDecoration3::BorderRadius(maximized ? 0.0 : 10.0));
 
-    if (m_leftButtons) {
-        m_leftButtons->setSpacing(8.0);
-        for (auto *button : m_leftButtons->buttons()) {
-            button->setGeometry(QRectF(0.0, 0.0, 14.0, 14.0));
+    // Button geometry comes from the shared painter's layout so the preview
+    // and the live decoration place every cluster identically (ADR-0129).
+    const auto layout = layoutDecorationButtons(chromeState(), size());
+    auto *group = m_leftButtons != nullptr ? m_leftButtons : m_rightButtons;
+    if (group != nullptr && !layout.isEmpty()) {
+        const QSizeF extent = layout.constFirst().geometry.size();
+        group->setSpacing(DecorationButtonSpacing);
+        for (auto *button : group->buttons()) {
+            button->setGeometry(QRectF(QPointF(0.0, 0.0), extent));
         }
-        m_leftButtons->setPos(QPointF(12.0, 5.0));
-    }
-    if (m_rightButtons) {
-        m_rightButtons->setSpacing(8.0);
-        for (auto *button : m_rightButtons->buttons()) {
-            button->setGeometry(QRectF(0.0, 0.0, 16.0, 16.0));
+        if (group == m_rightButtons) {
+            // The live group width skips hidden actions, so the cluster stays
+            // flush with the right inset.
+            group->setPos(QPointF(size().width() - group->geometry().width() - 14.0,
+                                  layout.constFirst().geometry.top()));
+        } else {
+            group->setPos(layout.constFirst().geometry.topLeft());
         }
-        const qreal groupWidth = m_rightButtons->geometry().width();
-        m_rightButtons->setPos(QPointF(size().width() - groupWidth - 14.0,
-                                       (titleHeight - 16.0) / 2.0));
     }
     updateVisualStyle();
 }
@@ -443,6 +455,19 @@ QColor QindaDecoration::buttonGlyphColor(KDecoration3::DecorationButtonType type
 {
     return decorationButtonGlyphColor(chromeState(), buttonKind(type),
                                       window()->isActive());
+}
+
+KDecoration3::DecorationButtonType QindaDecoration::buttonType(DecorationButtonKind kind)
+{
+    switch (kind) {
+    case DecorationButtonKind::Close:
+        return KDecoration3::DecorationButtonType::Close;
+    case DecorationButtonKind::Minimize:
+        return KDecoration3::DecorationButtonType::Minimize;
+    case DecorationButtonKind::Maximize:
+        return KDecoration3::DecorationButtonType::Maximize;
+    }
+    return KDecoration3::DecorationButtonType::Close;
 }
 
 DecorationButtonKind QindaDecoration::buttonKind(KDecoration3::DecorationButtonType type)

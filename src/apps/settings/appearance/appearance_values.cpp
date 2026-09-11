@@ -48,11 +48,13 @@ constexpr double MaximumUiScale = 3.0;
 
 QStringList AppearanceKeys::scopedKeys()
 {
-    return {QLatin1String(Theme), QLatin1String(ColorScheme),
-            QLatin1String(FontFamily), QLatin1String(FontPointSize),
-            QLatin1String(FontAntialiasing), QLatin1String(FontHinting),
-            QLatin1String(FontSubpixelOrder), QLatin1String(Wallpaper),
-            QLatin1String(WallpaperMode), QLatin1String(UiScale)};
+    QStringList keys{QLatin1String(Theme), QLatin1String(ColorScheme),
+                     QLatin1String(FontFamily), QLatin1String(FontPointSize),
+                     QLatin1String(FontAntialiasing), QLatin1String(FontHinting),
+                     QLatin1String(FontSubpixelOrder), QLatin1String(Wallpaper),
+                     QLatin1String(WallpaperMode), QLatin1String(UiScale)};
+    keys.append(Decoration::ChromePreferences::settingsKeys());
+    return keys;
 }
 
 QString colorSchemeToken(ColorSchemePreference scheme)
@@ -255,12 +257,21 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
                         .arg(MaximumUiScale));
     }
 
+    for (const QString &key : Decoration::ChromePreferences::settingsKeys()) {
+        const QVariant value = values.value(key);
+        if (value.metaType().id() != QMetaType::QString
+            || !decoded.chrome.setToken(key, value.toString())) {
+            return fail(key,
+                        QStringLiteral("expected a known chrome arrangement token"));
+        }
+    }
+
     return decoded;
 }
 
 QVariantMap AppearanceValues::toVariantMap() const
 {
-    return {{QLatin1String(AppearanceKeys::Theme), themeId},
+    QVariantMap map{{QLatin1String(AppearanceKeys::Theme), themeId},
             {QLatin1String(AppearanceKeys::ColorScheme),
              colorSchemeToken(colorScheme)},
             {QLatin1String(AppearanceKeys::FontFamily), fontFamily},
@@ -274,6 +285,8 @@ QVariantMap AppearanceValues::toVariantMap() const
             {QLatin1String(AppearanceKeys::WallpaperMode),
              wallpaperModeToken(wallpaperMode)},
             {QLatin1String(AppearanceKeys::UiScale), uiScale}};
+    map.insert(chrome.toSettingsValues());
+    return map;
 }
 
 AppearanceValidation
