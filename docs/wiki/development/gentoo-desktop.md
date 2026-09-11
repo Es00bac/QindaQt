@@ -12,7 +12,7 @@ ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=72492bb694157fe29b8acb4961ebca5191bf542c
+qq_source_commit=f5a5659bb2de81654909714ca876ba93395fea83
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
     gzip -n > qindaqt-desktop-0.1.0_pre20260910-r4.tar.gz
 ```
