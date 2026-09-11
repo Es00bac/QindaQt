@@ -5,17 +5,26 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r9`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r10`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=47a3d5f6d10b97973e69a20bc7d080988192b1d0
+qq_source_commit=6bce96c36b5899a9b47f6e49862aca0daf5530b9
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r9.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r10.tar.gz
 ```
+
+The `-r10` revision lands the window and container chrome preferences
+(ADR-0129), the contained-window handlebar with mouse-wheel roll-up
+(ADR-0131), the Luna taskbar repair (ADR-0124 amendment), and window-attached
+menus for layouts without a global menu (ADR-0130), whose Active Application
+popups now open against their widget and show desktop-entry names. Restarting
+`qindaqt-shell`, the settings service, and `qindaqt-settings` adopts the shell
+and Settings changes; the decoration plugin and compositor chrome (handlebars,
+wheel roll-up, button arrangement) take effect at the next login.
 
 The `-r9` revision adds the three preference icons the Settings sidebar and
 Appearance tab strip name (accessibility, wallpaper, font) to the QindaQt
