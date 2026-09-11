@@ -317,24 +317,24 @@ QtConfigNightLightPort::write(const NightLightSettings &settings)
     KConfigGroup kwinGroup(&kwin, kKwinGroup);
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.active != settings.output.active) {
-        kwinGroup.writeEntry(kActiveKey, settings.output.active);
+        kwinGroup.writeEntry(kActiveKey, settings.output.active, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.mode != settings.output.mode) {
         // Enum names are written as the exact kcfg choice-name strings.
-        kwinGroup.writeEntry(kModeKey, modeToConfigToken(settings.output.mode));
+        kwinGroup.writeEntry(kModeKey, modeToConfigToken(settings.output.mode), KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.dayTemperatureKelvin
                != settings.output.dayTemperatureKelvin) {
         kwinGroup.writeEntry(kDayTemperatureKey,
-                             settings.output.dayTemperatureKelvin);
+                             settings.output.dayTemperatureKelvin, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.nightTemperatureKelvin
                != settings.output.nightTemperatureKelvin) {
         kwinGroup.writeEntry(kNightTemperatureKey,
-                             settings.output.nightTemperatureKelvin);
+                             settings.output.nightTemperatureKelvin, KConfigBase::Notify);
     }
     if (!kwin.sync()) {
         return { WriteOutcome::Failed, QStringLiteral("kwinrc write failed") };
@@ -347,41 +347,41 @@ QtConfigNightLightPort::write(const NightLightSettings &settings)
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.source != settings.schedule.source) {
         generalGroup.writeEntry(kSourceKey,
-                                sourceToConfigToken(settings.schedule.source));
+                                sourceToConfigToken(settings.schedule.source), KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.automaticLocation
                != settings.schedule.automaticLocation) {
         locationGroup.writeEntry(kAutomaticKey,
-                                 settings.schedule.automaticLocation);
+                                 settings.schedule.automaticLocation, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.latitudeDegrees
                != settings.schedule.latitudeDegrees) {
         locationGroup.writeEntry(kLatitudeKey,
-                                 settings.schedule.latitudeDegrees);
+                                 settings.schedule.latitudeDegrees, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.longitudeDegrees
                != settings.schedule.longitudeDegrees) {
         locationGroup.writeEntry(kLongitudeKey,
-                                 settings.schedule.longitudeDegrees);
+                                 settings.schedule.longitudeDegrees, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.sunriseStart
                != settings.schedule.sunriseStart) {
-        timesGroup.writeEntry(kSunriseStartKey, settings.schedule.sunriseStart);
+        timesGroup.writeEntry(kSunriseStartKey, settings.schedule.sunriseStart, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.sunsetStart
                != settings.schedule.sunsetStart) {
-        timesGroup.writeEntry(kSunsetStartKey, settings.schedule.sunsetStart);
+        timesGroup.writeEntry(kSunsetStartKey, settings.schedule.sunsetStart, KConfigBase::Notify);
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.transitionSeconds
                != settings.schedule.transitionSeconds) {
         timesGroup.writeEntry(kTransitionDurationKey,
-                              settings.schedule.transitionSeconds);
+                              settings.schedule.transitionSeconds, KConfigBase::Notify);
     }
     if (!knight.sync()) {
         return { WriteOutcome::Failed,
