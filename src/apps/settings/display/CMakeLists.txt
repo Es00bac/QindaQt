@@ -85,6 +85,12 @@ set_target_properties(
 )
 qindaqt_enable_warnings(qindaqt_settings_display_qml)
 
+# Stage the confined icon module beside the route so an installed Settings
+# package can resolve QindaQt.Shell.Icons without a shell install, matching
+# the Audio and Customize routes (the night light rows are icon-led).
+include("${PROJECT_SOURCE_DIR}/src/shell/IconRuntimeInstall.cmake")
+qindaqt_install_shell_icons_runtime(SettingsAppearanceRuntime)
+
 install(
     TARGETS qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin
     RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"

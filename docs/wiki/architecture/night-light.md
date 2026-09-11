@@ -5,7 +5,7 @@ config port over the two persisted files, one live-state port over KWin's
 public NightLight interface, and one availability monitor for the schedule
 daemon. KWin's nightlight plugin stays the only live-output authority and
 `knighttimed` stays the only schedule authority; the decision record is
-[ADR-0136](0136-night-light-through-kwin.md). The Display route consumes the
+[ADR-0136](../adr/0136-night-light-through-kwin.md). The Display route consumes the
 public boundary through its own composition singleton (see
 [display settings](../apps/display-settings.md)); the shell quick-toggle that
 can hold a real inhibition is a later outcome.
