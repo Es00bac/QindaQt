@@ -55,6 +55,30 @@ CANON = {
         ring(24, 24, 8) + ring(40, 24, 8) + ring(32, 40, 8),
         dot(24, 24, 9, AMBER) + dot(40, 24, 9, BLUE) + dot(32, 40, 9, VIOLET),
     ),
+    "preferences-desktop-accessibility": Icon(
+        GROUP,
+        # Universal-access figure: head dot, outstretched arms, standing legs,
+        # inside a ring. Distinct from the notification bell and the gear.
+        ring(32, 32, 24, width=5) + dot(32, 19, 4) + strokes("M20 28h24", "M32 28v12", "M32 40l-7 10", "M32 40l7 10", width=5),
+        f'<circle cx="32" cy="32" r="26" fill="{BLUE}"/>'
+        + dot(32, 19, 5, PORCELAIN)
+        + strokes("M20 28h24", "M32 28v12", "M32 40l-7 10", "M32 40l7 10", color=PORCELAIN, width=5),
+    ),
+    "preferences-desktop-wallpaper": Icon(
+        GROUP,
+        # A framed landscape: sun in the corner, two hills across the bottom.
+        rect(9, 13, 46, 38, rx=5) + dot(22, 25, 4)
+        + stroke("M12 44l11-12 8 8 7-6 14 10", width=4),
+        rect(9, 13, 46, 38, rx=5, fill=VIOLET) + dot(22, 25, 5, PORCELAIN)
+        + filled("M9 46l14-14 8 8 7-6 17 12v5H9z", fill=APRICOT),
+    ),
+    "preferences-desktop-font": Icon(
+        GROUP,
+        # A capital A with its crossbar; the letterform is the glyph.
+        strokes("M14 50 32 12 50 50", "M22 36h20", width=6),
+        rect(8, 8, 48, 48, rx=8, fill=APRICOT)
+        + strokes("M16 50 32 12 48 50", "M23 36h18", color=INK, width=6),
+    ),
     "preferences-desktop-color": Icon(
         GROUP,
         # Three swatch dots inside a ring reads as a color-picker dial; a
