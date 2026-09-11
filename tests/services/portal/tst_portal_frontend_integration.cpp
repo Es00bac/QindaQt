@@ -5,12 +5,10 @@
 
 #include <QCoreApplication>
 #include <QDBusAbstractAdaptor>
-#include <QDBusArgument>
 #include <QDBusConnection>
 #include <QDBusMessage>
-#include <QDBusMetaType>
 #include <QDBusObjectPath>
-#include <QDBusReply>
+#include <QDBusPendingCall>
 #include <QDBusVariant>
 #include <QElapsedTimer>
 #include <QFile>
@@ -18,12 +16,8 @@
 #include <QProcess>
 #include <QProcessEnvironment>
 
-#include <cmath>
-
 using namespace QindaQt::Services::Portal;
 using namespace QindaQt::Tests::Portal;
-
-using PortalNamespaceMap = QMap<QString, QVariantMap>;
 
 namespace {
 
@@ -131,109 +125,6 @@ FakeGlobalShortcuts *registerInjectedServices(QDBusConnection &bus,
     return shortcuts;
 }
 
-QDBusMessage call(const QString &interfaceName, const QString &member,
-                  const QVariantList &arguments = {}, int timeout = 5'000)
-{
-    QDBusMessage message = QDBusMessage::createMethodCall(
-        QString::fromLatin1(FrontendService),
-        QString::fromLatin1(kPortalObjectPath), interfaceName, member);
-    message.setArguments(arguments);
-    return QDBusConnection::sessionBus().call(message, QDBus::Block, timeout);
-}
-
-QVariant unwrapVariant(QVariant value)
-{
-    for (int depth = 0;
-         depth < 3 && value.metaType() == QMetaType::fromType<QDBusVariant>();
-         ++depth) {
-        value = qvariant_cast<QDBusVariant>(value).variant();
-    }
-    return value;
-}
-
-bool near(double actual, double expected)
-{
-    return std::abs(actual - expected) < 0.00001;
-}
-
-bool verifyAccent(const QVariant &input, QString *error)
-{
-    const QVariant value = unwrapVariant(input);
-    if (value.metaType() != QMetaType::fromType<QDBusArgument>()) {
-        *error = QStringLiteral("accent-color did not retain its (ddd) signature");
-        return false;
-    }
-    const QDBusArgument argument = qvariant_cast<QDBusArgument>(value);
-    double red = 0.0;
-    double green = 0.0;
-    double blue = 0.0;
-    argument.beginStructure();
-    argument >> red >> green >> blue;
-    argument.endStructure();
-    // Smoked Plum publishes its opaque #EAB391 QST accent over the real bus.
-    if (!near(red, 234.0 / 255.0) || !near(green, 179.0 / 255.0)
-        || !near(blue, 145.0 / 255.0)) {
-        *error = QStringLiteral("frontend accent-color differs from QindaQt QST projection");
-        return false;
-    }
-    return true;
-}
-
-bool verifyFrontendValues(QString *error)
-{
-    const QDBusMessage all = call(QString::fromLatin1(FrontendInterface),
-                                  QStringLiteral("ReadAll"),
-                                  {QStringList{QStringLiteral("org.freedesktop.appearance")}});
-    if (all.type() != QDBusMessage::ReplyMessage || all.arguments().size() != 1) {
-        *error = QStringLiteral("frontend ReadAll failed: %1").arg(all.errorMessage());
-        return false;
-    }
-    const PortalNamespaceMap namespaces =
-        qdbus_cast<PortalNamespaceMap>(all.arguments().first());
-    const QVariantMap appearance = namespaces.value(
-        QString::fromLatin1(kAppearanceNamespace));
-    const QVariant scheme = unwrapVariant(
-        appearance.value(QString::fromLatin1(kColorSchemeKey)));
-    const QVariant contrast = unwrapVariant(
-        appearance.value(QString::fromLatin1(kContrastKey)));
-    if (appearance.size() != 3
-        || scheme.toUInt() != 1 || contrast.toUInt() != 0
-        || !verifyAccent(appearance.value(QString::fromLatin1(kAccentColorKey)), error)) {
-        if (error->isEmpty()) {
-            *error = QStringLiteral(
-                "frontend ReadAll values differ: namespaces=%1 keys=%2 scheme=%3 "
-                "contrast=%4 schemeType=%5 contrastType=%6")
-                         .arg(namespaces.size())
-                         .arg(appearance.size())
-                         .arg(scheme.toUInt())
-                         .arg(contrast.toUInt())
-                         .arg(scheme.metaType().name())
-                         .arg(contrast.metaType().name());
-        }
-        return false;
-    }
-    for (const QString &key : {QString::fromLatin1(kColorSchemeKey),
-                               QString::fromLatin1(kAccentColorKey),
-                               QString::fromLatin1(kContrastKey)}) {
-        const QDBusMessage one = call(QString::fromLatin1(FrontendInterface),
-                                      QStringLiteral("Read"),
-                                      {QString::fromLatin1(kAppearanceNamespace), key});
-        if (one.type() != QDBusMessage::ReplyMessage || one.arguments().size() != 1) {
-            *error = QStringLiteral("frontend Read failed for %1: %2")
-                         .arg(key, one.errorMessage());
-            return false;
-        }
-        const QVariant value = unwrapVariant(one.arguments().first());
-        if ((key == QString::fromLatin1(kColorSchemeKey) && value.toUInt() != 1)
-            || (key == QString::fromLatin1(kContrastKey) && value.toUInt() != 0)
-            || (key == QString::fromLatin1(kAccentColorKey)
-                && !verifyAccent(value, error))) {
-            return false;
-        }
-    }
-    return true;
-}
-
 bool runSelection(QString *error)
 {
     if (!kdePortalAdvertisesGlobalShortcuts(error)) {
@@ -252,7 +143,7 @@ bool runSelection(QString *error)
     ChildProcesses children;
     QProcess *frontend = nullptr;
     if (!startCore(*runtime, children, &frontend, error)
-        || !verifyFrontendValues(error)) {
+        || !verifyFrontendAppearance(error)) {
         return false;
     }
 
@@ -305,7 +196,7 @@ bool runSelection(QString *error)
     }
     Q_UNUSED(shortcutsPending)
 
-    const QDBusMessage background = call(
+    const QDBusMessage background = frontendPortalCall(
         QStringLiteral("org.freedesktop.portal.Background"),
         QStringLiteral("GetAppState"));
     if (background.type() != QDBusMessage::ErrorMessage) {
@@ -323,10 +214,11 @@ bool runSelection(QString *error)
         *error = QStringLiteral("other-desktop frontend did not start");
         return false;
     }
-    const QDBusMessage negative = call(QString::fromLatin1(FrontendInterface),
-                                       QStringLiteral("Read"),
-                                       {QString::fromLatin1(kAppearanceNamespace),
-                                        QString::fromLatin1(kColorSchemeKey)});
+    const QDBusMessage negative = frontendPortalCall(
+        QString::fromLatin1(FrontendInterface),
+        QStringLiteral("Read"),
+        {QString::fromLatin1(kAppearanceNamespace),
+         QString::fromLatin1(kColorSchemeKey)});
     if (negative.type() != QDBusMessage::ErrorMessage) {
         *error = QStringLiteral("other desktop selected the QindaQt Settings backend");
         return false;
@@ -348,7 +240,7 @@ bool runToolkit(QString *error)
     ChildProcesses children;
     QProcess *frontend = nullptr;
     if (!startCore(*runtime, children, &frontend, error)
-        || !verifyFrontendValues(error)) {
+        || !verifyFrontendAppearance(error)) {
         return false;
     }
     QProcessEnvironment probeEnvironment = runtime->environment;
