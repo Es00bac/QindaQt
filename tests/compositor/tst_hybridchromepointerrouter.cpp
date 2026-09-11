@@ -41,6 +41,7 @@ private Q_SLOTS:
     void activatesClicksWithoutAlsoCommittingDrags();
     void emitsThresholdedCumulativeDragLifecycle();
     void cancelsOwnedGrabAndClearsHoverOutsideChrome();
+    void rollsContainersWithTheWheelOverChromeAndHandlebars();
 };
 
 void HybridChromePointerRouterTests::reportsRaiseOnlyDecisionAsDispatchable()
@@ -308,6 +309,44 @@ void HybridChromePointerRouterTests::cancelsOwnedGrabAndClearsHoverOutsideChrome
     QCOMPARE(decision.drags.constLast().event.phase,
              HybridChrome::DragPhase::Cancel);
     QVERIFY(!router.active());
+}
+
+void HybridChromePointerRouterTests::rollsContainersWithTheWheelOverChromeAndHandlebars()
+{
+    std::optional<ChromePointerHit> resolved =
+        hit(HybridChrome::HitKind::OuterTitleDrag, QStringLiteral("container-a"));
+    HybridChromePointerRouter router([&](const QPointF &) { return resolved; });
+
+    // ADR-0131: wheel away rolls the container up, toward rolls it down.
+    const auto up = router.pointerWheel({5.0, 5.0}, Qt::NoModifier, 120.0);
+    QVERIFY(up.consumed);
+    QVERIFY(hasChromeDecisionOutput(up));
+    QCOMPARE(up.shadeRequests,
+             QVector<ChromeShadeRequest>({{QStringLiteral("container-a"), true}}));
+    const auto down = router.pointerWheel({5.0, 5.0}, Qt::NoModifier, -120.0);
+    QCOMPARE(down.shadeRequests,
+             QVector<ChromeShadeRequest>({{QStringLiteral("container-a"), false}}));
+
+    // A contained window's handlebar and the bar's tabs roll their container.
+    resolved = hit(HybridChrome::HitKind::MemberTitleDrag, QStringLiteral("member-a"));
+    QVERIFY(router.pointerWheel({6.0, 5.0}, Qt::NoModifier, 120.0).consumed);
+    resolved = hit(HybridChrome::HitKind::Tab, QStringLiteral("page-a"), 0);
+    QVERIFY(router.pointerWheel({6.5, 5.0}, Qt::NoModifier, -40.0).consumed);
+
+    // Modifiers, zero deltas, and client content pass through untouched.
+    QVERIFY(!router.pointerWheel({6.5, 5.0}, Qt::ControlModifier, 120.0).consumed);
+    QVERIFY(!router.pointerWheel({6.5, 5.0}, Qt::NoModifier, 0.0).consumed);
+    resolved = hit(HybridChrome::HitKind::Client);
+    const auto client = router.pointerWheel({7.0, 5.0}, Qt::NoModifier, 120.0);
+    QVERIFY(!client.consumed);
+    QVERIFY(client.shadeRequests.isEmpty());
+
+    // A held chrome grab owns the pointer; the wheel does not interrupt it.
+    resolved = hit(HybridChrome::HitKind::Tab, QStringLiteral("page-a"), 0);
+    QVERIFY(router.pointerPress(pointer({8.0, 5.0}, Qt::LeftButton, Qt::LeftButton)).consumed);
+    const auto held = router.pointerWheel({8.0, 5.0}, Qt::NoModifier, 120.0);
+    QVERIFY(!held.consumed);
+    QVERIFY(held.shadeRequests.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(HybridChromePointerRouterTests)

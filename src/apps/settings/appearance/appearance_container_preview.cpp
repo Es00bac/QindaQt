@@ -98,6 +98,8 @@ HybridChrome::ChromeLayoutRequest AppearanceContainerPreview::layoutRequest() co
                             .adjusted(kFrameInset, kFrameInset, -kFrameInset, -kFrameInset);
     request.containerFocused = true;
     request.style = Decoration::containerStyleFromVariantMap(m_containerStyle);
+    // Members keep the handlebar the compositor lays out for them (ADR-0131).
+    request.metrics.memberTitleHeight = Decoration::DecorationMemberHandleHeight;
     const auto &metrics = request.metrics;
     const QRectF inner = request.outerRect.adjusted(metrics.outerBorder, metrics.outerBorder,
                                                     -metrics.outerBorder, -metrics.outerBorder);
@@ -157,7 +159,7 @@ void AppearanceContainerPreview::paint(QPainter *painter)
         painter->setPen(muted);
         painter->setFont(m_toolkitFont);
         const QFontMetricsF metrics(m_toolkitFont);
-        qreal y = Decoration::DecorationTitleHeight + 12.0;
+        qreal y = Decoration::DecorationMemberHandleHeight + 10.0;
         for (const auto &line : {tr("Quarterly summary"), tr("Draft notes")}) {
             if (y + metrics.height() > size.height()) {
                 break;
@@ -166,13 +168,18 @@ void AppearanceContainerPreview::paint(QPainter *painter)
                               metrics.elidedText(line, Qt::ElideRight, size.width() - 24.0));
             y += metrics.height() + 6.0;
         }
+        // Contained windows draw the handlebar the decoration plugin paints
+        // for container members (ADR-0131).
         Decoration::DecorationFrameVisual frame;
         frame.size = size;
         frame.caption = member.title;
         frame.font = m_toolkitFont;
         frame.active = member.focused;
-        Decoration::paintDecoration(*painter, chrome, frame,
-                                    Decoration::layoutDecorationButtons(chrome, size));
+        frame.memberHandle = true;
+        Decoration::paintMemberHandle(*painter, chrome, frame);
+        for (const auto &button : Decoration::layoutMemberHandleButtons(chrome, size)) {
+            Decoration::paintDecorationButton(*painter, chrome, frame, button);
+        }
         painter->restore();
     }
     // AGENT-NOTE: ChromeRenderer clears its whole frame before painting, so

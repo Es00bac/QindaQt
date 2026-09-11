@@ -58,6 +58,10 @@ QindaButton *QindaButton::create(DecorationButtonType type,
         QObject::connect(window, &KDecoration3::DecoratedWindow::maximizeableChanged,
                          button, &QindaButton::setVisible);
         break;
+    case DecorationButtonType::Custom:
+        // The contained-window "more" control (ADR-0131).
+        button->setVisible(true);
+        break;
     default:
         button->setVisible(false);
         break;

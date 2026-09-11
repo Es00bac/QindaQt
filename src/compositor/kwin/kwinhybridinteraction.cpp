@@ -210,6 +210,9 @@ void KWinHybridSession::dispatchChromePointerDecision(
     for (const auto &request : decision.contextMenus) {
         showGroupContextMenu(request.containerId, request.globalPosition);
     }
+    for (const auto &request : decision.shadeRequests) {
+        applyWheelShade(request.containerId, request.shade);
+    }
 }
 
 void KWinHybridSession::handleChromeDrag(

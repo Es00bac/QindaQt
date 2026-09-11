@@ -14,6 +14,7 @@ class InputRedirection;
 class Window;
 struct KeyboardKeyEvent;
 struct PointerButtonEvent;
+struct PointerAxisEvent;
 struct PointerMotionEvent;
 }
 
@@ -66,6 +67,7 @@ private:
 
     [[nodiscard]] bool pointerMotion(KWin::PointerMotionEvent *event);
     [[nodiscard]] bool pointerButton(KWin::PointerButtonEvent *event);
+    [[nodiscard]] bool pointerAxis(KWin::PointerAxisEvent *event);
     [[nodiscard]] bool keyboardKey(KWin::KeyboardKeyEvent *event);
     [[nodiscard]] bool dispatch(HybridInput::InteractionDecision decision);
     [[nodiscard]] bool dispatchChrome(ChromePointerDecision decision);

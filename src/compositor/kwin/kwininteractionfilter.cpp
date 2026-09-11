@@ -32,6 +32,11 @@ public:
         return m_owner.pointerButton(event);
     }
 
+    bool pointerAxis(KWin::PointerAxisEvent *event) override
+    {
+        return m_owner.pointerAxis(event);
+    }
+
     bool keyboardKey(KWin::KeyboardKeyEvent *event) override
     {
         return m_owner.keyboardKey(event);
@@ -211,6 +216,20 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
     return dispatch(event->state == KWin::PointerButtonState::Pressed
                         ? m_controller.pointerPress(normalized)
                         : m_controller.pointerRelease(normalized));
+}
+
+bool KWinInteractionFilter::pointerAxis(KWin::PointerAxisEvent *event)
+{
+    // ADR-0131: wheel roll-up over shared chrome and member handlebars. KWin
+    // reports a wheel turned away from the user as a negative vertical delta
+    // unless natural scrolling inverted it, so the physical direction decides.
+    if (!event || event->orientation != Qt::Vertical || m_controller.active()
+        || !m_chromeRouter) {
+        return false;
+    }
+    const qreal awayFromUser = event->inverted ? event->delta : -event->delta;
+    return dispatchChrome(
+        m_chromeRouter->pointerWheel(event->position, event->modifiers, awayFromUser));
 }
 
 bool KWinInteractionFilter::keyboardKey(KWin::KeyboardKeyEvent *event)

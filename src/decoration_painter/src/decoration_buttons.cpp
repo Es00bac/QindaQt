@@ -51,6 +51,8 @@ void paintClassicGlyph(QPainter &painter, const DecorationChrome &chrome,
                                     radius * 2.0, radius * 2.0));
         }
         break;
+    case DecorationButtonKind::More:
+        break;
     }
 }
 
@@ -115,6 +117,8 @@ void paintGlyphChrome(QPainter &painter, const DecorationChrome &chrome,
             painter.drawPath(triangle);
         }
         break;
+    case DecorationButtonKind::More:
+        break;
     }
 }
 
@@ -173,6 +177,80 @@ void paintFlatButton(QPainter &painter, const DecorationChrome &chrome,
             painter.drawRect(QRectF(center.x() - radius, center.y() - radius,
                                     radius * 2.0, radius * 2.0));
         }
+        break;
+    case DecorationButtonKind::More:
+        break;
+    }
+}
+
+void paintMiniButton(QPainter &painter, const DecorationChrome &chrome,
+                     const DecorationFrameVisual &frame,
+                     const DecorationButtonVisual &button)
+{
+    // Miniature stoplights (ADR-0131): an 8 px dot centered in its 12 px hit
+    // cell, with its glyph revealed while the handle's controls are hovered.
+    // Glyph-style themes color their buttons as console glyphs, so the
+    // handlebar keeps classic stoplight colors for them.
+    const QPointF center = button.geometry.center();
+    if (button.kind == DecorationButtonKind::More) {
+        QColor ink = decorationCaptionColor(chrome, frame.active);
+        if (!frame.active) {
+            ink.setAlphaF(0.7f);
+        }
+        if (button.hovered || button.pressed) {
+            QColor plate = ink;
+            plate.setAlpha(button.pressed ? 72 : 40);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(plate);
+            painter.drawRoundedRect(button.geometry, 3.0, 3.0);
+        }
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        for (const qreal offset : {-3.0, 0.0, 3.0}) {
+            painter.drawEllipse(QPointF(center.x() + offset, center.y()), 1.1, 1.1);
+        }
+        return;
+    }
+    QColor fill;
+    if (chrome.glyphChrome()) {
+        fill = button.kind == DecorationButtonKind::Close ? QColor(QStringLiteral("#f07c76"))
+            : button.kind == DecorationButtonKind::Minimize ? QColor(QStringLiteral("#e8bf63"))
+                                                             : QColor(QStringLiteral("#71bd8a"));
+        if (!frame.active) {
+            fill = fill.darker(112);
+        }
+    } else {
+        fill = decorationButtonFill(chrome, button.kind, frame.active);
+    }
+    if (button.pressed) {
+        fill = fill.darker(125);
+    } else if (button.hovered) {
+        fill = fill.lighter(108);
+    }
+    constexpr qreal radius = 4.0;
+    painter.setPen(QPen(fill.darker(118), 0.6));
+    painter.setBrush(fill);
+    painter.drawEllipse(center, radius, radius);
+    if (!frame.controlsHovered) {
+        return;
+    }
+    QPen pen(qGray(fill.rgb()) >= 128 ? QColor(Qt::black) : QColor(Qt::white), 0.9);
+    pen.setCapStyle(Qt::RoundCap);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    constexpr qreal glyph = 1.7;
+    switch (button.kind) {
+    case DecorationButtonKind::Close:
+        painter.drawLine(center + QPointF(-glyph, -glyph), center + QPointF(glyph, glyph));
+        painter.drawLine(center + QPointF(glyph, -glyph), center + QPointF(-glyph, glyph));
+        break;
+    case DecorationButtonKind::Minimize:
+        painter.drawLine(center + QPointF(-glyph, 0.0), center + QPointF(glyph, 0.0));
+        break;
+    case DecorationButtonKind::Maximize:
+        painter.drawRect(QRectF(center.x() - glyph, center.y() - glyph, glyph * 2.0, glyph * 2.0));
+        break;
+    case DecorationButtonKind::More:
         break;
     }
 }
@@ -261,6 +339,11 @@ void paintDecorationButton(QPainter &painter, const DecorationChrome &chrome,
     }
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
+    if (frame.memberHandle) {
+        paintMiniButton(painter, chrome, frame, button);
+        painter.restore();
+        return;
+    }
     const QRectF circle = button.geometry.adjusted(1.0, 1.0, -1.0, -1.0);
     if (chrome.glyphChrome()) {
         paintGlyphChrome(painter, chrome, frame, button, circle);
