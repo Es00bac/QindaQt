@@ -78,6 +78,15 @@ def main():
                    "summary: pass (0)"):
         expect(needle in text, f"expected {needle!r} in output", result)
 
+    # Properties.Get answers with a variant; the live session printed
+    # "v b false" and the check must read it as unlocked, not unknown.
+    result = run_case("pam-present", "portal-routed.conf",
+                      **{**healthy(), "locked": FIXTURES / "locked-variant-false.txt"})
+    text = result.stdout.decode(errors="replace")
+    expect(result.returncode == 0, "a variant Locked reply must pass", result)
+    expect("default-collection: unlocked" in text,
+           "a variant Locked reply must report unlocked", result)
+
     result = run_case("pam-present", "portal-routed.conf",
                       busctl_list=FIXTURES / "busctl-list-none.txt")
     text = result.stdout.decode(errors="replace")
