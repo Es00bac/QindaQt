@@ -15,6 +15,7 @@ set(
     "qindaqt_shell_icons|QindaQt/Shell/Icons"
     "qindaqt_shell_desktop_controls_runtime|QindaQt/Shell/DesktopControls"
     "qindaqt_start_menu_qml|QindaQt/Shell/StartMenu"
+    "qindaqt_desktop_surface_qml|QindaQt/Shell/DesktopSurface"
 )
 
 function(_qindaqt_install_desktop_applet_module descriptor)
