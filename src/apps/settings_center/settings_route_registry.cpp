@@ -242,6 +242,24 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool accessibilityRegistered = registerRoute(accessibilityRoute);
   Q_ASSERT(accessibilityRegistered);
   Q_UNUSED(accessibilityRegistered);
+
+  // AGENT-GUARD: Appended last so every existing route index, shortcut, and
+  // traversal order stays stable (ADR-0128); the Input route continues that
+  // rule (ADR-0134).
+  const SettingsRoute inputRoute{
+      .id = QStringLiteral("input"),
+      .component = SettingsRouteComponent::Input,
+      .title = QCoreApplication::translate("SettingsCenter", "Input"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Mouse, touchpad, keyboard, and shortcuts"),
+      .iconName = QStringLiteral("preferences-desktop-peripherals"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool inputRegistered = registerRoute(inputRoute);
+  Q_ASSERT(inputRegistered);
+  Q_UNUSED(inputRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

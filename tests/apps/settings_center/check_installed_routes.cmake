@@ -147,6 +147,16 @@ if(NOT accessibility_in_stage OR NOT IS_DIRECTORY "${accessibility_module}")
         "${accessibility_module}")
 endif()
 
+set(input_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Input")
+cmake_path(NORMAL_PATH input_module OUTPUT_VARIABLE input_module)
+cmake_path(IS_PREFIX install_prefix "${input_module}" NORMALIZE input_in_stage)
+if(NOT input_in_stage OR NOT IS_DIRECTORY "${input_module}")
+    message(FATAL_ERROR
+        "installed Settings Input module is missing or outside stage: "
+        "${input_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -177,6 +187,11 @@ set(build_accessibility_module "${build_directory}/qml/QindaQt/SettingsApp/Acces
 if(NOT IS_DIRECTORY "${build_accessibility_module}")
     message(FATAL_ERROR
         "package poison requires the developer Accessibility QML tree to remain present")
+endif()
+set(build_input_module "${build_directory}/qml/QindaQt/SettingsApp/Input")
+if(NOT IS_DIRECTORY "${build_input_module}")
+    message(FATAL_ERROR
+        "package relocation requires the developer Input QML tree to remain present")
 endif()
 
 set(withheld_module "${appearance_module}.withheld")
@@ -268,7 +283,7 @@ if(NOT network_poison_status EQUAL 3)
 endif()
 # Reinstall rather than trusting the rename restoration, then repeat the
 # developer-tree poison for the Audio route the same way, and finally prove
-# all eleven complete routes below using only the staged prefix.
+# all twelve complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}
     RESULT_VARIABLE reinstall_status
@@ -376,6 +391,56 @@ if(NOT accessibility_reinstall_status EQUAL 0)
     message(FATAL_ERROR
         "staged Settings reinstall failed after Accessibility package poison:\n"
         "${accessibility_reinstall_output}${accessibility_reinstall_error}")
+endif()
+
+# Repeat the developer-tree poison for the Input route: withholding its
+# installed module must fail root construction (exit 3) even though the
+# build tree still carries the module.
+set(withheld_input_module "${input_module}.withheld")
+file(RENAME "${input_module}" "${withheld_input_module}")
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env
+            --unset=DISPLAY
+            --unset=WAYLAND_DISPLAY
+            --unset=QML_IMPORT_PATH
+            --unset=QML2_IMPORT_PATH
+            --unset=LD_LIBRARY_PATH
+            --unset=QT_PLUGIN_PATH
+            --unset=QT_QPA_PLATFORM_PLUGIN_PATH
+            QT_QPA_PLATFORM=offscreen
+            QT_QUICK_BACKEND=software
+            QML_DISABLE_DISK_CACHE=1
+            DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            XDG_CONFIG_HOME=${poison_sandbox}/config
+            XDG_DATA_HOME=${poison_sandbox}/data
+            XDG_DATA_DIRS=${poison_sandbox}/system-data
+            XDG_CACHE_HOME=${poison_sandbox}/cache
+            XDG_RUNTIME_DIR=${poison_runtime_dir}
+            "${SETTINGS_EXECUTABLE}" --page input
+    WORKING_DIRECTORY "${poison_sandbox}"
+    TIMEOUT 3
+    RESULT_VARIABLE input_poison_status
+    OUTPUT_VARIABLE input_poison_output
+    ERROR_VARIABLE input_poison_error
+)
+file(RENAME "${withheld_input_module}" "${input_module}")
+if(NOT input_poison_status EQUAL 3)
+    message(FATAL_ERROR
+        "incomplete installed Settings Input package returned "
+        "${input_poison_status}, expected root-construction failure 3 while "
+        "build QML remained present:\n"
+        "${input_poison_output}${input_poison_error}")
+endif()
+execute_process(
+    COMMAND ${install_command}
+    RESULT_VARIABLE input_reinstall_status
+    OUTPUT_VARIABLE input_reinstall_output
+    ERROR_VARIABLE input_reinstall_error
+)
+if(NOT input_reinstall_status EQUAL 0)
+    message(FATAL_ERROR
+        "staged Settings reinstall failed after Input package poison:\n"
+        "${input_reinstall_output}${input_reinstall_error}")
 endif()
 
 set(SANDBOX_ROOT "${install_prefix}/route-runtime")

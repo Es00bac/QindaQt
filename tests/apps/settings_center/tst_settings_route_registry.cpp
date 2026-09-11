@@ -215,7 +215,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 11);
+  QCOMPARE(registry.count(), 12);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -228,6 +228,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("clipboard")));
   QVERIFY(registry.hasRoute(QStringLiteral("color")));
   QVERIFY(registry.hasRoute(QStringLiteral("accessibility")));
+  QVERIFY(registry.hasRoute(QStringLiteral("input")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -241,6 +242,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("clipboard")), 8);
   QCOMPARE(registry.indexOf(QStringLiteral("color")), 9);
   QCOMPARE(registry.indexOf(QStringLiteral("accessibility")), 10);
+  QCOMPARE(registry.indexOf(QStringLiteral("input")), 11);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -331,6 +333,16 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
            QStringLiteral("preferences-desktop-accessibility"));
   QVERIFY(!accessibility->description.isEmpty());
   QVERIFY(accessibility->available);
+
+  const auto input = registry.route(QStringLiteral("input"));
+  QVERIFY(input.has_value());
+  QCOMPARE(input->id, QStringLiteral("input"));
+  QCOMPARE(input->component, SettingsRouteComponent::Input);
+  QCOMPARE(input->title, QStringLiteral("Input"));
+  QCOMPARE(input->category, QStringLiteral("Hardware"));
+  QCOMPARE(input->iconName, QStringLiteral("preferences-desktop-peripherals"));
+  QVERIFY(!input->description.isEmpty());
+  QVERIFY(input->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {
