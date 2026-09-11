@@ -134,12 +134,56 @@ if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
                 "${mode}"
         )
     endforeach()
+
+    qt_add_executable(qindaqt_portal_frontend_routing_tests
+                      portal_frontend_test_support.cpp
+                      portal_frontend_test_support.h
+                      tst_portal_frontend_routing.cpp)
+    target_compile_definitions(
+        qindaqt_portal_frontend_routing_tests
+        PRIVATE
+            QINDAQT_FALLBACK_PORTAL="${QINDAQT_KDE_PORTAL_METADATA}"
+            QINDAQT_PORTAL_EXECUTABLE="$<TARGET_FILE:xdg-desktop-portal-qindaqt>"
+            QINDAQT_PORTAL_METADATA="${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt.portal"
+            QINDAQT_PORTAL_SELECTION="${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt-portals.conf"
+            QINDAQT_PORTAL_TEST_RUNTIME_ROOT="${CMAKE_CURRENT_BINARY_DIR}/portal-p1-runtime"
+            QINDAQT_PORTAL_THEME_DIR="${PROJECT_SOURCE_DIR}/data/themes"
+            QINDAQT_SETTINGS_EXECUTABLE="$<TARGET_FILE:qindaqt-settings-service>"
+            QINDAQT_SETTINGS_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/data/settings"
+            QINDAQT_XDG_DESKTOP_PORTAL="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}"
+    )
+    target_link_libraries(
+        qindaqt_portal_frontend_routing_tests
+        PRIVATE QindaQt::PortalAppearance QindaQt::SettingsProtocol
+                Qt6::Core Qt6::DBus
+    )
+    add_dependencies(
+        qindaqt_portal_frontend_routing_tests
+        qindaqt-settings-service xdg-desktop-portal-qindaqt
+    )
+    qindaqt_enable_warnings(qindaqt_portal_frontend_routing_tests)
+
+    foreach(mode IN ITEMS routing routing-negative)
+        add_test(
+            NAME qindaqt.portal-frontend-${mode}
+            COMMAND
+                "${CMAKE_COMMAND}" -E env
+                --unset=DBUS_SESSION_BUS_ADDRESS
+                --unset=DBUS_STARTER_ADDRESS
+                --unset=DBUS_STARTER_BUS_TYPE
+                "${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}" --
+                "$<TARGET_FILE:qindaqt_portal_frontend_routing_tests>"
+                "${mode}"
+        )
+    endforeach()
+
     set(portal_p1_package_arguments
         "-DQINDAQT_FRONTEND_TEST=$<TARGET_FILE:qindaqt_portal_frontend_integration_tests>"
         "-DQINDAQT_TOOLKIT_PROBE=$<TARGET_FILE:qindaqt_portal_toolkit_probe>"
         "-DQINDAQT_XDG_DESKTOP_PORTAL=${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}"
         "-DQINDAQT_FALLBACK_PORTAL=${QINDAQT_KDE_PORTAL_METADATA}"
         "-DQINDAQT_DBUS_RUN_SESSION=${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}"
+        "-DQINDAQT_ROUTING_TEST=$<TARGET_FILE:qindaqt_portal_frontend_routing_tests>"
     )
 else()
     message(STATUS
@@ -215,6 +259,13 @@ if(TEST qindaqt.portal-frontend-selection)
                    TIMEOUT 35 RUN_SERIAL TRUE
     )
 endif()
+if(TEST qindaqt.portal-frontend-routing)
+    set_tests_properties(
+        qindaqt.portal-frontend-routing qindaqt.portal-frontend-routing-negative
+        PROPERTIES LABELS "service;portal;frontend;dbus;hostile"
+                   TIMEOUT 45 RUN_SERIAL TRUE
+    )
+endif()
 set_tests_properties(
     qindaqt.portal-source-boundary qindaqt.portal-source-boundary-negative
     PROPERTIES LABELS "service;portal;appearance;boundary;hostile" TIMEOUT 20
@@ -223,7 +274,7 @@ set_tests_properties(
     qindaqt.portal-staged-package
     PROPERTIES
         LABELS "service;portal;appearance;package;dbus;hostile"
-        TIMEOUT 40
+        TIMEOUT 120
         RUN_SERIAL TRUE
         DEPENDS "qindaqt.portal-process-lifecycle"
 )
@@ -236,4 +287,8 @@ endif()
 if(TEST qindaqt.portal-frontend-selection)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-selection;qindaqt.portal-frontend-toolkit")
+endif()
+if(TEST qindaqt.portal-frontend-routing)
+    set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
+                 DEPENDS "qindaqt.portal-frontend-routing;qindaqt.portal-frontend-routing-negative")
 endif()

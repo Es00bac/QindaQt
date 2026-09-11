@@ -255,3 +255,35 @@ configured build with the `Terminal` install component, `bwrap`, and the
 Gabbee checkout with its venv.  Missing lane acknowledgement exits 77 before
 touching anything.  Results land in
 `<build>/tests/session/gabbee-results/<run-id>/`.
+
+## Portal smoke notes (gap-portals, 2026-09-11)
+
+`tests/services/portal/proof/private-portal-proof.sh`, run under
+`qq-private gap-portals`, drives the real 1.20.4 frontend and the real
+`xdg-desktop-portal-kde` 6.6.6 on a private bus behind a virtual KWin. What
+it taught, as traps for the next real-backend portal session:
+
+1. Two staging layouts are needed because a frontend can start twice. Anything
+   that touches `org.freedesktop.portal.Desktop` (PipeWire's portal module,
+   WirePlumber) makes dbus-daemon activate a fallback `xdg-desktop-portal`
+   with the session daemon's environment — no `XDG_CURRENT_DESKTOP`, no
+   `XDG_DESKTOP_PORTAL_DIR`. `XDG_DESKTOP_PORTAL_DIR` expects declarations
+   flat beside the conf files, while the daemon-environment fallback reads the
+   standard `$XDG_DATA_HOME/xdg-desktop-portal/{portals/,portals.conf}`
+   layout. Staging both makes every frontend instance resolve the same
+   routing table; the activated copy then behaves identically.
+2. The frontend's PipeWire connection happens at startup and a failed connect
+   is latched: start the private `pipewire`/`wireplumber` pair before the
+   frontend or ScreenCast sessions silently complete with a failure response.
+3. The screenshot consent dialog is reached only through a permission-store
+   grant (`screenshot`/`screenshot`, app-id `''`). Seeding the private store
+   headlessly still failed with `UnknownMethod` on the exported path, so the
+   recorded run stops exactly at the real backend's consent dialog — the
+   documented valid stopping point for a session with no human.
+4. `org.freedesktop.impl.portal.desktop.qindaqt.service` exists on the host,
+   so a frontend on a private bus D-Bus-activates the installed Settings
+   backend even when the test never starts one; expect it in activation logs.
+
+The private-bus routing proof that pins the table itself lives in the
+`qindaqt.portal-frontend-routing(-negative)` rows and does not depend on any
+of the above.
