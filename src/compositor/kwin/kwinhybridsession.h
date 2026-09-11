@@ -105,6 +105,8 @@ public:
         ShellWindowAction action,
         QString *error = nullptr);
     void setChromePalette(const HybridChrome::ChromePalette &palette);
+    // Container chrome arrangement plus palette (ADR-0129).
+    void setChromeStyle(const HybridChrome::ChromeStyle &style);
     void setNativePalette(const QPalette &palette);
     void showSavedWorkspaces(const QString &containerId);
 
@@ -258,7 +260,7 @@ private:
     std::unique_ptr<KWinWorkspaceUiPort> m_workspacePort;
     std::unique_ptr<KWinWorkspaceController> m_workspaceController;
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;
-    HybridChrome::ChromePalette m_chromePalette;
+    HybridChrome::ChromeStyle m_chromeStyle = HybridChrome::ChromeStyle::qindaMacOS({});
     HybridContainerAppearanceStore m_appearance;
     std::unique_ptr<HybridShadeMemberPlatform> m_shadeMemberPlatform;
     std::unique_ptr<HybridShadeController> m_shadeController;

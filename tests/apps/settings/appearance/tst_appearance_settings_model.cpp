@@ -270,6 +270,9 @@ void AppearanceSettingsModelTests::draftValidationGatesApplyAndCancelRestores()
     QVERIFY(model != nullptr);
 
     QVERIFY(!model->setDraftValue(QStringLiteral("appearance.unknown"), 1));
+    QVERIFY(!model->setDraftValue(QStringLiteral("appearance.windowButtonSide"),
+                                  QStringLiteral("sideways")));
+    QVERIFY(!model->setDraftValue(QStringLiteral("appearance.containerTabOrder"), 1));
     QVERIFY(!model->setDraftValue(QLatin1String(AppearanceKeys::UiScale),
                                   QStringLiteral("bogus")));
     QVERIFY(!model->setDraftValue(QLatin1String(AppearanceKeys::FontPointSize),

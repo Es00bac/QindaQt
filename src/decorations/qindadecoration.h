@@ -51,6 +51,8 @@ public:
     [[nodiscard]] DecorationFrameVisual frameState() const;
     [[nodiscard]] static DecorationButtonKind buttonKind(
         KDecoration3::DecorationButtonType type);
+    [[nodiscard]] static KDecoration3::DecorationButtonType buttonType(
+        DecorationButtonKind kind);
     [[nodiscard]] QColor glyphChromeColor(KDecoration3::DecorationButtonType type) const;
     [[nodiscard]] QColor buttonColor(KDecoration3::DecorationButtonType type) const;
     [[nodiscard]] QColor buttonGlyphColor(KDecoration3::DecorationButtonType type) const;
@@ -85,6 +87,9 @@ private:
     std::optional<QPointF> m_contextPressPosition;
     bool m_controlsHovered = false;
     bool m_initialized = false;
+    // Side, style, and visible set the current button group was built for;
+    // a published chrome change that alters any of them rebuilds the group.
+    QString m_buttonArrangement;
 };
 
 } // namespace QindaQt::Decoration

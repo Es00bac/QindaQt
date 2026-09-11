@@ -254,3 +254,4 @@ nav:
       - "ADR-0126: ignore user-override entries the schema cannot normalize": adr/0126-ignore-user-overrides-the-schema-cannot-normalize.md
       - "ADR-0127: preview window chrome and the Qt toolkit through one painter": adr/0127-preview-window-chrome-and-toolkit-through-one-painter.md
       - "ADR-0128: add the Settings Accessibility route": adr/0128-accessibility-settings-route.md
+      - "ADR-0129: configure window and container chrome through Appearance": adr/0129-configure-window-and-container-chrome.md

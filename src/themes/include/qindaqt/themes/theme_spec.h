@@ -9,6 +9,11 @@
 namespace QindaQt::Themes {
 
 struct DecorationSpec {
+    // True when the theme file declares a `decoration` object. Container
+    // chrome follows an authored block and keeps the Qinda macOS arrangement
+    // otherwise (ADR-0129). Never serialized: the object's presence is the
+    // source, so the strict JSON round trip is unchanged.
+    bool authored = false;
     QString buttonPlacement = QStringLiteral("right");
     QString tabDirection = QStringLiteral("left-to-right");
     QString buttonStyle = QStringLiteral("symbols");

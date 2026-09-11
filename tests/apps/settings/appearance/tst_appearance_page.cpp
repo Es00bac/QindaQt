@@ -11,6 +11,7 @@
 #include <QAccessibleInterface>
 #include <QColor>
 #include <QCoreApplication>
+#include <QImage>
 #include <QFont>
 #include <QQmlEngine>
 #include <QQuickItem>
@@ -176,6 +177,8 @@ private slots:
     void statusFallbackAndAccessibilityTruth();
     void saveResultSummaryIsAccessibleAndTruthful();
     void focusedDestinationNavigationKeepsDraftAndControlsReachable();
+    void windowsDestinationPreviewsBothChromeSetsAndForwardsChoices_data();
+    void windowsDestinationPreviewsBothChromeSetsAndForwardsChoices();
     void qtToolkitCardReflectsThePlatformThemeProjection();
     void fontTypingWallpaperPreviewAndKeyboardScrollingStayUsable();
 
@@ -568,6 +571,65 @@ void AppearancePageTests::focusedDestinationNavigationKeepsDraftAndControlsReach
     QVERIFY(summary->property("text").toString().contains(
         QStringLiteral("Changes have not been applied")));
     QVERIFY(apply->isVisible());
+}
+
+void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsChoices_data()
+{
+    QTest::addColumn<QString>("themeId");
+    QTest::newRow("unauthored-decoration") << QStringLiteral("qinda-dusk");
+    QTest::newRow("authored-decoration") << QStringLiteral("qinda-bliss");
+}
+
+void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsChoices()
+{
+    QFETCH(QString, themeId);
+    const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + themeId + QStringLiteral(".json"));
+    QVERIFY2(loaded.ok, qPrintable(loaded.error));
+    const auto theme = loaded.theme;
+    const auto scene = createScene([&theme](StubAppearanceModel &model) {
+        model.draft = defaultDraftMap();
+        publishResolvedChrome(model, theme);
+        makeReady(model, false);
+    });
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+
+    // ADR-0129: one destination shows both chrome sets, each through its
+    // real renderer, and forwards arrangement choices to the one draft.
+    QVERIFY(activateDestination(scene, QStringLiteral("windows")) != nullptr);
+    QQuickItem *windowPreview = nullptr;
+    QTRY_VERIFY((windowPreview = item(scene.root, "appearanceWindowChromePreview")) != nullptr);
+    auto *containerPreview = item(scene.root, "appearanceContainerChromePreview");
+    QVERIFY(containerPreview != nullptr);
+    QTRY_VERIFY(containerPreview->width() > 0.0);
+    bool builds = false;
+    QVERIFY(QMetaObject::invokeMethod(containerPreview, "layoutBuilds",
+                                      Q_RETURN_ARG(bool, builds)));
+    QVERIFY2(builds, "the compositor layout engine rejected the container preview");
+
+    const QByteArray captureDirectory = qgetenv("QINDAQT_APPEARANCE_CAPTURE_DIR");
+    if (!captureDirectory.isEmpty()) {
+        // Design-review hook: render the destination tall enough to hold both
+        // previews and save it for visual inspection.
+        scene.view->resize(900, 1500);
+        QTest::qWait(300);
+        const QImage frame = scene.view->grabWindow();
+        QVERIFY(frame.save(QString::fromLocal8Bit(captureDirectory) + QStringLiteral("/windows-")
+                           + themeId + QStringLiteral(".png")));
+    }
+
+    QQuickItem *rightSide = nullptr;
+    QTRY_VERIFY((rightSide = item(scene.root, "appearanceWindowButtonSide_right")) != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(rightSide, "click"));
+    QTRY_VERIFY(scene.model->draftKeys.contains(QStringLiteral("appearance.windowButtonSide")));
+    QCOMPARE(scene.model->draftValues.constLast().toString(), QStringLiteral("right"));
+
+    QQuickItem *fromRight = nullptr;
+    QTRY_VERIFY((fromRight = item(scene.root, "appearanceContainerTabOrder_right-to-left")) != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(fromRight, "click"));
+    QTRY_COMPARE(scene.model->draftKeys.constLast(),
+                 QStringLiteral("appearance.containerTabOrder"));
+    QCOMPARE(scene.model->draftValues.constLast().toString(), QStringLiteral("right-to-left"));
 }
 
 QTEST_MAIN(AppearancePageTests)

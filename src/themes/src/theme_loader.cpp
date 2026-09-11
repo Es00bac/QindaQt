@@ -108,6 +108,7 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
     theme.blurEnabled = root.value(QStringLiteral("blurEnabled")).toBool(theme.blurEnabled);
 
     const auto decoration = root.value(QStringLiteral("decoration")).toObject();
+    theme.decoration.authored = root.value(QStringLiteral("decoration")).isObject();
     theme.decoration.buttonPlacement =
         decoration.value(QStringLiteral("buttonPlacement")).toString(theme.decoration.buttonPlacement);
     theme.decoration.tabDirection =

@@ -28,6 +28,7 @@ private slots:
     void validationRequiresInstalledThemesAndBounds();
     void scopedKeysMatchSchemaKeys();
     void bundledWallpaperCatalogIsOrderedAndDeduplicated();
+    void chromeArrangementTokensDecodeStrictlyAndRoundTrip();
 };
 
 void AppearanceValuesTests::tokenRoundTripsCoverEveryEnumeratedValue()
@@ -176,7 +177,8 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     // list with itself. Every client-scoped key must be defined by the
     // authority that will validate its optimistic commits.
     const auto keys = AppearanceKeys::scopedKeys();
-    QCOMPARE(keys.size(), 10);
+    // Ten appearance keys plus the chrome arrangement keys (ADR-0129).
+    QCOMPARE(keys.size(), 10 + QindaQt::Decoration::ChromePreferences::settingsKeys().size());
     for (const QString &key : keys) {
         QVERIFY2(schema->definition(key) != nullptr, qPrintable(key));
     }
@@ -241,6 +243,35 @@ void AppearanceValuesTests::bundledWallpaperCatalogIsOrderedAndDeduplicated()
              QStringLiteral("qindaqt:jade-fold"));
     QCOMPARE(entries.at(1).toMap().value(QStringLiteral("name")).toString(),
              QStringLiteral("Ink tide"));
+}
+
+void AppearanceValuesTests::chromeArrangementTokensDecodeStrictlyAndRoundTrip()
+{
+    QVariantMap map = AppearanceValues{}.toVariantMap();
+    // Defaults reproduce the shipped chrome for both sets (ADR-0129).
+    QCOMPARE(map.value(QStringLiteral("appearance.windowButtonStyle")).toString(),
+             QStringLiteral("theme"));
+    QCOMPARE(map.value(QStringLiteral("appearance.windowButtons")).toString(),
+             QStringLiteral("all"));
+    QCOMPARE(map.value(QStringLiteral("appearance.containerTabOrder")).toString(),
+             QStringLiteral("theme"));
+
+    map.insert(QStringLiteral("appearance.windowButtonSide"), QStringLiteral("right"));
+    map.insert(QStringLiteral("appearance.containerTabOrder"), QStringLiteral("right-to-left"));
+    const auto decoded = AppearanceValues::fromVariantMap(map);
+    QVERIFY(decoded.has_value());
+    QCOMPARE(decoded->chrome.windowButtonSide, QStringLiteral("right"));
+    QCOMPARE(decoded->chrome.containerTabOrder, QStringLiteral("right-to-left"));
+    QCOMPARE(decoded->toVariantMap(), map);
+
+    QVariantMap unknown = map;
+    unknown.insert(QStringLiteral("appearance.windowButtons"), QStringLiteral("sideways"));
+    QString error;
+    QVERIFY(!AppearanceValues::fromVariantMap(unknown, &error).has_value());
+    QVERIFY(error.contains(QStringLiteral("appearance.windowButtons")));
+    QVariantMap mistyped = map;
+    mistyped.insert(QStringLiteral("appearance.containerButtonGlyphs"), 1);
+    QVERIFY(!AppearanceValues::fromVariantMap(mistyped).has_value());
 }
 
 QTEST_GUILESS_MAIN(AppearanceValuesTests)

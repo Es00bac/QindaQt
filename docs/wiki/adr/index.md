@@ -141,3 +141,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0126: ignore user-override entries the schema cannot normalize](0126-ignore-user-overrides-the-schema-cannot-normalize.md)
 - [ADR-0127: preview window chrome and the Qt toolkit through one painter](0127-preview-window-chrome-and-toolkit-through-one-painter.md)
 - [ADR-0128: add the Settings Accessibility route](0128-accessibility-settings-route.md)
+- [ADR-0129: configure window and container chrome through Appearance](0129-configure-window-and-container-chrome.md)

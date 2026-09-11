@@ -63,11 +63,14 @@ qt_add_qml_module(
     SOURCES
         include/qindaqt/apps/settings_appearance/appearance_window_preview.h
         appearance_window_preview.cpp
+        include/qindaqt/apps/settings_appearance/appearance_container_preview.h
+        appearance_container_preview.cpp
     QML_FILES
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
         qml/AppearanceThemeSection.qml
         qml/AppearanceWallpaperSection.qml
+        qml/AppearanceWindowsSection.qml
         qml/SegmentedChoiceRow.qml
 )
 target_link_libraries(
@@ -75,7 +78,7 @@ target_link_libraries(
     # AGENT-CONTRACT: the preview window paints through the shared decoration
     # painter and the real Fusion QStyle (ADR-0127); it links no settings
     # model, so this shared module carries no second copy of route code.
-    PRIVATE QindaQt::TokensQml QindaQt::DecorationPainter Qt6::Core Qt6::Gui
+    PRIVATE QindaQt::TokensQml QindaQt::DecorationPainter QindaQt::HybridChrome Qt6::Core Qt6::Gui
             Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets
 )
 # The generated QML type-registration unit includes the QML_ELEMENT header by
@@ -121,6 +124,7 @@ install(
         qml/AppearancePage.qml
         qml/AppearanceThemeSection.qml
         qml/AppearanceWallpaperSection.qml
+        qml/AppearanceWindowsSection.qml
         qml/SegmentedChoiceRow.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
     COMPONENT SettingsAppearanceRuntime

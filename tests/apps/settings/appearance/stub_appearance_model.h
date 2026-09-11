@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/decoration_painter/decoration_painter.h"
+#include "qindaqt/themes/theme_spec.h"
+
 #include <QColor>
 #include <QFont>
 #include <QObject>
@@ -41,6 +44,8 @@ class StubAppearanceModel final : public QObject {
                    NOTIFY draftChanged)
     Q_PROPERTY(QFont previewToolkitFont MEMBER previewToolkitFont NOTIFY draftChanged)
     Q_PROPERTY(QColor previewCanvasColor MEMBER previewCanvasColor NOTIFY draftChanged)
+    Q_PROPERTY(QVariantMap previewContainerStyle MEMBER previewContainerStyle
+                   NOTIFY draftChanged)
 
 public:
     explicit StubAppearanceModel(QObject *parent = nullptr) : QObject(parent) {}
@@ -93,6 +98,7 @@ public:
     QVariantMap previewToolkitPalette;
     QFont previewToolkitFont;
     QColor previewCanvasColor;
+    QVariantMap previewContainerStyle;
     QVariantMap draft;
     QVariantMap fieldErrors;
     QVariantList installedThemes;
@@ -107,3 +113,30 @@ Q_SIGNALS:
     void stateChanged();
     void draftChanged();
 };
+
+// Publishes the chrome and toolkit projections the route model derives for
+// `theme` with default arrangement (ADR-0127, ADR-0129), so the previews
+// paint an actual theme through their real renderers.
+inline void publishResolvedChrome(StubAppearanceModel &model,
+                                  const QindaQt::Themes::ThemeSpec &theme)
+{
+    const QindaQt::Decoration::ChromePreferences preferences;
+    const auto color = [&theme](const char *key) {
+        return theme.colors.value(QString::fromLatin1(key));
+    };
+    model.previewChrome =
+        QindaQt::Decoration::resolveWindowChrome(theme, preferences).toVariantMap();
+    model.previewContainerStyle = QindaQt::Decoration::containerStyleToVariantMap(
+        QindaQt::Decoration::resolveContainerStyle(theme, preferences));
+    model.previewToolkitPalette = {
+        {QStringLiteral("window"), color("surface")},
+        {QStringLiteral("windowText"), color("text")},
+        {QStringLiteral("base"), color("surfaceRaised")},
+        {QStringLiteral("text"), color("text")},
+        {QStringLiteral("button"), color("surfaceRaised")},
+        {QStringLiteral("buttonText"), color("text")},
+        {QStringLiteral("highlight"), color("accent")},
+        {QStringLiteral("highlightedText"), color("accentText")},
+        {QStringLiteral("placeholderText"), color("textMuted")}};
+    model.previewCanvasColor = color("canvas");
+}

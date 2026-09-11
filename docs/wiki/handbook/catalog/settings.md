@@ -17,6 +17,14 @@ All **48 keys** in active `data/settings/schema-v2.json` are listed below. JSON 
 | `appearance.blurEnabled` | boolean | `true` | None beyond type |
 | `appearance.animationsEnabled` | boolean | `true` | None beyond type |
 | `appearance.animationDurationMs` | integer | `180` | `{"minimum":0,"maximum":1000}` |
+| `appearance.windowButtonStyle` | string | `"theme"` | `{"allowedValues":["theme","traffic-lights","flat","glyph"]}` |
+| `appearance.windowButtonSide` | string | `"theme"` | `{"allowedValues":["theme","left","right"]}` |
+| `appearance.windowButtons` | string | `"all"` | `{"allowedValues":["all","minimize-close","close"]}` |
+| `appearance.windowTitleAlignment` | string | `"center"` | `{"allowedValues":["center","left"]}` |
+| `appearance.containerButtonStyle` | string | `"theme"` | `{"allowedValues":["theme","traffic-lights","flat"]}` |
+| `appearance.containerButtonSide` | string | `"theme"` | `{"allowedValues":["theme","left","right"]}` |
+| `appearance.containerTabOrder` | string | `"theme"` | `{"allowedValues":["theme","left-to-right","right-to-left"]}` |
+| `appearance.containerButtonGlyphs` | string | `"theme"` | `{"allowedValues":["theme","always","hover"]}` |
 
 ## fonts
 

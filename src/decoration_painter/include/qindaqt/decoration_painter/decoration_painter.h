@@ -6,7 +6,9 @@
 
 #include <QColor>
 #include <QFont>
+#include <QLatin1String>
 #include <QList>
+#include <QStringList>
 #include <QMarginsF>
 #include <QRectF>
 #include <QSizeF>
@@ -55,6 +57,14 @@ struct DecorationChrome {
     QColor titleBar;
     QColor titleBarInactive;
     QColor restore;
+    // Arrangement (ADR-0129). An empty side keeps the pre-preference rule
+    // (glyph and flat buttons right, every other style left); `buttons` is
+    // all, minimize-close, or close; `titleAlignment` is center or left.
+    // Defaults are omitted from the published map, so untouched chrome stays
+    // byte-identical to what shipped before these fields existed.
+    QString buttonSide;
+    QString buttons = QStringLiteral("all");
+    QString titleAlignment = QStringLiteral("center");
 
     [[nodiscard]] static DecorationChrome
     fromChromePalette(const HybridChrome::ChromePalette &palette,
@@ -65,6 +75,7 @@ struct DecorationChrome {
     [[nodiscard]] QVariantMap toVariantMap() const;
 
     [[nodiscard]] bool glyphChrome() const;
+    [[nodiscard]] bool flatChrome() const;
     [[nodiscard]] bool wornLuna() const;
 };
 
@@ -74,6 +85,7 @@ struct DecorationChrome {
 chromePaletteForTheme(const Themes::ThemeSpec &theme);
 
 enum class DecorationButtonKind { Close, Minimize, Maximize };
+enum class DecorationButtonSide { Left, Right };
 
 struct DecorationButtonVisual {
     DecorationButtonKind kind = DecorationButtonKind::Close;
@@ -139,5 +151,64 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
 void paintDecoration(QPainter &painter, const DecorationChrome &chrome,
                      const DecorationFrameVisual &frame,
                      const QList<DecorationButtonVisual> &buttons);
+
+// Arrangement (ADR-0129): an explicit buttonSide wins; otherwise glyph and
+// flat buttons sit on the right and every other style on the left.
+[[nodiscard]] DecorationButtonSide effectiveButtonSide(const DecorationChrome &chrome);
+// Visible actions in physical left-to-right order for the resolved side and
+// button set: the right edge reads minimize, maximize, close; the left edge
+// keeps Qinda macOS logical order close, minimize, maximize.
+[[nodiscard]] QList<DecorationButtonKind>
+decorationButtonKinds(const DecorationChrome &chrome);
+
+// Stable Settings1 keys for the two chrome sets (ADR-0129). They mirror
+// data/settings/schema-v2.json and are part of the Appearance route scope.
+namespace ChromePreferenceKeys {
+inline constexpr QLatin1String WindowButtonStyle{"appearance.windowButtonStyle"};
+inline constexpr QLatin1String WindowButtonSide{"appearance.windowButtonSide"};
+inline constexpr QLatin1String WindowButtons{"appearance.windowButtons"};
+inline constexpr QLatin1String WindowTitleAlignment{"appearance.windowTitleAlignment"};
+inline constexpr QLatin1String ContainerButtonStyle{"appearance.containerButtonStyle"};
+inline constexpr QLatin1String ContainerButtonSide{"appearance.containerButtonSide"};
+inline constexpr QLatin1String ContainerTabOrder{"appearance.containerTabOrder"};
+inline constexpr QLatin1String ContainerButtonGlyphs{"appearance.containerButtonGlyphs"};
+} // namespace ChromePreferenceKeys
+
+// The user's arrangement for application window decorations and container
+// chrome. "theme" defers to the resolved theme, and every default reproduces
+// the chrome that shipped before these preferences existed.
+struct ChromePreferences {
+    QString windowButtonStyle = QStringLiteral("theme");
+    QString windowButtonSide = QStringLiteral("theme");
+    QString windowButtons = QStringLiteral("all");
+    QString windowTitleAlignment = QStringLiteral("center");
+    QString containerButtonStyle = QStringLiteral("theme");
+    QString containerButtonSide = QStringLiteral("theme");
+    QString containerTabOrder = QStringLiteral("theme");
+    QString containerButtonGlyphs = QStringLiteral("theme");
+
+    [[nodiscard]] static QStringList settingsKeys();
+    // Allowed tokens for one key, default first; empty for an unknown key.
+    [[nodiscard]] static QStringList tokens(const QString &key);
+    // Tolerant: a missing, mistyped, or unknown value keeps its default.
+    [[nodiscard]] static ChromePreferences fromSettingsValues(const QVariantMap &values);
+    [[nodiscard]] QVariantMap toSettingsValues() const;
+    [[nodiscard]] QString token(const QString &key) const;
+    // Returns false and leaves the field unchanged for an unknown key or token.
+    bool setToken(const QString &key, const QString &token);
+    [[nodiscard]] bool operator==(const ChromePreferences &) const = default;
+};
+
+[[nodiscard]] DecorationChrome applyWindowPreferences(DecorationChrome chrome,
+                                                      const ChromePreferences &preferences);
+[[nodiscard]] DecorationChrome resolveWindowChrome(const Themes::ThemeSpec &theme,
+                                                   const ChromePreferences &preferences);
+// Container chrome follows a theme that authors a `decoration` block and
+// keeps the Qinda macOS arrangement otherwise, then applies preferences.
+[[nodiscard]] HybridChrome::ChromeStyle
+resolveContainerStyle(const Themes::ThemeSpec &theme, const ChromePreferences &preferences);
+[[nodiscard]] QVariantMap containerStyleToVariantMap(const HybridChrome::ChromeStyle &style);
+// Tolerant: absent or mistyped keys keep ChromeStyle's defaults.
+[[nodiscard]] HybridChrome::ChromeStyle containerStyleFromVariantMap(const QVariantMap &map);
 
 } // namespace QindaQt::Decoration

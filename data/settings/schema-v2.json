@@ -62,6 +62,62 @@
       "constraints": { "minimum": 0, "maximum": 1000 }
     },
     {
+      "key": "appearance.windowButtonStyle",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "traffic-lights", "flat", "glyph"] }
+    },
+    {
+      "key": "appearance.windowButtonSide",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "left", "right"] }
+    },
+    {
+      "key": "appearance.windowButtons",
+      "domain": "appearance",
+      "type": "string",
+      "default": "all",
+      "constraints": { "allowedValues": ["all", "minimize-close", "close"] }
+    },
+    {
+      "key": "appearance.windowTitleAlignment",
+      "domain": "appearance",
+      "type": "string",
+      "default": "center",
+      "constraints": { "allowedValues": ["center", "left"] }
+    },
+    {
+      "key": "appearance.containerButtonStyle",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "traffic-lights", "flat"] }
+    },
+    {
+      "key": "appearance.containerButtonSide",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "left", "right"] }
+    },
+    {
+      "key": "appearance.containerTabOrder",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "left-to-right", "right-to-left"] }
+    },
+    {
+      "key": "appearance.containerButtonGlyphs",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "always", "hover"] }
+    },
+    {
       "key": "fonts.family",
       "domain": "fonts",
       "type": "string",

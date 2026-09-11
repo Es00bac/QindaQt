@@ -12,6 +12,8 @@ target_sources(
     qindaqt_decoration_painter
     PRIVATE
         src/decoration_painter.cpp
+        src/decoration_buttons.cpp
+        src/chrome_preferences.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

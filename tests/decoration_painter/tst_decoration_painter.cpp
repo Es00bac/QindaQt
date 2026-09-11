@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
+#include "qindaqt/themes/theme_loader.h"
+
+#include <QDir>
 #include <QImage>
 #include <QPainter>
 #include <QTest>
+
+#include <algorithm>
 
 using namespace QindaQt::Decoration;
 
@@ -61,6 +66,11 @@ private slots:
     void buttonLayoutFollowsTheLiveDecoration();
     void titleAndCaptionColorsFollowFocusAndAuthoring();
     void paintsClassicAndLunaChromeDeterministically();
+    void defaultPreferencesReproduceEveryShippedTheme();
+    void authoredDecorationDrivesContainerChrome();
+    void windowPreferencesArrangeButtonsAndCaptions();
+    void paintsFlatButtonsAndLeftCaptions();
+    void preferenceTokensAndContainerStylesRoundTrip();
 };
 
 void DecorationPainterTests::chromeRoundTripsThroughTheCompositorMap()
@@ -181,6 +191,208 @@ void DecorationPainterTests::paintsClassicAndLunaChromeDeterministically()
         }
     }
     QVERIFY2(strokeFound, "Luna close glyph stroke missing from the painted chrome");
+}
+
+namespace {
+
+QindaQt::Themes::ThemeSpec shippedTheme(const QString &id)
+{
+    const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + id + QStringLiteral(".json"));
+    return loaded.ok ? loaded.theme : QindaQt::Themes::ThemeSpec{};
+}
+
+int leftmostInk(const QImage &image, const QColor &ground, int from, int to)
+{
+    for (int x = from; x < to; ++x) {
+        for (int y = 7; y < 18; ++y) {
+            const QColor pixel = image.pixelColor(x, y);
+            if (qAbs(pixel.red() - ground.red()) + qAbs(pixel.green() - ground.green())
+                    + qAbs(pixel.blue() - ground.blue()) > 120) {
+                return x;
+            }
+        }
+    }
+    return -1;
+}
+
+} // namespace
+
+void DecorationPainterTests::defaultPreferencesReproduceEveryShippedTheme()
+{
+    // ADR-0129: untouched preferences must leave both chrome sets exactly as
+    // they rendered before preferences existed, for every shipped theme.
+    const QDir directory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
+    const auto files = directory.entryList({QStringLiteral("*.json")}, QDir::Files);
+    QVERIFY(files.size() >= 6);
+    const ChromePreferences defaults;
+    for (const QString &file : files) {
+        const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(directory.filePath(file));
+        QVERIFY2(loaded.ok, qPrintable(loaded.error));
+        const auto &theme = loaded.theme;
+        const auto base = DecorationChrome::fromTheme(theme);
+        QCOMPARE(resolveWindowChrome(theme, defaults).toVariantMap(), base.toVariantMap());
+        QCOMPARE(effectiveButtonSide(base),
+                 base.glyphChrome() ? DecorationButtonSide::Right : DecorationButtonSide::Left);
+        if (!theme.decoration.authored || theme.id == QLatin1String("qinda-macos")) {
+            const auto container = resolveContainerStyle(theme, defaults);
+            const auto macos = QindaQt::HybridChrome::ChromeStyle::qindaMacOS(
+                chromePaletteForTheme(theme));
+            QCOMPARE(container.buttonSide, macos.buttonSide);
+            QCOMPARE(container.tabDirection, macos.tabDirection);
+            QCOMPARE(container.buttonStyle, macos.buttonStyle);
+            QCOMPARE(container.hoverGlyphs, macos.hoverGlyphs);
+            QCOMPARE(container.palette.surface, macos.palette.surface);
+        }
+    }
+}
+
+void DecorationPainterTests::authoredDecorationDrivesContainerChrome()
+{
+    using namespace QindaQt::HybridChrome;
+    const auto bliss = shippedTheme(QStringLiteral("qinda-bliss"));
+    QVERIFY(bliss.decoration.authored);
+    ChromePreferences preferences;
+    auto style = resolveContainerStyle(bliss, preferences);
+    QCOMPARE(style.buttonSide, ButtonSide::Right);
+    QCOMPARE(style.tabDirection, TabVisualDirection::LeftToRight);
+    QCOMPARE(style.buttonStyle, ButtonStyle::Symbols);
+    QVERIFY(!style.hoverGlyphs);
+
+    preferences.containerButtonStyle = QStringLiteral("traffic-lights");
+    preferences.containerButtonSide = QStringLiteral("left");
+    preferences.containerTabOrder = QStringLiteral("right-to-left");
+    style = resolveContainerStyle(bliss, preferences);
+    QCOMPARE(style.buttonStyle, ButtonStyle::TrafficLights);
+    QCOMPARE(style.buttonSide, ButtonSide::Left);
+    QCOMPARE(style.tabDirection, TabVisualDirection::RightToLeft);
+    QVERIFY(style.hoverGlyphs); // the theme authors hover glyphs for lights
+    preferences.containerButtonGlyphs = QStringLiteral("always");
+    QVERIFY(!resolveContainerStyle(bliss, preferences).hoverGlyphs);
+    preferences.containerButtonStyle = QStringLiteral("flat");
+    preferences.containerButtonGlyphs = QStringLiteral("hover");
+    style = resolveContainerStyle(bliss, preferences);
+    QCOMPARE(style.buttonStyle, ButtonStyle::Symbols);
+    QVERIFY(style.hoverGlyphs);
+}
+
+void DecorationPainterTests::windowPreferencesArrangeButtonsAndCaptions()
+{
+    const QSizeF size(400.0, 300.0);
+    ChromePreferences preferences;
+    preferences.windowButtonSide = QStringLiteral("right");
+    auto chrome = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), preferences);
+    auto buttons = layoutDecorationButtons(chrome, size);
+    QCOMPARE(buttons.size(), 3);
+    QCOMPARE(buttons.at(0).kind, DecorationButtonKind::Minimize);
+    QCOMPARE(buttons.at(2).kind, DecorationButtonKind::Close);
+    QCOMPARE(buttons.at(2).geometry.right(), size.width() - 14.0);
+    QCOMPARE(buttons.at(0).geometry.size(), QSizeF(14.0, 14.0));
+    QVERIFY(decorationCaptionRect(chrome, size, buttons).right() < buttons.at(0).geometry.left());
+
+    preferences.windowButtons = QStringLiteral("minimize-close");
+    chrome = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), preferences);
+    buttons = layoutDecorationButtons(chrome, size);
+    QCOMPARE(buttons.size(), 2);
+    QVERIFY(std::none_of(buttons.cbegin(), buttons.cend(), [](const auto &button) {
+        return button.kind == DecorationButtonKind::Maximize;
+    }));
+    preferences.windowButtons = QStringLiteral("close");
+    chrome = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), preferences);
+    QCOMPARE(layoutDecorationButtons(chrome, size).size(), 1);
+
+    // Flat symbols default to the right edge and use the 16 px glyph cell.
+    ChromePreferences flat;
+    flat.windowButtonStyle = QStringLiteral("flat");
+    chrome = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), flat);
+    QVERIFY(chrome.flatChrome());
+    buttons = layoutDecorationButtons(chrome, size);
+    QCOMPARE(effectiveButtonSide(chrome), DecorationButtonSide::Right);
+    QCOMPARE(buttons.at(0).geometry.size(), QSizeF(16.0, 16.0));
+
+    // The published map carries only non-default arrangement and survives a
+    // round trip through the compositor property.
+    preferences.windowTitleAlignment = QStringLiteral("left");
+    chrome = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), preferences);
+    const auto map = chrome.toVariantMap();
+    QCOMPARE(map.value(QStringLiteral("buttonSide")).toString(), QStringLiteral("right"));
+    QCOMPARE(map.value(QStringLiteral("buttons")).toString(), QStringLiteral("close"));
+    QCOMPARE(map.value(QStringLiteral("titleAlignment")).toString(), QStringLiteral("left"));
+    QCOMPARE(DecorationChrome::fromVariantMap(map).toVariantMap(), map);
+    const auto untouched = DecorationChrome::fromTheme(classicTheme()).toVariantMap();
+    QVERIFY(!untouched.contains(QStringLiteral("buttonSide")));
+    QVERIFY(!untouched.contains(QStringLiteral("buttons")));
+    QVERIFY(!untouched.contains(QStringLiteral("titleAlignment")));
+    const auto tolerant = DecorationChrome::fromVariantMap(
+        {{QStringLiteral("buttonSide"), QStringLiteral("up")},
+         {QStringLiteral("buttons"), 3}});
+    QVERIFY(tolerant.buttonSide.isEmpty());
+    QCOMPARE(tolerant.buttons, QStringLiteral("all"));
+}
+
+void DecorationPainterTests::paintsFlatButtonsAndLeftCaptions()
+{
+    const QSizeF size(360.0, 200.0);
+    ChromePreferences preferences;
+    preferences.windowButtonStyle = QStringLiteral("flat");
+    auto centered = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), preferences);
+    preferences.windowTitleAlignment = QStringLiteral("left");
+    auto left = applyWindowPreferences(DecorationChrome::fromTheme(classicTheme()), preferences);
+
+    const QImage leftImage = paintedChrome(left, true, size);
+    QCOMPARE(leftImage, paintedChrome(left, true, size));
+    const QImage centeredImage = paintedChrome(centered, true, size);
+    const QColor title = decorationTitleColor(left, true);
+    const int leftInk = leftmostInk(leftImage, title, 2, int(size.width() / 2));
+    const int centerInk = leftmostInk(centeredImage, title, 2, int(size.width() / 2));
+    QVERIFY2(leftInk >= 0 && leftInk < 40, qPrintable(QString::number(leftInk)));
+    QVERIFY2(centerInk < 0 || centerInk > leftInk + 40, qPrintable(QString::number(centerInk)));
+
+    // Flat glyphs paint in caption ink inside their cells without hover.
+    const auto buttons = layoutDecorationButtons(left, size);
+    const QRect close = buttons.constLast().geometry.toRect();
+    bool ink = false;
+    for (int y = close.top(); y <= close.bottom() && !ink; ++y) {
+        for (int x = close.left(); x <= close.right(); ++x) {
+            if (qAbs(leftImage.pixelColor(x, y).lightness() - title.lightness()) > 80) {
+                ink = true;
+                break;
+            }
+        }
+    }
+    QVERIFY2(ink, "flat close glyph missing");
+}
+
+void DecorationPainterTests::preferenceTokensAndContainerStylesRoundTrip()
+{
+    const auto keys = ChromePreferences::settingsKeys();
+    QCOMPARE(keys.size(), 8);
+    const ChromePreferences defaults;
+    for (const QString &key : keys) {
+        const auto allowed = ChromePreferences::tokens(key);
+        QVERIFY2(!allowed.isEmpty(), qPrintable(key));
+        QCOMPARE(defaults.token(key), allowed.constFirst());
+    }
+    ChromePreferences edited;
+    QVERIFY(edited.setToken(QStringLiteral("appearance.containerButtonSide"),
+                            QStringLiteral("left")));
+    QVERIFY(!edited.setToken(QStringLiteral("appearance.containerButtonSide"),
+                             QStringLiteral("middle")));
+    QVERIFY(!edited.setToken(QStringLiteral("appearance.unknown"), QStringLiteral("theme")));
+    QCOMPARE(ChromePreferences::fromSettingsValues(edited.toSettingsValues()), edited);
+    const auto tolerant = ChromePreferences::fromSettingsValues(
+        {{QStringLiteral("appearance.windowButtons"), QStringLiteral("sideways")},
+         {QStringLiteral("appearance.windowButtonSide"), 1}});
+    QCOMPARE(tolerant, ChromePreferences{});
+
+    const auto style = resolveContainerStyle(shippedTheme(QStringLiteral("qinda-bliss")), edited);
+    const auto back = containerStyleFromVariantMap(containerStyleToVariantMap(style));
+    QCOMPARE(back.buttonSide, style.buttonSide);
+    QCOMPARE(back.tabDirection, style.tabDirection);
+    QCOMPARE(back.buttonStyle, style.buttonStyle);
+    QCOMPARE(back.hoverGlyphs, style.hoverGlyphs);
+    QCOMPARE(back.palette.surface, style.palette.surface);
+    QCOMPARE(back.palette.close, style.palette.close);
 }
 
 QTEST_MAIN(DecorationPainterTests)

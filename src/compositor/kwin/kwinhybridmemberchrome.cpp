@@ -84,7 +84,13 @@ void KWinHybridSession::restoreMemberChromeVisibilityForShutdown() noexcept
 
 void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &palette)
 {
-    m_chromePalette = palette;
+    m_chromeStyle.palette = palette;
+    synchronizeChrome();
+}
+
+void KWinHybridSession::setChromeStyle(const HybridChrome::ChromeStyle &style)
+{
+    m_chromeStyle = style;
     synchronizeChrome();
 }
 
