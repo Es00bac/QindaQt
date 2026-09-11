@@ -39,7 +39,12 @@ if(NOT IS_DIRECTORY "${developer_module}")
     message(FATAL_ERROR "Power relocation poison needs the developer module present")
 endif()
 
-set(sandbox "${install_prefix}/power-route-runtime")
+# AGENT-NOTE: the sandbox sits at the build-tree root so XDG_RUNTIME_DIR and
+# its Wayland socket stay inside the 108-byte Unix socket limit even in deep
+# lane checkout layouts; the staged install itself remains below its build
+# tree as the relocation guard requires.
+set(sandbox "${build_directory}/pr-sandbox")
+file(REMOVE_RECURSE "${sandbox}")
 file(MAKE_DIRECTORY "${sandbox}/config" "${sandbox}/data"
     "${sandbox}/system-data" "${sandbox}/cache" "${sandbox}/runtime")
 file(CHMOD "${sandbox}/runtime"

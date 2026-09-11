@@ -194,7 +194,7 @@ The production Audio applet composes only the public AudioClient through a shell
 
 **State:** `EXECUTABLE`. **Weight:** 2.
 
-The production Power applet composes exact-owner PB-1 truth through a shell-private public-client controller, audited manifest/registry/host routing, compiled QML, keyboard/accessibility interaction, and fail-closed request lineage. Session actions: org.qindaqt.Session1 logout on the session supervisor, a bounded session-actions client (screen-saver lock probed on the object, login1 suspend/restart/shutdown behind Can* checks, owner/epoch re-fenced replies), Session sections in the Power applet and page with confirmations, and Meta+L (ADR-0070).
+The production Power applet composes exact-owner PB-1 truth through a shell-private public-client controller, audited manifest/registry/host routing, compiled QML, keyboard/accessibility interaction, and fail-closed request lineage. Session actions: org.qindaqt.Session1 logout on the session supervisor, a bounded session-actions client (screen-saver lock probed on the object, login1 suspend/restart/shutdown behind Can* checks, owner/epoch re-fenced replies), Session sections in the Power applet and page with confirmations, and a single Meta+L owner: KWin's ksmserver "Lock Session" component, with the shell's former duplicate registration removed (ADR-0070, ADR-0132).
 
 **Caveat:** Physical suspend/resume and lock-screen qualification on real hardware, nested panel interaction, and hotplug remain. Panel presentation is icon-first since 6a2019aa.
 

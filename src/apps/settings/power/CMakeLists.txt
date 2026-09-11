@@ -5,7 +5,7 @@ target_sources(
     qindaqt_settings_power
     PRIVATE power_settings_model.cpp power_settings_projection.cpp
             screen_lock_settings.cpp qt_screen_lock_configurator.cpp
-            idle_display_settings.cpp
+            idle_display_settings.cpp lid_power_button_settings.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -13,6 +13,7 @@ target_sources(
             include/qindaqt/apps/settings_power/power_settings_model.h
             include/qindaqt/apps/settings_power/screen_lock_settings.h
             include/qindaqt/apps/settings_power/idle_display_settings.h
+            include/qindaqt/apps/settings_power/lid_power_button_settings.h
 )
 target_link_libraries(
     qindaqt_settings_power
@@ -39,10 +40,13 @@ qt_add_qml_module(
     SOURCES
         power_route_composition.h
         power_route_composition.cpp
+        qt_powerdevil_lid_port.h
+        qt_powerdevil_lid_port.cpp
 )
 target_link_libraries(
     qindaqt_settings_power_backend_qml
-    PRIVATE qindaqt_settings_power QindaQt::SessionActions QindaQt::TokensQml
+    PRIVATE qindaqt_settings_power QindaQt::PowerDevilLid QindaQt::SessionActions
+            QindaQt::TokensQml
             Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick
 )
 set_target_properties(qindaqt_settings_power_backend_qml PROPERTIES
@@ -64,6 +68,7 @@ qt_add_qml_module(
         qml/PowerSessionSection.qml
         qml/PowerScreenLockSection.qml
         qml/PowerIdleDisplaySection.qml
+        qml/PowerLidPowerButtonSection.qml
         qml/PowerSupplySection.qml
 )
 target_link_libraries(
@@ -102,6 +107,8 @@ install(
         qml/PowerProfileSection.qml
         qml/PowerSessionSection.qml
         qml/PowerScreenLockSection.qml
+        qml/PowerIdleDisplaySection.qml
+        qml/PowerLidPowerButtonSection.qml
         qml/PowerSupplySection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Power"
     COMPONENT SettingsAppearanceRuntime

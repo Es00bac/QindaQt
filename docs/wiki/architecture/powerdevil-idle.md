@@ -91,6 +91,17 @@ existing notification seam. Automatic dimming and other clients are ignored;
 the source/context filter is pinned to PowerDevil 6.6.6 and must be rechecked
 on upgrade.
 
+## Lid and power-button sibling
+
+The `QindaQt::Session::PowerDevilLid::PowerDevilLidAdapter`
+([ADR-0132](../adr/0132-finish-session-locking.md)) mirrors this adapter for
+PowerDevil's lid-close and power-button policy. It writes exactly the
+`SuspendAndShutdown` `LidAction`, `InhibitLidActionWhenExternalMonitorPresent`,
+and `PowerButtonAction` entries of the same three profiles, rejects any value
+outside the six supported `PowerDevil::PowerButtonAction` numbers cited in the
+ADR, and triggers the identical `refreshStatus` reload with the same owner
+fencing and error truth.
+
 ## Verification boundary
 
 The focused private-bus test uses a temporary `XDG_CONFIG_HOME` and a fake

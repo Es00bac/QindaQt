@@ -193,9 +193,11 @@ provisioning, but the notification facade is absent and its control is
 visibly disabled. Audio, Power, and Bluetooth access are independent of the
 notification token and fail closed on their own capability/client state. The
 Power controller additionally borrows one shell-owned session-actions client;
-its Session buttons never enter the reusable applet API. Meta+L uses the
-existing audited global-shortcut registrar and dispatches the same typed Lock
-request as the popup.
+its Session buttons never enter the reusable applet API. Meta+L is owned by
+KWin's ksmserver "Lock Session" component — the shell registers no competing
+global lock shortcut, and every QindaQt lock button dispatches the same
+typed Lock request through session_actions
+([ADR-0132](../adr/0132-finish-session-locking.md)).
 The preview keeps deterministic static applet fixtures rather than connecting
 to live clock, notification, global-menu, clipboard, task-list,
 status-notifier, audio, Bluetooth, or power state.

@@ -24,7 +24,9 @@ The route presents only validated, bounded public snapshot copies:
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
 | Internal brightness | Normalized 0–10000 position and exact observed raw value/maximum | Read-only disabled slider because Power1 version 1 has no internal-display mutation |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
-| Screen lock | Saved automatic-idle-lock preference and timeout | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled |
+| Screen lock | Saved automatic-idle-lock preference and timeout, resume-lock preference, and unlock grace | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled; toggle lock-after-wake and choose the stored grace delay |
+| Lid presence | Validated Power1 `SourceTruth` lid-presence fact under the shared admission predicate | Read-only visibility input: the lid rows of the power policy section render only when admitted truth says a lid exists |
+| Button and lid policy | PowerDevil's `SuspendAndShutdown` `LidAction`, `InhibitLidActionWhenExternalMonitorPresent`, and `PowerButtonAction` profile entries | Choose the supported do-nothing/sleep/hibernate/shut-down/lock/turn-off-screen actions and the external-monitor exception; both lid rows hide without an admitted lid |
 | Display power | Purpose-scoped Settings1 `power.idleDisplayOffMinutes` truth (-1 = never, 1–240 minutes) | Enable/disable idle display-off; choose the retained timeout only while it is enabled; never locks and never touches the screen-lock preference |
 | Session | Typed availability for Lock, Log out, Suspend, Restart, and Shut down | Lock and Suspend dispatch directly; Log out, Restart, and Shut down require confirmation |
 
@@ -36,21 +38,38 @@ pending, convergence-wait, failed, and uncertain states separately.
 ## Screen-lock preference boundary
 
 The Screen lock section is separate from Session actions. It reads and writes
-only KScreenLocker's documented `kscreenlockerrc` `[Daemon]` `Autolock` and
-`Timeout` keys, retaining `LockOnResume`, `RequirePassword`, and every other
-locker preference. Each mutation first re-reads the stored pair and applies
-only the intended key, so an external edit to the untouched key survives the
-save; a failed reload rejects the change instead of overwriting a config the
-page cannot read. A successful save is followed by the standard KDE screen
-locker's `configure` request. The section reports a saved-but-not-reloaded
-result when that request fails and offers one explicit retry; it never
-silently rolls back or claims live adoption. Retry re-runs the step that
-actually failed — reload, save, or live reload — and only a persisted change
-may reach the `configure` request, so a reported success never describes an
-unsaved change. The current timeout stays stored while automatic
-locking is off, and the page disables its duration selector until it is
-turned on again. The selector offers common idle durations and retains a
-previous valid custom duration so opening the page never silently changes it.
+only KScreenLocker's documented `kscreenlockerrc` `[Daemon]` `Autolock`,
+`Timeout`, `LockOnResume`, and `LockGrace` keys, retaining `RequirePassword`
+and every other locker preference
+([ADR-0091](../adr/0091-configure-kscreenlocker-preferences-through-settings.md),
+[ADR-0132](../adr/0132-finish-session-locking.md)). Each mutation first
+re-reads the stored state and applies only the intended key, so an external
+edit to the untouched keys survives the save; a failed reload rejects the
+change instead of overwriting a config the page cannot read. Unchanged values
+are never written, so a no-op save leaves the locker file byte-identical. A
+successful save is followed by the standard KDE screen locker's `configure`
+request. The section reports a saved-but-not-reloaded result when that request
+fails and offers one explicit retry; it never silently rolls back or claims
+live adoption. Retry re-runs the step that actually failed — reload, save, or
+live reload — and only a persisted change may reach the `configure` request,
+so a reported success never describes an unsaved change. The current timeout
+stays stored while automatic locking is off, and the page disables its
+duration selector until it is turned on again. Selectors offer common
+durations and retain a previous valid custom value so opening the page never
+silently changes it.
+
+## Button and lid policy boundary
+
+The Power button and lid section persists PowerDevil policy through the
+session's `powerdevil_lid` adapter
+([ADR-0132](../adr/0132-finish-session-locking.md)) behind an injected
+`PowerButtonLidPolicyPort`. QML and the route model never import the adapter;
+the composition constructs it, and the boundary test rejects any other file
+that names it. The offered actions map exactly to the cited
+`PowerDevil::PowerButtonAction` values, the external-monitor toggle is the
+inverse of the adapter's inhibit flag, and the two lid rows render only when
+the shared admission predicate admits lid-present truth. Hardware lid events
+stay with PowerDevil and the platform; the section configures policy only.
 
 ## Display-power preference boundary
 

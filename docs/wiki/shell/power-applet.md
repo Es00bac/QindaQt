@@ -131,8 +131,10 @@ require a focused modal confirmation whose Cancel and OK paths are keyboard
 operable. The client calls ScreenSaver on the session bus, authenticated
 Session1 for logout, and login1 only after an exact `Can* == "yes"` check.
 Owner loss or the five-second mutation deadline produces uncertain no-replay
-feedback. The existing audited global-shortcut registrar binds Meta+L to the
-same lock request; registration failure leaves the visible path intact.
+feedback. Meta+L is owned by KWin's ksmserver "Lock Session" component; the
+shell composition registers no competing global lock shortcut, and every
+lock button keeps dispatching the same typed request through session_actions
+([ADR-0132](../adr/0132-finish-session-locking.md)).
 
 ## Production seams
 
