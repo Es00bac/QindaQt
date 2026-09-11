@@ -5,17 +5,23 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r5`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r6`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=60b1b5e1c06d4246fbb8cf1d95a8057b9d03d5bd
+qq_source_commit=e1afc941820b88c5797bcd2d9a10fe97a6bc76ac
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r5.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r6.tar.gz
 ```
+
+The `-r6` revision installs the `QindaQt.Shell.DesktopSurface` QML module
+that `-r5` compiled but never staged. Without it the installed shell logged
+`No module named "QindaQt.Shell.DesktopSurface" found` and kept plain
+wallpaper when the `qinda-bliss` profile was adopted, so desktop icons never
+appeared. A shell-only refresh adopts the module; nothing else changes.
 
 The `-r5` revision ships two things. First, the QindaQt Bliss Luna option set
 (ADR-0124, ADR-0125): the `qinda-bliss` theme and wallpaper, the
