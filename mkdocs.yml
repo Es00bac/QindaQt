@@ -51,6 +51,7 @@ nav:
       - Display client: architecture/display-client.md
       - Display compositor writer: architecture/display-writer.md
       - Display color model: architecture/display-color-model.md
+      - Night light: architecture/night-light.md
       - Audio service: architecture/audio-service.md
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
