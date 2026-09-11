@@ -31,9 +31,13 @@ public:
 // stricter checks.
 class SettingsCompatibilityLoader final {
 public:
-    [[nodiscard]] static DocumentLoadResult load(const QString &path,
-                                                  const SettingsSchema &activeSchema,
-                                                  const SettingsSchema &legacySchema);
+    // `policy` applies to a document already at the active version; a legacy
+    // document is migrated strictly, because migration validates it in full.
+    [[nodiscard]] static DocumentLoadResult load(
+        const QString &path,
+        const SettingsSchema &activeSchema,
+        const SettingsSchema &legacySchema,
+        DocumentValuePolicy policy = DocumentValuePolicy::RejectInvalidValues);
 };
 
 } // namespace QindaQt::Settings

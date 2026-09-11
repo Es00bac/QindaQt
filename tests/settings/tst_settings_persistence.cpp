@@ -25,6 +25,7 @@ private slots:
     void rejectsNonRoundTrippableJsonText();
     void rejectsVolatileAndInvalidDocuments();
     void failedSavePreservesExistingFile();
+    void dropsInvalidEntriesOnlyWhenAsked();
 
 private:
     std::optional<SettingsSchema> m_schema;
@@ -254,6 +255,34 @@ void SettingsPersistenceTests::failedSavePreservesExistingFile()
     QFile afterFile(path);
     QVERIFY(afterFile.open(QIODevice::ReadOnly));
     QCOMPARE(afterFile.readAll(), before);
+}
+
+void SettingsPersistenceTests::dropsInvalidEntriesOnlyWhenAsked()
+{
+    constexpr auto mixed = R"json({
+      "schemaVersion": 2,
+      "layer": "user-overrides",
+      "values": {"windowManagement.snapDistance": 999, "unknown.key": true,
+                 "services.doNotDisturb": true}
+    })json";
+    const auto strict = SettingsDocumentCodec::fromJson(mixed, QStringLiteral("fixture"), *m_schema);
+    QVERIFY(!strict.ok);
+
+    const auto lenient = SettingsDocumentCodec::fromJson(
+        mixed, QStringLiteral("fixture"), *m_schema, DocumentValuePolicy::DropInvalidValues);
+    QVERIFY2(lenient.ok, qPrintable(lenient.error));
+    QVERIFY(lenient.document.layer == SettingLayer::UserOverrides);
+    QCOMPARE(lenient.document.values.size(), 1);
+    QCOMPARE(lenient.document.values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
+    QCOMPARE(lenient.validation.issues().size(), 2);
+
+    // Structural corruption is never tolerated, whatever the policy.
+    constexpr auto wrongLayer = R"json({"schemaVersion": 2, "layer": "nope", "values": {}})json";
+    QVERIFY(!SettingsDocumentCodec::fromJson(wrongLayer, QStringLiteral("fixture"), *m_schema,
+                                             DocumentValuePolicy::DropInvalidValues).ok);
+    constexpr auto notObject = R"json({"schemaVersion": 2, "layer": "user-overrides", "values": 1})json";
+    QVERIFY(!SettingsDocumentCodec::fromJson(notObject, QStringLiteral("fixture"), *m_schema,
+                                             DocumentValuePolicy::DropInvalidValues).ok);
 }
 
 QTEST_GUILESS_MAIN(SettingsPersistenceTests)

@@ -63,6 +63,14 @@ public:
     [[nodiscard]] std::optional<QVariantMap> normalizedLayer(
         const QVariantMap &values,
         ValidationResult *validation = nullptr) const;
+    // AGENT-CONTRACT: Normalizes every definable entry and reports the
+    // entries that cannot be normalized in `dropped` instead of rejecting the
+    // layer. Reserved for user-owned documents whose stray entries (a key from
+    // a newer schema, a value outside this build's bounds) must not block
+    // service startup; profile defaults and transactions stay strict.
+    [[nodiscard]] QVariantMap normalizedLayerDroppingInvalid(
+        const QVariantMap &values,
+        ValidationResult *dropped = nullptr) const;
 
 private:
     SettingsSchema() = default;

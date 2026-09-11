@@ -28,6 +28,10 @@ enum class SettingsServiceStartStatus {
 struct SettingsServiceStartResult final {
     SettingsServiceStartStatus status = SettingsServiceStartStatus::ServerRegistrationFailed;
     QString message;
+    // User-override entries this build's schema could not normalize and
+    // therefore left out of the composed user layer (ADR-0126). Non-empty only
+    // when status is Started; the file itself is not rewritten at startup.
+    Settings::ValidationResult ignoredUserOverrides;
 
     [[nodiscard]] bool ok() const noexcept { return status == SettingsServiceStartStatus::Started; }
 };
@@ -46,8 +50,13 @@ struct SettingsServiceStartResult final {
 // the winner's freshly migrated file -- see
 // docs/wiki/adr/0012-persist-notification-quieting-through-settings1.md. Corrupt or
 // unsupported-version profile/user data fails start() outright rather than
-// silently discarding it. An installed v1 profile is migrated only in memory;
-// a v1 user file is replaced only after name ownership succeeds.
+// silently discarding it. The one tolerated case is a structurally valid
+// user document carrying entries this schema cannot normalize (a key from a
+// newer build, a value outside these bounds): those entries are ignored and
+// reported through SettingsServiceStartResult::ignoredUserOverrides so one
+// stray entry cannot take the whole desktop down (ADR-0126). An installed v1
+// profile is migrated only in memory; a v1 user file is replaced only after
+// name ownership succeeds.
 class ResidentSettingsService final {
 public:
     ResidentSettingsService(QDBusConnection connection, Settings::SettingsSchema activeSchema,

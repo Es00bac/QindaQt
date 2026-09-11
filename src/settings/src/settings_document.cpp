@@ -47,7 +47,8 @@ bool validateDocumentHeader(const SettingsDocument &document,
 
 DocumentLoadResult SettingsDocumentCodec::fromJson(const QByteArray &json,
                                                     const QString &origin,
-                                                    const SettingsSchema &schema)
+                                                    const SettingsSchema &schema,
+                                                    DocumentValuePolicy policy)
 {
     QJsonParseError parseError;
     const auto parsed = QJsonDocument::fromJson(json, &parseError);
@@ -70,8 +71,15 @@ DocumentLoadResult SettingsDocumentCodec::fromJson(const QByteArray &json,
     }
 
     ValidationResult validation;
-    const auto normalized = schema.normalizedLayer(
-        root.value(QStringLiteral("values")).toObject().toVariantMap(), &validation);
+    const auto values = root.value(QStringLiteral("values")).toObject().toVariantMap();
+    if (policy == DocumentValuePolicy::DropInvalidValues) {
+        // Structural problems above still fail; only per-entry problems are
+        // tolerated, and every dropped entry is reported to the caller.
+        document.values = schema.normalizedLayerDroppingInvalid(values, &validation);
+        return {.ok = true, .document = document, .sourceSchemaVersion = document.schemaVersion,
+                .validation = validation, .error = {}};
+    }
+    const auto normalized = schema.normalizedLayer(values, &validation);
     if (!normalized.has_value()) {
         return failure(origin + QStringLiteral(": ") + validation.summary(), validation);
     }

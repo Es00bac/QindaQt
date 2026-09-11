@@ -262,6 +262,20 @@ std::optional<QVariantMap> SettingsSchema::normalizedLayer(const QVariantMap &va
                                                            ValidationResult *validation) const
 {
     ValidationResult local;
+    const auto normalized = normalizedLayerDroppingInvalid(values, &local);
+    if (validation != nullptr) {
+        *validation = local;
+    }
+    if (!local.isValid()) {
+        return std::nullopt;
+    }
+    return normalized;
+}
+
+QVariantMap SettingsSchema::normalizedLayerDroppingInvalid(const QVariantMap &values,
+                                                           ValidationResult *dropped) const
+{
+    ValidationResult local;
     QVariantMap normalized;
     for (auto iterator = values.cbegin(); iterator != values.cend(); ++iterator) {
         const auto value = normalizedValue(iterator.key(), iterator.value(), &local);
@@ -269,11 +283,8 @@ std::optional<QVariantMap> SettingsSchema::normalizedLayer(const QVariantMap &va
             normalized.insert(iterator.key(), *value);
         }
     }
-    if (validation != nullptr) {
-        *validation = local;
-    }
-    if (!local.isValid()) {
-        return std::nullopt;
+    if (dropped != nullptr) {
+        *dropped = local;
     }
     return normalized;
 }

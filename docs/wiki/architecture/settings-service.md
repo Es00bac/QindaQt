@@ -25,6 +25,13 @@ replaced with v2; the immutable installed profile is composed from the
 migrated candidate in memory. The new key remains absent so normal
 system-default resolution supplies `false`. Corrupt, wrong-layer, missing,
 stale/unsupported, or invalid migrated input fails startup without mutation.
+The one tolerated defect is per-entry: a structurally valid v2 user file may
+carry keys the active schema does not define or values it cannot normalize
+(typically written by a newer build sharing the same configuration
+directory). Those entries are left out of the composed user layer, reported
+once each to stderr as `ignored-user-override`, and dropped from disk only by
+the next committed transaction; the profile document and every transaction
+stay strict ([ADR-0126](../adr/0126-ignore-user-overrides-the-schema-cannot-normalize.md)).
 The appearance route slice later extended v2 additively with
 `appearance.colorScheme`, `appearance.wallpaperMode`, and `appearance.uiScale`
 (see [ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md));
