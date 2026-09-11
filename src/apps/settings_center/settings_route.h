@@ -18,6 +18,7 @@ enum class SettingsRouteComponent {
   Clipboard,
   Color,
   Accessibility,
+  Input,
 };
 
 [[nodiscard]] QString
