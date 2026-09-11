@@ -125,37 +125,14 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
         return;
     }
     painter->save();
-    painter->setRenderHint(QPainter::Antialiasing, true);
     painter->fillRect(rect(), Qt::transparent);
 
-    const qreal radius = window()->isMaximized() ? 0.0 : 10.0;
-    const bool worn = wornLunaChrome();
-    if (worn) {
-        paintWornLunaTitle(*painter,
-                           QRectF(0.0, 0.0, size().width(), borderTop()),
-                           titleColor(), wearSeed());
-    } else {
-        QPainterPath titlePath;
-        titlePath.addRoundedRect(QRectF(0.0, 0.0, size().width(), borderTop() + radius),
-                                 radius, radius);
-        painter->fillPath(titlePath, titleColor());
-        painter->fillRect(QRectF(0.0, borderTop() - radius,
-                                 size().width(), radius), titleColor());
-    }
-    if (!worn) {
-        painter->setPen(QPen(paletteColor("border", QPalette::Mid,
-                                         window()->isActive() ? QPalette::Active
-                                                              : QPalette::Inactive),
-                             0.75));
-        painter->drawLine(QPointF(0.0, borderTop() - 0.5),
-                          QPointF(size().width(), borderTop() - 0.5));
-    }
-    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
-    paintDecorationFrame(
-        *painter, rect(),
-        decorationVisualStyle(paletteColor("border", QPalette::Mid, group),
-                              paletteColor("surface", QPalette::Window, group),
-                              window()->isMaximized()));
+    // AGENT-CONTRACT: the shared painter is the renderer (ADR-0127); this
+    // method only gathers live window state. The Settings preview feeds the
+    // same functions, so what it shows is what this paints.
+    const auto chrome = chromeState();
+    const auto frame = frameState();
+    paintDecorationTitle(*painter, chrome, frame);
 
     if (m_leftButtons) {
         m_leftButtons->paint(painter, repaintArea);
@@ -173,30 +150,52 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
     const QRectF captionRect(captionLeft, 0.0,
                              qMax(0.0, captionRight - captionLeft),
                              borderTop());
-    auto font = settings()->font();
-    if (worn) {
-        // Luna captions carried the era's humanist title face; the family is
-        // advisory and falls back through fontconfig when it is not installed.
-        font.setFamily(QStringLiteral("Trebuchet MS"));
-        font.setWeight(QFont::Bold);
-        painter->setFont(font);
-        const QFontMetricsF metrics(font);
-        const auto caption = metrics.elidedText(window()->caption(), Qt::ElideRight,
-                                                qFloor(captionRect.width()));
-        painter->setPen(QPen(QColor(0, 0, 0, 140)));
-        painter->drawText(captionRect.translated(0.0, 1.0), Qt::AlignCenter, caption);
-        painter->setPen(QPen(captionColor()));
-        painter->drawText(captionRect, Qt::AlignCenter, caption);
-    } else {
-        painter->setPen(textColor());
-        font.setWeight(QFont::DemiBold);
-        painter->setFont(font);
-        const QFontMetricsF metrics(font);
-        const auto caption = metrics.elidedText(window()->caption(), Qt::ElideRight,
-                                                qFloor(captionRect.width()));
-        painter->drawText(captionRect, Qt::AlignCenter, caption);
-    }
+    paintDecorationCaption(*painter, chrome, frame, captionRect);
     painter->restore();
+}
+
+DecorationChrome QindaDecoration::chromeState() const
+{
+    auto chrome = DecorationChrome::fromVariantMap(
+        property("qindaqtChromePalette").toMap());
+    // Windows without a published chrome map (compositor not yet attached)
+    // paint from the window palette, exactly as before the shared painter.
+    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
+    const auto &palette = window()->palette();
+    if (!chrome.surface.isValid()) {
+        chrome.surface = palette.color(group, QPalette::Window);
+    }
+    if (!chrome.surfaceRaised.isValid()) {
+        chrome.surfaceRaised = palette.color(group, QPalette::Window);
+    }
+    if (!chrome.border.isValid()) {
+        chrome.border = palette.color(group, QPalette::Mid);
+    }
+    if (!chrome.text.isValid()) {
+        chrome.text = palette.color(group, QPalette::WindowText);
+    }
+    if (!chrome.textMuted.isValid()) {
+        chrome.textMuted = palette.color(group, QPalette::WindowText);
+    }
+    for (QColor *button : {&chrome.close, &chrome.minimize, &chrome.maximize}) {
+        if (!button->isValid()) {
+            *button = palette.color(group, QPalette::Button);
+        }
+    }
+    return chrome;
+}
+
+DecorationFrameVisual QindaDecoration::frameState() const
+{
+    DecorationFrameVisual frame;
+    frame.size = size();
+    frame.caption = window()->caption();
+    frame.font = settings()->font();
+    frame.active = window()->isActive();
+    frame.maximized = window()->isMaximized();
+    frame.controlsHovered = m_controlsHovered;
+    frame.restoreGlyph = window()->isMaximized() || memberFocusMaximized();
+    return frame;
 }
 
 void QindaDecoration::updateControlHover()
@@ -384,51 +383,27 @@ void QindaDecoration::updateVisualStyle()
 
 QColor QindaDecoration::titleColor() const
 {
-    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
-    if (window()->isActive()) {
-        if (const QColor authored = authoredColor("titleBar"); authored.isValid()) {
-            return authored;
-        }
-    } else {
-        if (const QColor authored = authoredColor("titleBarInactive");
-            authored.isValid()) {
-            return authored;
-        }
-    }
-    return paletteColor(window()->isActive() ? "surfaceRaised" : "surface",
-                        QPalette::Window, group);
+    return decorationTitleColor(chromeState(), window()->isActive());
 }
 
 QColor QindaDecoration::captionColor() const
 {
-    // White captions ride the dark Luna paint; light title surfaces keep the
-    // theme's own text color so contrast never regresses.
-    const QColor title = titleColor();
-    if (qGray(title.rgb()) < 128) {
-        return Qt::white;
-    }
-    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
-    return paletteColor(window()->isActive() ? "text" : "textMuted",
-                        QPalette::WindowText, group);
+    return decorationCaptionColor(chromeState(), window()->isActive());
 }
 
 QColor QindaDecoration::textColor() const
 {
-    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
-    return paletteColor(window()->isActive() ? "text" : "textMuted",
-                        QPalette::WindowText, group);
+    return decorationTextColor(chromeState(), window()->isActive());
 }
 
 bool QindaDecoration::glyphChrome() const
 {
-    return property("qindaqtChromePalette").toMap()
-               .value(QStringLiteral("buttonStyle"))
-               .toString() == QStringLiteral("glyph");
+    return chromeState().glyphChrome();
 }
 
 bool QindaDecoration::wornLunaChrome() const
 {
-    return authoredColor("titleBar").isValid();
+    return chromeState().wornLuna();
 }
 
 QColor QindaDecoration::authoredColor(const char *key) const
@@ -441,29 +416,13 @@ QColor QindaDecoration::authoredColor(const char *key) const
 QColor QindaDecoration::glyphChromeColor(
     KDecoration3::DecorationButtonType type) const
 {
-    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
-    switch (type) {
-    case KDecoration3::DecorationButtonType::Close:
-        return paletteColor("close", QPalette::Button, group);
-    case KDecoration3::DecorationButtonType::Minimize:
-        return paletteColor("minimize", QPalette::Button, group);
-    case KDecoration3::DecorationButtonType::Maximize:
-        if ((window()->isMaximized() || memberFocusMaximized())) {
-            if (const QColor restore = authoredColor("restore"); restore.isValid()) {
-                return restore;
-            }
-        }
-        return paletteColor("maximize", QPalette::Button, group);
-    default:
-        return paletteColor("maximize", QPalette::Button, group);
-    }
+    return decorationGlyphChromeColor(chromeState(), buttonKind(type),
+                                      window()->isMaximized() || memberFocusMaximized());
 }
 
 quint32 QindaDecoration::wearSeed() const
 {
-    // AGENT-NOTE: focus state is deliberately excluded. The same window text
-    // and width always reproduce the same wear; only the palette dims.
-    return quint32(qHash(window()->caption()) ^ (quint64(size().width()) << 32));
+    return decorationWearSeed(window()->caption(), size().width());
 }
 
 QColor QindaDecoration::paletteColor(const char *key,
@@ -477,17 +436,25 @@ QColor QindaDecoration::paletteColor(const char *key,
 
 QColor QindaDecoration::buttonColor(KDecoration3::DecorationButtonType type) const
 {
-    const char *key = type == KDecoration3::DecorationButtonType::Close ? "close"
-        : type == KDecoration3::DecorationButtonType::Minimize ? "minimize"
-                                                               : "maximize";
-    return paletteColor(key, QPalette::Button,
-                        window()->isActive() ? QPalette::Active : QPalette::Inactive);
+    return decorationButtonFill(chromeState(), buttonKind(type), window()->isActive());
 }
 
 QColor QindaDecoration::buttonGlyphColor(KDecoration3::DecorationButtonType type) const
 {
-    const QColor fill = buttonColor(type);
-    return qGray(fill.rgb()) >= 128 ? QColor(Qt::black) : QColor(Qt::white);
+    return decorationButtonGlyphColor(chromeState(), buttonKind(type),
+                                      window()->isActive());
+}
+
+DecorationButtonKind QindaDecoration::buttonKind(KDecoration3::DecorationButtonType type)
+{
+    switch (type) {
+    case KDecoration3::DecorationButtonType::Close:
+        return DecorationButtonKind::Close;
+    case KDecoration3::DecorationButtonType::Minimize:
+        return DecorationButtonKind::Minimize;
+    default:
+        return DecorationButtonKind::Maximize;
+    }
 }
 
 } // namespace QindaQt::Decoration

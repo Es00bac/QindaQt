@@ -6,8 +6,8 @@ endif()
 
 file(GLOB qml_files "${QINDAQT_CONTROLS_SOURCE_DIR}/*.qml")
 list(LENGTH qml_files qml_count)
-if(NOT qml_count EQUAL 16)
-    message(FATAL_ERROR "Expected 16 public Controls QML files, found ${qml_count}")
+if(NOT qml_count EQUAL 19)
+    message(FATAL_ERROR "Expected 19 public Controls QML files, found ${qml_count}")
 endif()
 
 set(allowed_imports

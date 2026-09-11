@@ -7,6 +7,8 @@
 #include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/apps/settings_appearance/wallpaper_catalog.h"
+#include "qindaqt/apps/settings_accessibility/accessibility_settings_model.h"
+#include "qindaqt/apps/settings_accessibility/accessibility_values.h"
 #include "qindaqt/apps/settings_audio/audio_settings_model.h"
 #include "qindaqt/apps/settings_bluetooth/bluetooth_settings_model.h"
 #include "qindaqt/apps/settings_display/display_settings_model.h"
@@ -29,6 +31,7 @@
 #include <QDBusConnection>
 #include <QDir>
 #include <QFileInfo>
+#include <QApplication>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QStandardPaths>
@@ -106,6 +109,44 @@ void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
           .absoluteFilePath(QStringLiteral(QINDAQT_INSTALL_QML_RELATIVE_PATH)));
 }
 
+[[nodiscard]] QStringList resolveThemeDirectories(
+    const QString &explicitThemeDirectory) {
+  QStringList directories = themeSearchDirectories();
+  if (!explicitThemeDirectory.isEmpty()) {
+    directories.prepend(QFileInfo(explicitThemeDirectory).absoluteFilePath());
+  }
+  return directories;
+}
+
+void startSettingsClient(
+    QindaQt::Services::SettingsClient::SettingsClient &client) {
+  QString error;
+  if (!client.start(&error)) {
+    qWarning("qindaqt-settings: Settings1 client unavailable: %s",
+             qPrintable(error));
+  }
+}
+
+// AGENT-CONTRACT: Accessibility owns one independent Settings1 transport and
+// a client scoped to exactly the four consumed accessibility keys
+// (ADR-0128). Sharing a transport with another Settings1 client is unsafe
+// because request tokens are per-client sequences that start alike. Members
+// are declared transport-first: each object holds its dependency by
+// reference, so reverse declaration order would construct a dangling client.
+struct AccessibilityServices {
+  QindaQt::Services::SettingsClient::QtSettingsTransport transport;
+  QindaQt::Services::SettingsClient::SettingsClient client;
+  QindaQt::Apps::SettingsAccessibility::AccessibilitySettingsModel model;
+
+  explicit AccessibilityServices(const QDBusConnection &bus)
+      : transport(bus),
+        client(transport, QindaQt::Apps::SettingsAccessibility::
+                              AccessibilityKeys::scopedKeys()),
+        model(client) {
+    startSettingsClient(client);
+  }
+};
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -116,7 +157,11 @@ int main(int argc, char **argv) {
   // defaults untouched (fail-closed). See
   // docs/wiki/architecture/font-preferences.md.
   QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
-  QGuiApplication application(argc, argv);
+  // AGENT-CONTRACT: Settings hosts the widgets application class (a
+  // QGuiApplication subclass) only so the Appearance route can paint the
+  // real Fusion QStyle in its toolkit preview (ADR-0127). No widget window
+  // is ever created; every surface stays QML on QindaQt.Controls.
+  QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-settings"));
   application.setOrganizationName(QStringLiteral("QindaQt"));
   // AGENT-CONTRACT: The installed product identity is the desktop entry
@@ -173,17 +218,10 @@ int main(int argc, char **argv) {
       quietingTransport, {QStringLiteral("services.doNotDisturb")});
   QindaQt::Services::SettingsClient::DoNotDisturbController quieting(
       quietingClient);
-  QString quietingError;
-  if (!quietingClient.start(&quietingError)) {
-    qWarning("qindaqt-settings: Settings1 client unavailable: %s",
-             qPrintable(quietingError));
-  }
+  startSettingsClient(quietingClient);
 
-  QStringList directories = themeSearchDirectories();
-  const QString explicitThemeDirectory = parser.value(themeDirectoryOption);
-  if (!explicitThemeDirectory.isEmpty()) {
-    directories.prepend(QFileInfo(explicitThemeDirectory).absoluteFilePath());
-  }
+  QStringList directories =
+      resolveThemeDirectories(parser.value(themeDirectoryOption));
 
   QString catalogError;
   const auto themes =
@@ -212,11 +250,7 @@ int main(int argc, char **argv) {
       QindaQt::Apps::SettingsAppearance::discoverBundledWallpapers(
           wallpaperSearchDirectories()),
       application.styleHints()->colorScheme(), facade);
-  QString appearanceClientError;
-  if (!appearanceClient.start(&appearanceClientError)) {
-    qWarning("qindaqt-settings: Settings1 client unavailable: %s",
-             qPrintable(appearanceClientError));
-  }
+  startSettingsClient(appearanceClient);
 
   QindaQt::DisplayClient::QtDisplayTransport displayTransport(
       QDBusConnection::sessionBus());
@@ -259,6 +293,8 @@ int main(int argc, char **argv) {
       bluetoothClient);
   bluetoothClient.start();
 
+  AccessibilityServices accessibility(QDBusConnection::sessionBus());
+
   // AGENT-CONTRACT: Initialize the Settings navigation controller with the
   // requested route.
   QindaQt::Apps::SettingsCenter::SettingsNavigationController navigation(
@@ -279,6 +315,8 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&audioSettings))},
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(&bluetoothSettings))},
+      {QStringLiteral("accessibilitySettings"),
+       QVariant::fromValue(static_cast<QObject *>(&accessibility.model))},
   });
 
   engine.loadFromModule(QStringLiteral("QindaQt.SettingsApp"),

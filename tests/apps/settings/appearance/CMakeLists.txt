@@ -41,7 +41,7 @@ add_test(NAME qindaqt.appearance-settings-model
          COMMAND qindaqt_appearance_model_tests)
 
 qt_add_executable(qindaqt_appearance_page_tests
-                  tst_appearance_page.cpp)
+                  tst_appearance_page.cpp stub_appearance_model.h)
 target_compile_definitions(
     qindaqt_appearance_page_tests PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
@@ -50,8 +50,9 @@ target_compile_definitions(
 )
 target_link_libraries(
     qindaqt_appearance_page_tests
-    PRIVATE qindaqt_settings_appearance QindaQt::TokensQml Qt6::Quick
-            Qt6::QuickControls2 Qt6::Test
+    PRIVATE qindaqt_settings_appearance QindaQt::TokensQml QindaQt::ShellIcons
+            qindaqt_shell_iconsplugin Qt6::Quick Qt6::QuickControls2 Qt6::Widgets
+            Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_appearance_page_tests)
 # AGENT-CONTRACT: The page imports QindaQt.Tokens/Controls/SettingsApp.
@@ -62,6 +63,7 @@ add_dependencies(
     qindaqt_tokens_qmlplugin
     qindaqt_controls_qmlplugin
     qindaqt_settings_appearance_qmlplugin
+    qindaqt_shell_iconsplugin
 )
 add_test(NAME qindaqt.appearance-page
          COMMAND qindaqt_appearance_page_tests)

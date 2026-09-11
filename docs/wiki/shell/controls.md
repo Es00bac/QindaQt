@@ -64,6 +64,9 @@ with the consuming view model.
 | `ThemeCard` | Keyboard-selectable radio choice. `available` is the caller-owned capability input. No supplied preview means the one complete active QST generation. A supplied preview must contain QST-derived `bg.base`, `bg.raised`, `accent.default`, `fg.default`, and `outline.strong` roles whose RGBA components are finite numbers in the Qt color range. Partial, wrong-typed, non-finite, out-of-range, or otherwise hostile maps disable selection and expose one explicit unavailable preview and accessible description; roles never fall back individually into a hybrid of themes. |
 | `TokenSwatch` | Named semantic-color sample with a caller description; it does not interpret theme identity. |
 | `FocusRing` | Two-logical-pixel QST focus outline bound to one required control. |
+| `TabBar` | Page-section switcher with `PageTabList` semantics. Tabs sit on one shared divider rule and the selected tab is marked by an accent indicator on that rule, never by a filled surface, so a strip cannot be mistaken for a row of buttons. |
+| `TabButton` | One `PageTab` of a `TabBar`: an optional `iconSource` glyph, a short label, hover/pressed state, and the focus ring. `available` is the caller-owned capability input. `accessibleDescription` is the one explanation: it is exposed to assistive technology and shown as the tooltip, so the visible strip stays glyph-first. |
+| `ToolTip` | Tokenized hover/focus explanation with QST surface, outline, caption type, and short motion. Consumers move sentences here and keep controls glyph-first; a tip never carries state that the control does not also expose through `Accessible.description`. |
 
 `QindaQt.Controls 1.0` names and property meanings form the compatibility
 boundary. Removing or renaming a component/property, changing a required

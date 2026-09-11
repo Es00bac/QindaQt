@@ -6,6 +6,7 @@ import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaQt.SettingsApp.Appearance 1.0
 
 // Theme selection owns its delegate/focus lifecycle. The route model remains
 // the only settings authority; this component forwards draft edits verbatim.
@@ -39,11 +40,35 @@ ColumnLayout {
 
     Component.onCompleted: focusFirstThemeCard(themeRepeater.itemAt(0))
 
+    // The preview is the explanation: the previewed theme's real window
+    // chrome (painted by the decoration painter the compositor uses) around
+    // the real Fusion widgets ordinary Qt applications get. It follows the
+    // draft, so a theme card, scheme, or font change shows before Apply.
+    AppearanceWindowPreview {
+        id: windowPreview
+        objectName: "appearanceWindowPreview"
+        Layout.fillWidth: true
+        Layout.preferredHeight: Math.round(Math.min(340, Math.max(220, width * 0.56)))
+        chrome: root.appearanceSettings.previewChrome
+        toolkitPalette: root.appearanceSettings.previewToolkitPalette
+        toolkitFont: root.appearanceSettings.previewToolkitFont
+        canvas: root.appearanceSettings.previewCanvasColor
+        caption: qsTr("QindaQt Settings")
+        Accessible.role: Accessible.Graphic
+        Accessible.name: qsTr("Preview of the %1 theme").arg(
+                             root.appearanceSettings.resolvedThemeId)
+        Accessible.description: qsTr(
+            "Window title bars, buttons, and application controls as they will look")
+        T.ToolTip.visible: previewHover.hovered
+        T.ToolTip.delay: 600
+        T.ToolTip.text: qsTr("Title bars, buttons, and application controls as they will look")
+        HoverHandler { id: previewHover }
+    }
+
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Theme")
-        description: qsTr(
-            "Choose one of the installed QindaQt themes and a preferred color scheme for new sessions")
+        description: ""
     }
 
     Flow {
@@ -91,10 +116,13 @@ ColumnLayout {
 
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("Preferred color scheme")
-        description: qsTr(
-            "Selects a compatible theme; System follows the platform")
+        label: qsTr("Color scheme")
+        description: ""
         editor: schemeButtons
+        T.ToolTip.visible: schemeHover.hovered
+        T.ToolTip.delay: 600
+        T.ToolTip.text: qsTr("Light or dark pick a matching theme; System follows the platform")
+        HoverHandler { id: schemeHover }
 
         SegmentedChoiceRow {
             id: schemeButtons
@@ -113,31 +141,24 @@ ColumnLayout {
     }
 
     // One theme choice, two consumers: QindaQt surfaces paint from QST
-    // tokens, and ordinary Qt applications receive the same colors, fonts,
-    // and icons through the Qt platform theme (ADR-0115). The swatches are
-    // the actual palette those applications get for the previewed theme.
+    // tokens, and ordinary Qt applications receive the same colors through
+    // the Qt platform theme (ADR-0115). The swatches are that palette; each
+    // names its role on hover.
     FormSurface {
         objectName: "appearanceQtToolkitCard"
         Layout.fillWidth: true
 
-        ColumnLayout {
+        RowLayout {
             width: parent.width
-            spacing: Tokens.space["2"]
+            spacing: Tokens.space["3"]
 
             Label {
-                Layout.fillWidth: true
-                text: qsTr("Applications and toolkits")
+                text: qsTr("Colors")
                 font.weight: Font.DemiBold
                 Accessible.role: Accessible.Heading
                 Accessible.name: text
-            }
-
-            Label {
-                Layout.fillWidth: true
-                muted: true
-                text: qsTr("QindaQt surfaces follow QST tokens; ordinary Qt applications receive the same theme through the Qt platform theme — palette, fonts, and icons update live.")
-                wrapMode: Text.Wrap
-                Accessible.name: text
+                Accessible.description: qsTr(
+                    "The palette ordinary Qt applications receive for this theme")
             }
 
             Flow {
@@ -153,18 +174,18 @@ ColumnLayout {
 
                         required property var modelData
 
-                        readonly property color swatchColor: modelData.color ?? "#000000"
+                        readonly property color swatchColor: modelData.color ?? Tokens.bg.base
 
-                        width: 92
-                        height: 56
+                        width: 44
+                        height: 28
                         radius: Tokens.radius.s
                         color: swatch.swatchColor
                         border.width: Tokens.space["1"] / 2
                         border.color: Tokens.outline.strong
                         Accessible.role: Accessible.StaticText
                         Accessible.name: qsTr("%1: %2").arg(
-                            swatch.modelData.role ?? "",
-                            swatch.swatchColor)
+                            swatch.modelData.role ?? "").arg(
+                            String(swatch.swatchColor))
                         T.ToolTip.visible: swatchHover.hovered
                         T.ToolTip.delay: 500
                         T.ToolTip.text: (swatch.modelData.role ?? "")

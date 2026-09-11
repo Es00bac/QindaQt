@@ -36,6 +36,7 @@ target_link_libraries(
     # ordinary Qt applications receive, so the Themes section can reflect the
     # combined QST + Qt6 platform-theme truth (ADR-0115).
     PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml QindaQt::AppAppearance
+           QindaQt::DecorationPainter
            qindaqt_themes qindaqt_native_palette Qt6::Core Qt6::Gui Qt6::Qml
 )
 target_include_directories(
@@ -59,6 +60,9 @@ qt_add_qml_module(
     CLASS_NAME QindaQtSettingsAppearancePlugin
     OUTPUT_DIRECTORY "${QINDAQT_APPEARANCE_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_appearance.qmltypes
+    SOURCES
+        include/qindaqt/apps/settings_appearance/appearance_window_preview.h
+        appearance_window_preview.cpp
     QML_FILES
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
@@ -68,8 +72,19 @@ qt_add_qml_module(
 )
 target_link_libraries(
     qindaqt_settings_appearance_qml
-    PRIVATE QindaQt::TokensQml Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick
-            Qt6::QuickControls2
+    # AGENT-CONTRACT: the preview window paints through the shared decoration
+    # painter and the real Fusion QStyle (ADR-0127); it links no settings
+    # model, so this shared module carries no second copy of route code.
+    PRIVATE QindaQt::TokensQml QindaQt::DecorationPainter Qt6::Core Qt6::Gui
+            Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets
+)
+# The generated QML type-registration unit includes the QML_ELEMENT header by
+# its file name (desktop-surface precedent); expose its directory privately.
+target_include_directories(
+    qindaqt_settings_appearance_qml
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/qindaqt/apps/settings_appearance"
 )
 set_target_properties(
     qindaqt_settings_appearance_qml

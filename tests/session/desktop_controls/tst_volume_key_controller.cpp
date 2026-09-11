@@ -3,6 +3,7 @@
 #include "fake_audio_transport.h"
 
 #include <qindaqt/services/audio_client/audio_client.h>
+#include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/session/desktop_controls/volume_key_controller.h>
 
 #include <QtTest>
@@ -17,7 +18,7 @@ Audio::Snapshot readySnapshot(double volume, bool muted, bool canSetVolume,
                               bool canSetMute)
 {
     Audio::Snapshot snapshot;
-    snapshot.schemaVersion = 1;
+    snapshot.schemaVersion = QindaQt::Audio::kSchemaVersion;
     snapshot.epoch = 7;
     snapshot.revision = 3;
     snapshot.availability = Audio::Availability::Ready;

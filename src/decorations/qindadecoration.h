@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindadecorationvisuals.h"
+
 #include <KDecoration3/Decoration>
 #include <KDecoration3/DecorationButton>
 
@@ -44,6 +46,11 @@ public:
     // takes the classic code paths unchanged.
     [[nodiscard]] bool glyphChrome() const;
     [[nodiscard]] bool wornLunaChrome() const;
+    // Live window state gathered for the shared painter (ADR-0127).
+    [[nodiscard]] DecorationChrome chromeState() const;
+    [[nodiscard]] DecorationFrameVisual frameState() const;
+    [[nodiscard]] static DecorationButtonKind buttonKind(
+        KDecoration3::DecorationButtonType type);
     [[nodiscard]] QColor glyphChromeColor(KDecoration3::DecorationButtonType type) const;
     [[nodiscard]] QColor buttonColor(KDecoration3::DecorationButtonType type) const;
     [[nodiscard]] QColor buttonGlyphColor(KDecoration3::DecorationButtonType type) const;

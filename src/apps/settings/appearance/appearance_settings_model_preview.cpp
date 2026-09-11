@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 
+#include "qindaqt/decoration_painter/decoration_painter.h"
+
 #include "native_palette.h"
 
 #include "qindaqt/design_tokens/token_deriver.h"
@@ -93,6 +95,86 @@ QVariantList AppearanceSettingsModel::previewQtPalette() const
         });
     }
     return entries;
+}
+
+QVariantMap AppearanceSettingsModel::previewChrome() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    // The same derivation the compositor publishes to every decoration.
+    return Decoration::DecorationChrome::fromTheme(
+               m_preview.themes().at(m_resolution.themeIndex))
+        .toVariantMap();
+}
+
+QVariantMap AppearanceSettingsModel::previewToolkitPalette() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
+    const auto native = QtTheme::nativeAppearance(
+        theme, m_preview.accessibilityInputs(m_draft, theme));
+    if (!native.has_value()) {
+        return {};
+    }
+    const auto &palette = native->palette;
+    static const struct {
+        const char *key;
+        QPalette::ColorRole role;
+    } kRoles[] = {
+        {"window", QPalette::Window},         {"windowText", QPalette::WindowText},
+        {"base", QPalette::Base},             {"text", QPalette::Text},
+        {"button", QPalette::Button},         {"buttonText", QPalette::ButtonText},
+        {"highlight", QPalette::Highlight},   {"highlightedText", QPalette::HighlightedText},
+        {"mid", QPalette::Mid},               {"dark", QPalette::Dark},
+        {"light", QPalette::Light},           {"placeholderText", QPalette::PlaceholderText},
+    };
+    QVariantMap map;
+    for (const auto &entry : kRoles) {
+        map.insert(QString::fromLatin1(entry.key), palette.color(QPalette::Normal, entry.role));
+    }
+    map.insert(QStringLiteral("disabledText"),
+               palette.color(QPalette::Disabled, QPalette::Text));
+    return map;
+}
+
+QFont AppearanceSettingsModel::previewToolkitFont() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
+    const auto native = QtTheme::nativeAppearance(
+        theme, m_preview.accessibilityInputs(m_draft, theme));
+    if (!native.has_value()) {
+        return {};
+    }
+    QFont font = native->font;
+    // The draft font family and size win so the preview follows the Fonts
+    // tab before Apply, exactly as the platform theme will after it.
+    if (!m_draft.fontFamily.isEmpty()) {
+        font.setFamily(m_draft.fontFamily);
+    }
+    if (m_draft.fontPointSize > 0.0) {
+        font.setPointSizeF(m_draft.fontPointSize);
+    }
+    return font;
+}
+
+QColor AppearanceSettingsModel::previewCanvasColor() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
+    const auto canvas = theme.colors.value(QStringLiteral("canvas"));
+    return canvas.isValid() ? canvas : theme.colors.value(QStringLiteral("surface"));
 }
 
 QSet<QString> AppearanceSettingsModel::installedThemeIds() const

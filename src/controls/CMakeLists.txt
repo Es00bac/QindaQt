@@ -32,6 +32,9 @@ qt_add_qml_module(
         qml/TextField.qml
         qml/ThemeCard.qml
         qml/TokenSwatch.qml
+        qml/TabBar.qml
+        qml/TabButton.qml
+        qml/ToolTip.qml
 )
 
 # Qt owns the deploy-name calculation used by qmldir and QML tooling. Query it

@@ -65,6 +65,87 @@ follow-up that silences the desktop applications menu's startup
 `TypeError` (one line per application row per output) is committed on
 `main` and rides the next checkpoint.
 
+## Appearance overhaul: one painter, real previews, real tabs, and the Accessibility route (September 11)
+
+The interrupted September 11 session's Settings work was completed,
+verified, and committed in this section's state. Two ADRs govern it.
+[ADR-0127](wiki/adr/0127-preview-window-chrome-and-toolkit-through-one-painter.md)
+extracts `src/decoration_painter` (`QindaQt::DecorationPainter`), the
+KDecoration-free painter that now renders the live compositor chrome, the
+KWin plugin, and the new `AppearanceWindowPreview` item in the Appearance
+route — the preview paints the previewed theme through the same functions
+the compositor uses, plus the real Fusion `QStyle` over the projected
+palette, so theme cards show the window and toolkit before Apply. Settings
+therefore hosts the widgets application class without creating any widget
+window. [ADR-0128](wiki/adr/0128-accessibility-settings-route.md) adds the
+eleventh built-in route, `accessibility`, scoped to the four consumed keys
+(`highContrast`, `reducedMotion`, `reducedTransparency`, `textScale`) on
+its own Settings1 transport, with draft/per-key Apply and a boundary scan
+that rejects any source naming the unconsumed `accessibility.screenReader`
+key. The Appearance destinations are now a real
+`QindaQt.Controls` `TabBar`/`TabButton` strip (glyphs, accent indicator,
+tooltips; public Controls count guarded at nineteen), the sidebar exposes
+glyph-first navigation, and visible explanatory paragraphs moved into
+accessible descriptions and tooltips.
+
+Source-shape compliance was finished in this pass: the preview's
+`paintToolkitSample` was decomposed into per-row painters behind a shared
+`ToolkitSampleContext`, the page test's stub model moved to
+`stub_appearance_model.h`, and `settings_center` `main()`/`Main.qml` were
+brought back under the file/function limits that the route additions had
+pushed over. The compositor chrome-palette test target needed the painter
+linked (it compiles `chromeappearancepalette.cpp` directly).
+
+Gates on the committed tree. Full dev build green after two environment
+repairs (below). Affected ctest rows: 53 of 55 pass — decoration-painter,
+appearance values/preview/model/page, all five accessibility rows
+(model, page, boundary, boundary-poison, installed-route), route registry
+and navigation (eleven-route assertions), app-route-construction,
+chrome-appearance-palette, controls behavior + source policy +
+installed-import + 26 visual baselines, app-appearance resolver and
+controller, portal-appearance-policy, and the hybrid decoration rows. The
+two failures are pre-existing and unrelated to this change:
+
+- `qindaqt.controls-font-pinning`: fontconfig substitution resolves
+  QindaQt Sans to a host-installed Inter (20 Inter files present on this
+  host). The test is pure QtGui substitution and untouched by this change.
+- `qindaqt.settings-app-installed-routes`: this row has never passed in
+  this checkout (recorded below since September 10). This pass repaired
+  one real harness defect inside it — the poison sandbox's
+  `XDG_RUNTIME_DIR` sat under the deep build prefix, so binding
+  `wayland-0` overflowed `sun_path`'s 108 bytes and crashed the staged
+  executable before it could report anything; the runtime dir now lives at
+  a short binary-tree root. That surfaced the actual remaining premise
+  defect: the poison phase expects exit 3 from withholding the installed
+  Appearance module, but the staged executable links
+  `qindaqt_settings_appearance_qml` (unchanged since before this program's
+  September lanes) so the route's QML resolves from embedded `qrc:`
+  resources and the import cannot fail. The phase that can work this way —
+  the Accessibility module, which is not embedded — passes its new poison
+  cycle. Making the embedded-module phases meaningful again belongs to the
+  settings/release lane.
+
+Environment repairs for whoever builds next. First, `build` in this
+checkout is a symlink to `work_SPaC3/builds/qindaqt/container-wm`; the
+current Qt 6.11/CMake AUTOMOC computes moc includes lexically through the
+symlink, so any freshly regenerated autogen (display_writer was the first
+victim) emits `../..` paths that resolve through the physical layout and
+fail. Reconfiguring with the binary directory spelled physically
+(`cmake -S <source> -B /home/cabewse/work_SPaC3/builds/qindaqt/container-wm/dev`)
+makes generated includes resolve; the dev tree is now configured that way,
+so plain `cmake --build /home/cabewse/work_SPaC3/builds/qindaqt/container-wm/dev`
+is the working invocation. Second, `mkdocs` lives in
+`work_SPaC3/builds/qindaqt-docs-venv/bin/mkdocs`; `mkdocs build --strict`,
+`tools/docs_validation.py`, and `tools/validate-docs` (235 documents) all
+pass on this tree. `tools/check-source-shape` reports no violations in any
+file this program touched; the remaining file/function-line errors
+(audio service, shell runtime, task list, bluetooth applet, panel
+geometry, kwin hybrid session) belong to untouched lanes.
+
+The new work is not yet packaged: the host still runs
+`0.1.0_pre20260910-r7`, and the next checkpoint (r8) should pin the commit
+recorded here. Nothing is pushed.
+
 ## Bundled applications on stock Qt 6 (September 10)
 
 [ADR-0116](wiki/adr/0116-build-bundled-applications-on-stock-qt6.md) retired

@@ -135,11 +135,19 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("color"));
 
-  // selectNext from 9 ("color") wraps to 0 ("notifications")
+  // selectNext from 9 ("color") -> 10 ("accessibility")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("accessibility"));
+
+  // selectNext from 10 ("accessibility") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 9 ("color")
+  // selectPrevious from 0 wraps to 10 ("accessibility")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("accessibility"));
+
+  // selectPrevious from 10 -> 9 ("color")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("color"));
 
@@ -212,12 +220,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(9));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("color"));
 
+  QVERIFY(controller.selectIndex(10));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("accessibility"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(10));
+  QVERIFY(!controller.selectIndex(11));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -275,7 +286,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 10);
+  QCOMPARE(list.size(), 11);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -316,6 +327,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap colorMap = list.at(9).toMap();
   QCOMPARE(colorMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("color"));
+
+  const QVariantMap accessibilityMap = list.at(10).toMap();
+  QCOMPARE(accessibilityMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("accessibility"));
 
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
@@ -367,7 +382,13 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt9.value(QStringLiteral("component")).toString(),
            QStringLiteral("color"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(10);
+  const QVariantMap itemAt10 = controller.routeAt(10);
+  QCOMPARE(itemAt10.value(QStringLiteral("id")).toString(),
+           QStringLiteral("accessibility"));
+  QCOMPARE(itemAt10.value(QStringLiteral("component")).toString(),
+           QStringLiteral("accessibility"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(11);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

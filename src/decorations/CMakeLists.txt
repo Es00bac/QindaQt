@@ -15,6 +15,7 @@ target_include_directories(qindaqt_decoration_visuals PUBLIC
 target_link_libraries(
     qindaqt_decoration_visuals
     PUBLIC
+        QindaQt::DecorationPainter
         Qt6::Gui
         KDecoration3::KDecoration
 )

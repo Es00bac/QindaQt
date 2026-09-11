@@ -225,6 +225,23 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool colorRegistered = registerRoute(colorRoute);
   Q_ASSERT(colorRegistered);
   Q_UNUSED(colorRegistered);
+
+  // AGENT-GUARD: Appended last so every existing route index, shortcut, and
+  // traversal order stays stable (ADR-0128).
+  const SettingsRoute accessibilityRoute{
+      .id = QStringLiteral("accessibility"),
+      .component = SettingsRouteComponent::Accessibility,
+      .title = QCoreApplication::translate("SettingsCenter", "Accessibility"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Contrast, motion, transparency, and text scale"),
+      .iconName = QStringLiteral("preferences-desktop-accessibility"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool accessibilityRegistered = registerRoute(accessibilityRoute);
+  Q_ASSERT(accessibilityRegistered);
+  Q_UNUSED(accessibilityRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

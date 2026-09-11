@@ -18,6 +18,7 @@ Item {
     property var idleDisplaySettings: null
     property var clipboardSettings: null
     property var colorSettings: null
+    property var accessibilitySettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
@@ -27,6 +28,7 @@ Item {
     property Component powerComponent: null
     property Component clipboardComponent: null
     property Component colorComponent: null
+    property Component accessibilityComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -60,6 +62,8 @@ Item {
               ? clipboardLoader
             : navigation.activeRouteComponent === "color"
               ? colorLoader
+            : navigation.activeRouteComponent === "accessibility"
+              ? accessibilityLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -233,6 +237,22 @@ Item {
     }
 
     Loader {
+        id: accessibilityLoader
+        objectName: host.objectNamePrefix + "AccessibilityLoader"
+        anchors.fill: parent
+        // AGENT-GUARD: The page requires its route model; a host without one
+        // (a test fixture or a partially composed root) falls through to the
+        // explicit unavailable notice instead of binding against null.
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "accessibility"
+                && host.accessibilityComponent !== null
+                && host.accessibilitySettings !== null
+        sourceComponent: host.accessibilityComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -250,7 +270,10 @@ Item {
                         && (host.navigation.activeRouteComponent !== "bluetooth" || host.bluetoothComponent === null)
                         && (host.navigation.activeRouteComponent !== "power" || host.powerComponent === null)
                         && (host.navigation.activeRouteComponent !== "clipboard" || host.clipboardComponent === null)
-                        && (host.navigation.activeRouteComponent !== "color" || host.colorComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "color" || host.colorComponent === null)
+                        && (host.navigation.activeRouteComponent !== "accessibility"
+                            || host.accessibilityComponent === null
+                            || host.accessibilitySettings === null)))
         sourceComponent: host.unavailableComponent
     }
 }

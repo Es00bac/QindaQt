@@ -92,6 +92,7 @@ private slots:
     void adaptsToEveryBuiltInTheme();
     void appliesReducedMotionAndTransparency();
     void longLocalizationUsesCompactFormFlow();
+    void tabBarExposesPageTabSemanticsAndSelectsFromInput();
 };
 
 void ControlsBehaviorTests::initTestCase()
@@ -622,3 +623,46 @@ void ControlsBehaviorTests::longLocalizationUsesCompactFormFlow()
 
 QTEST_MAIN(ControlsBehaviorTests)
 #include "tst_controls_behavior.moc"
+
+void ControlsBehaviorTests::tabBarExposesPageTabSemanticsAndSelectsFromInput()
+{
+    auto scene = createScene(QStringLiteral("qinda-dark.json"));
+    auto *bar = item(scene.root, "tabBar");
+    auto *first = item(scene.root, "tabFirst");
+    auto *second = item(scene.root, "tabSecond");
+    auto *locked = item(scene.root, "tabUnavailable");
+    QCOMPARE(accessible(bar)->role(), QAccessible::PageTabList);
+    QCOMPARE(accessible(first)->role(), QAccessible::PageTab);
+    QCOMPARE(accessible(first)->text(QAccessible::Name), QStringLiteral("Themes"));
+    QCOMPARE(accessible(first)->text(QAccessible::Description),
+             QStringLiteral("Colors and window style"));
+    QVERIFY(first->property("checked").toBool());
+    QVERIFY(accessible(first)->state().selected);
+    QVERIFY(!second->property("checked").toBool());
+    QVERIFY(item(first, "tabIndicator")->isVisible());
+    QVERIFY(!item(second, "tabIndicator")->isVisible());
+    QVERIFY(!locked->isEnabled());
+    QVERIFY(locked->property("available").toBool() == false);
+
+    // Selection follows ordinary pointer input and updates the strip's
+    // current index; the unavailable tab cannot take the selection.
+    QTest::mouseClick(scene.view.get(), Qt::LeftButton, Qt::NoModifier,
+                      second->mapToScene(QPointF(second->width() / 2,
+                                                 second->height() / 2)).toPoint());
+    QTRY_VERIFY(second->property("checked").toBool());
+    QCOMPARE(bar->property("currentIndex").toInt(), 1);
+    QVERIFY(!first->property("checked").toBool());
+    QVERIFY(item(second, "tabIndicator")->isVisible());
+    QTest::mouseClick(scene.view.get(), Qt::LeftButton, Qt::NoModifier,
+                      locked->mapToScene(QPointF(locked->width() / 2,
+                                                 locked->height() / 2)).toPoint());
+    QTest::qWait(50);
+    QCOMPARE(bar->property("currentIndex").toInt(), 1);
+
+    // Keyboard: a focused tab selects on Space.
+    first->forceActiveFocus();
+    QVERIFY(first->hasActiveFocus());
+    QTest::keyClick(scene.view.get(), Qt::Key_Space);
+    QTRY_VERIFY(first->property("checked").toBool());
+    QCOMPARE(bar->property("currentIndex").toInt(), 0);
+}

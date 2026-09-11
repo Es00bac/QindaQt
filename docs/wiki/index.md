@@ -196,6 +196,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   ICC assignment surface: Display1 inventory, C1 discovery/import catalog,
   Settings1 draft/apply truth with conflict/no-replay fencing, and the
   explicit compositor-application boundary.
+- [Settings Accessibility route](apps/accessibility-settings.md) documents the
+  four consumed accessibility keys, the reserved screen-reader key, per-key
+  draft/apply truth, and the tooltip-carried, short-label page.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party terminal
   with one shell per window. Containers provide tabs and splits; Terminal owns
   shell launch, PTY lifetime, profiles, scrollback search, and text rendering.

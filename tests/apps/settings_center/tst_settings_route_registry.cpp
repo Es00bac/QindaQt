@@ -215,7 +215,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 10);
+  QCOMPARE(registry.count(), 11);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -227,6 +227,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("power")));
   QVERIFY(registry.hasRoute(QStringLiteral("clipboard")));
   QVERIFY(registry.hasRoute(QStringLiteral("color")));
+  QVERIFY(registry.hasRoute(QStringLiteral("accessibility")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -239,6 +240,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("power")), 7);
   QCOMPARE(registry.indexOf(QStringLiteral("clipboard")), 8);
   QCOMPARE(registry.indexOf(QStringLiteral("color")), 9);
+  QCOMPARE(registry.indexOf(QStringLiteral("accessibility")), 10);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -318,6 +320,17 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!color->title.isEmpty());
   QVERIFY(!color->description.isEmpty());
   QVERIFY(color->available);
+
+  const auto accessibility = registry.route(QStringLiteral("accessibility"));
+  QVERIFY(accessibility.has_value());
+  QCOMPARE(accessibility->id, QStringLiteral("accessibility"));
+  QCOMPARE(accessibility->component, SettingsRouteComponent::Accessibility);
+  QCOMPARE(accessibility->title, QStringLiteral("Accessibility"));
+  QCOMPARE(accessibility->category, QStringLiteral("General"));
+  QCOMPARE(accessibility->iconName,
+           QStringLiteral("preferences-desktop-accessibility"));
+  QVERIFY(!accessibility->description.isEmpty());
+  QVERIFY(accessibility->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

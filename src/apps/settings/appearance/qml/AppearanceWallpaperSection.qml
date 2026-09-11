@@ -46,7 +46,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Wallpaper")
-        description: qsTr("Choose the desktop background and how it fits the screen")
+        description: ""
     }
 
     Image {
