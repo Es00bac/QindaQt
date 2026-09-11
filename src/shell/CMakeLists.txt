@@ -382,6 +382,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         qindaqt_install_shell_icons_runtime("${shell_component}")
         qindaqt_install_desktop_controls_applet_runtime("${shell_component}")
         qindaqt_install_start_menu_applet_runtime("${shell_component}")
+        qindaqt_install_desktop_surface_runtime("${shell_component}")
     endforeach()
 endif()
 

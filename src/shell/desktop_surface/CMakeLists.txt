@@ -84,3 +84,48 @@ set_target_properties(qindaqt_desktop_surface_qml
                       PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_desktop_surface_qml)
 add_dependencies(qindaqt_desktop_surface_qml qindaqt_shell_iconsplugin)
+
+# Shell-bearing install components need this module staged because the
+# runtime instantiates QindaQt.Shell.DesktopSurface for every profile that
+# declares desktop applets (ADR-0125); without it the installed shell logs
+# "No module named QindaQt.Shell.DesktopSurface" and keeps plain wallpaper.
+# Mirrors qindaqt_install_start_menu_applet_runtime in src/shell/start_menu.
+function(qindaqt_install_desktop_surface_runtime component_name)
+    if(NOT TARGET qindaqt_desktop_surface_qml)
+        message(FATAL_ERROR
+            "Desktop surface QML module is missing; add_subdirectory(shell/desktop_surface)"
+            " must run before the shell install rules")
+    endif()
+    qt_query_qml_module(
+        qindaqt_desktop_surface_qml
+        QMLDIR module_qmldir
+        TYPEINFO module_typeinfo
+        QML_FILES module_qml_files
+        QML_FILES_DEPLOY_PATHS module_deploy_paths
+    )
+    install(
+        TARGETS qindaqt_desktop_surface_qml qindaqt_desktop_surface_qmlplugin
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/DesktopSurface"
+            COMPONENT "${component_name}"
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/DesktopSurface"
+            COMPONENT "${component_name}"
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/DesktopSurface"
+            COMPONENT "${component_name}"
+    )
+    install(
+        FILES "${module_qmldir}" "${module_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/DesktopSurface"
+        COMPONENT "${component_name}"
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS module_qml_files module_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION
+                "${QT6_INSTALL_QML}/QindaQt/Shell/DesktopSurface/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT "${component_name}"
+        )
+    endforeach()
+endfunction()
