@@ -49,7 +49,7 @@ KWinChromeAppearance::~KWinChromeAppearance() = default;
 void KWinChromeAppearance::publish() {
   m_palette = chromePaletteForTheme(m_appearance->theme());
   m_nativePalette = nativePaletteForTheme(m_appearance->theme());
-  m_qmlPalette = decorationPaletteProperties(m_palette);
+  m_qmlPalette = decorationPaletteProperties(m_palette, m_appearance->theme());
   m_qmlPalette.insert(QStringLiteral("accent"),
                       m_nativePalette.color(QPalette::Highlight));
   m_qmlPalette.insert(QStringLiteral("accentText"),

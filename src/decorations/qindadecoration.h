@@ -39,6 +39,12 @@ public:
         return m_controlsHovered;
     }
     [[nodiscard]] bool memberFocusMaximized() const;
+    // Worn Luna chrome is active only when the resolved theme authors a
+    // titleBar color and selects the glyph button style; every other theme
+    // takes the classic code paths unchanged.
+    [[nodiscard]] bool glyphChrome() const;
+    [[nodiscard]] bool wornLunaChrome() const;
+    [[nodiscard]] QColor glyphChromeColor(KDecoration3::DecorationButtonType type) const;
     [[nodiscard]] QColor buttonColor(KDecoration3::DecorationButtonType type) const;
     [[nodiscard]] QColor buttonGlyphColor(KDecoration3::DecorationButtonType type) const;
 
@@ -54,15 +60,20 @@ private:
     void createButtons();
     void createContextMenu();
     void showContextMenu(const QPointF &position);
+    void reconcileButtons();
     void updateGeometry();
     void updateVisualStyle();
     [[nodiscard]] QColor titleColor() const;
+    [[nodiscard]] QColor captionColor() const;
     [[nodiscard]] QColor textColor() const;
+    [[nodiscard]] QColor authoredColor(const char *key) const;
     [[nodiscard]] QColor paletteColor(const char *key,
                                       QPalette::ColorRole fallbackRole,
                                       QPalette::ColorGroup group) const;
+    [[nodiscard]] quint32 wearSeed() const;
 
     KDecoration3::DecorationButtonGroup *m_leftButtons = nullptr;
+    KDecoration3::DecorationButtonGroup *m_rightButtons = nullptr;
     std::unique_ptr<QindaWindowContextMenu> m_contextMenu;
     std::optional<QPointF> m_contextPressPosition;
     bool m_controlsHovered = false;

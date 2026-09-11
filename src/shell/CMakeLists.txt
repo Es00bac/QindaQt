@@ -61,6 +61,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_task_list_applet
         TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
         TARGET qindaqt_shell_desktop_controls_runtime
+        TARGET qindaqt_start_menu_qml
 )
 
 target_link_libraries(
@@ -77,6 +78,7 @@ target_link_libraries(
         QindaQt::ShellTaskListApplet
         QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
         QindaQt::ShellDesktopControlsRuntime
+        QindaQt::ShellStartMenuQml
         QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
@@ -249,6 +251,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_task_list_applet
             TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
             TARGET qindaqt_shell_desktop_controls_runtime
+            TARGET qindaqt_start_menu_qml
+            TARGET qindaqt_desktop_surface_qml
     )
 
     target_link_libraries(
@@ -283,6 +287,9 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListOperations
             QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
             QindaQt::ShellDesktopControlsRuntime
+            QindaQt::ShellStartMenuQml
+            QindaQt::ShellDesktopSurface
+            QindaQt::ShellDesktopSurfaceQml
             QindaQt::ShellWorkspacesDBus
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
@@ -353,6 +360,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT QindaQt
     )
+    install(
+        TARGETS qindaqt_start_menu_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT QindaQt
+    )
     qindaqt_install_shell_primary_applet_components()
 
     qindaqt_install_task_list_shell_runtime()
@@ -369,6 +381,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         qindaqt_install_status_notifier_applet_runtime("${shell_component}")
         qindaqt_install_shell_icons_runtime("${shell_component}")
         qindaqt_install_desktop_controls_applet_runtime("${shell_component}")
+        qindaqt_install_start_menu_applet_runtime("${shell_component}")
     endforeach()
 endif()
 

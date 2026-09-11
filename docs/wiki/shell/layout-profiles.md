@@ -201,7 +201,10 @@ QindaQt ships original layouts inspired by useful interaction patterns:
 - NeXTSTEP-style vertical dock and compact utility areas;
 - macOS-style global menu and centered smart dock, paired by default with the
   Qinda macOS mist-and-sage theme;
-- Windows classic, left-start, and centered taskbar arrangements; and
+- an XP-inspired worn Luna bottom taskbar — start menu, quick launch, task
+  buttons, tray, clock, and show desktop — paired by default with the
+  QindaQt Bliss theme and the desktop-icons surface; and
+- Windows classic, left-start, and centered taskbar arrangements;
 - minimal, keyboard-driven, multi-row, and monitoring-focused layouts.
 
 These profiles reproduce workflows with original QindaQt code and assets. They
@@ -230,7 +233,27 @@ control. Reduced motion disables dock lift in the owning
 applets; reduced transparency and high contrast select opaque material from
 the published QST accessibility projection.
 
-Every one of the ten shipped profiles contains exactly one
+## Worn Luna taskbar material
+
+The Bliss profile's one bottom panel carries the id `bliss-taskbar`;
+`PanelContent` derives its `lunaMode` from that panel id — the same
+presentation-derivation precedent as the dock `dockMode` setting — and
+selects an opaque Luna gradient material with a gloss line instead of the
+token material. As with the dock derivation, a copied or renamed panel keeps
+or loses the treatment together with its id. The panel's task-list, clock,
+and quick-launch instances additionally opt into the `presentation: "luna"`
+setting for Luna applet dressing; instances without that setting, in this or
+any other profile, keep the standard presentation
+([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)).
+
+The Bliss profile is also a deliberate stock-profile exception: it ships
+**no clipboard slot**, because the XP taskbar it reproduces has no utility
+chip there. Every other stock profile keeps exactly one clipboard instance
+beside its notification center, and the stock-profile invariants assert one
+resolved clipboard per profile except qinda-bliss and exactly one resolved
+menu slot that is either a launcher or the start-menu applet.
+
+Every one of the eleven shipped profiles contains exactly one
 `notification-center` applet instance. This is a stock default, not a schema
 requirement: customization may remove it, and imported or user-created profiles
 may omit it. When the authenticated notification presentation runtime is

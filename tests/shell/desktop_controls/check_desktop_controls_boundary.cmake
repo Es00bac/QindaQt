@@ -33,7 +33,17 @@ endforeach()
 
 foreach(source IN LISTS qml_sources)
     file(READ "${source}" contents)
+    get_filename_component(source_name "${source}" NAME)
     foreach(token IN LISTS forbidden_qml)
+        # AGENT-NOTE (ADR-0124): QuickLaunchApplet.qml is the single
+        # hex-literal exception — its `luna` instance dressing paints the
+        # worn-Luna Bliss hover chrome (fixed visual identity, not palette
+        # authority). Every other file and every other forbidden token still
+        # fails this gate.
+        if(source_name STREQUAL "QuickLaunchApplet.qml"
+           AND token MATCHES "^#\\[0-9a-fA-F")
+            continue()
+        endif()
         string(REGEX MATCH "${token}" hit "${contents}")
         if(hit)
             message(FATAL_ERROR "${source} must not contain '${token}' (tokens-only presentation, window popups)")

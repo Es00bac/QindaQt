@@ -56,7 +56,7 @@ void ChromeAppearancePaletteTest::mapsThemeColors() {
   QCOMPARE(palette.text, loaded.theme.colors.value(QStringLiteral("text")));
   QVERIFY(contrast(palette.text, palette.surfaceRaised) >= 4.5);
   QVERIFY(contrast(palette.textMuted, palette.surface) >= 4.5);
-  QCOMPARE(decorationPaletteProperties(palette)
+  QCOMPARE(decorationPaletteProperties(palette, loaded.theme)
                .value(QStringLiteral("text"))
                .value<QColor>(),
            palette.text);

@@ -188,7 +188,7 @@ void AppearancePreviewTests::userDirectoryMergesWithoutHidingBuiltIns()
          QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")},
         &error);
     QVERIFY2(merged.has_value(), qPrintable(error));
-    QCOMPARE(merged->size(), 5);
+    QCOMPARE(merged->size(), 6);
     QSet<QString> ids;
     for (const ThemeSpec &theme : *merged) {
         ids.insert(theme.id);
@@ -198,6 +198,7 @@ void AppearancePreviewTests::userDirectoryMergesWithoutHidingBuiltIns()
     QVERIFY(ids.contains(QStringLiteral("qinda-dusk")));
     QVERIFY(ids.contains(QStringLiteral("qinda-high-contrast")));
     QVERIFY(ids.contains(QStringLiteral("qinda-macos")));
+    QVERIFY(ids.contains(QStringLiteral("qinda-bliss")));
 }
 
 QTEST_GUILESS_MAIN(AppearancePreviewTests)

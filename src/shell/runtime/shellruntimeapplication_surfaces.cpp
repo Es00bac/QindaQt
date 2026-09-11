@@ -5,6 +5,12 @@
 #include "notificationwindowcontroller.h"
 #include "qtcompositoroutputauthority.h"
 
+#include "desktopcontrolscomposition.h"
+#include "launcherappletcomposition.h"
+#include "launcher_applet_controller.h"
+#include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
+#include "qindaqt/shell/desktop_surface/desktop_surface_controller.h"
+
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -63,6 +69,26 @@ QScreen *notificationScreen(
 }
 
 } // namespace
+
+void ShellRuntimeApplication::initializeDesktopSurface(
+    const Profiles::LayoutProfile &profile)
+{
+    // AGENT-NOTE: the desktop surface starts only after the wallpaper
+    // controller has shown its background windows. LayerShellQt offers no
+    // within-layer ordering request and same-layer surfaces stack by map
+    // order, so creating these windows last keeps the icon surface above the
+    // wallpaper on every output. Its facades are borrowed from the desktop
+    // controls and launcher compositions; the controller is constructed even
+    // for profiles without a `desktop` section and then creates zero windows
+    // (strictly additive behavior).
+    m_desktopSurface =
+        std::make_unique<DesktopSurface::DesktopSurfaceController>(
+            m_application, m_engine,
+            DesktopSurface::DesktopSurfaceController::BorrowedFacades{
+                m_desktopControls->access(), m_launcherApplet->access()});
+    m_desktopSurface->adoptProfile(profile, m_applets, m_appletPolicy);
+    m_desktopSurface->start();
+}
 
 void ShellRuntimeApplication::startNotificationOutputAuthority()
 {

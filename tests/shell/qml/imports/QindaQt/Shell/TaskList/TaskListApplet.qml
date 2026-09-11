@@ -15,6 +15,7 @@ Item {
     property bool dockHasLauncherGroup: false
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
+    property bool luna: false
 
     objectName: "taskListApplet"
     implicitWidth: 96

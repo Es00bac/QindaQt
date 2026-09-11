@@ -5,7 +5,9 @@
 
 #include <KDecoration3/DecoratedWindow>
 
+#include <QBrush>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPen>
 
 namespace QindaQt::Decoration {
@@ -72,6 +74,12 @@ void QindaButton::paint(QPainter *painter, const QRectF &repaintArea)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     auto circle = geometry().adjusted(1.0, 1.0, -1.0, -1.0);
+    const auto *qinda = qobject_cast<const QindaDecoration *>(decoration());
+    if (qinda && qinda->glyphChrome()) {
+        paintGlyphChrome(*painter, circle);
+        painter->restore();
+        return;
+    }
     auto fill = fillColor();
     if (isPressed()) {
         fill = fill.darker(125);
@@ -82,7 +90,6 @@ void QindaButton::paint(QPainter *painter, const QRectF &repaintArea)
     painter->setBrush(fill);
     painter->drawEllipse(circle);
 
-    const auto *qinda = qobject_cast<const QindaDecoration *>(decoration());
     if (qinda && qinda->controlsHovered()) {
         paintGlyph(*painter, circle);
     }
@@ -133,6 +140,75 @@ void QindaButton::paintGlyph(QPainter &painter, const QRectF &circle) const
         } else {
             painter.drawRect(QRectF(center.x() - radius, center.y() - radius,
                                     radius * 2.0, radius * 2.0));
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void QindaButton::paintGlyphChrome(QPainter &painter, const QRectF &circle) const
+{
+    // AGENT-NOTE: glyph chrome draws the console-style outline glyphs in their
+    // own colors directly on the Luna paint. The dash-pattern stroke reads as
+    // chipped paint at 16 px; the shapes stay recognizable when eroded.
+    const auto *qinda = qobject_cast<const QindaDecoration *>(decoration());
+    QColor stroke = qinda
+        ? qinda->glyphChromeColor(type())
+        : QColor(QStringLiteral("#8da19a"));
+    if (decoration() && !decoration()->window()->isActive()) {
+        auto dimmed = stroke.toHsl();
+        dimmed.setHslF(dimmed.hslHueF(),
+                       dimmed.saturationF() * 0.45f,
+                       qBound(0.0f, static_cast<float>(dimmed.lightnessF() * 0.9), 1.0f),
+                       stroke.alphaF());
+        stroke = dimmed;
+    }
+    if (isPressed()) {
+        stroke = stroke.darker(130);
+    } else if (isHovered()) {
+        stroke = stroke.lighter(115);
+    }
+
+    if (isHovered() || isPressed()) {
+        const QColor halo = isPressed() ? QColor(0, 0, 0, 60)
+                                        : QColor(255, 255, 255, 46);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(halo);
+        painter.drawRoundedRect(circle.adjusted(-1.0, -1.0, -1.0, -1.0), 3.5, 3.5);
+    }
+
+    QPen pen(QBrush(stroke), 1.8);
+    pen.setDashPattern({5.0, 1.6, 3.0, 1.2});
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    const auto center = circle.center();
+    const qreal radius = circle.width() * 0.30;
+    const bool maximized = decoration() && decoration()->window()->isMaximized();
+    switch (type()) {
+    case DecorationButtonType::Close:
+        painter.drawLine(center + QPointF(-radius, -radius),
+                         center + QPointF(radius, radius));
+        painter.drawLine(center + QPointF(radius, -radius),
+                         center + QPointF(-radius, radius));
+        break;
+    case DecorationButtonType::Minimize:
+        painter.drawEllipse(center, radius, radius);
+        break;
+    case DecorationButtonType::Maximize:
+        if (maximized || (qinda && qinda->memberFocusMaximized())) {
+            painter.drawRect(QRectF(center.x() - radius,
+                                    center.y() - radius,
+                                    radius * 2.0, radius * 2.0));
+        } else {
+            QPainterPath triangle;
+            triangle.moveTo(center + QPointF(0.0, -radius));
+            triangle.lineTo(center + QPointF(radius * 1.1, radius * 0.8));
+            triangle.lineTo(center + QPointF(-radius * 1.1, radius * 0.8));
+            triangle.closeSubpath();
+            painter.drawPath(triangle);
         }
         break;
     default:

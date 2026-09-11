@@ -9,6 +9,7 @@
 #include "desktopcontrolscomposition.h"
 #include "power_applet_controller.h"
 #include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
+#include "qindaqt/shell/desktop_surface/desktop_surface_controller.h"
 #include "globalmenuappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
 #include "launcherappletcomposition.h"
@@ -296,6 +297,9 @@ void ShellRuntimeApplication::adoptLayoutProfile(
     if (m_windowFactory) {
         m_windowFactory->adoptProfile(profile, m_applets, m_appletPolicy);
     }
+    if (m_desktopSurface) {
+        m_desktopSurface->adoptProfile(profile, m_applets, m_appletPolicy);
+    }
     qInfo().noquote() << "QindaQt shell adopted layout profile" << profile.id;
     scheduleOutputReconcile();
 }
@@ -564,6 +568,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     startSettingsClients();
     initializeWallpaper();
 
+    initializeDesktopSurface(profile);
+
     initializeAppearanceBridge(!options.themeId.isEmpty());
 
     if (m_notificationClient) {
@@ -627,6 +633,10 @@ void ShellRuntimeApplication::resetRuntime()
     m_outputDebounce.stop();
     m_profileAdoptDebounce.stop();
     m_wallpaper.reset();
+    // Borrowed facades (desktop controls, launcher) are released further
+    // down; the desktop surface must not outlive them (AGENT-GUARD on the
+    // member declaration).
+    m_desktopSurface.reset();
     m_windowActionsRetry.stop();
     m_notificationCenterShortcut.reset();
     m_globalShortcutRegistrar.reset();

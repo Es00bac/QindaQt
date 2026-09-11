@@ -48,13 +48,23 @@ QVariantMap LayoutProfile::toVariantMap() const
     for (const auto &panel : panels) {
         panelValues.append(panel.toVariantMap());
     }
-    return {{QStringLiteral("schemaVersion"), schemaVersion},
+    QVariantMap values = {{QStringLiteral("schemaVersion"), schemaVersion},
             {QStringLiteral("id"), id},
             {QStringLiteral("name"), name},
             {QStringLiteral("description"), description},
             {QStringLiteral("defaultTheme"), defaultTheme},
             {QStringLiteral("workflow"), workflow.toVariantMap()},
             {QStringLiteral("panels"), panelValues}};
+    if (!desktopApplets.isEmpty()) {
+        QVariantList desktopAppletValues;
+        desktopAppletValues.reserve(desktopApplets.size());
+        for (const auto &applet : desktopApplets) {
+            desktopAppletValues.append(applet.toVariantMap());
+        }
+        values.insert(QStringLiteral("desktop"),
+                      QVariantMap{{QStringLiteral("applets"), desktopAppletValues}});
+    }
+    return values;
 }
 
 QJsonObject LayoutProfile::toJson() const

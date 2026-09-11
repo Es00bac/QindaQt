@@ -26,6 +26,9 @@ Item {
     // The panel/profile owner selects dock mode. Keeping it opt-in preserves
     // the compact taskbar contract for every existing host.
     property bool dockMode: false
+    // Instance-level worn Luna dressing (ADR-0124), set through this applet's
+    // own profile settings; every other host renders token visuals.
+    property bool luna: false
     property int dockTileSize: 60
     property bool dockHasLauncherGroup: false
     property bool reducedMotion: false
@@ -370,6 +373,7 @@ Item {
                 dockMode: root.dockMode
                 dockTileSize: root.resolvedDockTileSize
                 reducedMotion: root.reducedMotion
+                luna: root.luna
                 // The delegate's x is strip-local because the strip fills the
                 // applet; the falloff binding re-evaluates on every pointer
                 // move and on layout changes.

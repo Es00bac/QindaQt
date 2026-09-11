@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-bliss",
+  "name": "QindaQt Bliss",
+  "description": "A worn Luna taskbar with a green start menu, quick launch, task buttons, tray, clock, and desktop icons.",
+  "defaultTheme": "qinda-bliss",
+  "workflow": {
+    "overview": "disabled",
+    "workspacePolicy": "static",
+    "launcher": "start-menu",
+    "menu": "start-menu",
+    "taskList": "buttons",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "bliss-taskbar",
+      "edge": "bottom",
+      "layer": "above",
+      "hideMode": "never",
+      "alignment": "fill",
+      "rows": 1,
+      "thickness": 40,
+      "length": 1.0,
+      "applets": [
+        {"id": "start", "plugin": "start-menu", "settings": {"zone": "start"}},
+        {"id": "quick-launch", "plugin": "quick-launch", "settings": {"zone": "start", "presentation": "luna"}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "presentation": "luna", "grouping": "never"}},
+        {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end", "presentation": "luna", "iconSize": 16}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end", "presentation": "luna", "showDate": true}},
+        {"id": "show-desktop", "plugin": "show-desktop", "settings": {"zone": "end"}}
+      ]
+    }
+  ],
+  "desktop": {
+    "applets": [
+      {
+        "id": "desktop-icons",
+        "plugin": "desktop-icons",
+        "settings": {
+          "placement": "left",
+          "contextMenuStyle": "windows",
+          "applicationsMenuModifier": "shift"
+        }
+      }
+    ]
+  }
+}

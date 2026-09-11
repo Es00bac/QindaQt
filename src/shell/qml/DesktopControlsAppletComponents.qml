@@ -14,6 +14,9 @@ QtObject {
     property int dockTileSize: 60
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
+    // Settings bag of the applet instance currently being dispatched; used
+    // only for instance-level presentation opt-ins (ADR-0124 luna dressing).
+    property var appletSettings: ({})
 
     function facade(name) {
         if (access === null || access === undefined)
@@ -116,6 +119,7 @@ QtObject {
             dockTileSize: root.dockTileSize
             reducedMotion: root.reducedMotion
             dockZoomEnabled: root.dockZoomEnabled
+            luna: (root.appletSettings.presentation ?? "standard") === "luna"
         }
     }
 

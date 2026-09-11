@@ -35,7 +35,7 @@ function(qindaqt_install_task_list_shell_runtime)
     # $ORIGIN/../Tokens sibling path, or the shell fails before catalog lookup.
     install(
         TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
-                qindaqt_global_menu_qml
+                qindaqt_global_menu_qml qindaqt_start_menu_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT TaskListAppletRuntime
     )

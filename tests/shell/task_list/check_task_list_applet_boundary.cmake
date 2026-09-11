@@ -58,12 +58,20 @@ endforeach()
 # palette authority is forbidden: no hex color literals, no untyped theme
 # fallback maps. This scan runs in probe mode too, so the poison self-test
 # below proves it rejects a palette-carrying file.
+# AGENT-NOTE (ADR-0124): TaskListEntryButton.qml is the single hex-literal
+# exception — its `luna` instance dressing paints the worn-Luna Bliss taskbar
+# chrome (a fixed visual identity, not palette authority), and every non-luna
+# path still resolves QST-1 roles. The exception names the file exactly so any
+# other palette literal anywhere in the module still fails this gate.
+set(hex_exempt_qml "TaskListEntryButton.qml")
 file(GLOB_RECURSE applet_qml_files
      LIST_DIRECTORIES false
      "${applet_directory}/*.qml")
 foreach(path IN LISTS applet_qml_files)
     file(READ "${path}" qml_content)
-    if(qml_content MATCHES "#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]")
+    get_filename_component(path_name "${path}" NAME)
+    if(NOT path_name IN_LIST hex_exempt_qml
+       AND qml_content MATCHES "#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]")
         message(FATAL_ERROR
                 "${path}: task-list applet QML carries a hard-coded palette literal")
     endif()

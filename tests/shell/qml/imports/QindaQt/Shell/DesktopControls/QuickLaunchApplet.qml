@@ -12,6 +12,7 @@ Item {
     property int dockTileSize: 60
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
+    property bool luna: false
 
     objectName: "quickLaunchApplet"
     implicitWidth: 48

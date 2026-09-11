@@ -14,6 +14,7 @@ set(
     "qindaqt_shell_status_notifier_applet_runtime|QindaQt/Shell/StatusNotifier"
     "qindaqt_shell_icons|QindaQt/Shell/Icons"
     "qindaqt_shell_desktop_controls_runtime|QindaQt/Shell/DesktopControls"
+    "qindaqt_start_menu_qml|QindaQt/Shell/StartMenu"
 )
 
 function(_qindaqt_install_desktop_applet_module descriptor)
@@ -70,6 +71,7 @@ install(
         qindaqt_controls_qml
         qindaqt_global_menu_qml
         qindaqt_shell_launcher_qml
+        qindaqt_start_menu_qml
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     COMPONENT DesktopVirtual
 )

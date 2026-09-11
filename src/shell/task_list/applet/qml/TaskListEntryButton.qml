@@ -17,6 +17,10 @@ import QindaQt.Tokens 1.0
 // and the QindaQt.Controls focus ring; no applet-owned palette or fallback
 // colors. The QQC2 ToolButton base supplies button behavior only (press,
 // clicked, enabled) — the same shape as QindaQt.Controls' own primitives.
+// AGENT-NOTE: the single exception is the instance-level `luna` dressing
+// (ADR-0124): the Bliss profile opts individual taskbar applets in through
+// their own profile settings, and those constants are presentation dressing,
+// never the theme authority for any other host.
 T.ToolButton {
     id: button
 
@@ -26,6 +30,7 @@ T.ToolButton {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    property bool luna: false
     // Dock magnification factor for this tile (1.0 = rest). The strip computes
     // it from pointer proximity; transforms never touch layout bounds.
     property real dockZoomScale: 1.0
@@ -45,10 +50,11 @@ T.ToolButton {
     // A container's user-chosen accent color (see ContainerAppearance)
     // recolors its dock/panel icon; empty for every standalone window and
     // every container that never picked a color, in which case the icon
-    // keeps the ordinary enabled/disabled token color.
+    // keeps the ordinary enabled/disabled token color — or white on the
+    // Luna dressing, where the bar supplies the dark ground.
     readonly property color resolvedIconColor: String(entry.colorHex ?? "").length > 0
         ? entry.colorHex
-        : (enabled ? Tokens.fg.default : Tokens.fg.disabled)
+        : (luna ? "white" : (enabled ? Tokens.fg.default : Tokens.fg.disabled))
 
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
@@ -140,9 +146,10 @@ T.ToolButton {
                 visible: !button.vertical
                 text: button.entry.title.length > 0
                       ? button.entry.title : button.entry.applicationName
-                color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
+                color: button.luna ? "white"
+                      : button.enabled ? Tokens.fg.default : Tokens.fg.disabled
                 elide: Text.ElideRight
-                font.family: Tokens.type.fontFamily
+                font.family: button.luna ? "Trebuchet MS" : Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
                 Accessible.ignored: true
             }
@@ -163,7 +170,7 @@ T.ToolButton {
                 objectName: "taskListEntryCountBadge"
                 visible: !button.vertical && button.entry.kind === "container"
                 text: visible ? qsTr("×%1").arg(button.entry.windowCount) : ""
-                color: Tokens.fg.muted
+                color: button.luna ? "#cfe0f8" : Tokens.fg.muted
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
                 Accessible.ignored: true
@@ -220,21 +227,54 @@ T.ToolButton {
         }
     }
 
-    background: Rectangle {
-        radius: button.dockMode ? Tokens.radius.l : Tokens.radius.m
-        color: button.down ? Tokens.state.pressed
-             : button.hovered ? Tokens.state.hover
-             : button.entry.active ? Tokens.bg.raised
-             : "transparent"
-        border.color: Tokens.outline.divider
-        border.width: button.dockMode && !button.down && !button.hovered && !button.entry.active
-                      ? 0 : Tokens.space["1"] / 2
-        opacity: button.entry.minimized ? 0.7 : 1.0
+    // A Loader because `background` takes an Item: a `luna ? a : b` ternary
+    // over Component ids yields a QQmlComponent, which the property rejects.
+    background: Loader {
+        sourceComponent: button.luna ? lunaBackground : classicBackground
+    }
 
-        C.FocusRing {
-            objectName: "taskListEntryFocusRing"
-            anchors.fill: parent
-            control: button
+    Component {
+        id: classicBackground
+        Rectangle {
+            radius: button.dockMode ? Tokens.radius.l : Tokens.radius.m
+            color: button.down ? Tokens.state.pressed
+                 : button.hovered ? Tokens.state.hover
+                 : button.entry.active ? Tokens.bg.raised
+                 : "transparent"
+            border.color: Tokens.outline.divider
+            border.width: button.dockMode && !button.down && !button.hovered && !button.entry.active
+                          ? 0 : Tokens.space["1"] / 2
+            opacity: button.entry.minimized ? 0.7 : 1.0
+
+            C.FocusRing {
+                objectName: "taskListEntryFocusRing"
+                anchors.fill: parent
+                control: button
+            }
+        }
+    }
+
+    Component {
+        id: lunaBackground
+        Rectangle {
+            radius: 3
+            border.color: button.entry.active ? "#7aa7ee" : "#163a8c"
+            border.width: 1
+            opacity: button.entry.minimized ? 0.7 : 1.0
+            gradient: Gradient {
+                GradientStop { position: 0.0
+                    color: button.down ? "#1b47a4"
+                         : button.entry.active ? "#6d9ceb" : "#3a76dd" }
+                GradientStop { position: 1.0
+                    color: button.down ? "#163a8c"
+                         : button.entry.active ? "#4a80d8" : "#2452b4" }
+            }
+
+            C.FocusRing {
+                objectName: "taskListEntryLunaFocusRing"
+                anchors.fill: parent
+                control: button
+            }
         }
     }
 

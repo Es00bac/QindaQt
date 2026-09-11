@@ -55,6 +55,10 @@ public:
     QString defaultTheme = QStringLiteral("qinda-dark");
     WorkflowSpec workflow;
     QVector<PanelSpec> panels;
+    // Desktop-zone applet instances (ADR-0125). Their ids share the same
+    // profile-global namespace as panel applets; the section round-trips only
+    // when non-empty so pre-desktop profiles serialize unchanged.
+    QVector<AppletSpec> desktopApplets;
 
     [[nodiscard]] QVariantMap toVariantMap() const;
     [[nodiscard]] QJsonObject toJson() const;

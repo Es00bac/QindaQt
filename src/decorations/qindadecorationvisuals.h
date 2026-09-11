@@ -28,6 +28,12 @@ struct DecorationVisualStyle {
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
                                                           const QColor &surface,
                                                           bool maximized);
+// Deterministic weathered Luna title bar: the authored paint color flakes
+// away to a rust undercoat along the edges, with speckles and drips. The
+// same seed always reproduces the same wear pattern, so repaints never
+// flicker and every window weathers differently.
+void paintWornLunaTitle(QPainter &painter, const QRectF &bar,
+                        const QColor &paintColor, quint32 seed);
 // Resize-only borders extend the interactive resize grip outside the frame.
 // A grouped container member gets none: its frame is container-owned and
 // native member resize is vetoed by the compositor (ADR-0117).

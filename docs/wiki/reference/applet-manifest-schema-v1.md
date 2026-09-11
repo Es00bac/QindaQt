@@ -22,7 +22,12 @@ host.
 Placement zones are `panel-start`, `panel-center`, `panel-end`, `panel-fill`,
 and `desktop`. Orientations are `horizontal` and `vertical`. A preferred size
 must not be below its minimum, and an optional maximum must not be below the
-preferred size.
+preferred size. A `desktop`-zone instance is hosted without a panel edge: the
+shell resolves it through
+`AppletInstanceResolver::resolveDesktopBuiltin` and presents it on the
+per-output desktop surface
+([ADR-0125](../adr/0125-host-desktop-zone-applets.md)); every resolution gate
+is the same as for panel instances.
 
 ## Capabilities
 
@@ -43,7 +48,8 @@ authority.
 
 The built-in catalog lives in `data/applets`. It currently describes
 launcher, task-list, global-menu, status-tray, clock, notification-center,
-audio, Bluetooth, power, clipboard, and status-notifier applets.
+audio, Bluetooth, power, clipboard, status-notifier, start-menu,
+desktop-icons, and the desktop-control applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -138,7 +144,9 @@ session creation; later caller mutations cannot change that compatibility view.
 For profile schema v1, top and bottom panels map to `horizontal`, left and right
 panels map to `vertical`, and applet `settings.zone` maps `start`, `center`, and
 `end` to the corresponding panel placement zones. An absent zone is the
-canonical `start` placement.
+canonical `start` placement. Instances from the profile's root `desktop`
+section carry the `desktop` zone directly and are checked against the
+manifest's desktop placement.
 
 Applet insertion and duplication always require a matching catalog manifest.
 Adding a panel or changing its orientation validates every contained applet.

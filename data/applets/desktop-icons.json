@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "desktop-icons",
+  "name": "Desktop Icons",
+  "description": "Presents places as desktop icons with a configurable right-click desktop menu.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.desktop-icons"
+  },
+  "placements": {
+    "zones": ["desktop"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 80, "preferred": 480, "maximum": 16384, "stretch": true},
+    "crossAxis": {"minimum": 80, "preferred": 480, "maximum": 16384, "stretch": true}
+  },
+  "capabilities": ["applications.launch"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "placement": {"type": "string", "enum": ["left", "right"], "default": "left"},
+      "iconSize": {"type": "integer", "minimum": 24, "maximum": 96, "default": 48},
+      "contextMenuStyle": {"type": "string", "enum": ["windows", "mac", "traditional"], "default": "windows"},
+      "applicationsMenuModifier": {"type": "string", "enum": ["none", "shift", "ctrl", "alt"], "default": "shift"}
+    }
+  }
+}

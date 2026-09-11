@@ -72,6 +72,9 @@ class RuntimePanelWindowFactory;
 class AudioAppletComposition;
 class ShellAppearanceBridge;
 class DesktopControlsComposition;
+namespace DesktopSurface {
+class DesktopSurfaceController;
+}
 class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
@@ -114,6 +117,7 @@ private:
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void initializeAppearanceBridge(bool explicitThemeSelection);
     void initializeWallpaper();
+    void initializeDesktopSurface(const Profiles::LayoutProfile &profile);
     void startSettingsClients();
     void restartWindowActionsIdentity();
     void initializePanelVisibility(const Profiles::LayoutProfile &profile);
@@ -147,6 +151,11 @@ private:
     ShellDataRoots m_dataRoots;
     std::unique_ptr<ShellTokenPublisher> m_tokenPublisher;
     std::unique_ptr<WallpaperController> m_wallpaper;
+    // AGENT-GUARD: the desktop surface borrows m_desktopControls->access()
+    // and m_launcherApplet->access(). resetRuntime() destroys it right after
+    // the wallpaper and before either borrowed facade; it must never be
+    // reset later in that sequence.
+    std::unique_ptr<DesktopSurface::DesktopSurfaceController> m_desktopSurface;
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;
     std::unique_ptr<ShellSurface::PanelSurfaceController> m_controller;

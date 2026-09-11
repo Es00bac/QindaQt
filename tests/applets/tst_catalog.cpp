@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 24);
+    QCOMPARE(catalog.manifests().size(), 26);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -68,6 +68,9 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("system-status"),
         QStringLiteral("workspace-switcher"),
         QStringLiteral("workspace-tiles"),
+        // Worn Luna desktop experience (ADR-0124/ADR-0125).
+        QStringLiteral("start-menu"),
+        QStringLiteral("desktop-icons"),
     };
     QSet<QString> actual;
     for (const AppletManifest &manifest : catalog.manifests()) {

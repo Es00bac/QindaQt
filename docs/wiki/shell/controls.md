@@ -113,7 +113,7 @@ ctest --test-dir build/dev -R '^qindaqt\.controls-' --output-on-failure
 ```
 
 The behavior gate loads the compiled module with an offscreen software
-renderer, publishes each of the five built-in themes, queries Qt accessible
+renderer, publishes each of the six built-in themes, queries Qt accessible
 interfaces, and exercises keyboard activation, disabled/busy/error/degraded
 state, dynamic alert announcements, required/error editor association, hostile
 theme previews, long localized text, RTL switch/slider geometry, and reduced

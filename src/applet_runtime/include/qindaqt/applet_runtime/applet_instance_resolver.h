@@ -49,6 +49,14 @@ public:
         const Applets::ManifestCatalog &catalog,
         const AppletHost::CapabilityPolicy &policy,
         const BuiltinAppletRegistry &registry);
+
+    // Desktop-zone instances (ADR-0125) resolve against the desktop surface:
+    // the manifest must declare the desktop zone and no panel edge applies.
+    [[nodiscard]] static ResolvedAppletInstance resolveDesktopBuiltin(
+        const Profiles::AppletSpec &instance,
+        const Applets::ManifestCatalog &catalog,
+        const AppletHost::CapabilityPolicy &policy,
+        const BuiltinAppletRegistry &registry);
 };
 
 [[nodiscard]] QString toString(AppletResolutionStatus value);

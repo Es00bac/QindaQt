@@ -14,7 +14,7 @@ The repository currently builds and tests:
 - validated theme schema v1 with light, dusk, dark, high-contrast, and Qinda
   macOS themes;
 - QST-1 immutable semantic-token derivation, total caller-owned accessibility
-  transforms across loader-valid schema-v1 colors, exact five-theme WCAG pair
+  transforms across loader-valid schema-v1 colors, exact six-theme WCAG pair
   gates, clean installed-C++ consumption, and a read-only GUI-thread QML
   singleton;
 - a Qt Quick shell preview showing panels, applets, and the shared-title-bar

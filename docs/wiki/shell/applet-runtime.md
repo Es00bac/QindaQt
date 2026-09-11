@@ -58,9 +58,11 @@ intentional textual panel surfaces.
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, clipboard, status
-notifier, and the thirteen desktop-control packages. The compiled first-party
-registry contains twenty-three audited entry points. The production QML
-dispatcher renders all twenty-three hosted entry points:
+notifier, start menu, desktop icons, and the thirteen desktop-control
+packages. The compiled first-party
+registry contains twenty-five audited entry points. The production QML
+dispatcher renders the twenty-four panel-hosted entry points, and the desktop
+surface hosts the desktop-icons entry (see its bullet below):
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -117,7 +119,10 @@ dispatcher renders all twenty-three hosted entry points:
   the injected `ClipboardClientInterface` seam presenting public Clipboard1
   truth only after exact Settings1 user consent. The production dispatcher
   hosts its keyboard-capable history popup and every stock family places one
-  utility slot adjacent to notification center. Owner loss clears stale truth,
+  utility slot adjacent to notification center; the Bliss profile is the
+  deliberate exception and ships no clipboard slot
+  ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)). Owner loss
+  clears stale truth,
   and Clipboard1-v1 pin requests fail closed. See
   [Clipboard applet](clipboard-applet.md).
 - `qindaqt.applets.task-list` is a registered built-in with a manifest, policy
@@ -142,6 +147,24 @@ dispatcher renders all twenty-three hosted entry points:
   context menus, and every stock family places one tray slot beside its
   notification-center utility slot. See
   [Status notifier tray](status-tray.md).
+- `qindaqt.applets.start-menu` renders the compiled
+  `QindaQt.Shell.StartMenu` module: a green Luna start button opening a
+  two-column start panel popup with launcher sections left and places plus
+  system actions right. Its `applications.launch` grant rides the same
+  audited launcher seams, and the stock-profile invariant resolves exactly
+  one menu slot per profile that is either a launcher or this applet. See
+  [ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md); and
+- `qindaqt.applets.desktop-icons` hosts on the dedicated per-output desktop
+  surface from `QindaQt.Shell.DesktopSurface` instead of a panel: it
+  presents places as desktop icons that open in the QindaQt File Manager
+  through the PlacesController/FileManagerFolderOpener path, with
+  configurable left/right placement and icon size, and a right-click
+  desktop context menu in `windows`, `mac`, or `traditional` style whose
+  XFCE-style Applications menu sits behind a configurable modifier key.
+  Folder creation goes through the least-authority `NewFolderController`
+  seam, which writes only under the user's Desktop directory; the manifest
+  requests only `applications.launch` and no new capability enum. See
+  [ADR-0125](../adr/0125-host-desktop-zone-applets.md); and
 - The desktop-control entries are registered built-ins with compiled
   `QindaQt.Shell.DesktopControls` implementations: active application,
   application tiles, command HUD, command palette, dashboard, overview,
@@ -153,6 +176,15 @@ dispatcher renders all twenty-three hosted entry points:
   state after completion so property writes converge even when a change signal
   is absent. See [Desktop controls](desktop-controls.md) and
   [ADR-0075](../adr/0075-desktop-controls-and-workspaces.md).
+
+Desktop-zone instances take a separate hosting path: the shell resolves them
+through `AppletInstanceResolver::resolveDesktopBuiltin` and hosts the
+resolved set on one shell-owned background-layer desktop surface per output,
+between the wallpaper and ordinary windows. The five resolution gates, typed
+statuses, and capability-policy evaluation are identical to the panel path —
+the zone changes where an instance renders, never what it may do — and the
+audited registry remains the only route into the zone
+([ADR-0125](../adr/0125-host-desktop-zone-applets.md)).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token

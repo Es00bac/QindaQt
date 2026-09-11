@@ -33,9 +33,25 @@ hard-coding theme-specific palette values.
 | --- | --- |
 | `buttonPlacement` | `left` or `right`; defaults to `right` |
 | `tabDirection` | `left-to-right` or `right-to-left`; defaults to `left-to-right` |
-| `buttonStyle` | `symbols` or `traffic-lights`; defaults to `symbols` |
+| `buttonStyle` | `symbols`, `traffic-lights`, or `glyph`; defaults to `symbols` |
 | `hoverGlyphs` | Boolean controlling whether traffic-light glyphs appear only while hovered |
 | `closeColor`, `minimizeColor`, `maximizeColor` | Optional valid Qt colors |
+| `titleBarColor`, `titleBarInactiveColor` | Optional valid Qt colors; authoring `titleBarColor` selects the Luna title-bar presentation below |
+| `restoreColor` | Optional valid Qt color; colors the maximized glyph square alongside the three colors above |
+
+All decoration fields beyond the two directions are optional presentation
+hints. Absent fields keep the classic rendering: a theme that authors none
+of the optional colors and keeps `buttonStyle: symbols` or
+`traffic-lights` is painted exactly as before these keys existed. When
+`titleBarColor` is authored, the compositor decoration paints a Luna
+gradient title bar with a white Trebuchet MS caption and a deterministic
+weathering pass — rust undercoat chips, speckles, and drips whose seed is
+the caption hash plus the bar width, never focus — while an inactive window
+paints `titleBarInactiveColor` ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)).
+The `glyph` button style draws right-positioned outline game-console
+glyphs — circle, triangle, maximized square, and cross — colored by
+`minimizeColor`, `maximizeColor`, `restoreColor`, and `closeColor`, with
+dash-pattern "chipped" strokes.
 
 These are semantic decoration preferences, not QML implementation details. The
 compositor decoration and shell preview must consume the same map so ordinary
@@ -48,14 +64,19 @@ before panel QML and always retains `hicolor` as the final fallback. An invalid
 hint rejects the catalog at startup and never becomes a path.
 
 The built-in catalog currently supplies QindaQt Pearl, QindaQt Velvet,
-QindaQt Smoked Plum, Qinda High Contrast, and Qinda macOS. The default
+QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS, and QindaQt Bliss.
+The default
 Nightfall/Porcelain pair draws its dark surfaces from graphite and ink-blue
 night tones and its action role from restrained amber; the light counterpart
 uses cool porcelain surfaces with a dark burnt-amber action. The wallpaper
 catalog's QindaPunk artwork keeps its green visor as an image detail rather
 than a UI palette authority. Qinda macOS uses a mist-and-sage QindaQt
 palette, left-side traffic lights whose `x`, `_`, and `[]` glyphs appear on
-hover, and right-to-left container tabs. Future state, elevation, focus,
+hover, and right-to-left container tabs. QindaQt Bliss is the opt-in
+XP-influenced option set ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)):
+a light Tahoma theme with squared 4-pixel corners, an XP-face canvas, white
+raised surfaces, a Luna blue accent, right-side glyph window buttons, and a
+worn Luna title bar. Future state, elevation, focus,
 wallpaper, and typography tokens must be added compatibly or through a
 new schema version with migration tests.
 
