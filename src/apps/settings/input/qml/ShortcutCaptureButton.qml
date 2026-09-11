@@ -103,8 +103,8 @@ T.Button {
             return
         }
         event.accepted = true
-        const key = int(event.key)
-        const mods = int(event.modifiers)
+        const key = event.key
+        const mods = event.modifiers
         if (key === Qt.Key_Escape && mods === 0) {
             root.captureMode = false
             return

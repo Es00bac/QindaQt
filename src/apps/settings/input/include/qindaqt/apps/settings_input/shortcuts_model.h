@@ -56,11 +56,13 @@ public:
     // Q_INVOKABLE: native text for one key chord in the kglobalaccel
     // encoding, so capture controls never re-implement key formatting.
     Q_INVOKABLE [[nodiscard]] QString displayKey(int key) const;
-    // Q_INVOKABLE: display names of every OTHER action whose active keys
-    // contain any sequence in `keys`, formatted "<component> — <action>".
-    // Empty means the capture is conflict-free.
+    // Q_INVOKABLE: display names of every action other than the one at
+    // `row` whose active keys contain any sequence in `keys`, formatted
+    // "<component> — <action>". Empty means the capture is conflict-free, so
+    // re-capturing a row's own key is never a conflict; a row outside the
+    // model excludes nothing.
     Q_INVOKABLE QStringList
-    conflictsFor(const QVariantList &keys) const;
+    conflictsFor(int row, const QVariantList &keys) const;
     // Q_INVOKABLE: assigns `keys` (a list of ints in the kglobalaccel
     // encoding) to the row, then refreshes the affected truth.
     Q_INVOKABLE bool assign(int row, const QVariantList &keys);

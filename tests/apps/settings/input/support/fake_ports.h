@@ -136,10 +136,11 @@ public:
 class FakeShortcutPort final
     : public QindaQt::Apps::SettingsInput::ShortcutPort {
 public:
-    QList<QindaQt::Apps::SettingsInput::ShortcutAction> scripted;
     bool authorityPresent = true;
     QString nextFailure;
 
+    // One list backs reads and writes, so an assignment is visible to the
+    // next refresh exactly as the real authority would report it.
     QList<QindaQt::Apps::SettingsInput::ShortcutAction>
     actions(QString *error) const override
     {
@@ -152,7 +153,7 @@ public:
         if (error != nullptr) {
             error->clear();
         }
-        return scripted;
+        return m_scripted;
     }
 
     bool setShortcuts(const QString &componentUnique,

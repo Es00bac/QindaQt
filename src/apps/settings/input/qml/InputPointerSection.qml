@@ -35,6 +35,7 @@ ColumnLayout {
     }
 
     DegradedNotice {
+        id: degraded
         objectName: "inputPointerDegraded"
         Layout.fillWidth: true
         visible: !inputSettings.pointerDevices.available
@@ -42,6 +43,7 @@ ColumnLayout {
     }
 
     Label {
+        id: noDevices
         objectName: "inputPointerNoDevices"
         Layout.fillWidth: true
         visible: inputSettings.pointerDevices.available && !root.hasDevices
@@ -67,6 +69,7 @@ ColumnLayout {
     }
 
     FormRow {
+        id: speedRow
         objectName: "inputPointerSpeedRow"
         Layout.fillWidth: true
         visible: root.selection !== null && root.selection.speedAvailable
@@ -115,7 +118,6 @@ ColumnLayout {
             objectName: "inputPointerNaturalScrollSwitch"
             checked: root.selection !== null && root.selection.naturalScroll
             onToggled: root.selection.naturalScroll = checked
-            Accessible.description: parent.description
         }
     }
 
@@ -129,7 +131,6 @@ ColumnLayout {
             objectName: "inputPointerLeftHandedSwitch"
             checked: root.selection !== null && root.selection.leftHanded
             onToggled: root.selection.leftHanded = checked
-            Accessible.description: parent.description
         }
     }
 
@@ -160,7 +161,6 @@ ColumnLayout {
             objectName: "inputPointerMiddleEmulationSwitch"
             checked: root.selection !== null && root.selection.middleEmulation
             onToggled: root.selection.middleEmulation = checked
-            Accessible.description: parent.description
         }
     }
 
@@ -181,7 +181,6 @@ ColumnLayout {
             objectName: "inputTouchpadTapToClickSwitch"
             checked: root.selection !== null && root.selection.tapToClick
             onToggled: root.selection.tapToClick = checked
-            Accessible.description: parent.description
         }
     }
 
@@ -195,7 +194,6 @@ ColumnLayout {
             objectName: "inputTouchpadTapAndDragSwitch"
             checked: root.selection !== null && root.selection.tapAndDrag
             onToggled: root.selection.tapAndDrag = checked
-            Accessible.description: parent.description
         }
     }
 
@@ -209,7 +207,6 @@ ColumnLayout {
             objectName: "inputTouchpadDisableWhileTypingSwitch"
             checked: root.selection !== null && root.selection.disableWhileTyping
             onToggled: root.selection.disableWhileTyping = checked
-            Accessible.description: parent.description
         }
     }
 

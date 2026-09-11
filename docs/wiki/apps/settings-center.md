@@ -1,10 +1,10 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. It contains eleven real routes: **Notifications**,
+modular settings routes. It contains twelve real routes: **Notifications**,
 **Appearance**, **Display**, **Network**, **Customize**, **Audio**, and
-**Bluetooth**, followed by **Power**, **Clipboard**, **Color**, and
-**Accessibility**. The shell owns route identity, selection, responsive
+**Bluetooth**, followed by **Power**, **Clipboard**, **Color**,
+**Accessibility**, and **Input**. The shell owns route identity, selection, responsive
 presentation, and navigation accessibility. Each route continues to own its
 domain model, service scope, page state, and mutations.
 
@@ -19,7 +19,8 @@ the [Audio route](audio-settings.md); Bluetooth behavior is documented on the
 [Power route](power-settings.md); Clipboard behavior is documented on the
 [Clipboard route](clipboard-settings.md); Color behavior is documented on the
 [Color route](color-settings.md); Accessibility behavior is documented on the
-[Accessibility route](accessibility-settings.md); notification quieting and its live
+[Accessibility route](accessibility-settings.md); Input behavior is documented on the
+[Input route](input-settings.md); notification quieting and its live
 settings transaction remain documented under
 [notification presentation](../shell/notification-presentation.md).
 

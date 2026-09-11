@@ -24,8 +24,7 @@ struct KeyboardConfig {
 [[nodiscard]] bool isValidKeyboardConfig(const KeyboardConfig &config) noexcept;
 
 // Port to the keyboard repeat/NumLock configuration. The Qt adapter writes
-// KConfig into the injected file location and then asks the desktop to
-// reload, distinguishing `Stored` from `StoredButReloadFailed` so the route
+// KConfig into the injected file location and then announces the change, distinguishing `Stored` from `StoredButReloadFailed` so the route
 // never claims a live change it did not observe (ADR-0134).
 class KeyboardConfigPort {
 public:
@@ -43,8 +42,8 @@ public:
 };
 
 // Production adapter: KConfig file at `configFilePath` (kcminputrc under the
-// composition root's config location) plus a reconfigure request over `bus`
-// to the desktop authority (org.kde.KWin /KWin reconfigure, ADR-0134).
+// composition root's config location) plus the ConfigChanged announcement
+// over `bus` that makes a running KWin re-read it (ADR-0134).
 class QtKeyboardConfigPort final : public KeyboardConfigPort {
 public:
     QtKeyboardConfigPort(QString configFilePath, QDBusConnection bus);

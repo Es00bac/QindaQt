@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/keyboard_layout_port.h>
 
+#include <qindaqt/apps/settings_input/config_change_announcement.h>
+
 #include <KConfigGroup>
 #include <KSharedConfig>
 #include <QDBusConnectionInterface>
-#include <QDBusMessage>
 #include <QLoggingCategory>
 #include <QRegularExpression>
 
@@ -14,10 +15,12 @@ namespace {
 Q_LOGGING_CATEGORY(lcLayoutPort, "qindaqt.settings.input.layouts", QtInfoMsg)
 
 constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinPath = "/KWin";
-constexpr auto KWinInterface = "org.kde.KWin";
-constexpr int ReloadTimeoutMs = 3000;
 
+// AGENT-CONTRACT: KWin applies LayoutList/VariantList from kxkbrc together
+// with Use=true; a private KWin started with that group applied the list,
+// and a later write took effect after the ConfigChanged announcement
+// (ADR-0134).
+constexpr auto UseKey = "Use";
 constexpr auto LayoutListKey = "LayoutList";
 constexpr auto VariantListKey = "VariantList";
 constexpr qsizetype MaximumLayouts = 32;
@@ -32,16 +35,9 @@ const QRegularExpression &validCodePattern() {
     return pattern;
 }
 
-bool reloadSucceeded(const QDBusConnection &bus) {
-    if (!bus.isConnected() || bus.interface() == nullptr ||
-        !bus.interface()->isServiceRegistered(QLatin1String(KWinService))) {
-        return false;
-    }
-    QDBusMessage message = QDBusMessage::createMethodCall(
-        QLatin1String(KWinService), QLatin1String(KWinPath),
-        QLatin1String(KWinInterface), QStringLiteral("reconfigure"));
-    return bus.call(message, QDBus::Block, ReloadTimeoutMs).type() ==
-           QDBusMessage::ReplyMessage;
+bool desktopAuthorityPresent(const QDBusConnection &bus) {
+    return bus.isConnected() && bus.interface() != nullptr &&
+           bus.interface()->isServiceRegistered(QLatin1String(KWinService));
 }
 
 } // namespace
@@ -127,6 +123,7 @@ StoreResult QtKeyboardLayoutPort::writeConfiguredLayouts(
     const KSharedConfigPtr configFile = KSharedConfig::openConfig(
         m_kxkbrcPath, KConfig::SimpleConfig);
     KConfigGroup group(configFile, QStringLiteral("Layout"));
+    group.writeEntry(UseKey, true);
     group.writeEntry(LayoutListKey, codes);
     group.writeEntry(VariantListKey, variants);
     if (!group.sync()) {
@@ -136,9 +133,15 @@ StoreResult QtKeyboardLayoutPort::writeConfiguredLayouts(
         }
         return StoreResult::Failed;
     }
-    if (!reloadSucceeded(m_bus)) {
+    QHash<QString, QByteArrayList> changes;
+    changes.insert(QStringLiteral("Layout"),
+                   QByteArrayList{QByteArray(UseKey),
+                                  QByteArray(LayoutListKey),
+                                  QByteArray(VariantListKey)});
+    if (!announceConfigChange(m_bus, m_kxkbrcPath, changes) ||
+        !desktopAuthorityPresent(m_bus)) {
         qCInfo(lcLayoutPort,
-               "layout list stored, but the desktop reload request failed; "
+               "layout list stored, but no running desktop was told; "
                "it applies on the next session");
         return StoreResult::StoredButReloadFailed;
     }

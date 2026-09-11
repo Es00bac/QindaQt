@@ -195,20 +195,27 @@ void ShortcutsModelTest::conflictDetectionNamesTheConflictingAction()
         shellAction(QStringLiteral("qindaqt_reveal_panels"),
                     QStringLiteral("Reveal QindaQt panels"),
                     {QKeySequence(Qt::META | Qt::Key_Space)}));
+    port.mutableScripted().append(
+        shellAction(QStringLiteral("qindaqt_open_launcher"),
+                    QStringLiteral("Open launcher"), {}));
     ShortcutsModel model(port);
     model.refresh();
 
     const int metaSpace = int(Qt::META) | int(Qt::Key_Space);
     const QStringList conflicts =
-        model.conflictsFor({QVariant(metaSpace)});
+        model.conflictsFor(1, {QVariant(metaSpace)});
     QCOMPARE(conflicts.size(), 1);
     QVERIFY(conflicts.first().contains(QStringLiteral("QindaQt Shell")));
     QVERIFY(conflicts.first().contains(QStringLiteral("Reveal QindaQt panels")));
+    // Re-capturing the key a row already holds is not a conflict.
+    QVERIFY(model.conflictsFor(0, {QVariant(metaSpace)}).isEmpty());
+    // A row outside the model excludes nothing.
+    QCOMPARE(model.conflictsFor(-1, {QVariant(metaSpace)}).size(), 1);
     // A free key has no conflicts.
-    QVERIFY(model.conflictsFor({QVariant(int(Qt::META) | int(Qt::Key_P))})
+    QVERIFY(model.conflictsFor(1, {QVariant(int(Qt::META) | int(Qt::Key_P))})
                 .isEmpty());
     // Zero and garbage are ignored, never reported as conflicts.
-    QVERIFY(model.conflictsFor({QVariant(0)}).isEmpty());
+    QVERIFY(model.conflictsFor(1, {QVariant(0)}).isEmpty());
 }
 
 void ShortcutsModelTest::assignDelegatesEncodedKeys()

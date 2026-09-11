@@ -47,7 +47,6 @@ ColumnLayout {
             objectName: "inputKeyRepeatSwitch"
             checked: keyboard.keyRepeat
             onToggled: keyboard.keyRepeat = checked
-            Accessible.description: parent.description
         }
     }
 
@@ -95,7 +94,6 @@ ColumnLayout {
             objectName: "inputRepeatTestField"
             placeholderText: qsTr("Type here to test")
             Layout.preferredWidth: 320
-            Accessible.description: parent.description
         }
     }
 
@@ -153,7 +151,7 @@ ColumnLayout {
         Accessible.role: Accessible.List
         Accessible.name: qsTr("Configured keyboard layouts")
 
-        delegate: ItemDelegate {
+        delegate: T.ItemDelegate {
             id: layoutRow
             required property int index
             required property string title

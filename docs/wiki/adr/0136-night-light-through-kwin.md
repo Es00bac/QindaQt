@@ -43,7 +43,8 @@ state only from the KWin D-Bus properties and caches nothing as truth.
   knighttime v6.6.6 `src/daemon/kdarklightsettings.kcfg` and
   `kdarklightmanager.cpp`, which opens
   `KSharedConfig::openConfig("knighttimerc")` and watches it through
-  `KConfigWatcher`, so schedule writes apply live while the daemon runs.
+  `KConfigWatcher`, which re-reads the file when a writer announces the
+  change.
   The upstream migration multiplies legacy minutes by 60, confirming the
   stored unit is seconds. Enum entries persist as choice-name strings, as the
   upstream migration's string comparisons prove.
@@ -55,8 +56,12 @@ groups and keys, skips writes whose values did not change, and fails closed
 when a path cannot be written. A plain INI writer cannot stand in for KConfig
 here: QSettings escapes the schedule daemon's `[General]` group as
 `[%General]`, which its KConfigXT reader would silently miss, so the schedule
-choice would never apply. KDE's own file watching notices the changed file, so
-writes apply live while the daemons run. Live state is read asynchronously
+choice would never apply. KWin's and knighttimed's config watchers do not
+notice a file change by themselves: they re-read a file when the
+`org.kde.kconfig.notify` `ConfigChanged` signal names it, and KConfig sends
+that signal only for configurations opened by bare name. The port opens
+injected absolute paths, so after each write it sends `ConfigChanged` on
+`/kwinrc` or `/knighttimerc` itself, carrying the written groups and keys. Live state is read asynchronously
 only: blocking bus calls do not reliably complete against peer connections in
 this environment, so every read is a queued pending call.
 
@@ -96,12 +101,14 @@ pre-seeded through the production port — `Active=true`, `Mode=Constant`,
 `NightTemperature=3400` — produced, at compositor startup: `enabled=true`,
 `running=true`, `mode=0`, `currentTemperature=3400`,
 `targetTemperature=3400`; `preview(2700)` then animated the reported
-temperature 3400 → 2700 K over the bus and `stopPreview` ended it. One
-bounded caveat: a *changed* value written while the compositor ran did not
-converge in the sandbox even with an explicit KWin `reconfigure` — the
-in-sandbox watcher did not deliver the change to the plugin, so the
-startup-application evidence above stands in for live convergence. The shell
-quick-toggle follow-up should re-check live convergence on a real session.
+temperature 3400 → 2700 K over the bus and `stopPreview` ended it. The
+lane's first proof saw a *changed* value written while the compositor ran fail
+to converge, even with an explicit KWin `reconfigure`. Integration found the
+cause: nothing announced the write. In a private KWin, an absolute-path write
+changed nothing, while the same write followed by a hand-built `ConfigChanged`
+on `/kwinrc` moved `currentTemperature` from 3400 K to 2500 K. The port now
+sends that announcement, and `qindaqt.night-light-config-port` checks it on a
+private bus.
 
 **Location privacy.** Automatic location is enabled only when the user chooses
 "sunset to sunrise (automatic location)"; that choice lets `knighttimed` use Qt

@@ -54,6 +54,10 @@ set(
     qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_qml
     qindaqt_settings_color_qmlplugin
+    qindaqt_settings_accessibility_qml
+    qindaqt_settings_accessibility_qmlplugin
+    qindaqt_settings_input_qml
+    qindaqt_settings_input_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/keyboard_config_port.h>
 
+#include <qindaqt/apps/settings_input/config_change_announcement.h>
+
 #include <KConfigGroup>
 #include <KSharedConfig>
 #include <QDBusConnectionInterface>
-#include <QDBusMessage>
 #include <QLoggingCategory>
 
 namespace QindaQt::Apps::SettingsInput {
@@ -14,9 +15,6 @@ Q_LOGGING_CATEGORY(lcKeyboardConfigPort, "qindaqt.settings.input.keyboardconfig"
                    QtInfoMsg)
 
 constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinPath = "/KWin";
-constexpr auto KWinInterface = "org.kde.KWin";
-constexpr int ReloadTimeoutMs = 3000;
 
 constexpr int MinimumRepeatDelayMs = 100;
 constexpr int MaximumRepeatDelayMs = 2000;
@@ -24,25 +22,16 @@ constexpr int MinimumRepeatRate = 1;
 constexpr int MaximumRepeatRate = 100;
 
 // AGENT-CONTRACT: Key names are the ones the pinned KWin reads from
-// kcminputrc [Keyboard] (verified against libkwin and live in ADR-0134).
-// Renaming them silently breaks the desktop's repeat/NumLock behavior, not
-// just this route.
+// kcminputrc [Keyboard] (present in libkwin, ADR-0134). Renaming them
+// silently breaks the desktop's repeat/NumLock behavior, not just this route.
 constexpr auto KeyRepeatKey = "KeyRepeat";
 constexpr auto RepeatDelayKey = "RepeatDelay";
 constexpr auto RepeatRateKey = "RepeatRate";
 constexpr auto NumLockKey = "NumLock";
 
-QDBusMessage callReconfigure(const QDBusConnection &bus) {
-    QDBusMessage message = QDBusMessage::createMethodCall(
-        QLatin1String(KWinService), QLatin1String(KWinPath),
-        QLatin1String(KWinInterface), QStringLiteral("reconfigure"));
-    return bus.call(message, QDBus::Block, ReloadTimeoutMs);
-}
-
-bool reloadSucceeded(const QDBusConnection &bus) {
+bool desktopAuthorityPresent(const QDBusConnection &bus) {
     return bus.isConnected() && bus.interface() != nullptr &&
-           bus.interface()->isServiceRegistered(QLatin1String(KWinService)) &&
-           callReconfigure(bus).type() == QDBusMessage::ReplyMessage;
+           bus.interface()->isServiceRegistered(QLatin1String(KWinService));
 }
 
 int clampDelay(int value) {
@@ -97,9 +86,9 @@ StoreResult QtKeyboardConfigPort::write(const KeyboardConfig &config,
     // AGENT-NOTE: SimpleConfig avoids merging this route's writes into the
     // cascade of the user's real kcminputrc when a test relocates the path;
     // the desktop reads exactly this file.
-    const KSharedConfigPtr config_file = KSharedConfig::openConfig(
+    const KSharedConfigPtr configFile = KSharedConfig::openConfig(
         m_configFilePath, KConfig::SimpleConfig);
-    KConfigGroup group(config_file, QStringLiteral("Keyboard"));
+    KConfigGroup group(configFile, QStringLiteral("Keyboard"));
     group.writeEntry(KeyRepeatKey, config.keyRepeat);
     group.writeEntry(RepeatDelayKey, config.repeatDelayMs);
     group.writeEntry(RepeatRateKey, config.repeatRate);
@@ -111,13 +100,22 @@ StoreResult QtKeyboardConfigPort::write(const KeyboardConfig &config,
         }
         return StoreResult::Failed;
     }
-    if (!reloadSucceeded(m_bus)) {
+    QHash<QString, QByteArrayList> changes;
+    changes.insert(QStringLiteral("Keyboard"),
+                   QByteArrayList{QByteArray(KeyRepeatKey),
+                                  QByteArray(RepeatDelayKey),
+                                  QByteArray(RepeatRateKey),
+                                  QByteArray(NumLockKey)});
+    const bool announced =
+        announceConfigChange(m_bus, m_configFilePath, changes);
+    if (!announced || !desktopAuthorityPresent(m_bus)) {
         // AGENT-GUARD: File truth and live truth are reported separately.
-        // Collapsing this branch into success would tell the user the
-        // desktop changed behavior when it may still run with old values.
+        // The running KWin applies these values only after the announcement
+        // reaches it; collapsing this branch into success would tell the
+        // user the desktop changed behavior when it still runs old values.
         qCInfo(lcKeyboardConfigPort,
-               "keyboard config stored, but the desktop reload request "
-               "failed; the change applies on the next session");
+               "keyboard config stored, but no running desktop was told; "
+               "the change applies on the next session");
         return StoreResult::StoredButReloadFailed;
     }
     return StoreResult::Stored;

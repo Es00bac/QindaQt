@@ -81,12 +81,15 @@ target_link_libraries(
     QindaQt::SettingsNavigation qindaqt_settings_appearance
     qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
-    # and Color modules are static, so this in-process Main.qml host links them.
+    # Color, and Input backend modules are static, so this in-process Main.qml
+    # host links them.
     qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_backend_qml
     qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_input_backend_qml
+    qindaqt_settings_input_backend_qmlplugin
     qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
     qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )

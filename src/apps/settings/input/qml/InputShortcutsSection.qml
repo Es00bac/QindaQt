@@ -24,10 +24,6 @@ ColumnLayout {
 
     spacing: Tokens.space["2"]
 
-    function conflictText(conflicts) {
-        return qsTr("Already used by %1").arg(conflicts.join(", "))
-    }
-
     DegradedNotice {
         id: degraded
         objectName: "inputShortcutsDegraded"
@@ -48,7 +44,6 @@ ColumnLayout {
             placeholderText: qsTr("Type to filter")
             Layout.preferredWidth: 320
             onTextChanged: shortcuts.filter = text
-            Accessible.description: parent.description
         }
     }
 
@@ -62,143 +57,25 @@ ColumnLayout {
         Accessible.name: text
     }
 
+    // AGENT-NOTE: The page's Flickable scrolls this section and a ListView
+    // reports no implicit height, so a fill-height list collapses to nothing
+    // there. The list takes its content height and the page scrolls it, the
+    // same contract as the keyboard layouts list.
     ListView {
         id: shortcutList
         objectName: "inputShortcutsList"
         Layout.fillWidth: true
-        Layout.fillHeight: true
+        Layout.preferredHeight: contentHeight
         visible: shortcuts.available
+        interactive: false
         clip: true
         model: shortcuts
         spacing: Tokens.space["1"]
         Accessible.role: Accessible.List
         Accessible.name: qsTr("Global shortcuts")
 
-        delegate: Rectangle {
-            id: row
-            required property int index
-            required property string componentName
-            required property string actionName
-            required property string keys
-            required property string defaultKeys
-            required property bool isCommand
-            required property string command
-            width: ListView.view.width
-            height: rowLayout.implicitHeight + Tokens.space["3"] * 2
-            color: Tokens.bg.raised
-            radius: Tokens.radius.s
-
-            // Capture state for this row; null while not capturing.
-            property var pendingKeys: null
-            readonly property bool capturing: pendingKeys !== null
-
-            ColumnLayout {
-                id: rowLayout
-                anchors.fill: parent
-                anchors.margins: Tokens.space["3"]
-                spacing: Tokens.space["1"]
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        Layout.fillWidth: true
-                        text: row.actionName
-                        font.weight: Font.DemiBold
-                    }
-                    Label {
-                        visible: row.isCommand && row.command.length > 0
-                        text: row.command
-                        muted: true
-                        elide: Text.ElideMiddle
-                        Layout.maximumWidth: 220
-                    }
-                }
-                Label {
-                    text: row.componentName
-                    muted: true
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Tokens.space["2"]
-                    Label {
-                        objectName: "inputShortcutKeys_" + row.index
-                        Layout.fillWidth: true
-                        text: row.capturing
-                              ? qsTr("Press keys — Esc cancels, Backspace clears")
-                              : row.keys.length > 0 ? row.keys
-                                                    : qsTr("Disabled")
-                        muted: !row.capturing && row.keys.length === 0
-                    }
-                    Button {
-                        objectName: "inputShortcutReset_" + row.index
-                        text: qsTr("Reset")
-                        enabled: !row.capturing && row.defaultKeys.length > 0
-                                 && row.keys !== row.defaultKeys
-                        onClicked: shortcuts.resetToDefault(row.index)
-                    }
-                    Button {
-                        objectName: "inputShortcutClear_" + row.index
-                        text: qsTr("Clear")
-                        enabled: !row.capturing && row.keys.length > 0
-                        onClicked: shortcuts.clear(row.index)
-                    }
-                    Button {
-                        objectName: "inputShortcutRemove_" + row.index
-                        text: qsTr("Remove")
-                        visible: row.isCommand
-                        onClicked: shortcuts.removeCommand(row.index)
-                    }
-                    ShortcutCaptureButton {
-                        objectName: "inputShortcutCapture_" + row.index
-                        sequence: 0
-                        captureHint: qsTr("Capturing…")
-                        placeholderText: qsTr("Change")
-                        formatter: key => shortcuts.displayKey(key)
-                        enabled: !shortcuts.busy
-                        onCaptured: sequence => {
-                            row.pendingKeys = [sequence]
-                            const conflicts =
-                                shortcuts.conflictsFor(row.pendingKeys)
-                            if (conflicts.length === 0) {
-                                shortcuts.assign(row.index, row.pendingKeys)
-                                row.pendingKeys = null
-                            }
-                        }
-                    }
-                }
-
-                RowLayout {
-                    visible: row.capturing
-                        && shortcuts.conflictsFor(row.pendingKeys).length > 0
-                    Layout.fillWidth: true
-                    spacing: Tokens.space["2"]
-                    Label {
-                        objectName: "inputShortcutConflict_" + row.index
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        text: row.capturing
-                              ? root.conflictText(shortcuts.conflictsFor(
-                                                      row.pendingKeys))
-                              : ""
-                        Accessible.role: Accessible.AlertMessage
-                        Accessible.name: text
-                    }
-                    Button {
-                        objectName: "inputShortcutConflictAssign_" + row.index
-                        text: qsTr("Assign anyway")
-                        onClicked: {
-                            shortcuts.assign(row.index, row.pendingKeys)
-                            row.pendingKeys = null
-                        }
-                    }
-                    Button {
-                        objectName: "inputShortcutConflictCancel_" + row.index
-                        text: qsTr("Cancel")
-                        onClicked: row.pendingKeys = null
-                    }
-                }
-            }
+        delegate: InputShortcutRow {
+            shortcuts: root.shortcuts
         }
     }
 
@@ -239,8 +116,8 @@ ColumnLayout {
             objectName: "inputCommandAddButton"
             emphasized: true
             text: qsTr("Add")
-            enabled: commandName.text.trimmed().length > 0
-                     && commandLine.text.trimmed().length > 0
+            enabled: commandName.text.trim().length > 0
+                     && commandLine.text.trim().length > 0
             onClicked: {
                 if (shortcuts.addCommand(commandName.text,
                                          commandLine.text,

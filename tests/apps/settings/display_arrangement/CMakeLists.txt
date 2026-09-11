@@ -18,6 +18,8 @@ function(qindaqt_add_display_arrangement_test target source row)
     target_link_libraries(
         ${target}
         PRIVATE qindaqt_settings_display qindaqt_settings_appearance QindaQt::TokensQml
+                # The Night light section imports the shell icon module.
+                QindaQt::ShellIcons qindaqt_shell_iconsplugin
                 Qt6::Quick Qt6::QuickControls2 Qt6::Test
     )
     qindaqt_enable_warnings(${target})
@@ -25,6 +27,7 @@ function(qindaqt_add_display_arrangement_test target source row)
         ${target}
         qindaqt_tokens_qmlplugin
         qindaqt_controls_qmlplugin
+        qindaqt_shell_iconsplugin
         qindaqt_settings_display_qmlplugin
         qindaqt_settings_appearance_qmlplugin
     )

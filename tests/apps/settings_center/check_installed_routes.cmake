@@ -201,9 +201,12 @@ file(MAKE_DIRECTORY "${poison_sandbox}/config" "${poison_sandbox}/data"
 # AGENT-GUARD: The runtime directory must stay short: the session binds a
 # Wayland socket inside it and a sockaddr_un sun_path only holds 108 bytes.
 # Deep prefixes (this checkout's build path) overflow it and crash the staged
-# executable before it can report the poison failure this gate proves, so the
-# runtime root lives beside the build tree, not under the deep sandbox.
-set(poison_runtime_dir "${CMAKE_BINARY_DIR}/package-poison-runtime")
+# executable before it can report the poison failure this gate proves. Even the
+# build tree itself is too deep on some hosts, so the runtime root is a short,
+# uniquely named directory under /tmp that the gate removes when it finishes.
+string(RANDOM LENGTH 10 ALPHABET "abcdefghijklmnopqrstuvwxyz0123456789"
+       poison_runtime_suffix)
+set(poison_runtime_dir "/tmp/qindaqt-poison-${poison_runtime_suffix}")
 file(REMOVE_RECURSE "${poison_runtime_dir}")
 file(MAKE_DIRECTORY "${poison_runtime_dir}")
 file(CHMOD "${poison_runtime_dir}"
@@ -449,3 +452,5 @@ set(SANDBOX_ROOT "${install_prefix}/route-runtime")
 # fixture because no install layout exists there.
 set(USE_DEFAULT_THEME_SEARCH TRUE)
 include("${ROUTE_CHECK}")
+
+file(REMOVE_RECURSE "${poison_runtime_dir}")

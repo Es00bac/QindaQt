@@ -52,7 +52,8 @@ public:
 
     QindaQt::Services::NightLight::QtConfigNightLightPort configPort{
         configFilePath(QStringLiteral("kwinrc")),
-        configFilePath(QStringLiteral("knighttimerc"))};
+        configFilePath(QStringLiteral("knighttimerc")),
+        QDBusConnection::sessionBus()};
     QindaQt::Services::NightLight::QtNightLightStatePort statePort{
         QDBusConnection::sessionBus()};
     QindaQt::Services::NightLight::QtNightTimeScheduleMonitor scheduleMonitor{

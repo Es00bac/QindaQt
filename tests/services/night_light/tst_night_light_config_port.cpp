@@ -4,7 +4,13 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QProcess>
 #include <QtCore/QTemporaryDir>
+#include <QtCore/QUuid>
+#include <QtDBus/QDBusArgument>
+#include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusMetaType>
 
 #include <memory>
 #include <QtTest>
@@ -48,7 +54,69 @@ bool writeFile(const QString &path, const QString &content)
     return file.write(content.toUtf8()) == content.toUtf8().size();
 }
 
+QDBusConnection offlineBus()
+{
+    return QDBusConnection(QStringLiteral("none"));
+}
+
+// Private dbus-daemon: announcement rows never touch a real session bus.
+struct PrivateBus {
+    QProcess process;
+    QString address;
+    QString name;
+
+    bool start()
+    {
+        process.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
+        process.setArguments({ QStringLiteral("--session"),
+                               QStringLiteral("--nofork"),
+                               QStringLiteral("--nopidfile"),
+                               QStringLiteral("--print-address=1") });
+        process.start();
+        if (!process.waitForStarted() || !process.waitForReadyRead()) {
+            return false;
+        }
+        address = QString::fromUtf8(process.readLine()).trimmed();
+        name = QStringLiteral("night-light-config-port-%1")
+                   .arg(QUuid::createUuid().toString(QUuid::Id128));
+        return QDBusConnection::connectToBus(address, name).isConnected();
+    }
+
+    QDBusConnection connection() const { return QDBusConnection(name); }
+
+    ~PrivateBus()
+    {
+        if (!name.isEmpty()) {
+            QDBusConnection::disconnectFromBus(name);
+        }
+        process.terminate();
+        if (!process.waitForFinished(1000)) {
+            process.kill();
+            process.waitForFinished();
+        }
+    }
+};
+
 } // namespace
+
+// Records ConfigChanged announcements per object path, decoded the way
+// KConfigWatcher decodes them.
+class ConfigChangeRecorder final : public QObject {
+    Q_OBJECT
+
+public:
+    QHash<QString, QList<QHash<QString, QByteArrayList>>> byPath;
+
+public Q_SLOTS:
+    void record(const QDBusMessage &message)
+    {
+        if (message.arguments().size() != 1) {
+            return;
+        }
+        byPath[message.path()].append(
+            qdbus_cast<QHash<QString, QByteArrayList>>(message.arguments().at(0)));
+    }
+};
 
 class NightLightConfigPortTests final : public QObject {
     Q_OBJECT
@@ -61,6 +129,7 @@ private Q_SLOTS:
     void hostileStoredValuesFailClosedAndConverge();
     void invalidWriteIsRefused();
     void externalChangeIsReportedAndSelfWritesAreNot();
+    void writesAreAnnouncedToConfigWatchers();
 
 private Q_SLOTS:
     // Each test function gets fresh files: QSettings-style state leaking
@@ -87,7 +156,7 @@ private:
 
 void NightLightConfigPortTests::absentFilesReadAsDefaults()
 {
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     const NightLightConfigPort::ReadResult result = port.read();
     QCOMPARE(result.outcome, NightLightConfigPort::ReadOutcome::Absent);
     QCOMPARE(result.values, NightLightSettings{});
@@ -96,7 +165,7 @@ void NightLightConfigPortTests::absentFilesReadAsDefaults()
 
 void NightLightConfigPortTests::writeThenReadRoundTrip()
 {
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     const NightLightSettings settings = exampleSettings();
     const NightLightConfigPort::WriteResult write = port.write(settings);
     QCOMPARE(write.outcome, NightLightConfigPort::WriteOutcome::Applied);
@@ -151,7 +220,7 @@ void NightLightConfigPortTests::writeThenReadRoundTrip()
 
 void NightLightConfigPortTests::unchangedWriteTouchesNoFile()
 {
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     QCOMPARE(port.write(exampleSettings()).outcome,
              NightLightConfigPort::WriteOutcome::Applied);
     const QString kwinBefore = readFile(kwinPath());
@@ -182,7 +251,7 @@ void NightLightConfigPortTests::unrelatedGroupsAndKeysSurvive()
     NightLightSettings settings = exampleSettings();
     settings.output.mode = Mode::Constant;
     settings.schedule.source = ScheduleSource::Times;
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     QCOMPARE(port.write(settings).outcome,
              NightLightConfigPort::WriteOutcome::Applied);
 
@@ -209,7 +278,7 @@ void NightLightConfigPortTests::hostileStoredValuesFailClosedAndConverge()
                                 "Source=Location\n"
                                 "[Location]\n"
                                 "Automatic=true\n"));
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     NightLightConfigPort::ReadResult read = port.read();
     QCOMPARE(read.outcome, NightLightConfigPort::ReadOutcome::Failed);
     QVERIFY(!read.diagnostic.isEmpty());
@@ -252,7 +321,7 @@ void NightLightConfigPortTests::invalidWriteIsRefused()
 
     NightLightSettings hostile = exampleSettings();
     hostile.output.nightTemperatureKelvin = 999;
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     const NightLightConfigPort::WriteResult write = port.write(hostile);
     QCOMPARE(write.outcome, NightLightConfigPort::WriteOutcome::Failed);
     QVERIFY(!write.diagnostic.isEmpty());
@@ -262,7 +331,7 @@ void NightLightConfigPortTests::invalidWriteIsRefused()
 
 void NightLightConfigPortTests::externalChangeIsReportedAndSelfWritesAreNot()
 {
-    QtConfigNightLightPort port(kwinPath(), knightPath());
+    QtConfigNightLightPort port(kwinPath(), knightPath(), offlineBus());
     QSignalSpy external(&port, &NightLightConfigPort::changedExternally);
 
     // The port's own write is an echo, never an external change.
@@ -283,6 +352,40 @@ void NightLightConfigPortTests::externalChangeIsReportedAndSelfWritesAreNot()
     const qsizetype observed = external.count();
     QTest::qWait(300);
     QCOMPARE(external.count(), observed);
+}
+
+void NightLightConfigPortTests::writesAreAnnouncedToConfigWatchers()
+{
+    qDBusRegisterMetaType<QByteArrayList>();
+    qDBusRegisterMetaType<QHash<QString, QByteArrayList>>();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString listenerName = QStringLiteral("night-light-watcher");
+    QDBusConnection listener = QDBusConnection::connectToBus(bus.address, listenerName);
+    ConfigChangeRecorder recorder;
+    QVERIFY(listener.connect(QString(), QString(),
+                             QStringLiteral("org.kde.kconfig.notify"),
+                             QStringLiteral("ConfigChanged"), &recorder,
+                             SLOT(record(QDBusMessage))));
+
+    QtConfigNightLightPort port(kwinPath(), knightPath(), bus.connection());
+    QCOMPARE(port.write(exampleSettings()).outcome,
+             NightLightConfigPort::WriteOutcome::Applied);
+    QTRY_COMPARE(recorder.byPath.value(QStringLiteral("/kwinrc")).size(), 1);
+    const QByteArrayList kwinKeys = recorder.byPath.value(QStringLiteral("/kwinrc"))
+                                        .first()
+                                        .value(QStringLiteral("NightColor"));
+    QVERIFY(kwinKeys.contains("Active"));
+    QVERIFY(kwinKeys.contains("NightTemperature"));
+    QVERIFY(QFileInfo::exists(knightPath()));
+    QTRY_COMPARE(recorder.byPath.value(QStringLiteral("/knighttimerc")).size(), 1);
+
+    // Negative control: an unchanged write touches no file and announces nothing.
+    QCOMPARE(port.write(exampleSettings()).outcome,
+             NightLightConfigPort::WriteOutcome::Unchanged);
+    QTest::qWait(200);
+    QCOMPARE(recorder.byPath.value(QStringLiteral("/kwinrc")).size(), 1);
+    QDBusConnection::disconnectFromBus(listenerName);
 }
 
 QTEST_MAIN(NightLightConfigPortTests)

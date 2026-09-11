@@ -7,6 +7,10 @@
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QFileSystemWatcher>
+#include <QtCore/QHash>
+#include <QtCore/QRegularExpression>
+#include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusMetaType>
 
 #include <optional>
 #include <utility>
@@ -82,18 +86,44 @@ QString fileIdentity(const QString &path)
         .arg(info.size());
 }
 
+// Sends the ConfigChanged announcement KConfig would send for a config opened
+// by bare name, so KWin's and knighttimed's config watchers re-read the file.
+void announceConfigChange(const QDBusConnection &bus, const QString &path,
+                          const QHash<QString, QByteArrayList> &changes)
+{
+    if (!bus.isConnected() || changes.isEmpty()) {
+        return;
+    }
+    const QString fileName = QFileInfo(path).fileName();
+    static const QRegularExpression pathElement(
+        QStringLiteral("^[A-Za-z0-9_]+$"));
+    if (!pathElement.match(fileName).hasMatch()) {
+        return;
+    }
+    qDBusRegisterMetaType<QByteArrayList>();
+    qDBusRegisterMetaType<QHash<QString, QByteArrayList>>();
+    QDBusMessage message = QDBusMessage::createSignal(
+        QLatin1Char('/') + fileName, QStringLiteral("org.kde.kconfig.notify"),
+        QStringLiteral("ConfigChanged"));
+    message.setArguments({ QVariant::fromValue(changes) });
+    bus.send(message);
+}
+
 } // namespace
 
 class QtConfigNightLightPort::Private {
 public:
-    Private(QString kwinRcPath, QString knightTimeRcPath)
+    Private(QString kwinRcPath, QString knightTimeRcPath,
+            QDBusConnection announcementBus)
         : kwinRc(std::move(kwinRcPath)),
-          knightTimeRc(std::move(knightTimeRcPath))
+          knightTimeRc(std::move(knightTimeRcPath)),
+          bus(std::move(announcementBus))
     {
     }
 
     QString kwinRc;
     QString knightTimeRc;
+    QDBusConnection bus;
 
     // AGENT-GUARD: QFileSystemWatcher delivers its signals asynchronously, so
     // own-write echoes arrive after write() returned. Suppression therefore
@@ -113,10 +143,12 @@ NightLightConfigPort::NightLightConfigPort(QObject *parent)
 
 QtConfigNightLightPort::QtConfigNightLightPort(QString kwinRcPath,
                                                QString knightTimeRcPath,
+                                               QDBusConnection announcementBus,
                                                QObject *parent)
     : NightLightConfigPort(parent),
       d(std::make_unique<Private>(std::move(kwinRcPath),
-                                  std::move(knightTimeRcPath)))
+                                  std::move(knightTimeRcPath),
+                                  std::move(announcementBus)))
 {
     auto *watcher = new QFileSystemWatcher(this);
     // AGENT-NOTE: The watched files may not exist yet (fresh profile), so the
@@ -315,78 +347,93 @@ QtConfigNightLightPort::write(const NightLightSettings &settings)
 
     KConfig kwin(d->kwinRc, KConfig::SimpleConfig);
     KConfigGroup kwinGroup(&kwin, kKwinGroup);
+    QHash<QString, QByteArrayList> kwinChanges;
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.active != settings.output.active) {
-        kwinGroup.writeEntry(kActiveKey, settings.output.active, KConfigBase::Notify);
+        kwinGroup.writeEntry(kActiveKey, settings.output.active);
+        kwinChanges[kKwinGroup].append(kActiveKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.mode != settings.output.mode) {
         // Enum names are written as the exact kcfg choice-name strings.
-        kwinGroup.writeEntry(kModeKey, modeToConfigToken(settings.output.mode), KConfigBase::Notify);
+        kwinGroup.writeEntry(kModeKey, modeToConfigToken(settings.output.mode));
+        kwinChanges[kKwinGroup].append(kModeKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.dayTemperatureKelvin
                != settings.output.dayTemperatureKelvin) {
         kwinGroup.writeEntry(kDayTemperatureKey,
-                             settings.output.dayTemperatureKelvin, KConfigBase::Notify);
+                             settings.output.dayTemperatureKelvin);
+        kwinChanges[kKwinGroup].append(kDayTemperatureKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.output.nightTemperatureKelvin
                != settings.output.nightTemperatureKelvin) {
         kwinGroup.writeEntry(kNightTemperatureKey,
-                             settings.output.nightTemperatureKelvin, KConfigBase::Notify);
+                             settings.output.nightTemperatureKelvin);
+        kwinChanges[kKwinGroup].append(kNightTemperatureKey.toUtf8());
     }
     if (!kwin.sync()) {
         return { WriteOutcome::Failed, QStringLiteral("kwinrc write failed") };
     }
+    announceConfigChange(d->bus, d->kwinRc, kwinChanges);
 
     KConfig knight(d->knightTimeRc, KConfig::SimpleConfig);
     KConfigGroup generalGroup(&knight, kGeneralGroup);
     KConfigGroup locationGroup(&knight, kLocationGroup);
     KConfigGroup timesGroup(&knight, kTimesGroup);
+    QHash<QString, QByteArrayList> knightChanges;
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.source != settings.schedule.source) {
         generalGroup.writeEntry(kSourceKey,
-                                sourceToConfigToken(settings.schedule.source), KConfigBase::Notify);
+                                sourceToConfigToken(settings.schedule.source));
+        knightChanges[kGeneralGroup].append(kSourceKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.automaticLocation
                != settings.schedule.automaticLocation) {
         locationGroup.writeEntry(kAutomaticKey,
-                                 settings.schedule.automaticLocation, KConfigBase::Notify);
+                                 settings.schedule.automaticLocation);
+        knightChanges[kLocationGroup].append(kAutomaticKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.latitudeDegrees
                != settings.schedule.latitudeDegrees) {
         locationGroup.writeEntry(kLatitudeKey,
-                                 settings.schedule.latitudeDegrees, KConfigBase::Notify);
+                                 settings.schedule.latitudeDegrees);
+        knightChanges[kLocationGroup].append(kLatitudeKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.longitudeDegrees
                != settings.schedule.longitudeDegrees) {
         locationGroup.writeEntry(kLongitudeKey,
-                                 settings.schedule.longitudeDegrees, KConfigBase::Notify);
+                                 settings.schedule.longitudeDegrees);
+        knightChanges[kLocationGroup].append(kLongitudeKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.sunriseStart
                != settings.schedule.sunriseStart) {
-        timesGroup.writeEntry(kSunriseStartKey, settings.schedule.sunriseStart, KConfigBase::Notify);
+        timesGroup.writeEntry(kSunriseStartKey, settings.schedule.sunriseStart);
+        knightChanges[kTimesGroup].append(kSunriseStartKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.sunsetStart
                != settings.schedule.sunsetStart) {
-        timesGroup.writeEntry(kSunsetStartKey, settings.schedule.sunsetStart, KConfigBase::Notify);
+        timesGroup.writeEntry(kSunsetStartKey, settings.schedule.sunsetStart);
+        knightChanges[kTimesGroup].append(kSunsetStartKey.toUtf8());
     }
     if (current.outcome == ReadOutcome::Failed
         || current.values.schedule.transitionSeconds
                != settings.schedule.transitionSeconds) {
         timesGroup.writeEntry(kTransitionDurationKey,
-                              settings.schedule.transitionSeconds, KConfigBase::Notify);
+                              settings.schedule.transitionSeconds);
+        knightChanges[kTimesGroup].append(kTransitionDurationKey.toUtf8());
     }
     if (!knight.sync()) {
         return { WriteOutcome::Failed,
                  QStringLiteral("knighttimerc write failed") };
     }
+    announceConfigChange(d->bus, d->knightTimeRc, knightChanges);
 
     d->lastWriteKwinIdentity = fileIdentity(d->kwinRc);
     d->lastWriteKnightIdentity = fileIdentity(d->knightTimeRc);
