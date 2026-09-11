@@ -1,5 +1,145 @@
 # Integration handoff
 
+## Desktop gap wave: lock screen, portals, input and shortcuts, keyring, night light (September 11, r11)
+
+After r10 the user named five desktop gaps and asked for five GLM 5.3 Flash
+workers. Each lane worked in its own worktree from `7dad9e78`, serialized its
+builds on one lock, and reported through a lane handoff. Four lanes finished.
+The input lane was stopped with most of its work done, and the program manager
+completed it. The integration branch merges `411d276b` (keyring, ADR-0135),
+`cd5ed2c4` (portals, ADR-0133), `247b6460` (lock screen, ADR-0132), `3bae1d52`
+(night light, ADR-0136), and `17ed2413` (the input checkpoint, ADR-0134).
+`0ebc2d15` carries the input completion and the integration repairs, and
+`e059ad87` pins `0.1.0_pre20260910-r11`.
+
+### What each lane delivers
+
+- **Lock screen (ADR-0132).** Settings → Power gains lock after waking
+  (`LockOnResume`) and an unlock grace ladder beside the idle lock, PowerDevil
+  lid and power-button actions through the new `src/session/powerdevil_lid`
+  adapter (lid rows appear only for a proven lid), and one Meta+L owner:
+  KWin's ksmserver "Lock Session". The shell's dead registration is gone, and
+  the runtime boundary fails if it returns.
+- **Portals (ADR-0133).** Every family that the installed kde, gtk, lxqt, and
+  gnome-keyring portal metadata advertises has an explicit routing row. Secret
+  routes to gnome-keyring, and Wallpaper and Background stay unexported. A
+  private-bus proof drives the real `xdg-desktop-portal` frontend with fake
+  backends.
+- **Input and shortcuts (ADR-0134).** Settings gains an Input route. It shows
+  pointer and touchpad rows from KWin's input devices, with unsupported
+  capabilities hidden. It also covers key repeat, NumLock, keyboard layouts
+  from xkeyboard-config, and every kglobalaccel shortcut, with capture,
+  conflict naming, reset, clear, and custom command shortcuts.
+- **Keyring (ADR-0135).** gnome-keyring's secrets component is the only Secret
+  Service provider. D-Bus activation starts it, and PAM unlocks it at login.
+  `tools/keyring-check` reports the provider, the collection state, the PAM
+  line, and the portal route. The ADR records which Chromium and Electron
+  engines need `--password-store=gnome-libsecret`.
+- **Night light (ADR-0136).** Settings → Display gains a Night light section
+  over KWin's night light and `knighttimed`: a schedule by location,
+  coordinates, or times; temperatures with a live preview; a transition
+  length; and a status line. The section fails closed when either authority is
+  absent.
+
+### Completing the input lane, and integration repairs
+
+Headless probes settled the mechanisms. Each ran a virtual `kwin_wayland` on a
+private bus with private XDG directories, and the testing-harness page records
+the results.
+
+- KWin applies `kcminputrc`, `kxkbrc`, and `kwinrc` changes only after an
+  `org.kde.kconfig.notify` `ConfigChanged` announcement. KConfig never
+  announces a file opened by absolute path. The keyboard, layout, and night
+  light ports now announce exactly the keys they wrote, and a layout write also
+  sets `Use=true`. A store reports `StoredButReloadFailed` unless the
+  announcement went out and KWin is present.
+- kglobalaccel's `setForeignShortcutKeys` reads four ints per key sequence,
+  and a shorter sequence aborts KWin. The shortcut port now follows the
+  daemon's wire format. It lists components through `getComponent` and
+  `allShortcutInfos`, and it reads every assignment back so a refused key is
+  reported. A command shortcut is a `kglobalaccel/<id>.desktop` file plus a
+  registered `_launch` action, removed with `unregister`. The port checks
+  every reply's signature before decoding it.
+- "Assign anyway" first releases the key from its other holders.
+  Re-capturing an action's own key is no longer a conflict.
+- Several QML defects broke the route. An unqualified `ItemDelegate` failed
+  route construction. `ShortcutCaptureButton` called `int()`, so every
+  captured key threw. The custom command Add button called `.trimmed()` and
+  never enabled. The pointer section's first-focus chain named three ids it
+  never declared. The shortcut list collapsed to zero height inside the page's
+  scroll view. Editor description bindings threw before `FormRow` bound them.
+- Test fixes: Input and Display rows now set their own offscreen platform. The
+  Input page test waits for its module to load, publishes the dark theme, and
+  searches list delegates through the item tree. The installed-routes poison
+  keeps its runtime directory under `/tmp`.
+
+### Verification
+
+The manager build at `-j24` completed with no failed steps. Before the
+repairs, the broad safe suite ran 815 rows. After them, every row the wave
+touches passes: the eight Input rows, 140 Settings, Display, night light, and
+lid rows, and `desktop.virtual.stage-closure`. `validate-docs` (246
+documents), `mkdocs build --strict`, and `git diff --check` pass. The
+source-shape checker reports no errors in files changed since r10.
+`emerge --pretend` resolves only `qindaqt-desktop-0.1.0_pre20260910-r11` over
+r10, because the new RDEPEND atoms are already installed.
+
+The remaining failures on this host are environmental and involve no code the
+wave changed:
+
+- Eleven rows (fonts, clipboard applet, chrome palette) abort because the
+  gate ran on a VT without a display and those rows set no platform. With
+  `QT_QPA_PLATFORM=offscreen`, all 26 rows in that selector pass.
+- Six installed-route rows fail because QindaQt is installed under `/usr`.
+  `QML_IMPORT_TRACE=1` shows the withheld module resolving from
+  `/usr/lib64/qt6/qml`.
+- Ten `qindaqt.controls-visual-*-ordinary` rows report baseline drift (56
+  pixels, maximum channel delta 82) in controls and themes the wave did not
+  touch.
+- `session.parent-wayland.weston-headless` (Weston exits with status 127) and
+  the six `shell.notification-live.*` rows need a nested live session.
+
+### Packaging and adoption
+
+`-r11` adds `app-crypt/gcr:4` (for `gcr-prompter`), `gnome-base/gnome-keyring`,
+`~kde-plasma/knighttime-6.6.6`, and `x11-misc/xkeyboard-config` to RDEPEND.
+The compositor, decoration plugin, and Settings1 schema are unchanged. To
+adopt the revision without a new login, restart `qindaqt-shell` (for the Meta+L
+owner and the power applet), `qindaqt-settings` (for Power, Input, and Display),
+and the user `xdg-desktop-portal` service (for the new routing).
+
+The emerge finished in under eight minutes, and the running session adopted
+the revision without a new login:
+
+- The shell respawned on the new binary, and the settings service was stopped
+  so D-Bus reactivates it.
+- The restarted portal frontend exports Secret, FileChooser, Screenshot, and
+  ScreenCast, but not Wallpaper or Background.
+- `tools/keyring-check` passes against the live keyring once it reads the
+  variant reply that `Properties.Get` returns for `Locked`; a fixture case now
+  pins that reply.
+- KWin night light reports available, and `org.kde.NightTime` is on the
+  session bus.
+- kglobalaccel still listed the shell's removed `qindaqt_lock_session` action
+  with a default of Meta+L. After it was unregistered, ksmserver's Lock
+  Session is the only action that holds Meta+L.
+
+### Follow-ups
+
+- The launcher overrides for sync-era Electron applications (claude-desktop,
+  ZCode, sloom-studio) are user-level and were not applied. ADR-0135 lists the
+  flags and Exec lines.
+- Interactive checks remain on the installed desktop:
+  - Settings → Power shows the lock and lid rows.
+  - Meta+L locks the session.
+  - Night light previews and survives a re-login.
+  - Input layouts and shortcuts apply live.
+- Night light has no shell quick toggle yet.
+- `qindaqt.settings-power-installed-route` and
+  `qindaqt.settings-app-installed-routes` fail only on hosts with a system
+  QindaQt install. `QML_IMPORT_TRACE` shows that the withheld module resolves
+  from `/usr/lib64/qt6/qml`.
+
 ## Window and container chrome, contained-window handlebars, the Luna taskbar, and window-attached menus (September 11, r10)
 
 After the Appearance overhaul the user asked for configuration of both
