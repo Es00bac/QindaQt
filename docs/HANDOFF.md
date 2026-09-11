@@ -1,5 +1,163 @@
 # Integration handoff
 
+## Window and container chrome, contained-window handlebars, the Luna taskbar, and window-attached menus (September 11, r10)
+
+After the Appearance overhaul the user asked for configuration of both
+decoration sets (application windows and containers), menus attached to
+windows when a layout has no global menu, an Active Application popup that
+opens under its widget and names the application properly, and a repaired
+Bliss taskbar; then, that contained windows shrink to a docked-dialog
+handlebar with miniature controls and that the mouse wheel rolls chrome up.
+Commits `9b12cc28` (ADR-0129), `7dad9e78` (ADR-0131), and `6bce96c3`
+(ADR-0124 amendment and ADR-0130) carry the product work, and `64964838` pins
+`0.1.0_pre20260910-r10`.
+
+### Window and container chrome settings (ADR-0129)
+
+Appearance gains a Windows tab. It holds two live previews, each drawn by the
+real renderer, and four choice rows under each:
+
+- **Application windows** preview through `AppearanceWindowPreview` (the shared
+  decoration painter). Rows: button style (theme, lights, flat, glyphs), side
+  (theme, left, right), visible buttons (all, minimize and close, close), and
+  title alignment (center, left).
+- **Containers** preview through the new `AppearanceContainerPreview`, which
+  lays out a two-member container with the compositor's `ChromeLayoutEngine`,
+  paints it with `ChromeRenderer`, and paints each member's native title bar
+  with the shared painter. Rows: button style (theme, lights, flat), side,
+  tab order, and symbol visibility (theme, always, on hover).
+
+Eight `appearance.*` schema v2 keys carry the choices. Every default reproduces
+the shipped chrome; `qindaqt.decoration-painter` pins that for every theme in
+`data/themes`. Container chrome previously ignored the theme and always used the
+Qinda macOS style. It now follows an authored `decoration` block
+(`DecorationSpec::authored`), so Bliss containers match Bliss windows while
+unauthored themes are unchanged. The compositor reads the keys on a
+purpose-scoped Settings1 client, emits `containerStyleChanged`, and
+`KWinHybridSession::setChromeStyle` replaces the fixed macOS style. Window
+arrangement reaches the KDecoration plugin through the published chrome map
+(`buttonSide`, `buttons`, `titleAlignment`, each omitted at its default), and
+the plugin rebuilds its button group when the arrangement changes.
+
+Operational notes: the compositor and decoration changes load at the next
+login. Restart the resident `qindaqt-settings-service` before launching the new
+Settings application, because the Appearance route now scopes the eight keys
+and an older service rejects the whole scoped snapshot.
+
+### Contained-window handlebar and wheel roll-up (ADR-0131)
+
+Container members draw a 14 px handlebar instead of a full native title bar:
+title color, a centered grip, miniature stoplights in 12 px hit cells on the
+effective button side, and a "more" control (a KDecoration `Custom` button)
+that opens the QindaQt window menu. The compositor's `memberTitleHeight`
+equals the handlebar height. A modifier-free vertical wheel over a container's
+title row, tabs, controls, or a member handlebar rolls the container up (away)
+or down (toward) through `HybridChromePointerRouter::pointerWheel` and the
+existing shade path; over an ordinary title bar the decoration rolls that
+window. Both load in the compositor, so they need the next login.
+
+### Bliss Luna taskbar repair (ADR-0124 amendment)
+
+The Luna bar no longer paints cream chips: `lunaMode` reaches every applet
+chip, which turns transparent with a translucent hover. The start button sizes
+to its bold italic label. A lighter blue tray well holds the end zone, the
+clock is plain white Tahoma, and the notification button shows the real
+`notifications` glyph in white. The task list honors `grouping: "never"` for
+the first time: member windows of a container get their own buttons, and
+clicking or closing a member button acts on that window only.
+
+### Window-attached menus and Active Application popups (ADR-0130)
+
+The shell owns `com.canonical.AppMenu.Registrar` only while the adopted layout
+contains a global-menu applet that actually renders; a side-edge instance or a
+policy denial does not count. Startup and `adoptLayoutProfile` run the same
+check, and re-adopting the same layout keeps the owner. `qindaqt`,
+`macos-inspired`, and `unity-inspired` host the registrar; the other eight
+stock layouts keep menus inside their windows. Qt does not export
+`QDBusMenuBar`, so the platform theme checks for a live registrar owner each
+time a menubar is created and only then defers to Qt's generic theme, whose
+once-per-process cache is therefore filled only while a registrar exists. A
+menubar keeps its mode until its application recreates it or restarts.
+First-party applications show their in-window menu again when the registrar
+owner disappears. Clamping stale top-level indices removed a TypeError flood
+when focus moved to an application with fewer menus.
+
+Every `ControlPopupFrame` popup opens flush against its widget: below it with
+left edges aligned on a top panel, above it on a bottom panel, beside it on a
+side panel, sliding along the panel to stay on the output. A Wayland panel
+never learns its screen position, so on an offset dock the clamp can lag; the
+compositor still keeps the popup on screen. Task rows resolve names through
+the desktop-entry resolver (exact id, case-insensitive id, `StartupWMClass`,
+reverse-DNS tail, reported class, then the last id segment), so the Active
+Application label and heading, task buttons, tooltips, and command search show
+"Terminal" instead of `org.qindaqt.Terminal`.
+
+Open question: in `minimal`, the command palette lists no menu actions because
+no applet hosts global-menu data. Whether the palette should count as a host
+is undecided.
+
+### Verification and installation
+
+Gates on the combined tree before packaging: a full `sys-dev` build at
+`-j24` finished with no failed steps; 158 focused shell, task-list,
+global-menu, app-shell, platform-theme, desktop-controls, launcher, and
+start-menu rows passed together; 10 decoration, theme, and Appearance rows
+passed again; and `tools/validate-docs`, strict MkDocs, and `git diff --check`
+passed. `check-source-shape` reports only pre-existing errors in touched files:
+`shellruntimeapplication.cpp` (693 non-blank lines, one more than before;
+`initializeRuntime` unchanged at 186 lines) and `TaskListApplet.qml` (478,
+up from 469).
+
+`-r10` merged at 10:29 in about eight and a half minutes, serialized behind
+the wave build lock. The live shell respawned on it without a logout, and the
+settings service and portal were stopped so D-Bus reactivated them. On the
+installed desktop the r10 shell owns the AppMenu registrar for the `qindaqt`
+layout, Settings1 answers from the new service, and the shell has logged no
+TypeError or ReferenceError since the respawn; the 723
+`GlobalMenuApplet.qml:262` TypeErrors in the session log all came from the r9
+shell. Offscreen renders of the installed layouts through
+`qindaqt-shell-preview` show the Bliss bar with transparent chips, the tray
+well, and white glyphs, while the `qindaqt` render is byte-identical to r9. A
+capture of the live desktop shows the global menu, docks, and wallpaper intact
+on both outputs. The compositor-side work (container handlebars, wheel
+roll-up, window button arrangement) loads at the next login and has not been
+seen on the installed desktop yet. Active Application popup placement and
+naming are covered by the offscreen desktop-controls rows rather than a live
+check, because a live check would switch the user's layout.
+
+Operational notes: `safe-visible output fallback: output 'HDMI-A-1' scale
+differs` keeps logging at its pre-r10 rate. During verification a manager
+ctest run leaked an offscreen `qindaqt-terminal` on a private bus that held the
+first wave lock file; the wave helpers now close the lock descriptor for every
+payload and use `lanes/gap-wave/build-v2.lock`. The auto-mode classifier
+refused to kill the leaked process, so it stays until the user ends it.
+
+### Gap wave: five GLM 5.3 Flash lanes
+
+After this checkpoint the user started five parallel GLM 5.3 Flash lanes in
+kimi-code. Each works in its own worktree under
+`/home/cabewse/work_SPaC3/container-wm-workers/gap-*` on a `gap/*` branch based
+on `7dad9e78`:
+
+| Lane | ADR | Outcome |
+|---|---|---|
+| `gap-lock-screen` | 0132 | Lock on wake, unlock grace, lid and power-button actions, one Meta+L owner, private lock proof |
+| `gap-portals` | 0133 | Every portal family routed and pinned, Secret to gnome-keyring, private frontend routing proof |
+| `gap-input-shortcuts` | 0134 | Settings Input route: pointer and touchpad, keyboard and layouts, global shortcut editor |
+| `gap-keyring` | 0135 | gnome-keyring adopted as the Secret Service provider, password-store selection fix, provider contract test |
+| `gap-night-light` | 0136 | Night light section in Display over KWin's nightlight plugin and knighttimed |
+
+The prompts are `builds/qindaqt/lanes/gap-*/PROMPT.md`, and the shared rules
+are `builds/qindaqt/lanes/gap-wave/WAVE.md`. Every lane lists its owned paths
+and exact additive anchors; the ADR index and nav rows collide on purpose.
+Builds and tests go through `lanes/gap-wave/bin/qq-*`, which serialize every
+compile, test run, and emerge on `lanes/gap-wave/build-v2.lock` at `-j24` and
+run tests without the live display, session bus, or XDG homes. Each lane ends
+by writing `lanes/<lane>/RESULT` (`HANDOFF <sha>` or `BLOCKED <reason>`) and
+`lanes/<lane>/HANDOFF.md`; `lanes/gap-wave/status` prints one line per lane.
+Integration merges all five, applies their packaging requests (gnome-keyring,
+gcr, and knighttime in RDEPEND are expected), and cuts the next revision.
+
 ## Desktop outage repaired; Bliss Luna installed (September 11)
 
 The user reported a dark desktop on the night of September 10: green
