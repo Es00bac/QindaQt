@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""qindaqt-keyring-check: read-only Secret Service provider check.
+
+Reports, on a live QindaQt session:
+
+- who owns org.freedesktop.secrets,
+- whether the default collection is unlocked (read through properties only),
+- whether the display-manager PAM stack carries the pam_gnome_keyring lines,
+- whether the xdg-desktop-portal routing names a Secret backend.
+
+AGENT-GUARD: this tool only reads. It must never call Lock, Unlock,
+Prompt.Run, CreateItem, or any other state-changing Secret Service method,
+and it must never read collection or secret contents; the Program Manager
+runs it on the installed desktop against the user's real keyring.
+
+Exit codes: 0 pass, 1 findings, 2 internal error. The environment overrides
+QINDAQT_KEYRING_CHECK_BUSCTL_LIST, _READ_ALIAS, _COLLECTION_LOCKED,
+_PAM_DIR, and _PORTAL_CONF substitute command output and file locations;
+they exist for the fixture tests and never change what the tool reads on a
+live session.
+"""
+
+import argparse
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
+SERVICE = "org.freedesktop.secrets"
+
+PAM_FILE = "sddm"
+PAM_STACKS = ("auth", "password", "session")
+PORTAL_CONF_RELPATH = ("xdg-desktop-portal", "qindaqt-portals.conf")
+SECRET_ROW_RE = re.compile(r"^\s*org\.freedesktop\.impl\.portal\.Secret\s*=\s*(\S+)\s*$")
+
+TRUE_FLAGS = ("present", "routed")
+
+
+class Finding(Exception):
+    pass
+
+
+def run_or_none(arguments, timeout=10):
+    try:
+        return subprocess.run(arguments, capture_output=True, timeout=timeout,
+                              check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def read_fixture(name):
+    value = os.environ.get(name)
+    if not value:
+        return None
+    try:
+        return pathlib.Path(value).read_text(errors="replace")
+    except OSError as error:
+        raise Finding(f"cannot read fixture {name}={value}: {error}")
+
+
+def quoted_object_path(text, what):
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith('o "') and line.endswith('"'):
+            return line[3:-1]
+    raise Finding(f"{what} reply has no object path")
+
+
+def check_provider():
+    fixture = read_fixture("QINDAQT_KEYRING_CHECK_BUSCTL_LIST")
+    if fixture is None:
+        result = run_or_none(["busctl", "--user", "list", "--no-legend", "--no-pager"])
+        if result is None or result.returncode != 0:
+            return ["provider: unknown (busctl --user list unavailable)"], 1
+        fixture = result.stdout.decode(errors="replace")
+    for line in fixture.splitlines():
+        fields = line.split()
+        if fields and fields[0] == SERVICE and len(fields) > 1 and fields[1].isdigit():
+            process = process_name(fields[1]) or (
+                fields[2] if len(fields) > 2 else "unknown")
+            return [f"provider: {process} (pid {fields[1]})"], 0
+    return [f"provider: none ({SERVICE} is not owned on the session bus)"], 1
+
+
+def process_name(pid):
+    try:
+        return pathlib.Path(f"/proc/{pid}/comm").read_text().strip() or None
+    except OSError:
+        return None
+
+
+def check_default_collection(provider_lines):
+    if not provider_lines[0].startswith("provider: "):
+        return ["default-collection: unknown"], 1
+    if provider_lines[0].startswith("provider: unknown"):
+        return ["default-collection: unknown"], 1
+    if provider_lines[0].startswith("provider: none"):
+        return ["default-collection: unknown"], 0
+
+    alias_fixture = read_fixture("QINDAQT_KEYRING_CHECK_READ_ALIAS")
+    if alias_fixture is not None:
+        try:
+            alias = quoted_object_path(alias_fixture, "ReadAlias fixture")
+        except Finding as error:
+            return [f"default-collection: unknown ({error})"], 1
+    else:
+        if not os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
+            return ["default-collection: unknown (no session bus address)"], 1
+        result = run_or_none([
+            "busctl", "--user", "call", SERVICE, "/org/freedesktop/secrets",
+            "org.freedesktop.Secret.Service", "ReadAlias", "s", "default"])
+        if result is None or result.returncode != 0:
+            return ["default-collection: unknown (ReadAlias call failed)"], 1
+        try:
+            alias = quoted_object_path(result.stdout.decode(errors="replace"),
+                                       "ReadAlias")
+        except Finding as error:
+            return [f"default-collection: unknown ({error})"], 1
+
+    locked_fixture = read_fixture("QINDAQT_KEYRING_CHECK_COLLECTION_LOCKED")
+    if locked_fixture is not None:
+        reply = locked_fixture.strip()
+    else:
+        result = run_or_none([
+            "busctl", "--user", "call", SERVICE, alias,
+            "org.freedesktop.DBus.Properties", "Get", "ss",
+            "org.freedesktop.Secret.Collection", "Locked"])
+        if result is None or result.returncode != 0:
+            return ["default-collection: unknown (Locked property call failed)"], 1
+        reply = result.stdout.decode(errors="replace").strip()
+    if reply == "b false":
+        return [f"default-collection: unlocked ({alias})"], 0
+    if reply == "b true":
+        return [f"default-collection: locked ({alias})"], 1
+    return [f"default-collection: unknown (unexpected reply {reply!r})"], 1
+
+
+def pam_flags(path):
+    try:
+        lines = path.read_text(errors="replace").splitlines()
+    except OSError:
+        return None
+    flags = dict.fromkeys(PAM_STACKS, False)
+    for line in lines:
+        fields = line.split()
+        if not fields or len(fields) < 3:
+            continue
+        # AGENT-NOTE: display managers write "-auth" to ignore a missing
+        # module on non-gnome-keyring systems; the dash is not part of the
+        # stack name.
+        stack = fields[0][1:] if fields[0].startswith("-") else fields[0]
+        if stack in flags and "pam_gnome_keyring.so" in fields[2:]:
+            flags[stack] = True
+    return flags
+
+
+def check_pam():
+    pam_dir = pathlib.Path(os.environ.get("QINDAQT_KEYRING_CHECK_PAM_DIR", "/etc/pam.d"))
+    flags = pam_flags(pam_dir / PAM_FILE)
+    if flags is None:
+        return [f"pam-gnome-keyring: missing ({pam_dir / PAM_FILE} not readable)"], 1
+    detail = ", ".join(f"{key}: {'yes' if flags[key] else 'no'}" for key in PAM_STACKS)
+    if all(flags.values()):
+        return [f"pam-gnome-keyring: present ({detail})"], 0
+    if any(flags.values()):
+        return [f"pam-gnome-keyring: partial ({detail})"], 1
+    return [f"pam-gnome-keyring: missing (no pam_gnome_keyring.so in "
+            f"{pam_dir / PAM_FILE})"], 1
+
+
+def check_portal_route():
+    fixture = read_fixture("QINDAQT_KEYRING_CHECK_PORTAL_CONF")
+    candidates = []
+    if fixture is not None:
+        candidates.append(("fixture", fixture))
+    else:
+        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share")
+        for directory in data_dirs.split(":"):
+            if not directory:
+                continue
+            path = pathlib.Path(directory).joinpath(*PORTAL_CONF_RELPATH)
+            try:
+                candidates.append((str(path), path.read_text(errors="replace")))
+            except OSError:
+                continue
+    for source, text in candidates:
+        for line in text.splitlines():
+            match = SECRET_ROW_RE.match(line)
+            if match:
+                return [f"portal-secret-route: routed ({match.group(1)} via {source})"], 0
+    if candidates:
+        return [f"portal-secret-route: missing (no org.freedesktop.impl.portal.Secret "
+                f"row in {len(candidates)} conf file(s))"], 1
+    return ["portal-secret-route: unknown (no qindaqt-portals.conf found)"], 1
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Read-only Secret Service provider check for QindaQt sessions.")
+    parser.parse_args()
+    try:
+        report = []
+        findings = 0
+        provider_lines, count = check_provider()
+        collection_lines, count2 = check_default_collection(provider_lines)
+        pam_lines, count3 = check_pam()
+        portal_lines, count4 = check_portal_route()
+        for lines in (provider_lines, collection_lines, pam_lines, portal_lines):
+            report.extend(lines)
+        findings = count + count2 + count3 + count4
+    except Finding as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    for line in report:
+        print(line)
+    print(f"summary: {'pass' if findings == 0 else 'findings'} ({findings})")
+    return 0 if findings == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
