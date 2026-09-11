@@ -177,8 +177,13 @@ they neither contact nor modify the host portal or host D-Bus services.
 This proves package selection, non-Settings routing to declared backends, and
 Qt reaction on the private bus. It does not qualify an installed desktop, a
 host session bus, GTK/GSettings or Flatpak sandbox reaction, a real chooser
-UI, real-backend reachability for the routed families, or any non-Settings
-portal implementation.
+UI, or any non-Settings portal implementation. Real-backend reachability is
+evidenced by the recorded headless smoke
+(`tests/services/portal/proof/private-portal-proof.sh`): it starts a virtual
+KWin, a private PipeWire stack, the real KDE portal backend, and the real
+frontend, and its run stops at the real screenshot consent dialog, which needs
+a human click; the runtime traps it hit are noted in
+[gabbee interop evidence](../development/gabbee-interop-evidence.md).
 
 The durable process/protocol choice is recorded in
 [ADR-0054](../adr/0054-export-appearance-through-the-standard-settings-portal.md).
