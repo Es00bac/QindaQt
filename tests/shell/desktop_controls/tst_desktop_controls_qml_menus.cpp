@@ -2,6 +2,7 @@
 #include "desktop_controls_qml_test_support.h"
 #include "desktop_controls_test_support.h"
 
+#include "qindaqt/shell/desktop_controls/active_application_controller.h"
 #include "qindaqt/shell/desktop_controls/command_search_controller.h"
 #include "qindaqt/shell/desktop_controls/places_controller.h"
 #include "qindaqt/shell/desktop_controls/quick_launch_controller.h"
@@ -9,6 +10,7 @@
 
 #include <QAccessible>
 #include <QQmlExtensionPlugin>
+#include <QScreen>
 #include <QtTest>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_DesktopControlsPlugin)
@@ -26,7 +28,158 @@ private Q_SLOTS:
     void commandPaletteSearchesByKeyboardAndActivates();
     void placesMenuOpensFoldersThroughTheSeam();
     void quickLaunchDockUsesOnlyPersistedPins();
+    void controlPopupPlacementMath();
+    void activeApplicationPopupAnchorsToTheWidget();
 };
+
+void DesktopControlsQmlMenuTests::controlPopupPlacementMath()
+{
+    TaskListStack tasks;
+    ShellTaskListApplet::TaskListAppletController taskList(tasks.source, tasks.authority,
+                                                          tasks.port, {true, true, true});
+    ActiveApplicationController active(&taskList, {true, true});
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("ActiveApplicationApplet"), &active, &error),
+             qPrintable(error));
+    QObject *popup = host.child<QObject>(QStringLiteral("activeApplicationPopup"));
+    QVERIFY(popup != nullptr);
+    const auto place = [popup](QPointF anchor, qreal anchorWidth, qreal anchorHeight,
+                               qreal popupWidth, qreal popupHeight, const QString &edge,
+                               qreal boundsWidth, qreal boundsHeight) {
+        QVariant placed;
+        const bool invoked = QMetaObject::invokeMethod(
+            popup, "placementFor", Q_RETURN_ARG(QVariant, placed), Q_ARG(QVariant, anchor),
+            Q_ARG(QVariant, anchorWidth), Q_ARG(QVariant, anchorHeight),
+            Q_ARG(QVariant, popupWidth), Q_ARG(QVariant, popupHeight), Q_ARG(QVariant, edge),
+            Q_ARG(QVariant, boundsWidth), Q_ARG(QVariant, boundsHeight));
+        return invoked ? placed.toPointF() : QPointF(-9999, -9999);
+    };
+    // Top panel: directly under the widget, left edges aligned.
+    QCOMPARE(place({100, 0}, 80, 28, 300, 200, QStringLiteral("top"), 1920, 1080),
+             QPointF(0, 28));
+    // Bottom panel: directly above the widget.
+    QCOMPARE(place({100, 4}, 80, 28, 300, 200, QStringLiteral("bottom"), 1920, 1080),
+             QPointF(0, -200));
+    // Near the right output edge the popup slides left along the panel.
+    QCOMPARE(place({1800, 0}, 80, 28, 300, 200, QStringLiteral("top"), 1920, 1080),
+             QPointF(-180, 28));
+    // A popup wider than the output keeps its left edge on the output.
+    QCOMPARE(place({50, 0}, 80, 28, 500, 200, QStringLiteral("top"), 300, 1080),
+             QPointF(-50, 28));
+    // Side panels open beside the widget and slide along the vertical axis.
+    QCOMPARE(place({0, 1000}, 48, 48, 300, 200, QStringLiteral("left"), 1920, 1080),
+             QPointF(48, -120));
+    QCOMPARE(place({1872, 10}, 48, 48, 300, 200, QStringLiteral("right"), 1920, 1080),
+             QPointF(-300, 0));
+    // Unknown bounds never invent a clamp.
+    QCOMPARE(place({1800, 0}, 80, 28, 300, 200, QStringLiteral("top"), 0, 0), QPointF(0, 28));
+}
+
+void DesktopControlsQmlMenuTests::activeApplicationPopupAnchorsToTheWidget()
+{
+    TaskListStack tasks;
+    ShellTaskListApplet::TaskListAppletController taskList(tasks.source, tasks.authority,
+                                                          tasks.port, {true, true, true});
+    ActiveApplicationController active(&taskList, {true, true});
+    QVERIFY(tasks.publish(TaskListStack::activeEditorFacts()) > 0);
+
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("ActiveApplicationApplet"), &active, &error),
+             qPrintable(error));
+    const QSize output = host.window->screen()->size();
+    // RuntimePanel is frameless; offscreen adds frame margins to decorated
+    // windows, which would offset window-local placement from the output.
+    host.window->hide();
+    host.window->setFlags(host.window->flags() | Qt::FramelessWindowHint);
+    host.window->setGeometry(QRect(QPoint(0, 0), output));
+    host.window->show();
+    QTRY_VERIFY(host.window->isExposed());
+    auto *summary = host.child<QQuickItem>(QStringLiteral("activeApplicationSummary"));
+    QObject *popup = host.child<QObject>(QStringLiteral("activeApplicationPopup"));
+    QVERIFY(summary != nullptr);
+    QVERIFY(popup != nullptr);
+    const auto openPopup = [summary, popup] {
+        QVERIFY(QMetaObject::invokeMethod(summary, "openActions"));
+        QTRY_VERIFY(popup->property("opened").toBool());
+    };
+    const auto closePopup = [popup] {
+        QVERIFY(QMetaObject::invokeMethod(popup, "close"));
+        QTRY_VERIFY(!popup->property("opened").toBool());
+    };
+    // AGENT-NOTE: QQuickPopup::x()/y() report the window-system-settled
+    // position, which the offscreen platform never feeds back. The requested
+    // placement is observed on the separate popup window instead, relative to
+    // the anchor's global position.
+    const auto popupWindow = [popup]() -> QWindow * {
+        auto *content = popup->property("contentItem").value<QQuickItem *>();
+        return content != nullptr ? content->window() : nullptr;
+    };
+    const auto openedOffset = [&host, &popupWindow] {
+        QWindow *window = popupWindow();
+        return window != nullptr && window != host.item->window()
+            ? QPointF(window->geometry().topLeft()) - host.item->mapToGlobal(QPointF(0, 0))
+            : QPointF(-9999, -9999);
+    };
+    const auto requested = [popup] { return popup->property("placement").toPointF(); };
+
+    // Upper output half without a panel model: under the widget.
+    openPopup();
+    QCOMPARE(requested(), QPointF(0, host.item->height()));
+    QCOMPARE(openedOffset(), QPointF(0, host.item->height()));
+    closePopup();
+
+    // Lower output half without a panel model: above the widget.
+    host.item->setPosition(QPointF(20, output.height() - 60));
+    openPopup();
+    const qreal popupHeight = popupWindow()->height();
+    QCOMPARE(requested(), QPointF(0, -popupHeight));
+    QCOMPARE(openedOffset(), QPointF(0, -popupHeight));
+    closePopup();
+
+    // At the right output edge: slid left so the whole popup stays visible.
+    host.item->setPosition(QPointF(output.width() - host.item->width() - 2, 20));
+    openPopup();
+    const qreal popupWidth = popupWindow()->width();
+    QVERIFY(popupWidth > host.item->width() + 2);
+    const QPointF slid(output.width() - popupWidth - host.item->x(), host.item->height());
+    QCOMPARE(requested(), slid);
+    QCOMPARE(openedOffset(), slid);
+    closePopup();
+
+    // A RuntimePanel-like host names its edge. Its band sits at the bottom of
+    // the output, but the widget is near the top of that band's own window,
+    // so only the panel model (not the fallback heuristic) opens above.
+    QQmlComponent panelComponent(host.engine.get());
+    panelComponent.setData("import QtQuick\nWindow { flags: Qt.FramelessWindowHint;"
+                           " property var panel: ({ \"edge\": \"bottom\" }) }",
+                           QUrl(QStringLiteral("inline:bottom-panel-window.qml")));
+    std::unique_ptr<QObject> panelObject(panelComponent.create());
+    auto *bottomPanel = qobject_cast<QQuickWindow *>(panelObject.get());
+    QVERIFY2(bottomPanel != nullptr, qPrintable(panelComponent.errorString()));
+    bottomPanel->setGeometry(0, output.height() - 40, output.width(), 40);
+    host.item->setParentItem(bottomPanel->contentItem());
+    host.item->setPosition(QPointF(20, 6));
+    bottomPanel->show();
+    QTRY_VERIFY(bottomPanel->isExposed());
+    openPopup();
+    QCOMPARE(popup->property("resolvedPanelEdge").toString(), QStringLiteral("bottom"));
+    QCOMPARE(requested(), QPointF(0, -popupWindow()->height()));
+    QCOMPARE(openedOffset(), QPointF(0, -popupWindow()->height()));
+    closePopup();
+    host.item->setParentItem(host.window->contentItem());
+    host.item->setPosition(QPointF(20, 20));
+    panelObject.reset();
+
+    // The explicit override wins over detection.
+    popup->setProperty("panelEdge", QStringLiteral("left"));
+    openPopup();
+    QCOMPARE(popup->property("resolvedPanelEdge").toString(), QStringLiteral("left"));
+    QCOMPARE(requested(), QPointF(host.item->width(), 0));
+    QCOMPARE(openedOffset(), QPointF(host.item->width(), 0));
+    closePopup();
+}
 
 void DesktopControlsQmlMenuTests::systemMenuOpensAWindowPopupAndDispatchesThroughFacades()
 {

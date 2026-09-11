@@ -103,6 +103,55 @@ Item {
             }
         }
 
+        function submenuItems(count) {
+            const result = []
+            for (let index = 0; index < count; ++index) {
+                result.push({
+                    "id": "menu" + index, "kind": "submenu",
+                    "text": "Menu" + index, "mnemonicIndex": 0,
+                    "enabled": true, "checkable": false, "checked": false,
+                    "children": [{
+                        "id": "action" + index, "kind": "action",
+                        "text": "Action" + index, "mnemonicIndex": 0,
+                        "enabled": true, "checkable": false, "checked": false
+                    }]
+                })
+            }
+            return result
+        }
+
+        // Regression (shell-log TypeError flood at the MenuBarItem x binding):
+        // a retired top-level item re-evaluates its geometry after the visible
+        // entry list shrinks, while its stale sourceIndex still addresses the
+        // old list. Focus moving to an application with fewer menus, an
+        // unavailable publication, width pressure, and access loss all shrink
+        // it. The row runs under QT_FATAL_WARNINGS=1, so one warning fails it.
+        function test_shrinkingEntriesNeverMeasureRetiredIndices() {
+            fakeAccess.available = true
+            fakeAccess.items = submenuItems(4)
+            const applet = createTemporaryObject(appletComponent, testRoot,
+                                                 {"width": 1000})
+            verify(applet !== null)
+            tryCompare(applet.menuBar, "count", 4)
+            fakeAccess.items = submenuItems(1)
+            tryCompare(applet.menuBar, "count", 1)
+            fakeAccess.items = submenuItems(4)
+            tryCompare(applet.menuBar, "count", 4)
+            applet.width = 90
+            tryVerify(function() { return applet.menuBar.count < 4 })
+            applet.width = 1000
+            tryCompare(applet.menuBar, "count", 4)
+            fakeAccess.available = false
+            fakeAccess.items = []
+            tryCompare(applet.menuBar, "count", 0)
+            fakeAccess.available = true
+            fakeAccess.items = submenuItems(3)
+            tryCompare(applet.menuBar, "count", 3)
+            applet.access = null
+            tryCompare(applet.menuBar, "count", 0)
+            compare(applet.Accessible.name, "Menu unavailable")
+        }
+
         function test_nullAccessShowsUnavailable() {
             const applet = createTemporaryObject(appletComponent, testRoot, {
                 "access": null

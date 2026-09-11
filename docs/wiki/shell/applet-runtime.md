@@ -148,7 +148,8 @@ surface hosts the desktop-icons entry (see its bullet below):
   notification-center utility slot. See
   [Status notifier tray](status-tray.md).
 - `qindaqt.applets.start-menu` renders the compiled
-  `QindaQt.Shell.StartMenu` module: a green Luna start button opening a
+  `QindaQt.Shell.StartMenu` module: a green Luna start button, sized to its
+  icon and bold italic label, opening a
   two-column start panel popup with launcher sections left and places plus
   system actions right. Its `applications.launch` grant rides the same
   audited launcher seams, and the stock-profile invariant resolves exactly

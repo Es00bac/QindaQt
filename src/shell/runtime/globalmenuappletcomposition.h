@@ -15,6 +15,10 @@ namespace QindaQt::Applets {
 class ManifestCatalog;
 }
 
+namespace QindaQt::Profiles {
+class LayoutProfile;
+}
+
 namespace QindaQt::ShellWindowActionsClient {
 class ShellWindowActionsClient;
 }
@@ -57,6 +61,20 @@ public:
 
     void start();
     void stop();
+    // AGENT-CONTRACT (ADR-0130): the registrar name is a session-wide signal
+    // that a menu host exists; Qt's platform theme hides each new QMenuBar
+    // while it has an owner. The shell therefore owns it only while the
+    // adopted layout resolves a ready global-menu instance, using the same
+    // resolution as the panel dispatcher and desktop surface.
+    [[nodiscard]] static bool layoutHostsGlobalMenu(
+        const Profiles::LayoutProfile &profile,
+        const Applets::ManifestCatalog &catalog,
+        const AppletHost::CapabilityPolicy &policy);
+    // Idempotent residency transition for startup and every live layout
+    // adoption: starts unless already Ready when hosted; otherwise stops,
+    // releasing the name, with reason `global-menu-not-hosted`.
+    void followLayout(bool hosted);
+    [[nodiscard]] bool registrarResident() const noexcept;
     [[nodiscard]] GlobalMenu::GlobalMenuAppletAccess *access() const noexcept;
     [[nodiscard]] GlobalMenuRuntimeStatus status() const noexcept;
     [[nodiscard]] const QString &reasonCode() const noexcept;

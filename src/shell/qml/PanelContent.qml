@@ -158,6 +158,30 @@ Item {
         }
     }
 
+    // AGENT-NOTE: Luna notification-area well (ADR-0124, "Luna taskbar
+    // rendering"): a full-height lighter band from just before the end zone
+    // to the trailing edge, with a dark leading seam and a light highlight.
+    // It follows the solved end-zone geometry, reserves no space, and only
+    // lunaMode paints it, so every other panel renders exactly as before.
+    Rectangle {
+        id: lunaTrayWell
+        objectName: "lunaTrayWell"
+        // Luna dressing constants (ADR-0124); the seams derive from them.
+        readonly property color deepBlue: "#0c59b9"
+        readonly property color brightBlue: "#139ee9"
+        visible: root.lunaMode && endZone.desiredExtent > 0
+        x: Math.max(0, endZone.x - Tokens.space["2"])
+        width: Math.max(0, root.width - x)
+        height: root.height
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: lunaTrayWell.deepBlue }
+            GradientStop { position: 0.08; color: lunaTrayWell.brightBlue }
+            GradientStop { position: 1.0; color: Qt.darker(lunaTrayWell.brightBlue, 1.15) }
+        }
+        Rectangle { objectName: "lunaTrayWellSeam"; width: 1; height: parent.height; color: Qt.darker(lunaTrayWell.deepBlue, 1.35) }
+        Rectangle { objectName: "lunaTrayWellHighlight"; x: 1; width: 1; height: parent.height; color: Qt.lighter(lunaTrayWell.brightBlue, 1.35) }
+    }
+
     // Panel configuration menu (QQC2 style palette; Controls ships no menu
     // primitive yet — task-list context menu precedent). Every quick setting
     // persists through the PanelQuickConfig facade into Settings1.
@@ -269,6 +293,7 @@ Item {
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
         desktopControlsAccess: root.desktopControlsAccess
         dockMode: root.dockMode
+        lunaMode: root.lunaMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoom
@@ -296,6 +321,7 @@ Item {
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
         desktopControlsAccess: root.desktopControlsAccess
         dockMode: root.dockMode
+        lunaMode: root.lunaMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoom
@@ -323,6 +349,7 @@ Item {
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
         desktopControlsAccess: root.desktopControlsAccess
         dockMode: root.dockMode
+        lunaMode: root.lunaMode
         dockTileSize: root.dockTileSize
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoom

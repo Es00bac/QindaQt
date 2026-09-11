@@ -156,7 +156,62 @@ private Q_SLOTS:
   void publishesNativeWaylandAddressWithoutInventingWindowId();
   void productionIdentityRejectsOffscreenWindow();
   void localMenuTracksExactHostedExportAndRestoresOnLoss();
+  void localMenuReturnsOnRegistrarLossAndHidesForReturningHost();
 };
+
+void ApplicationMenuExportTest::
+    localMenuReturnsOnRegistrarLossAndHidesForReturningHost() {
+  // ADR-0130: a layout without a global-menu applet releases the registrar
+  // name, which must put the menu back in the window; adopting a hosting
+  // layout again hides it only after the new exact owner acknowledges it.
+  auto first = std::make_unique<RegistrarFixture>(
+      QStringLiteral("app-shell-residency-first"));
+  QVERIFY(first->start());
+  auto providerBus = QDBusConnection::connectToBus(
+      QDBusConnection::SessionBus,
+      QStringLiteral("app-shell-residency-provider"));
+  QVERIFY(providerBus.isConnected());
+  first->registrar.hostedProvider = providerBus.baseService();
+  first->registrar.hosted = true;
+  AppShell::ApplicationCoordinator coordinator;
+  QVERIFY(coordinator.replaceActions({action()}).ok());
+  QWindow window;
+  auto publisher = std::make_unique<FakeIdentityPublisher>(
+      AppShell::MenuExport::WindowMenuIdentity{
+          .kind = AppShell::MenuExport::WindowMenuIdentityKind::XWindow,
+          .registrarWindowId = 94});
+  AppShell::MenuExport::ApplicationMenuExport composition(
+      coordinator, window, providerBus, std::move(publisher));
+  QSignalSpy visibility(
+      &composition,
+      &AppShell::MenuExport::ApplicationMenuExport::localMenuVisibleChanged);
+  QVERIFY(composition.start());
+  QTRY_VERIFY_WITH_TIMEOUT(composition.published(), 5'000);
+  QTRY_VERIFY_WITH_TIMEOUT(!composition.localMenuVisible(), 5'000);
+  const auto signalsWhileHidden = visibility.size();
+
+  first->stop();
+  QTRY_COMPARE_WITH_TIMEOUT(
+      composition.status(),
+      AppShell::MenuExport::MenuExportStatus::WaitingForRegistrar, 5'000);
+  QVERIFY(composition.localMenuVisible());
+  QVERIFY(visibility.size() > signalsWhileHidden);
+
+  RegistrarFixture second(QStringLiteral("app-shell-residency-second"));
+  second.registrar.hostedProvider = providerBus.baseService();
+  second.registrar.hosted = true;
+  QVERIFY(second.start());
+  QTRY_VERIFY_WITH_TIMEOUT(composition.published(), 5'000);
+  QCOMPARE(second.registrar.registerCount, 1);
+  QCOMPARE(composition.registeredWindowId(), std::optional<quint32>{94});
+  QTRY_VERIFY_WITH_TIMEOUT(!composition.localMenuVisible(), 5'000);
+
+  composition.stop();
+  QVERIFY(composition.localMenuVisible());
+  first.reset();
+  QDBusConnection::disconnectFromBus(
+      QStringLiteral("app-shell-residency-provider"));
+}
 
 void ApplicationMenuExportTest::localMenuTracksExactHostedExportAndRestoresOnLoss() {
   RegistrarFixture registrar(QStringLiteral("app-shell-hosted-registrar"));

@@ -27,3 +27,18 @@ add_test(NAME qindaqt.qt-platform-theme-services COMMAND qindaqt_platform_servic
 set_tests_properties(qindaqt.qt-platform-theme-services PROPERTIES LABELS "qt-theme"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic;QT_FATAL_WARNINGS=1"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
+# ADR-0130: per-creation menubar decision against Qt's real generic theme on a
+# private bus (Qt caches its own registrar answer once per process).
+find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+qt_add_executable(qindaqt_platform_menubar_tests tst_platform_menubar.cpp
+    ${PROJECT_SOURCE_DIR}/src/platform/qt_theme/qindaqt_platform_theme.cpp
+    ${PROJECT_SOURCE_DIR}/src/platform/qt_theme/qindaqt_platform_theme.h)
+target_link_libraries(qindaqt_platform_menubar_tests PRIVATE qindaqt_native_palette QindaQt::AppAppearance Qt6::GuiPrivate Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_platform_menubar_tests)
+add_test(NAME qindaqt.qt-platform-theme-menubar-private-bus
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_platform_menubar_tests>)
+set_tests_properties(qindaqt.qt-platform-theme-menubar-private-bus PROPERTIES LABELS "qt-theme;global-menu;private-bus"
+    TIMEOUT 30
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")

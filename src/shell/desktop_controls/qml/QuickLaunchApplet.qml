@@ -88,7 +88,7 @@ Item {
         anchors.centerIn: parent
         name: "applications-other"
         size: 18
-        color: Tokens.fg.muted
+        color: root.luna ? "white" : Tokens.fg.muted
         symbolic: true
         fallbackText: qsTr("Quick launch")
         Accessible.ignored: true

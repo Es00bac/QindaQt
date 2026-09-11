@@ -4,7 +4,11 @@
 #include "qindaqt/shell/desktop_controls/active_application_controller.h"
 #include "qindaqt/shell/desktop_controls/quick_launch_controller.h"
 
+#include <qindaqt/shell/icons/desktop_entry_icon_resolver.h>
+
+#include <QFile>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QtTest>
 
 using namespace QindaQt::Shell::DesktopControls;
@@ -19,7 +23,72 @@ private Q_SLOTS:
   void quickLaunchRefusesUnknownOrUngrantedActivation();
   void activeApplicationFollowsTheActiveTaskRow();
   void activeApplicationIntentsAreFencedByGrantsAndPending();
+  void activeApplicationAndTaskRowsShowDesktopEntryNames();
 };
+
+namespace {
+
+QVariantMap rowForTask(const TaskListAppletController &taskList, const QString &taskId)
+{
+  for (const QVariant &value : taskList.entryRows()) {
+    const QVariantMap row = value.toMap();
+    if (row.value(QStringLiteral("taskId")).toString() == taskId) {
+      return row;
+    }
+  }
+  return {};
+}
+
+} // namespace
+
+void QuickLaunchAndActiveApplicationTests::activeApplicationAndTaskRowsShowDesktopEntryNames()
+{
+  // The composition's resolver maps raw compositor ids to desktop-entry
+  // names; the task rows carry the result, so the active application
+  // indicator, its accessible name, and the task buttons agree.
+  QTemporaryDir applications;
+  QVERIFY(applications.isValid());
+  QFile editorEntry(applications.filePath(QStringLiteral("org.qindaqt.TextEditor.desktop")));
+  QVERIFY(editorEntry.open(QIODevice::WriteOnly));
+  QVERIFY(editorEntry.write("[Desktop Entry]\nType=Application\nName=Text Editor\n"
+                            "Icon=accessories-text-editor\n") > 0);
+  editorEntry.close();
+  const QindaQt::Shell::Icons::DesktopEntryIconResolver resolver({applications.path()});
+
+  TaskListStack tasks;
+  TaskListAppletController taskList(
+      tasks.source, tasks.authority, tasks.port, {true, true, true}, {}, {},
+      [&resolver](const QString &applicationId, const QString &reportedName) {
+        return resolver.applicationDisplayName(applicationId, reportedName);
+      });
+  ActiveApplicationController active(&taskList, {true, true});
+  auto facts = TaskListStack::activeEditorFacts();
+  QVERIFY(tasks.publish(facts) > 0);
+  QCOMPARE(active.applicationId(), QStringLiteral("org.qindaqt.TextEditor"));
+  QCOMPARE(active.applicationName(), QStringLiteral("Text Editor"));
+  QCOMPARE(active.accessibleName(), QStringLiteral("Active application: Text Editor"));
+  const QVariantMap editorRow = rowForTask(taskList, QStringLiteral("w-editor"));
+  QCOMPARE(editorRow.value(QStringLiteral("applicationName")).toString(),
+           QStringLiteral("Text Editor"));
+  QVERIFY(editorRow.value(QStringLiteral("accessibleName")).toString()
+              .startsWith(QStringLiteral("Text Editor")));
+
+  // No desktop entry and a Wayland window reporting its raw app id: the
+  // prettified id, never "org.qindaqt.Terminal".
+  facts[0].active = false;
+  facts[1].active = true;
+  facts[1].minimized = false;
+  facts[1].applicationName = facts[1].applicationId;
+  QVERIFY(tasks.publish(facts) > 0);
+  QCOMPARE(active.taskId(), QStringLiteral("w-terminal"));
+  QCOMPARE(active.applicationName(), QStringLiteral("Terminal"));
+  QCOMPARE(active.accessibleName(), QStringLiteral("Active application: Terminal"));
+  const QVariantMap terminalRow = rowForTask(taskList, QStringLiteral("w-terminal"));
+  QCOMPARE(terminalRow.value(QStringLiteral("applicationName")).toString(),
+           QStringLiteral("Terminal"));
+  QVERIFY(!terminalRow.value(QStringLiteral("accessibleName")).toString()
+               .contains(QStringLiteral("org.qindaqt")));
+}
 
 void QuickLaunchAndActiveApplicationTests::
     quickLaunchMirrorsPinnedEntriesIndependentlyOfTheLauncherQuery()

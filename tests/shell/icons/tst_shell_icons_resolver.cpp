@@ -26,6 +26,9 @@ private slots:
     void hostileEntriesSkipped();
     void emptyAndMissingRoots();
     void repeatedScansAreDeterministic();
+    void startupWmClassMatchesBeforeTail();
+    void displayNamesFollowTheSameEntryMatching();
+    void applicationDisplayNameFallsBackToPrettifiedIds();
 
 private:
     QString m_apps1;
@@ -123,7 +126,71 @@ void ShellIconsResolverTest::repeatedScansAreDeterministic()
     QCOMPARE(again.entryCount(), m_resolver->entryCount());
     QCOMPARE(again.iconNameForAppId(QStringLiteral("dolphin")),
              m_resolver->iconNameForAppId(QStringLiteral("dolphin")));
-    QCOMPARE(m_resolver->entryCount(), 3);
+    QCOMPARE(m_resolver->entryCount(), 4);
+}
+
+void ShellIconsResolverTest::startupWmClassMatchesBeforeTail()
+{
+    // X11 windows report WM_CLASS; the entry declares it as StartupWMClass.
+    QCOMPARE(m_resolver->iconNameForAppId(QStringLiteral("LegacyClass")),
+             QStringLiteral("legacy-icon"));
+    QCOMPARE(m_resolver->iconNameForAppId(QStringLiteral("legacyclass")),
+             QStringLiteral("legacy-icon"));
+    QVERIFY(m_resolver->iconNameForAppId(QStringLiteral("OtherClass")).isEmpty());
+}
+
+void ShellIconsResolverTest::displayNamesFollowTheSameEntryMatching()
+{
+    QCOMPARE(m_resolver->displayNameForAppId(QStringLiteral("org.example.Foo")),
+             QStringLiteral("Foo"));
+    QCOMPARE(m_resolver->displayNameForAppId(QStringLiteral("org.kde.dolphin")),
+             QStringLiteral("Dolphin"));
+    QCOMPARE(m_resolver->displayNameForAppId(QStringLiteral("dolphin")),
+             QStringLiteral("Dolphin"));
+    QCOMPARE(m_resolver->displayNameForAppId(QStringLiteral("legacyclass")),
+             QStringLiteral("Legacy Client"));
+    // A refused Icon= value does not hide the entry's name.
+    QVERIFY(m_resolver->iconNameForDesktopId(QStringLiteral("absolute")).isEmpty());
+    QCOMPARE(m_resolver->displayNameForAppId(QStringLiteral("absolute")),
+             QStringLiteral("Absolute"));
+    // Hidden, NoDisplay, malformed, oversized, and escaping entries name nothing.
+    for (const QString &id : {QStringLiteral("hidden"), QStringLiteral("nodisplay"),
+                              QStringLiteral("broken"), QStringLiteral("huge"),
+                              QStringLiteral("escape"), QStringLiteral("org.example.Outside")}) {
+        QVERIFY2(m_resolver->displayNameForAppId(id).isEmpty(), qPrintable(id));
+    }
+}
+
+void ShellIconsResolverTest::applicationDisplayNameFallsBackToPrettifiedIds()
+{
+    // Wayland reports the app id as the resource class too.
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("org.kde.dolphin"),
+                                                QStringLiteral("org.kde.dolphin")),
+             QStringLiteral("Dolphin"));
+    // X11: the id misses, the reported WM_CLASS names the entry.
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("legacy-client-bin"),
+                                                QStringLiteral("LegacyClass")),
+             QStringLiteral("Legacy Client"));
+    // No entry: the last reverse-DNS segment of the raw id.
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("org.qindaqt.Terminal"),
+                                                QStringLiteral("org.qindaqt.Terminal")),
+             QStringLiteral("Terminal"));
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("org.qindaqt.Terminal"),
+                                                QString()),
+             QStringLiteral("Terminal"));
+    // A reported class that is not a reverse-DNS id is kept whole.
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("gimp-2.10"),
+                                                QStringLiteral("Gimp-2.10")),
+             QStringLiteral("Gimp-2.10"));
+    QVERIFY(m_resolver->applicationDisplayName(QString(), QString()).isEmpty());
+
+    QCOMPARE(DesktopEntryIconResolver::prettifiedApplicationId(QStringLiteral("firefox")),
+             QStringLiteral("Firefox"));
+    QCOMPARE(DesktopEntryIconResolver::prettifiedApplicationId(
+                 QStringLiteral("org.example.Foo.desktop")),
+             QStringLiteral("Foo"));
+    QCOMPARE(DesktopEntryIconResolver::prettifiedApplicationId(QStringLiteral("App org.x.Y")),
+             QStringLiteral("App org.x.Y"));
 }
 
 QTEST_GUILESS_MAIN(ShellIconsResolverTest)

@@ -388,5 +388,7 @@ icon and scheme projection for ordinary Qt consumers. Its pure projection uses
 public ThemeSpec/QST; only the QPA plugin links matching `Qt6::GuiPrivate` and
 observes the existing public Settings1 client. It writes no configuration,
 implements no QStyle and adds no KDE appearance dependency. Platform services
-remain delegated to Qt's generic base theme. See
+remain delegated to Qt's generic base theme, except that a D-Bus menubar is
+requested only while the AppMenu registrar has an owner
+([ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md)). See
 [ADR-0115](../adr/0115-share-appearance-through-qt-platform-theme.md).

@@ -202,7 +202,10 @@ seconds or the next successful operation.
 ## Surfaces and entry points
 
 The notification-center panel entry remains the established compact bell/moon
-glyph with its full accessible toggle name and Do Not Disturb state. The
+glyph with its full accessible toggle name and Do Not Disturb state. On the
+Luna taskbar ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md))
+the entry shows the icon theme's white `notifications` glyph instead, while Do
+Not Disturb keeps a white crescent. The
 icon-first applet pass does not change notification policy, popup/center
 content, focus behavior, or interruption authority.
 

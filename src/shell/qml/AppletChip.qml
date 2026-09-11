@@ -26,6 +26,9 @@ Rectangle {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool dockHasLauncherGroup: false
+    // Worn Luna taskbar (ADR-0124): set by PanelContent for the bliss-taskbar
+    // panel only; every other host leaves it false and keeps the raised chip.
+    property bool lunaMode: false
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
     readonly property var runtime: applet.runtime ?? ({})
@@ -56,7 +59,18 @@ Rectangle {
     // second clip here cuts their token padding on the stock 26 px panel;
     // PanelContent remains the sole surface-extent clip authority.
     clip: !usesLiveContent
-    color: builtinContent.selected || hoverHandler.hovered
+    // AGENT-NOTE: the Luna taskbar hosts applets directly on its gradient
+    // (ADR-0124, "Luna taskbar rendering"): no raised chip, and hover or an
+    // open notification center reads as a translucent white tint. Live strips
+    // that paint their own per-control hover (start button, quick-launch
+    // tiles, task buttons, tray items) take no chip tint, so pointing at one
+    // control never lights the whole strip.
+    readonly property bool lunaChipTint: !usesLiveContent
+        || !["start-menu", "quick-launch", "task-list", "status-notifier"].includes(pluginId)
+    color: lunaMode
+          ? ((builtinContent.selected || (hoverHandler.hovered && lunaChipTint))
+             ? Qt.rgba(1, 1, 1, 0.18) : "transparent")
+          : builtinContent.selected || hoverHandler.hovered
           ? (Tokens.ready ? Tokens.state.hover : colors.accent ?? "#8fc8b7")
           : settings.bare ? "transparent"
           : (Tokens.ready ? Tokens.bg.raised : colors.surfaceRaised ?? "#2c312e")
@@ -122,7 +136,8 @@ Rectangle {
         anchors.centerIn: parent
         name: root.iconName(root.pluginId)
         size: Math.min(20, root.height - Tokens.space["2"])
-        color: Tokens.fg.default
+        // White glyphs read on the Luna gradient; other hosts keep tokens.
+        color: root.lunaMode ? "white" : Tokens.fg.default
         symbolic: true
         fallbackText: root.displayLabel(root.pluginId)
         visible: !root.usesLiveContent
@@ -151,6 +166,7 @@ Rectangle {
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoomEnabled
         dockHasLauncherGroup: root.dockHasLauncherGroup
+        lunaMode: root.lunaMode
     }
 
     Rectangle {

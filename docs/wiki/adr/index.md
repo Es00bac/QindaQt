@@ -142,4 +142,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0127: preview window chrome and the Qt toolkit through one painter](0127-preview-window-chrome-and-toolkit-through-one-painter.md)
 - [ADR-0128: add the Settings Accessibility route](0128-accessibility-settings-route.md)
 - [ADR-0129: configure window and container chrome through Appearance](0129-configure-window-and-container-chrome.md)
+- [ADR-0130: attach menus to windows when the layout has no global menu](0130-window-attached-menus-without-a-global-menu.md)
 - [ADR-0131: contained windows keep a handlebar; the wheel rolls chrome up](0131-contained-window-handlebar-and-wheel-roll-up.md)

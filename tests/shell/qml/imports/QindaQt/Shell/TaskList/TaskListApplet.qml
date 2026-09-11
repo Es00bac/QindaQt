@@ -16,6 +16,7 @@ Item {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool luna: false
+    property string grouping: "when-crowded"
 
     objectName: "taskListApplet"
     implicitWidth: 96

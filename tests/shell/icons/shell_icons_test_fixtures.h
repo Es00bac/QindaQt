@@ -261,6 +261,9 @@ inline bool buildResolverFixtures(const QString &base)
                           entry(QStringLiteral("Absolute"), QStringLiteral("/etc/passwd")))
         || !writeTextFile(apps1 + QStringLiteral("/traversal.desktop"),
                           entry(QStringLiteral("Traversal"), QStringLiteral("../escape")))
+        || !writeTextFile(apps1 + QStringLiteral("/legacy-client.desktop"),
+                          entry(QStringLiteral("Legacy Client"), QStringLiteral("legacy-icon"))
+                              + QStringLiteral("StartupWMClass=LegacyClass\n"))
         || !writeTextFile(apps2 + QStringLiteral("/org.example.Foo.desktop"),
                           entry(QStringLiteral("FooShadow"), QStringLiteral("shadow-icon")))
         || !writeTextFile(outside + QStringLiteral("/org.example.Outside.desktop"),

@@ -118,7 +118,9 @@ Phases, exposed as `phaseText` with `phaseReasonText`:
 Rows follow the S1 presentation's stable order and are capped at
 `kMaxPresentedItems` (24); overflow is truthful through `overflowCount` and a
 counted `overflowText`. The panel renders only item icons plus an icon-only,
-accessibly counted overflow affordance. Loading, empty, unavailable, and
+accessibly counted overflow affordance, whose glyph is white on the Luna
+taskbar ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md));
+item icons are never recolored. Loading, empty, unavailable, and
 degraded diagnostics remain in the root accessible description rather than
 expanding the strip into state cards; actionable operation feedback opens in
 an independent `Popup.Window`, seeds focus on Dismiss, and closes on Escape or

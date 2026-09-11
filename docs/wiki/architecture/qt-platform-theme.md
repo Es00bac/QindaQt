@@ -49,6 +49,17 @@ generic base theme and delegates tray/menu/dialog services to it. It does not
 recursively discover another appearance plugin and does not implement those
 platform protocols.
 
+The one decision the plugin keeps is whether a `QMenuBar` gets a D-Bus platform
+menubar ([ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md)).
+At each menubar creation it asks the bus daemon whether
+`com.canonical.AppMenu.Registrar` has an owner; the shell owns that name only
+while its layout hosts a global-menu applet. With an owner the generic theme
+creates Qt's D-Bus menubar and the `QMenuBar` hides itself; without one the
+plugin returns no platform menubar and the `QMenuBar` stays in its window. Qt's
+generic theme caches its own registrar answer for the process and does not
+export its D-Bus menubar, so the plugin consults it only after a positive live
+check. A menubar keeps its mode until the application recreates it or restarts.
+
 Existing [Settings portal](portal-service.md) scheme/accent/contrast exports
 remain available to other toolkits. The QPA adapter supplements that standard
 portal with the full palette/font contract required by Qt applications.
@@ -56,7 +67,8 @@ portal with the full palette/font contract required by Qt applications.
 ## Verification
 
 Run `qindaqt.qt-platform-theme`, its `-explicit-style` and `-installed` variants,
-`qindaqt.qt-platform-theme-services`, and `session.sessionenvironment`. The platform rows load
+`qindaqt.qt-platform-theme-services`, `qindaqt.qt-platform-theme-menubar-private-bus`,
+and `session.sessionenvironment`. The platform rows load
 the built plugin into a real QApplication, constructs native Quick controls, and
 uses a private D-Bus fixture with no activation directories or host settings. It
 checks the shared Fusion palette, confirmed font, light/dark live transitions,
@@ -66,7 +78,10 @@ relocated plugin staged without build-library lookup. Session
 coverage proves defaults and explicit user override preservation. Package gates
 must additionally verify installed plugin discovery with the matching Qt build.
 The injected services row proves tray/menu/dialog delegation to the owned base
-theme; native Wayland tray/menu interaction remains a combined session gate.
+theme and the per-creation menubar decision from an injected host probe; the
+menubar private-bus row repeats that decision against Qt's real generic theme,
+starting with no registrar owner so the process-wide cache cannot pin it.
+Native Wayland tray/menu interaction remains a combined session gate.
 
 No test or package merge by itself proves that already running applications
 have loaded a newly installed plugin. Session/application restart remains the

@@ -9,6 +9,7 @@ Item {
     required property var access
     required property var theme
     property bool vertical: false
+    property bool luna: false
 
     objectName: "statusNotifierApplet"
     implicitWidth: 46

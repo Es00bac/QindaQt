@@ -9,6 +9,8 @@ in [ADR-0033](../adr/0033-canonical-menu-model-and-authenticated-menu-ownership.
 and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
 The local/global visibility handoff is defined by
 [ADR-0077](../adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md).
+Layouts without the applet keep menus in application windows under
+[ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md).
 
 ## Milestone boundary
 
@@ -16,7 +18,8 @@ G0 delivered the pure model, policy, exporter, Qt Widgets adapter, and applet
 facade. G1 delivered the AppMenu registrar, asynchronous dbusmenu transport,
 and shell-neutral composition coordinator. G2 now composes those accepted
 boundaries in `qindaqt-shell`: the audited built-in resolves in top-panel
-profiles, the shell owns the registrar on its injected session bus, consumes
+profiles, the shell owns the registrar on its injected session bus while the
+adopted layout resolves a global-menu applet, consumes
 authenticated active-window identity through its existing exact-owner
 window-actions client, and hosts the compiled `QindaQt.Shell.GlobalMenu`
 module with bounded submenu popups. `GlobalMenuAppletRuntime` is the narrow
@@ -281,7 +284,9 @@ the dbusmenu item id, and submits one `clicked` event. Missing focus mappings,
 registration replacement, PID/name mismatch, focus movement, owner loss, or
 stale lineage publishes unavailable and admits no event. Registrar startup
 collision publishes the explicit `degraded` phase with reason
-`registrar-name-owned`; missing policy/catalog authority is `unavailable`.
+`registrar-name-owned`; missing policy/catalog authority is `unavailable`. A
+layout without a ready global-menu instance publishes `unavailable` with reason
+`global-menu-not-hosted` and owns no registrar.
 Stop, owner loss, and replacement clear all items before any refresh.
 
 `ShellRuntimeApplication` constructs exactly one
@@ -311,6 +316,44 @@ rejected by the invocation guard with `no-active-provider` and emits no
 `Event`; the intent is dropped rather than queued, so a withdrawn action is
 never replayed against a provider that re-proves later, and never against a
 different target.
+
+## Registrar residency and window-attached menus
+
+The registrar name is a session-wide signal, not only a transport endpoint:
+Qt's platform theme hides each new `QMenuBar` while the name has an owner. The
+shell therefore owns it only while the active layout hosts a renderer
+([ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md)).
+`GlobalMenuAppletComposition::layoutHostsGlobalMenu` resolves every
+`global-menu` panel or desktop instance through `AppletInstanceResolver`, the
+same path the panel dispatcher and desktop surface render from, so an instance
+rejected by placement (the manifest admits only horizontal panel zones), host,
+implementation, or policy never claims the name. `ShellRuntimeApplication`
+calls `followLayout` at startup and after every live layout adoption
+([ADR-0122](../adr/0122-adopt-saved-layout-preferences-live.md)): a hosting
+layout starts residency unless it is already ready, and any other layout stops
+it, releases the name, and publishes `unavailable` with reason
+`global-menu-not-hosted`. Re-adopting a hosting layout keeps the same owner.
+Of the stock layouts, QindaQt, macOS-inspired, and Unity-inspired host the
+applet; the other eight keep menus in windows.
+
+Applications follow the name in two ways. AppShell exports watch the exact
+registrar owner: owner loss restores the local menu at once, and a returning
+hosting owner hides it again only after its acknowledgment. Ordinary Qt
+applications use the QindaQt Qt platform theme, which decides at each
+`QMenuBar` creation: it asks the bus daemon whether the registrar name has an
+owner and returns Qt's D-Bus menubar only then, otherwise no platform menubar,
+so the menubar stays in its window. Qt's generic theme caches its own
+registrar answer for the whole process and does not export its D-Bus menubar,
+so the QindaQt theme consults the generic theme only after a positive live
+check; a registrar that vanishes between the two synchronous checks leaves
+Qt's cache negative, which fails safe to in-window menus for that process.
+
+A menubar keeps the mode it was created with until the application recreates
+it or restarts. After a live switch away from a global-menu layout, an
+already-open Qt Widgets application without AppShell export keeps its hidden
+menubar until restarted; after a switch to one, it keeps its in-window
+menubar. Desktop controls that read this facade (command palette and HUD menu
+actions) find it unavailable in layouts without the applet.
 
 ## First-party AppShell export
 
@@ -567,6 +610,13 @@ loss, keyboard traversal, and single activation.
 Bluetooth, and Power. The panel factory injects only the facade; panel rows
 never receive a bus object or transport.
 
+Top-level entry geometry is total over retired entries. When the admitted
+entry list shrinks (focus moves to an application with fewer menus, an
+unavailable publication clears the items, width pressure admits fewer, or the
+facade goes away), Qt Quick Controls can re-evaluate a retiring `MenuBarItem`
+before its menu is removed; offsets are clamped to the admitted entries and an
+absent entry measures as empty text, so no binding reads past the list.
+
 ## Manifest, policy, and packaging
 
 The existing `global-menu` manifest requests `global-menu.read` and
@@ -641,7 +691,19 @@ by clicking the lower edge and lower trailing corner of a rendered menu word,
 with a separate assertion that no zone scroll bar owns those points; see
 [panel surfaces](panel-surfaces.md#panel-hit-targets)),
 `qindaqt.global-menu-installed-package`, and the shared
-`qindaqt.shell-runtime-component-closure`. The first-party application rows
+`qindaqt.shell-runtime-component-closure`. ADR-0130 residency is covered by
+`GlobalMenuRuntimeCompositionTest::layoutHostingFollowsResolvedGlobalMenuInstances`
+(every stock layout, plus a side-edge placement rejection) and
+`::registrarResidencyFollowsLayoutAdoption` (claim, no churn on re-adoption,
+release, reclaim over the live adoption catalog reload) in the
+runtime-composition row,
+`ApplicationMenuExportTest::localMenuReturnsOnRegistrarLossAndHidesForReturningHost`
+in `qindaqt.app-shell-menu-export-private-bus`, the per-creation menubar
+decision in `qindaqt.qt-platform-theme-services` and
+`qindaqt.qt-platform-theme-menubar-private-bus` (Qt's real generic theme on a
+private bus, starting with no owner), and
+`test_shrinkingEntriesNeverMeasureRetiredIndices` in
+`qindaqt.global-menu-applet-qml-offscreen`. The first-party application rows
 add the `qindaqt.(terminal|editor)-global-menu-identity-variants-source-policy`
 registrations that keep their hostile variants and live child-PID boundary in
 the test graph. Live installed-session

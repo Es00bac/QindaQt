@@ -49,6 +49,12 @@ class TaskListAppletController : public QObject {
   Q_PROPERTY(int entryCount READ entryCount NOTIFY stateReprojected)
   Q_PROPERTY(int totalEntryCount READ totalEntryCount NOTIFY stateReprojected)
   Q_PROPERTY(int overflowCount READ overflowCount NOTIFY stateReprojected)
+  // Ungrouped strip rows (`grouping: "never"`) and their exact overflow
+  // truth; see TaskListAppletProjection::windowRows. entryRows stays the
+  // grouped view, so hosts with different grouping share one controller.
+  Q_PROPERTY(QVariantList windowRows READ windowRows NOTIFY stateReprojected)
+  Q_PROPERTY(int windowOverflowCount READ windowOverflowCount
+                 NOTIFY stateReprojected)
   // Presentation bound for the strip projection (default
   // kMaxPresentedTaskEntries). A scrolling dock host raises it (up to
   // kMaxPresentedDockEntries) so overflow scrolls instead of truncating;
@@ -77,6 +83,13 @@ class TaskListAppletController : public QObject {
 public:
   using IconNameResolver = std::function<QString(const QString &applicationId)>;
   using IconResolvedResolver = std::function<bool(const QString &iconName)>;
+  // Presentation name for a row from (applicationId, compositor-reported
+  // applicationName). Absent, or answering empty, keeps the reported name.
+  // Rows publish the result as both applicationName and the leading part of
+  // accessibleName, so every consumer (buttons, tooltips, the active
+  // application indicator, command search) shows one name.
+  using ApplicationNameResolver = std::function<QString(
+      const QString &applicationId, const QString &reportedName)>;
 
   TaskListAppletController(
       ShellTaskList::TaskListSource &source,
@@ -94,6 +107,14 @@ public:
       TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
       IconNameResolver iconNameResolver,
       IconResolvedResolver iconResolvedResolver, QObject *parent = nullptr);
+  TaskListAppletController(
+      ShellTaskList::TaskListSource &source,
+      ShellTaskList::Producer::TaskListOperationAuthority &authority,
+      TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
+      IconNameResolver iconNameResolver,
+      IconResolvedResolver iconResolvedResolver,
+      ApplicationNameResolver applicationNameResolver,
+      QObject *parent = nullptr);
   ~TaskListAppletController() override = default;
 
   [[nodiscard]] QString phaseText() const;
@@ -105,6 +126,8 @@ public:
   // ShellDevelopment1 uses this count to prove compositor windows reached T1.
   [[nodiscard]] int totalWindowCount() const noexcept;
   [[nodiscard]] int overflowCount() const noexcept;
+  [[nodiscard]] QVariantList windowRows() const;
+  [[nodiscard]] int windowOverflowCount() const noexcept;
   [[nodiscard]] int presentationLimit() const noexcept;
   void setPresentationLimit(int limit);
   [[nodiscard]] bool windowsReadGranted() const noexcept;
@@ -129,6 +152,16 @@ public:
   Q_INVOKABLE bool minimizeTask(const QString &taskId, quint64 revision);
   Q_INVOKABLE bool closeTask(const QString &taskId, quint64 revision);
   Q_INVOKABLE bool raiseTask(const QString &taskId, quint64 revision);
+  // Ungrouped-row intents: taskId is the entry the row belongs to and
+  // windowId the member it shows (a non-empty id is required). The T0 source
+  // refuses a window outside that entry; activation then targets the member
+  // itself, so the compositor switches its container page, and Close closes
+  // only that window.
+  Q_INVOKABLE bool activateTaskWindow(const QString &taskId,
+                                      const QString &windowId,
+                                      quint64 revision);
+  Q_INVOKABLE bool closeTaskWindow(const QString &taskId,
+                                   const QString &windowId, quint64 revision);
 
   // Container/dock operations admitted by T1. taskId names a container entry
   // (its taskId is the container id); pageId/windowId must be members of that
@@ -216,7 +249,10 @@ private:
   bool refuse(const QString &message);
   bool dispatchTaskIntent(ShellTaskList::TaskIntentKind kind,
                           const QString &taskId, quint64 revision,
-                          const QString &actionText);
+                          const QString &actionText,
+                          const QString &windowId = QString());
+  [[nodiscard]] QVariantList
+  rowsToVariant(const QVector<TaskListAppletRow> &rows) const;
   bool dispatchContainerOperation(const QString &taskId, quint64 revision,
                                   const QString &memberWindowId,
                                   const QString &actionText,
@@ -241,6 +277,7 @@ private:
   TaskListAppletGrants m_grants;
   IconNameResolver m_iconNameResolver;
   IconResolvedResolver m_iconResolvedResolver;
+  ApplicationNameResolver m_applicationNameResolver;
   ShellTaskList::TaskListScope m_scope;
   TaskListAppletProjection m_projection;
   int m_presentationLimit = kMaxPresentedTaskEntries;

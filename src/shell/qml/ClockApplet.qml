@@ -15,8 +15,9 @@ Item {
     readonly property bool showSeconds: settings.showSeconds ?? false
     readonly property bool showDate: settings.showDate ?? true
     // Worn Luna dressing (ADR-0124): the Bliss profile opts this instance in
-    // through its own settings; every other profile keeps the token colors.
-    readonly property bool luna: settings.presentation === "luna"
+    // through its own settings, and the Luna taskbar dispatcher sets it for
+    // any clock it hosts; every other profile keeps the token colors.
+    property bool luna: settings.presentation === "luna"
 
     implicitWidth: Math.max(48, label.implicitWidth + 12)
     implicitHeight: Math.max(24, label.implicitHeight + 6)
@@ -41,17 +42,28 @@ Item {
 
     Text {
         id: label
+        objectName: "clockAppletLabel"
         anchors.centerIn: parent
         width: root.vertical ? parent.width - 4 : implicitWidth
         text: root.displayText()
+        // AGENT-NOTE: the Luna clock is plain white Tahoma at normal weight,
+        // like the Luna notification-area clock (ADR-0124, "Luna taskbar
+        // rendering"). An outline or bold face at 11 px fills the counters
+        // and left the digits illegible on the tray well.
         color: root.luna ? "white" : (root.colors.text ?? "white")
-        style: root.luna ? Text.Outline : Text.Normal
-        styleColor: root.luna ? "#10307a" : "transparent"
         font.pixelSize: root.vertical ? 9 : 11
-        font.bold: root.luna
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         wrapMode: Text.NoWrap
+    }
+
+    // Only the Luna path names a family; every other host keeps the
+    // inherited default font untouched.
+    Binding {
+        target: label
+        property: "font.family"
+        value: "Tahoma"
+        when: root.luna
     }
 
     Timer {

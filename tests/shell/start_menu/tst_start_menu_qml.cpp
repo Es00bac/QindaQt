@@ -180,6 +180,7 @@ private Q_SLOTS:
     void disabledFallbackWithoutAccess();
     void popupTraversesAndActivatesThroughStubs();
     void logOffConfirmsThroughSessionFacade();
+    void buttonWidthContainsItsLabel();
 };
 
 void StartMenuQmlTests::disabledFallbackWithoutAccess()
@@ -402,6 +403,50 @@ void StartMenuQmlTests::logOffConfirmsThroughSessionFacade()
     QVERIFY(QMetaObject::invokeMethod(confirmation, "accept"));
     QCOMPARE(session.requests, QStringList{QStringLiteral("logout")});
     QTRY_VERIFY(!confirmation->property("opened").toBool());
+}
+
+// AGENT-GUARD (regression): the panel chip takes the applet's implicit width.
+// A fixed 56 px let the bold italic label spill past the chip, where the next
+// applet painted over it and the button read "star".
+void StartMenuQmlTests::buttonWidthContainsItsLabel()
+{
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("StartMenuApplet"), nullptr, nullptr,
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *button = host.child<QQuickItem>(QStringLiteral("startMenuButton"));
+    auto *content =
+        host.child<QQuickItem>(QStringLiteral("startMenuButtonContent"));
+    auto *label = host.child<QQuickItem>(QStringLiteral("startMenuButtonLabel"));
+    QVERIFY(button != nullptr);
+    QVERIFY(content != nullptr);
+    QVERIFY(label != nullptr);
+    QVERIFY(label->isVisible());
+    const QFont font = label->property("font").value<QFont>();
+    QVERIFY(font.bold());
+    QVERIFY(font.italic());
+
+    const qreal padding = button->property("leftPadding").toReal()
+        + button->property("rightPadding").toReal();
+    QVERIFY(host.item->implicitWidth() > 56.0);
+    QVERIFY(host.item->width() + 0.5 >= content->implicitWidth() + padding);
+    const QRectF labelBounds =
+        label->mapRectToItem(host.item, QRectF(0, 0, label->width(), label->height()));
+    QVERIFY2(labelBounds.left() >= 0.0
+                 && labelBounds.right() <= host.item->width() + 0.5,
+             qPrintable(QStringLiteral("label %1..%2 outside applet width %3")
+                            .arg(labelBounds.left())
+                            .arg(labelBounds.right())
+                            .arg(host.item->width())));
+
+    // Vertical panels show the icon alone inside the manifest extent.
+    // The Row re-lays out on its next polish, so wait for the width too.
+    QVERIFY(host.item->setProperty("vertical", true));
+    QTRY_VERIFY(!label->isVisible());
+    QTRY_COMPARE(host.item->implicitWidth(), 56.0);
 }
 
 QTEST_MAIN(StartMenuQmlTests)

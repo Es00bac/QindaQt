@@ -67,6 +67,21 @@ struct TaskWindowFact {
                          const TaskWindowFact &) = default;
 };
 
+// One window a collapsed container represents, kept with its own identity,
+// title, and urgency. Presentations that never group (the task-list applet's
+// `grouping: "never"` setting) list each member as its own row; the collapsed
+// row itself keeps speaking with the primary's identity.
+struct TaskContainerMember {
+  QString windowId;
+  QString applicationId;
+  QString applicationName;
+  QString title;
+  bool urgent = false;
+
+  friend bool operator==(const TaskContainerMember &,
+                         const TaskContainerMember &) = default;
+};
+
 // One user-visible task-list row: a standalone window, or a whole QindaQt
 // container collapsed to its primary identity. windowCount counts the
 // representative plus every suppressed member; memberWindowIds is sorted so
@@ -85,6 +100,9 @@ struct TaskEntry {
   QString colorHex;
   QString primaryWindowId;
   QStringList memberWindowIds;
+  // Container entries only: every member, the primary included, in
+  // memberWindowIds order. Always empty for Window entries.
+  QVector<TaskContainerMember> members = {};
   quint32 windowCount = 1;
   QString outputId;
   QStringList workspaceIds;

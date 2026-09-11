@@ -70,11 +70,18 @@ provider and the QML seam hold separate instances.
 roots in injected order, first claim wins an id). Documents parse through
 the launcher's public `DesktopEntryParser`. An entry contributes its `Icon=`
 name only when it parses, is not hidden (`Hidden`/`NoDisplay`), and the value
-is a plain icon name — absolute paths and traversal values are refused.
-`iconNameForAppId` resolves a compositor app id by exact id, case-insensitive
-id, then case-insensitive reverse-DNS tail (`org.kde.dolphin` answers
-`dolphin`), with a trailing `.desktop` ignored. This is the seam the task
-list uses to show window icons from the compositor's app id. The icon-theme
+is a plain icon name — absolute paths and traversal values are refused. A
+visible entry contributes its `Name=` even when its icon is refused.
+`iconNameForAppId` and `displayNameForAppId` resolve a compositor app id by
+exact id, case-insensitive id, case-insensitive `StartupWMClass` (the X11
+WM_CLASS a first-party entry declares, such as `qindaqt-editor`), then
+case-insensitive reverse-DNS tail (`org.kde.dolphin` answers `dolphin`), with
+a trailing `.desktop` ignored. `applicationDisplayName(appId, reportedName)`
+is the presentation name: the entry name for the app id, else for the
+compositor-reported resource class, else `prettifiedApplicationId`, which
+turns a reverse-DNS id into its last segment (`org.qindaqt.Terminal` becomes
+`Terminal`) and keeps any other name. This is the seam the task list uses to
+show window icons and names from the compositor's app id. The icon-theme
 directory ceiling covers standard `hicolor` inventories whose later entries
 hold common application sizes such as `48x48`, `128x128`, `512x512`, and
 `scalable/apps`; those entries must not degrade into typed placeholders merely
@@ -180,7 +187,7 @@ ctest --test-dir build/dev \
 | Test | Scope |
 | --- | --- |
 | `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, a 649-directory hicolor-shaped inventory with an application icon beyond the former truncation point, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, oversized-index refusal, index-cache bound. |
-| `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
+| `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, `StartupWMClass` matching, display names under the same rules (a refused icon keeps its name), prettified-id fallback, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
 | `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, over-long-id refusal before cache access, canonical cache-key sharing, hostile-id flood cache-key-byte and RSS bounds, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |
 | `qindaqt.shell-icon-runtime-configuration` | Catalog-retained selected-theme hint, light/dark default, hostile-hint refusal, an oversized theme proving no second file-size/parser policy, schema-valid punctuation, and explicit XDG root ordering/fallback. |

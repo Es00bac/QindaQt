@@ -53,6 +53,7 @@ private slots:
   void degradedPhaseKeepsRetainedRows();
   void overflowTruthIsExactAndKeepsTheCanonicalHead();
   void dockBoundPresentsEveryRowWithoutOverflow();
+  void ungroupedRowsListEveryWindowWithExactOverflow();
   void rowFieldsMirrorTheEntryAndStampTheRevision();
   void pendingMarkersFlagOnlyNamedTasks();
   void iconPlaceholderIsDeterministicWithFallbacks();
@@ -172,6 +173,102 @@ void TaskListAppletProjectionTests::dockBoundPresentsEveryRowWithoutOverflow() {
       {}, true, quint64(13), kMaxPresentedDockEntries * 4);
   QCOMPARE(clampedHigh.rows.size(), 1);
   QCOMPARE(clampedHigh.overflowCount, 0);
+}
+
+void TaskListAppletProjectionTests::ungroupedRowsListEveryWindowWithExactOverflow() {
+  TaskEntry loose = makeEntry(QStringLiteral("w1"), kAppOne);
+  loose.memberWindowIds = {QStringLiteral("w1")};
+
+  TaskEntry container =
+      makeEntry(QStringLiteral("c1"), kAppTwo, TaskEntryKind::Container);
+  container.primaryWindowId = QStringLiteral("w3");
+  container.memberWindowIds = {QStringLiteral("w2"), QStringLiteral("w3")};
+  container.windowCount = 2;
+  container.active = true;
+  TaskContainerMember background;
+  background.windowId = QStringLiteral("w2");
+  background.applicationId = kAppOne;
+  background.applicationName = QStringLiteral("App One");
+  background.title = QStringLiteral("Background page");
+  background.urgent = true;
+  TaskContainerMember visible;
+  visible.windowId = QStringLiteral("w3");
+  visible.applicationId = kAppTwo;
+  visible.applicationName = QStringLiteral("App Two");
+  visible.title = QStringLiteral("Visible page");
+  container.members = {background, visible};
+
+  // A hand-built container without member identities keeps its row.
+  TaskEntry opaque =
+      makeEntry(QStringLiteral("c2"), kAppTwo, TaskEntryKind::Container);
+  opaque.windowCount = 2;
+
+  const auto presentation =
+      presentationOf(TaskListState::Ready, {loose, container, opaque});
+  auto projection = TaskListAppletProjectionModel::project(
+      presentation, {QStringLiteral("c1")}, true, 9);
+
+  // The grouped view is unchanged: one row per entry, no window target.
+  QCOMPARE(projection.rows.size(), qsizetype(3));
+  QCOMPARE(projection.rows.at(1).windowId, QString());
+  QCOMPARE(projection.rows.at(1).windowCount, quint32(2));
+
+  QCOMPARE(projection.totalWindowCount, 4);
+  QCOMPARE(projection.windowOverflowCount, 0);
+  QCOMPARE(projection.windowRows.size(), qsizetype(4));
+
+  const TaskListAppletRow &looseRow = projection.windowRows.at(0);
+  QCOMPARE(looseRow.taskId, QStringLiteral("w1"));
+  QCOMPARE(looseRow.windowId, QString());
+  QCOMPARE(looseRow.keyboardIndex, 1);
+  QCOMPARE(looseRow.accessibleName, QStringLiteral("Accessible w1"));
+
+  const TaskListAppletRow &backgroundRow = projection.windowRows.at(1);
+  QCOMPARE(backgroundRow.taskId, QStringLiteral("c1"));
+  QCOMPARE(backgroundRow.windowId, QStringLiteral("w2"));
+  QCOMPARE(backgroundRow.kind, TaskEntryKind::Window);
+  QCOMPARE(backgroundRow.title, QStringLiteral("Background page"));
+  QCOMPARE(backgroundRow.applicationId, kAppOne);
+  QCOMPARE(backgroundRow.iconText, QStringLiteral("A"));
+  QCOMPARE(backgroundRow.windowCount, quint32(1));
+  QCOMPARE(backgroundRow.memberWindowIds, QStringList{QStringLiteral("w2")});
+  QCOMPARE(backgroundRow.active, false);
+  QCOMPARE(backgroundRow.urgent, true);
+  QCOMPARE(backgroundRow.pending, true);
+  QCOMPARE(backgroundRow.generationRevision, quint64(9));
+  QCOMPARE(backgroundRow.keyboardIndex, 2);
+  QCOMPARE(backgroundRow.accessibleName,
+           QStringLiteral("App One \u2014 Background page, urgent"));
+
+  const TaskListAppletRow &visibleRow = projection.windowRows.at(2);
+  QCOMPARE(visibleRow.windowId, QStringLiteral("w3"));
+  QCOMPARE(visibleRow.active, true);
+  QCOMPARE(visibleRow.urgent, false);
+  QCOMPARE(visibleRow.keyboardIndex, 3);
+  QCOMPARE(visibleRow.accessibleName,
+           QStringLiteral("App Two \u2014 Visible page, active"));
+
+  const TaskListAppletRow &opaqueRow = projection.windowRows.at(3);
+  QCOMPARE(opaqueRow.taskId, QStringLiteral("c2"));
+  QCOMPARE(opaqueRow.kind, TaskEntryKind::Container);
+  QCOMPARE(opaqueRow.windowId, QString());
+  QCOMPARE(opaqueRow.keyboardIndex, 4);
+
+  // The same bound truncates the expanded tail with exact overflow truth.
+  projection = TaskListAppletProjectionModel::project(
+      presentation, {}, true, 9, 2);
+  QCOMPARE(projection.rows.size(), qsizetype(2));
+  QCOMPARE(projection.overflowCount, 1);
+  QCOMPARE(projection.windowRows.size(), qsizetype(2));
+  QCOMPARE(projection.totalWindowCount, 4);
+  QCOMPARE(projection.windowOverflowCount, 2);
+  QCOMPARE(projection.windowRows.at(1).windowId, QStringLiteral("w2"));
+
+  // Phases without rows project no window rows either.
+  projection = TaskListAppletProjectionModel::project(
+      presentationOf(TaskListState::Empty, {}), {}, true, 9);
+  QVERIFY(projection.windowRows.isEmpty());
+  QCOMPARE(projection.windowOverflowCount, 0);
 }
 
 void TaskListAppletProjectionTests::rowFieldsMirrorTheEntryAndStampTheRevision() {

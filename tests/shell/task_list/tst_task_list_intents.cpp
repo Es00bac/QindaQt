@@ -116,6 +116,62 @@ private slots:
                               QStringLiteral("w-p")}));
     }
 
+    void namedWindowNarrowsActivateAndCloseToThatMember()
+    {
+        // AGENT-GUARD: an ungrouped strip names the member it shows. Activate
+        // and Close must target exactly that window, because the shell router
+        // acts on outcome targets verbatim; Minimize and Raise keep the whole
+        // container; and a window outside the entry is refused like a
+        // vanished task, so a stale row can never reach a foreign window.
+        TaskListSource source;
+        QVERIFY(TaskListTest::publish(source, {
+                    TaskListTest::primary(QStringLiteral("w-p"), kAppId,
+                                          QStringLiteral("c-1")),
+                    TaskListTest::member(QStringLiteral("w-m"), QStringLiteral("c-1")),
+                    TaskListTest::standalone(QStringLiteral("w-loose"), kAppId),
+                }).ok());
+        const QStringList everyMember{QStringLiteral("w-m"), QStringLiteral("w-p")};
+
+        TaskIntentRequest request;
+        request.taskId = QStringLiteral("c-1");
+        request.windowId = QStringLiteral("w-m");
+        request.expectedRevision = source.revision();
+
+        request.kind = TaskIntentKind::Activate;
+        auto outcome = source.requestIntent(request);
+        QVERIFY(outcome.ok());
+        QCOMPARE(outcome.entryKind, TaskEntryKind::Container);
+        QCOMPARE(outcome.primaryWindowId, QStringLiteral("w-m"));
+        QCOMPARE(outcome.memberWindowIds, everyMember);
+
+        request.kind = TaskIntentKind::Close;
+        outcome = source.requestIntent(request);
+        QVERIFY(outcome.ok());
+        QCOMPARE(outcome.primaryWindowId, QStringLiteral("w-m"));
+        QCOMPARE(outcome.memberWindowIds, QStringList{QStringLiteral("w-m")});
+
+        request.kind = TaskIntentKind::Minimize;
+        outcome = source.requestIntent(request);
+        QVERIFY(outcome.ok());
+        QCOMPARE(outcome.primaryWindowId, QStringLiteral("w-p"));
+        QCOMPARE(outcome.memberWindowIds, everyMember);
+
+        request.kind = TaskIntentKind::Raise;
+        outcome = source.requestIntent(request);
+        QVERIFY(outcome.ok());
+        QCOMPARE(outcome.primaryWindowId, QStringLiteral("w-p"));
+
+        request.kind = TaskIntentKind::Activate;
+        request.windowId = QStringLiteral("w-loose");
+        QCOMPARE(source.requestIntent(request).code,
+                 TaskIntentErrorCode::UnknownTask);
+
+        // Staleness is still judged before membership.
+        request.expectedRevision = source.revision() + 1;
+        QCOMPARE(source.requestIntent(request).code,
+                 TaskIntentErrorCode::StaleRevision);
+    }
+
     void staleRevisionIsRejectedBeforeUnknownTask()
     {
         TaskListSource source;

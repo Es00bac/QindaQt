@@ -22,6 +22,10 @@ Item {
     // QST-1 token values themselves come from the Tokens singleton.
     required property var theme
     property bool vertical: false
+    // Worn Luna dressing (ADR-0124), set by the Luna taskbar dispatcher: the
+    // strip's own glyphs read white on the tray well. Item icons are the
+    // applications' own pixmaps and are never recolored.
+    property bool luna: false
 
     readonly property bool hasAccess: access !== null && access !== undefined
     readonly property string phase: hasAccess ? String(access.phaseText) : "unavailable"
@@ -189,7 +193,7 @@ Item {
             contentItem: ShellIcons.Icon {
                 name: "view-more-symbolic"
                 size: 18
-                color: Tokens.fg.muted
+                color: root.luna ? "white" : Tokens.fg.muted
                 symbolic: true
                 fallbackText: qsTr("More")
                 Accessible.ignored: true

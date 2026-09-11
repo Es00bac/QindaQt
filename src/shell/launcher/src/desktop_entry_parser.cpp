@@ -143,6 +143,7 @@ bool isEntryKey(const QString &key)
     QStringLiteral("Icon"),       QStringLiteral("NoDisplay"),
     QStringLiteral("Hidden"),     QStringLiteral("Categories"),
     QStringLiteral("Keywords"),   QStringLiteral("Actions"),
+    QStringLiteral("StartupWMClass"),
   };
   return keys.contains(key);
 }
@@ -286,6 +287,8 @@ DesktopEntryError validateFieldLimits(const ParsedDesktopEntry &entry)
     return fieldError("comment");
   if (!withinLimit(entry.iconName.size(), Bounds::maxIconNameLength))
     return fieldError("icon");
+  if (!withinLimit(entry.startupWmClass.size(), Bounds::maxStartupWmClassLength))
+    return fieldError("startup WM class");
   if (entry.categories.size() > Bounds::maxCategories)
     return fieldError("category count");
   for (const QString &category : entry.categories) {
@@ -470,6 +473,8 @@ DesktopEntryParseResult DesktopEntryParser::parse(const QString &text)
         entry.comment = value;
       else if (key == QLatin1String("Icon"))
         entry.iconName = value;
+      else if (key == QLatin1String("StartupWMClass"))
+        entry.startupWmClass = value;
       else if (key == QLatin1String("NoDisplay")
                || key == QLatin1String("Hidden")) {
         const auto flag = parseBoolValue(value);

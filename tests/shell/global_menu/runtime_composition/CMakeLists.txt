@@ -27,6 +27,8 @@ qt_add_executable(
     tst_global_menu_runtime_composition.cpp
     "${PROJECT_SOURCE_DIR}/src/shell/runtime/globalmenuappletcomposition.cpp"
     "${PROJECT_SOURCE_DIR}/src/shell/runtime/globalmenuappletcomposition.h"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/runtime_layout_adoption.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/runtime_layout_adoption.h"
 )
 target_include_directories(
     qindaqt_global_menu_runtime_composition_tests
@@ -54,6 +56,7 @@ target_link_libraries(
         QindaQt::GlobalMenuRegistrar
         QindaQt::GlobalMenuTransportComposition
         QindaQt::ShellWindowActionsClient
+        qindaqt_profiles
         Qt6::Core
         Qt6::DBus
         Qt6::Test

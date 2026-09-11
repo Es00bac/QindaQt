@@ -56,6 +56,8 @@ qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_menu_places_tests
 qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_launcher_windows_tests
     tst_quick_launch_and_active_application.cpp
     qindaqt.desktop-controls-quick-launch-active-application)
+# The naming row resolves real desktop entries through the shell icon module.
+target_link_libraries(qindaqt_desktop_controls_launcher_windows_tests PRIVATE QindaQt::ShellIcons)
 qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_search_tests
     tst_command_search_controller.cpp qindaqt.desktop-controls-command-search)
 

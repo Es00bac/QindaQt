@@ -81,6 +81,28 @@ bool TaskListAppletController::raiseTask(const QString &taskId,
                             QStringLiteral("Raise"));
 }
 
+bool TaskListAppletController::activateTaskWindow(const QString &taskId,
+                                                  const QString &windowId,
+                                                  quint64 revision) {
+  if (windowId.isEmpty()) {
+    return refuse(QStringLiteral("Activate: ") +
+                  intentRefusalText(TaskIntentErrorCode::InvalidRequest));
+  }
+  return dispatchTaskIntent(TaskIntentKind::Activate, taskId, revision,
+                            QStringLiteral("Activate"), windowId);
+}
+
+bool TaskListAppletController::closeTaskWindow(const QString &taskId,
+                                               const QString &windowId,
+                                               quint64 revision) {
+  if (windowId.isEmpty()) {
+    return refuse(QStringLiteral("Close: ") +
+                  intentRefusalText(TaskIntentErrorCode::InvalidRequest));
+  }
+  return dispatchTaskIntent(TaskIntentKind::Close, taskId, revision,
+                            QStringLiteral("Close"), windowId);
+}
+
 bool TaskListAppletController::activateContainerPage(const QString &taskId,
                                                      const QString &pageId,
                                                      quint64 revision) {
@@ -157,7 +179,7 @@ bool TaskListAppletController::refuse(const QString &message) {
 
 bool TaskListAppletController::dispatchTaskIntent(
     ShellTaskList::TaskIntentKind kind, const QString &taskId,
-    quint64 revision, const QString &actionText) {
+    quint64 revision, const QString &actionText, const QString &windowId) {
   if (!m_grants.windowsRead) {
     return refuse(actionText +
                   QStringLiteral(": the windows.read capability was not "
@@ -181,6 +203,7 @@ bool TaskListAppletController::dispatchTaskIntent(
   request.taskId = taskId;
   request.kind = kind;
   request.expectedRevision = revision;
+  request.windowId = windowId;
   const ShellTaskList::TaskIntentOutcome outcome =
       m_source.requestIntent(request);
   if (!outcome.ok()) {

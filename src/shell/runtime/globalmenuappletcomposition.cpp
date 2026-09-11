@@ -4,6 +4,7 @@
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/applet_host/host_selection.h"
+#include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
 #include "qindaqt/applets/manifest_catalog.h"
 #include "qindaqt/shell/global_menu/applet/globalmenuappletaccess.h"
@@ -12,6 +13,7 @@
 #include "qindaqt/shell/global_menu/composition/registrar_window_id_source.h"
 #include "qindaqt/shell/global_menu/ownership/active_window_source.h"
 #include "qindaqt/shell/global_menu/registrar/appmenu_registrar.h"
+#include "qindaqt/profiles/layout_profile.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QDBusObjectPath>
@@ -21,6 +23,8 @@
 
 namespace QindaQt::Shell {
 namespace {
+
+constexpr auto kGlobalMenuPlugin = QLatin1StringView("global-menu");
 
 bool globalMenuReadGranted(const Applets::ManifestCatalog &catalog,
                            const AppletHost::CapabilityPolicy &policy)
@@ -227,6 +231,52 @@ void GlobalMenuAppletComposition::stop()
     m_access->publishUnavailable();
     m_status = GlobalMenuRuntimeStatus::Unavailable;
     m_reasonCode.clear();
+}
+
+bool GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+    const Profiles::LayoutProfile &profile,
+    const Applets::ManifestCatalog &catalog,
+    const AppletHost::CapabilityPolicy &policy)
+{
+    // An instance rejected by placement, host, implementation, or policy never
+    // renders, so it must not claim the registrar for applications either.
+    const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
+    for (const auto &panel : profile.panels) {
+        for (const auto &applet : panel.applets) {
+            if (applet.plugin == kGlobalMenuPlugin
+                && AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                       applet, panel.edge, catalog, policy, registry)
+                       .ready()) {
+                return true;
+            }
+        }
+    }
+    for (const auto &applet : profile.desktopApplets) {
+        if (applet.plugin == kGlobalMenuPlugin
+            && AppletRuntime::AppletInstanceResolver::resolveDesktopBuiltin(
+                   applet, catalog, policy, registry)
+                   .ready()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void GlobalMenuAppletComposition::followLayout(bool hosted)
+{
+    if (hosted) {
+        if (m_status != GlobalMenuRuntimeStatus::Ready) {
+            start();
+        }
+        return;
+    }
+    stop();
+    m_reasonCode = QStringLiteral("global-menu-not-hosted");
+}
+
+bool GlobalMenuAppletComposition::registrarResident() const noexcept
+{
+    return m_registrar->isRunning();
 }
 
 GlobalMenu::GlobalMenuAppletAccess *

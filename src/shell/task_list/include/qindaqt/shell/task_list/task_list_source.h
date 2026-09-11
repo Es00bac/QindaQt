@@ -44,7 +44,8 @@ public:
   }
 
   // AGENT-GUARD: Stale-id rejection order is InvalidRequest, NoGeneration,
-  // SourceDegraded, StaleRevision, UnknownTask, then acceptance. Checking
+  // SourceDegraded, StaleRevision, UnknownTask (including a named windowId
+  // that is not a member of the resolved entry), then acceptance. Checking
   // StaleRevision before UnknownTask guarantees an intent is never resolved
   // against a generation the caller was not looking at, which is the only
   // thing preventing activation of a window the list no longer shows.

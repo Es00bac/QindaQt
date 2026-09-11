@@ -28,6 +28,33 @@ facades. Popups use `Popup.Window` so their keyboard focus and content are not
 clipped by the LayerShell panel band. All actions retain keyboard and
 accessible activation paths.
 
+On the Luna taskbar ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md),
+"Luna taskbar rendering") show desktop and quick launch take the `luna`
+dressing: show desktop paints a white glyph beneath its fully transparent
+standard button, which stays the only input and accessibility surface, and
+quick launch uses Luna hover tiles and a white empty-state glyph. The
+dispatcher forwards the panel-derived dressing to any desktop control that
+declares `luna`; other hosts never see it.
+
+## Popup placement
+
+`ControlPopupFrame` owns placement for every control popup built on it. A
+popup opens flush with the left edge of the control that owns it and directly
+below it, directly above it when the hosting panel is on the bottom edge, and
+beside it for left and right panels. The edge comes from the hosting
+`RuntimePanel` model; hosts without one (the desktop surface, previews, tests)
+open away from the nearer horizontal output edge, and `panelEdge` overrides
+both. The popup then slides along the panel axis to stay on the output. The
+anchor position is window-local because a Wayland layer-shell client never
+learns where its window sits, so a clamp can be late for an offset panel but
+never wrong; the compositor's popup positioner remains the backstop.
+
+The active application control shows the focused task row's application
+name. Task rows carry the desktop-entry name resolved from the compositor's
+application id (see [iconography](iconography.md#desktopentryiconresolver)),
+so the control, its popup heading, its accessible name, and the task list
+agree; a raw reverse-DNS id is never shown.
+
 The focused checks are the desktop-controls unit, composition, offscreen QML,
 workspace transport, resolver/catalog, and boundary rows. These rows prove
 compiled presentation and injected-facade behavior; they do not qualify a
