@@ -5,17 +5,28 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r10`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r11`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=6bce96c36b5899a9b47f6e49862aca0daf5530b9
+qq_source_commit=0ebc2d157f74a527a7204cda6e27e0c6fe4c8896
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r10.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r11.tar.gz
 ```
+
+The `-r11` revision lands the desktop gap wave: lock after waking, unlock
+grace, PowerDevil lid and power-button actions, and a single Meta+L owner
+(ADR-0132); explicit routing for every portal family (ADR-0133); the Input
+route for pointers, keyboards, layouts, and global shortcuts (ADR-0134);
+gnome-keyring as the Secret Service provider (ADR-0135); and night light in
+Settings → Display (ADR-0136). It adds `app-crypt/gcr:4`,
+`gnome-base/gnome-keyring`, `~kde-plasma/knighttime-6.6.6`, and
+`x11-misc/xkeyboard-config` to RDEPEND. The compositor and decoration plugin
+are unchanged, so restarting `qindaqt-shell`, `qindaqt-settings`, and the user
+`xdg-desktop-portal` service adopts the revision without a new login.
 
 The `-r10` revision lands the window and container chrome preferences
 (ADR-0129), the contained-window handlebar with mouse-wheel roll-up
