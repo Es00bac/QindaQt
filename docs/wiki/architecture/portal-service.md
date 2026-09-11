@@ -27,10 +27,13 @@ layers:
 | Portal adapter/process | Standard D-Bus marshalling, filtering, change signals, service-name ownership, activation, and shutdown on bus loss | Appearance persistence or any non-Settings portal |
 
 The backend does **not** implement a chooser, OpenURI, notifications, inhibit,
-screencast, remote desktop, or a consent dialog. Its `.portal` file advertises
-only `org.freedesktop.impl.portal.Settings`. The module owns QindaQt's frontend
-selection file, but it does not replace, embed, or supervise
-`xdg-desktop-portal`; non-Settings calls remain another backend's authority.
+screencast, remote desktop, secret storage, or a consent dialog. Its `.portal`
+file advertises only `org.freedesktop.impl.portal.Settings`. The module owns
+QindaQt's frontend selection file and keeps an explicit routing decision for
+every portal family ([ADR-0133](../adr/0133-route-every-portal-family.md)),
+but it does not replace, embed, or supervise `xdg-desktop-portal`; a routing
+row names another backend's authority, and non-Settings calls remain that
+backend's responsibility.
 
 ## Standard endpoint
 
@@ -103,13 +106,18 @@ public policy/source headers and libraries, six built-in QST themes, the
 D-Bus activation descriptor, a hardened user systemd unit, `qindaqt.portal`,
 and `qindaqt-portals.conf`. The selector binds
 `org.freedesktop.impl.portal.Settings` only to `qindaqt`, explicitly orders
-`kde;gtk;lxqt` for the supported non-Settings fallback families, orders
+`kde;gtk;lxqt` for the reviewed multi-provider families, orders
 GlobalShortcuts to `kde` alone because it is the only installed provider whose
-`.portal` metadata advertises that interface, disables Background, and uses
-`default=none` so an unreviewed family cannot silently escape the table. OpenURI is implemented by the frontend itself and therefore
+`.portal` metadata advertises that interface, routes Secret to the adopted
+`gnome-keyring` Secret Service provider, routes InputCapture, Clipboard, Usb,
+Account, and DynamicLauncher to `kde`, closes Wallpaper and Background on
+purpose, and uses `default=none` so an unreviewed family cannot silently
+escape the table. OpenURI is implemented by the frontend itself and therefore
 has no backend selector. The exact table is part of the
 [Settings backend v1 reference](../reference/portal-settings-backend-v1.md),
-following upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
+the per-family decisions are recorded in
+[ADR-0133](../adr/0133-route-every-portal-family.md), and the file follows
+upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
 
 On QindaQt sessions the package also installs a narrow systemd user drop-in for
 `plasma-xdg-desktop-portal-kde.service`. It sets `XDG_CURRENT_DESKTOP=KDE`
@@ -147,22 +155,30 @@ metadata. They prove QindaQt selection for the `qindaqt` desktop, exact
 frontend `ReadAll`/`Read` values and live forwarding, rejection under another
 desktop, injected KDE FileChooser and GlobalShortcuts fallback routing (after
 confirming the installed KDE backend's own `.portal` metadata still advertises
-`GlobalShortcuts`), and the closed Background escape. The Qt row runs an offscreen Qt 6 process with
+`GlobalShortcuts`), and the closed Background escape. Two more P1 rows stage
+fake `kde` and `gnome-keyring` backends behind the real frontend and prove
+that FileChooser, Screenshot, ScreenCast, RemoteDesktop, InputCapture, and
+Secret requests reach the routed fake backend, that Wallpaper and Background
+stay unexported, and that removing the Secret routing row withdraws the Secret
+interface (negative control). The Qt row runs an offscreen Qt 6 process with
 `QT_QPA_PLATFORMTHEME=xdgdesktopportal`, observes Dark then a live Light
 `QStyleHints::colorScheme()` change, and applies a palette derived from that
 hint. It does not claim that Qt replaces an application's explicit palette.
 
 The metadata gate compares the complete `.portal` and selector contracts, so
-duplicate entries, QindaQt ownership of a non-Settings family, or a reopened
-Background/default route fail both source and staged-installed controls. The
-staged-package row repeats both frontend rows against the installed artifacts.
+duplicate entries, QindaQt ownership of a non-Settings family, a rerouted or
+dropped Secret/Wallpaper row, or a reopened Background/default route fail both
+source and staged-installed controls. The
+staged-package row repeats every frontend row against the installed artifacts.
 All rows remove host session-bus variables, reserve the auxiliary portal names
 with injected test fakes, and use build-local runtime/config/data directories;
 they neither contact nor modify the host portal or host D-Bus services.
 
-This proves package selection and Qt reaction on the private bus. It does not
-qualify an installed desktop, a host session bus, GTK/GSettings or Flatpak
-sandbox reaction, a real chooser UI, or any non-Settings portal implementation.
+This proves package selection, non-Settings routing to declared backends, and
+Qt reaction on the private bus. It does not qualify an installed desktop, a
+host session bus, GTK/GSettings or Flatpak sandbox reaction, a real chooser
+UI, real-backend reachability for the routed families, or any non-Settings
+portal implementation.
 
 The durable process/protocol choice is recorded in
 [ADR-0054](../adr/0054-export-appearance-through-the-standard-settings-portal.md).

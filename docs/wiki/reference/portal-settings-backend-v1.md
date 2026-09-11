@@ -40,6 +40,13 @@ family.
 | ScreenCast | `kde;gtk;lxqt` | None |
 | RemoteDesktop | `kde;gtk;lxqt` | None |
 | GlobalShortcuts | `kde` | None |
+| Secret | `gnome-keyring` | None; adopted Secret Service provider |
+| InputCapture | `kde` | None |
+| Clipboard | `kde` | None |
+| Usb | `kde` | None |
+| Account | `kde` | None |
+| DynamicLauncher | `kde` | None |
+| Wallpaper | `none` | Deliberately unavailable |
 | Background | `none` | Deliberately unavailable |
 | OpenURI | Frontend-owned; no backend selector | None |
 | Any unlisted family | `default=none` | Deliberately unavailable |
@@ -58,6 +65,27 @@ The boundary test compares the exact selector string, so a future edit that
 widens this entry back to `kde;gtk;lxqt` fails closed until the listed
 backends are re-verified. See
 [ADR-0086](../adr/0086-route-globalshortcuts-only-to-a-verified-backend.md).
+
+Secret lists only `gnome-keyring`, the adopted Secret Service provider; the
+installed `kwallet.portal` also advertises
+`org.freedesktop.impl.portal.Secret`, so a future edit that reroutes or drops
+this row fails closed until the provider is re-verified. The provider choice
+itself is owned by the keyring decision (ADR-0135); this table owns only the
+routing row. See
+[ADR-0133](../adr/0133-route-every-portal-family.md).
+
+InputCapture, Clipboard, and Usb list only `kde` because it is the only
+installed provider whose `.portal` metadata advertises those interfaces.
+Account and DynamicLauncher also list only `kde` even though the installed
+`gtk.portal` advertises them: the KDE backend is the primary provider in a
+KWin session, and keeping one reviewed consent surface beats documenting a
+second inert fallback. Wallpaper is closed like Background: the KDE backend
+would change Plasma's wallpaper, which QindaQt does not use, and wallpaper
+surfaces are owned by the shell
+([ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md)). The
+frontend exports a family's interface only when the selector resolves an
+implementation for it, so `none` rows keep Wallpaper and Background
+unexported entirely; the private routing proof asserts both stay unexported.
 
 ## Methods and signal
 
