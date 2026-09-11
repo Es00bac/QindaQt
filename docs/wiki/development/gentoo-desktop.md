@@ -5,17 +5,27 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r3`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r4`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=2d0ae9eddb2285f2f4ac9195225eb4a7e5f23228
+qq_source_commit=72492bb694157fe29b8acb4961ebca5191bf542c
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r3.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r4.tar.gz
 ```
+
+The `-r4` revision brings Audio1 schema version 2 (ADR-0123): per-channel
+volumes and channel maps on devices and streams, and managed virtual
+sinks/sources created and removed from the Settings Audio page — the first
+Voicemeeter-class slice on PipeWire primitives. It also adds the Appearance
+tab's Applications-and-toolkits card, which renders the exact QPalette
+ordinary Qt applications receive for the previewed theme (ADR-0115). The
+audio service binary changes, so restart `qindaqt-audio-service` (or the
+session) after merging; the Settings app and shell adopt the new files on
+their next start.
 
 The `-r3` revision makes Apply in the Customize route change the running
 desktop (ADR-0122): the shell adopts a saved layout selection or an edited
