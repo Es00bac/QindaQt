@@ -8,11 +8,23 @@
 #include <cmath>
 #include <utility>
 
+#include <algorithm>
+
 namespace QindaQt::Apps::SettingsPower {
 namespace {
 constexpr auto DaemonGroup = "Daemon";
 constexpr auto AutolockKey = "Autolock";
 constexpr auto TimeoutKey = "Timeout";
+constexpr auto LockOnResumeKey = "LockOnResume";
+constexpr auto LockGraceKey = "LockGrace";
+
+// Defaults mirror upstream kscreenlocker v6.6.6
+// settings/kscreenlockersettings.kcfg so an absent key is treated as the
+// locker's own default instead of an invented value.
+constexpr bool DefaultAutolock = true;
+constexpr double DefaultTimeoutMinutes = 5.0;
+constexpr bool DefaultLockOnResume = true;
+constexpr int DefaultLockGraceSeconds = 5;
 
 int boundedTimeout(const double minutes) {
   if (!std::isfinite(minutes)) return ScreenLockSettingsModel::MinimumTimeoutMinutes;
@@ -30,6 +42,11 @@ QString storageError(const QSettings &settings) {
 }
 } // namespace
 
+bool ScreenLockSettingsModel::isValidGraceSeconds(const int seconds) {
+  return std::find(GraceChoices.begin(), GraceChoices.end(), seconds) !=
+         GraceChoices.end();
+}
+
 IniScreenLockPreferencesStore::IniScreenLockPreferencesStore(QString filePath)
     : m_filePath(std::move(filePath)) {}
 
@@ -41,17 +58,28 @@ bool IniScreenLockPreferencesStore::load(ScreenLockPreferences *preferences,
   }
   QSettings settings(m_filePath, QSettings::IniFormat);
   settings.beginGroup(QString::fromLatin1(DaemonGroup));
-  const bool automatic = settings.value(QString::fromLatin1(AutolockKey), true).toBool();
+  const bool automatic =
+      settings.value(QString::fromLatin1(AutolockKey), DefaultAutolock).toBool();
   bool timeoutOk = false;
-  const double timeout = settings.value(QString::fromLatin1(TimeoutKey), 5.0)
+  const double timeout = settings.value(QString::fromLatin1(TimeoutKey), DefaultTimeoutMinutes)
                              .toDouble(&timeoutOk);
+  const bool lockOnResume =
+      settings.value(QString::fromLatin1(LockOnResumeKey), DefaultLockOnResume).toBool();
+  bool graceOk = false;
+  const int lockGrace = settings.value(QString::fromLatin1(LockGraceKey), DefaultLockGraceSeconds)
+                            .toInt(&graceOk);
   settings.endGroup();
   if (settings.status() != QSettings::NoError) {
     if (error) *error = storageError(settings);
     return false;
   }
   preferences->automaticLock = automatic;
-  preferences->timeoutMinutes = boundedTimeout(timeoutOk ? timeout : 5.0);
+  preferences->timeoutMinutes = boundedTimeout(timeoutOk ? timeout : DefaultTimeoutMinutes);
+  preferences->lockOnResume = lockOnResume;
+  // An out-of-set stored grace (an upstream KCM custom value) is kept as-is so
+  // an unrelated-key save never invents a value the locker did not have; only
+  // the model setters validate against the offered choice set.
+  preferences->lockGraceSeconds = graceOk ? lockGrace : DefaultLockGraceSeconds;
   return true;
 }
 
@@ -59,8 +87,31 @@ bool IniScreenLockPreferencesStore::save(const ScreenLockPreferences &preference
                                          QString *error) {
   QSettings settings(m_filePath, QSettings::IniFormat);
   settings.beginGroup(QString::fromLatin1(DaemonGroup));
-  settings.setValue(QString::fromLatin1(AutolockKey), preferences.automaticLock);
-  settings.setValue(QString::fromLatin1(TimeoutKey), boundedTimeout(preferences.timeoutMinutes));
+  // AGENT-GUARD: write only keys whose requested value differs from the file,
+  // comparing with the same defaults load() uses. Unconditional writes would
+  // clobber a concurrent external edit to a key this save did not intend to
+  // change, and would rewrite - and so normalize - a pristine locker config.
+  const bool storedAutolock =
+      settings.value(QString::fromLatin1(AutolockKey), DefaultAutolock).toBool();
+  if (storedAutolock != preferences.automaticLock) {
+    settings.setValue(QString::fromLatin1(AutolockKey), preferences.automaticLock);
+  }
+  const double storedTimeout =
+      settings.value(QString::fromLatin1(TimeoutKey), DefaultTimeoutMinutes).toDouble();
+  const double requestedTimeout = boundedTimeout(preferences.timeoutMinutes);
+  if (storedTimeout != requestedTimeout) {
+    settings.setValue(QString::fromLatin1(TimeoutKey), requestedTimeout);
+  }
+  const bool storedLockOnResume =
+      settings.value(QString::fromLatin1(LockOnResumeKey), DefaultLockOnResume).toBool();
+  if (storedLockOnResume != preferences.lockOnResume) {
+    settings.setValue(QString::fromLatin1(LockOnResumeKey), preferences.lockOnResume);
+  }
+  const int storedLockGrace =
+      settings.value(QString::fromLatin1(LockGraceKey), DefaultLockGraceSeconds).toInt();
+  if (storedLockGrace != preferences.lockGraceSeconds) {
+    settings.setValue(QString::fromLatin1(LockGraceKey), preferences.lockGraceSeconds);
+  }
   settings.endGroup();
   settings.sync();
   if (settings.status() != QSettings::NoError) {
@@ -104,6 +155,8 @@ ScreenLockSettingsModel::ScreenLockSettingsModel(
 
 bool ScreenLockSettingsModel::automaticLock() const noexcept { return m_preferences.automaticLock; }
 int ScreenLockSettingsModel::timeoutMinutes() const noexcept { return boundedTimeout(m_preferences.timeoutMinutes); }
+bool ScreenLockSettingsModel::lockOnResume() const noexcept { return m_preferences.lockOnResume; }
+int ScreenLockSettingsModel::lockGraceSeconds() const noexcept { return m_preferences.lockGraceSeconds; }
 bool ScreenLockSettingsModel::busy() const noexcept { return m_busy; }
 const QString &ScreenLockSettingsModel::statusText() const noexcept { return m_statusText; }
 const QString &ScreenLockSettingsModel::errorText() const noexcept { return m_errorText; }
@@ -177,6 +230,31 @@ bool ScreenLockSettingsModel::setTimeoutMinutes(const int minutes) {
   return true;
 }
 
+bool ScreenLockSettingsModel::setLockOnResume(const bool enabled) {
+  if (m_busy) return false;
+  ScreenLockPreferences next;
+  if (!reloadLatest(&next)) return false;
+  next.lockOnResume = enabled;
+  if (!persist(next, PendingSaveField::LockOnResume)) return false;
+  beginLiveConfigure(tr("Updating resume locking…"));
+  return true;
+}
+
+bool ScreenLockSettingsModel::setLockGraceSeconds(const int seconds) {
+  if (m_busy) return false;
+  if (!isValidGraceSeconds(seconds)) {
+    m_errorText = tr("Choose one of the offered unlock delays.");
+    Q_EMIT changed();
+    return false;
+  }
+  ScreenLockPreferences next;
+  if (!reloadLatest(&next)) return false;
+  next.lockGraceSeconds = seconds;
+  if (!persist(next, PendingSaveField::LockGrace)) return false;
+  beginLiveConfigure(tr("Updating the unlock delay…"));
+  return true;
+}
+
 bool ScreenLockSettingsModel::retryLiveApply() {
   if (m_busy) return false;
   // Retry targets the step that actually failed. A live configure request is
@@ -206,6 +284,12 @@ bool ScreenLockSettingsModel::retryLiveApply() {
       break;
     case PendingSaveField::Timeout:
       latest.timeoutMinutes = m_pendingPreferences.timeoutMinutes;
+      break;
+    case PendingSaveField::LockOnResume:
+      latest.lockOnResume = m_pendingPreferences.lockOnResume;
+      break;
+    case PendingSaveField::LockGrace:
+      latest.lockGraceSeconds = m_pendingPreferences.lockGraceSeconds;
       break;
     case PendingSaveField::None:
       m_errorText = tr("Could not determine which screen-lock setting to save.");

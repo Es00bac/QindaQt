@@ -2,9 +2,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 
 ColumnLayout {
     id: root
@@ -22,6 +24,24 @@ ColumnLayout {
             return { "value": value, "label": qsTr("%1 minutes").arg(value) }
         })
     }
+    // ADR-0132: the grace ladder mirrors the documented KScreenLocker choices
+    // in seconds. A stored out-of-set value (an upstream custom delay) is kept
+    // as an extra entry so opening the page never silently changes it.
+    readonly property var graceOptions: {
+        const seconds = [
+            { "value": 0, "label": qsTr("Immediately") },
+            { "value": 5, "label": qsTr("5 seconds") },
+            { "value": 30, "label": qsTr("30 seconds") },
+            { "value": 60, "label": qsTr("1 minute") },
+            { "value": 300, "label": qsTr("5 minutes") }
+        ]
+        const current = root.screenLockSettings.lockGraceSeconds
+        if (seconds.findIndex(function(option) { return option.value === current }) < 0)
+            seconds.push({ "value": current,
+                           "label": qsTr("%1 seconds").arg(current) })
+        seconds.sort(function(left, right) { return left.value - right.value })
+        return seconds
+    }
 
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
@@ -37,8 +57,6 @@ ColumnLayout {
     FormSurface {
         Layout.fillWidth: true
         padding: Tokens.space["3"]
-        Accessible.role: Accessible.Grouping
-        Accessible.name: qsTr("Automatic screen lock")
 
         contentItem: ColumnLayout {
             spacing: Tokens.space["2"]
@@ -62,6 +80,13 @@ ColumnLayout {
                          && !root.screenLockSettings.busy
                 spacing: Tokens.space["2"]
 
+                ShellIcons.Icon {
+                    objectName: "powerScreenLockTimeoutIcon"
+                    name: "chronometer"
+                    size: 18
+                    fallbackText: qsTr("Idle lock timer")
+                    Accessible.ignored: true
+                }
                 Label {
                     text: qsTr("Lock after")
                     Accessible.name: text
@@ -87,6 +112,60 @@ ColumnLayout {
                             root.screenLockSettings.setTimeoutMinutes(
                                 root.timeoutOptions[index].value)
                     }
+                }
+            }
+
+            Switch {
+                id: lockOnResume
+                objectName: "powerScreenLockOnResume"
+                Layout.fillWidth: true
+                text: qsTr("Lock after waking from sleep")
+                checked: root.screenLockSettings.lockOnResume
+                enabled: !root.screenLockSettings.busy
+                accessibleDescription: checked
+                    ? qsTr("The screen locks when the computer wakes from sleep")
+                    : qsTr("Waking from sleep does not lock the screen")
+                onToggled: root.screenLockSettings.setLockOnResume(checked)
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                enabled: !root.screenLockSettings.busy
+                spacing: Tokens.space["2"]
+
+                ShellIcons.Icon {
+                    objectName: "powerScreenLockGraceIcon"
+                    name: "user-away"
+                    size: 18
+                    fallbackText: qsTr("Unlock delay")
+                    Accessible.ignored: true
+                }
+                Label {
+                    text: qsTr("Require password after")
+                    Accessible.name: text
+                    muted: !parent.enabled
+                }
+                ComboBox {
+                    id: graceSelector
+                    objectName: "powerScreenLockGraceSelector"
+                    Layout.fillWidth: true
+                    enabled: parent.enabled
+                    model: root.graceOptions
+                    textRole: "label"
+                    valueRole: "value"
+                    currentIndex: root.graceOptions.findIndex(function(option) {
+                        return option.value === root.screenLockSettings.lockGraceSeconds
+                    })
+                    T.ToolTip.visible: graceHover.hovered
+                    T.ToolTip.delay: 600
+                    T.ToolTip.text: qsTr("How long the screen stays unlocked after it locks")
+                    accessibleDescription: qsTr("Choose the unlock grace period")
+                    onActivated: index => {
+                        if (index >= 0 && index < root.graceOptions.length)
+                            root.screenLockSettings.setLockGraceSeconds(
+                                root.graceOptions[index].value)
+                    }
+                    HoverHandler { id: graceHover }
                 }
             }
 
@@ -116,5 +195,8 @@ ColumnLayout {
                 onClicked: root.screenLockSettings.retryLiveApply()
             }
         }
+
+        Accessible.role: Accessible.Grouping
+        Accessible.name: qsTr("Automatic screen lock")
     }
 }

@@ -38,6 +38,9 @@ private Q_SLOTS:
   void compactAndUnavailableFocusRemainAdmitted();
   void screenLockControlsRespectAutomaticLock();
   void idleDisplayControlsRespectThePolicy();
+  void resumeLockAndGraceRowsBindAndApply();
+  void powerPolicyRowsRespectLidPresenceAndApply();
+  void focusChainReachesTheLidPolicySection();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -264,6 +267,116 @@ void PowerPageTest::idleDisplayControlsRespectThePolicy() {
   QTRY_COMPARE(selector->property("currentText").toString(),
                QStringLiteral("15 minutes"));
   QCOMPARE(m_idleDisplay->minutesCalls, 0);
+}
+
+void PowerPageTest::resumeLockAndGraceRowsBindAndApply() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *resumeSwitch = findItem(page, QStringLiteral("powerScreenLockOnResume"));
+  auto *graceSelector = findItem(page, QStringLiteral("powerScreenLockGraceSelector"));
+  QVERIFY(resumeSwitch != nullptr);
+  QVERIFY(graceSelector != nullptr);
+  QVERIFY(resumeSwitch->isEnabled());
+  QCOMPARE(resumeSwitch->property("checked").toBool(), true);
+  QVERIFY(graceSelector->isEnabled());
+  QCOMPARE(graceSelector->property("currentText").toString(),
+           QStringLiteral("30 seconds"));
+  QCOMPARE(m_screenLock->lockOnResumeCalls, 0);
+  QCOMPARE(m_screenLock->lockGraceCalls, 0);
+
+  // A real click is the only path that writes the resume preference.
+  const QPoint resumeCenter = resumeSwitch->mapToScene(
+      QPointF(resumeSwitch->width() / 2.0,
+              resumeSwitch->height() / 2.0)).toPoint();
+  QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, resumeCenter);
+  QTRY_COMPARE(m_screenLock->lockOnResumeCalls, 1);
+  QVERIFY(!m_screenLock->lockOnResume);
+  QTRY_COMPARE(resumeSwitch->property("checked").toBool(), false);
+
+  // A stored out-of-set grace (an upstream custom delay) stays visible as an
+  // extra entry instead of being silently rewritten.
+  m_screenLock->lockGraceSeconds = 17;
+  Q_EMIT m_screenLock->changed();
+  QTRY_COMPARE(graceSelector->property("currentText").toString(),
+               QStringLiteral("17 seconds"));
+  QCOMPARE(m_screenLock->lockGraceCalls, 0);
+
+  // Keyboard selection writes the chosen grace value.
+  graceSelector->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), graceSelector);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_screenLock->lockGraceCalls, 1);
+  QCOMPARE(m_screenLock->lockGraceSeconds, 30);
+}
+
+void PowerPageTest::powerPolicyRowsRespectLidPresenceAndApply() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *powerButtonSelector = findItem(page,
+      QStringLiteral("powerPowerButtonSelector"));
+  auto *lidRow = findItem(page, QStringLiteral("powerLidActionRow"));
+  auto *externalRow = findItem(page,
+      QStringLiteral("powerLidExternalMonitorRow"));
+  QVERIFY(powerButtonSelector != nullptr);
+  QVERIFY(lidRow != nullptr);
+  QVERIFY(externalRow != nullptr);
+  QVERIFY(powerButtonSelector->isVisible());
+  QVERIFY(powerButtonSelector->isEnabled());
+  // The development machine has no lid: both lid rows must hide.
+  QVERIFY(!lidRow->isVisible());
+  QVERIFY(!externalRow->isVisible());
+
+  // Admitted lid presence reveals exactly the two lid rows.
+  m_model->lidPresent = true;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  QTRY_VERIFY(lidRow->isVisible());
+  QTRY_VERIFY(externalRow->isVisible());
+
+  auto *lidSelector = findItem(page, QStringLiteral("powerLidActionSelector"));
+  auto *externalSwitch = findItem(page,
+      QStringLiteral("powerLidExternalMonitorSwitch"));
+  QVERIFY(lidSelector != nullptr);
+  QVERIFY(externalSwitch != nullptr);
+  QCOMPARE(lidSelector->property("currentText").toString(),
+           QStringLiteral("Sleep"));
+  QCOMPARE(externalSwitch->property("checked").toBool(), false);
+
+  // Keyboard selection on the power-button row writes only that action.
+  powerButtonSelector->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), powerButtonSelector);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_model->lidPolicyState.applyCalls, 1);
+  const QVariantList lastApply =
+      m_model->lidPolicyState.applyArguments.constLast();
+  // applyPolicy(lidAction, wakeWithExternalMonitor, powerButtonAction): the
+  // keyboard step changed only the power-button slot (32 -> 64).
+  QCOMPARE(lastApply.at(0).toUInt(), 1u);
+  QCOMPARE(lastApply.at(1).toBool(), false);
+  QCOMPARE(lastApply.at(2).toUInt(), 64u);
+}
+
+void PowerPageTest::focusChainReachesTheLidPolicySection() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *powerButtonSelector = findItem(page,
+      QStringLiteral("powerPowerButtonSelector"));
+  QVERIFY(powerButtonSelector != nullptr);
+
+  // With the screen-lock controls disabled (busy), the page's host-entry
+  // target walks to the lid/power-button section's enabled selector.
+  m_screenLock->busy = true;
+  Q_EMIT m_screenLock->changed();
+  QCoreApplication::processEvents();
+  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(),
+           powerButtonSelector);
+
+  powerButtonSelector->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), powerButtonSelector);
 }
 
 QTEST_MAIN(PowerPageTest)

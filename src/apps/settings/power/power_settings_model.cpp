@@ -30,8 +30,10 @@ bool usableAvailability(const Availability availability) {
 
 PowerSettingsModel::PowerSettingsModel(Power::PowerClient &client,
                                        QObject *sessionActions,
+                                       QObject *lidPolicy,
                                        QObject *parent)
-    : QObject(parent), m_client(client), m_sessionActions(sessionActions) {
+    : QObject(parent), m_client(client), m_sessionActions(sessionActions),
+      m_lidPolicy(lidPolicy) {
   m_debounceTimer.setSingleShot(true);
   m_debounceTimer.setInterval(120);
   m_convergenceTimer.setSingleShot(true);
@@ -60,6 +62,8 @@ bool PowerSettingsModel::sessionActionsSupported() const noexcept {
 QObject *PowerSettingsModel::sessionActions() const noexcept {
   return m_sessionActions;
 }
+
+QObject *PowerSettingsModel::lidPolicy() const noexcept { return m_lidPolicy; }
 
 bool PowerSettingsModel::hasDisplaySnapshot() const noexcept {
   if (m_client.owner().isEmpty() || !m_client.hasSnapshot()) return false;
@@ -107,6 +111,14 @@ bool PowerSettingsModel::busy() const noexcept {
 }
 
 bool PowerSettingsModel::retryAvailable() const noexcept { return !busy(); }
+
+bool PowerSettingsModel::lidPresent() const noexcept {
+  // AGENT-GUARD: keep the shared admission predicate in front of this read. A
+  // missing, malformed, stale, or unadmitted snapshot must hide the lid rows;
+  // nothing on this page may present unvalidated platform truth.
+  if (!snapshotAdmitsBase()) return false;
+  return m_client.snapshot().source.lidPresent;
+}
 
 QString PowerSettingsModel::statusText() const {
   if (loading()) return tr("Connecting to the power service…");

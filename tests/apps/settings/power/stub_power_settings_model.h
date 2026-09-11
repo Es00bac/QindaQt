@@ -44,6 +44,8 @@ class StubScreenLockSettings final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool automaticLock MEMBER automaticLock NOTIFY changed)
   Q_PROPERTY(int timeoutMinutes MEMBER timeoutMinutes NOTIFY changed)
+  Q_PROPERTY(bool lockOnResume MEMBER lockOnResume NOTIFY changed)
+  Q_PROPERTY(int lockGraceSeconds MEMBER lockGraceSeconds NOTIFY changed)
   Q_PROPERTY(bool busy MEMBER busy NOTIFY changed)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
@@ -51,17 +53,27 @@ public:
   using QObject::QObject;
   bool automaticLock = false;
   int timeoutMinutes = 5;
+  bool lockOnResume = true;
+  int lockGraceSeconds = 30;
   bool busy = false;
   QString statusText = QStringLiteral("Automatic screen locking is off.");
   QString errorText;
   int automaticLockCalls = 0;
   int timeoutCalls = 0;
+  int lockOnResumeCalls = 0;
+  int lockGraceCalls = 0;
   int retryCalls = 0;
   Q_INVOKABLE bool setAutomaticLock(bool enabled) {
     ++automaticLockCalls; automaticLock = enabled; Q_EMIT changed(); return true;
   }
   Q_INVOKABLE bool setTimeoutMinutes(int minutes) {
     ++timeoutCalls; timeoutMinutes = minutes; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool setLockOnResume(bool enabled) {
+    ++lockOnResumeCalls; lockOnResume = enabled; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool setLockGraceSeconds(int seconds) {
+    ++lockGraceCalls; lockGraceSeconds = seconds; Q_EMIT changed(); return true;
   }
   Q_INVOKABLE bool retryLiveApply() { ++retryCalls; return true; }
 Q_SIGNALS:
@@ -96,6 +108,48 @@ Q_SIGNALS:
   void changed();
 };
 
+class StubLidPowerButtonPolicy final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool available MEMBER available NOTIFY availabilityChanged)
+  Q_PROPERTY(bool busy MEMBER busy NOTIFY busyChanged)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY errorChanged)
+  Q_PROPERTY(quint32 lidAction MEMBER lidAction NOTIFY policyChanged)
+  Q_PROPERTY(bool wakeWithExternalMonitor MEMBER wakeWithExternalMonitor
+                 NOTIFY policyChanged)
+  Q_PROPERTY(quint32 powerButtonAction MEMBER powerButtonAction NOTIFY
+                 policyChanged)
+
+public:
+  using QObject::QObject;
+  bool available = true;
+  bool busy = false;
+  QString errorText;
+  quint32 lidAction = 1;
+  bool wakeWithExternalMonitor = false;
+  quint32 powerButtonAction = 32;
+  int applyCalls = 0;
+  QList<QVariantList> applyArguments;
+  Q_INVOKABLE void applyPolicy(quint32 requestedLidAction,
+                               bool requestedWakeWithExternalMonitor,
+                               quint32 requestedPowerButtonAction) {
+    ++applyCalls;
+    applyArguments.append({QVariant::fromValue(requestedLidAction),
+                           requestedWakeWithExternalMonitor,
+                           QVariant::fromValue(requestedPowerButtonAction)});
+    lidAction = requestedLidAction;
+    wakeWithExternalMonitor = requestedWakeWithExternalMonitor;
+    powerButtonAction = requestedPowerButtonAction;
+    Q_EMIT policyChanged();
+  }
+
+Q_SIGNALS:
+  void availabilityChanged();
+  void busyChanged();
+  void errorChanged();
+  void policyChanged();
+  void applyFinished(bool success, const QString &error);
+};
+
 class StubPowerSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading MEMBER loading NOTIFY viewChanged)
@@ -107,6 +161,8 @@ class StubPowerSettingsModel final : public QObject {
   Q_PROPERTY(bool retryAvailable MEMBER retryAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool sessionActionsSupported MEMBER sessionActionsSupported CONSTANT)
   Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
+  Q_PROPERTY(bool lidPresent MEMBER lidPresent NOTIFY viewChanged)
+  Q_PROPERTY(QObject *lidPolicy READ lidPolicy CONSTANT)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText MEMBER operationStatusText NOTIFY viewChanged)
@@ -127,6 +183,7 @@ public:
   bool busy = false;
   bool retryAvailable = true;
   bool sessionActionsSupported = true;
+  bool lidPresent = false;
   QString statusText = QStringLiteral("Authoritative power state is shown.");
   QString errorText;
   QString operationStatusText;
@@ -143,6 +200,7 @@ public:
   QString lastTarget;
   int lastNormalized = -1;
   StubSessionActions sessionActionState;
+  StubLidPowerButtonPolicy lidPolicyState;
 
   explicit StubPowerSettingsModel(QObject *parent = nullptr) : QObject(parent) {
     supplyRows = {QVariantMap{{QStringLiteral("id"), QStringLiteral("ac-adapter")},
@@ -181,6 +239,7 @@ public:
   }
 
   [[nodiscard]] QObject *sessionActions() noexcept { return &sessionActionState; }
+  [[nodiscard]] QObject *lidPolicy() noexcept { return &lidPolicyState; }
 
   Q_INVOKABLE bool retry() { ++retryCount; return true; }
   Q_INVOKABLE bool requestProfile(const QString &id) {
