@@ -97,7 +97,10 @@ shell with the presentation descriptor. Host and shell also die with their
 supervisor, preventing PID-reuse trust after KWin exits. The shell uses that
 non-secret PID only to authenticate the unique D-Bus owner that publishes
 compositor and KScreenLocker state; a replacement must authenticate that path
-again and receives no inherited privacy state. An
+again and receives no inherited privacy state. Locker *preferences* — resume
+lock and the unlock grace period — are configured through the Power route's
+screen-lock adapter, not here
+([ADR-0132](../adr/0132-finish-session-locking.md)). An
 explicit `--session` still overrides the default for isolated test probes and
 alternate session compositions; bridge-only builds retain an empty default.
 
@@ -525,8 +528,12 @@ boundaries:
   later compositor, Platform, or Release work rather than claims of this slice;
 - shell panels/docks, global menu, notifications, applet rendering, and direct
   customization belong to **Shell and customization**;
-- heterogeneous topology application, display mutation, rotation/hotplug/lid
-  behavior, and platform device policy belong to **Platform services**; and
+- heterogeneous topology application, display mutation, rotation/hotplug
+  behavior, and platform device policy belong to **Platform services** — with
+  one exception: lid-close and power-button *preference policy* is now
+  configurable through the PowerDevil lid adapter and the Power Settings
+  section ([ADR-0132](../adr/0132-finish-session-locking.md)); hardware event
+  execution still belongs to PowerDevil and platform qualification; and
 - physical DRM/GPU/input/tablet coverage, suspend/resume, performance/memory,
   packaging, migration, recovery, and upgrades belong to
   **Release qualification**.

@@ -23,7 +23,10 @@ set(allowed_public_include_prefixes
     # The idle display-off section consumes the public Settings1 client and
     # the desktop-controls idle-preference seam; no service internals.
     "qindaqt/services/settings_client/"
-    "qindaqt/session/desktop_controls/")
+    "qindaqt/session/desktop_controls/"
+    # The composition's lid/power-button port forwards to the session's
+    # PowerDevil adapter behind an injected abstract port (ADR-0132).
+    "qindaqt/session/powerdevil_lid/")
 
 foreach(source IN LISTS route_files)
     file(READ "${source}" contents)
@@ -33,6 +36,10 @@ foreach(source IN LISTS route_files)
     if(contents MATCHES "services/session_actions/" AND
        NOT source MATCHES "/(power_route_composition|qt_screen_lock_configurator)\.cpp$")
         message(FATAL_ERROR "Power Settings imported session actions outside its composition root in ${source}")
+    endif()
+    if(contents MATCHES "session/powerdevil_lid/" AND
+       NOT source MATCHES "/(power_route_composition|qt_powerdevil_lid_port)\.(cpp|h)$")
+        message(FATAL_ERROR "Power Settings imported the PowerDevil lid adapter outside its composition root in ${source}")
     endif()
     if((contents MATCHES "QtDBus|QDBus") AND
        NOT source MATCHES "/(power_route_composition|qt_screen_lock_configurator)\.cpp$")
@@ -96,6 +103,7 @@ if(DEFINED SOURCE_ROOT)
     foreach(required IN ITEMS "QindaQt::PowerClient" "QindaQt::BrightnessModel"
             "QindaQt::SessionActions" "qindaqt_settings_power_qml"
             "PowerPage.qml" "PowerSessionSection.qml" "PowerScreenLockSection.qml"
+            "PowerLidPowerButtonSection.qml"
             "COMPONENT SettingsAppearanceRuntime")
         if(NOT cmake_contents MATCHES "${required}")
             message(FATAL_ERROR "Power Settings package registry is incomplete: ${required}")

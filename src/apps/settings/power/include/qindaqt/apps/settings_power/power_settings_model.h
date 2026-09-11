@@ -32,6 +32,9 @@ class PowerSettingsModel final : public QObject {
   Q_PROPERTY(bool retryAvailable READ retryAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool sessionActionsSupported READ sessionActionsSupported CONSTANT)
   Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
+  // ADR-0132: injected opaque lid/power-button policy port. The model owns no
+  // policy authority and never imports the adapter behind it.
+  Q_PROPERTY(QObject *lidPolicy READ lidPolicy CONSTANT)
   // ADR-0132: validated Power1 SourceTruth lid presence. The same admission
   // predicate that gates every other displayed truth gates this flag, so an
   // unadmitted or malformed snapshot hides the lid rows instead of trusting it.
@@ -50,6 +53,7 @@ class PowerSettingsModel final : public QObject {
 public:
   explicit PowerSettingsModel(Power::PowerClient &client,
                               QObject *sessionActions = nullptr,
+                              QObject *lidPolicy = nullptr,
                               QObject *parent = nullptr);
 
   [[nodiscard]] bool loading() const noexcept;
@@ -61,6 +65,7 @@ public:
   [[nodiscard]] bool retryAvailable() const noexcept;
   [[nodiscard]] bool sessionActionsSupported() const noexcept;
   [[nodiscard]] QObject *sessionActions() const noexcept;
+  [[nodiscard]] QObject *lidPolicy() const noexcept;
   [[nodiscard]] bool lidPresent() const noexcept;
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] const QString &errorText() const noexcept { return m_errorText; }
@@ -127,6 +132,7 @@ private:
 
   Power::PowerClient &m_client;
   QObject *m_sessionActions = nullptr;
+  QObject *m_lidPolicy = nullptr;
   QTimer m_debounceTimer;
   QTimer m_convergenceTimer;
   std::optional<DebouncedBrightness> m_debounce;
