@@ -147,3 +147,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0132: finish session locking on KWin's locker and PowerDevil's actions](0132-finish-session-locking.md)
 - [ADR-0133: route every portal family explicitly](0133-route-every-portal-family.md)
 - [ADR-0135: gnome-keyring is the Secret Service provider](0135-gnome-keyring-secret-service.md)
+- [ADR-0136: night light through KWin and knighttimed](0136-night-light-through-kwin.md)

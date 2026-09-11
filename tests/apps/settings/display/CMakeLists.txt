@@ -43,10 +43,14 @@ target_compile_definitions(
     QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
     QINDAQT_DISPLAY_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/display/qml/DisplayPage.qml"
 )
+# The page now hosts the night light section, which imports
+# QindaQt.Shell.Icons; a static module resolves only when its plugin is
+# linked into the test binary (settings_center precedent).
 target_link_libraries(
     qindaqt_display_page_tests
-    PRIVATE qindaqt_settings_display qindaqt_settings_appearance QindaQt::TokensQml Qt6::Quick
-            Qt6::QuickControls2 Qt6::Test
+    PRIVATE qindaqt_settings_display qindaqt_settings_appearance QindaQt::TokensQml
+            QindaQt::ShellIcons qindaqt_shell_iconsplugin
+            Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_display_page_tests)
 
@@ -65,3 +69,28 @@ set_tests_properties(
     ENVIRONMENT
         "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
 )
+
+qt_add_executable(qindaqt_display_night_light_section_tests
+                  tst_display_night_light_section.cpp
+                  stub_night_light_model.h)
+target_include_directories(qindaqt_display_night_light_section_tests
+                           PRIVATE ${PROJECT_SOURCE_DIR})
+target_compile_definitions(
+    qindaqt_display_night_light_section_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_NIGHT_LIGHT_SECTION_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/display/qml/DisplayNightLightSection.qml"
+)
+# The section imports QindaQt.Shell.Icons; a static module resolves only when
+# its plugin is linked into the test binary (settings_center precedent).
+target_link_libraries(
+    qindaqt_display_night_light_section_tests
+    PRIVATE qindaqt_settings_display qindaqt_settings_appearance QindaQt::TokensQml
+            QindaQt::ShellIcons qindaqt_shell_iconsplugin
+            Qt6::Quick Qt6::QuickControls2 Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_display_night_light_section_tests)
+add_test(NAME qindaqt.display-night-light-section
+         COMMAND qindaqt_display_night_light_section_tests)
+set_tests_properties(qindaqt.display-night-light-section
+                     PROPERTIES LABELS "app;display;night-light;qml")
