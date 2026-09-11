@@ -48,13 +48,17 @@ state only from the KWin D-Bus properties and caches nothing as truth.
   stored unit is seconds. Enum entries persist as choice-name strings, as the
   upstream migration's string comparisons prove.
 
-The night light service writes both files through one injected config port that
-preserves unrelated groups and keys, skips writes whose values did not change,
-and fails closed when a path cannot be written. KDE's `KConfig` watcher
-machinery (inotify based) notices the file change, so no KF6 dependency is
-added to the QindaQt service module; the value shapes written (bool
-`true`/`false`, enum name strings, `HH:mm:ss`, C-locale doubles) are exactly
-the ones KConfigXT reads.
+The night light service writes both files through one injected config port
+using `KConfig` (the only KDE dependency, `KF6::Config::Core`, with the same
+precedent as the session `powerdevil_idle` adapter), that preserves unrelated
+groups and keys, skips writes whose values did not change, and fails closed
+when a path cannot be written. A plain INI writer cannot stand in for KConfig
+here: QSettings escapes the schedule daemon's `[General]` group as
+`[%General]`, which its KConfigXT reader would silently miss, so the schedule
+choice would never apply. KDE's own file watching notices the changed file, so
+writes apply live while the daemons run. Live state is read asynchronously
+only: blocking bus calls do not reliably complete against peer connections in
+this environment, so every read is a queued pending call.
 
 **Mode mapping.** "Always on" is `Mode=Constant` with `Active=true`. Every
 scheduled choice is `Mode=DarkLight` with `Active=true` plus the matching
