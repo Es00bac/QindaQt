@@ -130,9 +130,12 @@ def check_default_collection(provider_lines):
         if result is None or result.returncode != 0:
             return ["default-collection: unknown (Locked property call failed)"], 1
         reply = result.stdout.decode(errors="replace").strip()
-    if reply == "b false":
+    # Properties.Get answers with a variant ("v b false"), while busctl
+    # get-property prints the bare value ("b false"); both carry the same truth.
+    value = reply[2:] if reply.startswith("v ") else reply
+    if value == "b false":
         return [f"default-collection: unlocked ({alias})"], 0
-    if reply == "b true":
+    if value == "b true":
         return [f"default-collection: locked ({alias})"], 1
     return [f"default-collection: unknown (unexpected reply {reply!r})"], 1
 
