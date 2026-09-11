@@ -290,6 +290,13 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellStartMenuQml
             QindaQt::ShellDesktopSurface
             QindaQt::ShellDesktopSurfaceQml
+            # AGENT-CONTRACT: the desktop surface is reached only from C++
+            # (QQmlComponent::loadFromModule), never from an `import` in
+            # the shell's QML files, so Qt's import scan cannot discover
+            # its static plugin. Link the plugin target explicitly (as the
+            # desktop-surface tests do) or the installed shell reports
+            # `No module named "QindaQt.Shell.DesktopSurface" found`.
+            qindaqt_desktop_surface_qmlplugin
             QindaQt::ShellWorkspacesDBus
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
