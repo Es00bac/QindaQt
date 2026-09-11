@@ -5,17 +5,28 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r7`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260910-r8`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=cd7b7b3b09643d4295e60431fc1a6d6e8f6c1e0a
+qq_source_commit=ca73689c5954a142a81554601dcce2acf11725d2
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r7.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r8.tar.gz
 ```
+
+The `-r8` revision lands the Appearance overhaul (ADR-0127) and the
+Accessibility route (ADR-0128): the Themes tab shows a preview window whose
+title bar, frame, and buttons are painted by the same decoration painter the
+compositor uses and whose client area is the real Fusion style with the
+previewed palette; the destinations are a glyph-first tab strip with
+tooltips; the sidebar shows route glyphs; and Settings gains an
+Accessibility route over the consumed accessibility keys. Restart
+`qindaqt-settings` and refresh the shell after merging. The decoration
+plugin now paints through the shared painter with unchanged output; it
+loads on the next session login.
 
 The `-r7` revision links the `QindaQt.Shell.DesktopSurface` static plugin
 into the production shell. `-r6` staged the module's files, but Qt links a
