@@ -15,6 +15,7 @@ target_sources(
         keyboard_settings_model.cpp
         pointer_device_selection.cpp
         pointer_devices_model.cpp
+        config_change_announcement.cpp
         qt_keyboard_config_port.cpp
         qt_keyboard_layout_port.cpp
         qt_shortcut_port.cpp
@@ -24,6 +25,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/apps/settings_input/evdev_layout_catalog.h
+            include/qindaqt/apps/settings_input/config_change_announcement.h
             include/qindaqt/apps/settings_input/keyboard_config_port.h
             include/qindaqt/apps/settings_input/keyboard_layout_port.h
             include/qindaqt/apps/settings_input/keyboard_layouts_model.h
@@ -86,6 +88,7 @@ qt_add_qml_module(
         qml/InputKeyboardSection.qml
         qml/InputPage.qml
         qml/InputPointerSection.qml
+        qml/InputShortcutRow.qml
         qml/InputShortcutsSection.qml
         qml/ShortcutCaptureButton.qml
 )
@@ -121,6 +124,7 @@ install(
         qml/InputKeyboardSection.qml
         qml/InputPage.qml
         qml/InputPointerSection.qml
+        qml/InputShortcutRow.qml
         qml/InputShortcutsSection.qml
         qml/ShortcutCaptureButton.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Input"

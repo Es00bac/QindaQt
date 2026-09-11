@@ -3555,3 +3555,36 @@ qualify menu capture or configuration activation; native menu/grab evidence
 requires compositor-delivered input. Do not report offscreen captures as native
 Wayland proof. No fixture changes Gabbee, mouse hardware preferences or the host
 session.
+
+## Desktop gap rows (September 11)
+
+Five lanes added these rows. Every one runs on private buses with fakes or
+private daemons and never touches the host session.
+
+| Area | Rows |
+| --- | --- |
+| Keyring ([ADR-0135](../adr/0135-gnome-keyring-secret-service.md)) | `qindaqt.secret-service-provider`, `qindaqt.secret-service-wrong-password`, `qindaqt.secret-service-no-daemon` (skip with exit 77 without `gnome-keyring-daemon`), `qindaqt.keyring-check-parsing` |
+| Portals ([ADR-0133](../adr/0133-route-every-portal-family.md)) | `qindaqt.portal-frontend-routing`, `qindaqt.portal-frontend-routing-negative` (real frontend, fake backends, `RUN_SERIAL`) |
+| Locking ([ADR-0132](../adr/0132-finish-session-locking.md)) | `qindaqt.settings-screen-lock-resume`, `qindaqt.settings-power-lid-presence`, `qindaqt.session-powerdevil-lid` |
+| Night light ([ADR-0136](../adr/0136-night-light-through-kwin.md)) | `qindaqt.night-light-values`, `qindaqt.night-light-config-port` (includes the `ConfigChanged` announcement), `qindaqt.night-light-state-port`, `qindaqt.night-light-boundary`, `qindaqt.night-light-boundary-poison`, `qindaqt.display-night-light-section` |
+| Input ([ADR-0134](../adr/0134-input-and-shortcut-settings.md)) | `qindaqt.settings-input-pointer-port`, `-keyboard-config-port`, `-keyboard-layout-port`, `-shortcut-port`, `-pointer-devices-model`, `-keyboard-models`, `-shortcuts-model`, `-page` |
+
+`qindaqt.settings-power-installed-route` and
+`qindaqt.settings-app-installed-routes` fail on a host that also has QindaQt
+installed under `/usr`: Qt resolves the withheld Power or Appearance module
+from the system QML path, so the relocated application keeps running instead of
+exiting. Both rows are correct on a host without a system install. The
+installed-routes gate keeps its poison runtime directory under `/tmp`, because a
+Wayland socket path inside a deep build tree exceeds the 108-byte limit.
+
+The integration probes that settled the KWin mechanisms ran a virtual
+`kwin_wayland` on a private D-Bus session with private XDG directories. They
+are not ctest rows; their logs live under
+`builds/qindaqt/gap-integration/proof/`. They established that:
+
+- a configuration written by absolute path reaches KWin only after an explicit
+  `ConfigChanged` announcement;
+- layouts apply from `kxkbrc` only with `Use=true`;
+- a kglobalaccel key sequence must carry four ints, and a one-int sequence
+  aborts the compositor;
+- a command component's `_launch` action runs its `Exec` line.

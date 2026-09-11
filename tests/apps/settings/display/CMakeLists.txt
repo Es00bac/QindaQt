@@ -15,6 +15,8 @@ target_link_libraries(
 qindaqt_enable_warnings(qindaqt_display_model_tests)
 add_test(NAME qindaqt.display-settings-model
          COMMAND qindaqt_display_model_tests)
+set_tests_properties(qindaqt.display-settings-model PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1")
 
 qt_add_executable(qindaqt_display_model_adversarial_tests
                   tst_display_settings_model_adversarial.cpp
@@ -31,6 +33,8 @@ target_link_libraries(
 qindaqt_enable_warnings(qindaqt_display_model_adversarial_tests)
 add_test(NAME qindaqt.display-settings-model-adversarial
          COMMAND qindaqt_display_model_adversarial_tests)
+set_tests_properties(qindaqt.display-settings-model-adversarial PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1")
 
 qt_add_executable(qindaqt_display_page_tests
                   tst_display_page.cpp
@@ -93,4 +97,5 @@ qindaqt_enable_warnings(qindaqt_display_night_light_section_tests)
 add_test(NAME qindaqt.display-night-light-section
          COMMAND qindaqt_display_night_light_section_tests)
 set_tests_properties(qindaqt.display-night-light-section
-                     PROPERTIES LABELS "app;display;night-light;qml")
+                     PROPERTIES LABELS "app;display;night-light;qml"
+                     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1")

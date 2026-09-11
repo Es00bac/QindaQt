@@ -7,12 +7,20 @@
 #include <QList>
 #include <QString>
 
+#include <array>
+
 namespace QindaQt::Apps::SettingsInput {
 
+// Component ids this route creates for custom command shortcuts. Only these
+// carry a command and are removable here; application components that
+// kglobalaccel loads from installed .desktop files (Konsole, Dolphin, ...)
+// are ordinary components.
+inline constexpr char CommandComponentPrefix[] = "qindaqt-custom-";
+
+// The kglobalaccel action that runs a desktop-file component's Exec line.
+inline constexpr char LaunchActionName[] = "_launch";
+
 // One global shortcut as the shortcut authority (kglobalaccel) reports it.
-// Components from installed .desktop entries are command-launchable; their
-// `command` holds the Exec value read back from the component file, and
-// everything else leaves `command` empty.
 struct ShortcutAction {
     QString componentUnique;  // authority identity, e.g. "qindaqt-shell"
     QString componentFriendly;
@@ -20,133 +28,81 @@ struct ShortcutAction {
     QString actionFriendly;
     QList<QKeySequence> active;   // empty means the shortcut is disabled
     QList<QKeySequence> defaults;
-    QString command;              // non-empty only for .desktop components
+    QString command;              // non-empty only for command components
 
-    [[nodiscard]] bool isCommandComponent() const noexcept {
-        return componentUnique.endsWith(QStringLiteral(".desktop"));
+    [[nodiscard]] bool isCommandComponent() const {
+        return componentUnique.startsWith(QLatin1String(CommandComponentPrefix)) &&
+               componentUnique.endsWith(QLatin1String(".desktop"));
     }
 };
 
-// AGENT-NOTE: Sequence helpers keep the kglobalaccel D-Bus encoding (one
-// int per sequence: Qt::Modifier bits OR the Qt::Key) at the port boundary
-// so models and QML never touch it. A global shortcut sequence is one key;
-// QKeySequence with more than one key is reduced to its first key.
+// AGENT-NOTE: kglobalaccel's integer encoding is one int per chord
+// (Qt::Modifier bits OR the Qt::Key). A captured global shortcut is one chord,
+// so these helpers keep the first chord of each sequence.
 [[nodiscard]] QList<int>
 shortcutKeysToInts(const QList<QKeySequence> &sequences);
 [[nodiscard]] QList<QKeySequence>
 shortcutKeysFromInts(const QList<int> &keys);
 [[nodiscard]] QString keySequenceDisplay(const QKeySequence &sequence);
 
-// AGENT-CONTRACT: The kglobalaccel wire types for one shortcut sequence —
-// signature `(ai)`, a struct holding one array of key ints — and for one
-// `allShortcutInfos` row. They live here (not in the adapter) because the
-// authority-side test fakes must declare the exact same C++ types: Qt D-Bus
-// matches incoming calls per registered type, and two types claiming one
-// signature in one process break the dispatch.
+// AGENT-CONTRACT: One key sequence on the kglobalaccel wire is the struct
+// `(ai)` holding EXACTLY four ints, the four chords of a QKeySequence with
+// unused chords zero. KF6GlobalAccel's demarshaller reads four ints without
+// checking, and a shorter array aborts the compositor that hosts kglobalaccel,
+// ending the desktop session (reproduced in a private KWin, ADR-0134).
+// Sequences reach the wire only through this type.
 struct ShortcutKeySequence {
-    QList<int> keys;
+    std::array<int, 4> chords{};
 };
 
-struct ShortcutInfoRow {
-    QString actionUnique;
-    QString actionFriendly;
-    QString componentUnique;
-    QString componentFriendly;
-    QString contextUnique;
-    QString contextFriendly;
-    ShortcutKeySequence keys;
-    ShortcutKeySequence defaults;
-};
+QDBusArgument &operator<<(QDBusArgument &argument,
+                          const ShortcutKeySequence &sequence);
+const QDBusArgument &operator>>(const QDBusArgument &argument,
+                                ShortcutKeySequence &sequence);
 
-inline QDBusArgument &operator<<(QDBusArgument &argument,
-                                 const ShortcutKeySequence &sequence) {
-    argument.beginStructure();
-    argument.beginArray(QMetaType::Int);
-    for (const int key : sequence.keys) {
-        argument << key;
-    }
-    argument.endArray();
-    argument.endStructure();
-    return argument;
-}
-
-inline const QDBusArgument &operator>>(const QDBusArgument &argument,
-                                       ShortcutKeySequence &sequence) {
-    sequence.keys.clear();
-    argument.beginStructure();
-    argument.beginArray();
-    while (!argument.atEnd()) {
-        int key = 0;
-        argument >> key;
-        sequence.keys.append(key);
-    }
-    argument.endArray();
-    argument.endStructure();
-    return argument;
-}
-
-inline QDBusArgument &operator<<(QDBusArgument &argument,
-                                 const ShortcutInfoRow &row) {
-    argument.beginStructure();
-    argument << row.actionUnique << row.actionFriendly << row.componentUnique
-             << row.componentFriendly << row.contextUnique
-             << row.contextFriendly << row.keys << row.defaults;
-    argument.endStructure();
-    return argument;
-}
-
-inline const QDBusArgument &operator>>(const QDBusArgument &argument,
-                                       ShortcutInfoRow &row) {
-    argument.beginStructure();
-    argument >> row.actionUnique >> row.actionFriendly >> row.componentUnique
-        >> row.componentFriendly >> row.contextUnique >> row.contextFriendly
-        >> row.keys >> row.defaults;
-    argument.endStructure();
-    return argument;
-}
-
-// Idempotent registration of the wire types with the D-Bus meta-type
-// system; the adapter and the test fakes both call it before exporting.
+// Idempotent registration of ShortcutKeySequence and its list with the D-Bus
+// type system; the adapter and the test fake call it before any call.
 void registerShortcutDBusTypes();
 
-// Port to the global shortcut authority (ADR-0134: kglobalaccel inside KWin;
-// D-Bus because the settings process registers no shortcuts of its own and
-// the enumeration/foreign-mutation surface is the D-Bus contract).
+// Port to the global shortcut authority (ADR-0134: kglobalaccel inside KWin).
 class ShortcutPort {
 public:
     virtual ~ShortcutPort();
 
-    // Every component's actions with their active and default keys. An
-    // unreachable authority or a malformed reply fails closed with an
-    // empty list and `error` set. The list order is the authority's order.
+    // Every component's actions with their active and default keys, read
+    // through each component object's allShortcutInfos. An unreachable
+    // authority or a reply with an unexpected D-Bus signature fails closed
+    // with an empty list and `error` set. The order is the authority's.
     [[nodiscard]] virtual QList<ShortcutAction>
     actions(QString *error) const = 0;
 
-    // Replaces the active keys of one existing action. An empty list
-    // disables (clear); the default keys reset is the same call with the
-    // action's recorded defaults. Unknown actions fail closed.
+    // Replaces the active keys of one existing action (empty clears; Reset
+    // is the same call with the recorded defaults) and reads them back. The
+    // authority silently ignores unknown actions and keeps a key another
+    // action holds; both return false with `error` saying so.
     [[nodiscard]] virtual bool
     setShortcuts(const QString &componentUnique, const QString &actionUnique,
                  const QList<QKeySequence> &keys, QString *error) const = 0;
 
-    // Installs a launchable command component under the user's shortcut
-    // data directory and assigns `keys` to it. The derived component id is
-    // reported through `componentUnique`; the caller must re-list to see it.
+    // Installs a command component (a desktop file under
+    // `<dataHome>/kglobalaccel` whose `_launch` action runs the command) and
+    // assigns `keys`. Nothing is written while the authority is unreachable;
+    // a failed registration or assignment removes the file and the
+    // registration again. The new id comes back through `componentUnique`.
     [[nodiscard]] virtual bool
     addCommandShortcut(const QString &name, const QString &command,
                        const QList<QKeySequence> &keys,
                        QString *componentUnique, QString *error) const = 0;
 
-    // Removes a command component previously added by
-    // addCommandShortcut (its file and its registration). Non-command
-    // components fail closed.
+    // Unregisters the `_launch` action of a command component this route
+    // created and deletes its file. Every other component fails closed.
     [[nodiscard]] virtual bool
     removeCommandShortcut(const QString &componentUnique,
                           QString *error) const = 0;
 };
 
-// Production adapter over org.kde.KGlobalAccel (kglobalaccel). `dataHome`
-// is the composition root's XDG data home; command components live under
+// Production adapter over org.kde.kglobalaccel. `dataHome` is the
+// composition root's XDG data home; command components live under
 // `<dataHome>/kglobalaccel/<id>.desktop` (ADR-0134).
 class QtShortcutPort final : public ShortcutPort {
 public:
@@ -165,14 +121,7 @@ public:
     removeCommandShortcut(const QString &componentUnique,
                           QString *error) const override;
 
-    // Built-in-type key accessors used while listing (a(ai) replies).
-    [[nodiscard]] QList<QKeySequence>
-    shortcutKeys(const QString &componentUnique,
-                 const QString &actionUnique) const;
-    [[nodiscard]] QList<QKeySequence>
-    defaultShortcutKeys(const QString &componentUnique,
-                        const QString &actionUnique) const;
-
+private:
     QDBusConnection m_bus;
     QString m_dataHome;
 };

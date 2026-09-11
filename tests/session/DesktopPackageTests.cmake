@@ -89,10 +89,12 @@ add_test(
         --qml-source "${PROJECT_SOURCE_DIR}/src/apps/settings_center/Main.qml"
         --embedded-qml-module QindaQt.SettingsApp.Customize
         --embedded-qml-module QindaQt.SettingsApp.PowerBackend
-        # AGENT-NOTE: ColorBackend is also a static module linked into the
-        # Settings Center (src/apps/settings/color/CMakeLists.txt), so the
-        # stage carries no qmldir for it; exempt it like PowerBackend.
+        # AGENT-NOTE: ColorBackend and InputBackend are also static modules
+        # linked into the Settings Center (src/apps/settings/color and input
+        # CMakeLists.txt), so the stage carries no qmldir for them; exempt them
+        # like PowerBackend.
         --embedded-qml-module QindaQt.SettingsApp.ColorBackend
+        --embedded-qml-module QindaQt.SettingsApp.InputBackend
         ${_qindaqt_desktop_system_library_arguments}
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_controls_qml>"
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_global_menu_qml>"

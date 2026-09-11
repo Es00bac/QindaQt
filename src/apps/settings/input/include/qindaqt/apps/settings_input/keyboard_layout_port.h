@@ -46,9 +46,9 @@ public:
                            QString *error) const = 0;
 };
 
-// Production adapter: KConfig file at `kxkbrcPath` plus the desktop reload
-// request over `bus` (the same org.kde.KWin /KWin reconfigure path the
-// keyboard config adapter uses; verified live by ADR-0134).
+// Production adapter: KConfig file at `kxkbrcPath` plus the ConfigChanged
+// announcement over `bus` that makes a running KWin re-read kxkbrc
+// (ADR-0134). `Stored` requires both the announcement and KWin on the bus.
 class QtKeyboardLayoutPort final : public KeyboardLayoutPort {
 public:
     QtKeyboardLayoutPort(QString kxkbrcPath, QDBusConnection bus);

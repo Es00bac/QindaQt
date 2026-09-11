@@ -134,7 +134,12 @@ QString ShortcutsModel::displayKey(int key) const {
     return keySequenceDisplay(QKeySequence(QKeyCombination::fromCombined(key)));
 }
 
-QStringList ShortcutsModel::conflictsFor(const QVariantList &keys) const {
+QStringList ShortcutsModel::conflictsFor(int row,
+                                         const QVariantList &keys) const {
+    const ShortcutAction *capturing =
+        row >= 0 && row < int(m_visibleRows.size())
+            ? &m_actions.at(m_visibleRows.at(row))
+            : nullptr;
     QStringList conflicts;
     for (const QVariant &keyValue : keys) {
         bool ok = false;
@@ -143,6 +148,11 @@ QStringList ShortcutsModel::conflictsFor(const QVariantList &keys) const {
             continue;
         }
         for (const ShortcutAction &action : m_actions) {
+            if (capturing != nullptr &&
+                action.componentUnique == capturing->componentUnique &&
+                action.actionUnique == capturing->actionUnique) {
+                continue;
+            }
             const bool holdsKey = std::any_of(
                 action.active.cbegin(), action.active.cend(),
                 [key](const QKeySequence &sequence) {
@@ -196,9 +206,37 @@ bool ShortcutsModel::assign(int row, const QVariantList &keys) {
     if (row < 0 || row >= int(m_visibleRows.size())) {
         return false;
     }
-    const ShortcutAction &action = m_actions.at(m_visibleRows.at(row));
-    return assignIdentity(action.componentUnique, action.actionUnique,
-                          keySequences(keys));
+    const ShortcutAction target = m_actions.at(m_visibleRows.at(row));
+    const QList<QKeySequence> sequences = keySequences(keys);
+    // AGENT-NOTE: The authority keeps a key another action holds, so an
+    // explicit assignment first releases the key from every other holder;
+    // that is what "Assign anyway" means (ADR-0134).
+    const QList<ShortcutAction> holders = m_actions;
+    for (const ShortcutAction &holder : holders) {
+        if (holder.componentUnique == target.componentUnique &&
+            holder.actionUnique == target.actionUnique) {
+            continue;
+        }
+        QList<QKeySequence> remaining;
+        for (const QKeySequence &active : holder.active) {
+            if (!sequences.contains(active)) {
+                remaining.append(active);
+            }
+        }
+        if (remaining.size() == holder.active.size()) {
+            continue;
+        }
+        QString error;
+        if (!m_port.setShortcuts(holder.componentUnique, holder.actionUnique,
+                                 remaining, &error)) {
+            m_statusText = error;
+            Q_EMIT statusTextChanged();
+            refresh();
+            return false;
+        }
+    }
+    return assignIdentity(target.componentUnique, target.actionUnique,
+                          sequences);
 }
 
 bool ShortcutsModel::resetToDefault(int row) {

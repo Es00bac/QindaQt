@@ -98,12 +98,15 @@ target_link_libraries(
     qindaqt_settings_customize_qmlplugin qindaqt_settings_bluetooth
     qindaqt_settings_bluetooth_qml
     # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
-    # and Color modules are static, so any in-process Main.qml host must link them.
+    # Color, and Input backend modules are static, so any in-process Main.qml
+    # host must link them.
     qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_backend_qml
     qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_input_backend_qml
+    qindaqt_settings_input_backend_qmlplugin
     qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
     qindaqt_themes Qt6::Quick Qt6::Test
 )

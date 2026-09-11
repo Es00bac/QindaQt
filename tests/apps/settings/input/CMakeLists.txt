@@ -28,6 +28,7 @@ add_test(NAME qindaqt.settings-input-pointer-port
 set_tests_properties(
     qindaqt.settings-input-pointer-port PROPERTIES
     LABELS "settings;input;dbus" TIMEOUT 60 RUN_SERIAL TRUE
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 # Keyboard repeat/NumLock config port: KConfig round trips in a temp dir.
@@ -35,6 +36,7 @@ qindaqt_input_test(
     qindaqt_settings_input_keyboard_config_port_test
     SOURCES
         tst_keyboard_config_port.cpp
+        support/config_change_listener.h
         support/private_bus.h
 )
 add_test(NAME qindaqt.settings-input-keyboard-config-port
@@ -42,6 +44,7 @@ add_test(NAME qindaqt.settings-input-keyboard-config-port
 set_tests_properties(
     qindaqt.settings-input-keyboard-config-port PROPERTIES
     LABELS "settings;input;dbus" TIMEOUT 60 RUN_SERIAL TRUE
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 # Layout port (kxkbrc) plus the bounded evdev catalog parser.
@@ -49,12 +52,15 @@ qindaqt_input_test(
     qindaqt_settings_input_keyboard_layout_port_test
     SOURCES
         tst_keyboard_layout_port.cpp
+        support/config_change_listener.h
+        support/private_bus.h
 )
 add_test(NAME qindaqt.settings-input-keyboard-layout-port
          COMMAND qindaqt_settings_input_keyboard_layout_port_test)
 set_tests_properties(
     qindaqt.settings-input-keyboard-layout-port PROPERTIES
-    LABELS "settings;input" TIMEOUT 60
+    LABELS "settings;input;dbus" TIMEOUT 60 RUN_SERIAL TRUE
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 # Shortcut authority port over a private bus with a fake kglobalaccel.
@@ -70,6 +76,7 @@ add_test(NAME qindaqt.settings-input-shortcut-port
 set_tests_properties(
     qindaqt.settings-input-shortcut-port PROPERTIES
     LABELS "settings;input;dbus" TIMEOUT 60 RUN_SERIAL TRUE
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 # Route models over in-process fakes: presentation truth and write paths.
@@ -82,6 +89,7 @@ add_test(NAME qindaqt.settings-input-pointer-devices-model
 set_tests_properties(
     qindaqt.settings-input-pointer-devices-model PROPERTIES
     LABELS "settings;input" TIMEOUT 60
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 qindaqt_input_test(
@@ -93,6 +101,7 @@ add_test(NAME qindaqt.settings-input-keyboard-models
 set_tests_properties(
     qindaqt.settings-input-keyboard-models PROPERTIES
     LABELS "settings;input" TIMEOUT 60
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 qindaqt_input_test(
@@ -104,6 +113,7 @@ add_test(NAME qindaqt.settings-input-shortcuts-model
 set_tests_properties(
     qindaqt.settings-input-shortcuts-model PROPERTIES
     LABELS "settings;input" TIMEOUT 60
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 # Offscreen Input page rows: capability hiding, conflict capture, the
@@ -116,12 +126,13 @@ qt_add_executable(
 target_include_directories(qindaqt_settings_input_page_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
     qindaqt_settings_input_page_test PRIVATE
-    qindaqt_settings_input
+    qindaqt_settings_input qindaqt_settings_appearance qindaqt_themes
     qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
     Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
 )
 target_compile_definitions(
     qindaqt_settings_input_page_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
     QINDAQT_INPUT_BUILD_QML_FILE="${CMAKE_BINARY_DIR}/qml/QindaQt/SettingsApp/Input/qml/InputPage.qml"
 )

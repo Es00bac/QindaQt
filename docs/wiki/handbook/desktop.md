@@ -142,8 +142,8 @@ leave the group intact:
 
 ### Keyboard reference
 
-These are the **default** bindings; they can be reassigned through the
-standard global shortcut settings. In the interactive modes, **Enter**
+These are the **default** bindings; reassign them in **Settings → Input →
+Shortcuts**, which also adds shortcuts that run a command. In the interactive modes, **Enter**
 confirms and **Esc** cancels.
 
 | Keys | What they do |
@@ -162,6 +162,7 @@ confirms and **Esc** cancels.
 | `Meta+Shift+C` | Show or hide the member title strips QindaQt draws (for this session) |
 | `Meta+Shift+F1` | Show or hide the desktop shortcut note |
 | `Meta+N` | Open the notification center |
+| `Meta+L` | Lock the screen (owned by KWin's session management component) |
 
 One rule worth knowing: while a window is grouped, its frame belongs to the
 container. Native per-window tiling shortcuts are redirected so a member

@@ -49,6 +49,9 @@ All **48 keys** in active `data/settings/schema-v2.json` are listed below. JSON 
 
 ## input
 
+These keys are superseded and unconsumed. The Input route writes KWin's own
+configuration instead ([ADR-0134](../../adr/0134-input-and-shortcut-settings.md)).
+
 | Key | Type | Default | Schema constraints |
 | --- | --- | --- | --- |
 | `input.pointerAcceleration` | number | `0.0` | `{"minimum":-1.0,"maximum":1.0}` |

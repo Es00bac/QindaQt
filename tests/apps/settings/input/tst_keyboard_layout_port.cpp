@@ -2,7 +2,11 @@
 #include <qindaqt/apps/settings_input/evdev_layout_catalog.h>
 #include <qindaqt/apps/settings_input/keyboard_layout_port.h>
 
+#include "support/config_change_listener.h"
+#include "support/private_bus.h"
+
 #include <QtDBus/QDBusConnection>
+#include <QDir>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -21,6 +25,7 @@ private Q_SLOTS:
     void malformedRowsAreDropped();
     void refusesEmptyDuplicateAndInvalidLists();
     void reloadFailureIsReportedSeparately();
+    void announcesTheLayoutChangeToARunningDesktop();
     void catalogParsesLayoutsAndVariants();
     void catalogRejectsHostileInput();
 
@@ -43,7 +48,7 @@ private:
 void KeyboardLayoutPortTest::missingFileIsEmptyList()
 {
     QtKeyboardLayoutPort port(path("absent-kxkbrc"),
-                              QDBusConnection::sessionBus());
+                              QDBusConnection(QStringLiteral("none")));
     QString error;
     QVERIFY(port.configuredLayouts(&error).isEmpty());
     QVERIFY(error.isEmpty());
@@ -52,7 +57,7 @@ void KeyboardLayoutPortTest::missingFileIsEmptyList()
 void KeyboardLayoutPortTest::layoutListRoundTrip()
 {
     const QString kxkbrc = path("roundtrip-kxkbrc");
-    QtKeyboardLayoutPort port(kxkbrc, QDBusConnection::sessionBus());
+    QtKeyboardLayoutPort port(kxkbrc, QDBusConnection(QStringLiteral("none")));
     const QList<KeyboardLayoutSelection> layouts = {
         {QStringLiteral("us"), QString(), {}, {}},
         {QStringLiteral("de"), QStringLiteral("nodeadkeys"), {}, {}},
@@ -62,7 +67,7 @@ void KeyboardLayoutPortTest::layoutListRoundTrip()
              StoreResult::StoredButReloadFailed);
     QCOMPARE(error, QString());
 
-    QtKeyboardLayoutPort reader(kxkbrc, QDBusConnection::sessionBus());
+    QtKeyboardLayoutPort reader(kxkbrc, QDBusConnection(QStringLiteral("none")));
     const QList<KeyboardLayoutSelection> readBack =
         reader.configuredLayouts(&error);
     QCOMPARE(error, QString());
@@ -71,6 +76,11 @@ void KeyboardLayoutPortTest::layoutListRoundTrip()
     QCOMPARE(readBack.at(0).variant, QString());
     QCOMPARE(readBack.at(1).layout, QStringLiteral("de"));
     QCOMPARE(readBack.at(1).variant, QStringLiteral("nodeadkeys"));
+
+    // KWin only applies the list together with Use=true.
+    QFile file(kxkbrc);
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    QVERIFY(QString::fromUtf8(file.readAll()).contains(QStringLiteral("Use=true")));
 }
 
 void KeyboardLayoutPortTest::malformedRowsAreDropped()
@@ -79,7 +89,7 @@ void KeyboardLayoutPortTest::malformedRowsAreDropped()
     QVERIFY(writeFile(kxkbrc,
                       "[Layout]\nLayoutList=us,bad/row,de\n"
                       "VariantList=,x,deadkeys\n"));
-    QtKeyboardLayoutPort port(kxkbrc, QDBusConnection::sessionBus());
+    QtKeyboardLayoutPort port(kxkbrc, QDBusConnection(QStringLiteral("none")));
     QString error;
     const QList<KeyboardLayoutSelection> layouts =
         port.configuredLayouts(&error);
@@ -93,7 +103,7 @@ void KeyboardLayoutPortTest::malformedRowsAreDropped()
 void KeyboardLayoutPortTest::refusesEmptyDuplicateAndInvalidLists()
 {
     const QString kxkbrc = path("refusal-kxkbrc");
-    QtKeyboardLayoutPort port(kxkbrc, QDBusConnection::sessionBus());
+    QtKeyboardLayoutPort port(kxkbrc, QDBusConnection(QStringLiteral("none")));
     QString error;
     QCOMPARE(port.writeConfiguredLayouts({}, &error), StoreResult::Failed);
     QVERIFY(error.contains(QStringLiteral("between 1 and")));
@@ -125,6 +135,32 @@ void KeyboardLayoutPortTest::reloadFailureIsReportedSeparately()
     QCOMPARE(port.writeConfiguredLayouts(layouts, &error),
              StoreResult::StoredButReloadFailed);
     QCOMPARE(error, QString());
+}
+
+void KeyboardLayoutPortTest::announcesTheLayoutChangeToARunningDesktop()
+{
+    QindaQt::Tests::PrivateBus bus;
+    QVERIFY(bus.start());
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
+    const QString listenerName = QStringLiteral("kxkbrc-listener");
+    QindaQt::Tests::ConfigChangeListener listener;
+    QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),
+                            QStringLiteral("kxkbrc")));
+    QVERIFY(QDir(m_dir.path()).mkpath(QStringLiteral("announce")));
+    QtKeyboardLayoutPort port(m_dir.filePath(QStringLiteral("announce/kxkbrc")),
+                              bus.connection);
+    const QList<KeyboardLayoutSelection> layouts = {
+        {QStringLiteral("us"), QString(), {}, {}},
+        {QStringLiteral("fr"), QString(), {}, {}},
+    };
+    QString error;
+    QCOMPARE(port.writeConfiguredLayouts(layouts, &error), StoreResult::Stored);
+    QTRY_COMPARE(listener.changes.size(), 1);
+    const QByteArrayList keys =
+        listener.changes.first().value(QStringLiteral("Layout"));
+    QVERIFY(keys.contains("LayoutList"));
+    QVERIFY(keys.contains("Use"));
+    QDBusConnection::disconnectFromBus(listenerName);
 }
 
 void KeyboardLayoutPortTest::catalogParsesLayoutsAndVariants()

@@ -28,13 +28,11 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
 
     if (argc >= 4 && argv[1] == QLatin1String("write")) {
-        // KConfigWatcher in the daemons matches the writer's component name
-        // against the config's own component; announce as "kwin" so the
-        // notify reaches KWin's watcher for its kwinrc.
-        QCoreApplication::setApplicationName(QStringLiteral("kwin"));
-        QCoreApplication::setOrganizationDomain(QStringLiteral("kde.org"));
+        // The port announces its writes over the proof's private session
+        // bus, so the running KWin re-reads kwinrc.
         QtConfigNightLightPort port(QString::fromUtf8(argv[2]),
-                                    QString::fromUtf8(argv[3]));
+                                    QString::fromUtf8(argv[3]),
+                                    QDBusConnection::sessionBus());
         QindaQt::Services::NightLight::NightLightSettings settings;
         settings.output.active = true;
         settings.output.mode = QindaQt::Services::NightLight::Mode::Constant;

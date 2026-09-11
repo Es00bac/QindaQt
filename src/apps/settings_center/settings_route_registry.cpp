@@ -73,6 +73,12 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   // AGENT-CONTRACT: Standard first-party routes.
   // Preserves deterministic initial navigation order: Notifications, then
   // Appearance.
+  const auto registerBuiltIn = [this](const SettingsRoute &route) {
+    const bool registered = registerRoute(route);
+    Q_ASSERT(registered);
+    Q_UNUSED(registered);
+  };
+
   const SettingsRoute notificationsRoute{
       .id = QStringLiteral("notifications"),
       .component = SettingsRouteComponent::Notifications,
@@ -84,9 +90,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool notifRegistered = registerRoute(notificationsRoute);
-  Q_ASSERT(notifRegistered);
-  Q_UNUSED(notifRegistered);
+  registerBuiltIn(notificationsRoute);
 
   const SettingsRoute appearanceRoute{
       .id = QStringLiteral("appearance"),
@@ -101,9 +105,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool appRegistered = registerRoute(appearanceRoute);
-  Q_ASSERT(appRegistered);
-  Q_UNUSED(appRegistered);
+  registerBuiltIn(appearanceRoute);
 
   const SettingsRoute displayRoute{
       .id = QStringLiteral("display"),
@@ -116,9 +118,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool dispRegistered = registerRoute(displayRoute);
-  Q_ASSERT(dispRegistered);
-  Q_UNUSED(dispRegistered);
+  registerBuiltIn(displayRoute);
 
   const SettingsRoute networkRoute{
       .id = QStringLiteral("network"),
@@ -131,9 +131,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool networkRegistered = registerRoute(networkRoute);
-  Q_ASSERT(networkRegistered);
-  Q_UNUSED(networkRegistered);
+  registerBuiltIn(networkRoute);
 
   const SettingsRoute customizeRoute{
       .id = QStringLiteral("customize"),
@@ -147,9 +145,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool customizeRegistered = registerRoute(customizeRoute);
-  Q_ASSERT(customizeRegistered);
-  Q_UNUSED(customizeRegistered);
+  registerBuiltIn(customizeRoute);
 
   const SettingsRoute audioRoute{
       .id = QStringLiteral("audio"),
@@ -162,9 +158,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool audioRegistered = registerRoute(audioRoute);
-  Q_ASSERT(audioRegistered);
-  Q_UNUSED(audioRegistered);
+  registerBuiltIn(audioRoute);
 
   const SettingsRoute bluetoothRoute{
       .id = QStringLiteral("bluetooth"),
@@ -177,9 +171,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool bluetoothRegistered = registerRoute(bluetoothRoute);
-  Q_ASSERT(bluetoothRegistered);
-  Q_UNUSED(bluetoothRegistered);
+  registerBuiltIn(bluetoothRoute);
 
   const SettingsRoute powerRoute{
       .id = QStringLiteral("power"),
@@ -192,9 +184,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool powerRegistered = registerRoute(powerRoute);
-  Q_ASSERT(powerRegistered);
-  Q_UNUSED(powerRegistered);
+  registerBuiltIn(powerRoute);
 
   const SettingsRoute clipboardRoute{
       .id = QStringLiteral("clipboard"),
@@ -207,9 +197,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool clipboardRegistered = registerRoute(clipboardRoute);
-  Q_ASSERT(clipboardRegistered);
-  Q_UNUSED(clipboardRegistered);
+  registerBuiltIn(clipboardRoute);
 
   const SettingsRoute colorRoute{
       .id = QStringLiteral("color"),
@@ -222,9 +210,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool colorRegistered = registerRoute(colorRoute);
-  Q_ASSERT(colorRegistered);
-  Q_UNUSED(colorRegistered);
+  registerBuiltIn(colorRoute);
 
   // AGENT-GUARD: Appended last so every existing route index, shortcut, and
   // traversal order stays stable (ADR-0128).
@@ -239,9 +225,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool accessibilityRegistered = registerRoute(accessibilityRoute);
-  Q_ASSERT(accessibilityRegistered);
-  Q_UNUSED(accessibilityRegistered);
+  registerBuiltIn(accessibilityRoute);
 
   // AGENT-GUARD: Appended last so every existing route index, shortcut, and
   // traversal order stays stable (ADR-0128); the Input route continues that
@@ -257,9 +241,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .available = true,
       .unavailableReason = QString(),
   };
-  const bool inputRegistered = registerRoute(inputRoute);
-  Q_ASSERT(inputRegistered);
-  Q_UNUSED(inputRegistered);
+  registerBuiltIn(inputRoute);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

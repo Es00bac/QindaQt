@@ -2,31 +2,19 @@
 #include <qindaqt/apps/settings_input/keyboard_config_port.h>
 
 #include <QtDBus/QDBusConnection>
-#include <QtDBus/QDBusInterface>
-#include <QtDBus/QDBusReply>
+#include <QDir>
 #include <QFile>
 #include <QIODevice>
 #include <QTemporaryDir>
 #include <QTest>
 
+#include "support/config_change_listener.h"
 #include "support/private_bus.h"
 
 using QindaQt::Apps::SettingsInput::isValidKeyboardConfig;
 using QindaQt::Apps::SettingsInput::KeyboardConfig;
 using QindaQt::Apps::SettingsInput::QtKeyboardConfigPort;
 using QindaQt::Apps::SettingsInput::StoreResult;
-
-// Fake desktop authority answering reconfigure on a private bus. Q_OBJECT
-// classes cannot live in function scope.
-class FakeKWin : public QObject
-{
-    Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin")
-public:
-    int reconfigures = 0;
-public Q_SLOTS:
-    Q_SCRIPTABLE void reconfigure() { ++reconfigures; }
-};
 
 class KeyboardConfigPortTest final : public QObject
 {
@@ -37,10 +25,16 @@ private Q_SLOTS:
     void roundTripPersistsValues();
     void rejectsOutOfRangeValuesWithoutWriting();
     void reloadFailureIsReportedSeparately();
-    void reloadSuccessIsReported();
+    void announcesTheChangeToARunningDesktop();
+    void withoutADesktopTheChangeWaitsForTheNextSession();
+    void relocatedFileNamesAreNeverAnnounced();
     void validityHelperRejectsOutOfRange();
 
 private:
+    static QDBusConnection offlineBus()
+    {
+        return QDBusConnection(QStringLiteral("none"));
+    }
     QString configPath() const
     {
         // Unique per test: several rows assert on the file's existence or
@@ -54,7 +48,7 @@ private:
 
 void KeyboardConfigPortTest::missingFileIsDefaultTruth()
 {
-    QtKeyboardConfigPort port(configPath(), QDBusConnection::sessionBus());
+    QtKeyboardConfigPort port(configPath(), offlineBus());
     QString error;
     const KeyboardConfig config = port.read(&error);
     QVERIFY(error.isEmpty());
@@ -67,7 +61,7 @@ void KeyboardConfigPortTest::missingFileIsDefaultTruth()
 void KeyboardConfigPortTest::roundTripPersistsValues()
 {
     const QString path = configPath();
-    QtKeyboardConfigPort port(path, QDBusConnection::sessionBus());
+    QtKeyboardConfigPort port(path, offlineBus());
     KeyboardConfig config;
     config.keyRepeat = true;
     config.repeatDelayMs = 660;
@@ -80,7 +74,7 @@ void KeyboardConfigPortTest::roundTripPersistsValues()
              StoreResult::StoredButReloadFailed);
     QCOMPARE(error, QString());
 
-    QtKeyboardConfigPort reader(path, QDBusConnection::sessionBus());
+    QtKeyboardConfigPort reader(path, offlineBus());
     const KeyboardConfig readBack = reader.read(nullptr);
     QVERIFY(readBack.keyRepeat);
     QCOMPARE(readBack.repeatDelayMs, 660);
@@ -101,7 +95,7 @@ void KeyboardConfigPortTest::roundTripPersistsValues()
 void KeyboardConfigPortTest::rejectsOutOfRangeValuesWithoutWriting()
 {
     const QString path = configPath();
-    QtKeyboardConfigPort port(path, QDBusConnection::sessionBus());
+    QtKeyboardConfigPort port(path, offlineBus());
     KeyboardConfig config;
     config.repeatDelayMs = 10; // below 100
     QString error;
@@ -134,23 +128,67 @@ void KeyboardConfigPortTest::reloadFailureIsReportedSeparately()
     QVERIFY(QFile::exists(configPath()));
 }
 
-void KeyboardConfigPortTest::reloadSuccessIsReported()
+void KeyboardConfigPortTest::announcesTheChangeToARunningDesktop()
 {
-    // A fake org.kde.KWin on a private bus answers reconfigure, so the
-    // write reports full success rather than a degraded one.
+    // A stand-in for the running desktop owns org.kde.KWin on a private bus;
+    // a second connection listens exactly where KWin's config watcher does.
     QindaQt::Tests::PrivateBus bus;
     QVERIFY(bus.start());
-    FakeKWin fake;
     QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
-    QVERIFY(bus.connection.registerObject(
-        QStringLiteral("/KWin"), &fake,
-        QDBusConnection::ExportAllContents));
+    const QString listenerName = QStringLiteral("kcminputrc-listener");
+    QindaQt::Tests::ConfigChangeListener listener;
+    QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),
+                            QStringLiteral("kcminputrc")));
 
-    QtKeyboardConfigPort port(configPath(), bus.connection);
+    QVERIFY(QDir(m_dir.path()).mkpath(QStringLiteral("announce")));
+    QtKeyboardConfigPort port(m_dir.filePath(QStringLiteral("announce/kcminputrc")),
+                              bus.connection);
     KeyboardConfig config;
+    config.repeatDelayMs = 400;
     QString error;
     QCOMPARE(port.write(config, &error), StoreResult::Stored);
-    QCOMPARE(fake.reconfigures, 1);
+    QTRY_COMPARE(listener.changes.size(), 1);
+    const QByteArrayList keys =
+        listener.changes.first().value(QStringLiteral("Keyboard"));
+    QVERIFY(keys.contains("RepeatDelay"));
+    QVERIFY(keys.contains("RepeatRate"));
+    QVERIFY(keys.contains("KeyRepeat"));
+    QVERIFY(keys.contains("NumLock"));
+    QDBusConnection::disconnectFromBus(listenerName);
+}
+
+void KeyboardConfigPortTest::withoutADesktopTheChangeWaitsForTheNextSession()
+{
+    // Negative control: the file is durable, but with nobody owning
+    // org.kde.KWin the port must not claim a live change.
+    QindaQt::Tests::PrivateBus bus;
+    QVERIFY(bus.start());
+    QVERIFY(QDir(m_dir.path()).mkpath(QStringLiteral("nodesktop")));
+    const QString path = m_dir.filePath(QStringLiteral("nodesktop/kcminputrc"));
+    QtKeyboardConfigPort port(path, bus.connection);
+    QString error;
+    QCOMPARE(port.write(KeyboardConfig{}, &error),
+             StoreResult::StoredButReloadFailed);
+    QVERIFY(QFile::exists(path));
+}
+
+void KeyboardConfigPortTest::relocatedFileNamesAreNeverAnnounced()
+{
+    QindaQt::Tests::PrivateBus bus;
+    QVERIFY(bus.start());
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
+    const QString listenerName = QStringLiteral("relocated-listener");
+    QindaQt::Tests::ConfigChangeListener listener;
+    QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),
+                            QStringLiteral("kcminputrc")));
+    // configPath() carries a hyphenated name, which is not a D-Bus path element.
+    QtKeyboardConfigPort port(configPath(), bus.connection);
+    QString error;
+    QCOMPARE(port.write(KeyboardConfig{}, &error),
+             StoreResult::StoredButReloadFailed);
+    QTest::qWait(200);
+    QCOMPARE(listener.changes.size(), 0);
+    QDBusConnection::disconnectFromBus(listenerName);
 }
 
 void KeyboardConfigPortTest::validityHelperRejectsOutOfRange()

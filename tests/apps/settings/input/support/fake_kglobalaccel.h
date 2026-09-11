@@ -6,26 +6,58 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusMetaType>
+#include <QDBusObjectPath>
 #include <QDBusVirtualObject>
-
-#include <cstdio>
-#include <QDBusMetaType>
-#include <QObject>
+#include <QList>
+#include <QMap>
+#include <QRegularExpression>
 #include <QStringList>
-#include <QVariantList>
-#include <QVariantMap>
+
+#include <algorithm>
 
 #include <qindaqt/apps/settings_input/shortcut_port.h>
 
 namespace QindaQt::Tests
 {
 
-// Fake kglobalaccel authority, service org.kde.kglobalaccel, implemented as
-// a QDBusVirtualObject: handleMethodCall receives every raw method call, so
-// the fake reproduces the daemon's exact wire behavior (a(ai) key encoding
-// and a(ssssssaiai) info rows) without depending on Qt's metatype-based
-// slot dispatch, which cannot resolve custom-typed IN parameters for plain
-// exported objects (ADR-0134 notes).
+// One allShortcutInfos row in the daemon's wire shape (ssssssaiai).
+struct FakeShortcutInfoWire {
+    QString actionUnique;
+    QString actionFriendly;
+    QString componentUnique;
+    QString componentFriendly;
+    QString contextUnique;
+    QString contextFriendly;
+    QList<int> keys;
+    QList<int> defaults;
+};
+
+inline QDBusArgument &operator<<(QDBusArgument &argument, const FakeShortcutInfoWire &row)
+{
+    argument.beginStructure();
+    argument << row.actionUnique << row.actionFriendly << row.componentUnique
+             << row.componentFriendly << row.contextUnique << row.contextFriendly
+             << row.keys << row.defaults;
+    argument.endStructure();
+    return argument;
+}
+
+inline const QDBusArgument &operator>>(const QDBusArgument &argument, FakeShortcutInfoWire &row)
+{
+    argument.beginStructure();
+    argument >> row.actionUnique >> row.actionFriendly >> row.componentUnique
+             >> row.componentFriendly >> row.contextUnique >> row.contextFriendly
+             >> row.keys >> row.defaults;
+    argument.endStructure();
+    return argument;
+}
+
+// Fake org.kde.kglobalaccel reproducing the daemon's wire contract as observed
+// in a private KWin (ADR-0134): allMainComponents (aas), getComponent (o), the
+// component object's allShortcutInfos (a(ssssssaiai)), setForeignShortcutKeys
+// (asa(ai), four ints per sequence), doRegister (as), unregister (ss). Unknown
+// actions are ignored and a key another action holds is dropped, silently,
+// exactly like the daemon.
 class FakeKGlobalAccel final : public QDBusVirtualObject
 {
 public:
@@ -40,29 +72,10 @@ public:
     bool publish(QDBusConnection bus)
     {
         QindaQt::Apps::SettingsInput::registerShortcutDBusTypes();
-        {
-            const QMetaType element =
-                QMetaType::fromType<QindaQt::Apps::SettingsInput::
-                                        ShortcutKeySequence>();
-            const QMetaType list =
-                QMetaType::fromType<QList<QindaQt::Apps::SettingsInput::
-                                              ShortcutKeySequence>>();
-            std::fprintf(stderr,
-                         "ELEM-SIG: name=%s dbus=%s | LIST dbus=%s\n",
-                         element.name(),
-                         QDBusMetaType::typeToSignature(element)
-                             ? QDBusMetaType::typeToSignature(element)
-                             : "NULL",
-                         QDBusMetaType::typeToSignature(list)
-                             ? QDBusMetaType::typeToSignature(list)
-                             : "NULL");
-        }
-        m_bus = bus;
-        // SubPath: one virtual object handles every path, matching the
-        // daemon's /kglobalaccel and /component/<id> objects.
-        return bus.registerService(QStringLiteral("org.kde.kglobalaccel")) &&
-               bus.registerVirtualObject(QStringLiteral("/"), this,
-                                         QDBusConnection::SubPath);
+        qDBusRegisterMetaType<FakeShortcutInfoWire>();
+        qDBusRegisterMetaType<QList<FakeShortcutInfoWire>>();
+        return bus.registerService(QStringLiteral("org.kde.kglobalaccel"))
+            && bus.registerVirtualObject(QStringLiteral("/"), this, QDBusConnection::SubPath);
     }
 
     void addComponent(const QString &unique, const QString &friendly)
@@ -74,224 +87,219 @@ public:
                    const QString &actionFriendly, const QList<int> &active,
                    const QList<int> &defaults)
     {
-        m_actions.append({componentUnique, actionUnique, actionFriendly,
-                          active, defaults});
+        m_actions.append({componentUnique, actionUnique, actionFriendly, active, defaults});
     }
 
-    // Negative-control switches.
+    bool hasAction(const QString &componentUnique, const QString &actionUnique) const
+    {
+        return std::any_of(m_actions.cbegin(), m_actions.cend(), [&](const Action &candidate) {
+            return candidate.componentUnique == componentUnique
+                && candidate.actionUnique == actionUnique;
+        });
+    }
+
+    Action action(const QString &componentUnique, const QString &actionUnique) const
+    {
+        for (const Action &candidate : m_actions) {
+            if (candidate.componentUnique == componentUnique
+                && candidate.actionUnique == actionUnique) {
+                return candidate;
+            }
+        }
+        return {};
+    }
+
+    // Negative-control switches and observations.
     bool malformedComponentList = false;
-    int setForeignCalls = 0;
+    bool malformedShortcutInfos = false;
+    int legacyIntegerCalls = 0;
+    int malformedSequenceCalls = 0;
+    QStringList callOrder;
+    QStringList lastActionId;
+    QList<QList<int>> lastSequences;
+    QList<QStringList> unregistered;
 
-    const QList<Action> &actionList() const { return m_actions; }
-
-    // QDBusVirtualObject
     QString introspect(const QString &) const override
     {
-        // Minimal but valid: the ports never introspect.
         return QStringLiteral("<node/>");
     }
 
-    bool handleMessage(const QDBusMessage &message,
-                       const QDBusConnection &connection) override
+    bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override
     {
-        Q_UNUSED(connection);
-        std::fprintf(stderr, "VCALL: path=%s member=%s iface=%s sig=%s\n",
-                     qPrintable(message.path()),
-                     qPrintable(message.member()),
-                     qPrintable(message.interface()),
-                     qPrintable(message.signature()));
-        // Component objects: one allShortcutInfos per component id.
-        if (message.path().startsWith(QLatin1String("/component/")) &&
-            message.member() == QLatin1String("allShortcutInfos")) {
-            QString unique = message.path();
-            unique.remove(0, QLatin1String("/component/").size());
-            unique.replace(QLatin1Char('_'), QLatin1Char('.'));
-            // The path escaping is lossy ('-' also became '_'); match
-            // against the escaped forms of the known component ids.
-            QString canonical;
-            for (auto it = m_componentFriendly.cbegin();
-                 it != m_componentFriendly.cend(); ++it) {
-                QString escaped = it.key();
-                escaped.replace(QLatin1Char('.'), QLatin1Char('_'));
-                escaped.replace(QLatin1Char('-'), QLatin1Char('_'));
-                if (escaped == unique) {
-                    canonical = it.key();
-                    break;
-                }
-            }
-            using QindaQt::Apps::SettingsInput::ShortcutInfoRow;
-            QDBusArgument array;
-            array.beginArray(
-                QMetaType::fromType<ShortcutInfoRow>());
-            for (const ShortcutInfoRow &row :
-                 allShortcutInfosFor(canonical)) {
-                array << row;
-            }
-            array.endArray();
-            QDBusMessage reply = message.createReply(
-                QVariant::fromValue(array));
-            m_bus.send(reply);
-            return true;
+        callOrder.append(message.member());
+        if (message.path().startsWith(QLatin1String("/component/"))) {
+            return handleComponent(message, connection);
         }
-        if (message.member() == QLatin1String("allActionsForComponent") &&
-            message.interface() == QLatin1String("org.kde.KGlobalAccel") &&
-            message.signature() == QLatin1String("as")) {
-            const QString componentUnique =
-                message.arguments().at(0).toStringList().value(0);
-            QDBusArgument array;
-            array.beginArray(QMetaType::QStringList);
-            for (const Action &action : std::as_const(m_actions)) {
-                if (action.componentUnique != componentUnique) {
-                    continue;
-                }
-                array << QStringList{componentUnique, action.actionUnique,
-                                     m_componentFriendly.value(componentUnique),
-                                     action.actionFriendly};
-            }
-            array.endArray();
-            QDBusMessage reply =
-                message.createReply(QVariant::fromValue(array));
-            m_bus.send(reply);
-            return true;
+        if (message.interface() != QLatin1String("org.kde.KGlobalAccel")) {
+            return false;
         }
-        if ((message.member() == QLatin1String("shortcutKeys") ||
-             message.member() == QLatin1String("defaultShortcutKeys")) &&
-            message.interface() == QLatin1String("org.kde.KGlobalAccel") &&
-            message.signature() == QLatin1String("as")) {
-            // as = (component unique, action unique)
-            const QStringList identity =
-                message.arguments().at(0).toStringList();
-            QList<int> keys;
-            for (const Action &action : std::as_const(m_actions)) {
-                if (action.componentUnique == identity.value(0) &&
-                    action.actionUnique == identity.value(1)) {
-                    keys = message.member() == QLatin1String("shortcutKeys")
-                               ? action.active
-                               : action.defaults;
-                }
-            }
-            QDBusMessage reply = message.createReply(QVariant::fromValue(keys));
-            m_bus.send(reply);
-            return true;
-        }
-        if (message.member() == QLatin1String("allMainComponents") &&
-            message.interface() == QLatin1String("org.kde.KGlobalAccel")) {
+        const QString member = message.member();
+        if (member == QLatin1String("allMainComponents")) {
             if (malformedComponentList) {
-                // A reply with no body: uninterpretable for this protocol.
-                QDBusMessage reply = message.createReply();
-                m_bus.send(reply);
+                connection.send(message.createReply(
+                    QVariant(QStringList{QStringLiteral("not"), QStringLiteral("rows")})));
                 return true;
             }
-            // aas: one array of strings per component row, marshalled
-            // explicitly so the reply signature matches the daemon.
-            QDBusArgument array;
-            array.beginArray(QMetaType::QStringList);
-            for (auto it = m_componentFriendly.cbegin();
-                 it != m_componentFriendly.cend(); ++it) {
-                array << QStringList{it.key(), it.value(), QString(),
-                                     QString()};
+            QDBusArgument rows;
+            rows.beginArray(QMetaType::fromType<QStringList>());
+            for (auto it = m_componentFriendly.cbegin(); it != m_componentFriendly.cend(); ++it) {
+                rows << QStringList{it.key(), it.value(), QString(), QString()};
             }
-            array.endArray();
-            QDBusMessage reply = message.createReply(
-                QVariant::fromValue(array));
-            m_bus.send(reply);
+            rows.endArray();
+            connection.send(message.createReply(QVariant::fromValue(rows)));
             return true;
         }
-        if (message.member() == QLatin1String("setForeignShortcut") &&
-            message.interface() == QLatin1String("org.kde.KGlobalAccel") &&
-            message.signature() == QLatin1String("asai")) {
-            // AGENT-CONTRACT: setForeignShortcut(asai) — one string list
-            // (component unique, component friendly, action unique, action
-            // friendly, context unique, context friendly) and one flat key
-            // array; built-in types, live-verified in ADR-0134.
-            const QList<QVariant> arguments = message.arguments();
-            const QStringList identity = arguments.at(0).toStringList();
-            const QString actionUnique = identity.value(2);
-            QList<int> flat;
-            {
-                const QVariant keysVariant = arguments.at(1);
-                QList<int> keys;
-                if (keysVariant.typeId() == QMetaType::QVariantList) {
-                    for (const QVariant &key : keysVariant.toList()) {
-                        keys.append(key.toInt());
-                    }
-                } else {
-                    const QDBusArgument argument =
-                        keysVariant.value<QDBusArgument>();
-                    argument.beginArray();
-                    while (!argument.atEnd()) {
-                        int key = 0;
-                        argument >> key;
-                        keys.append(key);
-                    }
-                    argument.endArray();
-                }
-                flat = keys;
+        if (member == QLatin1String("getComponent") && message.signature() == QLatin1String("s")) {
+            const QString unique = message.arguments().at(0).toString();
+            if (!m_componentFriendly.contains(unique)) {
+                connection.send(message.createErrorReply(
+                    QStringLiteral("org.kde.kglobalaccel.NoSuchComponent"), unique));
+                return true;
             }
-            applySetForeignShortcutKeys(identity.value(0), actionUnique,
-                                        flat);
-            QDBusMessage reply = message.createReply();
-            m_bus.send(reply);
+            connection.send(message.createReply(QVariant::fromValue(
+                QDBusObjectPath(QStringLiteral("/component/") + escaped(unique)))));
+            return true;
+        }
+        if (member == QLatin1String("doRegister") && message.signature() == QLatin1String("as")) {
+            const QStringList id = message.arguments().at(0).toStringList();
+            if (id.size() >= 4 && !hasAction(id.at(0), id.at(1))) {
+                if (!m_componentFriendly.contains(id.at(0))) {
+                    m_componentFriendly.insert(id.at(0), id.at(2));
+                }
+                m_actions.append({id.at(0), id.at(1), id.at(3), {}, {}});
+            }
+            connection.send(message.createReply());
+            return true;
+        }
+        if (member == QLatin1String("setForeignShortcutKeys")
+            && message.signature() == QLatin1String("asa(ai)")) {
+            return handleSetForeignShortcutKeys(message, connection);
+        }
+        if (member == QLatin1String("setForeignShortcut")) {
+            ++legacyIntegerCalls;
+            connection.send(message.createErrorReply(QStringLiteral("org.qindaqt.Test.LegacyCall"),
+                                                     QStringLiteral("use setForeignShortcutKeys")));
+            return true;
+        }
+        if (member == QLatin1String("unregister") && message.signature() == QLatin1String("ss")) {
+            const QString component = message.arguments().at(0).toString();
+            const QString actionUnique = message.arguments().at(1).toString();
+            unregistered.append({component, actionUnique});
+            const qsizetype removed = m_actions.removeIf([&](const Action &candidate) {
+                return candidate.componentUnique == component
+                    && candidate.actionUnique == actionUnique;
+            });
+            connection.send(message.createReply(QVariant(removed > 0)));
             return true;
         }
         return false; // unknown call: Qt produces the error reply
     }
 
-    // Test observation.
-    QList<QindaQt::Apps::SettingsInput::ShortcutInfoRow>
-    allShortcutInfosFor(const QString &componentUnique) const
+private:
+    bool handleComponent(const QDBusMessage &message, const QDBusConnection &connection)
     {
-        QList<QindaQt::Apps::SettingsInput::ShortcutInfoRow> rows;
-        for (const Action &action : std::as_const(m_actions)) {
-            if (action.componentUnique != componentUnique) {
+        if (message.member() != QLatin1String("allShortcutInfos") || !message.signature().isEmpty()) {
+            return false;
+        }
+        if (malformedShortcutInfos) {
+            connection.send(message.createReply(QVariant::fromValue(QList<int>{1, 2, 3})));
+            return true;
+        }
+        const QString component = componentForPath(message.path());
+        QDBusArgument rows;
+        rows.beginArray(QMetaType::fromType<FakeShortcutInfoWire>());
+        for (const Action &candidate : std::as_const(m_actions)) {
+            if (candidate.componentUnique != component) {
                 continue;
             }
-            QindaQt::Apps::SettingsInput::ShortcutInfoRow row;
-            row.actionUnique = action.actionUnique;
-            row.actionFriendly = action.actionFriendly;
-            row.componentUnique = action.componentUnique;
-            row.componentFriendly =
-                m_componentFriendly.value(action.componentUnique,
-                                          action.componentUnique);
-            row.contextUnique = QStringLiteral("default");
-            row.contextFriendly = QStringLiteral("Default Context");
-            row.keys.keys = action.active;
-            row.defaults.keys = action.defaults;
-            rows.append(row);
+            rows << FakeShortcutInfoWire{candidate.actionUnique, candidate.actionFriendly,
+                                         candidate.componentUnique,
+                                         m_componentFriendly.value(candidate.componentUnique),
+                                         QStringLiteral("default"),
+                                         QStringLiteral("Default Context"),
+                                         candidate.active, candidate.defaults};
         }
-        return rows;
+        rows.endArray();
+        connection.send(message.createReply(QVariant::fromValue(rows)));
+        return true;
     }
 
-private:
-    void applySetForeignShortcutKeys(const QString &componentUnique,
-                                     const QString &actionUnique,
-                                     const QList<int> &flat)
+    bool handleSetForeignShortcutKeys(const QDBusMessage &message, const QDBusConnection &connection)
     {
-        ++setForeignCalls;
-        for (Action &action : m_actions) {
-            if (action.componentUnique == componentUnique &&
-                action.actionUnique == actionUnique) {
-                action.active = flat;
-                return;
+        lastActionId = message.arguments().at(0).toStringList();
+        lastSequences.clear();
+        bool wellFormed = true;
+        const QDBusArgument sequences = message.arguments().at(1).value<QDBusArgument>();
+        sequences.beginArray();
+        while (!sequences.atEnd()) {
+            QList<int> chords;
+            sequences.beginStructure();
+            sequences >> chords;
+            sequences.endStructure();
+            wellFormed = wellFormed && chords.size() == 4;
+            lastSequences.append(chords);
+        }
+        sequences.endArray();
+        // AGENT-CONTRACT: KF6GlobalAccel reads four ints per sequence and aborts
+        // the hosting compositor otherwise; the fake refuses such a call loudly
+        // so a port regression fails its row instead of passing.
+        if (!wellFormed) {
+            ++malformedSequenceCalls;
+            connection.send(message.createErrorReply(
+                QStringLiteral("org.qindaqt.Test.MalformedSequence"),
+                QStringLiteral("each key sequence must carry four ints")));
+            return true;
+        }
+        applyKeys(lastActionId.value(0), lastActionId.value(1));
+        connection.send(message.createReply());
+        return true;
+    }
+
+    void applyKeys(const QString &componentUnique, const QString &actionUnique)
+    {
+        Action *target = nullptr;
+        for (Action &candidate : m_actions) {
+            if (candidate.componentUnique == componentUnique
+                && candidate.actionUnique == actionUnique) {
+                target = &candidate;
             }
         }
-        // The daemon creates unknown components on foreign assignment.
-        m_actions.append({componentUnique, actionUnique, actionUnique, flat,
-                          {}});
-    }
-
-    QVariantList allMainComponents() const
-    {
-        QVariantList rows;
-        for (auto it = m_componentFriendly.cbegin();
-             it != m_componentFriendly.cend(); ++it) {
-            rows.append(QVariantList{it.key(), it.value(), QString(),
-                                     QString()});
+        if (target == nullptr) {
+            return; // the daemon ignores unknown actions
         }
-        return rows;
+        QList<int> accepted;
+        for (const QList<int> &chords : std::as_const(lastSequences)) {
+            const int chord = chords.value(0);
+            const bool heldElsewhere = std::any_of(
+                m_actions.cbegin(), m_actions.cend(), [&](const Action &other) {
+                    return &other != target && other.active.contains(chord);
+                });
+            if (chord != 0 && !heldElsewhere) {
+                accepted.append(chord);
+            }
+        }
+        target->active = accepted;
     }
 
-    QDBusConnection m_bus{QStringLiteral("none")};
+    static QString escaped(const QString &unique)
+    {
+        static const QRegularExpression unsafe(QStringLiteral("[^A-Za-z0-9_]"));
+        QString path = unique;
+        path.replace(unsafe, QStringLiteral("_"));
+        return path;
+    }
+
+    QString componentForPath(const QString &path) const
+    {
+        const QString tail = path.mid(QStringLiteral("/component/").size());
+        for (auto it = m_componentFriendly.cbegin(); it != m_componentFriendly.cend(); ++it) {
+            if (escaped(it.key()) == tail) {
+                return it.key();
+            }
+        }
+        return {};
+    }
+
     QMap<QString, QString> m_componentFriendly;
     QList<Action> m_actions;
 };
