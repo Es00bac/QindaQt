@@ -30,6 +30,8 @@ target_sources(
         model/navigation_history.cpp
         model/places_controller.cpp
         model/search_controller.cpp
+        network/kio_network_directory_backend.cpp
+        network/network_location.cpp
         public/desktop_file_boundary.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
@@ -56,12 +58,17 @@ target_sources(
         model/navigation_history.h
         model/places_controller.h
         model/search_controller.h
+        network/kio_network_directory_backend.h
+        network/network_directory_backend.h
+        network/network_location.h
         public/desktop_file_boundary.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+find_package(KF6KIO 6.0 REQUIRED CONFIG)
 target_link_libraries(
     qindaqt_file_manager_support
     PUBLIC QindaQt::AppShell QindaQt::AppShellMenuExport Qt6::Core Qt6::Gui Qt6::Quick
+    PRIVATE KF6::KIOCore
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)

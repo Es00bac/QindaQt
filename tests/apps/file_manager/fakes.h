@@ -3,9 +3,11 @@
 
 #include "model/directory_lister.h"
 #include "model/launch_intent.h"
+#include "network/network_directory_backend.h"
 
 #include <QHash>
 #include <QStringList>
+#include <QVector>
 
 namespace QindaQt::Apps::FileManager::Test {
 
@@ -55,6 +57,37 @@ public:
 private:
   LaunchResult m_result;
   mutable QStringList m_requestedPaths;
+};
+
+// Test-only NetworkDirectoryBackend: requestListing()/cancel() just record
+// their call; the test fires listingReady manually via emitReady(), so
+// async success/error/stale/truncated/cancelled scenarios are fully
+// deterministic. No timer, thread, or real network/KIO involvement.
+class FakeNetworkDirectoryBackend final : public NetworkDirectoryBackend {
+public:
+  struct Request final {
+    quint64 generation = 0;
+    QUrl url;
+  };
+
+  void requestListing(quint64 generation, const QUrl &url) override {
+    m_requests.append({generation, url});
+  }
+
+  void cancel(quint64 generation) override {
+    m_cancelled.append(generation);
+  }
+
+  void emitReady(quint64 generation, const QUrl &url, NetworkListingResult result) {
+    Q_EMIT listingReady(generation, url, std::move(result));
+  }
+
+  [[nodiscard]] const QVector<Request> &requests() const { return m_requests; }
+  [[nodiscard]] const QVector<quint64> &cancelled() const { return m_cancelled; }
+
+private:
+  QVector<Request> m_requests;
+  QVector<quint64> m_cancelled;
 };
 
 } // namespace QindaQt::Apps::FileManager::Test

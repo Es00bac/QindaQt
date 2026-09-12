@@ -31,6 +31,22 @@ Item {
             title: qsTr("Not a folder"),
             showRetry: true
         },
+        "loading": {
+            title: qsTr("Loading…"),
+            showRetry: false
+        },
+        "unavailable": {
+            title: qsTr("Network browsing is unavailable"),
+            showRetry: true
+        },
+        "authentication-required": {
+            title: qsTr("Sign-in required"),
+            showRetry: true
+        },
+        "transport-error": {
+            title: qsTr("Couldn't reach this location"),
+            showRetry: true
+        },
         "error": {
             title: qsTr("Couldn't read this folder"),
             showRetry: true

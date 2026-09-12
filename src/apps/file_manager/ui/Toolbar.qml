@@ -60,7 +60,7 @@ ToolBar {
             objectName: "newFolderButton"
             iconName: "folder-new"
             text: qsTr("New Folder")
-            available: !root.mutationController.busy
+            available: !root.mutationController.busy && !root.navigationController.remoteActive
             Accessible.description: qsTr("Create a folder in the current location")
             onClicked: root.appCoordinator.activateAction("file.new-folder")
         }
@@ -76,6 +76,7 @@ ToolBar {
             objectName: "filterFolderButton"
             iconName: "edit-find"
             text: qsTr("Filter this folder (Ctrl+F)")
+            available: !root.navigationController.remoteActive
             Accessible.description: qsTr("Filter or search below this folder by name")
             onClicked: root.appCoordinator.activateAction("view.filter")
         }

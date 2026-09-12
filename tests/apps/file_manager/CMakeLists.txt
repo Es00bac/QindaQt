@@ -92,6 +92,21 @@ qindaqt_add_file_manager_test(
     qindaqt.file-manager-navigation-controller
 )
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_network_location_tests
+    tst_network_location.cpp
+    qindaqt.file-manager-network-location
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_controller_network_tests
+    tst_navigation_controller_network.cpp
+    qindaqt.file-manager-navigation-controller-network
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_kio_network_backend_tests
+    tst_kio_network_directory_backend.cpp
+    qindaqt.file-manager-kio-network-backend
+)
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_listing_order_tests
     tst_listing_order.cpp
     qindaqt.file-manager-listing-order

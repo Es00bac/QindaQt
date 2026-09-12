@@ -50,6 +50,11 @@ QVariantList PlacesController::places() const {
     list.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                          QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
+  // AGENT-NOTE (S5): this place exposes the route to network browsing
+  // without pretending a connection exists -- an empty path is never a
+  // navigable location, so PlacesSidebar routes it to the location bar
+  // instead of NavigationController::navigateTo().
+  list.append(placeMap(QStringLiteral("network"), QStringLiteral("Network"), QString()));
   return list;
 }
 

@@ -214,7 +214,7 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
   bindFileManagerBrowsingActions(coordinator, navigation);
-  bindFileManagerTransferActions(coordinator, clipboard, mutation);
+  bindFileManagerTransferActions(coordinator, navigation, clipboard, mutation);
   navigation.navigateTo(folder);
 
   QQmlApplicationEngine engine;
@@ -484,7 +484,7 @@ void BrowsingUiTests::contextMenuDisablesDuringMutation() {
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
   bindFileManagerBrowsingActions(coordinator, navigation);
-  bindFileManagerTransferActions(coordinator, clipboard, mutation);
+  bindFileManagerTransferActions(coordinator, navigation, clipboard, mutation);
   // main.cpp wires this exact busy-state disabling for file.new-folder/
   // rename/copy/move/trash/empty-trash directly in configureAppShell rather
   // than through a reusable bind*Actions helper, so it is reproduced here
