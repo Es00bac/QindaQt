@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktop_surface_qml_test_support.h"
 
+#include <QDir>
+#include <QFile>
 #include <QQmlExtensionPlugin>
+#include <QTemporaryDir>
 #include <QtTest>
+
+#include <memory>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_DesktopSurfacePlugin)
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
@@ -25,27 +30,83 @@ int visibleMenuItem(const SurfaceHost &host, const QString &objectName)
     return 0;
 }
 
+// Redirects HOME to a temp root so QStandardPaths::DesktopLocation resolves
+// inside the test sandbox (DesktopContentsController's default constructor
+// reads it), and restores the original value afterwards. Mirrors
+// tst_new_folder_controller.cpp's helper of the same name.
+class ScopedHomeRedirect {
+public:
+    explicit ScopedHomeRedirect(const QString &root)
+        : m_previous(qEnvironmentVariable("HOME"))
+    {
+        qputenv("HOME", root.toLocal8Bit());
+    }
+    ~ScopedHomeRedirect() { qputenv("HOME", m_previous.toLocal8Bit()); }
+
+    Q_DISABLE_COPY(ScopedHomeRedirect)
+
+private:
+    QString m_previous;
+};
+
+QString desktopPath(const QTemporaryDir &home)
+{
+    return home.path() + QStringLiteral("/Desktop");
+}
+
+bool writeFile(const QString &path)
+{
+    QFile file(path);
+    return file.open(QIODevice::WriteOnly);
+}
+
 } // namespace
 
 class DesktopSurfaceQmlTests final : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    // Per-test temp HOME with an empty Desktop directory; tests that need
+    // specific entries add them before creating a SurfaceHost.
+    void init();
+    void cleanup();
+
     void placementSettingSwitchesAnchorEdge();
-    void selectionAndDoubleClickOpenThroughPlacesSeam();
+    void selectionAndDoubleClickDispatchThroughTheBoundary();
     void contextMenuStyleSwitchesItemSets();
     void modifierRightClickOpensApplicationsPopup();
     void nullFacadesDisableMenuEntries();
+
+private:
+    std::unique_ptr<QTemporaryDir> m_home;
+    std::unique_ptr<ScopedHomeRedirect> m_redirect;
 };
+
+void DesktopSurfaceQmlTests::init()
+{
+    m_home = std::make_unique<QTemporaryDir>();
+    QVERIFY(m_home->isValid());
+    m_redirect = std::make_unique<ScopedHomeRedirect>(m_home->path());
+    QVERIFY(QDir().mkpath(desktopPath(*m_home)));
+}
+
+void DesktopSurfaceQmlTests::cleanup()
+{
+    m_redirect.reset();
+    m_home.reset();
+}
 
 void DesktopSurfaceQmlTests::placementSettingSwitchesAnchorEdge()
 {
-    StubPlaces places;
-    StubDesktopControlsAccess access(&places);
+    const QString desktop = desktopPath(*m_home);
+    QVERIFY(writeFile(desktop + QStringLiteral("/Alpha.txt")));
+    QVERIFY(writeFile(desktop + QStringLiteral("/Beta.txt")));
+    QVERIFY(QDir().mkpath(desktop + QStringLiteral("/Gamma")));
+
     StubLauncher launcher;
     SurfaceHost host;
     QString error;
-    QVERIFY2(host.create(&access, &launcher,
+    QVERIFY2(host.create(nullptr, &launcher,
                          {{QStringLiteral("placement"), QStringLiteral("left")}},
                          &error),
              qPrintable(error));
@@ -66,14 +127,17 @@ void DesktopSurfaceQmlTests::placementSettingSwitchesAnchorEdge()
     QTRY_VERIFY(view->x() + view->width() + 6 > 790.0);
 }
 
-void DesktopSurfaceQmlTests::selectionAndDoubleClickOpenThroughPlacesSeam()
+void DesktopSurfaceQmlTests::selectionAndDoubleClickDispatchThroughTheBoundary()
 {
-    StubPlaces places;
-    StubDesktopControlsAccess access(&places);
+    const QString desktop = desktopPath(*m_home);
+    QVERIFY(QDir().mkpath(desktop + QStringLiteral("/Projects")));
+    QVERIFY(writeFile(desktop + QStringLiteral("/Notes.txt")));
+    QVERIFY(writeFile(desktop + QStringLiteral("/Report.txt")));
+
     StubLauncher launcher;
     SurfaceHost host;
     QString error;
-    QVERIFY2(host.create(&access, &launcher,
+    QVERIFY2(host.create(nullptr, &launcher,
                          {{QStringLiteral("placement"), QStringLiteral("left")}},
                          &error),
              qPrintable(error));
@@ -81,30 +145,43 @@ void DesktopSurfaceQmlTests::selectionAndDoubleClickOpenThroughPlacesSeam()
     const auto tiles =
         host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
     QCOMPARE(tiles.size(), 3);
-    QQuickItem *desktopTile = tiles.at(1);
-    QCOMPARE(desktopTile->property("placeId").toString(),
-             QStringLiteral("desktop"));
+    // LocalDirectoryLister sorts directories before files, then
+    // case-insensitively by name: Projects, Notes.txt, Report.txt.
+    QQuickItem *folderTile = tiles.at(0);
+    QCOMPARE(folderTile->property("entryLabel").toString(),
+             QStringLiteral("Projects"));
+    QQuickItem *fileTile = tiles.at(1);
+    QCOMPARE(fileTile->property("entryLabel").toString(),
+             QStringLiteral("Notes.txt"));
 
     // Single click selects exactly one tile.
-    const QPointF center(desktopTile->width() / 2, desktopTile->height() / 2);
-    const QPointF sceneCenter = desktopTile->mapToScene(center);
+    const QPointF center(fileTile->width() / 2, fileTile->height() / 2);
+    const QPointF sceneCenter = fileTile->mapToScene(center);
     host.clickWindow(Qt::LeftButton, Qt::NoModifier, sceneCenter);
-    QCOMPARE(desktopTile->property("selected").toBool(), true);
+    QCOMPARE(fileTile->property("selected").toBool(), true);
     QCOMPARE(host.child<QQuickItem>(QStringLiteral("desktopIconsView"))
                  ->property("selectedId")
                  .toString(),
-             QStringLiteral("desktop"));
+             fileTile->property("entryId").toString());
 
-    // Double click opens through the places facade seam.
-    host.clickWindow(Qt::LeftButton, Qt::NoModifier, sceneCenter);
+    // Double click on a directory tile dispatches through the boundary
+    // (DesktopContentsController::open -> FileBoundary::launchLocalFile),
+    // which safely rejects a non-regular target instead of crashing or doing
+    // nothing observable.
+    auto *contents =
+        host.child<QObject>(QStringLiteral("desktopContentsController"));
+    QVERIFY(contents != nullptr);
+    QVERIFY(contents->property("feedback").toString().isEmpty());
+    const QPointF folderCenter(folderTile->width() / 2, folderTile->height() / 2);
+    const QPointF folderScene = folderTile->mapToScene(folderCenter);
+    host.clickWindow(Qt::LeftButton, Qt::NoModifier, folderScene);
     QTest::mouseDClick(host.window.get(), Qt::LeftButton, Qt::NoModifier,
-                       sceneCenter.toPoint());
-    QTRY_COMPARE(places.opened.size(), 1);
-    QCOMPARE(places.opened.constFirst(), QStringLiteral("desktop"));
+                       folderScene.toPoint());
+    QTRY_VERIFY(!contents->property("feedback").toString().isEmpty());
 
     // An empty-area left click clears the selection.
     host.clickWindow(Qt::LeftButton, Qt::NoModifier, kEmptySpot);
-    QCOMPARE(desktopTile->property("selected").toBool(), false);
+    QCOMPARE(folderTile->property("selected").toBool(), false);
 }
 
 void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
@@ -248,7 +325,7 @@ void DesktopSurfaceQmlTests::nullFacadesDisableMenuEntries()
     auto *menu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
     QVERIFY(menu != nullptr);
     QTRY_VERIFY(menu->property("opened").toBool());
-    // Launcher-gated entries disable; the places icons still render.
+    // Launcher-gated entries disable.
     QVERIFY(!host.visualItemsNamed(QStringLiteral("desktopContextTerminal"))
                  .constFirst()
                  ->isEnabled());
@@ -258,7 +335,8 @@ void DesktopSurfaceQmlTests::nullFacadesDisableMenuEntries()
     menu->setProperty("visible", false);
     QTRY_VERIFY(!menu->property("opened").toBool());
 
-    // No crash with no facade at all, and no tiles without places.
+    // No crash with no facade at all, and no tiles from the empty Desktop
+    // directory init() created.
     SurfaceHost bareHost;
     QVERIFY2(bareHost.create(nullptr, nullptr, {}, &error),
              qPrintable(error));
