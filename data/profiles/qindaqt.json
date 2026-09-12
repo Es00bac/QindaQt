@@ -39,5 +39,10 @@
         {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "dockMode": true}}
       ]
     }
-  ]
+  ],
+  "desktop": {
+    "applets": [
+      {"id": "desktop-icons", "plugin": "desktop-icons", "settings": {}}
+    ]
+  }
 }
