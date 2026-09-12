@@ -26,13 +26,21 @@ coordinator bypass. Exact descendant `fec87fa5` repaired the full lineage and
 the same reviewer accepted it after direct former-red 5/5, browsing/installed
 2/2, and mutation-action 1/1 checks. The final tree is integrated as
 `b12a02d6`; manager-tree build and the three affected registered rows pass.
-The existing `desktop-icons` surface is now enabled in
-the stock `qindaqt` source profile at `3c9da358` after independent ACCEPT and a
-fresh manager profile build/3-row replay. It still renders Places shortcuts;
-real Desktop-directory contents are the active next consumer slice, and no
-user profile, installed package, or live session was changed. Container shade
-candidate `ca7b0eb2` remains under independent exact-SHA review; Global Menu
-evidence candidate `076d8a3d` awaits its bounded test-only repair.
+The existing `desktop-icons` surface is enabled in the stock `qindaqt` source
+profile at `3c9da358`, and exact Desktop-contents candidate `ec4f1d73` received
+independent ACCEPT before integration as `6ee11e14`. It now lists real files
+and folders from the user's Desktop through the public File Manager boundary;
+regular files may dispatch to their configured handler, while folder-tile
+opening remains a later public-boundary outcome. The five affected rows pass on
+the integrated tree. Exact container-shade descendant `0dcefa42` also received
+same-reviewer ACCEPT after closing the sole executable-mode defect; its product
+and mode repair are integrated as `a117c109` and `86c9eb36`. No user profile,
+installed package, live desktop, or physical input/display was changed. The
+manager controller/unit rows pass 2/2 and three of four serialized nested rows
+pass; the fourth stops before product verdict on the disclosed
+placement-sensitive dock-gesture fixture defect, matching the bounded repair
+follow-up rather than a ghost/input failure. Global Menu evidence candidate
+`076d8a3d` remains in its bounded test-only repair.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 

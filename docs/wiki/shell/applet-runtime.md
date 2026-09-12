@@ -158,9 +158,10 @@ surface hosts the desktop-icons entry (see its bullet below):
 - `qindaqt.applets.desktop-icons` hosts on the dedicated per-output desktop
   surface from `QindaQt.Shell.DesktopSurface` instead of a panel: it presents
   the user's real Desktop-directory files and folders as desktop icons,
-  listed and opened through the least-authority `DesktopContentsController`
-  seam over File Manager's public `FileBoundary` (`listLocalFolder` /
-  `launchLocalFile`; see
+  listed through the least-authority `DesktopContentsController` seam over File
+  Manager's public `FileBoundary`. Regular files dispatch to the configured
+  handler through `launchLocalFile`; folder-tile opening remains a later public
+  folder-open boundary rather than a shell reach-through (see
   [module boundaries](../architecture/module-boundaries.md)), with
   configurable left/right placement and icon size, and a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose
