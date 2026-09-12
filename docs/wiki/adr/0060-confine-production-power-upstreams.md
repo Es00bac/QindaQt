@@ -4,7 +4,7 @@
 - **Date:** 2026-09-02
 - **Owners:** Power platform service
 - **Supersedes:** ADR-0024's requirement that every internal-brightness write use logind
-- **Superseded by:** None
+- **Superseded by:** [ADR-0148](0148-admit-internal-panel-brightness-through-power1.md), for the exclusion of a Power1 display-brightness method only
 
 ## Context
 

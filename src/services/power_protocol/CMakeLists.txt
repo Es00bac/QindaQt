@@ -9,6 +9,7 @@ target_sources(
     qindaqt_power_protocol
     PRIVATE
         src/power_aggregation.cpp
+        src/power_backlight_selection.cpp
         src/power_codec.cpp
         src/power_codec_fields.cpp
         src/power_codec_p.h
@@ -19,6 +20,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/services/power_protocol/power_aggregation.h
+            include/qindaqt/services/power_protocol/power_backlight_selection.h
             include/qindaqt/services/power_protocol/power_codec.h
             include/qindaqt/services/power_protocol/power_dbus.h
             include/qindaqt/services/power_protocol/power_limits.h

@@ -64,6 +64,17 @@ set_tests_properties(qindaqt.settings-power-slider-admission-debounce PROPERTIES
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;power;model;debounce")
 
+qt_add_executable(qindaqt_power_internal_brightness_tests
+    tst_power_internal_brightness.cpp power_settings_test_support.h)
+target_link_libraries(qindaqt_power_internal_brightness_tests
+    PRIVATE qindaqt_settings_power Qt6::Test)
+qindaqt_enable_warnings(qindaqt_power_internal_brightness_tests)
+add_test(NAME qindaqt.settings-power-internal-brightness
+    COMMAND qindaqt_power_internal_brightness_tests)
+set_tests_properties(qindaqt.settings-power-internal-brightness PROPERTIES
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "settings;power;model;brightness")
+
 qt_add_executable(qindaqt_power_page_tests
     tst_power_page.cpp stub_power_settings_model.h)
 target_include_directories(qindaqt_power_page_tests PRIVATE "${PROJECT_SOURCE_DIR}")

@@ -68,6 +68,17 @@ void PowerServiceObject::SetKeyboardBrightness(const Handle &device,
                     .value = value});
 }
 
+void PowerServiceObject::SetInternalBrightness(const Handle &device,
+                                               const quint32 value)
+{
+    beginOperation({.kind = OperationKind::SetInternalBrightness,
+                    .profileId = {},
+                    .applicationName = {},
+                    .reason = {},
+                    .handle = device,
+                    .value = value});
+}
+
 void PowerServiceObject::beginOperation(const PowerServiceRequest &request)
 {
     if (!calledFromDBus()) {

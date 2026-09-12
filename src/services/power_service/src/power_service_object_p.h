@@ -32,11 +32,15 @@ class PowerServiceObject final : public QObject, protected QDBusContext
         "direction=\"in\"/><arg name=\"applicationName\" type=\"s\" "
         "direction=\"in\"/><arg name=\"reason\" type=\"s\" direction=\"in\"/>"
         "<arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
-        "<method name=\"ReleaseProfileHold\"><arg name=\"hold\" type=\"(tt)\" "
+        "<method name=\"ReleaseProfileHold\"><arg name=\"hold\" type=\"(ts)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetKeyboardBrightness\"><arg name=\"device\" "
-        "type=\"(tt)\" direction=\"in\"/><arg name=\"value\" type=\"u\" "
+        "type=\"(ts)\" direction=\"in\"/><arg name=\"value\" type=\"u\" "
+        "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
+        "direction=\"out\"/></method>"
+        "<method name=\"SetInternalBrightness\"><arg name=\"device\" "
+        "type=\"(ts)\" direction=\"in\"/><arg name=\"value\" type=\"u\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
         "direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
@@ -55,6 +59,8 @@ public Q_SLOTS:
                                          const QString &reason);
     Q_SCRIPTABLE void ReleaseProfileHold(const QindaQt::Power::Handle &hold);
     Q_SCRIPTABLE void SetKeyboardBrightness(const QindaQt::Power::Handle &device,
+                                            quint32 value);
+    Q_SCRIPTABLE void SetInternalBrightness(const QindaQt::Power::Handle &device,
                                             quint32 value);
 
 Q_SIGNALS:

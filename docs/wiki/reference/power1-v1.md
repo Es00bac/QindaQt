@@ -165,6 +165,7 @@ The resident PB-1 object at `/org/qindaqt/Power1` exposes exactly:
 | `AcquireProfileHold` method | `sss` in, `(uuttttss)` out |
 | `ReleaseProfileHold` method | `(ts)` in, `(uuttttss)` out |
 | `SetKeyboardBrightness` method | `(ts)u` in, `(uuttttss)` out |
+| `SetInternalBrightness` method | `(ts)u` in, `(uuttttss)` out |
 | `Changed` signal | `tt` |
 
 Mutation methods use delayed replies: the reply carries the initiating and
@@ -172,6 +173,32 @@ observed lineage of exactly one dispatched operation and is sent exactly once.
 Snapshots are always `validateSnapshot`-accepted values; a snapshot is never
 an `a{sv}` bag. The installed introspection XML mirrors this table byte for
 byte.
+
+### Internal-panel brightness operation
+
+`SetInternalBrightness` is the one additive version-1 extension
+([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)). The
+snapshot signature and the canonical codec layout are unchanged. The closed
+operation-kind vocabulary is now `SetProfile=0`, `AcquireProfileHold=1`,
+`ReleaseProfileHold=2`, `SetKeyboardBrightness=3`, and
+`SetInternalBrightness=4`.
+
+A request is admitted only when all of these hold:
+
+- the `InternalBacklight` capability is present;
+- the handle is from the current epoch;
+- the value is no greater than the device maximum;
+- the pure `internalBrightnessAdmission` rule selects that device: it has a
+  usable maximum, it is in the preferred tier (firmware over platform over
+  raw), it is the only device in that tier, and it is `Ok` with an observed
+  value.
+
+Otherwise a stale or unknown handle completes `Rejected` with `stale-handle`,
+and every other refusal completes `Unsupported`.
+
+A successful result's observed revision already includes the re-read device
+observation. Clients converge on that observed value, not on the requested
+one.
 
 PB-0 intentionally contains no service, client, D-Bus connection, UPower,
 power-profiles-daemon, logind, Wayland, sysfs, hardware, session, Settings,

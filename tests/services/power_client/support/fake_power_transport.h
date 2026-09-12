@@ -142,6 +142,33 @@ inline Power::Snapshot powerClientSnapshot(const quint64 epoch = 11,
     return snapshot;
 }
 
+inline Power::InternalBacklight clientInternalBacklight(
+    const quint64 epoch, const QString &opaqueId,
+    const Power::BacklightKind kind = Power::BacklightKind::Firmware)
+{
+    return {.handle = {.epoch = epoch, .opaqueId = opaqueId},
+            .deviceName = opaqueId,
+            .internal = true,
+            .kind = kind,
+            .maximum = 255,
+            .observedKnown = true,
+            .observed = 128,
+            .status = Power::BacklightStatus::Ok,
+            .reason = Power::BacklightReason::None,
+            .diagnostic = {}};
+}
+
+// The fixture snapshot plus an internal-backlight inventory and capability.
+inline Power::Snapshot powerClientPanelSnapshot(
+    const quint64 epoch, const quint64 revision,
+    const QList<Power::InternalBacklight> &devices)
+{
+    Power::Snapshot snapshot = powerClientSnapshot(epoch, revision);
+    snapshot.capabilities |= Power::Capability::InternalBacklight;
+    snapshot.internalBacklights = devices;
+    return snapshot;
+}
+
 inline Power::Handle clientKeyboardHandle(const Power::Snapshot &snapshot)
 {
     return snapshot.keyboardBacklights.first().handle;

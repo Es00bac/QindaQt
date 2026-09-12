@@ -11,6 +11,8 @@ namespace QindaQt::Apps::SettingsPower::Projection {
 
 [[nodiscard]] QString keyboardRowId(const Power::Snapshot &snapshot,
                                     const Power::Handle &handle);
+[[nodiscard]] QString internalRowId(const Power::Snapshot &snapshot,
+                                    const Power::Handle &handle);
 [[nodiscard]] QVariantList supplies(const Power::Snapshot &snapshot);
 [[nodiscard]] QVariantList profileHolds(const Power::Snapshot &snapshot);
 [[nodiscard]] QVariantList internalBrightness(const Power::Snapshot &snapshot);

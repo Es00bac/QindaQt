@@ -81,6 +81,31 @@ set_tests_properties(
 )
 
 qt_add_executable(
+    qindaqt_power_internal_backlight_apply_tests
+    tst_power_internal_backlight_apply.cpp
+    support/fake_upower_service.cpp
+    support/fake_upower_service.h
+    support/private_bus.h
+)
+target_link_libraries(
+    qindaqt_power_internal_backlight_apply_tests
+    PRIVATE QindaQt::PowerService Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_power_internal_backlight_apply_tests
+    PRIVATE QINDAQT_TEST_SCRATCH_DIR="${CMAKE_CURRENT_BINARY_DIR}/scratch"
+)
+qindaqt_enable_warnings(qindaqt_power_internal_backlight_apply_tests)
+add_test(
+    NAME qindaqt.power-service-internal-backlight-apply
+    COMMAND qindaqt_power_internal_backlight_apply_tests
+)
+set_tests_properties(
+    qindaqt.power-service-internal-backlight-apply
+    PROPERTIES LABELS "service;power;dbus" TIMEOUT 60
+)
+
+qt_add_executable(
     qindaqt_power_upstream_composition_tests
     tst_power_upstream_composition.cpp
 )

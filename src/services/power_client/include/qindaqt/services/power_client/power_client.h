@@ -52,6 +52,9 @@ public:
                                              const QString &reason);
     [[nodiscard]] quint64 releaseProfileHold(const Handle &hold);
     [[nodiscard]] quint64 setKeyboardBrightness(const Handle &device, quint32 value);
+    // Internal panels are preflighted with the shared ADR-0148 target rule; a
+    // lower-preference, ambiguous, or read-only panel never crosses the bus.
+    [[nodiscard]] quint64 setInternalBrightness(const Handle &device, quint32 value);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Power::PowerClientState state,

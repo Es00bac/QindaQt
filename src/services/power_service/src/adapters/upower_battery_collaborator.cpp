@@ -104,6 +104,28 @@ void UpowerBatteryCollaborator::submitSetKeyboardBrightness(
                             .diagnostic = {}});
 }
 
+void UpowerBatteryCollaborator::submitSetInternalBrightness(
+    const quint64 operationId, const Handle &device, const quint32 value)
+{
+    Q_UNUSED(device)
+    Q_UNUSED(value)
+    // Internal panels are sysfs truth; production composition routes them to
+    // SysfsBacklightSource and never here. Completion stays asynchronous per
+    // the BatteryCollaborator seam contract.
+    const quint64 generation = m_generation;
+    QMetaObject::invokeMethod(
+        this,
+        [this, generation, operationId] {
+            Q_EMIT operationFinished(
+                generation, operationId,
+                CollaboratorOutcome{.status = CollaboratorStatus::Unsupported,
+                                    .reasonCode =
+                                        QStringLiteral("internal-backlight-unsupported"),
+                                    .diagnostic = {}});
+        },
+        Qt::QueuedConnection);
+}
+
 bool UpowerBatteryCollaborator::runningGeneration(const quint64 generation) const
 {
     return m_running && generation != 0 && generation == m_generation;

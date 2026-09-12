@@ -47,6 +47,21 @@ void UnavailableBatteryCollaborator::submitSetKeyboardBrightness(
                             .diagnostic = {}});
 }
 
+void UnavailableBatteryCollaborator::submitSetInternalBrightness(
+    const quint64 operationId, const Handle &device, const quint32 value)
+{
+    Q_UNUSED(device)
+    Q_UNUSED(value)
+    scheduleUnavailable(this, [this, operationId] {
+        Q_EMIT operationFinished(
+            0, operationId,
+            CollaboratorOutcome{.status = CollaboratorStatus::Unsupported,
+                                .reasonCode = QString::fromLatin1(
+                                    kUpstreamNotIntegratedReason),
+                                .diagnostic = {}});
+    });
+}
+
 quint64 UnavailableProfileCollaborator::start()
 {
     static quint64 generation = 0;

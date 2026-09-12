@@ -72,7 +72,7 @@ bool validBacklightReason(const BacklightReason value) {
 
 bool validOperationKind(const OperationKind value) {
   return static_cast<quint32>(value) <=
-         static_cast<quint32>(OperationKind::SetKeyboardBrightness);
+         static_cast<quint32>(OperationKind::SetInternalBrightness);
 }
 
 bool validOperationStatus(const OperationStatus value) {

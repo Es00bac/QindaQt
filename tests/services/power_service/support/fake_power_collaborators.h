@@ -12,11 +12,12 @@ class FakeBatteryCollaborator final : public Power::BatteryCollaborator
 public:
     using BatteryCollaborator::BatteryCollaborator;
 
-    struct KeyboardOperation {
+    struct BacklightOperation {
         quint64 operationId = 0;
         Power::Handle device;
         quint32 value = 0;
     };
+    using KeyboardOperation = BacklightOperation;
 
     quint64 start() override
     {
@@ -33,6 +34,12 @@ public:
                                      const quint32 value) override
     {
         keyboardOperations.push_back({operationId, device, value});
+    }
+    void submitSetInternalBrightness(const quint64 operationId,
+                                     const Power::Handle &device,
+                                     const quint32 value) override
+    {
+        internalOperations.push_back({operationId, device, value});
     }
 
     void publish(const Power::BatteryFacts &facts) { publishForGeneration(generation, facts); }
@@ -65,7 +72,8 @@ public:
         Q_EMIT operationFinished(runGeneration, operationId, outcome);
     }
 
-    QList<KeyboardOperation> keyboardOperations;
+    QList<BacklightOperation> keyboardOperations;
+    QList<BacklightOperation> internalOperations;
     int startCalls = 0;
     int stopCalls = 0;
     quint64 generation = 0;
@@ -230,6 +238,28 @@ inline Power::KeyboardBacklight fixtureKeyboard(const QString &opaqueId = QStrin
     device.maximum = 255;
     device.normalized = 5'019;
     device.canSet = true;
+    return device;
+}
+
+// A sysfs-shaped internal panel; Unavailable models the adapter's read-only
+// truth. Handle epochs are restamped by the coordinator.
+inline Power::InternalBacklight fixtureInternalBacklight(
+    const QString &opaqueId = QStringLiteral("backlight-panel"),
+    const Power::BacklightKind kind = Power::BacklightKind::Firmware,
+    const Power::BacklightStatus status = Power::BacklightStatus::Ok)
+{
+    Power::InternalBacklight device;
+    device.handle = {.epoch = 0, .opaqueId = opaqueId};
+    device.deviceName = opaqueId;
+    device.internal = true;
+    device.kind = kind;
+    device.maximum = 255;
+    device.observedKnown = true;
+    device.observed = 100;
+    device.status = status;
+    const bool ok = status == Power::BacklightStatus::Ok;
+    device.reason = ok ? Power::BacklightReason::None : Power::BacklightReason::LogindError;
+    device.diagnostic = ok ? QString() : QStringLiteral("backlight-read-only");
     return device;
 }
 

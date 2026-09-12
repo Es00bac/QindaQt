@@ -38,6 +38,8 @@ public:
     void stop() override;
     void submitSetKeyboardBrightness(quint64 operationId, const Handle &device,
                                      quint32 value) override;
+    void submitSetInternalBrightness(quint64 operationId, const Handle &device,
+                                     quint32 value) override;
 
 private:
     struct RefreshCycle;
