@@ -50,18 +50,27 @@ Control {
 
             PlaceButton {
                 required property var modelData
-                iconName: modelData.id === "home" ? "user-home" : modelData.id === "trash" ? "user-trash" : "drive-harddisk"
+                iconName: modelData.id === "home" ? "user-home"
+                    : modelData.id === "trash" ? "user-trash"
+                    : modelData.id === "network" ? "network-workgroup" : "drive-harddisk"
 
                 objectName: "placeButton_" + modelData.id
                 Layout.fillWidth: true
                 text: modelData.name
-                emphasized: root.navigationController.currentPath === modelData.path
-                Accessible.description: qsTr("Open %1").arg(modelData.path)
-                onClicked: root.navigationController.navigateTo(modelData.path)
+                emphasized: modelData.id !== "network"
+                    && root.navigationController.currentPath === modelData.path
+                // The Network place exposes the route to smb/sftp browsing
+                // without pretending a connection exists (S5): it opens the
+                // editable location bar instead of navigating anywhere.
+                Accessible.description: modelData.id === "network"
+                    ? qsTr("Enter a network location") : qsTr("Open %1").arg(modelData.path)
+                onClicked: modelData.id === "network"
+                    ? root.appCoordinator.activateAction("view.focus-location")
+                    : root.navigationController.navigateTo(modelData.path)
 
                 DropArea {
                     anchors.fill: parent
-                    enabled: modelData.id !== "trash"
+                    enabled: modelData.id !== "trash" && modelData.id !== "network"
                     onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
                     onDropped: (drop) => {
                         const action = EntryDrag.dispatch(

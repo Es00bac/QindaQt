@@ -54,6 +54,7 @@ void TestPlacesController::fixedPlacesArePublishedInOrder() {
     expected.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                              QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
+  expected.append(placeMap(QStringLiteral("network"), QStringLiteral("Network"), QString()));
   QCOMPARE(controller.places(), expected);
 }
 

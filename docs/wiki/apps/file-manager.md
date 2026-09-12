@@ -10,8 +10,10 @@ sorting with size/kind/modified columns, a hidden-file toggle, a list/grid
 view switch, and a places/bookmarks sidebar persisted in an app-local state
 file. The visual browsing revision adds catalog icons and bounded local raster previews. S3 adds the daily-use
 file clipboard (cut/copy/paste), drag-and-drop, a bounded recursive search,
-and a properties dialog. Per-volume Trash, mounts, and network
-locations remain later slices (see the roadmap below).
+and a properties dialog. S5 adds read-only `smb://`/`sftp://` network-location
+browsing behind an injected asynchronous backend seam (ADR-0137). Per-volume
+Trash, mounts, remote file opening/mutation, and a credential-entry UI
+remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md); the S1 mutation
@@ -22,7 +24,9 @@ the S2 bookmark persistence contract is recorded in
 Bounded local previews and public icon composition follow
 [ADR-0111](../adr/0111-bound-file-previews-and-consume-public-icons.md).
 The stock Qt 6 presentation surface follows
-[ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md).
+[ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md). The S5
+network-location browsing seam and KIO adapter are recorded in
+[ADR-0137](../adr/0137-file-manager-network-location-browsing.md).
 
 File Manager's presentation is stock Qt 6 QML (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Layouts`) styled by the platform theme palette; it no longer imports
@@ -592,9 +596,12 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - **S4** — volumes: mount enumeration and per-volume Trash (supersedes the
   ADR-0064 deferral with its own ADR; coordinate polkit/udisks boundaries
   through the Program Manager thread first).
-- **S5** — network locations (SMB/SFTP-style browsing) behind a new injected
-  backend seam and ADR; the lister contract currently forbids network and
-  portal locations.
+- **S5 (read-only browsing landed)** — `smb://`/`sftp://` folder browsing
+  through the injected, asynchronous `NetworkDirectoryBackend` seam and the
+  production `KioNetworkDirectoryBackend` adapter (ADR-0137). Still open:
+  remote regular-file opening (currently a truthful disabled state),
+  mount-based access, and a credential-entry UI; portal locations remain
+  out of scope.
 
 ## Bounded deferrals
 
@@ -604,8 +611,9 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  additional preview formats, portal-mediated paths,
-  open-with, and network locations remain explicit later outcomes (S3–S5).
+  additional preview formats, portal-mediated paths, open-with, remote file
+  opening/mutation, and a credential-entry UI remain explicit later outcomes
+  (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
   destination in a separate confirmed action.
@@ -620,8 +628,19 @@ The browsing-comfort regressions include `qindaqt.file-manager-name-filter`,
 and production QML with temporary local files, then delivers keyboard and wheel
 input at compact, desktop and 1080p sizes under light and dark platform color
 schemes. It validates the file clipboard only through the production action seam
-(see below); mounted volumes and network
-browsing remain explicit S4–S5 work.
+(see below); mounted volumes remain explicit S4 work.
+
+The S5 network-browsing rows are `qindaqt.file-manager-network-location`
+(allowlist/canonicalization: supported/unsupported schemes, credential and
+`..`-escape refusal, parent/breadcrumb/child URL derivation),
+`qindaqt.file-manager-navigation-controller-network` (async success/typed
+error/stale-generation/URL-mismatch/truncated-listing/local-remote routing/
+remote-directory-activation/remote-file-disabled-launch, all against a fake
+injected backend), and `qindaqt.file-manager-kio-network-backend` (the
+production `KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
+job-creation test seam). None of these rows make a DNS lookup, socket
+connection, or real KIO network request; the production adapter itself is
+otherwise only exercised by construction/linking.
 
 The S3 daily-use rows are `qindaqt.file-manager-clipboard-controller`,
 `qindaqt.file-manager-recursive-search`, and

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "navigation_controller.h"
+#include "../network/network_location.h"
 #include "preview/local_preview.h"
 
 #include <QDir>
@@ -70,25 +71,59 @@ constexpr std::array iconSizes{32, 48, 64, 96, 128};
 
 NavigationController::NavigationController(DirectoryListerPtr lister,
                                            FileLauncherPtr launcher,
+                                           NetworkDirectoryBackendPtr networkBackend,
                                            QObject *parent)
     : QObject(parent), m_lister(std::move(lister)),
-      m_launcher(std::move(launcher)) {
+      m_launcher(std::move(launcher)),
+      m_networkBackend(std::move(networkBackend)) {
   Q_ASSERT(m_lister);
   Q_ASSERT(m_launcher);
+  if (m_networkBackend) {
+    connect(m_networkBackend.get(), &NetworkDirectoryBackend::listingReady, this,
+            &NavigationController::onNetworkListingReady);
+  }
 }
 
 void NavigationController::navigateTo(const QString &path) {
-  const QString normalized = QDir::cleanPath(path);
-  if (!m_history.hasCurrent()) {
-    m_history.reset(normalized);
+  if (NetworkLocation::classify(path) == LocationScheme::Local) {
+    if (m_remoteActive) {
+      if (m_networkBackend) {
+        m_networkBackend->cancel(m_listingGeneration);
+      }
+      m_remoteActive = false;
+    }
+    const QString normalized = QDir::cleanPath(path);
+    if (!m_history.hasCurrent()) {
+      m_history.reset(normalized);
+      reload(true);
+      emit navigationChanged();
+      return;
+    }
+    if (!m_history.navigateTo(normalized)) {
+      return; // already there: no reload, no history churn
+    }
     reload(true);
     emit navigationChanged();
     return;
   }
-  if (!m_history.navigateTo(normalized)) {
-    return; // already there: no reload, no history churn
+
+  const auto canonical = NetworkLocation::canonicalize(path);
+  if (!canonical) {
+    // Malformed/refused location (bad host, embedded credentials, a ".."
+    // escape attempt): no navigation, no history churn.
+    return;
   }
-  reload(true);
+  const QString locationText = canonical->toString();
+  if (!m_history.hasCurrent()) {
+    m_history.reset(locationText);
+    enterRemote(*canonical);
+    emit navigationChanged();
+    return;
+  }
+  if (!m_history.navigateTo(locationText)) {
+    return; // already there
+  }
+  enterRemote(*canonical);
   emit navigationChanged();
 }
 
@@ -112,6 +147,14 @@ void NavigationController::goUp() {
   if (!m_history.hasCurrent()) {
     return;
   }
+  if (m_remoteActive) {
+    const auto parent = NetworkLocation::parentOf(m_remoteUrl);
+    if (!parent) {
+      return;
+    }
+    navigateTo(parent->toString());
+    return;
+  }
   const auto parent = NavigationHistory::parentOf(m_history.currentPath());
   if (!parent) {
     return;
@@ -119,7 +162,13 @@ void NavigationController::goUp() {
   navigateTo(*parent);
 }
 
-void NavigationController::refresh() { reload(); }
+void NavigationController::refresh() {
+  if (m_remoteActive) {
+    requestRemoteListing();
+    return;
+  }
+  reload();
+}
 
 void NavigationController::activate(int index) {
   if (index < 0 || index >= m_entries.size()) {
@@ -128,6 +177,14 @@ void NavigationController::activate(int index) {
   const DirectoryEntry &entry = m_entries.at(index);
   if (entry.isDirectory) {
     navigateTo(entry.absolutePath);
+    return;
+  }
+  if (m_remoteActive) {
+    // Truthful disabled state (S5 scope): no download/execute, no local
+    // launch of a URL-shaped path.
+    m_launchError =
+        QStringLiteral("Opening files from a network location is not supported yet");
+    emit launchErrorChanged();
     return;
   }
   const LaunchResult result = m_launcher->launch(entry.absolutePath);
@@ -241,13 +298,27 @@ bool NavigationController::canGoForward() const {
 }
 
 bool NavigationController::canGoUp() const {
-  return m_history.hasCurrent() &&
-         NavigationHistory::parentOf(m_history.currentPath()).has_value();
+  if (!m_history.hasCurrent()) {
+    return false;
+  }
+  if (m_remoteActive) {
+    return NetworkLocation::parentOf(m_remoteUrl).has_value();
+  }
+  return NavigationHistory::parentOf(m_history.currentPath()).has_value();
 }
 
 QVariantList NavigationController::breadcrumb() const {
   QVariantList list;
   if (!m_history.hasCurrent()) {
+    return list;
+  }
+  if (m_remoteActive) {
+    const auto segments = NetworkLocation::breadcrumbFor(m_remoteUrl);
+    list.reserve(segments.size());
+    for (const auto &segment : segments) {
+      list.append(QVariantMap{{QStringLiteral("name"), segment.name},
+                              {QStringLiteral("path"), segment.url.toString()}});
+    }
     return list;
   }
   const auto segments = NavigationHistory::breadcrumbFor(m_history.currentPath());
@@ -357,7 +428,83 @@ void NavigationController::clearGuestListing() {
   }
   m_guestActive = false;
   m_guestStatusText.clear();
+  if (m_remoteActive) {
+    requestRemoteListing();
+    return;
+  }
   reload();
+}
+
+void NavigationController::enterRemote(const QUrl &url) {
+  m_guestActive = false;
+  m_guestStatusText.clear();
+  m_nameFilter.clear();
+  m_remoteActive = true;
+  m_remoteUrl = url;
+  requestRemoteListing();
+}
+
+void NavigationController::requestRemoteListing() {
+  ++m_listingGeneration;
+  m_truncated = false;
+  m_listedEntries.clear();
+  m_entries.clear();
+  m_hiddenFilteredCount = 0;
+  if (!m_networkBackend) {
+    m_status = NavigationStatus::Unavailable;
+    m_statusMessage = QStringLiteral("Network browsing is unavailable");
+    emit entriesChanged();
+    return;
+  }
+  m_status = NavigationStatus::Loading;
+  m_statusMessage.clear();
+  const quint64 generation = m_listingGeneration;
+  const QUrl url = m_remoteUrl;
+  emit entriesChanged();
+  m_networkBackend->requestListing(generation, url);
+}
+
+void NavigationController::onNetworkListingReady(quint64 generation, const QUrl &url,
+                                                 const NetworkListingResult &result) {
+  // Fencing: a stale generation, a URL that no longer matches the current
+  // remote location, or a callback arriving after leaving remote browsing
+  // altogether is silently discarded. This also protects a callback that
+  // races this object's own destruction: the backend is destroyed (and any
+  // queued connection severed) before this object finishes tearing down its
+  // own members, per Qt's parent/child and unique_ptr destruction order.
+  if (!m_remoteActive || generation != m_listingGeneration || url != m_remoteUrl) {
+    return;
+  }
+  m_status = result.ok() ? (result.entries.isEmpty() ? NavigationStatus::Empty
+                                                     : NavigationStatus::Ready)
+                        : statusForNetworkError(result.error);
+  m_truncated = result.ok() && result.truncated;
+  m_listedEntries = result.ok() ? result.entries : QVector<DirectoryEntry>{};
+  rebuildVisibleEntries();
+  if (!result.ok()) {
+    m_statusMessage = NetworkLocation::boundedDiagnostic(result.diagnostic);
+  }
+  emit entriesChanged();
+}
+
+NavigationStatus NavigationController::statusForNetworkError(NetworkListingError error) {
+  switch (error) {
+  case NetworkListingError::None:
+    return NavigationStatus::Ready;
+  case NetworkListingError::Unavailable:
+    return NavigationStatus::Unavailable;
+  case NetworkListingError::AuthenticationRequired:
+    return NavigationStatus::AuthenticationRequired;
+  case NetworkListingError::PermissionDenied:
+    return NavigationStatus::PermissionDenied;
+  case NetworkListingError::NotFound:
+    return NavigationStatus::Missing;
+  case NetworkListingError::Transport:
+    return NavigationStatus::Transport;
+  case NetworkListingError::Unknown:
+    break;
+  }
+  return NavigationStatus::Error;
 }
 
 void NavigationController::reload(bool resetFilter) {
@@ -444,6 +591,14 @@ QString NavigationController::statusKeyFor(NavigationStatus status) {
     return QStringLiteral("not-a-directory");
   case NavigationStatus::Error:
     return QStringLiteral("error");
+  case NavigationStatus::Loading:
+    return QStringLiteral("loading");
+  case NavigationStatus::Unavailable:
+    return QStringLiteral("unavailable");
+  case NavigationStatus::AuthenticationRequired:
+    return QStringLiteral("authentication-required");
+  case NavigationStatus::Transport:
+    return QStringLiteral("transport-error");
   }
   return QStringLiteral("error");
 }

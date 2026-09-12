@@ -6,8 +6,10 @@
 #include "launch_intent.h"
 #include "listing_order.h"
 #include "navigation_history.h"
+#include "../network/network_directory_backend.h"
 
 #include <QObject>
+#include <QUrl>
 #include <QVariantList>
 #include <QVector>
 
@@ -20,6 +22,13 @@ enum class NavigationStatus {
   Missing,
   NotADirectory,
   Error,
+  // S5 network-browsing states (see NetworkListingError): an in-flight
+  // asynchronous remote listing, and the remote-only typed failures a local
+  // listing can never produce.
+  Loading,
+  Unavailable,
+  AuthenticationRequired,
+  Transport,
 };
 
 // AGENT-CONTRACT: This GUI-thread QObject owns the injected lister/launcher
@@ -53,9 +62,18 @@ class NavigationController final : public QObject {
   Q_PROPERTY(int iconSize READ iconSize NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool canZoomIn READ canZoomIn NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool canZoomOut READ canZoomOut NOTIFY presentationChanged FINAL)
+  // True while currentPath() is a canonical smb/sftp URL. QML and the
+  // AppShell action bindings disable every local-only action (mutation,
+  // preview, recursive search, bounded local launch) while this is true;
+  // navigation itself (back/forward/up/refresh/location entry) stays live.
+  Q_PROPERTY(bool remoteActive READ remoteActive NOTIFY navigationChanged FINAL)
 
 public:
+  // networkBackend may be null: navigateTo() then refuses every smb/sftp
+  // location with a typed Unavailable status instead of routing anywhere,
+  // and every existing local-only caller/test is unaffected.
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
+                       NetworkDirectoryBackendPtr networkBackend = nullptr,
                        QObject *parent = nullptr);
 
   // Navigates as if the user chose path directly (breadcrumb segment, typed
@@ -120,6 +138,7 @@ public:
   [[nodiscard]] int iconSize() const;
   [[nodiscard]] bool canZoomIn() const;
   [[nodiscard]] bool canZoomOut() const;
+  [[nodiscard]] bool remoteActive() const noexcept { return m_remoteActive; }
   [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
@@ -141,9 +160,25 @@ private:
   // (and presentationChanged for user-facing setting changes) afterwards.
   void rebuildVisibleEntries();
   [[nodiscard]] static QString statusKeyFor(NavigationStatus status);
+  // Marks a fresh remote navigation (drops any guest listing/name filter)
+  // and starts its first listing request.
+  void enterRemote(const QUrl &url);
+  // Starts (or restarts) the async remote listing for m_remoteUrl at a
+  // freshly bumped m_listingGeneration; sets NavigationStatus::Loading
+  // immediately so the UI never shows stale entries while waiting.
+  void requestRemoteListing();
+  // Fenced NetworkDirectoryBackend::listingReady handler: a generation or
+  // URL mismatch (superseded navigation, or a callback arriving after
+  // clearing/leaving the remote location) is silently discarded.
+  void onNetworkListingReady(quint64 generation, const QUrl &url,
+                             const NetworkListingResult &result);
+  [[nodiscard]] static NavigationStatus statusForNetworkError(NetworkListingError error);
 
   DirectoryListerPtr m_lister;
   FileLauncherPtr m_launcher;
+  NetworkDirectoryBackendPtr m_networkBackend;
+  bool m_remoteActive = false;
+  QUrl m_remoteUrl;
   NavigationHistory m_history;
   NavigationStatus m_status = NavigationStatus::Empty;
   QString m_statusMessage;
