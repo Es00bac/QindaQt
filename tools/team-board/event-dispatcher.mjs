@@ -181,11 +181,23 @@ function verdictFrom(content) {
   return '';
 }
 
+function declaresCandidate(content, candidate) {
+  return content.split(/\r?\n/).some((line) => {
+    if (!line.includes(candidate)) return false;
+    return /^\s*(?:#{1,6}\s*)?(?:-\s*)?(?:exact\s+)?(?:candidate|commit)(?:\s+(?:sha|commit))?\s*:/i.test(line)
+      || /\b(?:ACCEPT|REJECT|BLOCKING)\b.*\b(?:candidate|commit)\b/i.test(line)
+      || /\b(?:candidate|commit)\b.*\b(?:ACCEPT|REJECT|BLOCKING)\b/i.test(line);
+  });
+}
+
 async function reviewVerdictEvidence(worktree, assignment, candidate) {
   let newest = null;
   for (const file of await evidenceFiles(worktree, assignment)) {
     const content = await readFile(file, 'utf8');
-    if (!content.includes(candidate)) continue;
+    // AGENT-GUARD: a review thread can contain routing notes for its current
+    // HEAD and verdicts for another candidate. Only a verdict that declares
+    // this exact candidate may transition the review ledger.
+    if (!declaresCandidate(content, candidate)) continue;
     const reviewResult = verdictFrom(content);
     if (!reviewResult) continue;
     const evidenceAt = (await stat(file)).mtime.toISOString();
