@@ -95,10 +95,12 @@ export async function dispatchEvents({ events, previous = {}, queue, nowMs = Dat
     if (!activeKeys.has(key)) delete pending[key];
   }
   const deliveredValues = Object.values(delivered);
-  let lastEvidenceLatencyMs = Number(previous.lastEvidenceLatencyMs)
-    || Math.max(0, ...deliveredValues.map((entry) => Number(entry?.evidenceLatencyMs) || 0));
-  let lastQueueDurationMs = Number(previous.lastQueueDurationMs)
-    || Math.max(0, ...deliveredValues.map((entry) => Number(entry?.queueDurationMs) || 0));
+  const latestDelivery = deliveredValues.reduce((latest, entry) =>
+    Number(entry?.deliveredAt) >= Number(latest?.deliveredAt ?? -1) ? entry : latest, null);
+  let lastEvidenceLatencyMs = latestDelivery
+    ? Number(latestDelivery.evidenceLatencyMs) || 0 : Number(previous.lastEvidenceLatencyMs) || 0;
+  let lastQueueDurationMs = latestDelivery
+    ? Number(latestDelivery.queueDurationMs) || 0 : Number(previous.lastQueueDurationMs) || 0;
   const batch = [];
   for (const event of events) {
     if (delivered[event.key]) { delete pending[event.key]; continue; }
