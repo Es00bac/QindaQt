@@ -194,7 +194,8 @@ the Settings Customize route share this precedence contract.
 
 QindaQt ships original layouts inspired by useful interaction patterns:
 
-- QindaQt global-menu top bar and smart bottom shelf;
+- QindaQt global-menu top bar, smart bottom shelf, and the desktop-icons
+  surface with conservative (left-placement, Windows-style menu) defaults;
 - GNOME-style top bar, overview, dash, search, and dynamic workspace option;
 - Unity-style left launcher, top menu/status bar, workspace spread, and HUD;
 - MATE- and XFCE-style classic menus, panels, window lists, trays, and switchers;

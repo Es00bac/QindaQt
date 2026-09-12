@@ -29,6 +29,7 @@ private slots:
     void blissProfileCarriesDesktopSection();
     void rejectsDuplicateIdsAcrossPanelsAndDesktop();
     void everyBuiltInProfileHasOneNotificationCenter();
+    void stockProfileResolvesNonemptyDesktopInventory();
 };
 
 void ProfileTests::loadsEveryBuiltInProfile()
@@ -279,6 +280,26 @@ void ProfileTests::everyBuiltInProfileHasOneNotificationCenter()
 
         QCOMPARE(notificationCenterCount, 1);
     }
+}
+
+void ProfileTests::stockProfileResolvesNonemptyDesktopInventory()
+{
+    const auto result = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/qindaqt.json"));
+    QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+
+    // The desktop-icons instance is additive: the profile's existing
+    // panel/theme/workflow values are exactly as before this change.
+    QCOMPARE(result.profile.defaultTheme, QStringLiteral("qinda-dark"));
+    QCOMPARE(result.profile.panels.size(), 2);
+    QCOMPARE(result.profile.workflow.launcher, QStringLiteral("smart-shelf"));
+    QCOMPARE(result.profile.workflow.menu, QStringLiteral("global"));
+    QVERIFY(result.profile.workflow.globalMenu);
+
+    QVERIFY2(!result.profile.desktopApplets.isEmpty(),
+             "The stock qindaqt profile must resolve a nonempty desktop inventory");
+    QCOMPARE(result.profile.desktopApplets.constFirst().plugin,
+             QStringLiteral("desktop-icons"));
 }
 
 QTEST_GUILESS_MAIN(ProfileTests)
