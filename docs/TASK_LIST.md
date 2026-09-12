@@ -19,9 +19,18 @@ Dock geometry candidate `aef75d22` received independent ACCEPT and is integrated
 as `8d4e3142`: user-requested logical sizing remains immutable while tiles and
 gaps shrink to fit constrained panels, with bounded input overscan. A fresh
 strict production-shell closure and the four exact affected rows pass on main.
-This is source integration, not installed/live-desktop adoption. File Manager
-menu candidate `6f0b77f1` is queued for independent review, while the container
-lane is completing its roll-up ghost matrix before proposing a fix.
+This is source integration, not installed/live-desktop adoption. Independent
+review rejected File Manager menu candidate `6f0b77f1` for a retained-focus
+background Paste target and context actions that ignored authoritative busy
+state. The original Files lane repaired both in exact descendant `ae74a0d1`;
+its reported File Manager matrix is 32/32 and the same reviewer is rechecking
+the former-red cases. The existing `desktop-icons` surface is now enabled in
+the stock `qindaqt` source profile at `3c9da358` after independent ACCEPT and a
+fresh manager profile build/3-row replay. It still renders Places shortcuts;
+real Desktop-directory contents are the active next consumer slice, and no
+user profile, installed package, or live session was changed. Container shade
+candidate `ca7b0eb2` and Global Menu evidence candidate `076d8a3d` are under
+independent exact-SHA review in the other two lanes.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
