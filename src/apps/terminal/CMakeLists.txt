@@ -27,6 +27,7 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     search/terminal_search.cpp
     ui/terminal_ansi_palette.cpp
     ui/terminal_appearance.cpp
+    ui/terminal_bell.cpp
     ui/terminal_profile_apply_status.cpp
     ui/terminal_profile_dialog.cpp
     ui/terminal_find_bar.cpp
@@ -55,6 +56,7 @@ set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     search/terminal_search.h
     ui/terminal_ansi_palette.h
     ui/terminal_appearance.h
+    ui/terminal_bell.h
     ui/terminal_profile_apply_status.h
     ui/terminal_profile_dialog.h
     ui/terminal_find_bar.h

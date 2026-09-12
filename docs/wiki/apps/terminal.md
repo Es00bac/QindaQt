@@ -138,7 +138,9 @@ points; a terminal content scheme identifier (`system`, `light`, or `dark` —
 legacy `qinda-*` identifiers are mapped to this vocabulary when a stored
 profile is decoded); 0–100,000 scrollback lines; and a
 `silent` or `audible` bell policy. Both preserve all PTY bytes. Silent ignores
-parsed bell notifications; Audible requests a GUI beep. A user profile never changes the
+parsed bell notifications. Audible requests a GUI beep and, while the Terminal
+window is visible, asks Qt to mark that owning window as needing attention. A
+user profile never changes the
 shell contract: its program and argv go through `TerminalLaunchPolicy`, never
 through a shell string, and an invalid or unresolvable profile is refused. The
 line-oriented profile editor preserves every unchanged argv element exactly,
@@ -540,9 +542,14 @@ a directory source. The window row checks the published zoom shortcuts.
 Gentoo's shell prompt ends its OSC window-title sequence with BEL. Removing BEL
 for the silent profile left that sequence open, so the renderer swallowed the
 prompt and subsequent output. Bell policy now handles QTermWidget's parsed
-`bell` signal; Audible requests a GUI beep, while Silent does nothing. The PTY
-stream is byte-preserving in both modes. QTermWidget 2.4 uses notification mode
-for this public signal ([upstream implementation](https://github.com/lxqt/qtermwidget/blob/2.4.0/lib/qtermwidget.cpp)).
+`bell` signal; Audible requests a GUI beep plus standard Qt attention on the
+owning visible Terminal window, while Silent does nothing. Repeated audible
+bells each produce one beep and one attention request; a hidden window still
+beeps but does not retain an alert to surface later. Qt carries the attention
+request to the window system, where the existing compositor task fact and Task
+List urgency path present it; Terminal creates no parallel notification
+channel. The PTY stream is byte-preserving in both modes. QTermWidget 2.4 uses
+notification mode for this public signal ([upstream implementation](https://github.com/lxqt/qtermwidget/blob/2.4.0/lib/qtermwidget.cpp)).
 
 The real-widget test now creates the complete TerminalWindow with an isolated
 interactive Bash, a BEL-terminated title prompt, keyboard input, appearance refresh,
