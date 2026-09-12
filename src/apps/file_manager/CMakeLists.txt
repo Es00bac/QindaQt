@@ -103,6 +103,7 @@ qt_add_qml_module(
         ui/StatePane.qml
         ui/MutationDialogs.qml
         ui/PropertiesDialog.qml
+        ui/FileContextMenu.qml
         ui/EntryDrag.js
 )
 

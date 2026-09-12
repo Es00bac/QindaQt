@@ -202,6 +202,38 @@ controller.
 | `edit.undo` | platform Undo | Undo the last recoverable create, rename, or move |
 | `operation.cancel` | `Ctrl+Escape` | Request cancellation of the running operation |
 
+### Background and selection context menus
+
+`FileContextMenu.qml` is the one shared right-click/keyboard context menu
+`EntryGrid` and `EntryList` both instantiate, so Icon and Details behave
+identically instead of each declaring its own item list. Right-clicking (or
+invoking the context-menu key on) empty folder space shows only background
+actions — New Folder, Paste (only when the clipboard actually holds
+something), Refresh, the Icon/Details toggle, and Show Hidden. Right-clicking
+(or invoking the context-menu key while) a selection is targeted shows only
+`edit.cut`/`edit.copy`, `file.copy`/`file.move`/`file.trash`/`file.properties`,
+and `file.rename` — Rename only when exactly one entry is targeted, since
+`MutationDialogs.dispatch("file.rename")` only ever acts on the first selected
+entry. Every item dispatches through the same
+`ApplicationCoordinator::activateAction()`/`MutationDialogs` path the toolbar
+and menu bar already use; the menu adds no new mutation policy, only
+context-scoped visibility.
+
+A mouse right-click on an unselected entry replaces the selection with that
+entry first (mirroring a plain left-click), so the menu always targets what
+was actually clicked. The context-menu key (`Menu`, or `Shift+F10`) follows
+the same rule for the keyboard: with a valid focused entry it selects that
+entry first if nothing is already selected, then targets the resulting
+selection; with no focused entry (an empty folder, including a Ready folder
+whose only entries are hidden) it targets the background instead. A
+background right-click never changes the existing selection.
+
+The focused row `qindaqt.file-manager-browsing-ui` drives all of this through
+production `Main.qml` at compact and desktop sizes in both view modes: real
+mouse clicks distinguishing background from single- and multi-entry
+selection, the pristine-focus and true-background keyboard cases, and a real
+New Folder/Paste round trip through the existing dialogs and controllers.
+
 With multiple entries selected, copy and move ask for a destination **folder**
 and trash confirms the count, then run as one serialized batch:
 `MutationController::copyItemsTo`/`moveItemsTo`/`trashItems` validate every

@@ -26,7 +26,21 @@ Control {
         navigationController: root.navigationController
         columns: Math.max(1, Math.floor(gridView.width / gridView.cellWidth))
         rowHeight: gridView.cellHeight
-        onContextMenuRequested: contextMenu.popup()
+        // Keyboard invocation (Menu key / Shift+F10) follows the focused
+        // item: with a valid current entry, select it first if nothing is
+        // already selected (mirroring the existing mouse-click behavior
+        // below), then target that selection; with no current entry (an
+        // empty folder), target the background instead.
+        onContextMenuRequested: {
+            if (root.selection.currentIndex >= 0) {
+                if (root.selection.selectedEntries().length === 0)
+                    root.selection.selectOnly(root.selection.currentIndex)
+                contextMenu.selectionCount = root.selection.selectedEntries().length
+            } else {
+                contextMenu.selectionCount = 0
+            }
+            contextMenu.popup()
+        }
     }
     onIconSizeChanged: keyboardNavigation.scheduleReveal()
 
@@ -77,6 +91,19 @@ Control {
                         drop.accept(action)
                     else
                         drop.accepted = false
+                }
+            }
+
+            // Background right-click: GridView/Flickable only claims
+            // Qt.LeftButton by default, so a right-click that misses every
+            // delegate's own MouseArea falls through to this one.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: {
+                    gridView.forceActiveFocus()
+                    contextMenu.selectionCount = 0
+                    contextMenu.popup()
                 }
             }
 
@@ -220,8 +247,10 @@ Control {
                                 selection.selectOnly(delegateRoot.index)
                                 selection.focusIndex(delegateRoot.index)
                             }
-                            if (mouse.button === Qt.RightButton)
+                            if (mouse.button === Qt.RightButton) {
+                                contextMenu.selectionCount = selection.selectedEntries().length
                                 contextMenu.popup()
+                            }
                         }
                         onDoubleClicked: (mouse) => {
                             if (mouse.modifiers !== Qt.NoModifier)
@@ -251,41 +280,13 @@ Control {
 
         }
 
-        Menu {
+        FileContextMenu {
             id: contextMenu
-
-            MenuItem {
-                text: qsTr("Cut")
-                onTriggered: root.appCoordinator.activateAction("edit.cut")
-            }
-            MenuItem {
-                text: qsTr("Copy")
-                onTriggered: root.appCoordinator.activateAction("edit.copy")
-            }
-            MenuItem {
-                text: qsTr("Paste")
-                onTriggered: root.appCoordinator.activateAction("edit.paste")
-            }
-            MenuItem {
-                text: qsTr("Rename")
-                onTriggered: root.appCoordinator.activateAction("file.rename")
-            }
-            MenuItem {
-                text: qsTr("Copy To…")
-                onTriggered: root.appCoordinator.activateAction("file.copy")
-            }
-            MenuItem {
-                text: qsTr("Move To…")
-                onTriggered: root.appCoordinator.activateAction("file.move")
-            }
-            MenuItem {
-                text: qsTr("Move to Trash")
-                onTriggered: root.appCoordinator.activateAction("file.trash")
-            }
-            MenuItem {
-                text: qsTr("Properties")
-                onTriggered: root.appCoordinator.activateAction("file.properties")
-            }
+            objectName: "gridContextMenu"
+            appCoordinator: root.appCoordinator
+            navigationController: root.navigationController
+            clipboardController: root.clipboardController
+            mutationController: root.mutationController
         }
 
         Label {

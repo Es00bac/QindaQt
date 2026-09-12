@@ -23,6 +23,15 @@ ApplicationWindow {
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
 
+    // Set by FileContextMenu immediately before it activates "edit.paste" for
+    // a background (empty-space) invocation, and cleared by it immediately
+    // after: pasteDestination()'s focused-entry lookup below is wrong for a
+    // background paste (an unrelated directory can still be focused), but the
+    // action must still cross the coordinator like every other trigger, so
+    // this is the narrow, self-clearing seam that lets the one background
+    // case override the destination without adding a second dispatch path.
+    property string backgroundPasteOverride: ""
+
     visible: true
     width: 900
     height: 600
@@ -79,8 +88,12 @@ ApplicationWindow {
     }
 
     // Paste lands inside the focused folder entry when one exists, otherwise
-    // in the folder being browsed.
+    // in the folder being browsed. A background invocation overrides that
+    // lookup (see backgroundPasteOverride above) since it must always target
+    // the browsed folder regardless of what else remains focused.
     function pasteDestination() {
+        if (root.backgroundPasteOverride.length > 0)
+            return root.backgroundPasteOverride
         const entry = root.activeView().currentEntry()
         if (entry && entry.isDirectory)
             return entry.path
