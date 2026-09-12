@@ -116,6 +116,16 @@ hard links, or copied mutable build roots. Preserve one warm integration build
 per compatible configuration, while every worker and reviewer retains its own
 source and build tree and still runs the required independent gates.
 
+Interactive worker processes require a direct terminal. Do not pipe an
+interactive Codex or Claude process through `tee` or another stdout relay:
+Codex can fail without a TTY and Claude can continue with a blank visible
+terminal. Launch long-running worker terminals with a lifetime independent of
+the Program Manager (for example, a transient user-systemd service), record the
+actual worker and terminal PIDs, and preserve the provider session identifier
+before rotating a lane. Print-mode workers may use captured output when their
+provider supports it. A stopped launcher is not a completed handoff; inspect
+the final transcript, exact worktree state, and authored handoff evidence first.
+
 ## Failure correction
 
 The workflow preserves useful work and makes management errors visible. Never
