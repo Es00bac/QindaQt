@@ -54,8 +54,11 @@ inline bool publishTokens(QQmlEngine &engine)
         && facade->publish(loaded.theme, {}, &error);
 }
 
-// Least-authority stand-ins for the borrowed facades. The QML consumes only
-// `places.rows`/`places.open` and the launcher sections/activate seam.
+// Least-authority stand-ins for the borrowed facades. `places.rows` is no
+// longer read by the desktop icon tiles (see DesktopContentsController,
+// which lists the real Desktop directory instead); the QML still consumes
+// `places.open` for the mac-style desktop-folder "Open" context-menu entry,
+// plus the launcher sections/activate seam.
 class StubPlaces final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList rows READ rows CONSTANT)

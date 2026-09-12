@@ -61,6 +61,11 @@ Window {
         id: newFolderController
     }
 
+    DesktopContentsController {
+        id: desktopContents
+        objectName: "desktopContentsController"
+    }
+
     // Full-surface input, stacked UNDER the icons view: a plain Item does not
     // accept pointer events, so tile clicks reach the tiles and empty-area
     // clicks fall through to here. Empty-area left clicks clear the
@@ -91,7 +96,7 @@ Window {
         objectName: "desktopIconsView"
         anchors.fill: parent
         settings: root.appletSettings
-        access: root.access
+        contents: desktopContents
     }
 
     DesktopContextMenu {

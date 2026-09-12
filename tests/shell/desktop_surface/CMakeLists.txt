@@ -1,10 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # Desktop surface tests: the new-folder controller over a redirected
-# QStandardPaths HOME, the controller's resolution and zero-window contract
-# over the real manifest catalog and capability policy, and the compiled QML
-# module offscreen over stub facades. Nothing here reaches a compositor, a
-# session bus, or the user's real Desktop directory.
+# QStandardPaths HOME, the desktop-contents controller over an
+# injected/testable temporary root (real listing/refresh/open dispatch
+# through File Manager's public FileBoundary), the controller's resolution
+# and zero-window contract over the real manifest catalog and capability
+# policy, and the compiled QML module offscreen over stub facades and a
+# redirected HOME. Nothing here reaches a compositor, a session bus, or the
+# user's real Desktop directory.
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Test)
 
@@ -73,6 +76,8 @@ endfunction()
 
 qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_new_folder_tests
     tst_new_folder_controller.cpp qindaqt.desktop-surface-new-folder)
+qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_contents_tests
+    tst_desktop_contents_controller.cpp qindaqt.desktop-surface-contents)
 qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_controller_tests
     tst_desktop_surface_controller.cpp qindaqt.desktop-surface-controller)
 # The controller maps QQuickWindows, so the lane needs the offscreen platform

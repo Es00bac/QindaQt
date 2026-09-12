@@ -52,7 +52,9 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_DESKTOP_SURFACE_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_desktop_surface.qmltypes
     SOURCES
+        include/qindaqt/shell/desktop_surface/desktop_contents_controller.h
         include/qindaqt/shell/desktop_surface/new_folder_controller.h
+        src/desktop_contents_controller.cpp
         src/new_folder_controller.cpp
     QML_FILES
         qml/DesktopApplicationsMenu.qml
@@ -78,6 +80,13 @@ target_link_libraries(
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2
+    PRIVATE
+        # Dependency direction: Desktop-scoped code depends on File Manager's
+        # narrow public/ boundary, never the reverse (module-boundaries.md).
+        # DesktopContentsController is the first shell consumer of
+        # FileBoundary; only its .cpp includes public/desktop_file_boundary.h,
+        # so the link stays private here.
+        qindaqt_file_manager_support
 )
 target_compile_features(qindaqt_desktop_surface_qml PUBLIC cxx_std_20)
 set_target_properties(qindaqt_desktop_surface_qml

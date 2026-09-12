@@ -4,18 +4,19 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 
-// Desktop-icons applet presentation (ADR-0125): the places facade rendered as
-// selectable icon tiles. Windows-style placement fills one top-down column at
-// the chosen edge; `right` anchors the block to the output's right edge.
-// Icon names come from the places rows (PlacesController iconName); the one
-// literal below is the icon-first fallback for a row without a name.
+// Desktop-icons applet presentation (ADR-0125): the Desktop-directory
+// contents rendered as selectable icon tiles. Windows-style placement fills
+// one top-down column at the chosen edge; `right` anchors the block to the
+// output's right edge. Icon names come from the content rows
+// (DesktopContentsController iconName); the one literal below is the
+// icon-first fallback for a row without a name.
 Item {
     id: root
 
     required property var settings
-    // Borrowed DesktopControlsAccess facade; may be null. Only the places
-    // sub-facade is consumed (rows + open), never the root object.
-    required property var access
+    // Owned DesktopContentsController instance (never null): the real
+    // Desktop-directory listing plus the bounded open() dispatch.
+    required property var contents
 
     readonly property bool placementRight: {
         const requested = settings && settings.placement !== undefined
@@ -33,18 +34,10 @@ Item {
     // Single selection: exactly one tile may be highlighted at a time.
     property string selectedId: ""
 
-    // AGENT-GUARD: the revision reference forces this binding to re-evaluate
-    // when reflow() bumps it. PlacesController.rows is CONSTANT, so without
-    // the reference "Arrange Icons"/"Refresh"/"Sort By"/"Clean Up" would
-    // silently do nothing after startup.
-    property int revision: 0
-    readonly property var rows: {
-        const currentRevision = revision
-        if (access === null || access.places === null) {
-            return []
-        }
-        return access.places.rows
-    }
+    // contents.rows is NOTIFY'd, so binding to it directly re-evaluates the
+    // flow whenever refresh() publishes a new listing; no revision counter
+    // needed.
+    readonly property var rows: root.contents.rows
 
     implicitWidth: flow.implicitWidth + flow.anchors.leftMargin
                    + flow.anchors.rightMargin
@@ -54,18 +47,15 @@ Item {
         selectedId = ""
     }
 
-    // Re-sorts and re-queries the grid: rows are re-read from the places
-    // facade and the column flow restarts. Every menu re-sort entry lands
-    // here.
+    // Re-lists the Desktop directory through the boundary and restarts the
+    // column flow. Every menu re-sort/refresh/new-folder entry lands here.
     function reflow() {
         selectedId = ""
-        revision += 1
+        root.contents.refresh()
     }
 
-    function openPlace(placeId) {
-        if (access !== null && access.places !== null) {
-            access.places.open(placeId)
-        }
+    function openEntry(entryId) {
+        root.contents.open(entryId)
     }
 
     Flow {
@@ -90,10 +80,10 @@ Item {
                 required property var modelData
                 required property int index
 
-                readonly property string placeId: String(modelData.id)
-                readonly property string placeName: String(modelData.label)
+                readonly property string entryId: String(modelData.id)
+                readonly property string entryLabel: String(modelData.label)
                 readonly property bool selected:
-                    root.selectedId === placeId
+                    root.selectedId === entryId
 
                 width: Math.max(root.iconSize + 24, label.implicitWidth + 12)
                 height: root.iconSize + 40
@@ -101,8 +91,8 @@ Item {
                 color: selected ? "#33ffffff"
                     : tileInput.containsMouse ? "#22ffffff" : "transparent"
 
-                Keys.onReturnPressed: root.openPlace(placeId)
-                Keys.onEnterPressed: root.openPlace(placeId)
+                Keys.onReturnPressed: root.openEntry(entryId)
+                Keys.onEnterPressed: root.openEntry(entryId)
 
                 MouseArea {
                     id: tileInput
@@ -111,10 +101,10 @@ Item {
                     acceptedButtons: Qt.LeftButton
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.selectedId = tile.placeId
+                        root.selectedId = tile.entryId
                         tile.forceActiveFocus(Qt.MouseFocusReason)
                     }
-                    onDoubleClicked: root.openPlace(tile.placeId)
+                    onDoubleClicked: root.openEntry(tile.entryId)
                 }
 
                 ShellIcons.Icon {
@@ -126,7 +116,7 @@ Item {
                     name: String(tile.modelData.iconName) !== ""
                           ? String(tile.modelData.iconName) : "folder"
                     size: root.iconSize
-                    fallbackText: tile.placeName
+                    fallbackText: tile.entryLabel
                     Accessible.ignored: true
                 }
 
@@ -137,7 +127,7 @@ Item {
                     anchors.bottomMargin: 4
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: parent.width - 8
-                    text: tile.placeName
+                    text: tile.entryLabel
                     color: "#ffffff"
                     // Subtle dark shadow keeps white readable on bright
                     // wallpapers.
@@ -152,7 +142,7 @@ Item {
                 Accessible.role: Accessible.Button
                 Accessible.name: String(tile.modelData.accessibleName)
                 Accessible.selected: tile.selected
-                Accessible.onPressAction: root.openPlace(tile.placeId)
+                Accessible.onPressAction: root.openEntry(tile.entryId)
             }
         }
     }

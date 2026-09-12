@@ -156,12 +156,17 @@ surface hosts the desktop-icons entry (see its bullet below):
   one menu slot per profile that is either a launcher or this applet. See
   [ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md); and
 - `qindaqt.applets.desktop-icons` hosts on the dedicated per-output desktop
-  surface from `QindaQt.Shell.DesktopSurface` instead of a panel: it
-  presents places as desktop icons that open in the QindaQt File Manager
-  through the PlacesController/FileManagerFolderOpener path, with
+  surface from `QindaQt.Shell.DesktopSurface` instead of a panel: it presents
+  the user's real Desktop-directory files and folders as desktop icons,
+  listed and opened through the least-authority `DesktopContentsController`
+  seam over File Manager's public `FileBoundary` (`listLocalFolder` /
+  `launchLocalFile`; see
+  [module boundaries](../architecture/module-boundaries.md)), with
   configurable left/right placement and icon size, and a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose
-  XFCE-style Applications menu sits behind a configurable modifier key.
+  XFCE-style Applications menu sits behind a configurable modifier key. The
+  menu's own "Open"/"Display Properties" style entries still open the
+  Desktop folder itself through the borrowed `PlacesController` facade.
   Folder creation goes through the least-authority `NewFolderController`
   seam, which writes only under the user's Desktop directory; the manifest
   requests only `applications.launch` and no new capability enum. See
