@@ -52,7 +52,10 @@ export function deriveEvents({ reviews = [], workers = [], assignments = [], del
   for (const review of reviews) {
     const candidate = value(review?.candidate);
     const stage = reviewStage(review);
-    if (!candidate || stage === 'integrated') continue;
+    // AGENT-CONTRACT: the manager ledger retains rejected ancestors for audit,
+    // but resolvedBy makes their repair lineage non-actionable to the watcher.
+    // The named descendant must carry its own review/integration transition.
+    if (!candidate || stage === 'integrated' || value(review?.resolvedBy)) continue;
     if (stage === 'accepted' || stage === 'rejected') {
       events.push({ type: 'review-result', identity: value(review?.reviewer, 'review'), candidate, transition: stage,
         evidenceAt: value(review?.reviewedAt, value(review?.reviewStartedAt, value(review?.queuedAt))),

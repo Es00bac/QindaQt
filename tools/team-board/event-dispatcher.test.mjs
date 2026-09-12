@@ -178,6 +178,16 @@ test('completed one-shot review is a result event, not a failed reviewer', () =>
   assert.equal(events.some((event) => event.type === 'process-failure'), false);
 });
 
+test('a rejected ancestor resolved by a reviewed descendant remains history, not active work', () => {
+  const descendant = 'fec87fa5191a5e7af29d3d7bcf05d8a133178a67';
+  const events = deriveEvents({ reviews: [
+    { candidate, stage: 'rejected', reviewResult: 'REJECT', resolvedBy: descendant },
+    { candidate: descendant, stage: 'integrated', reviewResult: 'ACCEPT', integratedCommit: 'b12a02d6' },
+  ] });
+  assert.equal(events.some((event) => event.candidate === candidate), false);
+  assert.equal(events.some((event) => event.candidate === descendant), false);
+});
+
 test('dead manager and stale collector are degraded signals', () => {
   const events = deriveEvents({ managerAlive: false, collectorFresh: false });
   assert.deepEqual(events.map((event) => event.type).sort(), ['collector-stale', 'manager-dead']);

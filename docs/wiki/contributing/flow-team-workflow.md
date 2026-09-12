@@ -64,7 +64,11 @@ worker, exact candidate or outcome, and stable lifecycle transition; a later
 handoff by the same worker is therefore new while an unchanged scan is not. New events in one scan are
 coalesced into one bounded manager wake. Delivery state is written atomically,
 failed queue attempts remain pending for retry, and resolved failures are
-removed. This product path does not inherit the slower warning-reminder
+removed. A rejected candidate stays in the review ledger as evidence; once an
+exact reviewed descendant resolves it, the manager records that descendant in
+`resolvedBy`, and the ancestor stops emitting a current action while the
+descendant carries its own review and integration state. This product path does
+not inherit the slower warning-reminder
 cooldown; the five-minute watchdog remains the backstop for stale records and
 missed events. The dashboard reports evidence-to-queue and queue-call latency,
 omits legacy pre-await timing rows that cannot support those measurements, and
