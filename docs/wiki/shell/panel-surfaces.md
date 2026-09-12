@@ -146,13 +146,18 @@ non-focusable layer-shell panel. Escape closes these detail surfaces through the
 
 Centered bottom panels whose resolved applets request `dockMode` paint a
 content-hugging rounded shelf inside their solver-owned surface, which solves
-at full edge length so the shelf can grow with dock content and scroll beyond
-full width ([Dock interactions](dock-interactions.md)). The runtime
+at full edge length. The user preference remains 32–64 logical pixels; the
+surface derives one effective tile size for its current horizontal and vertical
+budget, proportionally shrinks the shelf down to a 24-logical-pixel floor, and
+restores it without persistence churn when space returns. Content beyond that
+floor scrolls ([Dock interactions](dock-interactions.md)). The runtime
 window factory tracks the QML-painted bounds and applies a `QWindow` input mask
-that includes the token hover allowance. This makes the transparent planned
-margins pass desktop input through while retaining hover magnification inside
-the bounded dock surface. The mask returns to the full surface for non-dock
-panels. QML uses only published QST colors and the read-only accessibility
+that includes the effective tile's size-derived magnification overscan above
+the bottom-aligned shelf. Fixed transparent margins are not made interactive;
+only a sub-padding horizontal overrun is added when the magnified icon needs
+it. The remaining planned surface passes desktop input through. The mask
+returns to the full surface for non-dock panels. QML uses only published QST
+colors and the read-only accessibility
 projection. A panel material is translucent only when the theme, the
 accessibility projection, and the per-panel quick setting all allow it, and
 the shell then requests compositor blur-behind (`org_kde_kwin_blur`) for

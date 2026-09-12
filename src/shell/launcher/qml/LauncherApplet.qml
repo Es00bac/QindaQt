@@ -22,14 +22,17 @@ Item {
     property int dockTileSize: 60
     property bool reducedMotion: false
     property bool dockHasLauncherGroup: false
+    readonly property int resolvedDockTileSize: Math.max(24, Math.min(64, dockTileSize))
     readonly property bool available: access !== null && Tokens.ready
     readonly property int summaryIconExtent:
-        Math.max(0, Math.min(root.dockMode ? 40 : 20,
+        Math.max(0, Math.min(root.dockMode
+                             ? Math.min(40, Math.max(
+                                 16, root.resolvedDockTileSize - 8)) : 20,
                              height - Tokens.space["2"]))
 
     objectName: "launcherApplet"
-    implicitWidth: dockMode ? dockTileSize : 32
-    implicitHeight: dockMode ? dockTileSize : 28
+    implicitWidth: dockMode ? resolvedDockTileSize : 32
+    implicitHeight: dockMode ? resolvedDockTileSize : 28
 
     // Flat cross-section traversal: section order is the focus order; each
     // section resolves its own delegates, so no stale item registry exists.

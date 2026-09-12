@@ -44,7 +44,7 @@ Item {
     // Host quick setting (panels.configuration): the macOS-style pointer
     // magnification of dock tiles. reducedMotion always wins over it.
     property bool dockZoomEnabled: true
-    readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
+    readonly property int resolvedDockTileSize: Math.max(24, Math.min(64, dockTileSize))
     // AGENT-GUARD: magnification transforms tile visuals only — delegate
     // sizes, layout bounds, and hit targets never change, so GridLayout and
     // the zone viewport geometry stay exact. The tile reserves its full

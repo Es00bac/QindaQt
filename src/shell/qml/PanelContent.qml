@@ -79,21 +79,16 @@ Item {
     // panel's short edges. The cross-axis inset is independent and stays
     // deliberately small: it is subtracted twice from the panel's thickness,
     // and hosted controls (menu entries, status buttons) target 24-36px hit
-    // areas. Reusing contentInset here left 22px on the stock 30px panel, so
-    // a hosted control was taller than its own row and centered to a negative
-    // offset -- hanging above and below the row and spending hit area outside
-    // it. See docs/wiki/shell/panel-surfaces.md#panel-hit-targets.
+    // areas. Reusing contentInset leaves a control taller than its row and
+    // wastes hit area outside the clip; see panel-surfaces.md#panel-hit-targets.
     readonly property real crossAxisInset: Tokens.space["1"]
+    readonly property int effectiveDockTileSize: dockMode ? centerZone.effectiveDockTileSize : dockTileSize
+    readonly property bool dockOverflowFallback: dockMode && centerZone.dockOverflowFallback
     readonly property bool dockUsesSideZones: dockMode
         && (startZone.desiredExtent > 0 || endZone.desiredExtent > 0)
-    // The surface plan remains solver-owned. This mask only prevents the
-    // transparent part of a centered dock window from swallowing desktop
-    // clicks, while retaining room for the dock tile hover expansion.
     readonly property rect inputBounds: dockMode
-        ? Qt.rect(Math.max(0, material.x - Tokens.space["3"]),
-                  Math.max(0, material.y - Tokens.space["3"]),
-                  Math.min(width, material.width + Tokens.space["6"]),
-                  Math.min(height, material.height + Tokens.space["6"]))
+        ? centerZone.dockInputBounds(material.x, material.y, material.width,
+            material.height, width, height, contentInset)
         : Qt.rect(0, 0, width, height)
 
     clip: true
@@ -104,8 +99,9 @@ Item {
         width: root.dockMode && !root.dockUsesSideZones
             ? Math.min(parent.width, centerZone.desiredExtent + root.contentInset * 2)
             : parent.width
-        height: root.dockMode ? Math.max(0, parent.height - Tokens.space["2"]) : parent.height
-        anchors.centerIn: parent
+        height: root.dockMode ? Math.min(parent.height, root.effectiveDockTileSize) : parent.height
+        x: Math.round((parent.width - width) / 2)
+        y: root.dockMode ? parent.height - height : 0
         radius: root.lunaMode ? 0
             : root.panel.alignment === "fill" ? 0
             : root.dockMode ? Tokens.radius.l : Tokens.radius.m
@@ -217,26 +213,26 @@ Item {
         }
         T.Menu {
             objectName: "panelConfigTileSize"
-            title: qsTr("Tile size")
+            title: qsTr("Tile size (logical px)")
             visible: root.dockMode
 
-            T.MenuItem {
-                text: qsTr("Compact (56)")
-                checkable: true
-                checked: root.dockTileSize === 56
-                onTriggered: root.applyPanelSetting("dockTileSize", 56)
+            T.Slider {
+                objectName: "panelConfigTileSizeSlider"
+                width: 220; from: 32; to: 64; stepSize: 1
+                snapMode: T.Slider.SnapAlways
+                value: root.dockTileSize
+                Accessible.name: qsTr("Dock tile size in logical pixels")
+                onMoved: root.applyPanelSetting("dockTileSize", Math.round(value))
             }
-            T.MenuItem {
-                text: qsTr("Default (60)")
-                checkable: true
-                checked: root.dockTileSize === 60
-                onTriggered: root.applyPanelSetting("dockTileSize", 60)
-            }
-            T.MenuItem {
-                text: qsTr("Large (64)")
-                checkable: true
-                checked: root.dockTileSize === 64
-                onTriggered: root.applyPanelSetting("dockTileSize", 64)
+
+            T.SpinBox {
+                objectName: "panelConfigTileSizeInput"
+                width: 220; from: 32; to: 64; stepSize: 1
+                editable: true
+                value: root.dockTileSize
+                Accessible.name: qsTr("Dock tile size in logical pixels")
+                Accessible.description: qsTr("From 32 to 64 logical pixels")
+                onValueModified: root.applyPanelSetting("dockTileSize", value)
             }
         }
     }
@@ -275,9 +271,11 @@ Item {
         objectName: "panelZoneStart"
         vertical: !root.horizontal
         x: root.horizontal ? root.contentInset : root.crossAxisInset
-        y: root.horizontal ? root.crossAxisInset : root.contentInset
+        y: root.horizontal ? (root.dockMode ? root.height - root.effectiveDockTileSize
+                                            : root.crossAxisInset) : root.contentInset
         width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
-        height: root.horizontal ? Math.max(0, parent.height - root.crossAxisInset * 2) : root.zoneExtent(this)
+        height: root.horizontal ? (root.dockMode ? root.effectiveDockTileSize
+            : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
         zone: "start"
         panel: root.panel
         theme: root.theme
@@ -295,6 +293,8 @@ Item {
         dockMode: root.dockMode
         lunaMode: root.lunaMode
         dockTileSize: root.dockTileSize
+        dockAvailableExtent: root.extent
+        dockSurfaceHeight: root.height
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoom
     }
@@ -303,9 +303,11 @@ Item {
         objectName: "panelZoneCenter"
         vertical: !root.horizontal
         x: root.horizontal ? root.centerOffset : root.crossAxisInset
-        y: root.horizontal ? root.crossAxisInset : root.centerOffset
+        y: root.horizontal ? (root.dockMode ? root.height - root.effectiveDockTileSize
+                                            : root.crossAxisInset) : root.centerOffset
         width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
-        height: root.horizontal ? Math.max(0, parent.height - root.crossAxisInset * 2) : root.zoneExtent(this)
+        height: root.horizontal ? (root.dockMode ? root.effectiveDockTileSize
+            : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
         zone: "center"
         panel: root.panel
         theme: root.theme
@@ -323,6 +325,8 @@ Item {
         dockMode: root.dockMode
         lunaMode: root.lunaMode
         dockTileSize: root.dockTileSize
+        dockAvailableExtent: root.extent
+        dockSurfaceHeight: root.height
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoom
     }
@@ -331,9 +335,11 @@ Item {
         objectName: "panelZoneEnd"
         vertical: !root.horizontal
         x: root.horizontal ? root.contentInset + root.extent - root.zoneExtent(endZone) : root.crossAxisInset
-        y: root.horizontal ? root.crossAxisInset : root.contentInset + root.extent - root.zoneExtent(endZone)
+        y: root.horizontal ? (root.dockMode ? root.height - root.effectiveDockTileSize
+            : root.crossAxisInset) : root.contentInset + root.extent - root.zoneExtent(endZone)
         width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
-        height: root.horizontal ? Math.max(0, parent.height - root.crossAxisInset * 2) : root.zoneExtent(this)
+        height: root.horizontal ? (root.dockMode ? root.effectiveDockTileSize
+            : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
         zone: "end"
         panel: root.panel
         theme: root.theme
@@ -351,6 +357,8 @@ Item {
         dockMode: root.dockMode
         lunaMode: root.lunaMode
         dockTileSize: root.dockTileSize
+        dockAvailableExtent: root.extent
+        dockSurfaceHeight: root.height
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoom
     }

@@ -11,8 +11,27 @@ namespace QindaQt::Shell {
 namespace {
 
 constexpr auto kKey = "panels.configuration";
-constexpr int kMinTileSize = 56;
+constexpr int kMinTileSize = 32;
 constexpr int kMaxTileSize = 64;
+
+bool exactInteger(const QVariant &value, int *result)
+{
+    const int type = value.metaType().id();
+    if (type != QMetaType::Int && type != QMetaType::LongLong
+        && type != QMetaType::Double) {
+        return false;
+    }
+    bool converted = false;
+    const qlonglong integer = value.toLongLong(&converted);
+    bool numeric = false;
+    const double real = value.toDouble(&numeric);
+    if (!converted || !numeric || real != static_cast<double>(integer)
+        || integer < kMinTileSize || integer > kMaxTileSize) {
+        return false;
+    }
+    *result = static_cast<int>(integer);
+    return true;
+}
 
 // Normalizes one raw per-panel entry: keeps only the documented keys and only
 // values inside their schema bounds; everything else is dropped so a hostile
@@ -36,14 +55,9 @@ QVariantMap sanitizePanelEntry(const QVariant &entry)
     }
     const auto tileSize = map.constFind(QStringLiteral("dockTileSize"));
     if (tileSize != map.constEnd()) {
-        bool valid = false;
-        const int value = tileSize->toInt(&valid);
-        if (valid
-            && (tileSize->metaType().id() == QMetaType::Int
-                || tileSize->metaType().id() == QMetaType::LongLong
-                || tileSize->metaType().id() == QMetaType::Double)) {
-            sanitized.insert(QStringLiteral("dockTileSize"),
-                             qBound(kMinTileSize, value, kMaxTileSize));
+        int value = 0;
+        if (exactInteger(*tileSize, &value)) {
+            sanitized.insert(QStringLiteral("dockTileSize"), value);
         }
     }
     return sanitized;

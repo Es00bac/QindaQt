@@ -140,6 +140,18 @@ void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
   root->setProperty("dockHasLauncherGroup", true);
   QTRY_VERIFY(separator->isVisible());
 
+  root->setProperty("dockTileSize", 37);
+  QTRY_COMPARE(root->property("resolvedDockTileSize").toInt(), 37);
+  QCOMPARE(entry->width(), 37.0);
+  QCOMPARE(entry->height(), 37.0);
+  QCOMPARE(icon->property("size").toInt(), 29);
+  root->setProperty("dockTileSize", 24);
+  QTRY_COMPARE(root->property("resolvedDockTileSize").toInt(), 24);
+  QCOMPARE(entry->width(), 24.0);
+  QCOMPARE(icon->property("size").toInt(), 16);
+  root->setProperty("dockTileSize", 64);
+  QTRY_COMPARE(entry->width(), 64.0);
+
   root->setProperty("reducedMotion", true);
   const QPoint pointer = entry->mapToScene(QPointF(entry->width() / 2,
                                                    entry->height() / 2)).toPoint();

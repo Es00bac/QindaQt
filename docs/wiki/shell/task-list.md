@@ -364,11 +364,15 @@ inside an 84–168 by 28 logical-pixel bound; vertical buttons show only the
 icon. Missing and hostile mappings use the typed application placeholder.
 
 An opt-in panel dock host may set the compiled applet's `dockMode` property
-and its bounded `dockTileSize` (56–64 logical pixels; 60 is the profile
-default). In that mode each existing task row becomes one icon-only tile with
-a 40-pixel icon, active surface, and running indicator; it does not fabricate
-pinned entries. The dock reserves the full tile before a hover lift and small
-magnification, while `reducedMotion` disables both movement and scaling.
+and its bounded `dockTileSize` (24–64 logical pixels). Values from 32 through
+64 are user preferences; 24–31 are transient shrink-to-fit values selected by
+the panel host and are never persisted. The existing 60-logical-pixel default
+therefore keeps its exact meaning. In dock mode each existing task row becomes
+one icon-only tile with an icon inset by 8 logical pixels and capped at the
+established 40-logical-pixel artwork size, active surface, and running
+indicator; it does not fabricate pinned entries. The dock
+reserves the full tile before hover magnification, while `reducedMotion`
+disables both movement and scaling.
 Tooltips and task context menus use their own popup window so they are not
 clipped by the panel band. `dockHasLauncherGroup` is a composition-supplied
 truth value: a separator appears only when both a preceding real launcher

@@ -46,7 +46,10 @@ settings.
      host one task-list instance — per-instance keying is future work if
      multiple task lists ever ship);
    - per-panel entries keyed by panel id: `transparency` (bool),
-     `dockZoom` (bool), `dockTileSize` (int 56–64).
+     `dockZoom` (bool), `dockTileSize` (int 32–64 logical pixels). Existing
+     56/60/64 values retain their exact meaning. The runtime may derive a
+     smaller per-output effective size down to 24 logical pixels to fit, but
+     never writes that transient value back.
    The shell runtime is the write authority for these values; the Settings
    Customize route continues to own profiles. Values are totally decoded —
    malformed containers or out-of-range numbers are dropped whole, never
@@ -71,3 +74,8 @@ settings.
 - Live geometry (position, size, alignment) remains out of scope until the
   live profile-binding slice lands; the right-click menu routes those edits
   to the Customize editor.
+- Dock size uses an integer-step slider and editable numeric input. The label
+  says logical pixels because Qt output scaling, not this preference, owns the
+  conversion to device pixels. Output-space pressure changes presentation
+  only: the stored preference grows back when the inventory or surface
+  constraint clears.

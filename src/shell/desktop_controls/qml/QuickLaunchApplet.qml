@@ -23,14 +23,19 @@ Item {
     // Host quick setting: dock magnification (same contract as the task
     // strip's). reducedMotion always wins over it.
     property bool dockZoomEnabled: true
-    readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
+    // Values below the panel's 24px transient-fit contract are malformed host
+    // input and retain the historical compact fail-safe rather than creating
+    // an unusable button.
+    readonly property int resolvedDockTileSize:
+        dockTileSize < 24 ? 56 : Math.min(64, dockTileSize)
 
     // Worn Luna dressing (ADR-0124): instance-level opt-in from the profile.
     property bool luna: false
     readonly property bool ready: access !== null && Tokens.ready
     readonly property var rows: ready ? access.rows : []
     readonly property bool showRows: ready && rows.length > 0
-    readonly property int iconExtent: dockMode ? 40
+    readonly property int iconExtent: dockMode
+        ? Math.min(40, Math.max(16, resolvedDockTileSize - 8))
                                                : Math.max(0, Math.min(20, (vertical ? width : height) - Tokens.space["2"]))
     // AGENT-GUARD: magnification transforms tile visuals only — delegate
     // sizes, layout bounds, and hit targets never change. Tiles are pinned to
