@@ -50,6 +50,16 @@ standards remain QindaQt-specific.
 The manager repeats: set a clear outcome, watch real evidence, remove an
 obstacle, connect peers, integrate finished work, refill safe capacity.
 
+Candidate handoffs, review results, stopped working processes, and live idle
+capacity with backlog use a separate event path with a scan interval of at most
+15 seconds. Event identity includes its type, worker, and exact candidate or
+outcome. Delivery state is written atomically, failed queue attempts remain
+pending for retry, and delivered events do not invoke the manager again on an
+unchanged scan. This product path does not inherit the slower warning-reminder
+cooldown; the five-minute watchdog remains the backstop for stale records and
+missed events. The dashboard reports queued delivery separately from manager
+acknowledgement and integrated, verified, and installed/adopted states.
+
 ## Durable queue contract
 
 Each row in `ops/team/queues/{shell,platform,first-party}.md` records:
@@ -80,6 +90,13 @@ serialization from direct evidence. Build-only work may proceed in separate
 worktrees with separate build roots and bounded parallelism when host headroom
 is measured. Private compositor, D-Bus, hardware, and input fixtures stay
 serialized when their namespaces could collide.
+
+Compatible CMake configurations may share a task-scoped `ccache` directory
+through explicit C and C++ compiler launchers. Keep compiler-content checking
+and normal header validation enabled; do not use sloppiness, ignored headers,
+hard links, or copied mutable build roots. Preserve one warm integration build
+per compatible configuration, while every worker and reviewer retains its own
+source and build tree and still runs the required independent gates.
 
 ## Failure correction
 
