@@ -47,6 +47,11 @@ qindaqt_add_terminal_test(
     tst_terminal_appearance.cpp
     qindaqt.terminal-appearance
 )
+qindaqt_add_terminal_test(
+    qindaqt_terminal_bell_tests
+    tst_terminal_bell.cpp
+    qindaqt.terminal-bell
+)
 
 qindaqt_add_terminal_test(
     qindaqt_terminal_profiles_tests
@@ -121,10 +126,9 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 
-# This is intentionally the only focused test that links the production
-# qtermwidget adapter. It locks down custom-scheme lookup/application and the
-# real widget's blank-grid selection representation; fakes cannot reproduce
-# either upstream boundary.
+# These are the only focused tests that link the production qtermwidget
+# adapter. They cover upstream behavior which support-library fakes cannot
+# reproduce: scheme/rendering behavior and the parsed bell signal boundary.
 qt_add_executable(
     qindaqt_terminal_widget_adapter_tests
     tst_terminal_widget_adapter.cpp
@@ -144,6 +148,28 @@ add_test(
 )
 set_tests_properties(
     qindaqt.terminal-widget-adapter-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+qt_add_executable(
+    qindaqt_terminal_bell_adapter_tests
+    tst_terminal_bell_adapter.cpp
+)
+target_link_libraries(
+    qindaqt_terminal_bell_adapter_tests
+    PRIVATE qindaqt_terminal_adapter qtermwidget6 Qt6::Test
+)
+target_compile_features(qindaqt_terminal_bell_adapter_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_terminal_bell_adapter_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_terminal_bell_adapter_tests)
+add_test(
+    NAME qindaqt.terminal-bell-adapter-offscreen
+    COMMAND qindaqt_terminal_bell_adapter_tests
+)
+set_tests_properties(
+    qindaqt.terminal-bell-adapter-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/terminal_widget_adapter.h"
 
+#include "ui/terminal_bell.h"
+
 #include "session/pty_bridge.h"
 #include "ui/terminal_appearance.h"
 
 #include <qtermwidget.h>
 
 #include <QContextMenuEvent>
-#include <QEvent>
 #include <QCoreApplication>
-#include <QApplication>
+#include <QEvent>
 #include <QFile>
 #include <QResizeEvent>
 #include <QTimer>
@@ -151,10 +152,10 @@ void closeChildDescriptors() {
 
 TerminalWidgetAdapter::TerminalWidgetAdapter(
     const TerminalViewAppearance &appearance, const TerminalProfile &profile,
-    QObject *parent)
+    TerminalBellActions bellActions, QObject *parent)
     : TerminalSessionBackend(parent), m_appearance(appearance),
-      m_profileAppearance(appearance),
-      m_profile(profile) {
+      m_profileAppearance(appearance), m_profile(profile),
+      m_bellActions(std::move(bellActions)) {
   // AGENT-NOTE: startnow is deliberately 0 and setShellProgram/setArgs are
   // never used: the widget must not spawn its own child (ADR-0040). Teletype
   // startup is deferred to start(), after TerminalSession has published and
@@ -173,8 +174,7 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
   // remove it from PTY bytes: doing so swallows interactive shell prompts.
   // qtermwidget emits parsed bell notifications; sound policy belongs here.
   connect(m_widget, &QTermWidget::bell, this, [this](const QString &) {
-    if (m_profile.bellPolicy == TerminalProfile::BellPolicy::Audible)
-      QApplication::beep();
+    dispatchTerminalBell(m_profile.bellPolicy, m_widget, m_bellActions);
   });
 
   connect(m_widget, &QTermWidget::sendData, this,

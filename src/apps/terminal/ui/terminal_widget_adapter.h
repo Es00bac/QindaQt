@@ -4,6 +4,7 @@
 #include "profiles/terminal_profile.h"
 #include "session/terminal_session_backend.h"
 #include "ui/terminal_appearance.h"
+#include "ui/terminal_bell.h"
 
 #include <QByteArray>
 #include <QEvent>
@@ -42,10 +43,13 @@ public:
   // visible layout, then owns child creation so failures stay typed.
   // The profile bounds scrollback, applies font family/size overrides on
   // top of the palette-derived content appearance, selects the bell policy,
-  // and names the content scheme that produced the appearance.
-  explicit TerminalWidgetAdapter(const TerminalViewAppearance &appearance,
-                                 const TerminalProfile &profile,
-                                 QObject *parent = nullptr);
+  // and names the content scheme that produced the appearance. Bell actions
+  // are copied and invoked synchronously on the GUI thread for the adapter's
+  // lifetime; the production default uses QApplication's beep/alert boundary.
+  explicit TerminalWidgetAdapter(
+      const TerminalViewAppearance &appearance, const TerminalProfile &profile,
+      TerminalBellActions bellActions = productionTerminalBellActions(),
+      QObject *parent = nullptr);
   ~TerminalWidgetAdapter() override;
 
   [[nodiscard]] StartOutcome
@@ -102,6 +106,7 @@ private:
   const TerminalViewAppearance m_profileAppearance;
   int m_zoomSteps = 0;
   TerminalProfile m_profile;
+  TerminalBellActions m_bellActions;
   QString m_schemePath;
   TerminalPtyBridge *m_bridge = nullptr;
   QString m_slavePath;
