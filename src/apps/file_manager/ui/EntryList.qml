@@ -27,7 +27,21 @@ Control {
         navigationController: root.navigationController
         columns: 1
         rowHeight: root.rowHeight
-        onContextMenuRequested: contextMenu.popup()
+        // Keyboard invocation (Menu key / Shift+F10) follows the focused
+        // item: with a valid current entry, select it first if nothing is
+        // already selected (mirroring the existing mouse-click behavior in
+        // EntryListDelegate), then target that selection; with no current
+        // entry (an empty folder), target the background instead.
+        onContextMenuRequested: {
+            if (root.selection.currentIndex >= 0) {
+                if (root.selection.selectedEntries().length === 0)
+                    root.selection.selectOnly(root.selection.currentIndex)
+                contextMenu.selectionCount = root.selection.selectedEntries().length
+            } else {
+                contextMenu.selectionCount = 0
+            }
+            contextMenu.popup()
+        }
     }
     onIconSizeChanged: keyboardNavigation.scheduleReveal()
 
@@ -133,6 +147,19 @@ Control {
                 }
             }
 
+            // Background right-click: ListView/Flickable only claims
+            // Qt.LeftButton by default, so a right-click that misses every
+            // delegate's own MouseArea falls through to this one.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: {
+                    listView.forceActiveFocus()
+                    contextMenu.selectionCount = 0
+                    contextMenu.popup()
+                }
+            }
+
             ListView {
                 id: listView
                 objectName: "entryListView"
@@ -173,56 +200,22 @@ Control {
                     mutationController: root.mutationController
                     clipboardController: root.clipboardController
                     onActivated: { root.activateCurrent(); }
-                    onContextMenuRequested: { contextMenu.popup(); }
+                    onContextMenuRequested: {
+                        contextMenu.selectionCount = root.selection.selectedEntries().length
+                        contextMenu.popup()
+                    }
                 }
             }
 
         }
 
-        Menu {
+        FileContextMenu {
             id: contextMenu
-            objectName: "entryContextMenu"
-
-            MenuItem {
-                objectName: "contextCutAction"
-                text: qsTr("Cut")
-                onTriggered: root.appCoordinator.activateAction("edit.cut")
-            }
-            MenuItem {
-                objectName: "contextClipboardCopyAction"
-                text: qsTr("Copy")
-                onTriggered: root.appCoordinator.activateAction("edit.copy")
-            }
-            MenuItem {
-                objectName: "contextPasteAction"
-                text: qsTr("Paste")
-                onTriggered: root.appCoordinator.activateAction("edit.paste")
-            }
-            MenuItem {
-                objectName: "contextRenameAction"
-                text: qsTr("Rename")
-                onTriggered: root.appCoordinator.activateAction("file.rename")
-            }
-            MenuItem {
-                objectName: "contextCopyAction"
-                text: qsTr("Copy To…")
-                onTriggered: root.appCoordinator.activateAction("file.copy")
-            }
-            MenuItem {
-                objectName: "contextMoveAction"
-                text: qsTr("Move To…")
-                onTriggered: root.appCoordinator.activateAction("file.move")
-            }
-            MenuItem {
-                objectName: "contextTrashAction"
-                text: qsTr("Move to Trash")
-                onTriggered: root.appCoordinator.activateAction("file.trash")
-            }
-            MenuItem {
-                objectName: "contextPropertiesAction"
-                text: qsTr("Properties")
-                onTriggered: root.appCoordinator.activateAction("file.properties")
-            }
+            objectName: "listContextMenu"
+            appCoordinator: root.appCoordinator
+            navigationController: root.navigationController
+            clipboardController: root.clipboardController
+            mutationController: root.mutationController
         }
 
         Label {
