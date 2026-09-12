@@ -143,7 +143,10 @@ item, not a native overlay window.
   every member's paint and pointer input is genuinely removed
   (`KWin::Window::setHidden`), while the shared-chrome anchor member is kept
   paintable through KWin's own force-visible scene API so the strip itself
-  stays visible and draggable. See
+  stays visible and draggable. Nothing but the strip may remain on screen or
+  receive input: no stale member image, no transient of a member, and no
+  hidden member revealed or focused by a KWin activation. Unroll restores the
+  exact frames, content, and the member focus held at roll-up. See
   [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md).
 - A container may be renamed and given a user-chosen accent color through the
   group menu. Both are process-local presentation overrides (not part of the

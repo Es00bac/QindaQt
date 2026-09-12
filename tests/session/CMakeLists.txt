@@ -608,6 +608,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         endif()
 
         include("${CMAKE_CURRENT_SOURCE_DIR}/InstalledPluginDiscoveryTest.cmake")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/shade_visibility/ShadeVisibilityTests.cmake")
     endif()
 endif()
 

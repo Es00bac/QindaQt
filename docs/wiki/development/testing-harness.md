@@ -2096,6 +2096,92 @@ budgets remain Platform or Release qualification work. Do not substitute the
 older D-Bus bridge workflow for the process-local evidence accepted in
 [ADR-0004](../adr/0004-process-local-hybrid-topology.md).
 
+## Container roll-up visibility proof
+
+`HybridShadeController` owns only orchestration, so its fake-platform suite
+(`compositor.hybrid-shade-controller`) cannot observe the KWin scene. The
+`compositor.shade-visibility.*` rows judge the real result. Each row starts
+`qindaqt-wm` on KWin's virtual backend with a private D-Bus daemon and
+HOME/XDG/runtime roots below `${CMAKE_BINARY_DIR}/sv`, groups real clients with
+the development input device (never host uinput), rolls the group up from its
+shared row, and writes captured PNGs plus `evidence.json` under
+`sv/evidence/<row>/`. The runner fails a row unless the flow completed, every
+recorded verdict passed, and the private compositor mapped the build tree's
+`qindaqt_compositor.so`. It exits 77 only when a real-client fixture or the
+offline network namespace is unavailable, and that coverage is then missing,
+not claimed.
+
+The private compositor runs from a byte-identical copy of `kwin_wayland`
+without file capabilities: the host binary carries `cap_sys_nice`, which makes
+KWin non-dumpable and its output memfds unreadable. KWin's QPainter swapchain
+keeps two buffers, so every capture parks the pointer in the output corner,
+forces exactly one repaint with a one-pixel nudge, and keeps the single slot
+whose bytes changed; an ambiguous swapchain fails the capture. A ghost verdict
+requires zero sampled pixels over the vacated area (only the strip excluded)
+to differ from the full-screen backdrop client's colour. An input verdict
+requires that backdrop client, not a hidden member, to receive real presses
+over every member's former content area.
+
+- `cycles` groups a GTK4 client-side-decorated member with member B of the
+  named kind, activates B, and runs three roll-up/unroll cycles. The first
+  cycle hands B a real xdg-activation token minted by the focused backdrop
+  (GTK presentation, Firefox remote open, or an Electron second instance);
+  KWin's `activateWindow()` clears `Window::isHidden()`, and the row requires
+  both members to stay hidden, unfocused, ghost-free, and input-transparent.
+  Each unroll must restore exact frames, the solid content colour of GTK
+  fixtures, and the focus the group held at roll-up.
+- `lifecycle` groups three GTK4 client-side-decorated members, rolls them up
+  with B anchoring the strip, maps a transient dialog of B, closes B (anchor
+  promotion), minimizes the group from its strip, hands A a real activation
+  token, and unrolls.
+
+Firefox and Electron fixtures run inside an unprivileged network namespace
+that only has loopback, and Firefox additionally uses offline preferences.
+The Electron fixture is the installed Claude desktop application, launched
+unmodified: it refuses to start with Chromium network-override switches.
+`session.shade-visibility-unit` covers the pure helpers (swapchain slot
+selection, pixel mismatch with scale and exclusion, PNG encoding, runner
+evaluation, and the fixture catalogue).
+
+The final-binary run (plugin sha256 prefix `c7bd5140`) passed all 14 shade
+rows in 446 seconds of serial wall time: `compositor.hybrid-shade-controller`
+(22 QTest functions), `session.shade-visibility-unit` (19 tests), and every
+`compositor.shade-visibility.*` row. The cycles rows recorded 22 of 22 verdicts
+for the GTK4 client-side, server-side, borderless, and XWayland client-side
+kinds, real Firefox on Wayland and XWayland (both client-decorated), the
+client-decorated Claude desktop Electron client, and GTK4 at 1440p@125% and
+1080p@150%. xterm and weston-terminal have no scripted activation and recorded
+18 of 18. The lifecycle row recorded 14 of 14 and then passed five consecutive
+repetitions. No capture over a vacated area mismatched a single sampled pixel.
+The same activation flow on the plugin built before the correction reproduced
+both defects: 10,602 of 32,565 sampled pixels kept the anchor's stale content,
+an admitted activation left the anchor focused and receiving presses while
+invisible, and the later unroll never completed.
+
+KWin places new clients nondeterministically, so every dock and activation
+gesture is derived from live stacking and frames. A point counts as uncovered
+only when no window above it covers it, where coverage includes a 32-pixel
+client-side resize border and a container's shared row, while tiled siblings
+cover only their exact frames. The lifecycle flow also waits for member frames
+to settle between docks.
+
+Not covered by these rows, and not claimed:
+
+- Blur and background-contrast effects. The QPainter nested backend cannot
+  render them, so a blurred rectangle behind a blur-requesting anchor in an
+  OpenGL session is unverified.
+- Physical DRM/KMS and OpenGL compositing, virtual-desktop moves, output moves,
+  and mixed-DPI outputs of a shaded group.
+- A compositor scene restart while shaded; the adapter re-applies the
+  treatment after `compositingToggled`, without nested evidence.
+- Platform failures during shade or a rejected unroll reflow, which the nested
+  session cannot inject; only the fake-platform suite covers them.
+- Wheel roll-up (ADR-0131): it shares the shade entry point, but development
+  input has no axis events.
+
+See [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
+and [Hybrid container chrome](../architecture/hybrid-chrome.md).
+
 ## Current Network1 N0 and N1 proof
 
 The Network boundary is qualified serially in fresh strict-warning Debug and

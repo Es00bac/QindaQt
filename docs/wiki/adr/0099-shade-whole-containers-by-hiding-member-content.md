@@ -139,12 +139,77 @@ result; that requires a nested live-Wayland workflow exercising an actual
 shaded container (see the testing harness) — coordinated with the team so it
 does not collide with a concurrent nested test slot.
 
+## Follow-up (2026-09-12): no occlusion ghost and no activation reveal
+
+Private nested captures of the KWin 6.6.6 scene disproved two assumptions of
+the mechanism above. The window inventory reported every member hidden, yet:
+
+1. **Occlusion ghost.** Rolling up a group whose active member draws
+   client-side decorations left that member's last frame on screen, plus
+   anything later painted over it, such as the closed group menu.
+   `WorkspaceScene::preparePaintSimpleScreen()` adds the opaque region of every
+   child item of a window whose `opacity()` is exactly 1.0 without consulting
+   item visibility, and `collectDamage()` culls damage beneath that region. The
+   force-visible anchor kept occluding with its hidden client surface, so the
+   desktop beneath it was never repainted. Clients that declare an opaque
+   surface region are affected: client-side-decorated toolkits, Electron,
+   Firefox, and borderless clients; the active member is the anchor because it
+   is topmost.
+2. **Activation reveal.** `Workspace::activateWindow()` calls
+   `Window::setHidden(false)` itself. An admitted xdg-activation request (and
+   equally X11 activation, Alt-Tab, an unminimize, or a reflow) unhid a shaded
+   member. The anchor then became an input-eligible, focused window whose
+   content stayed invisible, an invisible input blocker, and the group could no
+   longer be unrolled.
+
+The decision stands: shade hides member content and never shrinks members.
+Items 3 and 6 gain these obligations:
+
+- Every member, not only the anchor, has its `windowContainer()` and
+  `shadowItem()` hidden explicitly while shaded, so no reveal can repaint
+  content. Transient windows of members are hidden and restored with their
+  owner, including transients mapped while the group is shaded.
+- The anchor's `Window::opacity()` is held at 0.999 while shaded, so the scene
+  never treats it as an occluder. The original value is restored on unroll and
+  re-lowered if a rule or client raises it while shaded; the shared chrome it
+  carries renders unchanged.
+- The KWin adapter records exactly what it changed for each window (forced
+  `WindowItem`, hidden items, opacity, transients) and reports every
+  `hiddenChanged` reveal to `HybridShadeController::reassertMember()`. The
+  controller re-applies the original treatment inside KWin's own activation,
+  and keyboard focus is then handed to the next shown window. An unroll
+  releases this enforcement first, because its reflow legitimately activates a
+  member; a rejected unroll re-hides whatever that reflow revealed.
+- An anchor that closes while shaded is replaced by a surviving member before
+  the lifecycle resynchronizes chrome. If no survivor can anchor, the group is
+  unrolled rather than leaving hidden members with no strip. A compositor scene
+  restart re-applies the treatment to the recreated `WindowItem`s.
+- An explicit unroll hands keyboard focus back to the member that held it when
+  the group rolled up.
+
+Consequences: an admitted activation of a rolled-up member no longer shows,
+focuses, or unrolls it; the dock and task-list Activate path remains the
+explicit unroll-and-activate route. The correction depends on two further
+KWin 6.6 internals, the opacity-gated occlusion pass and activation's
+`setHidden(false)`, and stays confined to `kwinhybridshade.cpp`. Blur is not
+addressed: `BlurEffect::drawWindow()` blurs behind any painted window that has
+a blur region, so an OpenGL session whose anchor requests blur may still show a
+blurred rectangle. The QPainter nested harness cannot render blur, so that case
+is unverified. Evidence lives in the `compositor.hybrid-shade-controller`
+fake-platform tests and the `compositor.shade-visibility.*` nested rows, which
+judge captured private-compositor pixels, real client presses, and focus; see
+the [testing harness](../development/testing-harness.md).
+
 ## Revisit when
 
 A later milestone wants the shaded strip itself to show live thumbnail
 content (which would need a different, deliberately-paintable member
 surface), or wants shade to survive a compositor scene restart identically to
 normal chrome (`aboutToToggleCompositing`/`aboutToDestroy` handling has not
-been extended for the shaded-member-visibility state in this change). Also
-revisit if a future KWin version changes `WindowItem`'s force-visible
-ref-counting contract, since this decision depends on its exact semantics.
+been extended for the shaded-member-visibility state in this change; the
+2026-09-12 follow-up re-applies member visibility after `compositingToggled`,
+but no nested restart-while-shaded evidence exists yet). Also revisit if a
+future KWin version changes `WindowItem`'s force-visible ref-counting
+contract, gates scene occlusion on item visibility instead of window opacity,
+or stops unhiding windows on activation, since this decision depends on those
+exact semantics.
