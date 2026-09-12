@@ -90,3 +90,21 @@ test('manager acknowledgment clears a cooldown-pending duplicate', async () => {
   assert.equal(result.notificationState, 'acknowledged');
   assert.equal(result.pendingKey, '');
 });
+
+test('supervisor copies the assignment-mapped worktree and explicit message thread', async () => {
+  const fx = await fixture();
+  const rotated = path.join(fx.root, 'rotated-files-review');
+  await mkdir(path.join(rotated, 'ops/team/workers'), { recursive: true });
+  await mkdir(path.join(rotated, 'ops/team/messages/small-team-20260912/exact-thread'), { recursive: true });
+  await mkdir(path.join(fx.board, 'workers'), { recursive: true });
+  await writeFile(path.join(rotated, 'ops/team/workers/small-team-files.md'), '# mapped worker record\n');
+  await writeFile(path.join(rotated, 'ops/team/messages/small-team-20260912/exact-thread/verdict.md'), '# mapped verdict\n');
+  await writeFile(path.join(fx.board, 'assignments.json'), JSON.stringify({ assignments: [{
+    workerId: 'small-team-files', state: 'reviewing', worktree: 'rotated-files-review',
+    messageThread: 'exact-thread',
+  }] }));
+  await writeFile(path.join(fx.root, 'sessions.tsv'), '');
+  await tick(fx, { epoch: 4_000, issues: '' });
+  assert.equal(await readFile(path.join(fx.board, 'workers/small-team-files.md'), 'utf8'), '# mapped worker record\n');
+  assert.equal(await readFile(path.join(fx.board, 'messages/files/verdict.md'), 'utf8'), '# mapped verdict\n');
+});

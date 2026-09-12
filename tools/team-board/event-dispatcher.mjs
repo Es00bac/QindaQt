@@ -143,10 +143,11 @@ async function atomicJson(file, payload) {
   await rename(temporary, file);
 }
 
-async function candidateEvidence(worktree, assignment, candidate) {
+async function evidenceFiles(worktree, assignment) {
   const lane = value(assignment?.workerId).replace(/^small-team-/, '');
   const dispatch = path.basename(value(assignment?.dispatch), '.md');
-  const roots = [...new Set([lane, dispatch].filter(Boolean))]
+  const messageThread = value(assignment?.messageThread);
+  const roots = [...new Set([messageThread, dispatch, lane].filter(Boolean))]
     .map((name) => path.join(worktree, 'ops/team/messages/small-team-20260912', name));
   const files = [];
   for (const root of roots) {
@@ -158,6 +159,11 @@ async function candidateEvidence(worktree, assignment, candidate) {
   }
   const record = path.join(worktree, 'ops/team/workers', `${value(assignment?.workerId)}.md`);
   try { if ((await stat(record)).isFile()) files.push(record); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
+  return files;
+}
+
+async function candidateEvidence(worktree, assignment, candidate) {
+  const files = await evidenceFiles(worktree, assignment);
   for (const file of files) {
     const content = await readFile(file, 'utf8');
     if (content.includes(candidate) && /\b(candidate|handoff)\b/i.test(content)) {
@@ -167,18 +173,50 @@ async function candidateEvidence(worktree, assignment, candidate) {
   return null;
 }
 
+function verdictFrom(content) {
+  const match = content.match(/^(?:#{1,6}\s*(ACCEPT|REJECT|BLOCKING)\b|-\s*(?:Result|Verdict):\s*\**(ACCEPT|REJECT|BLOCKING)\b|VERDICT\s+(ACCEPT|REJECT)\b)/im);
+  const verdict = match?.slice(1).find(Boolean)?.toLowerCase();
+  if (verdict === 'accept') return 'ACCEPT';
+  if (verdict === 'reject' || verdict === 'blocking') return 'REJECT';
+  return '';
+}
+
+async function reviewVerdictEvidence(worktree, assignment, candidate) {
+  let newest = null;
+  for (const file of await evidenceFiles(worktree, assignment)) {
+    const content = await readFile(file, 'utf8');
+    if (!content.includes(candidate)) continue;
+    const reviewResult = verdictFrom(content);
+    if (!reviewResult) continue;
+    const evidenceAt = (await stat(file)).mtime.toISOString();
+    if (!newest || Date.parse(evidenceAt) > Date.parse(newest.evidenceAt)) {
+      newest = { file, evidenceAt, reviewResult };
+    }
+  }
+  return newest;
+}
+
 export async function discoverHandoffs(teamRoot, assignments = [], knownCandidates = new Set()) {
   const handoffs = [];
   for (const assignment of assignments) {
-    if (!['working', 'candidate', 'ready'].includes(value(assignment?.state).toLowerCase())) continue;
+    if (!['working', 'candidate', 'ready', 'reviewing'].includes(value(assignment?.state).toLowerCase())) continue;
     const worktree = path.resolve(teamRoot, value(assignment?.worktree));
     if (worktree !== path.resolve(teamRoot) && !worktree.startsWith(`${path.resolve(teamRoot)}${path.sep}`)) continue;
     let candidate;
     try {
       candidate = value((await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: worktree })).stdout);
-      if (!candidate || knownCandidates.has(candidate)) continue;
+      if (!candidate) continue;
       if (value((await execFileAsync('git', ['status', '--porcelain', '--untracked-files=no'], { cwd: worktree })).stdout)) continue;
     } catch { continue; }
+    const verdict = await reviewVerdictEvidence(worktree, assignment, candidate);
+    if (verdict) {
+      handoffs.push({ candidate, reviewer: value(assignment.workerId),
+        stage: verdict.reviewResult === 'ACCEPT' ? 'accepted' : 'rejected',
+        reviewResult: verdict.reviewResult, reviewedAt: verdict.evidenceAt,
+        turnIdentity: `${value(assignment.assignedAt, verdict.evidenceAt)}:${candidate}:${verdict.reviewResult.toLowerCase()}` });
+      continue;
+    }
+    if (knownCandidates.has(candidate)) continue;
     const evidence = await candidateEvidence(worktree, assignment, candidate);
     if (!evidence) continue;
     handoffs.push({ candidate, implementer: value(assignment.workerId), stage: 'queued', reviewResult: 'pending',

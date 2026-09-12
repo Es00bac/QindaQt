@@ -103,6 +103,38 @@ test('discovers a clean worker handoff before the manager review ledger contains
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('discovers a reviewer verdict for a known reviewing candidate before ledger mutation', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'qindaqt-review-events-'));
+  try {
+    const worktree = path.join(root, 'rotated-review');
+    mkdirSync(path.join(worktree, 'ops/team/messages/small-team-20260912/exact-review-thread'), { recursive: true });
+    execFileSync('git', ['init', '-q'], { cwd: worktree });
+    execFileSync('git', ['config', 'user.email', 'fixture@example.invalid'], { cwd: worktree });
+    execFileSync('git', ['config', 'user.name', 'Fixture'], { cwd: worktree });
+    writeFileSync(path.join(worktree, 'product.txt'), 'candidate\n');
+    execFileSync('git', ['add', 'product.txt'], { cwd: worktree });
+    execFileSync('git', ['commit', '-qm', 'Fixture candidate'], { cwd: worktree });
+    const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim();
+    writeFileSync(path.join(worktree, 'ops/team/messages/small-team-20260912/exact-review-thread/verdict.md'),
+      `# ACCEPT — exact candidate review\n\n- Candidate: \`${sha}\`\n- Result: **ACCEPT**\n`);
+    const found = await discoverHandoffs(root, [{ workerId: 'small-team-review', state: 'reviewing',
+      worktree: 'rotated-review', dispatch: 'unrelated-name.md', messageThread: 'exact-review-thread',
+      assignedAt: '2026-09-12T21:00:00Z' }], new Set([sha]));
+    assert.equal(found.length, 1);
+    assert.equal(found[0].candidate, sha);
+    assert.equal(found[0].reviewResult, 'ACCEPT');
+    const events = deriveEvents({ reviews: [{ candidate: sha, stage: 'reviewing' }, ...found] });
+    assert.equal(events.filter((event) => event.type === 'review-result').length, 1);
+    assert.equal(events.find((event) => event.type === 'review-result').transition, 'accepted');
+    let calls = 0;
+    const first = await dispatchEvents({ events, previous: {}, nowMs: 6_000, clock: () => 6_004,
+      queue: async () => { calls += 1; } });
+    await dispatchEvents({ events, previous: first, nowMs: 6_010,
+      queue: async () => { calls += 1; } });
+    assert.equal(calls, 1);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('completed one-shot review is a result event, not a failed reviewer', () => {
   const events = deriveEvents({ reviews: [{ candidate, stage: 'reviewing', reviewResult: 'ACCEPT' }],
     workers: [{ id: 'small-team-review', status: 'waiting — ACCEPT published', processObservation: { processState: 'stopped' } }] });

@@ -52,11 +52,14 @@ obstacle, connect peers, integrate finished work, refill safe capacity.
 
 Candidate handoffs, review results, stopped working processes, and live idle
 capacity with backlog use a separate event path with a scan interval of at most
-15 seconds. It reads handoff evidence from each assignment's explicit current
-worktree as well as the manager ledger, so ledger entry is not a prerequisite
-for notification. Event identity includes its type, worker, exact candidate or
-outcome, and stable lifecycle transition; a later handoff by the same worker is
-therefore new while an unchanged scan is not. New events in one scan are
+15 seconds. It reads handoff and reviewer-verdict evidence from each
+assignment's explicit current worktree and message-thread mapping as well as
+the manager ledger, so neither a candidate nor an ACCEPT/REJECT notification
+depends on prior ledger mutation. The five-minute watchdog uses the same
+mapping when copying current records/messages; rotated worktrees must not be
+overwritten by a historical lane directory. Event identity includes its type,
+worker, exact candidate or outcome, and stable lifecycle transition; a later
+handoff by the same worker is therefore new while an unchanged scan is not. New events in one scan are
 coalesced into one bounded manager wake. Delivery state is written atomically,
 failed queue attempts remain pending for retry, and resolved failures are
 removed. This product path does not inherit the slower warning-reminder
