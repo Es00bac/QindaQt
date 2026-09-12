@@ -50,6 +50,25 @@ standards remain QindaQt-specific.
 The manager repeats: set a clear outcome, watch real evidence, remove an
 obstacle, connect peers, integrate finished work, refill safe capacity.
 
+Before starting a long integration or documentation gate, and again before a
+checkpoint report, the Program Manager reads the latest authored handoff or
+verdict for every executing lane and services all completed outcomes in one
+pass. A completed reviewer is returned to its preserved compatible
+implementation session before the manager waits on long gates; a stale ledger
+label never keeps an accepted candidate queued or a worker idle. Each lane has
+one concrete executable successor rather than a reservation for an unpublished
+candidate, and an active implementation is not repeatedly preempted merely to
+make board labels look current.
+
+A blocking review finding must demonstrate a product defect, a consequential
+violation of an accepted contract, or invalid required verification. Optional
+refactoring, unrelated coverage, and pre-existing unrelated defects are
+nonblocking follow-ups. Repair review checks the exact repair, the original
+reproduction, and the affected regression boundary; it does not restart an
+unchanged broad audit without evidence of wider impact. A failed mandatory
+gate receives one bounded causal investigation before retry, and an identical
+long retry requires a changed hypothesis or input.
+
 Candidate handoffs, review results, stopped working processes, and live idle
 capacity with backlog use a separate event path with a scan interval of at most
 15 seconds. It reads handoff and reviewer-verdict evidence from each

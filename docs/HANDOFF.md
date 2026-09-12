@@ -34,6 +34,29 @@ passed. Installed/live-desktop adoption and physical input/display evidence
 remain separate. The container roll-up lane remains active and makes no
 completion claim yet.
 
+Desktop-contents candidate
+`ec4f1d738d945a346f04970adb15e90370e8ec79` received independent Sol/high
+ACCEPT with no P0-P2 findings and is integrated as `6ee11e14`. The dedicated
+desktop surface now lists real files and folders from the user's Desktop
+through File Manager's public boundary, filters hidden entries, refreshes
+boundedly, and dispatches regular-file launches without importing File Manager
+internals. Folder-tile opening remains a separate future public operation. The
+manager-tree five-row Desktop/boundary selector passes 5/5; no installed or
+live desktop was changed.
+
+Container-shade candidate `ca7b0eb2` was rejected only because its clean
+checkout recorded the session driver as non-executable. Exact mode-only
+descendant `0dcefa425b2f0a4ccfd5bd22f70154198f7acb2e` received same-reviewer
+ACCEPT after all four former-red Wayland CSD, XWayland CSD, Electron, and
+lifecycle rows passed serially. The product and repair are integrated as
+`a117c109` and `86c9eb36`; manager-tree controller/unit rows pass 2/2 and the
+serialized nested replay passes 3/4. The remaining Wayland-CSD cycle stops
+before any product verdict because A mapped entirely beneath B and the fixture
+could not find an uncovered dock gesture, exactly reproducing the disclosed
+placement-sensitive fixture defect. Timeout-log retention, socket-path
+guarding, count wording, and that fixture fallback remain nonblocking
+follow-ups; no unchanged long retry was run.
+
 ## Desktop gap wave: lock screen, portals, input and shortcuts, keyring, night light (September 11, r11)
 
 After r10 the user named five desktop gaps and asked for five GLM 5.3 Flash
