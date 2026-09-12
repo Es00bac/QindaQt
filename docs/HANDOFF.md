@@ -11,10 +11,15 @@ including `qindaqt.file-manager-installed-runtime`. This is a narrow public
 composition boundary for local listing, mutation, Trash and launch intent; it
 does not add remote access or duplicate policy.
 
-The immediate consumer slice is File Manager's visible background/selection
-context-menu behavior, reusing its existing action and mutation machinery.
-Its exact candidate `6f0b77f1aa2aebb5add7098cc3a419b3807b1a48` reports the complete
-File Manager label at 32/32 and is queued for independent review.
+File Manager's visible background/selection context-menu slice is integrated
+as `b12a02d6`. The same Sol reviewer rejected `6f0b77f1` and `ae74a0d1`, then
+accepted exact descendant `fec87fa5`: background Paste targets the browsed
+folder while crossing `ApplicationCoordinator` exactly once, selection and
+background actions are applicable in both views, and mutation actions follow
+authoritative busy-state truth. Independent former-red functions passed 5/5,
+browsing/installed rows 2/2, and the mutation-action preservation row 1/1.
+The manager-tree rebuild passed the three affected registered rows; docs 246,
+strict MkDocs, and diff checks pass. Installed/live adoption remains separate.
 
 Dock candidate `aef75d2230d3bc08cea5b777bd3468ae96191a9c` received independent
 Z.AI GLM ACCEPT and is integrated as `8d4e3142`. The accepted delta keeps
