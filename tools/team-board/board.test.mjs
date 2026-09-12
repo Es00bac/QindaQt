@@ -178,6 +178,36 @@ test('keeps observed process liveness separate from declared work and progress',
     'process observation contributes no product progress');
 });
 
+test('keeps a process visible when its mapped self-owned record is missing', () => {
+  const board = buildBoard({
+    program: { name: 'Fixture', sourceRows: 1 },
+    features: [],
+  }, [], {
+    nowMs: Date.parse('2026-08-26T12:30:00Z'),
+    activityCollectedAt: '2026-08-26T12:29:58Z',
+    processObservations: [{
+      workerId: 'rotated-worker',
+      processState: 'alive',
+      observedAt: '2026-08-26T12:29:58Z',
+      pid: 4242,
+      command: 'claude',
+      sessionId: 'rotated-session',
+      terminalPid: 4343,
+      terminalState: 'alive',
+      detail: 'Mapped harness observed without a self-owned record.',
+    }],
+  });
+
+  const observed = board.workers.find((worker) => worker.id === 'rotated-worker');
+  assert.ok(observed, 'the process observation remains visible without a Markdown record');
+  assert.equal(observed.recordSource, 'observer');
+  assert.equal(observed.recordValid, false);
+  assert.equal(observed.active, false, 'process liveness cannot create a productive task claim');
+  assert.equal(observed.status, 'record missing — process observation only');
+  assert.equal(observed.processObservation.processState, 'alive');
+  assert.equal(board.program.observedAliveProcesses, 1);
+});
+
 test('expires a stale alive observation instead of retaining false liveness', () => {
   const record = parseWorkerMarkdown(recordWorker('Idle Worker', 'waiting — no task', [
     ['2026-08-26T12:00:00Z — Waiting without productive work'],

@@ -440,7 +440,29 @@ export function buildBoard(data, workers, options = {}) {
     throw new TypeError('activity workers must have unique workerId values');
   }
   const observationByWorker = new Map(processObservations.map((observation) => [observation.workerId, observation]));
-  const currentWorkers = workers.map((worker) => Object.freeze({
+  const recordedWorkerIds = new Set(workers.map((worker) => worker.id));
+  // AGENT-GUARD: A missing self-owned record invalidates the task claim, not the
+  // separately collected process observation. Keep that process visible so the
+  // board cannot make a live harness look stopped or productive by implication.
+  const observerOnlyWorkers = processObservations
+    .filter((observation) => !recordedWorkerIds.has(observation.workerId))
+    .map((observation) => buildWorkerRecord({
+      id: observation.workerId,
+      name: `${observation.workerId} observed process`,
+      role: 'Unspecified role',
+      provider: 'Unspecified provider',
+      model: 'Unspecified model',
+      reasoning: 'Unspecified',
+      status: 'record missing — process observation only',
+      feature: 'No outcome declared',
+      startedAt: '',
+      updatedAt: observation.observedAt,
+      worktree: '',
+      updates: [],
+      fileName: '',
+      recordSource: 'observer',
+    }));
+  const currentWorkers = [...workers, ...observerOnlyWorkers].map((worker) => Object.freeze({
     ...worker,
     active: workerIsFresh(worker, nowMs, maxWorkerAgeMs),
     processObservation: observationByWorker.get(worker.id) ?? null,
