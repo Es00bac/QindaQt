@@ -88,7 +88,11 @@ export function deriveEvents({ reviews = [], workers = [], assignments = [], del
 }
 
 export async function dispatchEvents({ events, previous = {}, queue, nowMs = Date.now(), clock = Date.now, managerAlive = true }) {
-  const delivered = { ...(previous.delivered ?? {}) };
+  // Pre-repair state used `latencyMs` captured before the awaited queue call.
+  // AGENT-GUARD: never surface that legacy zero as current delivery evidence;
+  // retaining it would also suppress a real event from being measured once.
+  const delivered = Object.fromEntries(Object.entries(previous.delivered ?? {}).filter(([, entry]) =>
+    Number.isFinite(entry?.evidenceLatencyMs) && Number.isFinite(entry?.queueDurationMs)));
   const pending = { ...(previous.pending ?? {}) };
   const activeKeys = new Set(events.map((event) => event.key));
   for (const key of Object.keys(pending)) {
