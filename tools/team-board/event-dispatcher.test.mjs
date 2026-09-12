@@ -76,6 +76,9 @@ test('multiple new events are delivered in one bounded queue call', async () => 
   assert.equal(calls, 1);
   assert.equal(Object.keys(result.delivered).length, 2);
   assert.equal(result.lastQueueDurationMs, 7);
+  const unchanged = await dispatchEvents({ events, previous: result, nowMs: 5_020,
+    queue: async () => assert.fail('unchanged batch must not queue') });
+  assert.equal(unchanged.lastQueueDurationMs, 7);
 });
 
 test('discovers a clean worker handoff before the manager review ledger contains it', async () => {
