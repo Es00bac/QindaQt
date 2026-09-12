@@ -94,8 +94,11 @@ export async function dispatchEvents({ events, previous = {}, queue, nowMs = Dat
   for (const key of Object.keys(pending)) {
     if (!activeKeys.has(key)) delete pending[key];
   }
-  let lastEvidenceLatencyMs = Number(previous.lastEvidenceLatencyMs) || 0;
-  let lastQueueDurationMs = Number(previous.lastQueueDurationMs) || 0;
+  const deliveredValues = Object.values(delivered);
+  let lastEvidenceLatencyMs = Number(previous.lastEvidenceLatencyMs)
+    || Math.max(0, ...deliveredValues.map((entry) => Number(entry?.evidenceLatencyMs) || 0));
+  let lastQueueDurationMs = Number(previous.lastQueueDurationMs)
+    || Math.max(0, ...deliveredValues.map((entry) => Number(entry?.queueDurationMs) || 0));
   const batch = [];
   for (const event of events) {
     if (delivered[event.key]) { delete pending[event.key]; continue; }
@@ -115,7 +118,7 @@ export async function dispatchEvents({ events, previous = {}, queue, nowMs = Dat
         lastEvidenceLatencyMs = evidenceLatencyMs;
         delivered[event.key] = { event, firstSeenAt, deliveredAt, evidenceLatencyMs,
           queueDurationMs: lastQueueDurationMs };
-      delete pending[event.key];
+        delete pending[event.key];
       }
     } catch (error) {
       for (const event of batch) pending[event.key].error = error instanceof Error ? error.message : String(error);
