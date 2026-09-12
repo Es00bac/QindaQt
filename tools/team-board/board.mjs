@@ -16,6 +16,8 @@ export const FEATURE_STATE_WEIGHTS = Object.freeze({
 
 export const WORKER_ACTIVITY_MAX_AGE_MS = 30 * 60 * 1_000;
 export const WORKER_CLOCK_SKEW_MS = 5 * 60 * 1_000;
+export const PROCESS_OBSERVATION_MAX_AGE_MS = 15 * 1_000;
+export const PROVIDER_OBSERVATION_MAX_AGE_MS = 2 * 60 * 60 * 1_000;
 
 // AGENT-GUARD: this pattern must stay in lockstep with the row ids written in
 // ops/team/features.json; widening it silently lets arbitrary progress rows
@@ -24,6 +26,8 @@ const FEATURE_ID_PATTERN = /^QQ-\d{3}$/;
 const STEP_ID_PATTERN = /^QQ-\d{3}\.\d{2}$/;
 const PROVIDER_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 const PROVIDER_STATES = new Set(['available', 'degraded', 'unavailable']);
+const WORKER_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+const PROCESS_STATES = new Set(['alive', 'stopped', 'unknown']);
 
 function text(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
@@ -61,7 +65,7 @@ function normalizeWorkerError(fileName, error) {
   });
 }
 
-function normalizeProvider(raw, index) {
+function normalizeProvider(raw, index, nowMs, maxAgeMs) {
   const id = text(raw?.id).toLowerCase();
   if (!PROVIDER_ID_PATTERN.test(id)) {
     throw new TypeError(`providers[${index}].id must be a stable lowercase identifier`);
@@ -76,14 +80,66 @@ function normalizeProvider(raw, index) {
   if (estimatedReturnAt && !timestamp(estimatedReturnAt)) {
     throw new TypeError(`providers[${index}].estimatedReturnAt must be empty or an ISO timestamp`);
   }
+  const ageMs = Math.max(0, nowMs - timestamp(updatedAt));
+  const freshness = ageMs <= maxAgeMs ? 'current' : 'stale';
   return Object.freeze({
     id,
     name: text(raw?.name, id),
     status,
-    available: status === 'available',
+    available: status === 'available' && freshness === 'current',
+    effectiveStatus: freshness === 'current' ? status : 'unknown',
+    freshness,
+    ageMs,
     updatedAt,
     estimatedReturnAt,
     evidence: plainText(raw?.evidence, 'No capacity evidence recorded'),
+  });
+}
+
+function normalizeProcessObservation(raw, index, nowMs, maxAgeMs) {
+  const workerId = text(raw?.workerId).toLowerCase();
+  if (!WORKER_ID_PATTERN.test(workerId)) {
+    throw new TypeError(`activity.workers[${index}].workerId must be a stable lowercase identifier`);
+  }
+  const processState = text(raw?.processState, 'unknown').toLowerCase();
+  if (!PROCESS_STATES.has(processState)) {
+    throw new TypeError(`activity.workers[${index}].processState must be alive, stopped, or unknown`);
+  }
+  const observedAt = text(raw?.observedAt);
+  if (!timestamp(observedAt)) {
+    throw new TypeError(`activity.workers[${index}].observedAt must be an ISO timestamp`);
+  }
+  const pid = Number(raw?.pid);
+  if (!Number.isInteger(pid) || pid < 1) {
+    throw new TypeError(`activity.workers[${index}].pid must be a positive integer`);
+  }
+  const terminalPid = Number(raw?.terminalPid);
+  if (!Number.isInteger(terminalPid) || terminalPid < 1) {
+    throw new TypeError(`activity.workers[${index}].terminalPid must be a positive integer`);
+  }
+  const terminalState = text(raw?.terminalState, 'unknown').toLowerCase();
+  if (!PROCESS_STATES.has(terminalState)) {
+    throw new TypeError(`activity.workers[${index}].terminalState must be alive, stopped, or unknown`);
+  }
+  const observedMs = timestamp(observedAt);
+  const ageMs = Math.max(0, nowMs - observedMs);
+  const freshness = observedMs > nowMs + WORKER_CLOCK_SKEW_MS ? 'future'
+    : (ageMs <= maxAgeMs ? 'current' : 'stale');
+  return Object.freeze({
+    workerId,
+    processState: freshness === 'current' ? processState : 'unknown',
+    reportedProcessState: processState,
+    freshness,
+    ageMs,
+    observedAt,
+    pid,
+    command: plainText(raw?.command, 'unobserved'),
+    sessionId: plainText(raw?.sessionId),
+    terminalPid,
+    terminalState: freshness === 'current' ? terminalState : 'unknown',
+    reportedTerminalState: terminalState,
+    sessionEvidence: plainText(raw?.sessionEvidence, 'Requested model/reasoning and verified session metadata are not recorded.'),
+    detail: plainText(raw?.detail, 'Process observation does not establish productive task work.'),
   });
 }
 
@@ -165,7 +221,7 @@ function parseRecordFields(source) {
   return { name, fields, updateLines };
 }
 
-function buildWorkerRecord({ id, name, role, provider, model, reasoning, status, feature, startedAt, updatedAt, worktree, updates, fileName }) {
+function buildWorkerRecord({ id, name, role, provider, model, reasoning, status, feature, startedAt, updatedAt, worktree, updates, fileName, recordSource = 'self' }) {
   const recordIssues = [];
   if (!name || name === id) recordIssues.push('name is missing');
   if (!role || role === 'Unspecified role') recordIssues.push('role is missing');
@@ -185,9 +241,10 @@ function buildWorkerRecord({ id, name, role, provider, model, reasoning, status,
     startedAt,
     updatedAt,
     worktree,
+    recordSource,
     recordValid: recordIssues.length === 0,
     recordIssues: Object.freeze(recordIssues),
-    active: recordIssues.length === 0 && /^working\b/i.test(status),
+    active: recordSource === 'self' && recordIssues.length === 0 && /^working\b/i.test(status),
     updates: Object.freeze(updates.map((update) => Object.freeze(update))),
   });
 }
@@ -215,6 +272,7 @@ export function parseWorkerMarkdown(source, fileName = 'worker.md') {
       startedAt: frontMatterText(fields.started_at),
       updatedAt: frontMatterText(fields.updated_at) || (newestDeclared ? new Date(newestDeclared).toISOString() : ''),
       worktree: frontMatterText(fields.worktree),
+      recordSource: frontMatterText(fields.record_source, 'self').toLowerCase(),
       updates,
       fileName,
     });
@@ -238,6 +296,7 @@ export function parseWorkerMarkdown(source, fileName = 'worker.md') {
     startedAt: text(fields.started_at ?? fields.started),
     updatedAt: text(fields.updated_at) || (newestDeclared ? new Date(newestDeclared).toISOString() : ''),
     worktree: text(fields.worktree, text(fields['product worktree'])),
+    recordSource: text(fields['record source'], 'self').toLowerCase(),
     updates,
     fileName,
   });
@@ -370,17 +429,33 @@ export function buildBoard(data, workers, options = {}) {
   const evidenceBreadthPoints = Math.round(
     features.reduce((sum, feature) => sum + featureBreadth(feature), 0) * 100,
   ) / 100;
+  const processObservationMaxAgeMs = Number.isFinite(options.processObservationMaxAgeMs)
+    ? options.processObservationMaxAgeMs : PROCESS_OBSERVATION_MAX_AGE_MS;
+  const processObservations = (Array.isArray(options.processObservations)
+    ? options.processObservations : []).map((observation, index) => (
+      normalizeProcessObservation(observation, index, nowMs, processObservationMaxAgeMs)
+    ));
+  if (new Set(processObservations.map((observation) => observation.workerId)).size
+      !== processObservations.length) {
+    throw new TypeError('activity workers must have unique workerId values');
+  }
+  const observationByWorker = new Map(processObservations.map((observation) => [observation.workerId, observation]));
   const currentWorkers = workers.map((worker) => Object.freeze({
     ...worker,
     active: workerIsFresh(worker, nowMs, maxWorkerAgeMs),
+    processObservation: observationByWorker.get(worker.id) ?? null,
   }));
   const orderedWorkers = currentWorkers.sort((left, right) => (
     Number(right.active) - Number(left.active)
+    || Number(right.processObservation?.processState === 'alive')
+      - Number(left.processObservation?.processState === 'alive')
     || timestamp(right.updatedAt) - timestamp(left.updatedAt)
     || left.name.localeCompare(right.name)
   ));
+  const providerObservationMaxAgeMs = Number.isFinite(options.providerObservationMaxAgeMs)
+    ? options.providerObservationMaxAgeMs : PROVIDER_OBSERVATION_MAX_AGE_MS;
   const providers = (Array.isArray(options.providers) ? options.providers : [])
-    .map(normalizeProvider);
+    .map((provider, index) => normalizeProvider(provider, index, nowMs, providerObservationMaxAgeMs));
   if (new Set(providers.map((provider) => provider.id)).size !== providers.length) {
     throw new TypeError('provider records must have unique ids');
   }
@@ -391,6 +466,11 @@ export function buildBoard(data, workers, options = {}) {
     order: index,
   }))).sort((left, right) => timestamp(right.at) - timestamp(left.at) || left.order - right.order);
 
+  const collectedAt = text(options.activityCollectedAt);
+  const collectionAgeMs = collectedAt ? Math.max(0, nowMs - timestamp(collectedAt)) : null;
+  const collectionState = !collectedAt ? 'missing'
+    : (timestamp(collectedAt) > nowMs + WORKER_CLOCK_SKEW_MS ? 'error'
+      : (collectionAgeMs <= processObservationMaxAgeMs ? 'current' : 'stale'));
   return Object.freeze({
     program: Object.freeze({
       name: text(data?.program?.name, 'Team Board'),
@@ -403,6 +483,7 @@ export function buildBoard(data, workers, options = {}) {
       qualified,
       providerCount: providers.length,
       availableProviders: providers.filter((provider) => provider.available).length,
+      observedAliveProcesses: processObservations.filter((observation) => observation.processState === 'alive').length,
       evidencePoints,
       evidencePercent: actionableRows > 0 ? Math.round(evidencePoints / actionableRows * 100) / 100 : 0,
       evidenceBreadthPoints,
@@ -414,6 +495,19 @@ export function buildBoard(data, workers, options = {}) {
     features: Object.freeze([...features].sort((left, right) => left.id.localeCompare(right.id))),
     workers: Object.freeze(orderedWorkers),
     providers: Object.freeze(providers),
+    providerInventory: Object.freeze({
+      source: text(options.providerInventorySource, 'missing'),
+      state: text(options.providerInventoryState, providers.length ? 'current-team' : 'missing'),
+    }),
+    activityHealth: Object.freeze({
+      collectedAt,
+      ageMs: collectionAgeMs,
+      state: collectionState,
+      nextExpectedAt: collectedAt ? new Date(timestamp(collectedAt) + processObservationMaxAgeMs).toISOString() : '',
+    }),
+    delivery: Object.freeze(Array.isArray(options.delivery) ? options.delivery : []),
+    reviews: Object.freeze(Array.isArray(options.reviews) ? options.reviews : []),
+    supervision: Object.freeze(options.supervision && typeof options.supervision === 'object' ? options.supervision : {}),
     messages: Object.freeze(messages),
     workerErrors: Object.freeze(Array.isArray(options.workerErrors) ? [...options.workerErrors] : []),
   });
@@ -424,13 +518,17 @@ export function buildBoard(data, workers, options = {}) {
 // ops/team/features.json, in which case the canonical file still defines the
 // program rows while workers and messages come from the requested root.
 const canonicalFeaturesPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../ops/team/features.json');
-const canonicalProvidersPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../ops/team/providers.json');
 
 export async function readBoard(teamRoot) {
   const featurePath = path.join(teamRoot, 'features.json');
   const workersPath = path.join(teamRoot, 'workers');
   let data;
-  let providerData;
+  let providerData = { providers: [] };
+  let providerInventoryState = 'current-team';
+  let deliveryData = { outcomes: [] };
+  let reviewData = { reviews: [] };
+  let supervisionData = {};
+  let activityData = { workers: [] };
   try {
     data = JSON.parse(await readFile(featurePath, 'utf8'));
   } catch (error) {
@@ -438,11 +536,19 @@ export async function readBoard(teamRoot) {
     data = JSON.parse(await readFile(canonicalFeaturesPath, 'utf8'));
   }
   try {
+    activityData = JSON.parse(await readFile(path.join(teamRoot, 'activity.json'), 'utf8'));
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  try {
     providerData = JSON.parse(await readFile(path.join(teamRoot, 'providers.json'), 'utf8'));
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error;
-    providerData = JSON.parse(await readFile(canonicalProvidersPath, 'utf8'));
+    providerInventoryState = 'missing';
   }
+  try { deliveryData = JSON.parse(await readFile(path.join(teamRoot, 'delivery.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
+  try { reviewData = JSON.parse(await readFile(path.join(teamRoot, 'reviews.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
+  try { supervisionData = JSON.parse(await readFile(path.join(teamRoot, 'supervision.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   // AGENT-NOTE: unlike the flow upstream, this repo keeps a README inside
   // workers/ describing the record convention; it is documentation, never an
   // employee record.
@@ -464,5 +570,15 @@ export async function readBoard(teamRoot) {
   }));
   const workers = workerResults.flatMap((result) => result.worker ? [result.worker] : []);
   const workerErrors = workerResults.flatMap((result) => result.error ? [result.error] : []);
-  return buildBoard(data, workers, { workerErrors, providers: providerData?.providers });
+  return buildBoard(data, workers, {
+    workerErrors,
+    providers: providerData?.providers,
+    processObservations: activityData?.workers,
+    activityCollectedAt: activityData?.updatedAt,
+    providerInventorySource: providerInventoryState === 'current-team' ? path.join(teamRoot, 'providers.json') : 'missing',
+    providerInventoryState,
+    delivery: deliveryData?.outcomes,
+    reviews: reviewData?.reviews,
+    supervision: supervisionData,
+  });
 }
