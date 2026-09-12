@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/pointer_devices_model.h>
 
+#include <QSignalSpy>
 #include <QTest>
 
 using QindaQt::Apps::SettingsInput::PointerDeviceSnapshot;
@@ -103,6 +104,7 @@ private Q_SLOTS:
     void emptyListWithoutErrorMeansNoDevices();
     void rowsExposeIdentityAndKind();
     void selectionExposesAvailabilityTruth();
+    void selectedIndexTracksSelectionAcrossRefresh();
     void unsupportedControlIsHiddenNotDisabled();
     void failedWriteRevertsAndReports();
     void successKeepsThePresentedValue();
@@ -166,6 +168,36 @@ void PointerDevicesModelTest::selectionExposesAvailabilityTruth()
     PointerDevicesModel mouseModel(port);
     mouseModel.refresh();
     QVERIFY(!mouseModel.selection()->tapToClickAvailable());
+}
+
+void PointerDevicesModelTest::selectedIndexTracksSelectionAcrossRefresh()
+{
+    // The route's device picker binds to selectedIndex: the model must
+    // publish it on the automatic first selection, on explicit select(), and
+    // when a refresh drops the selected row.
+    FakePointerPort port;
+    port.scripted.append(mouseSnapshot());
+    port.scripted.append(touchpadSnapshot());
+    PointerDevicesModel model(port);
+    QCOMPARE(model.selectedIndex(), -1);
+    model.refresh();
+    QCOMPARE(model.selectedIndex(), 0);
+
+    model.select(1);
+    QCOMPARE(model.selectedIndex(), 1);
+
+    // The selected touchpad disappears; the selection falls back to row 0.
+    QSignalSpy spy(&model, &PointerDevicesModel::selectedIndexChanged);
+    QVERIFY(spy.isValid());
+    port.scripted.removeAt(1);
+    model.refresh();
+    QCOMPARE(model.selectedIndex(), 0);
+    QCOMPARE(spy.count(), 1);
+
+    // Every device vanishes: no selection at all.
+    port.scripted.clear();
+    model.refresh();
+    QCOMPARE(model.selectedIndex(), -1);
 }
 
 void PointerDevicesModelTest::unsupportedControlIsHiddenNotDisabled()

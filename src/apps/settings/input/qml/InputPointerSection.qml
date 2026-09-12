@@ -28,7 +28,7 @@ ColumnLayout {
 
     Label {
         visible: text.length > 0
-        text: inputSettings.pointerDevices.statusText
+        text: root.selection !== null ? root.selection.statusText : ""
         wrapMode: Text.Wrap
         Accessible.role: Accessible.AlertMessage
         Accessible.name: text
@@ -63,9 +63,22 @@ ColumnLayout {
             objectName: "inputPointerDeviceCombo"
             textRole: "label"
             model: inputSettings.pointerDevices
-            Layout.preferredWidth: 320
+            width: 320
             onActivated: index => inputSettings.pointerDevices.select(index)
         }
+    }
+
+    // AGENT-GUARD: The combo's selected index is the model's truth, not the
+    // combo's: QQuickComboBox keeps currentIndex at -1 when its model resets
+    // into non-empty, so without this binding the picker shows no device even
+    // though the rows describe the first one. A Binding element survives the
+    // combo's own imperative write on popup selection, which would break a
+    // plain property binding for the rest of the session.
+    Binding {
+        target: devicePicker.editor
+        property: "currentIndex"
+        value: inputSettings.pointerDevices.selectedIndex
+        restoreMode: Binding.RestoreBindingOrValue
     }
 
     FormRow {
@@ -95,7 +108,7 @@ ColumnLayout {
         description: qsTr("Flat keeps one speed; adaptive speeds up with faster motion")
         editor: ComboBox {
             objectName: "inputPointerProfileCombo"
-            Layout.preferredWidth: 220
+            width: 220
             textRole: "label"
             model: [
                 { label: qsTr("Adaptive"), value: false },
@@ -218,7 +231,7 @@ ColumnLayout {
         description: qsTr("Two fingers beside each other, or one finger along the edge")
         editor: ComboBox {
             objectName: "inputTouchpadScrollMethodCombo"
-            Layout.preferredWidth: 220
+            width: 220
             textRole: "label"
             model: [
                 { label: qsTr("Two fingers"), value: "two-finger" },

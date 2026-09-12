@@ -42,6 +42,7 @@ void PointerDevicesModel::select(int row) {
         return;
     }
     m_selectedRow = row;
+    Q_EMIT selectedIndexChanged();
     m_selection->setSnapshot(m_devices.at(row));
 }
 
@@ -54,6 +55,7 @@ void PointerDevicesModel::refresh() {
     QString error;
     const QList<PointerDeviceSnapshot> devices = m_port.devices(&error);
     const bool authorityAnswered = error.isEmpty();
+    const int previousSelectedRow = m_selectedRow;
     beginResetModel();
     m_devices = devices;
     m_available = authorityAnswered;
@@ -71,6 +73,9 @@ void PointerDevicesModel::refresh() {
         m_selection->setSnapshot(m_devices.at(selectedRow));
     } else {
         m_selectedRow = -1;
+    }
+    if (m_selectedRow != previousSelectedRow) {
+        Q_EMIT selectedIndexChanged();
     }
 }
 
