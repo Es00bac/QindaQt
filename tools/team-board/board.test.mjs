@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, writeFile, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -79,7 +79,7 @@ test('reports provider availability and preserves estimated return evidence', ()
   const board = buildBoard({
     program: { name: 'Fixture', sourceRows: 1 },
     features: [],
-  }, [], { providers: [
+  }, [], { nowMs: Date.parse('2026-08-28T11:01:00Z'), providers: [
     { id: 'openai', name: 'OpenAI', status: 'available', updatedAt: '2026-08-28T11:00:00Z', evidence: 'Live workers.' },
     { id: 'claude', name: 'Claude', status: 'unavailable', updatedAt: '2026-08-28T11:00:00Z', estimatedReturnAt: '2026-08-28T12:00:00Z', evidence: 'Quota reset estimate.' },
     { id: 'glm', name: 'GLM', status: 'degraded', updatedAt: '2026-08-28T11:00:00Z', estimatedReturnAt: '2026-08-28T11:30:00Z', evidence: 'Token-silent probe.' },
@@ -139,6 +139,102 @@ test('fails worker liveness closed for stale, missing, and future declarations',
   assert.equal(board.workers.find((entry) => entry.name === 'Stale worker')?.active, false);
   assert.equal(board.workers.find((entry) => entry.name === 'Future worker')?.active, false);
   assert.equal(board.workers.find((entry) => entry.name === 'Finished worker')?.active, false);
+});
+
+test('keeps observed process liveness separate from declared work and progress', () => {
+  const malformed = parseWorkerMarkdown(`# Observed worker
+
+- Status: waiting — record repair required
+
+## Updates
+
+- 2026-08-26T12:29:00Z — Process is still visible.
+`, 'observed-worker.md');
+  const board = buildBoard({
+    program: { name: 'Fixture', sourceRows: 1 },
+    features: [],
+  }, [malformed], {
+    nowMs: Date.parse('2026-08-26T12:30:00Z'),
+    processObservations: [{
+      workerId: 'observed-worker',
+      processState: 'alive',
+      observedAt: '2026-08-26T12:29:50Z',
+      pid: 4242,
+      command: 'claude',
+      sessionId: 'session-test',
+      terminalPid: 4343,
+      terminalState: 'alive',
+      detail: 'Harness process observed; productivity is not inferred.',
+    }],
+  });
+
+  assert.equal(board.workers[0].processObservation.processState, 'alive');
+  assert.equal(board.workers[0].processObservation.pid, 4242);
+  assert.equal(board.workers[0].processObservation.terminalState, 'alive');
+  assert.equal(board.workers[0].active, false,
+    'an observed process cannot repair invalid metadata or create a working claim');
+  assert.equal(board.program.observedAliveProcesses, 1);
+  assert.equal(board.program.evidencePercent, 0,
+    'process observation contributes no product progress');
+});
+
+test('expires a stale alive observation instead of retaining false liveness', () => {
+  const record = parseWorkerMarkdown(recordWorker('Idle Worker', 'waiting — no task', [
+    ['2026-08-26T12:00:00Z — Waiting without productive work'],
+  ]), 'idle-worker.md');
+  const board = buildBoard({ program: { name: 'Fixture', sourceRows: 1 }, features: [] }, [record], {
+    nowMs: Date.parse('2026-08-26T12:30:00Z'),
+    activityCollectedAt: '2026-08-26T12:00:00Z',
+    processObservations: [{
+      workerId: 'idle-worker', processState: 'alive', observedAt: '2026-08-26T12:00:00Z',
+      pid: 42, command: 'claude', sessionId: 'idle-session', terminalPid: 43,
+      terminalState: 'alive', detail: 'Old observation.',
+    }],
+  });
+  assert.equal(board.workers[0].processObservation.reportedProcessState, 'alive');
+  assert.equal(board.workers[0].processObservation.processState, 'unknown');
+  assert.equal(board.workers[0].processObservation.freshness, 'stale');
+  assert.equal(board.activityHealth.state, 'stale');
+  assert.equal(board.program.observedAliveProcesses, 0);
+});
+
+test('keeps an idle live harness and a held terminal with exited harness distinct', () => {
+  const idle = parseWorkerMarkdown(recordWorker('Idle Worker', 'waiting — review queue empty', [
+    ['2026-08-26T12:29:55Z — Entered bounded wait'],
+  ]), 'idle-worker.md');
+  const finished = parseWorkerMarkdown(recordWorker('Finished Reviewer', 'waiting — review complete', [
+    ['2026-08-26T12:29:55Z — Review handoff published'],
+  ]), 'finished-reviewer.md');
+  const observations = [
+    { workerId: 'idle-worker', processState: 'alive', observedAt: '2026-08-26T12:29:58Z', pid: 42, command: 'claude', sessionId: 'idle', terminalPid: 43, terminalState: 'alive', detail: 'Sleeping harness.' },
+    { workerId: 'finished-reviewer', processState: 'stopped', observedAt: '2026-08-26T12:29:58Z', pid: 44, command: 'kimi-code', sessionId: 'done', terminalPid: 45, terminalState: 'alive', detail: 'Finite harness exited.' },
+  ];
+  const board = buildBoard({ program: { name: 'Fixture', sourceRows: 1 }, features: [] }, [idle, finished], {
+    nowMs: Date.parse('2026-08-26T12:30:00Z'), activityCollectedAt: '2026-08-26T12:29:58Z', processObservations: observations,
+  });
+  assert.equal(board.workers.find((worker) => worker.id === 'idle-worker').active, false);
+  assert.equal(board.workers.find((worker) => worker.id === 'idle-worker').processObservation.processState, 'alive');
+  assert.equal(board.workers.find((worker) => worker.id === 'finished-reviewer').processObservation.processState, 'stopped');
+  assert.equal(board.workers.find((worker) => worker.id === 'finished-reviewer').processObservation.terminalState, 'alive');
+});
+
+test('labels manager observer records without treating their state as worker-owned', () => {
+  const observer = parseWorkerMarkdown(`# File session observer
+
+- Role: Manager-observed implementation session
+- Record source: observer
+- Provider/model: Anthropic; claude-sonnet-5/high requested, not attested
+- Status: working — observer saw a busy process, but the worker record is missing
+- Outcome: Publish the leased file boundary
+
+## Updates
+
+- 2026-08-26T12:29:00Z — Process observation refreshed.
+`, 'files.md');
+
+  assert.equal(observer.recordSource, 'observer');
+  assert.equal(observer.recordValid, true, 'the observer record can be schema-valid');
+  assert.equal(observer.active, false, 'an observer record cannot claim working state');
 });
 
 test('normalizes quoted frontmatter scalars before liveness evaluation', () => {
@@ -214,6 +310,8 @@ test('reads both live record shapes and exposes plain-English updates', async ()
   ]));
   await writeFile(path.join(root, 'workers', 'README.md'), '# Worker records\n');
   const board = await readBoard(root);
+  assert.equal(board.providerInventory.state, 'missing');
+  assert.deepEqual(board.providers, [], 'a missing current inventory never revives canonical historical providers');
   assert.deepEqual(board.workers.map((entry) => entry.name), ['Noor Hale', 'Avery Ox'],
     'the workers README is documentation, never an employee record');
   assert.equal(board.workers[0].name, 'Noor Hale', 'the fresh working record sorts first regardless of format');
@@ -383,4 +481,29 @@ test('lists and fetches closed threads and replies with explicit closed labels',
     { id: '2-closed-reply.md.done', closed: true, label: 'closed reply (closed)', bytes: 16 },
   ] }]);
   const reply = await fetch(`http://127.0.0.1:${address.port}/api/messages/_closed-thread/2-closed-reply.md.done`); assert.equal(reply.status, 200); assert.equal(await reply.text(), '# Closed history');
+});
+
+test('message index exposes a newly added reply without restarting the server', async (context) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'team-board-live-message-'));
+  await mkdir(path.join(root, 'workers')); await mkdir(path.join(root, 'messages', 'dock'), { recursive: true });
+  await writeFile(path.join(root, 'features.json'), JSON.stringify({ program: { name: 'Fixture', sourceRows: 1 }, features: [] }));
+  await writeFile(path.join(root, 'messages', 'dock', '1-claim.md'), '# Claim');
+  const server = createTeamBoardServer({ teamRoot: root }); context.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve)); const address = server.address();
+  let listed = await (await fetch(`http://127.0.0.1:${address.port}/api/messages`)).json();
+  assert.deepEqual(listed[0].replies.map((reply) => reply.id), ['1-claim.md']);
+  await writeFile(path.join(root, 'messages', 'dock', '2-handoff.md'), '# Handoff');
+  listed = await (await fetch(`http://127.0.0.1:${address.port}/api/messages`)).json();
+  assert.deepEqual(listed[0].replies.map((reply) => reply.id), ['1-claim.md', '2-handoff.md']);
+});
+
+test('served page leads with current delivery and retains explicit stale/disconnected states', async () => {
+  const source = await readFile(path.resolve('tools/team-board/public/index.html'), 'utf8');
+  assert.ok(source.indexOf('Who is doing what now') < source.indexOf('Historical integrated roadmap evidence'));
+  assert.match(source, /setInterval\(refreshMessages, 2000\)/);
+  assert.match(source, /Last good payload remains visible/);
+  assert.match(source, /Current user outcomes/);
+  assert.match(source, /Review and integration queue/);
+  assert.doesNotMatch(source, /nth-child\([^)]*\).*display:\s*none/,
+    'narrow layouts must not hide the core task-state columns');
 });

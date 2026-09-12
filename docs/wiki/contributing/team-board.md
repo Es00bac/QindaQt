@@ -1,13 +1,14 @@
 # Team board and progress evidence
 
 The QindaQt team board is a live operating view over durable Markdown worker
-records, message threads, and the canonical outcome ledger in
-`ops/team/features.json`. It deliberately separates delivery evidence from
-worker activity.
+records, message threads, a manager-owned current-delivery ledger, and the
+canonical integrated outcome ledger in `ops/team/features.json`. It
+deliberately separates current delivery, process observation, review state,
+provider evidence, and integrated product evidence.
 
 ## Two independent questions
 
-The board answers two questions without mixing them:
+The board answers three questions without mixing them:
 
 1. **Who is working now?** A durable employee record counts only when its owner
    record has parser-valid identity/outcome fields, `- Status: working — ...`,
@@ -17,6 +18,15 @@ The board answers two questions without mixing them:
    assignments, source-ready branches, compiler activity, review prose, and
    task estimates add zero. Only accepted behavior already integrated at the
    manager boundary can move an outcome step.
+3. **What happens next for this delivery?** A team-root `delivery.json` names
+   the full current user backlog, accountable owner, stage, last material
+   evidence, blocker, and next action. `reviews.json` separately records exact
+   candidate, implementer, reviewer, independent result, test provenance, next
+   gate, and integrated commit. Neither file creates product progress.
+
+The current-delivery and review sections lead the page. Historical integrated
+roadmap evidence remains available in a secondary collapsed section; its
+percentage is never presented as completion of today's request.
 
 Every valid record under `ops/team/workers/` is visible. `ops/team/ROSTER.md`
 catalogs stable core personas and staffing intent but is not an allowlist. The
@@ -30,18 +40,45 @@ They are coordination evidence only and never affect the product percentage.
 
 ## Provider capacity
 
-`ops/team/providers.json` records the five stable provider routes: OpenAI/
-Codex, Google Gemini Vertex, Z.AI GLM, Anthropic Claude, and Moonshot Kimi.
-Each record declares `available`, `degraded`, or `unavailable`, the last real
-probe time, evidence, and an estimated return/retry time when capacity is
-impaired. The graphical board renders all five and counts only `available`
-routes in its provider-capacity card.
+A configured team root must carry its own `providers.json`. The board never
+falls back to another machine's or an older team's provider inventory when that
+file is absent: it renders the current inventory as missing. Historical
+`ops/team/providers.json` records remain history for the canonical team root,
+not machine configuration discovery.
+
+Each current record declares `available`, `degraded`, or `unavailable`, an ISO
+observation time, bounded evidence, and an estimated return/retry time when
+capacity is impaired. Provider and harness are named separately from requested
+model/reasoning and verified session metadata. Quota that was not observed is
+unknown, not zero; product-specific quota is not attributed to another model.
+An expired observation becomes `unknown` rather than remaining available.
 
 Return times are estimates, not liveness. Reprobe at or before the recorded
 time, replace the estimate with observed state, and do not list a token-silent,
 quota-rejected, or semantically failed route as available. Provider capacity
 never creates worker liveness or product progress; it explains how much of the
 staffing system can presently be used.
+
+## Process and supervision freshness
+
+A lightweight collector updates sanitized PID/command/session observations
+independently from the five-minute deterministic supervisor. An `alive`
+observation expires after 15 seconds if collection stops; the API preserves
+the last reported state for diagnosis but exposes effective process/terminal
+state as `unknown`. The page retains the last good payload while clearly
+showing stale or disconnected collection. A held terminal, sleeping harness,
+or alive PID never proves productive work.
+
+The deterministic supervisor stores detected, pending, and successfully
+notified issue keys separately. A new issue discovered during cooldown stays
+pending and is retried when eligible. Only a successful manager queue updates
+the last-notified key/time; a queue failure is visible as degraded supervision
+and retains the pending issue. Dynamic ages are normalized into stable issue
+classes so an unchanged blocker does not manufacture a new key every tick.
+
+The message index is reread while the page is open. New replies appear without
+a browser reload while the selected thread/reply, focus, and reader scroll are
+preserved.
 
 ## Evidence maturity
 
@@ -91,7 +128,9 @@ Run the board's Node test suite before changing parsing, weighting, worker
 visibility, message confinement, or rendering:
 
 ```console
-node --test tools/team-board/board.test.mjs tools/team-board/markdown.dom.test.mjs
+node --test tools/team-board/board.test.mjs \
+  tools/team-board/markdown.dom.test.mjs \
+  tools/team-board/supervisor.test.mjs
 ```
 
 Then start an ephemeral server against an isolated or live team root and check
