@@ -1,5 +1,22 @@
 # Integration handoff
 
+## Small-team usable-fix wave (September 12)
+
+The File Manager worker's exact candidate
+`ae9865d5feed9c20264bbf1ff00e519937082462` received independent Z.AI GLM
+ACCEPT and is integrated as `7067f509`. The manager configured a fresh strict
+build with production shell disabled, built the File Manager plus the six
+focused boundary/dependency tests, and observed 7/7 selected rows pass,
+including `qindaqt.file-manager-installed-runtime`. This is a narrow public
+composition boundary for local listing, mutation, Trash and launch intent; it
+does not add remote access or duplicate policy.
+
+The immediate consumer slice is File Manager's visible background/selection
+context-menu behavior, reusing its existing action and mutation machinery.
+Dock candidate `aef75d2230d3bc08cea5b777bd3468ae96191a9c` is in independent
+review. The container roll-up lane remains an active reproduction and makes no
+completion claim yet.
+
 ## Desktop gap wave: lock screen, portals, input and shortcuts, keyring, night light (September 11, r11)
 
 After r10 the user named five desktop gaps and asked for five GLM 5.3 Flash

@@ -7,6 +7,17 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Immediate desktop and File Manager usability wave (September 12)
+
+The narrow Desktop/local-file boundary is integrated at `7067f509` after an
+independent review of candidate `ae9865d5`. A fresh strict manager build and
+all seven selected File Manager rows pass, including the installed-runtime
+row. The boundary is not a new framework: the next slice uses the existing
+action catalog, coordinators, dialogs, and controllers to make background and
+selection context menus truthful and consistent in grid and details views.
+Dock geometry is already a candidate under independent review, while the
+container lane is reproducing the roll-up ghost before proposing a fix.
+
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
 **Completed September 10.** The product owner retired the custom token UI for
