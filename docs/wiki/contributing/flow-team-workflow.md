@@ -59,7 +59,10 @@ depends on prior ledger mutation. A raw reviewer verdict transitions only the
 exact candidate declared in its own heading or candidate field; mentioning the
 review worktree's HEAD in a routing note is not verdict evidence. The five-minute watchdog uses the same
 mapping when copying current records/messages; rotated worktrees must not be
-overwritten by a historical lane directory. Event identity includes its type,
+overwritten by a historical lane directory. If the mapped worker has not yet
+published its stable record, the board removes the prior occupant's cached
+declaration and reports the record as missing while retaining independent
+process observation. Event identity includes its type,
 worker, exact candidate or outcome, and stable lifecycle transition; a later
 handoff by the same worker is therefore new while an unchanged scan is not. New events in one scan are
 coalesced into one bounded manager wake. Delivery state is written atomically,

@@ -99,12 +99,16 @@ test('supervisor copies the assignment-mapped worktree and explicit message thre
   await mkdir(path.join(fx.board, 'workers'), { recursive: true });
   await writeFile(path.join(rotated, 'ops/team/workers/small-team-files.md'), '# mapped worker record\n');
   await writeFile(path.join(rotated, 'ops/team/messages/small-team-20260912/exact-thread/verdict.md'), '# mapped verdict\n');
-  await writeFile(path.join(fx.board, 'assignments.json'), JSON.stringify({ assignments: [{
-    workerId: 'small-team-files', state: 'reviewing', worktree: 'rotated-files-review',
-    messageThread: 'exact-thread',
-  }] }));
+  await writeFile(path.join(fx.board, 'workers/small-team-dock.md'), '# stale prior occupant\n');
+  await writeFile(path.join(fx.board, 'assignments.json'), JSON.stringify({ assignments: [
+    { workerId: 'small-team-files', state: 'reviewing', worktree: 'rotated-files-review',
+      messageThread: 'exact-thread' },
+    { workerId: 'small-team-dock', state: 'working', worktree: 'rotated-files-review' },
+  ] }));
   await writeFile(path.join(fx.root, 'sessions.tsv'), '');
   await tick(fx, { epoch: 4_000, issues: '' });
   assert.equal(await readFile(path.join(fx.board, 'workers/small-team-files.md'), 'utf8'), '# mapped worker record\n');
   assert.equal(await readFile(path.join(fx.board, 'messages/files/verdict.md'), 'utf8'), '# mapped verdict\n');
+  await assert.rejects(readFile(path.join(fx.board, 'workers/small-team-dock.md'), 'utf8'),
+    (error) => error?.code === 'ENOENT');
 });
