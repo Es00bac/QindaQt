@@ -55,7 +55,9 @@ capacity with backlog use a separate event path with a scan interval of at most
 15 seconds. It reads handoff and reviewer-verdict evidence from each
 assignment's explicit current worktree and message-thread mapping as well as
 the manager ledger, so neither a candidate nor an ACCEPT/REJECT notification
-depends on prior ledger mutation. The five-minute watchdog uses the same
+depends on prior ledger mutation. A raw reviewer verdict transitions only the
+exact candidate declared in its own heading or candidate field; mentioning the
+review worktree's HEAD in a routing note is not verdict evidence. The five-minute watchdog uses the same
 mapping when copying current records/messages; rotated worktrees must not be
 overwritten by a historical lane directory. Event identity includes its type,
 worker, exact candidate or outcome, and stable lifecycle transition; a later

@@ -135,6 +135,28 @@ test('discovers a reviewer verdict for a known reviewing candidate before ledger
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('does not bind a verdict for another candidate to the review worktree HEAD', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'qindaqt-review-identity-'));
+  try {
+    const worktree = path.join(root, 'review');
+    const thread = path.join(worktree, 'ops/team/messages/small-team-20260912/review');
+    mkdirSync(thread, { recursive: true });
+    execFileSync('git', ['init', '-q'], { cwd: worktree });
+    execFileSync('git', ['config', 'user.email', 'fixture@example.invalid'], { cwd: worktree });
+    execFileSync('git', ['config', 'user.name', 'Fixture'], { cwd: worktree });
+    writeFileSync(path.join(worktree, 'product.txt'), 'candidate\n');
+    execFileSync('git', ['add', 'product.txt'], { cwd: worktree });
+    execFileSync('git', ['commit', '-qm', 'Fixture candidate'], { cwd: worktree });
+    const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim();
+    const other = '0123456789abcdef0123456789abcdef01234567';
+    writeFileSync(path.join(thread, 'routing-and-verdict.md'),
+      `# Queue note\n\nReview worktree HEAD remains ${head}.\n\n# REJECT — another candidate\n\n- Candidate: \`${other}\`\n- Verdict: **REJECT**\n`);
+    const found = await discoverHandoffs(root, [{ workerId: 'small-team-review', state: 'reviewing',
+      worktree: 'review', messageThread: 'review' }], new Set([head]));
+    assert.equal(found.length, 0);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('completed one-shot review is a result event, not a failed reviewer', () => {
   const events = deriveEvents({ reviews: [{ candidate, stage: 'reviewing', reviewResult: 'ACCEPT' }],
     workers: [{ id: 'small-team-review', status: 'waiting — ACCEPT published', processObservation: { processState: 'stopped' } }] });
