@@ -402,6 +402,49 @@ implementation surfaces and are not installed or ABI-stable. The executable
 name, desktop ID, folder-launch-argument contract, and documented action
 object names/shortcuts form the compatibility surface.
 
+## Public Desktop file boundary
+
+`QindaQt::Apps::FileManager::Desktop::FileBoundary`
+(`public/desktop_file_boundary.h`) is the one narrow, stateless seam through
+which Desktop-owned code (and, later, the network worker's URL/job
+integration) reaches File Manager's local-filesystem authority. It is the
+only File Manager surface Desktop may depend on; `model/**`, `mutation/**`,
+and `app_shell/**` remain private controllers even though their headers are
+`PUBLIC` in File Manager's own CMake target (see [Module
+boundaries](../architecture/module-boundaries.md)).
+
+- `listLocalFolder(absolutePath)` composes `LocalDirectoryLister` and returns
+  the same `ListingResult`/`DirectoryEntry` values File Manager's own
+  navigation uses: one bounded synchronous local read (at most
+  `LocalDirectoryLister::maximumEntries` entries), a typed `ListingError`
+  instead of a thrown exception, and identity fields (device, inode, size,
+  modification time, mode) a caller can hand straight to a mutation request
+  without a second stat.
+- `launchLocalFile(absolutePath)` composes `DesktopFileLauncher` and performs
+  the identical validate-then-`QDesktopServices::openUrl` local launch
+  contract documented above, returning a typed `LaunchError` on any
+  pre-flight rejection or declined handler.
+- `createLocalMutationController(parent)` composes one `MutationController`
+  over a `LocalMutationBackend` rooted at the same `$XDG_DATA_HOME/Trash`
+  File Manager's own `main.cpp` wires (ADR-0064), so Desktop-initiated
+  create/rename/copy/move/Trash/restore requests are identity-checked and
+  behave identically to File Manager's own. This composes already-accepted
+  controller/backend wiring; it adds no new mutation policy or architecture.
+
+Every member is GUI-thread only and performs no I/O beyond the bounded local
+reads/writes the composed classes already document. `listLocalFolder` and
+`launchLocalFile` are synchronous and stateless; `createLocalMutationController`
+returns a GUI-thread-confined `QObject` that owns exactly one worker thread
+and at most one in-flight operation, publishing bounded progress and typed
+failure through its existing properties/signals. The caller owns the returned
+controller's lifetime (via `parent`, or by keeping the `unique_ptr` alive) for
+as long as an operation may be in flight. The boundary resolves only local
+absolute paths; portal, network, and mount locations are out of scope and
+remain later slices. The focused row is
+`qindaqt.file-manager-desktop-file-boundary`, covering a real temporary-file
+listing success/failure case, launch pre-flight rejections, and an end-to-end
+Trash operation against fixture identity obtained from `listLocalFolder`.
+
 ## Stock-controls presentation and accessibility boundary
 
 Per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md), every

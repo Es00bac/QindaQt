@@ -30,6 +30,7 @@ target_sources(
         model/navigation_history.cpp
         model/places_controller.cpp
         model/search_controller.cpp
+        public/desktop_file_boundary.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
         mutation/device_resolver.h
@@ -55,6 +56,7 @@ target_sources(
         model/navigation_history.h
         model/places_controller.h
         model/search_controller.h
+        public/desktop_file_boundary.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
