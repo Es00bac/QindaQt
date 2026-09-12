@@ -13,11 +13,25 @@ test('handoff event bypasses an unrelated warning cooldown and duplicate scan ca
   const events = deriveEvents({ reviews: [{ candidate, stage: 'queued', reviewResult: 'pending' }] });
   let calls = 0;
   const first = await dispatchEvents({ events, previous: { warningCooldownUntil: 99_999 }, nowMs: 1_000,
-    clock: () => 1_000, queue: async () => { calls += 1; } });
+    clock: () => 1_007, queue: async () => { calls += 1; } });
   assert.equal(calls, 1);
-  assert.equal(first.lastEvidenceLatencyMs, 0);
+  assert.equal(first.lastEvidenceLatencyMs, 7);
+  assert.equal(first.lastQueueDurationMs, 7);
   await dispatchEvents({ events, previous: first, nowMs: 1_001, queue: async () => { calls += 1; } });
   assert.equal(calls, 1);
+});
+
+test('legacy pre-await zero timing neither surfaces nor suppresses honest redelivery', async () => {
+  const events = deriveEvents({ reviews: [{ candidate, stage: 'queued', reviewResult: 'pending' }] });
+  const key = events[0].key;
+  let calls = 0;
+  const result = await dispatchEvents({ events, previous: { delivered: {
+    [key]: { event: events[0], firstSeenAt: 1_000, deliveredAt: 1_000, latencyMs: 0 },
+  } }, nowMs: 2_000, clock: () => 2_009, queue: async () => { calls += 1; } });
+  assert.equal(calls, 1);
+  assert.equal(result.delivered[key].evidenceLatencyMs, 9);
+  assert.equal(result.delivered[key].queueDurationMs, 9);
+  assert.equal('latencyMs' in result.delivered[key], false);
 });
 
 test('failed queue remains pending and retries on the next scan', async () => {

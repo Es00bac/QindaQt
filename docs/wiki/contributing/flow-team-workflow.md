@@ -67,7 +67,8 @@ failed queue attempts remain pending for retry, and resolved failures are
 removed. This product path does not inherit the slower warning-reminder
 cooldown; the five-minute watchdog remains the backstop for stale records and
 missed events. The dashboard reports evidence-to-queue and queue-call latency,
-and separates queued delivery from manager acknowledgement and integrated,
+omits legacy pre-await timing rows that cannot support those measurements, and
+separates queued delivery from manager acknowledgement and integrated,
 verified, and installed/adopted states.
 
 ## Durable queue contract
