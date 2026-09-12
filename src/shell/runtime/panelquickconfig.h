@@ -32,7 +32,8 @@ public:
                      QObject *parent = nullptr);
 
     // Validated per-panel settings: transparency (bool), dockZoom (bool),
-    // dockTileSize (int 56..64). Absent keys are simply missing from the map.
+    // dockTileSize (int 32..64 logical pixels). Absent keys are simply missing
+    // from the map. Existing 56/60/64 values retain their exact meaning.
     Q_INVOKABLE QVariantMap panelSettings(const QString &panelId) const;
 
     // Persists one validated setting for the panel. Returns false (and writes

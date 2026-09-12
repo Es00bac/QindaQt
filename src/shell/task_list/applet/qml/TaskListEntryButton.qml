@@ -43,7 +43,7 @@ T.ToolButton {
     property bool dragHeld: false
     property real dragShiftX: 0
     property real dragFollowX: 0
-    readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
+    readonly property int resolvedDockTileSize: Math.max(24, Math.min(64, dockTileSize))
     // Ungrouped rows (`grouping: "never"`) name the one container member they
     // show: Activate and Close address that window, every other action the
     // whole container. Empty on grouped rows.
@@ -196,7 +196,8 @@ T.ToolButton {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
             name: String(button.entry.iconName ?? "")
-            size: 40
+            size: Math.min(40, Math.max(
+                      16, button.resolvedDockTileSize - 8))
             color: button.resolvedIconColor
             symbolic: button.entry.kind === "container"
             fallbackText: button.entry.applicationName

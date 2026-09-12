@@ -25,6 +25,8 @@ Flickable {
     property bool vertical: false
     property bool dockMode: false
     property int dockTileSize: 60
+    property real dockAvailableExtent: width
+    property real dockSurfaceHeight: height
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     // Worn Luna taskbar (ADR-0124): PanelContent's panel-derived lunaMode,
@@ -33,6 +35,27 @@ Flickable {
     readonly property int lanes: Math.max(1, Number(panel.rows ?? 1))
     readonly property var zoneApplets: (panel.applets ?? []).filter(
         applet => appletZone(applet) === zone)
+    readonly property int minimumFittedDockTileSize: 24
+    readonly property int dockUnitCount: dockMode ? countDockUnits() : 0
+    readonly property int dockGroupCount: dockMode ? countDockGroups() : 0
+    readonly property real dockFitSpacing:
+        Math.max(0, dockUnitCount - dockGroupCount) * Tokens.space["1"]
+        + Math.max(0, dockGroupCount - 1) * grid.spacing
+        + (dockHasTaskDivider() ? 1 + Tokens.space["1"] : 0)
+    readonly property int dockHorizontalTileLimit: dockUnitCount > 0
+        ? Math.floor(Math.max(0, dockAvailableExtent - dockFitSpacing)
+                     / dockUnitCount) : dockTileSize
+    readonly property int dockVerticalTileLimit: dockZoomEnabled && !reducedMotion
+        ? maxDockTileForHeight() : Math.floor(dockSurfaceHeight)
+    // AGENT-CONTRACT: this value is output-local presentation geometry. It
+    // must never be written back through PanelQuickConfig.
+    readonly property int effectiveDockTileSize: dockMode
+        ? Math.max(minimumFittedDockTileSize,
+                   Math.min(dockTileSize, dockHorizontalTileLimit,
+                            dockVerticalTileLimit)) : dockTileSize
+    readonly property bool dockOverflowFallback: dockMode
+        && (dockHorizontalTileLimit < minimumFittedDockTileSize
+            || dockVerticalTileLimit < minimumFittedDockTileSize)
     readonly property real desiredExtent: vertical ? grid.implicitHeight : grid.implicitWidth
     contentWidth: vertical ? width : grid.implicitWidth
     contentHeight: vertical ? grid.implicitHeight : height
@@ -115,6 +138,80 @@ Flickable {
         return settings.zone ?? "start";
     }
 
+    function dockUnitsFor(applet) {
+        const plugin = String(applet.plugin ?? "")
+        if (["dock-task-list", "grouped-task-list", "centered-task-list",
+             "task-list"].includes(plugin)) {
+            return taskListAppletAccess !== null
+                ? Math.max(0, Number(taskListAppletAccess.entryCount ?? 0)) : 1
+        }
+        if (plugin === "quick-launch") {
+            const quick = desktopControlsAccess !== null
+                ? desktopControlsAccess.quickLaunch : null
+            return quick !== null && quick !== undefined
+                ? Math.max(0, Number((quick.rows ?? []).length)) : 1
+        }
+        return 1
+    }
+
+    function countDockUnits() {
+        let count = 0
+        for (const applet of zoneApplets)
+            count += dockUnitsFor(applet)
+        return count
+    }
+
+    function countDockGroups() {
+        return zoneApplets.filter(applet => dockUnitsFor(applet) > 0).length
+    }
+
+    function dockHasTaskDivider() {
+        let hasLauncher = false
+        for (const applet of zoneApplets) {
+            if (dockUnitsFor(applet) <= 0)
+                continue
+            const plugin = String(applet.plugin ?? "")
+            if (isDockLauncher(applet))
+                hasLauncher = true
+            else if (hasLauncher && ["dock-task-list", "grouped-task-list",
+                                     "centered-task-list", "task-list"].includes(plugin))
+                return true
+        }
+        return false
+    }
+
+    function dockIconExtentFor(tileSize) {
+        return Math.min(40, Math.max(16, tileSize - 8))
+    }
+
+    function dockOverscanFor(tileSize) {
+        return Math.max(0, Math.ceil(dockIconExtentFor(tileSize)
+                                     - tileSize / 2)) + 3
+    }
+
+    function maxDockTileForHeight() {
+        for (let tileSize = 64; tileSize >= minimumFittedDockTileSize; --tileSize) {
+            if (tileSize + dockOverscanFor(tileSize) <= dockSurfaceHeight)
+                return tileSize
+        }
+        return 0
+    }
+
+    function dockInputBounds(materialX, materialY, materialWidth,
+                             materialHeight, surfaceWidth, surfaceHeight,
+                             contentInset) {
+        const verticalOverscan = dockZoomEnabled && !reducedMotion
+            ? dockOverscanFor(effectiveDockTileSize) : 0
+        const horizontalOverscan = dockZoomEnabled && !reducedMotion
+            ? Math.max(0, Math.ceil(dockIconExtentFor(
+                effectiveDockTileSize) / 4) - contentInset) : 0
+        const x = Math.max(0, materialX - horizontalOverscan)
+        const y = Math.max(0, materialY - verticalOverscan)
+        return Qt.rect(x, y,
+            Math.min(surfaceWidth - x, materialWidth + horizontalOverscan * 2),
+            Math.min(surfaceHeight - y, materialHeight + verticalOverscan))
+    }
+
     function isDockLauncher(applet) {
         const plugin = String(applet.plugin ?? "")
         return plugin === "launcher" || plugin === "application-launcher"
@@ -170,7 +267,7 @@ Flickable {
                 desktopControlsAccess: root.desktopControlsAccess
                 dockMode: root.dockMode
                 lunaMode: root.lunaMode
-                dockTileSize: root.dockTileSize
+                dockTileSize: root.effectiveDockTileSize
                 reducedMotion: root.reducedMotion
                 dockZoomEnabled: root.dockZoomEnabled
                 dockHasLauncherGroup: root.dockMode

@@ -12,22 +12,31 @@ configuration menu. The task-list data contracts stay in
 
 Both stock dock panels (the QindaQt smart shelf and the macOS-style dock)
 solve at full edge length (`length: 1.0`). The painted shelf still hugs its
-content: it grows as tasks, pins, and launcher tiles are added, fills the
-window at full output width, and never truncates. Beyond full width the
-center-zone viewport scrolls — by wheel, flick, or keyboard reveal — behind
-a thin non-interactive token-styled indicator that exists only while its own
-axis overflows (the [panel hit targets](panel-surfaces.md#panel-hit-targets)
-contract). In dock mode the strip projects every task row up to the
-compositor fact ceiling; the taskbar strip keeps its 64-row cap and exact
-"+N more" overflow truth.
+content. A user's 32–64 logical-pixel tile preference is preserved while the
+current output derives a separate effective size: if the preferred inventory
+would exceed the available horizontal span, or its magnification envelope
+would exceed the surface height, every tile and the shelf height shrink
+proportionally to the largest fitting integer size. Returning space restores
+the preference without a Settings write. The effective size stops at 24
+logical pixels, the usable pointer-target floor for this compact fallback.
+An inventory that still cannot fit at that floor scrolls — by wheel, flick,
+or keyboard reveal — behind a thin non-interactive token-styled indicator
+that exists only while its own axis overflows (the [panel hit
+targets](panel-surfaces.md#panel-hit-targets) contract). No task is truncated.
+In dock mode the strip projects every task row up to the compositor fact
+ceiling; the taskbar strip keeps its 64-row cap and exact "+N more" overflow
+truth.
 
 ## Magnification (macOS-style zoom)
 
 Pointer proximity swells dock tiles with a Gaussian falloff (peak 1.5 at the
 hovered tile, roughly two neighbors participating). Magnification transforms
-tile visuals only — delegate sizes, layout bounds, and hit targets never
-move, which keeps the strip's layout contract and the zone viewport exact.
-The tile reserves its full envelope before the icon swells, bottom-anchored.
+tile visuals only — delegate sizes and layout bounds never move, which keeps
+the strip's layout contract and the zone viewport exact. The dock surface
+reserves a size-derived overscan envelope above its bottom-aligned shelf before
+the icon swells. Its input/blur bounds add only that bounded envelope (plus any
+sub-padding horizontal overrun), rather than the former fixed transparent
+margin on all four sides.
 The effect is disabled by `reducedMotion` or by the per-panel `dockZoom`
 quick setting. The same seam backs the pins strip.
 
@@ -70,7 +79,10 @@ consumes the same painted bounds as the input mask.
 Right-clicking a panel's own surface (behind every applet chip) opens the
 panel configuration menu: "Customize Panel…" (opens the Settings app's
 Customize route) plus live quick settings — transparency for every panel,
-and magnification plus tile size (56/60/64) for docks. Every quick setting
-persists through Settings1 and applies immediately. Deep layout edits
+and magnification plus an integer-step 32–64 logical-pixel tile-size slider
+and numeric input for docks. “Logical pixels” are Qt layout units; output scale
+maps them to device pixels, so the control does not promise physical-pixel
+sizing. Every quick setting persists through Settings1 and applies immediately.
+Deep layout edits
 (alignment, autohide, applet arrangement) remain Customize-editor work until
 the live profile-binding slice lands; the menu routes there.
