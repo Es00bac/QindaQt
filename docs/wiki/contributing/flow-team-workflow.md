@@ -52,13 +52,18 @@ obstacle, connect peers, integrate finished work, refill safe capacity.
 
 Candidate handoffs, review results, stopped working processes, and live idle
 capacity with backlog use a separate event path with a scan interval of at most
-15 seconds. Event identity includes its type, worker, and exact candidate or
-outcome. Delivery state is written atomically, failed queue attempts remain
-pending for retry, and delivered events do not invoke the manager again on an
-unchanged scan. This product path does not inherit the slower warning-reminder
+15 seconds. It reads handoff evidence from each assignment's explicit current
+worktree as well as the manager ledger, so ledger entry is not a prerequisite
+for notification. Event identity includes its type, worker, exact candidate or
+outcome, and stable lifecycle transition; a later handoff by the same worker is
+therefore new while an unchanged scan is not. New events in one scan are
+coalesced into one bounded manager wake. Delivery state is written atomically,
+failed queue attempts remain pending for retry, and resolved failures are
+removed. This product path does not inherit the slower warning-reminder
 cooldown; the five-minute watchdog remains the backstop for stale records and
-missed events. The dashboard reports queued delivery separately from manager
-acknowledgement and integrated, verified, and installed/adopted states.
+missed events. The dashboard reports evidence-to-queue and queue-call latency,
+and separates queued delivery from manager acknowledgement and integrated,
+verified, and installed/adopted states.
 
 ## Durable queue contract
 

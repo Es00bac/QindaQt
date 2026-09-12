@@ -1,16 +1,21 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
-import { deriveEvents, dispatchEvents, mergeReviewSnapshots } from './event-dispatcher.mjs';
+import { deriveEvents, discoverHandoffs, dispatchEvents, mergeReviewSnapshots } from './event-dispatcher.mjs';
 
 const candidate = '6f0b77f1aa2aebb5add7098cc3a419b3807b1a48';
 
 test('handoff event bypasses an unrelated warning cooldown and duplicate scan calls no model', async () => {
   const events = deriveEvents({ reviews: [{ candidate, stage: 'queued', reviewResult: 'pending' }] });
   let calls = 0;
-  const first = await dispatchEvents({ events, previous: { warningCooldownUntil: 99_999 }, nowMs: 1_000, queue: async () => { calls += 1; } });
+  const first = await dispatchEvents({ events, previous: { warningCooldownUntil: 99_999 }, nowMs: 1_000,
+    clock: () => 1_000, queue: async () => { calls += 1; } });
   assert.equal(calls, 1);
-  assert.equal(first.lastLatencyMs, 0);
+  assert.equal(first.lastEvidenceLatencyMs, 0);
   await dispatchEvents({ events, previous: first, nowMs: 1_001, queue: async () => { calls += 1; } });
   assert.equal(calls, 1);
 });
@@ -21,10 +26,12 @@ test('failed queue remains pending and retries on the next scan', async () => {
   const failed = await dispatchEvents({ events, previous: {}, nowMs: 2_000, queue: async () => { calls += 1; throw new Error('queue down'); } });
   assert.equal(Object.keys(failed.pending).length, 1);
   assert.match(Object.values(failed.pending)[0].error, /queue down/);
-  const retried = await dispatchEvents({ events, previous: failed, nowMs: 2_012, queue: async () => { calls += 1; } });
+  const retried = await dispatchEvents({ events, previous: failed, nowMs: 2_012, clock: () => 2_012,
+    queue: async () => { calls += 1; } });
   assert.equal(calls, 2);
   assert.equal(Object.keys(retried.pending).length, 0);
-  assert.equal(retried.lastLatencyMs, 12);
+  assert.equal(retried.lastEvidenceLatencyMs, 12);
+  assert.equal(retried.lastQueueDurationMs, 0);
 });
 
 test('resolved events are removed from pending state', async () => {
@@ -37,10 +44,60 @@ test('resolved events are removed from pending state', async () => {
 });
 
 test('live waiting worker with backlog is actionable unless an assignment already exists', () => {
-  const worker = { id: 'small-team-files', status: 'waiting — handed off', processObservation: { processState: 'alive' } };
+  const worker = { id: 'small-team-files', status: 'waiting — handed off', updatedAt: '2026-09-12T21:00:00Z',
+    processObservation: { processState: 'alive' } };
   const delivery = [{ id: 'desktop-icons', stage: 'partial', outcome: 'Desktop icons' }];
   assert.equal(deriveEvents({ workers: [worker], delivery }).some((event) => event.type === 'available-capacity'), true);
-  assert.equal(deriveEvents({ workers: [worker], delivery, assignments: [{ workerId: worker.id, state: 'READY' }] }).some((event) => event.type === 'available-capacity'), false);
+  assert.equal(deriveEvents({ workers: [worker], delivery,
+    assignments: [{ workerId: worker.id, state: 'READY', assignedAt: '2026-09-12T21:01:00Z' }] })
+    .some((event) => event.type === 'available-capacity'), false);
+  assert.equal(deriveEvents({ workers: [worker], delivery,
+    assignments: [{ workerId: worker.id, state: 'READY', assignedAt: '2026-09-12T20:59:00Z' }] })
+    .some((event) => event.type === 'available-capacity'), true);
+});
+
+test('successive worker handoffs and changed review verdicts have distinct stable keys', () => {
+  const delivery = [{ id: 'desktop-icons', stage: 'partial' }];
+  const first = deriveEvents({ delivery, workers: [{ id: 'files', status: 'waiting — candidate 11111111 handed off',
+    updatedAt: '2026-09-12T21:00:00Z', processObservation: { processState: 'alive' } }] })[0];
+  const second = deriveEvents({ delivery, workers: [{ id: 'files', status: 'waiting — candidate 22222222 handed off',
+    updatedAt: '2026-09-12T21:10:00Z', processObservation: { processState: 'alive' } }] })[0];
+  assert.notEqual(first.key, second.key);
+  const accept = deriveEvents({ reviews: [{ candidate, reviewResult: 'ACCEPT', reviewer: 'review' }] })[0];
+  const reject = deriveEvents({ reviews: [{ candidate, reviewResult: 'REJECT', reviewer: 'review' }] })[0];
+  assert.notEqual(accept.key, reject.key);
+});
+
+test('multiple new events are delivered in one bounded queue call', async () => {
+  const events = deriveEvents({ managerAlive: false, collectorFresh: false });
+  let calls = 0;
+  const result = await dispatchEvents({ events, managerAlive: true, previous: {}, nowMs: 5_000,
+    clock: () => 5_007, queue: async (batch) => { calls += 1; assert.equal(batch.length, 2); } });
+  assert.equal(calls, 1);
+  assert.equal(Object.keys(result.delivered).length, 2);
+  assert.equal(result.lastQueueDurationMs, 7);
+});
+
+test('discovers a clean worker handoff before the manager review ledger contains it', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'qindaqt-events-'));
+  try {
+    const worktree = path.join(root, 'worker');
+    mkdirSync(path.join(worktree, 'ops/team/messages/small-team-20260912/files'), { recursive: true });
+    execFileSync('git', ['init', '-q'], { cwd: worktree });
+    execFileSync('git', ['config', 'user.email', 'fixture@example.invalid'], { cwd: worktree });
+    execFileSync('git', ['config', 'user.name', 'Fixture'], { cwd: worktree });
+    writeFileSync(path.join(worktree, 'product.txt'), 'candidate\n');
+    execFileSync('git', ['add', 'product.txt'], { cwd: worktree });
+    execFileSync('git', ['commit', '-qm', 'Fixture candidate'], { cwd: worktree });
+    const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim();
+    writeFileSync(path.join(worktree, 'ops/team/messages/small-team-20260912/files/handoff.md'),
+      `# Candidate handoff\n\nCandidate: ${sha}\n`);
+    const found = await discoverHandoffs(root, [{ workerId: 'small-team-files', state: 'working',
+      worktree: 'worker', dispatch: 'files.md', assignedAt: '2026-09-12T21:00:00Z' }], new Set());
+    assert.equal(found[0].candidate, sha);
+    assert.equal((await discoverHandoffs(root, [{ workerId: 'small-team-files', state: 'working',
+      worktree: 'worker', dispatch: 'files.md' }], new Set([sha]))).length, 0);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test('completed one-shot review is a result event, not a failed reviewer', () => {
