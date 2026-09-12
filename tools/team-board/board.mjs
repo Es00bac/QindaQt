@@ -508,6 +508,7 @@ export function buildBoard(data, workers, options = {}) {
     delivery: Object.freeze(Array.isArray(options.delivery) ? options.delivery : []),
     reviews: Object.freeze(Array.isArray(options.reviews) ? options.reviews : []),
     supervision: Object.freeze(options.supervision && typeof options.supervision === 'object' ? options.supervision : {}),
+    eventDispatch: Object.freeze(options.eventDispatch && typeof options.eventDispatch === 'object' ? options.eventDispatch : {}),
     messages: Object.freeze(messages),
     workerErrors: Object.freeze(Array.isArray(options.workerErrors) ? [...options.workerErrors] : []),
   });
@@ -528,6 +529,7 @@ export async function readBoard(teamRoot) {
   let deliveryData = { outcomes: [] };
   let reviewData = { reviews: [] };
   let supervisionData = {};
+  let eventDispatchData = {};
   let activityData = { workers: [] };
   try {
     data = JSON.parse(await readFile(featurePath, 'utf8'));
@@ -549,6 +551,7 @@ export async function readBoard(teamRoot) {
   try { deliveryData = JSON.parse(await readFile(path.join(teamRoot, 'delivery.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   try { reviewData = JSON.parse(await readFile(path.join(teamRoot, 'reviews.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   try { supervisionData = JSON.parse(await readFile(path.join(teamRoot, 'supervision.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
+  try { eventDispatchData = JSON.parse(await readFile(path.join(teamRoot, 'event-dispatch.json'), 'utf8')); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   // AGENT-NOTE: unlike the flow upstream, this repo keeps a README inside
   // workers/ describing the record convention; it is documentation, never an
   // employee record.
@@ -580,5 +583,6 @@ export async function readBoard(teamRoot) {
     delivery: deliveryData?.outcomes,
     reviews: reviewData?.reviews,
     supervision: supervisionData,
+    eventDispatch: eventDispatchData,
   });
 }
