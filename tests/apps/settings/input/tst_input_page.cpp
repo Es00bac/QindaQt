@@ -115,6 +115,7 @@ private Q_SLOTS:
     void cleanup();
 
     void capabilityHidingHidesUnsupportedRows();
+    void editorsSeatInsideTheirFormRows();
     void conflictCaptureNamesTheConflictingAction();
     void captureFlowEscapeCancelsAndBackspaceClears();
     void keyboardNavigationReachesTabsAndControls();
@@ -234,6 +235,54 @@ void InputPageTest::capabilityHidingHidesUnsupportedRows() {
     QVERIFY(!isShown(QStringLiteral("inputPointerNaturalScrollRow")));
     QVERIFY(!isShown(QStringLiteral("inputTouchpadHeader")));
     QVERIFY(!isShown(QStringLiteral("inputTouchpadTapToClickRow")));
+}
+
+void InputPageTest::editorsSeatInsideTheirFormRows() {
+    // An editor assigned inline (`editor: Slider {}`) is created without a
+    // parent and would never render: the row shows only its label text while
+    // object-existence checks keep passing. FormRow must seat every assigned
+    // editor in the row's editor host so the control is visible and
+    // interactive (regression for the Input route blank-form defect).
+    PointerDeviceSnapshot mouse;
+    mouse.deviceId = QStringLiteral("event5");
+    mouse.name = QStringLiteral("Fake Mouse");
+    mouse.pointer = true;
+    mouse.properties = QVariantMap{
+        {QStringLiteral("pointerAcceleration"), 0.0},
+        {QStringLiteral("supportsPointerAcceleration"), true},
+        {QStringLiteral("supportsNaturalScroll"), true},
+        {QStringLiteral("naturalScroll"), false},
+    };
+    facade->m_pointerPort.scripted.append(mouse);
+    facade->pointerModel.refresh();
+
+    auto *row = qobject_cast<QQuickItem *>(
+        findObject(QStringLiteral("inputPointerSpeedRow")));
+    QTRY_VERIFY(row != nullptr);
+    auto *naturalScrollRow = qobject_cast<QQuickItem *>(
+        findObject(QStringLiteral("inputPointerNaturalScrollRow")));
+    QVERIFY(naturalScrollRow != nullptr);
+    auto *slider = qobject_cast<QQuickItem *>(
+        findObject(QStringLiteral("inputPointerSpeedSlider")));
+    QVERIFY(slider != nullptr);
+    auto *naturalScroll = qobject_cast<QQuickItem *>(
+        findObject(QStringLiteral("inputPointerNaturalScrollSwitch")));
+    QVERIFY(naturalScroll != nullptr);
+
+    const auto seated = [](const QQuickItem *editor, const QQuickItem *owner) {
+        bool inHost = false;
+        bool underRow = false;
+        for (const QQuickItem *ancestor = editor->parentItem();
+             ancestor != nullptr; ancestor = ancestor->parentItem()) {
+            inHost = inHost ||
+                     ancestor->objectName() == QLatin1String("formRowEditorHost");
+            underRow = underRow || ancestor == owner;
+        }
+        return inHost && underRow;
+    };
+    QVERIFY(seated(slider, row));
+    QVERIFY(slider->width() > 0);
+    QVERIFY(seated(naturalScroll, naturalScrollRow));
 }
 
 void InputPageTest::conflictCaptureNamesTheConflictingAction() {

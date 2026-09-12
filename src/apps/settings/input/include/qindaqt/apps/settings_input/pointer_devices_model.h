@@ -19,6 +19,12 @@ class PointerDevicesModel final : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(QObject *selection READ selection CONSTANT)
+    // AGENT-CONTRACT: The picker row's selected index lives here, not in the
+    // combo: QQuickComboBox does not self-select when a list model resets
+    // into non-empty, so the route binds its picker to this property. It
+    // changes whenever the selected row changes, including after refresh().
+    Q_PROPERTY(int selectedIndex READ selectedIndex NOTIFY
+                   selectedIndexChanged)
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
     Q_PROPERTY(bool refreshing READ refreshing NOTIFY refreshingChanged)
     Q_PROPERTY(bool empty READ empty NOTIFY countChanged)
@@ -43,6 +49,7 @@ public:
     [[nodiscard]] bool empty() const { return m_devices.isEmpty(); }
     [[nodiscard]] bool available() const { return m_available; }
     [[nodiscard]] bool refreshing() const { return m_refreshing; }
+    [[nodiscard]] int selectedIndex() const { return m_selectedRow; }
     [[nodiscard]] PointerDeviceSelection *selection() const {
         return m_selection;
     }
@@ -57,6 +64,7 @@ public:
 
 Q_SIGNALS:
     void countChanged();
+    void selectedIndexChanged();
     void availableChanged();
     void refreshingChanged();
 

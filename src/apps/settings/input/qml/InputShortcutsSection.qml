@@ -42,7 +42,7 @@ ColumnLayout {
             id: searchField
             objectName: "inputShortcutsSearchField"
             placeholderText: qsTr("Type to filter")
-            Layout.preferredWidth: 320
+            width: 320
             onTextChanged: shortcuts.filter = text
         }
     }

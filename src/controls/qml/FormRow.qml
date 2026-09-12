@@ -48,6 +48,23 @@ T.Control {
         restoreMode: Binding.RestoreBinding
     }
 
+    // AGENT-GUARD: An inline editor assignment (`editor: Slider {}`) is
+    // created by the QML engine WITHOUT a parent — an unparented Item never
+    // renders or takes input, and the row silently degrades to bare label
+    // text (the Input route blank-form defect). Seat the assigned editor in
+    // editorHost. Call sites that declare the editor as a FormRow child
+    // already land there through the default property alias, so this is a
+    // no-op for that pattern. FormRow owns the editor's placement once it is
+    // assigned; size it directly (plain `width:`), not with Layout attached
+    // properties, because editorHost is a plain Item.
+    Component.onCompleted: seatEditor()
+    onEditorChanged: seatEditor()
+
+    function seatEditor() {
+        if (editor !== null && editor.parent !== editorHost)
+            editor.parent = editorHost
+    }
+
     contentItem: GridLayout {
         columns: control.wide ? 2 : 1
         columnSpacing: Tokens.space["5"]

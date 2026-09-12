@@ -93,7 +93,7 @@ ColumnLayout {
         editor: TextField {
             objectName: "inputRepeatTestField"
             placeholderText: qsTr("Type here to test")
-            Layout.preferredWidth: 320
+            width: 320
         }
     }
 
@@ -105,7 +105,7 @@ ColumnLayout {
         description: qsTr("State of the number pad when the session starts")
         editor: ComboBox {
             objectName: "inputNumLockCombo"
-            Layout.preferredWidth: 220
+            width: 220
             textRole: "label"
             model: [
                 { label: qsTr("Off"), value: 0 },

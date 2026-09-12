@@ -51,4 +51,4 @@ controls.
 | `qindaqt.settings-input-keyboard-layout-port` | `kxkbrc` round trip with `Use=true`, hostile catalogs, the announcement |
 | `qindaqt.settings-input-shortcut-port` | The kglobalaccel wire contract, read-back truth, command components, malformed replies |
 | `qindaqt.settings-input-pointer-devices-model`, `-keyboard-models`, `-shortcuts-model` | Presentation truth and write paths over fakes |
-| `qindaqt.settings-input-page` | Offscreen page: capability hiding, conflict capture, capture keys, keyboard navigation, unavailable notices |
+| `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, conflict capture, capture keys, keyboard navigation, unavailable notices |
