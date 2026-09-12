@@ -118,12 +118,17 @@ Current group-wide controls have these semantics:
   independent "strip" frame at the container's current position and width,
   height fixed to the shared chrome row, used only to build the shared-chrome
   plan; the real committed layout stays exactly as it was. Every member is
-  hidden from paint and pointer input (`KWin::Window::setHidden`), while the
-  current chrome anchor is additionally kept scene-paintable
-  (`WindowItem::refVisible(PAINT_DISABLED_BY_HIDDEN)`) with its own
-  content/decoration/shadow explicitly hidden, so the strip itself stays
-  visible and draggable while every member's content and input are genuinely
-  gone. Its chrome plan carries no tabs, members, or dividers at all (the
+  hidden from paint and pointer input (`KWin::Window::setHidden`) and has its
+  own content/decoration/shadow explicitly hidden, while the current chrome
+  anchor is additionally kept scene-paintable
+  (`WindowItem::refVisible(PAINT_DISABLED_BY_HIDDEN)`) at opacity 0.999, so the
+  strip itself stays visible and draggable while every member's content and
+  input are genuinely gone. The opacity keeps KWin from treating the anchor's
+  hidden client surface as an occluder, which would otherwise leave a stale
+  image of the member. Member transients hide with their owner. Because KWin's
+  own activation calls `setHidden(false)`, every such reveal is re-hidden
+  through `HybridShadeController::reassertMember` and focus moves to the next
+  shown window; a closed anchor is replaced by a surviving member. Its chrome plan carries no tabs, members, or dividers at all (the
   whole hit-testable rectangle is exactly the strip row), the chrome
   manager's plan validation checks that reduced shape's own invariant
   instead of the ordinary plan's tab/page-order check, group stacking
@@ -145,12 +150,14 @@ Current group-wide controls have these semantics:
   its native task/switcher/dock presence unminimized. **Unroll** performs the
   one real reflow in this lifecycle, back to the original size at the strip's
   current (possibly dragged) position, then restores every member's
-  visibility. Shade is rejected while maximized (and maximize while shaded);
+  visibility and hands focus back to the member that held it at roll-up.
+  Shade is rejected while maximized (and maximize while shaded);
   outer resize is rejected while shaded, but outer move remains available so
   the strip stays draggable, and moving it changes where the container
   reappears on unroll. See
   [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
-  for why member visibility, not reflow, is the mechanism.
+  for why member visibility, not reflow, is the mechanism, and its 2026-09-12
+  follow-up for the occlusion and activation-reveal corrections.
 - **Close** opens one nonblocking prompt for the container. **Close All** copies
   member IDs before requesting close, **Ungroup** performs one atomic
   `ReleaseContainer`, and **Cancel** changes nothing. The asynchronous decision

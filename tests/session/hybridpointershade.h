@@ -25,8 +25,9 @@ struct HybridPointerShadeEvidence final
 };
 
 // Drives the production group context menu's "Roll up group"/"Unroll group"
-// entry (the fifth action, index 4: Arrange windows, Detach active window,
-// Ungroup, Minimize group, Roll up/Unroll group) through real synthetic
+// entry (the sixth action, index 5: Saved workspaces…, Arrange windows,
+// Detach active window, Ungroup, Minimize group, Roll up/Unroll group) through
+// real synthetic
 // input against a live, already-grouped container. Proves the exact claims
 // ADR-0099 depends on: shading never changes either member's real KWin
 // frame, and each member is genuinely Window::isHidden() (not just

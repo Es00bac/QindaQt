@@ -254,7 +254,14 @@ whole group up to a compact title strip at its current position and width.
 No member is minimized (the container never becomes one collapsed dock
 entry) and no member's real frame is resized, but every member's content and
 pointer input are genuinely hidden while shaded, and only the shared-chrome
-anchor stays scene-paintable so the strip remains visible and draggable; see
+anchor stays scene-paintable so the strip remains visible and draggable. The
+anchor is held marginally below full opacity so KWin never lets its hidden
+client surface occlude the desktop beneath the strip, which would otherwise
+leave a stale ghost of client-side-decorated, Electron, Firefox, or borderless
+members. KWin's own activation cannot reveal a shaded member: the adapter
+re-hides it and hands focus to the next shown window. Member transients hide
+with their owner, a closed anchor is replaced by a surviving member, and an
+explicit unroll returns focus to the member that held it at roll-up; see
 [Hybrid constraints](hybrid-constraints.md) and
 [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md).
 
@@ -408,12 +415,16 @@ position), drag/cancel of the strip, and the maximize/shade mutual exclusion.
 `HybridShadeController` fake-platform tests cover the member-hiding
 orchestration itself: only the current anchor gets the content-preserving-
 visibility treatment, every other member gets plain hide/show, a rejected
-shade rolls every already-hidden member back, and a failed unshade still
-forgets the container so teardown cannot get stuck. `HybridContainerAppearanceStore`
-tests cover name/color normalization, rejection, and per-container
-independence. None of this yet covers shading a live grouped window through
-a nested KWin session — that is the only way to confirm the real KWin
-`WindowItem`/input behavior ADR-0099 depends on.
+shade rolls every already-hidden member back, a failed unshade still forgets
+the container so teardown cannot get stuck, a revealed member gets exactly its
+original treatment back, an unroll releases enforcement, a closed anchor is
+replaced by a survivor (or reported when none can anchor), and the member
+focused at roll-up is remembered. `HybridContainerAppearanceStore` tests cover
+name/color normalization, rejection, and per-container independence. The
+`compositor.shade-visibility.*` nested rows shade live grouped clients in a
+private KWin session and judge captured framebuffer pixels, real client
+presses, window inventory, and focus; their fixture matrix and missing
+coverage are recorded in the [testing harness](../development/testing-harness.md).
 The nested pointer workflow uses native KDecoration for an ordinary no-modifier
 detach; a second workflow unloads the plugin with a process-local group still
 owned and verifies restoration. These are functional input proofs, not pixel

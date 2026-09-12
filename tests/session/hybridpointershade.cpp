@@ -9,10 +9,14 @@ namespace QindaQt::Test {
 namespace {
 
 constexpr int InventoryTimeoutMilliseconds = 4000;
-// Menu order in KWinGroupContextMenu::prepare(): Arrange windows(0),
-// Detach active window(1), Ungroup(2), Minimize group(3), Roll up/Unroll
-// group(4). The label toggles with state but the index never moves.
-constexpr int RollUpMenuActionIndex = 4;
+// Menu order in KWinGroupContextMenu::prepare(): Saved workspaces…(0),
+// Arrange windows(1), Detach active window(2), Ungroup(3), Minimize group(4),
+// Roll up/Unroll group(5). The label toggles with state but the index never
+// moves.
+// AGENT-GUARD: keyboard navigation selects by position, so a new leading
+// entry silently retargets this workflow at "Minimize group"; update this
+// index whenever prepare() gains or reorders entries.
+constexpr int RollUpMenuActionIndex = 5;
 
 const ObservedWindow &window(const WindowInventory &inventory,
                              const QString &title)
