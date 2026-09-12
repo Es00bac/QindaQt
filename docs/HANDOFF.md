@@ -13,8 +13,20 @@ does not add remote access or duplicate policy.
 
 The immediate consumer slice is File Manager's visible background/selection
 context-menu behavior, reusing its existing action and mutation machinery.
-Dock candidate `aef75d2230d3bc08cea5b777bd3468ae96191a9c` is in independent
-review. The container roll-up lane remains an active reproduction and makes no
+Its exact candidate `6f0b77f1aa2aebb5add7098cc3a419b3807b1a48` reports the complete
+File Manager label at 32/32 and is queued for independent review.
+
+Dock candidate `aef75d2230d3bc08cea5b777bd3468ae96191a9c` received independent
+Z.AI GLM ACCEPT and is integrated as `8d4e3142`. The accepted delta keeps
+persisted logical icon/gap preferences immutable, derives bounded effective
+tile geometry for constrained panels, and preserves input overscan outside the
+visual tile. The manager's fresh strict production-shell closure built, and
+the exact launcher, task-list dock, desktop-controls composition, and panel
+geometry rows passed 4/4. An initial manager regex selected 17 registered rows
+after only four targets were built; its missing-executable results were an
+invalid test invocation, were not counted, and the corrected exact selector
+passed. Installed/live-desktop adoption and physical input/display evidence
+remain separate. The container roll-up lane remains active and makes no
 completion claim yet.
 
 ## Desktop gap wave: lock screen, portals, input and shortcuts, keyring, night light (September 11, r11)

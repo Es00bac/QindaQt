@@ -15,8 +15,13 @@ all seven selected File Manager rows pass, including the installed-runtime
 row. The boundary is not a new framework: the next slice uses the existing
 action catalog, coordinators, dialogs, and controllers to make background and
 selection context menus truthful and consistent in grid and details views.
-Dock geometry is already a candidate under independent review, while the
-container lane is reproducing the roll-up ghost before proposing a fix.
+Dock geometry candidate `aef75d22` received independent ACCEPT and is integrated
+as `8d4e3142`: user-requested logical sizing remains immutable while tiles and
+gaps shrink to fit constrained panels, with bounded input overscan. A fresh
+strict production-shell closure and the four exact affected rows pass on main.
+This is source integration, not installed/live-desktop adoption. File Manager
+menu candidate `6f0b77f1` is queued for independent review, while the container
+lane is completing its roll-up ghost matrix before proposing a fix.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
