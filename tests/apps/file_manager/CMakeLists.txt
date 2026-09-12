@@ -106,6 +106,11 @@ qindaqt_add_file_manager_test(
     tst_places_controller.cpp
     qindaqt.file-manager-places-controller
 )
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_desktop_file_boundary_tests
+    tst_desktop_file_boundary.cpp
+    qindaqt.file-manager-desktop-file-boundary
+)
 
 add_test(
     NAME qindaqt.file-manager-desktop-metadata
