@@ -188,7 +188,7 @@ function verdictFrom(content) {
 function declaresCandidate(content, candidate) {
   return content.split(/\r?\n/).some((line) => {
     if (!line.includes(candidate)) return false;
-    return /^\s*(?:#{1,6}\s*)?(?:-\s*)?(?:exact\s+)?(?:candidate|commit)(?:\s+(?:sha|commit))?\s*:/i.test(line)
+    return /^\s*(?:#{1,6}\s*)?(?:-\s*)?(?:exact\s+)?(?:(?:accepted|rejected|repaired)\s+)?(?:candidate|commit)(?:\s+(?:sha|commit))?\s*:/i.test(line)
       || /\b(?:ACCEPT|REJECT|BLOCKING)\b.*\b(?:candidate|commit)\b/i.test(line)
       || /\b(?:candidate|commit)\b.*\b(?:ACCEPT|REJECT|BLOCKING)\b/i.test(line);
   });

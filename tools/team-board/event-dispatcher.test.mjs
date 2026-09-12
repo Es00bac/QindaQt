@@ -130,7 +130,7 @@ test('discovers a reviewer verdict for a known reviewing candidate before ledger
     execFileSync('git', ['commit', '-qm', 'Fixture candidate'], { cwd: worktree });
     const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim();
     writeFileSync(path.join(worktree, 'ops/team/messages/small-team-20260912/exact-review-thread/verdict.md'),
-      `# ACCEPT — exact candidate review\n\n- Candidate: \`${sha}\`\n- Result: **ACCEPT**\n`);
+      `# ACCEPT — exact candidate review\n\n- Exact accepted candidate: \`${sha}\`\n- Result: **ACCEPT**\n`);
     const found = await discoverHandoffs(root, [{ workerId: 'small-team-review', state: 'reviewing',
       worktree: 'rotated-review', dispatch: 'unrelated-name.md', messageThread: 'exact-review-thread',
       assignedAt: '2026-09-12T21:00:00Z' }], new Set([sha]));
