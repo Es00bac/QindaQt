@@ -81,12 +81,17 @@
           "title": "Production panel/dock publication and static work areas",
           "weight": 14,
           "state": "QUALIFIED",
-          "summary": "Real LayerShell panels and deterministic static work-area behavior are integrated and independently qualified at 1080p, WUXGA, and 1440p.",
+          "summary": "Real LayerShell panels and deterministic static work-area behavior are integrated and independently qualified at 1080p, WUXGA, and 1440p. Dock content now derives bounded effective tile/gap geometry when a panel is constrained without mutating the user's persisted logical sizing preferences, and keeps bounded input overscan separate from the visual tile.",
           "evidence": [
             {
               "kind": "commit",
               "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912",
               "summary": "Integrated production-surface proof passed the three-resolution private nested matrix."
+            },
+            {
+              "kind": "commit",
+              "reference": "8d4e3142",
+              "summary": "Exact dock geometry candidate aef75d22 received independent Z.AI GLM ACCEPT and was integrated; a fresh strict production-shell closure built and the four exact affected launcher, task-list dock, desktop-controls composition, and panel-geometry rows passed on main. Installed/live adoption remains separate."
             }
           ],
           "caveat": "Physical multi-monitor and hardware qualification remain release work."
