@@ -19,8 +19,10 @@ namespace QindaQt::Apps::SettingsPower {
 //
 // AGENT-CONTRACT: displayed availability and final dispatch share one
 // admission predicate pinned to exact owner/epoch/revision truth. One
-// operation or debounce may be live; success stays fenced until a matching
-// authoritative snapshot converges. Uncertain work is never replayed.
+// operation or debounce may be live across profile, keyboard, and internal
+// brightness; success stays fenced until a matching authoritative snapshot
+// converges. Uncertain work is never replayed. Internal-panel admission uses
+// the shared Power1 target rule (ADR-0148) and never picks another device.
 class PowerSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading READ loading NOTIFY viewChanged)
@@ -84,14 +86,24 @@ public:
   Q_INVOKABLE bool requestProfile(const QString &profileId);
   Q_INVOKABLE bool requestKeyboardBrightness(const QString &rowId,
                                              int normalized);
+  Q_INVOKABLE bool requestInternalBrightness(const QString &rowId,
+                                             int normalized);
 
 Q_SIGNALS:
   void viewChanged();
   void actionRejected(const QString &reason);
 
 private:
-  enum class Intent { Profile, KeyboardBrightness };
+  enum class Intent { Profile, KeyboardBrightness, InternalBrightness };
+  struct BrightnessTarget {
+    Power::Handle handle;
+    bool valueKnown = false;
+    quint32 value = 0;
+    quint32 maximum = 0;
+    bool settable = false;
+  };
   struct DebouncedBrightness {
+    Intent intent = Intent::KeyboardBrightness;
     QString rowId;
     int normalized = 0;
     QString owner;
@@ -119,10 +131,14 @@ private:
   [[nodiscard]] bool hasDisplaySnapshot() const noexcept;
   [[nodiscard]] bool snapshotAdmitsBase() const noexcept;
   [[nodiscard]] QString profileAdmission(const QString &profileId) const;
-  [[nodiscard]] QString brightnessAdmission(const QString &rowId,
+  [[nodiscard]] QString brightnessAdmission(Intent intent, const QString &rowId,
                                             bool replacingDebounce) const;
-  [[nodiscard]] const Power::KeyboardBacklight *findKeyboard(
-      const Power::Snapshot &snapshot, const QString &rowId) const;
+  [[nodiscard]] std::optional<BrightnessTarget> findBrightness(
+      const Power::Snapshot &snapshot, Intent intent, const QString &rowId) const;
+  [[nodiscard]] static Power::OperationKind operationKind(Intent intent);
+  [[nodiscard]] QVariantList admittedBrightnessRows(QVariantList rows,
+                                                    Intent intent) const;
+  bool requestBrightness(Intent intent, const QString &rowId, int normalized);
   void dispatchDebouncedBrightness();
   void handleOperationCompleted(quint64 requestId,
                                 const Power::OperationResult &result);

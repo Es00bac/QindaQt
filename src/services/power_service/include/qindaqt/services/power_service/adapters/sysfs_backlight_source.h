@@ -37,10 +37,10 @@ struct BacklightWriteOutcome {
 // unusable still appears, typed Unavailable, instead of being silently hidden.
 //
 // AGENT-NOTE: writes go directly to the injected root's brightness file and
-// succeed only when that file is writable by this process. Power1 v1 has no
-// display-brightness wire method, so no coordinator path calls
-// writeBrightness() yet; it is the tested primitive the later PB-5 method and
-// the logind-apply provider (ADR-0024) can build on.
+// succeed only when that file is writable by this process. Power1
+// SetInternalBrightness reaches writeBrightness() only through
+// ProductionBatteryCollaborator, after the shared target rule (ADR-0148); the
+// desktop-controls media keys are a separate local consumer.
 class SysfsBacklightSource : public QObject {
     Q_OBJECT
 

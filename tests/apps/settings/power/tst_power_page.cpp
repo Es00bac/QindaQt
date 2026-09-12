@@ -34,6 +34,7 @@ private Q_SLOTS:
   void initTestCase();
   void rendersWideTruthAndAccessibleControls();
   void routesKeyboardAndProfileActions();
+  void internalSliderStaysResponsiveThroughRepublication();
   void sessionActionsHaveKeyboardParityAndDestructiveConfirmation();
   void compactAndUnavailableFocusRemainAdmitted();
   void screenLockControlsRespectAutomaticLock();
@@ -181,6 +182,60 @@ void PowerPageTest::routesKeyboardAndProfileActions() {
   QTRY_COMPARE(m_model->brightnessCount, 1);
   QCOMPARE(m_model->lastTarget, QStringLiteral("keyboard-41-1"));
   QCOMPARE(m_model->lastNormalized, 5'100);
+}
+
+void PowerPageTest::internalSliderStaysResponsiveThroughRepublication() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  const QString sliderName =
+      QStringLiteral("powerInternalBrightnessSlider_internal-41-1");
+  auto *slider = findItem(page, sliderName);
+  QVERIFY2(slider != nullptr, "internal display brightness has no slider");
+  QVERIFY(!slider->isEnabled());
+  QCOMPARE(m_model->internalBrightnessCount, 0);
+
+  // AGENT-GUARD: republished rows must keep the same delegate. Rebuilding it
+  // drops keyboard focus after every step and kills a pointer drag mid-way.
+  m_model->setInternalRow(true);
+  QCoreApplication::processEvents();
+  QCOMPARE(findItem(page, sliderName), slider);
+  QVERIFY(slider->isEnabled());
+  slider->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), slider);
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QTRY_COMPARE(m_model->internalBrightnessCount, 1);
+  QCOMPARE(m_model->lastTarget, QStringLiteral("internal-41-1"));
+  QVERIFY(m_model->lastNormalized > 4'493);
+
+  // An operation fence disables the control; convergence re-enables the same
+  // control with keyboard focus intact.
+  m_model->setInternalRow(false, 4'600);
+  QCoreApplication::processEvents();
+  QCOMPARE(findItem(page, sliderName), slider);
+  QVERIFY(!slider->isEnabled());
+  m_model->setInternalRow(true, 4'600);
+  QCoreApplication::processEvents();
+  QVERIFY(slider->isEnabled());
+  QTRY_COMPARE(m_view->activeFocusItem(), slider);
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QTRY_COMPARE(m_model->internalBrightnessCount, 2);
+
+  m_model->republishOnInternalRequest = true;
+  const qreal y = slider->height() / 2;
+  const QPoint start =
+      slider->mapToScene(QPointF(slider->width() * 0.2, y)).toPoint();
+  const QPoint end =
+      slider->mapToScene(QPointF(slider->width() * 0.8, y)).toPoint();
+  QVERIFY2(start.y() > 0 && start.y() < m_view->height(),
+           "focused internal slider was not revealed in the viewport");
+  const int before = m_model->internalBrightnessCount;
+  QTest::mousePress(m_view.get(), Qt::LeftButton, Qt::NoModifier, start);
+  for (int step = 1; step <= 6; ++step)
+    QTest::mouseMove(m_view.get(), start + (end - start) * step / 6);
+  QTest::mouseRelease(m_view.get(), Qt::LeftButton, Qt::NoModifier, end);
+  QTRY_VERIFY(m_model->internalBrightnessCount >= before + 2);
+  QCOMPARE(findItem(page, sliderName), slider);
+  QVERIFY(m_model->lastNormalized > 6'000);
 }
 
 void PowerPageTest::compactAndUnavailableFocusRemainAdmitted() {

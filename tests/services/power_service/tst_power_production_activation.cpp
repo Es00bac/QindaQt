@@ -239,6 +239,7 @@ class PowerProductionActivationTests final : public QObject
 
 private Q_SLOTS:
     void productionModePublishesFakeUpstreamTruth();
+    void productionModeAppliesInternalBrightnessWithReadback();
     void productionModeWithoutFakesStaysHonest();
     void defaultModeKeepsUnavailableTruth();
     void invalidModeExitsFailClosed();
@@ -296,6 +297,108 @@ void PowerProductionActivationTests::productionModePublishesFakeUpstreamTruth()
              QStringLiteral("panel"));
     QCOMPARE(snapshot.internalBacklights.constFirst().maximum, quint32(255));
     QVERIFY(snapshot.epoch != 0);
+    client.stop();
+}
+
+void PowerProductionActivationTests::productionModeAppliesInternalBrightnessWithReadback()
+{
+    registerDBusTypes();
+    ProductionBus bus;
+    QVERIFY(bus.start(QStringLiteral("--upstream=production")));
+    writeBacklightFixture(bus.backlightRoot);
+    // Without actual_brightness the kernel-facing readback is the brightness
+    // file itself, so the published observation must follow the write.
+    QVERIFY(QFile::remove(bus.backlightRoot + QStringLiteral("/panel/actual_brightness")));
+    const QString brightnessPath = bus.backlightRoot + QStringLiteral("/panel/brightness");
+    const auto readBrightness = [&brightnessPath] {
+        QFile file(brightnessPath);
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    };
+    bus.connectionName =
+        QStringLiteral("qindaqt-production-apply-%1")
+            .arg(QUuid::createUuid().toString(QUuid::Id128));
+    bus.connection = QDBusConnection::connectToBus(bus.address, bus.connectionName);
+    QVERIFY(bus.connection.isConnected());
+
+    const QDBusConnection upowerConnection = bus.openConnection(QStringLiteral("upower"));
+    FakeUpowerService upower(upowerConnection);
+    QVERIFY(upower.registerService());
+    upower.setDevices({productionBattery()});
+    const QDBusConnection profilesConnection =
+        bus.openConnection(QStringLiteral("profiles"));
+    FakePpdService profiles(profilesConnection, false);
+    QVERIFY(profiles.registerService());
+    profiles.setProfiles({QStringLiteral("balanced")});
+    profiles.setActiveProfile(QStringLiteral("balanced"));
+    const QDBusConnection logindConnection = bus.openConnection(QStringLiteral("logind"));
+    FakeLogindService logind(logindConnection);
+    QVERIFY(logind.registerService());
+    logind.setSessionTruth(false, false, false);
+
+    activateAndWaitForOwner(bus.connection, &bus.servicePid);
+    QVERIFY(bus.servicePid > 0);
+
+    QtPowerTransport transport(bus.connection);
+    PowerClient client(&transport);
+    QSignalSpy completed(&client, &PowerClient::operationCompleted);
+    client.start();
+    QTRY_VERIFY_WITH_TIMEOUT(client.hasSnapshot()
+                                 && client.snapshot().availability == Availability::Ready,
+                             10'000);
+    const InternalBacklight panel = client.snapshot().internalBacklights.constFirst();
+    QCOMPARE(panel.observed, quint32(128));
+    QCOMPARE(panel.status, BacklightStatus::Ok);
+
+    const quint64 requestId = client.setInternalBrightness(panel.handle, 200);
+    QTRY_COMPARE_WITH_TIMEOUT(completed.size(), 1, 5'000);
+    QCOMPARE(completed.first().at(0).toULongLong(), requestId);
+    const OperationResult applied = completed.first().at(1).value<OperationResult>();
+    QCOMPARE(applied.kind, OperationKind::SetInternalBrightness);
+    QCOMPARE(applied.status, OperationStatus::Succeeded);
+    QCOMPARE(readBrightness(), QByteArrayLiteral("200\n"));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        client.snapshot().revision >= applied.observedRevision
+            && client.snapshot().internalBacklights.constFirst().observed == 200,
+        5'000);
+
+    // Above the published maximum: refused before the bus, nothing written.
+    QVERIFY(client.setInternalBrightness(
+                client.snapshot().internalBacklights.constFirst().handle, 256)
+            != 0);
+    QTRY_COMPARE(completed.size(), 2);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Unsupported);
+
+    // Permission revoked after publication. The service's watcher republishes
+    // the panel read-only; the client then refuses locally, and an exact raw
+    // request that bypasses the client is refused by the service itself.
+    QFile brightness(brightnessPath);
+    const QFileDevice::Permissions original = brightness.permissions();
+    QVERIFY(brightness.setPermissions(QFileDevice::ReadOwner));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        client.snapshot().internalBacklights.constFirst().status
+                == BacklightStatus::Unavailable
+            && client.snapshot().internalBacklights.constFirst().diagnostic
+                == QStringLiteral("backlight-read-only"),
+        5'000);
+    const Handle readOnly = client.snapshot().internalBacklights.constFirst().handle;
+    QVERIFY(client.setInternalBrightness(readOnly, 50) != 0);
+    QTRY_COMPARE(completed.size(), 3);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Unsupported);
+
+    QDBusMessage raw = QDBusMessage::createMethodCall(
+        client.owner(), QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName), QStringLiteral("SetInternalBrightness"));
+    raw.setArguments({QVariant::fromValue(readOnly), quint32(50)});
+    const QDBusMessage reply = bus.connection.call(raw, QDBus::Block, 5'000);
+    brightness.setPermissions(original);
+    QCOMPARE(reply.type(), QDBusMessage::ReplyMessage);
+    const OperationResult refused =
+        qdbus_cast<OperationResult>(reply.arguments().constFirst());
+    QCOMPARE(refused.kind, OperationKind::SetInternalBrightness);
+    QCOMPARE(refused.status, OperationStatus::Unsupported);
+    QCOMPARE(readBrightness(), QByteArrayLiteral("200\n"));
     client.stop();
 }
 

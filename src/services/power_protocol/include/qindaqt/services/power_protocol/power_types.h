@@ -94,6 +94,7 @@ enum class OperationKind : quint32 {
   AcquireProfileHold = 1,
   ReleaseProfileHold = 2,
   SetKeyboardBrightness = 3,
+  SetInternalBrightness = 4,
 };
 
 enum class OperationStatus : quint32 {

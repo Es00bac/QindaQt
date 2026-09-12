@@ -70,9 +70,12 @@ policy in this model.
 ## Mutation and lifetime boundary
 
 The output contains authoritative `current` truth only; no requested-value
-field exists. Display mutation remains reserved for PB-5 after D7. Keyboard
-mutation remains a Power client operation with typed lineage and no automatic
-retry. Rapid-input coalescing belongs to that later client-side mutation path,
+field exists. Internal-panel mutation is the Power client
+`SetInternalBrightness` operation
+([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)), and
+external-display mutation remains reserved for PB-5 after D7. Keyboard and
+internal-panel mutations are Power client operations with typed lineage and no
+automatic retry; this model gains no mutation authority from either. Rapid-input coalescing belongs to that later client-side mutation path,
 not this generation composer. The module owns no QObject, thread, timer, file,
 D-Bus connection, Wayland object, platform handle, QML object, or retained
 snapshot.

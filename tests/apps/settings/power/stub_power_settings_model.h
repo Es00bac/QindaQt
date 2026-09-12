@@ -197,6 +197,8 @@ public:
   int retryCount = 0;
   int profileCount = 0;
   int brightnessCount = 0;
+  int internalBrightnessCount = 0;
+  bool republishOnInternalRequest = false;
   QString lastTarget;
   int lastNormalized = -1;
   StubSessionActions sessionActionState;
@@ -247,6 +249,21 @@ public:
   }
   Q_INVOKABLE bool requestKeyboardBrightness(const QString &id, int normalized) {
     ++brightnessCount; lastTarget = id; lastNormalized = normalized; return true;
+  }
+  Q_INVOKABLE bool requestInternalBrightness(const QString &id, int normalized) {
+    ++internalBrightnessCount; lastTarget = id; lastNormalized = normalized;
+    // Mirrors the real model, which republishes rows synchronously inside a
+    // request; the page must keep the same control through that.
+    if (republishOnInternalRequest) setInternalRow(true, normalized);
+    return true;
+  }
+
+  void setInternalRow(bool available, int normalized = -1) {
+    QVariantMap row = internalBrightnessRows.first().toMap();
+    row.insert(QStringLiteral("available"), available);
+    if (normalized >= 0) row.insert(QStringLiteral("normalized"), normalized);
+    internalBrightnessRows = {row};
+    Q_EMIT viewChanged();
   }
 
 Q_SIGNALS:

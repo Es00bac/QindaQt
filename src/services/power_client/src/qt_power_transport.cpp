@@ -249,6 +249,10 @@ void QtPowerTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("SetKeyboardBrightness");
         arguments = {QVariant::fromValue(request.handle), request.value};
         break;
+    case OperationKind::SetInternalBrightness:
+        method = QStringLiteral("SetInternalBrightness");
+        arguments = {QVariant::fromValue(request.handle), request.value};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

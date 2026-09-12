@@ -52,6 +52,8 @@ private Q_SLOTS:
     void acquireAndReleaseHoldsRoundTrip();
     void staleHoldHandleIsRejected();
     void keyboardBrightnessValidatesHandleAndRange();
+    void internalBrightnessAdmitsOnlyTheSelectedWritablePanel();
+    void internalBrightnessCompletesAfterObservedReadback();
     void authorityReplacementMakesDispatchedOperationUncertain();
     void duplicateUpstreamReplyIsDropped();
     void malformedOutcomeBecomesProtocolValidFailure();
@@ -207,6 +209,113 @@ void PowerServiceOperationTests::keyboardBrightnessValidatesHandleAndRange()
     QTRY_COMPARE(completed.size(), 1);
     QCOMPARE(completed.first().at(1).value<OperationResult>().status,
              OperationStatus::Succeeded);
+}
+
+namespace {
+
+PowerServiceRequest internalRequest(const Handle &handle, const quint32 value)
+{
+    return {.kind = OperationKind::SetInternalBrightness,
+            .profileId = {},
+            .applicationName = {},
+            .reason = {},
+            .handle = handle,
+            .value = value};
+}
+
+} // namespace
+
+void PowerServiceOperationTests::internalBrightnessAdmitsOnlyTheSelectedWritablePanel()
+{
+    OperationHarness harness;
+    const quint64 epoch = harness.coordinator->snapshot().epoch;
+    const Handle panel{.epoch = epoch, .opaqueId = QStringLiteral("backlight-panel")};
+    const Handle raw{.epoch = epoch, .opaqueId = QStringLiteral("backlight-raw")};
+
+    // Without internal inventory the capability itself is absent.
+    OperationSubmission refused = harness.coordinator->submit(internalRequest(panel, 10));
+    QVERIFY(!refused.pending);
+    QCOMPARE(refused.immediateResult.kind, OperationKind::SetInternalBrightness);
+    QCOMPARE(refused.immediateResult.status, OperationStatus::Unsupported);
+
+    BatteryFacts facts = fixtureBatteryFacts();
+    facts.internalBacklights = {
+        fixtureInternalBacklight(raw.opaqueId, BacklightKind::Raw),
+        fixtureInternalBacklight(panel.opaqueId)};
+    harness.battery.publish(facts);
+    QVERIFY(harness.coordinator->snapshot().capabilities.testFlag(
+        Capability::InternalBacklight));
+
+    refused = harness.coordinator->submit(
+        internalRequest({.epoch = epoch + 1, .opaqueId = panel.opaqueId}, 10));
+    QCOMPARE(refused.immediateResult.status, OperationStatus::Rejected);
+    QCOMPARE(refused.immediateResult.reasonCode, QStringLiteral("stale-handle"));
+    refused = harness.coordinator->submit(
+        internalRequest({.epoch = epoch, .opaqueId = QStringLiteral("backlight-gone")}, 10));
+    QCOMPARE(refused.immediateResult.reasonCode, QStringLiteral("stale-handle"));
+    // A lower kernel type preference is never the target.
+    refused = harness.coordinator->submit(internalRequest(raw, 10));
+    QCOMPARE(refused.immediateResult.status, OperationStatus::Unsupported);
+    refused = harness.coordinator->submit(internalRequest(panel, 256));
+    QCOMPARE(refused.immediateResult.status, OperationStatus::Unsupported);
+
+    facts.internalBacklights = {fixtureInternalBacklight(panel.opaqueId),
+                                fixtureInternalBacklight(QStringLiteral("backlight-dsi"))};
+    harness.battery.publish(facts);
+    refused = harness.coordinator->submit(internalRequest(panel, 10));
+    QCOMPARE(refused.immediateResult.status, OperationStatus::Unsupported);
+
+    // A read-only selected panel is refused and never replaced by another device.
+    facts.internalBacklights = {
+        fixtureInternalBacklight(panel.opaqueId, BacklightKind::Firmware,
+                                 BacklightStatus::Unavailable),
+        fixtureInternalBacklight(raw.opaqueId, BacklightKind::Raw)};
+    harness.battery.publish(facts);
+    QCOMPARE(harness.coordinator->submit(internalRequest(panel, 10)).immediateResult.status,
+             OperationStatus::Unsupported);
+    QCOMPARE(harness.coordinator->submit(internalRequest(raw, 10)).immediateResult.status,
+             OperationStatus::Unsupported);
+
+    QVERIFY(harness.battery.internalOperations.isEmpty());
+    QVERIFY(harness.battery.keyboardOperations.isEmpty());
+}
+
+void PowerServiceOperationTests::internalBrightnessCompletesAfterObservedReadback()
+{
+    OperationHarness harness;
+    QSignalSpy completed(harness.coordinator.get(),
+                         &PowerServiceCoordinator::operationCompleted);
+    BatteryFacts facts = fixtureBatteryFacts();
+    facts.internalBacklights = {fixtureInternalBacklight()};
+    harness.battery.publish(facts);
+    const Handle panel = harness.coordinator->snapshot().internalBacklights.first().handle;
+    const quint64 initiatingRevision = harness.coordinator->snapshot().revision;
+
+    const OperationSubmission accepted =
+        harness.coordinator->submit(internalRequest(panel, 200));
+    QVERIFY(accepted.pending);
+    QCOMPARE(harness.battery.internalOperations.size(), 1);
+    QCOMPARE(harness.battery.internalOperations.first().operationId, accepted.operationId);
+    QCOMPARE(harness.battery.internalOperations.first().device, panel);
+    QCOMPARE(harness.battery.internalOperations.first().value, quint32(200));
+    QCOMPARE(completed.size(), 0);
+
+    // The production adapter publishes its readback before completing.
+    facts.internalBacklights.first().observed = 200;
+    harness.battery.publish(facts);
+    harness.battery.finish(accepted.operationId, succeededOutcome());
+    QCOMPARE(completed.size(), 1);
+    const OperationResult result = completed.first().at(1).value<OperationResult>();
+    QCOMPARE(result.kind, OperationKind::SetInternalBrightness);
+    QCOMPARE(result.status, OperationStatus::Succeeded);
+    QCOMPARE(result.initiatingRevision, initiatingRevision);
+    QCOMPARE(result.observedRevision, harness.coordinator->snapshot().revision);
+    QVERIFY(result.observedRevision > initiatingRevision);
+    QCOMPARE(harness.coordinator->snapshot().internalBacklights.first().observed,
+             quint32(200));
+
+    harness.battery.finish(accepted.operationId, succeededOutcome());
+    QCOMPARE(completed.size(), 1);
 }
 
 void PowerServiceOperationTests::authorityReplacementMakesDispatchedOperationUncertain()

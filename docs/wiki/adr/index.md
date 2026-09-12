@@ -149,3 +149,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0134: own input and shortcut settings through KWin and kglobalaccel](0134-input-and-shortcut-settings.md)
 - [ADR-0135: gnome-keyring is the Secret Service provider](0135-gnome-keyring-secret-service.md)
 - [ADR-0136: night light through KWin and knighttimed](0136-night-light-through-kwin.md)
+- [ADR-0148: admit internal-panel brightness through Power1](0148-admit-internal-panel-brightness-through-power1.md)

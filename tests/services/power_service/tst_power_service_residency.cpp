@@ -291,9 +291,12 @@ void PowerServiceResidencyTests::introspectionExposesExactPower1Signatures()
                  QStringLiteral("type=\"%1\"").arg(snapshotSignature)),
              qPrintable(introspection));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
-    QVERIFY(introspection.contains(QStringLiteral("type=\"(tt)\"")));
+    // Handles marshal as (epoch t, opaque id s); introspection must say so.
+    QVERIFY(introspection.contains(QStringLiteral("type=\"(ts)\"")));
+    QVERIFY(!introspection.contains(QStringLiteral("type=\"(tt)\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"AcquireProfileHold\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"SetKeyboardBrightness\"")));
+    QVERIFY(introspection.contains(QStringLiteral("name=\"SetInternalBrightness\"")));
 
     service->stop();
     QDBusConnection::disconnectFromBus(connectionName);

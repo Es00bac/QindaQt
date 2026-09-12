@@ -19,6 +19,9 @@ namespace QindaQt::Power::Upstream {
 // drops the backlight rows with the rest rather than publishing device truth
 // without AC/on-battery authority. The subprocess generations of the owned
 // adapters are internal; only this object's own generation stamps emissions.
+// Internal-panel requests apply one at a time on later event-loop turns, only
+// while the domain is published and the ADR-0148 target rule still admits the
+// device, and their readback facts are emitted before the outcome.
 class ProductionBatteryCollaborator final : public BatteryCollaborator
 {
     Q_OBJECT
@@ -33,9 +36,13 @@ public:
     void stop() override;
     void submitSetKeyboardBrightness(quint64 operationId, const Handle &device,
                                      quint32 value) override;
+    void submitSetInternalBrightness(quint64 operationId, const Handle &device,
+                                     quint32 value) override;
 
 private:
     void mergeAndEmit();
+    void applyInternalBrightness(quint64 generation, quint64 operationId,
+                                 const QString &opaqueId, quint32 value);
 
     std::unique_ptr<UpowerBatteryCollaborator> m_upower;
     std::unique_ptr<SysfsBacklightSource> m_backlights;

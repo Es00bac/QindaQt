@@ -83,6 +83,14 @@ public:
   virtual void stop() = 0;
   virtual void submitSetKeyboardBrightness(quint64 operationId, const Handle &device,
                                            quint32 value) = 0;
+  // Sets the internal panel `device` to raw `value` after the coordinator
+  // admitted the request against the published snapshot (ADR-0148).
+  // AGENT-GUARD: complete on a later event-loop turn, never inside this call.
+  // PowerServiceObject stores the delayed D-Bus reply only after
+  // PowerServiceCoordinator::submit() returns, so a synchronous completion is
+  // dropped and the caller can only time out as Uncertain.
+  virtual void submitSetInternalBrightness(quint64 operationId, const Handle &device,
+                                           quint32 value) = 0;
 
 Q_SIGNALS:
   void factsChanged(quint64 generation,

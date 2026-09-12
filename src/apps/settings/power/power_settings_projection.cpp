@@ -3,6 +3,7 @@
 #include "power_settings_projection.h"
 
 #include <qindaqt/services/brightness_model/brightness_math.h>
+#include <qindaqt/services/power_protocol/power_backlight_selection.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QVariantMap>
@@ -89,6 +90,27 @@ QString internalReason(const Power::InternalBacklight &device) {
   return tr("Brightness is unavailable");
 }
 
+// The visible explanation for a panel the shared target rule does not admit.
+QString internalRefusal(const Power::Snapshot &snapshot,
+                        const Power::InternalBacklight &device,
+                        const Power::InternalBrightnessAdmission admission) {
+  switch (admission) {
+  case Power::InternalBrightnessAdmission::Admitted:
+    return snapshot.capabilities.testFlag(Power::Capability::InternalBacklight)
+        ? QString() : tr("Brightness adjustment is unavailable");
+  case Power::InternalBrightnessAdmission::NotSelected:
+    return tr("Another backlight device controls this display");
+  case Power::InternalBrightnessAdmission::Ambiguous:
+    return tr("Backlight device is ambiguous, so brightness is not adjusted");
+  case Power::InternalBrightnessAdmission::UnknownDevice:
+  case Power::InternalBrightnessAdmission::DeviceUnavailable:
+    break;
+  }
+  if (device.diagnostic == QStringLiteral("backlight-read-only"))
+    return tr("Brightness is read-only on this computer");
+  return internalReason(device);
+}
+
 template<typename Device>
 QList<const Device *> sortedByHandle(const QList<Device> &devices) {
   QList<const Device *> sorted;
@@ -108,6 +130,16 @@ QString keyboardRowId(const Power::Snapshot &snapshot,
   for (qsizetype index = 0; index < sorted.size(); ++index) {
     if (sorted.at(index)->handle == handle)
       return QStringLiteral("keyboard-%1-%2").arg(handle.epoch).arg(index + 1);
+  }
+  return {};
+}
+
+QString internalRowId(const Power::Snapshot &snapshot,
+                      const Power::Handle &handle) {
+  const auto sorted = sortedByHandle(snapshot.internalBacklights);
+  for (qsizetype index = 0; index < sorted.size(); ++index) {
+    if (sorted.at(index)->handle == handle)
+      return QStringLiteral("internal-%1-%2").arg(handle.epoch).arg(index + 1);
   }
   return {};
 }
@@ -186,9 +218,26 @@ QVariantList internalBrightness(const Power::Snapshot &snapshot) {
     const bool known = device.observedKnown && normalized.succeeded();
     const QString name = device.deviceName.trimmed().isEmpty()
         ? tr("Internal display") : device.deviceName;
+    const auto admission = Power::internalBrightnessAdmission(
+        snapshot.internalBacklights, device.handle.opaqueId);
+    // `settable` is device truth only; the model adds operation fencing and
+    // client state to produce `available`.
+    const bool settable =
+        snapshot.capabilities.testFlag(Power::Capability::InternalBacklight)
+        && admission == Power::InternalBrightnessAdmission::Admitted;
+    QString description;
+    if (!known)
+      description = tr("%1, brightness unavailable, read-only").arg(name);
+    else if (settable)
+      description = tr("%1, normalized %2 of 10000, raw %3 of %4")
+                        .arg(name).arg(normalized.value).arg(device.observed)
+                        .arg(device.maximum);
+    else
+      description = tr("%1, normalized %2 of 10000, raw %3 of %4, read-only")
+                        .arg(name).arg(normalized.value).arg(device.observed)
+                        .arg(device.maximum);
     rows.append(QVariantMap{
-        {QStringLiteral("id"), QStringLiteral("internal-%1-%2")
-             .arg(device.handle.epoch).arg(index + 1)},
+        {QStringLiteral("id"), internalRowId(snapshot, device.handle)},
         {QStringLiteral("name"), name},
         {QStringLiteral("known"), known},
         {QStringLiteral("normalized"), known ? normalized.value : 0U},
@@ -197,13 +246,10 @@ QVariantList internalBrightness(const Power::Snapshot &snapshot) {
         {QStringLiteral("rawText"), known
              ? tr("Raw %1 of %2").arg(device.observed).arg(device.maximum)
              : tr("Raw value unavailable")},
+        {QStringLiteral("settable"), settable},
         {QStringLiteral("available"), false},
-        {QStringLiteral("reason"), internalReason(device)},
-        {QStringLiteral("accessibleDescription"), known
-             ? tr("%1, normalized %2 of 10000, raw %3 of %4, read-only")
-                   .arg(name).arg(normalized.value).arg(device.observed)
-                   .arg(device.maximum)
-             : tr("%1, brightness unavailable").arg(name)},
+        {QStringLiteral("reason"), internalRefusal(snapshot, device, admission)},
+        {QStringLiteral("accessibleDescription"), description},
     });
   }
   return rows;

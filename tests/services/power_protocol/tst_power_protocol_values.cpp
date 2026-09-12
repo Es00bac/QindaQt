@@ -251,6 +251,15 @@ void PowerProtocolValuesTests::validatesWaylandBindingAndResultLineage() {
   result.observedRevision = result.initiatingRevision - 1;
   QCOMPARE(validateOperationResult(result).reasonCode,
            QStringLiteral("invalid-success-lineage"));
+
+  // ADR-0148 extends the closed operation vocabulary by exactly one kind.
+  result = TestData::validOperationResult();
+  result.kind = OperationKind::SetInternalBrightness;
+  QVERIFY(validateOperationResult(result).accepted);
+  QCOMPARE(static_cast<quint32>(result.kind), 4U);
+  result.kind = static_cast<OperationKind>(5);
+  QCOMPARE(validateOperationResult(result).reasonCode,
+           QStringLiteral("invalid-operation-result"));
 }
 
 QTEST_GUILESS_MAIN(PowerProtocolValuesTests)

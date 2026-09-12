@@ -22,7 +22,7 @@ The route presents only validated, bounded public snapshot copies:
 | Power supplies | AC-adapter presence plus up to eight batteries or UPS devices, with state, exact percentage or coarse level, upstream time estimate, and textual warning severity | Read-only inventory |
 | Power profiles | Active profile and at most four supported profiles | Select a different profile only when the exact snapshot admits it |
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
-| Internal brightness | Normalized 0–10000 position and exact observed raw value/maximum | Read-only disabled slider because Power1 version 1 has no internal-display mutation |
+| Internal brightness | Normalized 0–10000 position, exact observed raw value/maximum, and the reason a panel is not adjustable | Keyboard- and pointer-operable slider for the panel the shared Power1 target rule admits ([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)); read-only, ambiguous, lower-preference, and unavailable panels show a disabled slider or no value, with visible text |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
 | Screen lock | Saved automatic-idle-lock preference and timeout, resume-lock preference, and unlock grace | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled; toggle lock-after-wake and choose the stored grace delay |
 | Lid presence | Validated Power1 `SourceTruth` lid-presence fact under the shared admission predicate | Read-only visibility input: the lid rows of the power policy section render only when admitted truth says a lid exists |
@@ -92,13 +92,15 @@ One predicate supplies both each displayed availability flag and final
 dispatch admission. It requires a retained validated snapshot, a nonempty exact
 client owner, a client state of `Ready` or `Degraded`, nonzero epoch/revision,
 `Ready` or `Degraded` snapshot availability, the relevant capability, a
-current supported profile or keyboard handle, target `canSet` truth, and no
-conflicting debounce, operation, or convergence fence. A failed refresh may
+current supported profile, a keyboard handle with `canSet` truth or an internal
+panel the shared ADR-0148 target rule admits, and no conflicting debounce,
+operation, or convergence fence. The route calls the same pure rule as the
+service and client, so it never offers a panel the service would refuse. A failed refresh may
 retain bounded display rows, but stale client state disables every domain
 control and refuses requests until authoritative truth returns.
 
-Profile selection dispatches once. Keyboard slider gestures enter a 120 ms
-single-shot debounce; further changes for that same exact row replace the
+Profile selection dispatches once. Keyboard and internal-display slider
+gestures enter a 120 ms single-shot debounce; further changes for that same exact row replace the
 queued normalized value. A burst therefore sends at most one raw request.
 Dispatch re-resolves the row against the unchanged owner, epoch, and revision,
 converts the final normalized value with the public integer brightness math,
@@ -110,7 +112,10 @@ remains fenced while a debounce is queued.
 Every submitted operation pins request ID, kind, owner, epoch, revision, target,
 and expected result. Success never edits presented truth optimistically. The
 route waits for a matching authoritative snapshot at or beyond the result's
-observed revision and keeps controls fenced for at most five seconds. Owner or
+observed revision and keeps controls fenced for at most five seconds. An
+internal-panel result already carries the service's re-read observation. If
+the matching snapshot reports a different value, the wait ends at once: the
+observed level is shown with visible text, and nothing is replayed. Owner or
 epoch replacement, malformed or mismatched completion, timeout, and uncertain
 outcomes clear the local fence with visible no-replay feedback. The public
 client performs its own bounded transport timeout and resnapshot.
@@ -138,11 +143,15 @@ Page Up/Page Down and Ctrl+Home/Ctrl+End move the viewport, and focus changes
 reveal the active control. Supply, hold, and brightness cards expose list-item
 names and descriptions. Profile buttons expose radio-button role and checked
 state. Brightness sliders expose slider role, target name, normalized value,
-and exact raw value in both visible and accessible descriptions.
+and exact raw value in both visible and accessible descriptions; a panel that
+cannot be adjusted says read-only in its description. Brightness repeaters
+iterate row identities rather than row values. Republishing therefore keeps
+each slider: keyboard focus returns to a slider re-enabled after its fence, and
+a pointer drag continues while rows update.
 
 The page computes its host-entry target from current admission truth: the
 automatic screen-lock toggle when enabled, then the first enabled profile
-action, then the first enabled keyboard slider, then Retry,
+action, then the first enabled internal-display or keyboard slider, then Retry,
 then the route surface. Closing Settings remains a single window-level action;
 the page does not duplicate it. A disabled internal slider or fenced domain
 action is never nominated. Escape returns focus to the active Power PageTab in
@@ -181,15 +190,25 @@ profile admission, exact lineage, retained-stale presentation/admission
 closure, convergence, retry-status recovery, owner replacement, and opaque
 session-client injection without model authority. The slider row proves burst coalescing, normalized-to-raw
 conversion, normalized and raw-equivalent no-ops, invalid/stale rejection, and
-no dispatch after authority change. The screen-lock model row covers INI
+no dispatch after authority change. The internal-brightness row
+(`qindaqt.settings-power-internal-brightness`) covers:
+
+- one exact raw request for the admitted panel, with other brightness targets
+  fenced meanwhile;
+- convergence on observed readback, including a different settled value;
+- no control and no request for read-only, ambiguous, lower-preference,
+  degraded, capability-absent, and unavailable-service panels;
+- no replay after an uncertain result or owner loss;
+- no send after the lineage changes. The screen-lock model row covers INI
 round-trip preserving unrelated keys, merge-latest saves that keep external
 edits to the untouched key in both directions, retry that re-runs a failed
 load/save before any live configure is requested or claimed, saved-versus-live
 failure truth, and clamped one-to-240-minute timeout bounds.
 The warning-fatal page row renders wide and compact software scenes, verifies
 Power and session action wiring, destructive confirmation, accessible
-roles/descriptions, disabled internal truth, and an
-always-admitted focus target. Boundary/poison and installed-route rows prove
+roles/descriptions, the internal slider's disabled truth plus keyboard, fence,
+and pointer-drag continuity through republication, and an always-admitted
+focus target. Boundary/poison and installed-route rows prove
 the source and relocated package boundaries. Settings Center tests additionally
 cover eighth-route order, Ctrl+8, PageTab semantics, Escape/Tab entry, and
 exclusive wide/compact loaders.
@@ -198,7 +217,7 @@ No row contacts a host session/system bus, UPower, power-profiles-daemon,
 login1, ScreenSaver, sysfs, Wayland, or hardware. Screen-lock rows use
 temporary `kscreenlockerrc` copies and a fake live-configure client. This
 slice does not claim live host action success, live screen-locker preference
-adoption, internal-display mutation, hold acquisition/release,
+adoption, physical internal-display mutation, hold acquisition/release,
 charge thresholds, persistence beyond the bounded screen-lock preference
 file, live AT-SPI, physical brightness keys, or nested-session visuals.
 
@@ -206,7 +225,6 @@ file, live AT-SPI, physical brightness keys, or nested-session visuals.
 
 Opening Power activates its installed service through the public client. The
 page omits epoch/revision counters and uses power-mode and brightness language
-in place of protocol terms. Internal display brightness remains an explicitly
-read-only percentage and explanation, rather than a permanently disabled
-slider; the existing Power1 contract has no internal-display write operation.
-Keyboard brightness retains its supported control.
+in place of protocol terms. Internal display brightness shows its percentage,
+a slider for the admitted panel, and an explanation for any panel that Power1
+will not adjust. Keyboard brightness retains its supported control.

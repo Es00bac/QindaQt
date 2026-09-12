@@ -7,15 +7,19 @@ service/client, and production UPower, the standard Power Profiles provider,
 logind-session,
 logind-action, and injected-sysfs adapters are implemented with focused
 private-bus evidence. A production shell Power applet consumes the public
-client boundary. Idle, keyboard-backlight integration, the KWin backlight
-provider, and PB-3 session-action presentation remain pending.
+client boundary. Settings adjusts the selected internal panel through the
+additive Power1 `SetInternalBrightness` operation. Idle,
+keyboard-backlight integration, the KWin backlight provider, and PB-3
+session-action presentation remain pending.
 
 The durable choices are split across
 [ADR-0023](../adr/0023-split-power-authority-across-service-and-shell.md),
 [ADR-0024](../adr/0024-route-brightness-through-power1.md), and
 [ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md). The
 production adapter boundary and the refined direct-sysfs primitive are in
-[ADR-0060](../adr/0060-confine-production-power-upstreams.md).
+[ADR-0060](../adr/0060-confine-production-power-upstreams.md). The public
+internal-panel operation and its shared target rule are in
+[ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md).
 
 PB-0 fixed bounded values, hostile-input validation, canonical byte codecs,
 fixed QtDBus structures, and deterministic pure battery aggregation in
@@ -35,7 +39,7 @@ selects production; the wire contract is unchanged.
 | Power/suspend/hibernate keys | logind `handle-*` inhibitor locks | Shell controller |
 | Idle hint | compositor idle protocol plus logind | `Power1` idle collaborator |
 | Internal-panel brightness inventory | Kernel backlight sysfs | Injected-root adapter; bounded read and truthful writability |
-| Internal-panel brightness requests | No Power1 v1 method | Tested direct-sysfs primitive only; no public dispatch yet |
+| Internal-panel brightness requests | Power1 `SetInternalBrightness` (ADR-0148) | Shared target rule, then a deferred sysfs write that publishes readback before the result |
 | External brightness changes | Kernel `actual_brightness` | Adapter re-reads observed truth after a write |
 | Adaptive brightness | KWin | QindaQt exposes no competing adaptive loop |
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
@@ -81,7 +85,7 @@ composition separate:
 | `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice; the session-owned display-off behavior users configure today is enforced by [desktop controls](desktop-controls.md) through KIdleTime and org-kde-kwin-dpms with no Power1 wire surface |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
-| [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard mutation and no session actions | Installed eighth Settings route; no platform maturity claim |
+| [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard and internal-panel mutation and no session actions | Installed eighth Settings route; no platform maturity claim |
 | [`desktop_controls`](desktop-controls.md) | Session-process brightness media keys over the public sysfs write primitive, notification feedback, and idle display-off enforcement | Focused-evidence slice; no Power1 wire change |
 
 The service coordinator may not own UPower, logind, profile-daemon, or sysfs
@@ -181,11 +185,12 @@ raw maximum and observed values, preferring `actual_brightness`, and reports
 malformed, disappearing, or read-only devices with typed fail-closed truth. A
 narrow write primitive is available only for a writable injected
 `brightness` file and re-reads observation after the write. No setuid helper,
-polkit prompt, fallback path, or host path exists in tests. Power1 v1 has no
-display-brightness method, so this primitive is not remotely dispatchable;
-the local session-process media keys in
-[desktop controls](desktop-controls.md) are its first in-tree consumer, and a
-later PB-4/PB-5 method remains free to supersede them.
+polkit prompt, fallback path, or host path exists in tests. Power1
+`SetInternalBrightness` reaches this primitive only through the production
+battery collaborator, after the shared target rule admits the device (see
+[Internal-panel brightness](#internal-panel-brightness)). The local
+session-process media keys in [desktop controls](desktop-controls.md) remain a
+separate consumer.
 
 ## Production shell consumer
 
@@ -200,8 +205,8 @@ The controller accepts only a validated snapshot from the client's exact
 current owner. Owner loss/replacement clears prior truth and makes any pending
 operation terminal without replay. Profile and keyboard-brightness requests
 are bounded, serialized, resolved against the current snapshot, and fenced by
-request and generation lineage. Power1 v1 still defines no display-brightness
-write. Compiled offscreen interaction and relocated installed-package tests
+request and generation lineage. The applet does not consume the internal-panel
+operation. Compiled offscreen interaction and relocated installed-package tests
 prove the renderer/host composition without contacting a user session bus,
 power daemon, display server, or hardware.
 
@@ -214,9 +219,29 @@ specific host's battery, profile daemon, logind policy, or backlight access.
 
 The implemented inventory adapter reads the configured backlight sysfs root
 and owns a direct, permission-gated write primitive as decided by ADR-0060. It
-does not inspect DRM, open `/dev/i2c*`, register a Wayland provider, or expose
-a Power1 v1 display-brightness method. The topology and KWin registration
-rules below remain the contract for a later provider slice.
+does not inspect DRM, open `/dev/i2c*`, or register a Wayland provider.
+
+[ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)
+exposes that primitive as the Power1 `SetInternalBrightness` operation. One pure
+`power_protocol` rule chooses the target. The coordinator, the apply step,
+`PowerClient` preflight, and Settings all call it:
+
+- candidates are devices with a usable maximum;
+- the kernel type preference firmware over platform over raw selects one tier;
+- more than one device in that tier is ambiguous;
+- lower tiers are not selected;
+- the selected device is admitted only while it is `Ok` with an observed value,
+  and it never falls back to another device.
+
+The production battery collaborator applies admitted requests on later
+event-loop turns, one at a time, and only while the battery domain is
+published. For each request it re-checks the rule, writes, and publishes the
+re-read observation before completing. The result's observed revision
+therefore carries the kernel's answer. A denied write completes `Failed` with
+`backlight-read-only`.
+
+The rule cannot see connectors. The topology and KWin registration rules below
+remain the contract for the later provider slice, which may narrow admission.
 
 Registration is fail-closed. One device is exposed only when both conditions
 hold:
@@ -309,6 +334,22 @@ replacement bus. Scratch roots are under the assigned build tree. These rows
 never use an ambient bus, `/sys/class/backlight`, hardware, polkit, or a desktop
 session.
 
+ADR-0148 adds these rows under the same constraints:
+
+- `qindaqt.power-protocol-backlight-selection`: the target rule, including
+  ambiguity in every enumeration order;
+- `qindaqt.power-service-operations`: coordinator validation and readback
+  lineage;
+- `qindaqt.power-service-internal-backlight-apply`: over a private UPower fake
+  and a fixture root, writes are deferred, ordered, and generation-fenced;
+  readback publishes before completion; read-only, unselected, and
+  withdrawn-domain requests are refused;
+- `qindaqt.power-client`: preflight, owner-loss, and timeout rows with no replay;
+- `qindaqt.power-service-production-activation`: an end-to-end
+  `SetInternalBrightness` exchange with observed readback; after permissions
+  are revoked, the republished read-only panel is refused both by client
+  preflight and by the service on a raw bus request.
+
 Deterministic continuation starts with hostile codecs, aggregation and model
 properties; private-bus owner/epoch replacement; fake UPower/profile/logind
 adapters; all-or-nothing inhibitors; LVDS/eDP/DSI counterexamples; exact
@@ -323,9 +364,13 @@ services and fixture files. It does not claim a live host UPower, standard
 Power Profiles provider, logind policy, polkit subject, suspend/resume cycle,
 physical backlight mutation, idle hint, keyboard backlight, KWin Wayland
 provider, external monitor, hardware key, or host-session integration. The
-logind action boundary has no Power1 v1 or shell presentation route, and the
-sysfs write primitive has no public Power1 v1 operation. Those later slices
-require their own executable and hardware evidence.
+logind action boundary has no Power1 v1 or shell presentation route.
+Internal-panel mutation is proven only against fixture roots. The installed
+unit's `ProtectKernelTunables=true` mounts `/sys` read-only, so a packaged
+service publishes the panel read-only until a separate hardening decision
+grants write access. A physical panel, that hardening change, PowerDevil's
+concurrent brightness ownership, and connector topology each require their own
+executable and hardware evidence.
 
 ## Consumer-triggered recovery
 

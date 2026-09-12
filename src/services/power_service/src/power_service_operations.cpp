@@ -2,6 +2,7 @@
 
 #include <qindaqt/services/power_service/power_service_coordinator.h>
 
+#include <qindaqt/services/power_protocol/power_backlight_selection.h>
 #include <qindaqt/services/power_protocol/power_limits.h>
 #include <qindaqt/services/power_protocol/power_validation.h>
 
@@ -13,6 +14,17 @@ namespace {
 bool hasCapability(const Snapshot &snapshot, const Capability capability)
 {
     return snapshot.capabilities.testFlag(capability);
+}
+
+const InternalBacklight *findInternalDevice(const Snapshot &snapshot,
+                                            const Handle &handle)
+{
+    for (const InternalBacklight &device : snapshot.internalBacklights) {
+        if (device.handle == handle) {
+            return &device;
+        }
+    }
+    return nullptr;
 }
 
 const KeyboardBacklight *findKeyboardDevice(const Snapshot &snapshot,
@@ -142,6 +154,25 @@ QString PowerServiceCoordinator::validateRequest(
         }
         return {};
     }
+    case OperationKind::SetInternalBrightness: {
+        if (!hasCapability(m_snapshot, Capability::InternalBacklight)) {
+            return QStringLiteral("unsupported");
+        }
+        if (!request.handle.isValid() || request.handle.epoch != m_snapshot.epoch) {
+            return QStringLiteral("stale-handle");
+        }
+        const InternalBacklight *device = findInternalDevice(m_snapshot, request.handle);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (internalBrightnessAdmission(m_snapshot.internalBacklights,
+                                        request.handle.opaqueId)
+                != InternalBrightnessAdmission::Admitted
+            || request.value > device->maximum) {
+            return QStringLiteral("unsupported");
+        }
+        return {};
+    }
     }
     return QStringLiteral("malformed-request");
 }
@@ -192,6 +223,10 @@ OperationSubmission PowerServiceCoordinator::submit(
         break;
     case OperationKind::SetKeyboardBrightness:
         m_battery->submitSetKeyboardBrightness(operationId, request.handle,
+                                               request.value);
+        break;
+    case OperationKind::SetInternalBrightness:
+        m_battery->submitSetInternalBrightness(operationId, request.handle,
                                                request.value);
         break;
     }

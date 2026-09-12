@@ -17,11 +17,16 @@
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>
     <method name="ReleaseProfileHold">
-      <arg name="hold" type="(tt)" direction="in"/>
+      <arg name="hold" type="(ts)" direction="in"/>
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>
     <method name="SetKeyboardBrightness">
-      <arg name="device" type="(tt)" direction="in"/>
+      <arg name="device" type="(ts)" direction="in"/>
+      <arg name="value" type="u" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="SetInternalBrightness">
+      <arg name="device" type="(ts)" direction="in"/>
       <arg name="value" type="u" direction="in"/>
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>

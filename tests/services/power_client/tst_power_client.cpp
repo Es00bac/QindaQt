@@ -39,6 +39,8 @@ private Q_SLOTS:
     void localRejectionsNeverCrossTheTransport();
     void busyOperationIsRejectedLocally();
     void succeededOperationPublishesResultAndRefetches();
+    void internalBrightnessPreflightSharesTheTargetRule();
+    void internalBrightnessOwnerLossAndTimeoutAreNeverReplayed();
     void malformedReplyIsUncertainAndRefetches();
     void stopCompletesInFlightOperationAsClientStopped();
     void snapshotTimeoutTransitionsToUnavailable();
@@ -307,6 +309,110 @@ void PowerClientTests::succeededOperationPublishesResultAndRefetches()
     QCOMPARE(result.reasonCode, QStringLiteral("released"));
     // Completion triggers a resnapshot of the mutated truth.
     QTRY_VERIFY(transport.fetches.size() >= 2);
+    client.stop();
+}
+
+void PowerClientTests::internalBrightnessPreflightSharesTheTargetRule()
+{
+    FakePowerTransport transport;
+    PowerClient client(&transport);
+    const Handle firmware{.epoch = 11, .opaqueId = QStringLiteral("panel-firmware")};
+    const Handle raw{.epoch = 11, .opaqueId = QStringLiteral("panel-raw")};
+    driveToReady(client, transport,
+                 powerClientPanelSnapshot(
+                     11, 2,
+                     {clientInternalBacklight(11, raw.opaqueId, BacklightKind::Raw),
+                      clientInternalBacklight(11, firmware.opaqueId)}));
+    QSignalSpy completed(&client, &PowerClient::operationCompleted);
+
+    QVERIFY(client.setInternalBrightness(raw, 10) != 0);
+    QTRY_COMPARE(completed.size(), 1);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().kind,
+             OperationKind::SetInternalBrightness);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Unsupported);
+    QVERIFY(client.setInternalBrightness({.epoch = 12, .opaqueId = firmware.opaqueId}, 10)
+            != 0);
+    QTRY_COMPARE(completed.size(), 2);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().reasonCode,
+             QStringLiteral("stale-handle"));
+    QVERIFY(client.setInternalBrightness(firmware, 256) != 0);
+    QTRY_COMPARE(completed.size(), 3);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Unsupported);
+    QCOMPARE(transport.operations.size(), 0);
+
+    const quint64 requestId = client.setInternalBrightness(firmware, 200);
+    QCOMPARE(transport.operations.size(), 1);
+    const FakePowerTransport::Operation operation = transport.operations.constFirst();
+    QCOMPARE(operation.owner, kOwner);
+    QCOMPARE(operation.request.kind, OperationKind::SetInternalBrightness);
+    QCOMPARE(operation.request.handle, firmware);
+    QCOMPARE(operation.request.value, quint32(200));
+    transport.finish(operation, powerClientResult(operation, OperationStatus::Succeeded,
+                                                  QStringLiteral("applied")));
+    QTRY_COMPARE(completed.size(), 4);
+    QCOMPARE(completed.last().at(0).toULongLong(), requestId);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Succeeded);
+
+    // Two equally preferred panels make the same handle ambiguous locally.
+    transport.invalidate(kOwner, 11, 3);
+    transport.reply(transport.fetches.constLast(),
+                    powerClientPanelSnapshot(
+                        11, 3,
+                        {clientInternalBacklight(11, firmware.opaqueId),
+                         clientInternalBacklight(11, QStringLiteral("panel-dsi"))}));
+    QTRY_COMPARE(client.snapshot().revision, quint64(3));
+    QVERIFY(client.setInternalBrightness(firmware, 100) != 0);
+    QTRY_COMPARE(completed.size(), 5);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Unsupported);
+    QCOMPARE(transport.operations.size(), 1);
+    client.stop();
+}
+
+void PowerClientTests::internalBrightnessOwnerLossAndTimeoutAreNeverReplayed()
+{
+    FakePowerTransport transport;
+    PowerClient client(&transport);
+    const QString panelId = QStringLiteral("panel-firmware");
+    driveToReady(client, transport,
+                 powerClientPanelSnapshot(11, 2, {clientInternalBacklight(11, panelId)}));
+    QSignalSpy completed(&client, &PowerClient::operationCompleted);
+
+    const quint64 requestId =
+        client.setInternalBrightness({.epoch = 11, .opaqueId = panelId}, 200);
+    QCOMPARE(transport.operations.size(), 1);
+    transport.announceOwner(QStringLiteral(":1.99"));
+    QTRY_COMPARE(completed.size(), 1);
+    QCOMPARE(completed.first().at(0).toULongLong(), requestId);
+    const OperationResult lost = completed.first().at(1).value<OperationResult>();
+    QCOMPARE(lost.kind, OperationKind::SetInternalBrightness);
+    QCOMPARE(lost.status, OperationStatus::Uncertain);
+    QCOMPARE(lost.reasonCode, QStringLiteral("owner-replaced"));
+
+    transport.reply(transport.fetches.constLast(),
+                    powerClientPanelSnapshot(47, 1, {clientInternalBacklight(47, panelId)}));
+    QTRY_COMPARE(client.snapshot().epoch, quint64(47));
+    transport.finish(transport.operations.constFirst(),
+                     powerClientResult(transport.operations.constFirst(),
+                                       OperationStatus::Succeeded,
+                                       QStringLiteral("applied")));
+    QCOMPARE(completed.size(), 1);
+
+    client.setRequestTimeout(50);
+    const quint64 timedId =
+        client.setInternalBrightness({.epoch = 47, .opaqueId = panelId}, 100);
+    QCOMPARE(transport.operations.size(), 2);
+    QTRY_COMPARE(completed.size(), 2);
+    QCOMPARE(completed.last().at(0).toULongLong(), timedId);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().status,
+             OperationStatus::Uncertain);
+    QCOMPARE(completed.last().at(1).value<OperationResult>().reasonCode,
+             QStringLiteral("operation-timeout"));
+    QTest::qWait(120);
+    QCOMPARE(transport.operations.size(), 2);
     client.stop();
 }
 

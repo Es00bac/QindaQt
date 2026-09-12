@@ -5,6 +5,7 @@
 #include "power_settings_projection.h"
 
 #include <qindaqt/services/brightness_model/brightness_math.h>
+#include <qindaqt/services/power_protocol/power_backlight_selection.h>
 #include <qindaqt/services/power_protocol/power_limits.h>
 #include <qindaqt/services/power_protocol/power_validation.h>
 
@@ -178,48 +179,77 @@ QVariantList PowerSettingsModel::profileHoldRows() const {
       ? Projection::profileHolds(m_client.snapshot()) : QVariantList{};
 }
 
+QVariantList PowerSettingsModel::admittedBrightnessRows(QVariantList rows,
+                                                        const Intent intent) const {
+  for (QVariant &value : rows) {
+    QVariantMap row = value.toMap();
+    const QString id = row.value(QStringLiteral("id")).toString();
+    row.insert(QStringLiteral("available"),
+               brightnessAdmission(intent, id, true).isEmpty());
+    value = row;
+  }
+  return rows;
+}
+
 QVariantList PowerSettingsModel::internalBrightnessRows() const {
-  return hasDisplaySnapshot()
-      ? Projection::internalBrightness(m_client.snapshot()) : QVariantList{};
+  if (!hasDisplaySnapshot()) return {};
+  return admittedBrightnessRows(Projection::internalBrightness(m_client.snapshot()),
+                                Intent::InternalBrightness);
+}
+
+QVariantList PowerSettingsModel::keyboardBrightnessRows() const {
+  if (!hasDisplaySnapshot()) return {};
+  return admittedBrightnessRows(Projection::keyboardBrightness(m_client.snapshot()),
+                                Intent::KeyboardBrightness);
+}
+
+OperationKind PowerSettingsModel::operationKind(const Intent intent) {
+  switch (intent) {
+  case Intent::Profile: return OperationKind::SetProfile;
+  case Intent::KeyboardBrightness: return OperationKind::SetKeyboardBrightness;
+  case Intent::InternalBrightness: return OperationKind::SetInternalBrightness;
+  }
+  return OperationKind::SetProfile;
+}
+
+std::optional<PowerSettingsModel::BrightnessTarget>
+PowerSettingsModel::findBrightness(const Snapshot &snapshot, const Intent intent,
+                                   const QString &rowId) const {
+  if (intent == Intent::KeyboardBrightness) {
+    for (const Power::KeyboardBacklight &device : snapshot.keyboardBacklights)
+      if (Projection::keyboardRowId(snapshot, device.handle) == rowId)
+        return BrightnessTarget{device.handle, device.valueKnown, device.value,
+                                device.maximum, device.canSet};
+  } else if (intent == Intent::InternalBrightness) {
+    for (const Power::InternalBacklight &device : snapshot.internalBacklights)
+      if (Projection::internalRowId(snapshot, device.handle) == rowId)
+        return BrightnessTarget{
+            device.handle, device.observedKnown, device.observed, device.maximum,
+            Power::internalBrightnessAdmission(snapshot.internalBacklights,
+                                               device.handle.opaqueId)
+                == Power::InternalBrightnessAdmission::Admitted};
+  }
+  return std::nullopt;
 }
 
 QString PowerSettingsModel::brightnessAdmission(
-    const QString &rowId, const bool replacingDebounce) const {
+    const Intent intent, const QString &rowId, const bool replacingDebounce) const {
   if (m_pending || m_convergence || m_client.operationPending())
     return QStringLiteral("operation-busy");
   if (m_debounce && (!replacingDebounce || m_debounce->rowId != rowId))
     return QStringLiteral("operation-busy");
   if (!snapshotAdmitsBase()) return QStringLiteral("unavailable");
   const Snapshot snapshot = m_client.snapshot();
-  if (!snapshot.capabilities.testFlag(Capability::KeyboardBacklight))
+  const Capability capability = intent == Intent::InternalBrightness
+      ? Capability::InternalBacklight : Capability::KeyboardBacklight;
+  if (!snapshot.capabilities.testFlag(capability))
     return QStringLiteral("unsupported");
-  const Power::KeyboardBacklight *device = findKeyboard(snapshot, rowId);
-  if (device == nullptr || device->handle.epoch != snapshot.epoch)
+  const auto target = findBrightness(snapshot, intent, rowId);
+  if (!target || target->handle.epoch != snapshot.epoch)
     return QStringLiteral("stale-handle");
-  if (!device->canSet || !device->valueKnown || device->maximum == 0)
+  if (!target->settable || !target->valueKnown || target->maximum == 0)
     return QStringLiteral("unsupported");
   return {};
-}
-
-QVariantList PowerSettingsModel::keyboardBrightnessRows() const {
-  if (!hasDisplaySnapshot()) return {};
-  QVariantList rows = Projection::keyboardBrightness(m_client.snapshot());
-  for (QVariant &value : rows) {
-    QVariantMap row = value.toMap();
-    const QString id = row.value(QStringLiteral("id")).toString();
-    row.insert(QStringLiteral("available"),
-               brightnessAdmission(id, true).isEmpty());
-    value = row;
-  }
-  return rows;
-}
-
-const Power::KeyboardBacklight *PowerSettingsModel::findKeyboard(
-    const Snapshot &snapshot, const QString &rowId) const {
-  for (const Power::KeyboardBacklight &device : snapshot.keyboardBacklights)
-    if (Projection::keyboardRowId(snapshot, device.handle) == rowId)
-      return &device;
-  return nullptr;
 }
 
 bool PowerSettingsModel::retry() {
@@ -259,25 +289,37 @@ bool PowerSettingsModel::requestProfile(const QString &profileId) {
 
 bool PowerSettingsModel::requestKeyboardBrightness(const QString &rowId,
                                                     const int normalized) {
-  const QString reason = brightnessAdmission(rowId, true);
+  return requestBrightness(Intent::KeyboardBrightness, rowId, normalized);
+}
+
+bool PowerSettingsModel::requestInternalBrightness(const QString &rowId,
+                                                    const int normalized) {
+  return requestBrightness(Intent::InternalBrightness, rowId, normalized);
+}
+
+bool PowerSettingsModel::requestBrightness(const Intent intent,
+                                           const QString &rowId,
+                                           const int normalized) {
+  const QString reason = brightnessAdmission(intent, rowId, true);
   if (!reason.isEmpty() || normalized < 0
       || normalized > static_cast<int>(Power::kNormalizedBrightnessMaximum)) {
     reject(reason.isEmpty() ? QStringLiteral("invalid-brightness") : reason);
     return false;
   }
   const Snapshot snapshot = m_client.snapshot();
-  const Power::KeyboardBacklight *device = findKeyboard(snapshot, rowId);
-  if (device == nullptr) {
+  const auto target = findBrightness(snapshot, intent, rowId);
+  if (!target) {
     reject(QStringLiteral("stale-handle"));
     return false;
   }
+  const auto current = Brightness::normalizeRaw(0, target->maximum, target->value);
   const auto raw = Brightness::denormalizeRaw(
-      0, device->maximum, static_cast<quint32>(normalized));
+      0, target->maximum, static_cast<quint32>(normalized));
   // AGENT-GUARD: Returning a gesture to admitted observed truth must cancel
   // its queued predecessor. Checking both representations avoids an
   // idempotent raw write when multiple normalized positions round alike.
-  if (normalized == static_cast<int>(device->normalized)
-      || (raw.succeeded() && raw.value == device->value)) {
+  if ((current.succeeded() && normalized == static_cast<int>(current.value))
+      || (raw.succeeded() && raw.value == target->value)) {
     m_debounceTimer.stop();
     m_debounce.reset();
     m_errorText.clear();
@@ -285,7 +327,7 @@ bool PowerSettingsModel::requestKeyboardBrightness(const QString &rowId,
     Q_EMIT viewChanged();
     return true;
   }
-  m_debounce = DebouncedBrightness{rowId, normalized, m_client.owner(),
+  m_debounce = DebouncedBrightness{intent, rowId, normalized, m_client.owner(),
                                    snapshot.epoch, snapshot.revision};
   m_debounceTimer.start();
   m_errorText.clear();
@@ -307,32 +349,37 @@ void PowerSettingsModel::dispatchDebouncedBrightness() {
     reject(QStringLiteral("stale-handle"));
     return;
   }
-  const Power::KeyboardBacklight *device = findKeyboard(snapshot, debounce.rowId);
-  if (device == nullptr || !device->canSet) {
-    reject(QStringLiteral("stale-handle"));
+  // Final dispatch re-runs the same predicate that enabled the control.
+  const QString reason = brightnessAdmission(debounce.intent, debounce.rowId, false);
+  if (!reason.isEmpty()) {
+    reject(reason);
     return;
   }
+  const auto target = findBrightness(snapshot, debounce.intent, debounce.rowId);
   const auto raw = Brightness::denormalizeRaw(
-      0, device->maximum, static_cast<quint32>(debounce.normalized));
+      0, target->maximum, static_cast<quint32>(debounce.normalized));
   if (!raw.succeeded()) {
     reject(QStringLiteral("invalid-brightness"));
     return;
   }
-  if (device->valueKnown && raw.value == device->value) {
+  if (raw.value == target->value) {
     m_operationStatusText.clear();
     Q_EMIT viewChanged();
     return;
   }
-  const quint64 requestId = m_client.setKeyboardBrightness(device->handle,
-                                                            raw.value);
+  const bool internal = debounce.intent == Intent::InternalBrightness;
+  const quint64 requestId = internal
+      ? m_client.setInternalBrightness(target->handle, raw.value)
+      : m_client.setKeyboardBrightness(target->handle, raw.value);
   if (requestId == 0) {
     reject(QStringLiteral("request-id-exhausted"));
     return;
   }
-  m_pending = PendingOperation{requestId, Intent::KeyboardBrightness,
-                               debounce.rowId, debounce.owner, debounce.epoch,
+  m_pending = PendingOperation{requestId, debounce.intent, debounce.rowId,
+                               debounce.owner, debounce.epoch,
                                debounce.revision, raw.value};
-  m_operationStatusText = tr("Applying keyboard brightness…");
+  m_operationStatusText = internal ? tr("Applying display brightness…")
+                                   : tr("Applying keyboard brightness…");
   Q_EMIT viewChanged();
 }
 
@@ -345,10 +392,7 @@ void PowerSettingsModel::handleOperationCompleted(
       && Power::validateOperationResult(result).accepted
       && result.initiatingEpoch == pending.epoch
       && result.initiatingRevision == pending.revision
-      && ((pending.intent == Intent::Profile
-           && result.kind == OperationKind::SetProfile)
-          || (pending.intent == Intent::KeyboardBrightness
-              && result.kind == OperationKind::SetKeyboardBrightness));
+      && result.kind == operationKind(pending.intent);
   if (!exact || result.status == OperationStatus::Uncertain) {
     m_operationStatusText.clear();
     m_errorText = tr("The power change could not be confirmed. It was not replayed.");
@@ -398,19 +442,28 @@ void PowerSettingsModel::synchronizeAuthority() {
     } else {
       const Snapshot snapshot = m_client.snapshot();
       bool converged = false;
+      bool settledElsewhere = false;
       if (snapshot.revision >= m_convergence->minimumRevision) {
         if (m_convergence->intent == Intent::Profile) {
           converged = snapshot.profiles.activeProfileId == m_convergence->target;
-        } else if (const Power::KeyboardBacklight *device =
-                       findKeyboard(snapshot, m_convergence->target)) {
-          converged = device->valueKnown
-              && device->value == m_convergence->expectedRaw;
+        } else if (const auto target = findBrightness(
+                       snapshot, m_convergence->intent, m_convergence->target);
+                   target && target->valueKnown) {
+          converged = target->value == m_convergence->expectedRaw;
+          // AGENT-NOTE: the sysfs apply step publishes its readback before the
+          // result (ADR-0148), so the observed revision already holds the
+          // kernel's answer. Keyboard truth arrives later from its battery
+          // authority and keeps waiting for the timeout instead.
+          settledElsewhere = !converged
+              && m_convergence->intent == Intent::InternalBrightness;
         }
       }
-      if (converged) {
+      if (converged || settledElsewhere) {
         m_convergence.reset();
         m_convergenceTimer.stop();
         m_operationStatusText.clear();
+        if (settledElsewhere)
+          m_errorText = tr("The display settled at a different brightness than requested. The observed level is shown and nothing was replayed.");
       }
     }
   }

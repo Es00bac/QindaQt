@@ -2,11 +2,23 @@
 
 #include <qindaqt/services/power_client/power_client.h>
 
+#include <qindaqt/services/power_protocol/power_backlight_selection.h>
 #include <qindaqt/services/power_protocol/power_limits.h>
 #include <qindaqt/services/power_protocol/power_validation.h>
 
 namespace QindaQt::Power {
 namespace {
+
+const InternalBacklight *findInternalDevice(const Snapshot &snapshot,
+                                            const Handle &handle)
+{
+    for (const InternalBacklight &device : snapshot.internalBacklights) {
+        if (device.handle == handle) {
+            return &device;
+        }
+    }
+    return nullptr;
+}
 
 const KeyboardBacklight *findKeyboardDevice(const Snapshot &snapshot,
                                             const Handle &handle)
@@ -95,6 +107,23 @@ QString preflightOperation(const Snapshot &snapshot,
         }
         if (!snapshot.capabilities.testFlag(Capability::KeyboardBacklight)
             || !device->canSet || device->maximum == 0 || request.value > device->maximum) {
+            return QStringLiteral("unsupported");
+        }
+        return {};
+    }
+    case OperationKind::SetInternalBrightness: {
+        if (!request.handle.isValid() || request.handle.epoch != snapshot.epoch) {
+            return QStringLiteral("stale-handle");
+        }
+        const InternalBacklight *device = findInternalDevice(snapshot, request.handle);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (!snapshot.capabilities.testFlag(Capability::InternalBacklight)
+            || internalBrightnessAdmission(snapshot.internalBacklights,
+                                           request.handle.opaqueId)
+                != InternalBrightnessAdmission::Admitted
+            || request.value > device->maximum) {
             return QStringLiteral("unsupported");
         }
         return {};
@@ -198,6 +227,16 @@ quint64 PowerClient::releaseProfileHold(const Handle &hold)
 quint64 PowerClient::setKeyboardBrightness(const Handle &device, const quint32 value)
 {
     return beginOperation({.kind = OperationKind::SetKeyboardBrightness,
+                           .profileId = {},
+                           .applicationName = {},
+                           .reason = {},
+                           .handle = device,
+                           .value = value});
+}
+
+quint64 PowerClient::setInternalBrightness(const Handle &device, const quint32 value)
+{
+    return beginOperation({.kind = OperationKind::SetInternalBrightness,
                            .profileId = {},
                            .applicationName = {},
                            .reason = {},

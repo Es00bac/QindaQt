@@ -45,8 +45,9 @@ void PowerSettingsModelTest::projectsTruthAndKeepsSessionActionsInTheirInjectedB
   QCOMPARE(model.internalBrightnessRows().first().toMap()
                .value(QStringLiteral("rawText")).toString(),
            QStringLiteral("Raw 421 of 937"));
-  QVERIFY(!model.internalBrightnessRows().first().toMap()
-               .value(QStringLiteral("available")).toBool());
+  // ADR-0148: the sole writable firmware panel is an admitted control.
+  QVERIFY(model.internalBrightnessRows().first().toMap()
+              .value(QStringLiteral("available")).toBool());
   QVERIFY(!model.sessionActionsSupported());
   QVERIFY(model.sessionActions() == nullptr);
 
@@ -129,6 +130,7 @@ void PowerSettingsModelTest::staleSnapshotClosesPresentationAndAdmission() {
 
   QVERIFY(!model.requestProfile(QStringLiteral("power-saver")));
   QVERIFY(!model.requestKeyboardBrightness(keyboardId, 4'000));
+  QVERIFY(!model.requestInternalBrightness(QStringLiteral("internal-41-1"), 4'000));
   QCOMPARE(transport.submissions.size(), 0);
 }
 
