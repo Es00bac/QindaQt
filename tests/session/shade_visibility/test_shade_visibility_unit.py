@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+import copy
 import struct
 import sys
+import tempfile
 import unittest
 import zlib
 from pathlib import Path
@@ -186,6 +188,105 @@ class TiledSiblingTests(unittest.TestCase):
         self.assertTrue(uncovered(inventory, "middle", (285.0, 300.0)))
         self.assertIsNotNone(uncovered_content_point(inventory, "middle"))
         self.assertFalse(uncovered(inventory, "middle", (270.0, 300.0)))  # inside left's frame
+
+
+MEMBER_A, MEMBER_B = shade_fixtures.MEMBER_A_TITLE, shade_fixtures.MEMBER_B_TITLE
+
+
+def replayed_occlusion() -> dict:
+    """The integrated cycles.gtk-csd replay that stopped before any verdict:
+    KWin mapped member A entirely beneath active member B."""
+    return {shade_fixtures.BACKDROP_TITLE: window(0, 0, 1920, 1080, 0),
+            MEMBER_A: window(640, 330, 640, 420, 1),
+            MEMBER_B: window(680, 350, 560, 380, 2)}
+
+
+class _FixedInventory:
+    def __init__(self, inventory: dict) -> None:
+        self._inventory = inventory
+
+    def windows(self) -> dict:
+        return copy.deepcopy(self._inventory)
+
+
+class _RecordingPointer:
+    def __init__(self) -> None:
+        self.drags: list[tuple] = []
+        self.clicks: list[tuple] = []
+
+    def drag(self, start, end, meta_shift: bool = False) -> None:
+        self.drags.append((start, end, meta_shift))
+
+    def click(self, x: float, y: float, name: str = "left") -> None:
+        self.clicks.append((x, y, name))
+
+
+class OccludedSourceDockTests(unittest.TestCase):
+    def session_over(self, inventory: dict):
+        from shade_session import SessionConfig, ShadeSession
+        output = tempfile.TemporaryDirectory()
+        self.addCleanup(output.cleanup)
+        session = ShadeSession(SessionConfig(Path(output.name), "gtk-csd", "cycles", 1920, 1080, 1.0))
+        # Doubles for the Compositor1 endpoint and development pointer that
+        # start() would connect inside the private session.
+        session._control, session._pointer = _FixedInventory(inventory), _RecordingPointer()
+        return session
+
+    def test_replayed_fully_occluded_source_is_grouped_by_dragging_the_target_onto_it(self) -> None:
+        from shade_control import uncovered
+        inventory = replayed_occlusion()
+        session = self.session_over(inventory)
+        session.dock(MEMBER_A, MEMBER_B)
+        self.assertEqual(session.pointer.clicks, [])
+        self.assertEqual(len(session.pointer.drags), 1)
+        start, drop, meta_shift = session.pointer.drags[0]
+        self.assertTrue(meta_shift)
+        self.assertTrue(uncovered(inventory, MEMBER_B, start))
+        self.assertTrue(uncovered(inventory, MEMBER_A, drop, ignore=(MEMBER_B,)))
+        step = session.evidence["steps"][-1]
+        self.assertEqual((step["dragged"], step["onto"], step["reversed"]),
+                         (MEMBER_B, MEMBER_A, True))
+
+    def test_the_reversed_gesture_starts_in_the_targets_title_band_and_drops_on_the_source(self) -> None:
+        from shade_control import DockGesture, plan_dock
+        plan = plan_dock(replayed_occlusion(), MEMBER_A, MEMBER_B)
+        self.assertIsInstance(plan, DockGesture)
+        self.assertEqual((plan.dragged, plan.onto, plan.reversed), (MEMBER_B, MEMBER_A, True))
+        self.assertEqual(plan.start, (960.0, 362.0))
+        self.assertAlmostEqual(plan.drop[0], 691.2)
+        self.assertAlmostEqual(plan.drop[1], 540.0)
+
+    def test_a_source_mapped_above_its_target_keeps_the_forward_gesture(self) -> None:
+        from shade_control import DockGesture, plan_dock
+        # The passing attempts of the same row, where KWin mapped A above B.
+        inventory = replayed_occlusion()
+        inventory[MEMBER_A] = window(720, 372.5, 640, 420, 2)
+        inventory[MEMBER_B] = window(680, 350, 560, 380, 1)
+        plan = plan_dock(inventory, MEMBER_A, MEMBER_B)
+        self.assertIsInstance(plan, DockGesture)
+        self.assertEqual((plan.dragged, plan.onto, plan.reversed), (MEMBER_A, MEMBER_B, False))
+        self.assertEqual(plan.start, (1040.0, 384.5))
+        self.assertAlmostEqual(plan.drop[0], 724.8)
+        self.assertAlmostEqual(plan.drop[1], 540.0)
+
+    def test_a_partly_visible_source_is_raised_before_any_reversal(self) -> None:
+        from shade_control import RaiseClick, plan_dock, uncovered
+        inventory = {MEMBER_A: window(100, 100, 640, 420, 1), MEMBER_B: window(500, 350, 560, 380, 2),
+                     "title cover": window(0, 0, 1000, 150, 3)}
+        plan = plan_dock(inventory, MEMBER_A, MEMBER_B)
+        self.assertIsInstance(plan, RaiseClick)
+        self.assertEqual(plan.title, MEMBER_A)
+        self.assertTrue(uncovered(inventory, MEMBER_A, plan.point))
+
+    def test_an_already_grouped_target_is_never_dragged_in_reverse(self) -> None:
+        inventory = replayed_occlusion()
+        inventory[MEMBER_B]["containerId"] = "c1"
+        session = self.session_over(inventory)
+        with self.assertRaisesRegex(RuntimeError, "no uncovered dock gesture"):
+            session.dock(MEMBER_A, MEMBER_B)
+        self.assertEqual((session.pointer.drags, session.pointer.clicks), ([], []))
+        from shade_control import plan_dock
+        self.assertIsNone(plan_dock(inventory, MEMBER_A, MEMBER_B))
 
 
 class FixtureCatalogueTests(unittest.TestCase):

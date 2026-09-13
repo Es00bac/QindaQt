@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from shade_control import (CompositorControl, PointerDriver, connect, dock_drop_point, title_point,
+from shade_control import (CompositorControl, DockGesture, PointerDriver, connect, plan_dock,
                            uncovered_content_point, wait_for)
 from shade_fixtures import BACKDROP_COLOUR, BACKDROP_TITLE, FixtureLauncher
 from shade_framebuffer import Frame, encode_png, select_fresh_buffer, swapchain_buffers
@@ -113,27 +113,29 @@ class ShadeSession:
         return frame
 
     def dock(self, source: str, target: str) -> None:
-        """Meta+Shift-drag `source` onto an uncovered edge of `target`.
+        """Group `source` with `target` through one real Meta+Shift drag.
 
-        Raises whichever window blocks the gesture by clicking its uncovered
-        content first; raising the target and then the source always converges
-        because the dragged source may cover the drop point.
+        Every attempt re-plans from live inventory with `plan_dock`. A blocking
+        window is raised by clicking its uncovered content first; raising the
+        target and then the source always converges because the dragged source
+        may cover the drop point. A source mapped entirely beneath its target
+        is grouped by dragging the target onto it, recorded as `reversed`.
         """
         for _ in range(3):
             inventory = self.control.windows()
-            start = title_point(inventory, source)
-            drop = dock_drop_point(inventory, source, target)
-            if start and drop:
-                self.step(f"dock-{source}-onto-{target}", start=list(start), drop=list(drop),
+            plan = plan_dock(inventory, source, target)
+            if isinstance(plan, DockGesture):
+                self.step(f"dock-{source}-onto-{target}", start=list(plan.start),
+                          drop=list(plan.drop), dragged=plan.dragged, onto=plan.onto,
+                          reversed=plan.reversed,
                           members={title: window_summary(window)
                                    for title, window in inventory.items()})
-                self.pointer.drag(start, drop, meta_shift=True)
+                self.pointer.drag(plan.start, plan.drop, meta_shift=True)
                 return
-            blocked = target if drop is None else source
-            point = uncovered_content_point(inventory, blocked)
-            if point is None:
+            if plan is None:
                 break
-            self.pointer.click(*point)
+            blocked = plan.title
+            self.pointer.click(*plan.point)
             wait_for(f"{blocked} raised", lambda: self.control.windows()[blocked]["active"], 5)
         raise RuntimeError(f"no uncovered dock gesture from {source} onto {target}")
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import dbus
@@ -189,6 +190,58 @@ def uncovered_content_point(inventory: dict[str, dict[str, Any]],
             point = (x + width * fx, y + height * fy)
             if uncovered(inventory, title, point):
                 return point
+    return None
+
+
+@dataclass(frozen=True)
+class DockGesture:
+    """A Meta+Shift drag of `dragged` from `start` onto `onto` at `drop`."""
+
+    dragged: str
+    onto: str
+    start: tuple[float, float]
+    drop: tuple[float, float]
+    # True when the requested target is dragged onto the requested source.
+    reversed: bool = False
+
+
+@dataclass(frozen=True)
+class RaiseClick:
+    """A click on uncovered content of `title` that raises it above its blocker."""
+
+    title: str
+    point: tuple[float, float]
+
+
+def plan_dock(inventory: dict[str, dict[str, Any]], source: str,
+              target: str) -> DockGesture | RaiseClick | None:
+    """The next real input that puts `source` and `target` into one container.
+
+    Prefers dragging `source` onto `target`, raising whichever window blocks
+    that gesture while the blocker still has uncovered content. A source mapped
+    entirely beneath its target has neither, so the target is dragged onto the
+    source instead: the Meta+Shift grab may start anywhere on a window's own
+    input surface (docs/wiki/architecture/hybrid-topology.md), and the flows
+    judge only that both windows end up sharing one container.
+
+    AGENT-GUARD: never reverse once either window is grouped. A Meta+Shift drag
+    of a grouped member rearranges that member, so a reversed gesture would pull
+    B out of the lifecycle flow's C+B container instead of adding A to it.
+    """
+    start = title_point(inventory, source)
+    drop = dock_drop_point(inventory, source, target)
+    if start and drop:
+        return DockGesture(source, target, start, drop)
+    blocked = target if drop is None else source
+    point = uncovered_content_point(inventory, blocked)
+    if point is not None:
+        return RaiseClick(blocked, point)
+    if inventory[source].get("containerId") or inventory[target].get("containerId"):
+        return None
+    start = title_point(inventory, target)
+    drop = dock_drop_point(inventory, target, source)
+    if start and drop:
+        return DockGesture(target, source, start, drop, reversed=True)
     return None
 
 
