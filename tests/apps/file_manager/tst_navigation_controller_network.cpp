@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "fakes.h"
 #include "model/navigation_controller.h"
+#include "network/network_location.h"
 
 #include <QTest>
 
@@ -11,6 +12,7 @@ using QindaQt::Apps::FileManager::Test::FakeDirectoryLister;
 using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
 using QindaQt::Apps::FileManager::Test::FakeRemoteFileOpener;
+using QindaQt::Apps::FileManager::Test::FakeRemoteRenamer;
 
 namespace {
 
@@ -69,6 +71,14 @@ private slots:
   void aRemoteOpenFailurePublishesATruthfulLaunchError();
   void aSuccessfulRemoteOpenClearsAPreviousLaunchError();
   void destructionWithAPendingRemoteOpenDoesNotCrash();
+  void remoteRenameDispatchesAValidatedSiblingUrl();
+  void remoteRenameRejectsInvalidNames();
+  void remoteRenameRejectsUnlistedAndCrossFolderSources();
+  void remoteRenameRejectsOverlappingOperations();
+  void remoteRenameSuccessRefreshesTheListing();
+  void remoteRenameFailureStaysVisibleWithoutOptimisticRename();
+  void aCancelledRemoteRenameResultIsDiscarded();
+  void destructionWithAPendingRemoteRenameDoesNotCrash();
   void destructionWithAPendingRequestDoesNotCrash();
 };
 
@@ -417,6 +427,212 @@ void TestNavigationControllerNetwork::destructionWithAPendingRemoteOpenDoesNotCr
                                     std::make_unique<FakeFileLauncher>(), std::move(backend),
                                     std::move(opener));
     controller.navigateTo(QStringLiteral("smb://server/share"));
+  }
+  QVERIFY(true);
+}
+
+namespace {
+
+// Publishes a one-entry remote listing for url through rawBackend so
+// rename tests have a listed child to act on.
+void publishSingleEntry(FakeNetworkDirectoryBackend *rawBackend, NavigationController &controller,
+                        const QUrl &url, const QString &name) {
+  controller.navigateTo(url.toString());
+  const quint64 generation = rawBackend->requests().last().generation;
+  rawBackend->emitReady(generation, url,
+                        successResult(url, {makeEntry(name, NetworkLocation::childUrl(url, name).toString(), false)}));
+}
+
+} // namespace
+
+// ADR-0153: renaming a listed child dispatches one same-folder KIO rename
+// through the injected renamer, fenced by the current listing generation.
+void TestNavigationControllerNetwork::remoteRenameDispatchesAValidatedSiblingUrl() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+  QCOMPARE(controller.remoteRenameAvailable(), true);
+  QCOMPARE(controller.remoteRenameBusy(), false);
+
+  QVERIFY(controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                       QStringLiteral("report.txt")));
+  QCOMPARE(rawRenamer->requests().size(), 1);
+  QCOMPARE(rawRenamer->requests().constFirst().source.toString(),
+           QStringLiteral("smb://server/share/notes.txt"));
+  QCOMPARE(rawRenamer->requests().constFirst().destination.toString(),
+           QStringLiteral("smb://server/share/report.txt"));
+  QCOMPARE(rawRenamer->requests().constFirst().generation,
+           rawBackend->requests().last().generation);
+  QCOMPARE(controller.remoteRenameBusy(), true);
+}
+
+void TestNavigationControllerNetwork::remoteRenameRejectsInvalidNames() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+
+  for (const QString &badName :
+       {QString(), QStringLiteral("a/b"), QStringLiteral("a\\b"), QStringLiteral("."),
+        QStringLiteral(".."), QStringLiteral("a\u0000b")}) {
+    QVERIFY2(!controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                           badName),
+             qPrintable(QStringLiteral("name '%1' must be refused").arg(badName)));
+  }
+  QVERIFY(rawRenamer->requests().isEmpty());
+  QCOMPARE(controller.remoteRenameBusy(), false);
+}
+
+void TestNavigationControllerNetwork::remoteRenameRejectsUnlistedAndCrossFolderSources() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+
+  // Not in the current listing (stale or foreign identity).
+  QVERIFY(!controller.renameRemoteEntry(QStringLiteral("smb://server/share/other.txt"),
+                                        QStringLiteral("renamed.txt")));
+  // Listed child of a different folder.
+  QVERIFY(!controller.renameRemoteEntry(QStringLiteral("smb://server/other/notes.txt"),
+                                        QStringLiteral("renamed.txt")));
+  // Embedded credentials are refused outright.
+  QVERIFY(!controller.renameRemoteEntry(QStringLiteral("smb://user:pass@server/share/notes.txt"),
+                                        QStringLiteral("renamed.txt")));
+  QVERIFY(rawRenamer->requests().isEmpty());
+  QCOMPARE(controller.remoteRenameBusy(), false);
+}
+
+void TestNavigationControllerNetwork::remoteRenameRejectsOverlappingOperations() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+
+  QVERIFY(controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                       QStringLiteral("report.txt")));
+  QVERIFY(!controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                        QStringLiteral("second.txt")));
+  QCOMPARE(rawRenamer->requests().size(), 1);
+  QCOMPARE(controller.remoteRenameBusy(), true);
+}
+
+void TestNavigationControllerNetwork::remoteRenameSuccessRefreshesTheListing() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+  const qsizetype requestsBefore = rawBackend->requests().size();
+
+  QVERIFY(controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                       QStringLiteral("report.txt")));
+  rawRenamer->finishSuccess(rawRenamer->requests().constFirst().generation);
+
+  // The authoritative listing is re-requested; nothing changed optimistically
+  // in between.
+  QCOMPARE(rawBackend->requests().size(), requestsBefore + 1);
+  QCOMPARE(controller.remoteRenameBusy(), false);
+  QCOMPARE(controller.statusKey(), QStringLiteral("loading"));
+}
+
+void TestNavigationControllerNetwork::remoteRenameFailureStaysVisibleWithoutOptimisticRename() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("sftp://server/home"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+  QCOMPARE(controller.entryCount(), 1);
+  QCOMPARE(controller.entryAt(0)->name, QStringLiteral("notes.txt"));
+
+  QVERIFY(controller.renameRemoteEntry(QStringLiteral("sftp://server/home/notes.txt"),
+                                       QStringLiteral("report.txt")));
+  rawRenamer->finishFailure(rawRenamer->requests().constFirst().generation,
+                            QStringLiteral("synthetic rename failure"));
+
+  QCOMPARE(controller.launchError(), QStringLiteral("synthetic rename failure"));
+  // No optimistic rename: the listed entry still shows the original name and
+  // no refresh was forced by the failure.
+  QCOMPARE(controller.entryAt(0)->name, QStringLiteral("notes.txt"));
+  QCOMPARE(controller.remoteRenameBusy(), false);
+}
+
+// ADR-0153 lifetime: after the controller leaves the remote folder, the
+// cancelled rename's late result (even a failure) must not surface.
+void TestNavigationControllerNetwork::aCancelledRemoteRenameResultIsDiscarded() {
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  ListingResult ready;
+  ready.path = QStringLiteral("/home/jarrod");
+  lister->setResult(QStringLiteral("/home/jarrod"), ready);
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto renamer = std::make_unique<FakeRemoteRenamer>();
+  auto *rawRenamer = renamer.get();
+  NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>(),
+                                  std::move(backend), nullptr, std::move(renamer));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+  QVERIFY(controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                       QStringLiteral("report.txt")));
+  const quint64 renameGeneration = rawRenamer->requests().constFirst().generation;
+
+  controller.navigateTo(QStringLiteral("/home/jarrod"));
+  QVERIFY(rawRenamer->cancelled().contains(renameGeneration));
+  QVERIFY(controller.launchError().isEmpty());
+
+  // The quiet kill delivers a result for the cancelled generation; it is
+  // fenced out and stays invisible.
+  rawRenamer->finishFailure(renameGeneration, QStringLiteral("synthetic rename failure"));
+  QVERIFY(controller.launchError().isEmpty());
+}
+
+void TestNavigationControllerNetwork::destructionWithAPendingRemoteRenameDoesNotCrash() {
+  {
+    auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+    auto *rawBackend = backend.get();
+    auto renamer = std::make_unique<FakeRemoteRenamer>();
+    NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                    std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                    nullptr, std::move(renamer));
+    const QUrl url(QStringLiteral("smb://server/share"));
+    publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
+    QVERIFY(controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
+                                         QStringLiteral("report.txt")));
   }
   QVERIFY(true);
 }

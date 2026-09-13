@@ -35,7 +35,10 @@ target_sources(
         model/search_controller.cpp
         network/kio_network_directory_backend.cpp
         network/kio_remote_file_opener.cpp
+        network/kio_remote_renamer.cpp
         network/network_location.cpp
+        network/remote_open_controller.cpp
+        network/remote_rename_controller.cpp
         public/desktop_file_boundary.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
@@ -55,6 +58,7 @@ target_sources(
         model/clipboard_controller.h
         model/directory_lister.h
         model/entry_properties.h
+        model/entry_presentation.h
         model/file_manager_types.h
         model/launch_intent.h
         model/listing_order.h
@@ -65,9 +69,13 @@ target_sources(
         model/search_controller.h
         network/kio_network_directory_backend.h
         network/kio_remote_file_opener.h
+        network/kio_remote_renamer.h
         network/network_directory_backend.h
         network/network_location.h
         network/remote_file_opener.h
+        network/remote_open_controller.h
+        network/remote_rename_controller.h
+        network/remote_renamer.h
         public/desktop_file_boundary.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

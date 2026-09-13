@@ -128,6 +128,15 @@ set_tests_properties(qindaqt.file-manager-kio-remote-opener PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_kio_remote_renamer_tests
+    tst_kio_remote_renamer.cpp
+    qindaqt.file-manager-kio-remote-renamer
+)
+target_link_libraries(
+    qindaqt_file_manager_kio_remote_renamer_tests
+    PRIVATE KF6::KIOCore
+)
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_mutation_action_binding_tests
     tst_mutation_action_binding.cpp
     qindaqt.file-manager-mutation-action-binding

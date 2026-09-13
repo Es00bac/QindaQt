@@ -154,3 +154,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0150: admit immediate external-output brightness through Display1](0150-admit-immediate-external-output-brightness-through-display1.md)
 - [ADR-0151: authenticated SMB/SFTP browsing through KIO's standard UI delegate](0151-file-manager-authenticated-network-browsing.md)
 - [ADR-0152: remote regular-file opening through KIO's OpenUrlJob](0152-file-manager-remote-file-opening.md)
+- [ADR-0153: same-folder remote Rename through KIO's rename()](0153-file-manager-remote-rename.md)

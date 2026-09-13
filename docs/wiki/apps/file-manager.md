@@ -11,10 +11,12 @@ view switch, and a places/bookmarks sidebar persisted in an app-local state
 file. The visual browsing revision adds catalog icons and bounded local raster previews. S3 adds the daily-use
 file clipboard (cut/copy/paste), drag-and-drop, a bounded recursive search,
 and a properties dialog. S5 adds read-only `smb://`/`sftp://` network-location
-browsing behind an injected asynchronous backend seam (ADR-0137) and opens
+browsing behind an injected asynchronous backend seam (ADR-0137), opens
 remote regular files through the desktop's default handler via the injected
-`RemoteFileOpener` seam on `KIO::OpenUrlJob` (ADR-0152). Per-volume
-Trash, mounts, remote file mutation, and a QindaQt credential-entry UI
+`RemoteFileOpener` seam on `KIO::OpenUrlJob` (ADR-0152), and renames a
+listed child through the injected `RemoteRenamer` seam on `KIO::rename()`
+(ADR-0153). Per-volume
+Trash, mounts, remote file copy/move/create/write, and a QindaQt credential-entry UI
 remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -622,14 +624,16 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - **S5 (read-only browsing landed)** — `smb://`/`sftp://` folder browsing
   through the injected, asynchronous `NetworkDirectoryBackend` seam and the
   production `KioNetworkDirectoryBackend` adapter (ADR-0137), with ordinary
-  KIO authentication prompts (ADR-0151) and remote regular-file opening
+  KIO authentication prompts (ADR-0151), remote regular-file opening
   through `KIO::OpenUrlJob` behind the injected `RemoteFileOpener` seam
   (ADR-0152); because KIO's standard delegate prompts with QWidgets (its
   Open With dialog when no application is associated, plus credential and
   message boxes), the File Manager process runs a QWidget-capable
   `QApplication` composed through the shared factory in
   `runtime/file_manager_application.h`, while the UI itself stays Qt Quick
-  (ADR-0116). Still open: remote file mutation, mount-based access, and a
+  (ADR-0116). Same-folder remote Rename runs through `KIO::rename()` behind
+  the injected `RemoteRenamer` seam (ADR-0153). Still open: remote file
+  copy/move/create/write, mount-based access, and a
   QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
   authentication); portal locations remain out of scope.
 
@@ -642,8 +646,8 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
   additional preview formats, portal-mediated paths, open-with, remote file
-  mutation, and a QindaQt credential-entry UI remain explicit later outcomes
-  (S3–S5).
+  copy/move/create/write, and a QindaQt credential-entry UI remain explicit
+  later outcomes (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
   destination in a separate confirmed action.
@@ -666,7 +670,8 @@ The S5 network-browsing rows are `qindaqt.file-manager-network-location`
 `qindaqt.file-manager-navigation-controller-network` (async success/typed
 error/stale-generation/URL-mismatch/truncated-listing/local-remote routing/
 remote-directory-activation/remote-file-open-through-the-injected-opener/
-typed-open-failure-and-error-clearing, all against a fake injected backend),
+typed-open-failure-and-error-clearing/remote-rename-dispatch-validation-
+refresh-failure-and-stale-discard, all against fake injected backends),
 `qindaqt.file-manager-kio-network-backend` (the production
 `KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
 job-creation test seam), `qindaqt.file-manager-kio-remote-opener` (the
@@ -674,7 +679,10 @@ production `KioRemoteFileOpener`'s scheme boundary and retained KIO UI
 delegate via a job-creation test seam, plus one real open of an
 unassociated local file type driven to KIO's standard Open With prompt
 under the production application class — the dialog is dismissed
-hermetically, so no application is started), and `qindaqt.file-manager-mutation-action-binding`
+hermetically, so no application is started),
+`qindaqt.file-manager-kio-remote-renamer` (the production
+`KioRemoteRenamer`'s scheme/same-folder boundary and retained KIO UI
+delegate via a job-creation test seam), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay
