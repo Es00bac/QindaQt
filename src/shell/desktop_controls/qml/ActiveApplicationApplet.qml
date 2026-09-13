@@ -21,9 +21,48 @@ Item {
     readonly property bool hasWindow: ready && Boolean(access.hasActiveWindow)
     readonly property string applicationName: hasWindow ? String(access.applicationName) : ""
 
+    // The task row the open popup was opened for; empty while it is closed.
+    property string popupTaskId: ""
+    property string popupRevision: ""
+
+    // AGENT-GUARD: Minimize and Close act on the facade's CURRENT row, so an
+    // open popup must never outlive the task id and displayed revision it was
+    // opened for, or its rows would act on a replacement task. The
+    // controller's id/revision fence stays the dispatch authority; this only
+    // retires stale presentation (docs/wiki/shell/desktop-controls.md).
+    function popupTaskCurrent() {
+        return root.hasWindow && root.popupTaskId.length > 0
+            && String(root.access.taskId) === root.popupTaskId
+            && String(root.access.revision) === root.popupRevision
+    }
+
+    function retireStalePopup() {
+        if (actions.visible && !root.popupTaskCurrent())
+            actions.close()
+    }
+
+    function dispatchIntent(intent) {
+        if (!root.popupTaskCurrent()) {
+            actions.close()
+            return
+        }
+        if (intent())
+            actions.close()
+    }
+
     objectName: "activeApplicationApplet"
     implicitWidth: summary.implicitWidth
     implicitHeight: 28
+
+    // Runs on the publishing turn: the facade emits before any input event can
+    // reach a row of the now-stale popup.
+    Connections {
+        target: root.access
+        ignoreUnknownSignals: true
+        function onStateChanged() {
+            root.retireStalePopup()
+        }
+    }
 
     T.ToolButton {
         id: summary
@@ -42,8 +81,11 @@ Item {
         Accessible.description: root.ready ? String(root.access.accessibleDescription) : ""
 
         function openActions() {
-            if (root.hasWindow)
-                actions.open()
+            if (!root.hasWindow)
+                return
+            root.popupTaskId = String(root.access.taskId)
+            root.popupRevision = String(root.access.revision)
+            actions.open()
         }
 
         onClicked: openActions()
@@ -92,7 +134,11 @@ Item {
         heading: root.applicationName
         feedback: root.ready && root.access.feedbackPresent ? String(root.access.feedback) : ""
         initialFocusItem: minimizeRow
-        onClosed: summary.forceActiveFocus(Qt.PopupFocusReason)
+        onClosed: {
+            root.popupTaskId = ""
+            root.popupRevision = ""
+            summary.forceActiveFocus(Qt.PopupFocusReason)
+        }
 
         C.Label {
             objectName: "activeApplicationTitle"
@@ -112,7 +158,7 @@ Item {
             detail: qsTr("Hide the window without closing it")
             enabled: root.hasWindow && Boolean(root.access.canManage) && !Boolean(root.access.minimized)
             Keys.onDownPressed: closeRow.forceActiveFocus(Qt.TabFocusReason)
-            onActivated: if (root.access.minimize()) actions.close()
+            onActivated: root.dispatchIntent(function() { return root.access.minimize() })
         }
 
         MenuRow {
@@ -127,7 +173,7 @@ Item {
             destructive: true
             enabled: root.hasWindow && Boolean(root.access.canManage)
             Keys.onUpPressed: minimizeRow.forceActiveFocus(Qt.TabFocusReason)
-            onActivated: if (root.access.close()) actions.close()
+            onActivated: root.dispatchIntent(function() { return root.access.close() })
         }
     }
 }
