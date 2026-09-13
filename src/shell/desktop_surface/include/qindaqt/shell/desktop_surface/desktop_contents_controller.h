@@ -8,7 +8,12 @@
 #include <QVariantList>
 #include <qqmlintegration.h>
 
+#include <memory>
 #include <optional>
+
+namespace QindaQt::Apps::FileManager {
+class MutationController;
+}
 
 namespace QindaQt::Shell::DesktopSurface {
 
@@ -19,7 +24,8 @@ namespace QindaQt::Shell::DesktopSurface {
 //
 // AGENT-CONTRACT: crosses into File Manager exclusively through
 // `Apps::FileManager::Desktop::FileBoundary::listLocalFolder`,
-// `launchLocalFile`, and `openLocalFolder` (see module-boundaries.md); it
+// `launchLocalFile`, `openLocalFolder`, and
+// `createLocalMutationController` (see module-boundaries.md); it
 // never includes File
 // Manager's model/**, mutation/**, or app_shell/** headers directly. A
 // missing/unreadable root publishes zero rows plus `feedback` instead of
@@ -48,6 +54,7 @@ public:
   // folder activation starts a recording stand-in instead of File Manager.
   DesktopContentsController(QString root, QStringList fileManagerPrograms,
                             QObject *parent = nullptr);
+  ~DesktopContentsController() override;
 
   [[nodiscard]] QVariantList rows() const { return m_rows; }
   [[nodiscard]] QString feedback() const { return m_feedback; }
@@ -63,6 +70,9 @@ public:
   // listing never reported, or any typed boundary refusal, publishes
   // `feedback`, returns false, and launches nothing.
   Q_INVOKABLE bool open(const QString &absolutePath);
+  // Renames only an entry from the last listing, using the complete listing-
+  // time identity consumed by File Manager's asynchronous mutation boundary.
+  Q_INVOKABLE bool rename(const QString &absolutePath, const QString &newName);
   Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:
@@ -74,8 +84,12 @@ private:
     bool isDirectory = false;
     quint64 device = 0;
     quint64 inode = 0;
+    qint64 identitySize = 0;
+    qint64 modifiedNanoseconds = 0;
+    quint32 mode = 0;
   };
 
+  void initializeMutation();
   void publishFeedback(const QString &message);
 
   QString m_root;
@@ -84,6 +98,7 @@ private:
   QHash<QString, ListedEntry> m_listed;
   QVariantList m_rows;
   QString m_feedback;
+  std::unique_ptr<QindaQt::Apps::FileManager::MutationController> m_mutation;
 };
 
 } // namespace QindaQt::Shell::DesktopSurface

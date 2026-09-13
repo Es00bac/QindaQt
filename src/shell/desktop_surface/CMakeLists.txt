@@ -53,12 +53,16 @@ qt_add_qml_module(
     TYPEINFO qindaqt_desktop_surface.qmltypes
     SOURCES
         include/qindaqt/shell/desktop_surface/desktop_contents_controller.h
+        include/qindaqt/shell/desktop_surface/desktop_icon_layout_store.h
         include/qindaqt/shell/desktop_surface/new_folder_controller.h
         src/desktop_contents_controller.cpp
+        src/desktop_icon_layout_store.cpp
         src/new_folder_controller.cpp
     QML_FILES
         qml/DesktopApplicationsMenu.qml
         qml/DesktopContextMenu.qml
+        qml/DesktopIconContextMenu.qml
+        qml/DesktopRenamePopup.qml
         qml/DesktopIconsView.qml
         qml/DesktopSurface.qml
     DEPENDENCIES

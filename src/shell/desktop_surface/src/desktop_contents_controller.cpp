@@ -11,26 +11,41 @@
 namespace QindaQt::Shell::DesktopSurface {
 
 DesktopContentsController::DesktopContentsController(QObject *parent)
-    : DesktopContentsController(
-          QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
-          parent)
+    : DesktopContentsController(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+                                parent)
 {
 }
 
 DesktopContentsController::DesktopContentsController(QString root, QObject *parent)
     : QObject(parent), m_root(std::move(root))
 {
+    initializeMutation();
     refresh();
 }
 
-DesktopContentsController::DesktopContentsController(QString root,
-                                                     QStringList fileManagerPrograms,
+DesktopContentsController::DesktopContentsController(QString root, QStringList fileManagerPrograms,
                                                      QObject *parent)
-    : QObject(parent),
-      m_root(std::move(root)),
+    : QObject(parent), m_root(std::move(root)),
       m_fileManagerPrograms(std::move(fileManagerPrograms))
 {
+    initializeMutation();
     refresh();
+}
+
+DesktopContentsController::~DesktopContentsController() = default;
+
+void DesktopContentsController::initializeMutation()
+{
+    using QindaQt::Apps::FileManager::MutationController;
+    using QindaQt::Apps::FileManager::Desktop::FileBoundary;
+    m_mutation = FileBoundary::createLocalMutationController(this);
+    connect(m_mutation.get(), &MutationController::mutationCommitted, this,
+            &DesktopContentsController::refresh);
+    connect(m_mutation.get(), &MutationController::stateChanged, this, [this]() {
+        if (!m_mutation->failureMessage().isEmpty()) {
+            publishFeedback(m_mutation->failureMessage());
+        }
+    });
 }
 
 void DesktopContentsController::refresh()
@@ -50,17 +65,22 @@ void DesktopContentsController::refresh()
                 continue;
             }
             listed.insert(entry.absolutePath,
-                          {entry.isDirectory, entry.device, entry.inode});
+                          {entry.isDirectory, entry.device, entry.inode, entry.identitySize,
+                           entry.modifiedNanoseconds, entry.mode});
             rows.append(QVariantMap{
                 {QStringLiteral("id"), entry.absolutePath},
                 {QStringLiteral("label"), entry.name},
                 {QStringLiteral("path"), entry.absolutePath},
                 {QStringLiteral("iconName"),
-                 entry.isDirectory ? QStringLiteral("folder")
-                                   : QStringLiteral("text-x-generic")},
+                 entry.isDirectory ? QStringLiteral("folder") : QStringLiteral("text-x-generic")},
                 {QStringLiteral("accessibleName"),
                  QStringLiteral("%1, %2").arg(entry.name, entry.absolutePath)},
                 {QStringLiteral("isDirectory"), entry.isDirectory},
+                // Stable across a rename and unique within the mounted
+                // filesystem. Presentation uses this only as a layout key;
+                // mutation still receives the complete identity below.
+                {QStringLiteral("layoutKey"),
+                 QStringLiteral("%1:%2").arg(entry.device).arg(entry.inode)},
             });
         }
     }
@@ -84,9 +104,10 @@ bool DesktopContentsController::open(const QString &absolutePath)
     QString diagnostic;
     if (listed->isDirectory) {
         const ListedIdentity identity{listed->device, listed->inode};
-        const auto result = m_fileManagerPrograms
-            ? FileBoundary::openLocalFolder(absolutePath, identity, *m_fileManagerPrograms)
-            : FileBoundary::openLocalFolder(absolutePath, identity);
+        const auto result =
+            m_fileManagerPrograms
+                ? FileBoundary::openLocalFolder(absolutePath, identity, *m_fileManagerPrograms)
+                : FileBoundary::openLocalFolder(absolutePath, identity);
         diagnostic = result.diagnostic;
         if (!result.ok() && diagnostic.isEmpty()) {
             diagnostic = QStringLiteral("%1 could not be opened").arg(absolutePath);
@@ -97,6 +118,30 @@ bool DesktopContentsController::open(const QString &absolutePath)
     }
     if (!diagnostic.isEmpty()) {
         publishFeedback(diagnostic);
+        return false;
+    }
+    clearFeedback();
+    return true;
+}
+
+bool DesktopContentsController::rename(const QString &absolutePath, const QString &newName)
+{
+    const auto listed = m_listed.constFind(absolutePath);
+    if (listed == m_listed.cend()) {
+        publishFeedback(QStringLiteral("%1 is not on the Desktop").arg(absolutePath));
+        return false;
+    }
+    const QVariantMap identity{
+        {QStringLiteral("device"), QString::number(listed->device)},
+        {QStringLiteral("inode"), QString::number(listed->inode)},
+        {QStringLiteral("identitySize"), QString::number(listed->identitySize)},
+        {QStringLiteral("modifiedNanoseconds"), QString::number(listed->modifiedNanoseconds)},
+        {QStringLiteral("mode"), QString::number(listed->mode)},
+    };
+    if (!m_mutation->renameItem(absolutePath, newName, identity)) {
+        if (!m_mutation->failureMessage().isEmpty()) {
+            publishFeedback(m_mutation->failureMessage());
+        }
         return false;
     }
     clearFeedback();

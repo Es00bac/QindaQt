@@ -163,3 +163,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0158: bootstrap one session bus before the compositor](0158-bootstrap-one-session-bus-before-the-compositor.md)
 - [ADR-0159: author distinct decoration presets for every built-in theme](0159-author-distinct-decoration-presets-for-every-builtin-theme.md)
 - [ADR-0160: select installed KWin window decorations explicitly](0160-select-installed-kwin-window-decorations.md)
+- [ADR-0161: persist and mutate desktop icons behind owned boundaries](0161-persist-and-mutate-desktop-icons.md)

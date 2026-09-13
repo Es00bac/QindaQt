@@ -57,21 +57,34 @@ Window {
         }
     }
 
-    // Opens the Applications popup pinned to its own default bottom-left
-    // anchor (DesktopApplicationsMenu's `x`/`y` bindings). AGENT-GUARD:
-    // openApplicationsMenuAtPointer() below assigns Popup.x/y imperatively,
-    // which QML permanently replaces the declarative binding with — there is
-    // no way to set a property "just once". Every open path that must keep
-    // the fixed placement (Shift+right-click, the traditional style's
-    // Applications entry) calls this first to restore the exact original
-    // expressions via Qt.binding() before opening.
+    // Window-backed popups are positioned by their parent item's xdg anchor,
+    // not Popup.x/y, on Wayland. Each popup is therefore parented to a 1x1
+    // positioner whose top-right corner is the requested popup origin.
+    // Keeping the anchor itself inside the desktop surface preserves a valid
+    // xdg_positioner near output edges.
+    function positionPopupAnchor(anchor, pointerX, pointerY, popupWidth,
+                                 popupHeight) {
+        const requestedX = Math.max(0, Math.min(pointerX,
+            Math.max(0, root.width - popupWidth)))
+        const requestedY = Math.max(0, Math.min(pointerY,
+            Math.max(0, root.height - popupHeight)))
+        anchor.x = Math.max(0, requestedX - anchor.width)
+        anchor.y = requestedY
+    }
+
+    function openContextMenuAtPointer(pointerX, pointerY) {
+        positionPopupAnchor(contextMenuAnchor, pointerX, pointerY,
+                            contextMenu.width, contextMenu.height)
+        contextMenu.popup()
+    }
+
+    // Opens the Applications popup at its fixed bottom-left default. The
+    // traditional-style entry has no click coordinates of its own, and the
+    // modifier path intentionally keeps this documented placement.
     function openApplicationsMenuAtDefault() {
-        applicationsMenu.x = Qt.binding(function () { return 8 })
-        applicationsMenu.y = Qt.binding(function () {
-            return applicationsMenu.parent !== null
-                ? Math.max(8, applicationsMenu.parent.height - applicationsMenu.height - 8)
-                : 8
-        })
+        positionPopupAnchor(applicationsMenuAnchor, 8,
+                            Math.max(8, root.height - applicationsMenu.height - 8),
+                            applicationsMenu.width, applicationsMenu.height)
         applicationsMenu.open()
     }
 
@@ -81,11 +94,8 @@ Window {
     // MouseArea fill the same root Window content item), clamped so the
     // popup stays fully inside the surface near the right/bottom edges.
     function openApplicationsMenuAtPointer(pointerX, pointerY) {
-        const bounds = applicationsMenu.parent !== null ? applicationsMenu.parent : root
-        const maxX = Math.max(0, bounds.width - applicationsMenu.width)
-        const maxY = Math.max(0, bounds.height - applicationsMenu.height)
-        applicationsMenu.x = Math.max(0, Math.min(pointerX, maxX))
-        applicationsMenu.y = Math.max(0, Math.min(pointerY, maxY))
+        positionPopupAnchor(applicationsMenuAnchor, pointerX, pointerY,
+                            applicationsMenu.width, applicationsMenu.height)
         applicationsMenu.open()
     }
 
@@ -96,6 +106,11 @@ Window {
     DesktopContentsController {
         id: desktopContents
         objectName: "desktopContentsController"
+    }
+
+    DesktopIconLayoutStore {
+        id: desktopIconLayout
+        objectName: "desktopIconLayoutStore"
     }
 
     // Full-surface input, stacked UNDER the icons view: a plain Item does not
@@ -136,7 +151,7 @@ Window {
                 root.openApplicationsMenuAtDefault()
                 return
             }
-            contextMenu.popup()
+            root.openContextMenuAtPointer(mouse.x, mouse.y)
         }
     }
 
@@ -148,23 +163,39 @@ Window {
         anchors.fill: parent
         settings: root.appletSettings
         contents: desktopContents
+        layoutStore: desktopIconLayout
+        screenName: root.screenName
     }
 
-    DesktopContextMenu {
-        id: contextMenu
-        objectName: "desktopContextMenu"
-        style: root.contextMenuStyle
-        placesAccess: root.access !== null && root.access.places !== null
-                      ? root.access.places : null
-        launcherAccess: root.launcherAccess
-        newFolder: newFolderController
-        iconsView: iconsView
-        onApplicationsRequested: root.openApplicationsMenuAtDefault()
+    Item {
+        id: contextMenuAnchor
+        objectName: "desktopContextMenuAnchor"
+        width: 1
+        height: 1
+
+        DesktopContextMenu {
+            id: contextMenu
+            objectName: "desktopContextMenu"
+            style: root.contextMenuStyle
+            placesAccess: root.access !== null && root.access.places !== null
+                          ? root.access.places : null
+            launcherAccess: root.launcherAccess
+            newFolder: newFolderController
+            iconsView: iconsView
+            onApplicationsRequested: root.openApplicationsMenuAtDefault()
+        }
     }
 
-    DesktopApplicationsMenu {
-        id: applicationsMenu
-        objectName: "desktopApplicationsMenu"
-        launcherAccess: root.launcherAccess
+    Item {
+        id: applicationsMenuAnchor
+        objectName: "desktopApplicationsMenuAnchor"
+        width: 1
+        height: 1
+
+        DesktopApplicationsMenu {
+            id: applicationsMenu
+            objectName: "desktopApplicationsMenu"
+            launcherAccess: root.launcherAccess
+        }
     }
 }

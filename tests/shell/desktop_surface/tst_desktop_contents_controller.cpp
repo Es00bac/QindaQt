@@ -19,7 +19,8 @@ namespace {
   return file.open(QIODevice::WriteOnly);
 }
 
-[[nodiscard]] QVariantMap rowNamed(const QVariantList &rows, const QString &label) {
+[[nodiscard]] QVariantMap rowNamed(const QVariantList &rows,
+                                   const QString &label) {
   for (const QVariant &row : rows) {
     const QVariantMap map = row.toMap();
     if (map.value(QStringLiteral("label")).toString() == label) {
@@ -31,17 +32,21 @@ namespace {
 
 // A stand-in qindaqt-file-manager recording its exact argv (NUL-terminated),
 // renamed into place so a reader never sees a partial record.
-[[nodiscard]] QString writeRecordingProgram(const QString &directory, const QString &record) {
+[[nodiscard]] QString writeRecordingProgram(const QString &directory,
+                                            const QString &record) {
   const QString program = directory + QStringLiteral("/qindaqt-file-manager");
   QFile file(program);
   if (!file.open(QIODevice::WriteOnly)) {
     return {};
   }
-  file.write(QStringLiteral("#!/bin/sh\nprintf '%s\\0' \"$@\" > '%1.tmp' && mv '%1.tmp' '%1'\n")
-                 .arg(record)
-                 .toLocal8Bit());
+  file.write(
+      QStringLiteral(
+          "#!/bin/sh\nprintf '%s\\0' \"$@\" > '%1.tmp' && mv '%1.tmp' '%1'\n")
+          .arg(record)
+          .toLocal8Bit());
   file.close();
-  file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+  file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                      QFileDevice::ExeOwner);
   return program;
 }
 
@@ -72,6 +77,7 @@ private Q_SLOTS:
   void regularFileActivationKeepsTheDefaultHandlerPath();
   void emptyRootProducesZeroRowsWithoutFeedback();
   void unresolvedRootProducesZeroRowsWithFeedbackInsteadOfBlocking();
+  void renamesAListedEntryThroughTheIdentityBoundary();
 
 private:
   std::unique_ptr<QTemporaryDir> m_root;
@@ -94,7 +100,8 @@ void DesktopContentsControllerTests::cleanup() {
   m_bin.reset();
 }
 
-void DesktopContentsControllerTests::listsRealFilesAndFoldersFromTheInjectedRoot() {
+void DesktopContentsControllerTests::
+    listsRealFilesAndFoldersFromTheInjectedRoot() {
   QVERIFY(writeFile(m_root->filePath(QStringLiteral("Notes.txt"))));
   QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Projects"))));
 
@@ -102,7 +109,8 @@ void DesktopContentsControllerTests::listsRealFilesAndFoldersFromTheInjectedRoot
   QCOMPARE(controller.rows().size(), 2);
   QCOMPARE(controller.feedback(), QString());
 
-  const QVariantMap folder = rowNamed(controller.rows(), QStringLiteral("Projects"));
+  const QVariantMap folder =
+      rowNamed(controller.rows(), QStringLiteral("Projects"));
   QVERIFY(!folder.isEmpty());
   QCOMPARE(folder.value(QStringLiteral("iconName")).toString(),
            QStringLiteral("folder"));
@@ -111,27 +119,38 @@ void DesktopContentsControllerTests::listsRealFilesAndFoldersFromTheInjectedRoot
            m_root->filePath(QStringLiteral("Projects")));
   QCOMPARE(folder.value(QStringLiteral("id")).toString(),
            folder.value(QStringLiteral("path")).toString());
-  QVERIFY(folder.value(QStringLiteral("accessibleName")).toString().contains(
-      QStringLiteral("Projects")));
+  QVERIFY(folder.value(QStringLiteral("accessibleName"))
+              .toString()
+              .contains(QStringLiteral("Projects")));
 
-  const QVariantMap file = rowNamed(controller.rows(), QStringLiteral("Notes.txt"));
+  const QVariantMap file =
+      rowNamed(controller.rows(), QStringLiteral("Notes.txt"));
   QVERIFY(!file.isEmpty());
   QCOMPARE(file.value(QStringLiteral("iconName")).toString(),
            QStringLiteral("text-x-generic"));
   QCOMPARE(file.value(QStringLiteral("isDirectory")).toBool(), false);
 
   // Directories sort before files (LocalDirectoryLister's contract).
-  QCOMPARE(controller.rows().first().toMap().value(QStringLiteral("label")).toString(),
+  QCOMPARE(controller.rows()
+               .first()
+               .toMap()
+               .value(QStringLiteral("label"))
+               .toString(),
            QStringLiteral("Projects"));
 }
 
-void DesktopContentsControllerTests::hiddenEntriesAreOmittedFromThePresentation() {
+void DesktopContentsControllerTests::
+    hiddenEntriesAreOmittedFromThePresentation() {
   QVERIFY(writeFile(m_root->filePath(QStringLiteral("Visible.txt"))));
   QVERIFY(writeFile(m_root->filePath(QStringLiteral(".hidden"))));
 
   DesktopContentsController controller(m_root->path());
   QCOMPARE(controller.rows().size(), 1);
-  QCOMPARE(controller.rows().first().toMap().value(QStringLiteral("label")).toString(),
+  QCOMPARE(controller.rows()
+               .first()
+               .toMap()
+               .value(QStringLiteral("label"))
+               .toString(),
            QStringLiteral("Visible.txt"));
 }
 
@@ -145,7 +164,11 @@ void DesktopContentsControllerTests::refreshPicksUpABoundedChange() {
 
   QCOMPARE(rowsChanged.size(), 1);
   QCOMPARE(controller.rows().size(), 1);
-  QCOMPARE(controller.rows().first().toMap().value(QStringLiteral("label")).toString(),
+  QCOMPARE(controller.rows()
+               .first()
+               .toMap()
+               .value(QStringLiteral("label"))
+               .toString(),
            QStringLiteral("Later.txt"));
 }
 
@@ -155,11 +178,13 @@ void DesktopContentsControllerTests::openSafelyRejectsAMissingTarget() {
   QVERIFY(!controller.feedback().isEmpty());
 }
 
-void DesktopContentsControllerTests::openingAListedFolderStartsFileManagerWithItsCanonicalPath() {
+void DesktopContentsControllerTests::
+    openingAListedFolderStartsFileManagerWithItsCanonicalPath() {
   QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Projects"))));
   DesktopContentsController controller(m_root->path(), {m_program});
   const QString canonical =
-      QFileInfo(m_root->filePath(QStringLiteral("Projects"))).canonicalFilePath();
+      QFileInfo(m_root->filePath(QStringLiteral("Projects")))
+          .canonicalFilePath();
 
   QVERIFY2(controller.open(m_root->filePath(QStringLiteral("Projects"))),
            qPrintable(controller.feedback()));
@@ -167,7 +192,8 @@ void DesktopContentsControllerTests::openingAListedFolderStartsFileManagerWithIt
   QTRY_COMPARE(recorded(m_record), canonical.toLocal8Bit() + '\0');
 }
 
-void DesktopContentsControllerTests::folderActivationFailsTruthfullyWithoutLaunching() {
+void DesktopContentsControllerTests::
+    folderActivationFailsTruthfullyWithoutLaunching() {
   QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Replaced"))));
   QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Removed"))));
   QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Other"))));
@@ -175,12 +201,16 @@ void DesktopContentsControllerTests::folderActivationFailsTruthfullyWithoutLaunc
 
   // A listed folder replaced by a file, a removed folder, and a path that was
   // never listed each report feedback and never fall back to another folder.
-  QVERIFY(QDir(m_root->filePath(QStringLiteral("Replaced"))).removeRecursively());
+  QVERIFY(
+      QDir(m_root->filePath(QStringLiteral("Replaced"))).removeRecursively());
   QVERIFY(writeFile(m_root->filePath(QStringLiteral("Replaced"))));
-  QVERIFY(QDir(m_root->filePath(QStringLiteral("Removed"))).removeRecursively());
-  for (const QString &name : {QStringLiteral("Replaced"), QStringLiteral("Removed"),
-                              QStringLiteral("Unlisted")}) {
-    QSignalSpy feedbackChanged(&controller, &DesktopContentsController::feedbackChanged);
+  QVERIFY(
+      QDir(m_root->filePath(QStringLiteral("Removed"))).removeRecursively());
+  for (const QString &name :
+       {QStringLiteral("Replaced"), QStringLiteral("Removed"),
+        QStringLiteral("Unlisted")}) {
+    QSignalSpy feedbackChanged(&controller,
+                               &DesktopContentsController::feedbackChanged);
     QVERIFY(!controller.open(m_root->filePath(name)));
     QVERIFY2(!controller.feedback().isEmpty(), qPrintable(name));
     controller.clearFeedback();
@@ -194,7 +224,8 @@ void DesktopContentsControllerTests::folderActivationFailsTruthfullyWithoutLaunc
   QVERIFY(!QFile::exists(m_record));
 }
 
-void DesktopContentsControllerTests::regularFileActivationKeepsTheDefaultHandlerPath() {
+void DesktopContentsControllerTests::
+    regularFileActivationKeepsTheDefaultHandlerPath() {
   QVERIFY(writeFile(m_root->filePath(QStringLiteral("Locked.txt"))));
   QVERIFY(writeFile(m_root->filePath(QStringLiteral("Became-folder.txt"))));
   QVERIFY(QFile::setPermissions(m_root->filePath(QStringLiteral("Locked.txt")),
@@ -205,10 +236,12 @@ void DesktopContentsControllerTests::regularFileActivationKeepsTheDefaultHandler
 
   // Both outcomes carry launchLocalFile's own diagnostics and never reach the
   // File Manager program.
-  QVERIFY(!controller.open(m_root->filePath(QStringLiteral("Became-folder.txt"))));
+  QVERIFY(
+      !controller.open(m_root->filePath(QStringLiteral("Became-folder.txt"))));
   QVERIFY(controller.feedback().endsWith(QStringLiteral("is not a file")));
   if (QFileInfo(m_root->filePath(QStringLiteral("Locked.txt"))).isReadable()) {
-    QSKIP("running with permission override; unreadable-file refusal not observable");
+    QSKIP("running with permission override; unreadable-file refusal not "
+          "observable");
   }
   QVERIFY(!controller.open(m_root->filePath(QStringLiteral("Locked.txt"))));
   QVERIFY(controller.feedback().endsWith(QStringLiteral("cannot be read")));
@@ -216,7 +249,8 @@ void DesktopContentsControllerTests::regularFileActivationKeepsTheDefaultHandler
   QVERIFY(!QFile::exists(m_record));
 }
 
-void DesktopContentsControllerTests::emptyRootProducesZeroRowsWithoutFeedback() {
+void DesktopContentsControllerTests::
+    emptyRootProducesZeroRowsWithoutFeedback() {
   DesktopContentsController controller(m_root->path());
   QCOMPARE(controller.rows().size(), 0);
   QCOMPARE(controller.feedback(), QString());
@@ -228,6 +262,28 @@ void DesktopContentsControllerTests::
       m_root->filePath(QStringLiteral("does-not-exist")));
   QCOMPARE(controller.rows().size(), 0);
   QVERIFY(!controller.feedback().isEmpty());
+}
+
+void DesktopContentsControllerTests::
+    renamesAListedEntryThroughTheIdentityBoundary() {
+  const QString original = m_root->filePath(QStringLiteral("Old name.txt"));
+  const QString renamed = m_root->filePath(QStringLiteral("New name.txt"));
+  QVERIFY(writeFile(original));
+  DesktopContentsController controller(m_root->path());
+  const QVariantMap row =
+      rowNamed(controller.rows(), QStringLiteral("Old name.txt"));
+  QVERIFY(!row.value(QStringLiteral("layoutKey")).toString().isEmpty());
+
+  QVERIFY2(controller.rename(original, QStringLiteral("New name.txt")),
+           qPrintable(controller.feedback()));
+  QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(renamed), 5000);
+  QTRY_VERIFY_WITH_TIMEOUT(
+      !rowNamed(controller.rows(), QStringLiteral("New name.txt")).isEmpty(),
+      5000);
+  QCOMPARE(rowNamed(controller.rows(), QStringLiteral("New name.txt"))
+               .value(QStringLiteral("layoutKey")),
+           row.value(QStringLiteral("layoutKey")));
+  QVERIFY(!QFileInfo::exists(original));
 }
 
 QTEST_GUILESS_MAIN(DesktopContentsControllerTests)

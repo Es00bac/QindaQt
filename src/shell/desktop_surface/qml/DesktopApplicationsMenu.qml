@@ -25,8 +25,10 @@ T.Popup {
     width: 320
     height: Math.min(480, list.contentHeight + topPadding + bottomPadding)
     padding: 4
-    x: 8
-    y: parent !== null ? Math.max(8, parent.height - height - 8) : 8
+    // Wayland uses the 1x1 positioner parent supplied by DesktopSurface as
+    // the xdg anchor. Local popup offsets stay zero on every platform.
+    x: 0
+    y: 0
 
     background: Rectangle {
         color: "#ee20242a"

@@ -162,10 +162,14 @@ surface hosts the desktop-icons entry (see its bullet below):
   the user's real Desktop-directory files and folders as desktop icons,
   listed through the least-authority `DesktopContentsController` seam over File
   Manager's public `FileBoundary`. Regular files dispatch to the configured
-  handler through `launchLocalFile`; folder-tile opening remains a later public
-  folder-open boundary rather than a shell reach-through (see
+  handler through `launchLocalFile`; folder tiles open QindaQt File Manager
+  through the identity-fenced `openLocalFolder` boundary rather than a shell reach-through (see
   [module boundaries](../architecture/module-boundaries.md)), with
-  configurable left/right placement and icon size, and a right-click
+  configurable left/right default placement and icon size. Every tile can be
+  dragged freely within its output; a bounded atomic layout store persists
+  positions per output and filesystem identity, so rename retains placement.
+  Each tile has its own Open/Rename context menu, and rename crosses only File
+  Manager's public identity-fenced mutation boundary. The surface also owns a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose
   XFCE-style Applications menu sits behind a configurable modifier key. An
   explicitly styled `Templates.Menu` owns a content-model `ListView` and a
@@ -175,6 +179,9 @@ surface hosts the desktop-icons entry (see its bullet below):
   surface row therefore checks both dimensions before and after a physical
   right-click dispatch in addition to checking the menu's visible contents.
   An
+  background context popup and the Applications popup are parented to
+  pointer-positioned one-pixel anchors, because Wayland positions a window
+  popup from its parent xdg anchor rather than from `Popup.x`/`Popup.y`. An
   unmodified middle click on empty desktop space also opens the same
   Applications popup directly at the pointer, in any style, without opening
   the context menu, clamped so it stays fully inside the surface near the
@@ -193,7 +200,8 @@ surface hosts the desktop-icons entry (see its bullet below):
   Folder creation goes through the least-authority `NewFolderController`
   seam, which writes only under the user's Desktop directory; the manifest
   requests only `applications.launch` and no new capability enum. See
-  [ADR-0125](../adr/0125-host-desktop-zone-applets.md); and
+  [ADR-0125](../adr/0125-host-desktop-zone-applets.md) and
+  [ADR-0161](../adr/0161-persist-and-mutate-desktop-icons.md); and
 - The desktop-control entries are registered built-ins with compiled
   `QindaQt.Shell.DesktopControls` implementations: active application,
   application tiles, command HUD, command palette, dashboard, overview,
