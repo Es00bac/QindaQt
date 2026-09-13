@@ -1334,9 +1334,14 @@
           "kind": "commit",
           "reference": "a54476ac",
           "summary": "The independently accepted remote Move To lineage e88d2e35 plus operation-token repair ad8ca232 is integrated as c858d724 plus a54476ac. The exact integrated Move/navigation selector passes 2/2; docs 255, strict MkDocs and diff checks pass."
+        },
+        {
+          "kind": "commit",
+          "reference": "261b8d66",
+          "summary": "The independently accepted remote write-in-place lineage 2ca8b9e4 plus shape-only repair 1d2a28f is integrated as 71e8f787 plus 261b8d66. Regular remote files resolve through the session KIOFuse service to a local write-back path with direct-KIO fallback; the warm integrated build and exact KIOFuse row pass 1/1, docs 256, strict MkDocs and diff checks pass."
         }
       ],
-      "caveat": "Remote write-in-place, mounts, search, network previews, portals, installed/live authentication, and whole-application assistive-technology qualification remain."
+      "caveat": "Mounts, search, network previews, portals, installed/live authentication, and whole-application assistive-technology qualification remain."
         },
         {
           "id": "QQ-006.08",
