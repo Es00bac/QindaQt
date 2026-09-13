@@ -1,5 +1,21 @@
 # Integration handoff
 
+## Active Application top-bar popup alignment (September 13)
+
+Exact three-path candidate
+`7815189b1c5ec0c5619ca4d963f0ca4299022afa` received independent Sol/high
+ACCEPT and is integrated as `904e79f0`. The Wayland popup request now preserves
+the widget's placement origin instead of recentering against the full panel:
+the private nested stock-top-bar evidence places the control at `(82,2)` and
+the popup at `(82,32)`, directly beneath its left edge.
+
+The warning-enabled shell and nine focused desktop-control test targets built
+with two jobs. The exact integrated `^qindaqt\.desktop-controls-` selector
+passes 10/10; documentation validates 255 pages, strict MkDocs and the exact
+lineage diff check pass. This is source and private nested-compositor evidence;
+no installed package, live session, side-panel behavior, or short-panel
+behavior is claimed.
+
 ## Global Menu vertical-panel admission (September 13)
 
 Exact five-path candidate `14f0339a3efddc6a42fab96243d96400f75a7004`

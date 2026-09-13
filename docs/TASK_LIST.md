@@ -60,7 +60,13 @@ Global Menu applet is admitted at start, center, and fill on left/right panels
 without changing profiles, policy, grants, or implementation; the integrated
 four-target build and exact four-row selector pass 4/4, docs validate 254 pages,
 and strict MkDocs and diff checks pass. Installed/live-panel adoption remains
-separate.
+separate. Exact Active Application Wayland-anchor candidate `7815189b` then
+received independent Sol ACCEPT and is integrated as `904e79f0`. The stock
+top-bar control's private nested proof places the control at `(82,2)` and its
+popup at `(82,32)`, aligned beneath the control's left edge. The exact
+integrated desktop-controls selector passes 10/10; docs validate 255 pages,
+strict MkDocs and the lineage diff check pass. This remains source/nested
+evidence, not an installed or live-session adoption claim.
 Terminal audible-attention
 candidate `53402c13` received independent GLM ACCEPT and is integrated as
 `4a39d5bb`: an audible parsed bell preserves the existing beep and requests
