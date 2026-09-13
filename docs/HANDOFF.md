@@ -72,6 +72,22 @@ Terminal regression and two read-only Task List targets, then passed the exact
 six-row selector 6/6 on the integrated tree under display/session-bus
 isolation. No live bell, installation, or live-session mutation was performed.
 
+Settings Customize display-scope candidate
+`2f6e31ebf57790d3874f6a73899825720b1e2950` received independent Sonnet/high
+ACCEPT and is integrated as `fc7be200`. The route now distinguishes a truthful
+Primary display from All displays through revisioned output inventory and
+fails closed when primary identity is absent, ambiguous, or changes. The
+retained manager build completed and the exact model, page, pointer, window
+lifecycle, and boundary rows pass 5/5 on the integrated tree. Installed/live
+Settings adoption and physical multi-display qualification remain separate.
+
+Global Menu evidence descendant `12f2044467ab8b28b32d8195f962e896fa1acf9f`
+received same-reviewer Opus ACCEPT after every named retirement function killed
+the delayed-removal mutant and the Down case killed the stale-callback reopen
+mutant. Its exact two-path patch is integrated as `cc8bf4cf`; the manager-tree
+native-switch row passes 9/9. This strengthens executable evidence only and
+does not claim that the user's intermittent live-popup issue is resolved.
+
 This checkpoint also applies the bounded delivery rules recorded in
 [Flow team workflow](wiki/contributing/flow-team-workflow.md): all fresh
 handoffs are serviced before long gates, each accepted exact SHA moves directly

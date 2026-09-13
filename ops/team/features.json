@@ -69,7 +69,7 @@
           {
             "kind": "commit",
             "reference": "0dcefa425b2f0a4ccfd5bd22f70154198f7acb2e",
-            "summary": "The exact same-reviewer-accepted container-shade descendant is integrated as a117c109 plus mode repair 86c9eb36. Reviewer former-red rows pass 4/4; manager controller/unit rows pass 2/2 and nested rows pass 3/4, with the fourth stopping before product verdict on the disclosed placement-sensitive fixture defect. No installed adoption is claimed."
+            "summary": "The exact same-reviewer-accepted container-shade descendant is integrated as a117c109 plus mode repair 86c9eb36. Exact test/docs fallback 0b21207a received independent GLM ACCEPT and is integrated as 6a873081; its manager unit row passes 24/24, while one serialized integrated-tree former-stop replay remains the final closure gate. No installed adoption is claimed."
           }
         ]
       },
@@ -232,6 +232,11 @@
               "kind": "commit",
               "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
               "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File → New action succeed."
+            },
+            {
+              "kind": "commit",
+              "reference": "cc8bf4cf",
+              "summary": "Exact Global Menu regression-evidence descendant 12f20444 received same-reviewer Opus ACCEPT after killing the delayed-removal and stale-callback reopen mutants; its two-path patch is integrated and the manager-tree native-switch row passes 9/9. Production QML is unchanged, so this is not a live-popup resolution claim."
             }
           ],
           "caveat": "Native popup positioning repair and physical-session deployment remain open; Sloom exporter selection is integrated with real panel consumption pending."
@@ -451,7 +456,7 @@
           "title": "Direct WYSIWYG customization and reveal affordances",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan.",
+          "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan. Settings Customize now also derives revisioned output truth and exposes fail-closed Primary display versus All displays panel placement choices.",
           "evidence": [
             {
               "kind": "commit",
@@ -472,6 +477,11 @@
               "kind": "commit",
               "reference": "2500a3d71343f238ce30fd0d98f5cc2aa9a95809",
               "summary": "The customize canvas is integrated after Klara Dan von Neumann (Kimi K3) rejected a6ea864 at 0/0/2/3 and Adele Goldstine (OpenAI Codex) rejected two descendants before accepting the third repair at 0/0/0/0; the merged tree passes customize 17/17 (route plus domain rows), and Settings Center 9/9 in Debug and Release."
+            },
+            {
+              "kind": "commit",
+              "reference": "fc7be200",
+              "summary": "Exact display-scope candidate 2f6e31eb received independent Sonnet/high ACCEPT and is integrated; the retained manager build completed and the five affected Customize rows pass 5/5. Installed/live and physical multi-output qualification remain separate."
             }
           ],
           "caveat": "The running shell adopts a saved profile only at its next start: provisional live-shell binding, reveal affordances, the rendered nested matrix, and installed-session behavior remain later outcomes."
