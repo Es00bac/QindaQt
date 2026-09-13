@@ -1309,9 +1309,14 @@
           "kind": "commit",
           "reference": "8ddf96af",
           "summary": "The independently accepted remote New Folder lineage 504dd87a plus test-only shape repair 12e4ef49 is integrated as 9f5cce93 plus 8ddf96af. The strict affected build and exact integrated selector pass 9/9, including the split navigation-controller-network-mutation row; docs 253, strict MkDocs and diff checks pass."
+        },
+        {
+          "kind": "commit",
+          "reference": "70f2df8c",
+          "summary": "The independently accepted remote Copy To lineage 07becad3 plus repair b8a8cc02 is integrated as bf0ac7ed plus 70f2df8c. The warning-enabled affected build and exact integrated selector pass 11/11, including the former-red multi-selection and shared-cancel cases; docs 254, strict MkDocs and diff checks pass."
         }
       ],
-      "caveat": "Remote copy/move/write, mounts, search, network previews, portals, installed/live authentication, and whole-application assistive-technology qualification remain."
+      "caveat": "Remote move/write, mounts, search, network previews, portals, installed/live authentication, and whole-application assistive-technology qualification remain."
         },
         {
           "id": "QQ-006.08",
