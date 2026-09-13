@@ -165,8 +165,13 @@ surface hosts the desktop-icons entry (see its bullet below):
   [module boundaries](../architecture/module-boundaries.md)), with
   configurable left/right placement and icon size, and a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose
-  XFCE-style Applications menu sits behind a configurable modifier key. The
-  menu's own "Open"/"Display Properties" style entries still open the
+  XFCE-style Applications menu sits behind a configurable modifier key. An
+  unmodified middle click on empty desktop space also opens the same
+  Applications popup directly, in any style, without opening the context
+  menu; it fails closed (no popup) when the borrowed launcher facade is
+  absent, and a middle click over an icon tile stays inert rather than
+  activating the tile or opening any menu. The menu's own
+  "Open"/"Display Properties" style entries still open the
   Desktop folder itself through the borrowed `PlacesController` facade.
   Folder creation goes through the least-authority `NewFolderController`
   seam, which writes only under the user's Desktop directory; the manifest

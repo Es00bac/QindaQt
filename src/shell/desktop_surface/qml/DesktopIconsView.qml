@@ -98,13 +98,27 @@ Item {
                     id: tileInput
                     anchors.fill: parent
                     hoverEnabled: true
-                    acceptedButtons: Qt.LeftButton
+                    // AGENT-CONTRACT: Qt.MiddleButton is claimed here as a
+                    // deliberate no-op (see DesktopSurface.qml's
+                    // desktopSurfaceInput) so a middle click over a tile
+                    // never activates it and never falls through to reopen
+                    // the Applications popup underneath — tile middle click
+                    // must stay inert.
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
+                    onClicked: (mouse) => {
+                        if (mouse.button !== Qt.LeftButton) {
+                            return
+                        }
                         root.selectedId = tile.entryId
                         tile.forceActiveFocus(Qt.MouseFocusReason)
                     }
-                    onDoubleClicked: root.openEntry(tile.entryId)
+                    onDoubleClicked: (mouse) => {
+                        if (mouse.button !== Qt.LeftButton) {
+                            return
+                        }
+                        root.openEntry(tile.entryId)
+                    }
                 }
 
                 ShellIcons.Icon {

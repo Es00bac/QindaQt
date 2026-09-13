@@ -71,13 +71,31 @@ Window {
     // clicks fall through to here. Empty-area left clicks clear the
     // selection, right clicks open the context menu — or the Applications
     // popup when the configured modifier is held (XFCE behavior, any style).
+    // An unmodified middle click also opens the Applications popup directly,
+    // independent of style/modifier, mirroring traditional-desktop precedent.
+    //
+    // AGENT-GUARD: DesktopIconsView's tile MouseArea claims Qt.MiddleButton as
+    // a no-op specifically so a middle click over a tile never falls through
+    // to this handler. Removing that claim would make tile middle-clicks
+    // reopen this popup, breaking the documented "tile middle click stays
+    // inert" contract.
     MouseArea {
         objectName: "desktopSurfaceInput"
         anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
                 iconsView.clearSelection()
+                return
+            }
+            if (mouse.button === Qt.MiddleButton) {
+                // Fail closed (no popup) when the borrowed launcher facade is
+                // absent, rather than opening an empty popup for an
+                // unmodified gesture — same posture as the context menu's
+                // needsLauncher entry gating.
+                if (root.launcherAccess !== null) {
+                    applicationsMenu.open()
+                }
                 return
             }
             if (root.applicationsModifier !== Qt.NoModifier

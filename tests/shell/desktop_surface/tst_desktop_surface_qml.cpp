@@ -75,6 +75,9 @@ private Q_SLOTS:
     void selectionAndDoubleClickDispatchThroughTheBoundary();
     void contextMenuStyleSwitchesItemSets();
     void modifierRightClickOpensApplicationsPopup();
+    void middleClickOpensApplicationsPopupAtEmptyArea();
+    void middleClickOverTileStaysInert();
+    void middleClickFailsClosedWithoutLauncherFacade();
     void nullFacadesDisableMenuEntries();
 
 private:
@@ -306,6 +309,115 @@ void DesktopSurfaceQmlTests::modifierRightClickOpensApplicationsPopup()
     QCOMPARE(launcher.activated.constFirst(),
              QStringLiteral("org.qindaqt.Terminal"));
     QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
+}
+
+void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtEmptyArea()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher,
+                         {{QStringLiteral("contextMenuStyle"),
+                           QStringLiteral("windows")}},
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *contextMenu =
+        host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    QVERIFY(contextMenu != nullptr);
+    QVERIFY(applicationsMenu != nullptr);
+
+    // An unmodified middle click opens the Applications popup directly, in
+    // every context-menu style, without ever also opening the styled menu.
+    const char *styles[] = {"windows", "mac", "traditional"};
+    for (const char *style : styles) {
+        QVERIFY(host.window->setProperty(
+            "applets",
+            makeApplets({{QStringLiteral("contextMenuStyle"),
+                         QLatin1String(style)}})));
+        host.clickWindow(Qt::MiddleButton, Qt::NoModifier, kEmptySpot);
+        QCOMPARE(applicationsMenu->property("popupType").toInt(), 1);
+        QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+        QCOMPARE(contextMenu->property("opened").toBool(), false);
+        applicationsMenu->setProperty("visible", false);
+        QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
+    }
+}
+
+void DesktopSurfaceQmlTests::middleClickOverTileStaysInert()
+{
+    const QString desktop = desktopPath(*m_home);
+    QVERIFY(QDir().mkpath(desktop + QStringLiteral("/Projects")));
+    QVERIFY(writeFile(desktop + QStringLiteral("/Notes.txt")));
+
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher,
+                         {{QStringLiteral("placement"), QStringLiteral("left")}},
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto tiles =
+        host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    QCOMPARE(tiles.size(), 2);
+    QQuickItem *folderTile = tiles.at(0);
+
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu =
+        host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *contents =
+        host.child<QObject>(QStringLiteral("desktopContentsController"));
+    QVERIFY(applicationsMenu != nullptr);
+    QVERIFY(contextMenu != nullptr);
+    QVERIFY(contents != nullptr);
+
+    const QPointF center(folderTile->width() / 2, folderTile->height() / 2);
+    const QPointF sceneCenter = folderTile->mapToScene(center);
+    // Middle click over a tile must not select it, open a file/folder, or
+    // open either menu -- it is swallowed as a no-op by the tile's own
+    // MouseArea (see DesktopIconsView.qml) and never reaches the empty-area
+    // handler underneath.
+    host.clickWindow(Qt::MiddleButton, Qt::NoModifier, sceneCenter);
+    QCOMPARE(folderTile->property("selected").toBool(), false);
+    QCOMPARE(contents->property("feedback").toString(), QString());
+    QCOMPARE(applicationsMenu->property("opened").toBool(), false);
+    QCOMPARE(contextMenu->property("opened").toBool(), false);
+
+    // The same host still opens the popup from genuinely empty space.
+    host.clickWindow(Qt::MiddleButton, Qt::NoModifier, kEmptySpot);
+    QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+}
+
+void DesktopSurfaceQmlTests::middleClickFailsClosedWithoutLauncherFacade()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, nullptr, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu =
+        host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    QVERIFY(applicationsMenu != nullptr);
+    QVERIFY(contextMenu != nullptr);
+
+    // Fail closed: no launcher facade means no popup at all, not an empty one.
+    host.clickWindow(Qt::MiddleButton, Qt::NoModifier, kEmptySpot);
+    QTest::qWait(50);
+    QCOMPARE(applicationsMenu->property("opened").toBool(), false);
+    QCOMPARE(contextMenu->property("opened").toBool(), false);
 }
 
 void DesktopSurfaceQmlTests::nullFacadesDisableMenuEntries()
