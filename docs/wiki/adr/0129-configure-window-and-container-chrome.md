@@ -4,7 +4,7 @@
 - **Date:** 2026-09-11
 - **Owners:** Decorations, Compositor chrome, Settings Appearance
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** ADR-0159 for built-in unauthored-theme defaults only
 
 ## Context
 

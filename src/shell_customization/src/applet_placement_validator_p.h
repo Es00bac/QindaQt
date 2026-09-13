@@ -25,6 +25,8 @@ public:
         const Profiles::PanelSpec &panel) const;
     [[nodiscard]] std::optional<EditingError> validatePanel(
         const Profiles::PanelSpec &panel) const;
+    [[nodiscard]] std::optional<EditingError> validateDesktopPlacement(
+        const Profiles::AppletSpec &applet) const;
     [[nodiscard]] static bool placementChanges(
         const Profiles::AppletSpec &applet,
         const Profiles::PanelSpec &source,

@@ -80,15 +80,18 @@ void paintMemberHandle(QPainter &painter, const DecorationChrome &chrome,
     const qreal width = frame.size.width();
     const qreal height = DecorationMemberHandleHeight;
     const qreal radius = frame.maximized ? 0.0 : DecorationMemberCornerRadius;
-    const QColor bar = decorationTitleColor(chrome, frame.active);
+    // ADR-0139: the focused member's handlebar carries its container identity;
+    // every other member keeps the neutral title material.
+    const bool identityBar = frame.memberFocused && chrome.identityColor.isValid();
+    const QColor bar = decorationMemberHandleFillColor(chrome, frame);
 
     QPainterPath top;
     top.addRoundedRect(QRectF(0.0, 0.0, width, height + radius), radius, radius);
     QPainterPath body;
     body.addRect(QRectF(0.0, 0.0, width, height));
     const QPainterPath handle = top.intersected(body);
-    if (chrome.wornLuna()) {
-        // Luna paint keeps its vertical sheen at handlebar scale.
+    if (chrome.wornLuna() && !identityBar) {
+        // The identity fill stays flat so its chosen color remains legible.
         QLinearGradient sheen(QPointF(0.0, 0.0), QPointF(0.0, height));
         sheen.setColorAt(0.0, bar.lighter(118));
         sheen.setColorAt(1.0, bar.darker(112));
@@ -105,8 +108,8 @@ void paintMemberHandle(QPainter &painter, const DecorationChrome &chrome,
 
     const DecorationMemberHandleLayout layout = layoutMemberHandle(chrome, frame.size);
     if (!layout.grip.isEmpty()) {
-        QColor grip = decorationCaptionColor(chrome, frame.active);
-        grip.setAlphaF(frame.active ? 0.55f : 0.35f);
+        QColor grip = decorationMemberHandleInkColor(chrome, frame);
+        grip.setAlphaF(frame.active || identityBar ? 0.55f : 0.35f);
         painter.setPen(Qt::NoPen);
         painter.setBrush(grip);
         painter.drawRoundedRect(layout.grip, 1.5, 1.5);

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/hybrid_chrome/chromelayoutengine.h"
 
+#include "qindaqt/hybrid_chrome/chromeidentity.h"
+#include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+
 #include <QSet>
 
 #include <algorithm>
@@ -196,6 +199,118 @@ void appendContainerControls(const ChromeLayoutRequest &request,
     }
 }
 
+// Window-button cluster (traffic lights or symbols) beside the row edge the
+// style places them on.
+void appendWindowButtons(const ChromeLayoutRequest &request, ChromeRenderPlan *plan)
+{
+    const auto &metrics = request.metrics;
+    const auto actions = actionOrder(request.style, request.maximized);
+    const auto actionCount = static_cast<qreal>(actions.size());
+    const qreal clusterWidth = actionCount * metrics.buttonExtent
+        + (actionCount - 1.0) * metrics.buttonSpacing;
+    qreal buttonX = request.style.buttonSide == ButtonSide::Left
+        ? plan->outerTitleBar.left() + metrics.buttonClusterInset
+        : plan->outerTitleBar.right() - metrics.buttonClusterInset - clusterWidth;
+    const qreal buttonY = plan->outerTitleBar.center().y() - metrics.buttonExtent / 2.0;
+    for (const auto action : actions) {
+        plan->buttons.append({action,
+                              {buttonX, buttonY, metrics.buttonExtent, metrics.buttonExtent},
+                              buttonColor(request.style, action),
+                              glyph(action),
+                              !request.style.hoverGlyphs});
+        buttonX += metrics.buttonExtent + metrics.buttonSpacing;
+    }
+}
+
+// The shared row's tabs (with CONTRACTS §2.4 title overrides applied) and
+// the leftover outer-title drag region. Returns false with a rejected error
+// when the frame cannot hold the configured tabs.
+[[nodiscard]] bool appendTabsAndDragRect(const ChromeLayoutRequest &request,
+                                         ChromeRenderPlan *plan, QString *error)
+{
+    const auto &metrics = request.metrics;
+    if (!request.tabs.isEmpty()) {
+        const auto tabCount = static_cast<qreal>(request.tabs.size());
+        // Reserve a real outer-title drag region even when tabs overflow.
+        constexpr qreal minimumOuterDragWidth = 48.0;
+        const qreal controlBoundary = request.style.buttonSide == ButtonSide::Left
+            ? plan->buttons.constLast().rect.right() + metrics.titleHorizontalInset
+            : plan->buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
+        const qreal tabLeft = request.style.buttonSide == ButtonSide::Left
+            ? controlBoundary + metrics.titleHorizontalInset + minimumOuterDragWidth
+            : plan->tabStrip.left() + metrics.tabHorizontalInset;
+        const qreal tabRight = request.style.buttonSide == ButtonSide::Left
+            ? plan->controls.constFirst().rect.left() - metrics.tabHorizontalInset
+            : controlBoundary - metrics.titleHorizontalInset - minimumOuterDragWidth;
+        const qreal boundedTabLeft = request.style.buttonSide == ButtonSide::Left
+            ? tabLeft
+            : std::max(tabLeft,
+                       plan->controls.constLast().rect.right()
+                           + metrics.tabHorizontalInset);
+        const qreal availableWidth = tabRight - boundedTabLeft
+            - metrics.tabSpacing * (tabCount - 1.0);
+        if (availableWidth <= 0.0) {
+            reject(error, QStringLiteral("shared title row is too narrow for configured tabs"));
+            return false;
+        }
+        const qreal evenWidth = availableWidth / tabCount;
+        plan->tabsOverflowed = evenWidth < metrics.tabMinimumWidth;
+        const qreal tabWidth = plan->tabsOverflowed
+            ? evenWidth
+            : std::min(evenWidth, metrics.tabMaximumWidth);
+        qreal tabX = request.style.tabDirection == TabVisualDirection::LeftToRight
+            ? boundedTabLeft
+            : tabRight - tabWidth;
+        for (qsizetype index = 0; index < request.tabs.size(); ++index) {
+            const auto &tab = request.tabs[index];
+            // CONTRACTS §2.4: a missing or empty override keeps the derived
+            // title; overrides are keyed by the stable tab (page) id.
+            auto title = tab.title;
+            const auto override = request.tabTitleOverrides.constFind(tab.tabId);
+            if (override != request.tabTitleOverrides.cend() && !override->isEmpty()) {
+                title = *override;
+            }
+            plan->tabs.append({tab.tabId, title, index,
+                              {tabX, plan->tabStrip.top(), tabWidth, plan->tabStrip.height()},
+                              tab.active});
+            const qreal advance = tabWidth + metrics.tabSpacing;
+            tabX += request.style.tabDirection == TabVisualDirection::LeftToRight
+                ? advance
+                : -advance;
+        }
+    }
+
+    if (request.style.buttonSide == ButtonSide::Left) {
+        const qreal left = plan->buttons.constLast().rect.right() + metrics.titleHorizontalInset;
+        qreal right = plan->outerTitleBar.right() - metrics.titleHorizontalInset;
+        for (const auto &tab : plan->tabs) {
+            right = std::min(right, tab.rect.left() - metrics.titleHorizontalInset);
+        }
+        right = std::min(right,
+                         plan->controls.constFirst().rect.left()
+                             - metrics.titleHorizontalInset);
+        plan->outerTitleDragRect = {left, plan->outerTitleBar.top(), right - left,
+                                    plan->outerTitleBar.height()};
+    } else {
+        qreal left = plan->outerTitleBar.left() + metrics.titleHorizontalInset;
+        for (const auto &tab : plan->tabs) {
+            left = std::max(left, tab.rect.right() + metrics.titleHorizontalInset);
+        }
+        left = std::max(left,
+                        plan->controls.constLast().rect.right()
+                            + metrics.titleHorizontalInset);
+        const qreal right = plan->buttons.constFirst().rect.left()
+            - metrics.titleHorizontalInset;
+        plan->outerTitleDragRect = {left, plan->outerTitleBar.top(), right - left,
+                                    plan->outerTitleBar.height()};
+    }
+    if (!plan->outerTitleDragRect.isValid()) {
+        reject(error, QStringLiteral("outer frame is too narrow for window controls"));
+        return false;
+    }
+    return true;
+}
+
 } // namespace
 
 std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequest &request,
@@ -217,6 +332,13 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     plan.containerFocused = request.containerFocused;
     plan.memberTitlesVisible = request.memberTitlesVisible;
     plan.containerTitle = request.containerTitle;
+    // AGENT-CONTRACT: Shades resolve exactly once here so the renderer, the
+    // shaded badge, and the Appearance preview all paint identical values
+    // (ADR-0139). An invalid identityColor resolves through the theme accent.
+    plan.identityColor = request.identityColor;
+    plan.indexBadge = request.indexBadge;
+    plan.identity = resolveIdentityShades(request.identityColor,
+                                          request.style.palette);
     plan.metrics = request.metrics;
     plan.style = request.style;
     plan.outerFrame = request.outerRect;
@@ -235,91 +357,28 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     plan.contentRect = {inner.left(), plan.outerTitleBar.bottom(), inner.width(),
                         inner.bottom() - plan.outerTitleBar.bottom()};
 
-    const auto actions = actionOrder(request.style, request.maximized);
-    const auto actionCount = static_cast<qreal>(actions.size());
-    const qreal clusterWidth = actionCount * metrics.buttonExtent
-        + (actionCount - 1.0) * metrics.buttonSpacing;
-    qreal buttonX = request.style.buttonSide == ButtonSide::Left
-        ? plan.outerTitleBar.left() + metrics.buttonClusterInset
-        : plan.outerTitleBar.right() - metrics.buttonClusterInset - clusterWidth;
-    const qreal buttonY = plan.outerTitleBar.center().y() - metrics.buttonExtent / 2.0;
-    for (const auto action : actions) {
-        plan.buttons.append({action,
-                             {buttonX, buttonY, metrics.buttonExtent, metrics.buttonExtent},
-                             buttonColor(request.style, action),
-                             glyph(action),
-                             !request.style.hoverGlyphs});
-        buttonX += metrics.buttonExtent + metrics.buttonSpacing;
-    }
+    appendWindowButtons(request, &plan);
     appendContainerControls(request, &plan);
-    if (!request.tabs.isEmpty()) {
-        const auto tabCount = static_cast<qreal>(request.tabs.size());
-        // Reserve a real outer-title drag region even when tabs overflow.
-        constexpr qreal minimumOuterDragWidth = 48.0;
-        const qreal controlBoundary = request.style.buttonSide == ButtonSide::Left
-            ? plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset
-            : plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
-        const qreal tabLeft = request.style.buttonSide == ButtonSide::Left
-            ? controlBoundary + metrics.titleHorizontalInset + minimumOuterDragWidth
-            : plan.tabStrip.left() + metrics.tabHorizontalInset;
-        const qreal tabRight = request.style.buttonSide == ButtonSide::Left
-            ? plan.controls.constFirst().rect.left() - metrics.tabHorizontalInset
-            : controlBoundary - metrics.titleHorizontalInset - minimumOuterDragWidth;
-        const qreal boundedTabLeft = request.style.buttonSide == ButtonSide::Left
-            ? tabLeft
-            : std::max(tabLeft,
-                       plan.controls.constLast().rect.right()
-                           + metrics.tabHorizontalInset);
-        const qreal availableWidth = tabRight - boundedTabLeft
-            - metrics.tabSpacing * (tabCount - 1.0);
-        if (availableWidth <= 0.0) {
-            return reject(error, QStringLiteral("shared title row is too narrow for configured tabs"));
-        }
-        const qreal evenWidth = availableWidth / tabCount;
-        plan.tabsOverflowed = evenWidth < metrics.tabMinimumWidth;
-        const qreal tabWidth = plan.tabsOverflowed
-            ? evenWidth
-            : std::min(evenWidth, metrics.tabMaximumWidth);
-        qreal tabX = request.style.tabDirection == TabVisualDirection::LeftToRight
-            ? boundedTabLeft
-            : tabRight - tabWidth;
-        for (qsizetype index = 0; index < request.tabs.size(); ++index) {
-            const auto &tab = request.tabs[index];
-            plan.tabs.append({tab.tabId, tab.title, index,
-                              {tabX, plan.tabStrip.top(), tabWidth, plan.tabStrip.height()},
-                              tab.active});
-            const qreal advance = tabWidth + metrics.tabSpacing;
-            tabX += request.style.tabDirection == TabVisualDirection::LeftToRight
-                ? advance
-                : -advance;
-        }
+    // AGENT-CONTRACT: A shaded request is the rolled-up badge (ADR-0139):
+    // window buttons are dropped, controls/pills/label/drag regions are laid
+    // out by the badge module, and the generic shared-row layout below
+    // (which rejects narrow strips) never runs.
+    if (request.shaded) {
+        ChromeShadedBadge::layout(&plan, request);
+        return plan;
     }
-
-    if (request.style.buttonSide == ButtonSide::Left) {
-        const qreal left = plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset;
-        qreal right = plan.outerTitleBar.right() - metrics.titleHorizontalInset;
-        for (const auto &tab : plan.tabs) {
-            right = std::min(right, tab.rect.left() - metrics.titleHorizontalInset);
-        }
-        right = std::min(right,
-                         plan.controls.constFirst().rect.left()
-                             - metrics.titleHorizontalInset);
-        plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
-                                   plan.outerTitleBar.height()};
-    } else {
-        qreal left = plan.outerTitleBar.left() + metrics.titleHorizontalInset;
-        for (const auto &tab : plan.tabs) {
-            left = std::max(left, tab.rect.right() + metrics.titleHorizontalInset);
-        }
-        left = std::max(left,
-                        plan.controls.constLast().rect.right()
-                            + metrics.titleHorizontalInset);
-        const qreal right = plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
-        plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
-                                   plan.outerTitleBar.height()};
+    if (!appendTabsAndDragRect(request, &plan, error)) {
+        return std::nullopt;
     }
-    if (!plan.outerTitleDragRect.isValid()) {
-        return reject(error, QStringLiteral("outer frame is too narrow for window controls"));
+    // Keyboard selection hint (CONTRACTS §2.4, wire W2, ADR-0139): an 18 px
+    // identity chip at the leading edge of the outer drag region. indexBadge
+    // 0 hides it; the drag region yields the chip's width plus a gap.
+    if (request.indexBadge > 0 && plan.outerTitleDragRect.width() > 44.0) {
+        constexpr qreal badgeSize = 18.0;
+        plan.indexBadgeRect = {plan.outerTitleDragRect.left() + 2.0,
+                               plan.outerTitleDragRect.center().y() - badgeSize / 2.0,
+                               badgeSize, badgeSize};
+        plan.outerTitleDragRect.setLeft(plan.indexBadgeRect.right() + 4.0);
     }
 
     for (const auto &member : request.members) {

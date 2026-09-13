@@ -87,16 +87,38 @@ class IntentTranslationTest final : public QObject
     Q_OBJECT
 
 private slots:
-    void zoneVocabularyIsLimitedToSchemaV1Zones() const
+    void zoneVocabularyIncludesPanelAndDesktopOwners() const
     {
         QVERIFY(isValidEditorZone(QStringLiteral("start")));
         QVERIFY(isValidEditorZone(QStringLiteral("center")));
         QVERIFY(isValidEditorZone(QStringLiteral("end")));
-        // The editor must not offer zones the v1 runtime cannot honor
-        // (panel-fill needs schema v2; desktop needs its own slice).
+        // Panel fill still needs schema v2; desktop is a profile-v1 owner.
         QVERIFY(!isValidEditorZone(QStringLiteral("fill")));
-        QVERIFY(!isValidEditorZone(QStringLiteral("desktop")));
+        QVERIFY(isValidEditorZone(QStringLiteral("desktop")));
         QVERIFY(!isValidEditorZone(QString()));
+    }
+
+    void desktopInsertOmitsThePanelZoneSetting() const
+    {
+        const DropTarget target{
+            QString(QindaQt::ShellCustomization::DesktopAppletOwnerId),
+            QStringLiteral("desktop"), {}};
+        TranslationContext context;
+        context.expectedRevision = 2;
+        context.newInstanceAppletId = QStringLiteral("desktop-icons-instance");
+        context.sourceSettings = {{QStringLiteral("zone"), QStringLiteral("end")},
+                                  {QStringLiteral("iconSize"), 48}};
+
+        const auto commands = translateIntent(
+            paletteInsertIntent(palettePayload(QStringLiteral("desktop-icons"))),
+            target, context);
+        QCOMPARE(commands.size(), 1);
+        const auto &insert = std::get<
+            QindaQt::ShellCustomization::InsertAppletCommand>(commands.first());
+        QCOMPARE(insert.panelId,
+                 QString(QindaQt::ShellCustomization::DesktopAppletOwnerId));
+        QVERIFY(!insert.initialSettings.contains(QStringLiteral("zone")));
+        QCOMPARE(insert.initialSettings.value(QStringLiteral("iconSize")).toInt(), 48);
     }
 
     void paletteInsertTranslatesToSingleInsertCommand() const

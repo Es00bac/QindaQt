@@ -222,26 +222,39 @@ void AppearancePageTests::themeCardsRenderSelectAndGate()
                        previewTokensFor(QStringLiteral("qinda-dark.json"))),
             themeEntry(QStringLiteral("qinda-light"),
                        QStringLiteral("Qinda Light"), QStringLiteral("light"),
-                       previewTokensFor(QStringLiteral("qinda-light.json")))};
+                       previewTokensFor(QStringLiteral("qinda-light.json"))),
+            themeEntry(QStringLiteral("qinda-dusk"), QStringLiteral("Qinda Dusk"), QStringLiteral("dusk"),
+                       previewTokensFor(QStringLiteral("qinda-dusk.json"))),
+            themeEntry(QStringLiteral("qinda-high-contrast"),
+                       QStringLiteral("Qinda High Contrast"), QStringLiteral("dark"),
+                       previewTokensFor(QStringLiteral("qinda-high-contrast.json"))),
+            themeEntry(QStringLiteral("qinda-macos"), QStringLiteral("Qinda macOS"), QStringLiteral("light"),
+                       previewTokensFor(QStringLiteral("qinda-macos.json"))),
+            themeEntry(QStringLiteral("qinda-bliss"), QStringLiteral("Qinda Bliss"), QStringLiteral("light"),
+                       previewTokensFor(QStringLiteral("qinda-bliss.json")))};
         model.draft = defaultDraftMap();
         makeReady(model, false);
     });
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
-    QCOMPARE(scene.model->property("installedThemes").toList().size(), 2);
+    QCOMPARE(scene.model->property("installedThemes").toList().size(), 6);
     auto *repeater = scene.root->findChild<QObject *>(
         QStringLiteral("appearanceThemeRepeater"));
     QVERIFY(repeater != nullptr);
-    QCOMPARE(repeater->property("count").toInt(), 2);
+    QCOMPARE(repeater->property("count").toInt(), 6);
 
     QQuickItem *darkCard = nullptr;
     QQuickItem *lightCard = nullptr;
+    QQuickItem *lastCard = nullptr;
     QVERIFY2(QTest::qWaitFor(
                  [&]() {
                      darkCard = item(scene.root,
                                      "appearanceThemeCard_qinda-dark");
                      lightCard = item(scene.root,
                                       "appearanceThemeCard_qinda-light");
-                     return darkCard != nullptr && lightCard != nullptr;
+                     lastCard = item(scene.root,
+                                     "appearanceThemeCard_qinda-bliss");
+                     return darkCard != nullptr && lightCard != nullptr
+                         && lastCard != nullptr;
                  },
                  1'000),
              qPrintable(QStringLiteral("theme cards missing; descendants: %1")
@@ -249,6 +262,11 @@ void AppearancePageTests::themeCardsRenderSelectAndGate()
     QVERIFY(darkCard->isEnabled());
     QVERIFY(darkCard->property("checked").toBool());
     QVERIFY(!lightCard->property("checked").toBool());
+    auto *flow = qobject_cast<QQuickItem *>(scene.root->findChild<QObject *>(
+        QStringLiteral("appearanceThemeCards")));
+    QVERIFY(flow != nullptr);
+    QVERIFY2(flow->height() >= lastCard->y() + lastCard->height(),
+             "the theme-card flow must expose every wrapped row to the Settings viewport");
 
     // Selecting a theme and its matching scheme forms one user draft.
     QVERIFY(QMetaObject::invokeMethod(lightCard, "click"));
@@ -576,8 +594,8 @@ void AppearancePageTests::focusedDestinationNavigationKeepsDraftAndControlsReach
 void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsChoices_data()
 {
     QTest::addColumn<QString>("themeId");
-    QTest::newRow("unauthored-decoration") << QStringLiteral("qinda-dusk");
-    QTest::newRow("authored-decoration") << QStringLiteral("qinda-bliss");
+    QTest::newRow("traffic-light-decoration") << QStringLiteral("qinda-dusk");
+    QTest::newRow("glyph-decoration") << QStringLiteral("qinda-bliss");
 }
 
 void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsChoices()

@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-11
+- Superseded by: ADR-0158 for KGlobalAccel process placement and session ownership only
 
 ## Context
 
@@ -13,10 +14,14 @@ KWin is the running authority for all of it:
   `/org/kde/KWin/InputDevice/<sysname>` (interface `org.kde.KWin.InputDevice`);
 - key repeat and NumLock in `kcminputrc [Keyboard]`;
 - keyboard layouts in `kxkbrc [Layout]`;
-- global shortcuts in kglobalaccel, which runs inside KWin
+- global shortcuts in kglobalaccel, historically assumed here to run inside KWin
   ([ADR-0009](0009-use-kglobalaccel-for-shell-shortcuts.md)).
 
 A second copy of these values in Settings1 would drift from what KWin applies.
+
+The process-placement assumption above was later disproved on the installed
+Plasma 6 stack. [ADR-0158](0158-bootstrap-one-session-bus-before-the-compositor.md)
+keeps this API decision but owns the separate daemon in the QindaQt session.
 
 The gap-input-shortcuts worker was stopped before it finished. The Program
 Manager completed the route and settled every mechanism below with private

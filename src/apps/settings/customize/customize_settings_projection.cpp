@@ -4,6 +4,7 @@
 #include "customize_applet_setting_validation.h"
 
 #include "qindaqt/shell_customization_editor/accessibility_identity.h"
+#include "qindaqt/shell_customization/editing_commands.h"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -32,6 +33,20 @@ const Profiles::AppletSpec *findApplet(const Profiles::PanelSpec *panel,
         return nullptr;
     }
     for (const auto &applet : panel->applets) {
+        if (applet.id == appletId) {
+            return &applet;
+        }
+    }
+    return nullptr;
+}
+
+const Profiles::AppletSpec *findDesktopApplet(
+    const Profiles::LayoutProfile *profile, const QString &appletId)
+{
+    if (profile == nullptr) {
+        return nullptr;
+    }
+    for (const auto &applet : profile->desktopApplets) {
         if (applet.id == appletId) {
             return &applet;
         }
@@ -120,7 +135,34 @@ QVariantList CustomizeSettingsModel::palette() const
             {QStringLiteral("id"), manifest.id},
             {QStringLiteral("name"), manifest.name},
             {QStringLiteral("description"), manifest.description},
+            {QStringLiteral("desktopSupported"),
+             manifest.placementZones.contains(Applets::PlacementZone::Desktop)},
             {QStringLiteral("settingsSchema"), manifest.settingsSchema.toVariantMap()},
+        });
+    }
+    return result;
+}
+
+QVariantList CustomizeSettingsModel::desktopApplets() const
+{
+    QVariantList result;
+    const auto *profile = m_editor ? m_editor->profile() : nullptr;
+    if (profile == nullptr) {
+        return result;
+    }
+    result.reserve(profile->desktopApplets.size());
+    int position = 0;
+    for (const auto &applet : profile->desktopApplets) {
+        ++position;
+        const auto *manifest = findManifest(applet.plugin);
+        result.append(QVariantMap{
+            {QStringLiteral("id"), applet.id},
+            {QStringLiteral("pluginId"), applet.plugin},
+            {QStringLiteral("name"), manifest ? manifest->name : applet.plugin},
+            {QStringLiteral("zone"), QStringLiteral("desktop")},
+            {QStringLiteral("position"), position},
+            {QStringLiteral("count"), profile->desktopApplets.size()},
+            {QStringLiteral("settings"), applet.settings},
         });
     }
     return result;
@@ -209,7 +251,11 @@ QVariantMap CustomizeSettingsModel::selectedProperties() const
             {QStringLiteral("length"), panel->length},
         };
     }
-    const Profiles::AppletSpec *applet = findApplet(panel, m_selectedAppletId);
+    const bool desktopOwner = m_selectedPanelId
+        == ShellCustomization::DesktopAppletOwnerId;
+    const Profiles::AppletSpec *applet = desktopOwner
+        ? findDesktopApplet(profile, m_selectedAppletId)
+        : findApplet(panel, m_selectedAppletId);
     if (m_selectedKind == QLatin1String("applet") && applet != nullptr) {
         const auto *manifest = findManifest(applet->plugin);
         return {
@@ -217,8 +263,9 @@ QVariantMap CustomizeSettingsModel::selectedProperties() const
             {QStringLiteral("name"), manifest ? manifest->name : applet->plugin},
             {QStringLiteral("pluginId"), applet->plugin},
             {QStringLiteral("zone"),
-             applet->settings.value(QStringLiteral("zone"),
-                                    QStringLiteral("start"))},
+             desktopOwner ? QVariant(QStringLiteral("desktop"))
+                          : applet->settings.value(QStringLiteral("zone"),
+                                                   QStringLiteral("start"))},
             {QStringLiteral("settings"), applet->settings},
             {QStringLiteral("settingsFields"), schemaFields(manifest, *applet)},
             {QStringLiteral("schemaAvailable"), manifest != nullptr},
@@ -235,7 +282,9 @@ void CustomizeSettingsModel::clearSelectionIfMissing()
         return;
     }
     if (m_selectedKind == QLatin1String("applet")
-        && findApplet(panel, m_selectedAppletId) != nullptr) {
+        && ((m_selectedPanelId == ShellCustomization::DesktopAppletOwnerId
+             && findDesktopApplet(profile, m_selectedAppletId) != nullptr)
+            || findApplet(panel, m_selectedAppletId) != nullptr)) {
         return;
     }
     m_selectedKind.clear();

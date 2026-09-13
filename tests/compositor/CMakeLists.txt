@@ -58,6 +58,8 @@ if(TARGET QindaQt::HybridChrome)
         COMMAND qindaqt_chrome_appearance_palette_tests)
 endif()
 
+include("${CMAKE_CURRENT_LIST_DIR}/ContainerChromeBadgeTests.cmake")
+
 include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")
 
 qt_add_executable(
@@ -273,6 +275,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridstackingorder.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinchromehitrouting.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinchromemanager.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/chromeplanlocalizer.cpp"
     )
     target_include_directories(
         qindaqt_kwin_chrome_manager_tests
@@ -474,6 +477,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_container_placement_tests
         tst_hybridcontainerplacement.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
     )
     target_include_directories(
         qindaqt_hybrid_container_placement_tests

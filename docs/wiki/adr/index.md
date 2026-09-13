@@ -150,6 +150,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0135: gnome-keyring is the Secret Service provider](0135-gnome-keyring-secret-service.md)
 - [ADR-0136: night light through KWin and knighttimed](0136-night-light-through-kwin.md)
 - [ADR-0137: File Manager network-location browsing (S5)](0137-file-manager-network-location-browsing.md)
+- [ADR-0139: identity borders, focus emphasis, and the rolled-up badge](0139-identity-borders-focus-and-rolled-up-badge.md)
 - [ADR-0148: admit internal-panel brightness through Power1](0148-admit-internal-panel-brightness-through-power1.md)
 - [ADR-0150: admit immediate external-output brightness through Display1](0150-admit-immediate-external-output-brightness-through-display1.md)
 - [ADR-0151: authenticated SMB/SFTP browsing through KIO's standard UI delegate](0151-file-manager-authenticated-network-browsing.md)
@@ -159,3 +160,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0155: remote Copy To through KIO's copy()](0155-file-manager-remote-copy-to.md)
 - [ADR-0156: remote Move To through KIO's move()](0156-file-manager-remote-move-to.md)
 - [ADR-0157: remote write-in-place through the session KIOFuse service](0157-file-manager-remote-write-in-place.md)
+- [ADR-0158: bootstrap one session bus before the compositor](0158-bootstrap-one-session-bus-before-the-compositor.md)
+- [ADR-0159: author distinct decoration presets for every built-in theme](0159-author-distinct-decoration-presets-for-every-builtin-theme.md)

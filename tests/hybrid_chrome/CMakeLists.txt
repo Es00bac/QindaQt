@@ -48,3 +48,51 @@ set_tests_properties(
     hybrid-chrome.renderer
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+qt_add_executable(qindaqt_hybrid_chrome_identity_tests tst_identity.cpp)
+target_link_libraries(
+    qindaqt_hybrid_chrome_identity_tests
+    PRIVATE QindaQt::HybridChrome Qt6::Test
+)
+target_compile_features(qindaqt_hybrid_chrome_identity_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_hybrid_chrome_identity_tests
+    PROPERTIES CXX_EXTENSIONS OFF
+)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_hybrid_chrome_identity_tests)
+endif()
+target_compile_definitions(
+    qindaqt_hybrid_chrome_identity_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${CMAKE_CURRENT_LIST_DIR}/../.."
+)
+add_test(
+    NAME qindaqt.hybrid-chrome-identity
+    COMMAND qindaqt_hybrid_chrome_identity_tests
+)
+set_tests_properties(
+    qindaqt.hybrid-chrome-identity
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+qt_add_executable(qindaqt_hybrid_chrome_shadedbadge_tests tst_shadedbadge.cpp)
+target_link_libraries(
+    qindaqt_hybrid_chrome_shadedbadge_tests
+    PRIVATE QindaQt::HybridChrome Qt6::Test
+)
+target_compile_features(qindaqt_hybrid_chrome_shadedbadge_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_hybrid_chrome_shadedbadge_tests
+    PROPERTIES CXX_EXTENSIONS OFF
+)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_hybrid_chrome_shadedbadge_tests)
+endif()
+add_test(
+    NAME qindaqt.hybrid-chrome-shaded-badge
+    COMMAND qindaqt_hybrid_chrome_shadedbadge_tests
+)
+set_tests_properties(
+    qindaqt.hybrid-chrome-shaded-badge
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

@@ -141,9 +141,23 @@ inline Applets::AppletManifest manifest(QString id)
 
 inline QVector<Applets::AppletManifest> manifests()
 {
+    auto desktopIcons = manifest(QStringLiteral("desktop-icons"));
+    desktopIcons.placementZones = {Applets::PlacementZone::Desktop};
+    desktopIcons.settingsSchema = {
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("properties"),
+         QJsonObject{
+             {QStringLiteral("iconSize"),
+              QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                          {QStringLiteral("minimum"), 24},
+                          {QStringLiteral("maximum"), 96},
+                          {QStringLiteral("default"), 48}}},
+         }},
+    };
     return {manifest(QStringLiteral("launcher")),
             manifest(QStringLiteral("clock")),
-            manifest(QStringLiteral("task-list"))};
+            manifest(QStringLiteral("task-list")),
+            std::move(desktopIcons)};
 }
 
 inline QVector<ShellLayout::LogicalOutput> outputs()

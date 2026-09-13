@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridchromepointerrouter.h"
 
+#include <QElapsedTimer>
 #include <QLineF>
 
 #include <cmath>
@@ -28,13 +29,19 @@ bool hasChromeDecisionOutput(const ChromePointerDecision &decision) noexcept
 }
 
 HybridChromePointerRouter::HybridChromePointerRouter(HitResolver resolver,
-                                                     qreal dragThreshold)
+                                                     qreal dragThreshold,
+                                                     qreal doubleClickIntervalMs)
     : m_resolver(std::move(resolver))
     , m_dragThreshold(dragThreshold)
+    , m_doubleClickIntervalMs(doubleClickIntervalMs)
 {
     if (!std::isfinite(m_dragThreshold) || m_dragThreshold < 0.0) {
         m_dragThreshold = DefaultDragThreshold;
     }
+    if (!std::isfinite(m_doubleClickIntervalMs) || m_doubleClickIntervalMs <= 0.0) {
+        m_doubleClickIntervalMs = 400.0;
+    }
+    m_clickClock.start();
 }
 
 std::optional<ChromePointerHit> HybridChromePointerRouter::hitAt(
@@ -222,6 +229,21 @@ ChromePointerDecision HybridChromePointerRouter::pointerPress(
     return decision;
 }
 
+void HybridChromePointerRouter::noteBadgeClick(const ChromePointerHit &hit)
+{
+    m_lastBadgeClickMs = m_clickClock.isValid() ? m_clickClock.elapsed() : 0;
+    m_lastBadgeClickContainer = hit.containerId;
+}
+
+bool HybridChromePointerRouter::isBadgeDoubleClick(const ChromePointerHit &hit) const
+{
+    return m_lastBadgeClickMs >= 0
+        && m_lastBadgeClickContainer == hit.containerId
+        && m_clickClock.isValid()
+        && static_cast<qreal>(m_clickClock.elapsed() - m_lastBadgeClickMs)
+            <= m_doubleClickIntervalMs;
+}
+
 ChromePointerDecision HybridChromePointerRouter::pointerRelease(
     const HybridInput::PointerEvent &event)
 {
@@ -248,6 +270,23 @@ ChromePointerDecision HybridChromePointerRouter::pointerRelease(
         // AGENT-GUARD: Click and drag completion are mutually exclusive. A tab
         // drag must never reorder/detach and then activate on the same release.
         decision.activations.append(pressed);
+        // ADR-0139: a pill click on a shaded badge unrolls to that tab. The
+        // unroll request rides the same decision batch; the activation is
+        // processed first and the final unshade reflow fixes member geometry.
+        if (pressed.target.fromShadedBadge) {
+            decision.shadeRequests.append({pressed.containerId, false});
+        }
+    } else if (m_hovered == m_pressed && !m_dragActive
+               && pressed.target.kind == HybridChrome::HitKind::OuterTitleDrag
+               && pressed.target.fromShadedBadge) {
+        // A double-click anywhere on the badge body unrolls; a single click
+        // only raises (already requested at press).
+        if (isBadgeDoubleClick(pressed)) {
+            decision.shadeRequests.append({pressed.containerId, false});
+            m_lastBadgeClickMs = -1;
+        } else {
+            noteBadgeClick(pressed);
+        }
     }
     resetPointer();
     return decision;

@@ -115,9 +115,11 @@ Current group-wide controls have these semantics:
   frame. Failure preserves whichever side of the transition was previously
   valid.
 - **Shade** never reflows or resizes any member's real frame. It tracks an
-  independent "strip" frame at the container's current position and width,
-  height fixed to the shared chrome row, used only to build the shared-chrome
-  plan; the real committed layout stays exactly as it was. Every member is
+  independent "strip" frame at the container's current position, with width
+  derived from the badge controls and tab count (never exceeding the former
+  container width) and height fixed to the shared chrome row. That independent
+  frame is used only to build the shared-chrome plan; the real committed layout
+  stays exactly as it was. Every member is
   hidden from paint and pointer input (`KWin::Window::setHidden`) and has its
   own content/decoration/shadow explicitly hidden, while the current chrome
   anchor is additionally kept scene-paintable
@@ -128,11 +130,10 @@ Current group-wide controls have these semantics:
   image of the member. Member transients hide with their owner. Because KWin's
   own activation calls `setHidden(false)`, every such reveal is re-hidden
   through `HybridShadeController::reassertMember` and focus moves to the next
-  shown window; a closed anchor is replaced by a surviving member. Its chrome plan carries no tabs, members, or dividers at all (the
-  whole hit-testable rectangle is exactly the strip row), the chrome
-  manager's plan validation checks that reduced shape's own invariant
-  instead of the ordinary plan's tab/page-order check, group stacking
-  exempts the non-anchor members from its live-stack same-layer/contiguous-
+  shown window; a closed anchor is replaced by a surviving member. Its chrome
+  plan carries topology-ordered tabs as compact page pills but no members or
+  dividers; the chrome manager validates that shaded shape explicitly. Group
+  stacking exempts the non-anchor members from its live-stack same-layer/contiguous-
   block checks (they name the content-preserving anchor via
   `HybridShadeController::anchorWindowId`), and any raise of a shaded
   container's strip (a press on it, a dock click, a task-list raise/activate)

@@ -136,7 +136,7 @@ item, not a native overlay window.
   tabs left-to-right or right-to-left. This presentation choice never changes
   page order, stable IDs, keyboard traversal, or persistence semantics.
 - A container may be rolled up ("shaded") to a compact, still-visible,
-  still-movable title strip through the shared-row control or group menu,
+  still-movable identity badge through the shared-row control or group menu,
   distinct from whole-container minimize/iconify: a shaded container is never
   sent to the dock as one collapsed entry (minimized and shaded are
   independent states), and no member's real frame is ever resized. Instead,
@@ -145,9 +145,14 @@ item, not a native overlay window.
   paintable through KWin's own force-visible scene API so the strip itself
   stays visible and draggable. Nothing but the strip may remain on screen or
   receive input: no stale member image, no transient of a member, and no
-  hidden member revealed or focused by a KWin activation. Unroll restores the
-  exact frames, content, and the member focus held at roll-up. See
-  [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md).
+  hidden member revealed or focused by a KWin activation. The badge width is
+  derived from chrome metrics and tab count, capped by the former container
+  width, so roll-up genuinely shrinks the frame. It paints the container
+  identity color, names the active page, and keeps bounded page pills; clicking
+  a pill activates that page and unrolls. Unroll restores the exact frames,
+  content, and the member focus held at roll-up. See
+  [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
+  and [ADR-0139](../adr/0139-identity-borders-focus-and-rolled-up-badge.md).
 - A container may be renamed and given a user-chosen accent color through the
   group menu. Both are process-local presentation overrides (not part of the
   persistence-neutral `Core::WindowContainer` model below): the rename

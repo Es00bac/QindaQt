@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
+#include "qindaqt/hybrid_chrome/chromeidentity.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QDir>
@@ -72,6 +73,7 @@ private slots:
     void paintsFlatButtonsAndLeftCaptions();
     void preferenceTokensAndContainerStylesRoundTrip();
     void layoutsAndPaintsTheContainedWindowHandlebar();
+    void focusedMemberHandlebarWearsTheIdentityColor();
 };
 
 void DecorationPainterTests::chromeRoundTripsThroughTheCompositorMap()
@@ -233,8 +235,13 @@ void DecorationPainterTests::defaultPreferencesReproduceEveryShippedTheme()
         const auto &theme = loaded.theme;
         const auto base = DecorationChrome::fromTheme(theme);
         QCOMPARE(resolveWindowChrome(theme, defaults).toVariantMap(), base.toVariantMap());
-        QCOMPARE(effectiveButtonSide(base),
-                 base.glyphChrome() ? DecorationButtonSide::Right : DecorationButtonSide::Left);
+        const auto expectedSide = base.buttonSide == QLatin1String("right")
+            ? DecorationButtonSide::Right
+            : base.buttonSide == QLatin1String("left")
+                ? DecorationButtonSide::Left
+                : base.glyphChrome() ? DecorationButtonSide::Right
+                                     : DecorationButtonSide::Left;
+        QCOMPARE(effectiveButtonSide(base), expectedSide);
         if (!theme.decoration.authored || theme.id == QLatin1String("qinda-macos")) {
             const auto container = resolveContainerStyle(theme, defaults);
             const auto macos = QindaQt::HybridChrome::ChromeStyle::qindaMacOS(
@@ -444,6 +451,83 @@ void DecorationPainterTests::layoutsAndPaintsTheContainedWindowHandlebar()
     QCOMPARE(image.pixelColor(160, 100).alpha(), 0);
     QVERIFY(QColor(image.pixel(160, 7)).name() != decorationTitleColor(chrome, true).name());
     QCOMPARE(QColor(image.pixel(12, 7)).name(), chrome.close.name());
+}
+
+void DecorationPainterTests::focusedMemberHandlebarWearsTheIdentityColor()
+{
+    const QSizeF size(320.0, 200.0);
+    const QColor identity(QStringLiteral("#b65447"));
+    auto chrome = DecorationChrome::fromTheme(classicTheme());
+    chrome.identityColor = identity;
+
+    const auto paintBar = [&](bool memberFocused) {
+        QImage image(size.toSize(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        DecorationFrameVisual frame;
+        frame.size = size;
+        frame.active = true;
+        frame.memberHandle = true;
+        frame.memberFocused = memberFocused;
+        paintMemberHandle(painter, chrome, frame);
+        for (const auto &button : layoutMemberHandleButtons(chrome, size)) {
+            paintDecorationButton(painter, chrome, frame, button);
+        }
+        return image;
+    };
+
+    // ADR-0139: only the focused member's bar wears the container identity.
+    const auto focusedImage = paintBar(true);
+    QCOMPARE(QColor(focusedImage.pixel(80, 7)).name(), identity.name());
+    const auto neutralImage = paintBar(false);
+    QCOMPARE(QColor(neutralImage.pixel(80, 7)).name(),
+             decorationTitleColor(chrome, true).name());
+
+    // The ink helper (grip, "more" dots) holds the 4.5:1 threshold against
+    // the identity fill and switches light/dark with it: a mid-tone fill
+    // keeps the light theme ink, a near-white fill forces dark ink.
+    DecorationFrameVisual focusedFrame;
+    focusedFrame.size = size;
+    focusedFrame.active = true;
+    focusedFrame.memberHandle = true;
+    focusedFrame.memberFocused = true;
+    const auto ink = decorationMemberHandleInkColor(chrome, focusedFrame);
+    QVERIFY(QindaQt::HybridChrome::identityContrastRatio(ink, identity)
+            >= QindaQt::HybridChrome::IdentityTextContrast);
+    const QColor paleIdentity(QStringLiteral("#f2f0eb"));
+    const auto paleChrome = [&] {
+        auto c = chrome;
+        c.identityColor = paleIdentity;
+        return c;
+    }();
+    const auto paleInk = decorationMemberHandleInkColor(paleChrome, focusedFrame);
+    QVERIFY(QindaQt::HybridChrome::identityContrastRatio(paleInk, paleIdentity)
+            >= QindaQt::HybridChrome::IdentityTextContrast);
+    QVERIFY(paleInk != ink);
+
+    // The map codec carries identity only when set, so neutral chrome stays
+    // byte-identical; a focused member without an identity color paints the
+    // neutral bar.
+    chrome.memberFocused = true;
+    auto map = chrome.toVariantMap();
+    QVERIFY(map.contains(QStringLiteral("identityColor")));
+    QVERIFY(map.contains(QStringLiteral("memberFocused")));
+    const auto neutralChrome = DecorationChrome::fromTheme(classicTheme());
+    QVERIFY(!neutralChrome.toVariantMap().contains(QStringLiteral("identityColor")));
+    QVERIFY(!neutralChrome.toVariantMap().contains(QStringLiteral("memberFocused")));
+    const auto back = DecorationChrome::fromVariantMap(map);
+    QCOMPARE(back.identityColor, identity);
+    QVERIFY(back.memberFocused);
+    auto unfocusedIdentity = neutralChrome;
+    unfocusedIdentity.identityColor = identity;
+    QVERIFY(!unfocusedIdentity.toVariantMap().contains(QStringLiteral("memberFocused")));
+    DecorationFrameVisual noIdentityFrame;
+    noIdentityFrame.size = size;
+    noIdentityFrame.active = true;
+    noIdentityFrame.memberHandle = true;
+    noIdentityFrame.memberFocused = true;
+    QCOMPARE(decorationMemberHandleFillColor(neutralChrome, noIdentityFrame),
+             decorationTitleColor(neutralChrome, true));
 }
 
 QTEST_MAIN(DecorationPainterTests)

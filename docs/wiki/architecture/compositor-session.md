@@ -545,6 +545,18 @@ the [development harness](../development/testing-harness.md).
 
 ## Activation environment at session entry
 
+The outer `qindaqt-wm` entry establishes the process graph before KWin starts.
+An inherited `DBUS_SESSION_BUS_ADDRESS` is preserved. When none exists, the
+launcher replaces itself with `dbus-run-session --` and its exact original
+arguments, then the inner launcher starts KWin. KWin, the compositor plugin,
+its direct-child supervisor, shell, Settings, task-list producer/consumer, and
+activated platform services therefore observe one broker. This ordering is a
+functional prerequisite for output inventory, pointer devices, layout
+adoption, task facts, and shortcuts, not merely an activation optimization.
+The supervisor also owns Plasma 6's separate `kglobalacceld` process on that
+broker. See
+[ADR-0158](../adr/0158-bootstrap-one-session-bus-before-the-compositor.md).
+
 Before the supervisor starts shell consumers, it updates the D-Bus broker and
 systemd user manager with KWin’s current desktop connection variables. This
 prevents independently activated services from inheriting a retired Wayland

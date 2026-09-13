@@ -9,8 +9,10 @@ target_sources(
     qindaqt_hybrid_chrome
     PRIVATE
         src/chromehittest.cpp
+        src/chromeidentity.cpp
         src/chromelayoutengine.cpp
         src/chromerenderer.cpp
+        src/chromeshadedbadge.cpp
         src/chrometypes.cpp
         src/chromewidget.cpp
     PUBLIC
@@ -18,8 +20,10 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/hybrid_chrome/chromehittest.h
+            include/qindaqt/hybrid_chrome/chromeidentity.h
             include/qindaqt/hybrid_chrome/chromelayoutengine.h
             include/qindaqt/hybrid_chrome/chromerenderer.h
+            include/qindaqt/hybrid_chrome/chromeshadedbadge.h
             include/qindaqt/hybrid_chrome/chrometypes.h
             include/qindaqt/hybrid_chrome/chromewidget.h
 )

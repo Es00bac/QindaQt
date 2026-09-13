@@ -228,7 +228,7 @@ The Clipboard applet C1 composes the public Clipboard client into a privacy-gate
 
 **State:** `EXECUTABLE`. **Weight:** 10.
 
-The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan.
+The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, panel zones, desktop applet surface, and applet chips with a manifest-sourced palette and properties pane; transactional insert/move/duplicate/remove/settings behavior for both panel and desktop owners; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan.
 
 **Caveat:** The running shell adopts a saved profile only at its next start: provisional live-shell binding, reveal affordances, the rendered nested matrix, and installed-session behavior remain later outcomes.
 
@@ -556,5 +556,4 @@ The integrated private S3 desktop boots the production compositor, shell, reside
 - **decision** — [0015-qualify-function-before-resource-refinement](../../adr/0015-qualify-function-before-resource-refinement.md): ADR-0015 makes functional virtual-desktop qualification precede aggressive memory refinement.
 
 **Feature caveat:** No whole-desktop nested-session or daily-use release claim exists; this row remains zero until that integrated behavior is executable and evidenced.
-
 

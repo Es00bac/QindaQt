@@ -52,8 +52,12 @@ ChromeHitTarget ChromeHitTester::hitTest(const ChromeRenderPlan &plan,
                     std::nullopt, {}, control.control};
         }
     }
-    if (const auto resize = resizeHit(plan, logicalPosition); resize.isInteractive()) {
-        return resize;
+    // AGENT-CONTRACT: The rolled-up badge offers no resize affordance: its
+    // frame never resizes (shade freezes the committed layout, ADR-0099).
+    if (!plan.shaded) {
+        if (const auto resize = resizeHit(plan, logicalPosition); resize.isInteractive()) {
+            return resize;
+        }
     }
     if (!plan.outerFrame.contains(logicalPosition)) {
         return {};
@@ -61,7 +65,7 @@ ChromeHitTarget ChromeHitTester::hitTest(const ChromeRenderPlan &plan,
     for (const auto &tab : plan.tabs) {
         if (tab.rect.contains(logicalPosition)) {
             return {HitKind::Tab, tab.tabId, tab.logicalIndex, std::nullopt, {},
-                    std::nullopt};
+                    std::nullopt, plan.shaded};
         }
     }
     for (const auto &divider : plan.dividers) {
@@ -78,7 +82,7 @@ ChromeHitTarget ChromeHitTester::hitTest(const ChromeRenderPlan &plan,
     }
     if (plan.outerTitleDragRect.contains(logicalPosition)) {
         return {HitKind::OuterTitleDrag, plan.containerId, -1, std::nullopt, {},
-                std::nullopt};
+                std::nullopt, plan.shaded};
     }
     if (plan.contentRect.contains(logicalPosition)) {
         return {HitKind::Client, {}, -1, std::nullopt, {}, std::nullopt};

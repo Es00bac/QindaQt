@@ -14,6 +14,7 @@ private slots:
     void requiresSemanticColorTokens();
     void qindaMacosDefinesDecorationFlow();
     void qindaBlissDefinesWornLunaChrome();
+    void everyBuiltInThemeAuthorsAWindowDecoration();
     void rejectsInvalidDecorationValues();
     void catalogSwitchesTheme();
 };
@@ -39,13 +40,8 @@ void ThemeTests::qindaBlissDefinesWornLunaChrome()
     QVERIFY(result.theme.decoration.titleBarColor.isValid());
     QVERIFY(result.theme.decoration.titleBarInactiveColor.isValid());
     QVERIFY(result.theme.decoration.restoreColor.isValid());
-    // ADR-0129: a declared decoration object is authored; a theme without one
-    // keeps the Qinda macOS container arrangement.
+    // ADR-0129: a declared decoration object is authored.
     QVERIFY(result.theme.decoration.authored);
-    const auto unauthored = ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-    QVERIFY2(unauthored.ok, qPrintable(unauthored.error));
-    QVERIFY(!unauthored.theme.decoration.authored);
     QCOMPARE(result.theme.decoration.closeColor,
              QColor(QStringLiteral("#2d6be4")));
     QCOMPARE(result.theme.decoration.minimizeColor,
@@ -55,15 +51,25 @@ void ThemeTests::qindaBlissDefinesWornLunaChrome()
     QCOMPARE(result.theme.decoration.restoreColor,
              QColor(QStringLiteral("#e87bd0")));
 
-    // Themes without authored Luna fields keep the classic rendering: the
-    // optional colors stay invalid and round-trip drops the absent keys.
-    const auto classic = ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-light.json"));
-    QVERIFY2(classic.ok, qPrintable(classic.error));
-    QVERIFY(!classic.theme.decoration.titleBarColor.isValid());
-    QVERIFY(!classic.theme.decoration.restoreColor.isValid());
-    QVERIFY(!classic.theme.decoration.toVariantMap()
-                 .contains(QStringLiteral("titleBarColor")));
+}
+
+void ThemeTests::everyBuiltInThemeAuthorsAWindowDecoration()
+{
+    const auto results = ThemeLoader::fromDirectory(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
+    QSet<QString> visualFamilies;
+    for (const auto &result : results) {
+        QVERIFY2(result.ok, qPrintable(result.error));
+        QVERIFY2(result.theme.decoration.authored,
+                 qPrintable(result.theme.id + QStringLiteral(" has no decoration")));
+        visualFamilies.insert(result.theme.decoration.buttonPlacement
+                              + QLatin1Char('/')
+                              + result.theme.decoration.buttonStyle
+                              + QLatin1Char('/')
+                              + result.theme.decoration.tabDirection);
+    }
+    QVERIFY2(visualFamilies.size() >= 4,
+             "the bundled themes must provide several genuinely distinct window decorations");
 }
 
 void ThemeTests::qindaMacosDefinesDecorationFlow()

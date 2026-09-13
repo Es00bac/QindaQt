@@ -81,12 +81,11 @@ target_link_libraries(
         Qt6::Quick
         Qt6::QuickControls2
     PRIVATE
-        # Dependency direction: Desktop-scoped code depends on File Manager's
-        # narrow public/ boundary, never the reverse (module-boundaries.md).
-        # DesktopContentsController is the first shell consumer of
-        # FileBoundary; only its .cpp includes public/desktop_file_boundary.h,
-        # so the link stays private here.
-        qindaqt_file_manager_support
+        # AGENT-GUARD: Desktop-scoped code links only File Manager's isolated
+        # local-files boundary. Linking qindaqt_file_manager_support here pulls
+        # AppShell and KIO into qindaqt-shell and makes its staged runtime fail
+        # before main() when those application-only libraries are absent.
+        qindaqt_file_manager_desktop_boundary
 )
 target_compile_features(qindaqt_desktop_surface_qml PUBLIC cxx_std_20)
 set_target_properties(qindaqt_desktop_surface_qml

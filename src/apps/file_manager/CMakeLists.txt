@@ -1,5 +1,35 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+qt_add_library(qindaqt_file_manager_desktop_boundary STATIC)
+target_sources(
+    qindaqt_file_manager_desktop_boundary
+    PRIVATE
+        mutation/device_resolver.cpp
+        mutation/home_trash.cpp
+        mutation/local_mutation_backend.cpp
+        mutation/mutation_controller.cpp
+        mutation/mutation_controller_foreign.cpp
+        mutation/mutation_types.cpp
+        mutation/safe_path_operations.cpp
+        mutation/safe_tree_operations.cpp
+        model/launch_intent.cpp
+        model/local_directory_lister.cpp
+        public/desktop_file_boundary.cpp
+    PUBLIC
+        public/desktop_file_boundary.h
+)
+target_include_directories(
+    qindaqt_file_manager_desktop_boundary PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_file_manager_desktop_boundary PUBLIC Qt6::Core Qt6::Gui
+)
+target_compile_features(qindaqt_file_manager_desktop_boundary PUBLIC cxx_std_20)
+set_target_properties(
+    qindaqt_file_manager_desktop_boundary PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_file_manager_desktop_boundary)
+
 qt_add_library(qindaqt_file_manager_support STATIC)
 target_sources(
     qindaqt_file_manager_support
@@ -11,14 +41,6 @@ target_sources(
         app_shell/file_manager_mutation_actions.h
         app_shell/file_manager_transfer_actions.cpp
         app_shell/file_manager_transfer_actions.h
-        mutation/device_resolver.cpp
-        mutation/home_trash.cpp
-        mutation/local_mutation_backend.cpp
-        mutation/mutation_controller.cpp
-        mutation/mutation_controller_foreign.cpp
-        mutation/mutation_types.cpp
-        mutation/safe_path_operations.cpp
-        mutation/safe_tree_operations.cpp
         preview/local_preview.cpp
         preview/preview_provider.cpp
         preview/theme_icon_provider.cpp
@@ -26,9 +48,7 @@ target_sources(
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
         model/entry_properties.cpp
-        model/launch_intent.cpp
         model/listing_order.cpp
-        model/local_directory_lister.cpp
         model/navigation_controller.cpp
         model/navigation_history.cpp
         model/navigation_status.h
@@ -47,7 +67,6 @@ target_sources(
         network/remote_move_to_controller.cpp
         network/remote_open_controller.cpp
         network/remote_rename_controller.cpp
-        public/desktop_file_boundary.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
         mutation/device_resolver.h
@@ -94,13 +113,18 @@ target_sources(
         network/remote_open_controller.h
         network/remote_rename_controller.h
         network/remote_renamer.h
-        public/desktop_file_boundary.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 find_package(KF6KIO 6.0 REQUIRED CONFIG)
 target_link_libraries(
     qindaqt_file_manager_support
-    PUBLIC QindaQt::AppShell QindaQt::AppShellMenuExport Qt6::Core Qt6::Gui Qt6::Quick
+    PUBLIC
+        qindaqt_file_manager_desktop_boundary
+        QindaQt::AppShell
+        QindaQt::AppShellMenuExport
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Quick
     # ADR-0151: KIOWidgets registers KIO's standard job UI delegate at load
     # time; without it every KIO job has no credential/mount prompt path.
     # ADR-0152: KIOGui provides KIO::OpenUrlJob, the supported remote-open

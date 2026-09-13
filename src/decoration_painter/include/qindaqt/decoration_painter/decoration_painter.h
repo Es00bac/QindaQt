@@ -80,6 +80,13 @@ struct DecorationChrome {
     QString buttonSide;
     QString buttons = QStringLiteral("all");
     QString titleAlignment = QStringLiteral("center");
+    // Container identity emphasis (ADR-0139). `identityColor` is the owning
+    // container's color and `memberFocused` marks the one focused member;
+    // both arrive only for contained windows. An invalid color / false flag
+    // is omitted from the published map, so neutral members keep today's
+    // handlebar byte-identical.
+    QColor identityColor;
+    bool memberFocused = false;
 
     [[nodiscard]] static DecorationChrome
     fromChromePalette(const HybridChrome::ChromePalette &palette,
@@ -133,6 +140,10 @@ struct DecorationFrameVisual {
     bool restoreGlyph = false;
     // Paint the contained-window handlebar instead of the full title bar.
     bool memberHandle = false;
+    // ADR-0139: this member is its container's focused member, so the
+    // handlebar wears the chrome identity color. Carried on the frame (not
+    // the chrome) because it is per-window live state, not theme data.
+    bool memberFocused = false;
 };
 
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
@@ -252,5 +263,13 @@ layoutMemberHandleButtons(const DecorationChrome &chrome, const QSizeF &size);
 // through paintDecorationButton with frame.memberHandle set.
 void paintMemberHandle(QPainter &painter, const DecorationChrome &chrome,
                        const DecorationFrameVisual &frame);
+// Identity emphasis for the focused member's handlebar (ADR-0139): the fill
+// is the container identity color when this member is focused, else the
+// neutral title surface; the ink (grip, "more" dots) switches light/dark to
+// hold 4.5:1 against that fill.
+[[nodiscard]] QColor decorationMemberHandleFillColor(const DecorationChrome &chrome,
+                                                     const DecorationFrameVisual &frame);
+[[nodiscard]] QColor decorationMemberHandleInkColor(const DecorationChrome &chrome,
+                                                    const DecorationFrameVisual &frame);
 
 } // namespace QindaQt::Decoration

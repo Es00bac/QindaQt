@@ -19,5 +19,16 @@
     "accent": "#EABC9C",
     "accentText": "#30201C",
     "danger": "#F39CAA"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "traffic-lights",
+    "hoverGlyphs": false,
+    "titleBarColor": "#433549",
+    "titleBarInactiveColor": "#352A39",
+    "closeColor": "#F39CAA",
+    "minimizeColor": "#EABC9C",
+    "maximizeColor": "#72B59B"
   }
 }

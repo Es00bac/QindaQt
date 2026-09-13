@@ -25,21 +25,20 @@ and is GUI-thread-only; it exists for settings previews and toolkit-focused
 tests, not as the production group surface. `ChromeRenderer` paints the same
 plan into the compositor-owned scene image.
 
-The active tab receives a short accent rule inside its tab rectangle. The rule
-is painted from the resolved theme accent, while inactive tabs keep the neutral
-surface treatment. Keeping this cue inside the shared row makes the active page
-readable without adding a focusable surface or changing native member-frame
-ownership. It is the same accent token used by dividers and shared controls, so
-light and dark theme changes remain coherent.
+Every container receives one identity color. The renderer derives contrast-safe
+border, fill, and ink variants from that color plus the resolved theme. The
+active tab receives an identity tint and underline, the shared row carries an
+always-visible identity stripe, and the focused container strengthens its
+identity border and glow. Invalid or absent identity falls back to the theme
+accent, preserving compatibility without making the renderer choose policy.
 
 Focus cues are a separate snapshot from tab selection. The KWin session samples
 the workspace active native window and passes ownership into the immutable plan:
-the focused container gets an accent rule on the shared top edge, and the
-focused tiled member gets an accent ring only on the paintable side of its
-native frame. The ring is intersected with the renderer's transparent-member
+the focused tiled member gets a stronger identity ring and identity-filled
+handlebar only on the paintable side of its native frame. The ring is intersected with the renderer's transparent-member
 clip, so it remains visible when native titles are compact or hidden without
-painting client content. An unfocused container keeps the neutral outer frame
-even when one of its pages remains selected.
+painting client content. See
+[ADR-0139](../adr/0139-identity-borders-focus-and-rolled-up-badge.md).
 
 The pure hit tester orders window control, outer resize edge, tab, divider,
 member title, outer title, then client content. A hit returns a typed action plus
@@ -124,6 +123,13 @@ frame transparent, so application content and native KDecoration pixels remain
 owned by their real windows. Reanchoring follows the group's topmost member;
 failure to resolve a live, paintable anchor hides chrome rather than publishing
 a plan-only surface.
+
+Published plans and pointer hit tests stay in global logical coordinates. The
+scene image painter receives one localized copy translated by the outer-frame
+origin, including buttons, tabs, member/divider geometry, drag regions, and all
+three container-control rectangles. This all-fields translation is one bounded
+adapter rather than per-field paint logic; otherwise controls remain clickable
+through global hit testing while being clipped out of the local image.
 
 Shared chrome creates no production `QWidget`, `QWindow`, internal window,
 input mask, focusable surface, or `outputOnly` property. It consequently cannot
@@ -251,7 +257,10 @@ Group controls minimize/restore all members together and maximize/restore the
 complete outer frame. Close opens a nonblocking **Close All**, **Ungroup**, or
 **Cancel** prompt; cancel is the default and escape action. Ungroup uses the
 same atomic release path as detach and teardown. The shade control rolls the
-whole group up to a compact title strip at its current position and width.
+whole group up to a compact identity badge at its current position. Its width
+shrinks to the metric-derived control/label/tab-pill footprint, capped by the
+former container width; the badge uses the container color, active-page label,
+and up to eight page pills plus a bounded overflow counter.
 No member is minimized (the container never becomes one collapsed dock
 entry) and no member's real frame is resized, but every member's content and
 pointer input are genuinely hidden while shaded, and only the shared-chrome
@@ -264,7 +273,8 @@ re-hides it and hands focus to the next shown window. Member transients hide
 with their owner, a closed anchor is replaced by a surviving member, and an
 explicit unroll returns focus to the member that held it at roll-up; see
 [Hybrid constraints](hybrid-constraints.md) and
-[ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md).
+[ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md) and
+[ADR-0139](../adr/0139-identity-borders-focus-and-rolled-up-badge.md).
 
 An AppAppearance controller owned once by the compositor projects each confirmed
 theme into both grouped chrome plans and native Qinda decorations. The native
@@ -308,12 +318,11 @@ nested compositor, to keep its published chrome overlay
 click/drag eligibility past the first shade action instead of permanently
 dropping to zero:
 
-- `KWinChromeManager`'s per-container plan validation compares a plan's tabs
-  against the topology's real pages; a shaded plan deliberately omits every
-  tab (see below), which always failed that check and discarded the whole
-  publication. The shaded branch now validates its own, simpler invariant —
-  no tabs, members, or dividers at all — instead of the ordinary plan's
-  structural check.
+- `KWinChromeManager`'s per-container plan validation compares the badge pills
+  against the topology's real page order and active page, while shaded plans
+  deliberately omit member and divider geometry. The shaded branch accepts
+  that exact shape instead of either rejecting the pills or admitting hidden
+  member geometry.
 - Group stacking's same-KWin-layer/contiguous-live-stack validation exists to
   protect visible, input-eligible members; it was never given an exemption
   for shade's design of marking every member (anchor included) genuinely
@@ -412,10 +421,10 @@ lifecycle, cancellation, plan/scene agreement, scene-image lifecycle,
 anchor-aware exposure, ordinary router ownership/pass-through, popup ordering,
 right-click menu routing, hover forwarding, group-context reconciliation,
 focus mode, transient following, stale reconciliation, teardown/rebuild,
-the shade/unroll control's checked state and independence from tab/member
-geometry, and rename-override text painted into the shared row. Focused
+the shade/unroll control's checked state, compact badge/pill geometry and
+identity paint, and rename-override text painted into the shared row. Focused
 `HybridContainerPlacementController` tests cover the shaded strip's
-independent frame tracking (never touching the real committed layout while
+shrunk metric-derived width and independent frame tracking (never touching the real committed layout while
 shaded, one real reflow on unroll to the original size at the strip's current
 position), drag/cancel of the strip, and the maximize/shade mutual exclusion.
 `HybridShadeController` fake-platform tests cover the member-hiding

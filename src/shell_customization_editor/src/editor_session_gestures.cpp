@@ -33,7 +33,11 @@ QString settingsZoneValue(const QVariantMap &settings)
 QVariantMap settingsWithZone(const QVariantMap &source, const QString &zone)
 {
     QVariantMap adjusted = source;
-    adjusted.insert(QStringLiteral("zone"), zone);
+    if (zone == QLatin1String("desktop")) {
+        adjusted.remove(QStringLiteral("zone"));
+    } else {
+        adjusted.insert(QStringLiteral("zone"), zone);
+    }
     return adjusted;
 }
 
@@ -311,6 +315,20 @@ EditorOutcome EditorSession::armDrag(const DragPayload &payload)
                 m_gesturePanelId = panel.id;
                 m_gestureZone = settingsZoneValue(found->settings);
                 break;
+            }
+        }
+        if (m_gesturePanelId.isEmpty()
+            || m_gesturePanelId == DesktopAppletOwnerId) {
+            const auto found = std::find_if(
+                current->profile.desktopApplets.cbegin(),
+                current->profile.desktopApplets.cend(),
+                [this](const Profiles::AppletSpec &candidate) {
+                    return candidate.id == m_payload.sourceAppletId;
+                });
+            if (found != current->profile.desktopApplets.cend()) {
+                m_sourceSettings = found->settings;
+                m_gesturePanelId = DesktopAppletOwnerId;
+                m_gestureZone = QStringLiteral("desktop");
             }
         }
     }

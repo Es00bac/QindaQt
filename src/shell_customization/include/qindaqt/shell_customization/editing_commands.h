@@ -12,6 +12,12 @@
 
 namespace QindaQt::ShellCustomization {
 
+// Applet editing commands use one owner field for both panel and desktop
+// instances. This reserved value cannot collide with profile panel ids because
+// profile ids reject '@'. Keeping the existing wire-shaped commands avoids a
+// second mutation path whose undo/preview behavior could drift.
+inline constexpr QLatin1StringView DesktopAppletOwnerId("@desktop");
+
 enum class EditingCommandKind {
     AddPanel,
     RemovePanel,

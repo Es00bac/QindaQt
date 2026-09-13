@@ -516,6 +516,10 @@ void KWinHybridSession::synchronizeChrome()
         if (!appearance.colorHex.isEmpty()) {
             options.style.palette.accent = QColor(appearance.colorHex);
         }
+        // CONTRACTS §2.4 / ADR-0139: the same identity color also drives the
+        // derived border/tint/stripe/ring shades. An empty colorHex yields an
+        // invalid QColor, which falls back to the theme accent.
+        options.identityColor = QColor(appearance.colorHex);
         const auto plan = HybridChromePlanBuilder::build(
             *container, layout->activePage, options,
             [this](const QString &windowId) {

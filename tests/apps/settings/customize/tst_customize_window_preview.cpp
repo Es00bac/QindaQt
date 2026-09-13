@@ -106,7 +106,7 @@ void CustomizeWindowPreviewTests::resolvesTwoDifferentConfirmedCombosDifferently
              QStringLiteral("flat"));
 
     const QVariantMap secondPreferences{
-        {QStringLiteral("appearance.windowButtonStyle"), QStringLiteral("symbols")},
+        {QStringLiteral("appearance.windowButtonStyle"), QStringLiteral("glyph")},
         {QStringLiteral("appearance.windowButtonSide"), QStringLiteral("right")},
     };
     QVERIFY(harness.updateChromePreferences(secondPreferences, 8));
@@ -122,7 +122,7 @@ void CustomizeWindowPreviewTests::resolvesTwoDifferentConfirmedCombosDifferently
     QCOMPARE(secondChrome.value(QStringLiteral("buttonSide")).toString(),
              QStringLiteral("right"));
     QCOMPARE(secondChrome.value(QStringLiteral("buttonStyle")).toString(),
-             QStringLiteral("symbols"));
+             QStringLiteral("glyph"));
 }
 
 // A changed Settings1 revision republishes the preview truth exactly like

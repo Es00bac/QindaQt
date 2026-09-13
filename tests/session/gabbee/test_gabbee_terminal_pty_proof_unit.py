@@ -100,7 +100,7 @@ class PrivateSessionLaunchTests(unittest.TestCase):
             self.assertEqual(
                 wrapper.read_text(encoding="utf-8"),
                 "#!/usr/bin/sh\n"
-                "exec /opt/qindaqt/bin/qindaqt-session --no-polkit-agent --no-powerdevil\n",
+                "exec /opt/qindaqt/bin/qindaqt-session --no-polkit-agent --no-powerdevil --no-global-shortcut-daemon\n",
             )
             self.assertEqual(wrapper.stat().st_mode & 0o777, 0o700)
 

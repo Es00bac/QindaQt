@@ -68,7 +68,11 @@ desktop interior, so an edge-attached panel never detaches from its edge.
 Applets render as icon chips carrying the same XDG glyphs the live panel
 chips use, laid out in their real start/center/end zones, with hover states,
 selection rings, and tooltips. Drop targets are the three profile zones on
-each panel and light up under an active drag. Behind the panels, the screen
+each panel plus the remaining desktop canvas. The desktop target is the public
+profile owner `@desktop`; it projects, selects, moves, duplicates, removes, and
+configures `profile.desktopApplets` through the same transactional editor as
+panel applets. Desktop settings never receive a synthetic panel `zone` key.
+Targets light up under an active drag. Behind the panels, the screen
 paints the currently configured wallpaper — the same Settings1
 `appearance.wallpaper` identity and `appearance.wallpaperMode` the shell
 consumes, resolved through the public Settings Appearance wallpaper catalog
@@ -141,7 +145,8 @@ retain their readable names, so no label can overflow a panel just because the
 representative output is scaled down.
 They expose list/list-item or radio-button roles, contextual names and counts,
 selected state, and visible QindaQt Controls focus treatment. Palette activation
-inserts into the first panel's start zone through the same gesture path as a
+chooses the first compatible panel/orientation/zone, or the desktop for a
+desktop-only applet such as Desktop Icons, through the same gesture path as a
 pointer drag. The inspector's icon buttons (edge compass, alignment glyphs,
 duplicate/remove) expose button or radio semantics with their tooltips as
 accessible names.
@@ -214,7 +219,10 @@ The model row proves one-step pointer commit, exact cancellation, deterministic
 rejection rollback, pointer/keyboard insertion convergence, Undo/Redo,
 atomic profile persistence, retained applied baselines across Discard and
 authority recovery, Settings1 conflict truth, and foreign-lease recovery. The
-same row injects `DP-1` and `HDMI-A-1`, proves Primary stores only the exact
+same row inserts Desktop Icons through default palette activation, projects and
+selects it on the canvas, edits its typed icon-size setting, rejects an
+unsupported move to a panel without mutation, and reloads the persisted
+desktop applet. It also injects `DP-1` and `HDMI-A-1`, proves Primary stores only the exact
 `DP-1` identity, proves `*` solves to one panel surface on each display,
 reloads the strictly serialized saved profile, and rejects missing, ambiguous,
 or revision-changed primary truth without saving. It also proves

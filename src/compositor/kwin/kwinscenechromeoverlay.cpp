@@ -2,6 +2,7 @@
 #include "kwinscenechromeoverlay.h"
 
 #include "kwinchromemanager.h"
+#include "chromeplanlocalizer.h"
 #include "managedwindowregistry.h"
 
 #include "qindaqt/hybrid_chrome/chromerenderer.h"
@@ -22,37 +23,6 @@
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
-
-void translateRect(QRectF *rect, const QPointF &offset)
-{
-    rect->translate(offset);
-}
-
-HybridChrome::ChromeRenderPlan localizedPlan(
-    HybridChrome::ChromeRenderPlan plan, const QPointF &origin)
-{
-    const QPointF offset = -origin;
-    translateRect(&plan.outerFrame, offset);
-    translateRect(&plan.outerTitleBar, offset);
-    translateRect(&plan.outerTitleDragRect, offset);
-    translateRect(&plan.tabStrip, offset);
-    translateRect(&plan.contentRect, offset);
-    for (auto &button : plan.buttons) {
-        translateRect(&button.rect, offset);
-    }
-    for (auto &tab : plan.tabs) {
-        translateRect(&tab.rect, offset);
-    }
-    for (auto &member : plan.members) {
-        translateRect(&member.windowRect, offset);
-        translateRect(&member.titleDragRect, offset);
-    }
-    for (auto &divider : plan.dividers) {
-        translateRect(&divider.visualRect, offset);
-        translateRect(&divider.hitRect, offset);
-    }
-    return plan;
-}
 
 bool fail(QString *error, QString message)
 {
@@ -75,7 +45,7 @@ public:
     {
         m_globalGeometry = plan.outerFrame;
         m_devicePixelRatio = plan.devicePixelRatio;
-        m_plan = localizedPlan(std::move(plan), m_globalGeometry.topLeft());
+        m_plan = localizeChromeRenderPlan(std::move(plan), m_globalGeometry.topLeft());
         render();
         updateItem();
     }

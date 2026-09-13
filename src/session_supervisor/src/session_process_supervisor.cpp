@@ -67,6 +67,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             QStringLiteral("polkit-agent"), QStringList{}))
       , m_powerDevil(std::make_unique<OptionalSessionChild>(
             QStringLiteral("powerdevil"), QStringList{}))
+      , m_globalShortcutDaemon(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("global-shortcuts"), QStringList{}))
 {
     m_shellRestartTimer.setSingleShot(true);
     m_shellStableTimer.setSingleShot(true);
@@ -87,6 +89,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(m_polkitAgent.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_powerDevil.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_globalShortcutDaemon.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -141,6 +145,7 @@ bool SessionProcessSupervisor::start(QString *error)
     m_desktopControls->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
+    m_globalShortcutDaemon->resetRestartCount();
     m_hostProcessId = 0;
     m_shellProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -199,6 +204,7 @@ void SessionProcessSupervisor::stop() noexcept
     m_desktopControls->stop();
     m_polkitAgent->stop();
     m_powerDevil->stop();
+    m_globalShortcutDaemon->stop();
     m_shellProcessId = 0;
     m_hostProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -213,6 +219,7 @@ void SessionProcessSupervisor::stop() noexcept
     m_desktopControls->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
+    m_globalShortcutDaemon->resetRestartCount();
     m_stopping = false;
 }
 
@@ -278,6 +285,11 @@ int SessionProcessSupervisor::desktopControlsRestartCount() const noexcept
 qint64 SessionProcessSupervisor::powerDevilProcessId() const noexcept
 {
     return m_powerDevil->processId();
+}
+
+qint64 SessionProcessSupervisor::globalShortcutDaemonProcessId() const noexcept
+{
+    return m_globalShortcutDaemon->processId();
 }
 
 qint64 SessionProcessSupervisor::polkitAgentProcessId() const noexcept
@@ -413,12 +425,15 @@ void SessionProcessSupervisor::startNetworkSecretAgent()
 
 void SessionProcessSupervisor::startOptionalChildren()
 {
-    // AGENT-CONTRACT: all three children start after the shell establishes
-    // the compositor session. PowerDevil starts before desktop-controls so
+    // AGENT-CONTRACT: these children start after the shell establishes the
+    // compositor session. KGlobalAccel is a separate Plasma 6 daemon; keeping
+    // it in this tree makes shortcuts available on QindaQt's private bus where
+    // the distribution's systemd user activation cannot run. PowerDevil starts before desktop-controls so
     // idle preferences can follow its owner arrival; polkit registers prompts
     // for this session. Missing optional executables never prevent login.
     // PowerDevil owns the idle timer and inhibitors. Keep it in this process
     // tree because QindaQt does not activate graphical-session.target.
+    m_globalShortcutDaemon->start(m_options.globalShortcutDaemonExecutable);
     m_powerDevil->start(m_options.powerDevilExecutable);
     m_desktopControls->start(resolveExecutable(m_options.desktopControlsExecutable));
     m_polkitAgent->start(m_options.polkitAgentExecutable);

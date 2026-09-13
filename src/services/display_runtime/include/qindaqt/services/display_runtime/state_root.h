@@ -44,4 +44,11 @@ struct StateRootSelection {
 [[nodiscard]] StateRootSelection
 resolveProvisionedStateRoot(const StateRootSelection &selection);
 
+// Production activation without systemd has no StateDirectory provisioning.
+// Prepare the selected implicit per-user directory when absent, or resolve an
+// existing compatibility link, before D5 performs its ownership and mode
+// checks. Explicit --state-root callers retain the strict no-create contract.
+[[nodiscard]] StateRootSelection
+prepareImplicitStateRoot(const StateRootSelection &selection);
+
 } // namespace QindaQt::DisplayRuntime

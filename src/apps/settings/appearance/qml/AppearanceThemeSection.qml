@@ -77,6 +77,12 @@ ColumnLayout {
     Flow {
         objectName: "appearanceThemeCards"
         Layout.fillWidth: true
+        // AGENT-GUARD: Flow does not contribute its laid-out children to a
+        // ColumnLayout unless it publishes a height. A zero-height positioner
+        // left only the first overflowing card visible/clickable in the real
+        // Settings viewport even though the catalog contained every theme.
+        Layout.preferredHeight: childrenRect.height
+        Layout.minimumHeight: childrenRect.height
         spacing: Tokens.space["3"]
 
         Repeater {

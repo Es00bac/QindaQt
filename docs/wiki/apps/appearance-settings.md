@@ -18,7 +18,7 @@ One page covers the appearance preference set stored through Settings1:
 
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
-| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get; installed-theme cards; the system/light/dark scheme choice; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme` |
+| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get; six visible built-in theme cards with authored decoration presets; the system/light/dark scheme choice; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme` |
 | Windows | Two live previews (ADR-0129): an application window whose title bar is painted by the shared decoration painter, and a two-window container laid out and painted by the compositor's own chrome engine with native member title bars. Each set has glyph-light rows for button style, side, visible buttons or tab order, and title alignment or symbol visibility; every default is `Theme`, which keeps the shipped chrome | `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
 | Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
@@ -36,6 +36,14 @@ QindaQt surfaces, and stock Qt applications — without giving the route write
 access to any decoration or Qt style state. The preview follows the draft:
 a theme card, scheme, or font change shows before Apply. Without a widgets
 application (headless tests) the client area degrades to flat palette rows.
+
+Every built-in theme authors real decoration behavior. The current catalog
+contains at least four distinct families across left/right controls,
+traffic-light/symbol/glyph styles, tab direction, hover glyphs, and colors.
+The theme-card flow reports its wrapped height to the scroll layout, so later
+cards are visible rather than existing only in the model or preview. External
+legacy themes may still use the schema's unauthored compatibility fallback.
+See [ADR-0159](../adr/0159-author-distinct-decoration-presets-for-every-builtin-theme.md).
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio

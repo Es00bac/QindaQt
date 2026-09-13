@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-07
+- Superseded by: ADR-0139 for strip width and shaded chrome contents only
 
 ## Context
 

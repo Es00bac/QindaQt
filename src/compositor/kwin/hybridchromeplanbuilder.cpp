@@ -151,18 +151,15 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         return reject(error, QStringLiteral("container has no active page"));
     }
     // AGENT-CONTRACT: A shaded container's real committed layout/solution is
-    // frozen (see HybridContainerPlacementController::shade); building the
-    // plan from it would either reject on the stale content-frame check
-    // below or, worse, paint/hit-test member tiles nobody has actually
-    // hidden. The strip is built directly from options.shadedOuterFrame with
-    // no tabs/members/dividers, so the whole visible+hit-testable rectangle
-    // really is just the compact row (see ADR-0099's follow-up correction).
+    // frozen (see HybridContainerPlacementController::shade). The compact
+    // badge therefore has no member/divider geometry, but it retains one tab
+    // pill per page so page identity and activation remain available.
     if (options.shaded) {
         if (options.shadedOuterFrame.isEmpty()
             || options.shadedOuterFrame != options.shadedOuterFrame.normalized()) {
             return reject(error, QStringLiteral("shaded container has no valid strip frame"));
         }
-        const ChromeLayoutRequest shadedRequest{
+        ChromeLayoutRequest shadedRequest{
             .containerId = container.id(),
             .outerRect = options.shadedOuterFrame,
             .devicePixelRatio = options.devicePixelRatio,
@@ -171,12 +168,22 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
             .containerFocused = options.containerFocused,
             .memberTitlesVisible = options.memberTitlesVisible,
             .containerTitle = options.containerTitle,
+            .identityColor = options.identityColor,
+            .tabTitleOverrides = options.tabTitleOverrides,
+            .indexBadge = options.indexBadge,
             .metrics = options.metrics,
             .style = options.style,
             .tabs = {},
             .members = {},
             .dividers = {},
         };
+        // ADR-0139: the badge shows one pill per tab (with overridden tab
+        // names), so the shaded request carries the real page list.
+        for (const auto &page : container.pages()) {
+            shadedRequest.tabs.append({page.id(),
+                                       pageTitle(page, titleLookup),
+                                       page.id() == container.activePageId()});
+        }
         return HybridChrome::ChromeLayoutEngine::build(shadedRequest, error);
     }
     if (solution.outerFrame.isEmpty() || solution.outerFrame != solution.outerFrame.normalized()) {
@@ -192,6 +199,9 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         .containerFocused = options.containerFocused,
         .memberTitlesVisible = options.memberTitlesVisible,
         .containerTitle = options.containerTitle,
+        .identityColor = options.identityColor,
+        .tabTitleOverrides = options.tabTitleOverrides,
+        .indexBadge = options.indexBadge,
         .metrics = options.metrics,
         .style = options.style,
         .tabs = {},

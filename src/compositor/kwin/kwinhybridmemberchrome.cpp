@@ -8,7 +8,10 @@
 #include "managedwindowregistry.h"
 #include "memberchromevisibilitycontroller.h"
 
+#include <KDecoration3/Decoration>
 #include <window.h>
+
+#include <QVariantMap>
 
 namespace QindaQt::Compositor::KWinIntegration {
 
@@ -48,6 +51,57 @@ void KWinHybridSession::initializeMemberChromeSupport()
             });
     connect(m_chromeManager.get(), &KWinChromeManager::containerControlRequested,
             this, &KWinHybridSession::handleContainerControl);
+    connect(m_chromeManager.get(), &KWinChromeManager::chromePlansPublished,
+            this, &KWinHybridSession::publishMemberChromeIdentity);
+}
+
+void KWinHybridSession::publishMemberChromeIdentity()
+{
+    // ADR-0139: per-window decoration emphasis. The published chrome plans
+    // are the single authority for both the container identity color and the
+    // focused member, so publication rides the manager's post-snapshot hook
+    // and stays in lockstep with every chrome synchronization.
+    if (!m_chromeManager || !m_runtime || m_shutdown) {
+        return;
+    }
+    static constexpr auto MemberIdentityProperty = "qindaqtMemberIdentity";
+    for (const auto &windowId : m_registry.windowIds()) {
+        QVariantMap identity;
+        const auto owner = m_runtime->topology().ownerOf(windowId);
+        if (owner) {
+            const auto plan = m_chromeManager->plan(*owner);
+            if (plan) {
+                if (plan->identityColor.isValid()) {
+                    identity.insert(QStringLiteral("identityColor"),
+                                    plan->identityColor);
+                }
+                bool focused = false;
+                for (const auto &member : plan->members) {
+                    focused = focused
+                        || (member.memberId == windowId && member.focused);
+                }
+                identity.insert(QStringLiteral("focused"), focused);
+            }
+        }
+        auto *window = m_registry.window(windowId);
+        auto *decoration = window ? window->decoration() : nullptr;
+        if (!decoration) {
+            continue;
+        }
+        const auto current = decoration->property(MemberIdentityProperty);
+        if (identity.isEmpty()) {
+            if (current.isValid()) {
+                decoration->setProperty(MemberIdentityProperty, QVariant());
+                decoration->update();
+            }
+            continue;
+        }
+        if (current == identity) {
+            continue;
+        }
+        decoration->setProperty(MemberIdentityProperty, identity);
+        decoration->update();
+    }
 }
 
 void KWinHybridSession::synchronizeMemberChromeVisibility()

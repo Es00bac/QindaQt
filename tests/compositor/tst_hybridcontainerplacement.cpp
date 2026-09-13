@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridcontainerplacement.h"
 
+#include "hybridshadestripgeometry.h"
+
 #include <QtTest>
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -154,7 +156,7 @@ private Q_SLOTS:
     void resizesEdgesAndEnforcesMinimumFrame();
     void maximizesAndRestoresWholeContainer();
     void tracksVisibleAndHiddenWorkAreasWhileMaximized();
-    void shadesAndUnshadesWholeContainerPreservingPositionAndWidth();
+    void shadesAndUnshadesAnchoringTheBadgeStripAtTheLeftEdge();
     void rejectsShadeWhileMaximizedAndMaximizeWhileShaded();
     void rejectsOuterResizeWhileShadedButStillAllowsMove();
     void cancelledShadedMoveRestoresTheStripsPriorPosition();
@@ -304,7 +306,7 @@ void HybridContainerPlacementTest::tracksVisibleAndHiddenWorkAreasWhileMaximized
     QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
 }
 
-void HybridContainerPlacementTest::shadesAndUnshadesWholeContainerPreservingPositionAndWidth()
+void HybridContainerPlacementTest::shadesAndUnshadesAnchoringTheBadgeStripAtTheLeftEdge()
 {
     Fixture fixture;
     QString error;
@@ -320,7 +322,13 @@ void HybridContainerPlacementTest::shadesAndUnshadesWholeContainerPreservingPosi
     const auto strip = fixture.controller.shadedFrame(QStringLiteral("group"));
     QVERIFY(strip.has_value());
     QCOMPARE(strip->topLeft(), QPoint(100, 100));
-    QCOMPARE(strip->width(), 800);
+    // ADR-0139: the strip is the content-sized rolled-up badge anchored at
+    // the frame's left edge -- same top-left, badge width, compact height.
+    const auto container = sampleTopology().container(QStringLiteral("group"));
+    const auto tabCount = container ? container->pages().size() : qsizetype{1};
+    QCOMPARE(strip->width(),
+             HybridShadeStripGeometry::stripWidth(tabCount, QRect(100, 100, 800, 600)));
+    QVERIFY(strip->width() < 800);
     QVERIFY(strip->height() < 600);
     QVERIFY(strip->height() > 28);
 
@@ -330,8 +338,8 @@ void HybridContainerPlacementTest::shadesAndUnshadesWholeContainerPreservingPosi
     QCOMPARE(fixture.controller.shadedFrame(QStringLiteral("group")), strip);
     QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
 
-    // Unshade performs exactly one real reflow, back to the original size at
-    // the strip's current (here, unmoved) position.
+    // Unshade performs exactly one real reflow, back to the exact original
+    // size at the strip's current (here, unmoved) position.
     QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
     QVERIFY(!fixture.controller.isShaded(QStringLiteral("group")));
     QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));

@@ -34,6 +34,10 @@ struct SessionProcessOptions final {
     // Empty disables the daemon in private sessions; production resolves the
     // distribution PowerDevil executable before constructing this supervisor.
     QString powerDevilExecutable;
+    // KGlobalAccel is a separate daemon on Plasma 6. A private QindaQt bus
+    // cannot use the distribution's systemd user unit, so production owns the
+    // daemon as an optional session child.
+    QString globalShortcutDaemonExecutable;
     QString profileId;
     QString themeId;
     qint64 compositorProcessId = 0;
@@ -78,6 +82,7 @@ public:
     [[nodiscard]] qint64 desktopControlsProcessId() const noexcept;
     [[nodiscard]] int desktopControlsRestartCount() const noexcept;
     [[nodiscard]] qint64 powerDevilProcessId() const noexcept;
+    [[nodiscard]] qint64 globalShortcutDaemonProcessId() const noexcept;
     [[nodiscard]] qint64 polkitAgentProcessId() const noexcept;
     [[nodiscard]] int polkitAgentRestartCount() const noexcept;
     [[nodiscard]] qint64 welcomeProcessId() const noexcept;
@@ -124,6 +129,7 @@ private:
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;
+    std::unique_ptr<OptionalSessionChild> m_globalShortcutDaemon;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_token;
     qint64 m_hostProcessId = 0;

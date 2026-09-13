@@ -215,10 +215,27 @@ qindaqt_add_file_manager_test(
     tst_places_controller.cpp
     qindaqt.file-manager-places-controller
 )
-qindaqt_add_file_manager_test(
+qt_add_executable(
     qindaqt_file_manager_desktop_file_boundary_tests
     tst_desktop_file_boundary.cpp
-    qindaqt.file-manager-desktop-file-boundary
+)
+target_link_libraries(
+    qindaqt_file_manager_desktop_file_boundary_tests
+    PRIVATE qindaqt_file_manager_desktop_boundary Qt6::Test
+)
+target_compile_features(
+    qindaqt_file_manager_desktop_file_boundary_tests PRIVATE cxx_std_20
+)
+set_target_properties(
+    qindaqt_file_manager_desktop_file_boundary_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_file_manager_desktop_file_boundary_tests)
+add_test(
+    NAME qindaqt.file-manager-desktop-file-boundary
+    COMMAND qindaqt_file_manager_desktop_file_boundary_tests
+)
+set_tests_properties(
+    qindaqt.file-manager-desktop-file-boundary PROPERTIES LABELS "file-manager"
 )
 
 add_test(

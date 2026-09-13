@@ -41,6 +41,24 @@ const Profiles::AppletSpec *appletById(const Profiles::PanelSpec *panel,
     return nullptr;
 }
 
+const Profiles::AppletSpec *appletByOwner(const Profiles::LayoutProfile *profile,
+                                          const QString &ownerId,
+                                          const QString &appletId)
+{
+    if (profile == nullptr) {
+        return nullptr;
+    }
+    if (ownerId == ShellCustomization::DesktopAppletOwnerId) {
+        for (const auto &applet : profile->desktopApplets) {
+            if (applet.id == appletId) {
+                return &applet;
+            }
+        }
+        return nullptr;
+    }
+    return appletById(panelById(profile, ownerId), appletId);
+}
+
 ShellCustomizationEditor::PanelConfiguration panelConfiguration(
     const Profiles::PanelSpec &panel)
 {
@@ -145,7 +163,7 @@ void CustomizeSettingsModel::selectApplet(const QString &panelId,
                                            const QString &appletId)
 {
     const auto *profile = m_editor ? m_editor->profile() : nullptr;
-    if (appletById(panelById(profile, panelId), appletId) == nullptr) {
+    if (appletByOwner(profile, panelId, appletId) == nullptr) {
         return;
     }
     m_selectedKind = QStringLiteral("applet");
@@ -179,7 +197,7 @@ bool CustomizeSettingsModel::startAppletDrag(const QString &panelId,
         return false;
     }
     const auto *profile = m_editor->profile();
-    const auto *applet = appletById(panelById(profile, panelId), appletId);
+    const auto *applet = appletByOwner(profile, panelId, appletId);
     if (applet == nullptr) {
         return false;
     }
@@ -248,16 +266,6 @@ bool CustomizeSettingsModel::cancelDrag()
     return cancelled;
 }
 
-bool CustomizeSettingsModel::keyboardInsert(const QString &pluginId,
-                                             const QString &panelId,
-                                             const QString &zone,
-                                             const QString &beforeAppletId)
-{
-    return startPaletteDrag(pluginId)
-        && hoverDropTarget(panelId, zone, beforeAppletId)
-        && commitDrag();
-}
-
 bool CustomizeSettingsModel::keyboardMoveMode()
 {
     if (m_keyboardMoving) {
@@ -266,29 +274,35 @@ bool CustomizeSettingsModel::keyboardMoveMode()
     if (m_selectedKind != QLatin1String("applet") || !m_editor) {
         return false;
     }
+    const bool desktopOwner = m_selectedPanelId
+        == ShellCustomization::DesktopAppletOwnerId;
     const auto *panel = panelById(m_editor->profile(), m_selectedPanelId);
-    const auto *applet = appletById(panel, m_selectedAppletId);
-    if (panel == nullptr || applet == nullptr) {
+    const auto *applet = appletByOwner(m_editor->profile(), m_selectedPanelId,
+                                       m_selectedAppletId);
+    if ((!desktopOwner && panel == nullptr) || applet == nullptr) {
         return false;
     }
-    m_keyboardTarget.panelId = panel->id;
-    m_keyboardTarget.zone = applet->settings
+    m_keyboardTarget.panelId = m_selectedPanelId;
+    m_keyboardTarget.zone = desktopOwner ? QStringLiteral("desktop") : applet->settings
                                 .value(QStringLiteral("zone"),
                                        QStringLiteral("start"))
                                 .toString();
     m_keyboardTarget.beforeAppletId.reset();
     bool found = false;
-    for (const auto &candidate : panel->applets) {
-        if (found && candidate.settings
-                         .value(QStringLiteral("zone"),
-                                QStringLiteral("start"))
-                         .toString() == m_keyboardTarget.zone) {
+    const auto &siblings = desktopOwner ? m_editor->profile()->desktopApplets
+                                        : panel->applets;
+    for (const auto &candidate : siblings) {
+        if (found && (desktopOwner
+                      || candidate.settings
+                             .value(QStringLiteral("zone"),
+                                    QStringLiteral("start"))
+                             .toString() == m_keyboardTarget.zone)) {
             m_keyboardTarget.beforeAppletId = candidate.id;
             break;
         }
         found = candidate.id == applet->id || found;
     }
-    m_keyboardMoving = startAppletDrag(panel->id, applet->id);
+    m_keyboardMoving = startAppletDrag(m_selectedPanelId, applet->id);
     return m_keyboardMoving;
 }
 
@@ -336,6 +350,9 @@ QString CustomizeSettingsModel::nextDuplicateId(const QString &base) const
         if (profile != nullptr) {
             for (const auto &panel : profile->panels) {
                 used = appletById(&panel, candidate) != nullptr || used;
+            }
+            for (const auto &applet : profile->desktopApplets) {
+                used = applet.id == candidate || used;
             }
         }
         if (!used) {
@@ -462,9 +479,9 @@ bool CustomizeSettingsModel::configureAppletSetting(const QString &key,
     if (!canEdit() || m_selectedKind != QLatin1String("applet")) {
         return false;
     }
-    const auto *panel = panelById(m_editor->profile(), m_selectedPanelId);
-    const auto *applet = appletById(panel, m_selectedAppletId);
-    if (panel == nullptr || applet == nullptr) {
+    const auto *applet = appletByOwner(m_editor->profile(), m_selectedPanelId,
+                                       m_selectedAppletId);
+    if (applet == nullptr) {
         return false;
     }
     const auto *manifest = findManifest(applet->plugin);
@@ -496,11 +513,16 @@ bool CustomizeSettingsModel::configureAppletSetting(const QString &key,
     QVariantMap settings = applet->settings;
     settings.insert(key, validation.value);
     const auto intent = ShellCustomizationEditor::configureAppletSettingsIntent(
-        panel->id, applet->id, settings);
+        m_selectedPanelId, applet->id, settings);
     return settleEditorOutcome(
         m_editor->applyGesture(intent,
-                               targetFromStrings(panel->id,
-                                                 QStringLiteral("start"), {})),
+                               targetFromStrings(
+                                   m_selectedPanelId,
+                                   m_selectedPanelId
+                                           == ShellCustomization::DesktopAppletOwnerId
+                                       ? QStringLiteral("desktop")
+                                       : QStringLiteral("start"),
+                                   {})),
         QStringLiteral("Applet setting updated"));
 }
 

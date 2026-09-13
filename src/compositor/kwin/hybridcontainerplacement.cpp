@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridcontainerplacement.h"
 
+#include "hybridshadestripgeometry.h"
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 
 #include <QtMath>
@@ -465,11 +466,16 @@ bool HybridContainerPlacementController::shade(
     // (see ADR-0099's follow-up correction): member windows keep their exact
     // frame so no live app is resized to fake being hidden. The strip frame
     // is purely this controller's own bookkeeping; the KWin adapter is
-    // responsible for actually hiding member content/input.
+    // responsible for actually hiding member content/input. ADR-0139: the
+    // strip is a content-sized badge anchored at the frame's left edge.
+    const auto *snapshot = container(containerId);
+    const auto tabCount = snapshot ? snapshot->pages().size() : qsizetype{1};
     m_shadeStripFrames.insert(
         containerId,
         QRect(current->outerFrame.topLeft(),
-              QSize(current->outerFrame.width(), shadedOuterHeight())));
+              QSize(HybridShadeStripGeometry::stripWidth(tabCount,
+                                                         current->outerFrame),
+                    shadedOuterHeight())));
     m_shadeRestoreSizes.insert(containerId, current->outerFrame.size());
     if (m_changed) {
         m_changed();

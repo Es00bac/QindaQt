@@ -212,13 +212,14 @@ Startup selects exactly one state root in this order: explicit `--state-root`,
 systemd's single `STATE_DIRECTORY`, `XDG_STATE_HOME/qindaqt`, then
 `HOME/.local/state/qindaqt`. A selected value must be absolute, clean, bounded,
 and not `/`; D5 then proves existing-directory ownership, permissions, and
-journal-file safety. The systemd user unit retains `StateDirectory=qindaqt`
-with mode `0700` so an earlier pending journal remains recoverable. Because
-systemd may expose that historical location through a compatibility symlink,
-the process composition resolves only the systemd-provisioned root once before
-D5 opens the concrete directory. Explicit and XDG/HOME roots retain D5's
-no-symlink rule. Missing, ambiguous, unsafe, or rejected state truth terminates
-startup before the Wayland writer opens.
+journal-file safety. For every implicit source, D6 creates a missing per-user
+directory with mode `0700` and resolves one existing compatibility symlink to
+its canonical directory before D5 opens it. This covers direct private-bus
+activation, which receives neither systemd's `STATE_DIRECTORY` nor its
+directory-creation step. An explicit `--state-root` remains test/operator
+authority and must already exist without a symlink. Missing, ambiguous,
+unsafe, or rejected state truth terminates startup before the Wayland writer
+opens.
 
 After a valid absent/loaded result, D4 opens its private Wayland connection and
 derives a positive compositor PID with Linux `SO_PEERCRED`. D6 gives only that

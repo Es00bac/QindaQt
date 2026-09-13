@@ -59,12 +59,12 @@ public:
     [[nodiscard]] QStringList refreshMaximizedAreas();
     [[nodiscard]] bool isMaximized(const QString &containerId) const noexcept;
 
-    // Rolls the container up to a compact, still-visible, still-movable strip
-    // at the frame's current position and width. Unlike maximize/restore,
+    // Rolls the container up to a compact, still-visible, still-movable badge
+    // at the frame's current position with a metric/tab-derived width. Unlike maximize/restore,
     // shading never reflows or resizes any member window: the real committed
     // layout is left completely untouched (members keep their exact frame),
     // and this controller instead tracks an independent "strip frame" used
-    // only for the shared chrome plan and for dragging the strip around.
+    // only for the shared chrome plan and for dragging the badge around.
     // Content/decoration/shadow/input hiding for members is a KWin-adapter
     // responsibility (see HybridShadeMemberController) driven by isShaded();
     // this controller owns no KWin object and no visibility state.

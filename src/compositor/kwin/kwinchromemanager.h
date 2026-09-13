@@ -157,6 +157,10 @@ Q_SIGNALS:
     // exposes QWidget pointers or decides what a drag mutation means.
     void chromeDragLifecycle(const QString &containerId,
                              const QindaQt::HybridChrome::ChromeDragEvent &event);
+    // AGENT-CONTRACT: emitted synchronously at the end of every successful
+    // updateFromSnapshot, after visibility publication. Consumers may read
+    // plan() for any container in the snapshot.
+    void chromePlansPublished();
 
 private:
     struct Entry final

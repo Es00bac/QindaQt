@@ -38,8 +38,9 @@ cmake -S . -B build/release-checkpoint -G Ninja \
   -DQINDAQT_BUILD_SHELL=ON \
   -DQINDAQT_BUILD_PRODUCTION_SHELL=ON \
   -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
-cmake --build build/release-checkpoint --parallel "$(nproc)" \
-  --target src/all qindaqt-session-probe
+qq_makeopts="$(portageq envvar MAKEOPTS)"
+cmake --build build/release-checkpoint \
+  --target src/all qindaqt-session-probe -- ${qq_makeopts}
 cmake --install build/release-checkpoint \
   --prefix "$PWD/build/release-checkpoint-stage"
 ./tools/check-release-contract \
@@ -48,6 +49,11 @@ cmake --install build/release-checkpoint \
   --build-root build/release-checkpoint \
   --install-root build/release-checkpoint-stage
 ```
+
+The direct release build must use the machine's configured Portage job and
+load limits exactly. Do not replace `MAKEOPTS` with a guessed `--parallel`
+value or a command-local override; if a demonstrated failure requires different
+limits, obtain the operator's explicit approval first.
 
 Adjust only the KWin CMake version-file path for the distribution layout. The
 checker requires the runtime and development package to report the exact same
