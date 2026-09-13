@@ -62,8 +62,6 @@ T.ToolButton {
         ? entry.colorHex
         : (luna ? "white" : (enabled ? Tokens.fg.default : Tokens.fg.disabled))
 
-    TaskListUrgentPulse { target: button; active: entry.urgent && !reducedMotion }
-
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
     hoverEnabled: true
@@ -245,6 +243,8 @@ T.ToolButton {
             color: button.entry.active ? Tokens.fg.default : Tokens.fg.muted
             Accessible.ignored: true
         }
+
+        TaskListUrgentPulse { target: button; active: entry.urgent && !reducedMotion; showBadge: dockMode && entry.urgent }
     }
 
     // A Loader because `background` takes an Item: a `luna ? a : b` ternary
