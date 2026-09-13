@@ -11,6 +11,7 @@ using namespace QindaQt::Apps::FileManager;
 using QindaQt::Apps::FileManager::Test::FakeDirectoryLister;
 using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
+using QindaQt::Apps::FileManager::Test::FakeRemoteCopier;
 using QindaQt::Apps::FileManager::Test::FakeRemoteFileOpener;
 
 namespace {
@@ -70,6 +71,13 @@ private slots:
   void aRemoteOpenFailurePublishesATruthfulLaunchError();
   void aSuccessfulRemoteOpenClearsAPreviousLaunchError();
   void destructionWithAPendingRemoteOpenDoesNotCrash();
+  void remoteCopyDispatchesAValidatedDestination();
+  void remoteCopyRejectsUnlistedSourcesAndBadDestinations();
+  void remoteCopyRejectsSameTargetAndDirectorySelfCopies();
+  void remoteCopySuccessRefreshesOnlyTheCurrentFolder();
+  void remoteCopyFailureStaysVisibleWithoutOptimisticDisplay();
+  void aCancelledRemoteCopyResultIsDiscarded();
+  void destructionWithAPendingRemoteCopyDoesNotCrash();
   void destructionWithAPendingRequestDoesNotCrash();
 };
 
@@ -426,6 +434,197 @@ void TestNavigationControllerNetwork::destructionWithAPendingRemoteOpenDoesNotCr
 // helpers) live in tst_navigation_controller_network_mutation.cpp, a
 // separately registered QTest source; see AGENTS.md "split tests by
 // behavior and failure mode" and review P2 on candidate 504dd87a.
+
+namespace {
+
+// Builds a controller with backend + copier injected and publishes a
+// single listed child, ready for copy tests.
+void publishRemoteTree(FakeNetworkDirectoryBackend *rawBackend, NavigationController &controller,
+                       const QUrl &url, const QString &name, bool isDirectory) {
+  controller.navigateTo(url.toString());
+  const quint64 generation = rawBackend->requests().last().generation;
+  rawBackend->emitReady(generation, url,
+                        successResult(url, {makeEntry(name, NetworkLocation::childUrl(url, name).toString(),
+                                                      isDirectory)}));
+}
+
+} // namespace
+
+// ADR-0155: Copy To dispatches one validated copy (listed child -> distinct
+// child target of the canonical destination folder), fenced by the current
+// listing generation.
+void TestNavigationControllerNetwork::remoteCopyDispatchesAValidatedDestination() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, std::move(copier));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  QCOMPARE(controller.remoteCopyAvailable(), true);
+  QCOMPARE(controller.remoteCopyBusy(), false);
+
+  QVERIFY(controller.copyRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  QCOMPARE(rawCopier->requests().size(), 1);
+  QCOMPARE(rawCopier->requests().constFirst().source.toString(),
+           QStringLiteral("smb://server/share/notes.txt"));
+  QCOMPARE(rawCopier->requests().constFirst().destination.toString(),
+           QStringLiteral("smb://server/backup/notes.txt"));
+  QCOMPARE(rawCopier->requests().constFirst().generation,
+           rawBackend->requests().last().generation);
+  QCOMPARE(controller.remoteCopyBusy(), true);
+}
+
+void TestNavigationControllerNetwork::remoteCopyRejectsUnlistedSourcesAndBadDestinations() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, std::move(copier));
+
+  const QUrl url(QStringLiteral("sftp://server/home"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+
+  // Not a listed child of the current folder.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("sftp://server/home/other.txt"),
+                                      QStringLiteral("sftp://server/backup")));
+  // Destination from the wrong authority.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("sftp://server/home/notes.txt"),
+                                      QStringLiteral("smb://server/backup")));
+  // Malformed destination.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("sftp://server/home/notes.txt"),
+                                      QStringLiteral("not a url")));
+  // Embedded credentials in the destination.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("sftp://server/home/notes.txt"),
+                                      QStringLiteral("sftp://user:pass@server/backup")));
+  QVERIFY(rawCopier->requests().isEmpty());
+  QCOMPARE(controller.remoteCopyBusy(), false);
+}
+
+void TestNavigationControllerNetwork::remoteCopyRejectsSameTargetAndDirectorySelfCopies() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, std::move(copier));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  // Same target: destination folder == source folder.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                      QStringLiteral("smb://server/share")));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("Docs"), true);
+  // Directory into itself.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("smb://server/share/Docs"),
+                                      QStringLiteral("smb://server/share/Docs")));
+  // Directory into its own descendant.
+  QVERIFY(!controller.copyRemoteChild(QStringLiteral("smb://server/share/Docs"),
+                                      QStringLiteral("smb://server/share/Docs/2026")));
+  QVERIFY(rawCopier->requests().isEmpty());
+  QCOMPARE(controller.remoteCopyBusy(), false);
+}
+
+void TestNavigationControllerNetwork::remoteCopySuccessRefreshesOnlyTheCurrentFolder() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, std::move(copier));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+
+  // Copy to another folder: success changes nothing visible here, so no
+  // refresh is forced. (A destination equal to the current folder is
+  // refused pre-dispatch as a same-target copy, so the destination-scoped
+  // refresh only fires for a future validated case, never optimistically.)
+  QVERIFY(controller.copyRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const qsizetype requestsBefore = rawBackend->requests().size();
+  rawCopier->finishSuccess(rawCopier->requests().constFirst().generation);
+  QCOMPARE(rawBackend->requests().size(), requestsBefore);
+  QCOMPARE(controller.remoteCopyBusy(), false);
+  // No optimistic display of either endpoint.
+  QCOMPARE(controller.entryCount(), 1);
+}
+
+void TestNavigationControllerNetwork::remoteCopyFailureStaysVisibleWithoutOptimisticDisplay() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, std::move(copier));
+
+  const QUrl url(QStringLiteral("sftp://server/home"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  QCOMPARE(controller.entryCount(), 1);
+
+  QVERIFY(controller.copyRemoteChild(QStringLiteral("sftp://server/home/notes.txt"),
+                                     QStringLiteral("sftp://server/backup")));
+  rawCopier->finishFailure(rawCopier->requests().constFirst().generation,
+                           QStringLiteral("synthetic copy failure"));
+
+  QCOMPARE(controller.launchError(), QStringLiteral("synthetic copy failure"));
+  QCOMPARE(controller.entryCount(), 1);
+  QCOMPARE(controller.remoteCopyBusy(), false);
+}
+
+void TestNavigationControllerNetwork::aCancelledRemoteCopyResultIsDiscarded() {
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  ListingResult ready;
+  ready.path = QStringLiteral("/home/jarrod");
+  lister->setResult(QStringLiteral("/home/jarrod"), ready);
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>(),
+                                  std::move(backend), nullptr, nullptr, nullptr,
+                                  std::move(copier));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  QVERIFY(controller.copyRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const quint64 copyGeneration = rawCopier->requests().constFirst().generation;
+
+  controller.navigateTo(QStringLiteral("/home/jarrod"));
+  QVERIFY(rawCopier->cancelled().contains(copyGeneration));
+  QVERIFY(controller.launchError().isEmpty());
+
+  // The quiet kill delivers a result for the cancelled generation; it is
+  // fenced out and stays invisible.
+  rawCopier->finishFailure(copyGeneration, QStringLiteral("synthetic copy failure"));
+  QVERIFY(controller.launchError().isEmpty());
+}
+
+void TestNavigationControllerNetwork::destructionWithAPendingRemoteCopyDoesNotCrash() {
+  {
+    auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+    auto *rawBackend = backend.get();
+    auto copier = std::make_unique<FakeRemoteCopier>();
+    NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                    std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                    nullptr, nullptr, nullptr, std::move(copier));
+    const QUrl url(QStringLiteral("smb://server/share"));
+    publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+    QVERIFY(controller.copyRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                       QStringLiteral("smb://server/backup")));
+  }
+  QVERIFY(true);
+}
 
 void TestNavigationControllerNetwork::destructionWithAPendingRequestDoesNotCrash() {
   {

@@ -118,8 +118,10 @@ Item {
             ? (root.destinationKind === "copy"
                ? qsTr("Copy %1 items into folder").arg(root.selectedItems.length)
                : qsTr("Move %1 items into folder").arg(root.selectedItems.length))
-            : (root.destinationKind === "copy" ? qsTr("Copy to local path")
-                                               : qsTr("Move to local path"))
+            : (root.destinationKind === "copy"
+               ? (root.navigationController.remoteActive
+                  ? qsTr("Copy to network folder") : qsTr("Copy to local path"))
+               : qsTr("Move to local path"))
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: {
             if (root.selectedItems.length > 1) {
@@ -132,6 +134,16 @@ Item {
                 return
             }
             if (!root.selectedEntry) return
+            // ADR-0155: while browsing remote, Copy To goes through the
+            // navigation controller's injected KIO copier (one listed
+            // child to a validated remote destination); locally the
+            // identity-checked local mutation controller keeps the request.
+            if (root.navigationController.remoteActive
+                && root.destinationKind === "copy") {
+                root.navigationController.copyRemoteChild(root.selectedEntry.path,
+                    destinationPath.text)
+                return
+            }
             if (root.destinationKind === "copy")
                 root.mutationController.copyItem(root.selectedEntry.path,
                     destinationPath.text, root.selectedEntry)

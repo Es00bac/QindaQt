@@ -17,7 +17,7 @@ remote regular files through the desktop's default handler via the injected
 listed child through the injected `RemoteRenamer` seam on `KIO::rename()`
 (ADR-0153), and creates one validated child directory through the injected
 `RemoteFolderCreator` seam on `KIO::mkdir()` (ADR-0154). Per-volume
-Trash, mounts, remote file copy/move/write, and a QindaQt credential-entry UI
+Trash, mounts, remote file move/write, and a QindaQt credential-entry UI
 remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -635,8 +635,10 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   (ADR-0116). Same-folder remote Rename runs through `KIO::rename()` behind
   the injected `RemoteRenamer` seam (ADR-0153), and New Folder creates one
   validated child directory through `KIO::mkdir()` behind the injected
-  `RemoteFolderCreator` seam (ADR-0154). Still open: remote file
-  copy/move/write, mount-based access, and a
+  `RemoteFolderCreator` seam (ADR-0154). Copy To sends one listed child to
+  a validated remote destination folder through `KIO::copy()` behind the
+  injected `RemoteCopier` seam (ADR-0155). Still open: remote file
+  move/write, mount-based access, and a
   QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
   authentication); portal locations remain out of scope.
 
@@ -649,7 +651,7 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
   additional preview formats, portal-mediated paths, open-with, remote file
-  copy/move/write, and a QindaQt credential-entry UI remain explicit
+  move/write, and a QindaQt credential-entry UI remain explicit
   later outcomes (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
@@ -675,7 +677,9 @@ error/stale-generation/URL-mismatch/truncated-listing/local-remote routing/
 remote-directory-activation/remote-file-open-through-the-injected-opener/
 typed-open-failure-and-error-clearing/remote-rename-dispatch-validation-
 refresh-failure-and-stale-discard/remote-create-dispatch-validation-
-refresh-failure-and-stale-discard, all against fake injected backends),
+refresh-failure-and-stale-discard/remote-copy-dispatch-validation-
+success-no-refresh-for-other-folders-failure-and-stale-discard, all against
+fake injected backends),
 `qindaqt.file-manager-kio-network-backend` (the production
 `KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
 job-creation test seam), `qindaqt.file-manager-kio-remote-opener` (the
@@ -689,7 +693,10 @@ hermetically, so no application is started),
 delegate via a job-creation test seam),
 `qindaqt.file-manager-kio-remote-folder-creator` (the production
 `KioRemoteFolderCreator`'s scheme/userinfo boundary and retained KIO UI
-delegate via a job-creation test seam), and `qindaqt.file-manager-mutation-action-binding`
+delegate via a job-creation test seam),
+`qindaqt.file-manager-kio-remote-copier` (the production `KioRemoteCopier`'s
+scheme/authority boundary and retained KIO UI delegate via a job-creation
+test seam), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay

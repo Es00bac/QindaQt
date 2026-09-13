@@ -17,25 +17,6 @@ namespace {
 
 constexpr std::array iconSizes{32, 48, 64, 96, 128};
 
-[[nodiscard]] NavigationStatus statusFor(const ListingResult &result) {
-  if (result.ok()) {
-    return result.entries.isEmpty() ? NavigationStatus::Empty
-                                    : NavigationStatus::Ready;
-  }
-  switch (result.error) {
-  case ListingError::NotFound:
-    return NavigationStatus::Missing;
-  case ListingError::PermissionDenied:
-    return NavigationStatus::PermissionDenied;
-  case ListingError::NotADirectory:
-    return NavigationStatus::NotADirectory;
-  case ListingError::Unknown:
-  case ListingError::None:
-    break;
-  }
-  return NavigationStatus::Error;
-}
-
 } // namespace
 
 NavigationController::NavigationController(DirectoryListerPtr lister,
@@ -44,13 +25,15 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
                                            RemoteFileOpenerPtr remoteOpener,
                                            RemoteRenamerPtr remoteRenamer,
                                            RemoteFolderCreatorPtr folderCreator,
+                                           RemoteCopierPtr copier,
                                            QObject *parent)
     : QObject(parent), m_lister(std::move(lister)),
       m_launcher(std::move(launcher)),
       m_networkBackend(std::move(networkBackend)),
       m_remoteOpener(std::move(remoteOpener)),
       m_remoteRenamer(std::move(remoteRenamer)),
-      m_folderCreator(std::move(folderCreator)) {
+      m_folderCreator(std::move(folderCreator)),
+      m_copier(std::move(copier)) {
   Q_ASSERT(m_lister);
   Q_ASSERT(m_launcher);
   if (m_networkBackend) {
@@ -76,24 +59,27 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
     connect(m_remoteRename.get(), &RemoteRenameController::busyChanged, this,
             [this] { emit remoteRenameChanged(); });
     connect(m_remoteRename.get(), &RemoteRenameController::refreshRequested, this,
-            &NavigationController::onRemoteRenameRefreshRequested);
+            &NavigationController::onRemoteOperationRefreshRequested);
     connect(m_remoteRename.get(), &RemoteRenameController::failure, this,
-            [this](const QString &message) {
-              m_launchError = message;
-              emit launchErrorChanged();
-            });
+            &NavigationController::onRemoteOperationFailed);
   }
   if (m_folderCreator) {
     m_remoteCreate = std::make_unique<RemoteCreateFolderController>(*m_folderCreator, this);
     connect(m_remoteCreate.get(), &RemoteCreateFolderController::busyChanged, this,
             [this] { emit remoteCreateChanged(); });
     connect(m_remoteCreate.get(), &RemoteCreateFolderController::refreshRequested, this,
-            &NavigationController::onRemoteCreateRefreshRequested);
+            &NavigationController::onRemoteOperationRefreshRequested);
     connect(m_remoteCreate.get(), &RemoteCreateFolderController::failure, this,
-            [this](const QString &message) {
-              m_launchError = message;
-              emit launchErrorChanged();
-            });
+            &NavigationController::onRemoteOperationFailed);
+  }
+  if (m_copier) {
+    m_remoteCopy = std::make_unique<RemoteCopyToController>(*m_copier, this);
+    connect(m_remoteCopy.get(), &RemoteCopyToController::busyChanged, this,
+            [this] { emit remoteCopyChanged(); });
+    connect(m_remoteCopy.get(), &RemoteCopyToController::refreshRequested, this,
+            &NavigationController::onRemoteOperationRefreshRequested);
+    connect(m_remoteCopy.get(), &RemoteCopyToController::failure, this,
+            &NavigationController::onRemoteOperationFailed);
   }
 }
 
@@ -102,6 +88,7 @@ void NavigationController::navigateTo(const QString &path) {
     if (m_remoteActive) {
       cancelPendingRemoteRename();
       cancelPendingRemoteCreate();
+      cancelPendingRemoteCopy();
       if (m_networkBackend) {
         m_networkBackend->cancel(m_listingGeneration);
       }
@@ -111,6 +98,9 @@ void NavigationController::navigateTo(const QString &path) {
       }
       if (m_folderCreator) {
         emit remoteCreateChanged();
+      }
+      if (m_copier) {
+        emit remoteCopyChanged();
       }
     }
     const QString normalized = QDir::cleanPath(path);
@@ -241,12 +231,17 @@ bool NavigationController::renameRemoteEntry(const QString &sourcePath,
                                        sourcePath, newName);
 }
 
-void NavigationController::onRemoteRenameRefreshRequested() {
-  // Success: re-read the authoritative remote listing -- the displayed name
-  // never changed optimistically before this point.
+void NavigationController::onRemoteOperationRefreshRequested() {
+  // Confirmed success for the visible folder: re-read the authoritative
+  // remote listing -- nothing changed optimistically before this point.
   if (m_remoteActive) {
     requestRemoteListing();
   }
+}
+
+void NavigationController::onRemoteOperationFailed(const QString &message) {
+  m_launchError = message;
+  emit launchErrorChanged();
 }
 
 void NavigationController::cancelPendingRemoteRename() {
@@ -267,17 +262,29 @@ bool NavigationController::createRemoteFolder(const QString &name) {
   return m_remoteCreate->requestCreate(m_remoteUrl, m_listingGeneration, name);
 }
 
-void NavigationController::onRemoteCreateRefreshRequested() {
-  // Success: re-read the authoritative remote listing -- no optimistic
-  // entry was displayed before this point.
-  if (m_remoteActive) {
-    requestRemoteListing();
+bool NavigationController::copyRemoteChild(const QString &sourcePath,
+                                           const QString &destinationFolder) {
+  if (!m_remoteActive || !m_remoteCopy) {
+    m_launchError = QStringLiteral("Remote copy is not available here");
+    emit launchErrorChanged();
+    return false;
   }
+  // Validation, dispatch, result fencing, destination-scoped refresh, and
+  // job retirement live in RemoteCopyToController (see its header); this
+  // controller supplies the current folder snapshot.
+  return m_remoteCopy->requestCopy(m_listedEntries, m_remoteUrl, m_listingGeneration,
+                                   sourcePath, destinationFolder);
 }
 
 void NavigationController::cancelPendingRemoteCreate() {
   if (m_remoteCreate) {
     m_remoteCreate->cancelPending();
+  }
+}
+
+void NavigationController::cancelPendingRemoteCopy() {
+  if (m_remoteCopy) {
+    m_remoteCopy->cancelPending();
   }
 }
 
@@ -488,10 +495,12 @@ void NavigationController::clearGuestListing() {
 
 void NavigationController::enterRemote(const QUrl &url) {
   if (m_remoteActive) {
-    // Remote-to-remote replacement: retire any rename or create in flight
-    // for the folder being left, mirroring the listing cancellation below.
+    // Remote-to-remote replacement: retire any rename, create, or copy in
+    // flight for the folder being left, mirroring the listing cancellation
+    // below.
     cancelPendingRemoteRename();
     cancelPendingRemoteCreate();
+    cancelPendingRemoteCopy();
   }
   m_guestActive = false;
   m_guestStatusText.clear();
@@ -504,6 +513,9 @@ void NavigationController::enterRemote(const QUrl &url) {
   }
   if (m_folderCreator) {
     emit remoteCreateChanged();
+  }
+  if (m_copier) {
+    emit remoteCopyChanged();
   }
 }
 
@@ -548,7 +560,7 @@ void NavigationController::onNetworkListingReady(quint64 generation, const QUrl 
   }
   m_status = result.ok() ? (result.entries.isEmpty() ? NavigationStatus::Empty
                                                      : NavigationStatus::Ready)
-                        : statusForNetworkError(result.error);
+                        : NavigationPresentation::statusForNetworkError(result.error);
   m_truncated = result.ok() && result.truncated;
   m_listedEntries = result.ok() ? result.entries : QVector<DirectoryEntry>{};
   rebuildVisibleEntries();
@@ -556,26 +568,6 @@ void NavigationController::onNetworkListingReady(quint64 generation, const QUrl 
     m_statusMessage = NetworkLocation::boundedDiagnostic(result.diagnostic);
   }
   emit entriesChanged();
-}
-
-NavigationStatus NavigationController::statusForNetworkError(NetworkListingError error) {
-  switch (error) {
-  case NetworkListingError::None:
-    return NavigationStatus::Ready;
-  case NetworkListingError::Unavailable:
-    return NavigationStatus::Unavailable;
-  case NetworkListingError::AuthenticationRequired:
-    return NavigationStatus::AuthenticationRequired;
-  case NetworkListingError::PermissionDenied:
-    return NavigationStatus::PermissionDenied;
-  case NetworkListingError::NotFound:
-    return NavigationStatus::Missing;
-  case NetworkListingError::Transport:
-    return NavigationStatus::Transport;
-  case NetworkListingError::Unknown:
-    break;
-  }
-  return NavigationStatus::Error;
 }
 
 void NavigationController::reload(bool resetFilter) {
@@ -587,7 +579,7 @@ void NavigationController::reload(bool resetFilter) {
   m_guestStatusText.clear();
   ++m_listingGeneration;
   const ListingResult result = m_lister->list(m_history.currentPath());
-  m_status = statusFor(result);
+  m_status = NavigationPresentation::statusFor(result);
   m_truncated = result.ok() && result.truncated;
   m_listedEntries = result.ok() ? result.entries : QVector<DirectoryEntry>{};
   rebuildVisibleEntries();

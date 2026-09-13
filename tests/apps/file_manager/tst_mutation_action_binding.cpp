@@ -24,6 +24,7 @@ using namespace QindaQt::Apps::FileManager;
 using QindaQt::Apps::FileManager::Test::FakeDirectoryLister;
 using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
+using QindaQt::Apps::FileManager::Test::FakeRemoteCopier;
 using QindaQt::Apps::FileManager::Test::FakeRemoteFolderCreator;
 using QindaQt::Apps::FileManager::Test::FakeRemoteRenamer;
 
@@ -90,6 +91,7 @@ private slots:
   void remoteBrowsingDisablesFolderMutationsButNotEmptyTrashOrHistory();
   void remoteBrowsingKeepsRenameEnabledWhenARenamerIsInjected();
   void remoteBrowsingKeepsNewFolderEnabledWhenACreatorIsInjected();
+  void remoteBrowsingKeepsCopyEnabledWhenACopierIsInjected();
   void remoteBrowsingDisablesSearchAndFilter();
   void busyMutationDisablesEmptyTrashRegardlessOfRemoteState();
 };
@@ -206,6 +208,45 @@ void TestMutationActionBinding::remoteBrowsingKeepsNewFolderEnabledWhenACreatorI
   navigation.navigateTo(QDir::tempPath());
   QCOMPARE(navigation.remoteActive(), false);
   QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.new-folder")), std::optional<bool>(true));
+}
+
+// ADR-0155 fail-before/green row: with a RemoteCopier injected, Copy To is
+// available while browsing a remote folder; without one it keeps disabling
+// with the other current-folder mutations.
+void TestMutationActionBinding::remoteBrowsingKeepsCopyEnabledWhenACopierIsInjected() {
+  QindaQt::AppShell::ApplicationCoordinator coordinator;
+  const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
+  QVERIFY2(catalogResult.ok(), qPrintable(catalogResult.message));
+
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  ListingResult ready;
+  ready.path = QDir::tempPath();
+  lister->setResult(QDir::tempPath(), ready);
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  NavigationController navigation(std::move(lister), std::make_unique<FakeFileLauncher>(),
+                                  std::move(backend), nullptr, nullptr, nullptr,
+                                  std::move(copier));
+  MutationController mutation(std::make_unique<GatedMutationBackend>());
+
+  bindFileManagerBrowsingActions(coordinator, navigation);
+  bindFileManagerMutationActions(coordinator, navigation, mutation);
+
+  navigation.navigateTo(QStringLiteral("smb://server/share"));
+  QCOMPARE(navigation.remoteActive(), true);
+  QCOMPARE(navigation.remoteCopyAvailable(), true);
+  // Every other current-folder mutation stays disabled while remote
+  // (rename/new-folder need their own seams, absent here).
+  for (const char *actionId :
+       {"file.new-folder", "file.rename", "file.move", "file.trash"}) {
+    QCOMPARE(actionEnabled(coordinator, QLatin1String(actionId)), std::optional<bool>(false));
+  }
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.copy")), std::optional<bool>(true));
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.empty-trash")), std::optional<bool>(true));
+
+  navigation.navigateTo(QDir::tempPath());
+  QCOMPARE(navigation.remoteActive(), false);
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.copy")), std::optional<bool>(true));
 }
 
 void TestMutationActionBinding::remoteBrowsingDisablesSearchAndFilter() {

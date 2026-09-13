@@ -151,6 +151,15 @@ target_link_libraries(
     PRIVATE KF6::KIOCore
 )
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_kio_remote_copier_tests
+    tst_kio_remote_copier.cpp
+    qindaqt.file-manager-kio-remote-copier
+)
+target_link_libraries(
+    qindaqt_file_manager_kio_remote_copier_tests
+    PRIVATE KF6::KIOCore
+)
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_mutation_action_binding_tests
     tst_mutation_action_binding.cpp
     qindaqt.file-manager-mutation-action-binding

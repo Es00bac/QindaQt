@@ -37,8 +37,10 @@ target_sources(
         network/kio_network_directory_backend.cpp
         network/kio_remote_file_opener.cpp
         network/kio_remote_folder_creator.cpp
+        network/kio_remote_copier.cpp
         network/kio_remote_renamer.cpp
         network/network_location.cpp
+        network/remote_copy_to_controller.cpp
         network/remote_create_folder_controller.cpp
         network/remote_open_controller.cpp
         network/remote_rename_controller.cpp
@@ -73,9 +75,12 @@ target_sources(
         network/kio_network_directory_backend.h
         network/kio_remote_file_opener.h
         network/kio_remote_folder_creator.h
+        network/kio_remote_copier.h
         network/kio_remote_renamer.h
         network/network_directory_backend.h
         network/network_location.h
+        network/remote_copy_to_controller.h
+        network/remote_copier.h
         network/remote_create_folder_controller.h
         network/remote_file_opener.h
         network/remote_folder_creator.h

@@ -17,10 +17,15 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
       Q_UNUSED(result);
     };
     const bool idle = !mutation.busy() && !navigation.remoteActive();
-    for (const char *actionId :
-         {"file.copy", "file.move", "file.trash"}) {
+    for (const char *actionId : {"file.move", "file.trash"}) {
       enabled(actionId, idle);
     }
+    // ADR-0155: remote Copy To is available while browsing remote only with
+    // a copier injected and no copy in flight; without one, Copy keeps
+    // disabling with the other mutations.
+    enabled("file.copy", (!mutation.busy() && !navigation.remoteActive()) ||
+                             (navigation.remoteCopyAvailable() &&
+                              !navigation.remoteCopyBusy()));
     // ADR-0154: remote New Folder is available while browsing remote only
     // with a folder creator injected and no creation in flight; without
     // one, New Folder keeps disabling with the other mutations.
@@ -48,6 +53,8 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
   QObject::connect(&navigation, &NavigationController::remoteRenameChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::remoteCreateChanged,
+                   &coordinator, sync);
+  QObject::connect(&navigation, &NavigationController::remoteCopyChanged,
                    &coordinator, sync);
   sync();
 }
