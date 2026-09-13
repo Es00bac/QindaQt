@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "customize_test_support.h"
 
-#include "qindaqt/apps/settings_customize/customize_editor_host.h"
-#include "qindaqt/apps/settings_customize/customize_settings_model.h"
 #include "qindaqt/profiles/profile_loader.h"
-#include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_customization/layout_editing_repository.h"
 #include "qindaqt/shell_customization/layout_editing_coordinator.h"
 #include "qindaqt/shell_customization_editor/user_profile_store.h"
@@ -21,47 +18,6 @@ using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt;
 
 namespace {
-
-class ModelHarness final {
-public:
-    ModelHarness()
-        : store(temporaryStore(QStringLiteral("customize-model")))
-        , client(transport, {QString(LayoutProfileSettingsKey)},
-                 {.requestTimeoutMilliseconds = 100,
-                  .debounceMilliseconds = 0,
-                  .retryMilliseconds = {10}})
-        , model(client, {profile(), profile(QStringLiteral("alternate"))},
-                manifests(), outputProvider,
-                [this](const Profiles::LayoutProfile &selected,
-                       const QVector<ShellLayout::LogicalOutput> &inventory) {
-                    return std::make_unique<RepositoryCustomizeEditorHost>(
-                        selected, inventory, manifests(), store->path());
-                })
-    {
-    }
-
-    bool establish(const QString &profileId = QStringLiteral("fixture"))
-    {
-        if (!store->isValid() || !client.start()) {
-            return false;
-        }
-        Q_EMIT transport.ownerChanged(QStringLiteral(":1.90"));
-        if (!QTest::qWaitFor([this] { return !transport.snapshots.isEmpty(); },
-                             5'000)) {
-            return false;
-        }
-        const auto request = transport.snapshots.takeFirst();
-        Q_EMIT transport.snapshotReceived(request.token, request.owner,
-                                          snapshotWire(profileId));
-        return QTest::qWaitFor([this] { return model.ready(); }, 5'000);
-    }
-
-    std::unique_ptr<QTemporaryDir> store;
-    SequenceTransport transport;
-    SettingsClient client;
-    MutableCustomizeOutputProvider outputProvider;
-    CustomizeSettingsModel model;
-};
 
 qsizetype appletCount(const QVariantList &panels)
 {
@@ -516,13 +472,22 @@ void CustomizeSettingsModelTests::foreignLeaseFailsClosedThenRecoversOnRefresh()
     QVERIFY(foreign != nullptr);
 
     SequenceTransport transport;
+    SequenceTransport wallpaperTransport;
     SettingsClient client(transport, {QString(LayoutProfileSettingsKey)},
                           {.requestTimeoutMilliseconds = 100,
                            .debounceMilliseconds = 0,
                            .retryMilliseconds = {10}});
+    SettingsClient wallpaperClient(
+        wallpaperTransport,
+        {QStringLiteral("appearance.wallpaper"),
+         QStringLiteral("appearance.wallpaperMode")},
+        {.requestTimeoutMilliseconds = 100,
+         .debounceMilliseconds = 0,
+         .retryMilliseconds = {10}});
+    CustomizeWallpaperPreview wallpaperPreview(wallpaperClient, {});
     MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model(
-        client, {profile()}, manifests(), outputProvider,
+        client, {profile()}, manifests(), outputProvider, wallpaperPreview,
         [&repository, &store](const Profiles::LayoutProfile &,
                               const QVector<ShellLayout::LogicalOutput> &) {
             return std::make_unique<RepositoryCustomizeEditorHost>(

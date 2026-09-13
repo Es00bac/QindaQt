@@ -15,10 +15,14 @@ keep the preview visible instead of squeezing three columns together.
 
 The route is a presentation and composition boundary. It depends only on the
 public `shell_customization_editor`, `shell_customization`, `profiles`, applet
-manifest, Settings1 client, and the public confined iconography APIs (see
-[ADR-0121](../adr/0121-real-iconography-in-the-settings-customize-route.md)).
-It never imports shell surfaces, LayerShellQt, compositor code, a private
-service implementation, or platform mutation. The editing repository remains
+manifest, Settings1 client, the public confined iconography APIs (see
+[ADR-0121](../adr/0121-real-iconography-in-the-settings-customize-route.md)),
+and the public Settings Appearance wallpaper values/catalog
+(`appearance.wallpaper`/`appearance.wallpaperMode` keys, the mode codec, and
+the `qindaqt:<basename>` bundled-identity discovery) for the read-only canvas
+wallpaper preview. It never imports shell surfaces, LayerShellQt, compositor
+code, the shell runtime's private wallpaper resolver, a private service
+implementation, or platform mutation. The editing repository remains
 the sole placement and manifest acceptance authority.
 
 ## Layout gallery
@@ -57,9 +61,19 @@ desktop interior, so an edge-attached panel never detaches from its edge.
 Applets render as icon chips carrying the same XDG glyphs the live panel
 chips use, laid out in their real start/center/end zones, with hover states,
 selection rings, and tooltips. Drop targets are the three profile zones on
-each panel and light up under an active drag. Behind the panels, a themed
-gradient backdrop and a quiet window mock keep the screen reading as a
-desktop. The property panes issue complete panel configuration or move
+each panel and light up under an active drag. Behind the panels, the screen
+paints the currently configured wallpaper — the same Settings1
+`appearance.wallpaper` identity and `appearance.wallpaperMode` the shell
+consumes, resolved through the public Settings Appearance wallpaper catalog
+and painted with the shell's scaled/centered/tiled mapping — over the themed
+gradient backdrop, and a quiet window mock keeps the screen reading as a
+desktop. The preview is read-only: a route-owned Settings1 scope subscribes to
+exactly the two wallpaper keys through an independent transport, so layout
+editing truth and wallpaper preview truth never share request tokens. No
+wallpaper (explicit empty preference), an unknown mode token, an unresolvable
+or unreadable identity, a mistyped value, or unavailable Settings1 truth each
+fail closed to the token gradient; the stored preference is never renamed or
+repaired by this route. The property panes issue complete panel configuration or move
 intents for display scope, edge, alignment, thickness, length, and visibility.
 Display scope is deliberately the two choices the existing profile contract
 can state truthfully: **Primary display** writes the current primary screen's
@@ -196,7 +210,15 @@ the full settings map onto the new instance; and that the guard fails closed
 once the selected applet is removed. The dedicated pure
 `qindaqt.settings-customize-applet-setting-validation` row exercises the
 kind classifier and validator directly against hostile payloads for every
-declared JSON-schema kind, independent of the model/editor/QML. The
+declared JSON-schema kind, independent of the model/editor/QML. The dedicated
+`qindaqt.settings-customize-wallpaper-preview` row proves the read-only
+wallpaper projection: a configured
+`qindaqt:<basename>` identity resolves to the first readable root with its
+mode mapped, a saved absolute path resolves identically, a changed Settings1
+revision republishes source/mode, and an empty preference, unknown identity,
+unknown mode token, unresolvable path, mistyped value, or missing snapshot
+each fails closed to the explicit no-wallpaper fallback without renaming the
+stored preference. The
 warning-fatal pointer row drives real mouse events through the production page
 and editor in compact and wide modes: palette insertion, chip movement across
 preview reconstruction, one-step Undo, Escape and outside-release rollback. The warning-fatal page row renders 720×720 compact and 1080×720
@@ -206,7 +228,9 @@ controls, asserts the profile gallery card exists, is visible, and carries a
 palette/panel/zone elements, keyboard-activates the Primary/All radio controls,
 verifies Primary becomes disabled with an accessible degraded explanation when
 identity truth is unavailable, and proves the discard dialog is centered in the window
-overlay. The page and pointer harnesses install the confined icon runtime over
+overlay. The same page row proves the canvas wallpaper item stays hidden on
+the token fallback, appears with the configured source when wallpaper truth is
+ready, and maps tiled/centered/scaled modes to the shell's fill modes. The page and pointer harnesses install the confined icon runtime over
 the shipped icon theme, so both rows exercise resolved glyph rendering and the
 typed placeholder path stays the icons module's own coverage. The window-lifecycle row proves a dirty title-bar close opens that
 dialog, Cancel keeps the window and draft, and pending navigation plus

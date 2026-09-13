@@ -25,6 +25,7 @@ set(forbidden_pattern
 # AGENT-CONTRACT: This list mirrors the Customize route's documented public
 # dependencies. A new prefix requires the same-change boundary documentation.
 set(allowed_public_include_prefixes
+    "qindaqt/apps/settings_appearance/"
     "qindaqt/apps/settings_customize/"
     "qindaqt/applets/"
     "qindaqt/design_tokens/"

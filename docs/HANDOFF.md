@@ -24,6 +24,26 @@ provider process, session, first product tools, and exact candidate transition.
 
 ## Small-team usable-fix wave (September 12)
 
+The Customize route's configured-wallpaper canvas preview (Kimi worker,
+branch `worker/small-customize-wallpaper-preview-20260912`, descendant of the
+preserved `6d05caa2` applet-settings candidate) replaces the decorative
+gradient-only backdrop with a truthful preview of the Settings1
+`appearance.wallpaper` identity and `appearance.wallpaperMode` pair. A
+route-owned read-only `CustomizeWallpaperPreview` collaborator subscribes to
+exactly the two wallpaper keys through an independent transport, decodes the
+mode with the public Settings Appearance codec, resolves `qindaqt:<basename>`
+identities through the public bundled-wallpaper catalog (first readable root,
+same contract as the shell), and paints the shell's scaled/centered/tiled
+mapping on the canvas; the token gradient remains the explicit fallback for
+no wallpaper, invalid/unresolvable input, or unavailable Settings1 truth. No
+service, framework, duplicate resolver, or shell-internal import was added;
+the Customize boundary allowlist gained the one new public prefix with the
+wiki updated in the same change. The shell's private wallpaper resolver, the
+live desktop, and the `CustomizeWindowMock` (still a mock, per the dispatch)
+are untouched. Red-before evidence: the new page row failed on the exact base
+with `'wallpaper != nullptr' returned FALSE` — the base canvas rendered only
+the gradient despite configured wallpaper truth.
+
 The File Manager worker's exact candidate
 `ae9865d5feed9c20264bbf1ff00e519937082462` received independent Z.AI GLM
 ACCEPT and is integrated as `7067f509`. The manager configured a fresh strict

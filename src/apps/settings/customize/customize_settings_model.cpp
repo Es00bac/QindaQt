@@ -19,6 +19,7 @@ CustomizeSettingsModel::CustomizeSettingsModel(
     QVector<Profiles::LayoutProfile> availableProfiles,
     QVector<Applets::AppletManifest> manifests,
     CustomizeOutputProvider &outputProvider,
+    CustomizeWallpaperPreview &wallpaperPreview,
     EditorHostFactory hostFactory,
     QString startupError,
     QObject *parent)
@@ -27,6 +28,7 @@ CustomizeSettingsModel::CustomizeSettingsModel(
     , m_profiles(std::move(availableProfiles))
     , m_manifests(std::move(manifests))
     , m_outputProvider(outputProvider)
+    , m_wallpaperPreview(wallpaperPreview)
     , m_hostFactory(std::move(hostFactory))
     , m_startupError(std::move(startupError))
 {

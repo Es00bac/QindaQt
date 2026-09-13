@@ -11,6 +11,7 @@ target_sources(
         customize_settings_actions.cpp
         customize_settings_model.cpp
         customize_settings_projection.cpp
+        customize_wallpaper_preview.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -18,6 +19,7 @@ target_sources(
             include/qindaqt/apps/settings_customize/customize_editor_host.h
             include/qindaqt/apps/settings_customize/customize_output_provider.h
             include/qindaqt/apps/settings_customize/customize_settings_model.h
+            include/qindaqt/apps/settings_customize/customize_wallpaper_preview.h
 )
 target_link_libraries(
     qindaqt_settings_customize
@@ -25,6 +27,11 @@ target_link_libraries(
         QindaQt::SettingsClient
         QindaQt::ShellCustomizationEditor
         Qt6::Core Qt6::Qml
+    PRIVATE
+        # AGENT-CONTRACT: the Customize canvas previews the configured
+        # wallpaper through the public Settings Appearance wallpaper
+        # values/catalog only; Appearance model internals stay untouched.
+        qindaqt_settings_appearance
 )
 target_compile_features(qindaqt_settings_customize PUBLIC cxx_std_20)
 set_target_properties(
@@ -73,7 +80,8 @@ qt_add_qml_module(
 target_link_libraries(
     qindaqt_settings_customize_qml
     PRIVATE
-        qindaqt_settings_customize QindaQt::TokensQml QindaQt::ShellIcons
+        qindaqt_settings_customize qindaqt_settings_appearance
+        QindaQt::TokensQml QindaQt::ShellIcons
         Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
 )
 add_dependencies(
@@ -86,6 +94,7 @@ target_compile_definitions(
     QINDAQT_CUSTOMIZE_INSTALL_DATA_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt"
     QINDAQT_CUSTOMIZE_SOURCE_PROFILE_DIRECTORY="${PROJECT_SOURCE_DIR}/data/profiles"
     QINDAQT_CUSTOMIZE_SOURCE_MANIFEST_DIRECTORY="${PROJECT_SOURCE_DIR}/data/applets"
+    QINDAQT_CUSTOMIZE_SOURCE_WALLPAPER_DIRECTORY="${PROJECT_SOURCE_DIR}/data/wallpapers"
 )
 set_target_properties(
     qindaqt_settings_customize_qml PROPERTIES

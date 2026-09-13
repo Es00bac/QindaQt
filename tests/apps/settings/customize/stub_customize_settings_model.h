@@ -2,9 +2,46 @@
 #pragma once
 
 #include <QObject>
+#include <QUrl>
 #include <QVariantList>
 
 namespace QindaQt::Apps::SettingsCustomize::TestSupport {
+
+// Test stand-in for CustomizeWallpaperPreview: the same source/mode/status
+// shape the production projection publishes, driven directly by each row.
+class StubCustomizeWallpaperPreview final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QUrl source READ source NOTIFY changed)
+    Q_PROPERTY(QString mode READ mode NOTIFY changed)
+    Q_PROPERTY(QString status READ status NOTIFY changed)
+
+public:
+    explicit StubCustomizeWallpaperPreview(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    [[nodiscard]] QUrl source() const { return m_source; }
+    [[nodiscard]] QString mode() const { return m_mode; }
+    [[nodiscard]] QString status() const { return m_status; }
+
+    void configure(const QUrl &source, const QString &mode,
+                   const QString &status = QStringLiteral("ready"))
+    {
+        m_source = source;
+        m_mode = mode;
+        m_status = status;
+        Q_EMIT changed();
+    }
+
+Q_SIGNALS:
+    void changed();
+
+private:
+    QUrl m_source;
+    QString m_mode{QStringLiteral("scaled")};
+    QString m_status{QStringLiteral("none")};
+};
 
 class StubCustomizeSettingsModel final : public QObject {
     Q_OBJECT
@@ -36,6 +73,7 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString selectedAppletId READ emptyString CONSTANT)
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY contentChanged)
     Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY contentChanged)
+    Q_PROPERTY(QObject *wallpaperPreview READ wallpaperPreview CONSTANT)
 
 public:
     explicit StubCustomizeSettingsModel(QObject *parent = nullptr)
@@ -123,6 +161,11 @@ public:
     [[nodiscard]] QString selectedKind() const { return m_selectedKind; }
     [[nodiscard]] QString selectedPanelId() const { return QStringLiteral("bar"); }
     [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
+    [[nodiscard]] QObject *wallpaperPreview() { return &m_wallpaperPreview; }
+    [[nodiscard]] StubCustomizeWallpaperPreview *wallpaperPreviewFixture()
+    {
+        return &m_wallpaperPreview;
+    }
     [[nodiscard]] QVariantMap selectedProperties() const
     {
         if (m_selectedKind == QLatin1String("applet")) {
@@ -271,6 +314,7 @@ private:
     bool m_primaryDisplayAvailable = true;
     QString m_selectedKind = QStringLiteral("panel");
     QString m_appletSettingError;
+    StubCustomizeWallpaperPreview m_wallpaperPreview{this};
 };
 
 } // namespace QindaQt::Apps::SettingsCustomize::TestSupport
