@@ -461,7 +461,7 @@
           "title": "Direct WYSIWYG customization and reveal affordances",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan. Settings Customize now also derives revisioned output truth and exposes fail-closed Primary display versus All displays panel placement choices.",
+          "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan. Settings Customize now also derives revisioned output truth, exposes fail-closed Primary display versus All displays panel placement choices, edits declared boolean/integer/enum applet settings with bounded validation, and renders the configured wallpaper and mode instead of a decorative-only gradient.",
           "evidence": [
             {
               "kind": "commit",
@@ -487,6 +487,11 @@
               "kind": "commit",
               "reference": "fc7be200",
               "summary": "Exact display-scope candidate 2f6e31eb received independent Sonnet/high ACCEPT and is integrated; the retained manager build completed and the five affected Customize rows pass 5/5. Installed/live and physical multi-output qualification remain separate."
+            },
+            {
+              "kind": "commit",
+              "reference": "cf939e69",
+              "summary": "Accepted wallpaper and repaired applet-settings stack is integrated as 9594bb7f, dd405f81 and cf939e69. The manager warning-fatal affected build and eight non-installed Customize rows pass; docs 250, strict MkDocs and diff checks pass."
             }
           ],
           "caveat": "The running shell adopts a saved profile only at its next start: provisional live-shell binding, reveal affordances, the rendered nested matrix, and installed-session behavior remain later outcomes."

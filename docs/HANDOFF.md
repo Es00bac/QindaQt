@@ -44,6 +44,15 @@ are untouched. Red-before evidence: the new page row failed on the exact base
 with `'wallpaper != nullptr' returned FALSE` — the base canvas rendered only
 the gradient despite configured wallpaper truth.
 
+The wallpaper candidate `96d361ad` received independent ACCEPT, and exact
+descendant `b542ad2a` repaired all three applet-settings review findings:
+integer narrowing, malformed integer/enum schemas, and compact/wide keyboard
+interaction proof. The stack is integrated as `9594bb7f`, `dd405f81`, and
+`cf939e69`. The integrated warning-fatal build completed and all eight
+non-installed Customize rows pass 8/8; docs 250, strict MkDocs, and diff checks
+pass. The unchanged installed-route session-bus timeout remains unclaimed, and
+truthful contained-window chrome is a separate active successor.
+
 The File Manager worker's exact candidate
 `ae9865d5feed9c20264bbf1ff00e519937082462` received independent Z.AI GLM
 ACCEPT and is integrated as `7067f509`. The manager configured a fresh strict

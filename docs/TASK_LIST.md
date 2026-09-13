@@ -72,6 +72,14 @@ replacement listing cancels the prior generation. The integrated-tree network
 rows pass 2/2; docs 250, strict MkDocs, and diff checks pass. Remote regular-file
 opening remains active and installed/live access is not claimed.
 
+Customize applet editing and configured-wallpaper preview are integrated as
+the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
+`b542ad2a` closes unsafe integer narrowing, malformed integer/enum schema
+classification, and compact/wide keyboard-accessibility proof. The integrated
+non-installed Customize selector passes 8/8; docs 250, strict MkDocs, and diff
+checks pass. The installed-route session-bus timeout and truthful contained
+window chrome remain separate boundaries.
+
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
 **Completed September 10.** The product owner retired the custom token UI for
