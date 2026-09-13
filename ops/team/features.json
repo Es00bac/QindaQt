@@ -61,16 +61,16 @@
             "reference": "docs/wiki/development/implementation-roadmap.md",
             "summary": "The public roadmap records Hybrid interaction as Complete."
           },
-        {
-          "kind": "test",
-          "reference": "docs/wiki/development/testing-harness.md",
-          "summary": "The focused Hybrid selectors and private live workflows are the authoritative acceptance record."
-        },
-        {
-          "kind": "commit",
-          "reference": "0dcefa425b2f0a4ccfd5bd22f70154198f7acb2e",
-          "summary": "The exact same-reviewer-accepted container-shade descendant is integrated as a117c109 plus mode repair 86c9eb36. Reviewer former-red rows pass 4/4; manager controller/unit rows pass 2/2 and nested rows pass 3/4, with the fourth stopping before product verdict on the disclosed placement-sensitive fixture defect. No installed adoption is claimed."
-        }
+          {
+            "kind": "test",
+            "reference": "docs/wiki/development/testing-harness.md",
+            "summary": "The focused Hybrid selectors and private live workflows are the authoritative acceptance record."
+          },
+          {
+            "kind": "commit",
+            "reference": "0dcefa425b2f0a4ccfd5bd22f70154198f7acb2e",
+            "summary": "The exact same-reviewer-accepted container-shade descendant is integrated as a117c109 plus mode repair 86c9eb36. Reviewer former-red rows pass 4/4; manager controller/unit rows pass 2/2 and nested rows pass 3/4, with the fourth stopping before product verdict on the disclosed placement-sensitive fixture defect. No installed adoption is claimed."
+          }
         ]
       },
       "caveat": "Persisted login topology, mixed-DPI migration, and physical input/DRM/GPU coverage remain later Platform or Release gates."
@@ -1258,7 +1258,7 @@
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The September 8 checkpoint adds independent ANSI contrast, readable search and native profile dialogs, live themed icons and font/accessibility updates. Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The redesigned single-shell interface is installed through the September 8 desktop package.",
+          "summary": "The September 8 checkpoint adds independent ANSI contrast, readable search and native profile dialogs, live themed icons and font/accessibility updates. Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The redesigned single-shell interface is installed through the September 8 desktop package. Audible BEL handling now preserves the configured beep and requests standard Qt window attention only for the owning visible top-level Terminal window.",
           "evidence": [
             {
               "kind": "commit",
@@ -1304,6 +1304,11 @@
               "kind": "test",
               "reference": "docs/HANDOFF.md",
               "summary": "September 8 redesign installed through signed gui-wm/qindaqt-desktop-0.1.0_pre20260908. All1,067 payload files match the verified package and Portage ownership. Installed File Manager UI actions and native Editor startup/Terminal real-PTY checks pass; existing sessions preserved at explicit user direction."
+            },
+            {
+              "kind": "commit",
+              "reference": "53402c13b72d96273b6b0a3bdd5902893d4b5875",
+              "summary": "Exact Terminal audible-attention candidate received independent GLM ACCEPT and is integrated as 4a39d5bb. The integrated four-target build and exact Terminal plus read-only Task List selector pass 6/6 under isolation; no live bell or package adoption is claimed."
             }
           ],
           "caveat": "GPU rendering, later terminal capabilities, whole-application assistive-technology and physical display/input qualification remain."
