@@ -2555,6 +2555,26 @@ Integrated evidence:
 - No active desktop, user session bus, global input, host audio graph/device,
   physical display, or physical screen lock was touched by this evidence.
 
+## September 12 File Manager S5 network browsing integration
+
+- Exact File Manager S5 candidate `da0d1d55` and its independently accepted
+  repair `f05f196e` are integrated as `dab497c7` and `c4f5385b`. The public
+  boundary now browses bounded asynchronous `smb://` and `sftp://` locations
+  through injected KIO, keeps local behavior intact, leaves Empty Trash gated
+  only by mutation activity, and disables every Filter entry point while a
+  remote folder is current.
+- The integrated tree rebuilt the application and four new network/action test
+  binaries warning-fatally. The exact network-location, navigation-controller,
+  KIO-backend, mutation-action-binding, global-menu identity-policy and private-
+  bus export rows pass 6/6 with the documented offscreen environment. The
+  private-bus row initially lacked its separately registered helper binary;
+  building that target and rerunning only the failed row passed, without a
+  duplicate full gate.
+- This is source integration, not installed/live adoption. Real credentials,
+  mounts, network previews, and assistive-technology qualification remain
+  separate. The review's nonblocking P3 is to encode the offscreen environment
+  directly on the new CTest registration when that row is next touched.
+
 ## Next outcome
 
 Extend the accepted private interactive desktop S2 evidence described in
