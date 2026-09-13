@@ -99,7 +99,11 @@ integer narrowing, malformed integer/enum schemas, and compact/wide keyboard
 interaction proof. The stack is integrated as `9594bb7f`, `dd405f81`, and
 `cf939e69`. The integrated warning-fatal build completed and all eight
 non-installed Customize rows pass 8/8; docs 250, strict MkDocs, and diff checks
-pass. The unchanged installed-route session-bus timeout remains unclaimed.
+pass. Exact independently accepted test-isolation candidate `94ee62e8` is
+integrated as `65ef555b`: the installed-route harness now hides only an ambient
+host QindaQt module inside a private mount namespace while retaining the staged
+package proof. The integrated exact Customize selector passes 10/10, including
+the installed route; no installed package or live Settings session was mutated.
 
 The truthful contained-window preview lineage `eee34543` → `0448e9eb` →
 `5a647721` is independently accepted and integrated as `eefa25e8` →
@@ -107,7 +111,7 @@ The truthful contained-window preview lineage `eee34543` → `0448e9eb` →
 resolver/painter, subscribes to both required appearance theme keys, and proves
 non-fallback and independent-key adoption. The integrated non-installed
 Customize selector passes 9/9; docs 251, strict MkDocs, rendered-literal, shape,
-and diff checks pass. Installed/live Settings adoption remains unclaimed.
+and diff checks pass. Live Settings adoption remains unclaimed.
 
 The File Manager worker's exact candidate
 `ae9865d5feed9c20264bbf1ff00e519937082462` received independent Z.AI GLM

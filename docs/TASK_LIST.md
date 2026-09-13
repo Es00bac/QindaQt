@@ -103,8 +103,10 @@ checks pass. Truthful contained-window preview lineage `eee34543` → `0448e9eb`
 `df8a2679` → `5fba7edb`; it reuses the compositor decoration resolver/painter
 and consumes both required theme keys. The combined integrated non-installed
 Customize selector passes 9/9; docs 251, strict MkDocs, shape and diff checks
-pass. The installed-route session-bus timeout and live Settings adoption remain
-separate boundaries.
+pass. Exact independently accepted isolation candidate `94ee62e8` is integrated
+as `65ef555b`; the exact Customize selector now passes 10/10, including the
+staged installed route while an ambient host QindaQt module is hidden in a
+private mount namespace. Live Settings adoption remains a separate boundary.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
