@@ -602,7 +602,15 @@ The `global-menu-native-switch-qml-offscreen` row exercises the production
 failure order directly: open Edit, press File, verify File has replaced Edit
 before release, then verify release leaves File open. It also proves hover
 switching only occurs while a menu is open and File/New calls the facade once.
-The `global-menu-native-submenu-qml-offscreen` row pins recursive tree
+With `available` unchanged, the same row republishes the top-level projection
+with fewer and then with no entries while a real `Popup.Window` menu is open:
+the obsolete popup must retire synchronously with the republish, the retired
+generation must not dispatch, a queued Down-press focus callback — re-minted
+in the same turn because offscreen key delivery itself drains the deferred
+queue — must flush only after that retirement and leave the fresh projection
+closed, and the
+fresh projection must dispatch exactly
+once. The `global-menu-native-submenu-qml-offscreen` row pins recursive tree
 projection, separators, disabled and checked state, the depth cap, provider
 loss, keyboard traversal, and single activation.
 
