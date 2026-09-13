@@ -60,6 +60,8 @@ private slots:
   void aUrlMismatchCallbackIsDiscarded();
   void truncatedRemoteListingsAreReported();
   void navigatingBackToALocalPathClearsRemoteActiveAndCancels();
+  void refreshCancelsTheSupersededRemoteGeneration();
+  void remoteToRemoteNavigationCancelsTheSupersededGeneration();
   void activatingARemoteDirectoryNavigatesToItsChildUrl();
   void activatingARemoteFileIsTruthfullyDisabled();
   void destructionWithAPendingRequestDoesNotCrash();
@@ -242,6 +244,46 @@ void TestNavigationControllerNetwork::
   QCOMPARE(controller.remoteActive(), false);
   QCOMPARE(controller.statusKey(), QStringLiteral("empty"));
   QVERIFY(rawBackend->cancelled().contains(generation));
+}
+
+// Review P1 (ADR-0151): a superseded remote job may still be showing KIO's
+// credential prompt, so refresh must retire it, not just fence its result.
+void TestNavigationControllerNetwork::refreshCancelsTheSupersededRemoteGeneration() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  controller.navigateTo(url.toString());
+  const quint64 firstGeneration = rawBackend->requests().last().generation;
+
+  controller.refresh();
+  QCOMPARE(rawBackend->requests().size(), 2);
+  const quint64 secondGeneration = rawBackend->requests().last().generation;
+  QVERIFY(secondGeneration != firstGeneration);
+  QVERIFY2(rawBackend->cancelled().contains(firstGeneration),
+           "refresh left the superseded remote job (and any prompt) alive");
+}
+
+// Review P1 (ADR-0151): same retirement obligation when navigating from one
+// remote folder straight into another.
+void TestNavigationControllerNetwork::remoteToRemoteNavigationCancelsTheSupersededGeneration() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend));
+
+  controller.navigateTo(QStringLiteral("smb://server/share"));
+  const quint64 firstGeneration = rawBackend->requests().last().generation;
+
+  const QString secondUrl = QStringLiteral("smb://server/other");
+  controller.navigateTo(secondUrl);
+  QCOMPARE(rawBackend->requests().size(), 2);
+  QCOMPARE(rawBackend->requests().last().url.toString(), secondUrl);
+  QVERIFY(rawBackend->requests().last().generation != firstGeneration);
+  QVERIFY2(rawBackend->cancelled().contains(firstGeneration),
+           "remote-to-remote navigation left the superseded job (and any prompt) alive");
 }
 
 void TestNavigationControllerNetwork::activatingARemoteDirectoryNavigatesToItsChildUrl() {

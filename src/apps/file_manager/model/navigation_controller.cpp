@@ -445,6 +445,14 @@ void NavigationController::enterRemote(const QUrl &url) {
 }
 
 void NavigationController::requestRemoteListing() {
+  // ADR-0151 / review P1: a superseded remote job can still own KIO's
+  // credential prompt, so retire the current pending generation before any
+  // replacement request (refresh, remote-to-remote navigation, guest
+  // clearance). cancel() of an unknown generation is a documented no-op, so
+  // a first remote entry is unaffected.
+  if (m_remoteActive && m_networkBackend) {
+    m_networkBackend->cancel(m_listingGeneration);
+  }
   ++m_listingGeneration;
   m_truncated = false;
   m_listedEntries.clear();
