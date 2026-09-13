@@ -1,4 +1,4 @@
-# ADR-0149: Admit immediate external-output brightness through Display1
+# ADR-0150: Admit immediate external-output brightness through Display1
 
 - **Status:** Accepted
 - **Date:** 2026-09-12

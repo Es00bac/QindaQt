@@ -434,7 +434,7 @@ operational.
 
 ## Immediate D7 brightness
 
-[ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)
+[ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)
 fixes this contract. The exact values are in
 [Display1 version 1](../reference/display1-v1.md#immediate-brightness-d7).
 

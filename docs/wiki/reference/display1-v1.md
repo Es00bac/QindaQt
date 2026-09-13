@@ -422,7 +422,7 @@ classification only until its platform lane proves error semantics.
 
 ## Immediate brightness (D7)
 
-[ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)
+[ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)
 adds two methods to version 1. `GetSnapshot`, its signature, the canonical
 codecs, and the D1 machine are unchanged. `Changed` is the single invalidation
 hint for both reads.
