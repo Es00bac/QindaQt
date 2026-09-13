@@ -236,15 +236,26 @@ layoutHostingFollowsResolvedGlobalMenuInstances()
     QVERIFY(seen.contains(windowAttached));
     QVERIFY(defaultProfile != nullptr);
 
-    // Resolution decides, not the plugin id alone: the manifest admits only
-    // horizontal panel zones, so the same instance on a side edge never
-    // renders and must not claim the registrar either.
+    // Resolution decides, not the plugin id alone: the manifest admits side
+    // panels, so the same instance on a left edge renders and claims the
+    // registrar, while a zone the manifest does not admit never renders and
+    // must not claim it either.
     Profiles::LayoutProfile sideways = *defaultProfile;
     for (auto &panel : sideways.panels) {
         panel.edge = Profiles::Edge::Left;
     }
-    QVERIFY(!Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+    QVERIFY(Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
         sideways, fixture.catalog, fixture.policy));
+    Profiles::LayoutProfile unsupportedZone = sideways;
+    for (auto &panel : unsupportedZone.panels) {
+        for (auto &applet : panel.applets) {
+            if (applet.plugin == QLatin1String("global-menu")) {
+                applet.settings[QStringLiteral("zone")] = QStringLiteral("end");
+            }
+        }
+    }
+    QVERIFY(!Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
+        unsupportedZone, fixture.catalog, fixture.policy));
     QVERIFY(!Shell::GlobalMenuAppletComposition::layoutHostsGlobalMenu(
         Profiles::LayoutProfile{}, fixture.catalog, fixture.policy));
 }

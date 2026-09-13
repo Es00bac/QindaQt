@@ -326,7 +326,7 @@ shell therefore owns it only while the active layout hosts a renderer
 `GlobalMenuAppletComposition::layoutHostsGlobalMenu` resolves every
 `global-menu` panel or desktop instance through `AppletInstanceResolver`, the
 same path the panel dispatcher and desktop surface render from, so an instance
-rejected by placement (the manifest admits only horizontal panel zones), host,
+rejected by placement (a zone or panel edge its manifest does not admit), host,
 implementation, or policy never claims the name. `ShellRuntimeApplication`
 calls `followLayout` at startup and after every live layout adoption
 ([ADR-0122](../adr/0122-adopt-saved-layout-preferences-live.md)): a hosting
@@ -609,9 +609,10 @@ edge comes from the hosting `RuntimePanel` model; the applet's explicit
 `panelEdge` overrides it, and hosts without a panel model open away from the
 nearer output edge across the bar. The anchor position is window-local, so the
 compositor's popup positioner remains the backstop, and submenus keep Qt's
-cascade placement. The stock manifest still admits the applet only in
-horizontal panel zones; left and right placement applies to hosts that use the
-vertical layout.
+cascade placement. The manifest admits horizontal and vertical panels, so a
+user-authored left or right panel resolves the same compiled entry point and
+hosts the vertical layout with this placement; stock profiles still place the
+applet only on top panels.
 
 The `qindaqt.global-menu-popup-placement-qml-offscreen` row hosts the compiled
 applet in frameless panel windows at exact output positions. It proves
@@ -667,9 +668,12 @@ The existing `global-menu` manifest requests `global-menu.read` and
 `windows.activate`. The audited built-in policy grants only
 `global-menu.read`; it explicitly denies `windows.activate` because menu
 events do not activate arbitrary windows. The compiled built-in registry maps
-`QindaQt.Shell.GlobalMenu` to the in-process host. Stock placement remains
-limited to QindaQt, macOS, and Unity families, each on a top panel and only
-when `workflow.globalMenu` is true.
+`QindaQt.Shell.GlobalMenu` to the in-process host. The manifest admits the
+start, center, and fill panel zones on horizontal and vertical panels, so a
+user-authored left or right panel resolves the same entry point with the same
+`global-menu.read` grant; the end zone and unknown edges stay rejected. Stock
+placement remains limited to QindaQt, macOS, and Unity families, each on a top
+panel and only when `workflow.globalMenu` is true.
 
 `GlobalMenuAppletRuntime` installs the production shell, global-menu module
 library/plugin/QML metadata and sources, the embedded registrar/transport
@@ -737,7 +741,8 @@ with a separate assertion that no zone scroll bar owns those points; see
 `qindaqt.global-menu-installed-package`, and the shared
 `qindaqt.shell-runtime-component-closure`. ADR-0130 residency is covered by
 `GlobalMenuRuntimeCompositionTest::layoutHostingFollowsResolvedGlobalMenuInstances`
-(every stock layout, plus a side-edge placement rejection) and
+(every stock layout, a hosting side-edge layout, and an unsupported-zone
+rejection) and
 `::registrarResidencyFollowsLayoutAdoption` (claim, no churn on re-adoption,
 release, reclaim over the live adoption catalog reload) in the
 runtime-composition row,

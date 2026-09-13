@@ -60,6 +60,7 @@ private slots:
     void stockProfilesPlaceOneResolvedStatusNotifier();
     void resolvesDesktopZoneWithoutAPanelEdge();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
+    void globalMenuResolvesOnVerticalPanelsWithLeastAuthority();
     void desktopControlsResolveReadyInEveryStockPlacement();
 };
 
@@ -222,13 +223,13 @@ void AppletInstanceResolverTests::rejectsMissingManifestsAndUnsupportedPlacement
              QStringLiteral("missing-manifest"));
     QVERIFY(!missing.diagnostic.isEmpty());
 
-    const auto verticalMenu = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
-        instance(QStringLiteral("global-menu")), Profiles::Edge::Left,
+    const auto verticalControl = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("active-application")), Profiles::Edge::Left,
         fixture.catalog, fixture.policy, fixture.registry);
-    QCOMPARE(AppletRuntime::toString(verticalMenu.status),
+    QCOMPARE(AppletRuntime::toString(verticalControl.status),
              QStringLiteral("placement-rejected"));
-    QCOMPARE(verticalMenu.entryPoint,
-             QStringLiteral("qindaqt.applets.global-menu"));
+    QCOMPARE(verticalControl.entryPoint,
+             QStringLiteral("qindaqt.applets.active-application"));
 
     auto badZone = instance(QStringLiteral("clock"));
     badZone.settings[QStringLiteral("zone")] = QStringLiteral("diagonal");
@@ -540,6 +541,39 @@ void AppletInstanceResolverTests::globalMenuUsesLeastAuthorityAndStockTopPanels(
         }
     }
     QCOMPARE(enabledFamilies, 3);
+}
+
+void AppletInstanceResolverTests::globalMenuResolvesOnVerticalPanelsWithLeastAuthority()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    const auto resolveMenu = [&fixture](const QString &zone, Profiles::Edge edge) {
+        auto menu = instance(QStringLiteral("global-menu"));
+        menu.settings[QStringLiteral("zone")] = zone;
+        return AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            menu, edge, fixture.catalog, fixture.policy, fixture.registry);
+    };
+    const auto top = resolveMenu(QStringLiteral("start"), Profiles::Edge::Top);
+    QVERIFY2(top.ready(), qPrintable(top.diagnostic));
+    // A user-authored side panel hosts the compiled vertical layout with the same
+    // entry point; policy still grants only global-menu.read.
+    for (const Profiles::Edge edge : {Profiles::Edge::Left, Profiles::Edge::Right}) {
+        for (const QString &zone : {QStringLiteral("start"), QStringLiteral("center"),
+                                    QStringLiteral("fill")}) {
+            const auto resolved = resolveMenu(zone, edge);
+            QVERIFY2(resolved.ready(), qPrintable(zone + QStringLiteral(": ") + resolved.diagnostic));
+            QCOMPARE(resolved.entryPoint, top.entryPoint);
+            QCOMPARE(resolved.grantedCapabilities, QStringList{QStringLiteral("global-menu.read")});
+        }
+        for (const QString &zone : {QStringLiteral("end"), QStringLiteral("diagonal")}) {
+            QCOMPARE(AppletRuntime::toString(resolveMenu(zone, edge).status),
+                     QStringLiteral("placement-rejected"));
+        }
+    }
+    QCOMPARE(AppletRuntime::toString(
+                 resolveMenu(QStringLiteral("start"), static_cast<Profiles::Edge>(99)).status),
+             QStringLiteral("placement-rejected"));
 }
 
 void AppletInstanceResolverTests::desktopControlsResolveReadyInEveryStockPlacement()
