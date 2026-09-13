@@ -1,5 +1,34 @@
 # Integration handoff
 
+## September 13 marquee selection and multi-file operations
+
+Exact feature source `0937baaa3c2cd08a3864f565c1bf68d0d9ce59b4` is
+installed as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r5`; packaging commit
+`d64c2518` adds the pinned ebuild and Manifest. Desktop icons now support
+rubber-band marquee selection (Shift unions, Control toggles, empty click
+clears), Ctrl/Shift-click ranges, Ctrl+A, group drag with per-icon persisted
+placement, Delete-to-Trash, and a selection-scoped icon menu (Cut/Copy/
+Delete) with a clipboard-gated Paste on the desktop menu. DesktopContents
+Controller composes a ClipboardController through the existing FileBoundary
+seam, so desktop cut/copy/paste is byte-identical to File Manager's policy,
+and batch Trash rides the identity-fenced mutation batch contract. File
+Manager gains the same marquee gesture in both views through a shared
+SelectionBand, alternating Details-row backgrounds, and a 16-128 logical
+pixel zoom ladder (desktop icon size widened to the same range).
+
+Focused evidence: desktop-surface rows 8/8 (marquee, modifier gestures, group
+drag persistence, delete-to-trash through the menu, clipboard round-trip,
+icon clamp), the full file-manager label 45/45 (marquee/zebra viewport rows,
+zoom ladder), applet manifest/catalog rows, and the documentation validator
+over all 261 pages; strict MkDocs remains unavailable because no `mkdocs`
+executable is installed. Portage inherited `MAKEOPTS=-j24 -l24` and completed
+the exact r5 upgrade; `qcheck` reports 1,340/1,340 files good, and
+qindaqt-file-manager plus qindaqt-shell have complete shared-library closure.
+Only the supervised shell child was restarted: PID 3804762 maps the same
+inode as installed `/usr/bin/qindaqt-shell`; compositor 3106023 and session
+3106115 stayed up. Physical marquee/drag/paste acceptance remains with the
+user because production input injection correctly remains disabled.
+
 ## September 13 cursor-positioned menus and movable Desktop icons
 
 Exact feature source `4a593fd971f560964a8958db753af8bc51ceaccc` is

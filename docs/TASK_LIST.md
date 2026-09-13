@@ -7,8 +7,16 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Installed delivery checkpoint (September 13)
 
-Exact source `4a593fd971f560964a8958db753af8bc51ceaccc` is installed through
-Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r4`. The earlier repair
+Exact source `0937baaa3c2cd08a3864f565c1bf68d0d9ce59b4` is installed through
+Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r5`. Revision r5 adds
+rubber-band marquee selection to Desktop icons and both File Manager views
+(Shift unions, Control toggles, empty click clears), Ctrl/Shift-click and
+Ctrl+A multi-selection, Desktop group drag with per-icon persisted placement,
+Delete-to-Trash and a selection-scoped Cut/Copy/Delete icon menu, a
+clipboard-gated Paste on the desktop menu (composed through the existing
+FileBoundary seam so desktop clipboard policy stays byte-identical to File
+Manager), alternating Details-row backgrounds in File Manager, and a 16-128
+logical-pixel icon size range everywhere. The prior r4 source The earlier repair
 restores the shared session bus and supervised global-shortcut daemon, safe Display service
 activation, live decoration-control placement, all six selectable appearance
 themes, desktop applet editing and Desktop Icons, Dock task-list connectivity,
@@ -24,11 +32,11 @@ Applications menus beneath the physical pointer, makes Desktop icons freely
 movable with persistent per-screen placement, and adds per-icon Open/Rename
 menus backed by File Manager's identity-fenced mutation controller.
 
-The source build inherited the configured `MAKEOPTS=-j24 -l24`; the host plan
-contained exactly one package upgrade. `qcheck` verifies 1,339/1,339 files, the
-installed VDB ebuild records the exact source pin, all inspected executables and
-native plugins have complete shared-library closure, and the installed KWin
-6.6.6 release contract passes. A private installed compositor launch loaded the
+The r5 source build inherited the configured `MAKEOPTS=-j24 -l24`; the host
+plan contained exactly one package upgrade. `qcheck` verifies 1,340/1,340
+files, the installed VDB ebuild records the exact source pin, and all
+inspected executables and native plugins have complete shared-library closure.
+The supervised live shell was replaced and now maps the installed r5 inode. A private installed compositor launch loaded the
 QindaQt plugin and propagated one newly bootstrapped D-Bus address to its child
 session. The installed shell independently enumerates all 12 profiles, six
 themes, and 26 applets. Portage owns the installed runtime; there were no raw
