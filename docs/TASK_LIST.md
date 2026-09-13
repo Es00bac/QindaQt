@@ -7,8 +7,8 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Installed delivery checkpoint (September 13)
 
-Exact source `33504d61f0bcb573c3f7ded20beab5858a254d0c` is installed through
-Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r3`. The earlier repair
+Exact source `4a593fd971f560964a8958db753af8bc51ceaccc` is installed through
+Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r4`. The earlier repair
 restores the shared session bus and supervised global-shortcut daemon, safe Display service
 activation, live decoration-control placement, all six selectable appearance
 themes, desktop applet editing and Desktop Icons, Dock task-list connectivity,
@@ -19,10 +19,13 @@ AppShell/KIO dependency. Revision r2 adds the actual installed KWin decoration
 catalog and repairs the Customize canvas so the top bar, Dock, and applets are
 visible and interactive. Revision r3 gives the desktop context menu positive
 Wayland surface dimensions, preventing the fatal protocol disconnect observed
-on physical right-clicks.
+on physical right-clicks. Revision r4 anchors the desktop context and
+Applications menus beneath the physical pointer, makes Desktop icons freely
+movable with persistent per-screen placement, and adds per-icon Open/Rename
+menus backed by File Manager's identity-fenced mutation controller.
 
 The source build inherited the configured `MAKEOPTS=-j24 -l24`; the host plan
-contained exactly one package upgrade. `qcheck` verifies 1,337/1,337 files, the
+contained exactly one package upgrade. `qcheck` verifies 1,339/1,339 files, the
 installed VDB ebuild records the exact source pin, all inspected executables and
 native plugins have complete shared-library closure, and the installed KWin
 6.6.6 release contract passes. A private installed compositor launch loaded the
@@ -31,12 +34,21 @@ session. The installed shell independently enumerates all 12 profiles, six
 themes, and 26 applets. Portage owns the installed runtime; there were no raw
 `/usr` copies, and both the prior package and a fresh pre-merge rollback package
 remain available. The compositor and session remain running; only the
-supervised shell child and Settings application were replaced, and both now map
-the installed r3 files. A post-r3 physical right-click remains the user-visible
-acceptance gesture because production test-input injection is intentionally
-disabled.
+supervised shell child was replaced and now maps the installed r4 inode.
+Physical cursor placement, drag, and rename remain the user-visible acceptance
+gestures because production test-input injection is intentionally disabled.
 
 ## Active outcomes
+
+### Movable, editable Desktop icons and cursor-positioned menus (September 13)
+
+Installed r4 fixes both compositor-corner popup placements by parenting each
+window popup to a pointer-positioned one-pixel Wayland anchor. Desktop icons
+can be dragged inside their output and persist by output plus device/inode
+identity, so rename keeps the chosen position. Each icon owns an Open/Rename
+context menu; rename crosses only the existing File Manager mutation boundary.
+Five focused desktop-surface rows pass, the documentation validator covers all
+261 pages, and ADR-0161 records the new persistence contract.
 
 ### Truthful window decorations and usable Customize canvas (September 13)
 

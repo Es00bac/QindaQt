@@ -1,5 +1,32 @@
 # Integration handoff
 
+## September 13 cursor-positioned menus and movable Desktop icons
+
+Exact feature source `4a593fd971f560964a8958db753af8bc51ceaccc` is
+installed as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r4`; packaging commit
+`8eddf713` adds the pinned ebuild and Manifest. Both the empty-desktop context
+menu and middle-click Applications menu now use pointer-positioned one-pixel
+parents, matching Wayland's xdg popup anchor semantics instead of assigning
+ignored `Popup.x`/`Popup.y` values.
+
+Desktop tiles now support bounded drag placement, persisted atomically per
+output and device/inode identity. Each tile consumes right-click itself and
+opens an Open/Rename menu under the cursor. Rename uses the complete identity
+from the last Desktop listing through File Manager's existing asynchronous
+mutation controller, then refreshes on commit; no filesystem authority moved
+into QML or the shell presentation. ADR-0161 records the contract.
+
+The five focused desktop-surface rows pass, including real temporary-directory
+rename, malformed layout rejection, pointer menus, a multi-event drag and
+stored-position inspection. `tools/validate-docs` validates 261 documents and
+navigation; strict MkDocs is unavailable because no `mkdocs` executable is
+installed. Portage inherited `MAKEOPTS=-j24 -l24`, completed the exact r4
+upgrade, and `qcheck` reports 1,339/1,339 files good. Only the supervised shell
+child was restarted: PID 3356594 maps the same inode as installed
+`/usr/bin/qindaqt-shell`; compositor 3106023 and session 3106115 stayed up.
+Physical cursor/drag/rename acceptance remains with the user because production
+input injection correctly remains disabled.
+
 ## September 13 Appearance/Customize deployment and desktop-menu recovery
 
 Exact source `33504d61f0bcb573c3f7ded20beab5858a254d0c` is installed as
