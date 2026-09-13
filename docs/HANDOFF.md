@@ -48,8 +48,21 @@ SMB/SFTP child within its current remote folder through KIO's standard rename
 facility, with generation fencing and no optimistic display. The integrated
 eight-row File Manager/bootstrap selector passes 8/8 with the action-binding
 row's required offscreen platform; docs validate 252 pages, strict MkDocs and
-the integration diff check pass. Remote create/copy/move/write operations and
-installed/live credential validation remain separate boundaries.
+the integration diff check pass.
+
+Remote New Folder candidate `504dd87a` was independently rejected only because
+its combined navigation test exceeded the repository's 600-line hard limit.
+Exact same-author, test-only split `12e4ef49` received bounded same-reviewer
+ACCEPT after conserving all 34 functions and returning both test sources below
+500 non-blank lines. The lineage is integrated as `9f5cce93` plus `8ddf96af`.
+One validated folder in the active SMB/SFTP location is now created through
+KIO's standard `mkdir` facility with generation fencing, cancellation and no
+optimistic display. The strict affected build and exact integrated-tree
+nine-row selector pass 9/9, including the newly split
+`qindaqt.file-manager-navigation-controller-network-mutation` row; documentation
+validates 253 pages, strict MkDocs and the integration diff check pass. Remote
+copy/move/write operations and installed/live credential validation remain
+separate boundaries.
 
 Worker and reviewer terminals used the existing direct-TTY, independent
 user-systemd lifetime rule, and long integration gates use the existing
