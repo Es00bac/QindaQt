@@ -132,5 +132,132 @@ Item {
             tryCompare(fileMenu, "opened", false)
         }
 
+        // Observed on Qt 6.11.1: member reads on a destroyed QObject resolve
+        // to undefined instead of throwing, so `!menu.opened` already reads
+        // as total retirement for a destroyed delegate; the catch only
+        // guarantees a dangling reference can never abort the row. A retired
+        // menu is destroyed (removed delegate) or closed (retained delegate
+        // whose projection was rebuilt); a live open popup is the defect
+        // this guards against.
+        function retired(menu) {
+            if (menu === null)
+                return true
+            try {
+                return !menu.opened
+            } catch (error) {
+                return true
+            }
+        }
+
+        function test_republishWithFewerEntriesRetiresOpenPopup() {
+            const bar = menuBar()
+            const fileMenu = bar.menuAt(0)
+            const staleAction = fileMenu.itemAt(0)
+            compare(staleAction.text, "New")
+            mouseClick(bar.itemAt(0))
+            tryCompare(fileMenu, "opened", true)
+            compare(fileMenu.popupType, Popup.Window)
+
+            // The provider republishes a smaller top-level projection while
+            // available stays true: File disappears entirely. Its open native
+            // popup must be retired with the removed projection before any
+            // new interaction, and the retired generation must not dispatch.
+            fakeAccess.items = menuItems().slice(1)
+            // Strict same-turn reads with no event-loop spin: a retirement
+            // deferred through Qt.callLater would leave the bar oversized and
+            // the obsolete popup open right here, so a polling check would
+            // hide that defect instead of failing on it.
+            compare(bar.count, 1)
+            compare(bar.menuAt(0).menuData.id, "edit")
+            verify(retired(fileMenu),
+                   "obsolete popup must retire synchronously with the republish")
+            // The stale item is not destroyed on this turn: it still reads
+            // enabled and interactive. Its emitted triggered() must simply
+            // not dispatch (observed behavior consistent with Qt invalidating
+            // the released delegate's context; no mechanism is pinned here).
+            staleAction.triggered()
+            compare(fakeAccess.activateCalls, 0)
+
+            // Only the new projection can dispatch, and it does so exactly.
+            mouseClick(bar.itemAt(0))
+            tryCompare(bar.menuAt(0), "opened", true)
+            mouseClick(bar.menuAt(0).itemAt(0))
+            compare(fakeAccess.activateCalls, 1)
+            compare(fakeAccess.lastId, "undo")
+        }
+
+        function test_republishWithNoEntriesClosesEveryPopup() {
+            const bar = menuBar()
+            const fileMenu = bar.menuAt(0)
+            mouseClick(bar.itemAt(0))
+            tryCompare(fileMenu, "opened", true)
+
+            // Empty republish with available unchanged withdraws the whole
+            // top-level projection; an open popup cannot survive it. Strict
+            // same-turn read: a deferred removal would still list menus here.
+            fakeAccess.items = []
+            compare(bar.count, 0)
+            verify(retired(fileMenu),
+                   "obsolete popup must retire synchronously with the empty republish")
+            compare(applet.hasContent, false)
+            compare(fakeAccess.activateCalls, 0)
+
+            // Fresh truth must project into a working native bar again.
+            fakeAccess.items = menuItems()
+            tryCompare(bar, "count", 2)
+            mouseClick(bar.itemAt(0))
+            tryCompare(bar.menuAt(0), "opened", true)
+            mouseClick(bar.menuAt(0).itemAt(0))
+            compare(fakeAccess.activateCalls, 1)
+            compare(fakeAccess.lastId, "new")
+        }
+
+        function test_downPressThenRepublishRetiresQueuedFocusTarget() {
+            const bar = menuBar()
+            const fileMenu = bar.menuAt(0)
+            bar.itemAt(0).forceActiveFocus(Qt.TabFocusReason)
+            keyClick(Qt.Key_Down)
+            // Offscreen, Popup.Window opens synchronously and the QTest key
+            // delivery itself runs the deferred queue before returning, so
+            // the press's own callback executes inside keyClick while File
+            // is still open. Direct compare, no spin: polling here would
+            // also drain anything queued after the press.
+            compare(fileMenu.opened, true)
+
+            // The stale ordering cannot be produced through key delivery,
+            // so re-mint the exact deferred callback the press queues by
+            // calling the production queueing function on the captured
+            // File menu — no key event, no event-loop turn — and republish
+            // before anything drains it. The republish must retire the
+            // popup synchronously, and that queued callback must run only
+            // after the retirement and stay inert against the fresh
+            // projection.
+            applet.focusFirstMenuItem(fileMenu)
+            fakeAccess.items = menuItems().slice(1)
+            compare(bar.count, 1)
+            verify(retired(fileMenu),
+                   "obsolete popup must retire synchronously with the republish")
+
+            // Flush the queued batch inside this function: this marker
+            // cannot run before the focus callback ahead of it in the
+            // callLater queue has executed, so reaching it proves the stale
+            // callback already ran.
+            let flushed = false
+            Qt.callLater(function() { flushed = true })
+            tryVerify(function() { return flushed })
+
+            // `visible` is set synchronously by open(), so a mutant whose
+            // stale branch reopens the fresh projection fails right here;
+            // the second-turn re-check rules out a later transitioned open.
+            compare(bar.menuAt(0).visible, false,
+                    "stale focus callback must leave the fresh projection closed")
+            let secondTurn = false
+            Qt.callLater(function() { secondTurn = true })
+            tryVerify(function() { return secondTurn })
+            compare(bar.menuAt(0).visible, false)
+            compare(bar.menuAt(0).opened, false)
+            compare(fakeAccess.activateCalls, 0)
+        }
+
     }
 }
