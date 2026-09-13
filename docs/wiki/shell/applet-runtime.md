@@ -107,8 +107,10 @@ surface hosts the desktop-icons entry (see its bullet below):
   visibly disabled. See [Launcher](launcher.md) and
   [ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md); and
 - `qindaqt.applets.global-menu` renders the compiled
-  `QindaQt.Shell.GlobalMenu` module over the shell-owned AppMenu registrar and
-  dbusmenu coordinator. `global-menu.read` gates observation; the explicitly
+  `QindaQt.Shell.GlobalMenu` module on horizontal or vertical panels over the
+  shell-owned AppMenu registrar and dbusmenu coordinator; its manifest admits
+  the start, center, and fill zones, and stock profiles place it only on top
+  panels. `global-menu.read` gates observation; the explicitly
   denied `windows.activate` capability grants no arbitrary window control.
   The composition borrows the shell's one exact-owner window-actions client
   for authenticated active-window identity, and owner loss clears recursive
