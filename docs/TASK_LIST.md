@@ -41,14 +41,26 @@ passed. The fourth stopped before product verdict on the disclosed
 placement-sensitive dock-gesture fixture defect, not on a ghost or input
 failure. Its test-only fixture fallback now groups a source mapped entirely
 beneath its target; all four rows pass on the integrated plugin, including
-three reversed drags at that geometry. Global Menu evidence candidate
-`076d8a3d` remains in its bounded test-only repair. Terminal audible-attention
+three reversed drags at that geometry. Exact fallback candidate `0b21207a`
+received independent GLM ACCEPT and is integrated as `6a873081`; the manager
+unit row passes 24/24 and the serialized integrated-tree replay remains the
+last closure gate. Global Menu evidence descendant `12f20444` received
+same-reviewer Opus ACCEPT and is integrated as `cc8bf4cf`; its manager-tree
+native-switch row passes 9/9. This is test evidence, not a live-popup repair.
+Terminal audible-attention
 candidate `53402c13` received independent GLM ACCEPT and is integrated as
 `4a39d5bb`: an audible parsed bell preserves the existing beep and requests
 standard Qt attention for its owning visible top-level window, while silent
 profiles and hidden-window alerting fail closed. The integrated-tree Terminal
 and read-only Task List selector passes 6/6. No live bell, installed package,
 or desktop-session adoption is claimed.
+
+Settings Customize display scope candidate `2f6e31eb` received independent
+Sonnet/high ACCEPT and is integrated as `fc7be200`. Revisioned output truth now
+offers explicit Primary display and All displays choices and fails closed on
+absent or ambiguous primary identity. The retained manager build completed and
+the five affected Customize rows pass 5/5. Installed/live Settings adoption
+and physical multi-output qualification remain separate.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
