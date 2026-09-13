@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
+#include <QImage>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
+#include <QQuickItemGrabResult>
 #include <QQuickWindow>
 #include <QtTest>
 
@@ -111,12 +113,30 @@ qreal minimumSampled(QQuickItem *item, const QString &name, int samples,
   return minimum;
 }
 
+// Renders one item offscreen after the grab completes; false on failure. The
+// pulse never runs under reduced motion, so two grabs of the same tile differ
+// only by static urgency marks — deterministic on the software backend.
+bool grabItem(QQuickItem *item, QImage *out) {
+  const auto result = item->grabToImage();
+  if (result.isNull()) {
+    return false;
+  }
+  // QTRY macros cannot return values, so pump the loop manually until the
+  // asynchronous grab completes.
+  for (int spin = 0; spin < 200 && result->image().isNull(); ++spin) {
+    QTest::qWait(20);
+  }
+  *out = result->image();
+  return !out->isNull();
+}
+
 } // namespace
 
 // Demand-attention truth for the integrated Terminal bell path (audible bell
 // -> QApplication::alert -> projected `urgent`): while urgent the badge and
 // dock icon breathe opacity, the pulse settles to full when urgency clears,
-// and the existing reduced-motion host policy keeps the indication static.
+// the existing reduced-motion host policy keeps the indication static — and a
+// dock tile stays visibly urgent without any motion at all.
 class TaskListAppletAttentionQmlTests final : public QObject {
   Q_OBJECT
 
@@ -124,6 +144,8 @@ private slots:
   void panelBadgeBreathesWhileUrgentAndSettlesWhenCleared();
   void dockIconBreathesWhileUrgentAndSettlesWhenCleared();
   void reducedMotionKeepsAttentionStatic();
+  void reducedMotionDockTileDiffersFromClearedPixels();
+  void reducedMotionFlipMidPulseSettlesSurvivingDelegate();
 };
 
 void TaskListAppletAttentionQmlTests::
@@ -173,6 +195,14 @@ void TaskListAppletAttentionQmlTests::
            qPrintable(QStringLiteral("attention level never breathed below "
                                      "0.9; minimum sampled %1")
                           .arg(minimumLevel)));
+  // The badge itself must breathe (its opacity binding is the documented
+  // surface), not just the unbound level property on the button.
+  const qreal minimumBadgeOpacity =
+      minimumSampled(badge, QStringLiteral("opacity"), 8, 30);
+  QVERIFY2(minimumBadgeOpacity < 0.9,
+           qPrintable(QStringLiteral("badge opacity never breathed below "
+                                     "0.9; minimum sampled %1")
+                          .arg(minimumBadgeOpacity)));
 
   // Clearing urgency settles the pulse: stopped, full opacity, badge hidden.
   auto settled = TaskListTest::standalone(QStringLiteral("w1"),
@@ -332,6 +362,130 @@ void TaskListAppletAttentionQmlTests::reducedMotionKeepsAttentionStatic() {
   QVERIFY(dockPulse != nullptr);
   QVERIFY(!dockPulse->property("running").toBool());
   dockRoot->setParentItem(nullptr);
+}
+
+// Reviewer's reduced-motion pixel proof, as a permanent row: a dock tile
+// must differ from its cleared state while urgent even though the pulse
+// never runs. At the rejected candidate the two grabs were byte-identical.
+void TaskListAppletAttentionQmlTests::
+    reducedMotionDockTileDiffersFromClearedPixels() {
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port,
+                                      {true, true, true});
+  QVERIFY(publishFacts(source, authority,
+                       factsWithUrgentWindow(QStringLiteral("w1")))
+          > 0);
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  auto owned = createApplet(engine, controller,
+                            {{QStringLiteral("dockMode"), true},
+                             {QStringLiteral("dockTileSize"), 999},
+                             {QStringLiteral("reducedMotion"), true}});
+  QVERIFY(owned != nullptr);
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  QQuickWindow window;
+  window.setGeometry(0, 0, 900, 220);
+  root->setParentItem(window.contentItem());
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+
+  QQuickItem *urgent = nullptr;
+  QTRY_VERIFY((urgent = entryButtonFor(root, QStringLiteral("w1")))
+              != nullptr);
+  // With motion reduced the pulse must stay off, yet the tile must carry a
+  // static, non-color-only urgency mark the cleared tile does not render.
+  QObject *pulse = attentionPulseIn(urgent);
+  QVERIFY(pulse != nullptr);
+  QVERIFY(!pulse->property("running").toBool());
+  auto *dockBadge = urgent->findChild<QQuickItem *>(
+      QStringLiteral("taskListEntryDockUrgentBadge"));
+  QVERIFY2(dockBadge != nullptr,
+           "dock tile has no static urgency badge");
+  QTRY_VERIFY(dockBadge->isVisible());
+  QImage urgentImage;
+  QVERIFY2(grabItem(urgent, &urgentImage), "urgent dock tile grab failed");
+
+  auto settled = TaskListTest::standalone(QStringLiteral("w1"),
+                                          QStringLiteral("app.1"));
+  auto settledQuiet = TaskListTest::standalone(QStringLiteral("quiet"),
+                                               QStringLiteral("app.2"));
+  QVERIFY(publishFacts(source, authority, {settled, settledQuiet}) > 0);
+  QQuickItem *cleared = nullptr;
+  QTRY_VERIFY((cleared = entryButtonFor(root, QStringLiteral("w1")))
+              != nullptr);
+  auto *clearedBadge = cleared->findChild<QQuickItem *>(
+      QStringLiteral("taskListEntryDockUrgentBadge"));
+  QVERIFY(clearedBadge != nullptr);
+  QTRY_VERIFY(!clearedBadge->isVisible());
+  QImage clearedImage;
+  QVERIFY2(grabItem(cleared, &clearedImage), "cleared dock tile grab failed");
+
+  QVERIFY2(urgentImage != clearedImage,
+           "urgent and cleared dock tiles are pixel-identical under reduced "
+           "motion: the tile has no static urgency cue");
+}
+
+// Settle-on-stop on a delegate that survives: flipping the host
+// reduced-motion policy on while a row is urgent stops the pulse mid-breath
+// on the same delegate (no reprojection), so the onStopped reset is the only
+// thing that returns the level to full opacity.
+void TaskListAppletAttentionQmlTests::
+    reducedMotionFlipMidPulseSettlesSurvivingDelegate() {
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port,
+                                      {true, true, true});
+  QVERIFY(publishFacts(source, authority,
+                       factsWithUrgentWindow(QStringLiteral("w1")))
+          > 0);
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  auto owned = createApplet(engine, controller,
+                            {{QStringLiteral("dockMode"), true},
+                             {QStringLiteral("dockTileSize"), 999}});
+  QVERIFY(owned != nullptr);
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  QQuickWindow window;
+  window.setGeometry(0, 0, 900, 220);
+  root->setParentItem(window.contentItem());
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+
+  QQuickItem *tile = nullptr;
+  QTRY_VERIFY((tile = entryButtonFor(root, QStringLiteral("w1"))) != nullptr);
+  QObject *pulse = attentionPulseIn(tile);
+  QVERIFY(pulse != nullptr);
+  QTRY_VERIFY(pulse->property("running").toBool());
+  // Catch the breath mid-dim so a missing settle reset would freeze below
+  // full opacity deterministically.
+  QTRY_VERIFY(tile->property("urgentAttentionLevel").toReal() < 0.95);
+
+  // The property flip re-evaluates bindings only; the delegate survives.
+  QVERIFY(root->setProperty("reducedMotion", true));
+  QTRY_VERIFY(!pulse->property("running").toBool());
+  QQuickItem *sameTile = nullptr;
+  QTRY_VERIFY((sameTile = entryButtonFor(root, QStringLiteral("w1")))
+              != nullptr);
+  QCOMPARE(sameTile, tile);
+  QTRY_COMPARE(tile->property("urgentAttentionLevel").toReal(), 1.0);
+  // The static dock badge keeps the tile truthful without any motion.
+  auto *dockBadge = tile->findChild<QQuickItem *>(
+      QStringLiteral("taskListEntryDockUrgentBadge"));
+  QVERIFY(dockBadge != nullptr);
+  QTRY_VERIFY(dockBadge->isVisible());
 }
 
 QTEST_MAIN(TaskListAppletAttentionQmlTests)

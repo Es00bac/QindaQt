@@ -156,19 +156,23 @@ selection presents `Empty` even while degraded. Every presented row carries a
 composed as application, title, window count for grouped containers, then the
 state suffixes `active`, `minimized`, and `urgent` in that order.
 
-Urgency is animated where the row renders it: while `urgent` is projected —
-for example the [Terminal](../apps/terminal.md) audible-bell path, whose Qt
-attention request reaches this projection through the compositor task facts —
-the applet's `TaskListUrgentPulse` animation breathes the row's
-`urgentAttentionLevel` between full and dimmed opacity at the QST-1 short
-motion duration, and `TaskListEntryButton.qml` binds its urgency surfaces to
-that level: the `!` badge on panel rows and the tile icon on the dock, which
-has no badge. The breath is
+Urgency is both static and animated where the row renders it. While
+`urgent` is projected — for example the [Terminal](../apps/terminal.md)
+audible-bell path, whose Qt attention request reaches this projection through
+the compositor task facts — every surface carries the text truth first: the
+`!` badge inline on panel rows, and the same `!` as a static corner mark on
+dock tiles (`TaskListUrgentPulse.qml`). The static marks render whenever
+`urgent` holds, independent of motion, so an urgent dock tile stays visibly
+distinct from a quiet one with reduced motion enabled and at every rest
+frame. On top of that truth, while motion is allowed the applet's
+`TaskListUrgentPulse` animation breathes the row's `urgentAttentionLevel`
+between full and dimmed opacity at the QST-1 short motion duration, and
+`TaskListEntryButton.qml` binds the panel badge and dock tile icon opacities
+to that level. The breath is
 opacity-only (dock magnification owns icon scale; layout bounds and hit
-targets never move), the badge and icon remain visible at the dimmest point
-so demand-attention truth never depends on the animation, the pulse settles
-back to full opacity the moment urgency clears, and under the host
-reduced-motion policy it never runs — the surfaces stay at full opacity.
+targets never move), the badge and icon remain visible at the dimmest point,
+and the pulse settles back to full opacity the moment urgency clears or the
+host reduced-motion policy turns on — the static marks are unaffected.
 
 ## Public facts producer boundary
 
