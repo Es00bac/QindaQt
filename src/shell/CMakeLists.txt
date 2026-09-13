@@ -38,6 +38,7 @@ qt_add_qml_module(
         qml/AppletChip.qml
         qml/BuiltinAppletContent.qml
         qml/DesktopControlsAppletComponents.qml
+        qml/DockZoneViewport.qml
         qml/ClockApplet.qml
         qml/NotificationCenterApplet.qml
         qml/ContainerTabStrip.qml
@@ -227,6 +228,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/AppletChip.qml
             qml/BuiltinAppletContent.qml
             qml/DesktopControlsAppletComponents.qml
+            qml/DockZoneViewport.qml
             qml/ClockApplet.qml
             qml/NotificationCenterApplet.qml
             qml/NotificationCard.qml

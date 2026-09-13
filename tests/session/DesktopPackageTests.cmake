@@ -81,6 +81,7 @@ add_test(
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/AppletChip.qml"
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/PanelAppletRow.qml"
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/PanelAppletColumn.qml"
+        --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/DockZoneViewport.qml"
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/PanelContent.qml"
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/RuntimePanel.qml"
         # AGENT-NOTE: Ingrid Daubechies P1 on rejected candidate 99b0619:
