@@ -159,6 +159,25 @@ target_link_libraries(
     qindaqt_file_manager_kio_remote_copier_tests
     PRIVATE KF6::KIOCore
 )
+# ADR-0156: the production KioRemoteMover's scheme/authority boundary and
+# retained KIO UI delegate via a job-creation test seam.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_kio_remote_mover_tests
+    tst_kio_remote_mover.cpp
+    qindaqt.file-manager-kio-remote-mover
+)
+target_link_libraries(
+    qindaqt_file_manager_kio_remote_mover_tests
+    PRIVATE KF6::KIOCore
+)
+# ADR-0156: fake-injected remote Move To dispatch/validation/refresh/fence
+# rows, split from the copy rows because a confirmed move always refreshes
+# the visible folder.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_remote_move_dispatch_tests
+    tst_remote_move_dispatch.cpp
+    qindaqt.file-manager-remote-move-dispatch
+)
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_mutation_action_binding_tests
     tst_mutation_action_binding.cpp

@@ -26,6 +26,7 @@ using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
 using QindaQt::Apps::FileManager::Test::FakeRemoteCopier;
 using QindaQt::Apps::FileManager::Test::FakeRemoteFolderCreator;
+using QindaQt::Apps::FileManager::Test::FakeRemoteMover;
 using QindaQt::Apps::FileManager::Test::FakeRemoteRenamer;
 
 namespace {
@@ -92,11 +93,18 @@ private slots:
   void remoteBrowsingKeepsRenameEnabledWhenARenamerIsInjected();
   void remoteBrowsingKeepsNewFolderEnabledWhenACreatorIsInjected();
   void remoteBrowsingKeepsCopyEnabledWhenACopierIsInjected();
+  // ADR-0156 fail-before/green rows: with a RemoteMover injected, Move To is
+  // available while browsing remote (and the shared Cancel action tracks an
+  // in-flight remote move); without one it keeps disabling with the other
+  // current-folder mutations.
+  void remoteBrowsingKeepsMoveEnabledWhenAMoverIsInjected();
   void remoteBrowsingDisablesSearchAndFilter();
   void busyMutationDisablesEmptyTrashRegardlessOfRemoteState();
   // Review P1 repair (former red): the shared Cancel action enables while a
   // remote copy is in flight, not only for local mutation work.
   void remoteCopyDrivesTheSharedCancelAction();
+  // ADR-0156: the same Cancel contract for a destructive remote move.
+  void remoteMoveDrivesTheSharedCancelAction();
 };
 
 void TestMutationActionBinding::remoteBrowsingDisablesFolderMutationsButNotEmptyTrashOrHistory() {
@@ -252,6 +260,45 @@ void TestMutationActionBinding::remoteBrowsingKeepsCopyEnabledWhenACopierIsInjec
   QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.copy")), std::optional<bool>(true));
 }
 
+// ADR-0156 fail-before/green row: with a RemoteMover injected, Move To is
+// available while browsing a remote folder; without one it keeps disabling
+// with the other current-folder mutations.
+void TestMutationActionBinding::remoteBrowsingKeepsMoveEnabledWhenAMoverIsInjected() {
+  QindaQt::AppShell::ApplicationCoordinator coordinator;
+  const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
+  QVERIFY2(catalogResult.ok(), qPrintable(catalogResult.message));
+
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  ListingResult ready;
+  ready.path = QDir::tempPath();
+  lister->setResult(QDir::tempPath(), ready);
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto mover = std::make_unique<FakeRemoteMover>();
+  NavigationController navigation(std::move(lister), std::make_unique<FakeFileLauncher>(),
+                                  std::move(backend), nullptr, nullptr, nullptr, nullptr,
+                                  std::move(mover));
+  MutationController mutation(std::make_unique<GatedMutationBackend>());
+
+  bindFileManagerBrowsingActions(coordinator, navigation);
+  bindFileManagerMutationActions(coordinator, navigation, mutation);
+
+  navigation.navigateTo(QStringLiteral("smb://server/share"));
+  QCOMPARE(navigation.remoteActive(), true);
+  QCOMPARE(navigation.remoteMoveAvailable(), true);
+  // Every other current-folder mutation stays disabled while remote
+  // (rename/new-folder/copy need their own seams, absent here).
+  for (const char *actionId :
+       {"file.new-folder", "file.rename", "file.copy", "file.trash"}) {
+    QCOMPARE(actionEnabled(coordinator, QLatin1String(actionId)), std::optional<bool>(false));
+  }
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.move")), std::optional<bool>(true));
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.empty-trash")), std::optional<bool>(true));
+
+  navigation.navigateTo(QDir::tempPath());
+  QCOMPARE(navigation.remoteActive(), false);
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.move")), std::optional<bool>(true));
+}
+
 void TestMutationActionBinding::remoteBrowsingDisablesSearchAndFilter() {
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
@@ -362,6 +409,62 @@ void TestMutationActionBinding::remoteCopyDrivesTheSharedCancelAction() {
   QCOMPARE(actionEnabled(coordinator, QStringLiteral("operation.cancel")),
            std::optional<bool>(false));
   QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.copy")), std::optional<bool>(true));
+}
+
+// ADR-0156: with a RemoteMover injected and one move dispatched, the shared
+// operation.cancel action must be enabled even though the local mutation
+// backend is idle (the mover owns the job), Move must disable while its own
+// destructive operation is in flight, and both revert when the move
+// finishes.
+void TestMutationActionBinding::remoteMoveDrivesTheSharedCancelAction() {
+  QindaQt::AppShell::ApplicationCoordinator coordinator;
+  const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
+  QVERIFY2(catalogResult.ok(), qPrintable(catalogResult.message));
+
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto mover = std::make_unique<FakeRemoteMover>();
+  auto *rawMover = mover.get();
+  NavigationController navigation(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(),
+                                  std::move(backend), nullptr, nullptr, nullptr, nullptr,
+                                  std::move(mover));
+  MutationController mutation(std::make_unique<GatedMutationBackend>());
+
+  bindFileManagerBrowsingActions(coordinator, navigation);
+  bindFileManagerMutationActions(coordinator, navigation, mutation);
+
+  navigation.navigateTo(QStringLiteral("smb://server/share"));
+  NetworkListingResult listing;
+  listing.url = QUrl(QStringLiteral("smb://server/share"));
+  DirectoryEntry entry;
+  entry.name = QStringLiteral("notes.txt");
+  entry.absolutePath = QStringLiteral("smb://server/share/notes.txt");
+  entry.isDirectory = false;
+  listing.entries = {entry};
+  rawBackend->emitReady(rawBackend->requests().constLast().generation,
+                        QUrl(QStringLiteral("smb://server/share")), listing);
+  pumpEvents();
+  QCOMPARE(navigation.entryCount(), 1);
+
+  // Idle locally and remotely: Cancel stays disabled.
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("operation.cancel")),
+           std::optional<bool>(false));
+
+  QVERIFY(navigation.moveRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  // The local backend never sees the remote move, yet Cancel is reachable.
+  QCOMPARE(mutation.busy(), false);
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("operation.cancel")),
+           std::optional<bool>(true));
+  // Move stays disabled while its own destructive operation is in flight.
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.move")), std::optional<bool>(false));
+
+  rawMover->finishSuccess(rawMover->requests().constFirst().generation);
+  pumpEvents();
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("operation.cancel")),
+           std::optional<bool>(false));
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.move")), std::optional<bool>(true));
 }
 
 QTEST_MAIN(TestMutationActionBinding)

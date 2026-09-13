@@ -13,6 +13,8 @@
 #include "../network/remote_create_folder_controller.h"
 #include "../network/remote_file_opener.h"
 #include "../network/remote_folder_creator.h"
+#include "../network/remote_move_to_controller.h"
+#include "../network/remote_mover.h"
 #include "../network/remote_open_controller.h"
 #include "../network/remote_rename_controller.h"
 #include "../network/remote_renamer.h"
@@ -77,6 +79,12 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool remoteCopyAvailable READ remoteCopyAvailable NOTIFY navigationChanged FINAL)
   // True while one remote copy is in flight.
   Q_PROPERTY(bool remoteCopyBusy READ remoteCopyBusy NOTIFY remoteCopyChanged FINAL)
+  // ADR-0156: true while browsing remote with a RemoteMover injected --
+  // the action bindings use this to keep "file.move" available remotely.
+  Q_PROPERTY(bool remoteMoveAvailable READ remoteMoveAvailable NOTIFY navigationChanged FINAL)
+  // True while one remote move is in flight. A move is destructive, so the
+  // move action disables while busy to prevent overlap.
+  Q_PROPERTY(bool remoteMoveBusy READ remoteMoveBusy NOTIFY remoteMoveChanged FINAL)
 
 public:
   // networkBackend may be null: navigateTo() then refuses every smb/sftp
@@ -87,13 +95,15 @@ public:
   // remoteRenamer may be null: remote Rename then stays disabled by the
   // action bindings exactly as before this seam existed. folderCreator may
   // be null: remote New Folder then stays disabled the same way. copier
-  // may be null: remote Copy To then stays disabled the same way.
+  // may be null: remote Copy To then stays disabled the same way. mover
+  // may be null: remote Move To then stays disabled the same way.
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
                        NetworkDirectoryBackendPtr networkBackend = nullptr,
                        RemoteFileOpenerPtr remoteOpener = nullptr,
                        RemoteRenamerPtr remoteRenamer = nullptr,
                        RemoteFolderCreatorPtr folderCreator = nullptr,
                        RemoteCopierPtr copier = nullptr,
+                       RemoteMoverPtr mover = nullptr,
                        QObject *parent = nullptr);
 
   // Navigates as if the user chose path directly (breadcrumb segment, typed
@@ -144,6 +154,22 @@ public:
   // the generation fence discards its late result -- so Cancel works without
   // navigating away. No-op when no remote copy is active.
   Q_INVOKABLE void cancelRemoteCopy();
+  // ADR-0156: moves one listed child of the current remote folder to a
+  // validated remote destination folder through the injected RemoteMover.
+  // A move is destructive (the server may delete the source even on a
+  // mid-move failure), so unlisted/cross-folder sources, malformed
+  // destinations, same-target moves, and directory self/descendant moves are
+  // rejected before dispatch; failures surface through launchError and the
+  // listing refreshes after every confirmed success, because the source
+  // always left the folder being viewed. Returns false when the request was
+  // refused before dispatch.
+  Q_INVOKABLE bool moveRemoteChild(const QString &sourcePath, const QString &destinationFolder);
+  // ADR-0156: user-facing cancellation backing the shared operation.cancel
+  // action while a remote move is in flight. Retires it exactly like
+  // navigation replacement does -- the mover kills the KIO job quietly and
+  // the generation fence discards its late result. No-op when no remote move
+  // is active. Also called internally when remote browsing is replaced.
+  Q_INVOKABLE void cancelRemoteMove();
   // Returns the index of the entry named name in the current listing, or -1.
   // QML uses this to restore a deterministic selection across a refresh.
   Q_INVOKABLE int indexOfName(const QString &name) const;
@@ -205,6 +231,12 @@ public:
   [[nodiscard]] bool remoteCopyBusy() const noexcept {
     return m_remoteCopy != nullptr && m_remoteCopy->busy();
   }
+  [[nodiscard]] bool remoteMoveAvailable() const noexcept {
+    return m_remoteActive && m_mover != nullptr;
+  }
+  [[nodiscard]] bool remoteMoveBusy() const noexcept {
+    return m_remoteMove != nullptr && m_remoteMove->busy();
+  }
   [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
@@ -221,6 +253,7 @@ signals:
   void remoteRenameChanged();
   void remoteCreateChanged();
   void remoteCopyChanged();
+  void remoteMoveChanged();
 
 private:
   void reload(bool resetFilter = false);
@@ -247,12 +280,13 @@ private:
   // these hooks just bridge it to navigation state.
   void cancelPendingRemoteRename();
   void cancelPendingRemoteCreate();
-  // ADR-0155: same bridging for RemoteCopyToController; all remote
-  // operation failures share the launchError surface and all refresh
-  // requests share the listing re-read.
+  // ADR-0155/0156: same bridging for RemoteCopyToController and
+  // RemoteMoveToController; all remote operation failures share the
+  // launchError surface and all refresh requests share the listing re-read.
+  // (Copy and Move retire through their public Q_INVOKABLE hooks, which
+  // internal leave/replace paths call directly.)
   void onRemoteOperationRefreshRequested();
   void onRemoteOperationFailed(const QString &message);
-  void cancelPendingRemoteCopy();
 
   DirectoryListerPtr m_lister;
   FileLauncherPtr m_launcher;
@@ -261,10 +295,12 @@ private:
   RemoteRenamerPtr m_remoteRenamer;
   RemoteFolderCreatorPtr m_folderCreator;
   RemoteCopierPtr m_copier;
+  RemoteMoverPtr m_mover;
   std::unique_ptr<RemoteOpenController> m_remoteOpen;
   std::unique_ptr<RemoteRenameController> m_remoteRename;
   std::unique_ptr<RemoteCreateFolderController> m_remoteCreate;
   std::unique_ptr<RemoteCopyToController> m_remoteCopy;
+  std::unique_ptr<RemoteMoveToController> m_remoteMove;
   bool m_remoteActive = false;
   QUrl m_remoteUrl;
   NavigationHistory m_history;

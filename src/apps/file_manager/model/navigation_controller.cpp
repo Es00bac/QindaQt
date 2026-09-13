@@ -26,6 +26,7 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
                                            RemoteRenamerPtr remoteRenamer,
                                            RemoteFolderCreatorPtr folderCreator,
                                            RemoteCopierPtr copier,
+                                           RemoteMoverPtr mover,
                                            QObject *parent)
     : QObject(parent), m_lister(std::move(lister)),
       m_launcher(std::move(launcher)),
@@ -33,7 +34,8 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
       m_remoteOpener(std::move(remoteOpener)),
       m_remoteRenamer(std::move(remoteRenamer)),
       m_folderCreator(std::move(folderCreator)),
-      m_copier(std::move(copier)) {
+      m_copier(std::move(copier)),
+      m_mover(std::move(mover)) {
   Q_ASSERT(m_lister);
   Q_ASSERT(m_launcher);
   if (m_networkBackend) {
@@ -81,6 +83,15 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
     connect(m_remoteCopy.get(), &RemoteCopyToController::failure, this,
             &NavigationController::onRemoteOperationFailed);
   }
+  if (m_mover) {
+    m_remoteMove = std::make_unique<RemoteMoveToController>(*m_mover, this);
+    connect(m_remoteMove.get(), &RemoteMoveToController::busyChanged, this,
+            [this] { emit remoteMoveChanged(); });
+    connect(m_remoteMove.get(), &RemoteMoveToController::refreshRequested, this,
+            &NavigationController::onRemoteOperationRefreshRequested);
+    connect(m_remoteMove.get(), &RemoteMoveToController::failure, this,
+            &NavigationController::onRemoteOperationFailed);
+  }
 }
 
 void NavigationController::navigateTo(const QString &path) {
@@ -88,20 +99,16 @@ void NavigationController::navigateTo(const QString &path) {
     if (m_remoteActive) {
       cancelPendingRemoteRename();
       cancelPendingRemoteCreate();
-      cancelPendingRemoteCopy();
+      cancelRemoteCopy();
+      cancelRemoteMove();
       if (m_networkBackend) {
         m_networkBackend->cancel(m_listingGeneration);
       }
       m_remoteActive = false;
-      if (m_remoteRenamer) {
-        emit remoteRenameChanged();
-      }
-      if (m_folderCreator) {
-        emit remoteCreateChanged();
-      }
-      if (m_copier) {
-        emit remoteCopyChanged();
-      }
+      emit remoteRenameChanged();
+      emit remoteCreateChanged();
+      emit remoteCopyChanged();
+      emit remoteMoveChanged();
     }
     const QString normalized = QDir::cleanPath(path);
     if (!m_history.hasCurrent()) {
@@ -282,11 +289,27 @@ void NavigationController::cancelPendingRemoteCreate() {
   }
 }
 
-void NavigationController::cancelRemoteCopy() { cancelPendingRemoteCopy(); }
-
-void NavigationController::cancelPendingRemoteCopy() {
+void NavigationController::cancelRemoteCopy() {
   if (m_remoteCopy) {
     m_remoteCopy->cancelPending();
+  }
+}
+
+bool NavigationController::moveRemoteChild(const QString &sourcePath,
+                                           const QString &destinationFolder) {
+  if (!m_remoteActive || !m_remoteMove) {
+    m_launchError = QStringLiteral("Remote move is not available here");
+    emit launchErrorChanged();
+    return false;
+  }
+  // Validation, dispatch, fencing, and retirement live in RemoteMoveToController.
+  return m_remoteMove->requestMove(m_listedEntries, m_remoteUrl, m_listingGeneration,
+                                   sourcePath, destinationFolder);
+}
+
+void NavigationController::cancelRemoteMove() {
+  if (m_remoteMove) {
+    m_remoteMove->cancelPending();
   }
 }
 
@@ -497,12 +520,12 @@ void NavigationController::clearGuestListing() {
 
 void NavigationController::enterRemote(const QUrl &url) {
   if (m_remoteActive) {
-    // Remote-to-remote replacement: retire any rename, create, or copy in
-    // flight for the folder being left, mirroring the listing cancellation
-    // below.
+    // Remote-to-remote replacement: retire any in-flight remote operation
+    // for the folder being left, like the listing cancellation.
     cancelPendingRemoteRename();
     cancelPendingRemoteCreate();
-    cancelPendingRemoteCopy();
+    cancelRemoteCopy();
+    cancelRemoteMove();
   }
   m_guestActive = false;
   m_guestStatusText.clear();
@@ -510,15 +533,10 @@ void NavigationController::enterRemote(const QUrl &url) {
   m_remoteActive = true;
   m_remoteUrl = url;
   requestRemoteListing();
-  if (m_remoteRenamer) {
-    emit remoteRenameChanged();
-  }
-  if (m_folderCreator) {
-    emit remoteCreateChanged();
-  }
-  if (m_copier) {
-    emit remoteCopyChanged();
-  }
+  emit remoteRenameChanged();
+  emit remoteCreateChanged();
+  emit remoteCopyChanged();
+  emit remoteMoveChanged();
 }
 
 void NavigationController::requestRemoteListing() {

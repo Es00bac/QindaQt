@@ -10,12 +10,14 @@ class NavigationController;
 // Borrows all objects; Qt disconnects on either destruction.
 //
 // AGENT-GUARD: current-folder mutation actions (new folder, rename, copy,
-// move, trash) disable while a remote (smb/sftp) location is active --
-// remote entries carry no local mutation identity and this slice never
-// mutates a remote location. Undo, Restore Last, Empty Trash, and Cancel
-// operate on the local Trash and last-operation history independent of the
-// current folder (ADR-0137 Consequences), so they are gated only by the
-// mutation-busy slot -- never by NavigationController::remoteActive.
+// move, trash) disable while a remote (smb/sftp) location is active unless
+// their own injected remote seam is available (ADR-0153/0154/0155/0156) --
+// remote entries carry no local mutation identity and the local-only
+// backend must never receive a remote URL. Undo, Restore Last, Empty Trash,
+// and Cancel operate on the local Trash and last-operation history
+// independent of the current folder (ADR-0137 Consequences), so they are
+// gated only by the mutation-busy slot -- never by
+// NavigationController::remoteActive.
 void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinator,
                                     NavigationController &navigation,
                                     MutationController &mutation);

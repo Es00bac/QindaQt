@@ -15,9 +15,13 @@ browsing behind an injected asynchronous backend seam (ADR-0137), opens
 remote regular files through the desktop's default handler via the injected
 `RemoteFileOpener` seam on `KIO::OpenUrlJob` (ADR-0152), and renames a
 listed child through the injected `RemoteRenamer` seam on `KIO::rename()`
-(ADR-0153), and creates one validated child directory through the injected
-`RemoteFolderCreator` seam on `KIO::mkdir()` (ADR-0154). Per-volume
-Trash, mounts, remote file move/write, and a QindaQt credential-entry UI
+(ADR-0153), creates one validated child directory through the injected
+`RemoteFolderCreator` seam on `KIO::mkdir()` (ADR-0154), copies one listed
+child to a validated remote destination folder through the injected
+`RemoteCopier` seam on `KIO::copy()` (ADR-0155), and moves one listed child
+the same way through the injected `RemoteMover` seam on `KIO::move()`
+(ADR-0156). Per-volume
+Trash, mounts, remote file write, and a QindaQt credential-entry UI
 remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -31,7 +35,10 @@ Bounded local previews and public icon composition follow
 The stock Qt 6 presentation surface follows
 [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md). The S5
 network-location browsing seam and KIO adapter are recorded in
-[ADR-0137](../adr/0137-file-manager-network-location-browsing.md).
+[ADR-0137](../adr/0137-file-manager-network-location-browsing.md), and the
+remote Copy To and Move To seams are recorded in
+[ADR-0155](../adr/0155-file-manager-remote-copy-to.md) and
+[ADR-0156](../adr/0156-file-manager-remote-move-to.md).
 
 File Manager's presentation is stock Qt 6 QML (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Layouts`) styled by the platform theme palette; it no longer imports
@@ -637,8 +644,13 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   validated child directory through `KIO::mkdir()` behind the injected
   `RemoteFolderCreator` seam (ADR-0154). Copy To sends one listed child to
   a validated remote destination folder through `KIO::copy()` behind the
-  injected `RemoteCopier` seam (ADR-0155). Still open: remote file
-  move/write, mount-based access, and a
+  injected `RemoteCopier` seam (ADR-0155), and Move To moves one listed
+  child the same way through `KIO::move()` behind the injected `RemoteMover`
+  seam (ADR-0156) -- a destructive operation, so a confirmed success always
+  refreshes the visible folder (the source left it) and the pre-dispatch
+  listed-child/same-authority/no-userinfo checks are the last line of
+  defense before KIO. Still open: remote file
+  write, mount-based access, and a
   QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
   authentication); portal locations remain out of scope.
 
@@ -651,8 +663,9 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
   additional preview formats, portal-mediated paths, open-with, remote file
-  move/write, and a QindaQt credential-entry UI remain explicit
-  later outcomes (S3–S5).
+  write, and a QindaQt credential-entry UI remain explicit
+  later outcomes (S3–S5). Remote Move To (ADR-0156) is landed; batch remote
+  move remains deferred with batch remote copy.
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
   destination in a separate confirmed action.
@@ -696,17 +709,28 @@ delegate via a job-creation test seam),
 delegate via a job-creation test seam),
 `qindaqt.file-manager-kio-remote-copier` (the production `KioRemoteCopier`'s
 scheme/authority boundary and retained KIO UI delegate via a job-creation
-test seam), `qindaqt.file-manager-remote-copy-guard` (the production
+test seam),
+`qindaqt.file-manager-kio-remote-mover` (the production `KioRemoteMover`'s
+scheme/authority boundary and retained KIO UI delegate via a job-creation
+test seam), `qindaqt.file-manager-remote-move-dispatch` (the injected move
+dispatch/validation rows: a confirmed success always refreshes the visible
+folder because the source left it, failures stay visible without optimistic
+display, replacement navigation and direct user cancellation retire the job
+with a generation-fenced late result, and destruction with a pending move is
+safe), `qindaqt.file-manager-remote-copy-guard` (the production
 coordinator → Main.qml → MutationDialogs route: a remote multi-selection
 fails closed before the destination dialog and the local-only mutation
-backend, one selected child still routes to the injected copier, and the
-shared Cancel action retires an in-flight remote copy through the injected
-copier with a generation-fenced late result), and `qindaqt.file-manager-mutation-action-binding`
+backend for both Copy and Move, one selected child still routes to the
+injected copier or mover, and the
+shared Cancel action retires an in-flight remote copy or move through the
+injected collaborator with a generation-fenced late result), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay
 available and are instead gated only by the mutation-busy slot; the shared
-Cancel action additionally tracks an in-flight remote copy). None of
+Cancel action additionally tracks an in-flight remote copy or move, and the
+destructive Move action additionally disables while its own move is in
+flight). None of
 these rows make a DNS lookup, socket connection, or real KIO network request;
 the production adapter itself is
 otherwise only exercised by construction/linking.
