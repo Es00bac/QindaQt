@@ -49,6 +49,18 @@ anchor position is window-local because a Wayland layer-shell client never
 learns where its window sits, so a clamp can be late for an offset panel but
 never wrong; the compositor's popup positioner remains the backstop.
 
+On Wayland, QtWayland ignores a `Popup.Window`'s `x` and `y` once the popup
+has a parent item and anchors it at that item's top-right corner instead. The
+frame therefore keeps the declared control as `anchorItem`, and as the area
+`CloseOnPressOutsideParent` measures, but parents the popup to a hidden 1×1
+positioner cell whose top-right corner is the placement origin. An
+xdg_positioner anchor may not leave its parent surface, so an origin outside
+the host window (above a bottom panel, left of a right panel) is clamped into
+it and the compositor's placement-area slide completes the placement. KWin's
+placement area excludes a panel's strut, so a top-bar popup opens at the
+control's left edge and at the lower of the control's bottom and the bar's
+bottom edge.
+
 The active application control shows the focused task row's application
 name. Task rows carry the desktop-entry name resolved from the compositor's
 application id (see [iconography](iconography.md#desktopentryiconresolver)),

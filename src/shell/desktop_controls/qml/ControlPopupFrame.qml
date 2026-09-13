@@ -23,8 +23,8 @@ T.Popup {
     property string feedback: ""
     property Item initialFocusItem: null
     default property alias rows: body.data
-    // The control that owns the popup; defaults to its visual parent.
-    property Item anchorItem: parent
+    // The control that owns the popup; defaults to the item it is declared in.
+    property Item anchorItem: null
     // Explicit override ("top", "bottom", "left", "right"); empty detects the
     // hosting panel's edge.
     property string panelEdge: ""
@@ -36,6 +36,38 @@ T.Popup {
         ? placementFor(anchorItem.mapToItem(null, 0, 0), anchorItem.width, anchorItem.height,
                        width, height, resolvedPanelEdge, outputWidth(), outputHeight())
         : Qt.point(0, 0)
+    // The positioner cell's top-left in anchorItem coordinates. The clamp
+    // reads non-notifying scene geometry, so it also follows each open.
+    readonly property point positionerCell: placementRevision >= 0 && anchorItem !== null
+        ? anchorItem.mapFromItem(null, positionerCellFor(
+              anchorItem.mapToItem(null, placement.x, placement.y),
+              anchorItem.Window.width, anchorItem.Window.height))
+        : Qt.point(placement.x - 1, placement.y)
+
+    // AGENT-GUARD: QtWayland ignores a Popup.Window's x/y once the popup has a
+    // parent item. QQuickPopupWindow hands that item's scene rectangle to the
+    // xdg_positioner, anchored at its top-right corner with bottom-right
+    // gravity (Qt 6.11 qquickpopupwindow.cpp, qwaylandxdgshell.cpp), so a
+    // popup parented to its control opened at the control's right edge. The
+    // popup is parented to this 1x1 cell instead, whose top-right corner is
+    // the placement origin; x/y keep other platforms on that same origin, and
+    // the mask keeps CloseOnPressOutsideParent measured against the control.
+    readonly property Item positionerAnchor: Item {
+        objectName: "controlPopupPositionerAnchor"
+        parent: popup.anchorItem
+        visible: false
+        width: 1
+        height: 1
+        x: popup.positionerCell.x
+        y: popup.positionerCell.y
+        containmentMask: QtObject {
+            function contains(point: point): bool {
+                const owner = popup.anchorItem
+                return owner !== null
+                    && owner.contains(popup.positionerAnchor.mapToItem(owner, point.x, point.y))
+            }
+        }
+    }
 
     // Pure placement: the popup origin relative to the anchor's top-left.
     // AGENT-GUARD: `anchorPosition` is window-local on purpose. Wayland never
@@ -61,6 +93,17 @@ T.Popup {
         if (!(limit > 0))
             return 0
         return Math.max(0, Math.min(start, limit - extent)) - start
+    }
+
+    // Window-local top-left of the 1x1 positioner cell for a window-local
+    // popup origin. An xdg_positioner anchor rectangle may not leave its
+    // parent surface, so an origin outside the host window (above a bottom
+    // panel, left of a right panel) is clamped in and the compositor's
+    // placement-area slide completes the placement.
+    function positionerCellFor(origin, surfaceWidth, surfaceHeight) {
+        const inside = (value, limit) => limit > 0 ? Math.max(0, Math.min(value, limit - 1)) : value
+        return Qt.point(inside(Math.floor(origin.x) - 1, surfaceWidth),
+                        inside(Math.floor(origin.y), surfaceHeight))
     }
 
     function detectPanelEdge() {
@@ -97,8 +140,17 @@ T.Popup {
                  | T.Popup.CloseOnPressOutsideParent
     padding: Tokens.space["3"]
     width: Math.min(480, Math.max(240, contentItem.implicitWidth + leftPadding + rightPadding))
-    x: placement.x
-    y: placement.y
+    x: placement.x - positionerCell.x
+    y: placement.y - positionerCell.y
+
+    // The declared parent becomes the owner; the popup itself then hangs off
+    // the positioner cell (see positionerAnchor).
+    Component.onCompleted: {
+        if (anchorItem === null)
+            anchorItem = parent
+        if (anchorItem !== null)
+            parent = positionerAnchor
+    }
 
     onAboutToShow: ++placementRevision
 
