@@ -72,15 +72,31 @@ constexpr std::array iconSizes{32, 48, 64, 96, 128};
 NavigationController::NavigationController(DirectoryListerPtr lister,
                                            FileLauncherPtr launcher,
                                            NetworkDirectoryBackendPtr networkBackend,
+                                           RemoteFileOpenerPtr remoteOpener,
                                            QObject *parent)
     : QObject(parent), m_lister(std::move(lister)),
       m_launcher(std::move(launcher)),
-      m_networkBackend(std::move(networkBackend)) {
+      m_networkBackend(std::move(networkBackend)),
+      m_remoteOpener(std::move(remoteOpener)) {
   Q_ASSERT(m_lister);
   Q_ASSERT(m_launcher);
   if (m_networkBackend) {
     connect(m_networkBackend.get(), &NetworkDirectoryBackend::listingReady, this,
             &NavigationController::onNetworkListingReady);
+  }
+  if (m_remoteOpener) {
+    connect(m_remoteOpener.get(), &RemoteFileOpener::openFinished, this,
+            [this](const QString &diagnostic) {
+              if (diagnostic.isEmpty()) {
+                if (!m_launchError.isEmpty()) {
+                  m_launchError.clear();
+                  emit launchErrorChanged();
+                }
+                return;
+              }
+              m_launchError = diagnostic;
+              emit launchErrorChanged();
+            });
   }
 }
 
@@ -180,11 +196,7 @@ void NavigationController::activate(int index) {
     return;
   }
   if (m_remoteActive) {
-    // Truthful disabled state (S5 scope): no download/execute, no local
-    // launch of a URL-shaped path.
-    m_launchError =
-        QStringLiteral("Opening files from a network location is not supported yet");
-    emit launchErrorChanged();
+    activateRemoteFile(entry);
     return;
   }
   const LaunchResult result = m_launcher->launch(entry.absolutePath);
@@ -192,6 +204,22 @@ void NavigationController::activate(int index) {
     m_launchError = result.diagnostic;
     emit launchErrorChanged();
   }
+}
+
+// ADR-0152: a remote regular file is handed to the injected RemoteFileOpener
+// (production: KIO::OpenUrlJob, i.e. the desktop's default handler after any
+// KIO-managed temp download). QindaQt never downloads, executes, or locally
+// launches a URL-shaped path itself, and never opens a handler picker.
+void NavigationController::activateRemoteFile(const DirectoryEntry &entry) {
+  if (m_remoteOpener) {
+    m_remoteOpener->open(QUrl(entry.absolutePath));
+    return;
+  }
+  // Truthful disabled state when no opener is injected (the stock app always
+  // injects one; tests and foreign compositions may not).
+  m_launchError =
+      QStringLiteral("Opening files from a network location is not supported yet");
+  emit launchErrorChanged();
 }
 
 void NavigationController::clearLaunchError() {

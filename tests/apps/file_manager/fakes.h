@@ -4,6 +4,7 @@
 #include "model/directory_lister.h"
 #include "model/launch_intent.h"
 #include "network/network_directory_backend.h"
+#include "network/remote_file_opener.h"
 
 #include <QHash>
 #include <QStringList>
@@ -88,6 +89,22 @@ public:
 private:
   QVector<Request> m_requests;
   QVector<quint64> m_cancelled;
+};
+
+// Test-only RemoteFileOpener: records the requested URL; the test fires
+// openFinished manually, so success/failure wiring is deterministic without
+// a real KIO job, network, desktop handler, or credential prompt.
+class FakeRemoteFileOpener final : public RemoteFileOpener {
+public:
+  void open(const QUrl &url) override { m_requestedUrls.append(url); }
+
+  void finishSuccess() { Q_EMIT openFinished(QString()); }
+  void finishFailure(const QString &diagnostic) { Q_EMIT openFinished(diagnostic); }
+
+  [[nodiscard]] const QVector<QUrl> &requestedUrls() const { return m_requestedUrls; }
+
+private:
+  QVector<QUrl> m_requestedUrls;
 };
 
 } // namespace QindaQt::Apps::FileManager::Test
