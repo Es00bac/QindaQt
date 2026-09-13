@@ -84,9 +84,14 @@ QWidget-capable File Manager application composition. The integrated affected
 selector passes 10/10; docs 251, strict MkDocs, and diff checks pass. Remote
 Rename exact-parent descendant `28b109a0` received independent ACCEPT and is
 integrated as `133d5f54`; its eight-row integrated File Manager/bootstrap
-selector passes 8/8, docs 252, strict MkDocs, and diff checks pass. Remote
-create/copy/move/write and installed/live credential validation remain separate
-boundaries.
+selector passes 8/8, docs 252, strict MkDocs, and diff checks pass. Remote New
+Folder lineage `504dd87a` → `12e4ef49` also received same-reviewer ACCEPT after
+the exact test-only split restored the source-shape hard limit, and is integrated
+as `9f5cce93` → `8ddf96af`. The strict affected build and focused integrated-tree
+selector pass 9/9, including the newly split
+`qindaqt.file-manager-navigation-controller-network-mutation` row; docs validate
+253 pages, strict MkDocs and diff checks pass. Remote copy/move/write and
+installed/live credential validation remain separate boundaries.
 
 Customize applet editing and configured-wallpaper preview are integrated as
 the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
