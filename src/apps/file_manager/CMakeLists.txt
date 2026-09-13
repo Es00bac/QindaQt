@@ -7,6 +7,8 @@ target_sources(
         app_shell/file_manager_action_catalog.cpp
         app_shell/file_manager_browsing_actions.cpp
         app_shell/file_manager_browsing_actions.h
+        app_shell/file_manager_mutation_actions.cpp
+        app_shell/file_manager_mutation_actions.h
         app_shell/file_manager_transfer_actions.cpp
         app_shell/file_manager_transfer_actions.h
         mutation/device_resolver.cpp

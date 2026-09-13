@@ -638,8 +638,13 @@ error/stale-generation/URL-mismatch/truncated-listing/local-remote routing/
 remote-directory-activation/remote-file-disabled-launch, all against a fake
 injected backend), and `qindaqt.file-manager-kio-network-backend` (the
 production `KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
-job-creation test seam). None of these rows make a DNS lookup, socket
-connection, or real KIO network request; the production adapter itself is
+job-creation test seam), and `qindaqt.file-manager-mutation-action-binding`
+(the coordinator's actual action-enabled state, not just controller fields,
+under `NavigationController::remoteActive`: current-folder mutations and
+`view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay
+available and are instead gated only by the mutation-busy slot). None of
+these rows make a DNS lookup, socket connection, or real KIO network request;
+the production adapter itself is
 otherwise only exercised by construction/linking.
 
 The S3 daily-use rows are `qindaqt.file-manager-clipboard-controller`,

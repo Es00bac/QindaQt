@@ -107,6 +107,11 @@ qindaqt_add_file_manager_test(
     qindaqt.file-manager-kio-network-backend
 )
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_mutation_action_binding_tests
+    tst_mutation_action_binding.cpp
+    qindaqt.file-manager-mutation-action-binding
+)
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_listing_order_tests
     tst_listing_order.cpp
     qindaqt.file-manager-listing-order

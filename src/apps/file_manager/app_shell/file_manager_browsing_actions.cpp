@@ -22,6 +22,10 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     enabled("go.up", navigation.canGoUp());
     enabled("view.zoom-in", navigation.canZoomIn());
     enabled("view.zoom-out", navigation.canZoomOut());
+    // Recursive search never resolves a remote URL through QFileInfo (see
+    // SearchController::startSearch), so the action that opens it is
+    // disabled instead of presenting a dead end (ADR-0137).
+    enabled("view.filter", !navigation.remoteActive());
     checked("view.show-hidden", navigation.showHidden());
   };
   QObject::connect(&navigation, &NavigationController::navigationChanged,
