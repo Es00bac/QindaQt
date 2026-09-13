@@ -19,12 +19,16 @@ enum class AppletSettingFieldKind {
 };
 
 // Classifies one manifest `settingsSchema.properties.<key>` entry. A JSON
-// Schema "integer" is editable only when the manifest also declares both
-// `minimum` and `maximum` (the dispatch's "bounded integer"); a "string" is
-// editable only with a non-empty `enum` (the dispatch's "closed
-// enum/string-choice"). Everything else -- including a bare "string" with no
-// enum, "number", "object", "array", or an absent/unknown type -- is
-// Unsupported.
+// Schema "integer" is editable only when `minimum` and `maximum` are both
+// finite, integral, int-representable numbers with minimum <= maximum (the
+// dispatch's "bounded integer"); a "string" is editable only with a
+// non-empty `enum` whose every member is itself a JSON string (the
+// dispatch's "closed enum/string-choice"). A null, missing, non-numeric,
+// fractional, out-of-`int`-width, or reversed bound, a non-string enum
+// member, or any other declared kind -- a bare "string" with no enum,
+// "number", "object", "array", or an absent/unknown type -- is Unsupported.
+// This is a hostile-schema boundary, not just a hostile-value one: an
+// accepted manifest is never re-validated member-by-member upstream.
 [[nodiscard]] AppletSettingFieldKind appletSettingFieldKind(
     const QJsonObject &propertySchema);
 
