@@ -37,23 +37,32 @@ int visibleMenuItem(const SurfaceHost &host, const QString &objectName)
 class ScopedHomeRedirect {
 public:
     explicit ScopedHomeRedirect(const QString &root)
-        : m_previous(qEnvironmentVariable("HOME"))
+        : m_previous(qEnvironmentVariable("HOME")), m_previousData(qgetenv("XDG_DATA_HOME"))
     {
         qputenv("HOME", root.toLocal8Bit());
+        qputenv("XDG_DATA_HOME", (root + QStringLiteral("/.local/share")).toLocal8Bit());
     }
-    ~ScopedHomeRedirect() { qputenv("HOME", m_previous.toLocal8Bit()); }
+    ~ScopedHomeRedirect()
+    {
+        qputenv("HOME", m_previous.toLocal8Bit());
+        qputenv("XDG_DATA_HOME", m_previousData);
+    }
 
     Q_DISABLE_COPY(ScopedHomeRedirect)
 
 private:
     QString m_previous;
+    QByteArray m_previousData;
 };
 
 // Scoped environment override, restored on destruction.
 class ScopedEnvironment {
 public:
     ScopedEnvironment(const char *name, const QByteArray &value)
-        : m_name(name), m_previous(qgetenv(name)) { qputenv(name, value); }
+        : m_name(name), m_previous(qgetenv(name))
+    {
+        qputenv(name, value);
+    }
     ~ScopedEnvironment() { qputenv(m_name, m_previous); }
     Q_DISABLE_COPY(ScopedEnvironment)
 
@@ -88,6 +97,7 @@ private Q_SLOTS:
     void selectionAndDoubleClickDispatchThroughTheBoundary();
     void contextMenuStyleSwitchesItemSets();
     void contextMenuWindowHasPositiveSizeBeforeOpening();
+    void contextMenuOpensAtThePointer();
     void modifierRightClickOpensApplicationsPopup();
     void middleClickOpensApplicationsPopupAtEmptyArea();
     void middleClickOpensApplicationsPopupAtThePointer();
@@ -128,20 +138,17 @@ void DesktopSurfaceQmlTests::placementSettingSwitchesAnchorEdge()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(nullptr, &launcher,
-                         {{QStringLiteral("placement"), QStringLiteral("left")}},
-                         &error),
+                         {{QStringLiteral("placement"), QStringLiteral("left")}}, &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
     auto *view = host.child<QQuickItem>(QStringLiteral("desktopIconsView"));
     QVERIFY(view != nullptr);
     QCOMPARE(view->property("placementRight").toBool(), false);
     QCOMPARE(view->x(), 0.0);
-    QTRY_VERIFY(host.visualItemsNamed(QStringLiteral("desktopIconsTile")).size()
-                == 3);
+    QTRY_VERIFY(host.visualItemsNamed(QStringLiteral("desktopIconsTile")).size() == 3);
 
-    QVERIFY(host.window->setProperty("applets",
-                                     makeApplets({{QStringLiteral("placement"),
-                                                   QStringLiteral("right")}})));
+    QVERIFY(host.window->setProperty(
+        "applets", makeApplets({{QStringLiteral("placement"), QStringLiteral("right")}})));
     QTRY_COMPARE(view->property("placementRight").toBool(), true);
     // The block now hugs the right edge: its right side sits one margin from
     // the output edge.
@@ -159,21 +166,18 @@ void DesktopSurfaceQmlTests::selectionAndDoubleClickDispatchThroughTheBoundary()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(nullptr, &launcher,
-                         {{QStringLiteral("placement"), QStringLiteral("left")}},
-                         &error),
+                         {{QStringLiteral("placement"), QStringLiteral("left")}}, &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
-    const auto tiles =
-        host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
     QCOMPARE(tiles.size(), 3);
     // LocalDirectoryLister sorts directories before files, then
     // case-insensitively by name: Projects, Notes.txt, Report.txt.
     QQuickItem *folderTile = tiles.at(0);
-    QCOMPARE(folderTile->property("entryLabel").toString(),
-             QStringLiteral("Projects"));
+    QCOMPARE(folderTile->property("entryLabel").toString(), QStringLiteral("Projects"));
     QQuickItem *fileTile = tiles.at(1);
-    QCOMPARE(fileTile->property("entryLabel").toString(),
-             QStringLiteral("Notes.txt"));
+    QCOMPARE(fileTile->property("entryLabel").toString(), QStringLiteral("Notes.txt"));
+    QTRY_VERIFY(fileTile->y() > folderTile->y());
 
     // Single click selects exactly one tile.
     const QPointF center(fileTile->width() / 2, fileTile->height() / 2);
@@ -193,23 +197,20 @@ void DesktopSurfaceQmlTests::selectionAndDoubleClickDispatchThroughTheBoundary()
     QVERIFY(QDir().mkpath(bin));
     QFile program(bin + QStringLiteral("/qindaqt-file-manager"));
     QVERIFY(program.open(QIODevice::WriteOnly));
-    program.write(QStringLiteral("#!/bin/sh\nprintf '%s\\n' \"$@\" >> '%1'\n")
-                      .arg(record).toLocal8Bit());
+    program.write(
+        QStringLiteral("#!/bin/sh\nprintf '%s\\n' \"$@\" >> '%1'\n").arg(record).toLocal8Bit());
     program.close();
     QVERIFY(program.setPermissions(QFileDevice::ReadOwner | QFileDevice::ExeOwner));
     ScopedEnvironment path("PATH", bin.toLocal8Bit());
     const QByteArray expected =
-        QFileInfo(desktop + QStringLiteral("/Projects")).canonicalFilePath().toLocal8Bit()
-        + '\n';
-    auto *contents =
-        host.child<QObject>(QStringLiteral("desktopContentsController"));
+        QFileInfo(desktop + QStringLiteral("/Projects")).canonicalFilePath().toLocal8Bit() + '\n';
+    auto *contents = host.child<QObject>(QStringLiteral("desktopContentsController"));
     QVERIFY(contents != nullptr);
     QVERIFY(contents->property("feedback").toString().isEmpty());
     const QPointF folderCenter(folderTile->width() / 2, folderTile->height() / 2);
     const QPointF folderScene = folderTile->mapToScene(folderCenter);
     host.clickWindow(Qt::LeftButton, Qt::NoModifier, folderScene);
-    QTest::mouseDClick(host.window.get(), Qt::LeftButton, Qt::NoModifier,
-                       folderScene.toPoint());
+    QTest::mouseDClick(host.window.get(), Qt::LeftButton, Qt::NoModifier, folderScene.toPoint());
     const auto launches = [&record] {
         QFile file(record);
         return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
@@ -232,9 +233,7 @@ void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(&access, &launcher,
-                         {{QStringLiteral("contextMenuStyle"),
-                           QStringLiteral("windows")}},
-                         &error),
+                         {{QStringLiteral("contextMenuStyle"), QStringLiteral("windows")}}, &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
@@ -274,21 +273,19 @@ void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
 
     for (const auto &testCase : cases) {
         QVERIFY(host.window->setProperty(
-            "applets", makeApplets({{QStringLiteral("contextMenuStyle"),
-                                     QLatin1String(testCase.style)}})));
+            "applets",
+            makeApplets({{QStringLiteral("contextMenuStyle"), QLatin1String(testCase.style)}})));
         host.clickWindow(Qt::RightButton, Qt::NoModifier, kEmptySpot);
         QTRY_VERIFY(menu->property("opened").toBool());
         for (const auto &expected : testCase.expected) {
             const int actual = visibleMenuItem(host, expected.first);
             if (actual != expected.second) {
                 const auto found = host.visualItemsNamed(expected.first);
-                qDebug() << "menu item mismatch in style" << testCase.style
-                         << "item" << expected.first << "expected"
-                         << expected.second << "actual" << actual
+                qDebug() << "menu item mismatch in style" << testCase.style << "item"
+                         << expected.first << "expected" << expected.second << "actual" << actual
                          << "found" << found.size()
-                         << (found.isEmpty()
-                                 ? QVariant()
-                                 : QVariant(found.constFirst()->isVisible()));
+                         << (found.isEmpty() ? QVariant()
+                                             : QVariant(found.constFirst()->isVisible()));
             }
             QCOMPARE(actual, expected.second);
         }
@@ -323,6 +320,26 @@ void DesktopSurfaceQmlTests::contextMenuWindowHasPositiveSizeBeforeOpening()
     menu->setProperty("visible", false);
 }
 
+void DesktopSurfaceQmlTests::contextMenuOpensAtThePointer()
+{
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *menu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *anchor = host.child<QQuickItem>(QStringLiteral("desktopContextMenuAnchor"));
+    QVERIFY(menu != nullptr);
+    QVERIFY(anchor != nullptr);
+
+    const QPointF position(333, 211);
+    host.clickWindow(Qt::RightButton, Qt::NoModifier, position);
+    QTRY_VERIFY(menu->property("opened").toBool());
+    QCOMPARE(anchor->x() + anchor->width(), position.x());
+    QCOMPARE(anchor->y(), position.y());
+}
+
 void DesktopSurfaceQmlTests::modifierRightClickOpensApplicationsPopup()
 {
     StubPlaces places;
@@ -330,18 +347,15 @@ void DesktopSurfaceQmlTests::modifierRightClickOpensApplicationsPopup()
     StubLauncher launcher;
     SurfaceHost host;
     QString error;
-    QVERIFY2(host.create(
-                 &access, &launcher,
-                 {{QStringLiteral("applicationsMenuModifier"),
-                   QStringLiteral("shift")}},
-                 &error),
+    QVERIFY2(host.create(&access, &launcher,
+                         {{QStringLiteral("applicationsMenuModifier"), QStringLiteral("shift")}},
+                         &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
     // Plain right click opens the style menu (default windows style).
     host.clickWindow(Qt::RightButton, Qt::NoModifier, kEmptySpot);
-    auto *contextMenu =
-        host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *contextMenu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
     QVERIFY(contextMenu != nullptr);
     QTRY_VERIFY(contextMenu->property("opened").toBool());
     contextMenu->setProperty("visible", false);
@@ -349,28 +363,22 @@ void DesktopSurfaceQmlTests::modifierRightClickOpensApplicationsPopup()
 
     // Shift+right click opens the Applications popup regardless of style.
     host.clickWindow(Qt::RightButton, Qt::ShiftModifier, kEmptySpot);
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
     QVERIFY(applicationsMenu != nullptr);
     QCOMPARE(applicationsMenu->property("popupType").toInt(), 1);
     QTRY_VERIFY(applicationsMenu->property("opened").toBool());
     QCOMPARE(contextMenu->property("opened").toBool(), false);
 
-    const auto rows =
-        host.visualItemsNamed(QStringLiteral("desktopApplicationsRow"));
+    const auto rows = host.visualItemsNamed(QStringLiteral("desktopApplicationsRow"));
     QCOMPARE(rows.size(), 1);
-    QCOMPARE(QAccessible::queryAccessibleInterface(rows.constFirst())
-                 ->text(QAccessible::Name),
+    QCOMPARE(QAccessible::queryAccessibleInterface(rows.constFirst())->text(QAccessible::Name),
              QStringLiteral("Terminal"));
-    const QPointF rowCenter(rows.constFirst()->width() / 2,
-                            rows.constFirst()->height() / 2);
+    const QPointF rowCenter(rows.constFirst()->width() / 2, rows.constFirst()->height() / 2);
     const QPointF rowScene = rows.constFirst()->mapToScene(rowCenter);
-    QTest::mouseClick(
-        rows.constFirst()->window(), Qt::LeftButton, Qt::NoModifier,
-        rowScene.toPoint());
+    QTest::mouseClick(rows.constFirst()->window(), Qt::LeftButton, Qt::NoModifier,
+                      rowScene.toPoint());
     QTRY_COMPARE(launcher.activated.size(), 1);
-    QCOMPARE(launcher.activated.constFirst(),
-             QStringLiteral("org.qindaqt.Terminal"));
+    QCOMPARE(launcher.activated.constFirst(), QStringLiteral("org.qindaqt.Terminal"));
     QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
 }
 
@@ -382,16 +390,12 @@ void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtEmptyArea()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(&access, &launcher,
-                         {{QStringLiteral("contextMenuStyle"),
-                           QStringLiteral("windows")}},
-                         &error),
+                         {{QStringLiteral("contextMenuStyle"), QStringLiteral("windows")}}, &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
-    auto *contextMenu =
-        host.child<QObject>(QStringLiteral("desktopContextMenu"));
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
     QVERIFY(contextMenu != nullptr);
     QVERIFY(applicationsMenu != nullptr);
 
@@ -400,9 +404,7 @@ void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtEmptyArea()
     const char *styles[] = {"windows", "mac", "traditional"};
     for (const char *style : styles) {
         QVERIFY(host.window->setProperty(
-            "applets",
-            makeApplets({{QStringLiteral("contextMenuStyle"),
-                         QLatin1String(style)}})));
+            "applets", makeApplets({{QStringLiteral("contextMenuStyle"), QLatin1String(style)}})));
         host.clickWindow(Qt::MiddleButton, Qt::NoModifier, kEmptySpot);
         QCOMPARE(applicationsMenu->property("popupType").toInt(), 1);
         QTRY_VERIFY(applicationsMenu->property("opened").toBool());
@@ -422,8 +424,7 @@ void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtThePointer()
     QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
     QVERIFY(applicationsMenu != nullptr);
 
     // Two distinct empty-area positions, both far enough from every edge that
@@ -434,8 +435,10 @@ void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtThePointer()
     for (const QPointF &position : positions) {
         host.clickWindow(Qt::MiddleButton, Qt::NoModifier, position);
         QTRY_VERIFY(applicationsMenu->property("opened").toBool());
-        QCOMPARE(applicationsMenu->property("x").toReal(), position.x());
-        QCOMPARE(applicationsMenu->property("y").toReal(), position.y());
+        auto *anchor = host.child<QQuickItem>(QStringLiteral("desktopApplicationsMenuAnchor"));
+        QVERIFY(anchor != nullptr);
+        QCOMPARE(anchor->x() + anchor->width(), position.x());
+        QCOMPARE(anchor->y(), position.y());
         applicationsMenu->setProperty("visible", false);
         QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
     }
@@ -451,8 +454,7 @@ void DesktopSurfaceQmlTests::middleClickClampsPopupInsideTheSurfaceNearEdges()
     QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
     QVERIFY(applicationsMenu != nullptr);
 
     // A click near the surface's bottom-right corner must still land a fully
@@ -462,8 +464,10 @@ void DesktopSurfaceQmlTests::middleClickClampsPopupInsideTheSurfaceNearEdges()
     QTRY_VERIFY(applicationsMenu->property("opened").toBool());
     const qreal width = applicationsMenu->property("width").toReal();
     const qreal height = applicationsMenu->property("height").toReal();
-    const qreal x = applicationsMenu->property("x").toReal();
-    const qreal y = applicationsMenu->property("y").toReal();
+    auto *anchor = host.child<QQuickItem>(QStringLiteral("desktopApplicationsMenuAnchor"));
+    QVERIFY(anchor != nullptr);
+    const qreal x = anchor->x() + anchor->width();
+    const qreal y = anchor->y();
     QCOMPARE(x, 800.0 - width);
     QCOMPARE(y, 600.0 - height);
     QVERIFY(x >= 0.0);
@@ -482,16 +486,17 @@ void DesktopSurfaceQmlTests::shiftRightClickPlacementSurvivesAPriorPointerOpen()
     QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
     QVERIFY(applicationsMenu != nullptr);
 
     // Record the pristine default placement (DesktopApplicationsMenu's own
     // x/y bindings) before any pointer-anchored open ever runs.
     host.clickWindow(Qt::RightButton, Qt::ShiftModifier, kEmptySpot);
     QTRY_VERIFY(applicationsMenu->property("opened").toBool());
-    const qreal defaultX = applicationsMenu->property("x").toReal();
-    const qreal defaultY = applicationsMenu->property("y").toReal();
+    auto *anchor = host.child<QQuickItem>(QStringLiteral("desktopApplicationsMenuAnchor"));
+    QVERIFY(anchor != nullptr);
+    const qreal defaultX = anchor->x() + anchor->width();
+    const qreal defaultY = anchor->y();
     QCOMPARE(defaultX, 8.0);
     applicationsMenu->setProperty("visible", false);
     QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
@@ -499,8 +504,8 @@ void DesktopSurfaceQmlTests::shiftRightClickPlacementSurvivesAPriorPointerOpen()
     // A middle click anchors the popup at a different point.
     host.clickWindow(Qt::MiddleButton, Qt::NoModifier, QPointF(200, 150));
     QTRY_VERIFY(applicationsMenu->property("opened").toBool());
-    QCOMPARE(applicationsMenu->property("x").toReal(), 200.0);
-    QCOMPARE(applicationsMenu->property("y").toReal(), 150.0);
+    QCOMPARE(anchor->x() + anchor->width(), 200.0);
+    QCOMPARE(anchor->y(), 150.0);
     applicationsMenu->setProperty("visible", false);
     QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
 
@@ -509,8 +514,8 @@ void DesktopSurfaceQmlTests::shiftRightClickPlacementSurvivesAPriorPointerOpen()
     // declarative binding, so the fixed-placement path must restore it.
     host.clickWindow(Qt::RightButton, Qt::ShiftModifier, kEmptySpot);
     QTRY_VERIFY(applicationsMenu->property("opened").toBool());
-    QCOMPARE(applicationsMenu->property("x").toReal(), defaultX);
-    QCOMPARE(applicationsMenu->property("y").toReal(), defaultY);
+    QCOMPARE(anchor->x() + anchor->width(), defaultX);
+    QCOMPARE(anchor->y(), defaultY);
 }
 
 void DesktopSurfaceQmlTests::middleClickOverTileStaysInert()
@@ -525,21 +530,16 @@ void DesktopSurfaceQmlTests::middleClickOverTileStaysInert()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(&access, &launcher,
-                         {{QStringLiteral("placement"), QStringLiteral("left")}},
-                         &error),
+                         {{QStringLiteral("placement"), QStringLiteral("left")}}, &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
-    const auto tiles =
-        host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
     QCOMPARE(tiles.size(), 2);
     QQuickItem *folderTile = tiles.at(0);
 
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
-    auto *contextMenu =
-        host.child<QObject>(QStringLiteral("desktopContextMenu"));
-    auto *contents =
-        host.child<QObject>(QStringLiteral("desktopContentsController"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *contents = host.child<QObject>(QStringLiteral("desktopContentsController"));
     QVERIFY(applicationsMenu != nullptr);
     QVERIFY(contextMenu != nullptr);
     QVERIFY(contents != nullptr);
@@ -573,21 +573,16 @@ void DesktopSurfaceQmlTests::middleDoubleClickOverTileStaysInert()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(&access, &launcher,
-                         {{QStringLiteral("placement"), QStringLiteral("left")}},
-                         &error),
+                         {{QStringLiteral("placement"), QStringLiteral("left")}}, &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
-    const auto tiles =
-        host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
     QCOMPARE(tiles.size(), 2);
     QQuickItem *folderTile = tiles.at(0);
 
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
-    auto *contextMenu =
-        host.child<QObject>(QStringLiteral("desktopContextMenu"));
-    auto *contents =
-        host.child<QObject>(QStringLiteral("desktopContentsController"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *contents = host.child<QObject>(QStringLiteral("desktopContentsController"));
     QVERIFY(applicationsMenu != nullptr);
     QVERIFY(contextMenu != nullptr);
     QVERIFY(contents != nullptr);
@@ -598,8 +593,7 @@ void DesktopSurfaceQmlTests::middleDoubleClickOverTileStaysInert()
     // way it filters onClicked (see DesktopIconsView.qml).
     const QPointF center(folderTile->width() / 2, folderTile->height() / 2);
     const QPointF sceneCenter = folderTile->mapToScene(center);
-    QTest::mouseDClick(host.window.get(), Qt::MiddleButton, Qt::NoModifier,
-                       sceneCenter.toPoint());
+    QTest::mouseDClick(host.window.get(), Qt::MiddleButton, Qt::NoModifier, sceneCenter.toPoint());
     QCOMPARE(folderTile->property("selected").toBool(), false);
     QCOMPARE(contents->property("feedback").toString(), QString());
     QCOMPARE(applicationsMenu->property("opened").toBool(), false);
@@ -615,10 +609,8 @@ void DesktopSurfaceQmlTests::middleClickFailsClosedWithoutLauncherFacade()
     QVERIFY2(host.create(&access, nullptr, {}, &error), qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
 
-    auto *applicationsMenu =
-        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
-    auto *contextMenu =
-        host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *applicationsMenu = host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
     QVERIFY(applicationsMenu != nullptr);
     QVERIFY(contextMenu != nullptr);
 
@@ -636,8 +628,7 @@ void DesktopSurfaceQmlTests::nullFacadesDisableMenuEntries()
     SurfaceHost host;
     QString error;
     QVERIFY2(host.create(&access, nullptr,
-                         {{QStringLiteral("contextMenuStyle"),
-                           QStringLiteral("traditional")}},
+                         {{QStringLiteral("contextMenuStyle"), QStringLiteral("traditional")}},
                          &error),
              qPrintable(error));
     QTRY_VERIFY(host.window->isExposed());
@@ -647,27 +638,21 @@ void DesktopSurfaceQmlTests::nullFacadesDisableMenuEntries()
     QVERIFY(menu != nullptr);
     QTRY_VERIFY(menu->property("opened").toBool());
     // Launcher-gated entries disable.
-    QVERIFY(!host.visualItemsNamed(QStringLiteral("desktopContextTerminal"))
-                 .constFirst()
-                 ->isEnabled());
-    QVERIFY(!host.visualItemsNamed(QStringLiteral("desktopContextSettings"))
-                 .constFirst()
-                 ->isEnabled());
+    QVERIFY(
+        !host.visualItemsNamed(QStringLiteral("desktopContextTerminal")).constFirst()->isEnabled());
+    QVERIFY(
+        !host.visualItemsNamed(QStringLiteral("desktopContextSettings")).constFirst()->isEnabled());
     menu->setProperty("visible", false);
     QTRY_VERIFY(!menu->property("opened").toBool());
 
     // No crash with no facade at all, and no tiles from the empty Desktop
     // directory init() created.
     SurfaceHost bareHost;
-    QVERIFY2(bareHost.create(nullptr, nullptr, {}, &error),
-             qPrintable(error));
+    QVERIFY2(bareHost.create(nullptr, nullptr, {}, &error), qPrintable(error));
     QTRY_VERIFY(bareHost.window->isExposed());
-    QCOMPARE(bareHost.visualItemsNamed(QStringLiteral("desktopIconsTile"))
-                 .size(),
-             0);
+    QCOMPARE(bareHost.visualItemsNamed(QStringLiteral("desktopIconsTile")).size(), 0);
     bareHost.clickWindow(Qt::RightButton, Qt::NoModifier, kEmptySpot);
-    auto *bareMenu =
-        bareHost.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *bareMenu = bareHost.child<QObject>(QStringLiteral("desktopContextMenu"));
     QVERIFY(bareMenu != nullptr);
     QTRY_VERIFY(bareMenu->property("opened").toBool());
     bareMenu->setProperty("visible", false);

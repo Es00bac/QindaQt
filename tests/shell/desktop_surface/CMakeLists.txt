@@ -78,6 +78,8 @@ qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_new_folder_tests
     tst_new_folder_controller.cpp qindaqt.desktop-surface-new-folder)
 qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_contents_tests
     tst_desktop_contents_controller.cpp qindaqt.desktop-surface-contents)
+qindaqt_add_desktop_surface_test(qindaqt_desktop_icon_layout_store_tests
+    tst_desktop_icon_layout_store.cpp qindaqt.desktop-icon-layout-store)
 qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_controller_tests
     tst_desktop_surface_controller.cpp qindaqt.desktop-surface-controller)
 # The controller maps QQuickWindows, so the lane needs the offscreen platform
@@ -92,6 +94,13 @@ qindaqt_add_desktop_surface_test(
     qindaqt_desktop_surface_qml_tests
     tst_desktop_surface_qml.cpp
     qindaqt.desktop-surface-offscreen-qml
+    SUPPORT desktop_surface_qml_test_support.h
+    OFFSCREEN
+)
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_icon_interaction_tests
+    tst_desktop_icon_interactions.cpp
+    qindaqt.desktop-icon-interactions
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )

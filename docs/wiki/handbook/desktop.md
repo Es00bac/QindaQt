@@ -22,6 +22,20 @@ The default layout has two panels:
 
 Other looks are available — see [Making it yours](customization.md).
 
+## Desktop icons and menus
+
+The icons are the real files and folders in your Desktop directory. Drag an
+icon with the left button to place it anywhere on that screen; QindaQt keeps
+the position after restarting the shell. Right-click an icon for its own
+**Open** and **Rename…** menu. Renaming changes the real Desktop item through
+the same protected operation used by File Manager and keeps the icon where you
+put it.
+
+Right-click empty desktop space for the desktop menu. Middle-click empty space
+for the Applications menu, XFCE-style. Both menus open under the pointer and
+move inward only when necessary to stay on screen. **Arrange Icons** returns
+the current screen's icons to their configured left- or right-edge columns.
+
 ## Window containers
 
 Most desktops make you choose between independent windows and a tiling
