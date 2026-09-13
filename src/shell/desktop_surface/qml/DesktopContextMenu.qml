@@ -6,7 +6,7 @@ import QtQuick.Templates as T
 
 // Styled desktop context menu (ADR-0125). One menu, three item sets driven by
 // the desktop-icons `contextMenuStyle` setting. Every entry dispatches
-// through an existing seam: launcherAccess.activate(entryId),
+// through an existing seam: launcherAccess.activate(entryId, actionId),
 // placesAccess.open(placeId), newFolder.create(), or the icons view reflow.
 // A null facade disables its entries instead of crashing.
 //
@@ -59,9 +59,9 @@ T.Menu {
         }
     }
 
-    function activate(entryId) {
+    function activate(entryId, actionId) {
         if (launcherAccess !== null) {
-            launcherAccess.activate(entryId)
+            launcherAccess.activate(entryId, actionId)
         }
     }
 
@@ -75,7 +75,7 @@ T.Menu {
         }
     }
 
-    function dispatch(kind, targetId) {
+    function dispatch(kind, targetId, actionId) {
         switch (kind) {
         case "reflow":
             reflowIcons()
@@ -84,7 +84,7 @@ T.Menu {
             createFolder()
             break
         case "launch":
-            activate(targetId)
+            activate(targetId, actionId)
             break
         case "openPlace":
             if (placesAccess !== null) {
@@ -128,7 +128,7 @@ T.Menu {
                 {objectName: "desktopContextScreenSaver",
                  text: qsTr("Change Desktop && Screen Saver…"),
                  kind: "launch", targetId: "org.qindaqt.Settings",
-                 needsLauncher: true},
+                 actionId: "appearance", needsLauncher: true},
             ]
         }
         if (style === "traditional") {
@@ -147,7 +147,7 @@ T.Menu {
                 {objectName: "desktopContextSettings",
                  text: qsTr("Desktop Settings"),
                  kind: "launch", targetId: "org.qindaqt.Settings",
-                 needsLauncher: true},
+                 actionId: "appearance", needsLauncher: true},
             ]
         }
         return [
@@ -162,7 +162,7 @@ T.Menu {
             {objectName: "desktopContextDisplayProperties",
              text: qsTr("Display Properties"),
              kind: "launch", targetId: "org.qindaqt.Settings",
-             needsLauncher: true},
+             actionId: "display", needsLauncher: true},
         ]
     }
 
@@ -187,7 +187,8 @@ T.Menu {
             rightPadding: isSeparator ? 2 : 10
 
             onTriggered: root.dispatch(String(modelData.kind ?? ""),
-                                       String(modelData.targetId ?? ""))
+                                       String(modelData.targetId ?? ""),
+                                       String(modelData.actionId ?? ""))
 
             contentItem: Item {
                 implicitWidth: entry.isSeparator ? 160

@@ -173,9 +173,14 @@ surface hosts the desktop-icons entry (see its bullet below):
   keep the popup's own fixed bottom-left placement. It fails closed (no
   popup) when the borrowed launcher facade is absent, and a middle click or
   middle double-click over an icon tile stays inert rather than activating
-  the tile or opening any menu. The menu's own
-  "Open"/"Display Properties" style entries still open the
-  Desktop folder itself through the borrowed `PlacesController` facade.
+  the tile or opening any menu. The menu's mac-style "Open" entry opens the
+  Desktop folder itself through the borrowed `PlacesController` facade; the
+  settings-labeled entries — mac-style "Change Desktop & Screen Saver…",
+  traditional "Desktop Settings", and Windows-style "Display Properties" —
+  dispatch the installed `org.qindaqt.Settings` entry's `appearance` and
+  `display` desktop actions through the borrowed launcher facade, opening
+  the Appearance or Display route each label promises rather than the
+  primary Settings launch.
   Folder creation goes through the least-authority `NewFolderController`
   seam, which writes only under the user's Desktop directory; the manifest
   requests only `applications.launch` and no new capability enum. See
