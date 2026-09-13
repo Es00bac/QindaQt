@@ -559,9 +559,14 @@ Only genuinely empty state collapses to zero extent. Provider loss dismisses
 every open native menu and disables the retained tree. Re-publication may reuse
 a same-index top-level `Menu` delegate, so a changed `menuData` value first
 dismisses that menu, removes its dynamic descendants, and synchronously
-rebuilds them from the new snapshot. A queued gesture against a retired item is
-therefore inert, while the facade generation check remains the cross-boundary
-fallback against stale invocation.
+rebuilds them from the new snapshot. A publication that removes entries
+instead retires their delegates from the bar immediately: a popup left open on
+a removed top-level entry closes synchronously with the republish — the
+obsolete generation is detached and undispatchable before any later gesture
+can reach it — and an empty publication collapses the bar to zero entries.
+Either shape leaves a queued gesture against a retired item inert, while the
+facade generation check remains the cross-boundary fallback against stale
+invocation.
 
 Each projected `Menu` uses `Popup.Window`. The customized native controls
 explicitly derive from `QtQuick.Controls.Basic`, so an inherited desktop
