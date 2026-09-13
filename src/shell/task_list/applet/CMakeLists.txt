@@ -47,6 +47,7 @@ qt_add_qml_module(
         qml/TaskListApplet.qml
         qml/TaskListEntryButton.qml
         qml/TaskListPreviewPopup.qml
+        qml/TaskListUrgentPulse.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons
 )

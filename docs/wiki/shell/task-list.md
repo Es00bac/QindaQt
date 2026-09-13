@@ -156,6 +156,20 @@ selection presents `Empty` even while degraded. Every presented row carries a
 composed as application, title, window count for grouped containers, then the
 state suffixes `active`, `minimized`, and `urgent` in that order.
 
+Urgency is animated where the row renders it: while `urgent` is projected —
+for example the [Terminal](../apps/terminal.md) audible-bell path, whose Qt
+attention request reaches this projection through the compositor task facts —
+the applet's `TaskListUrgentPulse` animation breathes the row's
+`urgentAttentionLevel` between full and dimmed opacity at the QST-1 short
+motion duration, and `TaskListEntryButton.qml` binds its urgency surfaces to
+that level: the `!` badge on panel rows and the tile icon on the dock, which
+has no badge. The breath is
+opacity-only (dock magnification owns icon scale; layout bounds and hit
+targets never move), the badge and icon remain visible at the dimmest point
+so demand-attention truth never depends on the animation, the pulse settles
+back to full opacity the moment urgency clears, and under the host
+reduced-motion policy it never runs — the surfaces stay at full opacity.
+
 ## Public facts producer boundary
 
 `src/shell/task_list/producer/` is the shell-side facts producer over the
