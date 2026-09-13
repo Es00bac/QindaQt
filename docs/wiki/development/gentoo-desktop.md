@@ -26,6 +26,16 @@ new-folder, copy, move, and KIOFuse write-back. The package now declares
 session D-Bus service. Installation does not replace a running compositor or
 applications; compositor/plugin adoption still requires a later login.
 
+On the September 13 deployment host, the exact plan upgraded only
+`gui-wm/qindaqt-desktop` to `0.1.0_pre20260913`. Portage built and signed the
+binary package, merged it with `--usepkgonly`, and verified all 1,333 installed
+files. The prior `0.1.0_pre20260912` signed package remains available for
+rollback. The KWin 6.6.6 release contract, static ABI/dependency gates, private
+nested plugin boot, and staged installed-plugin discovery all pass. The active
+desktop was not restarted: its compositor, shell and Settings processes retain
+their original PIDs and start times, so the new files become live only at a
+later user-selected session boundary.
+
 The `-r11` revision lands the desktop gap wave: lock after waking, unlock
 grace, PowerDevil lid and power-button actions, and a single Meta+L owner
 (ADR-0132); explicit routing for every portal family (ADR-0133); the Input
@@ -230,7 +240,7 @@ Copy `packaging/gentoo/gui-wm/qindaqt-desktop/` into a configured local overlay,
 regenerate the Manifest, run the repository's package QA, and inspect the plan:
 
 ```sh
-ebuild /path/to/qindaqt-desktop-0.1.0_pre20260909.ebuild manifest
+ebuild /path/to/qindaqt-desktop-0.1.0_pre20260913.ebuild manifest
 pkgcheck scan --repo your-overlay gui-wm/qindaqt-desktop
 emerge --pretend --verbose gui-wm/qindaqt-desktop
 ```
