@@ -8,6 +8,8 @@
 #include "navigation_history.h"
 #include "navigation_status.h"
 #include "../network/network_directory_backend.h"
+#include "../network/remote_copy_to_controller.h"
+#include "../network/remote_copier.h"
 #include "../network/remote_create_folder_controller.h"
 #include "../network/remote_file_opener.h"
 #include "../network/remote_folder_creator.h"
@@ -70,6 +72,11 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool remoteCreateAvailable READ remoteCreateAvailable NOTIFY navigationChanged FINAL)
   // True while one remote folder creation is in flight.
   Q_PROPERTY(bool remoteCreateBusy READ remoteCreateBusy NOTIFY remoteCreateChanged FINAL)
+  // ADR-0155: true while browsing remote with a RemoteCopier injected --
+  // the action bindings use this to keep "file.copy" available remotely.
+  Q_PROPERTY(bool remoteCopyAvailable READ remoteCopyAvailable NOTIFY navigationChanged FINAL)
+  // True while one remote copy is in flight.
+  Q_PROPERTY(bool remoteCopyBusy READ remoteCopyBusy NOTIFY remoteCopyChanged FINAL)
 
 public:
   // networkBackend may be null: navigateTo() then refuses every smb/sftp
@@ -79,12 +86,14 @@ public:
   // the truthful "not supported yet" launchError instead of opening.
   // remoteRenamer may be null: remote Rename then stays disabled by the
   // action bindings exactly as before this seam existed. folderCreator may
-  // be null: remote New Folder then stays disabled the same way.
+  // be null: remote New Folder then stays disabled the same way. copier
+  // may be null: remote Copy To then stays disabled the same way.
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
                        NetworkDirectoryBackendPtr networkBackend = nullptr,
                        RemoteFileOpenerPtr remoteOpener = nullptr,
                        RemoteRenamerPtr remoteRenamer = nullptr,
                        RemoteFolderCreatorPtr folderCreator = nullptr,
+                       RemoteCopierPtr copier = nullptr,
                        QObject *parent = nullptr);
 
   // Navigates as if the user chose path directly (breadcrumb segment, typed
@@ -121,6 +130,14 @@ public:
   // through launchError; no optimistic entry is ever displayed. Returns
   // false when the request was refused before dispatch.
   Q_INVOKABLE bool createRemoteFolder(const QString &name);
+  // ADR-0155: copies one listed child of the current remote folder to a
+  // validated remote destination folder through the injected RemoteCopier.
+  // Rejects unlisted/cross-folder sources, malformed destinations,
+  // same-target copies, and directory self/descendant copies before
+  // dispatch; failures surface through launchError and the listing
+  // refreshes only when the confirmed destination is the current folder.
+  // Returns false when the request was refused before dispatch.
+  Q_INVOKABLE bool copyRemoteChild(const QString &sourcePath, const QString &destinationFolder);
   // Returns the index of the entry named name in the current listing, or -1.
   // QML uses this to restore a deterministic selection across a refresh.
   Q_INVOKABLE int indexOfName(const QString &name) const;
@@ -176,6 +193,12 @@ public:
   [[nodiscard]] bool remoteCreateBusy() const noexcept {
     return m_remoteCreate != nullptr && m_remoteCreate->busy();
   }
+  [[nodiscard]] bool remoteCopyAvailable() const noexcept {
+    return m_remoteActive && m_copier != nullptr;
+  }
+  [[nodiscard]] bool remoteCopyBusy() const noexcept {
+    return m_remoteCopy != nullptr && m_remoteCopy->busy();
+  }
   [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
@@ -191,6 +214,7 @@ signals:
   void presentationChanged();
   void remoteRenameChanged();
   void remoteCreateChanged();
+  void remoteCopyChanged();
 
 private:
   void reload(bool resetFilter = false);
@@ -215,12 +239,14 @@ private:
   void activateRemoteFile(const DirectoryEntry &entry);
   // ADR-0153: fenced rename result wiring lives in RemoteRenameController;
   // these hooks just bridge it to navigation state.
-  void onRemoteRenameRefreshRequested();
   void cancelPendingRemoteRename();
-  // ADR-0154: same bridging for RemoteCreateFolderController.
-  void onRemoteCreateRefreshRequested();
   void cancelPendingRemoteCreate();
-  [[nodiscard]] static NavigationStatus statusForNetworkError(NetworkListingError error);
+  // ADR-0155: same bridging for RemoteCopyToController; all remote
+  // operation failures share the launchError surface and all refresh
+  // requests share the listing re-read.
+  void onRemoteOperationRefreshRequested();
+  void onRemoteOperationFailed(const QString &message);
+  void cancelPendingRemoteCopy();
 
   DirectoryListerPtr m_lister;
   FileLauncherPtr m_launcher;
@@ -228,9 +254,11 @@ private:
   RemoteFileOpenerPtr m_remoteOpener;
   RemoteRenamerPtr m_remoteRenamer;
   RemoteFolderCreatorPtr m_folderCreator;
+  RemoteCopierPtr m_copier;
   std::unique_ptr<RemoteOpenController> m_remoteOpen;
   std::unique_ptr<RemoteRenameController> m_remoteRename;
   std::unique_ptr<RemoteCreateFolderController> m_remoteCreate;
+  std::unique_ptr<RemoteCopyToController> m_remoteCopy;
   bool m_remoteActive = false;
   QUrl m_remoteUrl;
   NavigationHistory m_history;
