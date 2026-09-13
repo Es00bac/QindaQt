@@ -3,8 +3,10 @@
 
 #include "customize_catalog.h"
 #include "qt_customize_output_provider.h"
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
+#include "qindaqt/decoration_painter/decoration_painter.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 
@@ -91,6 +93,23 @@ QStringList wallpaperSearchDirectories()
     return directories;
 }
 
+// AGENT-CONTRACT: The exact same directory-resolution shape
+// AppAppearance::ApplicationAppearanceController already uses for the
+// compositor's own confirmed-theme lookup, extended only with the source
+// catalog for the exact build executable, matching this file's other
+// catalogs.
+QStringList themeSearchDirectories()
+{
+    QStringList directories = AppAppearance::standardThemeDirectories();
+    const QString sourceDirectory = QStringLiteral(
+        QINDAQT_CUSTOMIZE_SOURCE_THEME_DIRECTORY);
+    if (isBuildExecutable() && QDir(sourceDirectory).exists()) {
+        directories.append(sourceDirectory);
+    }
+    directories.removeDuplicates();
+    return directories;
+}
+
 } // namespace
 
 class CustomizeRouteComposition::Private final {
@@ -102,8 +121,14 @@ public:
         , wallpaperClient(wallpaperTransport,
                           {QString(SettingsAppearance::AppearanceKeys::Wallpaper),
                            QString(SettingsAppearance::AppearanceKeys::WallpaperMode)})
+        , themeTransport(QDBusConnection::sessionBus())
+        , themeClient(themeTransport, {QStringLiteral("appearance.theme")})
+        , chromeTransport(QDBusConnection::sessionBus())
+        , chromeClient(chromeTransport, Decoration::ChromePreferences::settingsKeys())
         , outputProvider(*qGuiApp)
         , wallpaperPreview(wallpaperClient, wallpaperSearchDirectories())
+        , appearance(themeClient, themeSearchDirectories(), QStringLiteral("qinda-dark"))
+        , windowPreview(appearance, chromeClient)
     {
         const QString profileSource = QStringLiteral(
             QINDAQT_CUSTOMIZE_SOURCE_PROFILE_DIRECTORY);
@@ -127,25 +152,36 @@ public:
             };
         model = std::make_unique<CustomizeSettingsModel>(
             client, catalogs.profiles, catalogs.manifests, outputProvider,
-            wallpaperPreview, factory, catalogs.error);
+            wallpaperPreview, windowPreview, factory, catalogs.error);
         QString error;
         if (!client.start(&error) && catalogs.error.isEmpty()) {
             qWarning("qindaqt-settings: Customize Settings1 unavailable: %s",
                      qPrintable(error));
         }
-        // The wallpaper preview is an enhancement, not an editing authority:
-        // when its Settings1 scope cannot start, the canvas keeps its explicit
-        // token-gradient fallback instead of warning the user.
+        // The wallpaper and contained-window previews are enhancements, not
+        // an editing authority: when either scope cannot start, the canvas
+        // keeps its explicit fallback (token gradient; the theme's own
+        // default chrome) instead of warning the user.
         QString wallpaperError;
         Q_UNUSED(wallpaperClient.start(&wallpaperError))
+        QString themeError;
+        Q_UNUSED(themeClient.start(&themeError))
+        QString chromeError;
+        Q_UNUSED(chromeClient.start(&chromeError))
     }
 
     Services::SettingsClient::QtSettingsTransport transport;
     Services::SettingsClient::SettingsClient client;
     Services::SettingsClient::QtSettingsTransport wallpaperTransport;
     Services::SettingsClient::SettingsClient wallpaperClient;
+    Services::SettingsClient::QtSettingsTransport themeTransport;
+    Services::SettingsClient::SettingsClient themeClient;
+    Services::SettingsClient::QtSettingsTransport chromeTransport;
+    Services::SettingsClient::SettingsClient chromeClient;
     QtCustomizeOutputProvider outputProvider;
     CustomizeWallpaperPreview wallpaperPreview;
+    AppAppearance::ApplicationAppearanceController appearance;
+    CustomizeWindowPreview windowPreview;
     std::unique_ptr<CustomizeSettingsModel> model;
 };
 

@@ -485,9 +485,18 @@ void CustomizeSettingsModelTests::foreignLeaseFailsClosedThenRecoversOnRefresh()
          .debounceMilliseconds = 0,
          .retryMilliseconds = {10}});
     CustomizeWallpaperPreview wallpaperPreview(wallpaperClient, {});
+    SequenceTransport themeTransport;
+    SequenceTransport chromeTransport;
+    SettingsClient themeClient(themeTransport, {QStringLiteral("appearance.theme")});
+    SettingsClient chromeClient(chromeTransport,
+                                Decoration::ChromePreferences::settingsKeys());
+    AppAppearance::ApplicationAppearanceController appearance(
+        themeClient, themeDirectories(), QStringLiteral("qinda-dark"));
+    CustomizeWindowPreview windowPreview(appearance, chromeClient);
     MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model(
         client, {profile()}, manifests(), outputProvider, wallpaperPreview,
+        windowPreview,
         [&repository, &store](const Profiles::LayoutProfile &,
                               const QVector<ShellLayout::LogicalOutput> &) {
             return std::make_unique<RepositoryCustomizeEditorHost>(

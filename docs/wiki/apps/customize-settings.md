@@ -17,10 +17,17 @@ The route is a presentation and composition boundary. It depends only on the
 public `shell_customization_editor`, `shell_customization`, `profiles`, applet
 manifest, Settings1 client, the public confined iconography APIs (see
 [ADR-0121](../adr/0121-real-iconography-in-the-settings-customize-route.md)),
-and the public Settings Appearance wallpaper values/catalog
+the public Settings Appearance wallpaper values/catalog
 (`appearance.wallpaper`/`appearance.wallpaperMode` keys, the mode codec, and
 the `qindaqt:<basename>` bundled-identity discovery) for the read-only canvas
-wallpaper preview. It never imports shell surfaces, LayerShellQt, compositor
+wallpaper preview, and the public `app_appearance` theme resolution
+(`AppAppearance::ApplicationAppearanceController`) plus `decoration_painter`
+chrome resolver/painter (`Decoration::resolveWindowChrome`,
+`Decoration::ChromePreferences`, and the member-handlebar paint functions) for
+the read-only canvas contained-window decoration preview. This preview reuses
+the same theme+preferences resolution and the same paint functions the live
+KDecoration plugin uses, so it can never show a chrome the compositor would
+not actually draw. It never imports shell surfaces, LayerShellQt, compositor
 code, the shell runtime's private wallpaper resolver, a private service
 implementation, or platform mutation. The editing repository remains
 the sole placement and manifest acceptance authority.
@@ -66,13 +73,21 @@ paints the currently configured wallpaper — the same Settings1
 `appearance.wallpaper` identity and `appearance.wallpaperMode` the shell
 consumes, resolved through the public Settings Appearance wallpaper catalog
 and painted with the shell's scaled/centered/tiled mapping — over the themed
-gradient backdrop, and a quiet window mock keeps the screen reading as a
-desktop. The preview is read-only: a route-owned Settings1 scope subscribes to
-exactly the two wallpaper keys through an independent transport, so layout
-editing truth and wallpaper preview truth never share request tokens. No
-wallpaper (explicit empty preference), an unknown mode token, an unresolvable
-or unreadable identity, a mistyped value, or unavailable Settings1 truth each
-fail closed to the token gradient; the stored preference is never renamed or
+gradient backdrop, and a contained-window decoration preview keeps the screen
+reading as a desktop. That preview paints the configured `appearance.theme`
+and the container decoration preferences (button style, side, tab order,
+glyphs) through the same `Decoration::resolveWindowChrome` flattening and
+member-handlebar paint functions the compositor's own KDecoration plugin
+uses, so the chrome shown can never drift from what a real contained window
+would render; it is never a hard-coded decorative mock. Both previews are
+read-only: independent route-owned Settings1 scopes subscribe to exactly the
+wallpaper keys and exactly `Decoration::ChromePreferences::settingsKeys()`
+through their own transports, so layout editing truth, wallpaper preview
+truth, and window preview truth never share request tokens. No wallpaper
+(explicit empty preference), an unknown mode token, an unresolvable or
+unreadable identity, a mistyped value, or unavailable Settings1 truth each
+fail closed to the token gradient (wallpaper) or the resolved theme's own
+default chrome (window preview); the stored preferences are never renamed or
 repaired by this route. The property panes issue complete panel configuration or move
 intents for display scope, edge, alignment, thickness, length, and visibility.
 Display scope is deliberately the two choices the existing profile contract

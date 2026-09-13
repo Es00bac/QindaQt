@@ -11,9 +11,14 @@ qt_add_executable(
 target_include_directories(
     qindaqt_settings_customize_model_tests PRIVATE "${PROJECT_SOURCE_DIR}"
 )
+target_compile_definitions(
+    qindaqt_settings_customize_model_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
 target_link_libraries(
     qindaqt_settings_customize_model_tests
-    PRIVATE qindaqt_settings_customize Qt6::Gui Qt6::Test
+    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
+            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_model_tests)
 add_test(
@@ -55,9 +60,14 @@ qt_add_executable(
 target_include_directories(
     qindaqt_settings_customize_wallpaper_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
 )
+target_compile_definitions(
+    qindaqt_settings_customize_wallpaper_preview_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
 target_link_libraries(
     qindaqt_settings_customize_wallpaper_preview_tests
-    PRIVATE qindaqt_settings_customize Qt6::Gui Qt6::Test
+    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
+            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_wallpaper_preview_tests)
 add_test(
@@ -66,6 +76,33 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-customize-wallpaper-preview PROPERTIES
+    LABELS "settings;customize;domain"
+)
+
+qt_add_executable(
+    qindaqt_settings_customize_window_preview_tests
+    tst_customize_window_preview.cpp
+    customize_test_support.h
+)
+target_include_directories(
+    qindaqt_settings_customize_window_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_compile_definitions(
+    qindaqt_settings_customize_window_preview_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_window_preview_tests
+    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
+            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_window_preview_tests)
+add_test(
+    NAME qindaqt.settings-customize-window-preview
+    COMMAND qindaqt_settings_customize_window_preview_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-window-preview PROPERTIES
     LABELS "settings;customize;domain"
 )
 
@@ -126,6 +163,7 @@ target_link_libraries(
     PRIVATE QindaQt::ShellIcons qindaqt_shell_iconsplugin
             qindaqt_settings_customize qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
             qindaqt_settings_appearance qindaqt_themes QindaQt::TokensQml
+            QindaQt::AppAppearance QindaQt::DecorationPainter
             Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
 add_dependencies(

@@ -12,6 +12,7 @@ target_sources(
         customize_settings_model.cpp
         customize_settings_projection.cpp
         customize_wallpaper_preview.cpp
+        customize_window_preview.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -20,6 +21,7 @@ target_sources(
             include/qindaqt/apps/settings_customize/customize_output_provider.h
             include/qindaqt/apps/settings_customize/customize_settings_model.h
             include/qindaqt/apps/settings_customize/customize_wallpaper_preview.h
+            include/qindaqt/apps/settings_customize/customize_window_preview.h
 )
 target_link_libraries(
     qindaqt_settings_customize
@@ -32,6 +34,11 @@ target_link_libraries(
         # wallpaper through the public Settings Appearance wallpaper
         # values/catalog only; Appearance model internals stay untouched.
         qindaqt_settings_appearance
+        # AGENT-CONTRACT: the contained-window decoration preview reuses the
+        # compositor's own theme resolution and chrome flattening -- no
+        # second decoration engine (customize_window_preview.cpp).
+        QindaQt::AppAppearance
+        QindaQt::DecorationPainter
 )
 target_compile_features(qindaqt_settings_customize PUBLIC cxx_std_20)
 set_target_properties(
@@ -53,6 +60,8 @@ qt_add_qml_module(
     DEPENDENCIES
         TARGET qindaqt_shell_icons
     SOURCES
+        customize_contained_window_preview.h
+        customize_contained_window_preview.cpp
         customize_route_composition.h
         customize_route_composition.cpp
         qt_customize_output_provider.h
@@ -75,13 +84,12 @@ qt_add_qml_module(
         qml/CustomizeProfileCard.qml
         qml/CustomizeProperties.qml
         qml/CustomizeRoute.qml
-        qml/CustomizeWindowMock.qml
 )
 target_link_libraries(
     qindaqt_settings_customize_qml
     PRIVATE
         qindaqt_settings_customize qindaqt_settings_appearance
-        QindaQt::TokensQml QindaQt::ShellIcons
+        QindaQt::TokensQml QindaQt::ShellIcons QindaQt::DecorationPainter
         Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
 )
 add_dependencies(
@@ -95,6 +103,7 @@ target_compile_definitions(
     QINDAQT_CUSTOMIZE_SOURCE_PROFILE_DIRECTORY="${PROJECT_SOURCE_DIR}/data/profiles"
     QINDAQT_CUSTOMIZE_SOURCE_MANIFEST_DIRECTORY="${PROJECT_SOURCE_DIR}/data/applets"
     QINDAQT_CUSTOMIZE_SOURCE_WALLPAPER_DIRECTORY="${PROJECT_SOURCE_DIR}/data/wallpapers"
+    QINDAQT_CUSTOMIZE_SOURCE_THEME_DIRECTORY="${PROJECT_SOURCE_DIR}/data/themes"
 )
 set_target_properties(
     qindaqt_settings_customize_qml PROPERTIES
@@ -138,7 +147,6 @@ install(
         qml/CustomizeProfileCard.qml
         qml/CustomizeProperties.qml
         qml/CustomizeRoute.qml
-        qml/CustomizeWindowMock.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Customize"
     COMPONENT SettingsAppearanceRuntime
 )

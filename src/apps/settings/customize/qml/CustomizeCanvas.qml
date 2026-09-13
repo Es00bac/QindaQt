@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as T
+import QindaQt.SettingsApp.Customize 1.0
 import QindaQt.Tokens 1.0
 
 // The WYSIWYG work area: a monitor whose screen renders the edited layout
@@ -27,6 +28,11 @@ T.Control {
                                            && root.wallpaperPreview !== undefined
                                            && root.wallpaperPreview.status === "ready"
                                            && root.wallpaperPreview.source.toString().length > 0
+
+    // Read-only contained-window chrome truth published by the route model,
+    // resolved through the same Appearance/compositor decoration pipeline a
+    // real contained window paints from -- never an invented mock chrome.
+    readonly property var windowPreview: root.customizeSettings.windowPreview
 
     background: Rectangle {
         color: Tokens.bg.base
@@ -111,12 +117,16 @@ T.Control {
                         : Image.PreserveAspectCrop
                 }
 
-                // A quiet window mock keeps the preview reading as a desktop
-                // and gives floating panels a believable backdrop.
-                CustomizeWindowMock {
+                // A truthful contained-window preview keeps the canvas
+                // reading as a desktop and gives floating panels a believable
+                // backdrop, painted from the same resolved chrome a real
+                // contained window would show.
+                CustomizeContainedWindowPreview {
+                    objectName: "customizeWindowPreview"
                     width: Math.min(parent.width * 0.66, 900 * screen.width / 1920)
                     height: Math.min(parent.height * 0.52, 520 * screen.width / 1920)
                     anchors.centerIn: parent
+                    chrome: root.windowPreview.chrome
                 }
 
                 Repeater {
