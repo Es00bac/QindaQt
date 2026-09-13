@@ -60,9 +60,18 @@ KIO's standard `mkdir` facility with generation fencing, cancellation and no
 optimistic display. The strict affected build and exact integrated-tree
 nine-row selector pass 9/9, including the newly split
 `qindaqt.file-manager-navigation-controller-network-mutation` row; documentation
-validates 253 pages, strict MkDocs and the integration diff check pass. Remote
-copy/move/write operations and installed/live credential validation remain
-separate boundaries.
+validates 253 pages, strict MkDocs and the integration diff check pass.
+
+Remote Copy To lineage `07becad3` → `b8a8cc02` received independent
+same-reviewer ACCEPT after the repair made multi-selection fail closed and
+routed the shared Cancel action to an active remote copy. It is integrated as
+`bf0ac7ed` plus `70f2df8c`: one selected listed SMB/SFTP child can be copied to
+a validated same-authority remote destination through KIO's standard copy
+facility, with generation fencing and no credential handling in QindaQt. The
+strict affected build and exact integrated selector pass 11/11, including the
+split network-mutation, browsing UI, and former-red copy-guard rows. Remote
+move/write operations and installed/live credential validation remain separate
+boundaries.
 
 Worker and reviewer terminals used the existing direct-TTY, independent
 user-systemd lifetime rule, and long integration gates use the existing
