@@ -168,7 +168,10 @@ a fabricated unit argument.
 | Process lifetime | Exact constructing session bus; disconnect terminates |
 
 The installed XML exports `GetSnapshot`, `Stage(s, Candidate)`, `Preview(s)`,
-`Confirm(s)`, and `Cancel(s)`. Mutators return `OperationResult`. `Changed(s,
+`Confirm(s)`, and `Cancel(s)`, plus the D7 `GetBrightness` and
+`SetOutputBrightness(BrightnessRequest)` methods described in
+[Immediate brightness](#immediate-brightness-d7). Mutators return
+`OperationResult`. `Changed(s,
 t, b)` carries epoch, revision, and availability as a complete-read
 invalidation hint; clients must call `GetSnapshot` and never reconstruct output
 state from signal order. `GetSnapshot` carries the resident's active
@@ -413,9 +416,72 @@ sharpness, auto-rotate policy, and custom-mode definition. Each maps through an
 explicit switch to `BypassedForClosedPolicy`; any unknown value maps to
 `Required`.
 
-D1 only classifies values. Class-B transport/ownership is provisional until
-the corresponding platform lanes prove error semantics; no immediate
-production mutation is implemented here.
+D1 only classifies values. `Brightness` is the only operational class-B
+change, through the D7 methods below. Every other class-B value remains
+classification only until its platform lane proves error semantics.
+
+## Immediate brightness (D7)
+
+[ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)
+adds two methods to version 1. `GetSnapshot`, its signature, the canonical
+codecs, and the D1 machine are unchanged. `Changed` is the single invalidation
+hint for both reads.
+
+| Value or method | D-Bus signature |
+| --- | --- |
+| Output brightness: stable ID, capable, observed, value | `(sbbu)` |
+| Brightness snapshot: protocol version, epoch, topology revision, revision, rows | `(ustta(sbbu))` |
+| Brightness request: base epoch, base revision, stable ID, value | `(stsu)` |
+| `GetBrightness` | `() -> (ustta(sbbu))` |
+| `SetOutputBrightness` | `((stsu)) -> (uuusttss)`, operation kind `ImmediatePolicy` (6) |
+
+Values use KDE's 0–10000 scale. Zero is the dimmest supported setting, not
+off. A brightness snapshot is valid only when all of these hold:
+
+- the protocol version is 1;
+- the epoch is bounded;
+- the topology revision and the revision are both positive;
+- there are 1–32 rows with unique, bounded stable IDs;
+- no value exceeds 10000;
+- every unobserved row carries zero.
+
+`validateBrightnessJoin` also requires the snapshot's epoch,
+`topologyRevision` equal to that snapshot's revision, and one row per output in
+snapshot order. The decode wrappers require the exact static signatures. There
+is no canonical byte envelope, because brightness is never persisted.
+
+`revision` is monotonic within the epoch. It advances when any row or the
+joined topology revision changes, and is never ordered across epochs. A request
+is stale unless its epoch matches and its base revision lies between the
+revision at which the current topology revision was joined and the current
+revision. A value-only change since the base revision is last-writer-wins.
+
+| Refusal | Status and error | Diagnostic |
+| --- | --- | --- |
+| Invalid lineage, stable ID, or value | Rejected, `InvalidCandidate` | the validation reason |
+| Stale epoch or revision | Rejected, `StaleRevision` | `stale-revision` |
+| Another brightness request is pending | Busy, `TransactionActive` | `brightness-request-pending` |
+| D1 is not `Ready` | Rejected, `TransactionActive` | `transaction-active` |
+| Locked, or otherwise not `Safe` | Rejected, `Locked` or `CompositorUnavailable` | `locked`, `mutation-authority-unavailable` |
+| Unknown, ambiguous, internal, disabled, or replica output | Rejected, `InvalidCandidate` | `unknown-output`, `ambiguous-output`, `internal-output`, `output-disabled`, `replica-output` |
+| No capable joined device, or no observed value | Rejected, `InvalidCandidate` | `brightness-unsupported`, `brightness-unobserved` |
+| Equal observed value | Succeeded | `no-op` |
+
+An accepted request replies only when it finishes:
+
+- **Succeeded** after the compositor acknowledgement *and* a republish that
+  observes the value. `observedRevision` is that publication's revision.
+- **Rejected**, `CompositorRejected` (`compositor-rejected`), when the protocol
+  reports failure.
+- **Uncertain**, with one of these errors:
+  - `CompositorUnavailable`: `transport-uncertain`,
+    `compositor-owner-changed`, or `service-lineage-lost`;
+  - `TopologyChanged`: `topology-changed`;
+  - `Timeout`: `brightness-apply-timeout` or `brightness-observation-timeout`.
+
+If the writer refuses after admission, the result is Busy with
+`compositor-busy`, or Rejected with `compositor-unavailable`,
+`compositor-unsupported`, or `compositor-malformed`. Nothing is replayed.
 
 ## Deterministic acceptance matrix
 
@@ -442,6 +508,10 @@ qualification.
 | Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`, `qindaqt.display-service-resident-inventory-rejection-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation`, 500 ms recovered-set settle/clear, preservation across every same-owner generation/projection rejection from Staged through AwaitingConfirmation, explicit unavailable and failed replacement-owner withdrawal, and name/object/port teardown on disposable buses |
 | D4 writer mapping and serialization | `qindaqt.display-writer-mapper`, `qindaqt.display-writer-port`: exact connector/current-mode translation, structural mutation rejection, exactly-one-in-flight machine/token/request/owner fencing, socket peer identity, authority edges, timeout/stop/lineage loss, hostile synchronous completion, and late-reply suppression |
 | D4 writer boundary/package poison | `qindaqt.display-writer-boundary`, `qindaqt.display-writer-boundary-poison`, `qindaqt.display-writer-installed-boundary-poison`: pinned protocol XML, no private/platform dependency in public headers, staged installed-header consumer, and non-vacuous negative probes |
+| D7 brightness values | `qindaqt.display-protocol-brightness`: brightness snapshot and request bounds, hostile text/revision/value/count/duplicate rows, exact snapshot join, `ImmediatePolicy` result lineage, exact D-Bus signatures, fail-closed non-mutating decode |
+| D7 brightness authority | `qindaqt.display-service-brightness`, `qindaqt.display-service-brightness-model`: exact connector plus runtime-UUID join, clear on device/owner/lineage loss, topology-join revision fence, mirror/internal/disabled/ambiguous/non-capable/unobserved/unsafe/non-Ready refusal, no-op, one pending request, acknowledgement-plus-observation completion in both orders, typed port refusal, topology/owner/lineage uncertainty without replay, deadline, and Preview/brightness exclusion inside the real model |
+| D7 resident D-Bus | `qindaqt.display-service-resident-brightness-private-bus`: typed `GetBrightness`, delayed `SetOutputBrightness` reply only after the proving republish's `Changed`, hostile and inadmissible refusals, type-divergent arguments, acknowledged-but-unobserved timeout, and stop uncertainty |
+| D7 writer brightness | `qindaqt.display-writer-brightness-port`, `qindaqt.display-writer-wayland-brightness`: queued device frames and completions, owner/request fencing, topology/brightness exclusion, exact `set_brightness` plus `apply`, and local capability/version/UUID/enabled/scale/generation refusal with zero configurations |
 | D6 startup and resident composition | `qindaqt.display-runtime-state-root`, `qindaqt.display-runtime-resident-private-bus`: deterministic state-root precedence/rejection; load validation before writer start; loaded-target rollback with zero forward replay; combined writer/delay/lock safety; durability uncertainty; suspend delay; owner/lineage replacement; terminal authority loss; late completion |
 | D6 production safety and package boundary | `qindaqt.display-runtime-session-safety-private-bus`, `qindaqt.display-runtime-boundary`, `qindaqt.display-runtime-boundary-poison`, `qindaqt.display-runtime-installed-boundary-poison`, `qindaqt.display-runtime-process-startup`: matching/mismatching Wayland-peer PID, three-name lock quorum, exact-owner inhibitor lifetime, lock/sleep/resume/owner-loss transitions, D1/D2 dependency poison, installed public-header poison, and packaged missing/unsafe/malformed-state rejection before bus authority |
 

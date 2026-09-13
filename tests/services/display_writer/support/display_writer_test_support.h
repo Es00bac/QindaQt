@@ -6,6 +6,7 @@
 #include <qindaqt/services/display_writer/writer_transaction_port.h>
 
 #include <optional>
+#include <utility>
 
 namespace QindaQt::DisplayWriter::TestSupport
 {
@@ -43,6 +44,16 @@ public:
         }
         return submitStatus;
     }
+    SubmitStatus submitBrightness(const BrightnessConfiguration &configuration) override
+    {
+        brightnessSubmissions.push_back(configuration);
+        return brightnessSubmitStatus;
+    }
+    void publishDevices(quint64 generation, const QList<OutputDeviceState> &devices)
+    {
+        Q_ASSERT(observer != nullptr);
+        observer->outputManagementDevicesObserved(generation, devices);
+    }
     void publishOwner(quint64 generation, bool available)
     {
         Q_ASSERT(observer != nullptr);
@@ -59,8 +70,10 @@ public:
     OutputManagementObserver *observer = nullptr;
     PortStartStatus startStatus = PortStartStatus::Started;
     SubmitStatus submitStatus = SubmitStatus::Accepted;
+    SubmitStatus brightnessSubmitStatus = SubmitStatus::Accepted;
     std::optional<CompletionOutcome> synchronousOutcome;
     QList<Configuration> submissions;
+    QList<BrightnessConfiguration> brightnessSubmissions;
     quint64 ownerGeneration = 0;
     int startCalls = 0;
     int stopCalls = 0;
@@ -113,8 +126,19 @@ public:
     {
         completions.push_back({machineLineage, token, outcome});
     }
+    void brightnessDevicesObserved(const DisplayService::DeviceBrightnessFrame &frame) override
+    {
+        frames.push_back(frame);
+    }
+    void brightnessCompleted(quint64 requestId,
+                             DisplayService::BrightnessApplyOutcome outcome) override
+    {
+        brightnessCompletions.push_back({requestId, outcome});
+    }
 
     QList<Completion> completions;
+    QList<DisplayService::DeviceBrightnessFrame> frames;
+    QList<std::pair<quint64, DisplayService::BrightnessApplyOutcome>> brightnessCompletions;
 };
 
 inline Display::Output output(QString stableId = QStringLiteral("conn:DP-1"),

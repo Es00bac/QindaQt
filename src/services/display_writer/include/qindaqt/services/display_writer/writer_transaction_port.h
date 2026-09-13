@@ -52,6 +52,11 @@ public:
         const DisplayTransaction::Journal &journal) override;
     [[nodiscard]] DisplayTransaction::JournalMutationOutcome clearJournal() override;
     void requestApply(const DisplayTransaction::ApplyRequest &request) override;
+    // Fenced to the exact owner generation of the forwarded device frame and
+    // mutually exclusive with a topology apply. Completion and device frames
+    // reach the observer on a later event-loop turn, in arrival order.
+    [[nodiscard]] DisplayService::BrightnessSubmitStatus requestBrightness(
+        const DisplayService::BrightnessApplyRequest &request) override;
 
 Q_SIGNALS:
     // D6 combines this edge with authenticated lock and logind authority; it
@@ -66,12 +71,21 @@ private:
         quint64 ownerGeneration = 0;
     };
 
+    struct BrightnessPending {
+        quint64 serviceRequestId = 0;
+        quint64 requestId = 0;
+        quint64 ownerGeneration = 0;
+    };
+
     void outputManagementOwnerChanged(quint64 ownerGeneration,
                                       bool available) override;
     void outputManagementCompleted(quint64 ownerGeneration,
                                    quint64 requestId,
                                    CompletionOutcome outcome) override;
+    void outputManagementDevicesObserved(
+        quint64 ownerGeneration, const QList<OutputDeviceState> &devices) override;
     void finishPending(DisplayTransaction::ApplyOutcome outcome);
+    void finishBrightness(DisplayService::BrightnessApplyOutcome outcome);
     void finishDeferred(quint64 machineLineage, quint64 token,
                         DisplayTransaction::ApplyOutcome outcome);
     [[nodiscard]] quint64 nextRequestId();
@@ -81,6 +95,8 @@ private:
     DisplayService::TransactionPortObserver *m_observer = nullptr;
     QTimer m_timeout;
     std::optional<Pending> m_pending;
+    QTimer m_brightnessTimeout;
+    std::optional<BrightnessPending> m_brightnessPending;
     quint64 m_machineLineage = 0;
     quint64 m_ownerGeneration = 0;
     quint64 m_nextRequestId = 1;

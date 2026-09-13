@@ -165,6 +165,9 @@ public:
         m_display = nullptr;
         m_peerProcessId = 0;
         m_observer = nullptr;
+        m_publishedDevices.clear();
+        m_publishedDevicesGeneration = 0;
+        m_devicesPublished = false;
     }
 
     [[nodiscard]] qint64 peerProcessId() const noexcept override
@@ -320,6 +323,37 @@ public:
         return SubmitStatus::Accepted;
     }
 
+    [[nodiscard]] SubmitStatus submitBrightness(
+        const BrightnessConfiguration &configuration) override
+    {
+        if (!m_running || !m_available || m_management == nullptr) {
+            return SubmitStatus::Unavailable;
+        }
+        if (m_pending != nullptr) {
+            return SubmitStatus::Busy;
+        }
+        if (kde_output_management_v2_get_version(m_management->object())
+            < Private::kManagementSetBrightnessVersion) {
+            return SubmitStatus::Unsupported;
+        }
+        const Private::BrightnessTarget target =
+            Private::brightnessTarget(m_devices, configuration);
+        if (target.device == nullptr) {
+            return target.refusal;
+        }
+        auto *raw = m_management->create_configuration();
+        if (raw == nullptr) {
+            return SubmitStatus::Unavailable;
+        }
+        auto *proxy = new ConfigurationProxy(raw, this, m_ownerGeneration,
+                                             configuration.requestId);
+        m_pending = proxy;
+        proxy->set_brightness(target.device->object(), configuration.brightness);
+        proxy->apply();
+        flush();
+        return SubmitStatus::Accepted;
+    }
+
     void finishConfiguration(const quint64 ownerGeneration,
                              const quint64 requestId,
                              const CompletionOutcome outcome,
@@ -359,11 +393,10 @@ private:
             return;
         }
         if (qstrcmp(interface, kde_output_device_v2_interface.name) == 0) {
-            auto device = std::make_unique<OutputDevice>(name);
+            const quint32 boundVersion = std::min(version, kMaximumDeviceVersion);
+            auto device = std::make_unique<OutputDevice>(name, boundVersion);
             device->doneCallback = [self] { self->publishAvailability(); };
-            device->init(registry, name,
-                         static_cast<int>(std::min(version,
-                                                   kMaximumDeviceVersion)));
+            device->init(registry, name, static_cast<int>(boundVersion));
             self->m_devices.push_back(std::move(device));
             self->advanceOwner(false);
             self->publishAvailability();
@@ -403,6 +436,7 @@ private:
         if (m_observer != nullptr) {
             m_observer->outputManagementOwnerChanged(m_ownerGeneration, available);
         }
+        publishDevices();
     }
 
     void dispatchReadable()
@@ -450,6 +484,7 @@ private:
         if (m_observer != nullptr) {
             m_observer->outputManagementOwnerChanged(m_ownerGeneration, false);
         }
+        publishDevices();
         m_readNotifier->setEnabled(false);
         m_writeNotifier->setEnabled(false);
     }
@@ -499,6 +534,32 @@ private:
                                                         available);
             }
         }
+        publishDevices();
+    }
+
+    void publishDevices()
+    {
+        // AGENT-CONTRACT: Device facts are published only as the complete,
+        // unambiguous ready set of the current owner generation, at a device
+        // done boundary or a registry/transport edge. Anything less clears
+        // them with generation zero.
+        const bool complete = m_running && m_available && m_management != nullptr;
+        const QList<OutputDeviceState> devices = complete
+            ? Private::brightnessDeviceStates(
+                  m_devices, kde_output_management_v2_get_version(m_management->object())
+                      >= Private::kManagementSetBrightnessVersion)
+            : QList<OutputDeviceState>{};
+        const quint64 generation = complete ? m_ownerGeneration : 0;
+        if (m_devicesPublished && generation == m_publishedDevicesGeneration
+            && devices == m_publishedDevices) {
+            return;
+        }
+        m_devicesPublished = true;
+        m_publishedDevicesGeneration = generation;
+        m_publishedDevices = devices;
+        if (m_observer != nullptr) {
+            m_observer->outputManagementDevicesObserved(generation, devices);
+        }
     }
 
     OutputManagementObserver *m_observer = nullptr;
@@ -513,6 +574,9 @@ private:
     quint32 m_managementGlobal = 0;
     quint64 m_ownerGeneration = 0;
     qint64 m_peerProcessId = 0;
+    QList<OutputDeviceState> m_publishedDevices;
+    quint64 m_publishedDevicesGeneration = 0;
+    bool m_devicesPublished = false;
     bool m_running = false;
     bool m_available = false;
 };

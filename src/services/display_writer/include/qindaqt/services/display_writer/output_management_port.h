@@ -61,6 +61,35 @@ struct ColorProfileConfiguration {
                          const ColorProfileConfiguration &) = default;
 };
 
+// D7 facts for one ready compositor output device.
+struct OutputDeviceState {
+  QString connectorName;
+  QString uuid;
+  bool enabled = false;
+  // Output-management can issue set_brightness, the bound device version can
+  // carry capability_brightness, and the compositor advertised it.
+  bool brightnessCapable = false;
+  // The bound device version carries the brightness event and the last value
+  // was inside the protocol's 0-10000 scale.
+  bool brightnessObserved = false;
+  quint32 brightness = 0;
+
+  friend bool operator==(const OutputDeviceState &,
+                         const OutputDeviceState &) = default;
+};
+
+// One compositor brightness mutation for an exact connector/UUID pair on the
+// KDE 0-10000 scale.
+struct BrightnessConfiguration {
+  quint64 requestId = 0;
+  QString connectorName;
+  QString uuid;
+  quint32 brightness = 0;
+
+  friend bool operator==(const BrightnessConfiguration &,
+                         const BrightnessConfiguration &) = default;
+};
+
 // Structural validation for the least-authority compositor value. This is a
 // second trust boundary after Display1 request mapping so an alternate trusted
 // producer cannot make the production adapter emit malformed protocol calls.
@@ -121,6 +150,10 @@ public:
     virtual void outputManagementCompleted(quint64 ownerGeneration,
                                            quint64 requestId,
                                            CompletionOutcome outcome) = 0;
+    // D7: the complete ready device set for ownerGeneration, or zero and an
+    // empty list while no such set is available. A no-op by default.
+    virtual void outputManagementDevicesObserved(
+        quint64, const QList<OutputDeviceState> &) {}
 };
 
 class OutputManagementPort {
@@ -143,6 +176,15 @@ public:
   // remain source-compatible while color-capable adapters opt in.
   [[nodiscard]] virtual SubmitStatus
   submitColorProfile(const ColorProfileConfiguration &configuration) {
+    Q_UNUSED(configuration);
+    return SubmitStatus::Unsupported;
+  }
+  // AGENT-CONTRACT: Accepted only for the exact ready, enabled,
+  // brightness-capable connector whose UUID matches; Accepted promises one
+  // completion. KWin acknowledges set_brightness even on outputs that ignore
+  // it, so this refusal boundary is the writer's, not the compositor's.
+  [[nodiscard]] virtual SubmitStatus
+  submitBrightness(const BrightnessConfiguration &configuration) {
     Q_UNUSED(configuration);
     return SubmitStatus::Unsupported;
   }

@@ -23,6 +23,13 @@
       <arg name="transactionId" type="s" direction="in"/>
       <arg name="result" type="(uuusttss)" direction="out"/>
     </method>
+    <method name="GetBrightness">
+      <arg name="brightness" type="(ustta(sbbu))" direction="out"/>
+    </method>
+    <method name="SetOutputBrightness">
+      <arg name="request" type="(stsu)" direction="in"/>
+      <arg name="result" type="(uuusttss)" direction="out"/>
+    </method>
     <signal name="Changed">
       <arg name="epoch" type="s"/>
       <arg name="revision" type="t"/>

@@ -24,6 +24,12 @@ struct ValidationResult {
 [[nodiscard]] ValidationResult validateTransactionSummary(const TransactionSummary &summary);
 [[nodiscard]] ValidationResult validateSnapshot(const Snapshot &snapshot);
 [[nodiscard]] ValidationResult validateOperationResult(const OperationResult &result);
+[[nodiscard]] ValidationResult validateBrightnessSnapshot(const BrightnessSnapshot &brightness);
+[[nodiscard]] ValidationResult validateBrightnessRequest(const BrightnessRequest &request);
+// Accepts only rows that join this exact snapshot: the same epoch, a topology
+// revision equal to the snapshot revision, and one row per output in order.
+[[nodiscard]] ValidationResult validateBrightnessJoin(const Snapshot &snapshot,
+                                                      const BrightnessSnapshot &brightness);
 [[nodiscard]] ConfirmationRequirement confirmationRequirement(ChangeClass changeClass);
 
 } // namespace QindaQt::Display

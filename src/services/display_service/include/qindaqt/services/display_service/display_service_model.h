@@ -12,6 +12,11 @@
 namespace QindaQt::DisplayService
 {
 
+namespace Private
+{
+class BrightnessAuthority;
+}
+
 enum class InventoryObservationStatus {
     AcceptedNewLineage,
     AcceptedChanged,
@@ -34,6 +39,20 @@ struct InventoryObservationResult {
 struct ServiceOperationResult {
     bool available = false;
     DisplayTransaction::CommandResult command;
+    Display::OperationResult operation;
+};
+
+struct BrightnessRequestResult {
+    bool available = false;
+    // False only for an Accepted request: exactly one BrightnessFinish with
+    // requestId later drains from the model.
+    bool final = true;
+    quint64 requestId = 0;
+    Display::OperationResult operation;
+};
+
+struct BrightnessFinish {
+    quint64 requestId = 0;
     Display::OperationResult operation;
 };
 
@@ -92,14 +111,31 @@ public:
     DisplayTransaction::CommandResult prepareForSuspend();
     DisplayTransaction::CommandResult tick();
 
+    // D7 immediate brightness (ADR-0149). The publication joins the accepted
+    // machine snapshot and is nullptr while that snapshot is unavailable.
+    [[nodiscard]] const Display::BrightnessSnapshot *brightnessSnapshot() const;
+    [[nodiscard]] BrightnessRequestResult setOutputBrightness(
+        const Display::BrightnessRequest &request);
+    void brightnessDevicesObserved(const DeviceBrightnessFrame &frame);
+    void brightnessCompleted(quint64 requestId, BrightnessApplyOutcome outcome);
+    void brightnessTick();
+    // Zero when no brightness request is pending.
+    [[nodiscard]] quint64 brightnessDeadlineMonotonicMilliseconds() const noexcept;
+    // Drain what earlier calls finished or republished. Callers publish the
+    // Changed hint before delivering finishes.
+    [[nodiscard]] QList<BrightnessFinish> takeBrightnessFinishes();
+    [[nodiscard]] bool takeBrightnessPublicationChanged();
+
 private:
     [[nodiscard]] ServiceOperationResult operation(
         Display::OperationKind kind, const QString &transactionId,
         const std::function<DisplayTransaction::CommandResult()> &command);
+    [[nodiscard]] InventoryObservationResult observeFrame(const InventoryFrame &frame);
     [[nodiscard]] InventoryObservationResult establishLineage(
         const InventoryFrame &frame);
     [[nodiscard]] DisplayTransaction::CommandResult routeObservation(
         const Display::Snapshot &snapshot, bool outputSetChanged);
+    [[nodiscard]] const Display::Snapshot *machineSnapshot() const noexcept;
 
     DisplayTransaction::MonotonicClock &m_clock;
     TransactionPort &m_port;
@@ -117,6 +153,7 @@ private:
     std::optional<DisplayTransaction::Journal> m_pendingRecoveryJournal;
     // Composed lazily by snapshot(); mutable so the read boundary stays const.
     mutable Display::Snapshot m_publicSnapshot;
+    std::unique_ptr<Private::BrightnessAuthority> m_brightness;
 };
 
 } // namespace QindaQt::DisplayService

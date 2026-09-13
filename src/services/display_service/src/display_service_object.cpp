@@ -2,6 +2,9 @@
 
 #include "display_service_object_p.h"
 
+#include <QtCore/QVariant>
+
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::DisplayService
@@ -9,10 +12,11 @@ namespace QindaQt::DisplayService
 
 DisplayServiceObject::DisplayServiceObject(
     DisplayServiceModel &model, std::function<void(bool)> transitionCallback,
-    QObject *parent)
+    std::function<void()> brightnessCallback, QObject *parent)
     : QObject(parent)
     , m_model(model)
     , m_transitionCallback(std::move(transitionCallback))
+    , m_brightnessCallback(std::move(brightnessCallback))
 {
 }
 
@@ -44,6 +48,49 @@ Display::OperationResult DisplayServiceObject::Confirm(const QString &transactio
 Display::OperationResult DisplayServiceObject::Cancel(const QString &transactionId)
 {
     return complete(m_model.cancel(transactionId));
+}
+
+Display::BrightnessSnapshot DisplayServiceObject::GetBrightness()
+{
+    if (const Display::BrightnessSnapshot *brightness = m_model.brightnessSnapshot();
+        brightness != nullptr) {
+        return *brightness;
+    }
+    unavailableReply();
+    return {};
+}
+
+Display::OperationResult DisplayServiceObject::SetOutputBrightness(
+    const Display::BrightnessRequest &request)
+{
+    const BrightnessRequestResult result = m_model.setOutputBrightness(request);
+    if (!result.available) {
+        unavailableReply();
+        return {};
+    }
+    if (!result.final && calledFromDBus()) {
+        // AGENT-CONTRACT: An accepted immediate request replies only when the
+        // model finishes it, after the republish that proves Applied.
+        setDelayedReply(true);
+        m_brightnessReplies.push_back(
+            {.requestId = result.requestId, .connection = connection(), .call = message()});
+    }
+    if (m_brightnessCallback) {
+        m_brightnessCallback();
+    }
+    return result.operation;
+}
+
+void DisplayServiceObject::finishBrightness(const BrightnessFinish &finish)
+{
+    const auto found = std::ranges::find(m_brightnessReplies, finish.requestId,
+                                         &DelayedReply::requestId);
+    if (found == m_brightnessReplies.end()) {
+        return;
+    }
+    const DelayedReply reply = std::move(*found);
+    m_brightnessReplies.erase(found);
+    reply.connection.send(reply.call.createReply(QVariant::fromValue(finish.operation)));
 }
 
 Display::OperationResult DisplayServiceObject::complete(

@@ -56,6 +56,44 @@ add_test(
 )
 
 qt_add_executable(
+    qindaqt_display_service_brightness_tests
+    tst_display_service_brightness.cpp
+    support/display_brightness_test_support.h
+    support/display_service_test_support.h
+)
+target_link_libraries(
+    qindaqt_display_service_brightness_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+# The brightness row pins the private ADR-0149 authority directly, like the
+# model row's summary projection. It is not installed public API.
+target_include_directories(
+    qindaqt_display_service_brightness_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/display_service/src"
+)
+qindaqt_enable_warnings(qindaqt_display_service_brightness_tests)
+add_test(
+    NAME qindaqt.display-service-brightness
+    COMMAND qindaqt_display_service_brightness_tests
+)
+
+qt_add_executable(
+    qindaqt_display_service_brightness_model_tests
+    tst_display_service_brightness_model.cpp
+    support/display_brightness_test_support.h
+    support/display_service_test_support.h
+)
+target_link_libraries(
+    qindaqt_display_service_brightness_model_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_display_service_brightness_model_tests)
+add_test(
+    NAME qindaqt.display-service-brightness-model
+    COMMAND qindaqt_display_service_brightness_model_tests
+)
+
+qt_add_executable(
     qindaqt_display_service_deployment_tests
     tst_display_service_deployment.cpp
     support/display_service_test_support.h
@@ -141,10 +179,33 @@ add_test(
     COMMAND qindaqt_resident_display_service_inventory_rejection_private_bus_tests
 )
 
+qt_add_executable(
+    qindaqt_resident_display_brightness_private_bus_tests
+    tst_resident_display_brightness_private_bus.cpp
+    support/display_service_test_support.h
+    support/private_bus_test_support.h
+)
+target_link_libraries(
+    qindaqt_resident_display_brightness_private_bus_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_resident_display_brightness_private_bus_tests
+    PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DISPLAY_DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(qindaqt_resident_display_brightness_private_bus_tests)
+add_test(
+    NAME qindaqt.display-service-resident-brightness-private-bus
+    COMMAND qindaqt_resident_display_brightness_private_bus_tests
+)
+
 set_tests_properties(
     qindaqt.display-service-inventory
     qindaqt.display-service-model
     qindaqt.display-service-recovery
+    qindaqt.display-service-brightness
+    qindaqt.display-service-brightness-model
     qindaqt.display-service-deployment
     PROPERTIES LABELS "service;display" TIMEOUT 20
 )
@@ -152,6 +213,7 @@ set_tests_properties(
 set_tests_properties(
     qindaqt.display-service-inventory-private-bus
     qindaqt.display-service-resident-private-bus
+    qindaqt.display-service-resident-brightness-private-bus
     qindaqt.display-service-resident-inventory-rejection-private-bus
     PROPERTIES
         LABELS "service;display;private-dbus;isolated-runtime"

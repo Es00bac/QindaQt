@@ -43,7 +43,7 @@ selects production; the wire contract is unchanged.
 | External brightness changes | Kernel `actual_brightness` | Adapter re-reads observed truth after a write |
 | Adaptive brightness | KWin | QindaQt exposes no competing adaptive loop |
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
-| External-monitor brightness | No v1 authority | Honest unavailable; PB-6 is reserved |
+| External-monitor brightness | KWin brightness control, through Display1 `SetOutputBrightness` ([ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)) | Display D7; unavailable wherever KWin advertises no capability; PB-5 presentation pending; DDC/CI policy remains PB-6 |
 
 `Power1` holds no inhibitors in version 1. Lock-before-sleep remains a
 KWin/KScreenLocker responsibility. Shell session actions acquire all three
@@ -302,7 +302,7 @@ replace a foreign binding, preventing reciprocal restart loops.
 | PB-1 | Wayland-free service/client, upstream collaborators, activation package | Accepted PB-0 |
 | PB-2 | Production upstream adapters; backlight provider, idle, and session-bound activation continue separately | PB-1 plus routed supervisor contract |
 | PB-3 | Shell session actions and all-or-nothing key inhibitors | Shell owner and Controls/overlay boundary |
-| PB-4 | Display D7 class-B brightness policy/method | Accepted Display D2 |
+| PB-4 | Display D7 class-B brightness policy and method: Display1 `GetBrightness` and `SetOutputBrightness` ([ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)) | Accepted Display D2 |
 | PB-5 | Display-client binding, shortcuts, Power/Brightness Settings routes | PB-2, PB-4, shared app routes |
 | PB-6 | Lid override, idle actions, charge thresholds, DDC/CI | Reserved; later ADRs required |
 
