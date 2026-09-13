@@ -57,7 +57,10 @@ placement-sensitive fixture defect. A test-only fixture fallback now drags B
 onto A in exactly that ungrouped case. On the integrated plugin that row passed
 five of five fresh sessions, three of them at the former-stop geometry through
 the fallback. Lifecycle, XWayland CSD, and Electron then passed serially with
-full verdict counts and zero ghost pixels. Timeout-log retention, socket-path
+full verdict counts and zero ghost pixels. After integration as `6a873081`,
+the manager's exact former-stop GTK Wayland CSD cycle also completed with
+22/22 verdicts and session exit 0 using the integrated source scripts and the
+source-identical reviewed compositor artifacts. Timeout-log retention, socket-path
 guarding, and count wording remain nonblocking follow-ups; no unchanged long
 retry was run.
 
