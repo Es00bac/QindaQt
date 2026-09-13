@@ -86,8 +86,16 @@ a validated same-authority remote destination through KIO's standard copy
 facility, with generation fencing and no credential handling in QindaQt. The
 strict affected build and exact integrated selector pass 11/11, including the
 split network-mutation, browsing UI, and former-red copy-guard rows. Remote
-move/write operations and installed/live credential validation remain separate
-boundaries.
+Move To lineage `e88d2e35` → `ad8ca232` then received same-reviewer ACCEPT
+after replacing the reused listing-generation request token with a monotonic
+operation identity. It is integrated as `c858d724` plus `a54476ac`: one listed
+SMB/SFTP child can be moved to a validated same-authority destination through
+KIO, and Cancel followed by an immediate same-listing retry cannot let the old
+move's late failure or success retire, fail, or refresh its replacement. The
+warning-enabled affected build and exact two-row integrated selector pass 2/2;
+documentation validates 255 pages, strict MkDocs and the integration diff check
+pass. Remote write-in-place and installed/live credential validation remain
+separate boundaries.
 
 Worker and reviewer terminals used the existing direct-TTY, independent
 user-systemd lifetime rule, and long integration gates use the existing
