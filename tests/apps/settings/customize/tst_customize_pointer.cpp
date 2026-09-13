@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "customize_test_support.h"
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/apps/settings_customize/customize_editor_host.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
 #include "qindaqt/apps/settings_customize/customize_wallpaper_preview.h"
+#include "qindaqt/apps/settings_customize/customize_window_preview.h"
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -15,6 +17,7 @@
 #include <QtTest>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQtSettingsCustomizePlugin)
 
 using namespace QindaQt;
 using namespace QindaQt::Apps::SettingsCustomize;
@@ -73,9 +76,18 @@ void CustomizePointerTests::pointerDeliverySurvivesPreviewReconstruction()
         {QStringLiteral("appearance.wallpaper"),
          QStringLiteral("appearance.wallpaperMode")});
     CustomizeWallpaperPreview wallpaperPreview(wallpaperClient, {});
+    SequenceTransport themeTransport;
+    SequenceTransport chromeTransport;
+    Services::SettingsClient::SettingsClient themeClient(
+        themeTransport, {QStringLiteral("appearance.theme")});
+    Services::SettingsClient::SettingsClient chromeClient(
+        chromeTransport, Decoration::ChromePreferences::settingsKeys());
+    AppAppearance::ApplicationAppearanceController appearance(
+        themeClient, themeDirectories(), QStringLiteral("qinda-dark"));
+    CustomizeWindowPreview windowPreview(appearance, chromeClient);
     MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model(client, {profile()}, manifests(), outputProvider,
-        wallpaperPreview,
+        wallpaperPreview, windowPreview,
         [&](const Profiles::LayoutProfile &selected,
             const QVector<ShellLayout::LogicalOutput> &inventory) {
             return std::make_unique<RepositoryCustomizeEditorHost>(

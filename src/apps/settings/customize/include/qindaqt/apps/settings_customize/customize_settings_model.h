@@ -4,6 +4,7 @@
 #include "qindaqt/apps/settings_customize/customize_editor_host.h"
 #include "qindaqt/apps/settings_customize/customize_output_provider.h"
 #include "qindaqt/apps/settings_customize/customize_wallpaper_preview.h"
+#include "qindaqt/apps/settings_customize/customize_window_preview.h"
 
 #include <QObject>
 #include <QVariantList>
@@ -58,23 +59,25 @@ class CustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY selectionChanged)
     Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY selectionChanged)
     Q_PROPERTY(QObject *wallpaperPreview READ wallpaperPreview CONSTANT)
+    Q_PROPERTY(QObject *windowPreview READ windowPreview CONSTANT)
 
 public:
     enum class State { Loading, Ready, Saving, Conflict, Unavailable };
     Q_ENUM(State)
 
-    // AGENT-CONTRACT: client, outputProvider, and wallpaperPreview must
-    // outlive this GUI-thread model. The factory returns a fresh editor host
-    // for profile selection and discard rebuilds; returning null fails closed
-    // and preserves the last confirmed selection. wallpaperPreview is a
-    // borrowed read-only projection; the model exposes it to QML but never
-    // mutates it.
+    // AGENT-CONTRACT: client, outputProvider, wallpaperPreview, and
+    // windowPreview must outlive this GUI-thread model. The factory returns a
+    // fresh editor host for profile selection and discard rebuilds; returning
+    // null fails closed and preserves the last confirmed selection.
+    // wallpaperPreview and windowPreview are borrowed read-only projections;
+    // the model exposes them to QML but never mutates them.
     CustomizeSettingsModel(
         Services::SettingsClient::SettingsClient &client,
         QVector<Profiles::LayoutProfile> availableProfiles,
         QVector<Applets::AppletManifest> manifests,
         CustomizeOutputProvider &outputProvider,
         CustomizeWallpaperPreview &wallpaperPreview,
+        CustomizeWindowPreview &windowPreview,
         EditorHostFactory hostFactory,
         QString startupError = {},
         QObject *parent = nullptr);
@@ -108,6 +111,7 @@ public:
     [[nodiscard]] QVariantMap selectedProperties() const;
     [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
     [[nodiscard]] QObject *wallpaperPreview() const { return &m_wallpaperPreview; }
+    [[nodiscard]] QObject *windowPreview() const { return &m_windowPreview; }
 
     Q_INVOKABLE bool selectProfile(const QString &profileId);
     Q_INVOKABLE void selectPanel(const QString &panelId);
@@ -167,6 +171,7 @@ private:
     QVector<Applets::AppletManifest> m_manifests;
     CustomizeOutputProvider &m_outputProvider;
     CustomizeWallpaperPreview &m_wallpaperPreview;
+    CustomizeWindowPreview &m_windowPreview;
     EditorHostFactory m_hostFactory;
     std::unique_ptr<CustomizeEditorHost> m_editor;
     State m_state = State::Loading;

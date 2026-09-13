@@ -7,6 +7,7 @@
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QAccessible>
+#include <QDebug>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
@@ -14,6 +15,7 @@
 #include <QtTest>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQtSettingsCustomizePlugin)
 
 using QindaQt::Apps::SettingsCustomize::TestSupport::StubCustomizeSettingsModel;
 
@@ -107,6 +109,7 @@ private slots:
     void rendersAppletSettingEditorsInWideMode();
     void rendersAppletSettingEditorsInCompactMode();
     void canvasFollowsConfiguredWallpaperAndFallsBackToTokens();
+    void canvasWindowPreviewShowsResolvedChromeAndStaysContained();
 };
 
 void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
@@ -413,6 +416,61 @@ void CustomizePageTests::canvasFollowsConfiguredWallpaperAndFallsBackToTokens()
                                                QStringLiteral("unavailable"));
     QTRY_VERIFY(!wallpaper->isVisible());
     QCOMPARE(wallpaper->property("source").toUrl(), QUrl());
+}
+
+void CustomizePageTests::canvasWindowPreviewShowsResolvedChromeAndStaysContained()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString loadError;
+    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
+    view.resize(1080, 720);
+    view.show();
+    QTest::qWait(50);
+
+    // Red-before contract: the canvas must surface a preview item bound to
+    // the model's resolved chrome truth, not a hard-coded mock.
+    auto *preview = item(view.rootObject(), "customizeWindowPreview");
+    QVERIFY(preview != nullptr);
+
+    const QVariantMap firstChrome{
+        {QStringLiteral("surface"), QColor(Qt::red)},
+        {QStringLiteral("buttonStyle"), QStringLiteral("flat")},
+        {QStringLiteral("buttonSide"), QStringLiteral("left")},
+    };
+    model.windowPreviewFixture()->configure(firstChrome);
+    QTRY_COMPARE(preview->property("chrome").toMap().value(QStringLiteral("buttonSide")),
+                 QVariant(QStringLiteral("left")));
+
+    const QVariantMap secondChrome{
+        {QStringLiteral("surface"), QColor(Qt::blue)},
+        {QStringLiteral("buttonStyle"), QStringLiteral("symbols")},
+        {QStringLiteral("buttonSide"), QStringLiteral("right")},
+    };
+    model.windowPreviewFixture()->configure(secondChrome);
+    QTRY_COMPARE(preview->property("chrome").toMap().value(QStringLiteral("buttonSide")),
+                 QVariant(QStringLiteral("right")));
+
+    // Responsive containment: across different monitor aspect ratios, the
+    // preview stays fully inside its screen, never overflowing. The page's
+    // own compact/wide switch (< 1000px) is a separate concern from this
+    // preview's containment and stays out of scope here.
+    auto *screen = item(view.rootObject(), "customizeOutputCanvas");
+    QVERIFY(screen != nullptr);
+    for (const int width : {1080, 1600}) {
+        view.resize(width, 720);
+        view.show();
+        QTest::qWait(50);
+        QVERIFY(preview->isVisible());
+        const QRectF previewRect(preview->mapToItem(screen, QPointF(0, 0)),
+                                 QSizeF(preview->width(), preview->height()));
+        const QRectF screenRect(0, 0, screen->width(), screen->height());
+        QVERIFY2(screenRect.contains(previewRect),
+                 qPrintable(QStringLiteral("preview %1 escaped screen %2 at width %3")
+                                .arg(QDebug::toString(previewRect),
+                                     QDebug::toString(screenRect))
+                                .arg(width)));
+    }
 }
 
 QTEST_MAIN(CustomizePageTests)

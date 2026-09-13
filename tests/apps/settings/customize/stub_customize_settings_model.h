@@ -43,6 +43,33 @@ private:
     QString m_status{QStringLiteral("none")};
 };
 
+// Test stand-in for CustomizeWindowPreview: the same read-only chrome shape
+// the production projection publishes, driven directly by each row.
+class StubCustomizeWindowPreview final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QVariantMap chrome READ chrome NOTIFY changed)
+
+public:
+    explicit StubCustomizeWindowPreview(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    [[nodiscard]] QVariantMap chrome() const { return m_chrome; }
+
+    void configure(const QVariantMap &chrome)
+    {
+        m_chrome = chrome;
+        Q_EMIT changed();
+    }
+
+Q_SIGNALS:
+    void changed();
+
+private:
+    QVariantMap m_chrome;
+};
+
 class StubCustomizeSettingsModel final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool loading READ falseValue CONSTANT)
@@ -74,6 +101,7 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY contentChanged)
     Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY contentChanged)
     Q_PROPERTY(QObject *wallpaperPreview READ wallpaperPreview CONSTANT)
+    Q_PROPERTY(QObject *windowPreview READ windowPreview CONSTANT)
 
 public:
     explicit StubCustomizeSettingsModel(QObject *parent = nullptr)
@@ -165,6 +193,11 @@ public:
     [[nodiscard]] StubCustomizeWallpaperPreview *wallpaperPreviewFixture()
     {
         return &m_wallpaperPreview;
+    }
+    [[nodiscard]] QObject *windowPreview() { return &m_windowPreview; }
+    [[nodiscard]] StubCustomizeWindowPreview *windowPreviewFixture()
+    {
+        return &m_windowPreview;
     }
     [[nodiscard]] QVariantMap selectedProperties() const
     {
@@ -315,6 +348,7 @@ private:
     QString m_selectedKind = QStringLiteral("panel");
     QString m_appletSettingError;
     StubCustomizeWallpaperPreview m_wallpaperPreview{this};
+    StubCustomizeWindowPreview m_windowPreview{this};
 };
 
 } // namespace QindaQt::Apps::SettingsCustomize::TestSupport

@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/applets/api_version.h"
 #include "qindaqt/applets/applet_manifest.h"
 #include "qindaqt/apps/settings_customize/customize_editor_host.h"
 #include "qindaqt/apps/settings_customize/customize_output_provider.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
 #include "qindaqt/apps/settings_customize/customize_wallpaper_preview.h"
+#include "qindaqt/apps/settings_customize/customize_window_preview.h"
+#include "qindaqt/decoration_painter/decoration_painter.h"
 #include "qindaqt/profiles/layout_profile.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
@@ -26,6 +29,11 @@
 #include <utility>
 
 namespace QindaQt::Apps::SettingsCustomize::TestSupport {
+
+inline QStringList themeDirectories()
+{
+    return {QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")};
+}
 
 class MutableCustomizeOutputProvider final : public CustomizeOutputProvider {
 public:
@@ -231,6 +239,29 @@ inline QVariantMap wallpaperSnapshotWire(
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
 }
 
+inline QVariantMap valuesSnapshotWire(
+    const QVariantMap &values,
+    const QString &epoch = QStringLiteral("epoch-a"),
+    quint64 revision = 7)
+{
+    using Services::SettingsProtocol::SettingsWireStatus;
+    using Services::SettingsProtocol::WireContract;
+    QVariantMap sources;
+    for (auto it = values.cbegin(); it != values.cend(); ++it) {
+        sources.insert(it.key(), QStringLiteral("user-overrides"));
+    }
+    return {{QLatin1StringView(WireContract::FieldStatus),
+             quint32(SettingsWireStatus::Applied)},
+            {QLatin1StringView(WireContract::FieldWireSchemaVersion),
+             WireContract::WireSchemaVersion},
+            {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
+            {QLatin1StringView(WireContract::FieldEpoch), epoch},
+            {QLatin1StringView(WireContract::FieldRevision), revision},
+            {QLatin1StringView(WireContract::FieldValues), values},
+            {QLatin1StringView(WireContract::FieldSourceLayers), sources},
+            {QLatin1StringView(WireContract::FieldMessage), QString{}}};
+}
+
 inline QVariantMap commitWire(
     Services::SettingsProtocol::SettingsWireStatus status,
     const QString &profileId,
@@ -283,9 +314,21 @@ public:
                           {.requestTimeoutMilliseconds = 100,
                            .debounceMilliseconds = 0,
                            .retryMilliseconds = {10}})
+        , themeClient(themeTransport, {QStringLiteral("appearance.theme")},
+                      {.requestTimeoutMilliseconds = 100,
+                       .debounceMilliseconds = 0,
+                       .retryMilliseconds = {10}})
+        , chromeClient(chromeTransport,
+                       Decoration::ChromePreferences::settingsKeys(),
+                       {.requestTimeoutMilliseconds = 100,
+                        .debounceMilliseconds = 0,
+                        .retryMilliseconds = {10}})
         , wallpaperPreview(wallpaperClient, {wallpaperStore->path()})
+        , appearance(themeClient, themeDirectories(),
+                     QStringLiteral("qinda-dark"))
+        , windowPreview(appearance, chromeClient)
         , model(client, {profile(), profile(QStringLiteral("alternate"))},
-                manifests(), outputProvider, wallpaperPreview,
+                manifests(), outputProvider, wallpaperPreview, windowPreview,
                 [this](const Profiles::LayoutProfile &selected,
                        const QVector<ShellLayout::LogicalOutput> &inventory) {
                     return std::make_unique<RepositoryCustomizeEditorHost>(
@@ -358,13 +401,92 @@ public:
         return wallpaperStore->path() + QStringLiteral("/fixture-wall.png");
     }
 
+    // The chrome client is scoped to the exact ChromePreferences::settingsKeys()
+    // set (matching production wiring): a wire snapshot must carry every one
+    // of those keys or SettingsClient rejects it as out of scope. Overrides
+    // fill in on top of the "theme" defaults for every other key.
+    [[nodiscard]] static QVariantMap fullChromeValues(const QVariantMap &overrides)
+    {
+        return QindaQt::Decoration::ChromePreferences::fromSettingsValues(overrides)
+            .toSettingsValues();
+    }
+
+    // Publishes a confirmed theme and chrome-preference snapshot through the
+    // same request/reply cycle a live Settings1 confirmation uses. Neither
+    // client needs to be established for the model itself to work: chrome
+    // stays at the theme's own default until this (or nothing at all, per
+    // the fail-closed contract) resolves.
+    bool establishWindowPreview(const QString &themeId,
+                                const QVariantMap &chromeOverrides,
+                                quint64 chromeRevision = 7)
+    {
+        using Services::SettingsClient::ClientState;
+        if (!themeClient.start() || !chromeClient.start()) {
+            return false;
+        }
+        Q_EMIT themeTransport.ownerChanged(QStringLiteral(":1.90"));
+        Q_EMIT chromeTransport.ownerChanged(QStringLiteral(":1.90"));
+        if (!QTest::qWaitFor(
+                [this] { return !themeTransport.snapshots.isEmpty(); }, 5'000)
+            || !QTest::qWaitFor(
+                [this] { return !chromeTransport.snapshots.isEmpty(); },
+                5'000)) {
+            return false;
+        }
+        const auto themeRequest = themeTransport.snapshots.takeFirst();
+        Q_EMIT themeTransport.snapshotReceived(
+            themeRequest.token, themeRequest.owner,
+            valuesSnapshotWire({{QStringLiteral("appearance.theme"), themeId}}));
+        const auto chromeRequest = chromeTransport.snapshots.takeFirst();
+        Q_EMIT chromeTransport.snapshotReceived(
+            chromeRequest.token, chromeRequest.owner,
+            valuesSnapshotWire(fullChromeValues(chromeOverrides),
+                               QStringLiteral("epoch-a"), chromeRevision));
+        return QTest::qWaitFor(
+            [this] {
+                return themeClient.state() == ClientState::Ready
+                    && chromeClient.state() == ClientState::Ready;
+            },
+            5'000);
+    }
+
+    // Publishes a changed chrome-preference pair through the same
+    // request/reply cycle a live SettingsChanged invalidation uses.
+    bool updateChromePreferences(const QVariantMap &chromeOverrides,
+                                 quint64 revision)
+    {
+        const qsizetype before = chromeTransport.snapshots.size();
+        Q_EMIT chromeTransport.settingsChanged(
+            QStringLiteral(":1.90"), QStringLiteral("epoch-a"), revision,
+            chromeOverrides.keys());
+        if (!QTest::qWaitFor(
+                [this, before] {
+                    return chromeTransport.snapshots.size() > before;
+                },
+                5'000)) {
+            return false;
+        }
+        const auto request = chromeTransport.snapshots.takeLast();
+        Q_EMIT chromeTransport.snapshotReceived(
+            request.token, request.owner,
+            valuesSnapshotWire(fullChromeValues(chromeOverrides),
+                               QStringLiteral("epoch-a"), revision));
+        return true;
+    }
+
     std::unique_ptr<QTemporaryDir> store;
     std::unique_ptr<QTemporaryDir> wallpaperStore;
     SequenceTransport transport;
     SequenceTransport wallpaperTransport;
+    SequenceTransport themeTransport;
+    SequenceTransport chromeTransport;
     Services::SettingsClient::SettingsClient client;
     Services::SettingsClient::SettingsClient wallpaperClient;
+    Services::SettingsClient::SettingsClient themeClient;
+    Services::SettingsClient::SettingsClient chromeClient;
     CustomizeWallpaperPreview wallpaperPreview;
+    AppAppearance::ApplicationAppearanceController appearance;
+    CustomizeWindowPreview windowPreview;
     MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model;
 };
