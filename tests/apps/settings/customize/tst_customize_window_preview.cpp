@@ -13,6 +13,8 @@ class CustomizeWindowPreviewTests final : public QObject {
 
 private slots:
     void fallsBackToTheThemeDefaultBeforeConfirmation();
+    void resolvesAConfirmedNonFallbackThemeNotJustTheFallback();
+    void republishesWhenEitherRequiredThemeKeyChangesIndependently();
     void resolvesTwoDifferentConfirmedCombosDifferently();
     void tracksAuthoritativeChromePreferenceChanges();
 };
@@ -31,6 +33,51 @@ void CustomizeWindowPreviewTests::fallsBackToTheThemeDefaultBeforeConfirmation()
     QCOMPARE(harness.windowPreview.chrome(), expected);
 }
 
+// The theme client must be scoped to both required Settings1 keys
+// (appearance.theme and appearance.colorScheme), matching
+// ApplicationAppearanceController's own resolution contract: requesting a
+// genuinely non-fallback, non-circular theme must actually be adopted, not
+// silently stay on the "qinda-dark" construction-time fallback. Asserting
+// the adopted theme id directly -- independent of the chrome comparison --
+// proves adoption happened rather than merely that resolveWindowChrome is
+// self-consistent with whatever theme never changed.
+void CustomizeWindowPreviewTests::resolvesAConfirmedNonFallbackThemeNotJustTheFallback()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establishWindowPreview(QStringLiteral("qinda-light"),
+                                           QStringLiteral("light"), {}));
+    QCOMPARE(harness.appearance.theme().id, QStringLiteral("qinda-light"));
+    const QVariantMap expected =
+        QindaQt::Decoration::resolveWindowChrome(
+            harness.appearance.theme(), QindaQt::Decoration::ChromePreferences{})
+            .toVariantMap();
+    QCOMPARE(harness.windowPreview.chrome(), expected);
+}
+
+// Proves the preview republishes when EITHER required theme key changes on
+// its own, not just when both happen to change together: a theme-id change
+// with the color scheme held fixed, then a color-scheme change with the
+// requested theme id text held fixed (moving qinda-bliss, a light-only
+// theme, out of its compatible scheme forces a different resolved theme).
+void CustomizeWindowPreviewTests::republishesWhenEitherRequiredThemeKeyChangesIndependently()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establishWindowPreview(QStringLiteral("qinda-light"),
+                                           QStringLiteral("light"), {}));
+    QCOMPARE(harness.appearance.theme().id, QStringLiteral("qinda-light"));
+
+    // Theme id changes, color scheme does not.
+    QVERIFY(harness.updateTheme(QStringLiteral("qinda-bliss"), QStringLiteral("light"), 8));
+    QTRY_COMPARE(harness.appearance.theme().id, QStringLiteral("qinda-bliss"));
+
+    // Color scheme changes, the requested theme id text does not: qinda-bliss
+    // is light-only, so demanding "dark" makes it incompatible and the
+    // resolver falls through to the dark built-in -- a different theme is
+    // adopted purely because the color-scheme key was received and changed.
+    QVERIFY(harness.updateTheme(QStringLiteral("qinda-bliss"), QStringLiteral("dark"), 9));
+    QTRY_COMPARE(harness.appearance.theme().id, QStringLiteral("qinda-dark"));
+}
+
 // The two-resolver-outputs acceptance criterion: a confirmed theme with
 // distinct button-style/button-side preferences produces genuinely different,
 // correctly-resolved chrome -- proving the preview reuses
@@ -44,7 +91,7 @@ void CustomizeWindowPreviewTests::resolvesTwoDifferentConfirmedCombosDifferently
         {QStringLiteral("appearance.windowButtonSide"), QStringLiteral("left")},
     };
     QVERIFY(harness.establishWindowPreview(QStringLiteral("qinda-dark"),
-                                           firstPreferences));
+                                           QStringLiteral("dark"), firstPreferences));
     const QVariantMap firstChrome = harness.windowPreview.chrome();
     const QVariantMap firstExpected =
         QindaQt::Decoration::resolveWindowChrome(
@@ -85,7 +132,7 @@ void CustomizeWindowPreviewTests::tracksAuthoritativeChromePreferenceChanges()
 {
     ModelHarness harness;
     QVERIFY(harness.establishWindowPreview(
-        QStringLiteral("qinda-dark"),
+        QStringLiteral("qinda-dark"), QStringLiteral("dark"),
         {{QStringLiteral("appearance.windowButtons"), QStringLiteral("all")}}));
     QSignalSpy changed(&harness.windowPreview, &CustomizeWindowPreview::changed);
 

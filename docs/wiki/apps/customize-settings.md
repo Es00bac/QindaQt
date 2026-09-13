@@ -74,16 +74,20 @@ paints the currently configured wallpaper — the same Settings1
 consumes, resolved through the public Settings Appearance wallpaper catalog
 and painted with the shell's scaled/centered/tiled mapping — over the themed
 gradient backdrop, and a contained-window decoration preview keeps the screen
-reading as a desktop. That preview paints the configured `appearance.theme`
-and the container decoration preferences (button style, side, tab order,
-glyphs) through the same `Decoration::resolveWindowChrome` flattening and
+reading as a desktop. That preview paints the configured theme (`appearance.
+theme` and `appearance.colorScheme` together — the same pair
+`AppAppearance::ApplicationAppearanceController` and the compositor's own
+equivalent controller both require to resolve a theme at all) and the
+container decoration preferences (button style, side, tab order, glyphs)
+through the same `Decoration::resolveWindowChrome` flattening and
 member-handlebar paint functions the compositor's own KDecoration plugin
 uses, so the chrome shown can never drift from what a real contained window
 would render; it is never a hard-coded decorative mock. Both previews are
 read-only: independent route-owned Settings1 scopes subscribe to exactly the
-wallpaper keys and exactly `Decoration::ChromePreferences::settingsKeys()`
-through their own transports, so layout editing truth, wallpaper preview
-truth, and window preview truth never share request tokens. No wallpaper
+wallpaper keys, exactly `appearance.theme`/`appearance.colorScheme`, and
+exactly `Decoration::ChromePreferences::settingsKeys()` through their own
+transports, so layout editing truth, wallpaper preview truth, and window
+preview truth never share request tokens. No wallpaper
 (explicit empty preference), an unknown mode token, an unresolvable or
 unreadable identity, a mistyped value, or unavailable Settings1 truth each
 fail closed to the token gradient (wallpaper) or the resolved theme's own

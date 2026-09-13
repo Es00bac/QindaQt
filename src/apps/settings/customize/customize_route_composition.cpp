@@ -122,7 +122,8 @@ public:
                           {QString(SettingsAppearance::AppearanceKeys::Wallpaper),
                            QString(SettingsAppearance::AppearanceKeys::WallpaperMode)})
         , themeTransport(QDBusConnection::sessionBus())
-        , themeClient(themeTransport, {QStringLiteral("appearance.theme")})
+        , themeClient(themeTransport, {QStringLiteral("appearance.theme"),
+                                       QStringLiteral("appearance.colorScheme")})
         , chromeTransport(QDBusConnection::sessionBus())
         , chromeClient(chromeTransport, Decoration::ChromePreferences::settingsKeys())
         , outputProvider(*qGuiApp)
