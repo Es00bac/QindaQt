@@ -22,6 +22,7 @@ target_sources(
         preview/local_preview.cpp
         preview/preview_provider.cpp
         preview/theme_icon_provider.cpp
+        runtime/file_manager_application.cpp
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
         model/entry_properties.cpp
@@ -49,6 +50,7 @@ target_sources(
         preview/local_preview.h
         preview/preview_provider.h
         preview/theme_icon_provider.h
+        runtime/file_manager_application.h
         model/bookmarks_store.h
         model/clipboard_controller.h
         model/directory_lister.h
@@ -76,8 +78,10 @@ target_link_libraries(
     # ADR-0151: KIOWidgets registers KIO's standard job UI delegate at load
     # time; without it every KIO job has no credential/mount prompt path.
     # ADR-0152: KIOGui provides KIO::OpenUrlJob, the supported remote-open
-    # facility.
-    PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets
+    # facility. Qt6::Widgets is private because that delegate prompts with
+    # QWidgets (Open With dialog, credential/message boxes); the process
+    # application class lives in runtime/file_manager_application.h.
+    PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets Qt6::Widgets
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)

@@ -120,8 +120,13 @@ qindaqt_add_file_manager_test(
 )
 target_link_libraries(
     qindaqt_file_manager_kio_remote_opener_tests
-    PRIVATE KF6::KIOGui
+    PRIVATE KF6::KIOGui Qt6::Widgets
 )
+# The P1 regression row drives KIO's standard Open With prompt, which needs a
+# QWidget-capable application; run display-less like the other GUI rows.
+set_tests_properties(qindaqt.file-manager-kio-remote-opener PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_mutation_action_binding_tests
     tst_mutation_action_binding.cpp

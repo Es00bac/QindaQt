@@ -18,9 +18,13 @@ namespace QindaQt::Apps::FileManager {
 // failure as its typed launchError text; an implementation must:
 //  - never persist a credential (no wallet/keyring/session write), and never
 //    read, log, or accept embedded URL userinfo;
-//  - never choose a custom handler, prompt for one, execute a command line,
-//    or mutate remote content -- opening means "hand to the desktop's
-//    default handler";
+//  - never add its own handler picker or prompt, execute a command line, or
+//    mutate remote content -- opening means "hand to the desktop's default
+//    handler". KIO's standard UI delegate may still prompt: ordinary
+//    authentication, and its Open With dialog when no application is
+//    associated with the file's type. That prompt is the platform's, not a
+//    QindaQt one, and it constructs QWidgets, so the process must run the
+//    QWidget-capable application from runtime/file_manager_application.h;
 //  - emit openFinished at most once per open() call, on the GUI thread,
 //    and never synchronously reenter the caller before open() returns.
 class RemoteFileOpener : public QObject {

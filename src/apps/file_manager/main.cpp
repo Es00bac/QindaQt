@@ -15,6 +15,7 @@
 #include "network/kio_remote_file_opener.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
+#include "runtime/file_manager_application.h"
 #include "runtime/mutation_ui_action_probe.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
@@ -155,7 +156,7 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
 } // namespace
 
 // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
-// call runs before QGuiApplication construction (pre-construction
+// call runs before application construction (pre-construction
 // QGuiApplication::setFont persists as the application default font). A
 // missing, unavailable, or unresolvable preference source leaves platform
 // defaults untouched (fail-closed). See
@@ -166,11 +167,15 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
 // deliberately no QST token publishing or per-app theme handling here.
 int main(int argc, char **argv) {
   QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
-  QGuiApplication application(argc, argv);
-  application.setApplicationName(QStringLiteral("qindaqt-file-manager"));
-  application.setApplicationDisplayName(QStringLiteral("QindaQt File Manager"));
-  application.setOrganizationName(QStringLiteral("QindaQt"));
-  application.setDesktopFileName(QStringLiteral("org.qindaqt.FileManager"));
+  // AGENT-NOTE: composed through the shared factory, not constructed here
+  // directly: KIO's standard widgets delegate requires a QWidget-capable
+  // application (see runtime/file_manager_application.h), and focused tests
+  // must run under the same application class to exercise its prompts.
+  auto application = QindaQt::Apps::FileManager::createApplication(argc, argv);
+  application->setApplicationName(QStringLiteral("qindaqt-file-manager"));
+  application->setApplicationDisplayName(QStringLiteral("QindaQt File Manager"));
+  application->setOrganizationName(QStringLiteral("QindaQt"));
+  application->setDesktopFileName(QStringLiteral("org.qindaqt.FileManager"));
 
   QCommandLineParser parser;
   parser.setApplicationDescription(QStringLiteral("QindaQt local file manager"));
@@ -179,7 +184,7 @@ int main(int argc, char **argv) {
   registerCommandLineOptions(parser);
   parser.addPositionalArgument(QStringLiteral("folder"),
                                QStringLiteral("Local folder to open"), QStringLiteral("[folder]"));
-  parser.process(application);
+  parser.process(*application);
   if (parser.positionalArguments().size() > 1) {
     std::fprintf(stderr, "qindaqt-file-manager: open one folder at a time\n");
     return 2;
@@ -331,7 +336,7 @@ int main(int argc, char **argv) {
     destroyRoots();
     return 0;
   }
-  const int exitCode = application.exec();
+  const int exitCode = application->exec();
   destroyRoots();
   return exitCode;
 }

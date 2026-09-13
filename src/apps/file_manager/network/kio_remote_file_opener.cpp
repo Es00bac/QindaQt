@@ -37,7 +37,11 @@ void KioRemoteFileOpener::open(const QUrl &url) {
   // slave that needs credentials can then prompt; if no KIO GUI library is
   // loaded the job simply has no delegate and failures still arrive here as
   // a typed result. QindaQt installs no custom delegate and never sees a
-  // credential.
+  // credential. AGENT-NOTE: that standard delegate prompts with QWidgets
+  // (Open With dialog, credential/message boxes), so the surrounding process
+  // must be the QWidget-capable application from
+  // runtime/file_manager_application.h -- under a bare QGuiApplication the
+  // Open With dialog aborts the process (review P1 on 2b37f9c1).
   if (job->uiDelegate() == nullptr) {
     job->setUiDelegate(KIO::createDefaultJobUiDelegate());
   }

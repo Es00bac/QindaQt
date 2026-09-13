@@ -624,7 +624,12 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   production `KioNetworkDirectoryBackend` adapter (ADR-0137), with ordinary
   KIO authentication prompts (ADR-0151) and remote regular-file opening
   through `KIO::OpenUrlJob` behind the injected `RemoteFileOpener` seam
-  (ADR-0152). Still open: remote file mutation, mount-based access, and a
+  (ADR-0152); because KIO's standard delegate prompts with QWidgets (its
+  Open With dialog when no application is associated, plus credential and
+  message boxes), the File Manager process runs a QWidget-capable
+  `QApplication` composed through the shared factory in
+  `runtime/file_manager_application.h`, while the UI itself stays Qt Quick
+  (ADR-0116). Still open: remote file mutation, mount-based access, and a
   QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
   authentication); portal locations remain out of scope.
 
@@ -666,7 +671,10 @@ typed-open-failure-and-error-clearing, all against a fake injected backend),
 `KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
 job-creation test seam), `qindaqt.file-manager-kio-remote-opener` (the
 production `KioRemoteFileOpener`'s scheme boundary and retained KIO UI
-delegate via a job-creation test seam), and `qindaqt.file-manager-mutation-action-binding`
+delegate via a job-creation test seam, plus one real open of an
+unassociated local file type driven to KIO's standard Open With prompt
+under the production application class — the dialog is dismissed
+hermetically, so no application is started), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay

@@ -19,9 +19,10 @@ framework — each a new authority this module must not own.
 The platform already ships the supported facility:
 `KIO::OpenUrlJob` (KIOGui) opens a URL with the desktop's default handler
 and performs any temporary download a remote URL needs, owning the temp
-file's lifecycle. It is a `KJob`, so it inherits KIO's standard UI delegate
-automatically (KIOWidgets is already linked per ADR-0151) and ordinary
-authentication prompts work through the same flow as network listing.
+file's lifecycle. Unlike plain `KIO::Job` it does not auto-install a UI
+delegate, so the adapter receives KIO's registered standard delegate
+(KIOWidgets, already linked per ADR-0151) and ordinary authentication
+prompts work through the same flow as network listing.
 
 ## Decision
 
@@ -49,6 +50,14 @@ remote regular-file activation, mirroring how it already uses
 
 - The support library's private KIO dependency grows by `KF6::KIOGui`
   (`KIO::OpenUrlJob`); KIOCore/KIOWidgets from ADR-0151 remain.
+- The standard delegate prompts with QWidgets. Its Open With dialog appears
+  when the file's type has no associated application, exactly the prompt a
+  user needs to choose one; it is the platform's dialog, not a QindaQt
+  picker. QWidget construction aborts a bare `QGuiApplication`, so the File
+  Manager process composes a QWidget-capable `QApplication` through the
+  shared factory in `runtime/file_manager_application.h` (the UI itself
+  stays Qt Quick per ADR-0116), and focused tests compose the same factory
+  so they exercise that prompt path under the production application class.
 - Remote regular files now open through the desktop's default handler, with
   any needed download handled by KIO; QindaQt owns no downloader, temp-file
   policy, handler picker, or credential authority, and never reads, stores,
@@ -57,7 +66,10 @@ remote regular-file activation, mirroring how it already uses
   wiring (activation reaches the opener; typed failure/success/error-clear
   behavior; lifetime), and `qindaqt.file-manager-kio-remote-opener` proves
   the production adapter's scheme boundary and retained KIO UI delegate
-  with never-started jobs. Neither row touches a network or credential.
+  with never-started jobs, plus drives one real open of an unassociated
+  local file type to KIO's standard Open With prompt under the production
+  application class (no application is started; the dialog is dismissed
+  hermetically). Neither row touches a network or credential.
 - Remote mutation (rename/trash/write on remote folders) remains an
   explicit later outcome and gains no authority from this slice.
 
