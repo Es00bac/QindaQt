@@ -376,6 +376,9 @@ replace earlier work:
 - Keep contained-member handlebars usable at narrow split widths: one shared
   layout must retain all miniature window controls, a centered grip, and a
   real button-free native detach region at the documented supported minimum.
+  Integrated `ca32dd1a` provides the independently accepted 108-logical-pixel
+  layout; its eight affected main-tree rows pass. Installed compositor adoption
+  remains separate.
 - Make the active container and active member unmistakable through stronger
   theme-consistent frame cues, including when member titles are hidden.
 - Replace stock KWin chrome context menus with QindaQt group/member-aware

@@ -69,6 +69,13 @@ unchanged broad audit without evidence of wider impact. A failed mandatory
 gate receives one bounded causal investigation before retry, and an identical
 long retry requires a changed hypothesis or input.
 
+Long integration gates run asynchronously with one published session identifier
+and one exact integration boundary. The Program Manager does not stop, restart,
+or duplicate that gate merely to await it; after recording the retained session,
+the manager ends a bounded checkpoint so queued candidate, verdict, failure, and
+capacity events can be serviced. A later checkpoint resumes that same session
+before recording the gate result.
+
 Candidate handoffs, review results, stopped working processes, and live idle
 capacity with backlog use a separate event path with a scan interval of at most
 15 seconds. It reads handoff and reviewer-verdict evidence from each
