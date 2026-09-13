@@ -115,8 +115,12 @@ schema-v1 profile, a supplied logical output inventory, and an immutable copy
 of the session's validated applet-manifest catalog. It then publishes retained,
 immutable snapshots carrying the normalized profile, complete solved layout,
 optimistic revision, and preview status. The output inventory belongs to one
-editor session; a later output-monitoring controller will cancel or rebuild the
-session when that inventory changes. Repository reads and commands are confined
+editor session. The Settings Customize composition injects the current ordered
+logical inventory plus the exact primary output identity and its revision: a
+clean session may rebuild on change, while a dirty session fences further
+display-scope mutation and persistence until Discard or reload. Missing or
+ambiguous primary identity is never replaced with the first inventory member.
+Repository reads and commands are confined
 to one editor thread. Invalid initial profiles or manifest catalogs leave the
 repository non-ready with no published snapshot or committed profile; the
 initialization error and supplied initial revision remain available at the
@@ -174,14 +178,18 @@ remain outstanding parts of the Shell and customization milestone.
 ## Shell startup selection and catalog precedence
 
 The production shell adopts the confirmed Settings1 `panels.layoutProfile`
-selection at startup ([ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md)).
+selection at startup ([ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md))
+and reconciles a newly applied Customize profile live
+([ADR-0122](../adr/0122-adopt-saved-layout-preferences-live.md)).
 Before the initial surface plan it performs one bounded read of the scoped
 Settings1 snapshot; an explicit `--profile` outranks the saved selection, and
 the `qindaqt` profile remains the fallback when the service is unavailable or
 the saved profile has been deleted or renamed (a diagnostic names the dropped
 selection). Only an explicit unknown `--profile` fails startup.
-Profile changes are deliberately not applied live: the Customize route's
-promise is adoption at the next shell start, which this read implements.
+After Customize atomically saves profile content and confirms selection, the
+running shell reloads the same catalog precedence and incrementally reconciles
+the resulting surface set without a compositor or shell restart. Startup still
+uses the bounded initial read and precedence rules above.
 
 Profile catalogs merge low-to-high precedence with the writable user store
 last, so user-saved profiles override — and partial user catalogs no longer

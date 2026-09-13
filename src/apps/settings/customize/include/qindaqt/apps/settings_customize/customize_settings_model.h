@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/apps/settings_customize/customize_editor_host.h"
+#include "qindaqt/apps/settings_customize/customize_output_provider.h"
 
 #include <QObject>
 #include <QVariantList>
@@ -19,7 +20,8 @@ namespace QindaQt::Apps::SettingsCustomize {
 inline constexpr QLatin1StringView LayoutProfileSettingsKey("panels.layoutProfile");
 
 using EditorHostFactory = std::function<std::unique_ptr<CustomizeEditorHost>(
-    const Profiles::LayoutProfile &profile)>;
+    const Profiles::LayoutProfile &profile,
+    const QVector<ShellLayout::LogicalOutput> &outputs)>;
 
 // QObject projection for the compiled Customize page. The model owns route
 // state but receives Settings1 and editor-host dependencies explicitly; QML
@@ -34,6 +36,9 @@ class CustomizeSettingsModel final : public QObject {
     Q_PROPERTY(bool canEdit READ canEdit NOTIFY stateChanged)
     Q_PROPERTY(bool dirty READ dirty NOTIFY contentChanged)
     Q_PROPERTY(bool applyAvailable READ applyAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool displayScopeChangeAvailable READ displayScopeChangeAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool primaryDisplayAvailable READ primaryDisplayAvailable NOTIFY stateChanged)
+    Q_PROPERTY(QString displayScopeError READ displayScopeError NOTIFY stateChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY contentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY contentChanged)
     Q_PROPERTY(bool visualDragActive READ visualDragActive NOTIFY contentChanged)
@@ -55,13 +60,15 @@ public:
     enum class State { Loading, Ready, Saving, Conflict, Unavailable };
     Q_ENUM(State)
 
-    // AGENT-CONTRACT: client must outlive this GUI-thread model. The factory
-    // returns a fresh editor host for profile selection and discard rebuilds;
-    // returning null fails closed and preserves the last confirmed selection.
+    // AGENT-CONTRACT: client and outputProvider must outlive this GUI-thread
+    // model. The factory returns a fresh editor host for profile selection and
+    // discard rebuilds; returning null fails closed and preserves the last
+    // confirmed selection.
     CustomizeSettingsModel(
         Services::SettingsClient::SettingsClient &client,
         QVector<Profiles::LayoutProfile> availableProfiles,
         QVector<Applets::AppletManifest> manifests,
+        CustomizeOutputProvider &outputProvider,
         EditorHostFactory hostFactory,
         QString startupError = {},
         QObject *parent = nullptr);
@@ -74,6 +81,9 @@ public:
     [[nodiscard]] bool canEdit() const noexcept;
     [[nodiscard]] bool dirty() const noexcept;
     [[nodiscard]] bool applyAvailable() const noexcept;
+    [[nodiscard]] bool displayScopeChangeAvailable() const noexcept;
+    [[nodiscard]] bool primaryDisplayAvailable() const;
+    [[nodiscard]] QString displayScopeError() const;
     [[nodiscard]] bool canUndo() const noexcept;
     [[nodiscard]] bool canRedo() const noexcept;
     [[nodiscard]] bool visualDragActive() const noexcept;
@@ -127,6 +137,7 @@ private:
     void handleSnapshot();
     void handleCommit(const Services::SettingsClient::CommitOutcome &outcome);
     void handleUncertain(const QString &message);
+    void handleOutputSnapshotChanged();
     [[nodiscard]] const Profiles::LayoutProfile *findProfile(const QString &id) const;
     [[nodiscard]] const Applets::AppletManifest *findManifest(const QString &id) const;
     [[nodiscard]] bool rebuild(const Profiles::LayoutProfile &profile);
@@ -140,10 +151,12 @@ private:
         const QString &panelId, const QString &zone,
         const QString &beforeAppletId) const;
     [[nodiscard]] QString nextDuplicateId(const QString &base) const;
+    [[nodiscard]] bool outputTruthCurrent();
 
     Services::SettingsClient::SettingsClient &m_client;
     QVector<Profiles::LayoutProfile> m_profiles;
     QVector<Applets::AppletManifest> m_manifests;
+    CustomizeOutputProvider &m_outputProvider;
     EditorHostFactory m_hostFactory;
     std::unique_ptr<CustomizeEditorHost> m_editor;
     State m_state = State::Loading;
@@ -159,6 +172,8 @@ private:
     QString m_lastDropReason;
     QString m_confirmedOwner;
     QString m_confirmedEpoch;
+    CustomizeOutputSnapshot m_editorOutputs;
+    QString m_displayScopeError;
     ShellCustomizationEditor::DropTarget m_keyboardTarget;
     bool m_hasBaseline = false;
     bool m_selectionDirty = false;
@@ -166,6 +181,7 @@ private:
     bool m_keyboardMoving = false;
     bool m_lastDropAccepted = false;
     bool m_editorUnavailable = false;
+    bool m_outputTruthStale = false;
 };
 
 } // namespace QindaQt::Apps::SettingsCustomize

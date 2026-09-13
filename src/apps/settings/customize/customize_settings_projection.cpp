@@ -185,12 +185,20 @@ QVariantMap CustomizeSettingsModel::selectedProperties() const
     const auto *profile = m_editor ? m_editor->profile() : nullptr;
     const Profiles::PanelSpec *panel = findPanel(profile, m_selectedPanelId);
     if (m_selectedKind == QLatin1String("panel") && panel != nullptr) {
+        const PrimaryOutputResolution primary = resolvePrimaryOutput(
+            m_outputProvider.snapshot());
+        const QString outputScope = panel->output == QLatin1String("*")
+            ? QStringLiteral("all")
+            : (primary.ok() && panel->output == primary.outputId
+                   ? QStringLiteral("primary") : QStringLiteral("other"));
         return {
             {QStringLiteral("kind"), QStringLiteral("panel")},
             {QStringLiteral("name"),
              ShellCustomizationEditor::panelDisplayName(*panel)},
             {QStringLiteral("edge"), Profiles::toString(panel->edge)},
             {QStringLiteral("alignment"), Profiles::toString(panel->alignment)},
+            {QStringLiteral("output"), panel->output},
+            {QStringLiteral("outputScope"), outputScope},
             {QStringLiteral("layer"), Profiles::toString(panel->layer)},
             {QStringLiteral("hideMode"), Profiles::toString(panel->hideMode)},
             {QStringLiteral("rows"), panel->rows},

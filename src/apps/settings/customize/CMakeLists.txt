@@ -6,6 +6,7 @@ target_sources(
     PRIVATE
         customize_catalog.cpp
         customize_editor_host.cpp
+        customize_output_provider.cpp
         customize_settings_actions.cpp
         customize_settings_model.cpp
         customize_settings_projection.cpp
@@ -14,6 +15,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/apps/settings_customize/customize_editor_host.h
+            include/qindaqt/apps/settings_customize/customize_output_provider.h
             include/qindaqt/apps/settings_customize/customize_settings_model.h
 )
 target_link_libraries(
@@ -45,6 +47,8 @@ qt_add_qml_module(
     SOURCES
         customize_route_composition.h
         customize_route_composition.cpp
+        qt_customize_output_provider.h
+        qt_customize_output_provider.cpp
     QML_FILES
         qml/CustomizeAppletIcon.qml
         qml/CustomizeAppletPalette.qml

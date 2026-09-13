@@ -16,6 +16,9 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(bool canEdit READ trueValue CONSTANT)
     Q_PROPERTY(bool dirty READ dirty NOTIFY contentChanged)
     Q_PROPERTY(bool applyAvailable READ falseValue CONSTANT)
+    Q_PROPERTY(bool displayScopeChangeAvailable READ trueValue CONSTANT)
+    Q_PROPERTY(bool primaryDisplayAvailable READ primaryDisplayAvailable NOTIFY contentChanged)
+    Q_PROPERTY(QString displayScopeError READ displayScopeError NOTIFY contentChanged)
     Q_PROPERTY(bool canUndo READ falseValue CONSTANT)
     Q_PROPERTY(bool canRedo READ falseValue CONSTANT)
     Q_PROPERTY(bool visualDragActive READ falseValue CONSTANT)
@@ -28,8 +31,8 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
     Q_PROPERTY(QVariantList panels READ panels CONSTANT)
     Q_PROPERTY(QVariantList palette READ palette CONSTANT)
-    Q_PROPERTY(QString selectedKind READ emptyString CONSTANT)
-    Q_PROPERTY(QString selectedPanelId READ emptyString CONSTANT)
+    Q_PROPERTY(QString selectedKind READ selectedKind CONSTANT)
+    Q_PROPERTY(QString selectedPanelId READ selectedPanelId CONSTANT)
     Q_PROPERTY(QString selectedAppletId READ emptyString CONSTANT)
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties CONSTANT)
 
@@ -43,6 +46,15 @@ public:
     [[nodiscard]] bool trueValue() const { return true; }
     [[nodiscard]] bool dirty() const { return m_dirty; }
     [[nodiscard]] QString emptyString() const { return {}; }
+    [[nodiscard]] bool primaryDisplayAvailable() const
+    {
+        return m_primaryDisplayAvailable;
+    }
+    [[nodiscard]] QString displayScopeError() const
+    {
+        return m_primaryDisplayAvailable
+            ? QString{} : QStringLiteral("The primary display is not currently known");
+    }
     [[nodiscard]] QString statusText() const
     {
         return QStringLiteral(
@@ -92,7 +104,7 @@ public:
         return {QVariantMap{
             {QStringLiteral("id"), QStringLiteral("bar")},
             {QStringLiteral("name"), QStringLiteral("Top panel")},
-            {QStringLiteral("output"), QStringLiteral("primary")},
+            {QStringLiteral("output"), QStringLiteral("DP-1")},
             {QStringLiteral("edge"), QStringLiteral("top")},
             {QStringLiteral("alignment"), QStringLiteral("fill")},
             {QStringLiteral("layer"), QStringLiteral("above")},
@@ -107,7 +119,24 @@ public:
             {QStringLiteral("applets"), QVariantList{applet}},
         }};
     }
-    [[nodiscard]] QVariantMap selectedProperties() const { return {}; }
+    [[nodiscard]] QString selectedKind() const { return QStringLiteral("panel"); }
+    [[nodiscard]] QString selectedPanelId() const { return QStringLiteral("bar"); }
+    [[nodiscard]] QVariantMap selectedProperties() const
+    {
+        return {
+            {QStringLiteral("kind"), QStringLiteral("panel")},
+            {QStringLiteral("name"), QStringLiteral("Top panel")},
+            {QStringLiteral("output"), QStringLiteral("DP-1")},
+            {QStringLiteral("outputScope"), QStringLiteral("primary")},
+            {QStringLiteral("edge"), QStringLiteral("top")},
+            {QStringLiteral("alignment"), QStringLiteral("fill")},
+            {QStringLiteral("layer"), QStringLiteral("above")},
+            {QStringLiteral("hideMode"), QStringLiteral("never")},
+            {QStringLiteral("rows"), 1},
+            {QStringLiteral("thickness"), 32},
+            {QStringLiteral("length"), 1.0},
+        };
+    }
 
     Q_INVOKABLE bool selectProfile(const QString &) { return true; }
     Q_INVOKABLE void selectPanel(const QString &) {}
@@ -128,8 +157,12 @@ public:
     Q_INVOKABLE bool keyboardStep(const QString &) { return true; }
     Q_INVOKABLE bool removeSelected() { return true; }
     Q_INVOKABLE bool duplicateSelected() { return true; }
-    Q_INVOKABLE bool configureSelectedPanel(const QString &, const QVariant &)
+    Q_INVOKABLE bool configureSelectedPanel(const QString &field,
+                                             const QVariant &value)
     {
+        lastConfiguredField = field;
+        lastConfiguredValue = value;
+        ++configurePanelCalls;
         return true;
     }
     Q_INVOKABLE bool undo() { return true; }
@@ -147,14 +180,27 @@ public:
         Q_EMIT contentChanged();
     }
 
+    void setPrimaryDisplayAvailable(bool available)
+    {
+        if (m_primaryDisplayAvailable == available) {
+            return;
+        }
+        m_primaryDisplayAvailable = available;
+        Q_EMIT contentChanged();
+    }
+
 Q_SIGNALS:
     void contentChanged();
 
 public:
     int keyboardInsertCalls = 0;
+    int configurePanelCalls = 0;
+    QString lastConfiguredField;
+    QVariant lastConfiguredValue;
 
 private:
     bool m_dirty = false;
+    bool m_primaryDisplayAvailable = true;
 };
 
 } // namespace QindaQt::Apps::SettingsCustomize::TestSupport

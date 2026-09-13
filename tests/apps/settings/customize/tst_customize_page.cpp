@@ -132,6 +132,38 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     QVERIFY(wide->isVisible());
     QVERIFY(item(view.rootObject(), "customizeThicknessSlider") != nullptr);
 
+    auto *primaryScope = item(view.rootObject(), "customizeDisplayScopePrimary");
+    auto *allScope = item(view.rootObject(), "customizeDisplayScopeAll");
+    auto *scopeError = item(view.rootObject(), "customizeDisplayScopeError");
+    QVERIFY(primaryScope != nullptr);
+    QVERIFY(allScope != nullptr);
+    QVERIFY(scopeError != nullptr);
+    QVERIFY(primaryScope->isVisible());
+    QVERIFY(allScope->isVisible());
+    QVERIFY2(accessibleName(primaryScope).contains(QStringLiteral("Primary display")),
+             qPrintable(accessibleName(primaryScope)));
+    QVERIFY2(accessibleName(allScope).contains(QStringLiteral("All displays")),
+             qPrintable(accessibleName(allScope)));
+    allScope->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(allScope->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Space);
+    QTRY_COMPARE(model.configurePanelCalls, 1);
+    QCOMPARE(model.lastConfiguredField, QStringLiteral("outputScope"));
+    QCOMPARE(model.lastConfiguredValue, QVariant(QStringLiteral("all")));
+
+    primaryScope->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(primaryScope->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Space);
+    QTRY_COMPARE(model.configurePanelCalls, 2);
+    QCOMPARE(model.lastConfiguredField, QStringLiteral("outputScope"));
+    QCOMPARE(model.lastConfiguredValue, QVariant(QStringLiteral("primary")));
+
+    model.setPrimaryDisplayAvailable(false);
+    QTRY_VERIFY(!primaryScope->isEnabled());
+    QTRY_VERIFY(scopeError->isVisible());
+    QVERIFY2(accessibleName(scopeError).contains(QStringLiteral("not currently known")),
+             qPrintable(accessibleName(scopeError)));
+
     model.setDirty(true);
     QVERIFY(QMetaObject::invokeMethod(view.rootObject(), "requestClose"));
     auto *discardDialog = view.rootObject()->findChild<QObject *>(

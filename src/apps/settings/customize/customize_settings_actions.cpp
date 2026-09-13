@@ -359,6 +359,38 @@ bool CustomizeSettingsModel::configureSelectedPanel(const QString &field,
         return false;
     }
     auto configuration = panelConfiguration(*panel);
+    if (field == QLatin1String("outputScope")) {
+        if (value.metaType().id() != QMetaType::QString
+            || !outputTruthCurrent()) {
+            return false;
+        }
+        QString outputId;
+        if (value.toString() == QLatin1String("all")) {
+            outputId = QStringLiteral("*");
+        } else if (value.toString() == QLatin1String("primary")) {
+            const PrimaryOutputResolution primary = resolvePrimaryOutput(
+                m_outputProvider.snapshot());
+            if (!primary.ok()) {
+                m_displayScopeError = primary.error;
+                setState(m_state, primary.error);
+                Q_EMIT selectionChanged();
+                return false;
+            }
+            outputId = primary.outputId;
+        } else {
+            return false;
+        }
+        if (panel->output == outputId) {
+            return true;
+        }
+        const auto intent = ShellCustomizationEditor::movePanelIntent(
+            panel->id, outputId, panel->edge, panel->alignment, std::nullopt);
+        return settleEditorOutcome(m_editor->applyGesture(
+            intent, targetFromStrings(panel->id, QStringLiteral("start"), {})),
+            outputId == QLatin1String("*")
+                ? QStringLiteral("Panel shown on all displays")
+                : QStringLiteral("Panel shown on the primary display"));
+    }
     if (field == QLatin1String("edge") || field == QLatin1String("alignment")) {
         Profiles::Edge edge = panel->edge;
         Profiles::Alignment alignment = panel->alignment;
@@ -412,7 +444,7 @@ bool CustomizeSettingsModel::redo()
 
 bool CustomizeSettingsModel::apply()
 {
-    if (!applyAvailable()) {
+    if (!applyAvailable() || !outputTruthCurrent()) {
         return false;
     }
     if (m_editor->dirty()) {

@@ -18,6 +18,7 @@ CustomizeSettingsModel::CustomizeSettingsModel(
     Services::SettingsClient::SettingsClient &client,
     QVector<Profiles::LayoutProfile> availableProfiles,
     QVector<Applets::AppletManifest> manifests,
+    CustomizeOutputProvider &outputProvider,
     EditorHostFactory hostFactory,
     QString startupError,
     QObject *parent)
@@ -25,6 +26,7 @@ CustomizeSettingsModel::CustomizeSettingsModel(
     , m_client(client)
     , m_profiles(std::move(availableProfiles))
     , m_manifests(std::move(manifests))
+    , m_outputProvider(outputProvider)
     , m_hostFactory(std::move(hostFactory))
     , m_startupError(std::move(startupError))
 {
@@ -37,6 +39,8 @@ CustomizeSettingsModel::CustomizeSettingsModel(
             this, &CustomizeSettingsModel::handleCommit);
     connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain,
             this, &CustomizeSettingsModel::handleUncertain);
+    connect(&m_outputProvider, &CustomizeOutputProvider::snapshotChanged,
+            this, &CustomizeSettingsModel::handleOutputSnapshotChanged);
 
     if (!m_startupError.isEmpty() || m_profiles.isEmpty()
         || m_manifests.isEmpty() || !m_hostFactory) {
@@ -85,7 +89,26 @@ bool CustomizeSettingsModel::dirty() const noexcept
 
 bool CustomizeSettingsModel::applyAvailable() const noexcept
 {
-    return canEdit() && dirty() && !visualDragActive();
+    return canEdit() && dirty() && !visualDragActive() && !m_outputTruthStale;
+}
+
+bool CustomizeSettingsModel::displayScopeChangeAvailable() const noexcept
+{
+    return canEdit() && !m_outputTruthStale;
+}
+
+bool CustomizeSettingsModel::primaryDisplayAvailable() const
+{
+    return !m_outputTruthStale
+        && resolvePrimaryOutput(m_outputProvider.snapshot()).ok();
+}
+
+QString CustomizeSettingsModel::displayScopeError() const
+{
+    if (m_outputTruthStale || !m_displayScopeError.isEmpty()) {
+        return m_displayScopeError;
+    }
+    return resolvePrimaryOutput(m_outputProvider.snapshot()).error;
 }
 
 bool CustomizeSettingsModel::canUndo() const noexcept
@@ -174,7 +197,9 @@ const Applets::AppletManifest *CustomizeSettingsModel::findManifest(
 
 bool CustomizeSettingsModel::rebuild(const Profiles::LayoutProfile &profile)
 {
-    std::unique_ptr<CustomizeEditorHost> next = m_hostFactory(profile);
+    const CustomizeOutputSnapshot outputs = m_outputProvider.snapshot();
+    std::unique_ptr<CustomizeEditorHost> next = m_hostFactory(profile,
+                                                               outputs.outputs);
     if (!next) {
         m_editorUnavailable = true;
         setState(State::Unavailable,
@@ -192,7 +217,10 @@ bool CustomizeSettingsModel::rebuild(const Profiles::LayoutProfile &profile)
         return false;
     }
     m_editor = std::move(next);
+    m_editorOutputs = outputs;
     m_editorUnavailable = false;
+    m_outputTruthStale = false;
+    m_displayScopeError.clear();
     m_selectedProfileId = profile.id;
     m_keyboardMoving = false;
     m_lastDropAccepted = false;
@@ -200,6 +228,54 @@ bool CustomizeSettingsModel::rebuild(const Profiles::LayoutProfile &profile)
     clearSelectionIfMissing();
     Q_EMIT contentChanged();
     return true;
+}
+
+bool CustomizeSettingsModel::outputTruthCurrent()
+{
+    const CustomizeOutputSnapshot current = m_outputProvider.snapshot();
+    if (current.revision == m_editorOutputs.revision
+        && current.outputs.size() == m_editorOutputs.outputs.size()
+        && current.primaryOutputIds == m_editorOutputs.primaryOutputIds
+        && current.error == m_editorOutputs.error) {
+        bool equal = true;
+        for (qsizetype i = 0; i < current.outputs.size(); ++i) {
+            const auto &left = current.outputs.at(i);
+            const auto &right = m_editorOutputs.outputs.at(i);
+            equal = equal && left.id == right.id
+                && left.geometry == right.geometry && left.scale == right.scale;
+        }
+        if (equal) {
+            return true;
+        }
+    }
+    m_outputTruthStale = true;
+    m_displayScopeError = QStringLiteral(
+        "The display arrangement changed while editing. Discard or reload the draft before changing display scope");
+    setState(m_state, m_displayScopeError);
+    Q_EMIT selectionChanged();
+    return false;
+}
+
+void CustomizeSettingsModel::handleOutputSnapshotChanged()
+{
+    if (!m_editor) {
+        return;
+    }
+    if (dirty()) {
+        m_outputTruthStale = true;
+        m_displayScopeError = QStringLiteral(
+            "The display arrangement changed while editing. Discard or reload the draft before applying it");
+        setState(m_state, m_displayScopeError);
+        Q_EMIT selectionChanged();
+        return;
+    }
+    const auto *profile = findProfile(m_selectedProfileId);
+    if (profile != nullptr && rebuild(*profile)) {
+        setState(State::Ready);
+        // AGENT-NOTE: State can remain Ready while the primary identity changes;
+        // this shared notifier makes QML re-read display-scope availability.
+        Q_EMIT stateChanged();
+    }
 }
 
 void CustomizeSettingsModel::handleClientState()
