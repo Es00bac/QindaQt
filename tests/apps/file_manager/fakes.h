@@ -5,6 +5,7 @@
 #include "model/launch_intent.h"
 #include "network/network_directory_backend.h"
 #include "network/remote_file_opener.h"
+#include "network/remote_renamer.h"
 
 #include <QHash>
 #include <QStringList>
@@ -105,6 +106,36 @@ public:
 
 private:
   QVector<QUrl> m_requestedUrls;
+};
+
+// Test-only RemoteRenamer: records rename()/cancel() calls; the test fires
+// renameFinished manually, so success/failure/stale/cancel wiring is
+// deterministic without a real KIO job, network, or filesystem.
+class FakeRemoteRenamer final : public RemoteRenamer {
+public:
+  struct Request final {
+    quint64 generation = 0;
+    QUrl source;
+    QUrl destination;
+  };
+
+  void rename(quint64 generation, const QUrl &source, const QUrl &destination) override {
+    m_requests.append({generation, source, destination});
+  }
+
+  void cancel(quint64 generation) override { m_cancelled.append(generation); }
+
+  void finishSuccess(quint64 generation) { Q_EMIT renameFinished(generation, QString()); }
+  void finishFailure(quint64 generation, const QString &diagnostic) {
+    Q_EMIT renameFinished(generation, diagnostic);
+  }
+
+  [[nodiscard]] const QVector<Request> &requests() const { return m_requests; }
+  [[nodiscard]] const QVector<quint64> &cancelled() const { return m_cancelled; }
+
+private:
+  QVector<Request> m_requests;
+  QVector<quint64> m_cancelled;
 };
 
 } // namespace QindaQt::Apps::FileManager::Test

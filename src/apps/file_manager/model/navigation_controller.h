@@ -8,6 +8,9 @@
 #include "navigation_history.h"
 #include "../network/network_directory_backend.h"
 #include "../network/remote_file_opener.h"
+#include "../network/remote_open_controller.h"
+#include "../network/remote_rename_controller.h"
+#include "../network/remote_renamer.h"
 
 #include <QObject>
 #include <QUrl>
@@ -68,6 +71,12 @@ class NavigationController final : public QObject {
   // preview, recursive search, bounded local launch) while this is true;
   // navigation itself (back/forward/up/refresh/location entry) stays live.
   Q_PROPERTY(bool remoteActive READ remoteActive NOTIFY navigationChanged FINAL)
+  // ADR-0153: true while browsing remote with a RemoteRenamer injected --
+  // the action bindings use this to keep "file.rename" available remotely.
+  Q_PROPERTY(bool remoteRenameAvailable READ remoteRenameAvailable NOTIFY navigationChanged FINAL)
+  // True while one remote rename is in flight; re-entrant requests are
+  // refused and the rename action disables to prevent overlap.
+  Q_PROPERTY(bool remoteRenameBusy READ remoteRenameBusy NOTIFY remoteRenameChanged FINAL)
 
 public:
   // networkBackend may be null: navigateTo() then refuses every smb/sftp
@@ -75,9 +84,12 @@ public:
   // and every existing local-only caller/test is unaffected. remoteOpener
   // may also be null: remote regular-file activation then keeps reporting
   // the truthful "not supported yet" launchError instead of opening.
+  // remoteRenamer may be null: remote Rename then stays disabled by the
+  // action bindings exactly as before this seam existed.
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
                        NetworkDirectoryBackendPtr networkBackend = nullptr,
                        RemoteFileOpenerPtr remoteOpener = nullptr,
+                       RemoteRenamerPtr remoteRenamer = nullptr,
                        QObject *parent = nullptr);
 
   // Navigates as if the user chose path directly (breadcrumb segment, typed
@@ -100,6 +112,13 @@ public:
   // bounded launch for a file. Out-of-range indexes are ignored.
   Q_INVOKABLE void activate(int index);
   Q_INVOKABLE void clearLaunchError();
+  // ADR-0153: renames one listed child of the current remote folder to a
+  // validated sibling name through the injected RemoteRenamer, then
+  // refreshes the authoritative listing on success. Rejects everything else
+  // (unknown name, separators, dot names, unlisted or cross-folder sources,
+  // overlapping renames) before dispatch and reports the failure through
+  // launchError. Returns false when the request was refused before dispatch.
+  Q_INVOKABLE bool renameRemoteEntry(const QString &sourcePath, const QString &newName);
   // Returns the index of the entry named name in the current listing, or -1.
   // QML uses this to restore a deterministic selection across a refresh.
   Q_INVOKABLE int indexOfName(const QString &name) const;
@@ -143,6 +162,12 @@ public:
   [[nodiscard]] bool canZoomIn() const;
   [[nodiscard]] bool canZoomOut() const;
   [[nodiscard]] bool remoteActive() const noexcept { return m_remoteActive; }
+  [[nodiscard]] bool remoteRenameAvailable() const noexcept {
+    return m_remoteActive && m_remoteRename != nullptr;
+  }
+  [[nodiscard]] bool remoteRenameBusy() const noexcept {
+    return m_remoteRename != nullptr && m_remoteRename->busy();
+  }
   [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
@@ -156,6 +181,7 @@ signals:
   void entriesChanged();
   void launchErrorChanged();
   void presentationChanged();
+  void remoteRenameChanged();
 
 private:
   void reload(bool resetFilter = false);
@@ -179,12 +205,19 @@ private:
   // ADR-0152: hands a remote regular file to the injected opener, or reports
   // the truthful "not supported yet" error when none is injected.
   void activateRemoteFile(const DirectoryEntry &entry);
+  // ADR-0153: fenced rename result wiring lives in RemoteRenameController;
+  // these hooks just bridge it to navigation state.
+  void onRemoteRenameRefreshRequested();
+  void cancelPendingRemoteRename();
   [[nodiscard]] static NavigationStatus statusForNetworkError(NetworkListingError error);
 
   DirectoryListerPtr m_lister;
   FileLauncherPtr m_launcher;
   NetworkDirectoryBackendPtr m_networkBackend;
   RemoteFileOpenerPtr m_remoteOpener;
+  RemoteRenamerPtr m_remoteRenamer;
+  std::unique_ptr<RemoteOpenController> m_remoteOpen;
+  std::unique_ptr<RemoteRenameController> m_remoteRename;
   bool m_remoteActive = false;
   QUrl m_remoteUrl;
   NavigationHistory m_history;

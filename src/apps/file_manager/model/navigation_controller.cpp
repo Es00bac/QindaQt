@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "navigation_controller.h"
 #include "../network/network_location.h"
+#include "entry_presentation.h"
 #include "preview/local_preview.h"
 
 #include <QDir>
-#include <QFileInfo>
-#include <QLocale>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -37,47 +36,19 @@ constexpr std::array iconSizes{32, 48, 64, 96, 128};
   return NavigationStatus::Error;
 }
 
-// Presentation text is produced C++-side so QML delegates stay dumb and the
-// formatting rules are unit-testable through the public entries() snapshot.
-[[nodiscard]] QString sizeTextFor(const DirectoryEntry &entry) {
-  if (entry.isDirectory) {
-    return QStringLiteral("—");
-  }
-  return QLocale().formattedDataSize(entry.size);
-}
-
-[[nodiscard]] QString modifiedTextFor(const DirectoryEntry &entry) {
-  if (!entry.lastModified.isValid()) {
-    return QString();
-  }
-  return QLocale().toString(entry.lastModified, QLocale::ShortFormat);
-}
-
-[[nodiscard]] QString kindTextFor(const DirectoryEntry &entry) {
-  if (entry.isDirectory) {
-    return QStringLiteral("Folder");
-  }
-  if (entry.isSymlink) {
-    return QStringLiteral("Link");
-  }
-  const QString suffix = QFileInfo(entry.name).suffix();
-  if (suffix.isEmpty()) {
-    return QStringLiteral("File");
-  }
-  return QStringLiteral("%1 File").arg(suffix.toUpper());
-}
-
 } // namespace
 
 NavigationController::NavigationController(DirectoryListerPtr lister,
                                            FileLauncherPtr launcher,
                                            NetworkDirectoryBackendPtr networkBackend,
                                            RemoteFileOpenerPtr remoteOpener,
+                                           RemoteRenamerPtr remoteRenamer,
                                            QObject *parent)
     : QObject(parent), m_lister(std::move(lister)),
       m_launcher(std::move(launcher)),
       m_networkBackend(std::move(networkBackend)),
-      m_remoteOpener(std::move(remoteOpener)) {
+      m_remoteOpener(std::move(remoteOpener)),
+      m_remoteRenamer(std::move(remoteRenamer)) {
   Q_ASSERT(m_lister);
   Q_ASSERT(m_launcher);
   if (m_networkBackend) {
@@ -85,16 +56,28 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
             &NavigationController::onNetworkListingReady);
   }
   if (m_remoteOpener) {
-    connect(m_remoteOpener.get(), &RemoteFileOpener::openFinished, this,
-            [this](const QString &diagnostic) {
-              if (diagnostic.isEmpty()) {
-                if (!m_launchError.isEmpty()) {
-                  m_launchError.clear();
-                  emit launchErrorChanged();
-                }
-                return;
-              }
-              m_launchError = diagnostic;
+    m_remoteOpen = std::make_unique<RemoteOpenController>(*m_remoteOpener, this);
+    connect(m_remoteOpen.get(), &RemoteOpenController::cleared, this, [this] {
+      if (!m_launchError.isEmpty()) {
+        m_launchError.clear();
+        emit launchErrorChanged();
+      }
+    });
+    connect(m_remoteOpen.get(), &RemoteOpenController::failure, this,
+            [this](const QString &message) {
+              m_launchError = message;
+              emit launchErrorChanged();
+            });
+  }
+  if (m_remoteRenamer) {
+    m_remoteRename = std::make_unique<RemoteRenameController>(*m_remoteRenamer, this);
+    connect(m_remoteRename.get(), &RemoteRenameController::busyChanged, this,
+            [this] { emit remoteRenameChanged(); });
+    connect(m_remoteRename.get(), &RemoteRenameController::refreshRequested, this,
+            &NavigationController::onRemoteRenameRefreshRequested);
+    connect(m_remoteRename.get(), &RemoteRenameController::failure, this,
+            [this](const QString &message) {
+              m_launchError = message;
               emit launchErrorChanged();
             });
   }
@@ -103,10 +86,14 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
 void NavigationController::navigateTo(const QString &path) {
   if (NetworkLocation::classify(path) == LocationScheme::Local) {
     if (m_remoteActive) {
+      cancelPendingRemoteRename();
       if (m_networkBackend) {
         m_networkBackend->cancel(m_listingGeneration);
       }
       m_remoteActive = false;
+      if (m_remoteRenamer) {
+        emit remoteRenameChanged();
+      }
     }
     const QString normalized = QDir::cleanPath(path);
     if (!m_history.hasCurrent()) {
@@ -211,8 +198,8 @@ void NavigationController::activate(int index) {
 // KIO-managed temp download). QindaQt never downloads, executes, or locally
 // launches a URL-shaped path itself, and never opens a handler picker.
 void NavigationController::activateRemoteFile(const DirectoryEntry &entry) {
-  if (m_remoteOpener) {
-    m_remoteOpener->open(QUrl(entry.absolutePath));
+  if (m_remoteOpen) {
+    m_remoteOpen->open(QUrl(entry.absolutePath));
     return;
   }
   // Truthful disabled state when no opener is injected (the stock app always
@@ -220,6 +207,34 @@ void NavigationController::activateRemoteFile(const DirectoryEntry &entry) {
   m_launchError =
       QStringLiteral("Opening files from a network location is not supported yet");
   emit launchErrorChanged();
+}
+
+bool NavigationController::renameRemoteEntry(const QString &sourcePath,
+                                             const QString &newName) {
+  if (!m_remoteActive || !m_remoteRename) {
+    m_launchError = QStringLiteral("Remote rename is not available here");
+    emit launchErrorChanged();
+    return false;
+  }
+  // Validation, dispatch, result fencing, and job retirement live in
+  // RemoteRenameController (see its header); this controller supplies the
+  // current folder snapshot and surfaces refresh/failure.
+  return m_remoteRename->requestRename(m_listedEntries, m_remoteUrl, m_listingGeneration,
+                                       sourcePath, newName);
+}
+
+void NavigationController::onRemoteRenameRefreshRequested() {
+  // Success: re-read the authoritative remote listing -- the displayed name
+  // never changed optimistically before this point.
+  if (m_remoteActive) {
+    requestRemoteListing();
+  }
+}
+
+void NavigationController::cancelPendingRemoteRename() {
+  if (m_remoteRename) {
+    m_remoteRename->cancelPending();
+  }
 }
 
 void NavigationController::clearLaunchError() {
@@ -363,36 +378,15 @@ QString NavigationController::statusKey() const { return statusKeyFor(m_status);
 QString NavigationController::statusMessage() const { return m_statusMessage; }
 
 QVariantList NavigationController::entries() const {
-  QVariantList list;
-  list.reserve(m_entries.size());
-  for (const auto &entry : m_entries) {
-    list.append(QVariantMap{
-        {QStringLiteral("name"), entry.name},
-        {QStringLiteral("path"), entry.absolutePath},
-        {QStringLiteral("isDirectory"), entry.isDirectory},
-        {QStringLiteral("isSymlink"), entry.isSymlink},
-        {QStringLiteral("isHidden"), entry.isHidden},
-        {QStringLiteral("isReadable"), entry.isReadable},
-        {QStringLiteral("size"), entry.size},
-        {QStringLiteral("modified"), entry.lastModified},
-        {QStringLiteral("sizeText"), sizeTextFor(entry)},
-        {QStringLiteral("modifiedText"), modifiedTextFor(entry)},
-        {QStringLiteral("kindText"), kindTextFor(entry)},
-        {QStringLiteral("iconName"), entryIconName(entry)},
-        {QStringLiteral("previewUrl"), previewUrl(entry, m_listingGeneration)},
-        // AGENT-GUARD: These identity fields cross QVariant -> JavaScript ->
-        // QVariant before mutation dispatch. Decimal strings preserve all 64
-        // bits; JS Number would round current-epoch nanoseconds and make every
-        // UI mutation fail its optimistic identity check (review P1-1).
-        {QStringLiteral("device"), QString::number(entry.device)},
-        {QStringLiteral("inode"), QString::number(entry.inode)},
-        {QStringLiteral("identitySize"), QString::number(entry.identitySize)},
-        {QStringLiteral("modifiedNanoseconds"),
-         QString::number(entry.modifiedNanoseconds)},
-        {QStringLiteral("mode"), QString::number(entry.mode)},
-    });
-  }
-  return list;
+  // Marshalling lives in EntryPresentation (model/entry_presentation.h) so
+  // this controller stays under the project's source-size invariant; the
+  // identity-field AGENT-GUARD moved with it.
+  return EntryPresentation::entryListToVariants(
+      m_entries, m_listingGeneration,
+      [this](const DirectoryEntry &entry) { return entryIconName(entry); },
+      [this](const DirectoryEntry &entry, quint64 generation) {
+        return previewUrl(entry, generation);
+      });
 }
 
 QString NavigationController::launchError() const { return m_launchError; }
@@ -464,12 +458,20 @@ void NavigationController::clearGuestListing() {
 }
 
 void NavigationController::enterRemote(const QUrl &url) {
+  if (m_remoteActive) {
+    // Remote-to-remote replacement: retire any rename in flight for the
+    // folder being left, mirroring the listing cancellation below.
+    cancelPendingRemoteRename();
+  }
   m_guestActive = false;
   m_guestStatusText.clear();
   m_nameFilter.clear();
   m_remoteActive = true;
   m_remoteUrl = url;
   requestRemoteListing();
+  if (m_remoteRenamer) {
+    emit remoteRenameChanged();
+  }
 }
 
 void NavigationController::requestRemoteListing() {

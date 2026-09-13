@@ -13,6 +13,7 @@
 #include "model/search_controller.h"
 #include "network/kio_network_directory_backend.h"
 #include "network/kio_remote_file_opener.h"
+#include "network/kio_remote_renamer.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
 #include "runtime/file_manager_application.h"
@@ -222,7 +223,8 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
       std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
       std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioRemoteFileOpener>());
+      std::make_unique<QindaQt::Apps::FileManager::KioRemoteFileOpener>(),
+      std::make_unique<QindaQt::Apps::FileManager::KioRemoteRenamer>());
   auto *previews = new QindaQt::Apps::FileManager::PreviewProvider(
       std::make_unique<QindaQt::Apps::FileManager::LocalPreviewDecoder>());
   engine.addImageProvider(QStringLiteral("previews"), previews);

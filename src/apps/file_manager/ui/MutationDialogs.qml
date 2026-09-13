@@ -79,7 +79,15 @@ Item {
         title: qsTr("Rename selected item")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: {
-            if (root.selectedEntry)
+            if (!root.selectedEntry)
+                return
+            // ADR-0153: while browsing remote, Rename goes through the
+            // navigation controller's injected KIO renamer; locally it
+            // stays on the identity-checked local mutation controller.
+            if (root.navigationController.remoteActive)
+                root.navigationController.renameRemoteEntry(root.selectedEntry.path,
+                    renameName.text)
+            else
                 root.mutationController.renameItem(root.selectedEntry.path,
                     renameName.text, root.selectedEntry)
         }

@@ -18,10 +18,17 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
     };
     const bool idle = !mutation.busy() && !navigation.remoteActive();
     for (const char *actionId :
-         {"file.new-folder", "file.rename", "file.copy", "file.move",
+         {"file.new-folder", "file.copy", "file.move",
           "file.trash"}) {
       enabled(actionId, idle);
     }
+    // ADR-0153: same-folder remote Rename is the one current-folder mutation
+    // available while browsing remote -- but only with a renamer injected
+    // and no rename already in flight. Without a renamer, Rename keeps
+    // disabling with the other current-folder mutations.
+    enabled("file.rename", (!mutation.busy() && !navigation.remoteActive()) ||
+                               (navigation.remoteRenameAvailable() &&
+                                !navigation.remoteRenameBusy()));
     // Empty Trash, Undo, and Restore Last act on the local Trash/history and
     // stay available while browsing remote -- see this file's AGENT-GUARD.
     enabled("file.empty-trash", !mutation.busy());
@@ -32,6 +39,8 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
   QObject::connect(&mutation, &MutationController::stateChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::navigationChanged,
+                   &coordinator, sync);
+  QObject::connect(&navigation, &NavigationController::remoteRenameChanged,
                    &coordinator, sync);
   sync();
 }
