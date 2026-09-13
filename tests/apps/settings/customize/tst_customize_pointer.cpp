@@ -2,6 +2,7 @@
 #include "customize_test_support.h"
 #include "qindaqt/apps/settings_customize/customize_editor_host.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
+#include "qindaqt/apps/settings_customize/customize_wallpaper_preview.h"
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -65,9 +66,16 @@ void CustomizePointerTests::pointerDeliverySurvivesPreviewReconstruction()
     auto store = temporaryStore(QStringLiteral("customize-pointer"));
     QVERIFY(store->isValid());
     SequenceTransport transport;
+    SequenceTransport wallpaperTransport;
     Services::SettingsClient::SettingsClient client(transport, {QString(LayoutProfileSettingsKey)});
+    Services::SettingsClient::SettingsClient wallpaperClient(
+        wallpaperTransport,
+        {QStringLiteral("appearance.wallpaper"),
+         QStringLiteral("appearance.wallpaperMode")});
+    CustomizeWallpaperPreview wallpaperPreview(wallpaperClient, {});
     MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model(client, {profile()}, manifests(), outputProvider,
+        wallpaperPreview,
         [&](const Profiles::LayoutProfile &selected,
             const QVector<ShellLayout::LogicalOutput> &inventory) {
             return std::make_unique<RepositoryCustomizeEditorHost>(

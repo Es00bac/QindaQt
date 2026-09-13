@@ -3,6 +3,7 @@
 
 #include "customize_catalog.h"
 #include "qt_customize_output_provider.h"
+#include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -64,6 +65,32 @@ QStringList catalogDirectories(const QString &suffix,
     return directories;
 }
 
+// AGENT-CONTRACT: Same wallpaper-root contract as the Settings executable and
+// the shell: standard data locations first (per-user before system), then the
+// relocated prefix beside an installed executable; the source catalog joins
+// only for the exact build executable so a developer run previews the bundled
+// artwork without installed data.
+QStringList wallpaperSearchDirectories()
+{
+    QStringList directories = QStandardPaths::locateAll(
+        QStandardPaths::GenericDataLocation, QStringLiteral("qindaqt/wallpapers"),
+        QStandardPaths::LocateDirectory);
+    const QString bundled = QDir(QCoreApplication::applicationDirPath())
+                                .filePath(QStringLiteral(
+                                    QINDAQT_CUSTOMIZE_INSTALL_DATA_RELATIVE_PATH)
+                                              + QLatin1String("/wallpapers"));
+    if (QDir(bundled).exists()) {
+        directories.append(QDir::cleanPath(bundled));
+    }
+    const QString sourceDirectory = QStringLiteral(
+        QINDAQT_CUSTOMIZE_SOURCE_WALLPAPER_DIRECTORY);
+    if (isBuildExecutable() && QDir(sourceDirectory).exists()) {
+        directories.append(sourceDirectory);
+    }
+    directories.removeDuplicates();
+    return directories;
+}
+
 } // namespace
 
 class CustomizeRouteComposition::Private final {
@@ -71,7 +98,12 @@ public:
     Private()
         : transport(QDBusConnection::sessionBus())
         , client(transport, {QString(LayoutProfileSettingsKey)})
+        , wallpaperTransport(QDBusConnection::sessionBus())
+        , wallpaperClient(wallpaperTransport,
+                          {QString(SettingsAppearance::AppearanceKeys::Wallpaper),
+                           QString(SettingsAppearance::AppearanceKeys::WallpaperMode)})
         , outputProvider(*qGuiApp)
+        , wallpaperPreview(wallpaperClient, wallpaperSearchDirectories())
     {
         const QString profileSource = QStringLiteral(
             QINDAQT_CUSTOMIZE_SOURCE_PROFILE_DIRECTORY);
@@ -94,18 +126,26 @@ public:
                     profile, outputs, manifests, userDirectory);
             };
         model = std::make_unique<CustomizeSettingsModel>(
-            client, catalogs.profiles, catalogs.manifests, outputProvider, factory,
-            catalogs.error);
+            client, catalogs.profiles, catalogs.manifests, outputProvider,
+            wallpaperPreview, factory, catalogs.error);
         QString error;
         if (!client.start(&error) && catalogs.error.isEmpty()) {
             qWarning("qindaqt-settings: Customize Settings1 unavailable: %s",
                      qPrintable(error));
         }
+        // The wallpaper preview is an enhancement, not an editing authority:
+        // when its Settings1 scope cannot start, the canvas keeps its explicit
+        // token-gradient fallback instead of warning the user.
+        QString wallpaperError;
+        Q_UNUSED(wallpaperClient.start(&wallpaperError))
     }
 
     Services::SettingsClient::QtSettingsTransport transport;
     Services::SettingsClient::SettingsClient client;
+    Services::SettingsClient::QtSettingsTransport wallpaperTransport;
+    Services::SettingsClient::SettingsClient wallpaperClient;
     QtCustomizeOutputProvider outputProvider;
+    CustomizeWallpaperPreview wallpaperPreview;
     std::unique_ptr<CustomizeSettingsModel> model;
 };
 

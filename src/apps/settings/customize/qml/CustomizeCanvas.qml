@@ -19,6 +19,15 @@ T.Control {
     padding: Tokens.space["4"]
     Accessible.ignored: true
 
+    // Read-only wallpaper truth published by the route model. Null (or a
+    // model without the projection) keeps the token gradient; only an
+    // explicit "ready" status with a resolved source paints the wallpaper.
+    readonly property var wallpaperPreview: root.customizeSettings.wallpaperPreview
+    readonly property bool wallpaperReady: root.wallpaperPreview !== null
+                                           && root.wallpaperPreview !== undefined
+                                           && root.wallpaperPreview.status === "ready"
+                                           && root.wallpaperPreview.source.toString().length > 0
+
     background: Rectangle {
         color: Tokens.bg.base
         radius: Tokens.radius.l
@@ -81,6 +90,25 @@ T.Control {
                         color: Tokens.accent.default
                         opacity: 0.06
                     }
+                }
+
+                // The configured wallpaper, painted exactly the way the shell
+                // paints it (scaled/centered/tiled), over the token gradient
+                // that stays as the explicit fallback for no wallpaper,
+                // invalid input, or unavailable Settings1 truth.
+                Image {
+                    objectName: "customizeCanvasWallpaper"
+
+                    anchors.fill: parent
+                    visible: root.wallpaperReady
+                    source: root.wallpaperReady ? root.wallpaperPreview.source : ""
+                    asynchronous: true
+                    clip: true
+                    fillMode: root.wallpaperReady
+                              && root.wallpaperPreview.mode === "tiled" ? Image.Tile
+                        : root.wallpaperReady
+                          && root.wallpaperPreview.mode === "centered" ? Image.Pad
+                        : Image.PreserveAspectCrop
                 }
 
                 // A quiet window mock keeps the preview reading as a desktop

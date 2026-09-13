@@ -46,6 +46,19 @@ QString accessibleName(QQuickItem *candidate)
                                 : interface->text(QAccessible::Name);
 }
 
+// The canvas Image declares its QML fillMode through a metaobject enum
+// (QQuickImage is private API); resolve symbolic values at runtime instead of
+// hardcoding private integer constants.
+int fillModeValue(QQuickItem *image, const char *key)
+{
+    const QMetaObject *meta = image->metaObject();
+    const int index = meta->indexOfProperty("fillMode");
+    if (index < 0) {
+        return -1;
+    }
+    return meta->property(index).enumerator().keyToValue(key);
+}
+
 // Shared production-page load: token facade, the shipped icon theme (so both
 // callers exercise resolved glyph rendering, not placeholders), and the
 // compiled CustomizePage.qml bound to `model`.
@@ -92,6 +105,7 @@ class CustomizePageTests final : public QObject {
 private slots:
     void rendersCompactAndWideWithoutLosingAccessibleEditors();
     void rendersAppletSettingEditorsInWideMode();
+    void canvasFollowsConfiguredWallpaperAndFallsBackToTokens();
 };
 
 void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
@@ -282,6 +296,49 @@ void CustomizePageTests::rendersAppletSettingEditorsInWideMode()
     QVERIFY2(accessibleName(readOnlyRow).contains(QStringLiteral("between 1 and 60")),
              qPrintable(accessibleName(readOnlyRow)));
     model.setAppletSettingError(QString());
+}
+
+void CustomizePageTests::canvasFollowsConfiguredWallpaperAndFallsBackToTokens()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString loadError;
+    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
+    view.resize(1080, 720);
+    view.show();
+    QTest::qWait(50);
+
+    // Red-before contract: the canvas must surface a wallpaper item driven by
+    // the configured wallpaper truth, not only the decorative gradient.
+    auto *wallpaper = item(view.rootObject(), "customizeCanvasWallpaper");
+    QVERIFY(wallpaper != nullptr);
+
+    // No configured wallpaper (explicit "none" truth) keeps the token
+    // gradient: the image stays hidden and loads nothing.
+    QVERIFY(!wallpaper->isVisible());
+    QCOMPARE(wallpaper->property("source").toUrl(), QUrl());
+
+    const QUrl bundled = QUrl::fromLocalFile(QStringLiteral(
+        QINDAQT_SOURCE_DIR "/data/wallpapers/jade-fold.png"));
+    model.wallpaperPreviewFixture()->configure(bundled, QStringLiteral("tiled"));
+    QTRY_VERIFY(wallpaper->isVisible());
+    QCOMPARE(wallpaper->property("source").toUrl(), bundled);
+    QCOMPARE(wallpaper->property("fillMode").toInt(),
+             fillModeValue(wallpaper, "Tile"));
+
+    model.wallpaperPreviewFixture()->configure(bundled, QStringLiteral("centered"));
+    QTRY_COMPARE(wallpaper->property("fillMode").toInt(),
+                 fillModeValue(wallpaper, "Pad"));
+
+    model.wallpaperPreviewFixture()->configure(bundled, QStringLiteral("scaled"));
+    QTRY_COMPARE(wallpaper->property("fillMode").toInt(),
+                 fillModeValue(wallpaper, "PreserveAspectCrop"));
+
+    // Unavailable/invalid Settings1 truth fails closed back to the gradient.
+    model.wallpaperPreviewFixture()->configure(QUrl(), QStringLiteral("scaled"),
+                                               QStringLiteral("unavailable"));
+    QTRY_VERIFY(!wallpaper->isVisible());
+    QCOMPARE(wallpaper->property("source").toUrl(), QUrl());
 }
 
 QTEST_MAIN(CustomizePageTests)

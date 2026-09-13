@@ -13,7 +13,7 @@ target_include_directories(
 )
 target_link_libraries(
     qindaqt_settings_customize_model_tests
-    PRIVATE qindaqt_settings_customize Qt6::Test
+    PRIVATE qindaqt_settings_customize Qt6::Gui Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_model_tests)
 add_test(
@@ -44,6 +44,28 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-customize-applet-setting-validation PROPERTIES
+    LABELS "settings;customize;domain"
+)
+
+qt_add_executable(
+    qindaqt_settings_customize_wallpaper_preview_tests
+    tst_customize_wallpaper_preview.cpp
+    customize_test_support.h
+)
+target_include_directories(
+    qindaqt_settings_customize_wallpaper_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_wallpaper_preview_tests
+    PRIVATE qindaqt_settings_customize Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_wallpaper_preview_tests)
+add_test(
+    NAME qindaqt.settings-customize-wallpaper-preview
+    COMMAND qindaqt_settings_customize_wallpaper_preview_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-wallpaper-preview PROPERTIES
     LABELS "settings;customize;domain"
 )
 
