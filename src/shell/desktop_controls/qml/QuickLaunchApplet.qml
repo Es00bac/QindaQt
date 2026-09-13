@@ -45,6 +45,18 @@ Item {
     // Pointer x in strip coordinates while hovered; -1 when zoom is inactive.
     property real dockPointerX: -1
     readonly property real dockZoomPeak: 1.5
+    // The tile icon's upward growth envelope over this strip's own tile: the
+    // bottom-anchored swell at dockZoomPeak plus the 3px hover lift. It must
+    // equal PanelAppletRow.dockOverscanFor over the same effective tile — the
+    // panel viewport exposes exactly this much headroom above the shelf and
+    // the input/blur masks reserve the same band, so tracking or painting
+    // beyond it would leave the masked surface, and less would collapse the
+    // zoom under a pointer riding the magnified bump. Dock-only geometry;
+    // the tracking surface below stays unpickable outside dock zoom.
+    readonly property real dockZoomEnvelope:
+        Math.max(0, (dockMode ? iconExtent
+                              : Math.min(40, Math.max(16, resolvedDockTileSize - 8)))
+                   - resolvedDockTileSize / 2) + 3
 
     function dockZoomFor(centerX) {
         if (!dockZoomActive || dockPointerX < 0) {
@@ -63,6 +75,30 @@ Item {
             root.dockPointerX = hovered ? point.position.x : -1
         onHoveredChanged:
             root.dockPointerX = hovered ? point.position.x : -1
+    }
+
+    // AGENT-GUARD: the tracking surface is the band strictly above the tiles
+    // and is pickable only while magnification is active, so it never becomes
+    // the hover target over a tile's own hit area and never shades panel
+    // content on non-dock hosts. It keeps the falloff following a pointer
+    // that rides the magnified bump above the shelf instead of collapsing
+    // the zoom at the shelf line.
+    Item {
+        id: dockZoomSurface
+        objectName: "quickLaunchDockZoomSurface"
+        x: 0
+        y: -root.dockZoomEnvelope
+        width: parent.width
+        height: root.dockZoomEnvelope
+        visible: root.dockZoomActive
+
+        HoverHandler {
+            enabled: root.dockZoomActive
+            onPointChanged:
+                root.dockPointerX = hovered ? point.position.x : -1
+            onHoveredChanged:
+                root.dockPointerX = hovered ? point.position.x : -1
+        }
     }
     property string contextEntryId: ""
 

@@ -53,6 +53,17 @@ Flickable {
         ? Math.max(minimumFittedDockTileSize,
                    Math.min(dockTileSize, dockHorizontalTileLimit,
                             dockVerticalTileLimit)) : dockTileSize
+    // The dock zone viewport exposes exactly this much growth envelope above
+    // the shelf: the same size-derived value maxDockTileForHeight reserves
+    // inside the surface and dockInputBounds masks for input/blur. Exposing
+    // less clips the magnified bump at the shelf top, so the reserved
+    // headroom goes unused; exposing more would paint outside the masked
+    // region. Dock content is offset down by the same value so the tiles
+    // stay pinned to the shelf while the viewport reaches higher.
+    readonly property bool dockZoomHeadroomActive: dockMode && !vertical
+        && dockZoomEnabled && !reducedMotion
+    readonly property real dockZoomHeadroom: dockZoomHeadroomActive
+        ? dockOverscanFor(effectiveDockTileSize) : 0
     readonly property bool dockOverflowFallback: dockMode
         && (dockHorizontalTileLimit < minimumFittedDockTileSize
             || dockVerticalTileLimit < minimumFittedDockTileSize)
@@ -232,6 +243,10 @@ Flickable {
 
     Grid {
         id: grid
+        // Dock mode: sit below the magnification envelope so the tiles rest
+        // on the shelf while the viewport's clip boundary reaches into the
+        // headroom above it.
+        y: root.dockZoomHeadroom
         rows: root.vertical ? -1 : root.lanes
         columns: root.vertical ? root.lanes : -1
         flow: root.vertical ? Grid.LeftToRight : Grid.TopToBottom
@@ -246,8 +261,12 @@ Flickable {
 
                 // AGENT-GUARD: do not override AppletChip's zero extent for an
                 // empty live applet; doing so resurrects an invisible panel slot.
+                // The cross-axis chip extent subtracts the magnification
+                // envelope so the chip bottom edge stays on the shelf inside
+                // the taller viewport.
                 height: emptyLiveContent ? 0 : root.vertical ? implicitHeight
-                    : Math.max(1, (root.height - (root.lanes - 1) * grid.spacing) / root.lanes)
+                    : Math.max(1, (root.height - root.dockZoomHeadroom
+                                   - (root.lanes - 1) * grid.spacing) / root.lanes)
                 width: emptyLiveContent ? 0 : root.vertical
                     ? Math.max(1, (root.width - (root.lanes - 1) * grid.spacing) / root.lanes)
                     : implicitWidth

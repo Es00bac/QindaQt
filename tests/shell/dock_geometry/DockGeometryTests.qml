@@ -206,5 +206,45 @@ Item {
             verify(!findChild(panel, "panelConfigTileSize").visible)
             menu.close()
         }
+
+        // AGENT-CONTRACT: the dock zone viewport must expose exactly the
+        // size-derived magnification envelope that the input mask and blur
+        // reserve above the painted shelf. A viewport that stops at the shelf
+        // top clips every magnified pixel (the reserved headroom is never
+        // used), and one that exposes anything else masks or paints area the
+        // surface never allocated. Disabling the zoom quick setting collapses
+        // the viewport back onto the bare shelf.
+        function test_zoneViewportExposesTheMagnificationEnvelope() {
+            panel.panelQuickConfig = fakePanelConfig
+            panel.panel = { id: "envelope-dock", edge: "bottom",
+                alignment: "center", rows: 1, thickness: 80, applets: [
+                    { id: "tasks", plugin: "task-list",
+                      settings: { zone: "center", dockMode: true },
+                      runtime: { ready: true,
+                                 entryPoint: "qindaqt.applets.task-list" } }] }
+            wait(20)
+            const material = findChild(panel, "panelMaterial")
+            const center = findChild(panel, "panelZoneCenter")
+            verify(panel.dockMode)
+            verify(center.dockZoomHeadroom > 0)
+            compare(center.y, panel.inputBounds.y)
+            compare(center.height,
+                    panel.effectiveDockTileSize + center.dockZoomHeadroom)
+            fuzzyCompare(center.y + center.height, panel.height, 0.01)
+            verify(center.y < material.y)
+            // Tiles stay pinned to the shelf bottom inside the taller
+            // viewport: the slot layout never moves.
+            const chips = root.named(center, "appletChip")
+            verify(chips.length >= 1)
+            fuzzyCompare(chips[0].mapToItem(panel, 0, 0).y + chips[0].height,
+                         panel.height, 0.01)
+
+            fakePanelConfig.store = { "envelope-dock": { dockZoom: false } }
+            fakePanelConfig.panelSettingsChanged()
+            tryVerify(() => center.dockZoomHeadroom === 0)
+            compare(center.y, material.y)
+            compare(panel.inputBounds.y, material.y)
+            compare(center.height, panel.effectiveDockTileSize)
+        }
     }
 }

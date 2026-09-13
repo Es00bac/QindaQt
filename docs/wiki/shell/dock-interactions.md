@@ -36,7 +36,13 @@ the strip's layout contract and the zone viewport exact. The dock surface
 reserves a size-derived overscan envelope above its bottom-aligned shelf before
 the icon swells. Its input/blur bounds add only that bounded envelope (plus any
 sub-padding horizontal overrun), rather than the former fixed transparent
-margin on all four sides.
+margin on all four sides. The zone viewport exposes exactly that envelope: in
+dock mode its clip boundary rises above the shelf by the same size-derived
+value while the tiles stay pinned to the shelf, so the swell is visible and
+interactive above the painted bottom edge instead of being clipped at it. Each
+strip also keeps tracking the pointer through the envelope, so the falloff
+follows a pointer gliding over the magnified bump rather than collapsing the
+zoom at the shelf line.
 The effect is disabled by `reducedMotion` or by the per-panel `dockZoom`
 quick setting. The same seam backs the pins strip.
 
