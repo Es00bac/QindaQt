@@ -1,5 +1,49 @@
 # Integration handoff
 
+## September 13 desktop-integration repair deployment
+
+Exact repair source `287f126559c58e466c7e55d832f4e00a17d729e6` is
+installed as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r1`. It restores one
+session bus across KWin, the shell, services, KGlobalAccel and Global Menu;
+repairs safe implicit Display state activation; localizes the three live
+decoration controls; exposes all six selectable themes and their decoration
+geometry; permits Desktop applet mutation and Desktop Icons; restores Dock task
+operations; and restores compact colored container roll-up strips. The Desktop
+surface now links a narrow static File Manager boundary instead of pulling the
+full application shell and KIO runtime into `qindaqt-shell`.
+
+Portage inherited the configured `MAKEOPTS=-j24 -l24`, built a 31,825,920-byte
+gpkg, and merged exactly one package upgrade. A fresh rollback package was made
+before the merge. The exact local `~amd64` exception is recorded in
+`/etc/portage/package.accept_keywords/qindaqt-repair-r1`; no broader keyword or
+world configuration changed. The VDB ebuild contains the exact source pin and `qcheck`
+reports 1,335/1,335 files good. The installed KWin 6.6.6 release contract passes;
+the installed compositor and decoration plugins and both main executables have
+no unresolved shared libraries; `qindaqt-shell` no longer has an AppShell
+runtime dependency. An isolated launch of the installed `qindaqt-wm` loaded the
+installed compositor plugin, bootstrapped a private D-Bus session, and
+propagated that exact address to its child session. The installed shell lists 12
+profiles, six themes, and 26 applets, including Desktop Icons, Task List, and
+Global Menu.
+
+Before packaging, the integrated development tree passed 49/49 focused
+session/display/theme/customize/decoration/roll-up checks, 38/38 Global Menu
+checks, 6/6 Desktop boundary checks, and a 171/171 broad affected suite. The
+private virtual Desktop boot passed 2/2, including its package fixture. The
+repository documentation validator and release-contract checks pass. Strict
+MkDocs could not be executed on this host because the `mkdocs` executable is
+not installed; the existing source-shape gate still reports older oversized
+production files outside this repair, while this change adds no new hard shape
+failure.
+
+The user's `qindaqt` profile now includes the `desktop-icons` applet and remains
+valid JSON. Its pre-change copy is preserved at
+`~/.local/share/qindaqt/profiles/qindaqt.json.before-desktop-icons-20260913T1020`.
+No running physical-desktop process was forcibly restarted or logged out. The
+old session was originally created without a bus in KWin and cannot be repaired
+in place, so the installed bus, service, shortcut, Task List, and Global Menu
+repairs become live at the next logout/login boundary.
+
 ## September 13 full-desktop Portage deployment
 
 The reviewed product source at exact commit

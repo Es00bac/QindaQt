@@ -7,15 +7,28 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Installed delivery checkpoint (September 13)
 
-Exact integrated product source `b7d4667657fa299adf0d9a480976ce0294f5d17a`
+Exact integrated repair source `287f126559c58e466c7e55d832f4e00a17d729e6`
 is installed through Portage as
-`gui-wm/qindaqt-desktop-0.1.0_pre20260913`. The signed binary-only merge changed
-only that package, `qcheck` verifies 1,333/1,333 files, the mandatory native
-KWin release/static/private-boot/staged-install gates pass, and the prior signed
-package remains available for rollback. Portage owns the installed runtime;
-there were no raw `/usr` copies. The running desktop processes were preserved,
-so a fresh-login live-adoption check remains intentionally open rather than
-being inferred from installed bytes.
+`gui-wm/qindaqt-desktop-0.1.0_pre20260913-r1`. This revision restores the shared
+session bus and supervised global-shortcut daemon, safe Display service
+activation, live decoration-control placement, all six selectable appearance
+themes, desktop applet editing and Desktop Icons, Dock task-list connectivity,
+Global Menu connectivity, and compact colored container roll-up strips. It also
+isolates the Desktop surface from the full File Manager application runtime so
+the shell can start from a staged or installed tree without an accidental
+AppShell/KIO dependency.
+
+The source build inherited the configured `MAKEOPTS=-j24 -l24`; the host plan
+contained exactly one package upgrade. `qcheck` verifies 1,335/1,335 files, the
+installed VDB ebuild records the exact source pin, all inspected executables and
+native plugins have complete shared-library closure, and the installed KWin
+6.6.6 release contract passes. A private installed compositor launch loaded the
+QindaQt plugin and propagated one newly bootstrapped D-Bus address to its child
+session. The installed shell independently enumerates all 12 profiles, six
+themes, and 26 applets. Portage owns the installed runtime; there were no raw
+`/usr` copies, and both the prior package and a fresh pre-merge rollback package
+remain available. The running physical desktop was deliberately not restarted,
+so adoption of the shared bus and newly installed code requires the next login.
 
 ## Active outcomes
 
