@@ -5,36 +5,37 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260913`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260913-r3`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=b7d4667657fa299adf0d9a480976ce0294f5d17a
+qq_source_commit=33504d61f0bcb573c3f7ded20beab5858a254d0c
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260913.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260913-r3.tar.gz
 ```
 
-The September 13 checkpoint packages the reviewed delivery through
-`b7d46676`: current Desktop/Customize behavior, Dock magnification and
+The September 13 r3 checkpoint packages the reviewed delivery through
+`33504d61`: current Desktop/Customize behavior, Dock magnification and
 attention, Active Application and Global Menu anchoring, external-display
 brightness, and authenticated File Manager browsing plus remote open, rename,
-new-folder, copy, move, and KIOFuse write-back. The package now declares
+new-folder, copy, move, and KIOFuse write-back. It also exposes installed KWin
+decoration choices, projects the primary output truthfully in Customize, and
+prevents a zero-sized desktop context-menu popup from disconnecting the shell
+on Wayland. The package declares
 `kde-misc/kio-fuse` directly because remote write-back composition invokes its
 session D-Bus service. Installation does not replace a running compositor or
 applications; compositor/plugin adoption still requires a later login.
 
-On the September 13 deployment host, the exact plan upgraded only
-`gui-wm/qindaqt-desktop` to `0.1.0_pre20260913`. Portage built and signed the
-binary package, merged it with `--usepkgonly`, and verified all 1,333 installed
-files. The prior `0.1.0_pre20260912` signed package remains available for
-rollback. The KWin 6.6.6 release contract, static ABI/dependency gates, private
-nested plugin boot, and staged installed-plugin discovery all pass. The active
-desktop was not restarted: its compositor, shell and Settings processes retain
-their original PIDs and start times, so the new files become live only at a
-later user-selected session boundary.
+On the September 13 r3 deployment host, the exact plan upgraded only
+`gui-wm/qindaqt-desktop` from r2 to r3. Portage inherited
+`MAKEOPTS=-j24 -l24`, built and signed the 31,877,120-byte binary package,
+merged it with `--usepkgonly`, and verified all 1,337 installed files. A fresh
+r2 package remains available for rollback. The supervised shell child and
+Settings application were replaced without restarting KWin or the session;
+both now map the installed r3 files.
 
 The `-r11` revision lands the desktop gap wave: lock after waking, unlock
 grace, PowerDevil lid and power-button actions, and a single Meta+L owner

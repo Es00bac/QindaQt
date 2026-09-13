@@ -1,5 +1,37 @@
 # Integration handoff
 
+## September 13 Appearance/Customize deployment and desktop-menu recovery
+
+Exact source `33504d61f0bcb573c3f7ded20beab5858a254d0c` is installed as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260913-r3`. Revision r2 delivered the real
+KWin decoration catalog and primary-output Customize canvas from `4161e6a7`;
+r3 adds the desktop right-click recovery after physical-session evidence showed
+two shell exits. In each exit, KWin logged `width and height must be positive
+and non-zero`, Qt ended the Wayland connection with a protocol error, and the
+session supervisor replaced the shell. The explicitly styled desktop
+`Templates.Menu` had no style-provided implicit size despite reporting itself
+opened in the offscreen test.
+
+The menu now owns its content-model view and positive dimensions before the
+first Wayland commit. The new regression failed against the old zero-width
+menu, then the complete desktop-surface selector passed 5/5 after repair. The
+Appearance/Customize selector remains 16/16, Settings identity/route
+construction passes 2/2, and the dependency-free documentation validator
+passes all 260 entries. Strict MkDocs is unavailable on this host.
+
+Portage inherited `MAKEOPTS=-j24 -l24`, planned exactly one r2-to-r3 upgrade
+with no downloads or dependency changes, refreshed the signed r2 rollback,
+built a 31,877,120-byte signed r3 gpkg, and completed a binary-only merge.
+The VDB ebuild pins the exact source commit and `qcheck` reports 1,337/1,337
+files good. The installed desktop-menu QML is byte-identical to the committed
+source and the installed shell has complete shared-library closure. Only the
+supervised shell child was replaced afterward; PID 3272359 maps the installed
+r3 inode while the compositor and session remain running. Installed Settings
+was also relaunched on the live session bus at the Appearance route so the new
+decoration and Customize work is visible now. A post-r3 physical right-click
+still requires the user's gesture because the production compositor correctly
+rejects unauthenticated test-input injection.
+
 ## September 13 decoration catalog and Customize projection repair
 
 Appearance now treats KWin's actual application-window decoration as a
@@ -24,9 +56,8 @@ configuration preservation test, non-zero-origin/tall-output projection test,
 pointer interactions, lifecycle, accessibility, boundary poison, and staged
 installed-route isolation. The repository documentation validator passes all
 260 Markdown/navigation entries. Strict MkDocs is unavailable on this host
-because the `mkdocs` executable is not installed. This handoff makes no
-installed-package, live KWin configuration, or physical-session adoption
-claim.
+because the `mkdocs` executable is not installed. The later deployment section
+records installed and live-shell adoption evidence.
 
 The broader Settings desktop-identity and route-construction rows pass 2/2.
 Its installed-routes row reaches the deliberately withheld Network-module
