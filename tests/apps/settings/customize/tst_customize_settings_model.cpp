@@ -3,13 +3,17 @@
 
 #include "qindaqt/apps/settings_customize/customize_editor_host.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
+#include "qindaqt/profiles/profile_loader.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_customization/layout_editing_repository.h"
 #include "qindaqt/shell_customization/layout_editing_coordinator.h"
 #include "qindaqt/shell_customization_editor/user_profile_store.h"
+#include "qindaqt/shell_layout/panel_layout_solver.h"
 
 #include <QFileInfo>
 #include <QtTest>
+
+#include <algorithm>
 
 using namespace QindaQt::Apps::SettingsCustomize;
 using namespace QindaQt::Apps::SettingsCustomize::TestSupport;
@@ -27,10 +31,11 @@ public:
                   .debounceMilliseconds = 0,
                   .retryMilliseconds = {10}})
         , model(client, {profile(), profile(QStringLiteral("alternate"))},
-                manifests(),
-                [this](const Profiles::LayoutProfile &selected) {
+                manifests(), outputProvider,
+                [this](const Profiles::LayoutProfile &selected,
+                       const QVector<ShellLayout::LogicalOutput> &inventory) {
                     return std::make_unique<RepositoryCustomizeEditorHost>(
-                        selected, outputs(), manifests(), store->path());
+                        selected, inventory, manifests(), store->path());
                 })
     {
     }
@@ -54,6 +59,7 @@ public:
     std::unique_ptr<QTemporaryDir> store;
     SequenceTransport transport;
     SettingsClient client;
+    MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model;
 };
 
@@ -79,7 +85,137 @@ private slots:
     void persistenceAndConflictRemainTruthful();
     void foreignLeaseFailsClosedThenRecoversOnRefresh();
     void appliedContentSurvivesDiscardAndAuthorityRecovery();
+    void panelDisplayScopeUsesExactPrimaryAndRoundTrips();
+    void primaryScopeFailsClosedWithoutStableTruth();
+    void primaryChangeFencesDirtyDraft();
 };
+
+void CustomizeSettingsModelTests::panelDisplayScopeUsesExactPrimaryAndRoundTrips()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establish());
+    harness.model.selectPanel(QStringLiteral("dock"));
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("output")),
+             QStringLiteral("DP-1"));
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("outputScope")),
+             QStringLiteral("primary"));
+    QVERIFY(harness.model.primaryDisplayAvailable());
+
+    const auto primarySolved = ShellLayout::PanelLayoutSolver::solve(
+        profile().panels, outputs());
+    QVERIFY2(primarySolved.ok(), qPrintable(primarySolved.error.message));
+    QStringList primaryDockOutputs;
+    for (const auto &surface : primarySolved.surfaces) {
+        if (surface.panelId == QLatin1String("dock")) {
+            primaryDockOutputs.append(surface.outputId);
+        }
+    }
+    QCOMPARE(primaryDockOutputs, QStringList({QStringLiteral("DP-1")}));
+
+    QVERIFY(harness.model.configureSelectedPanel(QStringLiteral("outputScope"),
+                                                 QStringLiteral("all")));
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("output")),
+             QStringLiteral("*"));
+    QVERIFY(harness.model.canUndo());
+    QVERIFY(harness.model.undo());
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("output")),
+             QStringLiteral("DP-1"));
+    QVERIFY(!harness.model.canUndo());
+    QVERIFY(harness.model.redo());
+    QVERIFY(harness.model.apply());
+
+    const QString saved = QDir(harness.store->path()).filePath(
+        ShellCustomizationEditor::UserProfileStore::fileNameForId(
+            QStringLiteral("fixture")));
+    const Profiles::LoadResult loaded = Profiles::ProfileLoader::fromFile(saved);
+    QVERIFY2(loaded.ok, qPrintable(loaded.error.message));
+    const auto dock = std::find_if(
+        loaded.profile.panels.cbegin(), loaded.profile.panels.cend(),
+        [](const Profiles::PanelSpec &panel) {
+            return panel.id == QLatin1String("dock");
+        });
+    QVERIFY(dock != loaded.profile.panels.cend());
+    QCOMPARE(dock->output, QStringLiteral("*"));
+
+    const auto solved = ShellLayout::PanelLayoutSolver::solve(
+        loaded.profile.panels, outputs());
+    QVERIFY2(solved.ok(), qPrintable(solved.error.message));
+    QStringList dockOutputs;
+    for (const auto &surface : solved.surfaces) {
+        if (surface.panelId == QLatin1String("dock")) {
+            dockOutputs.append(surface.outputId);
+        }
+    }
+    QCOMPARE(dockOutputs,
+             QStringList({QStringLiteral("DP-1"),
+                          QStringLiteral("HDMI-A-1")}));
+}
+
+void CustomizeSettingsModelTests::primaryScopeFailsClosedWithoutStableTruth()
+{
+    ModelHarness harness;
+    CustomizeOutputSnapshot missing = harness.outputProvider.snapshot();
+    missing.primaryOutputIds.clear();
+    ++missing.revision;
+    harness.outputProvider.publish(missing);
+    QVERIFY(harness.establish());
+    harness.model.selectPanel(QStringLiteral("dock"));
+    const QVariantList before = harness.model.panels();
+    QVERIFY(!harness.model.primaryDisplayAvailable());
+    QVERIFY(harness.model.displayScopeError().contains(
+        QStringLiteral("not currently known")));
+    QVERIFY(!harness.model.configureSelectedPanel(QStringLiteral("outputScope"),
+                                                  QStringLiteral("primary")));
+    QCOMPARE(harness.model.panels(), before);
+    QVERIFY(!harness.model.canUndo());
+
+    CustomizeOutputSnapshot ambiguous = missing;
+    ambiguous.primaryOutputIds = {QStringLiteral("DP-1"),
+                                  QStringLiteral("HDMI-A-1")};
+    ++ambiguous.revision;
+    harness.outputProvider.publish(ambiguous);
+    QVERIFY(!harness.model.primaryDisplayAvailable());
+    QVERIFY(harness.model.displayScopeError().contains(
+        QStringLiteral("More than one")));
+    QVERIFY(!harness.model.configureSelectedPanel(QStringLiteral("outputScope"),
+                                                  QStringLiteral("primary")));
+    QCOMPARE(harness.model.panels(), before);
+}
+
+void CustomizeSettingsModelTests::primaryChangeFencesDirtyDraft()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establish());
+    harness.model.selectPanel(QStringLiteral("dock"));
+    QVERIFY(harness.model.configureSelectedPanel(QStringLiteral("outputScope"),
+                                                 QStringLiteral("all")));
+
+    CustomizeOutputSnapshot changed = harness.outputProvider.snapshot();
+    changed.primaryOutputIds = {QStringLiteral("HDMI-A-1")};
+    ++changed.revision;
+    harness.outputProvider.publish(changed);
+
+    QVERIFY(!harness.model.primaryDisplayAvailable());
+    QVERIFY(harness.model.displayScopeError().contains(
+        QStringLiteral("changed while editing")));
+    QVERIFY(!harness.model.applyAvailable());
+    QVERIFY(!harness.model.configureSelectedPanel(QStringLiteral("outputScope"),
+                                                  QStringLiteral("primary")));
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("output")),
+             QStringLiteral("*"));
+    QVERIFY(!harness.model.apply());
+    const QString saved = QDir(harness.store->path()).filePath(
+        ShellCustomizationEditor::UserProfileStore::fileNameForId(
+            QStringLiteral("fixture")));
+    QVERIFY(!QFileInfo::exists(saved));
+
+    QVERIFY(harness.model.discard());
+    QVERIFY(harness.model.primaryDisplayAvailable());
+    QVERIFY(harness.model.configureSelectedPanel(QStringLiteral("outputScope"),
+                                                 QStringLiteral("primary")));
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("output")),
+             QStringLiteral("HDMI-A-1"));
+}
 
 void CustomizeSettingsModelTests::pointerGestureCommitsOneUndoStepAndCancelRollsBack()
 {
@@ -251,9 +387,11 @@ void CustomizeSettingsModelTests::foreignLeaseFailsClosedThenRecoversOnRefresh()
                           {.requestTimeoutMilliseconds = 100,
                            .debounceMilliseconds = 0,
                            .retryMilliseconds = {10}});
+    MutableCustomizeOutputProvider outputProvider;
     CustomizeSettingsModel model(
-        client, {profile()}, manifests(),
-        [&repository, &store](const Profiles::LayoutProfile &) {
+        client, {profile()}, manifests(), outputProvider,
+        [&repository, &store](const Profiles::LayoutProfile &,
+                              const QVector<ShellLayout::LogicalOutput> &) {
             return std::make_unique<RepositoryCustomizeEditorHost>(
                 repository, manifests(), store->path());
         });

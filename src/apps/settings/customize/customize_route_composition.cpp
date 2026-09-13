@@ -2,6 +2,7 @@
 #include "customize_route_composition.h"
 
 #include "customize_catalog.h"
+#include "qt_customize_output_provider.h"
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -10,6 +11,7 @@
 #include <QDBusConnection>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QStandardPaths>
 
 #include <algorithm>
@@ -69,6 +71,7 @@ public:
     Private()
         : transport(QDBusConnection::sessionBus())
         , client(transport, {QString(LayoutProfileSettingsKey)})
+        , outputProvider(*qGuiApp)
     {
         const QString profileSource = QStringLiteral(
             QINDAQT_CUSTOMIZE_SOURCE_PROFILE_DIRECTORY);
@@ -84,15 +87,14 @@ public:
                                           .filePath(QStringLiteral("qindaqt/profiles"));
         const QVector<Applets::AppletManifest> manifests = catalogs.manifests;
         const EditorHostFactory factory =
-            [manifests, userDirectory](const Profiles::LayoutProfile &profile) {
+            [manifests, userDirectory](
+                const Profiles::LayoutProfile &profile,
+                const QVector<ShellLayout::LogicalOutput> &outputs) {
                 return std::make_unique<RepositoryCustomizeEditorHost>(
-                    profile,
-                    QVector<ShellLayout::LogicalOutput>{
-                        {QStringLiteral("primary"), QRect(0, 0, 1920, 1080), 1.0}},
-                    manifests, userDirectory);
+                    profile, outputs, manifests, userDirectory);
             };
         model = std::make_unique<CustomizeSettingsModel>(
-            client, catalogs.profiles, catalogs.manifests, factory,
+            client, catalogs.profiles, catalogs.manifests, outputProvider, factory,
             catalogs.error);
         QString error;
         if (!client.start(&error) && catalogs.error.isEmpty()) {
@@ -103,6 +105,7 @@ public:
 
     Services::SettingsClient::QtSettingsTransport transport;
     Services::SettingsClient::SettingsClient client;
+    QtCustomizeOutputProvider outputProvider;
     std::unique_ptr<CustomizeSettingsModel> model;
 };
 

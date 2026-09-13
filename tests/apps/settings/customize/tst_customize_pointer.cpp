@@ -66,10 +66,12 @@ void CustomizePointerTests::pointerDeliverySurvivesPreviewReconstruction()
     QVERIFY(store->isValid());
     SequenceTransport transport;
     Services::SettingsClient::SettingsClient client(transport, {QString(LayoutProfileSettingsKey)});
-    CustomizeSettingsModel model(client, {profile()}, manifests(),
-        [&](const Profiles::LayoutProfile &selected) {
+    MutableCustomizeOutputProvider outputProvider;
+    CustomizeSettingsModel model(client, {profile()}, manifests(), outputProvider,
+        [&](const Profiles::LayoutProfile &selected,
+            const QVector<ShellLayout::LogicalOutput> &inventory) {
             return std::make_unique<RepositoryCustomizeEditorHost>(
-                selected, outputs(), manifests(), store->path());
+                selected, inventory, manifests(), store->path());
         });
     QVERIFY(client.start());
     Q_EMIT transport.ownerChanged(QStringLiteral(":1.90"));

@@ -3,6 +3,7 @@
 
 #include "qindaqt/applets/api_version.h"
 #include "qindaqt/applets/applet_manifest.h"
+#include "qindaqt/apps/settings_customize/customize_output_provider.h"
 #include "qindaqt/profiles/layout_profile.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
@@ -18,6 +19,34 @@
 #include <utility>
 
 namespace QindaQt::Apps::SettingsCustomize::TestSupport {
+
+class MutableCustomizeOutputProvider final : public CustomizeOutputProvider {
+public:
+    explicit MutableCustomizeOutputProvider(QObject *parent = nullptr)
+        : CustomizeOutputProvider(parent)
+    {
+        m_snapshot.outputs = {
+            {QStringLiteral("DP-1"), QRect(0, 0, 1920, 1080), 1.0},
+            {QStringLiteral("HDMI-A-1"), QRect(1920, 0, 2560, 1440), 1.25},
+        };
+        m_snapshot.primaryOutputIds = {QStringLiteral("DP-1")};
+        m_snapshot.revision = 1;
+    }
+
+    [[nodiscard]] CustomizeOutputSnapshot snapshot() const override
+    {
+        return m_snapshot;
+    }
+
+    void publish(CustomizeOutputSnapshot snapshot)
+    {
+        m_snapshot = std::move(snapshot);
+        Q_EMIT snapshotChanged();
+    }
+
+private:
+    CustomizeOutputSnapshot m_snapshot;
+};
 
 class SequenceTransport final
     : public Services::SettingsClient::SettingsTransport {
@@ -62,7 +91,7 @@ inline Profiles::LayoutProfile profile(QString id = QStringLiteral("fixture"))
 
     Profiles::PanelSpec bar;
     bar.id = QStringLiteral("bar");
-    bar.output = QStringLiteral("primary");
+    bar.output = QStringLiteral("DP-1");
     bar.edge = Profiles::Edge::Top;
     bar.applets = {
         {.id = QStringLiteral("launcher-instance"),
@@ -75,7 +104,7 @@ inline Profiles::LayoutProfile profile(QString id = QStringLiteral("fixture"))
 
     Profiles::PanelSpec dock;
     dock.id = QStringLiteral("dock");
-    dock.output = QStringLiteral("primary");
+    dock.output = QStringLiteral("DP-1");
     dock.edge = Profiles::Edge::Bottom;
     dock.layer = Profiles::Layer::Overlay;
     dock.alignment = Profiles::Alignment::Center;
@@ -125,7 +154,10 @@ inline QVector<Applets::AppletManifest> manifests()
 
 inline QVector<ShellLayout::LogicalOutput> outputs()
 {
-    return {{QStringLiteral("primary"), QRect(0, 0, 1920, 1080), 1.0}};
+    return {
+        {QStringLiteral("DP-1"), QRect(0, 0, 1920, 1080), 1.0},
+        {QStringLiteral("HDMI-A-1"), QRect(1920, 0, 2560, 1440), 1.25},
+    };
 }
 
 inline QVariantMap snapshotWire(const QString &profileId,

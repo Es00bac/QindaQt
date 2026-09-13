@@ -31,6 +31,65 @@ FormSurface {
 
         Label {
             Layout.fillWidth: true
+            text: qsTr("Displays")
+            muted: true
+            font.pointSize: Tokens.type.caption
+            Accessible.name: text
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Tokens.space["1"]
+
+            Button {
+                objectName: "customizeDisplayScopePrimary"
+                Layout.fillWidth: true
+                text: qsTr("Primary display")
+                checkable: true
+                autoExclusive: true
+                emphasized: checked
+                checked: root.properties.outputScope === "primary"
+                available: root.customizeSettings.displayScopeChangeAvailable
+                           && root.customizeSettings.primaryDisplayAvailable
+                accessibleDescription: root.customizeSettings.displayScopeError
+                Accessible.role: Accessible.RadioButton
+                Accessible.checked: checked
+                onClicked: root.customizeSettings.configureSelectedPanel(
+                               "outputScope", "primary")
+            }
+
+            Button {
+                objectName: "customizeDisplayScopeAll"
+                Layout.fillWidth: true
+                text: qsTr("All displays")
+                checkable: true
+                autoExclusive: true
+                emphasized: checked
+                checked: root.properties.outputScope === "all"
+                available: root.customizeSettings.displayScopeChangeAvailable
+                Accessible.role: Accessible.RadioButton
+                Accessible.checked: checked
+                Accessible.description: qsTr(
+                    "Show this panel once on every available display")
+                onClicked: root.customizeSettings.configureSelectedPanel(
+                               "outputScope", "all")
+            }
+        }
+
+        Label {
+            objectName: "customizeDisplayScopeError"
+            Layout.fillWidth: true
+            visible: text.length > 0
+            text: root.customizeSettings.displayScopeError
+            muted: true
+            wrapMode: Text.Wrap
+            font.pointSize: Tokens.type.caption
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
+        }
+
+        Label {
+            Layout.fillWidth: true
             text: qsTr("Edge")
             muted: true
             font.pointSize: Tokens.type.caption

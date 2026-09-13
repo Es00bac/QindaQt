@@ -60,8 +60,15 @@ selection rings, and tooltips. Drop targets are the three profile zones on
 each panel and light up under an active drag. Behind the panels, a themed
 gradient backdrop and a quiet window mock keep the screen reading as a
 desktop. The property panes issue complete panel configuration or move
-intents for edge, alignment, thickness, length, and visibility. They
-deliberately omit always-hidden mode
+intents for display scope, edge, alignment, thickness, length, and visibility.
+Display scope is deliberately the two choices the existing profile contract
+can state truthfully: **Primary display** writes the current primary screen's
+exact Qt/Wayland output identifier, while **All displays** writes the schema-v1
+wildcard `*`. Both reuse the public panel-move intent, so the layout solver,
+revision fencing, preview validation, and one-step Undo behavior remain the
+same as an edge move. The route never persists the label `primary` as a
+sentinel or invents a second placement solver. The panes deliberately omit
+always-hidden mode
 until the separate reveal-affordance work exists; creating an unrecoverable
 panel from this route would violate fail-closed interaction.
 
@@ -127,6 +134,17 @@ rebuild after the foreign lease is released. Missing catalogs, invalid
 manifests, repository failure, and Settings1 transport failure likewise fail
 closed.
 
+The production composition injects a Customize-owned snapshot provider over
+the current `QGuiApplication` screen inventory. It pairs the ordered logical
+output values with the exact primary `QScreen::name()` and a monotonic revision.
+Primary is disabled with an accessible explanation when that identity is
+missing, does not name exactly one inventory member, or is ambiguous. If the
+inventory or primary changes while a draft is dirty, display-scope controls and
+Apply are fenced until Discard or reload rebuilds the editor against one fresh
+snapshot. No arbitrary screen is selected, and stale exact output identity can
+never be written as though it were still primary. A clean editor may rebuild
+immediately when the injected inventory changes.
+
 Built and installed executables discover profiles and applet manifests from
 their respective source or relocated `share/qindaqt` catalogs without relying
 on a developer-tree working directory. The compiled
@@ -148,14 +166,19 @@ The model row proves one-step pointer commit, exact cancellation, deterministic
 rejection rollback, pointer/keyboard insertion convergence, Undo/Redo,
 atomic profile persistence, retained applied baselines across Discard and
 authority recovery, Settings1 conflict truth, and foreign-lease recovery. The
+same row injects `DP-1` and `HDMI-A-1`, proves Primary stores only the exact
+`DP-1` identity, proves `*` solves to one panel surface on each display,
+reloads the strictly serialized saved profile, and rejects missing, ambiguous,
+or revision-changed primary truth without saving. The
 warning-fatal pointer row drives real mouse events through the production page
 and editor in compact and wide modes: palette insertion, chip movement across
 preview reconstruction, one-step Undo, Escape and outside-release rollback. The warning-fatal page row renders 720×720 compact and 1080×720
 wide layouts with a software `QQuickView`, checks the canvas and contextual
 controls, asserts the profile gallery card exists, is visible, and carries a
 "layout profile" accessible name, validates accessible names for
-palette/panel/zone elements, exercises
-keyboard activation, and proves the discard dialog is centered in the window
+palette/panel/zone elements, keyboard-activates the Primary/All radio controls,
+verifies Primary becomes disabled with an accessible degraded explanation when
+identity truth is unavailable, and proves the discard dialog is centered in the window
 overlay. The page and pointer harnesses install the confined icon runtime over
 the shipped icon theme, so both rows exercise resolved glyph rendering and the
 typed placeholder path stays the icons module's own coverage. The window-lifecycle row proves a dirty title-bar close opens that
