@@ -77,6 +77,9 @@ private slots:
   void remoteCopySuccessRefreshesOnlyTheCurrentFolder();
   void remoteCopyFailureStaysVisibleWithoutOptimisticDisplay();
   void aCancelledRemoteCopyResultIsDiscarded();
+  // Review P1 repair: the shared Cancel action retires an in-flight remote
+  // copy directly, without depending on navigating away.
+  void directUserCancellationRetiresTheRemoteCopy();
   void destructionWithAPendingRemoteCopyDoesNotCrash();
   void destructionWithAPendingRequestDoesNotCrash();
 };
@@ -608,6 +611,45 @@ void TestNavigationControllerNetwork::aCancelledRemoteCopyResultIsDiscarded() {
   // fenced out and stays invisible.
   rawCopier->finishFailure(copyGeneration, QStringLiteral("synthetic copy failure"));
   QVERIFY(controller.launchError().isEmpty());
+}
+
+// Review P1 repair (former red): cancelRemoteCopy() is the user-facing hook
+// behind the shared operation.cancel action. It must retire the in-flight
+// copy in place -- quiet copier cancel, no listing re-read, no visible
+// failure -- without the navigation replacement the only previous cancel
+// path depended on.
+void TestNavigationControllerNetwork::directUserCancellationRetiresTheRemoteCopy() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto copier = std::make_unique<FakeRemoteCopier>();
+  auto *rawCopier = copier.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, std::move(copier));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  // Idle cancel is a harmless no-op.
+  controller.cancelRemoteCopy();
+  QVERIFY(rawCopier->cancelled().isEmpty());
+
+  QVERIFY(controller.copyRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const quint64 copyGeneration = rawCopier->requests().constFirst().generation;
+  const qsizetype requestsBefore = rawBackend->requests().size();
+
+  controller.cancelRemoteCopy();
+  QVERIFY(rawCopier->cancelled().contains(copyGeneration));
+  QCOMPARE(controller.remoteCopyBusy(), false);
+  // No navigation happened: the folder stays active and nothing re-reads.
+  QCOMPARE(controller.remoteActive(), true);
+  QCOMPARE(rawBackend->requests().size(), requestsBefore);
+  QVERIFY(controller.launchError().isEmpty());
+
+  // The quiet kill's late result is generation-fenced and stays invisible.
+  rawCopier->finishFailure(copyGeneration, QStringLiteral("synthetic copy failure"));
+  QVERIFY(controller.launchError().isEmpty());
+  QCOMPARE(controller.remoteCopyBusy(), false);
 }
 
 void TestNavigationControllerNetwork::destructionWithAPendingRemoteCopyDoesNotCrash() {
