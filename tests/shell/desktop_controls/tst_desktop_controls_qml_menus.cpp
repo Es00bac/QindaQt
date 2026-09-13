@@ -11,6 +11,7 @@
 #include <QAccessible>
 #include <QQmlExtensionPlugin>
 #include <QScreen>
+#include <QtMath>
 #include <QtTest>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_DesktopControlsPlugin)
@@ -28,6 +29,7 @@ private Q_SLOTS:
     void commandPaletteSearchesByKeyboardAndActivates();
     void placesMenuOpensFoldersThroughTheSeam();
     void quickLaunchDockUsesOnlyPersistedPins();
+    void quickLaunchDockMagnificationGrowsAboveTheShelfInsideItsEnvelope();
     void controlPopupPlacementMath();
     void activeApplicationPopupAnchorsToTheWidget();
 };
@@ -412,6 +414,87 @@ void DesktopControlsQmlMenuTests::quickLaunchDockUsesOnlyPersistedPins()
     entries.constFirst()->forceActiveFocus();
     keyClickFocused(host, Qt::Key_Return);
     QCOMPARE(stack.spawner.requests.size(), 1);
+}
+
+void DesktopControlsQmlMenuTests::
+    quickLaunchDockMagnificationGrowsAboveTheShelfInsideItsEnvelope()
+{
+    LauncherStack stack;
+    QVERIFY(stack.addEntry(QStringLiteral("editor.desktop"), QStringLiteral("Fixture Editor"),
+                           QStringLiteral("/bin/true")));
+    QVERIFY(stack.addEntry(QStringLiteral("mail.desktop"), QStringLiteral("Fixture Mail"),
+                           QStringLiteral("/bin/true")));
+    QVERIFY(stack.scanner.start());
+    stack.publishPinned({QStringLiteral("editor"), QStringLiteral("mail")});
+    Shell::Launcher::LauncherAppletController launcher(&stack.scanner, &stack.persistence,
+                                                        &stack.executor, true);
+    QuickLaunchController quickLaunch(&launcher, true);
+
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("QuickLaunchApplet"), &quickLaunch, &error, false,
+                          true, 60, 60), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto entries = host.visualItemsNamed(QStringLiteral("quickLaunchEntry"));
+    QCOMPARE(entries.size(), 2);
+
+    // The pins strip must reserve a pointer-tracking surface reaching
+    // exactly the panel's magnification envelope above the shelf
+    // (PanelAppletRow::dockOverscanFor over the same tile), so the swell
+    // keeps following a pointer gliding across the bump instead of
+    // collapsing at the shelf line. The surface never overlaps the tiles.
+    const qreal tile = 60.0;
+    const qreal iconExtent = qBound<qreal>(16, tile - 8, 40);
+    const qreal envelope = qCeil(iconExtent - tile / 2) + 3;
+    auto *zoomSurface =
+        host.item->findChild<QQuickItem *>(QStringLiteral("quickLaunchDockZoomSurface"));
+    QVERIFY(zoomSurface != nullptr);
+    QCOMPARE(zoomSurface->y(), -envelope);
+    QCOMPARE(zoomSurface->height(), envelope);
+    QCOMPARE(zoomSurface->width(), host.item->width());
+    QVERIFY(zoomSurface->y() + zoomSurface->height()
+            <= entries.constFirst()->y() + 0.01);
+
+    QQuickItem *second = entries.at(1);
+    auto *secondIcon = second->findChild<QQuickItem *>(
+        QStringLiteral("quickLaunchEntryIcon"));
+    QVERIFY(secondIcon != nullptr);
+    const qreal secondRestX = second->x();
+    const qreal secondRestY = second->y();
+
+    // At the falloff peak the icon paints strictly above the strip top and
+    // stays inside the reserved envelope; the slot layout never moves. The
+    // rendered scale is Behavior-driven and the offscreen platform may drop
+    // a stray synthetic hover into the envelope band, so the rendered
+    // assertion is bounded, not exact.
+    host.item->setProperty("dockPointerX", second->x() + second->width() / 2);
+    QTRY_VERIFY(secondIcon->property("scale").toDouble() > 1.4);
+    QVERIFY(secondIcon->property("scale").toDouble() <= 1.5);
+    const qreal iconTop = secondIcon->mapToItem(host.item, QPointF(0, 0)).y();
+    QVERIFY(iconTop < 0.0);
+    QVERIFY(iconTop >= -envelope);
+    QCOMPARE(second->x(), secondRestX);
+    QCOMPARE(second->y(), secondRestY);
+    QCOMPARE(second->height(), tile);
+
+    // Pointer exit settles every tile to exactly rest scale.
+    host.item->setProperty("dockPointerX", -1.0);
+    QTRY_COMPARE(secondIcon->property("scale").toDouble(), 1.0);
+    QTRY_COMPARE(entries.constFirst()
+                     ->findChild<QQuickItem *>(QStringLiteral("quickLaunchEntryIcon"))
+                     ->property("scale")
+                     .toDouble(),
+                 1.0);
+
+    // reducedMotion and the disabled dockZoom quick setting keep the tiles
+    // at rest scale even with a pointer value present.
+    host.item->setProperty("reducedMotion", true);
+    host.item->setProperty("dockPointerX", second->x() + second->width() / 2);
+    QTRY_COMPARE(secondIcon->property("scale").toDouble(), 1.0);
+    host.item->setProperty("reducedMotion", false);
+    host.item->setProperty("dockZoomEnabled", false);
+    host.item->setProperty("dockPointerX", second->x() + second->width() / 2);
+    QTRY_COMPARE(secondIcon->property("scale").toDouble(), 1.0);
 }
 
 QTEST_MAIN(DesktopControlsQmlMenuTests)
