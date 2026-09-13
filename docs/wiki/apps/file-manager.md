@@ -696,11 +696,17 @@ delegate via a job-creation test seam),
 delegate via a job-creation test seam),
 `qindaqt.file-manager-kio-remote-copier` (the production `KioRemoteCopier`'s
 scheme/authority boundary and retained KIO UI delegate via a job-creation
-test seam), and `qindaqt.file-manager-mutation-action-binding`
+test seam), `qindaqt.file-manager-remote-copy-guard` (the production
+coordinator → Main.qml → MutationDialogs route: a remote multi-selection
+fails closed before the destination dialog and the local-only mutation
+backend, one selected child still routes to the injected copier, and the
+shared Cancel action retires an in-flight remote copy through the injected
+copier with a generation-fenced late result), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay
-available and are instead gated only by the mutation-busy slot). None of
+available and are instead gated only by the mutation-busy slot; the shared
+Cancel action additionally tracks an in-flight remote copy). None of
 these rows make a DNS lookup, socket connection, or real KIO network request;
 the production adapter itself is
 otherwise only exercised by construction/linking.

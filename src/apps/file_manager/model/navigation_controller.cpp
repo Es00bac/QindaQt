@@ -282,6 +282,8 @@ void NavigationController::cancelPendingRemoteCreate() {
   }
 }
 
+void NavigationController::cancelRemoteCopy() { cancelPendingRemoteCopy(); }
+
 void NavigationController::cancelPendingRemoteCopy() {
   if (m_remoteCopy) {
     m_remoteCopy->cancelPending();

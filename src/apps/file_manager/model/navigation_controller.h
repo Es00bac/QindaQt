@@ -138,6 +138,12 @@ public:
   // refreshes only when the confirmed destination is the current folder.
   // Returns false when the request was refused before dispatch.
   Q_INVOKABLE bool copyRemoteChild(const QString &sourcePath, const QString &destinationFolder);
+  // ADR-0155: user-facing cancellation backing the shared operation.cancel
+  // action (Ctrl+Escape). Retires an in-flight remote copy exactly like
+  // navigation replacement does -- the copier kills the KIO job quietly and
+  // the generation fence discards its late result -- so Cancel works without
+  // navigating away. No-op when no remote copy is active.
+  Q_INVOKABLE void cancelRemoteCopy();
   // Returns the index of the entry named name in the current listing, or -1.
   // QML uses this to restore a deterministic selection across a refresh.
   Q_INVOKABLE int indexOfName(const QString &name) const;

@@ -58,6 +58,17 @@ destination folder. The shape mirrors ADR-0153/0154.
   in `main.cpp`; the AppShell action binding and the destination dialog
   route `file.copy` to the remote path while `remoteActive`, with local
   Copy To behavior unchanged.
+- One-child contract at the UI boundary (review repair, 2026-09-13): the
+  destination dialog refuses to open or accept a remote Copy To unless
+  exactly one current-folder child is selected, so a remote multi-selection
+  can never reach the local-only mutation backend's multi-item branch.
+  Batch remote copy remains out of scope.
+- The shared `operation.cancel` action is truthful about the active owner:
+  it enables for an in-flight remote copy as well as for local mutation
+  work, and `MutationDialogs` routes it to `NavigationController::
+  cancelRemoteCopy()` while a remote copy is busy (quiet KIO kill,
+  generation-fenced late result) and to the local mutation backend
+  otherwise.
 
 ## Consequences
 
@@ -73,10 +84,15 @@ destination folder. The shape mirrors ADR-0153/0154.
   place in the controller.
 - `qindaqt.file-manager-navigation-controller-network` proves the injected
   dispatch/validation/success-no-refresh/failure/stale-discard/lifetime
-  wiring; `qindaqt.file-manager-kio-remote-copier` proves the production
+  wiring plus direct user cancellation in place; `qindaqt.file-manager-kio-remote-copier` proves the production
   adapter's scheme/authority boundary and retained KIO UI delegate;
   `qindaqt.file-manager-mutation-action-binding` proves the action stays
-  disabled without the seam and enabled with it. All rows are no-network.
+  disabled without the seam and enabled with it, and that the shared Cancel
+  action tracks an in-flight remote copy;
+  `qindaqt.file-manager-remote-copy-guard` proves, through the production
+  coordinator → Main.qml → MutationDialogs route, that a remote
+  multi-selection fails closed before the local mutation backend and that
+  shared Cancel retires the remote copy. All rows are no-network.
 
 ## Revisit when
 

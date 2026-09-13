@@ -44,7 +44,10 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
     enabled("file.empty-trash", !mutation.busy());
     enabled("edit.undo", mutation.canUndo());
     enabled("file.restore-last", mutation.canRestore());
-    enabled("operation.cancel", mutation.busy());
+    // ADR-0155 repair (review P1): Cancel must also be reachable while a
+    // remote copy is in flight -- MutationDialogs routes it to the remote
+    // owner -- not only while the local mutation backend is busy.
+    enabled("operation.cancel", mutation.busy() || navigation.remoteCopyBusy());
   };
   QObject::connect(&mutation, &MutationController::stateChanged,
                    &coordinator, sync);

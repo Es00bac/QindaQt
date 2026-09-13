@@ -27,6 +27,14 @@ Item {
             renameDialog.open()
         } else if (actionId === "file.copy" || actionId === "file.move") {
             if (selection.length < 1) return
+            // ADR-0155 one-child contract (review P1 repair): a remote
+            // multi-selection must fail closed here -- before the dialog can
+            // open -- so it can never reach the local-only mutation
+            // backend's multi-item branch. Local multi copy/move is
+            // unchanged.
+            if (actionId === "file.copy" && navigationController.remoteActive
+                && selection.length !== 1)
+                return
             selectedItems = selection
             selectedEntry = selection[0]
             destinationKind = actionId === "file.copy" ? "copy" : "move"
@@ -46,7 +54,14 @@ Item {
         } else if (actionId === "edit.undo") {
             mutationController.undo()
         } else if (actionId === "operation.cancel") {
-            mutationController.cancel()
+            // Route to the active owner (review P1 repair): an in-flight
+            // remote copy retires through the injected copier (quiet KIO
+            // kill, generation-fenced); otherwise the local mutation
+            // backend keeps the request.
+            if (root.navigationController.remoteCopyBusy)
+                root.navigationController.cancelRemoteCopy()
+            else
+                root.mutationController.cancel()
         }
     }
 
@@ -124,6 +139,14 @@ Item {
                : qsTr("Move to local path"))
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: {
+            // Review P1 repair: re-check the remote one-child Copy contract
+            // at accept time so a stale remote multi-selection can never be
+            // routed anywhere even if it somehow reached the dialog. Local
+            // selections are unaffected.
+            if (root.navigationController.remoteActive
+                && root.destinationKind === "copy"
+                && root.selectedItems.length !== 1)
+                return
             if (root.selectedItems.length > 1) {
                 if (root.destinationKind === "copy")
                     root.mutationController.copyItemsTo(root.selectedItems,
