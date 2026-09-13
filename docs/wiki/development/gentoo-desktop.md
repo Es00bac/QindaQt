@@ -5,17 +5,26 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260910-r11`. Regenerate the
+The current dated package checkpoint is `0.1.0_pre20260913`. Regenerate the
 package Manifest whenever this immutable pin changes. Each checkpoint is a
 local reviewed snapshot and has not been pushed to the public remote. The
 ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
 the pinned commit, then place it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=0ebc2d157f74a527a7204cda6e27e0c6fe4c8896
+qq_source_commit=b7d4667657fa299adf0d9a480976ce0294f5d17a
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260910-r11.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260913.tar.gz
 ```
+
+The September 13 checkpoint packages the reviewed delivery through
+`b7d46676`: current Desktop/Customize behavior, Dock magnification and
+attention, Active Application and Global Menu anchoring, external-display
+brightness, and authenticated File Manager browsing plus remote open, rename,
+new-folder, copy, move, and KIOFuse write-back. The package now declares
+`kde-misc/kio-fuse` directly because remote write-back composition invokes its
+session D-Bus service. Installation does not replace a running compositor or
+applications; compositor/plugin adoption still requires a later login.
 
 The `-r11` revision lands the desktop gap wave: lock after waking, unlock
 grace, PowerDevil lid and power-button actions, and a single Meta+L owner
