@@ -7,19 +7,22 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Installed delivery checkpoint (September 13)
 
-Exact integrated repair source `287f126559c58e466c7e55d832f4e00a17d729e6`
-is installed through Portage as
-`gui-wm/qindaqt-desktop-0.1.0_pre20260913-r1`. This revision restores the shared
-session bus and supervised global-shortcut daemon, safe Display service
+Exact source `33504d61f0bcb573c3f7ded20beab5858a254d0c` is installed through
+Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r3`. The earlier repair
+restores the shared session bus and supervised global-shortcut daemon, safe Display service
 activation, live decoration-control placement, all six selectable appearance
 themes, desktop applet editing and Desktop Icons, Dock task-list connectivity,
 Global Menu connectivity, and compact colored container roll-up strips. It also
 isolates the Desktop surface from the full File Manager application runtime so
 the shell can start from a staged or installed tree without an accidental
-AppShell/KIO dependency.
+AppShell/KIO dependency. Revision r2 adds the actual installed KWin decoration
+catalog and repairs the Customize canvas so the top bar, Dock, and applets are
+visible and interactive. Revision r3 gives the desktop context menu positive
+Wayland surface dimensions, preventing the fatal protocol disconnect observed
+on physical right-clicks.
 
 The source build inherited the configured `MAKEOPTS=-j24 -l24`; the host plan
-contained exactly one package upgrade. `qcheck` verifies 1,335/1,335 files, the
+contained exactly one package upgrade. `qcheck` verifies 1,337/1,337 files, the
 installed VDB ebuild records the exact source pin, all inspected executables and
 native plugins have complete shared-library closure, and the installed KWin
 6.6.6 release contract passes. A private installed compositor launch loaded the
@@ -27,23 +30,26 @@ QindaQt plugin and propagated one newly bootstrapped D-Bus address to its child
 session. The installed shell independently enumerates all 12 profiles, six
 themes, and 26 applets. Portage owns the installed runtime; there were no raw
 `/usr` copies, and both the prior package and a fresh pre-merge rollback package
-remain available. The running physical desktop was deliberately not restarted,
-so adoption of the shared bus and newly installed code requires the next login.
+remain available. The compositor and session remain running; only the
+supervised shell child and Settings application were replaced, and both now map
+the installed r3 files. A post-r3 physical right-click remains the user-visible
+acceptance gesture because production test-input injection is intentionally
+disabled.
 
 ## Active outcomes
 
 ### Truthful window decorations and usable Customize canvas (September 13)
 
-The current source repairs two user-visible Settings failures. Appearance now
-lists installed native and Aurorae KWin decorations separately from QindaQt
+The installed r3 package repairs two user-visible Settings failures.
+Appearance now lists installed native and Aurorae KWin decorations separately from QindaQt
 appearance themes, applies the exact KWin plugin/theme pair through an explicit
 action, and never paints a QindaQt mock as the preview for a foreign plugin.
 Customize now derives its monitor aspect and coordinate origin from the current
 primary output, keeping the top bar, dock, and their applet targets visible and
 interactive on tall or non-zero-origin displays. The focused combined selector
-passes 16/16, including the staged installed-route row. This is source evidence;
-the Portage package and running physical Settings application have not been
-replaced.
+passes 16/16, including the staged installed-route row. The running Settings
+application now maps r3 and is open to Appearance; the installed Customize
+canvas was visually captured with its top panel, bottom Dock, and applet targets.
 
 ### Immediate desktop and File Manager usability wave (September 12)
 
