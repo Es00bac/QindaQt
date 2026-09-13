@@ -8,9 +8,17 @@ The reviewed product source at exact commit
 `0e19fba3` add the immutable ebuild, direct `kde-misc/kio-fuse` runtime
 dependency, release-contract pin, documentation, and exact Manifest entry.
 The host plan contained one package upgrade and no world update. Portage built
-a signed 31,907,840-byte gpkg with 12 memory-aware jobs and then performed a
-binary-only merge. The previous `0.1.0_pre20260912` signed gpkg remains in
-`PKGDIR`; a fresh `quickpkg` copy was created before the merge.
+a signed 31,907,840-byte gpkg under the user's completed one-time j12 exception
+and then performed a binary-only merge. The previous
+`0.1.0_pre20260912` signed gpkg remains in `PKGDIR`; a fresh `quickpkg` copy was
+created before the merge. A subsequent manager-launched validation `src/all`
+build incorrectly reused j12 after that exception had ended. Root interrupted
+only that Ninja process and resumed the preserved warm build with the configured
+`MAKEOPTS=-j24 -l24`; the continuation completed successfully. Global agent
+policy now forbids overriding configured `MAKEOPTS` or using alternate
+parallelism throttles. Future Portage builds inherit it unchanged, and direct
+builds use the equivalent job/load limits unless the user explicitly approves
+an exception.
 
 The installed VDB ebuild records the exact source pin, `qcheck` reports
 1,333/1,333 files good, and sampled compositor, KDecoration, shell and bundled
