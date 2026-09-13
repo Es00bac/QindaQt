@@ -84,20 +84,13 @@ Item {
     readonly property real crossAxisInset: Tokens.space["1"]
     readonly property int effectiveDockTileSize: dockMode ? centerZone.effectiveDockTileSize : dockTileSize
     readonly property bool dockOverflowFallback: dockMode && centerZone.dockOverflowFallback
-    // AGENT-CONTRACT: the dock surface reserves a magnification envelope
-    // above the painted shelf — maxDockTileForHeight fits tile + dockOverscanFor
-    // inside the surface, and dockInputBounds/PanelSurfaceBlur mask and blur
-    // exactly that band. Every zone viewport exposes the same envelope so
-    // magnified tiles stay visible and interactive above the shelf, while
-    // the shelf and the slot layout never move.
-    readonly property real dockZoomHeadroom: dockMode
-        ? centerZone.dockZoomHeadroom : 0
+    // Dock zone viewports are placed by DockZoneViewport (shared envelope arithmetic).
+    DockZoneViewport {
+        id: dockZoneViewport
+    }
     readonly property bool dockUsesSideZones: dockMode
         && (startZone.desiredExtent > 0 || endZone.desiredExtent > 0)
-    readonly property rect inputBounds: dockMode
-        ? centerZone.dockInputBounds(material.x, material.y, material.width,
-            material.height, width, height, contentInset)
-        : Qt.rect(0, 0, width, height)
+    readonly property rect inputBounds: dockMode ? centerZone.dockInputBounds(material.x, material.y, material.width, material.height, width, height, contentInset) : Qt.rect(0, 0, width, height)
 
     clip: true
 
@@ -279,13 +272,9 @@ Item {
         objectName: "panelZoneStart"
         vertical: !root.horizontal
         x: root.horizontal ? root.contentInset : root.crossAxisInset
-        y: root.horizontal ? (root.dockMode
-                ? root.height - root.effectiveDockTileSize - root.dockZoomHeadroom
-                : root.crossAxisInset) : root.contentInset
+        y: root.horizontal ? (root.dockMode ? dockZoneViewport.shelfY(root.height, root.effectiveDockTileSize, centerZone.dockZoomHeadroom) : root.crossAxisInset) : root.contentInset
         width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
-        height: root.horizontal ? (root.dockMode
-            ? root.effectiveDockTileSize + root.dockZoomHeadroom
-            : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
+        height: root.horizontal ? (root.dockMode ? dockZoneViewport.shelfExtent(root.effectiveDockTileSize, centerZone.dockZoomHeadroom) : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
         zone: "start"
         panel: root.panel
         theme: root.theme
@@ -313,13 +302,9 @@ Item {
         objectName: "panelZoneCenter"
         vertical: !root.horizontal
         x: root.horizontal ? root.centerOffset : root.crossAxisInset
-        y: root.horizontal ? (root.dockMode
-                ? root.height - root.effectiveDockTileSize - root.dockZoomHeadroom
-                : root.crossAxisInset) : root.centerOffset
+        y: root.horizontal ? (root.dockMode ? dockZoneViewport.shelfY(root.height, root.effectiveDockTileSize, centerZone.dockZoomHeadroom) : root.crossAxisInset) : root.centerOffset
         width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
-        height: root.horizontal ? (root.dockMode
-            ? root.effectiveDockTileSize + root.dockZoomHeadroom
-            : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
+        height: root.horizontal ? (root.dockMode ? dockZoneViewport.shelfExtent(root.effectiveDockTileSize, centerZone.dockZoomHeadroom) : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
         zone: "center"
         panel: root.panel
         theme: root.theme
@@ -347,13 +332,9 @@ Item {
         objectName: "panelZoneEnd"
         vertical: !root.horizontal
         x: root.horizontal ? root.contentInset + root.extent - root.zoneExtent(endZone) : root.crossAxisInset
-        y: root.horizontal ? (root.dockMode
-                ? root.height - root.effectiveDockTileSize - root.dockZoomHeadroom
-            : root.crossAxisInset) : root.contentInset + root.extent - root.zoneExtent(endZone)
+        y: root.horizontal ? (root.dockMode ? dockZoneViewport.shelfY(root.height, root.effectiveDockTileSize, centerZone.dockZoomHeadroom) : root.crossAxisInset) : root.contentInset + root.extent - root.zoneExtent(endZone)
         width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - root.crossAxisInset * 2)
-        height: root.horizontal ? (root.dockMode
-            ? root.effectiveDockTileSize + root.dockZoomHeadroom
-            : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
+        height: root.horizontal ? (root.dockMode ? dockZoneViewport.shelfExtent(root.effectiveDockTileSize, centerZone.dockZoomHeadroom) : Math.max(0, parent.height - root.crossAxisInset * 2)) : root.zoneExtent(this)
         zone: "end"
         panel: root.panel
         theme: root.theme
