@@ -13,6 +13,7 @@
 
 #include <memory>
 
+using QindaQt::Apps::SettingsPower::TestSupport::StubExternalBrightness;
 using QindaQt::Apps::SettingsPower::TestSupport::StubPowerSettingsModel;
 using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 using QindaQt::Apps::SettingsPower::TestSupport::StubIdleDisplaySettings;
@@ -35,6 +36,7 @@ private Q_SLOTS:
   void rendersWideTruthAndAccessibleControls();
   void routesKeyboardAndProfileActions();
   void internalSliderStaysResponsiveThroughRepublication();
+  void externalDisplayRowsOfferAdmittedSlidersAndReadOnlyReasons();
   void sessionActionsHaveKeyboardParityAndDestructiveConfirmation();
   void compactAndUnavailableFocusRemainAdmitted();
   void screenLockControlsRespectAutomaticLock();
@@ -236,6 +238,68 @@ void PowerPageTest::internalSliderStaysResponsiveThroughRepublication() {
   QTRY_VERIFY(m_model->internalBrightnessCount >= before + 2);
   QCOMPARE(findItem(page, sliderName), slider);
   QVERIFY(m_model->lastNormalized > 6'000);
+}
+
+void PowerPageTest::externalDisplayRowsOfferAdmittedSlidersAndReadOnlyReasons() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto &external = m_model->externalBrightnessState;
+  const QString sliderName =
+      QStringLiteral("powerExternalBrightnessSlider_external-1");
+  QVERIFY(findItem(page, sliderName) == nullptr);
+  external.setRows({
+      StubExternalBrightness::row(QStringLiteral("external-1"),
+          QStringLiteral("Studio monitor"), true, 6'000, {}),
+      StubExternalBrightness::row(QStringLiteral("external-2"),
+          QStringLiteral("Office TV"), false, 0,
+          QStringLiteral("This display does not offer brightness control"))});
+  QCoreApplication::processEvents();
+
+  auto *slider = findItem(page, sliderName);
+  QVERIFY2(slider != nullptr, "external display brightness has no slider");
+  QVERIFY(slider->isVisible());
+  QVERIFY(slider->isEnabled());
+  QCOMPARE(slider->property("value").toReal(), 6'000.0);
+  auto *accessible = QAccessible::queryAccessibleInterface(slider);
+  QVERIFY(accessible != nullptr);
+  QCOMPARE(accessible->role(), QAccessible::Slider);
+  QVERIFY(accessible->text(QAccessible::Name).contains(QStringLiteral("Studio monitor")));
+  auto *level = findItem(page, QStringLiteral("powerExternalBrightness_external-1"));
+  QVERIFY(level != nullptr);
+  QVERIFY(level->property("text").toString().contains(QStringLiteral("60%")));
+
+  // A display without brightness control stays listed with its reason and
+  // offers no control.
+  auto *readOnly = findItem(page,
+      QStringLiteral("powerExternalBrightnessSlider_external-2"));
+  QVERIFY(readOnly != nullptr);
+  QVERIFY(!readOnly->isVisible());
+  QVERIFY(!readOnly->isEnabled());
+  auto *reason = findItem(page, QStringLiteral("powerExternalReason_external-2"));
+  QVERIFY(reason != nullptr);
+  QVERIFY(reason->isVisible());
+  QVERIFY(reason->property("text").toString().contains(QStringLiteral("does not offer")));
+
+  slider->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), slider);
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QTRY_COMPARE(external.requestCount, 1);
+  QCOMPARE(external.lastTarget, QStringLiteral("external-1"));
+  QCOMPARE(external.lastNormalized, 6'100);
+
+  // A fence disables the same control; failure text stays visible.
+  external.errorText = QStringLiteral(
+      "The display brightness change could not be confirmed. It was not replayed.");
+  external.setAvailable(0, false);
+  QCoreApplication::processEvents();
+  QCOMPARE(findItem(page, sliderName), slider);
+  QVERIFY(!slider->isEnabled());
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QCOMPARE(external.requestCount, 1);
+  auto *error = findItem(page, QStringLiteral("powerExternalBrightnessError"));
+  QVERIFY(error != nullptr);
+  QVERIFY(error->isVisible());
+  QVERIFY(error->property("text").toString().contains(QStringLiteral("not replayed")));
 }
 
 void PowerPageTest::compactAndUnavailableFocusRemainAdmitted() {

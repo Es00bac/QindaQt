@@ -150,8 +150,56 @@ Q_SIGNALS:
   void applyFinished(bool success, const QString &error);
 };
 
+// External-display rows as the injected ADR-0150 route model presents them.
+class StubExternalBrightness final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QVariantList rows MEMBER rows NOTIFY viewChanged)
+  Q_PROPERTY(bool busy MEMBER busy NOTIFY viewChanged)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
+  Q_PROPERTY(QString operationStatusText MEMBER operationStatusText NOTIFY viewChanged)
+
+public:
+  using QObject::QObject;
+  QVariantList rows;
+  bool busy = false;
+  QString errorText;
+  QString operationStatusText;
+  int requestCount = 0;
+  QString lastTarget;
+  int lastNormalized = -1;
+
+  static QVariantMap row(const QString &id, const QString &name, bool settable,
+                         int normalized, const QString &reason) {
+    return {{QStringLiteral("id"), id}, {QStringLiteral("name"), name},
+      {QStringLiteral("known"), settable}, {QStringLiteral("normalized"), normalized},
+      {QStringLiteral("settable"), settable}, {QStringLiteral("available"), settable},
+      {QStringLiteral("reason"), reason},
+      {QStringLiteral("accessibleDescription"), settable
+           ? QStringLiteral("%1, brightness %2 percent").arg(name).arg(normalized / 100)
+           : QStringLiteral("%1, read-only").arg(name)}};
+  }
+  void setRows(const QVariantList &value) {
+    rows = value;
+    Q_EMIT viewChanged();
+  }
+  void setAvailable(qsizetype index, bool available) {
+    QVariantMap value = rows.at(index).toMap();
+    value.insert(QStringLiteral("available"), available);
+    rows[index] = value;
+    Q_EMIT viewChanged();
+  }
+
+  Q_INVOKABLE bool requestBrightness(const QString &id, int normalized) {
+    ++requestCount; lastTarget = id; lastNormalized = normalized; return true;
+  }
+
+Q_SIGNALS:
+  void viewChanged();
+};
+
 class StubPowerSettingsModel final : public QObject {
   Q_OBJECT
+  Q_PROPERTY(QObject *externalBrightness READ externalBrightness CONSTANT)
   Q_PROPERTY(bool loading MEMBER loading NOTIFY viewChanged)
   Q_PROPERTY(bool ready MEMBER ready NOTIFY viewChanged)
   Q_PROPERTY(bool degraded MEMBER degraded NOTIFY viewChanged)
@@ -242,6 +290,10 @@ public:
 
   [[nodiscard]] QObject *sessionActions() noexcept { return &sessionActionState; }
   [[nodiscard]] QObject *lidPolicy() noexcept { return &lidPolicyState; }
+  StubExternalBrightness externalBrightnessState;
+  [[nodiscard]] QObject *externalBrightness() noexcept {
+    return &externalBrightnessState;
+  }
 
   Q_INVOKABLE bool retry() { ++retryCount; return true; }
   Q_INVOKABLE bool requestProfile(const QString &id) {

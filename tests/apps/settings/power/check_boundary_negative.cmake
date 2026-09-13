@@ -26,7 +26,7 @@ endfunction()
 file(REMOVE_RECURSE "${POISON_ROOT}")
 file(MAKE_DIRECTORY "${POISON_ROOT}")
 file(WRITE "${POISON_ROOT}/allowed.cpp"
-    "#include <qindaqt/services/power_client/power_client.h>\n#include <qindaqt/services/brightness_model/brightness_math.h>\n#include <QtCore/QObject>\n")
+    "#include <qindaqt/services/power_client/power_client.h>\n#include <qindaqt/services/brightness_model/brightness_math.h>\n#include <qindaqt/services/display_client/client.h>\n#include <QtCore/QObject>\n")
 execute_process(COMMAND "${CMAKE_COMMAND}" "-DSCAN_ROOT=${POISON_ROOT}"
     -P "${CHECK_SCRIPT}" RESULT_VARIABLE allowed_status
     OUTPUT_VARIABLE allowed_output ERROR_VARIABLE allowed_error)
@@ -40,6 +40,12 @@ require_rejected(sibling "poison.cpp"
 require_rejected(private_service "poison.cpp"
     "#include <qindaqt/services/power_service/resident_power_service.h>"
     "public-client-only boundary")
+require_rejected(display_service "poison.cpp"
+    "#include <qindaqt/services/display_service/resident_display_service.h>"
+    "public-client-only boundary")
+require_rejected(display_transport "poison.cpp"
+    "#include <qindaqt/services/display_client/qt_display_transport.h>"
+    "Display transport outside its composition root")
 require_rejected(direct_dbus "poison.cpp"
     "#include <QtDBus/QDBusConnection>"
     "direct D-Bus")

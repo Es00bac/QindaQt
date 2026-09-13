@@ -48,7 +48,36 @@ public:
   QList<DisplayTransaction::ApplyRequest> requests;
   QList<quint64> requestLineages;
   quint64 lineage = 0;
+
+  // ADR-0150 immediate brightness: record each writer request and let the
+  // test drive the compositor acknowledgement and observed republication.
+  DisplayService::BrightnessSubmitStatus
+  requestBrightness(const DisplayService::BrightnessApplyRequest &request) override {
+    brightnessRequests.push_back(request);
+    return DisplayService::BrightnessSubmitStatus::Accepted;
+  }
+  void publishDevices(const DisplayService::DeviceBrightnessFrame &frame) {
+    Q_ASSERT(observer != nullptr);
+    observer->brightnessDevicesObserved(frame);
+  }
+  void completeBrightness(DisplayService::BrightnessApplyOutcome outcome) {
+    Q_ASSERT(observer != nullptr && !brightnessRequests.isEmpty());
+    observer->brightnessCompleted(brightnessRequests.constLast().requestId, outcome);
+  }
+
+  QList<DisplayService::BrightnessApplyRequest> brightnessRequests;
 };
+
+// The capable, observed device behind inventoryOutput() on one live writer owner.
+inline DisplayService::DeviceBrightnessFrame brightnessDevices(quint32 value) {
+  return {.ownerGeneration = 5,
+          .devices = {{.connectorName = QStringLiteral("DP-1"),
+                       .runtimeUuid = QStringLiteral("runtime-uuid"),
+                       .enabled = true,
+                       .capable = true,
+                       .observed = true,
+                       .value = value}}};
+}
 
 class FakeInventorySource final : public DisplayService::InventorySource {
 public:

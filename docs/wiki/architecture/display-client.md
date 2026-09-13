@@ -56,6 +56,42 @@ Publication is whole-value and fail closed:
 `snapshot()` returns an optional owning value. Consumers must not manufacture a
 revision-zero placeholder when no snapshot is held.
 
+## Immediate brightness
+
+`Client` also binds Display1's D7 immediate brightness methods
+([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)).
+After each accepted complete snapshot read, including the repeated topology
+revision that `Changed` carries for a brightness-only republication, it issues
+one `GetBrightness` read.
+
+`brightness()` holds rows only while they pass the public join against the
+held snapshot: same epoch, same topology revision, and the same stable output
+order.
+
+- Within one epoch, an older or same-revision hybrid reply never replaces the
+  published rows, and an exact duplicate emits no `brightnessChanged`.
+- Rows that name a newer topology revision are withdrawn, and the snapshot is
+  read first.
+- A new topology revision, owner loss, explicit unavailability, `stop()`, or a
+  failed read withdraws the rows without changing the topology client state.
+  An older Display1 without brightness therefore simply publishes none.
+
+`setOutputBrightness()` shares the single serialized mutation slot. Before any
+wire call it refuses:
+
+- a stopped client;
+- a pending operation;
+- missing rows;
+- an invalid value;
+- a request whose epoch or brightness revision differs from the published rows
+  (`stale-revision`);
+- a stable ID that is not exactly one joined row (`unknown-output`).
+
+An accepted request is forwarded unchanged. Its result has kind
+`ImmediatePolicy` and arrives only when the service finishes. A success must
+name the submitted epoch and brightness revision. Owner loss, timeout, and
+mismatched results complete once as `Uncertain` and are never replayed.
+
 ## Client states and operation results
 
 | State | Meaning |
@@ -117,11 +153,24 @@ env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
   -R '^qindaqt\.display-client-'
 ```
 
-Four deterministic rows cover lineage, publication, operation completion, and
-coordinator policy through the injected public transport seam. One serial row
-composes the real Qt transport and resident service on a disposable private
-session bus, including absent-owner activation, owner replacement, stale
-candidate rejection, and teardown. These rows open no display and do not prove
+Five deterministic rows cover lineage, publication, operation completion,
+coordinator policy, and immediate brightness through the injected public
+transport seam. The brightness row (`qindaqt.display-client-brightness`)
+covers:
+
+- the topology join and monotonic republication;
+- withdrawal on lineage loss;
+- local refusals that never reach the transport;
+- the delayed reply and a success that names another revision;
+- a typed busy result;
+- owner loss and timeout without replay.
+
+One serial row composes the real Qt transport and resident service on a
+disposable private session bus. It covers absent-owner activation, owner
+replacement, stale candidate rejection, and teardown. It also covers a joined
+`GetBrightness` read and an exact `SetOutputBrightness` request: the delayed
+reply follows the observed republication, and service loss completes the
+request uncertain. These rows open no display and do not prove
 that KWin accepted an output configuration. Public output-management writer,
 durable journal, Settings UI, nested compositor convergence, hardware, and
 resource qualification remain later milestones.

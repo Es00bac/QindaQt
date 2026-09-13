@@ -12,6 +12,10 @@ ColumnLayout {
     required property var powerSettings
     property Item firstActionTarget: null
     property var actionRegistrations: ({})
+    // ADR-0150: injected external-display rows; null when the route has none.
+    readonly property var externalBrightness: root.powerSettings.externalBrightness ?? null
+    readonly property var externalRows: root.externalBrightness !== null
+        ? root.externalBrightness.rows : []
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
 
@@ -22,7 +26,8 @@ ColumnLayout {
     function rowIds(rows) {
         return rows.map(row => row.id)
     }
-    // Internal panels register first (keys 0-99), keyboard backlights after.
+    // Internal panels register first (keys 0-99), external displays next
+    // (100-199), keyboard backlights after (200 and up).
     function updateAction(key, item) {
         root.actionRegistrations[key] = item
         root.refreshTarget()
@@ -121,6 +126,102 @@ ColumnLayout {
 
     SectionHeader {
         Layout.fillWidth: true
+        title: qsTr("External display brightness")
+        description: qsTr("Adjust connected monitors whose brightness the compositor can control.")
+    }
+
+    Repeater {
+        id: externalRepeater
+        model: root.rowIds(root.externalRows)
+
+        delegate: FormSurface {
+            id: externalRow
+            required property int index
+            readonly property var row: root.externalRows[index] ?? ({})
+            Layout.fillWidth: true
+            padding: Tokens.space["3"]
+            Accessible.role: Accessible.ListItem
+            Accessible.name: externalRow.row.name ?? ""
+            Accessible.description: externalRow.row.accessibleDescription ?? ""
+
+            contentItem: ColumnLayout {
+                spacing: Tokens.space["2"]
+                Label {
+                    Layout.fillWidth: true
+                    text: externalRow.row.name ?? ""
+                    font.weight: Font.DemiBold
+                }
+                Slider {
+                    id: externalSlider
+                    objectName: "powerExternalBrightnessSlider_" + (externalRow.row.id ?? "")
+                    Layout.fillWidth: true
+                    visible: externalRow.row.known === true
+                    from: 0
+                    to: 10000
+                    stepSize: 100
+                    value: externalRow.row.known === true ? externalRow.row.normalized : 0
+                    enabled: externalRow.row.available === true
+                    accessibleName: qsTr("%1 brightness").arg(externalRow.row.name ?? "")
+                    accessibleDescription: externalRow.row.accessibleDescription ?? ""
+                    onEnabledChanged: root.updateAction(100 + externalRow.index, externalSlider)
+                    Component.onCompleted: root.updateAction(100 + externalRow.index, externalSlider)
+                    Component.onDestruction: root.removeAction(100 + externalRow.index)
+                    onMoved: if (enabled) root.externalBrightness.requestBrightness(
+                                 externalRow.row.id, Math.round(value))
+                }
+                Label {
+                    objectName: "powerExternalBrightness_" + (externalRow.row.id ?? "")
+                    Layout.fillWidth: true
+                    text: externalRow.row.known === true
+                        ? qsTr("Brightness: %1%").arg(Math.round(externalRow.row.normalized / 100))
+                        : qsTr("Brightness is unavailable")
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: text
+                }
+                Label {
+                    objectName: "powerExternalReason_" + (externalRow.row.id ?? "")
+                    Layout.fillWidth: true
+                    visible: text.length > 0
+                    text: externalRow.row.reason ?? ""
+                    wrapMode: Text.Wrap
+                    muted: true
+                    Accessible.name: text
+                }
+            }
+        }
+    }
+
+    Label {
+        objectName: "powerExternalBrightnessStatus"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: root.externalBrightness !== null ? root.externalBrightness.operationStatusText : ""
+        wrapMode: Text.Wrap
+        Accessible.role: Accessible.StaticText
+        Accessible.name: text
+    }
+
+    Label {
+        objectName: "powerExternalBrightnessError"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: root.externalBrightness !== null ? root.externalBrightness.errorText : ""
+        wrapMode: Text.Wrap
+        color: Tokens.fg.default
+        Accessible.role: Accessible.AlertMessage
+        Accessible.name: text
+    }
+
+    Label {
+        Layout.fillWidth: true
+        visible: externalRepeater.count === 0
+        text: qsTr("No external display brightness control is currently reported.")
+        muted: true
+        Accessible.name: text
+    }
+
+    SectionHeader {
+        Layout.fillWidth: true
         title: qsTr("Keyboard brightness")
         description: qsTr("Adjust the keyboard backlight.")
     }
@@ -159,11 +260,11 @@ ColumnLayout {
                     accessibleDescription: qsTr("%1. Brightness %2%")
                         .arg(keyboardRow.row.name ?? "")
                         .arg(Math.round(value / 100))
-                    onEnabledChanged: root.updateAction(100 + keyboardRow.index,
+                    onEnabledChanged: root.updateAction(200 + keyboardRow.index,
                                                         keyboardSlider)
-                    Component.onCompleted: root.updateAction(100 + keyboardRow.index,
+                    Component.onCompleted: root.updateAction(200 + keyboardRow.index,
                                                              keyboardSlider)
-                    Component.onDestruction: root.removeAction(100 + keyboardRow.index)
+                    Component.onDestruction: root.removeAction(200 + keyboardRow.index)
                     onMoved: if (enabled) root.powerSettings.requestKeyboardBrightness(
                                  keyboardRow.row.id, Math.round(value))
                 }

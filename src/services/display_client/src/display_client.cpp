@@ -31,6 +31,7 @@ Client::Client(DisplayTransport *transport, QObject *parent)
           &Client::acceptOperationReply);
   connect(m_transport, &DisplayTransport::activationFinished, this,
           &Client::acceptActivationFinished);
+  initializeBrightness();
 
   connect(&m_fetchTimer, &QTimer::timeout, this, &Client::onFetchTimeout);
   connect(&m_operationTimer, &QTimer::timeout, this,
@@ -93,6 +94,7 @@ void Client::stop() {
 
   m_owner.clear();
   m_snapshot.reset();
+  clearBrightness();
   m_announcedEpoch.clear();
   m_activationInFlight = false;
 
@@ -398,6 +400,11 @@ void Client::onOperationTimeout() {
 }
 
 void Client::publishState(ClientState state, const QString &reasonCode) {
+  // AGENT-GUARD: brightness rows join a held snapshot. Every path that drops
+  // the snapshot (owner loss, unavailability) withdraws them here.
+  if (!m_snapshot.has_value()) {
+    clearBrightness();
+  }
   if (m_state == state && m_reasonCode == reasonCode) {
     return;
   }

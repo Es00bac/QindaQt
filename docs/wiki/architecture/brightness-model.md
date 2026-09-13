@@ -73,7 +73,10 @@ The output contains authoritative `current` truth only; no requested-value
 field exists. Internal-panel mutation is the Power client
 `SetInternalBrightness` operation
 ([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)), and
-external-display mutation remains reserved for PB-5 after D7. Keyboard and
+external-display mutation is Display1 `SetOutputBrightness`
+([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)),
+issued per output by the Power Settings route through the public Display
+client. Keyboard and
 internal-panel mutations are Power client operations with typed lineage and no
 automatic retry; this model gains no mutation authority from either. Rapid-input coalescing belongs to that later client-side mutation path,
 not this generation composer. The module owns no QObject, thread, timer, file,

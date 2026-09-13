@@ -347,4 +347,62 @@ void QtDisplayTransport::submitMethod(const QString &owner,
           });
 }
 
+void QtDisplayTransport::fetchBrightness(const QString &owner,
+                                         const quint64 requestId) {
+  if (!d->running || owner.isEmpty() || owner != d->owner) {
+    QMetaObject::invokeMethod(
+        this,
+        [this, owner, requestId]() {
+          if (d->running) {
+            Q_EMIT brightnessReply(owner, requestId, false, {},
+                                   QStringLiteral("owner-unavailable"));
+          }
+        },
+        Qt::QueuedConnection);
+    return;
+  }
+  const QDBusMessage call = QDBusMessage::createMethodCall(
+      owner, QString::fromLatin1(Display::kObjectPath),
+      QString::fromLatin1(Display::kInterfaceName),
+      QStringLiteral("GetBrightness"));
+  auto *watcher =
+      new QDBusPendingCallWatcher(d->connection.asyncCall(call), this);
+  connect(watcher, &QDBusPendingCallWatcher::finished, this,
+          [this, watcher, owner, requestId](QDBusPendingCallWatcher *) {
+            const QDBusMessage reply = watcher->reply();
+            watcher->deleteLater();
+            if (!d->running) {
+              return;
+            }
+            if (reply.type() == QDBusMessage::ErrorMessage) {
+              Q_EMIT brightnessReply(owner, requestId, false, {},
+                                     normalizedError(QDBusError(reply)));
+              return;
+            }
+            Display::BrightnessSnapshot brightness;
+            const bool decoded =
+                reply.arguments().size() == 1 &&
+                reply.arguments().constFirst().canConvert<QDBusArgument>() &&
+                Display::decodeBrightnessSnapshotArgument(
+                    qvariant_cast<QDBusArgument>(reply.arguments().constFirst()),
+                    brightness)
+                    .accepted;
+            if (!decoded) {
+              Q_EMIT brightnessReply(owner, requestId, false, {},
+                                     QStringLiteral("malformed-reply"));
+              return;
+            }
+            Q_EMIT brightnessReply(owner, requestId, true, brightness, {});
+          });
+}
+
+void QtDisplayTransport::submitOutputBrightness(
+    const QString &owner, const quint64 requestId,
+    const Display::BrightnessRequest &request) {
+  // Display1 holds this reply until the request finishes (ADR-0150); the
+  // client's operation timeout bounds the wait.
+  submitMethod(owner, requestId, QStringLiteral("SetOutputBrightness"),
+               {QVariant::fromValue(request)});
+}
+
 } // namespace QindaQt::DisplayClient

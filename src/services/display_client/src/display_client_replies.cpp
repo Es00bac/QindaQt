@@ -17,7 +17,9 @@ Display::ErrorCode errorCodeForReason(const QString &reasonCode) {
   if (reasonCode == QStringLiteral("invalid-candidate")) {
     return Display::ErrorCode::InvalidCandidate;
   }
-  if (reasonCode == QStringLiteral("invalid-transaction-id")) {
+  if (reasonCode == QStringLiteral("invalid-transaction-id") ||
+      reasonCode == QStringLiteral("invalid-brightness-request") ||
+      reasonCode == QStringLiteral("unknown-output")) {
     return Display::ErrorCode::InvalidCandidate;
   }
   if (reasonCode == QStringLiteral("client-not-running") ||
@@ -117,10 +119,20 @@ void Client::acceptSnapshotReply(const QString &owner, quint64 requestId,
 
   const bool exactDuplicate = m_snapshot.has_value() && snapshot == *m_snapshot;
   m_announcedEpoch.clear();
+  // AGENT-GUARD: withdraw brightness that no longer joins before observers see
+  // the new snapshot, so rows are never presented against another topology.
+  if (m_brightness.has_value() &&
+      (m_brightness->serviceEpoch != snapshot.serviceEpoch ||
+       m_brightness->topologyRevision != snapshot.revision)) {
+    clearBrightness();
+  }
   if (!exactDuplicate) {
     publishSnapshotState(snapshot);
   }
   publishState(operationPending() ? ClientState::Busy : ClientState::Ready, {});
+  // Changed repeats the topology revision for a brightness-only
+  // republication, so every accepted complete read also refreshes brightness.
+  requestBrightness();
 
   if (m_refetchNeeded) {
     m_refetchNeeded = false;
@@ -150,11 +162,15 @@ void Client::acceptOperationReply(const QString &owner, quint64 requestId,
   } else {
     const bool success = result.status == Display::OperationStatus::Accepted ||
                          result.status == Display::OperationStatus::Succeeded;
+    // An immediate success must also name the brightness revision it was
+    // submitted against (ADR-0150).
     const bool matchingLineage =
         owner == m_owner && result.kind == publicKind(op.kind) &&
         (result.transactionId.isEmpty() ||
          result.transactionId == op.transactionId) &&
-        (!success || result.initiatingEpoch == op.epochAtSubmit);
+        (!success || result.initiatingEpoch == op.epochAtSubmit) &&
+        (op.kind != OperationKind::Brightness || !success ||
+         result.initiatingRevision == op.revisionAtSubmit);
     if (!matchingLineage) {
       failure = QStringLiteral("lineage-mismatch");
     }
@@ -212,6 +228,10 @@ Display::OperationResult Client::localResult(OperationKind kind,
   result.initiatingEpoch =
       m_snapshot ? m_snapshot->serviceEpoch : QStringLiteral("client-local");
   result.initiatingRevision = m_snapshot ? m_snapshot->revision : 1;
+  if (kind == OperationKind::Brightness && m_brightness.has_value()) {
+    result.initiatingEpoch = m_brightness->serviceEpoch;
+    result.initiatingRevision = m_brightness->revision;
+  }
   result.observedRevision = result.initiatingRevision;
   return result;
 }
@@ -226,6 +246,8 @@ Display::OperationKind Client::publicKind(OperationKind kind) {
     return Display::OperationKind::Confirm;
   case OperationKind::Cancel:
     return Display::OperationKind::Cancel;
+  case OperationKind::Brightness:
+    return Display::OperationKind::ImmediatePolicy;
   }
   return Display::OperationKind::Stage;
 }

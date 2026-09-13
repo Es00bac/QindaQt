@@ -32,9 +32,10 @@ bool usableAvailability(const Availability availability) {
 PowerSettingsModel::PowerSettingsModel(Power::PowerClient &client,
                                        QObject *sessionActions,
                                        QObject *lidPolicy,
+                                       QObject *externalBrightness,
                                        QObject *parent)
     : QObject(parent), m_client(client), m_sessionActions(sessionActions),
-      m_lidPolicy(lidPolicy) {
+      m_lidPolicy(lidPolicy), m_externalBrightness(externalBrightness) {
   m_debounceTimer.setSingleShot(true);
   m_debounceTimer.setInterval(120);
   m_convergenceTimer.setSingleShot(true);

@@ -43,6 +43,11 @@ qindaqt_add_display_client_test(
     tst_display_client_coordinator.cpp
     qindaqt.display-client-coordinator
 )
+qindaqt_add_display_client_test(
+    qindaqt_display_client_brightness_tests
+    tst_display_client_brightness.cpp
+    qindaqt.display-client-brightness
+)
 
 qt_add_executable(
     qindaqt_display_client_private_bus_tests

@@ -21,6 +21,11 @@ public:
     QString transactionId;
     Display::Candidate candidate;
   };
+  struct BrightnessSubmission {
+    QString owner;
+    quint64 requestId = 0;
+    Display::BrightnessRequest request;
+  };
 
   void start() override { running = true; }
   void stop() override { running = false; }
@@ -28,6 +33,10 @@ public:
 
   void fetchSnapshot(const QString &owner, quint64 requestId) override {
     fetches.push_back({owner, requestId});
+  }
+
+  void fetchBrightness(const QString &owner, quint64 requestId) override {
+    brightnessFetches.push_back({owner, requestId});
   }
 
   void submitStage(const QString &owner, quint64 requestId,
@@ -59,6 +68,11 @@ public:
     maybeReplyInline(operations.constLast());
   }
 
+  void submitOutputBrightness(const QString &owner, quint64 requestId,
+                              const Display::BrightnessRequest &request) override {
+    brightnessSubmissions.push_back({owner, requestId, request});
+  }
+
   void publishOwner(const QString &owner) { Q_EMIT ownerChanged(owner); }
   void publishInvalidation(const QString &owner, const QString &epoch,
                            quint64 revision, bool available = true) {
@@ -71,6 +85,12 @@ public:
                      bool success = true, const QString &reason = {}) {
     Q_EMIT snapshotReply(fetch.owner, fetch.requestId, success, snapshot,
                          reason);
+  }
+  void replyBrightness(const Fetch &fetch,
+                       const Display::BrightnessSnapshot &brightness,
+                       bool success = true, const QString &reason = {}) {
+    Q_EMIT brightnessReply(fetch.owner, fetch.requestId, success, brightness,
+                           reason);
   }
   void replyOperation(const Operation &operation,
                       const Display::OperationResult &result,
@@ -88,6 +108,8 @@ public:
   int activationRequests = 0;
   QList<Fetch> fetches;
   QList<Operation> operations;
+  QList<Fetch> brightnessFetches;
+  QList<BrightnessSubmission> brightnessSubmissions;
   bool inlineOperationReply = false;
   Display::OperationResult inlineResult;
 

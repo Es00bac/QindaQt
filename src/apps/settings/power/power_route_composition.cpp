@@ -2,9 +2,12 @@
 
 #include "power_route_composition.h"
 
+#include <qindaqt/apps/settings_power/external_display_brightness_model.h>
 #include <qindaqt/apps/settings_power/idle_display_settings.h>
 #include <qindaqt/apps/settings_power/power_settings_model.h>
 #include <qindaqt/apps/settings_power/screen_lock_settings.h>
+#include <qindaqt/services/display_client/client.h>
+#include <qindaqt/services/display_client/qt_display_transport.h>
 #include <qindaqt/services/power_client/power_client.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/services/session_actions/session_actions_client.h>
@@ -24,6 +27,8 @@ class PowerRouteComposition::Private final {
 public:
   Private()
       : transport(QDBusConnection::sessionBus()), client(&transport),
+        displayTransport(QDBusConnection::sessionBus()),
+        displayClient(&displayTransport), externalBrightness(displayClient),
         sessionActions(QDBusConnection::sessionBus(),
                        QDBusConnection::systemBus()),
         screenLockStore(std::make_unique<IniScreenLockPreferencesStore>(
@@ -37,8 +42,9 @@ public:
         idleDisplaySettings(idlePreferences, idleClient),
         lidPowerButton(QDBusConnection::sessionBus()),
         lidPowerButtonPort(lidPowerButton),
-        model(client, &sessionActions, &lidPowerButtonPort) {
+        model(client, &sessionActions, &lidPowerButtonPort, &externalBrightness) {
     client.start();
+    displayClient.start();
     sessionActions.start();
     lidPowerButton.start();
     // AGENT-GUARD: offscreen harnesses run with QT_FATAL_WARNINGS and no
@@ -56,12 +62,18 @@ public:
   ~Private() {
     sessionActions.stop();
     client.stop();
+    displayClient.stop();
     idleClient.stop();
     lidPowerButton.stop();
   }
 
   Power::QtPowerTransport transport;
   Power::PowerClient client;
+  // ADR-0150: external-display brightness uses its own public Display client;
+  // member order destroys the model and client before their transport.
+  DisplayClient::QtDisplayTransport displayTransport;
+  DisplayClient::Client displayClient;
+  ExternalDisplayBrightnessModel externalBrightness;
   Services::SessionActions::SessionActionsClient sessionActions;
   std::unique_ptr<IniScreenLockPreferencesStore> screenLockStore;
   QtScreenLockConfigureClient screenLockConfigure;

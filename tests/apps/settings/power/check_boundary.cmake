@@ -26,12 +26,20 @@ set(allowed_public_include_prefixes
     "qindaqt/session/desktop_controls/"
     # The composition's lid/power-button port forwards to the session's
     # PowerDevil adapter behind an injected abstract port (ADR-0132).
-    "qindaqt/session/powerdevil_lid/")
+    "qindaqt/session/powerdevil_lid/"
+    # External-display brightness consumes the public Display client and its
+    # protocol values (ADR-0150); never the Display service or writer.
+    "qindaqt/services/display_client/"
+    "qindaqt/services/display_protocol/")
 
 foreach(source IN LISTS route_files)
     file(READ "${source}" contents)
-    if(contents MATCHES "power_(service|backlight_provider|idle)/|UPower|power-profiles-daemon|systemd/logind|/sys/class/backlight")
+    if(contents MATCHES "power_(service|backlight_provider|idle)/|display_(service|writer|runtime)/|UPower|power-profiles-daemon|systemd/logind|/sys/class/backlight")
         message(FATAL_ERROR "Power Settings crossed its public-client-only boundary in ${source}")
+    endif()
+    if(contents MATCHES "qt_display_transport|QtDisplayTransport" AND
+       NOT source MATCHES "/power_route_composition\.cpp$")
+        message(FATAL_ERROR "Power Settings constructed a Display transport outside its composition root in ${source}")
     endif()
     if(contents MATCHES "services/session_actions/" AND
        NOT source MATCHES "/(power_route_composition|qt_screen_lock_configurator)\.cpp$")
@@ -101,7 +109,7 @@ endforeach()
 if(DEFINED SOURCE_ROOT)
     file(READ "${route_root}/CMakeLists.txt" cmake_contents)
     foreach(required IN ITEMS "QindaQt::PowerClient" "QindaQt::BrightnessModel"
-            "QindaQt::SessionActions" "qindaqt_settings_power_qml"
+            "QindaQt::SessionActions" "QindaQt::DisplayClient" "qindaqt_settings_power_qml"
             "PowerPage.qml" "PowerSessionSection.qml" "PowerScreenLockSection.qml"
             "PowerLidPowerButtonSection.qml"
             "COMPONENT SettingsAppearanceRuntime")
