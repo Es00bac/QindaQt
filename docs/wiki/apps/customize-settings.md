@@ -74,8 +74,8 @@ paints the currently configured wallpaper — the same Settings1
 consumes, resolved through the public Settings Appearance wallpaper catalog
 and painted with the shell's scaled/centered/tiled mapping — over the themed
 gradient backdrop, and a contained-window decoration preview keeps the screen
-reading as a desktop. That preview paints the configured theme (`appearance.
-theme` and `appearance.colorScheme` together — the same pair
+reading as a desktop. That preview paints the configured theme
+(`appearance.theme` and `appearance.colorScheme` together — the same pair
 `AppAppearance::ApplicationAppearanceController` and the compositor's own
 equivalent controller both require to resolve a theme at all) and the
 container decoration preferences (button style, side, tab order, glyphs)
