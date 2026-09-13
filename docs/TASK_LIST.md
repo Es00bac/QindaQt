@@ -110,8 +110,13 @@ be copied to a validated same-authority remote destination through KIO, while
 multi-selection fails closed and the shared Cancel action reaches the active
 copy. The strict affected build and exact integrated selector pass 11/11,
 including the split network-mutation, browsing UI, and former-red copy-guard
-rows. Remote move/write and installed/live credential validation remain
-separate boundaries.
+rows. Remote Move To lineage `e88d2e35` → `ad8ca232` received bounded
+same-reviewer ACCEPT and is integrated as `c858d724` → `a54476ac`; a
+monotonic operation identity keeps Cancel/retry late results from aliasing the
+replacement while listing freshness remains independently fenced. The exact
+integrated Move/navigation selector passes 2/2; docs validate 255 pages, strict
+MkDocs and diff checks pass. Remote write-in-place and installed/live credential
+validation remain separate boundaries.
 
 Customize applet editing and configured-wallpaper preview are integrated as
 the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
