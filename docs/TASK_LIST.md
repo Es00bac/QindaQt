@@ -47,7 +47,15 @@ unit row passes 24/24 and the serialized integrated-source former-stop replay
 completed with 22/22 verdicts and session exit 0. Global Menu evidence
 descendant `12f20444` received
 same-reviewer Opus ACCEPT and is integrated as `cc8bf4cf`; its manager-tree
-native-switch row passes 9/9. This is test evidence, not a live-popup repair.
+native-switch row passes 9/9. Exact popup-anchor candidate `fe6ad0b7` then
+received independent Sol ACCEPT and is integrated as `a5b6c59c`: top-level
+native menus request an origin adjacent to their triggering item on all four
+panel edges while Qt retains switching, submenu, keyboard, dismissal, lifetime,
+and activation ownership. After explicitly building the main-tree Global Menu
+QML plugin, the exact affected selector passes 9/9; docs validate 254 pages and
+strict MkDocs passes. This is source integration, not installed/live-panel
+adoption. Vertical user-authored panel admission remains a separately reviewed
+descendant.
 Terminal audible-attention
 candidate `53402c13` received independent GLM ACCEPT and is integrated as
 `4a39d5bb`: an audible parsed bell preserves the existing beep and requests
