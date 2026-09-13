@@ -152,3 +152,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0137: File Manager network-location browsing (S5)](0137-file-manager-network-location-browsing.md)
 - [ADR-0148: admit internal-panel brightness through Power1](0148-admit-internal-panel-brightness-through-power1.md)
 - [ADR-0150: admit immediate external-output brightness through Display1](0150-admit-immediate-external-output-brightness-through-display1.md)
+- [ADR-0151: authenticated SMB/SFTP browsing through KIO's standard UI delegate](0151-file-manager-authenticated-network-browsing.md)

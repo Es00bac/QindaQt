@@ -95,13 +95,14 @@ void KioNetworkDirectoryBackend::requestListing(quint64 generation, const QUrl &
     Q_EMIT listingReady(generation, url, unavailable);
     return;
   }
-  // AGENT-CONTRACT: no UI delegate means no interactive error dialog and,
-  // critically, no credential/mount prompt; a slave that would otherwise ask
-  // for a password instead fails the job with ERR_CANNOT_LOGIN or
-  // ERR_CANNOT_AUTHENTICATE, mapped to a typed AuthenticationRequired result.
-  job->setUiDelegate(nullptr);
-  job->setUiDelegateExtension(nullptr);
-
+  // AGENT-CONTRACT (ADR-0151): a supported job keeps the platform's standard
+  // KIO UI delegate and delegate extension. A kioslave that needs
+  // credentials or a mount therefore shows KIO's normal prompt instead of
+  // failing with ERR_CANNOT_LOGIN; cancelled/failed prompts still surface as
+  // the typed AuthenticationRequired result below. QindaQt never installs a
+  // custom delegate, so it never reads, stores, or owns a credential -- and
+  // destruction/cancel() above still kills the job quietly, taking any open
+  // prompt down with it.
   PendingRequest &pending = m_pending[generation];
   pending.job = job;
   pending.url = url;

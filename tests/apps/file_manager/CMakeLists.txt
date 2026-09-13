@@ -106,6 +106,13 @@ qindaqt_add_file_manager_test(
     tst_kio_network_directory_backend.cpp
     qindaqt.file-manager-kio-network-backend
 )
+# The delegate-seam probes include KIO job headers directly; the support
+# library keeps KIO private, so the includes come from the KIO target here.
+find_package(KF6KIO 6.0 REQUIRED CONFIG)
+target_link_libraries(
+    qindaqt_file_manager_kio_network_backend_tests
+    PRIVATE KF6::KIOCore
+)
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_mutation_action_binding_tests
     tst_mutation_action_binding.cpp

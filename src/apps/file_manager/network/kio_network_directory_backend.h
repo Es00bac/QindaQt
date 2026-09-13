@@ -12,12 +12,13 @@ class ListJob;
 namespace QindaQt::Apps::FileManager {
 
 // Production NetworkDirectoryBackend confining every KIO::ListJob this
-// module starts (ADR-0137). Owns no other KIO job kind, no wallet/keyring
-// handle, and no UI delegate: requestListing() clears each job's UI
-// delegate before starting it, so a slave that would otherwise prompt for
-// credentials or a mount instead fails the job with a typed error. Local
-// listing/launch/mutation/preview/search authorities never construct or
-// receive this type.
+// module starts (ADR-0137, authentication flow amended by ADR-0151). Owns no
+// other KIO job kind and no wallet/keyring handle: requestListing() leaves
+// the platform's standard KIO UI delegate on each supported job, so a slave
+// that needs credentials or a mount shows KIO's ordinary prompt instead of
+// failing with a typed error; QindaQt itself never reads, stores, or owns a
+// credential. Local listing/launch/mutation/preview/search authorities never
+// construct or receive this type.
 //
 // Not final: tst_kio_network_directory_backend.cpp subclasses this to
 // override createListJob(), proving the scheme/policy boundary without ever

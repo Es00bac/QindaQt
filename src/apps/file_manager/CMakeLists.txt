@@ -70,7 +70,9 @@ find_package(KF6KIO 6.0 REQUIRED CONFIG)
 target_link_libraries(
     qindaqt_file_manager_support
     PUBLIC QindaQt::AppShell QindaQt::AppShellMenuExport Qt6::Core Qt6::Gui Qt6::Quick
-    PRIVATE KF6::KIOCore
+    # ADR-0151: KIOWidgets registers KIO's standard job UI delegate at load
+    # time; without it every KIO::ListJob has no credential/mount prompt path.
+    PRIVATE KF6::KIOCore KF6::KIOWidgets
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)

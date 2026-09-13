@@ -4,7 +4,7 @@
 - **Date:** 2026-09-12
 - **Owners:** File Manager
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0151](0151-file-manager-authenticated-network-browsing.md), for the clearing of the KIO job UI delegate only; the seam, policy gate, and typed errors stand
 
 ## Context
 
