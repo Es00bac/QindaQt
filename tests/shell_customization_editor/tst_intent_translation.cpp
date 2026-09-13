@@ -218,6 +218,32 @@ private slots:
         QCOMPARE(configure.length, 0.75);
     }
 
+    void configureAppletSettingsTranslatesToSingleUpdateCommand() const
+    {
+        const DropTarget target;
+        TranslationContext context;
+        context.expectedRevision = 9;
+
+        const QVariantMap settings{
+            {QStringLiteral("zone"), QStringLiteral("start")},
+            {QStringLiteral("showIcon"), false},
+        };
+        const auto commands = translateIntent(
+            configureAppletSettingsIntent(QStringLiteral("bar"),
+                                          QStringLiteral("clock-instance"), settings),
+            target, context);
+
+        QCOMPARE(commands.size(), 1);
+        QVERIFY(sameKind(commands.first(),
+                         QindaQt::ShellCustomization::EditingCommandKind::UpdateAppletSettings));
+        const auto &update =
+            std::get<QindaQt::ShellCustomization::UpdateAppletSettingsCommand>(commands.first());
+        QCOMPARE(update.expectedRevision, quint64{9});
+        QCOMPARE(update.panelId, QStringLiteral("bar"));
+        QCOMPARE(update.appletId, QStringLiteral("clock-instance"));
+        QCOMPARE(update.settings, settings);
+    }
+
     void gestureSequenceWrapsMutationsInPreviewBracket() const
     {
         const DropTarget target{QStringLiteral("bar"), QStringLiteral("end"),
@@ -367,6 +393,24 @@ private slots:
                                                        QStringLiteral("clock-instance")),
                                           validTarget);
         QVERIFY(valid.ok());
+
+        const auto blankConfigurePanel = validateIntent(
+            configureAppletSettingsIntent(QString(), QStringLiteral("clock-instance"), {}),
+            validTarget);
+        QVERIFY(!blankConfigurePanel.ok());
+        QCOMPARE(blankConfigurePanel.code, IntentErrorCode::EmptyPanelId);
+
+        const auto blankConfigureApplet = validateIntent(
+            configureAppletSettingsIntent(QStringLiteral("bar"), QString(), {}), validTarget);
+        QVERIFY(!blankConfigureApplet.ok());
+        QCOMPARE(blankConfigureApplet.code, IntentErrorCode::EmptyAppletId);
+
+        const auto validConfigureApplet = validateIntent(
+            configureAppletSettingsIntent(QStringLiteral("bar"),
+                                          QStringLiteral("clock-instance"),
+                                          {{QStringLiteral("zone"), QStringLiteral("end")}}),
+            validTarget);
+        QVERIFY(validConfigureApplet.ok());
     }
 };
 

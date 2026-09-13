@@ -46,6 +46,44 @@ QString accessibleName(QQuickItem *candidate)
                                 : interface->text(QAccessible::Name);
 }
 
+// Shared production-page load: token facade, the shipped icon theme (so both
+// callers exercise resolved glyph rendering, not placeholders), and the
+// compiled CustomizePage.qml bound to `model`.
+bool loadCustomizePage(QQuickView &view, StubCustomizeSettingsModel &model,
+                       QString *error)
+{
+    view.engine()->addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
+    auto *facade = QindaQt::Apps::SettingsAppearance::ensureTokenFacade(
+        *view.engine(), error);
+    if (facade == nullptr) {
+        return false;
+    }
+    const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+    if (!theme.ok) {
+        *error = theme.error;
+        return false;
+    }
+    if (!facade->publish(theme.theme, {}, error)) {
+        return false;
+    }
+    if (!QindaQt::Shell::Icons::IconRuntime::install(
+            *view.engine(), {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
+            {QStringLiteral("QindaQt")})) {
+        *error = QStringLiteral("icon runtime install");
+        return false;
+    }
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.setInitialProperties({{QStringLiteral("customizeSettings"),
+                                QVariant::fromValue(static_cast<QObject *>(&model))}});
+    view.setSource(QUrl::fromLocalFile(QStringLiteral(QINDAQT_CUSTOMIZE_PAGE_QML_PATH)));
+    if (view.status() != QQuickView::Ready) {
+        *error = QStringLiteral("view not ready");
+        return false;
+    }
+    return view.rootObject() != nullptr;
+}
+
 } // namespace
 
 class CustomizePageTests final : public QObject {
@@ -53,36 +91,15 @@ class CustomizePageTests final : public QObject {
 
 private slots:
     void rendersCompactAndWideWithoutLosingAccessibleEditors();
+    void rendersAppletSettingEditorsInWideMode();
 };
 
 void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
 {
     StubCustomizeSettingsModel model;
     QQuickView view;
-    view.engine()->addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
-    QString facadeError;
-    auto *facade = QindaQt::Apps::SettingsAppearance::ensureTokenFacade(
-        *view.engine(), &facadeError);
-    QVERIFY2(facade != nullptr, qPrintable(facadeError));
-    const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-    QVERIFY2(theme.ok, qPrintable(theme.error));
-    QString publishError;
-    QVERIFY2(facade->publish(theme.theme, {}, &publishError),
-             qPrintable(publishError));
-    // The route renders real applet glyphs; the harness resolves the shipped
-    // icon theme so the row proves resolved iconography, not placeholders.
-    QVERIFY2(QindaQt::Shell::Icons::IconRuntime::install(
-                 *view.engine(),
-                 {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
-                 {QStringLiteral("QindaQt")}),
-             "icon runtime install");
-    view.setResizeMode(QQuickView::SizeRootObjectToView);
-    view.setInitialProperties({{QStringLiteral("customizeSettings"),
-                                QVariant::fromValue(static_cast<QObject *>(&model))}});
-    view.setSource(QUrl::fromLocalFile(QStringLiteral(QINDAQT_CUSTOMIZE_PAGE_QML_PATH)));
-    QCOMPARE(view.status(), QQuickView::Ready);
-    QVERIFY(view.rootObject() != nullptr);
+    QString loadError;
+    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
 
     view.resize(720, 720);
     view.show();
@@ -206,6 +223,65 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     QVERIFY(QMetaObject::invokeMethod(detailsTab, "click"));
     QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 2);
     QTRY_VERIFY(item(compact, "customizeProperties")->isVisible());
+}
+
+void CustomizePageTests::rendersAppletSettingEditorsInWideMode()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString loadError;
+    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
+    view.resize(1080, 720);
+    view.show();
+    QTest::qWait(50);
+
+    model.selectApplet(QStringLiteral("bar"), QStringLiteral("clock-instance"));
+    auto *settingSwitch = item(view.rootObject(), "customizeAppletSettingSwitch_showIcon");
+    auto *settingSlider = item(view.rootObject(), "customizeAppletSettingSlider_refreshSeconds");
+    auto *settingChoice = item(view.rootObject(), "customizeAppletSettingChoice_alignment");
+    auto *readOnlyRow = item(view.rootObject(), "customizeAppletSettingError");
+    QVERIFY(settingSwitch != nullptr);
+    QVERIFY(settingSlider != nullptr);
+    QVERIFY(settingChoice != nullptr);
+    QVERIFY(readOnlyRow != nullptr);
+    QVERIFY(settingSwitch->isVisible());
+    QVERIFY(settingSlider->isVisible());
+    QVERIFY(settingChoice->isVisible());
+    QVERIFY2(accessibleName(settingSwitch).contains(QStringLiteral("showIcon")),
+             qPrintable(accessibleName(settingSwitch)));
+
+    settingSwitch->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(settingSwitch->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Space);
+    QTRY_COMPARE(model.configureAppletSettingCalls, 1);
+    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("showIcon"));
+    QCOMPARE(model.lastConfiguredAppletValue, QVariant(false));
+
+    settingSlider->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(settingSlider->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Right);
+    QTRY_COMPARE(model.configureAppletSettingCalls, 2);
+    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("refreshSeconds"));
+
+    // The declared-but-Unsupported freeform string field (labelFormat) stays
+    // the quiet read-only row rather than gaining an invented free-text
+    // editor: its sibling editor controls exist (one delegate instantiates
+    // all four candidate rows) but none of them is visible.
+    auto *labelFormatSwitch =
+        item(view.rootObject(), "customizeAppletSettingSwitch_labelFormat");
+    auto *labelFormatChoice =
+        item(view.rootObject(), "customizeAppletSettingChoice_labelFormat");
+    auto *labelFormatSlider =
+        item(view.rootObject(), "customizeAppletSettingSlider_labelFormat");
+    QVERIFY(labelFormatSwitch == nullptr || !labelFormatSwitch->isVisible());
+    QVERIFY(labelFormatChoice == nullptr || !labelFormatChoice->isVisible());
+    QVERIFY(labelFormatSlider == nullptr || !labelFormatSlider->isVisible());
+
+    model.setAppletSettingError(QStringLiteral("'refreshSeconds' must be between 1 and 60"));
+    QTRY_VERIFY(readOnlyRow->isVisible());
+    QVERIFY2(accessibleName(readOnlyRow).contains(QStringLiteral("between 1 and 60")),
+             qPrintable(accessibleName(readOnlyRow)));
+    model.setAppletSettingError(QString());
 }
 
 QTEST_MAIN(CustomizePageTests)

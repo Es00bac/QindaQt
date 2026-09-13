@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
 
+#include "customize_applet_setting_validation.h"
+
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_customization_editor/accessibility_identity.h"
 #include "qindaqt/shell_customization_editor/keyboard_navigation.h"
 
+#include <QJsonObject>
 #include <QMetaType>
 
 namespace QindaQt::Apps::SettingsCustomize {
@@ -43,6 +46,27 @@ ShellCustomizationEditor::PanelConfiguration panelConfiguration(
 {
     return {panel.layer, panel.hideMode, panel.rows, panel.thickness,
             panel.length};
+}
+
+// A settings map omits a field until it is first explicitly set, so the
+// stored value and the schema default must be compared as the same typed
+// kind rather than as raw QVariants (a JSON default surfaces as a double;
+// validateAppletSettingValue's own result is the field's real stored type).
+bool sameEffectiveAppletSettingValue(AppletSettingFieldKind kind,
+                                     const QVariant &storedOrDefault,
+                                     const QVariant &validated)
+{
+    switch (kind) {
+    case AppletSettingFieldKind::Boolean:
+        return storedOrDefault.toBool() == validated.toBool();
+    case AppletSettingFieldKind::BoundedInteger:
+        return storedOrDefault.toLongLong() == validated.toLongLong();
+    case AppletSettingFieldKind::EnumChoice:
+        return storedOrDefault.toString() == validated.toString();
+    case AppletSettingFieldKind::Unsupported:
+        break;
+    }
+    return false;
 }
 
 } // namespace
@@ -113,6 +137,7 @@ void CustomizeSettingsModel::selectPanel(const QString &panelId)
     m_selectedKind = QStringLiteral("panel");
     m_selectedPanelId = panelId;
     m_selectedAppletId.clear();
+    m_appletSettingError.clear();
     Q_EMIT selectionChanged();
 }
 
@@ -126,6 +151,7 @@ void CustomizeSettingsModel::selectApplet(const QString &panelId,
     m_selectedKind = QStringLiteral("applet");
     m_selectedPanelId = panelId;
     m_selectedAppletId = appletId;
+    m_appletSettingError.clear();
     Q_EMIT selectionChanged();
 }
 
@@ -428,6 +454,54 @@ bool CustomizeSettingsModel::configureSelectedPanel(const QString &field,
     return settleEditorOutcome(m_editor->applyGesture(
         ShellCustomizationEditor::configureIntent(panel->id, configuration),
         targetFromStrings(panel->id, QStringLiteral("start"), {})));
+}
+
+bool CustomizeSettingsModel::configureAppletSetting(const QString &key,
+                                                    const QVariant &value)
+{
+    if (!canEdit() || m_selectedKind != QLatin1String("applet")) {
+        return false;
+    }
+    const auto *panel = panelById(m_editor->profile(), m_selectedPanelId);
+    const auto *applet = appletById(panel, m_selectedAppletId);
+    if (panel == nullptr || applet == nullptr) {
+        return false;
+    }
+    const auto *manifest = findManifest(applet->plugin);
+    if (manifest == nullptr) {
+        m_appletSettingError =
+            QStringLiteral("This applet's manifest is unavailable");
+        Q_EMIT selectionChanged();
+        return false;
+    }
+    const auto validation =
+        validateAppletSettingValue(manifest->settingsSchema, key, value);
+    if (!validation.ok()) {
+        m_appletSettingError = validation.error;
+        Q_EMIT selectionChanged();
+        return false;
+    }
+    const QJsonObject properties =
+        manifest->settingsSchema.value(QStringLiteral("properties")).toObject();
+    const AppletSettingFieldKind kind =
+        appletSettingFieldKind(properties.value(key).toObject());
+    const QVariant effectiveCurrent = applet->settings.contains(key)
+        ? applet->settings.value(key)
+        : appletSettingSchemaDefault(manifest->settingsSchema, key);
+    m_appletSettingError.clear();
+    if (sameEffectiveAppletSettingValue(kind, effectiveCurrent, validation.value)) {
+        Q_EMIT selectionChanged();
+        return true;
+    }
+    QVariantMap settings = applet->settings;
+    settings.insert(key, validation.value);
+    const auto intent = ShellCustomizationEditor::configureAppletSettingsIntent(
+        panel->id, applet->id, settings);
+    return settleEditorOutcome(
+        m_editor->applyGesture(intent,
+                               targetFromStrings(panel->id,
+                                                 QStringLiteral("start"), {})),
+        QStringLiteral("Applet setting updated"));
 }
 
 bool CustomizeSettingsModel::undo()

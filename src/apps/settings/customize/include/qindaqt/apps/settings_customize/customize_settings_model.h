@@ -55,6 +55,7 @@ class CustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString selectedPanelId READ selectedPanelId NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedAppletId READ selectedAppletId NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY selectionChanged)
+    Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY selectionChanged)
 
 public:
     enum class State { Loading, Ready, Saving, Conflict, Unavailable };
@@ -100,6 +101,7 @@ public:
     [[nodiscard]] QString selectedPanelId() const { return m_selectedPanelId; }
     [[nodiscard]] QString selectedAppletId() const { return m_selectedAppletId; }
     [[nodiscard]] QVariantMap selectedProperties() const;
+    [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
 
     Q_INVOKABLE bool selectProfile(const QString &profileId);
     Q_INVOKABLE void selectPanel(const QString &panelId);
@@ -120,6 +122,7 @@ public:
     Q_INVOKABLE bool duplicateSelected();
     Q_INVOKABLE bool configureSelectedPanel(const QString &field,
                                             const QVariant &value);
+    Q_INVOKABLE bool configureAppletSetting(const QString &key, const QVariant &value);
     Q_INVOKABLE bool undo();
     Q_INVOKABLE bool redo();
     Q_INVOKABLE bool apply();
@@ -174,6 +177,7 @@ private:
     QString m_confirmedEpoch;
     CustomizeOutputSnapshot m_editorOutputs;
     QString m_displayScopeError;
+    QString m_appletSettingError;
     ShellCustomizationEditor::DropTarget m_keyboardTarget;
     bool m_hasBaseline = false;
     bool m_selectionDirty = false;

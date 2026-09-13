@@ -4,6 +4,7 @@ qt_add_library(qindaqt_settings_customize STATIC)
 target_sources(
     qindaqt_settings_customize
     PRIVATE
+        customize_applet_setting_validation.cpp
         customize_catalog.cpp
         customize_editor_host.cpp
         customize_output_provider.cpp

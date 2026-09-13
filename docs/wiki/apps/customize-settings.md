@@ -73,13 +73,28 @@ until the separate reveal-affordance work exists; creating an unrecoverable
 panel from this route would violate fail-closed interaction.
 
 Manifest `settingsSchema` fields and current values are exposed in the selected
-applet pane as a quiet read-only list. They are read-only in this slice because the accepted public
-editor intent vocabulary has no arbitrary applet-settings intent: the only
-`UpdateAppletSettings` sequence it owns is the internal zone update used by a
-move. The route does not bypass that boundary by executing engine commands
-directly. Duplicate and Remove remain available through public editor intents,
-and the applet zone selector converges on the same public drag gesture a
-pointer move uses.
+applet pane. A declared boolean, bounded integer (both `minimum` and
+`maximum` present), or closed enum/string-choice (`enum` non-empty) field
+renders a real typed editor — a Switch, a Slider, or a ComboBox — through the
+public `configureAppletSetting(key, value)` method, which is the one public
+`ConfigureAppletSettingsIntent` this domain now owns (see
+[Customization editor domain](../shell/customization-editor.md)). Any other
+declared kind — a bare freeform string, a number, an object, an array, or an
+unknown/absent `type` — stays the quiet read-only row it always was; the
+route invents no free-text or open-ended editor. The route validates the
+declared kind, numeric bounds, and enum membership itself before ever calling
+the editor: an unknown key, a value of the wrong type, an out-of-range
+integer, or a value outside its enum is rejected atomically with a visible
+error and never reaches `UpdateAppletSettingsCommand`. A no-op — the value
+already in effect, whether explicitly stored or only the schema default —
+adds no Undo step. `UpdateAppletSettingsCommand` replaces the applet's whole
+settings map, so the route always sends the complete current map with
+exactly the one validated field changed; unrelated fields (including `zone`)
+survive untouched. The route does not bypass the editor boundary by executing
+engine commands or editing profile JSON directly. Duplicate and Remove remain
+available through public editor intents and copy/discard the full settings
+map with the rest of the applet; the applet zone selector converges on the
+same public drag gesture a pointer move uses.
 
 ## Keyboard and accessibility
 
@@ -169,7 +184,19 @@ authority recovery, Settings1 conflict truth, and foreign-lease recovery. The
 same row injects `DP-1` and `HDMI-A-1`, proves Primary stores only the exact
 `DP-1` identity, proves `*` solves to one panel surface on each display,
 reloads the strictly serialized saved profile, and rejects missing, ambiguous,
-or revision-changed primary truth without saving. The
+or revision-changed primary truth without saving. It also proves
+`configureAppletSetting` for every supported kind (boolean, bounded integer,
+enum) round-trips through Apply and the reloaded saved profile with unrelated
+settings preserved; atomically rejects an unknown key, a value of the wrong
+type for every kind, an out-of-range or fractional integer, an unlisted enum
+choice, and a declared-but-Unsupported freeform-string key, each leaving the
+settings map and Undo stack untouched; adds no Undo step for a no-op against
+either an explicitly stored or a schema-default value; that Duplicate copies
+the full settings map onto the new instance; and that the guard fails closed
+once the selected applet is removed. The dedicated pure
+`qindaqt.settings-customize-applet-setting-validation` row exercises the
+kind classifier and validator directly against hostile payloads for every
+declared JSON-schema kind, independent of the model/editor/QML. The
 warning-fatal pointer row drives real mouse events through the production page
 and editor in compact and wide modes: palette insertion, chip movement across
 preview reconstruction, one-step Undo, Escape and outside-release rollback. The warning-fatal page row renders 720×720 compact and 1080×720

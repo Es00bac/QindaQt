@@ -11,6 +11,7 @@
 #include "qindaqt/shell_layout/panel_layout_types.h"
 
 #include <QDir>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QRect>
 #include <QTemporaryDir>
@@ -136,11 +137,28 @@ inline Applets::AppletManifest manifest(QString id)
     result.settingsSchema = {
         {QStringLiteral("type"), QStringLiteral("object")},
         {QStringLiteral("properties"),
-         QJsonObject{{QStringLiteral("labelFormat"),
-                      QJsonObject{{QStringLiteral("type"),
-                                   QStringLiteral("string")},
-                                  {QStringLiteral("default"),
-                                   QStringLiteral("short")}}}}},
+         QJsonObject{
+             // Freeform string with no enum: deliberately Unsupported, the
+             // read-only negative control (customize_applet_setting_validation.h).
+             {QStringLiteral("labelFormat"),
+              QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                          {QStringLiteral("default"), QStringLiteral("short")}}},
+             {QStringLiteral("showIcon"),
+              QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")},
+                          {QStringLiteral("default"), true}}},
+             {QStringLiteral("refreshSeconds"),
+              QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                          {QStringLiteral("minimum"), 1},
+                          {QStringLiteral("maximum"), 60},
+                          {QStringLiteral("default"), 5}}},
+             {QStringLiteral("alignment"),
+              QJsonObject{
+                  {QStringLiteral("type"), QStringLiteral("string")},
+                  {QStringLiteral("enum"),
+                   QJsonArray{QStringLiteral("leading"), QStringLiteral("center"),
+                             QStringLiteral("trailing")}},
+                  {QStringLiteral("default"), QStringLiteral("leading")}}},
+         }},
     };
     return result;
 }

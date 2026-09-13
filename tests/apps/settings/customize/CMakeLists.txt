@@ -26,6 +26,28 @@ set_tests_properties(
 )
 
 qt_add_executable(
+    qindaqt_settings_customize_applet_setting_validation_tests
+    tst_customize_applet_setting_validation.cpp
+)
+target_include_directories(
+    qindaqt_settings_customize_applet_setting_validation_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/apps/settings/customize"
+)
+target_link_libraries(
+    qindaqt_settings_customize_applet_setting_validation_tests
+    PRIVATE qindaqt_settings_customize Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_applet_setting_validation_tests)
+add_test(
+    NAME qindaqt.settings-customize-applet-setting-validation
+    COMMAND qindaqt_settings_customize_applet_setting_validation_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-applet-setting-validation PROPERTIES
+    LABELS "settings;customize;domain"
+)
+
+qt_add_executable(
     qindaqt_settings_customize_page_tests
     tst_customize_page.cpp
     stub_customize_settings_model.h

@@ -31,10 +31,11 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
     Q_PROPERTY(QVariantList panels READ panels CONSTANT)
     Q_PROPERTY(QVariantList palette READ palette CONSTANT)
-    Q_PROPERTY(QString selectedKind READ selectedKind CONSTANT)
+    Q_PROPERTY(QString selectedKind READ selectedKind NOTIFY contentChanged)
     Q_PROPERTY(QString selectedPanelId READ selectedPanelId CONSTANT)
     Q_PROPERTY(QString selectedAppletId READ emptyString CONSTANT)
-    Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties CONSTANT)
+    Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY contentChanged)
+    Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY contentChanged)
 
 public:
     explicit StubCustomizeSettingsModel(QObject *parent = nullptr)
@@ -119,10 +120,51 @@ public:
             {QStringLiteral("applets"), QVariantList{applet}},
         }};
     }
-    [[nodiscard]] QString selectedKind() const { return QStringLiteral("panel"); }
+    [[nodiscard]] QString selectedKind() const { return m_selectedKind; }
     [[nodiscard]] QString selectedPanelId() const { return QStringLiteral("bar"); }
+    [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
     [[nodiscard]] QVariantMap selectedProperties() const
     {
+        if (m_selectedKind == QLatin1String("applet")) {
+            const QVariantList settingsFields{
+                QVariantMap{{QStringLiteral("key"), QStringLiteral("showIcon")},
+                            {QStringLiteral("label"), QStringLiteral("showIcon")},
+                            {QStringLiteral("type"), QStringLiteral("boolean")},
+                            {QStringLiteral("editable"), true},
+                            {QStringLiteral("value"), true}},
+                QVariantMap{{QStringLiteral("key"), QStringLiteral("refreshSeconds")},
+                            {QStringLiteral("label"), QStringLiteral("refreshSeconds")},
+                            {QStringLiteral("type"), QStringLiteral("integer")},
+                            {QStringLiteral("editable"), true},
+                            {QStringLiteral("value"), 5},
+                            {QStringLiteral("minimum"), 1},
+                            {QStringLiteral("maximum"), 60}},
+                QVariantMap{{QStringLiteral("key"), QStringLiteral("alignment")},
+                            {QStringLiteral("label"), QStringLiteral("alignment")},
+                            {QStringLiteral("type"), QStringLiteral("string")},
+                            {QStringLiteral("editable"), true},
+                            {QStringLiteral("value"), QStringLiteral("leading")},
+                            {QStringLiteral("enumValues"),
+                             QVariantList{QStringLiteral("leading"),
+                                         QStringLiteral("center"),
+                                         QStringLiteral("trailing")}}},
+                QVariantMap{{QStringLiteral("key"), QStringLiteral("labelFormat")},
+                            {QStringLiteral("label"), QStringLiteral("labelFormat")},
+                            {QStringLiteral("type"), QStringLiteral("string")},
+                            {QStringLiteral("editable"), false},
+                            {QStringLiteral("value"), QStringLiteral("short")}},
+            };
+            return {
+                {QStringLiteral("kind"), QStringLiteral("applet")},
+                {QStringLiteral("name"), QStringLiteral("Clock")},
+                {QStringLiteral("pluginId"), QStringLiteral("clock")},
+                {QStringLiteral("zone"), QStringLiteral("end")},
+                {QStringLiteral("settings"),
+                 QVariantMap{{QStringLiteral("zone"), QStringLiteral("end")}}},
+                {QStringLiteral("settingsFields"), settingsFields},
+                {QStringLiteral("schemaAvailable"), true},
+            };
+        }
         return {
             {QStringLiteral("kind"), QStringLiteral("panel")},
             {QStringLiteral("name"), QStringLiteral("Top panel")},
@@ -139,8 +181,16 @@ public:
     }
 
     Q_INVOKABLE bool selectProfile(const QString &) { return true; }
-    Q_INVOKABLE void selectPanel(const QString &) {}
-    Q_INVOKABLE void selectApplet(const QString &, const QString &) {}
+    Q_INVOKABLE void selectPanel(const QString &)
+    {
+        m_selectedKind = QStringLiteral("panel");
+        Q_EMIT contentChanged();
+    }
+    Q_INVOKABLE void selectApplet(const QString &, const QString &)
+    {
+        m_selectedKind = QStringLiteral("applet");
+        Q_EMIT contentChanged();
+    }
     Q_INVOKABLE bool startPaletteDrag(const QString &) { return true; }
     Q_INVOKABLE bool startAppletDrag(const QString &, const QString &) { return true; }
     Q_INVOKABLE bool hoverDropTarget(const QString &, const QString &,
@@ -163,6 +213,15 @@ public:
         lastConfiguredField = field;
         lastConfiguredValue = value;
         ++configurePanelCalls;
+        return true;
+    }
+    Q_INVOKABLE bool configureAppletSetting(const QString &key, const QVariant &value)
+    {
+        lastConfiguredAppletKey = key;
+        lastConfiguredAppletValue = value;
+        ++configureAppletSettingCalls;
+        m_appletSettingError.clear();
+        Q_EMIT contentChanged();
         return true;
     }
     Q_INVOKABLE bool undo() { return true; }
@@ -189,18 +248,29 @@ public:
         Q_EMIT contentChanged();
     }
 
+    void setAppletSettingError(const QString &error)
+    {
+        m_appletSettingError = error;
+        Q_EMIT contentChanged();
+    }
+
 Q_SIGNALS:
     void contentChanged();
 
 public:
     int keyboardInsertCalls = 0;
     int configurePanelCalls = 0;
+    int configureAppletSettingCalls = 0;
     QString lastConfiguredField;
     QVariant lastConfiguredValue;
+    QString lastConfiguredAppletKey;
+    QVariant lastConfiguredAppletValue;
 
 private:
     bool m_dirty = false;
     bool m_primaryDisplayAvailable = true;
+    QString m_selectedKind = QStringLiteral("panel");
+    QString m_appletSettingError;
 };
 
 } // namespace QindaQt::Apps::SettingsCustomize::TestSupport

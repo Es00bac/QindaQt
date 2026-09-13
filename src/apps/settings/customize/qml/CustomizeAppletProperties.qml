@@ -6,10 +6,11 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Applet inspector: identity with glyph, a zone selector drawn as three
-// panel glyphs, duplicate/remove icon actions, and the manifest's settings
-// schema as a quiet read-only list (the accepted editor vocabulary has no
-// arbitrary applet-settings intent yet).
+// Applet inspector: identity, zone selector, duplicate/remove actions, and
+// the manifest's declared settingsSchema fields as real typed editors for
+// the kinds this route supports (boolean/bounded-integer/closed-enum); an
+// unsupported kind stays read-only. Every editor calls the one public
+// configureAppletSetting() method (ConfigureAppletSettingsIntent).
 FormSurface {
     id: root
 
@@ -159,35 +160,140 @@ FormSurface {
         Repeater {
             model: root.settingsFields
 
-            delegate: RowLayout {
-                id: fieldRow
+            // One delegate handles every field; exactly one of the four rows
+            // below is visible, chosen by its manifest kind (see
+            // customize_applet_setting_validation.h).
+            delegate: ColumnLayout {
+                id: fieldItem
 
                 required property var modelData
 
-                width: parent.width
-                spacing: Tokens.space["2"]
+                readonly property bool isBoolean: fieldItem.modelData.editable === true
+                    && fieldItem.modelData.type === "boolean"
+                readonly property bool isInteger: fieldItem.modelData.editable === true
+                    && fieldItem.modelData.type === "integer"
+                readonly property bool isChoice: fieldItem.modelData.editable === true
+                    && fieldItem.modelData.type === "string"
 
-                Label {
+                width: parent.width
+                spacing: Tokens.space["1"]
+
+                Switch {
+                    objectName: "customizeAppletSettingSwitch_"
+                                + (fieldItem.modelData.key ?? "")
                     Layout.fillWidth: true
-                    text: fieldRow.modelData.label ?? ""
-                    muted: true
-                    font.pointSize: Tokens.type.caption
-                    elide: Text.ElideRight
-                    Accessible.name: text
+                    visible: fieldItem.isBoolean
+                    text: fieldItem.modelData.label ?? ""
+                    checked: (fieldItem.modelData.value ?? false) === true
+                    enabled: root.customizeSettings.canEdit
+                    onToggled: root.customizeSettings.configureAppletSetting(
+                                   fieldItem.modelData.key, checked)
                 }
 
-                Label {
-                    text: String(fieldRow.modelData.value ?? "—")
-                    font.pointSize: Tokens.type.caption
-                    font.family: Tokens.type.monoFontFamily
-                    elide: Text.ElideMiddle
-                    Accessible.name: qsTr("%1: %2").arg(
-                        fieldRow.modelData.label ?? "").arg(text)
-                    Accessible.description: qsTr(
-                        "Read-only schema field of type %1").arg(
-                        fieldRow.modelData.type ?? "")
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: fieldItem.isChoice
+                    spacing: Tokens.space["2"]
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: fieldItem.modelData.label ?? ""
+                        muted: true
+                        font.pointSize: Tokens.type.caption
+                        elide: Text.ElideRight
+                        Accessible.name: text
+                    }
+
+                    ComboBox {
+                        objectName: "customizeAppletSettingChoice_"
+                                    + (fieldItem.modelData.key ?? "")
+                        model: fieldItem.modelData.enumValues ?? []
+                        currentIndex: fieldItem.isChoice
+                                      ? model.indexOf(fieldItem.modelData.value) : -1
+                        enabled: root.customizeSettings.canEdit
+                        accessibleDescription: fieldItem.modelData.label ?? ""
+                        onActivated: root.customizeSettings.configureAppletSetting(
+                                         fieldItem.modelData.key, currentText)
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: fieldItem.isInteger
+                    spacing: Tokens.space["2"]
+
+                    Label {
+                        text: fieldItem.modelData.label ?? ""
+                        muted: true
+                        font.pointSize: Tokens.type.caption
+                        Accessible.name: text
+                    }
+                    Item { Layout.fillWidth: true }
+                    Label {
+                        text: fieldItem.isInteger
+                              ? String(Math.round(integerSlider.value)) : ""
+                        font.pointSize: Tokens.type.caption
+                        font.family: Tokens.type.monoFontFamily
+                    }
+                }
+
+                Slider {
+                    id: integerSlider
+                    objectName: "customizeAppletSettingSlider_"
+                                + (fieldItem.modelData.key ?? "")
+                    Layout.fillWidth: true
+                    visible: fieldItem.isInteger
+                    from: fieldItem.modelData.minimum ?? 0
+                    to: fieldItem.modelData.maximum ?? 100
+                    stepSize: 1
+                    value: fieldItem.modelData.value ?? from
+                    enabled: root.customizeSettings.canEdit
+                    accessibleName: fieldItem.modelData.label ?? ""
+                    accessibleDescription: qsTr("%1 to %2").arg(from).arg(to)
+                    onMoved: root.customizeSettings.configureAppletSetting(
+                                 fieldItem.modelData.key, Math.round(value))
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: !fieldItem.isBoolean && !fieldItem.isInteger
+                             && !fieldItem.isChoice
+                    spacing: Tokens.space["2"]
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: fieldItem.modelData.label ?? ""
+                        muted: true
+                        font.pointSize: Tokens.type.caption
+                        elide: Text.ElideRight
+                        Accessible.name: text
+                    }
+
+                    Label {
+                        text: String(fieldItem.modelData.value ?? "—")
+                        font.pointSize: Tokens.type.caption
+                        font.family: Tokens.type.monoFontFamily
+                        elide: Text.ElideMiddle
+                        Accessible.name: qsTr("%1: %2").arg(
+                            fieldItem.modelData.label ?? "").arg(text)
+                        Accessible.description: qsTr(
+                            "Read-only schema field of type %1").arg(
+                            fieldItem.modelData.type ?? "")
+                    }
                 }
             }
+        }
+
+        Label {
+            objectName: "customizeAppletSettingError"
+            Layout.fillWidth: true
+            visible: text.length > 0
+            text: root.customizeSettings.appletSettingError
+            muted: true
+            wrapMode: Text.Wrap
+            font.pointSize: Tokens.type.caption
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
         }
 
         Label {
