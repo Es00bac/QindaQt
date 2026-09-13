@@ -460,6 +460,27 @@ boundaries](../architecture/module-boundaries.md)).
   the identical validate-then-`QDesktopServices::openUrl` local launch
   contract documented above, returning a typed `LaunchError` on any
   pre-flight rejection or declined handler.
+- `openLocalFolder(absolutePath, listed, programCandidates, start)` opens one
+  listed local folder in QindaQt File Manager.
+  - **Identity.** The path must still be the object `listLocalFolder`
+    reported. `ListedIdentity` carries its device and inode under the same
+    `lstat` semantics, so a symlink entry is identified by the link.
+  - **Target.** The path must resolve once to a readable, enterable
+    canonical directory.
+  - **Program.** The first absolute, executable
+    `fileManagerProgramCandidates()` entry is used: the running application's
+    sibling `qindaqt-file-manager`, then the `PATH` lookup result.
+  - **Launch.** That program is started detached, with exactly the canonical
+    directory as its single argument. No shell, URL handler, or default
+    `inode/directory` association is involved.
+  - **Refusals.** A missing, dangling, or relative path (`NotFound`), a
+    replaced object (`Replaced`), a non-directory (`NotDirectory`), an
+    unreadable directory (`Unreadable`), no installed program
+    (`NotInstalled`), or a failed start (`LaunchRefused`) returns a typed
+    `FolderOpenError`. It never falls back to another folder or program. Only
+    `LaunchRefused` happens after a start attempt.
+  - **Success** means the process started. File Manager revalidates its
+    folder argument (exit 4 otherwise), and its later exit is not observed.
 - `createLocalMutationController(parent)` composes one `MutationController`
   over a `LocalMutationBackend` rooted at the same `$XDG_DATA_HOME/Trash`
   File Manager's own `main.cpp` wires (ADR-0064), so Desktop-initiated

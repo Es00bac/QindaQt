@@ -23,12 +23,23 @@ DesktopContentsController::DesktopContentsController(QString root, QObject *pare
     refresh();
 }
 
+DesktopContentsController::DesktopContentsController(QString root,
+                                                     QStringList fileManagerPrograms,
+                                                     QObject *parent)
+    : QObject(parent),
+      m_root(std::move(root)),
+      m_fileManagerPrograms(std::move(fileManagerPrograms))
+{
+    refresh();
+}
+
 void DesktopContentsController::refresh()
 {
     using QindaQt::Apps::FileManager::Desktop::FileBoundary;
     const auto listing = FileBoundary::listLocalFolder(m_root);
 
     QVariantList rows;
+    QHash<QString, ListedEntry> listed;
     if (listing.ok()) {
         rows.reserve(listing.entries.size());
         for (const auto &entry : listing.entries) {
@@ -38,6 +49,8 @@ void DesktopContentsController::refresh()
             if (entry.isHidden) {
                 continue;
             }
+            listed.insert(entry.absolutePath,
+                          {entry.isDirectory, entry.device, entry.inode});
             rows.append(QVariantMap{
                 {QStringLiteral("id"), entry.absolutePath},
                 {QStringLiteral("label"), entry.name},
@@ -51,6 +64,7 @@ void DesktopContentsController::refresh()
             });
         }
     }
+    m_listed = std::move(listed);
     m_rows = std::move(rows);
     Q_EMIT rowsChanged();
     publishFeedback(listing.ok() ? QString() : listing.diagnostic);
@@ -59,9 +73,30 @@ void DesktopContentsController::refresh()
 bool DesktopContentsController::open(const QString &absolutePath)
 {
     using QindaQt::Apps::FileManager::Desktop::FileBoundary;
-    const auto result = FileBoundary::launchLocalFile(absolutePath);
-    if (!result.ok()) {
-        publishFeedback(result.diagnostic);
+    using QindaQt::Apps::FileManager::Desktop::ListedIdentity;
+    const auto listed = m_listed.constFind(absolutePath);
+    if (listed == m_listed.cend()) {
+        // AGENT-GUARD: activation opens only what the Desktop listed; an
+        // unknown path is never launched or reinterpreted as another item.
+        publishFeedback(QStringLiteral("%1 is not on the Desktop").arg(absolutePath));
+        return false;
+    }
+    QString diagnostic;
+    if (listed->isDirectory) {
+        const ListedIdentity identity{listed->device, listed->inode};
+        const auto result = m_fileManagerPrograms
+            ? FileBoundary::openLocalFolder(absolutePath, identity, *m_fileManagerPrograms)
+            : FileBoundary::openLocalFolder(absolutePath, identity);
+        diagnostic = result.diagnostic;
+        if (!result.ok() && diagnostic.isEmpty()) {
+            diagnostic = QStringLiteral("%1 could not be opened").arg(absolutePath);
+        }
+    } else {
+        const auto result = FileBoundary::launchLocalFile(absolutePath);
+        diagnostic = result.ok() ? QString() : result.diagnostic;
+    }
+    if (!diagnostic.isEmpty()) {
+        publishFeedback(diagnostic);
         return false;
     }
     clearFeedback();
