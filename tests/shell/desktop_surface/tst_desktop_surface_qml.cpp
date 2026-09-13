@@ -76,7 +76,11 @@ private Q_SLOTS:
     void contextMenuStyleSwitchesItemSets();
     void modifierRightClickOpensApplicationsPopup();
     void middleClickOpensApplicationsPopupAtEmptyArea();
+    void middleClickOpensApplicationsPopupAtThePointer();
+    void middleClickClampsPopupInsideTheSurfaceNearEdges();
+    void shiftRightClickPlacementSurvivesAPriorPointerOpen();
     void middleClickOverTileStaysInert();
+    void middleDoubleClickOverTileStaysInert();
     void middleClickFailsClosedWithoutLauncherFacade();
     void nullFacadesDisableMenuEntries();
 
@@ -349,6 +353,107 @@ void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtEmptyArea()
     }
 }
 
+void DesktopSurfaceQmlTests::middleClickOpensApplicationsPopupAtThePointer()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    QVERIFY(applicationsMenu != nullptr);
+
+    // Two distinct empty-area positions, both far enough from every edge that
+    // the popup (320 wide, well under 600 tall with one stub section) is not
+    // clamped: the popup must land exactly on the clicked point, not at a
+    // fixed spot.
+    const QPointF positions[] = {QPointF(100, 100), QPointF(300, 250)};
+    for (const QPointF &position : positions) {
+        host.clickWindow(Qt::MiddleButton, Qt::NoModifier, position);
+        QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+        QCOMPARE(applicationsMenu->property("x").toReal(), position.x());
+        QCOMPARE(applicationsMenu->property("y").toReal(), position.y());
+        applicationsMenu->setProperty("visible", false);
+        QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
+    }
+}
+
+void DesktopSurfaceQmlTests::middleClickClampsPopupInsideTheSurfaceNearEdges()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    QVERIFY(applicationsMenu != nullptr);
+
+    // A click near the surface's bottom-right corner must still land a fully
+    // on-surface popup: clamped to width/height away from the far edges, not
+    // the raw (near off-surface) pointer coordinates.
+    host.clickWindow(Qt::MiddleButton, Qt::NoModifier, QPointF(780, 580));
+    QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+    const qreal width = applicationsMenu->property("width").toReal();
+    const qreal height = applicationsMenu->property("height").toReal();
+    const qreal x = applicationsMenu->property("x").toReal();
+    const qreal y = applicationsMenu->property("y").toReal();
+    QCOMPARE(x, 800.0 - width);
+    QCOMPARE(y, 600.0 - height);
+    QVERIFY(x >= 0.0);
+    QVERIFY(y >= 0.0);
+    QVERIFY(x + width <= 800.0);
+    QVERIFY(y + height <= 600.0);
+}
+
+void DesktopSurfaceQmlTests::shiftRightClickPlacementSurvivesAPriorPointerOpen()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    QVERIFY(applicationsMenu != nullptr);
+
+    // Record the pristine default placement (DesktopApplicationsMenu's own
+    // x/y bindings) before any pointer-anchored open ever runs.
+    host.clickWindow(Qt::RightButton, Qt::ShiftModifier, kEmptySpot);
+    QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+    const qreal defaultX = applicationsMenu->property("x").toReal();
+    const qreal defaultY = applicationsMenu->property("y").toReal();
+    QCOMPARE(defaultX, 8.0);
+    applicationsMenu->setProperty("visible", false);
+    QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
+
+    // A middle click anchors the popup at a different point.
+    host.clickWindow(Qt::MiddleButton, Qt::NoModifier, QPointF(200, 150));
+    QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+    QCOMPARE(applicationsMenu->property("x").toReal(), 200.0);
+    QCOMPARE(applicationsMenu->property("y").toReal(), 150.0);
+    applicationsMenu->setProperty("visible", false);
+    QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
+
+    // Shift+right click must land back at the exact original default, not the
+    // stale pointer position: assigning Popup.x/y permanently replaces a
+    // declarative binding, so the fixed-placement path must restore it.
+    host.clickWindow(Qt::RightButton, Qt::ShiftModifier, kEmptySpot);
+    QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+    QCOMPARE(applicationsMenu->property("x").toReal(), defaultX);
+    QCOMPARE(applicationsMenu->property("y").toReal(), defaultY);
+}
+
 void DesktopSurfaceQmlTests::middleClickOverTileStaysInert()
 {
     const QString desktop = desktopPath(*m_home);
@@ -395,6 +500,51 @@ void DesktopSurfaceQmlTests::middleClickOverTileStaysInert()
     // The same host still opens the popup from genuinely empty space.
     host.clickWindow(Qt::MiddleButton, Qt::NoModifier, kEmptySpot);
     QTRY_VERIFY(applicationsMenu->property("opened").toBool());
+}
+
+void DesktopSurfaceQmlTests::middleDoubleClickOverTileStaysInert()
+{
+    const QString desktop = desktopPath(*m_home);
+    QVERIFY(QDir().mkpath(desktop + QStringLiteral("/Projects")));
+    QVERIFY(writeFile(desktop + QStringLiteral("/Notes.txt")));
+
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher,
+                         {{QStringLiteral("placement"), QStringLiteral("left")}},
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto tiles =
+        host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    QCOMPARE(tiles.size(), 2);
+    QQuickItem *folderTile = tiles.at(0);
+
+    auto *applicationsMenu =
+        host.child<QObject>(QStringLiteral("desktopApplicationsMenu"));
+    auto *contextMenu =
+        host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    auto *contents =
+        host.child<QObject>(QStringLiteral("desktopContentsController"));
+    QVERIFY(applicationsMenu != nullptr);
+    QVERIFY(contextMenu != nullptr);
+    QVERIFY(contents != nullptr);
+
+    // A middle double-click over a tile must be exactly as inert as a single
+    // middle click there: no selection, no open, no popup of either kind.
+    // The tile's MouseArea filters onDoubleClicked by mouse.button the same
+    // way it filters onClicked (see DesktopIconsView.qml).
+    const QPointF center(folderTile->width() / 2, folderTile->height() / 2);
+    const QPointF sceneCenter = folderTile->mapToScene(center);
+    QTest::mouseDClick(host.window.get(), Qt::MiddleButton, Qt::NoModifier,
+                       sceneCenter.toPoint());
+    QCOMPARE(folderTile->property("selected").toBool(), false);
+    QCOMPARE(contents->property("feedback").toString(), QString());
+    QCOMPARE(applicationsMenu->property("opened").toBool(), false);
+    QCOMPARE(contextMenu->property("opened").toBool(), false);
 }
 
 void DesktopSurfaceQmlTests::middleClickFailsClosedWithoutLauncherFacade()
