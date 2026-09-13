@@ -206,7 +206,7 @@
           "title": "Global application menu",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The integrated G0 foundation plus the G1 production transports execute a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, an exact-owner com.canonical.AppMenu.Registrar service keyed to caller unique names, an asynchronous com.canonical.dbusmenu client with bounded atomic decoding and revision fencing, and a transport coordinator that binds them to the G0 lineage, all under private-bus hostile tests. G2 composes the accepted transports into the production shell: the shell owns the AppMenu registrar, binds menu truth to the authenticated compositor identity snapshot (ADR-0063), hosts the compiled QindaQt.Shell.GlobalMenu applet with keyboard-reachable submenu popups in the panel dispatcher, and ships it as a closed GlobalMenuAppletRuntime install component. Top-level native popups now request an origin adjacent to the triggering item on every panel edge, with panel-axis sliding while Qt retains switching, submenu, keyboard, dismissal, lifetime, and activation ownership. The Terminal and the Text Editor compose the first-party AppShell menu export like the File Manager, and the shared exporter's lifecycle is fail-closed: native-surface recreation withdraws and republishes the window identity, in-flight registrations are compensated on withdrawal, and registrar replies are classified as confirmed, refused, or uncertain.",
+          "summary": "The integrated G0 foundation plus the G1 production transports execute a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, an exact-owner com.canonical.AppMenu.Registrar service keyed to caller unique names, an asynchronous com.canonical.dbusmenu client with bounded atomic decoding and revision fencing, and a transport coordinator that binds them to the G0 lineage, all under private-bus hostile tests. G2 composes the accepted transports into the production shell: the shell owns the AppMenu registrar, binds menu truth to the authenticated compositor identity snapshot (ADR-0063), hosts the compiled QindaQt.Shell.GlobalMenu applet with keyboard-reachable submenu popups in the panel dispatcher, and ships it as a closed GlobalMenuAppletRuntime install component. Top-level native popups now request an origin adjacent to the triggering item on every panel edge, with panel-axis sliding while Qt retains switching, submenu, keyboard, dismissal, lifetime, and activation ownership. The existing Global Menu applet is admitted in user-authored horizontal and vertical panels at start, center, and fill while retaining its exact grants and invalid-edge/zone rejection. The Terminal and the Text Editor compose the first-party AppShell menu export like the File Manager, and the shared exporter's lifecycle is fail-closed: native-surface recreation withdraws and republishes the window identity, in-flight registrations are compensated on withdrawal, and registrar replies are classified as confirmed, refused, or uncertain.",
           "evidence": [
             {
               "kind": "commit",
@@ -247,9 +247,14 @@
               "kind": "commit",
               "reference": "a5b6c59c",
               "summary": "Exact six-path popup-anchor candidate fe6ad0b7 received independent Sol ACCEPT and is integrated. After explicitly building the main-tree Global Menu QML plugin, the exact nine affected rows pass 9/9; docs validate 254 pages, strict MkDocs and diff checks pass. Live installed-panel adoption remains separate."
+            },
+            {
+              "kind": "commit",
+              "reference": "588c399a",
+              "summary": "Exact five-path vertical-admission candidate 14f0339a received independent Sol ACCEPT and is integrated. The main-tree four-target build and exact affected selector pass 4/4; docs validate 254 pages, strict MkDocs and diff checks pass. Profiles, applet policy and Global Menu implementation remain unchanged."
             }
           ],
-          "caveat": "Source-level native popup positioning is integrated and verified. Physical-session deployment remains open; vertical user-authored panel admission is under independent review, and Sloom exporter selection is integrated with real panel consumption pending."
+          "caveat": "Source-level native popup positioning and vertical user-authored panel admission are integrated and verified. Physical-session deployment remains open, and Sloom exporter selection is integrated with real panel consumption pending."
         },
         {
           "id": "QQ-004.07",

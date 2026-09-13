@@ -1,5 +1,21 @@
 # Integration handoff
 
+## Global Menu vertical-panel admission (September 13)
+
+Exact five-path candidate `14f0339a3efddc6a42fab96243d96400f75a7004`
+received independent Sol/high ACCEPT after a clean detached review. It is
+integrated as `588c399a`. The manifest now admits the existing compiled Global
+Menu applet at start, center, and fill on left/right user-authored panels while
+retaining exact `global-menu.read` authority and the invalid edge/zone and
+panel-end rejection controls. Profiles, applet policy, resolver implementation,
+and Global Menu implementation are unchanged.
+
+The manager rebuilt the catalog, resolver, runtime-composition and Global Menu
+QML-plugin targets with two jobs. The exact integrated selector passes 4/4
+(catalog 6/0, resolver 17/0, runtime composition 8/0, vertical QML 3/0);
+documentation validates 254 pages, strict MkDocs and the lineage diff check
+pass. This is source integration, not installed/live-panel adoption.
+
 ## Dock terminal-bell attention surface (September 13)
 
 Original attention candidate `88ffc3460eab0b451788dbe41f903a26f196db13`

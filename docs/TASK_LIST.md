@@ -54,8 +54,13 @@ panel edges while Qt retains switching, submenu, keyboard, dismissal, lifetime,
 and activation ownership. After explicitly building the main-tree Global Menu
 QML plugin, the exact affected selector passes 9/9; docs validate 254 pages and
 strict MkDocs passes. This is source integration, not installed/live-panel
-adoption. Vertical user-authored panel admission remains a separately reviewed
-descendant.
+adoption. Exact five-path vertical-panel admission descendant `14f0339a` then
+received independent Sol ACCEPT and is integrated as `588c399a`. The existing
+Global Menu applet is admitted at start, center, and fill on left/right panels
+without changing profiles, policy, grants, or implementation; the integrated
+four-target build and exact four-row selector pass 4/4, docs validate 254 pages,
+and strict MkDocs and diff checks pass. Installed/live-panel adoption remains
+separate.
 Terminal audible-attention
 candidate `53402c13` received independent GLM ACCEPT and is integrated as
 `4a39d5bb`: an audible parsed bell preserves the existing beep and requests
