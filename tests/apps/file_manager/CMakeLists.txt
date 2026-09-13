@@ -102,6 +102,11 @@ qindaqt_add_file_manager_test(
     qindaqt.file-manager-navigation-controller-network
 )
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_controller_network_mutation_tests
+    tst_navigation_controller_network_mutation.cpp
+    qindaqt.file-manager-navigation-controller-network-mutation
+)
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_kio_network_backend_tests
     tst_kio_network_directory_backend.cpp
     qindaqt.file-manager-kio-network-backend
