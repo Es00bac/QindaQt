@@ -12,6 +12,7 @@
 #include "model/places_controller.h"
 #include "model/search_controller.h"
 #include "network/kio_network_directory_backend.h"
+#include "network/kio_remote_file_opener.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
 #include "runtime/mutation_ui_action_probe.h"
@@ -215,7 +216,8 @@ int main(int argc, char **argv) {
   auto controller = std::make_unique<QindaQt::Apps::FileManager::NavigationController>(
       std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
       std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>());
+      std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>(),
+      std::make_unique<QindaQt::Apps::FileManager::KioRemoteFileOpener>());
   auto *previews = new QindaQt::Apps::FileManager::PreviewProvider(
       std::make_unique<QindaQt::Apps::FileManager::LocalPreviewDecoder>());
   engine.addImageProvider(QStringLiteral("previews"), previews);

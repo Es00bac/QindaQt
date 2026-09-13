@@ -11,8 +11,10 @@ view switch, and a places/bookmarks sidebar persisted in an app-local state
 file. The visual browsing revision adds catalog icons and bounded local raster previews. S3 adds the daily-use
 file clipboard (cut/copy/paste), drag-and-drop, a bounded recursive search,
 and a properties dialog. S5 adds read-only `smb://`/`sftp://` network-location
-browsing behind an injected asynchronous backend seam (ADR-0137). Per-volume
-Trash, mounts, remote file opening/mutation, and a credential-entry UI
+browsing behind an injected asynchronous backend seam (ADR-0137) and opens
+remote regular files through the desktop's default handler via the injected
+`RemoteFileOpener` seam on `KIO::OpenUrlJob` (ADR-0152). Per-volume
+Trash, mounts, remote file mutation, and a QindaQt credential-entry UI
 remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -619,10 +621,12 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   through the Program Manager thread first).
 - **S5 (read-only browsing landed)** — `smb://`/`sftp://` folder browsing
   through the injected, asynchronous `NetworkDirectoryBackend` seam and the
-  production `KioNetworkDirectoryBackend` adapter (ADR-0137). Still open:
-  remote regular-file opening (currently a truthful disabled state),
-  mount-based access, and a credential-entry UI; portal locations remain
-  out of scope.
+  production `KioNetworkDirectoryBackend` adapter (ADR-0137), with ordinary
+  KIO authentication prompts (ADR-0151) and remote regular-file opening
+  through `KIO::OpenUrlJob` behind the injected `RemoteFileOpener` seam
+  (ADR-0152). Still open: remote file mutation, mount-based access, and a
+  QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
+  authentication); portal locations remain out of scope.
 
 ## Bounded deferrals
 
@@ -633,7 +637,7 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
   additional preview formats, portal-mediated paths, open-with, remote file
-  opening/mutation, and a credential-entry UI remain explicit later outcomes
+  mutation, and a QindaQt credential-entry UI remain explicit later outcomes
   (S3–S5).
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
@@ -656,10 +660,13 @@ The S5 network-browsing rows are `qindaqt.file-manager-network-location`
 `..`-escape refusal, parent/breadcrumb/child URL derivation),
 `qindaqt.file-manager-navigation-controller-network` (async success/typed
 error/stale-generation/URL-mismatch/truncated-listing/local-remote routing/
-remote-directory-activation/remote-file-disabled-launch, all against a fake
-injected backend), and `qindaqt.file-manager-kio-network-backend` (the
-production `KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
-job-creation test seam), and `qindaqt.file-manager-mutation-action-binding`
+remote-directory-activation/remote-file-open-through-the-injected-opener/
+typed-open-failure-and-error-clearing, all against a fake injected backend),
+`qindaqt.file-manager-kio-network-backend` (the production
+`KioNetworkDirectoryBackend`'s own scheme/policy boundary via a
+job-creation test seam), `qindaqt.file-manager-kio-remote-opener` (the
+production `KioRemoteFileOpener`'s scheme boundary and retained KIO UI
+delegate via a job-creation test seam), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay

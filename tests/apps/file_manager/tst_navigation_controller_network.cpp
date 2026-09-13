@@ -10,6 +10,7 @@ using namespace QindaQt::Apps::FileManager;
 using QindaQt::Apps::FileManager::Test::FakeDirectoryLister;
 using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
+using QindaQt::Apps::FileManager::Test::FakeRemoteFileOpener;
 
 namespace {
 
@@ -64,6 +65,10 @@ private slots:
   void remoteToRemoteNavigationCancelsTheSupersededGeneration();
   void activatingARemoteDirectoryNavigatesToItsChildUrl();
   void activatingARemoteFileIsTruthfullyDisabled();
+  void activatingARemoteFileOpensItThroughTheRemoteOpener();
+  void aRemoteOpenFailurePublishesATruthfulLaunchError();
+  void aSuccessfulRemoteOpenClearsAPreviousLaunchError();
+  void destructionWithAPendingRemoteOpenDoesNotCrash();
   void destructionWithAPendingRequestDoesNotCrash();
 };
 
@@ -326,6 +331,94 @@ void TestNavigationControllerNetwork::activatingARemoteFileIsTruthfullyDisabled(
   controller.activate(0);
   QVERIFY(!controller.launchError().isEmpty());
   QVERIFY(rawLauncher->requestedPaths().isEmpty());
+}
+
+// ADR-0152: with an injected opener, activating a remote regular file must
+// hand the canonical child URL to it instead of reporting "not supported".
+void TestNavigationControllerNetwork::activatingARemoteFileOpensItThroughTheRemoteOpener() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto opener = std::make_unique<FakeRemoteFileOpener>();
+  auto *rawOpener = opener.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  std::move(opener));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  controller.navigateTo(url.toString());
+  const quint64 generation = rawBackend->requests().last().generation;
+  rawBackend->emitReady(
+      generation, url,
+      successResult(url, {makeEntry(QStringLiteral("notes.txt"),
+                                    QStringLiteral("smb://server/share/notes.txt"), false)}));
+
+  controller.activate(0);
+  QCOMPARE(rawOpener->requestedUrls().size(), 1);
+  QCOMPARE(rawOpener->requestedUrls().constFirst().toString(),
+           QStringLiteral("smb://server/share/notes.txt"));
+  rawOpener->finishSuccess();
+  QVERIFY(controller.launchError().isEmpty());
+}
+
+void TestNavigationControllerNetwork::aRemoteOpenFailurePublishesATruthfulLaunchError() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto opener = std::make_unique<FakeRemoteFileOpener>();
+  auto *rawOpener = opener.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  std::move(opener));
+
+  const QUrl url(QStringLiteral("sftp://server/home"));
+  controller.navigateTo(url.toString());
+  const quint64 generation = rawBackend->requests().last().generation;
+  rawBackend->emitReady(
+      generation, url,
+      successResult(url, {makeEntry(QStringLiteral("notes.txt"),
+                                    QStringLiteral("sftp://server/home/notes.txt"), false)}));
+
+  controller.activate(0);
+  rawOpener->finishFailure(QStringLiteral("synthetic open failure"));
+  QCOMPARE(controller.launchError(), QStringLiteral("synthetic open failure"));
+}
+
+void TestNavigationControllerNetwork::aSuccessfulRemoteOpenClearsAPreviousLaunchError() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto opener = std::make_unique<FakeRemoteFileOpener>();
+  auto *rawOpener = opener.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  std::move(opener));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  controller.navigateTo(url.toString());
+  const quint64 generation = rawBackend->requests().last().generation;
+  rawBackend->emitReady(
+      generation, url,
+      successResult(url, {makeEntry(QStringLiteral("notes.txt"),
+                                    QStringLiteral("smb://server/share/notes.txt"), false)}));
+
+  controller.activate(0);
+  rawOpener->finishFailure(QStringLiteral("synthetic open failure"));
+  QVERIFY(!controller.launchError().isEmpty());
+  // A later successful open retires the stale error instead of leaving the
+  // banner up over an unrelated success.
+  controller.activate(0);
+  rawOpener->finishSuccess();
+  QVERIFY(controller.launchError().isEmpty());
+}
+
+void TestNavigationControllerNetwork::destructionWithAPendingRemoteOpenDoesNotCrash() {
+  {
+    auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+    auto opener = std::make_unique<FakeRemoteFileOpener>();
+    NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                    std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                    std::move(opener));
+    controller.navigateTo(QStringLiteral("smb://server/share"));
+  }
+  QVERIFY(true);
 }
 
 void TestNavigationControllerNetwork::destructionWithAPendingRequestDoesNotCrash() {

@@ -7,6 +7,7 @@
 #include "listing_order.h"
 #include "navigation_history.h"
 #include "../network/network_directory_backend.h"
+#include "../network/remote_file_opener.h"
 
 #include <QObject>
 #include <QUrl>
@@ -71,9 +72,12 @@ class NavigationController final : public QObject {
 public:
   // networkBackend may be null: navigateTo() then refuses every smb/sftp
   // location with a typed Unavailable status instead of routing anywhere,
-  // and every existing local-only caller/test is unaffected.
+  // and every existing local-only caller/test is unaffected. remoteOpener
+  // may also be null: remote regular-file activation then keeps reporting
+  // the truthful "not supported yet" launchError instead of opening.
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
                        NetworkDirectoryBackendPtr networkBackend = nullptr,
+                       RemoteFileOpenerPtr remoteOpener = nullptr,
                        QObject *parent = nullptr);
 
   // Navigates as if the user chose path directly (breadcrumb segment, typed
@@ -172,11 +176,15 @@ private:
   // clearing/leaving the remote location) is silently discarded.
   void onNetworkListingReady(quint64 generation, const QUrl &url,
                              const NetworkListingResult &result);
+  // ADR-0152: hands a remote regular file to the injected opener, or reports
+  // the truthful "not supported yet" error when none is injected.
+  void activateRemoteFile(const DirectoryEntry &entry);
   [[nodiscard]] static NavigationStatus statusForNetworkError(NetworkListingError error);
 
   DirectoryListerPtr m_lister;
   FileLauncherPtr m_launcher;
   NetworkDirectoryBackendPtr m_networkBackend;
+  RemoteFileOpenerPtr m_remoteOpener;
   bool m_remoteActive = false;
   QUrl m_remoteUrl;
   NavigationHistory m_history;
