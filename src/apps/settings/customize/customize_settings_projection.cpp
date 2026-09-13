@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_customize/customize_settings_model.h"
 
+#include "customize_applet_setting_validation.h"
+
 #include "qindaqt/shell_customization_editor/accessibility_identity.h"
 
 #include <QJsonArray>
@@ -51,11 +53,12 @@ QVariantList schemaFields(const Applets::AppletManifest *manifest,
     names.sort();
     for (const QString &name : names) {
         const QJsonObject schema = properties.value(name).toObject();
+        const AppletSettingFieldKind kind = appletSettingFieldKind(schema);
         QVariantMap field{
             {QStringLiteral("key"), name},
             {QStringLiteral("label"), name},
             {QStringLiteral("type"), schema.value(QStringLiteral("type")).toString()},
-            {QStringLiteral("editable"), false},
+            {QStringLiteral("editable"), kind != AppletSettingFieldKind::Unsupported},
         };
         const QVariant current = applet.settings.value(name);
         field.insert(QStringLiteral("value"),

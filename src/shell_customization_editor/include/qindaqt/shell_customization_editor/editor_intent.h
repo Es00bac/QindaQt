@@ -5,6 +5,7 @@
 #include "qindaqt/profiles/profile_types.h"
 
 #include <QString>
+#include <QVariantMap>
 #include <QtTypes>
 
 #include <optional>
@@ -59,6 +60,7 @@ enum class IntentKind {
     DuplicateApplet,
     ConfigurePanel,
     MovePanel,
+    ConfigureAppletSettings,
 };
 
 struct InsertAppletIntent final {
@@ -106,12 +108,26 @@ struct MovePanelIntent final {
     std::optional<QString> beforePanelId;
 };
 
+// AGENT-CONTRACT: settings must carry the applet's complete current settings
+// map with exactly the caller-validated field changed, because the engine's
+// UpdateAppletSettingsCommand replaces the whole map (see
+// AppletEditMutation::apply). The typed schema validation (declared kind,
+// bounds, enum membership) is the caller's responsibility: this intent and
+// its structural validateIntent() pass carry no schema/type policy, matching
+// ConfigurePanelIntent's full-tuple-replace precedent.
+struct ConfigureAppletSettingsIntent final {
+    QString panelId;
+    QString appletId;
+    QVariantMap settings;
+};
+
 using CustomizationIntent = std::variant<InsertAppletIntent,
                                          MoveAppletIntent,
                                          RemoveAppletIntent,
                                          DuplicateAppletIntent,
                                          ConfigurePanelIntent,
-                                         MovePanelIntent>;
+                                         MovePanelIntent,
+                                         ConfigureAppletSettingsIntent>;
 
 [[nodiscard]] IntentKind intentKind(const CustomizationIntent &intent) noexcept;
 
@@ -129,6 +145,8 @@ using CustomizationIntent = std::variant<InsertAppletIntent,
                                                   Profiles::Edge edge,
                                                   Profiles::Alignment alignment,
                                                   const std::optional<QString> &beforePanelId);
+[[nodiscard]] CustomizationIntent configureAppletSettingsIntent(
+    const QString &panelId, const QString &appletId, const QVariantMap &settings);
 
 // Structural validation only. Existence, manifest compatibility, collision,
 // and layout acceptance are engine authority (evaluate()/execute()); this pass

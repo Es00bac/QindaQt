@@ -60,6 +60,7 @@ static_assert(std::is_same_v<std::variant_alternative_t<2, CustomizationIntent>,
 static_assert(std::is_same_v<std::variant_alternative_t<3, CustomizationIntent>, DuplicateAppletIntent>);
 static_assert(std::is_same_v<std::variant_alternative_t<4, CustomizationIntent>, ConfigurePanelIntent>);
 static_assert(std::is_same_v<std::variant_alternative_t<5, CustomizationIntent>, MovePanelIntent>);
+static_assert(std::is_same_v<std::variant_alternative_t<6, CustomizationIntent>, ConfigureAppletSettingsIntent>);
 
 IntentKind intentKind(const CustomizationIntent &intent) noexcept
 {
@@ -101,6 +102,13 @@ CustomizationIntent movePanelIntent(const QString &panelId,
                                     const std::optional<QString> &beforePanelId)
 {
     return MovePanelIntent{panelId, outputId, edge, alignment, beforePanelId};
+}
+
+CustomizationIntent configureAppletSettingsIntent(const QString &panelId,
+                                                  const QString &appletId,
+                                                  const QVariantMap &settings)
+{
+    return ConfigureAppletSettingsIntent{panelId, appletId, settings};
 }
 
 QVector<EditingCommand> translateIntent(const CustomizationIntent &intent,
@@ -193,6 +201,16 @@ QVector<EditingCommand> translateIntent(const CustomizationIntent &intent,
         command.edge = move.edge;
         command.alignment = move.alignment;
         command.beforePanelId = move.beforePanelId;
+        commands.append(command);
+        break;
+    }
+    case IntentKind::ConfigureAppletSettings: {
+        const auto &configure = std::get<ConfigureAppletSettingsIntent>(intent);
+        UpdateAppletSettingsCommand command;
+        command.expectedRevision = context.expectedRevision;
+        command.panelId = configure.panelId;
+        command.appletId = configure.appletId;
+        command.settings = configure.settings;
         commands.append(command);
         break;
     }

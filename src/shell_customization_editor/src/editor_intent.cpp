@@ -128,6 +128,18 @@ IntentValidation validateIntent(const CustomizationIntent &intent, const DropTar
         }
         return {};
     }
+    case IntentKind::ConfigureAppletSettings: {
+        const auto &configure = std::get<ConfigureAppletSettingsIntent>(intent);
+        if (configure.panelId.trimmed().isEmpty()) {
+            return failure(IntentErrorCode::EmptyPanelId,
+                           QStringLiteral("configured applet's owning panel must not be blank"));
+        }
+        if (configure.appletId.trimmed().isEmpty()) {
+            return failure(IntentErrorCode::EmptyAppletId,
+                           QStringLiteral("configured applet must not be blank"));
+        }
+        return {};
+    }
     }
     return {};
 }

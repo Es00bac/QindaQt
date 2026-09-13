@@ -25,10 +25,16 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 
 - **Intent values** (`editor_intent.h`): drag payload (palette plugin or
   applet instance), resolved drop target identity `(panelId, zone, beforeAppletId)`,
-  the six customization intents, and structural validation. Validation only
+  the seven customization intents, and structural validation. Validation only
   checks shape (blank identities, zone vocabulary `start`/`center`/`end`,
   self-anchoring moves, configuration bounds); existence, manifest
   compatibility, and layout acceptance stay with the engine.
+  `ConfigureAppletSettingsIntent` carries the applet's complete settings map
+  (like `ConfigurePanelIntent`, `UpdateAppletSettingsCommand` replaces the
+  whole map) with exactly the caller-validated field changed; typed
+  schema-kind/bounds/enum validation is the caller's responsibility (see the
+  [Settings Customize route](../apps/customize-settings.md)), not this
+  module's.
 - **Intent translator** (`intent_translator.h`): a pure function from intent +
   target + context to ordered `EditingCommand` sequences. Identical inputs
   always produce identical sequences, which is the invariant behind
