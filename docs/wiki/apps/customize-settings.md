@@ -265,7 +265,12 @@ sole direct `QDBusConnection` exception is the named route-composition source
 that constructs the public Settings1 transport. The installed row reuses the
 sanitized Settings package harness and proves the relocated module, the staged
 confined icon module, and the
-catalogs.
+catalogs. When Qt's own QML directory also holds an installed QindaQt, whose
+modules would satisfy the harness's withheld-module poisons and keep the
+relocated application running until timeout, the row runs that unchanged
+harness in a private bubblewrap mount namespace that hides only the host
+`QindaQt` directory, and fails with an explicit diagnostic when that isolation
+is unavailable.
 
 These tests use injected transports, temporary stores, and offscreen rendering.
 They do not contact a host session bus, compositor, hardware, or input device.

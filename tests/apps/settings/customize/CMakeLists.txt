@@ -284,7 +284,10 @@ set_tests_properties(
 
 # The route-specific row deliberately reuses the Settings package harness. It
 # gives the Customize selector an installed-prefix proof while keeping route
-# construction authority in one hostile, sanitized script.
+# construction authority in one hostile, sanitized script. The local driver
+# only hides a host-installed QindaQt from Qt's QML directory, so withheld staged
+# modules cannot resolve to the host copy (see run_isolated_package_check.cmake).
+find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 add_test(
     NAME qindaqt.settings-customize-installed-route
     COMMAND "${CMAKE_COMMAND}"
@@ -296,7 +299,10 @@ add_test(
             -DSETTINGS_EXECUTABLE_NAME=qindaqt-settings${CMAKE_EXECUTABLE_SUFFIX}
             -DCONFIGURATION=$<CONFIG>
             -DROUTE_CHECK=${PROJECT_SOURCE_DIR}/tests/apps/settings_center/check_route_construction.cmake
-            -P ${PROJECT_SOURCE_DIR}/tests/apps/settings_center/check_installed_routes.cmake
+            -DPACKAGE_CHECK=${PROJECT_SOURCE_DIR}/tests/apps/settings_center/check_installed_routes.cmake
+            -DHOST_QML_IMPORT_DIR=${QT6_INSTALL_PREFIX}/${QT6_INSTALL_QML}
+            -DBWRAP_EXECUTABLE=${QINDAQT_DESKTOP_BWRAP}
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_isolated_package_check.cmake"
 )
 set_tests_properties(
     qindaqt.settings-customize-installed-route PROPERTIES
