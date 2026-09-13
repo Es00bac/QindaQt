@@ -169,4 +169,71 @@ TestCase {
         const bar = findChild(browser, "entry" + data.tag + "ScrollBar")
         verify(!bar.visible)
     }
+    function delegateByIndex(index) {
+        for (let i = 0; i < view.contentItem.children.length; ++i) {
+            const child = view.contentItem.children[i]
+            if (child.index === index)
+                return child
+        }
+        return null
+    }
+    function test_marqueeSelection_data() { return [{tag:"Grid"}, {tag:"List"}] }
+    function test_marqueeSelection(data) {
+        navigation.entries = navigation.entries.slice(0, 2)
+        fixtureSelection.selectOnly(0)
+        open(data.tag)
+        const band = findChild(browser, "selectionBand")
+        verify(band !== null)
+        // A band dragged across both entries selects exactly them.
+        mouseDrag(band, 20, 300, 560, -260)
+        compare(fixtureSelection.count(), 2)
+        compare(fixtureSelection.currentIndex, 1)
+        // A plain click on empty space clears the selection.
+        mouseClick(band, 20, 300)
+        compare(fixtureSelection.count(), 0)
+        // Shift-drag unions with the current selection.
+        fixtureSelection.selectOnly(1)
+        mouseDrag(band, 20, 300, 560, -260, Qt.LeftButton, Qt.ShiftModifier)
+        compare(fixtureSelection.count(), 2)
+        // Ctrl-drag toggles every crossed entry: starting from only entry 0,
+        // entry 0 drops out and entry 1 joins.
+        fixtureSelection.selectOnly(0)
+        mouseDrag(band, 20, 300, 560, -260, Qt.LeftButton, Qt.ControlModifier)
+        compare(fixtureSelection.count(), 1)
+        verify(!fixtureSelection.isSelected(0))
+        verify(fixtureSelection.isSelected(1))
+        // Presses on a delegate never start a band: ordinary clicking below
+        // keeps working and the band reports nothing.
+        fixtureSelection.selectOnly(0)
+        const first = delegateByIndex(0)
+        mouseDrag(first, 5, 5, 30, 30)
+        compare(fixtureSelection.count(), 1)
+        verify(fixtureSelection.isSelected(0))
+    }
+    function test_detailsRowsAlternateBackground() {
+        open("List")
+        fixtureSelection.selected = ({})
+        const even = delegateByIndex(0)
+        const odd = delegateByIndex(1)
+        verify(even !== null && odd !== null)
+        // Even rows rest transparent; odd rows carry the palette's
+        // alternateBase so adjacent rows are easy to tell apart.
+        compare(String(even.color), "#00000000")
+        compare(String(odd.color), String(browser.palette.alternateBase))
+        // Hover is a translucent highlight tint on either parity.
+        const highlight = browser.palette.highlight
+        const hoverTint = Qt.rgba(highlight.r, highlight.g, highlight.b, 0.20)
+        mouseMove(odd, 4, 4)
+        tryCompare(odd, "color", hoverTint)
+        mouseMove(even, 4, 4)
+        tryCompare(even, "color", hoverTint)
+        // Move the pointer into empty trailing viewport space (only two
+        // fixture entries) so the hover highlight clears entirely.
+        const band = findChild(browser, "selectionBand")
+        mouseMove(band, band.width - 4, band.height - 4)
+        tryCompare(even, "color", "#00000000")
+        // Selection still wins over both stripes and hover.
+        fixtureSelection.selectOnly(1)
+        tryCompare(odd, "color", browser.palette.highlight)
+    }
 }

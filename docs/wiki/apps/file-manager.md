@@ -5,7 +5,8 @@ landed bounded listing, navigation, and regular-file launch. S1 adds local new
 folder, rename, copy, same-filesystem move, home Trash, restore, and
 empty-Trash operations with cooperative cancellation, progress, typed failure,
 and one-level recovery. S2 adds the core browsing surface: an editable
-location bar, multi-select with serialized batch operations, configurable
+location bar, multi-select with serialized batch operations (including the
+rubber-band marquee gesture and alternating Details-row backgrounds), configurable
 sorting with size/kind/modified columns, a hidden-file toggle, a list/grid
 view switch, and a places/bookmarks sidebar persisted in an app-local state
 file. The visual browsing revision adds catalog icons and bounded local raster previews. S3 adds the daily-use
@@ -97,7 +98,16 @@ the sidebar narrows from 196 to 148 pixels below 680 pixels window width. Bookma
 `BookmarksStore` (ADR-0090); a bookmark whose folder vanished simply lands on
 the ordinary "missing" state card.
 
-The main pane defaults to a spacious icon grid. Details mode exposes a clickable
+The main pane defaults to a spacious icon grid. Both views support rubber-band
+(marquee) selection: dragging on empty viewport space draws a band and selects
+every crossed entry on release, with the usual modifier policy (a plain band
+replaces the selection, Shift unions, Control toggles); a band-free click on
+empty space clears it. Selection also composes from click, Ctrl+click, and
+Shift+click range gestures, `Ctrl+A`, and keyboard navigation. Details mode
+alternates row backgrounds (odd rows carry the palette's `alternateBase`, even
+rows stay transparent, hover is a translucent highlight tint on either parity,
+and the selection highlight always wins) so adjacent rows are easy to tell
+apart. Details mode exposes a clickable
 sort header (Name, Size, Kind, Modified); metadata columns progressively hide
 below the available width, preserving the filename and size. Clicking the active column reverses its
 direction; directories sort first by default. Hidden entries (dot names) are
@@ -132,8 +142,8 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `entryListView` / `entryGridView` | `Return`/`Enter` | Open the selected entry |
 
 The status bar reports the visible item or selection count and provides zoom
-buttons plus a reset percentage. Zoom uses five bounded, session-local icon
-sizes (32, 48, 64, 96, 128 logical pixels; 64 is the default). Details rows scale
+buttons plus a reset percentage. Zoom uses seven bounded, session-local icon
+sizes (16, 24, 32, 48, 64, 96, 128 logical pixels; 64 is the default). Details rows scale
 their icons and height proportionally. Zoom leaves the view mode unchanged;
 `Ctrl+1`/`Ctrl+2` select a mode explicitly. These catalog commands are not
 checkable toggles: repeating the current view does nothing. Folder Options

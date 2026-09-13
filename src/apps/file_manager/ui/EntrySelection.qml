@@ -66,6 +66,36 @@ QtObject {
         selected = next
         focusIndex(index)
     }
+    // Rubber-band results arrive as a raw index array (view-order
+    // intersection, already sorted). Modifiers match every other selection
+    // gesture: Shift unions into the current set, Control toggles each hit,
+    // and no modifier replaces the set. An empty array with no modifier is
+    // an empty-space click and clears the selection.
+    function applyIndexSet(indexes, modifiers) {
+        const entries = navigationController.entries
+        const valid = indexes.filter(index => index >= 0 && index < entries.length)
+        if (modifiers & Qt.ControlModifier) {
+            const next = Object.assign({}, selected)
+            for (const index of valid) {
+                const id = key(entries[index])
+                if (next[id] !== undefined) delete next[id]
+                else next[id] = entries[index]
+            }
+            selected = next
+        } else if (modifiers & Qt.ShiftModifier) {
+            const next = Object.assign({}, selected)
+            for (const index of valid) next[key(entries[index])] = entries[index]
+            selected = next
+        } else {
+            const next = ({})
+            for (const index of valid) next[key(entries[index])] = entries[index]
+            selected = next
+        }
+        if (valid.length > 0) {
+            focusIndex(valid[valid.length - 1])
+            anchorKey = currentKey
+        }
+    }
     function selectAll() {
         const next = ({})
         for (const entry of navigationController.entries) next[key(entry)] = entry

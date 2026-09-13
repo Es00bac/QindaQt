@@ -3,12 +3,29 @@
 
 #include "public/desktop_file_boundary.h"
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QStandardPaths>
 #include <QVariantMap>
 
 #include <utility>
 
 namespace QindaQt::Shell::DesktopSurface {
+
+namespace {
+
+// The platform clipboard only exists under a QGuiApplication; GUI-less
+// controller tests run under QCoreApplication and leave this null, which the
+// clipboard policy treats as fail-closed.
+QClipboard *applicationClipboard()
+{
+    if (qobject_cast<QGuiApplication *>(QCoreApplication::instance()) == nullptr) {
+        return nullptr;
+    }
+    return QGuiApplication::clipboard();
+}
+
+} // namespace
 
 DesktopContentsController::DesktopContentsController(QObject *parent)
     : DesktopContentsController(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
@@ -17,16 +34,22 @@ DesktopContentsController::DesktopContentsController(QObject *parent)
 }
 
 DesktopContentsController::DesktopContentsController(QString root, QObject *parent)
-    : QObject(parent), m_root(std::move(root))
+    : DesktopContentsController(std::move(root), std::nullopt, applicationClipboard(), parent)
 {
-    initializeMutation();
-    refresh();
 }
 
 DesktopContentsController::DesktopContentsController(QString root, QStringList fileManagerPrograms,
                                                      QObject *parent)
+    : DesktopContentsController(std::move(root), std::move(fileManagerPrograms), nullptr, parent)
+{
+}
+
+DesktopContentsController::DesktopContentsController(QString root,
+                                                     std::optional<QStringList> fileManagerPrograms,
+                                                     QClipboard *clipboard, QObject *parent)
     : QObject(parent), m_root(std::move(root)),
-      m_fileManagerPrograms(std::move(fileManagerPrograms))
+      m_fileManagerPrograms(std::move(fileManagerPrograms)),
+      m_clipboard(clipboard)
 {
     initializeMutation();
     refresh();
@@ -36,6 +59,7 @@ DesktopContentsController::~DesktopContentsController() = default;
 
 void DesktopContentsController::initializeMutation()
 {
+    using QindaQt::Apps::FileManager::ClipboardController;
     using QindaQt::Apps::FileManager::MutationController;
     using QindaQt::Apps::FileManager::Desktop::FileBoundary;
     m_mutation = FileBoundary::createLocalMutationController(this);
@@ -46,6 +70,12 @@ void DesktopContentsController::initializeMutation()
             publishFeedback(m_mutation->failureMessage());
         }
     });
+    if (m_clipboard != nullptr) {
+        m_clipboardController =
+            FileBoundary::createLocalClipboardController(*m_mutation, *m_clipboard, this);
+        connect(m_clipboardController.get(), &ClipboardController::stateChanged, this,
+                [this]() { emit clipboardChanged(); });
+    }
 }
 
 void DesktopContentsController::refresh()
@@ -76,6 +106,15 @@ void DesktopContentsController::refresh()
                 {QStringLiteral("accessibleName"),
                  QStringLiteral("%1, %2").arg(entry.name, entry.absolutePath)},
                 {QStringLiteral("isDirectory"), entry.isDirectory},
+                // Listing-time identity, exactly the shape the mutation
+                // batch and clipboard contracts consume (decimal strings),
+                // so the QML passes selected rows through unchanged.
+                {QStringLiteral("device"), QString::number(entry.device)},
+                {QStringLiteral("inode"), QString::number(entry.inode)},
+                {QStringLiteral("identitySize"), QString::number(entry.identitySize)},
+                {QStringLiteral("modifiedNanoseconds"),
+                 QString::number(entry.modifiedNanoseconds)},
+                {QStringLiteral("mode"), QString::number(entry.mode)},
                 // Stable across a rename and unique within the mounted
                 // filesystem. Presentation uses this only as a layout key;
                 // mutation still receives the complete identity below.
@@ -141,6 +180,116 @@ bool DesktopContentsController::rename(const QString &absolutePath, const QStrin
     if (!m_mutation->renameItem(absolutePath, newName, identity)) {
         if (!m_mutation->failureMessage().isEmpty()) {
             publishFeedback(m_mutation->failureMessage());
+        }
+        return false;
+    }
+    clearFeedback();
+    return true;
+}
+
+bool DesktopContentsController::trashEntries(const QVariantList &items)
+{
+    QVariantList batch;
+    QString diagnostic;
+    if (!collectBatchItems(items, &batch, &diagnostic)) {
+        publishFeedback(diagnostic);
+        return false;
+    }
+    if (!m_mutation->trashItems(batch)) {
+        if (!m_mutation->failureMessage().isEmpty()) {
+            publishFeedback(m_mutation->failureMessage());
+        }
+        return false;
+    }
+    clearFeedback();
+    return true;
+}
+
+bool DesktopContentsController::copySelection(const QVariantList &items)
+{
+    return dispatchClipboardSelection(
+        items, [this](const QVariantList &batch) { return m_clipboardController->copySelection(batch); });
+}
+
+bool DesktopContentsController::cutSelection(const QVariantList &items)
+{
+    return dispatchClipboardSelection(
+        items, [this](const QVariantList &batch) { return m_clipboardController->cutSelection(batch); });
+}
+
+bool DesktopContentsController::pasteIntoDesktop()
+{
+    if (!m_clipboardController) {
+        publishFeedback(QStringLiteral("The clipboard is not available"));
+        return false;
+    }
+    if (!m_clipboardController->pasteInto(m_root)) {
+        if (!m_clipboardController->lastRejection().isEmpty()) {
+            publishFeedback(m_clipboardController->lastRejection());
+        }
+        return false;
+    }
+    clearFeedback();
+    return true;
+}
+
+bool DesktopContentsController::canPaste() const
+{
+    return m_clipboardController != nullptr && m_clipboardController->canPaste();
+}
+
+QString DesktopContentsController::clipboardMode() const
+{
+    return m_clipboardController != nullptr ? m_clipboardController->mode()
+                                            : QStringLiteral("none");
+}
+
+bool DesktopContentsController::collectBatchItems(const QVariantList &items,
+                                                  QVariantList *batch,
+                                                  QString *diagnostic) const
+{
+    for (const QVariant &item : items) {
+        const QVariantMap map = item.toMap();
+        const QString path = map.value(QStringLiteral("path")).toString();
+        const auto listed = m_listed.constFind(path);
+        if (path.isEmpty() || listed == m_listed.cend()) {
+            // AGENT-GUARD: only entries the last listing reported may be
+            // mutated; an unknown path is refused before any batch item is
+            // built, so nothing else gets trashed or clipboard-adopted.
+            *diagnostic = path.isEmpty()
+                ? QStringLiteral("A selected entry is no longer on the Desktop")
+                : QStringLiteral("%1 is not on the Desktop").arg(path);
+            return false;
+        }
+        batch->append(QVariantMap{
+            {QStringLiteral("path"), path},
+            {QStringLiteral("device"), QString::number(listed->device)},
+            {QStringLiteral("inode"), QString::number(listed->inode)},
+            {QStringLiteral("identitySize"), QString::number(listed->identitySize)},
+            {QStringLiteral("modifiedNanoseconds"),
+             QString::number(listed->modifiedNanoseconds)},
+            {QStringLiteral("mode"), QString::number(listed->mode)},
+        });
+    }
+    return true;
+}
+
+bool DesktopContentsController::dispatchClipboardSelection(
+    const QVariantList &items, const std::function<bool(const QVariantList &)> &dispatch)
+{
+    if (!m_clipboardController) {
+        publishFeedback(QStringLiteral("The clipboard is not available"));
+        return false;
+    }
+    QVariantList batch;
+    QString diagnostic;
+    if (!collectBatchItems(items, &batch, &diagnostic)) {
+        publishFeedback(diagnostic);
+        return false;
+    }
+    if (!dispatch(batch)) {
+        if (!m_clipboardController->lastRejection().isEmpty()) {
+            publishFeedback(m_clipboardController->lastRejection());
         }
         return false;
     }
