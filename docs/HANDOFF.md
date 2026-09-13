@@ -40,9 +40,16 @@ the File Manager composes a QWidget-capable application so that standard dialog
 path does not abort. The integrated affected selector passes 10/10, including
 the hermetic Open With regression and font-bootstrap wiring row; documentation
 validates 251 pages, strict MkDocs and the integration diff check pass.
-Installed/live network access and real credentials were not exercised. Remote
-Rename remains a separately reviewed delta being rebased onto this accepted
-parent before integration.
+Installed/live network access and real credentials were not exercised.
+
+The remote-Rename delta was independently accepted after exact-parent rebase as
+`28b109a0` and is integrated as `133d5f54`. File Manager now renames one listed
+SMB/SFTP child within its current remote folder through KIO's standard rename
+facility, with generation fencing and no optimistic display. The integrated
+eight-row File Manager/bootstrap selector passes 8/8 with the action-binding
+row's required offscreen platform; docs validate 252 pages, strict MkDocs and
+the integration diff check pass. Remote create/copy/move/write operations and
+installed/live credential validation remain separate boundaries.
 
 Worker and reviewer terminals used the existing direct-TTY, independent
 user-systemd lifetime rule, and long integration gates use the existing
