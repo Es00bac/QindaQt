@@ -158,3 +158,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0154: remote New Folder through KIO's mkdir()](0154-file-manager-remote-new-folder.md)
 - [ADR-0155: remote Copy To through KIO's copy()](0155-file-manager-remote-copy-to.md)
 - [ADR-0156: remote Move To through KIO's move()](0156-file-manager-remote-move-to.md)
+- [ADR-0157: remote write-in-place through the session KIOFuse service](0157-file-manager-remote-write-in-place.md)

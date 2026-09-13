@@ -18,10 +18,13 @@ listed child through the injected `RemoteRenamer` seam on `KIO::rename()`
 (ADR-0153), creates one validated child directory through the injected
 `RemoteFolderCreator` seam on `KIO::mkdir()` (ADR-0154), copies one listed
 child to a validated remote destination folder through the injected
-`RemoteCopier` seam on `KIO::copy()` (ADR-0155), and moves one listed child
+`RemoteCopier` seam on `KIO::copy()` (ADR-0155), moves one listed child
 the same way through the injected `RemoteMover` seam on `KIO::move()`
-(ADR-0156). Per-volume
-Trash, mounts, remote file write, and a QindaQt credential-entry UI
+(ADR-0156), and writes a remote file's edits back in place by resolving
+the canonical URL through the session KIOFuse service and opening the
+returned local write-back path through the same `KIO::OpenUrlJob` boundary
+(ADR-0157). Per-volume
+Trash, mounts, and a QindaQt credential-entry UI
 remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
@@ -38,7 +41,9 @@ network-location browsing seam and KIO adapter are recorded in
 [ADR-0137](../adr/0137-file-manager-network-location-browsing.md), and the
 remote Copy To and Move To seams are recorded in
 [ADR-0155](../adr/0155-file-manager-remote-copy-to.md) and
-[ADR-0156](../adr/0156-file-manager-remote-move-to.md).
+[ADR-0156](../adr/0156-file-manager-remote-move-to.md), and remote
+write-in-place through the platform KIOFuse service is recorded in
+[ADR-0157](../adr/0157-file-manager-remote-write-in-place.md).
 
 File Manager's presentation is stock Qt 6 QML (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Layouts`) styled by the platform theme palette; it no longer imports
@@ -386,6 +391,16 @@ rationale and boundary.
   above; `DesktopFileLauncher::validateRegularFile()` is a public static seam
   so every pre-flight rejection has a deterministic, environment-independent
   test.
+- `KioFuseRemoteFileOpener` (`network/kio_fuse_remote_file_opener.h`) is the
+  production remote opener (ADR-0157) and the only remote-write owner: it
+  re-validates the scheme/no-userinfo boundary before any contact, resolves
+  the canonical URL through the session KIOFuse D-Bus service, opens the
+  returned local path through `KIO::OpenUrlJob` with KIO's standard UI
+  delegate, and falls back to the ADR-0152 direct open when the facility
+  cannot answer. It owns no downloader, sync engine, mount, or credential
+  authority — KIOFuse's daemon lifetime belongs to the platform — and each
+  `open()` is an independent, monotonically keyed operation whose pending
+  watcher and job die quietly with the object.
 - `NavigationController` (`model/navigation_controller.h`) is a GUI-thread
   `QObject` that owns one injected `DirectoryLister` and one injected
   `FileLauncher` for its whole lifetime. It keeps the raw listing and
@@ -649,8 +664,21 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   seam (ADR-0156) -- a destructive operation, so a confirmed success always
   refreshes the visible folder (the source left it) and the pre-dispatch
   listed-child/same-authority/no-userinfo checks are the last line of
-  defense before KIO. Still open: remote file
-  write, mount-based access, and a
+  defense before KIO. Remote write-in-place (ADR-0157): the stock opener
+  is `KioFuseRemoteFileOpener`, which validates the same scheme/no-userinfo
+  boundary before any contact, asks the session's standard KIOFuse service
+  (`org.kde.KIOFuse.VFS.mountUrl`, the same client `libKF6KIOGui` embeds)
+  to expose the SAME canonical remote URL as a local FUSE path, and opens
+  that local path through `KIO::OpenUrlJob` with the standard UI delegate
+  retained; the desktop handler edits an ordinary local file and KIOFuse
+  owns writing the saved bytes back to the mounted URL on close. Where the
+  facility cannot answer (no session bus, mount error, malformed reply) the
+  opener falls back to the ADR-0152 direct remote open, so remote open
+  never regresses without KIOFuse; opens stay fire-and-forget (no busy
+  state, no listing refresh, no shared Cancel owner), each keyed by its own
+  monotonic identity, and destruction kills pending watchers and jobs
+  quietly. Still open: mount-based volume
+  access (S4) and a
   QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
   authentication); portal locations remain out of scope.
 
@@ -662,10 +690,12 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  additional preview formats, portal-mediated paths, open-with, remote file
-  write, and a QindaQt credential-entry UI remain explicit
+  additional preview formats, portal-mediated paths, open-with,
+  and a QindaQt credential-entry UI remain explicit
   later outcomes (S3–S5). Remote Move To (ADR-0156) is landed; batch remote
-  move remains deferred with batch remote copy.
+  move remains deferred with batch remote copy. Remote write-in-place
+  (ADR-0157) covers one regular file opened through the desktop handler;
+  batch remote writes remain deferred with it.
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
   destination in a separate confirmed action.
@@ -701,6 +731,15 @@ delegate via a job-creation test seam, plus one real open of an
 unassociated local file type driven to KIO's standard Open With prompt
 under the production application class — the dialog is dismissed
 hermetically, so no application is started),
+`qindaqt.file-manager-kio-fuse-remote-opener` (the production
+`KioFuseRemoteFileOpener`'s scheme/userinfo refusal before any contact,
+canonical same-URL mount resolution opened as a local file:// job with the
+retained KIO UI delegate, the direct-open fallback on a mount error, a
+malformed reply, or a missing facility, bounded no-credential diagnostics,
+independent concurrent opens, and quiet destruction with a pending
+resolution — all through the faked `createMountCall`/`canResolve`/
+`createOpenUrlJob` seams, hermetically: no session bus, KIOFuse daemon,
+network, or desktop handler),
 `qindaqt.file-manager-kio-remote-renamer` (the production
 `KioRemoteRenamer`'s scheme/same-folder boundary and retained KIO UI
 delegate via a job-creation test seam),
