@@ -64,6 +64,11 @@ private slots:
   void remoteMoveFailureStaysVisibleWithoutOptimisticDisplay();
   void aCancelledRemoteMoveResultIsDiscarded();
   void directUserCancellationRetiresTheRemoteMove();
+  // Review P1 repair (former red on e88d2e35): Cancel followed by an
+  // immediate retry in the same unchanged listing must not let the
+  // cancelled move's late result retire, fail, or refresh the replacement.
+  void cancelThenRetryInSameListingIgnoresTheOldMovesLateFailure();
+  void cancelThenRetryInSameListingIgnoresTheOldMovesLateSuccess();
   void destructionWithAPendingRemoteMoveDoesNotCrash();
 };
 
@@ -267,6 +272,97 @@ void TestRemoteMoveDispatch::directUserCancellationRetiresTheRemoteMove() {
   rawMover->finishFailure(moveGeneration, QStringLiteral("synthetic move failure"));
   QVERIFY(controller.launchError().isEmpty());
   QCOMPARE(controller.remoteMoveBusy(), false);
+}
+
+// Review P1 repair (former red): the rejected candidate fenced results
+// with the listing generation, which a Cancel -> immediate retry in the
+// same unchanged listing reuses -- the cancelled move's late failure then
+// retired the replacement and exposed the stale diagnostic. The repair
+// gives every accepted move a monotonic, never-reused operation identity
+// (still distinct across the two dispatches below), so the old failure
+// must stay invisible: the replacement stays busy, no error surfaces, no
+// refresh fires, and only the replacement's own completion is authoritative.
+void TestRemoteMoveDispatch::cancelThenRetryInSameListingIgnoresTheOldMovesLateFailure() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto mover = std::make_unique<FakeRemoteMover>();
+  auto *rawMover = mover.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, nullptr, std::move(mover));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  const qsizetype listingRequests = rawBackend->requests().size();
+
+  // Move A against the current listing generation, then Cancel it.
+  QVERIFY(controller.moveRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const quint64 operationA = rawMover->requests().constFirst().generation;
+  controller.cancelRemoteMove();
+  QVERIFY(rawMover->cancelled().contains(operationA));
+
+  // Move B in the SAME unchanged listing: the listing generation is
+  // identical, so only a non-reused operation identity can keep A's late
+  // result from aliasing B.
+  QVERIFY(controller.moveRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const quint64 operationB = rawMover->requests().constLast().generation;
+  QVERIFY2(operationB != operationA,
+           "each accepted move must carry a non-reused operation identity");
+
+  // A's late failure must not retire, fail, or refresh B.
+  rawMover->finishFailure(operationA, QStringLiteral("stale move failure"));
+  QCOMPARE(controller.remoteMoveBusy(), true);
+  QVERIFY(controller.launchError().isEmpty());
+  QCOMPARE(rawBackend->requests().size(), listingRequests);
+
+  // B's own completion stays authoritative: its failure surfaces and only
+  // its failure forces no refresh (a move failure changes nothing visible).
+  rawMover->finishFailure(operationB, QStringLiteral("replacement move failure"));
+  QCOMPARE(controller.remoteMoveBusy(), false);
+  QCOMPARE(controller.launchError(), QStringLiteral("replacement move failure"));
+  QCOMPARE(rawBackend->requests().size(), listingRequests);
+}
+
+// The success ordering of the same alias: A's late success must not
+// trigger the authoritative refresh belonging to B's completion -- B stays
+// busy, no refresh fires, and B's own success later refreshes exactly once.
+void TestRemoteMoveDispatch::cancelThenRetryInSameListingIgnoresTheOldMovesLateSuccess() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto mover = std::make_unique<FakeRemoteMover>();
+  auto *rawMover = mover.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, nullptr, nullptr, std::move(mover));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  publishRemoteTree(rawBackend, controller, url, QStringLiteral("notes.txt"), false);
+  const qsizetype listingRequests = rawBackend->requests().size();
+
+  QVERIFY(controller.moveRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const quint64 operationA = rawMover->requests().constFirst().generation;
+  controller.cancelRemoteMove();
+  QVERIFY(rawMover->cancelled().contains(operationA));
+
+  QVERIFY(controller.moveRemoteChild(QStringLiteral("smb://server/share/notes.txt"),
+                                     QStringLiteral("smb://server/backup")));
+  const quint64 operationB = rawMover->requests().constLast().generation;
+  QVERIFY2(operationB != operationA,
+           "each accepted move must carry a non-reused operation identity");
+
+  // A's late success must not refresh for B.
+  rawMover->finishSuccess(operationA);
+  QCOMPARE(controller.remoteMoveBusy(), true);
+  QCOMPARE(rawBackend->requests().size(), listingRequests);
+
+  // B's own confirmed success is the single authoritative refresh.
+  rawMover->finishSuccess(operationB);
+  QCOMPARE(controller.remoteMoveBusy(), false);
+  QCOMPARE(rawBackend->requests().size(), listingRequests + 1);
+  QCOMPARE(controller.statusKey(), QStringLiteral("loading"));
 }
 
 void TestRemoteMoveDispatch::destructionWithAPendingRemoteMoveDoesNotCrash() {
