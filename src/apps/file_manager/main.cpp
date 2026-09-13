@@ -169,6 +169,10 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
 // ADR-0116: File Manager renders with stock Qt Quick Controls; its palette,
 // fonts, and icon theme come from the Qt platform theme (ADR-0115). There is
 // deliberately no QST token publishing or per-app theme handling here.
+//
+// ADR-0157: remote files open through the session KIOFuse service so
+// the desktop handler edits a local write-back path; it falls back to
+// the plain ADR-0152 KIO open wherever KIOFuse is unavailable.
 int main(int argc, char **argv) {
   QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   // AGENT-NOTE: composed through the shared factory, not constructed here
@@ -226,9 +230,6 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
       std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
       std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>(),
-      // ADR-0157: remote files open through the session KIOFuse service so
-      // the desktop handler edits a local write-back path; it falls back to
-      // the plain ADR-0152 KIO open wherever KIOFuse is unavailable.
       std::make_unique<QindaQt::Apps::FileManager::KioFuseRemoteFileOpener>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteRenamer>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteFolderCreator>(),
