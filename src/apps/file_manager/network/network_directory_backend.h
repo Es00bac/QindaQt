@@ -42,11 +42,21 @@ struct NetworkListingResult final {
 // preview, recursive search, bounded local launch) never see a
 // NetworkDirectoryBackend or a remote DirectoryEntry; NavigationController
 // keeps those authorities local-only and disables their UI entry points
-// while a remote location is active. An implementation must:
-//  - never persist a credential (no wallet/keyring/session write);
-//  - never present interactive UI (a dialog, a mount prompt, a portal) --
-//    an authentication requirement becomes a typed AuthenticationRequired
-//    result instead;
+// while a remote location is active, and cancels the superseded pending
+// generation before every replacement remote request. An implementation
+// must:
+//  - never persist a credential (no wallet/keyring/session write), and never
+//    read, log, or accept embedded URL userinfo -- NetworkLocation refuses
+//    credentials in location strings before they reach this interface and
+//    QindaQt owns no credential store;
+//  - handle an authentication requirement either by surfacing the platform's
+//    ordinary prompt through its own supported UI facility (the production
+//    KIO adapter keeps KIO's standard UI delegate for exactly this; see
+//    ADR-0151) or, when the implementation has no UI facility, by failing
+//    the request into a typed AuthenticationRequired result. Interactive UI
+//    is permitted for ordinary authentication only; it never extends to
+//    other policy, and it never grants QindaQt ownership or storage of the
+//    credential;
 //  - emit listingReady at most once per accepted requestListing() call, on
 //    the GUI thread. NavigationController -- not this interface -- fences a
 //    stale generation/URL, so an implementation may still emit after

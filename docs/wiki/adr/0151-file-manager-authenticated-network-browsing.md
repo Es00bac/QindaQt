@@ -40,6 +40,10 @@ the typed `AuthenticationRequired` result through the unchanged error table.
 - QindaQt installs no custom delegate and gains no credential authority: URL
   userinfo remains refused by `NetworkLocation::canonicalize()`, and QindaQt
   never reads, logs, stores, serializes, or owns a credential.
+- `NavigationController` cancels the superseded pending generation before
+  every replacement remote request (refresh, remote-to-remote navigation,
+  guest clearance), so a job's prompt can never outlive the navigation that
+  replaced it.
 - Unsupported or malformed schemes still fail before job creation, the
   entry bound, generation/URL fencing, typed error mapping, and local-only
   mutation guards are unchanged, and destruction/cancellation still kills
