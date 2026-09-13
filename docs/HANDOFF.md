@@ -110,8 +110,13 @@ KIO, and Cancel followed by an immediate same-listing retry cannot let the old
 move's late failure or success retire, fail, or refresh its replacement. The
 warning-enabled affected build and exact two-row integrated selector pass 2/2;
 documentation validates 255 pages, strict MkDocs and the integration diff check
-pass. Remote write-in-place and installed/live credential validation remain
-separate boundaries.
+pass. Remote write-in-place lineage `2ca8b9e4` → `1d2a28f` then received
+same-reviewer ACCEPT and is integrated as `71e8f787` plus `261b8d66`.
+Regular remote files resolve through the session KIOFuse service to a local
+write-back path; when that facility is unavailable, the existing direct-KIO
+desktop-handler path remains the fallback. The warm integrated build and exact
+KIOFuse row pass 1/1; documentation validates 256 pages, strict MkDocs and diff
+checks pass. Installed/live credential validation remains a separate boundary.
 
 Worker and reviewer terminals used the existing direct-TTY, independent
 user-systemd lifetime rule, and long integration gates use the existing

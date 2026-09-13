@@ -121,8 +121,13 @@ same-reviewer ACCEPT and is integrated as `c858d724` → `a54476ac`; a
 monotonic operation identity keeps Cancel/retry late results from aliasing the
 replacement while listing freshness remains independently fenced. The exact
 integrated Move/navigation selector passes 2/2; docs validate 255 pages, strict
-MkDocs and diff checks pass. Remote write-in-place and installed/live credential
-validation remain separate boundaries.
+MkDocs and diff checks pass. Remote write-in-place lineage `2ca8b9e4` →
+`1d2a28f` received same-reviewer ACCEPT and is integrated as `71e8f787` →
+`261b8d66`; regular remote files now resolve through the session KIOFuse
+service to a local write-back path, while unavailable resolution preserves the
+existing direct-KIO open fallback. The integrated exact KIOFuse row passes 1/1;
+docs validate 256 pages, strict MkDocs and diff checks pass. Installed/live
+credential validation remains a separate boundary.
 
 Customize applet editing and configured-wallpaper preview are integrated as
 the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
