@@ -105,6 +105,7 @@ class CustomizePageTests final : public QObject {
 private slots:
     void rendersCompactAndWideWithoutLosingAccessibleEditors();
     void rendersAppletSettingEditorsInWideMode();
+    void rendersAppletSettingEditorsInCompactMode();
     void canvasFollowsConfiguredWallpaperAndFallsBackToTokens();
 };
 
@@ -277,6 +278,28 @@ void CustomizePageTests::rendersAppletSettingEditorsInWideMode()
     QTRY_COMPARE(model.configureAppletSettingCalls, 2);
     QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("refreshSeconds"));
 
+    // The ComboBox's own accessible name is its displayed value (QindaQt's
+    // wrapper binds Accessible.name to displayText, matching native combo
+    // boxes); the field identity instead lives in accessibleDescription,
+    // which production QML binds to the field label.
+    QAccessibleInterface *choiceInterface =
+        QAccessible::queryAccessibleInterface(settingChoice);
+    QVERIFY(choiceInterface != nullptr);
+    QVERIFY2(choiceInterface->text(QAccessible::Description)
+                 .contains(QStringLiteral("alignment")),
+             qPrintable(choiceInterface->text(QAccessible::Description)));
+
+    // A focused, closed ComboBox commits its highlighted neighbor with a
+    // plain arrow key -- no popup interaction needed, matching native combo
+    // box keyboard behavior (verified against a standalone Qt6 probe before
+    // relying on it here).
+    settingChoice->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(settingChoice->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Down);
+    QTRY_COMPARE(model.configureAppletSettingCalls, 3);
+    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("alignment"));
+    QCOMPARE(model.lastConfiguredAppletValue, QVariant(QStringLiteral("center")));
+
     // The declared-but-Unsupported freeform string field (labelFormat) stays
     // the quiet read-only row rather than gaining an invented free-text
     // editor: its sibling editor controls exist (one delegate instantiates
@@ -296,6 +319,57 @@ void CustomizePageTests::rendersAppletSettingEditorsInWideMode()
     QVERIFY2(accessibleName(readOnlyRow).contains(QStringLiteral("between 1 and 60")),
              qPrintable(accessibleName(readOnlyRow)));
     model.setAppletSettingError(QString());
+}
+
+void CustomizePageTests::rendersAppletSettingEditorsInCompactMode()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString loadError;
+    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
+    view.resize(720, 720);
+    view.show();
+    QTest::qWait(50);
+
+    model.selectApplet(QStringLiteral("bar"), QStringLiteral("clock-instance"));
+    auto *detailsTab = item(view.rootObject(), "customizeCompactTab_2");
+    QVERIFY(detailsTab != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(detailsTab, "click"));
+    QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 2);
+
+    auto *compact = item(view.rootObject(), "customizeCompactLayout");
+    QVERIFY(compact != nullptr);
+    QTRY_VERIFY(item(compact, "customizeProperties")->isVisible());
+
+    auto *settingSwitch = item(compact, "customizeAppletSettingSwitch_showIcon");
+    auto *settingSlider = item(compact, "customizeAppletSettingSlider_refreshSeconds");
+    auto *settingChoice = item(compact, "customizeAppletSettingChoice_alignment");
+    QVERIFY(settingSwitch != nullptr);
+    QVERIFY(settingSlider != nullptr);
+    QVERIFY(settingChoice != nullptr);
+    QVERIFY(settingSwitch->isVisible());
+    QVERIFY(settingSlider->isVisible());
+    QVERIFY(settingChoice->isVisible());
+
+    settingSwitch->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(settingSwitch->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Space);
+    QTRY_COMPARE(model.configureAppletSettingCalls, 1);
+    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("showIcon"));
+    QCOMPARE(model.lastConfiguredAppletValue, QVariant(false));
+
+    settingSlider->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(settingSlider->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Right);
+    QTRY_COMPARE(model.configureAppletSettingCalls, 2);
+    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("refreshSeconds"));
+
+    settingChoice->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(settingChoice->hasActiveFocus());
+    QTest::keyClick(&view, Qt::Key_Down);
+    QTRY_COMPARE(model.configureAppletSettingCalls, 3);
+    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("alignment"));
+    QCOMPARE(model.lastConfiguredAppletValue, QVariant(QStringLiteral("center")));
 }
 
 void CustomizePageTests::canvasFollowsConfiguredWallpaperAndFallsBackToTokens()
