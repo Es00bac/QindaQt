@@ -125,11 +125,26 @@ void DesktopControlsQmlMenuTests::activeApplicationPopupAnchorsToTheWidget()
             : QPointF(-9999, -9999);
     };
     const auto requested = [popup] { return popup->property("placement").toPointF(); };
+    // QtWayland ignores the popup's x/y: its xdg_positioner anchors at the
+    // top-right corner of the popup's parent item, which must therefore be a
+    // 1x1 cell ending at the placement origin, not the whole widget.
+    const auto positionerRect = [popup] {
+        auto *cell = popup->property("parent").value<QQuickItem *>();
+        return cell != nullptr ? cell->mapRectToScene(cell->boundingRect()) : QRectF();
+    };
+    const auto originCell = [&host, &requested] {
+        return QRectF(host.item->mapToScene(requested()) - QPointF(1, 0), QSizeF(1, 1));
+    };
 
     // Upper output half without a panel model: under the widget.
     openPopup();
     QCOMPARE(requested(), QPointF(0, host.item->height()));
     QCOMPARE(openedOffset(), QPointF(0, host.item->height()));
+    QCOMPARE(positionerRect(), originCell());
+    // CloseOnPressOutsideParent still measures the whole control.
+    auto *cell = popup->property("parent").value<QQuickItem *>();
+    QVERIFY(cell->contains(cell->mapFromItem(host.item, QPointF(host.item->width() - 1, 1))));
+    QVERIFY(!cell->contains(cell->mapFromItem(host.item, QPointF(host.item->width() + 4, 1))));
     closePopup();
 
     // Lower output half without a panel model: above the widget.
@@ -138,6 +153,7 @@ void DesktopControlsQmlMenuTests::activeApplicationPopupAnchorsToTheWidget()
     const qreal popupHeight = popupWindow()->height();
     QCOMPARE(requested(), QPointF(0, -popupHeight));
     QCOMPARE(openedOffset(), QPointF(0, -popupHeight));
+    QCOMPARE(positionerRect(), originCell());
     closePopup();
 
     // At the right output edge: slid left so the whole popup stays visible.
@@ -148,6 +164,7 @@ void DesktopControlsQmlMenuTests::activeApplicationPopupAnchorsToTheWidget()
     const QPointF slid(output.width() - popupWidth - host.item->x(), host.item->height());
     QCOMPARE(requested(), slid);
     QCOMPARE(openedOffset(), slid);
+    QCOMPARE(positionerRect(), originCell());
     closePopup();
 
     // A RuntimePanel-like host names its edge. Its band sits at the bottom of
@@ -169,6 +186,9 @@ void DesktopControlsQmlMenuTests::activeApplicationPopupAnchorsToTheWidget()
     QCOMPARE(popup->property("resolvedPanelEdge").toString(), QStringLiteral("bottom"));
     QCOMPARE(requested(), QPointF(0, -popupWindow()->height()));
     QCOMPARE(openedOffset(), QPointF(0, -popupWindow()->height()));
+    // The origin lies above the band window, so the cell is clamped into it:
+    // an xdg_positioner anchor rectangle may not leave its parent surface.
+    QCOMPARE(positionerRect(), QRectF(host.item->mapToScene(QPointF(-1, 0)).x(), 0, 1, 1));
     closePopup();
     host.item->setParentItem(host.window->contentItem());
     host.item->setPosition(QPointF(20, 20));
