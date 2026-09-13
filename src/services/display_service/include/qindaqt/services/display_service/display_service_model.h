@@ -111,7 +111,7 @@ public:
     DisplayTransaction::CommandResult prepareForSuspend();
     DisplayTransaction::CommandResult tick();
 
-    // D7 immediate brightness (ADR-0149). The publication joins the accepted
+    // D7 immediate brightness (ADR-0150). The publication joins the accepted
     // machine snapshot and is nullptr while that snapshot is unavailable.
     [[nodiscard]] const Display::BrightnessSnapshot *brightnessSnapshot() const;
     [[nodiscard]] BrightnessRequestResult setOutputBrightness(

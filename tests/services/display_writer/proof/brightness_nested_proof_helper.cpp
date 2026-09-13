@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// ADR-0149 private nested-KWin proof helper. It runs only under
+// ADR-0150 private nested-KWin proof helper. It runs only under
 // run_brightness_nested_proof.sh against a disposable kwin_wayland --virtual
 // socket, never against a host display, and is not a ctest row. Every result
 // is one "key=value" line on stdout for the runner to assert.
