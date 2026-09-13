@@ -145,11 +145,14 @@ public:
                               const QString &actionId = QString())
     {
         activated.append(entryId);
-        Q_UNUSED(actionId);
+        // Recorded so route-action dispatch (e.g. Settings desktop actions)
+        // is asserted, not just the entry id.
+        activatedActions.append(actionId);
         return true;
     }
 
     QStringList activated;
+    QStringList activatedActions;
 };
 
 // One resolved desktop-icons applet map in the

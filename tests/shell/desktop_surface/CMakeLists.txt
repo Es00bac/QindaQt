@@ -95,3 +95,12 @@ qindaqt_add_desktop_surface_test(
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )
+# Route-action dispatch for the settings-labeled context-menu entries, split
+# by failure mode from the general offscreen row above.
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_context_menu_action_tests
+    tst_desktop_context_menu_actions.cpp
+    qindaqt.desktop-surface-context-menu-actions
+    SUPPORT desktop_surface_qml_test_support.h
+    OFFSCREEN
+)

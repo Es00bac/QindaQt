@@ -34,6 +34,34 @@ if(NOT desktop_source MATCHES "\nExec=qindaqt-settings\n")
     message(FATAL_ERROR "org.qindaqt.Settings.desktop must Exec the qindaqt-settings binary")
 endif()
 
+# Route actions: the Desktop context menu dispatches the entry's freedesktop
+# desktop actions (appearance -> Appearance route, display -> Display route),
+# so the declared action ids and their Exec contracts are part of the
+# identity: a missing or renamed action silently degrades those menu entries
+# back to the primary launch.
+if(NOT desktop_source MATCHES "\nActions=appearance;display;\n")
+    message(FATAL_ERROR
+        "org.qindaqt.Settings.desktop must declare Actions=appearance;display;")
+endif()
+foreach(action IN ITEMS appearance display)
+    string(REGEX MATCH
+           "\\[Desktop Action ${action}\\]\n[^\[]*"
+           action_group
+           "${desktop_source}")
+    if(action_group STREQUAL "")
+        message(FATAL_ERROR
+            "org.qindaqt.Settings.desktop is missing the [Desktop Action ${action}] group")
+    endif()
+    if(NOT action_group MATCHES "\nName=[^\r\n]+\n")
+        message(FATAL_ERROR
+            "Desktop Action ${action} must Name its route")
+    endif()
+    if(NOT action_group MATCHES "\nExec=qindaqt-settings --page ${action}\n")
+        message(FATAL_ERROR
+            "Desktop Action ${action} must Exec 'qindaqt-settings --page ${action}'")
+    endif()
+endforeach()
+
 file(READ "${cmake_lists}" lists_source)
 if(NOT lists_source MATCHES "org\\.qindaqt\\.Settings\\.desktop")
     message(FATAL_ERROR "settings CMakeLists must install org.qindaqt.Settings.desktop")

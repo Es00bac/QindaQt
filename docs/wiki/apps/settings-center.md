@@ -47,7 +47,12 @@ component. It is not a QML URL, plugin path, or service locator.
 The public command accepts `--page notifications`, `--page appearance`,
 `--page display`, `--page network`, `--page customize`, `--page audio`, and
 `--page bluetooth`, `--page power`, `--page clipboard`, `--page color`, and
-`--page accessibility`.
+`--page accessibility`. The installed `org.qindaqt.Settings.desktop` entry
+declares two freedesktop desktop actions, `appearance` and `display`, whose
+`Exec` lines launch `qindaqt-settings --page appearance` and
+`qindaqt-settings --page display`; the Desktop context menu reuses them, so
+its settings-labeled entries open the route their labels promise instead of
+the primary launch.
 Unknown, noncanonical, path-like, or otherwise hostile values exit 2 before any
 settings transport, route model, or QML root is constructed. Registry lookup
 also rejects unknown runtime selection without changing the active or previous
