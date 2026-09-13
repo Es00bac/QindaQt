@@ -43,8 +43,9 @@ failure. Its test-only fixture fallback now groups a source mapped entirely
 beneath its target; all four rows pass on the integrated plugin, including
 three reversed drags at that geometry. Exact fallback candidate `0b21207a`
 received independent GLM ACCEPT and is integrated as `6a873081`; the manager
-unit row passes 24/24 and the serialized integrated-tree replay remains the
-last closure gate. Global Menu evidence descendant `12f20444` received
+unit row passes 24/24 and the serialized integrated-source former-stop replay
+completed with 22/22 verdicts and session exit 0. Global Menu evidence
+descendant `12f20444` received
 same-reviewer Opus ACCEPT and is integrated as `cc8bf4cf`; its manager-tree
 native-switch row passes 9/9. This is test evidence, not a live-popup repair.
 Terminal audible-attention
