@@ -82,8 +82,11 @@ opening is now integrated through independently accepted lineage `2b37f9c1` →
 `39c061b6`. It uses KIO's standard desktop handler/Open With facilities and a
 QWidget-capable File Manager application composition. The integrated affected
 selector passes 10/10; docs 251, strict MkDocs, and diff checks pass. Remote
-Rename remains a separately reviewed delta awaiting exact-parent rebase and
-recheck; installed/live access is not claimed.
+Rename exact-parent descendant `28b109a0` received independent ACCEPT and is
+integrated as `133d5f54`; its eight-row integrated File Manager/bootstrap
+selector passes 8/8, docs 252, strict MkDocs, and diff checks pass. Remote
+create/copy/move/write and installed/live credential validation remain separate
+boundaries.
 
 Customize applet editing and configured-wallpaper preview are integrated as
 the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
