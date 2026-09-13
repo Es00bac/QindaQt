@@ -65,7 +65,7 @@ target_link_libraries(
     qindaqt_display_service_brightness_tests
     PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
 )
-# The brightness row pins the private ADR-0149 authority directly, like the
+# The brightness row pins the private ADR-0150 authority directly, like the
 # model row's summary projection. It is not installed public API.
 target_include_directories(
     qindaqt_display_service_brightness_tests

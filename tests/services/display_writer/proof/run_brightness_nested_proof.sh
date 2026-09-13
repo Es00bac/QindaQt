@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: LGPL-3.0-or-later
 #
-# ADR-0149 private nested-KWin brightness proof. It never touches the host
+# ADR-0150 private nested-KWin brightness proof. It never touches the host
 # display, session bus, or hardware:
 #
 # 1. it re-executes itself with an empty environment inside dbus-run-session,

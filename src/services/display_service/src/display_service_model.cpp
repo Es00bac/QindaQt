@@ -424,7 +424,7 @@ ServiceOperationResult DisplayServiceModel::preview(const QString &transactionId
 {
     return operation(Display::OperationKind::Preview, transactionId,
                      [this, &transactionId] {
-                         // AGENT-CONTRACT: ADR-0149 coexistence. No topology
+                         // AGENT-CONTRACT: ADR-0150 coexistence. No topology
                          // apply may start while an immediate brightness
                          // write is unresolved.
                          if (m_brightness->pending()) {

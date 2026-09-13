@@ -52,7 +52,7 @@ add_test(NAME qindaqt.display-writer-wayland-startup
 set_tests_properties(qindaqt.display-writer-wayland-startup
     PROPERTIES LABELS "service;display;writer;wayland" TIMEOUT 15)
 
-# ADR-0149 private brightness peer. It reuses the protocol code generated for
+# ADR-0150 private brightness peer. It reuses the protocol code generated for
 # the startup row in this directory instead of emitting a second custom rule.
 qt_add_executable(qindaqt_display_writer_wayland_brightness_tests
     tst_display_writer_wayland_brightness.cpp
@@ -71,7 +71,7 @@ add_test(NAME qindaqt.display-writer-wayland-brightness
 set_tests_properties(qindaqt.display-writer-wayland-brightness
     PROPERTIES LABELS "service;display;writer;wayland" TIMEOUT 20)
 
-# ADR-0149 private nested-KWin proof helper (no test registration). It runs
+# ADR-0150 private nested-KWin proof helper (no test registration). It runs
 # only through proof/run_brightness_nested_proof.sh against a disposable
 # kwin_wayland --virtual socket, never as a ctest row. Only client headers are
 # generated here; the interface definitions come from the writer archive.
