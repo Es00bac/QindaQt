@@ -7,6 +7,8 @@ qt_add_executable(
     qindaqt_settings_customize_model_tests
     tst_customize_settings_model.cpp
     customize_test_support.h
+    customize_sequence_transport.h
+    customize_window_preview_test_support.h
 )
 target_include_directories(
     qindaqt_settings_customize_model_tests PRIVATE "${PROJECT_SOURCE_DIR}"
@@ -56,6 +58,8 @@ qt_add_executable(
     qindaqt_settings_customize_wallpaper_preview_tests
     tst_customize_wallpaper_preview.cpp
     customize_test_support.h
+    customize_sequence_transport.h
+    customize_window_preview_test_support.h
 )
 target_include_directories(
     qindaqt_settings_customize_wallpaper_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
@@ -83,6 +87,8 @@ qt_add_executable(
     qindaqt_settings_customize_window_preview_tests
     tst_customize_window_preview.cpp
     customize_test_support.h
+    customize_sequence_transport.h
+    customize_window_preview_test_support.h
 )
 target_include_directories(
     qindaqt_settings_customize_window_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
@@ -148,6 +154,8 @@ qt_add_executable(
     qindaqt_settings_customize_pointer_tests
     tst_customize_pointer.cpp
     customize_test_support.h
+    customize_sequence_transport.h
+    customize_window_preview_test_support.h
 )
 target_include_directories(
     qindaqt_settings_customize_pointer_tests PRIVATE "${PROJECT_SOURCE_DIR}"
