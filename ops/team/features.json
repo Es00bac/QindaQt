@@ -252,6 +252,11 @@
               "kind": "commit",
               "reference": "588c399a",
               "summary": "Exact five-path vertical-admission candidate 14f0339a received independent Sol ACCEPT and is integrated. The main-tree four-target build and exact affected selector pass 4/4; docs validate 254 pages, strict MkDocs and diff checks pass. Profiles, applet policy and Global Menu implementation remain unchanged."
+            },
+            {
+              "kind": "commit",
+              "reference": "904e79f0",
+              "summary": "Exact three-path Active Application Wayland-anchor candidate 7815189b received independent Sol ACCEPT and is integrated. Private nested evidence places popup (82,32) beneath control (82,2); the exact main desktop-controls selector passes 10/10, docs validate 255 pages, and strict MkDocs and diff checks pass. Installed/live adoption remains separate."
             }
           ],
           "caveat": "Source-level native popup positioning and vertical user-authored panel admission are integrated and verified. Physical-session deployment remains open, and Sloom exporter selection is integrated with real panel consumption pending."
