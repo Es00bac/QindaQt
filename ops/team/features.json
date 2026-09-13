@@ -1548,6 +1548,11 @@
             "kind": "test",
             "reference": "https://github.com/Es00bac/QindaQt/actions/runs/34180153305/job/101917487408",
             "summary": "Exact dc8a54cc native build/stage/release contract and 3 static checks pass; build-tree and installed-discovery boot gates each pass1/1. Tagged production sources match installed8486e058."
+          },
+          {
+            "kind": "commit",
+            "reference": "b7d4667657fa299adf0d9a480976ce0294f5d17a",
+            "summary": "Installed through Portage as gui-wm/qindaqt-desktop-0.1.0_pre20260913. The one-package signed binary merge preserves the prior rollback gpkg; qcheck verifies 1333/1333 files and the exact KWin 6.6.6 release contract, three static rows, private nested plugin boot, and staged installed-plugin discovery pass. Running desktop processes were not restarted, so fresh-login live adoption remains unclaimed."
           }
         ]
       },

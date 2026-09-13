@@ -1,5 +1,41 @@
 # Integration handoff
 
+## September 13 full-desktop Portage deployment
+
+The reviewed product source at exact commit
+`b7d4667657fa299adf0d9a480976ce0294f5d17a` is installed as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260913`. Packaging commits `928e6aa1` and
+`0e19fba3` add the immutable ebuild, direct `kde-misc/kio-fuse` runtime
+dependency, release-contract pin, documentation, and exact Manifest entry.
+The host plan contained one package upgrade and no world update. Portage built
+a signed 31,907,840-byte gpkg with 12 memory-aware jobs and then performed a
+binary-only merge. The previous `0.1.0_pre20260912` signed gpkg remains in
+`PKGDIR`; a fresh `quickpkg` copy was created before the merge.
+
+The installed VDB ebuild records the exact source pin, `qcheck` reports
+1,333/1,333 files good, and sampled compositor, KDecoration, shell and bundled
+application paths resolve to the new Portage owner. Both native plugins have no
+unresolved shared libraries. The exact KWin 6.6.6 release contract, all three
+static ABI/dependency rows, the private nested plugin boot, and staged installed
+plugin discovery pass. A private invocation of the actual `/usr/bin/qindaqt-shell`
+enumerates all installed profiles, themes and applets; the focused installed
+Editor, File Manager, Calendar and Terminal smokes also pass.
+
+Four additional shell component-staging tests and the Settings ambient-module
+poison test remain red in the developer harness: the former omit the newly
+required AppShell shared object from their partial install components, while
+the latter times out after constructing from the host module instead of
+observing its historical exit-3 sentinel. The actual installed shell links and
+enumerates correctly, so these are recorded harness-closure defects rather
+than package-integrity failures; they are not represented as passing release
+evidence.
+
+The running compositor, shell and Settings service PIDs and start times match
+the pre-merge snapshot. Nothing was restarted or logged out, so installed-file
+delivery is complete but live adoption and a fresh-login installed-session
+check are deliberately unavailable until the user chooses a later session
+boundary.
+
 ## Active Application top-bar popup alignment (September 13)
 
 Exact three-path candidate

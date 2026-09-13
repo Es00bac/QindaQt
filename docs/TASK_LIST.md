@@ -5,6 +5,18 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 13)
+
+Exact integrated product source `b7d4667657fa299adf0d9a480976ce0294f5d17a`
+is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260913`. The signed binary-only merge changed
+only that package, `qcheck` verifies 1,333/1,333 files, the mandatory native
+KWin release/static/private-boot/staged-install gates pass, and the prior signed
+package remains available for rollback. Portage owns the installed runtime;
+there were no raw `/usr` copies. The running desktop processes were preserved,
+so a fresh-login live-adoption check remains intentionally open rather than
+being inferred from installed bytes.
+
 ## Active outcomes
 
 ### Immediate desktop and File Manager usability wave (September 12)
