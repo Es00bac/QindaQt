@@ -54,6 +54,20 @@ const Profiles::AppletSpec *findDesktopApplet(
     return nullptr;
 }
 
+const ShellLayout::LogicalOutput *selectPreviewOutput(
+    const CustomizeOutputSnapshot &snapshot)
+{
+    const PrimaryOutputResolution primary = resolvePrimaryOutput(snapshot);
+    if (primary.ok()) {
+        for (const auto &output : snapshot.outputs) {
+            if (output.id == primary.outputId) {
+                return &output;
+            }
+        }
+    }
+    return snapshot.outputs.isEmpty() ? nullptr : &snapshot.outputs.constFirst();
+}
+
 QVariantList schemaFields(const Applets::AppletManifest *manifest,
                           const Profiles::AppletSpec &applet)
 {
@@ -143,6 +157,19 @@ QVariantList CustomizeSettingsModel::palette() const
     return result;
 }
 
+QVariantMap CustomizeSettingsModel::previewOutput() const
+{
+    const auto *output = selectPreviewOutput(m_editorOutputs);
+    if (output == nullptr || !output->geometry.isValid()) {
+        return {{QStringLiteral("id"), QStringLiteral("representative")},
+                {QStringLiteral("width"), 1920},
+                {QStringLiteral("height"), 1080}};
+    }
+    return {{QStringLiteral("id"), output->id},
+            {QStringLiteral("width"), output->geometry.width()},
+            {QStringLiteral("height"), output->geometry.height()}};
+}
+
 QVariantList CustomizeSettingsModel::desktopApplets() const
 {
     QVariantList result;
@@ -176,14 +203,25 @@ QVariantList CustomizeSettingsModel::panels() const
     if (profile == nullptr || layout == nullptr) {
         return result;
     }
+    const auto *preview = selectPreviewOutput(m_editorOutputs);
     result.reserve(profile->panels.size());
     for (const auto &panel : profile->panels) {
         QRect geometry;
+        bool visibleOnPreviewOutput = false;
         for (const auto &surface : layout->surfaces) {
-            if (surface.panelId == panel.id) {
+            if (surface.panelId == panel.id
+                && (preview == nullptr || surface.outputId == preview->id)) {
                 geometry = surface.geometry;
+                visibleOnPreviewOutput = true;
                 break;
             }
+        }
+        if (visibleOnPreviewOutput && preview != nullptr) {
+            // AGENT-GUARD: solved panel rectangles use the global logical
+            // desktop coordinate space. The monitor preview is local to one
+            // output; retaining a non-zero output origin projects every panel
+            // outside the canvas and makes its applets impossible to select.
+            geometry.translate(-preview->geometry.topLeft());
         }
         QVariantList applets;
         applets.reserve(panel.applets.size());
@@ -219,6 +257,7 @@ QVariantList CustomizeSettingsModel::panels() const
             {QStringLiteral("y"), geometry.y()},
             {QStringLiteral("width"), geometry.width()},
             {QStringLiteral("height"), geometry.height()},
+            {QStringLiteral("previewVisible"), visibleOnPreviewOutput},
             {QStringLiteral("applets"), applets},
         });
     }

@@ -38,6 +38,7 @@ private slots:
     void rejectedTargetRollsBackDeterministically();
     void pointerAndKeyboardPathsConverge();
     void profileProjectionKeepsSelectionInOneLiveProperty();
+    void previewProjectionUsesPrimaryOutputLocalCoordinates();
     void persistenceAndConflictRemainTruthful();
     void foreignLeaseFailsClosedThenRecoversOnRefresh();
     void appliedContentSurvivesDiscardAndAuthorityRecovery();
@@ -51,6 +52,42 @@ private slots:
     void configureAppletSettingFailsClosedAfterSelectionBecomesStale();
     void desktopAppletCanBeInsertedEditedAndPersisted();
 };
+
+void CustomizeSettingsModelTests::previewProjectionUsesPrimaryOutputLocalCoordinates()
+{
+    ModelHarness harness;
+    CustomizeOutputSnapshot snapshot;
+    snapshot.outputs = {
+        {QStringLiteral("DP-1"), QRect(2560, -200, 1920, 1280), 1.25},
+        {QStringLiteral("HDMI-A-1"), QRect(0, 0, 2560, 1440), 1.0},
+    };
+    snapshot.primaryOutputIds = {QStringLiteral("DP-1")};
+    snapshot.revision = 2;
+    harness.outputProvider.publish(snapshot);
+    QVERIFY(harness.establish());
+
+    const QVariantMap output = harness.model.previewOutput();
+    QCOMPARE(output.value(QStringLiteral("id")).toString(),
+             QStringLiteral("DP-1"));
+    QCOMPARE(output.value(QStringLiteral("width")).toInt(), 1920);
+    QCOMPARE(output.value(QStringLiteral("height")).toInt(), 1280);
+
+    const QVariantList panels = harness.model.panels();
+    QCOMPARE(panels.size(), 2);
+    const auto byId = [&panels](QLatin1StringView id) {
+        return std::find_if(panels.cbegin(), panels.cend(), [id](const QVariant &value) {
+            return value.toMap().value(QStringLiteral("id")).toString() == id;
+        })->toMap();
+    };
+    const QVariantMap top = byId(QLatin1StringView("bar"));
+    const QVariantMap dock = byId(QLatin1StringView("dock"));
+    QVERIFY(top.value(QStringLiteral("previewVisible")).toBool());
+    QVERIFY(dock.value(QStringLiteral("previewVisible")).toBool());
+    QCOMPARE(top.value(QStringLiteral("x")).toInt(), 0);
+    QCOMPARE(top.value(QStringLiteral("y")).toInt(), 0);
+    QCOMPARE(dock.value(QStringLiteral("y")).toInt(),
+             1280 - dock.value(QStringLiteral("height")).toInt());
+}
 
 void CustomizeSettingsModelTests::desktopAppletCanBeInsertedEditedAndPersisted()
 {

@@ -55,7 +55,11 @@ dash-pattern "chipped" strokes.
 
 These are semantic decoration preferences, not QML implementation details. The
 compositor decoration and shell preview must consume the same map so ordinary
-and grouped windows remain consistent.
+and grouped windows remain consistent while QindaQt's KDecoration plugin is
+active. Selecting a different installed native or Aurorae decoration is a
+separate KWin preference; Appearance does not render that foreign plugin
+through this schema or painter
+([ADR-0160](../adr/0160-select-installed-kwin-window-decorations.md)).
 
 `iconTheme` is non-token metadata. `ThemeLoader` validates and retains it in
 the catalog's `ThemeSpec`; shell composition consumes that already-parsed

@@ -39,3 +39,7 @@ Explicit Appearance overrides still apply on top of the selected preset.
 
 Decoration presets become independently installable packages with their own
 identity and selection key instead of remaining part of theme data.
+
+Installed KWin decoration selection is now an independent platform preference;
+see [ADR-0160](0160-select-installed-kwin-window-decorations.md). This ADR still
+governs the presets consumed when the QindaQt KDecoration plugin is active.

@@ -395,6 +395,12 @@ The member decoration is installed at KDecoration3's exported KDE plugin
 directory under module ID `org.qindaqt`. On first run, `qindaqt-wm` writes
 `[org.kde.kdecoration2] library=org.qindaqt` only when that key is missing. A
 user-selected third-party decoration is never overwritten on a later launch.
+The Appearance **Windows** destination is the explicit user-facing authority
+for changing that selection: it lists installed native and Aurorae choices,
+writes only KWin's decoration keys, and requests live reconfiguration
+([ADR-0160](../adr/0160-select-installed-kwin-window-decorations.md)). QindaQt
+theme and button preferences affect ordinary windows only while `org.qindaqt`
+is selected; container chrome remains QindaQt-owned for every selection.
 
 Every non-maximized window using the QindaQt server decoration paints the
 theme's `border` color into its reserved one-logical-pixel outer frame. It also

@@ -4,6 +4,8 @@
 # appearance values, pure QST-1 preview projection, and the Settings1-backed
 # route model. Consumes only public service client, themes, and design-token
 # boundaries; the qindaqt-settings executable owns the route seam.
+find_package(Qt6 6.11 REQUIRED COMPONENTS DBus)
+
 qt_add_library(qindaqt_settings_appearance STATIC)
 target_sources(
     qindaqt_settings_appearance
@@ -16,6 +18,7 @@ target_sources(
         appearance_settings_model_preview.cpp
         appearance_settings_model_results.cpp
         appearance_theme_catalog.cpp
+        window_decoration_controller.cpp
         wallpaper_catalog.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -26,6 +29,7 @@ target_sources(
             include/qindaqt/apps/settings_appearance/appearance_qml_composition.h
             include/qindaqt/apps/settings_appearance/appearance_settings_model.h
             include/qindaqt/apps/settings_appearance/appearance_theme_catalog.h
+            include/qindaqt/apps/settings_appearance/window_decoration_controller.h
             include/qindaqt/apps/settings_appearance/wallpaper_catalog.h
 )
 target_link_libraries(
@@ -37,7 +41,7 @@ target_link_libraries(
     # combined QST + Qt6 platform-theme truth (ADR-0115).
     PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml QindaQt::AppAppearance
            QindaQt::DecorationPainter
-           qindaqt_themes qindaqt_native_palette Qt6::Core Qt6::Gui Qt6::Qml
+           qindaqt_themes qindaqt_native_palette Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml
 )
 target_include_directories(
     qindaqt_settings_appearance
@@ -66,6 +70,8 @@ qt_add_qml_module(
         include/qindaqt/apps/settings_appearance/appearance_container_preview.h
         appearance_container_preview.cpp
     QML_FILES
+        qml/DecorationChoiceCard.qml
+        qml/WindowDecorationChooser.qml
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
         qml/AppearanceThemeSection.qml
@@ -120,6 +126,8 @@ install(
 )
 install(
     FILES
+        qml/DecorationChoiceCard.qml
+        qml/WindowDecorationChooser.qml
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
         qml/AppearanceThemeSection.qml

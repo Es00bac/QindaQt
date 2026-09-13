@@ -93,6 +93,7 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString announcement READ emptyString CONSTANT)
     Q_PROPERTY(QString selectedProfileId READ selectedProfileId CONSTANT)
     Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
+    Q_PROPERTY(QVariantMap previewOutput READ previewOutput CONSTANT)
     Q_PROPERTY(QVariantList panels READ panels CONSTANT)
     Q_PROPERTY(QVariantList desktopApplets READ desktopApplets CONSTANT)
     Q_PROPERTY(QVariantList palette READ palette CONSTANT)
@@ -158,6 +159,12 @@ public:
                             {QStringLiteral("description"),
                              QStringLiteral("Fixture clock")}}};
     }
+    [[nodiscard]] QVariantMap previewOutput() const
+    {
+        return {{QStringLiteral("id"), QStringLiteral("DP-1")},
+                {QStringLiteral("width"), 1920},
+                {QStringLiteral("height"), 1080}};
+    }
     [[nodiscard]] QVariantList panels() const
     {
         const QVariantMap applet{
@@ -184,6 +191,7 @@ public:
             {QStringLiteral("y"), 0},
             {QStringLiteral("width"), 1920},
             {QStringLiteral("height"), 32},
+            {QStringLiteral("previewVisible"), true},
             {QStringLiteral("applets"), QVariantList{applet}},
         }};
     }

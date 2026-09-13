@@ -16,6 +16,7 @@ T.Page {
     objectName: "appearancePage"
 
     required property var appearanceSettings
+    property var windowDecorationSettings: null
     property var navigation: null
     signal closeRequested()
 
@@ -353,6 +354,7 @@ T.Page {
         id: windowsPage
         AppearanceWindowsSection {
             appearanceSettings: root.appearanceSettings
+            windowDecorationSettings: root.windowDecorationSettings
             editorBusy: root.editorBusy
         }
     }

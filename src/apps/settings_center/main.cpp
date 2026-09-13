@@ -7,6 +7,7 @@
 #include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/apps/settings_appearance/wallpaper_catalog.h"
+#include "qindaqt/apps/settings_appearance/window_decoration_controller.h"
 #include "qindaqt/apps/settings_accessibility/accessibility_settings_model.h"
 #include "qindaqt/apps/settings_accessibility/accessibility_values.h"
 #include "qindaqt/apps/settings_audio/audio_settings_model.h"
@@ -38,6 +39,7 @@
 #include <QStyleHints>
 
 #include <cstdio>
+#include <memory>
 namespace {
 
 // AGENT-CONTRACT: Installed-theme discovery contract: standard data
@@ -125,6 +127,20 @@ void startSettingsClient(
     qWarning("qindaqt-settings: Settings1 client unavailable: %s",
              qPrintable(error));
   }
+}
+
+// KWin decoration plugin/theme selection is native compositor configuration,
+// not a Settings1 appearance value. This factory keeps the platform mutation
+// behind its controller while the composition root owns the required lifetime
+// (ADR-0160).
+[[nodiscard]] std::unique_ptr<
+    QindaQt::Apps::SettingsAppearance::WindowDecorationController>
+makeWindowDecorationController() {
+  return std::make_unique<
+      QindaQt::Apps::SettingsAppearance::WindowDecorationController>(
+      QindaQt::Apps::SettingsAppearance::windowDecorationConfigPath(),
+      QindaQt::Apps::SettingsAppearance::windowDecorationThemeRoots(),
+      QindaQt::Apps::SettingsAppearance::requestKWinDecorationReconfigure);
 }
 
 // AGENT-CONTRACT: Accessibility owns one independent Settings1 transport and
@@ -239,7 +255,7 @@ int main(int argc, char **argv) {
     std::fprintf(stderr, "qindaqt-settings: %s\n", qPrintable(facadeError));
     return 3;
   }
-
+  auto windowDecorationSettings = makeWindowDecorationController();
   QindaQt::Services::SettingsClient::QtSettingsTransport appearanceTransport(
       QDBusConnection::sessionBus());
   QindaQt::Services::SettingsClient::SettingsClient appearanceClient(
@@ -307,6 +323,8 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&quieting))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(&appearanceSettings))},
+      {QStringLiteral("windowDecorationSettings"),
+       QVariant::fromValue<QObject *>(windowDecorationSettings.get())},
       {QStringLiteral("displaySettings"),
        QVariant::fromValue(static_cast<QObject *>(&displaySettings))},
       {QStringLiteral("networkSettings"),

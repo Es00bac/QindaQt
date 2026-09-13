@@ -60,8 +60,13 @@ current target before commit; outside release, Escape and grab cancellation
 roll back. This keeps a move alive when its preview reconstructs the source chip.
 
 The canvas uses repository-projected panel rectangles, not a second geometry
-solver: the monitor's screen keeps a 16:9 representative shape and scales the
-solved rectangles, applying only a cross-axis thickness floor (24px, the same
+solver. It selects the current primary output (falling back to the first valid
+inventory entry when primary identity is unavailable), preserves that output's
+logical aspect ratio, and translates global solved rectangles into the selected
+output's local coordinates before scaling them. This keeps both top bars and
+bottom docks visible on tall-aspect and non-zero-origin displays. Panels scoped
+to a different output remain available in the Outline but do not masquerade as
+members of the previewed monitor. The canvas applies only a cross-axis thickness floor (24px, the same
 floor the desktop concept preview uses) so icon chips remain clickable when
 the representative output is scaled down; the floor grows a bar toward the
 desktop interior, so an edge-attached panel never detaches from its edge.

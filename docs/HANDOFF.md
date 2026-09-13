@@ -1,5 +1,41 @@
 # Integration handoff
 
+## September 13 decoration catalog and Customize projection repair
+
+Appearance now treats KWin's actual application-window decoration as a
+separate platform preference. Its Windows destination inventories installed
+native and Aurorae decorations, marks the configured choice, and applies only
+the exact `[org.kde.kdecoration2]` `library`/`theme` keys before requiring a
+successful bounded `org.kde.KWin.reconfigure` reply. QindaQt's painter and
+button controls appear only when QindaQt is selected; a foreign decoration is
+previewed truthfully by the Settings window's real frame after apply. The
+accepted ownership contract is in ADR-0160.
+
+The Customize canvas now selects the primary output, preserves its logical
+aspect ratio, translates globally solved panel rectangles into output-local
+coordinates, and hides other-output panels from that one-monitor canvas while
+retaining them in the Outline. This restores visible/clickable top-bar, dock,
+and applet targets on tall displays and desktops whose primary output has a
+non-zero origin.
+
+The affected targets build with the configured `MAKEOPTS=-j24 -l24`. The exact
+combined Appearance/Customize selector passes 16/16, including the new KWin
+configuration preservation test, non-zero-origin/tall-output projection test,
+pointer interactions, lifecycle, accessibility, boundary poison, and staged
+installed-route isolation. The repository documentation validator passes all
+260 Markdown/navigation entries. Strict MkDocs is unavailable on this host
+because the `mkdocs` executable is not installed. This handoff makes no
+installed-package, live KWin configuration, or physical-session adoption
+claim.
+
+The broader Settings desktop-identity and route-construction rows pass 2/2.
+Its installed-routes row reaches the deliberately withheld Network-module
+subcase, then loads the already installed system Network module and remains
+running instead of returning the expected missing-module status. The stage's
+own Network directory was verified withheld for 12 seconds; this is host
+package contamination in that isolation gate, not an observed failure to load
+the complete staged Appearance or Customize routes.
+
 ## September 13 desktop-integration repair deployment
 
 Exact repair source `287f126559c58e466c7e55d832f4e00a17d729e6` is
