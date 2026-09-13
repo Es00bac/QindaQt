@@ -34,7 +34,15 @@ foreach(relative_path IN LISTS application_sources)
 
     list(GET calls 0 call_text)
     string(FIND "${content}" "${call_text}" call_position)
-    string(REGEX MATCH "Q(Gui)?Application application\\(argc, argv\\);" construction "${content}")
+    # Recognized constructions: a direct Q(Gui)Application definition, or the
+    # File Manager shared factory call whose body constructs the application
+    # (runtime/file_manager_application.h returns a QWidget-capable
+    # QApplication so KIO's standard prompts survive; ADR-0152 repair on
+    # bc51cf1b). Both prove the bootstrap call textually precedes the point
+    # of application construction.
+    string(REGEX MATCH
+        "(Q(Gui)?Application application\\(argc, argv\\);|QindaQt::Apps::FileManager::createApplication\\(argc, argv\\))"
+        construction "${content}")
     if(construction STREQUAL "")
         message(FATAL_ERROR "${relative_path} has no recognized application construction")
     endif()
