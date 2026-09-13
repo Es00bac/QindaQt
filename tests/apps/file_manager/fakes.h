@@ -5,6 +5,7 @@
 #include "model/launch_intent.h"
 #include "network/network_directory_backend.h"
 #include "network/remote_file_opener.h"
+#include "network/remote_folder_creator.h"
 #include "network/remote_renamer.h"
 
 #include <QHash>
@@ -128,6 +129,35 @@ public:
   void finishSuccess(quint64 generation) { Q_EMIT renameFinished(generation, QString()); }
   void finishFailure(quint64 generation, const QString &diagnostic) {
     Q_EMIT renameFinished(generation, diagnostic);
+  }
+
+  [[nodiscard]] const QVector<Request> &requests() const { return m_requests; }
+  [[nodiscard]] const QVector<quint64> &cancelled() const { return m_cancelled; }
+
+private:
+  QVector<Request> m_requests;
+  QVector<quint64> m_cancelled;
+};
+
+// Test-only RemoteFolderCreator: records createFolder()/cancel() calls; the
+// test fires createFinished manually, so success/failure/stale/cancel
+// wiring is deterministic without a real KIO job, network, or filesystem.
+class FakeRemoteFolderCreator final : public RemoteFolderCreator {
+public:
+  struct Request final {
+    quint64 generation = 0;
+    QUrl url;
+  };
+
+  void createFolder(quint64 generation, const QUrl &url) override {
+    m_requests.append({generation, url});
+  }
+
+  void cancel(quint64 generation) override { m_cancelled.append(generation); }
+
+  void finishSuccess(quint64 generation) { Q_EMIT createFinished(generation, QString()); }
+  void finishFailure(quint64 generation, const QString &diagnostic) {
+    Q_EMIT createFinished(generation, diagnostic);
   }
 
   [[nodiscard]] const QVector<Request> &requests() const { return m_requests; }

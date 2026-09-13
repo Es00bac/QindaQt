@@ -2,6 +2,8 @@
 #pragma once
 
 #include "file_manager_types.h"
+#include "navigation_history.h"
+#include "../network/network_location.h"
 
 #include <QDateTime>
 #include <QFileInfo>
@@ -86,5 +88,38 @@ entryListToVariants(const QVector<DirectoryEntry> &entries, quint64 generation,
 }
 
 } // namespace EntryPresentation
+
+// Breadcrumb marshalling for QML, kept out of NavigationController with the
+// other presentation helpers so the controller stays under the project's
+// source-size invariant. The remote branch mirrors NavigationHistory's
+// shape with network URL segments instead of plain paths.
+namespace NavigationPresentation {
+
+[[nodiscard]] inline QVariantList
+breadcrumbVariants(bool remoteActive, const QUrl &remoteUrl, bool hasCurrent,
+                   const QString &currentPath) {
+  QVariantList list;
+  if (!hasCurrent) {
+    return list;
+  }
+  if (remoteActive) {
+    const auto segments = NetworkLocation::breadcrumbFor(remoteUrl);
+    list.reserve(segments.size());
+    for (const auto &segment : segments) {
+      list.append(QVariantMap{{QStringLiteral("name"), segment.name},
+                              {QStringLiteral("path"), segment.url.toString()}});
+    }
+    return list;
+  }
+  const auto segments = NavigationHistory::breadcrumbFor(currentPath);
+  list.reserve(segments.size());
+  for (const auto &segment : segments) {
+    list.append(QVariantMap{{QStringLiteral("name"), segment.name},
+                            {QStringLiteral("path"), segment.path}});
+  }
+  return list;
+}
+
+} // namespace NavigationPresentation
 
 } // namespace QindaQt::Apps::FileManager

@@ -6,8 +6,11 @@
 #include "launch_intent.h"
 #include "listing_order.h"
 #include "navigation_history.h"
+#include "navigation_status.h"
 #include "../network/network_directory_backend.h"
+#include "../network/remote_create_folder_controller.h"
 #include "../network/remote_file_opener.h"
+#include "../network/remote_folder_creator.h"
 #include "../network/remote_open_controller.h"
 #include "../network/remote_rename_controller.h"
 #include "../network/remote_renamer.h"
@@ -18,22 +21,6 @@
 #include <QVector>
 
 namespace QindaQt::Apps::FileManager {
-
-enum class NavigationStatus {
-  Ready,
-  Empty,
-  PermissionDenied,
-  Missing,
-  NotADirectory,
-  Error,
-  // S5 network-browsing states (see NetworkListingError): an in-flight
-  // asynchronous remote listing, and the remote-only typed failures a local
-  // listing can never produce.
-  Loading,
-  Unavailable,
-  AuthenticationRequired,
-  Transport,
-};
 
 // AGENT-CONTRACT: This GUI-thread QObject owns the injected lister/launcher
 // and all navigation/listing state for one window. It never blocks longer
@@ -77,6 +64,12 @@ class NavigationController final : public QObject {
   // True while one remote rename is in flight; re-entrant requests are
   // refused and the rename action disables to prevent overlap.
   Q_PROPERTY(bool remoteRenameBusy READ remoteRenameBusy NOTIFY remoteRenameChanged FINAL)
+  // ADR-0154: true while browsing remote with a RemoteFolderCreator
+  // injected -- the action bindings use this to keep "file.new-folder"
+  // available remotely.
+  Q_PROPERTY(bool remoteCreateAvailable READ remoteCreateAvailable NOTIFY navigationChanged FINAL)
+  // True while one remote folder creation is in flight.
+  Q_PROPERTY(bool remoteCreateBusy READ remoteCreateBusy NOTIFY remoteCreateChanged FINAL)
 
 public:
   // networkBackend may be null: navigateTo() then refuses every smb/sftp
@@ -85,11 +78,13 @@ public:
   // may also be null: remote regular-file activation then keeps reporting
   // the truthful "not supported yet" launchError instead of opening.
   // remoteRenamer may be null: remote Rename then stays disabled by the
-  // action bindings exactly as before this seam existed.
+  // action bindings exactly as before this seam existed. folderCreator may
+  // be null: remote New Folder then stays disabled the same way.
   NavigationController(DirectoryListerPtr lister, FileLauncherPtr launcher,
                        NetworkDirectoryBackendPtr networkBackend = nullptr,
                        RemoteFileOpenerPtr remoteOpener = nullptr,
                        RemoteRenamerPtr remoteRenamer = nullptr,
+                       RemoteFolderCreatorPtr folderCreator = nullptr,
                        QObject *parent = nullptr);
 
   // Navigates as if the user chose path directly (breadcrumb segment, typed
@@ -119,6 +114,13 @@ public:
   // overlapping renames) before dispatch and reports the failure through
   // launchError. Returns false when the request was refused before dispatch.
   Q_INVOKABLE bool renameRemoteEntry(const QString &sourcePath, const QString &newName);
+  // ADR-0154: creates one validated child directory in the current remote
+  // folder through the injected RemoteFolderCreator, then refreshes the
+  // authoritative listing on confirmed success. Rejects invalid/traversal
+  // names and overlapping creates before dispatch and reports failures
+  // through launchError; no optimistic entry is ever displayed. Returns
+  // false when the request was refused before dispatch.
+  Q_INVOKABLE bool createRemoteFolder(const QString &name);
   // Returns the index of the entry named name in the current listing, or -1.
   // QML uses this to restore a deterministic selection across a refresh.
   Q_INVOKABLE int indexOfName(const QString &name) const;
@@ -168,6 +170,12 @@ public:
   [[nodiscard]] bool remoteRenameBusy() const noexcept {
     return m_remoteRename != nullptr && m_remoteRename->busy();
   }
+  [[nodiscard]] bool remoteCreateAvailable() const noexcept {
+    return m_remoteActive && m_folderCreator != nullptr;
+  }
+  [[nodiscard]] bool remoteCreateBusy() const noexcept {
+    return m_remoteCreate != nullptr && m_remoteCreate->busy();
+  }
   [[nodiscard]] quint64 listingGeneration() const { return m_listingGeneration; }
 
   // Test seams independent of QML's QVariantList marshalling. entryCount and
@@ -182,6 +190,7 @@ signals:
   void launchErrorChanged();
   void presentationChanged();
   void remoteRenameChanged();
+  void remoteCreateChanged();
 
 private:
   void reload(bool resetFilter = false);
@@ -189,7 +198,6 @@ private:
   // filter/order and republishes statusMessage. Callers emit entriesChanged
   // (and presentationChanged for user-facing setting changes) afterwards.
   void rebuildVisibleEntries();
-  [[nodiscard]] static QString statusKeyFor(NavigationStatus status);
   // Marks a fresh remote navigation (drops any guest listing/name filter)
   // and starts its first listing request.
   void enterRemote(const QUrl &url);
@@ -209,6 +217,9 @@ private:
   // these hooks just bridge it to navigation state.
   void onRemoteRenameRefreshRequested();
   void cancelPendingRemoteRename();
+  // ADR-0154: same bridging for RemoteCreateFolderController.
+  void onRemoteCreateRefreshRequested();
+  void cancelPendingRemoteCreate();
   [[nodiscard]] static NavigationStatus statusForNetworkError(NetworkListingError error);
 
   DirectoryListerPtr m_lister;
@@ -216,8 +227,10 @@ private:
   NetworkDirectoryBackendPtr m_networkBackend;
   RemoteFileOpenerPtr m_remoteOpener;
   RemoteRenamerPtr m_remoteRenamer;
+  RemoteFolderCreatorPtr m_folderCreator;
   std::unique_ptr<RemoteOpenController> m_remoteOpen;
   std::unique_ptr<RemoteRenameController> m_remoteRename;
+  std::unique_ptr<RemoteCreateFolderController> m_remoteCreate;
   bool m_remoteActive = false;
   QUrl m_remoteUrl;
   NavigationHistory m_history;

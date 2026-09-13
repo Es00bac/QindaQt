@@ -58,8 +58,16 @@ Item {
         modal: true
         title: qsTr("Create a new folder")
         standardButtons: Dialog.Ok | Dialog.Cancel
-        onAccepted: root.mutationController.createFolder(
-            root.navigationController.currentPath, newFolderName.text)
+        onAccepted: {
+            // ADR-0154: while browsing remote, New Folder goes through the
+            // navigation controller's injected KIO creator; locally it
+            // stays on the identity-checked local mutation controller.
+            if (root.navigationController.remoteActive)
+                root.navigationController.createRemoteFolder(newFolderName.text)
+            else
+                root.mutationController.createFolder(
+                    root.navigationController.currentPath, newFolderName.text)
+        }
 
         TextField {
             id: newFolderName
