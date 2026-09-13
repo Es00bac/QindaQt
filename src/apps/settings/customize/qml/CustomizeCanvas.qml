@@ -33,6 +33,13 @@ T.Control {
     // resolved through the same Appearance/compositor decoration pipeline a
     // real contained window paints from -- never an invented mock chrome.
     readonly property var windowPreview: root.customizeSettings.windowPreview
+    readonly property var previewOutput: root.customizeSettings.previewOutput ?? ({
+        id: "representative", width: 1920, height: 1080
+    })
+    readonly property real outputWidth: Math.max(1, previewOutput.width ?? 1920)
+    readonly property real outputHeight: Math.max(1, previewOutput.height ?? 1080)
+    readonly property int visiblePanelCount: (root.customizeSettings.panels ?? [])
+        .filter(panel => panel.previewVisible !== false).length
 
     background: Rectangle {
         color: Tokens.bg.base
@@ -44,14 +51,16 @@ T.Control {
     contentItem: Item {
         id: canvasHost
 
-        // Monitor bezel keeps a 16:9 screen inside any column shape.
+        // The monitor follows the previewed output's real logical aspect.
+        // A fixed 16:9 canvas clipped bottom panels on taller displays and
+        // made the supposedly direct editor impossible to use.
         Rectangle {
             id: bezel
 
             anchors.centerIn: parent
-            width: parent.width < parent.height * 16 / 9
-                   ? parent.width : parent.height * 16 / 9
-            height: width * 9 / 16
+            width: parent.width < parent.height * root.outputWidth / root.outputHeight
+                   ? parent.width : parent.height * root.outputWidth / root.outputHeight
+            height: width * root.outputHeight / root.outputWidth
             radius: Tokens.radius.l
             color: Tokens.bg.highest
             border.width: Tokens.space["1"]
@@ -216,16 +225,18 @@ T.Control {
                     delegate: CustomizePanelPreview {
                         required property var modelData
 
+                        visible: modelData.previewVisible !== false
                         panelData: modelData
                         customizeSettings: root.customizeSettings
-                        canvasScale: screen.width / 1920
+                        canvasScale: Math.min(screen.width / root.outputWidth,
+                                              screen.height / root.outputHeight)
                     }
                 }
 
                 Text {
-                    visible: root.customizeSettings.panels.length === 0
+                    visible: root.visiblePanelCount === 0
                     anchors.centerIn: parent
-                    text: qsTr("This layout has no panels yet")
+                    text: qsTr("This display has no panels yet")
                     color: Tokens.fg.muted
                     font.family: Tokens.type.fontFamily
                     font.pointSize: Tokens.type.body

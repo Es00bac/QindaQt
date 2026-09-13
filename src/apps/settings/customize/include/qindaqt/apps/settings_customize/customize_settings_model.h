@@ -51,6 +51,7 @@ class CustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString announcement READ announcement NOTIFY announcementChanged)
     Q_PROPERTY(QString selectedProfileId READ selectedProfileId NOTIFY contentChanged)
     Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
+    Q_PROPERTY(QVariantMap previewOutput READ previewOutput NOTIFY contentChanged)
     Q_PROPERTY(QVariantList panels READ panels NOTIFY contentChanged)
     Q_PROPERTY(QVariantList desktopApplets READ desktopApplets NOTIFY contentChanged)
     Q_PROPERTY(QVariantList palette READ palette CONSTANT)
@@ -104,6 +105,7 @@ public:
     [[nodiscard]] QString announcement() const { return m_announcement; }
     [[nodiscard]] QString selectedProfileId() const { return m_selectedProfileId; }
     [[nodiscard]] QVariantList profiles() const;
+    [[nodiscard]] QVariantMap previewOutput() const;
     [[nodiscard]] QVariantList panels() const;
     [[nodiscard]] QVariantList desktopApplets() const;
     [[nodiscard]] QVariantList palette() const;

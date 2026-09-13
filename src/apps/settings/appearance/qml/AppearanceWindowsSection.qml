@@ -8,19 +8,24 @@ import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 import QindaQt.SettingsApp.Appearance 1.0
 
-// QindaQt draws two sets of chrome (ADR-0129): application window
-// decorations, painted by the KDecoration plugin, and container chrome,
-// painted by the compositor around grouped windows. Each set has a live
-// preview drawn by its real renderer and its own arrangement choices;
-// "Theme" keeps whatever the theme ships. The route model stays the only
-// settings authority; this section forwards draft edits verbatim.
+// KWin owns the application-window decoration choice (ADR-0160), while
+// Settings1 owns QindaQt decoration preferences and compositor container
+// chrome (ADR-0129). A foreign plugin is never rendered through QindaQt's
+// painter: after apply, this Settings window's own frame is its live preview.
 ColumnLayout {
     id: root
 
     required property var appearanceSettings
+    property var windowDecorationSettings: null
     required property bool editorBusy
     readonly property bool editable: appearanceSettings.canEdit && !editorBusy
-    readonly property Item firstFocusTarget: windowStyleRow.firstChoice
+    readonly property Item firstDecorationChoice: decorationChooser.firstChoice
+    readonly property bool qindaQtDecorationSelected:
+        windowDecorationSettings === null
+        || windowDecorationSettings.selectedUsesQindaQt
+    readonly property Item firstFocusTarget: firstDecorationChoice !== null
+                                                  ? firstDecorationChoice
+                                                  : windowStyleRow.firstChoice
 
     Layout.fillWidth: true
     spacing: Tokens.space["3"]
@@ -58,16 +63,25 @@ ColumnLayout {
         }
     }
 
+    WindowDecorationChooser {
+        id: decorationChooser
+        settings: root.windowDecorationSettings
+        editorBusy: root.editorBusy
+    }
+
     SectionHeader {
         objectName: "appearanceWindowsHeader"
         Layout.fillWidth: true
         title: qsTr("Application windows")
-        description: ""
+        description: root.qindaQtDecorationSelected
+                     ? qsTr("QindaQt decoration options")
+                     : qsTr("After applying, the Settings window frame is the live preview of the KWin decoration")
     }
 
     AppearanceWindowPreview {
         objectName: "appearanceWindowChromePreview"
         Layout.fillWidth: true
+        visible: root.qindaQtDecorationSelected
         Layout.preferredHeight: Math.round(Math.min(250, Math.max(180, width * 0.4)))
         chrome: root.appearanceSettings.previewChrome ?? ({})
         toolkitPalette: root.appearanceSettings.previewToolkitPalette ?? ({})
@@ -80,8 +94,22 @@ ColumnLayout {
         Accessible.description: qsTr("Title bar buttons and caption as application windows show them")
     }
 
+    FormSurface {
+        objectName: "appearanceExternalDecorationPreview"
+        Layout.fillWidth: true
+        visible: !root.qindaQtDecorationSelected
+
+        Label {
+            width: parent.width
+            text: qsTr("This decoration is drawn by KWin, not by QindaQt. Apply it to preview it on this Settings window's real frame.")
+            wrapMode: Text.Wrap
+            Accessible.name: text
+        }
+    }
+
     ChromeChoice {
         id: windowStyleRow
+        visible: root.qindaQtDecorationSelected
         label: qsTr("Buttons")
         settings: root.appearanceSettings
         canEdit: root.editable
@@ -97,6 +125,7 @@ ColumnLayout {
     }
 
     ChromeChoice {
+        visible: root.qindaQtDecorationSelected
         label: qsTr("Side")
         settings: root.appearanceSettings
         canEdit: root.editable
@@ -111,6 +140,7 @@ ColumnLayout {
     }
 
     ChromeChoice {
+        visible: root.qindaQtDecorationSelected
         label: qsTr("Show")
         settings: root.appearanceSettings
         canEdit: root.editable
@@ -125,6 +155,7 @@ ColumnLayout {
     }
 
     ChromeChoice {
+        visible: root.qindaQtDecorationSelected
         label: qsTr("Title")
         settings: root.appearanceSettings
         canEdit: root.editable

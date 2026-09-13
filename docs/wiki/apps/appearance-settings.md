@@ -4,9 +4,11 @@
 surface. It is one modular route beside the Notifications route inside the
 ordinary `qindaqt-settings` Qt Quick application. The domain module
 `src/apps/settings/appearance` owns validated appearance values, the QST-1
-preview projection, and the Settings1-backed route model; the executable owns
-only the additive route seam. The durable composition decisions are recorded
-in [ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md).
+preview projection, the Settings1-backed route model, and the narrow installed
+KWin-decoration controller; the executable owns only their additive route
+seams. The durable composition decisions are recorded in
+[ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md) and
+[ADR-0160](../adr/0160-select-installed-kwin-window-decorations.md).
 The route keeps its transaction state machine separate from preview projection
 and divides presentation into dedicated Themes, Wallpaper, and Fonts
 destinations. The destinations share one route-level draft and Apply/Revert
@@ -19,7 +21,7 @@ One page covers the appearance preference set stored through Settings1:
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
 | Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get; six visible built-in theme cards with authored decoration presets; the system/light/dark scheme choice; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme` |
-| Windows | Two live previews (ADR-0129): an application window whose title bar is painted by the shared decoration painter, and a two-window container laid out and painted by the compositor's own chrome engine with native member title bars. Each set has glyph-light rows for button style, side, visible buttons or tab order, and title alignment or symbol visibility; every default is `Theme`, which keeps the shipped chrome | `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
+| Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
 | Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
@@ -27,15 +29,23 @@ Display scale belongs to the separate **Display** route, which owns the live
 output configuration. Appearance offers a direct route action rather than a
 second, stored-only scale control.
 
-The preview and the palette row are presentation-only. The preview's chrome
-is `DecorationChrome::fromTheme` (the derivation the compositor publishes to
-every decoration) painted by the shared decoration painter, and its client
-area is the Fusion `QStyle` painted with `nativeAppearance`'s palette and the
-draft font, so the page shows the combined theme truth — window chrome,
-QindaQt surfaces, and stock Qt applications — without giving the route write
-access to any decoration or Qt style state. The preview follows the draft:
-a theme card, scheme, or font change shows before Apply. Without a widgets
-application (headless tests) the client area degrades to flat palette rows.
+The Themes preview and palette row are presentation-only. Its chrome is
+`DecorationChrome::fromTheme` (the derivation the QindaQt compositor publishes)
+painted by the shared decoration painter, and its client area is the Fusion
+`QStyle` painted with `nativeAppearance`'s palette and the draft font. It
+therefore previews the QindaQt appearance theme rather than claiming to render
+an unrelated active KDecoration plugin. The preview follows the draft: a theme
+card, scheme, or font change shows before Apply. Without a widgets application
+(headless tests) the client area degrades to flat palette rows.
+
+The Windows destination reads the real KWin decoration selection separately.
+It discovers valid Aurorae theme directories from the standard XDG data roots
+and supported native plugins from Qt's plugin roots. Applying one choice
+preserves unrelated `kwinrc` keys and synchronously requests KWin reconfigure.
+QindaQt's renderer is shown only for QindaQt; a foreign plugin's authoritative
+preview is the Settings window's own frame after apply. Container chrome is
+always available because the QindaQt compositor owns that renderer regardless
+of the application-window decoration plugin.
 
 Every built-in theme authors real decoration behavior. The current catalog
 contains at least four distinct families across left/right controls,
@@ -123,7 +133,10 @@ without discarding confirmed state:
    directories win duplicate IDs, while unique built-ins remain present; an
    invalid theme fails closed and no themes exits 3 instead of rendering
    token-less controls;
-5. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,
+5. construct the KWin-decoration controller with the user's `kwinrc`, standard
+   Aurorae data roots, and the bounded KWin reconfigure call; it performs no
+   write until the user explicitly invokes **Use decoration**;
+6. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,
    and only then load `Main.qml`; one presentation-active route host
    instantiates exactly one route component with its required model property,
    while both bounded domain models remain alive. The executable adds
@@ -137,7 +150,10 @@ page receives only its own model even though both models share the process.
 
 ## Deliberate non-goals for this slice
 
-- The Settings window never mutates compositor or shell surfaces directly. After Apply publishes a confirmed Settings1 snapshot, the production shell background controller adopts the installed or custom wallpaper on every output.
+- Settings1 Apply never mutates compositor or shell surfaces directly. The
+  separate **Use decoration** action changes only KWin's documented decoration
+  configuration and requests one live reload. After Settings1 Apply publishes
+  a confirmed snapshot, the production shell adopts appearance preferences.
 - Font families are listed from the local Qt font database for selection. The
   persisted value remains validated text because first-party session bootstrap
   remains the consumer that applies it before application construction.
@@ -172,7 +188,13 @@ ctest --test-dir build/dev \
 - `qindaqt.appearance-page` — offscreen Controls scene: focused-destination
   navigation, theme click selection/gating, installed-font and wallpaper
   selection wiring, tokenized font selectors and checked-only hinting emphasis,
-  one shared action row, per-key result truth, and accessible roles.
+  one shared Settings1 action row, per-key result truth, and accessible roles.
+- `qindaqt.appearance-window-decoration-controller` — Aurorae discovery,
+  stable selection identities, exact KWin library/theme persistence, unrelated
+  key preservation, QindaQt-theme cleanup, and one reload request per apply.
+- `qindaqt.appearance-window-decoration-page` — installed-decoration card and
+  apply wiring plus the rule that foreign selections hide QindaQt's inapplicable
+  preview and controls.
 
 Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md).
 

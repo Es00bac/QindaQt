@@ -25,6 +25,7 @@ T.ApplicationWindow {
     required property var navigation
     required property var quietingSettings
     required property var appearanceSettings
+    property var windowDecorationSettings: null
     property var displaySettings: null
     property var networkSettings: null
     property var customizeSettings: CustomizeRouteComposition.model
@@ -266,6 +267,7 @@ T.ApplicationWindow {
         AppearancePage {
             objectName: "appearancePage"
             appearanceSettings: root.appearanceSettings
+            windowDecorationSettings: root.windowDecorationSettings
             navigation: root.navigation
             onCloseRequested: root.close()
         }

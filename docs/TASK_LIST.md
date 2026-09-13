@@ -32,6 +32,19 @@ so adoption of the shared bus and newly installed code requires the next login.
 
 ## Active outcomes
 
+### Truthful window decorations and usable Customize canvas (September 13)
+
+The current source repairs two user-visible Settings failures. Appearance now
+lists installed native and Aurorae KWin decorations separately from QindaQt
+appearance themes, applies the exact KWin plugin/theme pair through an explicit
+action, and never paints a QindaQt mock as the preview for a foreign plugin.
+Customize now derives its monitor aspect and coordinate origin from the current
+primary output, keeping the top bar, dock, and their applet targets visible and
+interactive on tall or non-zero-origin displays. The focused combined selector
+passes 16/16, including the staged installed-route row. This is source evidence;
+the Portage package and running physical Settings application have not been
+replaced.
+
 ### Immediate desktop and File Manager usability wave (September 12)
 
 The narrow Desktop/local-file boundary is integrated at `7067f509` after an

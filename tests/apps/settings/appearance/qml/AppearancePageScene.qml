@@ -14,6 +14,7 @@ Item {
     AppearancePage {
         anchors.fill: parent
         appearanceSettings: sceneRoot.stubModel
+        windowDecorationSettings: sceneRoot.stubModel.windowDecorationSettings
         onCloseRequested: sceneRoot.closeRequested()
     }
 }

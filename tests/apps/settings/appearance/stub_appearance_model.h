@@ -10,6 +10,70 @@
 #include <QStringList>
 #include <QVariant>
 
+class StubWindowDecorationSettings final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QVariantList decorations MEMBER decorations CONSTANT)
+    Q_PROPERTY(QString configuredId MEMBER configuredId NOTIFY stateChanged)
+    Q_PROPERTY(QString configuredName MEMBER configuredName NOTIFY stateChanged)
+    Q_PROPERTY(QString selectedId MEMBER selectedId NOTIFY stateChanged)
+    Q_PROPERTY(bool selectedUsesQindaQt READ selectedUsesQindaQt NOTIFY stateChanged)
+    Q_PROPERTY(bool applyAvailable READ applyAvailable NOTIFY stateChanged)
+    Q_PROPERTY(QString statusText READ statusText NOTIFY stateChanged)
+    Q_PROPERTY(QString errorText MEMBER errorText NOTIFY stateChanged)
+
+public:
+    explicit StubWindowDecorationSettings(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+        decorations = {
+            QVariantMap{{QStringLiteral("id"), QStringLiteral("native:org.qindaqt")},
+                        {QStringLiteral("name"), QStringLiteral("QindaQt")},
+                        {QStringLiteral("kind"), QStringLiteral("native")}},
+            QVariantMap{{QStringLiteral("id"), QStringLiteral("aurorae:Scratchy")},
+                        {QStringLiteral("name"), QStringLiteral("Scratchy")},
+                        {QStringLiteral("kind"), QStringLiteral("aurorae")}},
+        };
+    }
+
+    [[nodiscard]] bool selectedUsesQindaQt() const
+    {
+        return selectedId == QLatin1String("native:org.qindaqt");
+    }
+    [[nodiscard]] bool applyAvailable() const
+    {
+        return selectedId != configuredId;
+    }
+    [[nodiscard]] QString statusText() const
+    {
+        return QStringLiteral("Current window decoration: %1").arg(configuredName);
+    }
+    Q_INVOKABLE bool selectDecoration(const QString &id)
+    {
+        selectedId = id;
+        Q_EMIT stateChanged();
+        return true;
+    }
+    Q_INVOKABLE bool applySelection()
+    {
+        configuredId = selectedId;
+        configuredName = selectedUsesQindaQt() ? QStringLiteral("QindaQt")
+                                               : QStringLiteral("Scratchy");
+        ++applies;
+        Q_EMIT stateChanged();
+        return true;
+    }
+
+    QVariantList decorations;
+    QString configuredId = QStringLiteral("native:org.qindaqt");
+    QString configuredName = QStringLiteral("QindaQt");
+    QString selectedId = configuredId;
+    QString errorText;
+    int applies = 0;
+
+Q_SIGNALS:
+    void stateChanged();
+};
+
 // Duck-typed stand-in for AppearanceSettingsModel: the page is defined
 // against this property surface, so the presentation test can drive every
 // route without a live Settings1 lineage.
@@ -46,9 +110,15 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(QColor previewCanvasColor MEMBER previewCanvasColor NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap previewContainerStyle MEMBER previewContainerStyle
                    NOTIFY draftChanged)
+    Q_PROPERTY(QObject *windowDecorationSettings READ windowDecorationSettings CONSTANT)
 
 public:
     explicit StubAppearanceModel(QObject *parent = nullptr) : QObject(parent) {}
+
+    [[nodiscard]] QObject *windowDecorationSettings()
+    {
+        return &windowDecorations;
+    }
 
     Q_INVOKABLE bool setDraftValue(const QString &key, const QVariant &value)
     {
@@ -108,6 +178,7 @@ public:
     int applies = 0;
     int cancels = 0;
     int retries = 0;
+    StubWindowDecorationSettings windowDecorations{this};
 
 Q_SIGNALS:
     void stateChanged();
