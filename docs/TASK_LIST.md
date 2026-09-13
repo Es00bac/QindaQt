@@ -40,7 +40,13 @@ manager controller/unit rows pass 2/2 and three of four serialized nested rows
 pass; the fourth stops before product verdict on the disclosed
 placement-sensitive dock-gesture fixture defect, matching the bounded repair
 follow-up rather than a ghost/input failure. Global Menu evidence candidate
-`076d8a3d` remains in its bounded test-only repair.
+`076d8a3d` remains in its bounded test-only repair. Terminal audible-attention
+candidate `53402c13` received independent GLM ACCEPT and is integrated as
+`4a39d5bb`: an audible parsed bell preserves the existing beep and requests
+standard Qt attention for its owning visible top-level window, while silent
+profiles and hidden-window alerting fail closed. The integrated-tree Terminal
+and read-only Task List selector passes 6/6. No live bell, installed package,
+or desktop-session adoption is claimed.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 

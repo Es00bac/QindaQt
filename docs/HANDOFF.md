@@ -57,6 +57,28 @@ placement-sensitive fixture defect. Timeout-log retention, socket-path
 guarding, count wording, and that fixture fallback remain nonblocking
 follow-ups; no unchanged long retry was run.
 
+Terminal audible-attention candidate
+`53402c13b72d96273b6b0a3bdd5902893d4b5875` received independent GLM ACCEPT
+with P0/P1/P2/P3 `0/0/0/2` and is integrated as `4a39d5bb`. Audible parsed
+bells retain the existing beep and issue exactly one standard Qt attention
+request to the owning visible top-level Terminal window; silent profiles issue
+neither, and a hidden audible window still beeps without retaining an alert.
+The manager rebuilt the four changed Terminal targets plus the two affected
+Terminal regression and two read-only Task List targets, then passed the exact
+six-row selector 6/6 on the integrated tree under display/session-bus
+isolation. No live bell, installation, or live-session mutation was performed.
+
+This checkpoint also applies the bounded delivery rules recorded in
+[Flow team workflow](wiki/contributing/flow-team-workflow.md): all fresh
+handoffs are serviced before long gates, each accepted exact SHA moves directly
+to integration, a reviewer rotates to its pre-authorized compatible successor,
+and only demonstrated product defects, consequential contract violations, or
+invalid required verification block. Optional refactors, unrelated coverage,
+and pre-existing findings remain nonblocking; an unchanged long retry requires
+a changed hypothesis or input. Direct worker terminals keep an independent
+lifetime and routing records name observed worker/terminal PIDs and provider
+sessions rather than retired launchers.
+
 ## Desktop gap wave: lock screen, portals, input and shortcuts, keyring, night light (September 11, r11)
 
 After r10 the user named five desktop gaps and asked for five GLM 5.3 Flash
