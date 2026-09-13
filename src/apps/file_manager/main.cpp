@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_browsing_actions.h"
+#include "app_shell/file_manager_mutation_actions.h"
 #include "app_shell/file_manager_transfer_actions.h"
 #include "model/bookmarks_store.h"
 #include "model/clipboard_controller.h"
@@ -54,37 +55,8 @@ namespace {
   QindaQt::Apps::FileManager::bindFileManagerBrowsingActions(coordinator, navigation);
   QindaQt::Apps::FileManager::bindFileManagerTransferActions(coordinator, navigation,
                                                              clipboard, mutation);
-  const auto syncMutationActions = [&coordinator, &mutation, &navigation]() {
-    // AGENT-GUARD: current-folder mutation actions disable while a remote
-    // (smb/sftp) location is active -- remote entries carry no local
-    // mutation identity and this slice never mutates a remote location.
-    // Undo/Restore Last/Empty Trash/Cancel operate on the local Trash and
-    // last-operation history independent of the current folder, so they are
-    // gated only by the mutation-busy slot.
-    const bool idle = !mutation.busy() && !navigation.remoteActive();
-    for (const QString &actionId :
-         {QStringLiteral("file.new-folder"), QStringLiteral("file.rename"),
-          QStringLiteral("file.copy"), QStringLiteral("file.move"),
-          QStringLiteral("file.trash"), QStringLiteral("file.empty-trash")}) {
-      const auto result = coordinator.setActionEnabled(actionId, idle);
-      Q_UNUSED(result);
-    }
-    const auto undoResult = coordinator.setActionEnabled(
-        QStringLiteral("edit.undo"), mutation.canUndo());
-    const auto restoreResult = coordinator.setActionEnabled(
-        QStringLiteral("file.restore-last"), mutation.canRestore());
-    const auto cancelResult = coordinator.setActionEnabled(
-        QStringLiteral("operation.cancel"), mutation.busy());
-    Q_UNUSED(undoResult);
-    Q_UNUSED(restoreResult);
-    Q_UNUSED(cancelResult);
-  };
-  QObject::connect(
-      &mutation, &QindaQt::Apps::FileManager::MutationController::stateChanged,
-      &coordinator, syncMutationActions);
-  QObject::connect(
-      &navigation, &QindaQt::Apps::FileManager::NavigationController::navigationChanged,
-      &coordinator, syncMutationActions);
+  QindaQt::Apps::FileManager::bindFileManagerMutationActions(coordinator, navigation,
+                                                             mutation);
   QObject::connect(
       &coordinator,
       &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
@@ -95,15 +67,6 @@ namespace {
                             : QString());
         Q_UNUSED(result);
       });
-  const auto undoDisabled =
-      coordinator.setActionEnabled(QStringLiteral("edit.undo"), false);
-  const auto restoreDisabled =
-      coordinator.setActionEnabled(QStringLiteral("file.restore-last"), false);
-  const auto cancelDisabled =
-      coordinator.setActionEnabled(QStringLiteral("operation.cancel"), false);
-  Q_UNUSED(undoDisabled);
-  Q_UNUSED(restoreDisabled);
-  Q_UNUSED(cancelDisabled);
   return {};
 }
 
