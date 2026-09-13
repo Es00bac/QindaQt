@@ -90,8 +90,15 @@ the exact test-only split restored the source-shape hard limit, and is integrate
 as `9f5cce93` → `8ddf96af`. The strict affected build and focused integrated-tree
 selector pass 9/9, including the newly split
 `qindaqt.file-manager-navigation-controller-network-mutation` row; docs validate
-253 pages, strict MkDocs and diff checks pass. Remote copy/move/write and
-installed/live credential validation remain separate boundaries.
+253 pages, strict MkDocs and diff checks pass. Remote Copy To lineage
+`07becad3` → `b8a8cc02` received independent same-reviewer ACCEPT and is
+integrated as `bf0ac7ed` → `70f2df8c`; one selected listed SMB/SFTP child can
+be copied to a validated same-authority remote destination through KIO, while
+multi-selection fails closed and the shared Cancel action reaches the active
+copy. The strict affected build and exact integrated selector pass 11/11,
+including the split network-mutation, browsing UI, and former-red copy-guard
+rows. Remote move/write and installed/live credential validation remain
+separate boundaries.
 
 Customize applet editing and configured-wallpaper preview are integrated as
 the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
