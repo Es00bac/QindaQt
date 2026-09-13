@@ -161,6 +161,12 @@ item, not a native overlay window.
   active-group choice. Server-drawn member titles restore their exact prior
   border state on detach, release, and compositor shutdown; client-drawn title
   bars remain controlled by their applications.
+- A visible server-drawn member handlebar has a 108-logical-pixel supported
+  minimum for its four miniature controls, centered grip, and button-free
+  native detach region. The shared decoration-painter layout owns those
+  rectangles for both preview paint and live KDecoration; narrower tiles omit
+  the grip and report an explicitly unsupported constraint-overflow case to
+  the container sizing owner.
 
 ## Persistence
 

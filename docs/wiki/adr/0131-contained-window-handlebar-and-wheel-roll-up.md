@@ -26,9 +26,13 @@ roll-up.
    button set applied (ADR-0129). A "more" control at the opposite end opens
    the QindaQt window menu. Glyph-style themes keep classic stoplight colors
    on the handlebar. The shared painter owns the metrics, layout, and
-   painting (`DecorationMemberHandleHeight`, `layoutMemberHandleButtons`,
+   painting (`DecorationMemberHandleHeight`, `layoutMemberHandle`,
    `paintMemberHandle`), so the Settings container preview draws the same
-   bar.
+   bar. Its value layout carries every control target, the centered grip, and
+   the button-free native drag region. At the 108-logical-pixel minimum
+   supported width it shrinks the grip to 8 px; roomier bars retain the 36 px
+   preferred grip. The live decoration consumes the same layout instead of
+   independently positioning its targets.
 2. **Member title regions follow the bar.** The compositor's
    `chromeMetrics()` sets `memberTitleHeight` to the handlebar height, so
    modified-pointer targets, hit tests, and the preview's layout request
@@ -53,9 +57,15 @@ roll-up.
   and maximize, and the "more" menu for roll-up, keep above or below, and
   workspaces. The existing title-toggle control and `Meta+Shift+C` still hide
   member bars entirely.
+- Widths below 108 logical pixels are not a complete handlebar presentation:
+  the layout reports them unsupported and omits the grip rather than painting
+  it through a control. Container constraint handling remains responsible for
+  avoiding such undersized member tiles.
 - The decoration and compositor changes load in the compositor process and
   take effect at the next login after installation.
-- `qindaqt.decoration-painter` pins the handlebar layout for classic and
-  glyph chrome and its painted pixels; the chrome pointer router suite pins
-  wheel routing over the title row, tabs, and handlebars, and the
-  pass-through cases.
+- `qindaqt.member-handle-layout` pins the minimum and roomy handlebar layouts
+  for classic and glyph chrome, maximized and restored frames, and proves at
+  pixel level that grip ink never enters a control. The existing decoration
+  painter/plugin rows preserve the complete renderer and live factory; the
+  chrome pointer router suite pins wheel routing over the title row, tabs, and
+  handlebars, and the pass-through cases.

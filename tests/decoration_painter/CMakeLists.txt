@@ -15,3 +15,15 @@ set_tests_properties(
     qindaqt.decoration-painter
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+qt_add_executable(qindaqt_member_handle_layout_tests tst_member_handle_layout.cpp)
+target_link_libraries(
+    qindaqt_member_handle_layout_tests
+    PRIVATE QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_member_handle_layout_tests)
+add_test(NAME qindaqt.member-handle-layout COMMAND qindaqt_member_handle_layout_tests)
+set_tests_properties(
+    qindaqt.member-handle-layout
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

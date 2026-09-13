@@ -373,6 +373,9 @@ replace earlier work:
 - Add QindaQt-specific parent-frame controls for member-title visibility and
   a compact management menu using the existing arrange, detach, and ungroup
   actions, without obscuring normal window controls.
+- Keep contained-member handlebars usable at narrow split widths: one shared
+  layout must retain all miniature window controls, a centered grip, and a
+  real button-free native detach region at the documented supported minimum.
 - Make the active container and active member unmistakable through stronger
   theme-consistent frame cues, including when member titles are hidden.
 - Replace stock KWin chrome context menus with QindaQt group/member-aware
@@ -477,7 +480,8 @@ single-instance applet creation; and all 31 unresolved stock preset instances.
 The selected repairs are integrated. Final acceptance includes exact candidate
 review, integrated regression tests, and private nested visual interaction.
 The shared chrome now combines tabs and group controls in one 28-pixel row
-(right-to-left tabs in Mac style); native member title strips use 24 pixels.
+(right-to-left tabs in Mac style); native members use responsive 14-pixel
+handlebars with a 108-logical-pixel supported minimum.
 Current evidence and remaining scope are recorded in [Handoff](HANDOFF.md).
 This does not close the other audit findings or assert complete desktop-environment
 parity. Memory optimization remains deferred behind usability.

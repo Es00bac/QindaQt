@@ -298,6 +298,16 @@ or down (toward) through `HybridChromePointerRouter::pointerWheel` and the
 existing shade path; over an ordinary title bar the decoration rolls that
 window. Both load in the compositor, so they need the next login.
 
+The handlebar is responsive down to a documented 108-logical-pixel supported
+minimum. `layoutMemberHandle` now returns the miniature button targets,
+centered grip, and button-free native drag rectangle as one value consumed by
+both `paintMemberHandle` and live `QindaDecoration` geometry. At that minimum
+the grip contracts to 8 px without entering the left- or right-side controls;
+at roomy widths it remains 36 px. Smaller geometry reports an incomplete
+layout and omits the grip instead of drawing over an action. The focused
+`qindaqt.member-handle-layout` row covers both chrome styles, frame states,
+geometry invariants, and handle-only pixels without touching a live compositor.
+
 ### Bliss Luna taskbar repair (ADR-0124 amendment)
 
 The Luna bar no longer paints cream chips: `lunaMode` reaches every applet

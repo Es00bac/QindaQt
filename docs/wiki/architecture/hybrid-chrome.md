@@ -69,11 +69,12 @@ maximize-or-restore, close.
 The shared row reserves left traffic lights, right-to-left tabs, and a minimum
 outer drag region without stacking a separate tab strip below it. The two group
 controls occupy the side opposite the standard window buttons and remain
-separate from tabs and the drag region in left- and right-side layouts. Native member
-decorations stay visible as compact 24-logical-pixel strips: they retain normal
-member title dragging and per-window controls, while the shared row owns group
-controls, tabs, and outer resize. The constraint solver reserves the shared row
-once; the chrome plan and scene content frame therefore keep identical bounds.
+separate from tabs and the drag region in left- and right-side layouts. Native
+member decorations stay visible as compact 14-logical-pixel handlebars: they
+retain a bounded native member drag region and per-window controls, while the
+shared row owns group controls, tabs, and outer resize. The constraint solver
+reserves the shared row once; the chrome plan and scene content frame therefore
+keep identical bounds.
 
 The production Hybrid session currently selects this Qinda macOS style with
 the palette resolved by the live AppAppearance projection. Theme changes
@@ -343,10 +344,15 @@ Container members draw a 14 px handlebar instead of a full native title bar:
 title color, a centered grip, miniature stoplights on the effective button
 side, and a "more" control that opens the window menu. The compositor's
 `memberTitleHeight` equals the handlebar height, so member title regions match
-the painted bar. A modifier-free vertical wheel over the container title row,
-a tab or control, or a member handlebar rolls the container up (wheel away
-from the user) or down. Over an ordinary window's title bar the decoration
-rolls that window. See
+the painted bar. One painter-owned value layout also supplies the live
+decoration's control clusters and its button-free native drag rectangle. At
+the 108-logical-pixel supported minimum, all four 12 px targets remain in
+bounds on either button side and the centered grip contracts to 8 px without
+overlap; it grows to 36 px when space permits. Narrower geometry is explicitly
+incomplete and paints no grip. A modifier-free vertical wheel over the
+container title row, a tab or control, or a member handlebar rolls the
+container up (wheel away from the user) or down. Over an ordinary window's
+title bar the decoration rolls that window. See
 [ADR-0131](../adr/0131-contained-window-handlebar-and-wheel-roll-up.md).
 
 ## Compositor scene restart

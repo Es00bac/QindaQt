@@ -38,6 +38,13 @@ constexpr qreal DecorationMemberCornerRadius = 6.0;
 constexpr qreal DecorationMiniButtonCell = 12.0;
 constexpr qreal DecorationMiniButtonSpacing = 3.0;
 constexpr qreal DecorationMiniButtonInset = 6.0;
+constexpr qreal DecorationMemberGripMaximumWidth = 36.0;
+constexpr qreal DecorationMemberGripMinimumWidth = 8.0;
+constexpr qreal DecorationMemberControlClearance = 2.0;
+// AGENT-CONTRACT: Three stoplights at one end, More at the other, and a
+// centered minimum grip fit without overlap at this width. Container sizing
+// must treat a layout below it as explicitly unsupported.
+constexpr qreal DecorationMemberHandleMinimumWidth = 108.0;
 
 struct DecorationVisualStyle {
     QColor frameColor;
@@ -102,6 +109,16 @@ struct DecorationButtonVisual {
     bool visible = true;
     bool hovered = false;
     bool pressed = false;
+};
+
+// Value-only geometry shared by the preview painter and live KDecoration.
+// `dragRegion` is the button-free native detach target; supported guarantees
+// every control and the centered grip are in bounds and mutually disjoint.
+struct DecorationMemberHandleLayout {
+    QList<DecorationButtonVisual> buttons;
+    QRectF grip;
+    QRectF dragRegion;
+    bool supported = false;
 };
 
 struct DecorationFrameVisual {
@@ -225,6 +242,10 @@ resolveContainerStyle(const Themes::ThemeSpec &theme, const ChromePreferences &p
 // Contained-window handlebar (ADR-0131): stoplights on the effective button
 // side with the visible set applied, and a "more" control that opens the
 // window menu at the opposite end, all in miniature hit cells.
+[[nodiscard]] DecorationMemberHandleLayout
+layoutMemberHandle(const DecorationChrome &chrome, const QSizeF &size);
+// Compatibility projection for callers that paint only the controls. New
+// geometry consumers should retain the complete layout above.
 [[nodiscard]] QList<DecorationButtonVisual>
 layoutMemberHandleButtons(const DecorationChrome &chrome, const QSizeF &size);
 // Handle bar, seam, frame outline, and the centered grip. Its buttons paint
