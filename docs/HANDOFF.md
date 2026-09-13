@@ -1,5 +1,25 @@
 # Integration handoff
 
+## Dock terminal-bell attention surface (September 13)
+
+Original attention candidate `88ffc3460eab0b451788dbe41f903a26f196db13`
+connected the already-integrated Terminal bell request to a restrained Dock and
+panel opacity pulse, but independent review rejected it because reduced-motion
+Dock tiles became pixel-identical after urgency cleared. Exact same-author
+repair `ac06ddd065bf9ca9ac12205248904392764f6057` adds a static, text-based
+urgency mark while retaining the motion enhancement. The same reviewer accepted
+the repair after the unchanged former-red pixel probe distinguished urgent from
+cleared output and measured 10.31:1 contrast on the production Dock surface.
+
+The lineage is integrated as `8ff215bc` plus `34cbf438`. On the integrated tree,
+the focused warning-enabled build succeeded and the task-list applet/boundary
+selector passes 14/14, including attention, Dock, keyboard, accessibility,
+private-bus composition and panel dispatch. Documentation validates 250 pages,
+strict MkDocs and the integration diff check pass. The changed attention test is
+451 non-blank lines and the pulse component 65; the bounded shape check reports
+only the pre-existing TaskListApplet/controller errors and existing review
+warnings. No installed package, live bell, or running desktop was mutated.
+
 ## Authenticated File Manager network browsing (September 12)
 
 Exact Kimi candidate `28e5c160df1399b78f57653b25f0b3bef852b6f1`

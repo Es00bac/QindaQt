@@ -1349,6 +1349,11 @@
               "kind": "commit",
               "reference": "53402c13b72d96273b6b0a3bdd5902893d4b5875",
               "summary": "Exact Terminal audible-attention candidate received independent GLM ACCEPT and is integrated as 4a39d5bb. The integrated four-target build and exact Terminal plus read-only Task List selector pass 6/6 under isolation; no live bell or package adoption is claimed."
+            },
+            {
+              "kind": "commit",
+              "reference": "ac06ddd065bf9ca9ac12205248904392764f6057",
+              "summary": "Exact Dock attention repair received same-reviewer Opus ACCEPT and is integrated with original 88ffc346 as 8ff215bc plus 34cbf438. Reduced motion retains a static text cue; the integrated task-list applet/boundary selector passes 14/14. No live-session adoption is claimed."
             }
           ],
           "caveat": "GPU rendering, later terminal capabilities, whole-application assistive-technology and physical display/input qualification remain."

@@ -56,6 +56,13 @@ profiles and hidden-window alerting fail closed. The integrated-tree Terminal
 and read-only Task List selector passes 6/6. No live bell, installed package,
 or desktop-session adoption is claimed.
 
+The corresponding Dock/panel presentation lineage `88ffc346` plus exact repair
+`ac06ddd0` received independent same-reviewer ACCEPT and is integrated as
+`8ff215bc` plus `34cbf438`. Urgency uses a restrained opacity breath when motion
+is allowed and a static text cue when reduced motion is enabled. The integrated
+task-list applet/boundary selector passes 14/14; no live-session adoption is
+claimed.
+
 Settings Customize display scope candidate `2f6e31eb` received independent
 Sonnet/high ACCEPT and is integrated as `fc7be200`. Revisioned output truth now
 offers explicit Primary display and All displays choices and fails closed on
