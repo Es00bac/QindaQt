@@ -314,6 +314,51 @@ set_tests_properties(
         TIMEOUT 300
 )
 
+# Terminal-bell demand attention (bell -> `urgent` projection): one harness
+# for the panel badge and dock tile pulse, its settle-on-clear, and the host
+# reduced-motion static proof. Purely additive registration; disjoint from the
+# frozen magnification candidate's test edits.
+qindaqt_add_task_list_applet_test(
+    qindaqt_task_list_applet_attention_qml_tests
+    tst_task_list_applet_attention_qml.cpp
+    qindaqt.task-list-applet-attention-qml
+    "shell;task-list;offscreen;accessibility"
+    task_list_applet_test_fakes.h
+    task_list_operation_test_support.h
+)
+target_link_libraries(
+    qindaqt_task_list_applet_attention_qml_tests
+    PRIVATE
+        QindaQt::TokensQml
+        qindaqt_shell_task_list_appletplugin
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
+        qindaqt_themes
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+)
+target_compile_definitions(
+    qindaqt_task_list_applet_attention_qml_tests
+    PRIVATE
+        QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_SOURCE_DIR="${task_list_boundary_source_root}"
+)
+add_dependencies(
+    qindaqt_task_list_applet_attention_qml_tests
+    qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin
+    qindaqt_shell_iconsplugin
+)
+qt_import_qml_plugins(qindaqt_task_list_applet_attention_qml_tests)
+set_tests_properties(
+    qindaqt.task-list-applet-attention-qml
+    PROPERTIES
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+        TIMEOUT 300
+)
+
 # AGENT-GUARD: QT_FATAL_WARNINGS=1 is load-bearing — the compiled module must
 # render warning-free offscreen. Do not drop it to silence a Qt warning; fix
 # the cause or report it.

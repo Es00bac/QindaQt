@@ -43,6 +43,8 @@ T.ToolButton {
     property bool dragHeld: false
     property real dragShiftX: 0
     property real dragFollowX: 0
+    // Demand-attention (terminal bell) pulse level, 1.0 = rest (TaskListUrgentPulse).
+    property real urgentAttentionLevel: 1.0
     readonly property int resolvedDockTileSize: Math.max(24, Math.min(64, dockTileSize))
     // Ungrouped rows (`grouping: "never"`) name the one container member they
     // show: Activate and Close address that window, every other action the
@@ -59,6 +61,8 @@ T.ToolButton {
     readonly property color resolvedIconColor: String(entry.colorHex ?? "").length > 0
         ? entry.colorHex
         : (luna ? "white" : (enabled ? Tokens.fg.default : Tokens.fg.disabled))
+
+    TaskListUrgentPulse { target: button; active: entry.urgent && !reducedMotion }
 
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
@@ -166,10 +170,12 @@ T.ToolButton {
                 Accessible.ignored: true
             }
 
-            // Demand-attention truth is text, never color-only.
+            // Demand-attention truth is text, never color-only; the urgent
+            // breath is opacity on this always-visible-while-urgent badge.
             Text {
                 objectName: "taskListEntryUrgentBadge"
                 visible: button.entry.urgent
+                opacity: button.urgentAttentionLevel
                 text: "!"
                 color: Tokens.fg.default
                 font.family: Tokens.type.fontFamily
@@ -201,6 +207,7 @@ T.ToolButton {
             color: button.resolvedIconColor
             symbolic: button.entry.kind === "container"
             fallbackText: button.entry.applicationName
+            opacity: button.urgentAttentionLevel
             // AGENT-GUARD: bottom-anchored swell inside the tile's reserved
             // envelope — the icon grows upward from its rest bottom edge and
             // never shifts the delegate's layout bounds or hit target. The
