@@ -90,8 +90,13 @@ the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
 `b542ad2a` closes unsafe integer narrowing, malformed integer/enum schema
 classification, and compact/wide keyboard-accessibility proof. The integrated
 non-installed Customize selector passes 8/8; docs 250, strict MkDocs, and diff
-checks pass. The installed-route session-bus timeout and truthful contained
-window chrome remain separate boundaries.
+checks pass. Truthful contained-window preview lineage `eee34543` → `0448e9eb`
+→ `5a647721` is also independently accepted and integrated as `eefa25e8` →
+`df8a2679` → `5fba7edb`; it reuses the compositor decoration resolver/painter
+and consumes both required theme keys. The combined integrated non-installed
+Customize selector passes 9/9; docs 251, strict MkDocs, shape and diff checks
+pass. The installed-route session-bus timeout and live Settings adoption remain
+separate boundaries.
 
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
