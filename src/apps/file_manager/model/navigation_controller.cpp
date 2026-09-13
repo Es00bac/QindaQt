@@ -10,12 +10,13 @@
 
 #include <algorithm>
 #include <array>
+#include <iterator>
 
 namespace QindaQt::Apps::FileManager {
 
 namespace {
 
-constexpr std::array iconSizes{32, 48, 64, 96, 128};
+constexpr std::array iconSizes{16, 24, 32, 48, 64, 96, 128};
 
 } // namespace
 
@@ -396,7 +397,9 @@ void NavigationController::setNameFilter(const QString &filter) {
 }
 
 void NavigationController::zoomBy(int steps) {
-  const int next = std::clamp(m_iconSizeIndex + std::clamp(steps, -4, 4), 0, 4);
+  const int next =
+      std::clamp(m_iconSizeIndex + std::clamp(steps, -6, 6), 0,
+                 static_cast<int>(std::ssize(iconSizes)) - 1);
   if (next == m_iconSizeIndex) {
     return;
   }
@@ -404,7 +407,7 @@ void NavigationController::zoomBy(int steps) {
   emit presentationChanged();
 }
 
-void NavigationController::resetZoom() { zoomBy(2 - m_iconSizeIndex); }
+void NavigationController::resetZoom() { zoomBy(4 - m_iconSizeIndex); }
 
 QString NavigationController::currentPath() const {
   return m_history.currentPath();
@@ -476,7 +479,9 @@ int NavigationController::iconSize() const {
   return iconSizes.at(static_cast<std::size_t>(m_iconSizeIndex));
 }
 
-bool NavigationController::canZoomIn() const { return m_iconSizeIndex < 4; }
+bool NavigationController::canZoomIn() const {
+  return m_iconSizeIndex < static_cast<int>(std::ssize(iconSizes)) - 1;
+}
 
 bool NavigationController::canZoomOut() const { return m_iconSizeIndex > 0; }
 

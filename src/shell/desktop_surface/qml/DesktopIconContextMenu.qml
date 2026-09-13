@@ -5,11 +5,17 @@ import QtQuick
 import QtQuick.Templates as T
 
 // Per-icon menu. Its 1x1 parent anchor is positioned by DesktopIconsView so
-// the xdg popup appears beneath the physical pointer on Wayland.
+// the xdg popup appears beneath the physical pointer on Wayland. The menu
+// opens with exactly one icon or a whole multi-selection targeted (the view
+// selects on right-press), so Cut/Copy/Delete act on the view's current
+// selection, mirroring the File Manager's own context menu.
 T.Menu {
     id: root
     signal openRequested()
     signal renameRequested()
+    signal cutRequested()
+    signal copyRequested()
+    signal deleteRequested()
     popupType: T.Popup.Window
     topPadding: 4
     bottomPadding: 4
@@ -55,8 +61,23 @@ T.Menu {
         onTriggered: root.openRequested()
     }
     IconMenuItem {
+        objectName: "desktopIconContextCut"
+        label: qsTr("Cut")
+        onTriggered: root.cutRequested()
+    }
+    IconMenuItem {
+        objectName: "desktopIconContextCopy"
+        label: qsTr("Copy")
+        onTriggered: root.copyRequested()
+    }
+    IconMenuItem {
         objectName: "desktopIconContextRename"
         label: qsTr("Rename…")
         onTriggered: root.renameRequested()
+    }
+    IconMenuItem {
+        objectName: "desktopIconContextDelete"
+        label: qsTr("Delete")
+        onTriggered: root.deleteRequested()
     }
 }

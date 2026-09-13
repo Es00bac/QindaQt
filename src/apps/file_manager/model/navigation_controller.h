@@ -187,7 +187,8 @@ public:
   // navigation clears the filter; refresh and presentation changes retain it.
   static constexpr int maximumNameFilterLength = 256;
   Q_INVOKABLE void setNameFilter(const QString &filter);
-  // Steps through 32, 48, 64, 96 and 128 logical pixels with saturating bounds.
+  // Steps through 16, 24, 32, 48, 64, 96 and 128 logical pixels with
+  // saturating bounds.
   // Changes presentation only: listing identities and generations stay intact.
   Q_INVOKABLE void zoomBy(int steps);
   Q_INVOKABLE void resetZoom();
@@ -318,7 +319,7 @@ private:
   QString m_nameFilter;
   bool m_guestActive = false;
   QString m_guestStatusText;
-  int m_iconSizeIndex = 2;
+  int m_iconSizeIndex = 4;
 };
 
 } // namespace QindaQt::Apps::FileManager

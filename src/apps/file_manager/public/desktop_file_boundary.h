@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "../model/clipboard_controller.h"
 #include "../model/file_manager_types.h"
 #include "../model/launch_intent.h"
 #include "../mutation/mutation_controller.h"
@@ -11,6 +12,8 @@
 
 #include <functional>
 #include <memory>
+
+class QClipboard;
 
 namespace QindaQt::Apps::FileManager::Desktop {
 
@@ -123,6 +126,18 @@ public:
   // accepted controller/backend wiring; it adds no new mutation policy.
   [[nodiscard]] static std::unique_ptr<MutationController>
   createLocalMutationController(QObject *parent = nullptr);
+
+  // Composes one ClipboardController over an existing local mutation
+  // controller and the platform clipboard, so Desktop-initiated
+  // cut/copy/paste adopts exactly File Manager's own clipboard policy
+  // (identity-checked own snapshots, foreign copy-only adoption, cut cleared
+  // after commit). The caller owns the returned controller's lifetime; the
+  // mutation controller must outlive it and must be the
+  // createLocalMutationController composition above so paste dispatches into
+  // the same identity-checked local authority.
+  [[nodiscard]] static std::unique_ptr<ClipboardController>
+  createLocalClipboardController(MutationController &mutation, QClipboard &clipboard,
+                                 QObject *parent = nullptr);
 };
 
 } // namespace QindaQt::Apps::FileManager::Desktop

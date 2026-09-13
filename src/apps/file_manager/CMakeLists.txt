@@ -12,6 +12,7 @@ target_sources(
         mutation/mutation_types.cpp
         mutation/safe_path_operations.cpp
         mutation/safe_tree_operations.cpp
+        model/clipboard_controller.cpp
         model/launch_intent.cpp
         model/local_directory_lister.cpp
         public/desktop_file_boundary.cpp
@@ -166,6 +167,7 @@ qt_add_qml_module(
         ui/LocationBar.qml
         ui/PlacesSidebar.qml
         ui/EntrySelection.qml
+        ui/SelectionBand.qml
         ui/EntryList.qml
         ui/EntryListDelegate.qml
         ui/EntryGrid.qml

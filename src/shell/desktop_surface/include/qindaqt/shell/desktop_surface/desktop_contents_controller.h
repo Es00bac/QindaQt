@@ -8,10 +8,14 @@
 #include <QVariantList>
 #include <qqmlintegration.h>
 
+#include <functional>
 #include <memory>
 #include <optional>
 
+class QClipboard;
+
 namespace QindaQt::Apps::FileManager {
+class ClipboardController;
 class MutationController;
 }
 
@@ -43,6 +47,11 @@ class DesktopContentsController : public QObject {
   Q_PROPERTY(QVariantList rows READ rows NOTIFY rowsChanged)
   // Last listing/launch diagnostic; empty when the last operation succeeded.
   Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
+  // True when the composed clipboard holds pasteable content (File Manager's
+  // own snapshot or an adopted foreign uri-list).
+  Q_PROPERTY(bool canPaste READ canPaste NOTIFY clipboardChanged)
+  // "copy", "cut", or "none" — the composed clipboard's current mode.
+  Q_PROPERTY(QString clipboardMode READ clipboardMode NOTIFY clipboardChanged)
 
 public:
   explicit DesktopContentsController(QObject *parent = nullptr);
@@ -54,10 +63,21 @@ public:
   // folder activation starts a recording stand-in instead of File Manager.
   DesktopContentsController(QString root, QStringList fileManagerPrograms,
                             QObject *parent = nullptr);
+  // Test seam: also injects the clipboard the cut/copy/paste policy composes
+  // over. Passing nullptr (the production default below) leaves clipboard
+  // operations disabled/fail-closed, which keeps GUI-less controller tests
+  // able to exercise everything else.
+  DesktopContentsController(QString root, std::optional<QStringList> fileManagerPrograms,
+                            QClipboard *clipboard, QObject *parent = nullptr);
   ~DesktopContentsController() override;
 
   [[nodiscard]] QVariantList rows() const { return m_rows; }
   [[nodiscard]] QString feedback() const { return m_feedback; }
+  // True when the composed clipboard holds pasteable content (File Manager's
+  // own snapshot or an adopted foreign uri-list).
+  [[nodiscard]] bool canPaste() const;
+  // "copy", "cut", or "none" — the composed clipboard's current mode.
+  [[nodiscard]] QString clipboardMode() const;
 
   // Re-lists the root directory through the boundary. The desktop context
   // menu's Arrange/Refresh/Clean Up/New Folder entries call this so the icon
@@ -73,11 +93,36 @@ public:
   // Renames only an entry from the last listing, using the complete listing-
   // time identity consumed by File Manager's asynchronous mutation boundary.
   Q_INVOKABLE bool rename(const QString &absolutePath, const QString &newName);
+  // Batch-moves the given entries to the home Trash. Each item must be one of
+  // this controller's own row maps (or carry at least its "path" plus the
+  // identity fields); anything the last listing did not report is refused
+  // with `feedback` before any item is trashed.
+  Q_INVOKABLE bool trashEntries(const QVariantList &items);
+  // Copies/cuts the given entries to the composed clipboard; paste lands in
+  // the Desktop directory through the same identity-checked batch contract
+  // File Manager's own clipboard uses.
+  Q_INVOKABLE bool copySelection(const QVariantList &items);
+  Q_INVOKABLE bool cutSelection(const QVariantList &items);
+  Q_INVOKABLE bool pasteIntoDesktop();
   Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:
   void rowsChanged();
   void feedbackChanged();
+  void clipboardChanged();
+
+private:
+  // Shared validation: rebuilds the mutation batch item maps (path plus
+  // listing-time identity) for exactly the entries the last listing
+  // reported; returns false (with `diagnostic` set) otherwise.
+  [[nodiscard]] bool collectBatchItems(const QVariantList &items,
+                                       QVariantList *batch,
+                                       QString *diagnostic) const;
+  // Shared copy/cut path: validates the selection into batch item maps, then
+  // dispatches through the composed clipboard policy.
+  [[nodiscard]] bool dispatchClipboardSelection(
+      const QVariantList &items,
+      const std::function<bool(const QVariantList &)> &dispatch);
 
 private:
   struct ListedEntry {
@@ -95,10 +140,12 @@ private:
   QString m_root;
   // Unset means FileBoundary's production program candidates.
   std::optional<QStringList> m_fileManagerPrograms;
+  QClipboard *m_clipboard = nullptr;
   QHash<QString, ListedEntry> m_listed;
   QVariantList m_rows;
   QString m_feedback;
   std::unique_ptr<QindaQt::Apps::FileManager::MutationController> m_mutation;
+  std::unique_ptr<QindaQt::Apps::FileManager::ClipboardController> m_clipboardController;
 };
 
 } // namespace QindaQt::Shell::DesktopSurface

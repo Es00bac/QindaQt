@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktop_surface_qml_test_support.h"
 
+#include "qindaqt/shell/desktop_surface/desktop_contents_controller.h"
+
 #include <QDir>
 #include <QFile>
 #include <QQmlExtensionPlugin>
@@ -39,6 +41,12 @@ private Q_SLOTS:
     void cleanup();
     void contextMenuOpensAtThePointerAndOffersRename();
     void iconCanBeDraggedAndItsPositionIsStored();
+    void marqueeSelectsCrossedIconsAndAnEmptyClickClears();
+    void ctrlClickTogglesWhileShiftClickRanges();
+    void groupDragMovesAndPersistsTheWholeSelection();
+    void deleteMovesEverySelectedIconToTrash();
+    void cutCopyAndPasteRideTheComposedClipboard();
+    void iconSizeIsClampedToTheSupportedRange();
 
 private:
     std::unique_ptr<QTemporaryDir> m_home;
@@ -119,6 +127,294 @@ void DesktopIconInteractionTests::iconCanBeDraggedAndItsPositionIsStored()
                                       Q_ARG(QString, tile->property("layoutKey").toString())));
     QCOMPARE(stored.value(QStringLiteral("x")).toReal(), tile->x());
     QCOMPARE(stored.value(QStringLiteral("y")).toReal(), tile->y());
+}
+
+namespace {
+
+// Press-drag-release along a path of scene points (the first entry is the
+// press origin, the last the release point).
+void dragWindow(QQuickWindow *window, const QList<QPointF> &path,
+                Qt::KeyboardModifiers modifiers = Qt::NoModifier)
+{
+    QVERIFY(!path.isEmpty());
+    QTest::mousePress(window, Qt::LeftButton, modifiers, path.first().toPoint());
+    for (int i = 1; i < path.size(); ++i) {
+        QTest::mouseMove(window, path.at(i).toPoint());
+    }
+    QTest::mouseRelease(window, Qt::LeftButton, modifiers, path.last().toPoint());
+}
+
+// Tiles restore their stored/fallback geometry via a deferred call after
+// the window appears; wait until the three fixture icons stack in listing
+// order before deriving click coordinates from their positions.
+#define QTRY_TILES_LAID_OUT(tiles)                                              \
+    QTRY_VERIFY2(                                                               \
+        (tiles).size() >= 3                                                     \
+            && tileNamed((tiles), QStringLiteral("Alpha.txt"))->y()             \
+                   < tileNamed((tiles), QStringLiteral("Beta.txt"))->y()        \
+            && tileNamed((tiles), QStringLiteral("Beta.txt"))->y()              \
+                   < tileNamed((tiles), QStringLiteral("Gamma.txt"))->y(),      \
+        "tiles did not settle into their laid-out positions")
+
+QQuickItem *tileNamed(const QList<QQuickItem *> &tiles, const QString &label)
+{
+    for (QQuickItem *tile : tiles) {
+        if (tile->property("entryLabel").toString() == label) {
+            return tile;
+        }
+    }
+    return nullptr;
+}
+
+int selectedTileCount(const QList<QQuickItem *> &tiles)
+{
+    int count = 0;
+    for (const QQuickItem *tile : tiles) {
+        if (tile->property("selected").toBool()) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+void triggerMenuItem(const SurfaceHost &host, const QString &objectName)
+{
+    const auto items = host.visualItemsNamed(objectName);
+    QCOMPARE(items.size(), 1);
+    QVERIFY(QMetaObject::invokeMethod(items.constFirst(), "triggered"));
+}
+
+} // namespace
+
+void DesktopIconInteractionTests::marqueeSelectsCrossedIconsAndAnEmptyClickClears()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Beta.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Gamma.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    QCOMPARE(tiles.size(), 3);
+
+    // A band from empty lower-left space up across the whole icon column
+    // selects every crossed icon.
+    dragWindow(host.window.get(),
+               {QPointF(30, 420), QPointF(200, 300), QPointF(450, 150),
+                QPointF(700, 20)});
+    QCOMPARE(selectedTileCount(tiles), 3);
+    auto *view = host.child<QQuickItem>(QStringLiteral("desktopIconsView"));
+    QCOMPARE(view->property("selectedIds").toMap().size(), 3);
+
+    // A plain click on empty space (press-release without a drag) clears it.
+    host.clickWindow(Qt::LeftButton, Qt::NoModifier, QPointF(30, 420));
+    QCOMPARE(selectedTileCount(tiles), 0);
+    QVERIFY(view->property("selectedIds").toMap().isEmpty());
+}
+
+void DesktopIconInteractionTests::ctrlClickTogglesWhileShiftClickRanges()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Beta.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Gamma.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    QCOMPARE(tiles.size(), 3);
+
+    QQuickItem *alphaTile = tileNamed(tiles, QStringLiteral("Alpha.txt"));
+    QQuickItem *betaTile = tileNamed(tiles, QStringLiteral("Beta.txt"));
+    QQuickItem *gammaTile = tileNamed(tiles, QStringLiteral("Gamma.txt"));
+    QVERIFY(alphaTile != nullptr && betaTile != nullptr && gammaTile != nullptr);
+    QTRY_TILES_LAID_OUT(tiles);
+    const QPointF alphaCenter =
+        alphaTile->mapToScene(QPointF(alphaTile->width() / 2, alphaTile->height() / 2));
+    const QPointF betaCenter =
+        betaTile->mapToScene(QPointF(betaTile->width() / 2, betaTile->height() / 2));
+    const QPointF gammaCenter =
+        gammaTile->mapToScene(QPointF(gammaTile->width() / 2, gammaTile->height() / 2));
+
+    // Shift+click ranges from the anchor set by the last plain click; the
+    // in-between icon joins even though it was never clicked directly.
+    host.clickWindow(Qt::LeftButton, Qt::NoModifier, alphaCenter);
+    QCOMPARE(selectedTileCount(tiles), 1);
+    host.clickWindow(Qt::LeftButton, Qt::ShiftModifier, gammaCenter);
+    QCOMPARE(selectedTileCount(tiles), 3);
+    QVERIFY(alphaTile->property("selected").toBool());
+    QVERIFY(betaTile->property("selected").toBool());
+    QVERIFY(gammaTile->property("selected").toBool());
+
+    // A plain click collapses the range to one icon.
+    host.clickWindow(Qt::LeftButton, Qt::NoModifier, betaCenter);
+    QCOMPARE(selectedTileCount(tiles), 1);
+    QVERIFY(betaTile->property("selected").toBool());
+
+    // Ctrl+click toggles individual icons on and off.
+    host.clickWindow(Qt::LeftButton, Qt::ControlModifier, gammaCenter);
+    QCOMPARE(selectedTileCount(tiles), 2);
+    QVERIFY(betaTile->property("selected").toBool());
+    QVERIFY(gammaTile->property("selected").toBool());
+    host.clickWindow(Qt::LeftButton, Qt::ControlModifier, gammaCenter);
+    QCOMPARE(selectedTileCount(tiles), 1);
+    QVERIFY(betaTile->property("selected").toBool());
+}
+
+void DesktopIconInteractionTests::groupDragMovesAndPersistsTheWholeSelection()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Beta.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Gamma.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    QCOMPARE(tiles.size(), 3);
+
+    QQuickItem *alphaTile = tileNamed(tiles, QStringLiteral("Alpha.txt"));
+    QQuickItem *betaTile = tileNamed(tiles, QStringLiteral("Beta.txt"));
+    QQuickItem *gammaTile = tileNamed(tiles, QStringLiteral("Gamma.txt"));
+    QVERIFY(alphaTile != nullptr && betaTile != nullptr && gammaTile != nullptr);
+    QTRY_TILES_LAID_OUT(tiles);
+    const QPointF alphaCenter =
+        alphaTile->mapToScene(QPointF(alphaTile->width() / 2, alphaTile->height() / 2));
+    const QPointF gammaCenter =
+        gammaTile->mapToScene(QPointF(gammaTile->width() / 2, gammaTile->height() / 2));
+    host.clickWindow(Qt::LeftButton, Qt::NoModifier, alphaCenter);
+    host.clickWindow(Qt::LeftButton, Qt::ControlModifier, gammaCenter);
+    QCOMPARE(selectedTileCount(tiles), 2);
+
+    const QPointF alphaStart(alphaTile->x(), alphaTile->y());
+    const QPointF gammaStart(gammaTile->x(), gammaTile->y());
+    const QPointF betaStart(betaTile->x(), betaTile->y());
+    // Press on the already-selected Alpha keeps the two-icon selection and
+    // drags both together by the same delta.
+    dragWindow(host.window.get(),
+               {alphaCenter, alphaCenter + QPointF(40, 30),
+                alphaCenter + QPointF(120, 70)});
+    QVERIFY(alphaTile->x() > alphaStart.x());
+    QVERIFY(gammaTile->x() > gammaStart.x());
+    QCOMPARE(alphaTile->x() - alphaStart.x(), gammaTile->x() - gammaStart.x());
+    QCOMPARE(alphaTile->y() - alphaStart.y(), gammaTile->y() - gammaStart.y());
+    // The unselected icon stays put.
+    QCOMPARE(betaTile->x(), betaStart.x());
+    QCOMPARE(betaTile->y(), betaStart.y());
+
+    auto *store = host.child<QObject>(QStringLiteral("desktopIconLayoutStore"));
+    QVERIFY(store != nullptr);
+    for (const QQuickItem *tile : {alphaTile, gammaTile}) {
+        QVariantMap stored;
+        QVERIFY(QMetaObject::invokeMethod(store, "position", Q_RETURN_ARG(QVariantMap, stored),
+                                          Q_ARG(QString, QStringLiteral("OFFSCREEN0")),
+                                          Q_ARG(QString, tile->property("layoutKey").toString())));
+        QCOMPARE(stored.value(QStringLiteral("x")).toReal(), tile->x());
+        QCOMPARE(stored.value(QStringLiteral("y")).toReal(), tile->y());
+    }
+}
+
+void DesktopIconInteractionTests::deleteMovesEverySelectedIconToTrash()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Beta.txt")));
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Gamma.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    const auto tiles = host.visualItemsNamed(QStringLiteral("desktopIconsTile"));
+    QCOMPARE(tiles.size(), 3);
+
+    QQuickItem *alphaTile = tileNamed(tiles, QStringLiteral("Alpha.txt"));
+    QQuickItem *gammaTile = tileNamed(tiles, QStringLiteral("Gamma.txt"));
+    QVERIFY(alphaTile != nullptr && gammaTile != nullptr);
+    QTRY_TILES_LAID_OUT(tiles);
+    const QPointF alphaCenter =
+        alphaTile->mapToScene(QPointF(alphaTile->width() / 2, alphaTile->height() / 2));
+    const QPointF gammaCenter =
+        gammaTile->mapToScene(QPointF(gammaTile->width() / 2, gammaTile->height() / 2));
+    host.clickWindow(Qt::LeftButton, Qt::NoModifier, alphaCenter);
+    host.clickWindow(Qt::LeftButton, Qt::ControlModifier, gammaCenter);
+    QCOMPARE(selectedTileCount(tiles), 2);
+
+    // Right-click on a selected icon opens the icon menu; Delete applies to
+    // the whole selection.
+    host.clickWindow(Qt::RightButton, Qt::NoModifier, gammaCenter);
+    auto *menu = host.child<QObject>(QStringLiteral("desktopIconContextMenu"));
+    QTRY_VERIFY(menu->property("opened").toBool());
+    triggerMenuItem(host, QStringLiteral("desktopIconContextDelete"));
+
+    const QDir trashFiles(m_home->path() + QStringLiteral("/.local/share/Trash/files"));
+    QTRY_VERIFY_WITH_TIMEOUT(trashFiles.exists(QStringLiteral("Alpha.txt")), 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(trashFiles.exists(QStringLiteral("Gamma.txt")), 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        host.visualItemsNamed(QStringLiteral("desktopIconsTile")).size() == 1, 5000);
+    QVERIFY(!QFileInfo::exists(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    QVERIFY(!QFileInfo::exists(m_home->path() + QStringLiteral("/Desktop/Gamma.txt")));
+}
+
+void DesktopIconInteractionTests::cutCopyAndPasteRideTheComposedClipboard()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    QQuickItem *tile = host.visualItemsNamed(QStringLiteral("desktopIconsTile")).constFirst();
+    const QPointF center = tile->mapToScene(QPointF(tile->width() / 2, tile->height() / 2));
+    auto *contents = host.child<QObject>(QStringLiteral("desktopContentsController"));
+    QVERIFY(contents != nullptr);
+    auto *view = host.child<QQuickItem>(QStringLiteral("desktopIconsView"));
+    QVERIFY(view != nullptr);
+
+    host.clickWindow(Qt::RightButton, Qt::NoModifier, center);
+    auto *menu = host.child<QObject>(QStringLiteral("desktopIconContextMenu"));
+    QTRY_VERIFY(menu->property("opened").toBool());
+    triggerMenuItem(host, QStringLiteral("desktopIconContextCut"));
+    QCOMPARE(contents->property("clipboardMode").toString(), QStringLiteral("cut"));
+    QVERIFY(view->property("canPaste").toBool());
+
+    // Paste from the empty-area desktop menu: the target is the Desktop
+    // itself, so the move refuses as an already-exists no-op with feedback
+    // instead of removing anything.
+    host.clickWindow(Qt::RightButton, Qt::NoModifier, QPointF(30, 420));
+    auto *desktopMenu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    QTRY_VERIFY(desktopMenu->property("opened").toBool());
+    const auto pasteItems = host.visualItemsNamed(QStringLiteral("desktopContextPaste"));
+    QCOMPARE(pasteItems.size(), 1);
+    QVERIFY(pasteItems.constFirst()->isEnabled());
+    triggerMenuItem(host, QStringLiteral("desktopContextPaste"));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        contents->property("feedback").toString().contains(QStringLiteral("Nothing to paste")),
+        5000);
+    QVERIFY(QFileInfo::exists(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+}
+
+void DesktopIconInteractionTests::iconSizeIsClampedToTheSupportedRange()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Alpha.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher,
+                         {{QStringLiteral("iconSize"), 8}}, &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    QQuickItem *icon =
+        host.visualItemsNamed(QStringLiteral("desktopIconsTileIcon")).constFirst();
+    QCOMPARE(icon->property("size").toInt(), 16);
+
+    // The setting is live: growing past the supported ceiling clamps to 128.
+    QVERIFY(host.window->setProperty(
+        "applets", makeApplets({{QStringLiteral("iconSize"), 500}})));
+    QTRY_COMPARE(icon->property("size").toInt(), 128);
 }
 
 QTEST_MAIN(DesktopIconInteractionTests)

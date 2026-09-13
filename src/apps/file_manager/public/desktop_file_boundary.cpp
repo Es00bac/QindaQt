@@ -104,4 +104,10 @@ FileBoundary::createLocalMutationController(QObject *parent) {
       std::make_unique<LocalMutationBackend>(trashRoot), parent);
 }
 
+std::unique_ptr<ClipboardController>
+FileBoundary::createLocalClipboardController(MutationController &mutation,
+                                             QClipboard &clipboard, QObject *parent) {
+  return std::make_unique<ClipboardController>(mutation, clipboard, parent);
+}
+
 } // namespace QindaQt::Apps::FileManager::Desktop

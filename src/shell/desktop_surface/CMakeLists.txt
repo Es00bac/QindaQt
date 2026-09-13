@@ -64,6 +64,7 @@ qt_add_qml_module(
         qml/DesktopIconContextMenu.qml
         qml/DesktopRenamePopup.qml
         qml/DesktopIconsView.qml
+        qml/DesktopMarqueeBand.qml
         qml/DesktopSurface.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons

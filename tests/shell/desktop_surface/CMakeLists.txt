@@ -104,6 +104,16 @@ qindaqt_add_desktop_surface_test(
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )
+# Clipboard composition under the offscreen platform: foreign uri-list
+# adoption pastes into the redirected Desktop; an own cut reports its mode
+# and refuses the paste-into-itself no-op. Needs a QGuiApplication, so it
+# rides the same offscreen lane.
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_clipboard_roundtrip_tests
+    tst_desktop_clipboard_roundtrip.cpp
+    qindaqt.desktop-clipboard-roundtrip
+    OFFSCREEN
+)
 # Route-action dispatch for the settings-labeled context-menu entries, split
 # by failure mode from the general offscreen row above.
 qindaqt_add_desktop_surface_test(

@@ -115,12 +115,15 @@ Window {
 
     // Full-surface input, stacked UNDER the icons view: a plain Item does not
     // accept pointer events, so tile clicks reach the tiles and empty-area
-    // clicks fall through to here. Empty-area left clicks clear the
-    // selection, right clicks open the context menu — or the Applications
-    // popup when the configured modifier is held (XFCE behavior, any style).
-    // An unmodified middle click also opens the Applications popup directly
-    // at the pointer (clamped inside the surface), independent of
-    // style/modifier, mirroring traditional-desktop precedent.
+    // clicks fall through to here — except left clicks, which the icons
+    // view's marquee band claims first (an empty-area click that drags
+    // marquee-selects; one that does not drag clears the selection). This
+    // handler keeps the remaining empty-area gestures: right clicks open the
+    // context menu — or the Applications popup when the configured modifier
+    // is held (XFCE behavior, any style) — and an unmodified middle click
+    // opens the Applications popup directly at the pointer (clamped inside
+    // the surface), independent of style/modifier, mirroring
+    // traditional-desktop precedent.
     //
     // AGENT-GUARD: DesktopIconsView's tile MouseArea claims Qt.MiddleButton as
     // a no-op specifically so a middle click over a tile never falls through
@@ -130,12 +133,8 @@ Window {
     MouseArea {
         objectName: "desktopSurfaceInput"
         anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        acceptedButtons: Qt.RightButton | Qt.MiddleButton
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton) {
-                iconsView.clearSelection()
-                return
-            }
             if (mouse.button === Qt.MiddleButton) {
                 // Fail closed (no popup) when the borrowed launcher facade is
                 // absent, rather than opening an empty popup for an

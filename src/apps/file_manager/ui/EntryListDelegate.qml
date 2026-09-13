@@ -26,11 +26,20 @@ Rectangle {
 
     property bool entrySelected: selection.isSelected(delegateRoot.index)
 
+    // AGENT-NOTE: zebra striping comes from the palette's alternateBase on
+    // odd rows (a durable platform convention for telling adjacent detail
+    // rows apart); hover is a translucent highlight tint over either parity
+    // so the affordance never depends on the row's resting color. Selected
+    // rows keep the opaque highlight and always win.
+    readonly property color hoverTint: Qt.rgba(
+        viewPalette.highlight.r, viewPalette.highlight.g, viewPalette.highlight.b, 0.20)
+
     width: ListView.view ? ListView.view.width : 0
     height: delegateRoot.rowHeight
     radius: 8
     color: delegateRoot.entrySelected ? delegateRoot.viewPalette.highlight
-         : hoverArea.containsMouse ? delegateRoot.viewPalette.alternateBase : "transparent"
+         : hoverArea.containsMouse ? delegateRoot.hoverTint
+         : delegateRoot.index % 2 === 1 ? delegateRoot.viewPalette.alternateBase : "transparent"
 
     Drag.active: dragHandler.active
     Drag.dragType: Drag.Automatic

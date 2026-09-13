@@ -27,22 +27,27 @@ void TestIconZoom::boundedStepsAndReset() {
   QCOMPARE(controller.iconSize(), 48);
   controller.zoomBy(-1);
   QCOMPARE(controller.iconSize(), 32);
+  QVERIFY(controller.canZoomOut());
+  controller.zoomBy(-1);
+  QCOMPARE(controller.iconSize(), 24);
+  controller.zoomBy(-1);
+  QCOMPARE(controller.iconSize(), 16);
   QVERIFY(!controller.canZoomOut());
   controller.zoomBy(std::numeric_limits<int>::min());
-  QCOMPARE(presentation.count(), 2);
+  QCOMPARE(presentation.count(), 4);
   controller.zoomBy(std::numeric_limits<int>::max());
   QCOMPARE(controller.iconSize(), 128);
   QVERIFY(!controller.canZoomIn());
   controller.zoomBy(1);
   controller.zoomBy(0);
-  QCOMPARE(presentation.count(), 3);
+  QCOMPARE(presentation.count(), 5);
   controller.zoomBy(-1);
   QCOMPARE(controller.iconSize(), 96);
   controller.resetZoom();
   QCOMPARE(controller.iconSize(), 64);
-  QCOMPARE(presentation.count(), 5);
+  QCOMPARE(presentation.count(), 7);
   controller.resetZoom();
-  QCOMPARE(presentation.count(), 5);
+  QCOMPARE(presentation.count(), 7);
 }
 
 void TestIconZoom::zoomPreservesListingAndFilter() {

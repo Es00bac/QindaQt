@@ -184,6 +184,17 @@ Control {
                 }
                 ZoomWheelHandler { onZoomRequested: (steps) => root.zoomRequested(steps) }
 
+                // Marquee selection over empty viewport space; the band
+                // declines presses that land on a delegate so ordinary
+                // clicking below is untouched.
+                SelectionBand {
+                    id: selectionBand
+                    anchors.fill: parent
+                    view: listView
+                    onFinished: (indexes, modifiers) =>
+                        root.selection.applyIndexSet(indexes, modifiers)
+                }
+
                 Accessible.role: Accessible.List
                 Accessible.name: qsTr("Folder contents")
 

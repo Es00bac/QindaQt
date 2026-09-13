@@ -78,6 +78,9 @@ private Q_SLOTS:
   void emptyRootProducesZeroRowsWithoutFeedback();
   void unresolvedRootProducesZeroRowsWithFeedbackInsteadOfBlocking();
   void renamesAListedEntryThroughTheIdentityBoundary();
+  void rowsCarryTheIdentityFieldsTheBatchContractsConsume();
+  void trashesOnlyListedEntriesThroughTheIdentityBoundary();
+  void clipboardOperationsFailClosedWithoutAClipboard();
 
 private:
   std::unique_ptr<QTemporaryDir> m_root;
@@ -284,6 +287,77 @@ void DesktopContentsControllerTests::
                .value(QStringLiteral("layoutKey")),
            row.value(QStringLiteral("layoutKey")));
   QVERIFY(!QFileInfo::exists(original));
+}
+
+void DesktopContentsControllerTests::
+    rowsCarryTheIdentityFieldsTheBatchContractsConsume() {
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Notes.txt"))));
+  DesktopContentsController controller(m_root->path());
+  const QVariantMap row =
+      rowNamed(controller.rows(), QStringLiteral("Notes.txt"));
+  for (const char *key :
+       {"device", "inode", "identitySize", "modifiedNanoseconds", "mode"}) {
+    const QString value = row.value(QLatin1String(key)).toString();
+    QVERIFY2(!value.isEmpty(), key);
+    // Decimal-string round trip is exactly what the batch contract parses.
+    bool numeric = false;
+    value.toULongLong(&numeric);
+    QVERIFY2(numeric, key);
+  }
+  QCOMPARE(row.value(QStringLiteral("path")).toString(),
+           m_root->filePath(QStringLiteral("Notes.txt")));
+}
+
+void DesktopContentsControllerTests::
+    trashesOnlyListedEntriesThroughTheIdentityBoundary() {
+  const QByteArray previousDataHome = qgetenv("XDG_DATA_HOME");
+  QTemporaryDir dataHome;
+  QVERIFY(dataHome.isValid());
+  qputenv("XDG_DATA_HOME", dataHome.path().toLocal8Bit());
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("First.txt"))));
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Second.txt"))));
+  const QString ghost = m_root->filePath(QStringLiteral("Ghost.txt"));
+
+  {
+    DesktopContentsController controller(m_root->path());
+    const QVariantList rows = controller.rows();
+    QCOMPARE(rows.size(), 2);
+    QVERIFY2(controller.trashEntries(rows), qPrintable(controller.feedback()));
+    const QDir trashFiles(dataHome.filePath(QStringLiteral("Trash/files")));
+    QTRY_VERIFY_WITH_TIMEOUT(trashFiles.exists(QStringLiteral("First.txt")),
+                             5000);
+    QTRY_VERIFY_WITH_TIMEOUT(trashFiles.exists(QStringLiteral("Second.txt")),
+                             5000);
+    QTRY_VERIFY_WITH_TIMEOUT(controller.rows().isEmpty(), 5000);
+    QVERIFY(!QFileInfo::exists(m_root->filePath(QStringLiteral("First.txt"))));
+    QVERIFY(!QFileInfo::exists(m_root->filePath(QStringLiteral("Second.txt"))));
+
+    // A path the listing never reported is refused before anything mutates;
+    // the two legitimately trashed files stay exactly where they landed.
+    QVERIFY(!controller.trashEntries(
+        {QVariantMap{{QStringLiteral("path"), ghost}}}));
+    QVERIFY(controller.feedback().contains(QStringLiteral("not on the Desktop")));
+    QCOMPARE(trashFiles.entryList(QDir::Files | QDir::NoDotAndDotDot).size(), 2);
+    QVERIFY(!trashFiles.exists(QStringLiteral("Ghost.txt")));
+  }
+  qputenv("XDG_DATA_HOME", previousDataHome);
+}
+
+void DesktopContentsControllerTests::
+    clipboardOperationsFailClosedWithoutAClipboard() {
+  // This row runs GUI-less: no QGuiApplication exists, so the composed
+  // clipboard stays absent and every clipboard entry refuses closed with
+  // feedback instead of crashing or dispatching.
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Notes.txt"))));
+  DesktopContentsController controller(m_root->path());
+  const QVariantList rows = controller.rows();
+  QCOMPARE(rows.size(), 1);
+  QVERIFY(!controller.canPaste());
+  QCOMPARE(controller.clipboardMode(), QStringLiteral("none"));
+  QVERIFY(!controller.copySelection(rows));
+  QVERIFY(controller.feedback().contains(QStringLiteral("clipboard")));
+  QVERIFY(!controller.cutSelection(rows));
+  QVERIFY(!controller.pasteIntoDesktop());
 }
 
 QTEST_GUILESS_MAIN(DesktopContentsControllerTests)

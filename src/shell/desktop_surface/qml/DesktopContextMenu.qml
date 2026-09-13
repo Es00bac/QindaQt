@@ -107,6 +107,11 @@ T.Menu {
         case "newFolder":
             createFolder()
             break
+        case "paste":
+            if (iconsView !== null) {
+                iconsView.pasteClipboard()
+            }
+            break
         case "launch":
             activate(targetId, actionId)
             break
@@ -132,6 +137,9 @@ T.Menu {
         if (entry.needsPlaces === true) {
             return placesAccess !== null
         }
+        if (entry.needsClipboard === true) {
+            return iconsView !== null && iconsView.canPaste === true
+        }
         return true
     }
 
@@ -143,6 +151,9 @@ T.Menu {
                  kind: "newFolder", needsNewFolder: true},
                 {objectName: "desktopContextOpen", text: qsTr("Open"),
                  kind: "openPlace", targetId: "desktop", needsPlaces: true},
+                {separator: true},
+                {objectName: "desktopContextPaste", text: qsTr("Paste"),
+                 kind: "paste", needsClipboard: true},
                 {separator: true},
                 {objectName: "desktopContextSortBy", text: qsTr("Sort By"),
                  kind: "reflow"},
@@ -167,6 +178,8 @@ T.Menu {
                 {objectName: "desktopContextCreateFolder",
                  text: qsTr("Create Folder…"), kind: "newFolder",
                  needsNewFolder: true},
+                {objectName: "desktopContextPaste", text: qsTr("Paste"),
+                 kind: "paste", needsClipboard: true},
                 {separator: true},
                 {objectName: "desktopContextSettings",
                  text: qsTr("Desktop Settings"),
@@ -182,6 +195,8 @@ T.Menu {
             {separator: true},
             {objectName: "desktopContextNewFolder", text: qsTr("New Folder"),
              kind: "newFolder", needsNewFolder: true},
+            {objectName: "desktopContextPaste", text: qsTr("Paste"),
+             kind: "paste", needsClipboard: true},
             {separator: true},
             {objectName: "desktopContextDisplayProperties",
              text: qsTr("Display Properties"),
