@@ -63,6 +63,15 @@ absent or ambiguous primary identity. The retained manager build completed and
 the five affected Customize rows pass 5/5. Installed/live Settings adoption
 and physical multi-output qualification remain separate.
 
+File Manager authenticated network browsing candidate `28e5c160` was rejected
+for superseded remote jobs and a contradictory authentication contract. Exact
+same-author repair `45b08b30` received bounded same-reviewer ACCEPT and is
+integrated as `32d7a8c2` plus `b9a6311f`. Ordinary SMB/SFTP authentication now
+uses KIO's standard UI delegate while QindaQt remains credential-free, and a
+replacement listing cancels the prior generation. The integrated-tree network
+rows pass 2/2; docs 250, strict MkDocs, and diff checks pass. Remote regular-file
+opening remains active and installed/live access is not claimed.
+
 ### Finish the bundled applications on stock Qt 6 (September 9)
 
 **Completed September 10.** The product owner retired the custom token UI for
