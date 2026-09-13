@@ -12,6 +12,7 @@ using QindaQt::Apps::FileManager::Test::FakeDirectoryLister;
 using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
 using QindaQt::Apps::FileManager::Test::FakeRemoteFileOpener;
+using QindaQt::Apps::FileManager::Test::FakeRemoteFolderCreator;
 using QindaQt::Apps::FileManager::Test::FakeRemoteRenamer;
 
 namespace {
@@ -79,6 +80,13 @@ private slots:
   void remoteRenameFailureStaysVisibleWithoutOptimisticRename();
   void aCancelledRemoteRenameResultIsDiscarded();
   void destructionWithAPendingRemoteRenameDoesNotCrash();
+  void remoteCreateDispatchesAValidatedChildUrl();
+  void remoteCreateRejectsInvalidAndTraversalNames();
+  void remoteCreateRejectsOverlappingOperations();
+  void remoteCreateSuccessRefreshesTheListing();
+  void remoteCreateFailureStaysVisibleWithoutOptimisticEntry();
+  void aCancelledRemoteCreateResultIsDiscarded();
+  void destructionWithAPendingRemoteCreateDoesNotCrash();
   void destructionWithAPendingRequestDoesNotCrash();
 };
 
@@ -633,6 +641,173 @@ void TestNavigationControllerNetwork::destructionWithAPendingRemoteRenameDoesNot
     publishSingleEntry(rawBackend, controller, url, QStringLiteral("notes.txt"));
     QVERIFY(controller.renameRemoteEntry(QStringLiteral("smb://server/share/notes.txt"),
                                          QStringLiteral("report.txt")));
+  }
+  QVERIFY(true);
+}
+
+namespace {
+
+// Builds a controller with backend + folder creator injected and navigates
+// to an empty remote folder, ready for create tests.
+void enterEmptyRemoteFolder(FakeNetworkDirectoryBackend *rawBackend,
+                            NavigationController &controller, const QUrl &url) {
+  controller.navigateTo(url.toString());
+  const quint64 generation = rawBackend->requests().last().generation;
+  rawBackend->emitReady(generation, url, successResult(url, {}));
+}
+
+} // namespace
+
+// ADR-0154: New Folder in an active remote folder dispatches one validated
+// child-directory creation through the injected creator, fenced by the
+// current listing generation.
+void TestNavigationControllerNetwork::remoteCreateDispatchesAValidatedChildUrl() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto creator = std::make_unique<FakeRemoteFolderCreator>();
+  auto *rawCreator = creator.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, std::move(creator));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  enterEmptyRemoteFolder(rawBackend, controller, url);
+  QCOMPARE(controller.remoteCreateAvailable(), true);
+  QCOMPARE(controller.remoteCreateBusy(), false);
+
+  QVERIFY(controller.createRemoteFolder(QStringLiteral("New Folder")));
+  QCOMPARE(rawCreator->requests().size(), 1);
+  QCOMPARE(rawCreator->requests().constFirst().url.toString(),
+           QStringLiteral("smb://server/share/New Folder"));
+  QCOMPARE(rawCreator->requests().constFirst().generation,
+           rawBackend->requests().last().generation);
+  QCOMPARE(controller.remoteCreateBusy(), true);
+}
+
+void TestNavigationControllerNetwork::remoteCreateRejectsInvalidAndTraversalNames() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto creator = std::make_unique<FakeRemoteFolderCreator>();
+  auto *rawCreator = creator.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, std::move(creator));
+
+  const QUrl url(QStringLiteral("sftp://server/home"));
+  enterEmptyRemoteFolder(rawBackend, controller, url);
+
+  for (const QString &badName :
+       {QString(), QStringLiteral("a/b"), QStringLiteral("a\\b"), QStringLiteral("."),
+        QStringLiteral(".."), QStringLiteral("a\u0000b")}) {
+    QVERIFY2(!controller.createRemoteFolder(badName),
+             qPrintable(QStringLiteral("name '%1' must be refused").arg(badName)));
+  }
+  QVERIFY(rawCreator->requests().isEmpty());
+  QCOMPARE(controller.remoteCreateBusy(), false);
+}
+
+void TestNavigationControllerNetwork::remoteCreateRejectsOverlappingOperations() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto creator = std::make_unique<FakeRemoteFolderCreator>();
+  auto *rawCreator = creator.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, std::move(creator));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  enterEmptyRemoteFolder(rawBackend, controller, url);
+
+  QVERIFY(controller.createRemoteFolder(QStringLiteral("One")));
+  QVERIFY(!controller.createRemoteFolder(QStringLiteral("Two")));
+  QCOMPARE(rawCreator->requests().size(), 1);
+  QCOMPARE(controller.remoteCreateBusy(), true);
+}
+
+void TestNavigationControllerNetwork::remoteCreateSuccessRefreshesTheListing() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto creator = std::make_unique<FakeRemoteFolderCreator>();
+  auto *rawCreator = creator.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, std::move(creator));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  enterEmptyRemoteFolder(rawBackend, controller, url);
+  const qsizetype requestsBefore = rawBackend->requests().size();
+
+  QVERIFY(controller.createRemoteFolder(QStringLiteral("New Folder")));
+  rawCreator->finishSuccess(rawCreator->requests().constFirst().generation);
+
+  // The authoritative listing is re-requested after confirmed success; no
+  // optimistic entry appeared in between.
+  QCOMPARE(rawBackend->requests().size(), requestsBefore + 1);
+  QCOMPARE(controller.remoteCreateBusy(), false);
+  QCOMPARE(controller.statusKey(), QStringLiteral("loading"));
+}
+
+void TestNavigationControllerNetwork::remoteCreateFailureStaysVisibleWithoutOptimisticEntry() {
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto creator = std::make_unique<FakeRemoteFolderCreator>();
+  auto *rawCreator = creator.get();
+  NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                  std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                  nullptr, nullptr, std::move(creator));
+
+  const QUrl url(QStringLiteral("sftp://server/home"));
+  enterEmptyRemoteFolder(rawBackend, controller, url);
+  QCOMPARE(controller.entryCount(), 0);
+
+  QVERIFY(controller.createRemoteFolder(QStringLiteral("New Folder")));
+  rawCreator->finishFailure(rawCreator->requests().constFirst().generation,
+                            QStringLiteral("synthetic create failure"));
+
+  QCOMPARE(controller.launchError(), QStringLiteral("synthetic create failure"));
+  // No optimistic entry and no refresh on failure.
+  QCOMPARE(controller.entryCount(), 0);
+  QCOMPARE(controller.remoteCreateBusy(), false);
+}
+
+void TestNavigationControllerNetwork::aCancelledRemoteCreateResultIsDiscarded() {
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  ListingResult ready;
+  ready.path = QStringLiteral("/home/jarrod");
+  lister->setResult(QStringLiteral("/home/jarrod"), ready);
+  auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+  auto *rawBackend = backend.get();
+  auto creator = std::make_unique<FakeRemoteFolderCreator>();
+  auto *rawCreator = creator.get();
+  NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>(),
+                                  std::move(backend), nullptr, nullptr, std::move(creator));
+
+  const QUrl url(QStringLiteral("smb://server/share"));
+  enterEmptyRemoteFolder(rawBackend, controller, url);
+  QVERIFY(controller.createRemoteFolder(QStringLiteral("New Folder")));
+  const quint64 createGeneration = rawCreator->requests().constFirst().generation;
+
+  controller.navigateTo(QStringLiteral("/home/jarrod"));
+  QVERIFY(rawCreator->cancelled().contains(createGeneration));
+  QVERIFY(controller.launchError().isEmpty());
+
+  // The quiet kill delivers a result for the cancelled generation; it is
+  // fenced out and stays invisible.
+  rawCreator->finishFailure(createGeneration, QStringLiteral("synthetic create failure"));
+  QVERIFY(controller.launchError().isEmpty());
+}
+
+void TestNavigationControllerNetwork::destructionWithAPendingRemoteCreateDoesNotCrash() {
+  {
+    auto backend = std::make_unique<FakeNetworkDirectoryBackend>();
+    auto *rawBackend = backend.get();
+    auto creator = std::make_unique<FakeRemoteFolderCreator>();
+    NavigationController controller(std::make_unique<FakeDirectoryLister>(),
+                                    std::make_unique<FakeFileLauncher>(), std::move(backend),
+                                    nullptr, nullptr, std::move(creator));
+    const QUrl url(QStringLiteral("smb://server/share"));
+    enterEmptyRemoteFolder(rawBackend, controller, url);
+    QVERIFY(controller.createRemoteFolder(QStringLiteral("New Folder")));
   }
   QVERIFY(true);
 }

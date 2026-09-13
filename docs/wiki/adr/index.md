@@ -155,3 +155,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0151: authenticated SMB/SFTP browsing through KIO's standard UI delegate](0151-file-manager-authenticated-network-browsing.md)
 - [ADR-0152: remote regular-file opening through KIO's OpenUrlJob](0152-file-manager-remote-file-opening.md)
 - [ADR-0153: same-folder remote Rename through KIO's rename()](0153-file-manager-remote-rename.md)
+- [ADR-0154: remote New Folder through KIO's mkdir()](0154-file-manager-remote-new-folder.md)

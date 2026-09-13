@@ -18,10 +18,15 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
     };
     const bool idle = !mutation.busy() && !navigation.remoteActive();
     for (const char *actionId :
-         {"file.new-folder", "file.copy", "file.move",
-          "file.trash"}) {
+         {"file.copy", "file.move", "file.trash"}) {
       enabled(actionId, idle);
     }
+    // ADR-0154: remote New Folder is available while browsing remote only
+    // with a folder creator injected and no creation in flight; without
+    // one, New Folder keeps disabling with the other mutations.
+    enabled("file.new-folder", (!mutation.busy() && !navigation.remoteActive()) ||
+                                    (navigation.remoteCreateAvailable() &&
+                                     !navigation.remoteCreateBusy()));
     // ADR-0153: same-folder remote Rename is the one current-folder mutation
     // available while browsing remote -- but only with a renamer injected
     // and no rename already in flight. Without a renamer, Rename keeps
@@ -41,6 +46,8 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
   QObject::connect(&navigation, &NavigationController::navigationChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::remoteRenameChanged,
+                   &coordinator, sync);
+  QObject::connect(&navigation, &NavigationController::remoteCreateChanged,
                    &coordinator, sync);
   sync();
 }

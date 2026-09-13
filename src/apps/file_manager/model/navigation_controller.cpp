@@ -43,12 +43,14 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
                                            NetworkDirectoryBackendPtr networkBackend,
                                            RemoteFileOpenerPtr remoteOpener,
                                            RemoteRenamerPtr remoteRenamer,
+                                           RemoteFolderCreatorPtr folderCreator,
                                            QObject *parent)
     : QObject(parent), m_lister(std::move(lister)),
       m_launcher(std::move(launcher)),
       m_networkBackend(std::move(networkBackend)),
       m_remoteOpener(std::move(remoteOpener)),
-      m_remoteRenamer(std::move(remoteRenamer)) {
+      m_remoteRenamer(std::move(remoteRenamer)),
+      m_folderCreator(std::move(folderCreator)) {
   Q_ASSERT(m_lister);
   Q_ASSERT(m_launcher);
   if (m_networkBackend) {
@@ -81,18 +83,34 @@ NavigationController::NavigationController(DirectoryListerPtr lister,
               emit launchErrorChanged();
             });
   }
+  if (m_folderCreator) {
+    m_remoteCreate = std::make_unique<RemoteCreateFolderController>(*m_folderCreator, this);
+    connect(m_remoteCreate.get(), &RemoteCreateFolderController::busyChanged, this,
+            [this] { emit remoteCreateChanged(); });
+    connect(m_remoteCreate.get(), &RemoteCreateFolderController::refreshRequested, this,
+            &NavigationController::onRemoteCreateRefreshRequested);
+    connect(m_remoteCreate.get(), &RemoteCreateFolderController::failure, this,
+            [this](const QString &message) {
+              m_launchError = message;
+              emit launchErrorChanged();
+            });
+  }
 }
 
 void NavigationController::navigateTo(const QString &path) {
   if (NetworkLocation::classify(path) == LocationScheme::Local) {
     if (m_remoteActive) {
       cancelPendingRemoteRename();
+      cancelPendingRemoteCreate();
       if (m_networkBackend) {
         m_networkBackend->cancel(m_listingGeneration);
       }
       m_remoteActive = false;
       if (m_remoteRenamer) {
         emit remoteRenameChanged();
+      }
+      if (m_folderCreator) {
+        emit remoteCreateChanged();
       }
     }
     const QString normalized = QDir::cleanPath(path);
@@ -237,6 +255,32 @@ void NavigationController::cancelPendingRemoteRename() {
   }
 }
 
+bool NavigationController::createRemoteFolder(const QString &name) {
+  if (!m_remoteActive || !m_remoteCreate) {
+    m_launchError = QStringLiteral("Creating folders is not available here");
+    emit launchErrorChanged();
+    return false;
+  }
+  // Validation, dispatch, result fencing, and job retirement live in
+  // RemoteCreateFolderController (see its header); this controller supplies
+  // the active folder and surfaces refresh/failure.
+  return m_remoteCreate->requestCreate(m_remoteUrl, m_listingGeneration, name);
+}
+
+void NavigationController::onRemoteCreateRefreshRequested() {
+  // Success: re-read the authoritative remote listing -- no optimistic
+  // entry was displayed before this point.
+  if (m_remoteActive) {
+    requestRemoteListing();
+  }
+}
+
+void NavigationController::cancelPendingRemoteCreate() {
+  if (m_remoteCreate) {
+    m_remoteCreate->cancelPending();
+  }
+}
+
 void NavigationController::clearLaunchError() {
   if (m_launchError.isEmpty()) {
     return;
@@ -351,29 +395,14 @@ bool NavigationController::canGoUp() const {
 }
 
 QVariantList NavigationController::breadcrumb() const {
-  QVariantList list;
-  if (!m_history.hasCurrent()) {
-    return list;
-  }
-  if (m_remoteActive) {
-    const auto segments = NetworkLocation::breadcrumbFor(m_remoteUrl);
-    list.reserve(segments.size());
-    for (const auto &segment : segments) {
-      list.append(QVariantMap{{QStringLiteral("name"), segment.name},
-                              {QStringLiteral("path"), segment.url.toString()}});
-    }
-    return list;
-  }
-  const auto segments = NavigationHistory::breadcrumbFor(m_history.currentPath());
-  list.reserve(segments.size());
-  for (const auto &segment : segments) {
-    list.append(QVariantMap{{QStringLiteral("name"), segment.name},
-                            {QStringLiteral("path"), segment.path}});
-  }
-  return list;
+  return NavigationPresentation::breadcrumbVariants(m_remoteActive, m_remoteUrl,
+                                                      m_history.hasCurrent(),
+                                                      m_history.currentPath());
 }
 
-QString NavigationController::statusKey() const { return statusKeyFor(m_status); }
+QString NavigationController::statusKey() const {
+  return NavigationPresentation::statusKeyFor(m_status);
+}
 
 QString NavigationController::statusMessage() const { return m_statusMessage; }
 
@@ -459,9 +488,10 @@ void NavigationController::clearGuestListing() {
 
 void NavigationController::enterRemote(const QUrl &url) {
   if (m_remoteActive) {
-    // Remote-to-remote replacement: retire any rename in flight for the
-    // folder being left, mirroring the listing cancellation below.
+    // Remote-to-remote replacement: retire any rename or create in flight
+    // for the folder being left, mirroring the listing cancellation below.
     cancelPendingRemoteRename();
+    cancelPendingRemoteCreate();
   }
   m_guestActive = false;
   m_guestStatusText.clear();
@@ -471,6 +501,9 @@ void NavigationController::enterRemote(const QUrl &url) {
   requestRemoteListing();
   if (m_remoteRenamer) {
     emit remoteRenameChanged();
+  }
+  if (m_folderCreator) {
+    emit remoteCreateChanged();
   }
 }
 
@@ -613,32 +646,6 @@ void NavigationController::rebuildVisibleEntries() {
     notices.append(QStringLiteral("%1 hidden").arg(m_hiddenFilteredCount));
   }
   m_statusMessage = notices.join(QStringLiteral("; "));
-}
-
-QString NavigationController::statusKeyFor(NavigationStatus status) {
-  switch (status) {
-  case NavigationStatus::Ready:
-    return QStringLiteral("ready");
-  case NavigationStatus::Empty:
-    return QStringLiteral("empty");
-  case NavigationStatus::PermissionDenied:
-    return QStringLiteral("permission-denied");
-  case NavigationStatus::Missing:
-    return QStringLiteral("missing");
-  case NavigationStatus::NotADirectory:
-    return QStringLiteral("not-a-directory");
-  case NavigationStatus::Error:
-    return QStringLiteral("error");
-  case NavigationStatus::Loading:
-    return QStringLiteral("loading");
-  case NavigationStatus::Unavailable:
-    return QStringLiteral("unavailable");
-  case NavigationStatus::AuthenticationRequired:
-    return QStringLiteral("authentication-required");
-  case NavigationStatus::Transport:
-    return QStringLiteral("transport-error");
-  }
-  return QStringLiteral("error");
 }
 
 } // namespace QindaQt::Apps::FileManager
