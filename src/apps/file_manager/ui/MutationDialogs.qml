@@ -27,13 +27,12 @@ Item {
             renameDialog.open()
         } else if (actionId === "file.copy" || actionId === "file.move") {
             if (selection.length < 1) return
-            // ADR-0155 one-child contract (review P1 repair): a remote
+            // ADR-0155/0156 one-child contract (review P1 repair): a remote
             // multi-selection must fail closed here -- before the dialog can
             // open -- so it can never reach the local-only mutation
             // backend's multi-item branch. Local multi copy/move is
             // unchanged.
-            if (actionId === "file.copy" && navigationController.remoteActive
-                && selection.length !== 1)
+            if (navigationController.remoteActive && selection.length !== 1)
                 return
             selectedItems = selection
             selectedEntry = selection[0]
@@ -55,11 +54,13 @@ Item {
             mutationController.undo()
         } else if (actionId === "operation.cancel") {
             // Route to the active owner (review P1 repair): an in-flight
-            // remote copy retires through the injected copier (quiet KIO
-            // kill, generation-fenced); otherwise the local mutation
-            // backend keeps the request.
+            // remote copy or move retires through the injected collaborator
+            // (quiet KIO kill, generation-fenced); otherwise the local
+            // mutation backend keeps the request.
             if (root.navigationController.remoteCopyBusy)
                 root.navigationController.cancelRemoteCopy()
+            else if (root.navigationController.remoteMoveBusy)
+                root.navigationController.cancelRemoteMove()
             else
                 root.mutationController.cancel()
         }
@@ -136,15 +137,15 @@ Item {
             : (root.destinationKind === "copy"
                ? (root.navigationController.remoteActive
                   ? qsTr("Copy to network folder") : qsTr("Copy to local path"))
-               : qsTr("Move to local path"))
+               : (root.navigationController.remoteActive
+                  ? qsTr("Move to network folder") : qsTr("Move to local path")))
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: {
-            // Review P1 repair: re-check the remote one-child Copy contract
-            // at accept time so a stale remote multi-selection can never be
-            // routed anywhere even if it somehow reached the dialog. Local
-            // selections are unaffected.
+            // Review P1 repair: re-check the remote one-child Copy/Move
+            // contract at accept time so a stale remote multi-selection can
+            // never be routed anywhere even if it somehow reached the
+            // dialog. Local selections are unaffected.
             if (root.navigationController.remoteActive
-                && root.destinationKind === "copy"
                 && root.selectedItems.length !== 1)
                 return
             if (root.selectedItems.length > 1) {
@@ -157,14 +158,18 @@ Item {
                 return
             }
             if (!root.selectedEntry) return
-            // ADR-0155: while browsing remote, Copy To goes through the
-            // navigation controller's injected KIO copier (one listed
-            // child to a validated remote destination); locally the
-            // identity-checked local mutation controller keeps the request.
-            if (root.navigationController.remoteActive
-                && root.destinationKind === "copy") {
-                root.navigationController.copyRemoteChild(root.selectedEntry.path,
-                    destinationPath.text)
+            // ADR-0155/0156: while browsing remote, Copy To and Move To go
+            // through the navigation controller's injected KIO collaborators
+            // (one listed child to a validated remote destination); locally
+            // the identity-checked local mutation controller keeps the
+            // request.
+            if (root.navigationController.remoteActive) {
+                if (root.destinationKind === "copy")
+                    root.navigationController.copyRemoteChild(root.selectedEntry.path,
+                        destinationPath.text)
+                else
+                    root.navigationController.moveRemoteChild(root.selectedEntry.path,
+                        destinationPath.text)
                 return
             }
             if (root.destinationKind === "copy")

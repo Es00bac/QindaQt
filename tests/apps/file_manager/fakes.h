@@ -7,6 +7,7 @@
 #include "network/remote_copier.h"
 #include "network/remote_file_opener.h"
 #include "network/remote_folder_creator.h"
+#include "network/remote_mover.h"
 #include "network/remote_renamer.h"
 
 #include <QHash>
@@ -189,6 +190,36 @@ public:
   void finishSuccess(quint64 generation) { Q_EMIT copyFinished(generation, QString()); }
   void finishFailure(quint64 generation, const QString &diagnostic) {
     Q_EMIT copyFinished(generation, diagnostic);
+  }
+
+  [[nodiscard]] const QVector<Request> &requests() const { return m_requests; }
+  [[nodiscard]] const QVector<quint64> &cancelled() const { return m_cancelled; }
+
+private:
+  QVector<Request> m_requests;
+  QVector<quint64> m_cancelled;
+};
+
+// Test-only RemoteMover: records move()/cancel() calls; the test fires
+// moveFinished manually, so success/failure/stale/cancel wiring is
+// deterministic without a real KIO job, network, or filesystem.
+class FakeRemoteMover final : public RemoteMover {
+public:
+  struct Request final {
+    quint64 generation = 0;
+    QUrl source;
+    QUrl destination;
+  };
+
+  void move(quint64 generation, const QUrl &source, const QUrl &destination) override {
+    m_requests.append({generation, source, destination});
+  }
+
+  void cancel(quint64 generation) override { m_cancelled.append(generation); }
+
+  void finishSuccess(quint64 generation) { Q_EMIT moveFinished(generation, QString()); }
+  void finishFailure(quint64 generation, const QString &diagnostic) {
+    Q_EMIT moveFinished(generation, diagnostic);
   }
 
   [[nodiscard]] const QVector<Request> &requests() const { return m_requests; }

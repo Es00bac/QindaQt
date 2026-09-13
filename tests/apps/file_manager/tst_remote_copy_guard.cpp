@@ -27,6 +27,7 @@ using QindaQt::Apps::FileManager::Test::FakeDirectoryLister;
 using QindaQt::Apps::FileManager::Test::FakeFileLauncher;
 using QindaQt::Apps::FileManager::Test::FakeNetworkDirectoryBackend;
 using QindaQt::Apps::FileManager::Test::FakeRemoteCopier;
+using QindaQt::Apps::FileManager::Test::FakeRemoteMover;
 
 namespace {
 
@@ -71,8 +72,10 @@ private:
 // the real dispatch/accept/cancel paths instead of controller shortcuts.
 // Mirrors the browsing-UI harness; everything is fake or temporary-dir
 // based. init() reports failures as values because helpers must not host
-// QTest macros (an early return would silently pass).
-struct RemoteCopyFixture final {
+// QTest macros (an early return would silently pass). Hosts both the Copy
+// guard rows (ADR-0155 repair) and the Move To rows (ADR-0156): the
+// production route is shared, only the injected collaborator differs.
+struct RemoteMutationRouteFixture final {
   bool init(const QString &temporaryPath, QString *error) {
     const QString sourceRoot = QStringLiteral(QINDAQT_SOURCE_DIR);
     NetworkListingResult listing;
@@ -91,9 +94,12 @@ struct RemoteCopyFixture final {
     rawBackend = backend.get();
     auto copier = std::make_unique<FakeRemoteCopier>();
     rawCopier = copier.get();
+    auto mover = std::make_unique<FakeRemoteMover>();
+    rawMover = mover.get();
     navigation = std::make_unique<NavigationController>(
         std::make_unique<FakeDirectoryLister>(), std::make_unique<FakeFileLauncher>(),
-        std::move(backend), nullptr, nullptr, nullptr, std::move(copier));
+        std::move(backend), nullptr, nullptr, nullptr, std::move(copier),
+        std::move(mover));
     auto recording = std::make_unique<RecordingMutationBackend>();
     rawRecording = recording.get();
     mutation = std::make_unique<MutationController>(std::move(recording));
@@ -180,6 +186,7 @@ struct RemoteCopyFixture final {
   QQuickItem *listView = nullptr;
   FakeNetworkDirectoryBackend *rawBackend = nullptr;
   FakeRemoteCopier *rawCopier = nullptr;
+  FakeRemoteMover *rawMover = nullptr;
   RecordingMutationBackend *rawRecording = nullptr;
 };
 
@@ -190,18 +197,25 @@ struct RemoteCopyFixture final {
 // can open, so the local-only mutation backend's multi-item branch never
 // receives remote URL-shaped inputs. A single selection still opens the
 // dialog and routes the accepted copy to the injected remote copier.
+// ADR-0156 adds the same production-route coverage for Move To through the
+// injected mover: a remote multi-selection Move fails closed before the
+// dialog, one selected child routes to the mover, and the shared Cancel
+// action retires an in-flight remote move with a generation-fenced late
+// result.
 class TestRemoteCopyGuard final : public QObject {
   Q_OBJECT
 
 private slots:
   void remoteMultiSelectionCopyFailsClosedBeforeTheLocalBackend();
   void sharedCancelRoutesToTheInFlightRemoteCopy();
+  void remoteMultiSelectionMoveFailsClosedBeforeTheLocalBackend();
+  void sharedCancelRoutesToTheInFlightRemoteMove();
 };
 
 void TestRemoteCopyGuard::remoteMultiSelectionCopyFailsClosedBeforeTheLocalBackend() {
   QTemporaryDir temporary;
   QVERIFY(temporary.isValid());
-  RemoteCopyFixture fixture;
+  RemoteMutationRouteFixture fixture;
   QString error;
   QVERIFY2(fixture.init(temporary.path(), &error), qPrintable(error));
   QCOMPARE(fixture.navigation->remoteActive(), true);
@@ -254,7 +268,7 @@ void TestRemoteCopyGuard::remoteMultiSelectionCopyFailsClosedBeforeTheLocalBacke
 void TestRemoteCopyGuard::sharedCancelRoutesToTheInFlightRemoteCopy() {
   QTemporaryDir temporary;
   QVERIFY(temporary.isValid());
-  RemoteCopyFixture fixture;
+  RemoteMutationRouteFixture fixture;
   QString error;
   QVERIFY2(fixture.init(temporary.path(), &error), qPrintable(error));
 
@@ -289,6 +303,100 @@ void TestRemoteCopyGuard::sharedCancelRoutesToTheInFlightRemoteCopy() {
   // The quiet kill's late result is generation-fenced: no visible failure.
   fixture.rawCopier->finishFailure(copyGeneration,
                                    QStringLiteral("synthetic copy failure"));
+  QCoreApplication::processEvents();
+  QVERIFY(fixture.navigation->launchError().isEmpty());
+  QCOMPARE(fixture.rawRecording->executeCount(), 0);
+}
+
+// ADR-0156 former red: the pre-slice QML only fenced remote Copy, so a
+// remote multi-selection Move reached the local-only backend's multi-item
+// branch with remote URL-shaped inputs. It must fail closed before the
+// destination dialog can open; one selected child routes the accepted move
+// to the injected mover, still never to the local backend.
+void TestRemoteCopyGuard::remoteMultiSelectionMoveFailsClosedBeforeTheLocalBackend() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  RemoteMutationRouteFixture fixture;
+  QString error;
+  QVERIFY2(fixture.init(temporary.path(), &error), qPrintable(error));
+  QCOMPARE(fixture.navigation->remoteActive(), true);
+  QCOMPARE(fixture.navigation->remoteMoveAvailable(), true);
+
+  QObject *destinationDialog =
+      fixture.window->findChild<QObject *>(QStringLiteral("destinationDialog"));
+  QVERIFY(destinationDialog);
+
+  // Two-entry selection through the production select-all action.
+  QVERIFY(fixture.coordinator.activateAction(QStringLiteral("edit.select-all")));
+  QCoreApplication::processEvents();
+
+  // The shared Move action: coordinator -> Main.qml -> MutationDialogs.dispatch.
+  QVERIFY(fixture.coordinator.activateAction(QStringLiteral("file.move")));
+  QCoreApplication::processEvents();
+  // Fail closed: no dialog opened, and the local mutation backend saw
+  // nothing at any point.
+  QVERIFY(!destinationDialog->property("visible").toBool());
+  QCOMPARE(fixture.rawRecording->executeCount(), 0);
+
+  // Exactly one entry: the dialog opens and the accepted destination routes
+  // to the injected mover, still never to the local backend.
+  QVERIFY(QMetaObject::invokeMethod(fixture.listView, "selectEntry",
+                                    Q_ARG(QVariant, QVariant(0))));
+  QVERIFY(fixture.coordinator.activateAction(QStringLiteral("file.move")));
+  QTRY_VERIFY(destinationDialog->property("visible").toBool());
+  QObject *destinationField =
+      fixture.window->findChild<QObject *>(QStringLiteral("destinationPathField"));
+  QVERIFY(destinationField);
+  QVERIFY(destinationField->setProperty("text", QStringLiteral("smb://server/backup")));
+  QVERIFY(QMetaObject::invokeMethod(destinationDialog, "accept", Qt::DirectConnection));
+  QCoreApplication::processEvents();
+  QCOMPARE(fixture.rawMover->requests().size(), 1);
+  QCOMPARE(fixture.rawMover->requests().constFirst().source.toString(),
+           QStringLiteral("smb://server/share/alpha.txt"));
+  QCOMPARE(fixture.rawMover->requests().constFirst().destination.toString(),
+           QStringLiteral("smb://server/backup/alpha.txt"));
+  QCOMPARE(fixture.rawRecording->executeCount(), 0);
+}
+
+// ADR-0156: the shared Cancel action retires an in-flight remote move
+// through the injected mover (quiet kill, generation-fenced late result)
+// exactly like the copy repair, and is truthfully enabled while the local
+// mutation backend is idle.
+void TestRemoteCopyGuard::sharedCancelRoutesToTheInFlightRemoteMove() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  RemoteMutationRouteFixture fixture;
+  QString error;
+  QVERIFY2(fixture.init(temporary.path(), &error), qPrintable(error));
+
+  // Start one validated remote move and leave it in flight.
+  QVERIFY(QMetaObject::invokeMethod(fixture.listView, "selectEntry",
+                                    Q_ARG(QVariant, QVariant(0))));
+  QVERIFY(fixture.coordinator.activateAction(QStringLiteral("file.move")));
+  QObject *destinationDialog =
+      fixture.window->findChild<QObject *>(QStringLiteral("destinationDialog"));
+  QTRY_VERIFY(destinationDialog->property("visible").toBool());
+  QObject *destinationField =
+      fixture.window->findChild<QObject *>(QStringLiteral("destinationPathField"));
+  QVERIFY(destinationField);
+  QVERIFY(destinationField->setProperty("text", QStringLiteral("smb://server/backup")));
+  QVERIFY(QMetaObject::invokeMethod(destinationDialog, "accept", Qt::DirectConnection));
+  QCoreApplication::processEvents();
+  QCOMPARE(fixture.rawMover->requests().size(), 1);
+  QCOMPARE(fixture.mutation->busy(), false);
+  QCOMPARE(fixture.rawRecording->executeCount(), 0);
+
+  QCOMPARE(actionEnabled(fixture.coordinator, QStringLiteral("operation.cancel")),
+           std::optional<bool>(true));
+  const quint64 moveGeneration = fixture.rawMover->requests().constFirst().generation;
+  QVERIFY(fixture.coordinator.activateAction(QStringLiteral("operation.cancel")));
+  QCoreApplication::processEvents();
+  QVERIFY(fixture.rawMover->cancelled().contains(moveGeneration));
+  QCOMPARE(fixture.navigation->remoteMoveBusy(), false);
+
+  // The quiet kill's late result is generation-fenced: no visible failure.
+  fixture.rawMover->finishFailure(moveGeneration,
+                                  QStringLiteral("synthetic move failure"));
   QCoreApplication::processEvents();
   QVERIFY(fixture.navigation->launchError().isEmpty());
   QCOMPARE(fixture.rawRecording->executeCount(), 0);

@@ -17,7 +17,7 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
       Q_UNUSED(result);
     };
     const bool idle = !mutation.busy() && !navigation.remoteActive();
-    for (const char *actionId : {"file.move", "file.trash"}) {
+    for (const char *actionId : {"file.trash"}) {
       enabled(actionId, idle);
     }
     // ADR-0155: remote Copy To is available while browsing remote only with
@@ -26,6 +26,13 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
     enabled("file.copy", (!mutation.busy() && !navigation.remoteActive()) ||
                              (navigation.remoteCopyAvailable() &&
                               !navigation.remoteCopyBusy()));
+    // ADR-0156: remote Move To follows the same contract with a mover
+    // injected -- and, because a move deletes its source at the server, the
+    // action additionally disables while a move is already in flight so two
+    // destructive moves can never overlap.
+    enabled("file.move", (!mutation.busy() && !navigation.remoteActive()) ||
+                             (navigation.remoteMoveAvailable() &&
+                              !navigation.remoteMoveBusy()));
     // ADR-0154: remote New Folder is available while browsing remote only
     // with a folder creator injected and no creation in flight; without
     // one, New Folder keeps disabling with the other mutations.
@@ -44,10 +51,12 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
     enabled("file.empty-trash", !mutation.busy());
     enabled("edit.undo", mutation.canUndo());
     enabled("file.restore-last", mutation.canRestore());
-    // ADR-0155 repair (review P1): Cancel must also be reachable while a
-    // remote copy is in flight -- MutationDialogs routes it to the remote
-    // owner -- not only while the local mutation backend is busy.
-    enabled("operation.cancel", mutation.busy() || navigation.remoteCopyBusy());
+    // ADR-0155/0156 repair (review P1): Cancel must also be reachable while
+    // an in-flight remote copy or move is retiring through the injected
+    // collaborator -- MutationDialogs routes it to the remote owner -- not
+    // only while the local mutation backend is busy.
+    enabled("operation.cancel", mutation.busy() || navigation.remoteCopyBusy() ||
+                                    navigation.remoteMoveBusy());
   };
   QObject::connect(&mutation, &MutationController::stateChanged,
                    &coordinator, sync);
@@ -58,6 +67,8 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
   QObject::connect(&navigation, &NavigationController::remoteCreateChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::remoteCopyChanged,
+                   &coordinator, sync);
+  QObject::connect(&navigation, &NavigationController::remoteMoveChanged,
                    &coordinator, sync);
   sync();
 }
