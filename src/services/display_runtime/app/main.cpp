@@ -59,13 +59,11 @@ int main(int argc, char **argv)
              .systemdStateDirectory = qEnvironmentVariable("STATE_DIRECTORY"),
              .xdgStateHome = qEnvironmentVariable("XDG_STATE_HOME"),
              .home = qEnvironmentVariable("HOME")});
-    if (stateRoot.accepted() && parser.value(stateRootOption).isEmpty()
-        && !qEnvironmentVariableIsEmpty("STATE_DIRECTORY")) {
-        // AGENT-CONTRACT: systemd owns StateDirectory provisioning and may
-        // preserve the historical qindaqt compatibility symlink. Resolve that
-        // one trusted process input here so D5 still receives a concrete
-        // directory and enforces all journal ownership/mode checks.
-        stateRoot = DisplayRuntime::resolveProvisionedStateRoot(stateRoot);
+    if (stateRoot.accepted() && parser.value(stateRootOption).isEmpty()) {
+        // AGENT-CONTRACT: direct activation on QindaQt's private bus receives
+        // no systemd StateDirectory. Prepare the implicit per-user root (or
+        // resolve its compatibility link) before D5 performs final checks.
+        stateRoot = DisplayRuntime::prepareImplicitStateRoot(stateRoot);
     }
     if (!stateRoot.accepted()) {
         qCritical("Display1 state-root selection failed: %s",

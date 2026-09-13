@@ -21,7 +21,11 @@ namespace {
 QVariantMap settingsWithZone(const QVariantMap &settings, const QString &zone)
 {
     QVariantMap adjusted = settings;
-    adjusted.insert(QStringLiteral("zone"), zone);
+    if (zone == QLatin1String("desktop")) {
+        adjusted.remove(QStringLiteral("zone"));
+    } else {
+        adjusted.insert(QStringLiteral("zone"), zone);
+    }
     return adjusted;
 }
 
@@ -38,7 +42,9 @@ void appendZoneUpdate(QVector<EditingCommand> &commands,
                       const DropTarget &target,
                       quint64 expectedRevision)
 {
-    if (settingsZone(sourceSettings) == target.zone) {
+    const bool alreadyDesktop = target.zone == QLatin1String("desktop")
+        && !sourceSettings.contains(QStringLiteral("zone"));
+    if (alreadyDesktop || settingsZone(sourceSettings) == target.zone) {
         return;
     }
     UpdateAppletSettingsCommand update;

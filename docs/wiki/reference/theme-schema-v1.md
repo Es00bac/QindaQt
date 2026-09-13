@@ -65,6 +65,9 @@ hint rejects the catalog at startup and never becomes a path.
 
 The built-in catalog currently supplies QindaQt Pearl, QindaQt Velvet,
 QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS, and QindaQt Bliss.
+Every built-in authors a decoration block, and the catalog intentionally spans
+multiple window-manager arrangements; the unauthored fallback below exists for
+external and older packages, not as the built-in default.
 The default
 Nightfall/Porcelain pair draws its dark surfaces from graphite and ink-blue
 night tones and its action role from restrained amber; the light counterpart
@@ -100,7 +103,8 @@ authored block: `buttonPlacement` sets the container button side,
 `tabDirection` sets the tab order, `buttonStyle` selects traffic lights
 (`traffic-lights`) or flat symbols (any other style), and `hoverGlyphs` keeps
 traffic-light symbols hidden until hover. A theme without the object keeps
-the Qinda macOS container arrangement. Users can override both chrome sets
+the Qinda macOS container arrangement for compatibility. Users can override both chrome sets
 from Appearance
-([ADR-0129](../adr/0129-configure-window-and-container-chrome.md)).
-
+([ADR-0129](../adr/0129-configure-window-and-container-chrome.md)); built-in
+preset diversity is fixed by
+[ADR-0159](../adr/0159-author-distinct-decoration-presets-for-every-builtin-theme.md).

@@ -97,9 +97,7 @@ MouseArea {
             if (payload.appletId) {
                 customizeSettings.selectApplet(payload.panelId, payload.appletId)
             } else {
-                const panels = customizeSettings.panels
-                if (panels.length)
-                    customizeSettings.keyboardInsert(payload.pluginId, panels[0].id, "start", "")
+                customizeSettings.keyboardInsertDefault(payload.pluginId)
             }
         }
         payload = null

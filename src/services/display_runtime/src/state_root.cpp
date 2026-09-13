@@ -4,6 +4,7 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
+#include <QtCore/QFile>
 
 namespace QindaQt::DisplayRuntime
 {
@@ -87,6 +88,25 @@ resolveProvisionedStateRoot(const StateRootSelection &selection)
                 .reasonCode = QStringLiteral("invalid-state-root-path")};
     }
     return validate(canonical);
+}
+
+StateRootSelection prepareImplicitStateRoot(const StateRootSelection &selection)
+{
+    if (!selection.accepted()) {
+        return selection;
+    }
+    if (!QFileInfo(selection.path).exists()) {
+        if (!QDir().mkpath(selection.path)
+            || !QFile::setPermissions(selection.path,
+                                      QFileDevice::ReadOwner
+                                          | QFileDevice::WriteOwner
+                                          | QFileDevice::ExeOwner)) {
+            return {.path = {},
+                    .error = StateRootError::InvalidPath,
+                    .reasonCode = QStringLiteral("state-root-provision-failed")};
+        }
+    }
+    return resolveProvisionedStateRoot(selection);
 }
 
 } // namespace QindaQt::DisplayRuntime

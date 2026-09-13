@@ -178,10 +178,8 @@ inline HybridChrome::ChromeRenderPlan makePlan(
     return std::move(*plan);
 }
 
-// A shaded container's plan intentionally carries no tabs/members/dividers
-// regardless of how many pages the topology has (see
-// HybridChromePlanBuilder::build's shaded branch): the whole visible/
-// hit-testable rectangle is exactly the strip row.
+// A shaded container carries its real page list as compact badge pills while
+// omitting all member and divider geometry.
 inline HybridChrome::ChromeRenderPlan makeShadedPlan(
     const Core::WindowContainer &container,
     HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::standard(
@@ -193,6 +191,10 @@ inline HybridChrome::ChromeRenderPlan makeShadedPlan(
     request.outerRect = outerRect;
     request.shaded = true;
     request.style = std::move(style);
+    for (const auto &page : container.pages()) {
+        request.tabs.append({page.id(), page.id(),
+                             page.id() == container.activePageId()});
+    }
     QString error;
     auto plan = HybridChrome::ChromeLayoutEngine::build(request, &error);
     if (!plan) {

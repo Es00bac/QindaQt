@@ -139,6 +139,10 @@ private:
                                 HybridChrome::ContainerControl control);
     void initializeMemberChromeSupport();
     void synchronizeMemberChromeVisibility();
+    // ADR-0139: publishes the per-window qindaqtMemberIdentity decoration
+    // property (container identity color + focused member) from the plans
+    // the chrome manager just published.
+    void publishMemberChromeIdentity();
     [[nodiscard]] bool memberTitlesVisible(
         const QString &containerId) const noexcept;
     void restoreMemberChromeVisibilityForShutdown() noexcept;

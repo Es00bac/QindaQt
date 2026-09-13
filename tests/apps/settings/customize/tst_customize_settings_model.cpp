@@ -49,7 +49,56 @@ private slots:
     void configureAppletSettingNoOpAddsNoUndoStep();
     void duplicateSelectedCopiesCurrentAppletSettings();
     void configureAppletSettingFailsClosedAfterSelectionBecomesStale();
+    void desktopAppletCanBeInsertedEditedAndPersisted();
 };
+
+void CustomizeSettingsModelTests::desktopAppletCanBeInsertedEditedAndPersisted()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establish());
+    const QVariantList panelBaseline = harness.model.panels();
+    const QVariantList palette = harness.model.palette();
+    const auto desktopPalette = std::find_if(
+        palette.cbegin(), palette.cend(),
+        [](const QVariant &entry) {
+            return entry.toMap().value(QStringLiteral("id"))
+                == QLatin1String("desktop-icons");
+        });
+    QVERIFY(desktopPalette != palette.cend());
+    QVERIFY(desktopPalette->toMap().value(QStringLiteral("desktopSupported")).toBool());
+
+    QVERIFY(harness.model.keyboardInsertDefault(QStringLiteral("desktop-icons")));
+    QCOMPARE(harness.model.panels(), panelBaseline);
+    QCOMPARE(harness.model.desktopApplets().size(), 1);
+    const QVariantMap projected = harness.model.desktopApplets().constFirst().toMap();
+    QCOMPARE(projected.value(QStringLiteral("pluginId")).toString(),
+             QStringLiteral("desktop-icons"));
+
+    harness.model.selectApplet(QStringLiteral("@desktop"),
+                               projected.value(QStringLiteral("id")).toString());
+    QCOMPARE(harness.model.selectedProperties().value(QStringLiteral("zone")).toString(),
+             QStringLiteral("desktop"));
+    QVERIFY(harness.model.configureAppletSetting(QStringLiteral("iconSize"), 64));
+
+    const QVariantList beforeRejectedMove = harness.model.desktopApplets();
+    QVERIFY(harness.model.startAppletDrag(
+        QStringLiteral("@desktop"), projected.value(QStringLiteral("id")).toString()));
+    QVERIFY(harness.model.hoverDropTarget(QStringLiteral("bar"),
+                                          QStringLiteral("start")));
+    QVERIFY(!harness.model.dropAccepted());
+    QVERIFY(harness.model.cancelDrag());
+    QCOMPARE(harness.model.desktopApplets(), beforeRejectedMove);
+
+    QVERIFY(harness.model.apply());
+    const QString saved = QDir(harness.store->path()).filePath(
+        ShellCustomizationEditor::UserProfileStore::fileNameForId(
+            QStringLiteral("fixture")));
+    const Profiles::LoadResult loaded = Profiles::ProfileLoader::fromFile(saved);
+    QVERIFY2(loaded.ok, qPrintable(loaded.error.message));
+    QCOMPARE(loaded.profile.desktopApplets.size(), 1);
+    QCOMPARE(loaded.profile.desktopApplets.constFirst()
+                 .settings.value(QStringLiteral("iconSize")).toInt(), 64);
+}
 
 void CustomizeSettingsModelTests::panelDisplayScopeUsesExactPrimaryAndRoundTrips()
 {

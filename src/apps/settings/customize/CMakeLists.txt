@@ -9,6 +9,7 @@ target_sources(
         customize_editor_host.cpp
         customize_output_provider.cpp
         customize_settings_actions.cpp
+        customize_settings_insertion.cpp
         customize_settings_model.cpp
         customize_settings_projection.cpp
         customize_wallpaper_preview.cpp

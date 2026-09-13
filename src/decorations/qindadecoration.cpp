@@ -143,6 +143,10 @@ bool QindaDecoration::event(QEvent *event)
             // (ADR-0131), which changes its buttons as well as its geometry.
             reconcileButtons();
             updateGeometry();
+        } else if (change->propertyName() == QByteArrayLiteral("qindaqtMemberIdentity")) {
+            // Container identity emphasis is paint-only (ADR-0139): the
+            // member frame, buttons, and geometry never change with it.
+            update();
         }
     }
     return handled;
@@ -161,7 +165,10 @@ void QindaDecoration::paint(QPainter *painter, const QRectF &repaintArea)
     // method only gathers live window state. The Settings preview feeds the
     // same functions, so what it shows is what this paints.
     const auto chrome = chromeState();
-    const auto frame = frameState();
+    auto frame = frameState();
+    // ADR-0139: the member-focus flag arrives with the chrome map but paints
+    // through the frame, so the handlebar helpers read one place.
+    frame.memberFocused = chrome.memberFocused;
     if (frame.memberHandle) {
         // Contained windows keep only the handlebar (ADR-0131): no caption,
         // because the container's tabs already name the page.
@@ -201,6 +208,18 @@ DecorationChrome QindaDecoration::chromeState() const
 {
     auto chrome = DecorationChrome::fromVariantMap(
         property("qindaqtChromePalette").toMap());
+    // AGENT-CONTRACT: the session's member-chrome publisher owns this
+    // process-local per-window map (container identity color + focused
+    // member flag, ADR-0139). It is separate from qindaqtChromePalette so
+    // the theme publisher and the topology publisher never overwrite each
+    // other's keys.
+    const auto memberIdentity = property("qindaqtMemberIdentity").toMap();
+    if (!chrome.identityColor.isValid()) {
+        chrome.identityColor = memberIdentity.value(QStringLiteral("identityColor"))
+                                   .value<QColor>();
+    }
+    chrome.memberFocused = chrome.memberFocused
+        || memberIdentity.value(QStringLiteral("focused")).toBool();
     // Windows without a published chrome map (compositor not yet attached)
     // paint from the window palette, exactly as before the shared painter.
     const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;

@@ -306,6 +306,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridcontainerappearance.h
             kwin/hybridshadecontroller.cpp
             kwin/hybridshadecontroller.h
+            kwin/hybridshadestripgeometry.cpp
+            kwin/hybridshadestripgeometry.h
             kwin/hybridgroupedgeometryreconciler.cpp
             kwin/hybridgroupedgeometryreconciler.h
             kwin/hybridmemberpolicy.cpp
@@ -327,6 +329,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinchromescenelifecycle.h
             kwin/kwinscenechromeoverlay.cpp
             kwin/kwinscenechromeoverlay.h
+            kwin/chromeplanlocalizer.cpp
+            kwin/chromeplanlocalizer.h
             kwin/kwindockpreview.cpp
             kwin/kwindockpreview.h
             kwin/kwingroupcontextmanager.cpp

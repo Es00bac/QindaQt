@@ -52,6 +52,7 @@ class CustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString selectedProfileId READ selectedProfileId NOTIFY contentChanged)
     Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
     Q_PROPERTY(QVariantList panels READ panels NOTIFY contentChanged)
+    Q_PROPERTY(QVariantList desktopApplets READ desktopApplets NOTIFY contentChanged)
     Q_PROPERTY(QVariantList palette READ palette CONSTANT)
     Q_PROPERTY(QString selectedKind READ selectedKind NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedPanelId READ selectedPanelId NOTIFY selectionChanged)
@@ -104,6 +105,7 @@ public:
     [[nodiscard]] QString selectedProfileId() const { return m_selectedProfileId; }
     [[nodiscard]] QVariantList profiles() const;
     [[nodiscard]] QVariantList panels() const;
+    [[nodiscard]] QVariantList desktopApplets() const;
     [[nodiscard]] QVariantList palette() const;
     [[nodiscard]] QString selectedKind() const { return m_selectedKind; }
     [[nodiscard]] QString selectedPanelId() const { return m_selectedPanelId; }
@@ -126,6 +128,7 @@ public:
                                     const QString &panelId,
                                     const QString &zone,
                                     const QString &beforeAppletId = {});
+    Q_INVOKABLE bool keyboardInsertDefault(const QString &pluginId);
     Q_INVOKABLE bool keyboardMoveMode();
     Q_INVOKABLE bool keyboardStep(const QString &direction);
     Q_INVOKABLE bool removeSelected();

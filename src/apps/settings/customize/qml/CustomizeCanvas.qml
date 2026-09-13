@@ -49,7 +49,8 @@ T.Control {
             id: bezel
 
             anchors.centerIn: parent
-            width: Math.min(parent.width, parent.height * 16 / 9)
+            width: parent.width < parent.height * 16 / 9
+                   ? parent.width : parent.height * 16 / 9
             height: width * 9 / 16
             radius: Tokens.radius.l
             color: Tokens.bg.highest
@@ -62,6 +63,10 @@ T.Control {
                 objectName: "customizeOutputCanvas"
                 anchors.fill: parent
                 anchors.margins: Tokens.space["3"]
+                // Panel zones are descendants and therefore win hit testing;
+                // all remaining screen space is the desktop applet target.
+                readonly property string targetPanelId: "@desktop"
+                readonly property string targetZone: "desktop"
 
                 // Themed backdrop: the same vertical light falloff the
                 // desktop concept preview paints, driven entirely by the
@@ -123,10 +128,86 @@ T.Control {
                 // contained window would show.
                 CustomizeContainedWindowPreview {
                     objectName: "customizeWindowPreview"
-                    width: Math.min(parent.width * 0.66, 900 * screen.width / 1920)
+                    width: parent.width * 0.66 < 900 * screen.width / 1920
+                           ? parent.width * 0.66 : 900 * screen.width / 1920
                     height: Math.min(parent.height * 0.52, 520 * screen.width / 1920)
                     anchors.centerIn: parent
                     chrome: root.windowPreview.chrome
+                }
+
+                Flow {
+                    id: desktopAppletGrid
+
+                    objectName: "customizeDesktopAppletGrid"
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.margins: Tokens.space["3"]
+                    width: parent.width * 0.3 < 180 ? parent.width * 0.3 : 180
+                    spacing: Tokens.space["2"]
+                    z: 2
+
+                    Repeater {
+                        model: root.customizeSettings.desktopApplets
+
+                        delegate: Rectangle {
+                            id: desktopChip
+
+                            required property var modelData
+                            width: 64
+                            height: 72
+                            radius: Tokens.radius.m
+                            color: selected ? Tokens.accent.subtle
+                                  : hover.hovered ? Tokens.state.hover
+                                  : Qt.rgba(0, 0, 0, 0.18)
+                            border.width: selected || hover.hovered
+                                          ? Tokens.space["1"] / 2 : 0
+                            border.color: selected ? Tokens.accent.default
+                                                   : Tokens.outline.strong
+
+                            readonly property bool selected:
+                                root.customizeSettings.selectedKind === "applet"
+                                && root.customizeSettings.selectedAppletId
+                                   === (modelData.id ?? "")
+                            readonly property string dragPluginId:
+                                modelData.pluginId ?? ""
+                            readonly property string dragPanelId: "@desktop"
+                            readonly property string dragAppletId:
+                                modelData.id ?? ""
+
+                            objectName: "customizeDesktopApplet_"
+                                        + (modelData.id ?? "")
+                            Accessible.role: Accessible.ListItem
+                            Accessible.name: qsTr("%1 desktop applet")
+                                               .arg(modelData.name ?? "")
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: Tokens.space["1"]
+
+                                CustomizeAppletIcon {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    pluginId: desktopChip.modelData.pluginId ?? ""
+                                    iconSize: 32
+                                }
+                                Text {
+                                    width: 58
+                                    text: desktopChip.modelData.name ?? ""
+                                    color: Tokens.fg.default
+                                    elide: Text.ElideRight
+                                    horizontalAlignment: Text.AlignHCenter
+                                    font.family: Tokens.type.fontFamily
+                                    font.pointSize: Tokens.type.caption
+                                }
+                            }
+
+                            HoverHandler { id: hover }
+                            TapHandler {
+                                onTapped: root.customizeSettings.selectApplet(
+                                              "@desktop",
+                                              desktopChip.modelData.id ?? "")
+                            }
+                        }
+                    }
                 }
 
                 Repeater {

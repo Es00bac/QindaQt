@@ -6,6 +6,8 @@
 
 #include "windowcontainer.h"
 
+#include <QColor>
+#include <QHash>
 #include <QRectF>
 #include <QString>
 
@@ -33,6 +35,13 @@ struct HybridChromePlanOptions final
     // ContainerAppearance rename override; empty means "no override" (see
     // ChromeLayoutRequest::containerTitle).
     QString containerTitle;
+    // Container identity and keyboard-hint inputs (CONTRACTS §2.4, wire W1/W2,
+    // ADR-0139). Defaults reproduce today's output: an invalid identityColor
+    // derives every identity shade from the theme accent, a missing or empty
+    // override keeps the derived tab title, and indexBadge 0 hides the badge.
+    QColor identityColor;
+    QHash<QString, QString> tabTitleOverrides;
+    int indexBadge = 0;
     HybridChrome::ChromeMetrics metrics;
     HybridChrome::ChromeStyle style = HybridChrome::ChromeStyle::qindaMacOS({});
 };

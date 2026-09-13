@@ -9,26 +9,43 @@ namespace QindaQt::ShellCustomization::AppletEditMutation {
 namespace {
 
 using LayoutEditHelpers::appletIndex;
+using LayoutEditHelpers::appletOwner;
 using LayoutEditHelpers::containsApplet;
 using LayoutEditHelpers::error;
 using LayoutEditHelpers::panelIndex;
 
-std::optional<qsizetype> insertionIndex(const Profiles::PanelSpec &panel,
+std::optional<qsizetype> insertionIndex(const QVector<Profiles::AppletSpec> &applets,
                                         const std::optional<QString> &beforeAppletId)
 {
     if (!beforeAppletId.has_value()) {
-        return panel.applets.size();
+        return applets.size();
     }
-    const qsizetype index = appletIndex(panel, *beforeAppletId);
+    const qsizetype index = appletIndex(applets, *beforeAppletId);
     return index < 0 ? std::nullopt : std::optional(index);
 }
 
-std::optional<EditingError> unknownPanel(const QString &role,
-                                         const QString &panelId)
+std::optional<EditingError> unknownOwner(const QString &role,
+                                         const QString &ownerId)
 {
     return error(EditingErrorCode::UnknownPanelId,
-                 QStringLiteral("%1 panel '%2' does not exist").arg(role, panelId),
-                 panelId);
+                 QStringLiteral("%1 applet owner '%2' does not exist").arg(role, ownerId),
+                 ownerId);
+}
+
+std::optional<EditingError> validateTarget(
+    const Profiles::LayoutProfile &profile,
+    const QString &ownerId,
+    const Profiles::AppletSpec &applet,
+    const AppletPlacementValidator &placementValidator)
+{
+    if (ownerId == DesktopAppletOwnerId) {
+        return placementValidator.validateDesktopPlacement(applet);
+    }
+    const qsizetype index = panelIndex(profile, ownerId);
+    if (index < 0) {
+        return unknownOwner(QStringLiteral("target"), ownerId);
+    }
+    return placementValidator.validatePlacement(applet, profile.panels[index]);
 }
 
 std::optional<EditingError> unknownApplet(const QString &panelId,
@@ -58,9 +75,9 @@ std::optional<EditingError> apply(
     const InsertAppletCommand &command,
     const AppletPlacementValidator &placementValidator)
 {
-    const qsizetype targetIndex = panelIndex(profile, command.panelId);
-    if (targetIndex < 0) {
-        return unknownPanel(QStringLiteral("target"), command.panelId);
+    QVector<Profiles::AppletSpec> *target = appletOwner(profile, command.panelId);
+    if (target == nullptr) {
+        return unknownOwner(QStringLiteral("target"), command.panelId);
     }
     if (command.instanceId.trimmed().isEmpty()) {
         return error(EditingErrorCode::InvalidCommand,
@@ -75,8 +92,7 @@ std::optional<EditingError> apply(
                      command.instanceId);
     }
 
-    Profiles::PanelSpec &target = profile.panels[targetIndex];
-    const auto insertion = insertionIndex(target, command.beforeAppletId);
+    const auto insertion = insertionIndex(*target, command.beforeAppletId);
     if (!insertion.has_value()) {
         return unknownAnchor(command.panelId, *command.beforeAppletId);
     }
@@ -85,10 +101,11 @@ std::optional<EditingError> apply(
         .plugin = command.pluginId,
         .settings = command.initialSettings,
     };
-    if (auto placementError = placementValidator.validatePlacement(inserted, target)) {
+    if (auto placementError = validateTarget(profile, command.panelId, inserted,
+                                              placementValidator)) {
         return placementError;
     }
-    target.applets.insert(*insertion, std::move(inserted));
+    target->insert(*insertion, std::move(inserted));
     return std::nullopt;
 }
 
@@ -97,17 +114,16 @@ std::optional<EditingError> apply(
     const MoveAppletCommand &command,
     const AppletPlacementValidator &placementValidator)
 {
-    const qsizetype sourcePanelIndex = panelIndex(profile, command.sourcePanelId);
-    const qsizetype targetPanelIndex = panelIndex(profile, command.targetPanelId);
-    if (sourcePanelIndex < 0) {
-        return unknownPanel(QStringLiteral("source"), command.sourcePanelId);
+    QVector<Profiles::AppletSpec> *source = appletOwner(profile, command.sourcePanelId);
+    QVector<Profiles::AppletSpec> *target = appletOwner(profile, command.targetPanelId);
+    if (source == nullptr) {
+        return unknownOwner(QStringLiteral("source"), command.sourcePanelId);
     }
-    if (targetPanelIndex < 0) {
-        return unknownPanel(QStringLiteral("target"), command.targetPanelId);
+    if (target == nullptr) {
+        return unknownOwner(QStringLiteral("target"), command.targetPanelId);
     }
 
-    const qsizetype sourceAppletIndex =
-        appletIndex(profile.panels[sourcePanelIndex], command.appletId);
+    const qsizetype sourceAppletIndex = appletIndex(*source, command.appletId);
     if (sourceAppletIndex < 0) {
         return unknownApplet(command.sourcePanelId, command.appletId);
     }
@@ -118,30 +134,36 @@ std::optional<EditingError> apply(
                      command.appletId);
     }
     if (command.beforeAppletId.has_value()
-        && appletIndex(profile.panels[targetPanelIndex], *command.beforeAppletId) < 0) {
+        && appletIndex(*target, *command.beforeAppletId) < 0) {
         return unknownAnchor(command.targetPanelId, *command.beforeAppletId);
     }
 
-    Profiles::AppletSpec moved =
-        profile.panels[sourcePanelIndex].applets[sourceAppletIndex];
-    if (AppletPlacementValidator::placementChanges(
-            moved,
-            profile.panels[sourcePanelIndex],
-            profile.panels[targetPanelIndex])) {
-        if (auto placementError = placementValidator.validatePlacement(
-                moved, profile.panels[targetPanelIndex])) {
+    Profiles::AppletSpec moved = source->at(sourceAppletIndex);
+    bool placementChanged = command.sourcePanelId != command.targetPanelId;
+    if (placementChanged
+        && command.sourcePanelId != DesktopAppletOwnerId
+        && command.targetPanelId != DesktopAppletOwnerId) {
+        const auto sourcePanelIndex = panelIndex(profile, command.sourcePanelId);
+        const auto targetPanelIndex = panelIndex(profile, command.targetPanelId);
+        placementChanged = AppletPlacementValidator::placementChanges(
+            moved, profile.panels.at(sourcePanelIndex), profile.panels.at(targetPanelIndex));
+    }
+    if (placementChanged) {
+        if (auto placementError = validateTarget(profile, command.targetPanelId,
+                                                  moved, placementValidator)) {
             return placementError;
         }
     }
 
-    profile.panels[sourcePanelIndex].applets.removeAt(sourceAppletIndex);
-    Profiles::PanelSpec &target = profile.panels[targetPanelIndex];
-    const auto insertion = insertionIndex(target, command.beforeAppletId);
+    source->removeAt(sourceAppletIndex);
+    // Removing from the same vector can invalidate the anchor's prior index,
+    // so resolve the insertion only after removal.
+    const auto insertion = insertionIndex(*target, command.beforeAppletId);
     if (!insertion.has_value()) {
         return unknownAnchor(command.targetPanelId,
                              command.beforeAppletId.value_or(QString{}));
     }
-    target.applets.insert(*insertion, std::move(moved));
+    target->insert(*insertion, std::move(moved));
     return std::nullopt;
 }
 
@@ -150,16 +172,15 @@ std::optional<EditingError> apply(
     const RemoveAppletCommand &command,
     const AppletPlacementValidator &)
 {
-    const qsizetype ownerIndex = panelIndex(profile, command.panelId);
-    if (ownerIndex < 0) {
-        return unknownPanel(QStringLiteral("owner"), command.panelId);
+    QVector<Profiles::AppletSpec> *owner = appletOwner(profile, command.panelId);
+    if (owner == nullptr) {
+        return unknownOwner(QStringLiteral("owner"), command.panelId);
     }
-    Profiles::PanelSpec &owner = profile.panels[ownerIndex];
-    const qsizetype index = appletIndex(owner, command.appletId);
+    const qsizetype index = appletIndex(*owner, command.appletId);
     if (index < 0) {
         return unknownApplet(command.panelId, command.appletId);
     }
-    owner.applets.removeAt(index);
+    owner->removeAt(index);
     return std::nullopt;
 }
 
@@ -168,16 +189,16 @@ std::optional<EditingError> apply(
     const DuplicateAppletCommand &command,
     const AppletPlacementValidator &placementValidator)
 {
-    const qsizetype sourcePanelIndex = panelIndex(profile, command.sourcePanelId);
-    const qsizetype targetPanelIndex = panelIndex(profile, command.targetPanelId);
-    if (sourcePanelIndex < 0) {
-        return unknownPanel(QStringLiteral("source"), command.sourcePanelId);
+    const QVector<Profiles::AppletSpec> *source = appletOwner(
+        std::as_const(profile), command.sourcePanelId);
+    QVector<Profiles::AppletSpec> *target = appletOwner(profile, command.targetPanelId);
+    if (source == nullptr) {
+        return unknownOwner(QStringLiteral("source"), command.sourcePanelId);
     }
-    if (targetPanelIndex < 0) {
-        return unknownPanel(QStringLiteral("target"), command.targetPanelId);
+    if (target == nullptr) {
+        return unknownOwner(QStringLiteral("target"), command.targetPanelId);
     }
-    const qsizetype sourceAppletIndex =
-        appletIndex(profile.panels[sourcePanelIndex], command.appletId);
+    const qsizetype sourceAppletIndex = appletIndex(*source, command.appletId);
     if (sourceAppletIndex < 0) {
         return unknownApplet(command.sourcePanelId, command.appletId);
     }
@@ -194,18 +215,17 @@ std::optional<EditingError> apply(
                      command.newAppletId);
     }
 
-    Profiles::PanelSpec &target = profile.panels[targetPanelIndex];
-    const auto insertion = insertionIndex(target, command.beforeAppletId);
+    const auto insertion = insertionIndex(*target, command.beforeAppletId);
     if (!insertion.has_value()) {
         return unknownAnchor(command.targetPanelId, *command.beforeAppletId);
     }
-    Profiles::AppletSpec duplicate =
-        profile.panels[sourcePanelIndex].applets[sourceAppletIndex];
+    Profiles::AppletSpec duplicate = source->at(sourceAppletIndex);
     duplicate.id = command.newAppletId;
-    if (auto placementError = placementValidator.validatePlacement(duplicate, target)) {
+    if (auto placementError = validateTarget(profile, command.targetPanelId,
+                                              duplicate, placementValidator)) {
         return placementError;
     }
-    target.applets.insert(*insertion, std::move(duplicate));
+    target->insert(*insertion, std::move(duplicate));
     return std::nullopt;
 }
 
@@ -214,25 +234,26 @@ std::optional<EditingError> apply(
     const UpdateAppletSettingsCommand &command,
     const AppletPlacementValidator &placementValidator)
 {
-    const qsizetype ownerIndex = panelIndex(profile, command.panelId);
-    if (ownerIndex < 0) {
-        return unknownPanel(QStringLiteral("owner"), command.panelId);
+    QVector<Profiles::AppletSpec> *owner = appletOwner(profile, command.panelId);
+    if (owner == nullptr) {
+        return unknownOwner(QStringLiteral("owner"), command.panelId);
     }
-    Profiles::PanelSpec &owner = profile.panels[ownerIndex];
-    const qsizetype index = appletIndex(owner, command.appletId);
+    const qsizetype index = appletIndex(*owner, command.appletId);
     if (index < 0) {
         return unknownApplet(command.panelId, command.appletId);
     }
 
-    Profiles::AppletSpec updated = owner.applets[index];
+    Profiles::AppletSpec updated = owner->at(index);
     updated.settings = command.settings;
-    if (AppletPlacementValidator::zonePlacementChanges(
-            owner.applets[index].settings, command.settings)) {
-        if (auto placementError = placementValidator.validatePlacement(updated, owner)) {
+    if (command.panelId != DesktopAppletOwnerId
+        && AppletPlacementValidator::zonePlacementChanges(
+            owner->at(index).settings, command.settings)) {
+        if (auto placementError = validateTarget(profile, command.panelId,
+                                                  updated, placementValidator)) {
             return placementError;
         }
     }
-    owner.applets[index] = std::move(updated);
+    owner->operator[](index) = std::move(updated);
     return std::nullopt;
 }
 

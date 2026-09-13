@@ -16,6 +16,12 @@ namespace QindaQt::ShellCustomization::LayoutEditHelpers {
                                    const QString &panelId) noexcept;
 [[nodiscard]] qsizetype appletIndex(const Profiles::PanelSpec &panel,
                                     const QString &appletId) noexcept;
+[[nodiscard]] qsizetype appletIndex(const QVector<Profiles::AppletSpec> &applets,
+                                    const QString &appletId) noexcept;
+[[nodiscard]] QVector<Profiles::AppletSpec> *appletOwner(
+    Profiles::LayoutProfile &profile, const QString &ownerId) noexcept;
+[[nodiscard]] const QVector<Profiles::AppletSpec> *appletOwner(
+    const Profiles::LayoutProfile &profile, const QString &ownerId) noexcept;
 [[nodiscard]] bool containsApplet(const Profiles::LayoutProfile &profile,
                                   const QString &appletId) noexcept;
 [[nodiscard]] bool sameProfile(const Profiles::LayoutProfile &first,

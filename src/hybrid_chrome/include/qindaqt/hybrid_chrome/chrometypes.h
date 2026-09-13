@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "chromeidentity.h"
+
 #include <QColor>
+#include <QHash>
 #include <QMetaType>
 #include <QPointF>
 #include <QRectF>
@@ -187,6 +190,13 @@ struct ChromeLayoutRequest final
     // tabs as the only page-identity presentation, exactly as before this
     // field existed.
     QString containerTitle;
+    // Container identity and keyboard-hint inputs (CONTRACTS §2.4,
+    // ADR-0139). An invalid identityColor means "derive every identity shade
+    // from the theme accent"; a missing or empty tabTitleOverrides entry
+    // keeps the derived tab title; indexBadge 0 hides the badge.
+    QColor identityColor;
+    QHash<QString, QString> tabTitleOverrides;
+    int indexBadge = 0;
     ChromeMetrics metrics;
     ChromeStyle style;
     QVector<ChromeTabSpec> tabs;
@@ -249,6 +259,12 @@ struct ChromeRenderPlan final
     bool containerFocused = false;
     bool memberTitlesVisible = true;
     QString containerTitle;
+    // Identity inputs echoed onto the plan (CONTRACTS §2.4) plus the shades
+    // derived once here, so renderer, badge, and preview all paint the same
+    // values (ADR-0139).
+    QColor identityColor;
+    int indexBadge = 0;
+    ChromeIdentityShades identity;
     ChromeMetrics metrics;
     ChromeStyle style;
     QRectF outerFrame;
@@ -264,6 +280,12 @@ struct ChromeRenderPlan final
     QVector<MemberGeometry> members;
     QVector<DividerGeometry> dividers;
     bool tabsOverflowed = false;
+    // Rolled-up badge extras (ADR-0139): the badge label rect (foremost tab
+    // and container name), the pill overflow count behind "+N", and the
+    // keyboard selection chip rect. Empty/zero when not shown.
+    QRectF badgeLabelRect;
+    int badgeOverflowCount = 0;
+    QRectF indexBadgeRect;
 };
 
 struct ChromeHitTarget final
@@ -274,6 +296,10 @@ struct ChromeHitTarget final
     std::optional<WindowAction> action;
     Qt::Edges resizeEdges;
     std::optional<ContainerControl> containerControl;
+    // ADR-0139: the target lives on a shaded container's rolled-up badge, so
+    // pointer interactions also carry the unroll-to-it semantics (a pill
+    // click unrolls to that tab; a badge double-click unrolls).
+    bool fromShadedBadge = false;
 
     [[nodiscard]] bool isInteractive() const { return kind != HitKind::None; }
     friend bool operator==(const ChromeHitTarget &, const ChromeHitTarget &) = default;

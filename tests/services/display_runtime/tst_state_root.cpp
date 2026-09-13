@@ -18,6 +18,7 @@ private Q_SLOTS:
     void selectsOneDeterministicSource();
     void rejectsMissingAmbiguousAndHostileValues();
     void resolvesSystemdProvisionedCompatibilityLink();
+    void preparesImplicitRootWithoutSystemd();
 };
 
 void StateRootTest::selectsOneDeterministicSource()
@@ -79,6 +80,24 @@ void StateRootTest::resolvesSystemdProvisionedCompatibilityLink()
          .error = StateRootError::None,
          .reasonCode = {}});
     QCOMPARE(missing.error, StateRootError::InvalidPath);
+}
+
+void StateRootTest::preparesImplicitRootWithoutSystemd()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const QString selectedPath = temporary.path() + QStringLiteral("/state/qindaqt");
+    const auto prepared = prepareImplicitStateRoot(
+        {.path = selectedPath, .error = StateRootError::None, .reasonCode = {}});
+    QVERIFY(prepared.accepted());
+    QCOMPARE(prepared.path, QFileInfo(selectedPath).canonicalFilePath());
+    const QFileInfo metadata(prepared.path);
+    QVERIFY(metadata.isDir());
+    QCOMPARE(metadata.permissions()
+                 & (QFileDevice::ReadGroup | QFileDevice::WriteGroup
+                    | QFileDevice::ExeGroup | QFileDevice::ReadOther
+                    | QFileDevice::WriteOther | QFileDevice::ExeOther),
+             QFileDevice::Permissions{});
 }
 
 void StateRootTest::rejectsMissingAmbiguousAndHostileValues()

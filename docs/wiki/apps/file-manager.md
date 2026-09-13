@@ -471,9 +471,11 @@ object names/shortcuts form the compatibility surface.
 (`public/desktop_file_boundary.h`) is the one narrow, stateless seam through
 which Desktop-owned code (and, later, the network worker's URL/job
 integration) reaches File Manager's local-filesystem authority. It is the
-only File Manager surface Desktop may depend on; `model/**`, `mutation/**`,
-and `app_shell/**` remain private controllers even though their headers are
-`PUBLIC` in File Manager's own CMake target (see [Module
+only File Manager surface Desktop may depend on. The dedicated
+`qindaqt_file_manager_desktop_boundary` target contains that seam and its local
+listing/launch/mutation implementation without AppShell or KIO, so the shell's
+runtime closure cannot inherit application-only shared libraries. `model/**`,
+`mutation/**`, and `app_shell/**` remain private controllers (see [Module
 boundaries](../architecture/module-boundaries.md)).
 
 - `listLocalFolder(absolutePath)` composes `LocalDirectoryLister` and returns

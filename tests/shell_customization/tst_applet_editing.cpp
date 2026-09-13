@@ -36,6 +36,13 @@ Applets::AppletManifest horizontalStartManifest()
     return result;
 }
 
+Applets::AppletManifest desktopManifest()
+{
+    Applets::AppletManifest result = manifest(QStringLiteral("desktop-icons"));
+    result.placementZones = {Applets::PlacementZone::Desktop};
+    return result;
+}
+
 } // namespace
 
 class AppletEditingTest final : public QObject {
@@ -49,7 +56,57 @@ private slots:
     void enforcesOrientationAndZoneCompatibilityAtomically();
     void unavailableLegacyAppletsAllowOnlyPlacementNeutralWork();
     void publishesSchemaRoundTripValues();
+    void editsDesktopAppletsThroughTheTransactionalOwner();
 };
+
+void AppletEditingTest::editsDesktopAppletsThroughTheTransactionalOwner()
+{
+    auto catalog = manifests();
+    catalog.append(desktopManifest());
+    LayoutEditingRepository repository(profile(), outputs(), catalog);
+    QVERIFY(repository.isReady());
+    auto coordinator = repository.tryAcquireCoordinator();
+    QVERIFY(coordinator);
+
+    const EditingResult inserted = coordinator->execute(InsertAppletCommand{
+        .expectedRevision = 0,
+        .panelId = QString(DesktopAppletOwnerId),
+        .instanceId = QStringLiteral("desktop-icons-instance"),
+        .pluginId = QStringLiteral("desktop-icons"),
+        .initialSettings = {{QStringLiteral("iconSize"), 48}},
+        .beforeAppletId = std::nullopt,
+    });
+    QVERIFY2(inserted.succeeded(), qPrintable(inserted.error.message));
+    QCOMPARE(repository.snapshot()->profile.desktopApplets.size(), 1);
+
+    QVERIFY(coordinator->execute(UpdateAppletSettingsCommand{
+        .expectedRevision = 1,
+        .panelId = QString(DesktopAppletOwnerId),
+        .appletId = QStringLiteral("desktop-icons-instance"),
+        .settings = {{QStringLiteral("iconSize"), 64}},
+    }).succeeded());
+    QCOMPARE(repository.snapshot()->profile.desktopApplets.constFirst()
+                 .settings.value(QStringLiteral("iconSize")).toInt(), 64);
+
+    const auto beforeRejectedMove = repository.snapshot();
+    const EditingResult rejectedMove = coordinator->execute(MoveAppletCommand{
+        .expectedRevision = 2,
+        .sourcePanelId = QString(DesktopAppletOwnerId),
+        .appletId = QStringLiteral("desktop-icons-instance"),
+        .targetPanelId = QStringLiteral("bar"),
+        .beforeAppletId = std::nullopt,
+    });
+    QCOMPARE(rejectedMove.error.code,
+             EditingErrorCode::UnsupportedAppletPlacement);
+    QCOMPARE(repository.snapshot(), beforeRejectedMove);
+
+    QVERIFY(coordinator->execute(RemoveAppletCommand{
+        .expectedRevision = 2,
+        .panelId = QString(DesktopAppletOwnerId),
+        .appletId = QStringLiteral("desktop-icons-instance"),
+    }).succeeded());
+    QVERIFY(repository.snapshot()->profile.desktopApplets.isEmpty());
+}
 
 void AppletEditingTest::insertsCatalogSelectionsFromAnImmutableSnapshot()
 {

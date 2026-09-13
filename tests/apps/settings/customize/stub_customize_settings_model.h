@@ -94,6 +94,7 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString selectedProfileId READ selectedProfileId CONSTANT)
     Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
     Q_PROPERTY(QVariantList panels READ panels CONSTANT)
+    Q_PROPERTY(QVariantList desktopApplets READ desktopApplets CONSTANT)
     Q_PROPERTY(QVariantList palette READ palette CONSTANT)
     Q_PROPERTY(QString selectedKind READ selectedKind NOTIFY contentChanged)
     Q_PROPERTY(QString selectedPanelId READ selectedPanelId CONSTANT)
@@ -186,6 +187,18 @@ public:
             {QStringLiteral("applets"), QVariantList{applet}},
         }};
     }
+    [[nodiscard]] QVariantList desktopApplets() const
+    {
+        return {QVariantMap{
+            {QStringLiteral("id"), QStringLiteral("desktop-icons-instance")},
+            {QStringLiteral("pluginId"), QStringLiteral("desktop-icons")},
+            {QStringLiteral("name"), QStringLiteral("Desktop Icons")},
+            {QStringLiteral("zone"), QStringLiteral("desktop")},
+            {QStringLiteral("position"), 1},
+            {QStringLiteral("count"), 1},
+            {QStringLiteral("settings"), QVariantMap{}},
+        }};
+    }
     [[nodiscard]] QString selectedKind() const { return m_selectedKind; }
     [[nodiscard]] QString selectedPanelId() const { return QStringLiteral("bar"); }
     [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
@@ -275,6 +288,11 @@ public:
     Q_INVOKABLE bool cancelDrag() { return true; }
     Q_INVOKABLE bool keyboardInsert(const QString &, const QString &,
                                     const QString &, const QString & = {})
+    {
+        ++keyboardInsertCalls;
+        return true;
+    }
+    Q_INVOKABLE bool keyboardInsertDefault(const QString &)
     {
         ++keyboardInsertCalls;
         return true;

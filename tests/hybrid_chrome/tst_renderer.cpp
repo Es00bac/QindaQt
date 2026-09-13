@@ -42,6 +42,14 @@ QPoint physicalPoint(const QPointF &logical, qreal devicePixelRatio)
             qRound(logical.y() * devicePixelRatio)};
 }
 
+bool closeColor(const QColor &first, const QColor &second, int tolerance)
+{
+    return qAbs(first.red() - second.red()) <= tolerance
+        && qAbs(first.green() - second.green()) <= tolerance
+        && qAbs(first.blue() - second.blue()) <= tolerance
+        && qAbs(first.alpha() - second.alpha()) <= tolerance;
+}
+
 std::optional<ChromePalette> paletteFromTheme(const QString &themeId)
 {
     QFile file(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/%1.json").arg(themeId));
@@ -104,9 +112,9 @@ class ChromeRendererTests final : public QObject
 private Q_SLOTS:
     void trafficLightGlyphsAppearOnControlHover();
     void groupControlsUsePlanGeometryAndPalette();
-    void renamedContainerPaintsTitleInAccentColor();
-    void activeTabGetsThemeAccentCue();
-    void focusedContainerAndMemberGetThemeAccentCues();
+    void renamedContainerPaintsTitleInIdentityTextColor();
+    void activeTabGetsIdentityUnderlineCue();
+    void focusedContainerAndMemberGetIdentityCues();
     void rendersAtDevicePixelRatioWithoutChangingLogicalPlan();
     void leavesCompleteMemberFramesTransparent();
     void clearsPixelsThatBecomeMemberFramesAfterReflow();
@@ -154,7 +162,7 @@ void ChromeRendererTests::groupControlsUsePlanGeometryAndPalette()
     QVERIFY(render(*hiddenPlan) != idle);
 }
 
-void ChromeRendererTests::renamedContainerPaintsTitleInAccentColor()
+void ChromeRendererTests::renamedContainerPaintsTitleInIdentityTextColor()
 {
     auto request = baseRequest();
     const auto unnamedPlan = ChromeLayoutEngine::build(request);
@@ -178,7 +186,7 @@ void ChromeRendererTests::renamedContainerPaintsTitleInAccentColor()
     QCOMPARE(unnamedImage.pixelColor(dragCenter), namedPlan->style.palette.surface);
 }
 
-void ChromeRendererTests::activeTabGetsThemeAccentCue()
+void ChromeRendererTests::activeTabGetsIdentityUnderlineCue()
 {
     for (const auto &themeId : {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light")}) {
         const auto palette = paletteFromTheme(themeId);
@@ -200,13 +208,18 @@ void ChromeRendererTests::activeTabGetsThemeAccentCue()
         const auto inactiveCue = physicalPoint(
             QPointF(inactiveTab->rect.center().x(), inactiveTab->rect.bottom() - 1.0),
             plan->devicePixelRatio);
-        QCOMPARE(image.pixelColor(activeCue), plan->style.palette.accent);
-        QVERIFY(image.pixelColor(inactiveCue) != plan->style.palette.accent);
+        // ADR-0139: the underline is the derived identity border color (the
+        // accent for an uncolored container), 3 px instead of the old 2 px.
+        QCOMPARE(image.pixelColor(activeCue), plan->identity.border);
+        QVERIFY(image.pixelColor(inactiveCue) != plan->identity.border);
+        // The active tab fill is the identity tint, no longer the raised
+        // surface, and the tab title paints in the contrast-safe ink.
+        QCOMPARE(plan->tabs[0].active, true);
         saveEvidence(image, themeId + QStringLiteral("-active-tab.png"));
     }
 }
 
-void ChromeRendererTests::focusedContainerAndMemberGetThemeAccentCues()
+void ChromeRendererTests::focusedContainerAndMemberGetIdentityCues()
 {
     for (const auto &themeId : {QStringLiteral("qinda-dark"), QStringLiteral("qinda-light")}) {
         const auto palette = paletteFromTheme(themeId);
@@ -227,30 +240,48 @@ void ChromeRendererTests::focusedContainerAndMemberGetThemeAccentCues()
 
         const auto outerFrameSample = physicalPoint(QPointF(500.0, 0.0),
                                                     focusedPlan->devicePixelRatio);
-        QCOMPARE(focusedImage.pixelColor(outerFrameSample), focusedPlan->style.palette.accent);
-        QVERIFY(unfocusedImage.pixelColor(outerFrameSample)
-                != unfocusedPlan->style.palette.accent);
+        // The 28% glow overpaints the border it rides on, so compare with a
+        // one-quantum tolerance; the shade is still the identity border.
+        QVERIFY(closeColor(focusedImage.pixelColor(outerFrameSample),
+                           focusedPlan->identity.border, 2));
+        QVERIFY(closeColor(unfocusedImage.pixelColor(outerFrameSample),
+                           unfocusedPlan->identity.borderDimmed, 2));
 
         const auto focusedMemberEdge = physicalPoint(QPointF(0.0, 350.0),
                                                      focusedPlan->devicePixelRatio);
-        const auto siblingEdge = physicalPoint(QPointF(999.0, 350.0),
-                                               focusedPlan->devicePixelRatio);
-        QCOMPARE(focusedImage.pixelColor(focusedMemberEdge), focusedPlan->style.palette.accent);
-        QVERIFY(focusedImage.pixelColor(siblingEdge) != focusedPlan->style.palette.accent);
-        QCOMPARE(focusedImage.pixelColor(physicalPoint(focusedPlan->members[0].windowRect.center(),
-                                                        focusedPlan->devicePixelRatio)),
+        QCOMPARE(focusedImage.pixelColor(focusedMemberEdge),
+                 focusedPlan->identity.border);
+        QCOMPARE(focusedImage.pixelColor(
+                     physicalPoint(focusedPlan->members[0].windowRect.center(),
+                                   focusedPlan->devicePixelRatio)),
                  QColor(Qt::transparent));
 
-        auto siblingFocusedRequest = focusedRequest;
-        siblingFocusedRequest.members[0].focused = false;
-        siblingFocusedRequest.members[1].focused = true;
-        const auto siblingFocusedPlan = ChromeLayoutEngine::build(siblingFocusedRequest);
-        QVERIFY(siblingFocusedPlan);
-        const auto siblingFocusedImage = render(*siblingFocusedPlan);
-        QCOMPARE(siblingFocusedImage.pixelColor(siblingEdge),
-                 siblingFocusedPlan->style.palette.accent);
-        QVERIFY(siblingFocusedImage.pixelColor(focusedMemberEdge)
-                != siblingFocusedPlan->style.palette.accent);
+        // The 3 px ring around the focused member is isolatable where
+        // members leave a real gap: a gapped fixture shows the ring beside
+        // the focused member and nothing but surface beside the sibling.
+        auto gappedRequest = unfocusedRequest;
+        gappedRequest.members = {
+            {QStringLiteral("member-a"), QStringLiteral("Editor"),
+             QRectF(1.0, 29.0, 400.0, 400.0)},
+            {QStringLiteral("member-b"), QStringLiteral("Terminal"),
+             QRectF(600.0, 29.0, 399.0, 400.0)},
+        };
+        gappedRequest.dividers = {};
+        auto gappedFocused = gappedRequest;
+        gappedFocused.containerFocused = true;
+        gappedFocused.members[0].focused = true;
+        const auto gappedFocusedPlan = ChromeLayoutEngine::build(gappedFocused);
+        QVERIFY(gappedFocusedPlan);
+        const auto gappedFocusedImage = render(*gappedFocusedPlan);
+        const auto gappedUnfocusedPlan = ChromeLayoutEngine::build(gappedRequest);
+        QVERIFY(gappedUnfocusedPlan);
+        const auto gappedUnfocusedImage = render(*gappedUnfocusedPlan);
+        const auto ringSample = physicalPoint(QPointF(402.0, 350.0),
+                                              gappedFocusedPlan->devicePixelRatio);
+        QCOMPARE(gappedFocusedImage.pixelColor(ringSample),
+                 gappedFocusedPlan->identity.border);
+        QVERIFY(gappedUnfocusedImage.pixelColor(ringSample)
+                != gappedFocusedPlan->identity.border);
         saveEvidence(focusedImage, themeId + QStringLiteral("-focused-frame.png"));
         saveEvidence(unfocusedImage, themeId + QStringLiteral("-unfocused-frame.png"));
     }
@@ -278,7 +309,10 @@ void ChromeRendererTests::leavesCompleteMemberFramesTransparent()
         const QVector<QPointF> samples{
             member.titleDragRect.center(),
             member.windowRect.center(),
-            member.windowRect.bottomRight() - QPointF(2.0, 2.0),
+            // Inset past the frame's rounded-corner antialiasing, which
+            // legitimately reaches a couple of pixels into a squared-off
+            // member corner at the container's own corner radius.
+            member.windowRect.bottomRight() - QPointF(6.0, 6.0),
         };
         for (const auto &sample : samples) {
             QCOMPARE(image.pixelColor(physicalPoint(sample, plan->devicePixelRatio)),

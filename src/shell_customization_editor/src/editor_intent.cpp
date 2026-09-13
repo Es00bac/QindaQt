@@ -10,7 +10,8 @@ bool isValidEditorZone(const QString &zone)
 {
     return zone == QLatin1String("start")
         || zone == QLatin1String("center")
-        || zone == QLatin1String("end");
+        || zone == QLatin1String("end")
+        || zone == QLatin1String("desktop");
 }
 
 namespace {

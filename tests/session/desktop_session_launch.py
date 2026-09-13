@@ -96,7 +96,7 @@ def _traced_session_program(
         f"exec {python} {tracer} --role session --executable {executable} "
         f"--trace {trace} --exec-only -- --profile {profile} --theme {theme} "
         f"--notification-host {notification} --shell {shell} "
-        "--no-polkit-agent --no-powerdevil\n",
+        "--no-polkit-agent --no-powerdevil --no-global-shortcut-daemon\n",
         encoding="utf-8",
     )
     wrapper.chmod(0o700)
@@ -116,7 +116,7 @@ def _session_program(
             # and launch host privilege or power agents from production default paths.
             "#!/usr/bin/sh\n"
             f"exec {shlex.quote(str(stage.executables['session']))} "
-            "--no-polkit-agent --no-powerdevil\n",
+            "--no-polkit-agent --no-powerdevil --no-global-shortcut-daemon\n",
             encoding="utf-8",
         )
         wrapper.chmod(0o700)
@@ -131,7 +131,7 @@ def _session_program(
         "#!/usr/bin/sh\n"
         f"exec {shlex.quote(str(stage.executables['session']))} "
         f"--profile {shlex.quote(scenario.profile_id)} "
-        f"--theme {shlex.quote(scenario.theme_id)} --no-polkit-agent --no-powerdevil\n",
+        f"--theme {shlex.quote(scenario.theme_id)} --no-polkit-agent --no-powerdevil --no-global-shortcut-daemon\n",
         encoding="utf-8",
     )
     wrapper.chmod(0o700)

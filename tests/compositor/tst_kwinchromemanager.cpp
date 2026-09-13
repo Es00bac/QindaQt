@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridstackingorder.h"
+#include "chromeplanlocalizer.h"
 #include "kwinchromemanager_testfixture.h"
 
+#include "qindaqt/hybrid_chrome/chromerenderer.h"
+
+#include <QPainter>
 #include <QtTest>
 
 using namespace QindaQt;
@@ -21,7 +25,8 @@ private Q_SLOTS:
     void recreatesSceneOverlaysAfterSynchronousClear();
     void validatesPointerActivationAndRoutesHoverToPaint();
     void rejectsInvalidOrStaleSnapshotsAtomically();
-    void publishesAShadedPlanDespiteOmittingTabsMembersAndDividers();
+    void publishesAShadedBadgeWithTabsButWithoutMemberGeometry();
+    void localizesAndPaintsLiveContainerControls();
 };
 
 void KWinChromeManagerTests::reconcilesOneOverlayPerContainerAndTearsDownSafely()
@@ -162,6 +167,54 @@ void KWinChromeManagerTests::supportsQindaMacAndStandardChromePlans()
     QVERIFY(manager.updateFromSnapshot(topology, standardRight));
     QCOMPARE(manager.plan(QStringLiteral("container-alpha"))->style.buttonSide,
              HybridChrome::ButtonSide::Right);
+}
+
+void KWinChromeManagerTests::localizesAndPaintsLiveContainerControls()
+{
+    const auto topology = makeTopology({makeContainer(QStringLiteral("alpha"))}, 2);
+    const QPointF globalOrigin(137.0, 83.0);
+    const auto global = localizeChromeRenderPlan(
+        plansFor(topology).constBegin().value(), -globalOrigin);
+    QVERIFY(!global.controls.isEmpty());
+    QCOMPARE(global.outerFrame.topLeft(), globalOrigin);
+
+    const auto local = localizeChromeRenderPlan(global, global.outerFrame.topLeft());
+    QCOMPARE(local.outerFrame.topLeft(), QPointF{});
+    for (qsizetype index = 0; index < global.controls.size(); ++index) {
+        QCOMPARE(local.controls.at(index).rect,
+                 global.controls.at(index).rect.translated(-global.outerFrame.topLeft()));
+    }
+
+    const QSize size = local.outerFrame.size().toSize();
+    QImage withControls(size, QImage::Format_ARGB32_Premultiplied);
+    QImage withoutControls(size, QImage::Format_ARGB32_Premultiplied);
+    withControls.fill(Qt::transparent);
+    withoutControls.fill(Qt::transparent);
+    {
+        QPainter painter(&withControls);
+        HybridChrome::ChromeRenderer::paint(painter, local);
+    }
+    auto stripped = local;
+    stripped.controls.clear();
+    {
+        QPainter painter(&withoutControls);
+        HybridChrome::ChromeRenderer::paint(painter, stripped);
+    }
+
+    bool controlPixelChanged = false;
+    for (const auto &control : local.controls) {
+        const QRect pixels = control.rect.toAlignedRect().intersected(withControls.rect());
+        for (int y = pixels.top(); y <= pixels.bottom() && !controlPixelChanged; ++y) {
+            for (int x = pixels.left(); x <= pixels.right(); ++x) {
+                if (withControls.pixel(x, y) != withoutControls.pixel(x, y)) {
+                    controlPixelChanged = true;
+                    break;
+                }
+            }
+        }
+    }
+    QVERIFY2(controlPixelChanged,
+             "live scene-local rendering must produce visible container-control pixels");
 }
 
 void KWinChromeManagerTests::sceneOverlayBoundaryRoutesNativeInputAndOwnsVisibility()
@@ -388,13 +441,9 @@ void KWinChromeManagerTests::rejectsInvalidOrStaleSnapshotsAtomically()
 
 // AGENT-CONTRACT: regression for the live-run finding that a shaded
 // container's chromeOverlayCount/publishedGroupStackingCount permanently
-// dropped to 0 after the first shade. A multi-page container's shaded plan
-// (see makeShadedPlan) always has fewer tabs than the topology's real page
-// count by design; updateFromSnapshot must publish it anyway rather than
-// applying the ordinary plan's tab/member/divider structural checks, and
-// must still reject a shaded plan that (incorrectly) carries any of that
-// structure.
-void KWinChromeManagerTests::publishesAShadedPlanDespiteOmittingTabsMembersAndDividers()
+// dropped to 0 after the first shade. A shaded plan keeps topology-ordered
+// tabs as compact badge pills, but must omit member and divider geometry.
+void KWinChromeManagerTests::publishesAShadedBadgeWithTabsButWithoutMemberGeometry()
 {
     FakeOverlayFactory factory;
     KWinChromeManager manager(factory);
@@ -410,23 +459,24 @@ void KWinChromeManagerTests::publishesAShadedPlanDespiteOmittingTabsMembersAndDi
     QCOMPARE(manager.overlayCount(), 1);
     const auto record = factory.records.value(QStringLiteral("container-alpha"));
     QCOMPARE(record->planCount, 1);
-    QVERIFY(record->plan.tabs.isEmpty());
+    QCOMPARE(record->plan.tabs.size(), alpha.pages().size());
+    QCOMPARE(record->plan.tabs.constFirst().tabId, alpha.pages().constFirst().id());
     QVERIFY(record->plan.members.isEmpty());
     QVERIFY(record->plan.dividers.isEmpty());
 
     auto malformedShaded = makeShadedPlan(alpha);
-    malformedShaded.tabs.append(HybridChrome::TabGeometry{
-        .tabId = QStringLiteral("page-alpha-main"),
-        .title = QStringLiteral("page-alpha-main"),
-        .logicalIndex = 0,
-        .rect = QRectF(0.0, 0.0, 100.0, 26.0),
-        .active = true,
+    malformedShaded.members.append(HybridChrome::MemberGeometry{
+        .memberId = QStringLiteral("window-alpha-a"),
+        .title = QStringLiteral("window-alpha-a"),
+        .windowRect = QRectF(0.0, 0.0, 100.0, 26.0),
+        .titleDragRect = {},
+        .focused = false,
     });
     KWinChromeManager::ChromePlanMap malformedPlans;
     malformedPlans.insert(QStringLiteral("container-alpha"), malformedShaded);
     const auto next = makeTopology({alpha}, 5);
     QVERIFY(!manager.updateFromSnapshot(next, malformedPlans, {}, &error));
-    QVERIFY(error.contains(QStringLiteral("must omit")));
+    QVERIFY(error.contains(QStringLiteral("members and dividers")));
     // Rejection is atomic: the previously published (valid) shaded entry
     // survives untouched, matching rejectsInvalidOrStaleSnapshotsAtomically.
     QCOMPARE(manager.overlayCount(), 1);

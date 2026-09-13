@@ -4,7 +4,9 @@
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactiontypes.h"
 
+#include <QElapsedTimer>
 #include <QPointF>
+#include <QString>
 #include <QVector>
 
 #include <functional>
@@ -20,9 +22,7 @@ struct ChromePointerHit final
     [[nodiscard]] bool isValid() const noexcept;
     friend bool operator==(const ChromePointerHit &,
                            const ChromePointerHit &) = default;
-};
-
-struct RoutedChromeDrag final
+};struct RoutedChromeDrag final
 {
     QString containerId;
     HybridChrome::ChromeDragEvent event;
@@ -84,7 +84,8 @@ public:
         std::function<std::optional<ChromePointerHit>(const QPointF &)>;
 
     explicit HybridChromePointerRouter(HitResolver resolver,
-                                       qreal dragThreshold = 8.0);
+                                       qreal dragThreshold = 8.0,
+                                       qreal doubleClickIntervalMs = 400.0);
 
     [[nodiscard]] ChromePointerDecision pointerMove(
         const HybridInput::PointerEvent &event);
@@ -115,6 +116,10 @@ private:
                     ChromePointerDecision *decision) const;
     void cancelPointer(ChromePointerDecision *decision);
     void resetPointer() noexcept;
+    // ADR-0139: stamps a completed click on a shaded badge so a second click
+    // within the double-click interval requests the unroll.
+    void noteBadgeClick(const ChromePointerHit &hit);
+    [[nodiscard]] bool isBadgeDoubleClick(const ChromePointerHit &hit) const;
 
     [[nodiscard]] static bool ownsOrdinaryInput(
         const HybridChrome::ChromeHitTarget &target) noexcept;
@@ -129,6 +134,10 @@ private:
 
     HitResolver m_resolver;
     qreal m_dragThreshold = 8.0;
+    qreal m_doubleClickIntervalMs = 400.0;
+    QElapsedTimer m_clickClock;
+    qint64 m_lastBadgeClickMs = -1.0;
+    QString m_lastBadgeClickContainer;
     std::optional<ChromePointerHit> m_hovered;
     std::optional<ChromePointerHit> m_pressed;
     QPointF m_pressPosition;

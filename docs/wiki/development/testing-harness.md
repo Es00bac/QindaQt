@@ -43,7 +43,9 @@ fixture input; the separate desktop interactive matrix proves container and
 profile behavior. It does not claim physical input or complete assistive
 technology qualification.
 
-Compile with `cmake --build build/dev --parallel 24`. For TTY verification,
+Compile with
+`cmake --build build/dev -- $(portageq envvar MAKEOPTS)`, preserving the
+machine's configured Portage job and load limits exactly. For TTY verification,
 set `QT_QPA_PLATFORM=offscreen` for the broad suite; native runners select their
 own Wayland platform. Use a short, private `TMPDIR` on a filesystem with free
 space: Unix display and bus socket paths must fit within 108 bytes. Do not
@@ -648,11 +650,12 @@ import, and the PSS measurement. The selector is runnable after a focused
 build of exactly these targets:
 
 ```sh
-cmake --build build/dev --parallel 3 --target \
+cmake --build build/dev --target \
   qindaqt_controls_visual_tests qindaqt_controls_behavior_tests \
   qindaqt_controls_font_pinning_tests qindaqt_controls_font_fixture_negative_tests \
   qindaqt_controls_memory_probe qindaqt_controls_bare_memory_probe \
-  qindaqt_controls_qml qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+  qindaqt_controls_qml qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin \
+  -- $(portageq envvar MAKEOPTS)
 ```
 
 This boundary is software-renderer, package, and process-memory evidence. Live
@@ -829,6 +832,15 @@ shell/host/optional-agent stop order, and the exact XML surface. A disposable
 non-secret helper proves the optional network secret agent never blocks
 readiness and consumes exactly one restart. These tests open no display and
 inject no input.
+
+`session.sessionbusbootstrap` pins the display-manager entry contract: an
+existing bus is preserved, while an absent address produces exactly
+`dbus-run-session -- <original argv>`. The session optional-child lifetime row
+also proves the separate KGlobalAccel daemon starts, receives one bounded
+restart, and is gone after stop. Production nested qualification must observe
+KWin, Compositor1, shell consumers, and `org.kde.kglobalaccel` on that same
+private broker; see
+[ADR-0158](../adr/0158-bootstrap-one-session-bus-before-the-compositor.md).
 
 `qindaqt.notification-presentation-model` covers first-snapshot baselining
 without popup replay, new/replacement ordering, monotonic expiry, center-open
@@ -2713,7 +2725,8 @@ hardware behavior, or the complete contained D6 matrix below.
 The first whole-desktop harness boundary is selected with:
 
 ```sh
-cmake --build build/dev --parallel 1 --target qindaqt-desktop-session-probe
+cmake --build build/dev --target qindaqt-desktop-session-probe \
+  -- $(portageq envvar MAKEOPTS)
 ctest --test-dir build/dev --parallel 1 --output-on-failure \
   -R '^desktop\.virtual\.(sandbox-unit|package-contract|stage-closure)$'
 ```

@@ -50,6 +50,11 @@ int main(int argc, char *argv[])
          QStringLiteral("/usr/libexec/org_kde_powerdevil")},
         {QStringLiteral("no-powerdevil"),
          QStringLiteral("Disable the PowerDevil child for a private session.")},
+        {QStringLiteral("global-shortcut-daemon"),
+         QStringLiteral("KGlobalAccel daemon executable."), QStringLiteral("path"),
+         QStringLiteral("/usr/libexec/kglobalacceld")},
+        {QStringLiteral("no-global-shortcut-daemon"),
+         QStringLiteral("Disable the KGlobalAccel child for a private session.")},
         {QStringLiteral("polkit-agent"),
          QStringLiteral("Optional polkit authentication agent executable; "
                         "well-known locations are used when omitted."),
@@ -91,6 +96,9 @@ int main(int argc, char *argv[])
     options.welcomeExecutable = parser.value(QStringLiteral("welcome"));
     options.powerDevilExecutable = parser.isSet(QStringLiteral("no-powerdevil"))
         ? QString{} : parser.value(QStringLiteral("powerdevil"));
+    options.globalShortcutDaemonExecutable =
+        parser.isSet(QStringLiteral("no-global-shortcut-daemon"))
+        ? QString{} : parser.value(QStringLiteral("global-shortcut-daemon"));
     options.desktopControlsExecutable =
         parser.value(QStringLiteral("desktop-controls"));
     options.polkitAgentExecutable = resolvePolkitAgentExecutable(

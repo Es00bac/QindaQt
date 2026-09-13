@@ -193,8 +193,10 @@ void paintMiniButton(QPainter &painter, const DecorationChrome &chrome,
     // handlebar keeps classic stoplight colors for them.
     const QPointF center = button.geometry.center();
     if (button.kind == DecorationButtonKind::More) {
-        QColor ink = decorationCaptionColor(chrome, frame.active);
-        if (!frame.active) {
+        // ADR-0139: on a focused member's identity bar the "more" dots use
+        // the contrast-safe handlebar ink; the neutral path is unchanged.
+        QColor ink = decorationMemberHandleInkColor(chrome, frame);
+        if (!frame.active && !(frame.memberFocused && chrome.identityColor.isValid())) {
             ink.setAlphaF(0.7f);
         }
         if (button.hovered || button.pressed) {

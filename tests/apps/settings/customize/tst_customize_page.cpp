@@ -225,6 +225,12 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     QVERIFY(canvas != nullptr);
     QVERIFY(panel != nullptr);
     QVERIFY(chip != nullptr);
+    auto *desktopApplet = item(compact,
+                               "customizeDesktopApplet_desktop-icons-instance");
+    QVERIFY(desktopApplet != nullptr);
+    QVERIFY(desktopApplet->isVisible());
+    QVERIFY2(accessibleName(desktopApplet).contains(QStringLiteral("Desktop Icons")),
+             qPrintable(accessibleName(desktopApplet)));
     const QRectF chipBounds = chip->mapRectToItem(panel, chip->boundingRect());
     QVERIFY(chipBounds.left() >= 0.0);
     QVERIFY(chipBounds.top() >= 0.0);

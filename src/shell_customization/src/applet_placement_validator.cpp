@@ -146,6 +146,31 @@ std::optional<EditingError> AppletPlacementValidator::validatePanel(
     return std::nullopt;
 }
 
+std::optional<EditingError> AppletPlacementValidator::validateDesktopPlacement(
+    const Profiles::AppletSpec &applet) const
+{
+    const auto manifest = m_manifests.constFind(applet.plugin);
+    if (manifest == m_manifests.cend()) {
+        return error(EditingErrorCode::ManifestUnavailable,
+                     QStringLiteral("manifest '%1' is unavailable in this editor session")
+                         .arg(applet.plugin),
+                     QStringLiteral("desktop"), applet.id);
+    }
+    if (!manifest->supportsHost(Applets::ApiVersion::current())) {
+        return error(EditingErrorCode::InvalidManifest,
+                     QStringLiteral("manifest '%1' requires an unsupported host API")
+                         .arg(applet.plugin),
+                     QStringLiteral("desktop"), applet.id);
+    }
+    if (!manifest->placementZones.contains(Applets::PlacementZone::Desktop)) {
+        return error(EditingErrorCode::UnsupportedAppletPlacement,
+                     QStringLiteral("applet '%1' does not support desktop placement")
+                         .arg(applet.id),
+                     QStringLiteral("desktop"), applet.id);
+    }
+    return std::nullopt;
+}
+
 bool AppletPlacementValidator::placementChanges(
     const Profiles::AppletSpec &applet,
     const Profiles::PanelSpec &source,

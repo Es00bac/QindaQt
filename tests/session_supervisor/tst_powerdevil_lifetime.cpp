@@ -16,6 +16,8 @@ private Q_SLOTS:
         options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
         options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
         options.powerDevilExecutable = QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+        options.globalShortcutDaemonExecutable =
+            QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
         options.networkSecretAgentExecutable.clear();
         options.desktopControlsExecutable.clear();
         options.polkitAgentExecutable.clear();
@@ -28,6 +30,14 @@ private Q_SLOTS:
         for (int session = 0; session != 2; ++session) {
             QVERIFY2(supervisor.start(&error), qPrintable(error));
             QTRY_VERIFY(supervisor.powerDevilProcessId() > 1);
+            QTRY_VERIFY(supervisor.globalShortcutDaemonProcessId() > 1);
+            QVERIFY(supervisor.globalShortcutDaemonProcessId()
+                    != supervisor.powerDevilProcessId());
+            const auto shortcutInitial = supervisor.globalShortcutDaemonProcessId();
+            QCOMPARE(::kill(static_cast<pid_t>(shortcutInitial), SIGTERM), 0);
+            QTRY_VERIFY(supervisor.globalShortcutDaemonProcessId() > 1
+                        && supervisor.globalShortcutDaemonProcessId()
+                            != shortcutInitial);
             const auto initial = supervisor.powerDevilProcessId();
             QCOMPARE(::kill(static_cast<pid_t>(initial), SIGTERM), 0);
             QTRY_VERIFY(supervisor.powerDevilProcessId() > 1
@@ -35,9 +45,13 @@ private Q_SLOTS:
             QVERIFY(supervisor.isRunning());
             QCOMPARE(finished.size(), 0);
             const auto replacement = supervisor.powerDevilProcessId();
+            const auto shortcutReplacement = supervisor.globalShortcutDaemonProcessId();
             supervisor.stop();
             QCOMPARE(supervisor.powerDevilProcessId(), qint64(0));
+            QCOMPARE(supervisor.globalShortcutDaemonProcessId(), qint64(0));
             QCOMPARE(::kill(static_cast<pid_t>(replacement), 0), -1);
+            QCOMPARE(errno, ESRCH);
+            QCOMPARE(::kill(static_cast<pid_t>(shortcutReplacement), 0), -1);
             QCOMPARE(errno, ESRCH);
         }
         qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");

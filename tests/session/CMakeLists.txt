@@ -69,7 +69,7 @@ qindaqt_enable_warnings(qindaqt-wayland-pointer-constraints-probe)
 # both the production install rule and this staged-install contract check.
 find_package(KDecoration3 6.6 REQUIRED CONFIG)
 
-foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline sessiondefaults sessionenvironment)
+foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline sessionbusbootstrap sessiondefaults sessionenvironment)
     add_executable(tst_${test_name} tst_${test_name}.cpp)
     target_compile_features(tst_${test_name} PRIVATE cxx_std_20)
     target_link_libraries(tst_${test_name} PRIVATE QindaQt::SessionSupport Qt6::Test)

@@ -158,17 +158,17 @@ class LifecycleTraceTests(unittest.TestCase):
             scenario = SimpleNamespace(profile_id="work", theme_id="light")
             environment = {"XDG_RUNTIME_DIR": str(runtime)}
             self.assertIn(
-                "--no-polkit-agent --no-powerdevil",
+                "--no-polkit-agent --no-powerdevil --no-global-shortcut-daemon",
                 _session_program(stage, environment, scenario).read_text(),
             )
             environment[LIFECYCLE_TRACE_ENVIRONMENT] = "1"
             self.assertIn(
-                "--no-polkit-agent --no-powerdevil",
+                "--no-polkit-agent --no-powerdevil --no-global-shortcut-daemon",
                 _session_program(stage, environment, scenario).read_text(),
             )
             environment[LIFECYCLE_TRACE_ENVIRONMENT] = "0"
             self.assertIn(
-                "--no-polkit-agent --no-powerdevil",
+                "--no-polkit-agent --no-powerdevil --no-global-shortcut-daemon",
                 _session_program(stage, environment, None).read_text(),
             )
 

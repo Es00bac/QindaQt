@@ -338,13 +338,15 @@ implemented; do not use placeholder modules to bypass a boundary.
   application-owned child-PTY bridge — is pinned in
   [ADR-0040](../adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md)
   (superseding ADR-0030).
-- Desktop-scoped code depends only on `src/apps/file_manager/public`
+- Desktop-scoped code depends only on the isolated
+  `qindaqt_file_manager_desktop_boundary` target rooted at
+  `src/apps/file_manager/public`
   (`FileBoundary`'s local listing, bounded file launch, identity-fenced folder
   open in QindaQt File Manager, and mutation-controller composition). It
-  never imports File Manager's `model/**`, `mutation/**`,
-  or `app_shell/**` headers directly, even though those headers are `PUBLIC`
-  in File Manager's own CMake target; those remain File Manager's private
-  controllers. See [File Manager](../apps/file-manager.md#public-desktop-file-boundary).
+  never imports File Manager's `model/**`, `mutation/**`, or `app_shell/**`
+  headers directly and never links the full File Manager support target;
+  those remain File Manager's private controllers. See [File
+  Manager](../apps/file-manager.md#public-desktop-file-boundary).
 - Terminal search admission/counting and link detection/open policy remain
   qtermwidget-free application components. Only the confined adapter maps an
   admitted query to the pinned renderer search surface or extracts its bounded

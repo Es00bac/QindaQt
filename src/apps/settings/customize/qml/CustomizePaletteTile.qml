@@ -7,8 +7,8 @@ import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
 // One palette tile: the applet's icon, recognized by glyph and explained by
-// tooltip. Activation inserts into the first panel's start zone through the
-// same public intent a pointer drag uses.
+// tooltip. Activation selects the first compatible panel zone, or the desktop
+// for a desktop-only applet, through the same intent a pointer drag uses.
 T.AbstractButton {
     id: tile
 
@@ -36,13 +36,7 @@ T.AbstractButton {
     readonly property string dragPanelId: ""
     readonly property string dragAppletId: ""
 
-    onClicked: {
-        const panels = customizeSettings.panels
-        if (panels.length > 0) {
-            customizeSettings.keyboardInsert(
-                tile.modelData.id ?? "", panels[0].id, "start", "")
-        }
-    }
+    onClicked: customizeSettings.keyboardInsertDefault(tile.modelData.id ?? "")
 
     background: Rectangle {
         radius: Tokens.radius.m

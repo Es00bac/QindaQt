@@ -19,5 +19,16 @@
     "accent": "#8C4D38",
     "accentText": "#FFF8F1",
     "danger": "#A22F4B"
+  },
+  "decoration": {
+    "buttonPlacement": "right",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "symbols",
+    "hoverGlyphs": false,
+    "titleBarColor": "#F3E8DF",
+    "titleBarInactiveColor": "#E5D9D3",
+    "closeColor": "#A22F4B",
+    "minimizeColor": "#8C4D38",
+    "maximizeColor": "#47735F"
   }
 }

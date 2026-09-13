@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/hybrid_chrome/chromerenderer.h"
 
+#include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+
 #include <QFontMetricsF>
 #include <QPainter>
 #include <QPainterPath>
@@ -110,6 +112,53 @@ void paintLabel(QPainter &painter,
     painter.drawText(rect.adjusted(6.0, 0.0, -6.0, 0.0), Qt::AlignCenter, elided);
 }
 
+// Identity frame, focus glow, title-row stripe, and the keyboard selection
+// chip (ADR-0139). Called after the row content so the stripe stays crisp.
+void paintIdentityFrame(QPainter &painter, const ChromeRenderPlan &plan,
+                        const QPainterPath &framePath)
+{
+    painter.setBrush(Qt::NoBrush);
+    const qreal frameThickness = plan.containerFocused && !plan.shaded
+        ? std::max(plan.borderHairline * 3.0, 3.0)
+        : std::max(plan.borderHairline * 2.0, 2.0);
+    painter.setPen(QPen(plan.containerFocused || plan.shaded
+                            ? plan.identity.border
+                            : plan.identity.borderDimmed,
+                        frameThickness));
+    painter.drawPath(framePath);
+    if (plan.containerFocused && !plan.shaded) {
+        auto glowPen = QPen(plan.identity.glow, std::max(frameThickness * 2.0, 6.0));
+        glowPen.setJoinStyle(Qt::RoundJoin);
+        painter.setPen(glowPen);
+        painter.drawPath(framePath);
+    }
+
+    if (!plan.shaded) {
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, false);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(plan.identity.border);
+        const qreal radius = plan.metrics.cornerRadius;
+        painter.drawRect(QRectF(plan.outerTitleBar.left() + radius,
+                                plan.outerTitleBar.top(),
+                                plan.outerTitleBar.width() - radius * 2.0,
+                                std::min(3.0, plan.outerTitleBar.height())));
+        painter.restore();
+    }
+
+    if (plan.indexBadgeRect.isValid()) {
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(plan.identity.border);
+        painter.drawRoundedRect(plan.indexBadgeRect, 9.0, 9.0);
+        painter.setPen(plan.identity.indexBadgeInk);
+        painter.drawText(plan.indexBadgeRect, Qt::AlignCenter,
+                         QString::number(plan.indexBadge));
+        painter.restore();
+    }
+}
+
 } // namespace
 
 void ChromeRenderer::paint(QPainter &painter,
@@ -138,47 +187,54 @@ void ChromeRenderer::paint(QPainter &painter,
     // must never blend over application content or KDecoration pixels.
     painter.setClipPath(paintClip);
     painter.fillPath(framePath, plan.style.palette.surface);
-    painter.fillRect(plan.outerTitleBar, plan.style.palette.surfaceRaised);
-    if (plan.tabStrip.isValid() && !plan.tabStrip.isEmpty()) {
-        painter.fillRect(plan.tabStrip, plan.style.palette.surface);
-    }
-    // AGENT-CONTRACT: containerTitle is the user's rename override (see
-    // ContainerAppearance); it paints in the leftover outer-title drag
-    // region beside tabs/controls, in the resolved accent color so a custom
-    // container color (already folded into style.palette.accent by the
-    // session) is visible even when the container has no custom name and no
-    // tabs of its own page titles would otherwise show it. Empty title is a
-    // silent no-op, matching every container that never renamed.
-    if (!plan.containerTitle.isEmpty() && plan.outerTitleDragRect.width() > 0.0) {
-        paintLabel(painter, plan.outerTitleDragRect, plan.containerTitle,
-                  plan.style.palette.accent);
+    if (!plan.shaded) {
+        painter.fillRect(plan.outerTitleBar, plan.style.palette.surfaceRaised);
+        if (plan.tabStrip.isValid() && !plan.tabStrip.isEmpty()) {
+            painter.fillRect(plan.tabStrip, plan.style.palette.surface);
+        }
+        // AGENT-CONTRACT: containerTitle is the user's rename override (see
+        // ContainerAppearance); it paints in the leftover outer-title drag
+        // region beside tabs/controls, in the resolved identity text color.
+        // Empty title is a silent no-op, matching every container that never
+        // renamed.
+        if (!plan.containerTitle.isEmpty() && plan.outerTitleDragRect.width() > 0.0) {
+            paintLabel(painter, plan.outerTitleDragRect, plan.containerTitle,
+                      plan.identity.textOnFill);
+        }
     }
 
-    for (const auto &tab : plan.tabs) {
-        const auto fill = tab.active ? plan.style.palette.surfaceRaised
-                                     : plan.style.palette.surface;
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(fill);
-        painter.drawRoundedRect(tab.rect.adjusted(0.0, 2.0, 0.0, -2.0), 6.0, 6.0);
-        paintLabel(painter, tab.rect, tab.title,
-                   tab.active ? plan.style.palette.text : plan.style.palette.textMuted);
-        // AGENT-CONTRACT: The active page cue is resolved from the same theme
-        // accent as dividers and controls. Keep it inside the tab geometry so
-        // native member frames remain transparent and KWin owns focus/input.
-        if (tab.active) {
-            const qreal inset = std::min(4.0, tab.rect.width() / 4.0);
-            const qreal thickness = std::min(2.0, tab.rect.height());
-            if (tab.rect.width() > inset * 2.0 && thickness > 0.0) {
-                painter.save();
-                painter.setRenderHint(QPainter::Antialiasing, false);
-                painter.setBrush(plan.style.palette.accent);
-                painter.drawRect(QRectF(tab.rect.left() + inset,
-                                       tab.rect.bottom() - thickness,
-                                       tab.rect.width() - inset * 2.0,
-                                       thickness));
-                painter.restore();
+    if (!plan.shaded) {
+        for (const auto &tab : plan.tabs) {
+            const auto fill = tab.active ? plan.identity.tabTint
+                                         : plan.style.palette.surface;
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(fill);
+            painter.drawRoundedRect(tab.rect.adjusted(0.0, 2.0, 0.0, -2.0), 6.0, 6.0);
+            paintLabel(painter, tab.rect, tab.title,
+                       tab.active ? plan.identity.textOnFill
+                                  : plan.style.palette.textMuted);
+            // AGENT-CONTRACT: The active page underline derives from the same
+            // identity shades as the frame and stripe (ADR-0139). Keep it
+            // inside the tab geometry so native member frames remain
+            // transparent and KWin owns focus/input.
+            if (tab.active) {
+                const qreal inset = std::min(4.0, tab.rect.width() / 4.0);
+                const qreal thickness = std::min(3.0, tab.rect.height());
+                if (tab.rect.width() > inset * 2.0 && thickness > 0.0) {
+                    painter.save();
+                    painter.setRenderHint(QPainter::Antialiasing, false);
+                    painter.setBrush(plan.identity.border);
+                    painter.drawRect(QRectF(tab.rect.left() + inset,
+                                           tab.rect.bottom() - thickness,
+                                           tab.rect.width() - inset * 2.0,
+                                           thickness));
+                    painter.restore();
+                }
             }
         }
+    } else {
+        // ADR-0139: the shaded plan's tabs are the badge pills.
+        ChromeShadedBadge::paint(painter, plan);
     }
 
     // AGENT-GUARD: Member title bars are painted by KDecoration. Drawing the
@@ -221,22 +277,7 @@ void ChromeRenderer::paint(QPainter &painter,
     for (const auto &divider : plan.dividers) {
         painter.drawRect(divider.visualRect);
     }
-    painter.setBrush(Qt::NoBrush);
-    const qreal frameThickness = plan.containerFocused
-        ? std::max(plan.borderHairline * 2.0, 2.0)
-        : plan.borderHairline;
-    painter.setPen(QPen(plan.style.palette.border, frameThickness));
-    painter.drawPath(framePath);
-
-    // AGENT-CONTRACT: A focused container is marked on its shared top edge;
-    // the complete neutral frame remains visible so a focused member's ring
-    // can distinguish the left/right or top/bottom sibling boundary.
-    if (plan.containerFocused) {
-        const qreal radius = plan.metrics.cornerRadius;
-        painter.setPen(QPen(plan.style.palette.accent, frameThickness));
-        painter.drawLine(QPointF(plan.outerFrame.left() + radius, plan.outerFrame.top()),
-                         QPointF(plan.outerFrame.right() - radius, plan.outerFrame.top()));
-    }
+    paintIdentityFrame(painter, plan, framePath);
 
     // AGENT-CONTRACT: A focused member cue is clipped to the paintable side
     // of its native frame. This keeps client content and KDecoration pixels
@@ -246,14 +287,14 @@ void ChromeRenderer::paint(QPainter &painter,
         if (!member.focused) {
             continue;
         }
-        const qreal ring = std::max(plan.borderHairline * 2.0, 2.0);
+        const qreal ring = std::max(plan.borderHairline * 3.0, 3.0);
         QPainterPath ringPath;
         ringPath.addRect(member.windowRect.adjusted(-ring, -ring, ring, ring));
         QPainterPath nativeFrame;
         nativeFrame.addRect(member.windowRect);
         painter.setPen(Qt::NoPen);
         painter.fillPath(ringPath.subtracted(nativeFrame).intersected(paintClip),
-                         plan.style.palette.accent);
+                         plan.identity.border);
     }
     painter.restore();
 }

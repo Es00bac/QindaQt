@@ -9,8 +9,8 @@ system-service state.
 
 | Component | Owns | Does not own |
 | --- | --- | --- |
-| `qindaqt-wm` | Wayland composition, input routing, outputs, workspaces, client lifecycle, and window-container transactions | Panels, settings UI, applet rendering, or device policy |
-| `qindaqt-session` | Essential host/shell startup, descriptor-only notification authentication, parent-death-witnessed KWin PID provisioning, and coupled process lifetime | Compositor internals, desktop policy, or token persistence |
+| `qindaqt-wm` | One inherited-or-bootstrapped session bus followed by Wayland composition, input routing, outputs, workspaces, client lifecycle, and window-container transactions | Panels, settings UI, applet rendering, or device policy |
+| `qindaqt-session` | Essential host/shell startup, descriptor-only notification authentication, parent-death-witnessed KWin PID provisioning, coupled process lifetime, and the separate KGlobalAccel daemon | Compositor internals, desktop policy, or token persistence |
 | QindaQt Shell | Panels, docks, overview, task presentation, global menu, privacy-gated notifications UI and a Settings1-fed interruption-policy projection, direct customization, and shell-wide presentation actions | Authoritative window/output/lock state, global-shortcut conflict/remapping policy, settings persistence, or privileged hardware changes |
 | `qindaqt-settings-service` | Active schema v2, v1 migration, copy-on-write user persistence, optimistic revision order, and change notification | Settings presentation, executable attestation, compositor/lock/presenter authority, or session supervision |
 | `xdg-desktop-portal-qindaqt` | Standard Settings-backend projection of confirmed Settings1/QST appearance truth, activation name, and change signals | Portal frontend, settings persistence, consent UI, or any non-Settings portal interface |
@@ -31,6 +31,11 @@ release-matched plugin provides window discovery, experimental D-Bus container
 transactions, and an in-process Hybrid topology/input/chrome runtime. Exact
 ABI, backend, discovery, proof, and limitation details are in
 [Compositor and session integration](compositor-session.md).
+
+If the display manager supplies no session-bus address, the launcher first
+re-enters itself under `dbus-run-session`. This guarantees KWin and every later
+desktop process use one authority graph; see
+[ADR-0158](../adr/0158-bootstrap-one-session-bus-before-the-compositor.md).
 
 ## Interaction boundaries
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwincommandbuilder.h"
 #include "sessioncommandline.h"
+#include "sessionbusbootstrap.h"
 #include "sessiondefaults.h"
 #include "sessionenvironment.h"
 
@@ -51,7 +52,7 @@ std::optional<QindaQt::Session::KWinCommandCapabilities> queryKWinCapabilities(
     return QindaQt::Session::KWinCommandBuilder::capabilitiesFromHelpText(helpText);
 }
 
-int replaceWithKWin(const QStringList &command)
+int replaceProcess(const QStringList &command, const QString &role)
 {
     std::vector<QByteArray> encoded;
     encoded.reserve(static_cast<std::size_t>(command.size()));
@@ -66,11 +67,12 @@ int replaceWithKWin(const QStringList &command)
     }
     arguments.push_back(nullptr);
 
-    // AGENT-GUARD: Replacing the launcher keeps the compositor as the display
-    // manager's session leader, so termination and crash reporting target the
-    // real authority instead of an orphaned grandchild.
+    // AGENT-GUARD: Always replace rather than detach. With a pre-existing bus,
+    // KWin stays at the display manager's tracked PID; with the bus wrapper,
+    // dbus-run-session stays tracked and owns both KWin and broker teardown.
     ::execvp(arguments.front(), arguments.data());
-    QTextStream(stderr) << "qindaqt-wm: could not launch " << command.constFirst() << ": "
+    QTextStream(stderr) << "qindaqt-wm: could not launch " << role << ' '
+                        << command.constFirst() << ": "
                         << std::strerror(errno) << '\n';
     return 127;
 }
@@ -92,6 +94,28 @@ int main(int argc, char *argv[])
         QTextStream(stdout) << QCoreApplication::applicationName() << ' '
                             << QCoreApplication::applicationVersion() << '\n';
         return 0;
+    }
+
+    // AGENT-CONTRACT: KWin, the shell, and D-Bus-activated services must
+    // inherit one bus. Some display managers provide no usable user bus; if
+    // KWin starts first, Qt autolaunches a private bus only for the later
+    // session child and permanently disconnects CompositorShell1 and KWin
+    // input from the desktop that consumes them.
+    const QString busRunner = QStandardPaths::findExecutable(
+        QStringLiteral("dbus-run-session"));
+    const auto processEnvironment = QProcessEnvironment::systemEnvironment();
+    const auto busBootstrap = QindaQt::Session::SessionBusBootstrap::command(
+        application.arguments(), processEnvironment, busRunner);
+    if (processEnvironment.value(QStringLiteral("DBUS_SESSION_BUS_ADDRESS"))
+            .trimmed().isEmpty()) {
+        if (!busBootstrap.required()) {
+            QTextStream(stderr)
+                << "qindaqt-wm: no session bus and dbus-run-session is unavailable\n";
+            return 2;
+        }
+        QStringList command{busBootstrap.executable};
+        command.append(busBootstrap.arguments);
+        return replaceProcess(command, QStringLiteral("session bus wrapper"));
     }
 
     QString error;
@@ -132,5 +156,5 @@ int main(int argc, char *argv[])
         QTextStream(stderr) << "qindaqt-wm: " << error << '\n';
         return 2;
     }
-    return replaceWithKWin(command);
+    return replaceProcess(command, QStringLiteral("KWin"));
 }

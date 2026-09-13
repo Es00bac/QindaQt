@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
+#include "qindaqt/hybrid_chrome/chromeidentity.h"
+
 #include <QFontMetricsF>
 #include <QLinearGradient>
 #include <QPainter>
@@ -126,6 +128,8 @@ DecorationChrome DecorationChrome::fromVariantMap(const QVariantMap &map)
     chrome.titleBar = mapColor(map, "titleBar");
     chrome.titleBarInactive = mapColor(map, "titleBarInactive");
     chrome.restore = mapColor(map, "restore");
+    chrome.identityColor = mapColor(map, "identityColor");
+    chrome.memberFocused = map.value(QStringLiteral("memberFocused")).toBool();
     return chrome;
 }
 
@@ -158,6 +162,14 @@ QVariantMap DecorationChrome::toVariantMap() const
     if (restore.isValid()) {
         map.insert(QStringLiteral("restore"), restore);
     }
+    // Identity emphasis keys are additive and optional (ADR-0139): absent
+    // keys keep neutral members byte-identical.
+    if (identityColor.isValid()) {
+        map.insert(QStringLiteral("identityColor"), identityColor);
+    }
+    if (memberFocused) {
+        map.insert(QStringLiteral("memberFocused"), true);
+    }
     return map;
 }
 
@@ -185,6 +197,31 @@ DecorationVisualStyle decorationVisualStyle(const QColor &border,
     style.shadowColor = inkShadow(surface);
     style.framed = !maximized;
     return style;
+}
+
+QColor decorationMemberHandleFillColor(const DecorationChrome &chrome,
+                                       const DecorationFrameVisual &frame)
+{
+    // ADR-0139: only the one focused member wears the container identity;
+    // every other handlebar keeps the neutral title surface.
+    if (frame.memberFocused && chrome.identityColor.isValid()) {
+        return chrome.identityColor;
+    }
+    return decorationTitleColor(chrome, frame.active);
+}
+
+QColor decorationMemberHandleInkColor(const DecorationChrome &chrome,
+                                      const DecorationFrameVisual &frame)
+{
+    const auto fill = decorationMemberHandleFillColor(chrome, frame);
+    // The shared identity derivation picks whichever of the theme text,
+    // white, and black holds 4.5:1 against the fill (ADR-0139), so glyphs
+    // switch light/dark automatically. The neutral path keeps today's
+    // caption color rule unchanged.
+    if (frame.memberFocused && chrome.identityColor.isValid()) {
+        return HybridChrome::identityInk(fill, chrome.text);
+    }
+    return decorationCaptionColor(chrome, frame.active);
 }
 
 QMarginsF decorationBorders(bool maximized)
