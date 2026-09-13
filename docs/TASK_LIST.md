@@ -77,7 +77,13 @@ integrated as `32d7a8c2` plus `b9a6311f`. Ordinary SMB/SFTP authentication now
 uses KIO's standard UI delegate while QindaQt remains credential-free, and a
 replacement listing cancels the prior generation. The integrated-tree network
 rows pass 2/2; docs 250, strict MkDocs, and diff checks pass. Remote regular-file
-opening remains active and installed/live access is not claimed.
+opening is now integrated through independently accepted lineage `2b37f9c1` →
+`bc51cf1b` → `9e3fea96`, mapped on main to `f9b9d931` → `3e6dea68` →
+`39c061b6`. It uses KIO's standard desktop handler/Open With facilities and a
+QWidget-capable File Manager application composition. The integrated affected
+selector passes 10/10; docs 251, strict MkDocs, and diff checks pass. Remote
+Rename remains a separately reviewed delta awaiting exact-parent rebase and
+recheck; installed/live access is not claimed.
 
 Customize applet editing and configured-wallpaper preview are integrated as
 the accepted stack `9594bb7f` → `dd405f81` → `cf939e69`. Exact repair
