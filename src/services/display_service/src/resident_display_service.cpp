@@ -44,7 +44,15 @@ ResidentDisplayService::ResidentDisplayService(
         *m_clock, *m_transactionPort, std::move(epochFactory), timing,
         std::move(startupJournal));
     m_serviceObject = std::make_unique<DisplayServiceObject>(
-        *m_model, [this](const bool changed) { modelTransitioned(changed); });
+        *m_model, [this](const bool changed) { modelTransitioned(changed); },
+        [this] { serviceBrightness(); });
+    m_brightnessTimer = new QTimer(this);
+    m_brightnessTimer->setSingleShot(true);
+    m_brightnessTimer->setTimerType(Qt::PreciseTimer);
+    QObject::connect(m_brightnessTimer, &QTimer::timeout, this, [this] {
+        m_model->brightnessTick();
+        serviceBrightness();
+    });
     m_deadlineTimer = new QTimer(this);
     m_deadlineTimer->setSingleShot(true);
     m_deadlineTimer->setTimerType(Qt::PreciseTimer);
@@ -120,6 +128,13 @@ void ResidentDisplayService::stop()
     m_inventorySource->setObserver(nullptr);
     m_transactionPort->setObserver(nullptr);
     (void)m_model->transportLost();
+    // An accepted immediate request receives its typed uncertainty before the
+    // object leaves the bus; stop() itself publishes no Changed hint.
+    (void)m_model->takeBrightnessPublicationChanged();
+    for (const BrightnessFinish &finish : m_model->takeBrightnessFinishes()) {
+        m_serviceObject->finishBrightness(finish);
+    }
+    m_brightnessTimer->stop();
     if (m_nameRegistered) {
         m_connection.unregisterService(m_serviceName);
         m_nameRegistered = false;
@@ -175,26 +190,31 @@ void ResidentDisplayService::inventoryObserved(const InventoryFrame &frame)
             modelTransitioned(true);
             m_serviceObject->notifyChanged();
         }
+        serviceBrightness(result.stateChanged);
         return;
     }
     modelTransitioned(result.stateChanged);
     syncTopologySettleTimer(
         result.status == InventoryObservationStatus::AcceptedNewLineage
         || result.status == InventoryObservationStatus::AcceptedChanged);
-    if (result.stateChanged
-        || result.status == InventoryObservationStatus::AcceptedNewLineage) {
+    const bool published = result.stateChanged
+        || result.status == InventoryObservationStatus::AcceptedNewLineage;
+    if (published) {
         m_serviceObject->notifyChanged();
     }
+    serviceBrightness(published);
 }
 
 void ResidentDisplayService::inventoryUnavailable()
 {
-    if (m_model->transportLost()) {
+    const bool lost = m_model->transportLost();
+    if (lost) {
         m_deadlineTimer->stop();
         m_topologySettleTimer->stop();
         Q_EMIT modelStateChanged();
         m_serviceObject->notifyChanged();
     }
+    serviceBrightness(lost);
 }
 
 void ResidentDisplayService::applyCompleted(
@@ -207,6 +227,41 @@ void ResidentDisplayService::applyCompleted(
     if (result.stateChanged) {
         m_serviceObject->notifyChanged();
     }
+}
+
+void ResidentDisplayService::brightnessDevicesObserved(const DeviceBrightnessFrame &frame)
+{
+    m_model->brightnessDevicesObserved(frame);
+    serviceBrightness();
+}
+
+void ResidentDisplayService::brightnessCompleted(const quint64 requestId,
+                                                 const BrightnessApplyOutcome outcome)
+{
+    m_model->brightnessCompleted(requestId, outcome);
+    serviceBrightness();
+}
+
+void ResidentDisplayService::serviceBrightness(const bool changedAlreadyPublished)
+{
+    // AGENT-CONTRACT: Publish before replying. One Changed hint covers both
+    // publications, and an accepted immediate request replies only after the
+    // hint for the republish that proved it.
+    if (m_model->takeBrightnessPublicationChanged() && !changedAlreadyPublished) {
+        m_serviceObject->notifyChanged();
+    }
+    for (const BrightnessFinish &finish : m_model->takeBrightnessFinishes()) {
+        m_serviceObject->finishBrightness(finish);
+    }
+    const quint64 deadline = m_model->brightnessDeadlineMonotonicMilliseconds();
+    if (deadline == 0) {
+        m_brightnessTimer->stop();
+        return;
+    }
+    const quint64 now = m_clock->nowMilliseconds();
+    const quint64 remaining = deadline > now ? deadline - now : 0;
+    m_brightnessTimer->start(static_cast<int>(std::min<quint64>(
+        remaining, static_cast<quint64>(std::numeric_limits<int>::max()))));
 }
 
 void ResidentDisplayService::modelTransitioned(const bool changed)

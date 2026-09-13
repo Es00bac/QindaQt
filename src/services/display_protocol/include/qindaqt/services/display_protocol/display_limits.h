@@ -35,6 +35,9 @@ inline constexpr quint32 kMaxRefreshMilliHertz = 1'000'000;
 inline constexpr double kMinimumScale = 1.0;
 inline constexpr double kMaximumScale = 3.0;
 inline constexpr qsizetype kFingerprintBytes = 32;
+// KDE output-device/management brightness scale: 0 is the dimmest supported
+// setting, never off; 10000 is the maximum.
+inline constexpr quint32 kMaxBrightness = 10'000;
 
 inline constexpr char kServiceName[] = "org.qindaqt.Display1";
 inline constexpr char kObjectPath[] = "/org/qindaqt/Display1";

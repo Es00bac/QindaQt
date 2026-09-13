@@ -39,6 +39,7 @@ target_sources(
     PRIVATE
         src/apply_request_mapper.cpp
         src/configuration_validation.cpp
+        src/qt_wayland_output_brightness.cpp
         src/qt_wayland_output_objects_p.h
         src/qt_wayland_output_management_port.cpp
         src/writer_transaction_port.cpp

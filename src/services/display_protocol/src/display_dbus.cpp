@@ -61,6 +61,9 @@ void registerDBusTypes()
     qRegisterMetaType<TransactionSummary>();
     qRegisterMetaType<Snapshot>();
     qRegisterMetaType<OperationResult>();
+    qRegisterMetaType<OutputBrightness>();
+    qRegisterMetaType<BrightnessSnapshot>();
+    qRegisterMetaType<BrightnessRequest>();
     qDBusRegisterMetaType<Mode>();
     qDBusRegisterMetaType<Output>();
     qDBusRegisterMetaType<CandidateOutput>();
@@ -68,6 +71,9 @@ void registerDBusTypes()
     qDBusRegisterMetaType<TransactionSummary>();
     qDBusRegisterMetaType<Snapshot>();
     qDBusRegisterMetaType<OperationResult>();
+    qDBusRegisterMetaType<OutputBrightness>();
+    qDBusRegisterMetaType<BrightnessSnapshot>();
+    qDBusRegisterMetaType<BrightnessRequest>();
 }
 
 DBusDecodeResult decodeCandidateArgument(const QDBusArgument &argument,
@@ -300,6 +306,91 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, OperationResult &
     value.kind = static_cast<OperationKind>(kind);
     value.status = static_cast<OperationStatus>(status);
     value.error = static_cast<ErrorCode>(error);
+    return argument;
+}
+
+DBusDecodeResult decodeBrightnessSnapshotArgument(const QDBusArgument &argument,
+                                                  BrightnessSnapshot &destination)
+{
+    if (!hasSignature(argument, "(ustta(sbbu))")) {
+        return {.accepted = false, .reasonCode = QStringLiteral("invalid-dbus-signature")};
+    }
+    BrightnessSnapshot decoded;
+    argument >> decoded;
+    const ValidationResult validation = validateBrightnessSnapshot(decoded);
+    if (!validation.accepted) {
+        return {.accepted = false, .reasonCode = validation.reasonCode};
+    }
+    destination = std::move(decoded);
+    return {.accepted = true, .reasonCode = {}};
+}
+
+DBusDecodeResult decodeBrightnessRequestArgument(const QDBusArgument &argument,
+                                                 BrightnessRequest &destination)
+{
+    if (!hasSignature(argument, "(stsu)")) {
+        return {.accepted = false, .reasonCode = QStringLiteral("invalid-dbus-signature")};
+    }
+    BrightnessRequest decoded;
+    argument >> decoded;
+    const ValidationResult validation = validateBrightnessRequest(decoded);
+    if (!validation.accepted) {
+        return {.accepted = false, .reasonCode = validation.reasonCode};
+    }
+    destination = std::move(decoded);
+    return {.accepted = true, .reasonCode = {}};
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const OutputBrightness &value)
+{
+    argument.beginStructure();
+    argument << value.stableId << value.capable << value.observed << value.value;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, OutputBrightness &value)
+{
+    argument.beginStructure();
+    argument >> value.stableId >> value.capable >> value.observed >> value.value;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const BrightnessSnapshot &value)
+{
+    argument.beginStructure();
+    argument << value.protocolVersion << value.serviceEpoch << value.topologyRevision
+             << value.revision;
+    writeArray(argument, value.outputs);
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, BrightnessSnapshot &value)
+{
+    value.wireValid = true;
+    argument.beginStructure();
+    argument >> value.protocolVersion >> value.serviceEpoch >> value.topologyRevision
+        >> value.revision;
+    readBoundedArray(argument, value.outputs, kMaxOutputs, value.wireValid);
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const BrightnessRequest &value)
+{
+    argument.beginStructure();
+    argument << value.baseEpoch << value.baseRevision << value.stableId << value.value;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, BrightnessRequest &value)
+{
+    argument.beginStructure();
+    argument >> value.baseEpoch >> value.baseRevision >> value.stableId >> value.value;
+    argument.endStructure();
     return argument;
 }
 

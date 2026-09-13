@@ -88,6 +88,39 @@ identity comes from `SO_PEERCRED` on the Wayland socket; no environment value or
 D-Bus-name claim is accepted. This identity authenticates the session-lock
 quorum but never grants mutation without D1 safety and D5 journal gates.
 
+## Immediate brightness
+
+[ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)
+adds the writer's only non-topology mutation.
+`OutputManagementPort::submitBrightness` sends one configuration containing
+exactly `set_brightness` followed by `apply`. The target must be a ready,
+enabled connector whose UUID matches exactly and whose bound device advertises
+`capability_brightness`. That capability needs device version 9 or later, and
+`set_brightness` needs management version 9. Each of these is refused locally,
+with no protocol request:
+
+- an unknown or duplicate connector;
+- a stale UUID;
+- a disabled or non-capable device;
+- a capability bit on a device bound below version 9;
+- a value above 10000.
+
+This refusal is the writer's boundary, not the compositor's: KWin 6.6.6 stores
+`set_brightness` for any live device and acknowledges outputs whose backend
+ignores it.
+
+The production adapter records `capabilities` and, from device version 8,
+`brightness`. It publishes device facts only at a `done`, registry, or
+transport edge, and only as the complete ready set of its owner generation;
+anything less publishes generation zero. `WriterTransactionPort`:
+
+- forwards those facts and brightness completions on a later event-loop turn,
+  in arrival order;
+- fences each completion by writer request ID and owner generation;
+- keeps topology applies and brightness writes mutually exclusive;
+- completes a pending brightness write as `TransportUncertain` on an owner
+  change, stop, or local timeout.
+
 ## Protocol source and compatibility
 
 The two client XML inputs are copied exactly from Plasma Wayland Protocols
@@ -124,6 +157,44 @@ binds reach availability without submission or unrelated server traffic. This
 fixture uses the existing test-only Wayland server dependency and no host socket.
 Boundary and poison rows pin the XML and prove platform/private
 dependencies cannot escape the installed header surface.
+
+ADR-0149 adds two rows.
+
+`qindaqt.display-writer-brightness-port` covers:
+
+- queued device frames and completions;
+- owner-generation and request-ID fencing;
+- mutual exclusion of topology applies and brightness writes;
+- timeout, owner change, and stop.
+
+`qindaqt.display-writer-wayland-brightness` runs the production adapter
+against a private protocol server. It proves exact device facts and a single
+`set_brightness` plus `apply`. It also proves that each of these is refused
+locally with zero configurations sent:
+
+- a non-capable device;
+- a version-8 device carrying the capability bit;
+- a version-7 device;
+- a disabled device;
+- an out-of-scale observation, a stale UUID, an unknown connector, an
+  out-of-scale request, or a wrong owner generation.
+
+It also covers protocol failure and hotplug uncertainty.
+
+The private nested-KWin brightness proof is not a ctest row. It lives in
+`tests/services/display_writer/proof/run_brightness_nested_proof.sh`. It
+starts `kwin_wayland --virtual` inside an empty-environment `dbus-run-session`
+with disposable XDG roots and no system bus. On KWin 6.6.6 it records:
+
+- virtual outputs publish brightness 10000 without the brightness capability,
+  and the writer refuses each one locally;
+- KWin itself acknowledges `set_brightness` on non-capable, out-of-scale, and
+  disabled targets without any brightness event;
+- compositor loss clears device authority and makes a pinned request
+  unavailable;
+- a virtual output's runtime UUID survives a restart. The UUID therefore never
+  fences a restart on its own; the writer's owner generation and Display1's new
+  epoch do.
 
 These are deterministic and compile-time D4/D6 evidence. They do **not** prove a
 real KWin apply, callback-before-observation ordering, post-apply convergence,

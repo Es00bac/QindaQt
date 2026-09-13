@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 namespace QindaQt::DisplayWriter
 {
@@ -27,6 +28,12 @@ WriterTransactionPort::WriterTransactionPort(
         static_cast<quint64>(std::numeric_limits<int>::max()))));
     QObject::connect(&m_timeout, &QTimer::timeout, this, [this] {
         finishPending(DisplayTransaction::ApplyOutcome::TransportUncertain);
+    });
+    m_brightnessTimeout.setSingleShot(true);
+    m_brightnessTimeout.setTimerType(Qt::PreciseTimer);
+    m_brightnessTimeout.setInterval(m_timeout.interval());
+    QObject::connect(&m_brightnessTimeout, &QTimer::timeout, this, [this] {
+        finishBrightness(DisplayService::BrightnessApplyOutcome::TransportUncertain);
     });
     m_outputManagement->setObserver(this);
 }
@@ -64,11 +71,13 @@ void WriterTransactionPort::stop()
         finishDeferred(pending.machineLineage, pending.token,
                        DisplayTransaction::ApplyOutcome::TransportUncertain);
     }
+    finishBrightness(DisplayService::BrightnessApplyOutcome::TransportUncertain);
     m_outputManagement->stop();
     const bool wasAvailable = m_available;
     m_started = false;
     m_available = false;
     m_ownerGeneration = 0;
+    outputManagementDevicesObserved(0, {});
     if (wasAvailable) {
         Q_EMIT mutationAuthorityChanged(false);
     }
@@ -123,7 +132,7 @@ void WriterTransactionPort::requestApply(
                        DisplayTransaction::ApplyOutcome::TransportUncertain);
         return;
     }
-    if (m_pending) {
+    if (m_pending || m_brightnessPending) {
         finishDeferred(lineage, request.token,
                        DisplayTransaction::ApplyOutcome::Rejected);
         return;
@@ -162,6 +171,51 @@ void WriterTransactionPort::requestApply(
     }
 }
 
+DisplayService::BrightnessSubmitStatus WriterTransactionPort::requestBrightness(
+    const DisplayService::BrightnessApplyRequest &request)
+{
+    using Status = DisplayService::BrightnessSubmitStatus;
+    if (!m_started || !m_available || m_ownerGeneration == 0
+        || request.ownerGeneration != m_ownerGeneration) {
+        return Status::Unavailable;
+    }
+    if (m_pending || m_brightnessPending) {
+        return Status::Busy;
+    }
+    const quint64 requestId = nextRequestId();
+    // AGENT-GUARD: Publish the fence before submitBrightness(), matching the
+    // topology path: a callback must match this exact tuple or be ignored.
+    m_brightnessPending = BrightnessPending{.serviceRequestId = request.requestId,
+                                            .requestId = requestId,
+                                            .ownerGeneration = m_ownerGeneration};
+    const SubmitStatus status = m_outputManagement->submitBrightness(
+        {.requestId = requestId,
+         .connectorName = request.connectorName,
+         .uuid = request.runtimeUuid,
+         .brightness = request.value});
+    switch (status) {
+    case SubmitStatus::Accepted:
+        if (m_brightnessPending) {
+            m_brightnessTimeout.start();
+        }
+        return Status::Accepted;
+    case SubmitStatus::Unavailable:
+        m_brightnessPending.reset();
+        return Status::Unavailable;
+    case SubmitStatus::Busy:
+        m_brightnessPending.reset();
+        return Status::Busy;
+    case SubmitStatus::Unsupported:
+        m_brightnessPending.reset();
+        return Status::Unsupported;
+    case SubmitStatus::Malformed:
+        m_brightnessPending.reset();
+        return Status::Malformed;
+    }
+    m_brightnessPending.reset();
+    return Status::Malformed;
+}
+
 void WriterTransactionPort::outputManagementOwnerChanged(
     const quint64 ownerGeneration, const bool available)
 {
@@ -169,6 +223,9 @@ void WriterTransactionPort::outputManagementOwnerChanged(
         || ownerGeneration != m_ownerGeneration || !available;
     if (m_pending && fenceChanged) {
         finishPending(DisplayTransaction::ApplyOutcome::TransportUncertain);
+    }
+    if (m_brightnessPending && fenceChanged) {
+        finishBrightness(DisplayService::BrightnessApplyOutcome::TransportUncertain);
     }
     m_ownerGeneration = ownerGeneration;
     const bool nextAvailable = m_started && available && ownerGeneration != 0;
@@ -183,6 +240,16 @@ void WriterTransactionPort::outputManagementCompleted(
     const quint64 ownerGeneration, const quint64 requestId,
     const CompletionOutcome outcome)
 {
+    if (m_brightnessPending && m_brightnessPending->ownerGeneration == ownerGeneration
+        && m_brightnessPending->requestId == requestId
+        && ownerGeneration == m_ownerGeneration) {
+        finishBrightness(outcome == CompletionOutcome::Applied
+                             ? DisplayService::BrightnessApplyOutcome::Applied
+                             : outcome == CompletionOutcome::Rejected
+                             ? DisplayService::BrightnessApplyOutcome::Rejected
+                             : DisplayService::BrightnessApplyOutcome::TransportUncertain);
+        return;
+    }
     if (!m_pending || m_pending->ownerGeneration != ownerGeneration
         || m_pending->requestId != requestId || ownerGeneration != m_ownerGeneration) {
         return;
@@ -222,6 +289,54 @@ void WriterTransactionPort::finishDeferred(
         [this, machineLineage, token, outcome] {
             if (m_observer != nullptr) {
                 m_observer->applyCompleted(machineLineage, token, outcome);
+            }
+        },
+        Qt::QueuedConnection);
+}
+
+void WriterTransactionPort::outputManagementDevicesObserved(
+    const quint64 ownerGeneration, const QList<OutputDeviceState> &devices)
+{
+    DisplayService::DeviceBrightnessFrame frame;
+    if (m_started && m_available && ownerGeneration != 0
+        && ownerGeneration == m_ownerGeneration) {
+        frame.ownerGeneration = ownerGeneration;
+        frame.devices.reserve(devices.size());
+        for (const OutputDeviceState &device : devices) {
+            frame.devices.push_back({.connectorName = device.connectorName,
+                                     .runtimeUuid = device.uuid,
+                                     .enabled = device.enabled,
+                                     .capable = device.brightnessCapable,
+                                     .observed = device.brightnessObserved,
+                                     .value = device.brightness});
+        }
+    }
+    // Queued like completions so the port never reenters the D2 observer
+    // synchronously and device facts keep their arrival order.
+    QMetaObject::invokeMethod(
+        this,
+        [this, frame] {
+            if (m_observer != nullptr) {
+                m_observer->brightnessDevicesObserved(frame);
+            }
+        },
+        Qt::QueuedConnection);
+}
+
+void WriterTransactionPort::finishBrightness(
+    const DisplayService::BrightnessApplyOutcome outcome)
+{
+    if (!m_brightnessPending) {
+        return;
+    }
+    m_brightnessTimeout.stop();
+    const quint64 serviceRequestId =
+        std::exchange(m_brightnessPending, std::nullopt)->serviceRequestId;
+    QMetaObject::invokeMethod(
+        this,
+        [this, serviceRequestId, outcome] {
+            if (m_observer != nullptr) {
+                m_observer->brightnessCompleted(serviceRequestId, outcome);
             }
         },
         Qt::QueuedConnection);

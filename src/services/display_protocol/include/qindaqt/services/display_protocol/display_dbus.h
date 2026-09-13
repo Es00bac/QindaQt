@@ -28,6 +28,10 @@ void registerDBusTypes();
                                                       Snapshot &destination);
 [[nodiscard]] DBusDecodeResult decodeOperationResultArgument(const QDBusArgument &argument,
                                                              OperationResult &destination);
+[[nodiscard]] DBusDecodeResult decodeBrightnessSnapshotArgument(
+    const QDBusArgument &argument, BrightnessSnapshot &destination);
+[[nodiscard]] DBusDecodeResult decodeBrightnessRequestArgument(const QDBusArgument &argument,
+                                                               BrightnessRequest &destination);
 
 QDBusArgument &operator<<(QDBusArgument &argument, const Mode &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Mode &value);
@@ -43,5 +47,11 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Snapshot &value);
 QDBusArgument &operator<<(QDBusArgument &argument, const OperationResult &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, OperationResult &value);
+QDBusArgument &operator<<(QDBusArgument &argument, const OutputBrightness &value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, OutputBrightness &value);
+QDBusArgument &operator<<(QDBusArgument &argument, const BrightnessSnapshot &value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, BrightnessSnapshot &value);
+QDBusArgument &operator<<(QDBusArgument &argument, const BrightnessRequest &value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, BrightnessRequest &value);
 
 } // namespace QindaQt::Display

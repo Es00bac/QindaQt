@@ -267,3 +267,4 @@ nav:
       - "ADR-0136: night light through KWin and knighttimed": adr/0136-night-light-through-kwin.md
       - "ADR-0137: File Manager network-location browsing (S5)": adr/0137-file-manager-network-location-browsing.md
       - "ADR-0148: admit internal-panel brightness through Power1": adr/0148-admit-internal-panel-brightness-through-power1.md
+      - "ADR-0149: admit immediate external-output brightness through Display1": adr/0149-admit-immediate-external-output-brightness-through-display1.md

@@ -42,6 +42,22 @@ public:
         requestMachineLineages.push_back(currentMachineLineage);
         applyRequests.push_back(request);
     }
+    BrightnessSubmitStatus requestBrightness(const BrightnessApplyRequest &request) override
+    {
+        brightnessRequests.push_back(request);
+        return brightnessSubmitStatus;
+    }
+    void publishDevices(const DeviceBrightnessFrame &frame)
+    {
+        Q_ASSERT(observer != nullptr);
+        observer->brightnessDevicesObserved(frame);
+    }
+    void completeBrightness(BrightnessApplyOutcome outcome)
+    {
+        Q_ASSERT(observer != nullptr);
+        Q_ASSERT(!brightnessRequests.isEmpty());
+        observer->brightnessCompleted(brightnessRequests.constLast().requestId, outcome);
+    }
     void completeLast(DisplayTransaction::ApplyOutcome outcome)
     {
         Q_ASSERT(observer != nullptr);
@@ -54,6 +70,8 @@ public:
     QList<DisplayTransaction::Journal> storedJournals;
     QList<quint64> requestMachineLineages;
     QList<DisplayTransaction::ApplyRequest> applyRequests;
+    QList<BrightnessApplyRequest> brightnessRequests;
+    BrightnessSubmitStatus brightnessSubmitStatus = BrightnessSubmitStatus::Accepted;
     quint64 currentMachineLineage = 0;
     int clearCalls = 0;
     bool storeSucceeds = true;

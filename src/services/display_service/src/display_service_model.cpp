@@ -2,6 +2,7 @@
 
 #include <qindaqt/services/display_service/display_service_model.h>
 
+#include "display_brightness_authority_p.h"
 #include "display_service_projection_p.h"
 
 #include <qindaqt/services/display_protocol/display_limits.h>
@@ -139,6 +140,8 @@ DisplayServiceModel::DisplayServiceModel(DisplayTransaction::MonotonicClock &clo
     , m_epochFactory(std::move(epochFactory))
     , m_timing(timing)
     , m_pendingRecoveryJournal(std::move(startupJournal))
+    , m_brightness(std::make_unique<Private::BrightnessAuthority>(
+          clock, port, timing.observationTimeoutMilliseconds))
 {
 }
 
@@ -260,8 +263,20 @@ InventoryObservationResult DisplayServiceModel::establishLineage(
             .stateChanged = true};
 }
 
+const Display::Snapshot *DisplayServiceModel::machineSnapshot() const noexcept
+{
+    return m_machine == nullptr ? nullptr : &m_machine->currentSnapshot();
+}
+
 InventoryObservationResult DisplayServiceModel::observeInventory(
     const InventoryFrame &frame)
+{
+    const InventoryObservationResult result = observeFrame(frame);
+    m_brightness->refresh(machineSnapshot());
+    return result;
+}
+
+InventoryObservationResult DisplayServiceModel::observeFrame(const InventoryFrame &frame)
 {
     if (m_machine == nullptr || frame.uniqueOwner != m_sourceOwner) {
         return establishLineage(frame);
@@ -356,6 +371,7 @@ bool DisplayServiceModel::transportLost()
     m_machine.reset();
     m_frame = {};
     m_sourceOwner.clear();
+    m_brightness->refresh(nullptr);
     return changed;
 }
 
@@ -408,6 +424,17 @@ ServiceOperationResult DisplayServiceModel::preview(const QString &transactionId
 {
     return operation(Display::OperationKind::Preview, transactionId,
                      [this, &transactionId] {
+                         // AGENT-CONTRACT: ADR-0149 coexistence. No topology
+                         // apply may start while an immediate brightness
+                         // write is unresolved.
+                         if (m_brightness->pending()) {
+                             return DisplayTransaction::CommandResult{
+                                 .accepted = false,
+                                 .stateChanged = false,
+                                 .error = DisplayTransaction::CommandError::TransactionActive,
+                                 .state = m_machine->view().state,
+                                 .transactionId = m_machine->view().transactionId};
+                         }
                          return m_machine->preview(transactionId);
                      });
 }
@@ -469,6 +496,51 @@ DisplayTransaction::CommandResult DisplayServiceModel::prepareForSuspend()
 DisplayTransaction::CommandResult DisplayServiceModel::tick()
 {
     return m_machine == nullptr ? unavailableCommand() : m_machine->tick();
+}
+
+const Display::BrightnessSnapshot *DisplayServiceModel::brightnessSnapshot() const
+{
+    return m_machine == nullptr ? nullptr : m_brightness->snapshot();
+}
+
+BrightnessRequestResult DisplayServiceModel::setOutputBrightness(
+    const Display::BrightnessRequest &request)
+{
+    if (m_machine == nullptr) {
+        return {};
+    }
+    return m_brightness->request(request, machineSnapshot(), m_machine->view().state, m_safety);
+}
+
+void DisplayServiceModel::brightnessDevicesObserved(const DeviceBrightnessFrame &frame)
+{
+    m_brightness->devicesObserved(frame, machineSnapshot());
+}
+
+void DisplayServiceModel::brightnessCompleted(const quint64 requestId,
+                                              const BrightnessApplyOutcome outcome)
+{
+    m_brightness->completed(requestId, outcome);
+}
+
+void DisplayServiceModel::brightnessTick()
+{
+    m_brightness->tick();
+}
+
+quint64 DisplayServiceModel::brightnessDeadlineMonotonicMilliseconds() const noexcept
+{
+    return m_brightness->deadlineMonotonicMilliseconds();
+}
+
+QList<BrightnessFinish> DisplayServiceModel::takeBrightnessFinishes()
+{
+    return m_brightness->takeFinishes();
+}
+
+bool DisplayServiceModel::takeBrightnessPublicationChanged()
+{
+    return m_brightness->takePublicationChanged();
 }
 
 } // namespace QindaQt::DisplayService

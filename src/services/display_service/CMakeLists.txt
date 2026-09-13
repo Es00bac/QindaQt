@@ -8,6 +8,8 @@ target_sources(
     qindaqt_display_service
     PRIVATE
         src/compositor_inventory_source.cpp
+        src/display_brightness_authority.cpp
+        src/display_brightness_authority_p.h
         src/display_inventory_codec.cpp
         src/display_inventory_projection.cpp
         src/display_inventory_validation_p.h

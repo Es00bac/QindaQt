@@ -9,7 +9,9 @@ timer scheduling, and an exact-owner adapter over D0's read-only
 writer module. D5 adds the separate crash-safe filesystem journal adapter and
 deterministic startup-load seam. D6 now composes the packaged process from D2,
 D4, D5, authenticated session-lock truth, and an exact-owner logind delay
-inhibitor. Deterministic fake/private-bus evidence covers startup and recovery;
+inhibitor. D7 adds the first operational class-B change: observed,
+lineage-fenced external-output brightness. Deterministic fake/private-bus
+evidence covers startup and recovery;
 contained nested convergence, Settings integration, UI, and physical runtime
 proof remain later outcomes.
 
@@ -424,11 +426,61 @@ Fake-port tests do not claim either property or serialize that runtime window.
 
 Topology is class A and always requires confirmation. The public class-B enum
 is closed and each current member maps explicitly to bypass; an unknown value
-fails safe to confirmation. The values describe policy classification only in
-D1. Brightness, color, DDC-CI, ICC, ambient, and custom-mode owners must prove
-device error semantics before D7 makes any bypass operational. New members
-require a protocol decision and tests; no generic `requiresConfirmation` flag
-is accepted.
+fails safe to confirmation. New members require a protocol decision and tests;
+no generic `requiresConfirmation` flag is accepted. D7 makes brightness the
+only operational class-B change. Color, DDC-CI, ICC, ambient, and custom-mode
+owners must still prove device error semantics before their bypass becomes
+operational.
+
+## Immediate D7 brightness
+
+[ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)
+fixes this contract. The exact values are in
+[Display1 version 1](../reference/display1-v1.md#immediate-brightness-d7).
+
+Brightness is not topology, and it never enters the D1 machine. D0 inventory
+carries no brightness and does not advance its generation when brightness
+changes. The machine would also read a same-fingerprint newer revision during
+`Observing` as an apply rejection. The resident therefore publishes a sibling
+`BrightnessSnapshot` joined to the accepted machine snapshot.
+
+**Observation.** D4's own output-management connection is the observation
+authority. The transaction port forwards device facts on a later event-loop
+turn: either the complete ready device set for its owner generation, or
+generation zero with no devices. A model-owned `BrightnessAuthority` joins each
+snapshot output to exactly one device whose connector and runtime UUID both
+match exactly once. Anything else publishes a cleared row. Losing the accepted
+snapshot withdraws the publication; losing device authority clears every row.
+
+**Admission and coexistence.**
+
+- At most one immediate request is pending.
+- D1 must be `Ready` and safety must be `Safe`.
+- The model refuses `Preview` while that request is pending.
+- D4 refuses a topology apply during a brightness write, and a brightness write
+  during a topology apply.
+
+No class-A apply or revert can overlap an immediate write; a staged candidate
+waits.
+
+**Completion.** The D-Bus call gets a delayed reply. After each input, the
+resident does three things in order:
+
+1. publishes `Changed` for any republish;
+2. delivers finished results;
+3. arms one brightness deadline timer using the D1 observation timeout.
+
+`Succeeded` needs both a compositor acknowledgement and an observed republish
+of the requested value, because KWin acknowledges writes its backend ignores.
+Any of these finishes the request as typed uncertainty, and it is never
+replayed:
+
+- an accepted topology revision;
+- a device owner-generation change;
+- D0 owner or transport loss;
+- stop;
+- transport uncertainty;
+- the deadline.
 
 ## Evidence boundary and next slices
 

@@ -220,6 +220,45 @@ struct OperationResult {
     friend bool operator==(const OperationResult &, const OperationResult &) = default;
 };
 
+// AGENT-CONTRACT: D7 class-B brightness is a sibling publication of Snapshot.
+// It joins one exact Snapshot revision by stable ID and never enters the D1
+// transaction machine, its canonical fingerprint, or the snapshot codec.
+struct OutputBrightness {
+    QString stableId;
+    // The exact joined connector advertises KDE output-device brightness
+    // control on a device version that can carry the capability.
+    bool capable = false;
+    // A complete device state carried a brightness value; value is 0 otherwise.
+    bool observed = false;
+    quint32 value = 0;
+
+    friend bool operator==(const OutputBrightness &, const OutputBrightness &) = default;
+};
+
+struct BrightnessSnapshot {
+    quint32 protocolVersion = 1;
+    QString serviceEpoch;
+    // The Snapshot revision these rows join; rows follow that snapshot's order.
+    quint64 topologyRevision = 0;
+    // Monotonic within serviceEpoch: advances whenever a row or the joined
+    // topology revision changes. Immediate requests and results use this
+    // revision namespace.
+    quint64 revision = 0;
+    QList<OutputBrightness> outputs;
+    bool wireValid = true;
+
+    friend bool operator==(const BrightnessSnapshot &, const BrightnessSnapshot &) = default;
+};
+
+struct BrightnessRequest {
+    QString baseEpoch;
+    quint64 baseRevision = 0;
+    QString stableId;
+    quint32 value = 0;
+
+    friend bool operator==(const BrightnessRequest &, const BrightnessRequest &) = default;
+};
+
 } // namespace QindaQt::Display
 
 Q_DECLARE_METATYPE(QindaQt::Display::Transform)
@@ -236,3 +275,6 @@ Q_DECLARE_METATYPE(QindaQt::Display::Candidate)
 Q_DECLARE_METATYPE(QindaQt::Display::TransactionSummary)
 Q_DECLARE_METATYPE(QindaQt::Display::Snapshot)
 Q_DECLARE_METATYPE(QindaQt::Display::OperationResult)
+Q_DECLARE_METATYPE(QindaQt::Display::OutputBrightness)
+Q_DECLARE_METATYPE(QindaQt::Display::BrightnessSnapshot)
+Q_DECLARE_METATYPE(QindaQt::Display::BrightnessRequest)

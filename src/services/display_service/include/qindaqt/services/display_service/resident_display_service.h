@@ -68,9 +68,15 @@ private:
     void inventoryUnavailable() override;
     void applyCompleted(quint64 machineLineage, quint64 token,
                         DisplayTransaction::ApplyOutcome outcome) override;
+    void brightnessDevicesObserved(const DeviceBrightnessFrame &frame) override;
+    void brightnessCompleted(quint64 requestId, BrightnessApplyOutcome outcome) override;
     void modelTransitioned(bool changed);
     void armDeadline();
     void syncTopologySettleTimer(bool acceptedInventoryChanged = false);
+    // Publishes any brightness republish unless the caller already emitted
+    // Changed for this turn, then delivers finished immediate results, then
+    // re-arms the brightness deadline.
+    void serviceBrightness(bool changedAlreadyPublished = false);
 
     std::unique_ptr<InventorySource> m_inventorySource;
     std::unique_ptr<DisplayTransaction::MonotonicClock> m_clock;
@@ -81,6 +87,7 @@ private:
     QString m_serviceName;
     QTimer *m_deadlineTimer = nullptr;
     QTimer *m_topologySettleTimer = nullptr;
+    QTimer *m_brightnessTimer = nullptr;
     bool m_objectRegistered = false;
     bool m_nameRegistered = false;
 };

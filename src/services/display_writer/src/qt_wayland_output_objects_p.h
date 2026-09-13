@@ -9,10 +9,16 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace QindaQt::DisplayWriter::Private
 {
+
+// Since-versions from the vendored protocol XML, pinned by the boundary row.
+inline constexpr quint32 kDeviceBrightnessEventVersion = 8;
+inline constexpr quint32 kDeviceBrightnessCapabilityVersion = 9;
+inline constexpr quint32 kManagementSetBrightnessVersion = 9;
 
 class DeviceMode final : public QtWayland::kde_output_device_mode_v2
 {
@@ -60,8 +66,9 @@ private:
 class OutputDevice final : public QtWayland::kde_output_device_v2
 {
 public:
-    explicit OutputDevice(const quint32 globalName)
+    OutputDevice(const quint32 globalName, const quint32 boundVersion)
         : m_globalName(globalName)
+        , m_boundVersion(boundVersion)
     {
     }
 
@@ -78,6 +85,18 @@ public:
     [[nodiscard]] const QString &uuid() const noexcept { return m_uuid; }
     [[nodiscard]] bool ready() const noexcept { return m_ready; }
     [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
+    [[nodiscard]] quint32 boundVersion() const noexcept { return m_boundVersion; }
+    // AGENT-GUARD: capability_brightness exists only from device version 9.
+    // An older bound device cannot grant it, whatever flag bits arrive.
+    [[nodiscard]] bool brightnessCapable() const noexcept
+    {
+        return boundVersion() >= kDeviceBrightnessCapabilityVersion
+            && (m_capabilities & QtWayland::kde_output_device_v2::capability_brightness) != 0U;
+    }
+    [[nodiscard]] std::optional<quint32> brightness() const noexcept
+    {
+        return boundVersion() >= kDeviceBrightnessEventVersion ? m_brightness : std::nullopt;
+    }
 
     [[nodiscard]] DeviceMode *mode(const ModeReference &reference) const
     {
@@ -111,12 +130,23 @@ protected:
     {
         m_enabled = enabled == 1;
     }
+    void kde_output_device_v2_capabilities(const uint32_t flags) override
+    {
+        m_capabilities = flags;
+    }
+    void kde_output_device_v2_brightness(const uint32_t brightness) override
+    {
+        m_brightness = brightness;
+    }
 
 private:
     quint32 m_globalName = 0;
+    quint32 m_boundVersion = 0;
     QString m_name;
     QString m_uuid;
     std::vector<std::unique_ptr<DeviceMode>> m_modes;
+    std::optional<quint32> m_brightness;
+    quint32 m_capabilities = 0;
     bool m_ready = false;
     bool m_enabled = false;
 };
@@ -131,5 +161,19 @@ public:
         }
     }
 };
+
+struct BrightnessTarget {
+    OutputDevice *device = nullptr;
+    SubmitStatus refusal = SubmitStatus::Accepted;
+};
+
+// Brightness facts for an already ready, unambiguous device set, in order.
+[[nodiscard]] QList<OutputDeviceState> brightnessDeviceStates(
+    const std::vector<std::unique_ptr<OutputDevice>> &devices, bool managementCanSetBrightness);
+// Resolves the only device a brightness configuration may address. A null
+// device carries the typed refusal, and no protocol request may follow it.
+[[nodiscard]] BrightnessTarget brightnessTarget(
+    const std::vector<std::unique_ptr<OutputDevice>> &devices,
+    const BrightnessConfiguration &configuration);
 
 } // namespace QindaQt::DisplayWriter::Private

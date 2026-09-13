@@ -296,6 +296,76 @@ ValidationResult validateOperationResult(const OperationResult &result)
     return accepted();
 }
 
+ValidationResult validateBrightnessSnapshot(const BrightnessSnapshot &brightness)
+{
+    if (!brightness.wireValid) {
+        return rejected("malformed-payload");
+    }
+    if (brightness.protocolVersion != kProtocolVersion) {
+        return rejected("unsupported-version");
+    }
+    if (!boundedRequiredText(brightness.serviceEpoch, kMaxServiceEpochUtf8Bytes)
+        || brightness.topologyRevision == 0 || brightness.revision == 0) {
+        return rejected("invalid-brightness-lineage");
+    }
+    if (brightness.outputs.isEmpty() || brightness.outputs.size() > kMaxOutputs) {
+        return rejected("invalid-brightness-count");
+    }
+    QSet<QString> outputIds;
+    for (const OutputBrightness &output : brightness.outputs) {
+        if (!boundedRequiredText(output.stableId, kMaxStableIdUtf8Bytes)) {
+            return rejected("invalid-brightness-output");
+        }
+        if (output.value > kMaxBrightness) {
+            return rejected("invalid-brightness-value");
+        }
+        if (!output.observed && output.value != 0) {
+            return rejected("inconsistent-brightness-output");
+        }
+        if (outputIds.contains(output.stableId)) {
+            return rejected("duplicate-brightness-output");
+        }
+        outputIds.insert(output.stableId);
+    }
+    return accepted();
+}
+
+ValidationResult validateBrightnessRequest(const BrightnessRequest &request)
+{
+    if (!boundedRequiredText(request.baseEpoch, kMaxServiceEpochUtf8Bytes)
+        || request.baseRevision == 0) {
+        return rejected("invalid-brightness-lineage");
+    }
+    if (!boundedRequiredText(request.stableId, kMaxStableIdUtf8Bytes)) {
+        return rejected("invalid-brightness-output");
+    }
+    if (request.value > kMaxBrightness) {
+        return rejected("invalid-brightness-value");
+    }
+    return accepted();
+}
+
+ValidationResult validateBrightnessJoin(const Snapshot &snapshot,
+                                        const BrightnessSnapshot &brightness)
+{
+    if (const auto validation = validateBrightnessSnapshot(brightness); !validation.accepted) {
+        return validation;
+    }
+    if (brightness.serviceEpoch != snapshot.serviceEpoch
+        || brightness.topologyRevision != snapshot.revision) {
+        return rejected("brightness-lineage-mismatch");
+    }
+    if (brightness.outputs.size() != snapshot.outputs.size()) {
+        return rejected("brightness-output-mismatch");
+    }
+    for (qsizetype index = 0; index < snapshot.outputs.size(); ++index) {
+        if (brightness.outputs.at(index).stableId != snapshot.outputs.at(index).stableId) {
+            return rejected("brightness-output-mismatch");
+        }
+    }
+    return accepted();
+}
+
 ConfirmationRequirement confirmationRequirement(const ChangeClass changeClass)
 {
     switch (changeClass) {

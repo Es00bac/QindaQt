@@ -46,6 +46,8 @@ void DisplayServiceDeploymentTest::descriptorsAndXmlStayAligned()
     QVERIFY(xmlBytes.contains("type=\"(usta(sbbsiiduus))\" direction=\"in\""));
     QVERIFY(xmlBytes.contains("type=\"(uuusttss)\" direction=\"out\""));
     QVERIFY(xmlBytes.contains("type=\"(ustaya(ssssssiibbbbbsiiiiduusa(siiub))a(suustttu))\""));
+    QVERIFY(xmlBytes.contains("type=\"(ustta(sbbu))\" direction=\"out\""));
+    QVERIFY(xmlBytes.contains("type=\"(stsu)\" direction=\"in\""));
     QXmlStreamReader reader(&xml);
     QStringList methods;
     QStringList signalNames;
@@ -64,7 +66,9 @@ void DisplayServiceDeploymentTest::descriptorsAndXmlStayAligned()
     QVERIFY2(!reader.hasError(), qPrintable(reader.errorString()));
     QCOMPARE(methods, QStringList({QStringLiteral("GetSnapshot"),
                                   QStringLiteral("Stage"), QStringLiteral("Preview"),
-                                  QStringLiteral("Confirm"), QStringLiteral("Cancel")}));
+                                  QStringLiteral("Confirm"), QStringLiteral("Cancel"),
+                                  QStringLiteral("GetBrightness"),
+                                  QStringLiteral("SetOutputBrightness")}));
     QCOMPARE(signalNames, QStringList({QStringLiteral("Changed")}));
 }
 
