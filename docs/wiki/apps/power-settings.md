@@ -2,12 +2,14 @@
 
 `qindaqt-settings --page power` is the first-party power-supply, profile, and
 brightness and session-control surface. The route model receives an injected
-`PowerClient` and purpose-built `SessionActionsClient`; a narrow
-process-lifetime QML composition owns both clients and their injected Qt bus
-connections. The same composition separately owns the bounded KScreenLocker
+`PowerClient`, a purpose-built `SessionActionsClient`, and an external-display
+brightness model over the public Display client; a narrow process-lifetime QML
+composition owns those clients and their injected Qt bus connections. The same
+composition separately owns the bounded KScreenLocker
 preference adapter described in [ADR-0091](../adr/0091-configure-kscreenlocker-preferences-through-settings.md).
 UPower, power-profiles-daemon, login1, ScreenSaver, sysfs, the resident Power
-service, and the supervisor never cross into the Power model or page.
+and Display services, KWin output management, and the supervisor never cross
+into the Power model or page.
 
 The wire values and bounds are fixed by the [Power1 reference](../reference/power1-v1.md),
 and the platform authority remains owned by the
@@ -23,6 +25,7 @@ The route presents only validated, bounded public snapshot copies:
 | Power profiles | Active profile and at most four supported profiles | Select a different profile only when the exact snapshot admits it |
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
 | Internal brightness | Normalized 0–10000 position, exact observed raw value/maximum, and the reason a panel is not adjustable | Keyboard- and pointer-operable slider for the panel the shared Power1 target rule admits ([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)); read-only, ambiguous, lower-preference, and unavailable panels show a disabled slider or no value, with visible text |
+| External display brightness | Normalized 0–10000 level Display1 publishes for each enabled external output, joined to the exact topology revision, and the reason an output is not adjustable | Keyboard- and pointer-operable slider for each output Display1 admits ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)); outputs without KWin brightness control or a reported level, mirrored outputs, and ambiguously identified outputs stay listed with visible text and never dispatch; internal panels stay with Power1 and disabled outputs are not listed |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
 | Screen lock | Saved automatic-idle-lock preference and timeout, resume-lock preference, and unlock grace | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled; toggle lock-after-wake and choose the stored grace delay |
 | Lid presence | Validated Power1 `SourceTruth` lid-presence fact under the shared admission predicate | Read-only visibility input: the lid rows of the power policy section render only when admitted truth says a lid exists |
@@ -120,6 +123,41 @@ epoch replacement, malformed or mismatched completion, timeout, and uncertain
 outcomes clear the local fence with visible no-replay feedback. The public
 client performs its own bounded transport timeout and resnapshot.
 
+## External display brightness
+
+The composition also constructs one public Display client over its own Qt
+transport. It injects an `ExternalDisplayBrightnessModel` into the Power model
+as the opaque `externalBrightness` object, the same way it injects the
+session-actions and lid-policy objects. The model reads only the client's
+validated snapshot and the brightness rows the client has joined to that
+snapshot's exact epoch and topology revision
+([Display client](../architecture/display-client.md)). It lists each enabled,
+non-internal output in snapshot order under a route-local `external-N` row ID.
+Internal panels remain the Power1 rows above.
+
+One admission predicate supplies each row's `available` flag and final
+dispatch. It requires:
+
+- a `Ready` client with an exact owner and published brightness rows;
+- no live display-arrangement transaction;
+- an output with KWin brightness control and a reported level that is
+  neither mirrored nor ambiguously identified;
+- no conflicting debounce, operation, or convergence fence.
+
+Gestures use the same 120 ms debounce and no-op rules as the Power rows, pinned
+to owner, service epoch, and brightness revision. Dispatch re-resolves the row
+to the same stable output ID and sends one exact `SetOutputBrightness` request.
+A brightness republication during the debounce refuses the queued gesture, and
+loss of the joined rows cancels it.
+
+Display1 replies only after it observes the change. A success therefore waits
+only until joined rows at or beyond the result's observed revision arrive; a
+different observed level ends that wait at once with visible text. Busy,
+refused, uncertain, malformed or mismatched results, owner loss, and the
+five-second convergence timeout clear the fence with visible text and are
+never replayed. This fence is independent of the Power1 operation fence
+because each service serializes its own mutations.
+
 ## Session-action boundary
 
 Power1 version 1 remains free of session actions. `PowerRouteComposition`
@@ -151,7 +189,8 @@ a pointer drag continues while rows update.
 
 The page computes its host-entry target from current admission truth: the
 automatic screen-lock toggle when enabled, then the first enabled profile
-action, then the first enabled internal-display or keyboard slider, then Retry,
+action, then the first enabled internal-display, external-display, or keyboard
+slider, then Retry,
 then the route surface. Closing Settings remains a single window-level action;
 the page does not duplicate it. A disabled internal slider or fenced domain
 action is never nominated. Escape returns focus to the active Power PageTab in
@@ -199,7 +238,27 @@ no dispatch after authority change. The internal-brightness row
 - no control and no request for read-only, ambiguous, lower-preference,
   degraded, capability-absent, and unavailable-service panels;
 - no replay after an uncertain result or owner loss;
-- no send after the lineage changes. The screen-lock model row covers INI
+- no send after the lineage changes.
+
+The external-display row (`qindaqt.settings-power-external-brightness`) drives
+the real public Display client over a fake Display1 transport. It covers:
+
+- one row per enabled external output, with the internal panel and the
+  disabled output omitted and an output without brightness control listed
+  read-only;
+- a queued burst coalesced into one exact request pinned to epoch, brightness
+  revision, and stable output ID, with the other monitor fenced meanwhile;
+- the delayed reply converging on the observed republication, and an
+  authoritative different-value republication ending the wait with visible
+  text;
+- no-op cancellation, a stale gesture refused after a brightness
+  republication, and a queued gesture cancelled when a topology replacement
+  moves its row;
+- no control and no request for mirrored, ambiguously identified, unreported,
+  arrangement-in-progress, and degraded-client rows;
+- busy, refused, uncertain, and owner-loss outcomes, none replayed.
+
+The screen-lock model row covers INI
 round-trip preserving unrelated keys, merge-latest saves that keep external
 edits to the untouched key in both directions, retry that re-runs a failed
 load/save before any live configure is requested or claimed, saved-versus-live
@@ -207,9 +266,12 @@ failure truth, and clamped one-to-240-minute timeout bounds.
 The warning-fatal page row renders wide and compact software scenes, verifies
 Power and session action wiring, destructive confirmation, accessible
 roles/descriptions, the internal slider's disabled truth plus keyboard, fence,
-and pointer-drag continuity through republication, and an always-admitted
-focus target. Boundary/poison and installed-route rows prove
-the source and relocated package boundaries. Settings Center tests additionally
+and pointer-drag continuity through republication, the external slider's
+admitted value, read-only reason, keyboard dispatch, fence, and failure text,
+and an always-admitted focus target. Boundary/poison and installed-route rows
+prove the source and relocated package boundaries; the poisons include a
+Display service import and a Display transport outside the composition root.
+Settings Center tests additionally
 cover eighth-route order, Ctrl+8, PageTab semantics, Escape/Tab entry, and
 exclusive wide/compact loaders.
 
@@ -217,7 +279,8 @@ No row contacts a host session/system bus, UPower, power-profiles-daemon,
 login1, ScreenSaver, sysfs, Wayland, or hardware. Screen-lock rows use
 temporary `kscreenlockerrc` copies and a fake live-configure client. This
 slice does not claim live host action success, live screen-locker preference
-adoption, physical internal-display mutation, hold acquisition/release,
+adoption, physical internal-display or external-monitor mutation, KWin
+brightness capability on any particular monitor, hold acquisition/release,
 charge thresholds, persistence beyond the bounded screen-lock preference
 file, live AT-SPI, physical brightness keys, or nested-session visuals.
 
@@ -227,4 +290,6 @@ Opening Power activates its installed service through the public client. The
 page omits epoch/revision counters and uses power-mode and brightness language
 in place of protocol terms. Internal display brightness shows its percentage,
 a slider for the admitted panel, and an explanation for any panel that Power1
-will not adjust. Keyboard brightness retains its supported control.
+will not adjust. External display brightness lists each enabled external
+output with its percentage and a slider where Display1 admits a change, or the
+reason it does not. Keyboard brightness retains its supported control.

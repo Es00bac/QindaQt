@@ -10,8 +10,9 @@
 namespace QindaQt::Apps::SettingsPower {
 
 // Process-lifetime QML singleton composition. It owns only the public Power1
-// transport/client and the route model; platform services remain behind the
-// public client boundary.
+// transport/client, the public Display1 transport/client for external-display
+// brightness (ADR-0150), and the route models; platform services remain behind
+// the public client boundaries.
 class PowerRouteComposition final : public QObject {
   Q_OBJECT
   QML_ELEMENT

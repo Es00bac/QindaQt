@@ -37,6 +37,10 @@ class PowerSettingsModel final : public QObject {
   // ADR-0132: injected opaque lid/power-button policy port. The model owns no
   // policy authority and never imports the adapter behind it.
   Q_PROPERTY(QObject *lidPolicy READ lidPolicy CONSTANT)
+  // ADR-0150: injected opaque external-display brightness rows over the public
+  // Display client. Display1 serializes that mutation, so its fence is
+  // independent of this model's Power1 operation fence.
+  Q_PROPERTY(QObject *externalBrightness READ externalBrightness CONSTANT)
   // ADR-0132: validated Power1 SourceTruth lid presence. The same admission
   // predicate that gates every other displayed truth gates this flag, so an
   // unadmitted or malformed snapshot hides the lid rows instead of trusting it.
@@ -56,6 +60,7 @@ public:
   explicit PowerSettingsModel(Power::PowerClient &client,
                               QObject *sessionActions = nullptr,
                               QObject *lidPolicy = nullptr,
+                              QObject *externalBrightness = nullptr,
                               QObject *parent = nullptr);
 
   [[nodiscard]] bool loading() const noexcept;
@@ -68,6 +73,9 @@ public:
   [[nodiscard]] bool sessionActionsSupported() const noexcept;
   [[nodiscard]] QObject *sessionActions() const noexcept;
   [[nodiscard]] QObject *lidPolicy() const noexcept;
+  [[nodiscard]] QObject *externalBrightness() const noexcept {
+    return m_externalBrightness;
+  }
   [[nodiscard]] bool lidPresent() const noexcept;
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] const QString &errorText() const noexcept { return m_errorText; }
@@ -149,6 +157,7 @@ private:
   Power::PowerClient &m_client;
   QObject *m_sessionActions = nullptr;
   QObject *m_lidPolicy = nullptr;
+  QObject *m_externalBrightness = nullptr;
   QTimer m_debounceTimer;
   QTimer m_convergenceTimer;
   std::optional<DebouncedBrightness> m_debounce;

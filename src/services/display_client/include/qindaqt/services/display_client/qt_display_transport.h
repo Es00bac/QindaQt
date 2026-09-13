@@ -37,6 +37,9 @@ public:
                      const QString &transactionId) override;
   void submitCancel(const QString &owner, quint64 requestId,
                     const QString &transactionId) override;
+  void fetchBrightness(const QString &owner, quint64 requestId) override;
+  void submitOutputBrightness(const QString &owner, quint64 requestId,
+                              const Display::BrightnessRequest &request) override;
 
 private Q_SLOTS:
   void onServiceOwnerChanged(const QString &service, const QString &oldOwner,

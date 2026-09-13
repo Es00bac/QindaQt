@@ -23,6 +23,7 @@ class DisplayClientPrivateBusTest final : public QObject {
 private Q_SLOTS:
   void transportLocalFailuresAreAsynchronous();
   void lifecycleReplacementAndTransactionAreReal();
+  void brightnessCrossesTheResidentService();
 };
 
 void DisplayClientPrivateBusTest::transportLocalFailuresAreAsynchronous() {
@@ -183,6 +184,118 @@ void DisplayClientPrivateBusTest::lifecycleReplacementAndTransactionAreReal() {
   serviceB->stop();
   QDBusConnection::disconnectFromBus(residentNameB);
   QDBusConnection::disconnectFromBus(residentNameA);
+  QDBusConnection::disconnectFromBus(clientName);
+}
+
+void DisplayClientPrivateBusTest::brightnessCrossesTheResidentService() {
+  PrivateSessionBus bus;
+  QString busError;
+  QVERIFY2(bus.start(&busError), qPrintable(busError));
+  Display::registerDBusTypes();
+  const QString clientName =
+      privateConnectionName(QStringLiteral("brightness-client"));
+  const QString residentName =
+      privateConnectionName(QStringLiteral("brightness-resident"));
+  QDBusConnection clientConnection =
+      QDBusConnection::connectToBus(bus.address(), clientName);
+  QDBusConnection residentConnection =
+      QDBusConnection::connectToBus(bus.address(), residentName);
+  QVERIFY(clientConnection.isConnected());
+  QVERIFY(residentConnection.isConnected());
+
+  auto inventory = std::make_unique<FakeInventorySource>();
+  FakeInventorySource *inventoryPointer = inventory.get();
+  auto port = std::make_unique<FakeTransactionPort>();
+  FakeTransactionPort *portPointer = port.get();
+  const DisplayTransaction::Timing timing{
+      .applyTimeoutMilliseconds = 1'000,
+      .observationTimeoutMilliseconds = 2'000,
+      .confirmationTimeoutMilliseconds = 1'000,
+      .firstRevertBackoffMilliseconds = 20,
+      .secondRevertBackoffMilliseconds = 20};
+  auto service = std::make_unique<DisplayService::ResidentDisplayService>(
+      std::move(inventory), std::move(port), std::make_unique<ElapsedClock>(),
+      [] { return QStringLiteral("d7-private-client"); }, residentConnection,
+      QString::fromLatin1(Display::kServiceName), timing);
+  QCOMPARE(service->start(), DisplayService::ServiceStartStatus::Started);
+  inventoryPointer->publish(inventoryFrame(1));
+  (void)service->setSafetyState(DisplayTransaction::SafetyState::Safe);
+  portPointer->publishDevices(brightnessDevices(6'000));
+
+  QtDisplayTransport transport(clientConnection);
+  Client client(&transport);
+  QSignalSpy completions(&client, &Client::operationCompleted);
+  client.start();
+  QTRY_VERIFY_WITH_TIMEOUT(client.brightness().has_value(), 5'000);
+  const Display::BrightnessSnapshot published = *client.brightness();
+  QCOMPARE(published.topologyRevision, client.snapshot()->revision);
+  const QString stableId = client.snapshot()->outputs.constFirst().stableId;
+  QVERIFY(published.outputs.constFirst()
+          == (Display::OutputBrightness{.stableId = stableId,
+                                        .capable = true,
+                                        .observed = true,
+                                        .value = 6'000}));
+
+  // Stale lineage is refused before it reaches the bus.
+  const quint64 staleId = client.setOutputBrightness(
+      {.baseEpoch = published.serviceEpoch,
+       .baseRevision = published.revision + 1,
+       .stableId = stableId,
+       .value = 2'500});
+  QTRY_COMPARE_WITH_TIMEOUT(completions.size(), 1, 5'000);
+  QCOMPARE(completions.at(0).at(0).toULongLong(), staleId);
+  QCOMPARE(qvariant_cast<Display::OperationResult>(completions.at(0).at(1)).error,
+           Display::ErrorCode::StaleRevision);
+  QCOMPARE(portPointer->brightnessRequests.size(), 0);
+
+  // The exact request crosses the bus; the real delayed reply arrives only
+  // after the service observes the new value.
+  const quint64 applyId = client.setOutputBrightness(
+      {.baseEpoch = published.serviceEpoch,
+       .baseRevision = published.revision,
+       .stableId = stableId,
+       .value = 2'500});
+  QTRY_COMPARE_WITH_TIMEOUT(portPointer->brightnessRequests.size(), 1, 5'000);
+  QCOMPARE(portPointer->brightnessRequests.constFirst().connectorName,
+           QStringLiteral("DP-1"));
+  QCOMPARE(portPointer->brightnessRequests.constFirst().value, quint32{2'500});
+  portPointer->completeBrightness(DisplayService::BrightnessApplyOutcome::Applied);
+  QTest::qWait(100);
+  QCOMPARE(completions.size(), 1);
+  QCOMPARE(client.state(), ClientState::Busy);
+  portPointer->publishDevices(brightnessDevices(2'500));
+  QTRY_COMPARE_WITH_TIMEOUT(completions.size(), 2, 5'000);
+  QCOMPARE(completions.at(1).at(0).toULongLong(), applyId);
+  const auto applied =
+      qvariant_cast<Display::OperationResult>(completions.at(1).at(1));
+  QCOMPARE(applied.kind, Display::OperationKind::ImmediatePolicy);
+  QCOMPARE(applied.status, Display::OperationStatus::Succeeded);
+  QCOMPARE(applied.initiatingRevision, published.revision);
+  QVERIFY(applied.observedRevision > published.revision);
+  QTRY_VERIFY_WITH_TIMEOUT(
+      client.brightness().has_value()
+          && client.brightness()->revision >= applied.observedRevision
+          && client.brightness()->outputs.constFirst().value == 2'500,
+      5'000);
+
+  // Losing the service during a delayed request completes it once, uncertain.
+  const Display::BrightnessSnapshot current = *client.brightness();
+  const quint64 lostId = client.setOutputBrightness(
+      {.baseEpoch = current.serviceEpoch,
+       .baseRevision = current.revision,
+       .stableId = stableId,
+       .value = 4'000});
+  QTRY_COMPARE_WITH_TIMEOUT(portPointer->brightnessRequests.size(), 2, 5'000);
+  service->stop();
+  service.reset();
+  QTRY_COMPARE_WITH_TIMEOUT(completions.size(), 3, 5'000);
+  QCOMPARE(completions.at(2).at(0).toULongLong(), lostId);
+  QCOMPARE(qvariant_cast<Display::OperationResult>(completions.at(2).at(1)).status,
+           Display::OperationStatus::Uncertain);
+  QTRY_VERIFY_WITH_TIMEOUT(!client.brightness().has_value(), 5'000);
+
+  client.stop();
+  QDBusConnection::disconnectFromBus(residentName);
   QDBusConnection::disconnectFromBus(clientName);
 }
 

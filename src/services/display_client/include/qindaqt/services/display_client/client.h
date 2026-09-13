@@ -63,12 +63,23 @@ public:
   [[nodiscard]] quint64 confirm(const QString &transactionId);
   [[nodiscard]] quint64 cancel(const QString &transactionId);
 
+  // ADR-0150 immediate brightness. brightness() holds only rows that join the
+  // held snapshot's exact epoch and topology revision and never regress within
+  // one epoch. setOutputBrightness() uses the single serialized mutation slot,
+  // never replays, and requires the published brightness lineage and exactly
+  // one joined stable output.
+  [[nodiscard]] std::optional<Display::BrightnessSnapshot> brightness() const;
+  [[nodiscard]] quint64
+  setOutputBrightness(const Display::BrightnessRequest &request);
+
 Q_SIGNALS:
   void stateChanged(QindaQt::DisplayClient::ClientState state,
                     const QString &reasonCode);
   void snapshotChanged(const QindaQt::Display::Snapshot &snapshot);
   void operationCompleted(quint64 requestId,
                           const QindaQt::Display::OperationResult &result);
+  // Emitted whenever brightness() is published, replaced, or withdrawn.
+  void brightnessChanged();
 
 private Q_SLOTS:
   void acceptOwner(const QString &owner);
@@ -82,12 +93,16 @@ private Q_SLOTS:
                             bool transportSuccess,
                             const Display::OperationResult &result,
                             const QString &reasonCode);
+  void acceptBrightnessReply(const QString &owner, quint64 requestId,
+                             bool transportSuccess,
+                             const Display::BrightnessSnapshot &brightness,
+                             const QString &reasonCode);
   void acceptActivationFinished(bool success, const QString &reasonCode);
   void onFetchTimeout();
   void onOperationTimeout();
 
 private:
-  enum class OperationKind { Stage, Preview, Confirm, Cancel };
+  enum class OperationKind { Stage, Preview, Confirm, Cancel, Brightness };
   struct PendingOperation {
     quint64 requestId = 0;
     OperationKind kind = OperationKind::Stage;
@@ -121,6 +136,10 @@ private:
               const QString &reasonCode) const;
   [[nodiscard]] static Display::OperationKind publicKind(OperationKind kind);
   [[nodiscard]] ClientState baseState() const noexcept;
+  // Brightness publication lives in display_client_brightness.cpp.
+  void initializeBrightness();
+  void requestBrightness();
+  void clearBrightness();
 
   DisplayTransport *m_transport = nullptr;
   ClientState m_state = ClientState::Stopped;
@@ -139,6 +158,11 @@ private:
   bool m_activationInFlight = false;
   QString m_announcedEpoch;
   int m_requestTimeoutMs = 5'000;
+  std::optional<Display::BrightnessSnapshot> m_brightness;
+  QTimer m_brightnessTimer;
+  quint64 m_brightnessRequestId = 0;
+  bool m_brightnessFetchInFlight = false;
+  bool m_brightnessRefetchNeeded = false;
 };
 
 } // namespace QindaQt::DisplayClient

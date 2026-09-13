@@ -64,6 +64,34 @@ set_tests_properties(qindaqt.settings-power-slider-admission-debounce PROPERTIES
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;power;model;debounce")
 
+qt_add_executable(qindaqt_power_external_brightness_tests
+    tst_power_external_brightness.cpp external_brightness_test_support.h
+    "${PROJECT_SOURCE_DIR}/tests/services/display_client/support/fake_display_transport.h")
+target_include_directories(qindaqt_power_external_brightness_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/tests/services/display_client/support")
+target_link_libraries(qindaqt_power_external_brightness_tests
+    PRIVATE qindaqt_settings_power QindaQt::DisplayClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_power_external_brightness_tests)
+add_test(NAME qindaqt.settings-power-external-brightness
+    COMMAND qindaqt_power_external_brightness_tests)
+set_tests_properties(qindaqt.settings-power-external-brightness PROPERTIES
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "settings;power;model;brightness;display")
+
+qt_add_executable(qindaqt_power_route_composition_tests
+    tst_power_route_composition.cpp)
+target_include_directories(qindaqt_power_route_composition_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_power_route_composition_tests
+    PRIVATE qindaqt_settings_power_backend_qml qindaqt_settings_power
+    Qt6::Qml Qt6::Test)
+qindaqt_enable_warnings(qindaqt_power_route_composition_tests)
+add_test(NAME qindaqt.settings-power-composition
+    COMMAND qindaqt_power_route_composition_tests)
+set_tests_properties(qindaqt.settings-power-composition PROPERTIES
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent;QT_FATAL_WARNINGS=1"
+    LABELS "settings;power;composition")
+
 qt_add_executable(qindaqt_power_internal_brightness_tests
     tst_power_internal_brightness.cpp power_settings_test_support.h)
 target_link_libraries(qindaqt_power_internal_brightness_tests

@@ -43,7 +43,7 @@ selects production; the wire contract is unchanged.
 | External brightness changes | Kernel `actual_brightness` | Adapter re-reads observed truth after a write |
 | Adaptive brightness | KWin | QindaQt exposes no competing adaptive loop |
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
-| External-monitor brightness | KWin brightness control, through Display1 `SetOutputBrightness` ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)) | Display D7; unavailable wherever KWin advertises no capability; PB-5 presentation pending; DDC/CI policy remains PB-6 |
+| External-monitor brightness | KWin brightness control, through Display1 `SetOutputBrightness` ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)) | Display D7; unavailable wherever KWin advertises no capability; presented per output by the [Power Settings route](../apps/power-settings.md) through the public Display client; DDC/CI policy remains PB-6 |
 
 `Power1` holds no inhibitors in version 1. Lock-before-sleep remains a
 KWin/KScreenLocker responsibility. Shell session actions acquire all three
@@ -85,14 +85,15 @@ composition separate:
 | `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice; the session-owned display-off behavior users configure today is enforced by [desktop controls](desktop-controls.md) through KIdleTime and org-kde-kwin-dpms with no Power1 wire surface |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
-| [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard and internal-panel mutation and no session actions | Installed eighth Settings route; no platform maturity claim |
+| [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard, internal-panel, and external-display mutation and no session actions | Installed eighth Settings route; no platform maturity claim |
 | [`desktop_controls`](desktop-controls.md) | Session-process brightness media keys over the public sysfs write primitive, notification feedback, and idle display-off enforcement | Focused-evidence slice; no Power1 wire change |
 
 The service coordinator may not own UPower, logind, profile-daemon, or sysfs
 transport objects. Dedicated adapters own those resources behind the injected
 PB-1 collaborator boundaries; the composition root owns adapter lifetimes.
 Power modules do not link Display implementation modules or Wayland. Only the
-later PB-5 binding may consume the public Display client.
+Power Settings external-display brightness rows consume the public Display
+client; the Power service and client modules do not.
 
 The profile adapter consumes the standard Power Profiles D-Bus contract. On
 Gentoo, `sys-apps/tuned[ppd]` is an equivalent provider and the desktop ebuild

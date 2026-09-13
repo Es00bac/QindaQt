@@ -11,6 +11,7 @@ target_sources(
         src/qt_display_transport.cpp
         src/display_client.cpp
         src/display_client_replies.cpp
+        src/display_client_brightness.cpp
         src/display_coordinator.cpp
     PUBLIC
         FILE_SET HEADERS

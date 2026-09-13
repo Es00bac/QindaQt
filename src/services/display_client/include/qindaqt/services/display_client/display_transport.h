@@ -35,6 +35,12 @@ public:
                              const QString &transactionId) = 0;
   virtual void submitCancel(const QString &owner, quint64 requestId,
                             const QString &transactionId) = 0;
+  // ADR-0150 immediate brightness on the exact owner: GetBrightness replies
+  // through brightnessReply(), SetOutputBrightness through operationReply().
+  virtual void fetchBrightness(const QString &owner, quint64 requestId) = 0;
+  virtual void
+  submitOutputBrightness(const QString &owner, quint64 requestId,
+                         const Display::BrightnessRequest &request) = 0;
 
 Q_SIGNALS:
   void ownerChanged(const QString &owner);
@@ -49,6 +55,10 @@ Q_SIGNALS:
                       bool transportSuccess,
                       const QindaQt::Display::OperationResult &result,
                       const QString &reasonCode);
+  void brightnessReply(const QString &owner, quint64 requestId,
+                       bool transportSuccess,
+                       const QindaQt::Display::BrightnessSnapshot &brightness,
+                       const QString &reasonCode);
 };
 
 } // namespace QindaQt::DisplayClient
