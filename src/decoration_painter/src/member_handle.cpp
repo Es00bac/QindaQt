@@ -13,26 +13,63 @@
 // stoplights and a "more" control, instead of a full title bar.
 namespace QindaQt::Decoration {
 
-QList<DecorationButtonVisual> layoutMemberHandleButtons(const DecorationChrome &chrome,
-                                                        const QSizeF &size)
+DecorationMemberHandleLayout layoutMemberHandle(const DecorationChrome &chrome,
+                                                const QSizeF &size)
 {
-    QList<DecorationButtonVisual> buttons;
+    DecorationMemberHandleLayout layout;
+    const qreal width = std::max(0.0, size.width());
     const qreal cell = DecorationMiniButtonCell;
     const qreal top = (DecorationMemberHandleHeight - cell) / 2.0;
     const bool right = effectiveButtonSide(chrome) == DecorationButtonSide::Right;
     const auto kinds = decorationButtonKinds(chrome);
     const auto count = static_cast<qreal>(kinds.size());
     const qreal groupWidth = count * cell + std::max(0.0, count - 1.0) * DecorationMiniButtonSpacing;
-    qreal x = right ? size.width() - groupWidth - DecorationMiniButtonInset
-                    : DecorationMiniButtonInset;
+    const qreal inset = std::min(
+        DecorationMiniButtonInset,
+        std::max(0.0, (width - groupWidth - cell) / 2.0));
+    qreal x = right ? width - groupWidth - inset : inset;
+    QRectF stoplightBounds;
     for (const auto kind : kinds) {
-        buttons.append({kind, QRectF(x, top, cell, cell)});
+        const QRectF geometry(x, top, cell, cell);
+        layout.buttons.append({kind, geometry});
+        stoplightBounds = stoplightBounds.isNull()
+            ? geometry : stoplightBounds.united(geometry);
         x += cell + DecorationMiniButtonSpacing;
     }
-    const qreal moreX = right ? DecorationMiniButtonInset
-                              : size.width() - cell - DecorationMiniButtonInset;
-    buttons.append({DecorationButtonKind::More, QRectF(moreX, top, cell, cell)});
-    return buttons;
+    const qreal moreX = right ? inset : width - cell - inset;
+    const QRectF more(moreX, top, cell, cell);
+    layout.buttons.append({DecorationButtonKind::More, more});
+
+    const qreal clearLeft = (right ? more : stoplightBounds).right()
+        + DecorationMemberControlClearance;
+    const qreal clearRight = (right ? stoplightBounds : more).left()
+        - DecorationMemberControlClearance;
+    layout.dragRegion = QRectF(clearLeft, 0.0,
+                              std::max(0.0, clearRight - clearLeft),
+                              DecorationMemberHandleHeight);
+    layout.supported = width >= DecorationMemberHandleMinimumWidth
+        && size.height() >= DecorationMemberHandleHeight;
+
+    const qreal center = width / 2.0;
+    if (layout.supported && center >= layout.dragRegion.left()
+        && center <= layout.dragRegion.right()) {
+        const qreal availableHalf = std::min(
+            center - layout.dragRegion.left(), layout.dragRegion.right() - center);
+        const qreal gripWidth = std::min(
+            {DecorationMemberGripMaximumWidth, width * 0.2, availableHalf * 2.0});
+        if (gripWidth >= DecorationMemberGripMinimumWidth) {
+            layout.grip = QRectF(center - gripWidth / 2.0,
+                                 DecorationMemberHandleHeight / 2.0 - 1.5,
+                                 gripWidth, 3.0);
+        }
+    }
+    return layout;
+}
+
+QList<DecorationButtonVisual> layoutMemberHandleButtons(
+    const DecorationChrome &chrome, const QSizeF &size)
+{
+    return layoutMemberHandle(chrome, size).buttons;
 }
 
 void paintMemberHandle(QPainter &painter, const DecorationChrome &chrome,
@@ -66,14 +103,14 @@ void paintMemberHandle(QPainter &painter, const DecorationChrome &chrome,
     style.cornerRadius = DecorationMemberCornerRadius;
     paintDecorationFrame(painter, QRectF(QPointF(0.0, 0.0), frame.size), style);
 
-    // Grip: a short pill centered on the bar in caption ink.
-    QColor grip = decorationCaptionColor(chrome, frame.active);
-    grip.setAlphaF(frame.active ? 0.55f : 0.35f);
-    const qreal gripWidth = std::min(36.0, width * 0.2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(grip);
-    painter.drawRoundedRect(QRectF((width - gripWidth) / 2.0, height / 2.0 - 1.5, gripWidth, 3.0),
-                            1.5, 1.5);
+    const DecorationMemberHandleLayout layout = layoutMemberHandle(chrome, frame.size);
+    if (!layout.grip.isEmpty()) {
+        QColor grip = decorationCaptionColor(chrome, frame.active);
+        grip.setAlphaF(frame.active ? 0.55f : 0.35f);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(grip);
+        painter.drawRoundedRect(layout.grip, 1.5, 1.5);
+    }
     painter.restore();
 }
 

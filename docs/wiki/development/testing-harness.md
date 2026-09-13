@@ -3550,6 +3550,15 @@ the public KDecoration shadow image, padding, center stretch cell, falloff, and
 the maximized no-shadow result. The nested desktop screenshot remains the gate
 for compositor placement and edge separation against the wallpaper.
 
+`qindaqt.member-handle-layout` exercises the contained-window handlebar at its
+108-logical-pixel supported minimum and at a roomy width. It covers classic
+left-side and glyph right-side controls, maximized and restored frames, every
+in-bounds/non-overlap invariant, the retained native drag rectangle, and a
+handle-only pixel probe proving the centered grip never paints through a
+button target. The adjacent decoration-painter, plugin-load, visual, and
+window-menu rows remain the production renderer/factory regression boundary;
+no live compositor or screenshot baseline is involved.
+
 ## Determinism and acceptance
 
 Scenario data can declare output geometry/scale/rotation/refresh, profile,

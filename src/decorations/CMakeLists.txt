@@ -44,6 +44,7 @@ add_library(qindaqt_decoration MODULE
     qindabutton.cpp
     qindabutton.h
     qindadecoration.cpp
+    qindadecorationgeometry.cpp
     qindadecoration.h
 )
 
