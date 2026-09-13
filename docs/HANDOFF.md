@@ -31,9 +31,18 @@ credential prompting to KIO's standard UI delegate without reading, storing,
 logging, or accepting credentials itself, rejects URL userinfo, and cancels a
 superseded listing before refresh or remote-to-remote replacement. On the
 integrated tree, the two focused network rows pass 2/2, documentation validates
-250 documents, strict MkDocs passes, and the diff check is clean. Remote
-regular-file opening is a separate active descendant; installed/live network
-access and real credentials were not exercised.
+250 documents, strict MkDocs passes, and the diff check is clean.
+
+The independently accepted remote-open lineage `2b37f9c1` → `bc51cf1b` →
+`9e3fea96` is integrated as `f9b9d931` → `3e6dea68` → `39c061b6`.
+Remote regular files now use KIO's standard desktop handler and Open With path;
+the File Manager composes a QWidget-capable application so that standard dialog
+path does not abort. The integrated affected selector passes 10/10, including
+the hermetic Open With regression and font-bootstrap wiring row; documentation
+validates 251 pages, strict MkDocs and the integration diff check pass.
+Installed/live network access and real credentials were not exercised. Remote
+Rename remains a separately reviewed delta being rebased onto this accepted
+parent before integration.
 
 Worker and reviewer terminals used the existing direct-TTY, independent
 user-systemd lifetime rule, and long integration gates use the existing
