@@ -35,6 +35,7 @@ target_sources(
         model/places_controller.cpp
         model/search_controller.cpp
         network/kio_network_directory_backend.cpp
+        network/kio_fuse_remote_file_opener.cpp
         network/kio_remote_file_opener.cpp
         network/kio_remote_folder_creator.cpp
         network/kio_remote_copier.cpp
@@ -75,6 +76,7 @@ target_sources(
         model/places_controller.h
         model/search_controller.h
         network/kio_network_directory_backend.h
+        network/kio_fuse_remote_file_opener.h
         network/kio_remote_file_opener.h
         network/kio_remote_folder_creator.h
         network/kio_remote_copier.h
@@ -105,7 +107,9 @@ target_link_libraries(
     # facility. Qt6::Widgets is private because that delegate prompts with
     # QWidgets (Open With dialog, credential/message boxes); the process
     # application class lives in runtime/file_manager_application.h.
-    PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets Qt6::Widgets
+    # ADR-0157: Qt6::DBus is private for the session KIOFuse mount call; the
+    # kio-fuse daemon lifecycle belongs to the platform, not File Manager.
+    PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets Qt6::Widgets Qt6::DBus
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)

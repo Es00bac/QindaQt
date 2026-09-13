@@ -19,8 +19,13 @@ namespace QindaQt::Apps::FileManager {
 //  - never persist a credential (no wallet/keyring/session write), and never
 //    read, log, or accept embedded URL userinfo;
 //  - never add its own handler picker or prompt, execute a command line, or
-//    mutate remote content -- opening means "hand to the desktop's default
-//    handler". KIO's standard UI delegate may still prompt: ordinary
+//    mutate remote content itself -- opening means "hand to the desktop's
+//    default handler". (The production handler path may still write back:
+//    ADR-0157's KioFuseRemoteFileOpener resolves the URL through the session
+//    KIOFuse service so the handler's saved bytes return to the same remote
+//    URL; that write-back belongs to KIOFuse's lifecycle, not to this seam's
+//    implementations mutating anything directly.) KIO's standard UI delegate
+//    may still prompt: ordinary
 //    authentication, and its Open With dialog when no application is
 //    associated with the file's type. That prompt is the platform's, not a
 //    QindaQt one, and it constructs QWidgets, so the process must run the

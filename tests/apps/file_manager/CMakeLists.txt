@@ -133,6 +133,23 @@ set_tests_properties(qindaqt.file-manager-kio-remote-opener PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_kio_fuse_remote_opener_tests
+    tst_kio_fuse_remote_file_opener.cpp
+    qindaqt.file-manager-kio-fuse-remote-opener
+)
+# The seams include KIO job and QtDBus headers directly; the support library
+# keeps both private, so the includes come from the targets here.
+target_link_libraries(
+    qindaqt_file_manager_kio_fuse_remote_opener_tests
+    PRIVATE KF6::KIOGui Qt6::Widgets Qt6::DBus
+)
+# Rows that build a real resolved-open job need the QWidget-capable
+# application but no display, session bus, or network; the faked mount seam
+# answers every resolution in-process.
+set_tests_properties(qindaqt.file-manager-kio-fuse-remote-opener PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_kio_remote_renamer_tests
     tst_kio_remote_renamer.cpp
     qindaqt.file-manager-kio-remote-renamer

@@ -12,7 +12,7 @@
 #include "model/places_controller.h"
 #include "model/search_controller.h"
 #include "network/kio_network_directory_backend.h"
-#include "network/kio_remote_file_opener.h"
+#include "network/kio_fuse_remote_file_opener.h"
 #include "network/kio_remote_copier.h"
 #include "network/kio_remote_folder_creator.h"
 #include "network/kio_remote_mover.h"
@@ -226,7 +226,10 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
       std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
       std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioRemoteFileOpener>(),
+      // ADR-0157: remote files open through the session KIOFuse service so
+      // the desktop handler edits a local write-back path; it falls back to
+      // the plain ADR-0152 KIO open wherever KIOFuse is unavailable.
+      std::make_unique<QindaQt::Apps::FileManager::KioFuseRemoteFileOpener>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteRenamer>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteFolderCreator>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteCopier>(),
