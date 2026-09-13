@@ -86,6 +86,18 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 
+add_test(
+    NAME qindaqt.global-menu-popup-placement-qml-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_BINARY_DIR}/qml"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuPopupPlacement.qml"
+)
+set_tests_properties(
+    qindaqt.global-menu-popup-placement-qml-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+)
+
 # Reuses the same production-panel double set as the keyboard row below: the
 # panel host imports every built-in applet module eagerly, so only
 # GlobalMenu is removed from the shared doubles, leaving this row to resolve

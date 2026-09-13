@@ -17,6 +17,11 @@ Basic.Menu {
     property int maximumDepth: 6
     property bool interactive: true
     property bool projectionReady: false
+    // Top-level placement inputs. A non-empty panelEdge ("top", "bottom",
+    // "left", "right") wins over the hosting RuntimePanel's edge; vertical
+    // selects the fallback axis for hosts without a panel model.
+    property string panelEdge: ""
+    property bool vertical: false
     readonly property var colors: theme.colors ?? ({})
 
     objectName: "globalMenuNativeMenu"
@@ -30,6 +35,68 @@ Basic.Menu {
     width: 240
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
                  | Popup.CloseOnReleaseOutsideParent
+
+    // AGENT-CONTRACT: top-level placement reuses desktop controls' pure
+    // ControlPopupFrame contract (docs/wiki/shell/desktop-controls.md, "Popup
+    // placement"): flush with the triggering item's leading edge, below it,
+    // above it on a bottom panel, beside it on side panels, then slid along the
+    // panel axis to stay on the output. tst_GlobalMenuPopupPlacement.qml pins the
+    // same vectors as tst_desktop_controls_qml_menus.cpp.
+    // AGENT-GUARD: `anchorPosition` is window-local on purpose. A Wayland
+    // layer-shell client never learns where its window sits, so clamping happens
+    // only along the panel axis and the compositor's popup positioner remains
+    // the backstop.
+    function placementFor(anchorPosition, anchorWidth, anchorHeight, popupWidth, popupHeight,
+                          edge, boundsWidth, boundsHeight) {
+        const sideways = edge === "left" || edge === "right"
+        let px = edge === "left" ? anchorWidth : (edge === "right" ? -popupWidth : 0)
+        let py = sideways ? 0 : (edge === "bottom" ? -popupHeight : anchorHeight)
+        if (sideways)
+            py += slideOffset(anchorPosition.y + py, popupHeight, boundsHeight)
+        else
+            px += slideOffset(anchorPosition.x + px, popupWidth, boundsWidth)
+        return Qt.point(px, py)
+    }
+
+    // Shift keeping [start, start + extent] inside [0, limit], preferring the
+    // start edge when the popup is larger than the output.
+    function slideOffset(start, extent, limit) {
+        if (!(limit > 0))
+            return 0
+        return Math.max(0, Math.min(start, limit - extent)) - start
+    }
+
+    function panelEdgeFor(anchor) {
+        if (panelEdge.length > 0)
+            return panelEdge
+        const hostWindow = anchor.Window.window
+        const hostPanel = hostWindow !== null ? hostWindow.panel : undefined
+        const edge = hostPanel ? String(hostPanel.edge ?? "") : ""
+        if (edge === "top" || edge === "bottom" || edge === "left" || edge === "right")
+            return edge
+        // Hosts without a panel model (desktop surface, previews, tests): open
+        // away from the nearer output edge across the bar.
+        const center = anchor.mapToItem(null, anchor.width / 2, anchor.height / 2)
+        if (vertical)
+            return anchor.Screen.width > 0 && center.x > anchor.Screen.width / 2 ? "right" : "left"
+        return anchor.Screen.height > 0 && center.y > anchor.Screen.height / 2 ? "bottom" : "top"
+    }
+
+    // AGENT-GUARD: MenuBar opens a top-level menu with itself as the menu's
+    // parent MenuBarItem and requests an origin below that item. Replace only
+    // that requested origin, before the window is shown; Qt still owns opening,
+    // switching, focus, submenu cascade, and dismissal. Submenus keep Qt's
+    // cascade placement.
+    function placeAtMenuBarItem() {
+        const anchor = parent
+        if (depth !== 0 || anchor === null || anchor.menu !== menu)
+            return
+        const placed = placementFor(anchor.mapToItem(null, 0, 0), anchor.width, anchor.height,
+                                    width, height, panelEdgeFor(anchor),
+                                    anchor.Screen.width, anchor.Screen.height)
+        x = placed.x
+        y = placed.y
+    }
 
     // The menu tree is an immutable facade publication. Re-publication
     // may reuse its top-level Menu, so menuData changes rebuild descendants
@@ -102,6 +169,7 @@ Basic.Menu {
         populate()
     }
 
+    onAboutToShow: placeAtMenuBarItem()
     onMenuDataChanged: rebuildProjection()
     Component.onCompleted: {
         projectionReady = true

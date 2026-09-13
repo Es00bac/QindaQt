@@ -576,11 +576,12 @@ colors to the owning menu, so replacing appearance tokens updates an open
 tree without rebuilding it or changing its invocation generation. The production layer-shell panel
 retains `Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the
 native transient is the independently focusable keyboard surface. Qt Quick
-Controls owns popup placement, focus, open/close state, parent/submenu
-lifetime, Up/Down traversal, Right/Left submenu traversal, Escape dismissal,
-outside-press dismissal, hover switching, and checkable presentation. QindaQt
-only supplies the immutable content tree, styling, the six-level cap, and the
-one leaf-action callback. Reaching the cap leaves the excess submenu disabled.
+Controls owns focus, open/close state, parent/submenu lifetime and submenu
+cascade placement, Up/Down traversal, Right/Left submenu traversal, Escape
+dismissal, outside-press dismissal, hover switching, and checkable
+presentation. QindaQt only supplies the immutable content tree, styling, the
+six-level cap, the top-level popup origin described below, and the one
+leaf-action callback. Reaching the cap leaves the excess submenu disabled.
 Every leaf callback passes the facade publication generation; the facade then
 applies the existing invocation guard and no-replay dbusmenu rule.
 
@@ -589,9 +590,39 @@ input filter admits a press on another surface owned by the popup application,
 so a press can reach the layer-shell panel while its menu is open. Qt's
 `MenuBarItem` emits `triggered` from that press, and `MenuBar` closes the old
 menu, highlights the new item, and opens its menu before release. QindaQt does
-not mirror that state or defer a competing focus-loss close. This preserves
-the popup anchor and platform-specific constraint adjustment supplied by Qt
-and removes the former private `_q_waylandPopupAnchor*` bridge.
+not mirror that state or defer a competing focus-loss close. Qt's parent
+control geometry and platform-specific constraint adjustment stay in place,
+and the former private `_q_waylandPopupAnchor*` bridge stays removed.
+
+Top-level popups open adjacent to the triggering menu-bar item for every panel
+edge. Qt's `MenuBar` requests an origin directly below its `MenuBarItem`, which
+put a bottom panel's menu past the output (off Wayland, Qt's client-side
+fitting then pushed it back over the bar) and a vertical bar's menu below the
+item instead of beside it. Each top-level `GlobalMenuNativeMenu` therefore
+replaces only that requested origin in `aboutToShow`, using the same pure
+placement contract as desktop controls' `ControlPopupFrame`
+([desktop controls](desktop-controls.md#popup-placement)): flush with the item's
+leading edge and below it on a top panel, above it on a bottom panel, and
+beside it on left and right panels, then slid along the panel axis to stay on
+the output, keeping the start edge on the output when the popup is larger. The
+edge comes from the hosting `RuntimePanel` model; the applet's explicit
+`panelEdge` overrides it, and hosts without a panel model open away from the
+nearer output edge across the bar. The anchor position is window-local, so the
+compositor's popup positioner remains the backstop, and submenus keep Qt's
+cascade placement. The stock manifest still admits the applet only in
+horizontal panel zones; left and right placement applies to hosts that use the
+vertical layout.
+
+The `qindaqt.global-menu-popup-placement-qml-offscreen` row hosts the compiled
+applet in frameless panel windows at exact output positions. It proves
+adjacency to the exact triggering item on all four edges, panel-axis sliding on
+every edge, an oversized popup, re-opening after the anchor moves, the explicit
+edge override and the model-less fallback, and that switching, keyboard
+submenu traversal, Escape, outside-press dismissal, and single activation stay
+Qt-owned in a placed popup. Its contract case reuses the desktop-controls
+placement vectors. The production-panel keyboard row also requires the popup
+to open directly below the exact item through the real panel dispatcher. These
+are offscreen proofs; live panel adoption is not claimed.
 
 The offscreen production-composition path hosts the real `PanelAppletRow` →
 `AppletChip` → `BuiltinAppletContent` chain: **Tab** reaches the native menu
