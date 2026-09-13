@@ -339,8 +339,9 @@ implemented; do not use placeholder modules to bypass a boundary.
   [ADR-0040](../adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md)
   (superseding ADR-0030).
 - Desktop-scoped code depends only on `src/apps/file_manager/public`
-  (`FileBoundary`'s local listing, bounded launch, and mutation-controller
-  composition). It never imports File Manager's `model/**`, `mutation/**`,
+  (`FileBoundary`'s local listing, bounded file launch, identity-fenced folder
+  open in QindaQt File Manager, and mutation-controller composition). It
+  never imports File Manager's `model/**`, `mutation/**`,
   or `app_shell/**` headers directly, even though those headers are `PUBLIC`
   in File Manager's own CMake target; those remain File Manager's private
   controllers. See [File Manager](../apps/file-manager.md#public-desktop-file-boundary).

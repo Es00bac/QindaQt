@@ -3,6 +3,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -28,14 +29,33 @@ namespace {
   return {};
 }
 
+// A stand-in qindaqt-file-manager recording its exact argv (NUL-terminated),
+// renamed into place so a reader never sees a partial record.
+[[nodiscard]] QString writeRecordingProgram(const QString &directory, const QString &record) {
+  const QString program = directory + QStringLiteral("/qindaqt-file-manager");
+  QFile file(program);
+  if (!file.open(QIODevice::WriteOnly)) {
+    return {};
+  }
+  file.write(QStringLiteral("#!/bin/sh\nprintf '%s\\0' \"$@\" > '%1.tmp' && mv '%1.tmp' '%1'\n")
+                 .arg(record)
+                 .toLocal8Bit());
+  file.close();
+  file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+  return program;
+}
+
+[[nodiscard]] QByteArray recorded(const QString &record) {
+  QFile file(record);
+  return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+}
+
 } // namespace
 
-// Failure-before coverage for DesktopContentsController: the boundary's own
-// typed-failure paths (missing target, non-regular target) are the only
-// launch outcomes a hostile/offline test environment can assert on
-// deterministically, mirroring tst_desktop_file_boundary.cpp's own launch
-// tests. A real successful launch depends on the desktop's configured
-// handlers and is out of scope here for the same reason it is there.
+// Folder activation is proven end to end against a recording stand-in for
+// qindaqt-file-manager; regular files keep FileBoundary::launchLocalFile, whose
+// typed pre-flight failures are the only file-launch outcomes an offline test
+// can assert without invoking the desktop's configured handlers.
 class DesktopContentsControllerTests final : public QObject {
   Q_OBJECT
 
@@ -47,20 +67,32 @@ private Q_SLOTS:
   void hiddenEntriesAreOmittedFromThePresentation();
   void refreshPicksUpABoundedChange();
   void openSafelyRejectsAMissingTarget();
-  void openSafelyRejectsADirectoryTarget();
+  void openingAListedFolderStartsFileManagerWithItsCanonicalPath();
+  void folderActivationFailsTruthfullyWithoutLaunching();
+  void regularFileActivationKeepsTheDefaultHandlerPath();
   void emptyRootProducesZeroRowsWithoutFeedback();
   void unresolvedRootProducesZeroRowsWithFeedbackInsteadOfBlocking();
 
 private:
   std::unique_ptr<QTemporaryDir> m_root;
+  std::unique_ptr<QTemporaryDir> m_bin;
+  QString m_record;
+  QString m_program;
 };
 
 void DesktopContentsControllerTests::init() {
   m_root = std::make_unique<QTemporaryDir>();
-  QVERIFY(m_root->isValid());
+  m_bin = std::make_unique<QTemporaryDir>();
+  QVERIFY(m_root->isValid() && m_bin->isValid());
+  m_record = m_bin->filePath(QStringLiteral("argv"));
+  m_program = writeRecordingProgram(m_bin->path(), m_record);
+  QVERIFY(!m_program.isEmpty());
 }
 
-void DesktopContentsControllerTests::cleanup() { m_root.reset(); }
+void DesktopContentsControllerTests::cleanup() {
+  m_root.reset();
+  m_bin.reset();
+}
 
 void DesktopContentsControllerTests::listsRealFilesAndFoldersFromTheInjectedRoot() {
   QVERIFY(writeFile(m_root->filePath(QStringLiteral("Notes.txt"))));
@@ -123,18 +155,65 @@ void DesktopContentsControllerTests::openSafelyRejectsAMissingTarget() {
   QVERIFY(!controller.feedback().isEmpty());
 }
 
-void DesktopContentsControllerTests::openSafelyRejectsADirectoryTarget() {
+void DesktopContentsControllerTests::openingAListedFolderStartsFileManagerWithItsCanonicalPath() {
   QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Projects"))));
-  DesktopContentsController controller(m_root->path());
+  DesktopContentsController controller(m_root->path(), {m_program});
+  const QString canonical =
+      QFileInfo(m_root->filePath(QStringLiteral("Projects"))).canonicalFilePath();
 
-  QSignalSpy feedbackChanged(&controller,
-                            &DesktopContentsController::feedbackChanged);
-  QVERIFY(!controller.open(m_root->filePath(QStringLiteral("Projects"))));
-  QVERIFY(!controller.feedback().isEmpty());
-  QCOMPARE(feedbackChanged.size(), 1);
-
-  controller.clearFeedback();
+  QVERIFY2(controller.open(m_root->filePath(QStringLiteral("Projects"))),
+           qPrintable(controller.feedback()));
   QCOMPARE(controller.feedback(), QString());
+  QTRY_COMPARE(recorded(m_record), canonical.toLocal8Bit() + '\0');
+}
+
+void DesktopContentsControllerTests::folderActivationFailsTruthfullyWithoutLaunching() {
+  QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Replaced"))));
+  QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Removed"))));
+  QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Other"))));
+  DesktopContentsController controller(m_root->path(), {m_program});
+
+  // A listed folder replaced by a file, a removed folder, and a path that was
+  // never listed each report feedback and never fall back to another folder.
+  QVERIFY(QDir(m_root->filePath(QStringLiteral("Replaced"))).removeRecursively());
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Replaced"))));
+  QVERIFY(QDir(m_root->filePath(QStringLiteral("Removed"))).removeRecursively());
+  for (const QString &name : {QStringLiteral("Replaced"), QStringLiteral("Removed"),
+                              QStringLiteral("Unlisted")}) {
+    QSignalSpy feedbackChanged(&controller, &DesktopContentsController::feedbackChanged);
+    QVERIFY(!controller.open(m_root->filePath(name)));
+    QVERIFY2(!controller.feedback().isEmpty(), qPrintable(name));
+    controller.clearFeedback();
+  }
+
+  // No installed File Manager is a typed refusal too.
+  DesktopContentsController uninstalled(m_root->path(), QStringList{});
+  QVERIFY(!uninstalled.open(m_root->filePath(QStringLiteral("Other"))));
+  QVERIFY(uninstalled.feedback().contains(QStringLiteral("File Manager")));
+  QTest::qWait(100);
+  QVERIFY(!QFile::exists(m_record));
+}
+
+void DesktopContentsControllerTests::regularFileActivationKeepsTheDefaultHandlerPath() {
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Locked.txt"))));
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Became-folder.txt"))));
+  QVERIFY(QFile::setPermissions(m_root->filePath(QStringLiteral("Locked.txt")),
+                                QFileDevice::WriteOwner));
+  DesktopContentsController controller(m_root->path(), {m_program});
+  QVERIFY(QFile::remove(m_root->filePath(QStringLiteral("Became-folder.txt"))));
+  QVERIFY(QDir().mkpath(m_root->filePath(QStringLiteral("Became-folder.txt"))));
+
+  // Both outcomes carry launchLocalFile's own diagnostics and never reach the
+  // File Manager program.
+  QVERIFY(!controller.open(m_root->filePath(QStringLiteral("Became-folder.txt"))));
+  QVERIFY(controller.feedback().endsWith(QStringLiteral("is not a file")));
+  if (QFileInfo(m_root->filePath(QStringLiteral("Locked.txt"))).isReadable()) {
+    QSKIP("running with permission override; unreadable-file refusal not observable");
+  }
+  QVERIFY(!controller.open(m_root->filePath(QStringLiteral("Locked.txt"))));
+  QVERIFY(controller.feedback().endsWith(QStringLiteral("cannot be read")));
+  QTest::qWait(100);
+  QVERIFY(!QFile::exists(m_record));
 }
 
 void DesktopContentsControllerTests::emptyRootProducesZeroRowsWithoutFeedback() {

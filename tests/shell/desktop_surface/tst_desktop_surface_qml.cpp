@@ -49,6 +49,19 @@ private:
     QString m_previous;
 };
 
+// Scoped environment override, restored on destruction.
+class ScopedEnvironment {
+public:
+    ScopedEnvironment(const char *name, const QByteArray &value)
+        : m_name(name), m_previous(qgetenv(name)) { qputenv(name, value); }
+    ~ScopedEnvironment() { qputenv(m_name, m_previous); }
+    Q_DISABLE_COPY(ScopedEnvironment)
+
+private:
+    const char *m_name;
+    QByteArray m_previous;
+};
+
 QString desktopPath(const QTemporaryDir &home)
 {
     return home.path() + QStringLiteral("/Desktop");
@@ -171,10 +184,22 @@ void DesktopSurfaceQmlTests::selectionAndDoubleClickDispatchThroughTheBoundary()
                  .toString(),
              fileTile->property("entryId").toString());
 
-    // Double click on a directory tile dispatches through the boundary
-    // (DesktopContentsController::open -> FileBoundary::launchLocalFile),
-    // which safely rejects a non-regular target instead of crashing or doing
-    // nothing observable.
+    // Double click and Return on a directory tile open that exact folder in
+    // QindaQt File Manager (FileBoundary::openLocalFolder). PATH holds only a
+    // recording stand-in, so no real application starts.
+    const QString bin = m_home->filePath(QStringLiteral("bin"));
+    const QString record = m_home->filePath(QStringLiteral("argv"));
+    QVERIFY(QDir().mkpath(bin));
+    QFile program(bin + QStringLiteral("/qindaqt-file-manager"));
+    QVERIFY(program.open(QIODevice::WriteOnly));
+    program.write(QStringLiteral("#!/bin/sh\nprintf '%s\\n' \"$@\" >> '%1'\n")
+                      .arg(record).toLocal8Bit());
+    program.close();
+    QVERIFY(program.setPermissions(QFileDevice::ReadOwner | QFileDevice::ExeOwner));
+    ScopedEnvironment path("PATH", bin.toLocal8Bit());
+    const QByteArray expected =
+        QFileInfo(desktop + QStringLiteral("/Projects")).canonicalFilePath().toLocal8Bit()
+        + '\n';
     auto *contents =
         host.child<QObject>(QStringLiteral("desktopContentsController"));
     QVERIFY(contents != nullptr);
@@ -184,7 +209,14 @@ void DesktopSurfaceQmlTests::selectionAndDoubleClickDispatchThroughTheBoundary()
     host.clickWindow(Qt::LeftButton, Qt::NoModifier, folderScene);
     QTest::mouseDClick(host.window.get(), Qt::LeftButton, Qt::NoModifier,
                        folderScene.toPoint());
-    QTRY_VERIFY(!contents->property("feedback").toString().isEmpty());
+    const auto launches = [&record] {
+        QFile file(record);
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    };
+    QTRY_COMPARE(launches(), expected);
+    QTest::keyClick(host.window.get(), Qt::Key_Return);
+    QTRY_COMPARE(launches(), expected + expected);
+    QCOMPARE(contents->property("feedback").toString(), QString());
 
     // An empty-area left click clears the selection.
     host.clickWindow(Qt::LeftButton, Qt::NoModifier, kEmptySpot);
