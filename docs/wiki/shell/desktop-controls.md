@@ -55,6 +55,23 @@ application id (see [iconography](iconography.md#desktopentryiconresolver)),
 so the control, its popup heading, its accessible name, and the task list
 agree; a raw reverse-DNS id is never shown.
 
+The popup acts only on the task it was opened for. Opening records the row's
+task id and displayed revision. The existing state notification then closes
+the popup through `ControlPopupFrame.close()`, on the publishing turn, when any
+of these happens:
+
+- focus moves to another task;
+- the same task publishes a new revision;
+- no window is focused.
+
+A Minimize or Close activation that arrives after that change dispatches
+nothing, and reopening binds to the newly published row. A reprojection that
+leaves the task id and revision unchanged keeps the popup open. The
+controller's task-id and revision fence remains the dispatch authority; the
+applet only retires stale presentation. The
+`qindaqt.desktop-controls-offscreen-active-application` row proves this
+sequence offscreen.
+
 The focused checks are the desktop-controls unit, composition, offscreen QML,
 workspace transport, resolver/catalog, and boundary rows. These rows prove
 compiled presentation and injected-facade behavior; they do not qualify a

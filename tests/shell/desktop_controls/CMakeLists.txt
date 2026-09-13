@@ -147,6 +147,9 @@ qindaqt_add_desktop_controls_qml_test(qindaqt_desktop_controls_qml_workspace_tes
     tst_desktop_controls_qml_workspaces.cpp qindaqt.desktop-controls-offscreen-workspaces)
 qindaqt_add_desktop_controls_qml_test(qindaqt_desktop_controls_qml_menu_tests
     tst_desktop_controls_qml_menus.cpp qindaqt.desktop-controls-offscreen-menus)
+qindaqt_add_desktop_controls_qml_test(qindaqt_desktop_controls_qml_active_application_tests
+    tst_desktop_controls_qml_active_application.cpp
+    qindaqt.desktop-controls-offscreen-active-application)
 
 add_test(
     NAME qindaqt.desktop-controls-boundary
