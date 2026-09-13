@@ -514,7 +514,7 @@
               "summary": "The independently accepted truthful contained-window preview lineage is integrated as eefa25e8, df8a2679 and 5fba7edb. The integrated non-installed Customize selector passes 9/9; docs 251, strict MkDocs, shape and diff checks pass."
             }
           ],
-          "caveat": "The running shell adopts a saved profile only at its next start: provisional live-shell binding, reveal affordances, the rendered nested matrix, and installed-session behavior remain later outcomes."
+          "caveat": "Per ADR-0122, the running shell live-adopts a saved profile selection or edited user-store copy within one incremental reconciliation cycle, without a shell or compositor restart. Reveal affordances, the rendered nested matrix, and installed-session qualification remain later outcomes."
         },
         {
           "id": "QQ-004.09",
