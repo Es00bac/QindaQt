@@ -2577,6 +2577,15 @@ Integrated evidence:
 
 ## Next outcome
 
+Display D7 is integrated through `6c451420` after the same independent reviewer
+accepted the bounded ADR-0150 repair `95d4c595`. The integrated tree rebuilt
+the seven affected protocol/service/writer targets at `-j2`, passed all six
+registered brightness rows, and passed the private two-output nested-KWin proof
+20/20. The proof used disposable runtime and D-Bus roots and did not touch host
+display state. This delivers immediate Display1 brightness admission for
+capable external outputs; Power Settings controls and physical hardware
+qualification remain separate.
+
 Extend the accepted private interactive desktop S2 evidence described in
 [Task list](TASK_LIST.md) across WUXGA, 1440p, representative 125%/150% scales,
 light/dusk/dark themes, and a real multi-output arrangement. Preserve the exact

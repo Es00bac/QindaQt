@@ -615,7 +615,7 @@
           "title": "Display inventory and reversible output transactions",
           "weight": 18,
           "state": "EXECUTABLE",
-          "summary": "The revisioned compositor inventory, bounded Display1 protocol, privacy-preserving identity, topology, reversible transaction state machine, resident service, exact-owner asynchronous client/coordinator, bounded public QtWayland writer, crash-safe journal, and authenticated packaged D6 runtime composition are integrated.",
+          "summary": "The revisioned compositor inventory, bounded Display1 protocol, privacy-preserving identity, topology, reversible transaction state machine, resident service, exact-owner asynchronous client/coordinator, bounded public QtWayland writer, crash-safe journal, authenticated packaged D6 runtime composition, and D7 immediate brightness for capable external outputs are integrated.",
           "evidence": [
             {
               "kind": "commit",
@@ -659,6 +659,16 @@
             },
             {
               "kind": "commit",
+              "reference": "6c451420",
+              "summary": "The independently accepted D7 lineage admits immediate brightness only for capable external outputs through Display1 and the public QtWayland writer, with the durable decision and source contracts consistently named ADR-0150."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/HANDOFF.md",
+              "summary": "Integrated-tree verification built all seven affected targets, passed the six registered brightness rows, and passed the private two-output nested-KWin proof 20/20 without touching host display state."
+            },
+            {
+              "kind": "commit",
               "reference": "347eb03f",
               "summary": "Retains valid compositor inventory observed before apply ACK; independently reviewed and five integrated transaction test groups pass."
             },
@@ -668,7 +678,7 @@
               "summary": "Physical HDMI 125% preview/Cancel and Keep/restore cycles pass through Display1; verified service deployed through a user-level override."
             }
           ],
-          "caveat": "Physical Display1 preview, confirmation and rollback are qualified; direct Settings pointer interaction, broader hardware/hotplug/suspend/resource coverage remain distinct. Settings integration is under QQ-006.05."
+          "caveat": "Physical Display1 preview, confirmation and rollback are qualified, and D7 exposes immediate brightness for capable external outputs. Direct Power Settings pointer interaction is in progress; broader hardware/hotplug/suspend/resource coverage remains distinct. Settings integration is under QQ-006.05."
         },
         {
           "id": "QQ-005.03",

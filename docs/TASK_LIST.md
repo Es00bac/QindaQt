@@ -773,6 +773,14 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   D0-D6/session-lock 40/40. Nested convergence, mixed/physical
   outputs, resources, suspend/hotplug, and hardware qualification remain.
 
+- `6c451420` — Display D7 admits immediate brightness only for a capable
+  external output through Display1 and the bounded public QtWayland writer.
+  The exact lineage was independently accepted after the ADR-0150 reference
+  repair. Integrated verification built all seven affected targets, passed
+  the six registered brightness rows, and passed the private two-output
+  nested-KWin proof 20/20. Power Settings controls and physical brightness
+  hardware qualification remain separate outcomes.
+
 - `fa22af50` — GCC 15.3 strict Release portability repair for the
   customization-editor panel-step value. The accepted two-path change
   aggregate-initializes the exact panel/zone/null-anchor tuple and avoids the
