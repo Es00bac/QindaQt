@@ -716,14 +716,18 @@ test seam), `qindaqt.file-manager-remote-move-dispatch` (the injected move
 dispatch/validation rows: a confirmed success always refreshes the visible
 folder because the source left it, failures stay visible without optimistic
 display, replacement navigation and direct user cancellation retire the job
-with a generation-fenced late result, and destruction with a pending move is
+with an operation-identity-fenced late result -- a Cancel followed by an
+immediate same-listing retry reuses the listing generation, so each accepted
+move carries its own monotonic, never-reused operation token, and the old
+move's late failure or success can never retire, fail, or refresh the
+replacement -- and destruction with a pending move is
 safe), `qindaqt.file-manager-remote-copy-guard` (the production
 coordinator → Main.qml → MutationDialogs route: a remote multi-selection
 fails closed before the destination dialog and the local-only mutation
 backend for both Copy and Move, one selected child still routes to the
 injected copier or mover, and the
 shared Cancel action retires an in-flight remote copy or move through the
-injected collaborator with a generation-fenced late result), and `qindaqt.file-manager-mutation-action-binding`
+injected collaborator with a fenced late result), and `qindaqt.file-manager-mutation-action-binding`
 (the coordinator's actual action-enabled state, not just controller fields,
 under `NavigationController::remoteActive`: current-folder mutations and
 `view.filter`/search disable, while Empty Trash, Undo, and Restore Last stay

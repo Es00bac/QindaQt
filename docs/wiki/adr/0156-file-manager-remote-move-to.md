@@ -59,10 +59,17 @@ folder. The shape mirrors ADR-0155.
   answer when the server deleted the source mid-move and then reported a
   failure -- the refreshed listing, never an optimistic disappearance, is
   the truth the user sees.
-- Results are fenced by the generation captured at dispatch. Failures
-  surface as the controller's `launchError` text. Cancellation (the shared
-  `operation.cancel` action, replacement navigation, or leaving remote)
-  retires the in-flight move quietly and its late result is discarded.
+- Results are fenced by a monotonic, never-reused operation identity issued
+  per accepted move -- not by the listing generation, which remains the
+  source-freshness fence at dispatch (reviewed P1 repair, 2026-09-13: a
+  Cancel followed by an immediate retry in the same unchanged listing
+  reused the generation as the request identity, so the cancelled job's
+  late failure/success aliased onto the replacement move and retired,
+  failed, or refreshed it; the operation token makes that alias
+  impossible). Failures surface as the controller's `launchError` text.
+  Cancellation (the shared `operation.cancel` action, replacement
+  navigation, or leaving remote) retires the in-flight move quietly and
+  its late result is discarded.
 - The seam is injected and defaults to null: without it, Move To keeps
   disabling while remote exactly as before, and every existing composition
   and test is unaffected. The stock application composes `KioRemoteMover`

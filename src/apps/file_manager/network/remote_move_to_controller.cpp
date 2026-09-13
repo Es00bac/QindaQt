@@ -68,22 +68,32 @@ bool RemoteMoveToController::requestMove(const QVector<DirectoryEntry> &listedEn
     return refuse(QStringLiteral("Cannot move a folder into itself"));
   }
   m_busy = true;
-  m_generation = listingGeneration;
+  // Issue the fresh operation identity BEFORE dispatch so the mover's
+  // result -- and any quiet-kill result after cancel() -- correlates to
+  // exactly this request. Never reset m_operation: uniqueness over the
+  // controller's whole lifetime is what fences a cancelled job's late
+  // result away from a same-listing retry.
+  ++m_operation;
+  // The listing generation stays the dispatch-time freshness fence (see the
+  // header contract); it is deliberately not reused as the request
+  // identity.
+  Q_UNUSED(listingGeneration);
   Q_EMIT busyChanged();
-  m_mover->move(m_generation, source, target);
+  m_mover->move(m_operation, source, target);
   return true;
 }
 
-void RemoteMoveToController::onMoveFinished(quint64 generation,
+void RemoteMoveToController::onMoveFinished(quint64 operation,
                                             const QString &diagnostic) {
-  // Fenced like the copy handler: a result belonging to a cancelled or
-  // superseded move (including the quiet kill that cancellation triggers)
-  // is discarded without touching visible state.
-  if (!m_busy || generation != m_generation) {
+  // Fenced by the operation identity, not the listing generation: a result
+  // belonging to a cancelled or superseded move (including the quiet kill
+  // that cancellation triggers) carries an older identity and is discarded
+  // without touching visible state -- even when a retry in the same
+  // unchanged listing is already in flight (reviewed P1).
+  if (!m_busy || operation != m_operation) {
     return;
   }
   m_busy = false;
-  m_generation = 0;
   Q_EMIT busyChanged();
   if (diagnostic.isEmpty()) {
     // Success: the source left the folder being viewed, so the caller
@@ -100,9 +110,11 @@ void RemoteMoveToController::cancelPending() {
   if (!m_busy) {
     return;
   }
-  m_mover->cancel(m_generation);
+  m_mover->cancel(m_operation);
   m_busy = false;
-  m_generation = 0;
+  // m_operation is intentionally NOT reset here: the cancelled job's late
+  // result keeps its (now stale) identity, and the next accepted move gets
+  // a fresh one -- that is the whole token-alias repair.
   Q_EMIT busyChanged();
 }
 
