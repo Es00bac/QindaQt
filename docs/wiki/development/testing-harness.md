@@ -2141,7 +2141,7 @@ The Electron fixture is the installed Claude desktop application, launched
 unmodified: it refuses to start with Chromium network-override switches.
 `session.shade-visibility-unit` covers the pure helpers (swapchain slot
 selection, pixel mismatch with scale and exclusion, PNG encoding, runner
-evaluation, and the fixture catalogue).
+evaluation, dock-gesture planning, and the fixture catalogue).
 
 The final-binary run (plugin sha256 prefix `c7bd5140`) passed all 14 shade
 rows in 446 seconds of serial wall time: `compositor.hybrid-shade-controller`
@@ -2162,8 +2162,26 @@ KWin places new clients nondeterministically, so every dock and activation
 gesture is derived from live stacking and frames. A point counts as uncovered
 only when no window above it covers it, where coverage includes a 32-pixel
 client-side resize border and a container's shared row, while tiled siblings
-cover only their exact frames. The lifecycle flow also waits for member frames
-to settle between docks.
+cover only their exact frames. A dock drags the source onto the target, first
+raising whichever window blocks that gesture by clicking its uncovered content.
+When KWin maps the source entirely beneath its target, neither is possible, so
+the fixture drags the target onto the source instead and records the dock step
+as `reversed`. The `Meta+Shift` grab may start anywhere on a window's own
+surface, and the flows judge only that both windows share one container. The
+fixture never reverses once either window is grouped, because a `Meta+Shift`
+drag of a grouped member rearranges it out of its container. The lifecycle flow
+also waits for member frames to settle between docks.
+
+The reversed dock was added after an integrated replay of
+`cycles.gtk-csd.single-1080p` stopped before any verdict, with A mapped entirely
+beneath active B. `session.shade-visibility-unit` replays that geometry. It
+failed with the original error before the fallback, and now runs 24 tests. On
+the integrated plugin (sha256 prefix `0426c210`), five fresh sessions of that
+row each passed 22 of 22 verdicts. KWin mapped the exact former-stop geometry
+in three of them, and each of those grouped through the reversed drag. The
+lifecycle row then passed 14 of 14, and the XWayland client-side and Electron
+cycles rows passed 22 of 22, all through the forward drag. No run mismatched a
+ghost sample.
 
 Not covered by these rows, and not claimed:
 
@@ -2178,6 +2196,10 @@ Not covered by these rows, and not claimed:
   session cannot inject; only the fake-platform suite covers them.
 - Wheel roll-up (ADR-0131): it shares the shade entry point, but development
   input has no axis events.
+- The reversed dock drag with an XWayland or Electron target. In two
+  XWayland client-side sessions and two Electron sessions, KWin mapped A above
+  member B, so only the forward drag ran. The grab is compositor-owned, but
+  dragging such a window onto A is unverified.
 
 See [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
 and [Hybrid container chrome](../architecture/hybrid-chrome.md).

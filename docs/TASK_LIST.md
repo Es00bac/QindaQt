@@ -36,10 +36,12 @@ the integrated tree. Exact container-shade descendant `0dcefa42` also received
 same-reviewer ACCEPT after closing the sole executable-mode defect; its product
 and mode repair are integrated as `a117c109` and `86c9eb36`. No user profile,
 installed package, live desktop, or physical input/display was changed. The
-manager controller/unit rows pass 2/2 and three of four serialized nested rows
-pass; the fourth stops before product verdict on the disclosed
-placement-sensitive dock-gesture fixture defect, matching the bounded repair
-follow-up rather than a ghost/input failure. Global Menu evidence candidate
+manager controller/unit rows pass 2/2, and three of four serialized nested rows
+passed. The fourth stopped before product verdict on the disclosed
+placement-sensitive dock-gesture fixture defect, not on a ghost or input
+failure. Its test-only fixture fallback now groups a source mapped entirely
+beneath its target; all four rows pass on the integrated plugin, including
+three reversed drags at that geometry. Global Menu evidence candidate
 `076d8a3d` remains in its bounded test-only repair. Terminal audible-attention
 candidate `53402c13` received independent GLM ACCEPT and is integrated as
 `4a39d5bb`: an audible parsed bell preserves the existing beep and requests

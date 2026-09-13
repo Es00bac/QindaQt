@@ -50,12 +50,16 @@ descendant `0dcefa425b2f0a4ccfd5bd22f70154198f7acb2e` received same-reviewer
 ACCEPT after all four former-red Wayland CSD, XWayland CSD, Electron, and
 lifecycle rows passed serially. The product and repair are integrated as
 `a117c109` and `86c9eb36`; manager-tree controller/unit rows pass 2/2 and the
-serialized nested replay passes 3/4. The remaining Wayland-CSD cycle stops
+serialized nested replay passes 3/4. The remaining Wayland-CSD cycle stopped
 before any product verdict because A mapped entirely beneath B and the fixture
 could not find an uncovered dock gesture, exactly reproducing the disclosed
-placement-sensitive fixture defect. Timeout-log retention, socket-path
-guarding, count wording, and that fixture fallback remain nonblocking
-follow-ups; no unchanged long retry was run.
+placement-sensitive fixture defect. A test-only fixture fallback now drags B
+onto A in exactly that ungrouped case. On the integrated plugin that row passed
+five of five fresh sessions, three of them at the former-stop geometry through
+the fallback. Lifecycle, XWayland CSD, and Electron then passed serially with
+full verdict counts and zero ghost pixels. Timeout-log retention, socket-path
+guarding, and count wording remain nonblocking follow-ups; no unchanged long
+retry was run.
 
 Terminal audible-attention candidate
 `53402c13b72d96273b6b0a3bdd5902893d4b5875` received independent GLM ACCEPT
