@@ -90,7 +90,7 @@ quorum but never grants mutation without D1 safety and D5 journal gates.
 
 ## Immediate brightness
 
-[ADR-0149](../adr/0149-admit-immediate-external-output-brightness-through-display1.md)
+[ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)
 adds the writer's only non-topology mutation.
 `OutputManagementPort::submitBrightness` sends one configuration containing
 exactly `set_brightness` followed by `apply`. The target must be a ready,
@@ -158,7 +158,7 @@ fixture uses the existing test-only Wayland server dependency and no host socket
 Boundary and poison rows pin the XML and prove platform/private
 dependencies cannot escape the installed header surface.
 
-ADR-0149 adds two rows.
+ADR-0150 adds two rows.
 
 `qindaqt.display-writer-brightness-port` covers:
 
