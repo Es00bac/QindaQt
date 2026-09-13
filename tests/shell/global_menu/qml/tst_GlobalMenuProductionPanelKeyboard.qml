@@ -103,6 +103,12 @@ Item {
             verify(popup !== null)
             compare(popup.popupType, Popup.Window)
             tryCompare(popup, "opened", true)
+            // Through the production dispatcher the popup still opens directly
+            // below the exact item (this host has no panel model and sits in the
+            // upper output half).
+            const origin = top.mapToGlobal(0, 0)
+            tryCompare(popup.contentItem.Window.window, "y", origin.y + top.height)
+            compare(popup.contentItem.Window.window.x, origin.x)
             tryCompare(popup, "currentIndex", 0)
             keyClick(Qt.Key_Down)
             compare(popup.currentIndex, 1)

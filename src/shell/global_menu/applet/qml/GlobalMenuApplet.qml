@@ -10,6 +10,8 @@ Item {
     required property var access
     required property var theme
     property bool vertical: false
+    // Explicit top-level popup edge; empty follows the hosting panel's edge.
+    property string panelEdge: ""
     property int maximumVisibleEntries: 8
     readonly property int clampedEntryLimit: Math.max(1, Math.floor(maximumVisibleEntries))
     readonly property var colors: theme.colors ?? ({})
@@ -331,6 +333,8 @@ Item {
                     access: root.access
                     theme: root.theme
                     interactive: root.available
+                    panelEdge: root.panelEdge
+                    vertical: root.vertical
                     maximumDepth: 6
                 }
                 onObjectAdded: (index, object) => nativeMenuBar.insertMenu(index, object)
