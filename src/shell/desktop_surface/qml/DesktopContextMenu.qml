@@ -39,6 +39,30 @@ T.Menu {
     topPadding: 4
     bottomPadding: 4
 
+    // Templates.Menu supplies behavior but no style-owned sizing or content
+    // view. A Window popup must have both dimensions before its first Wayland
+    // commit; otherwise KWin disconnects the whole shell for the invalid 0x0
+    // surface. Keep this equivalent to the sizing contract a QQC2 style
+    // normally contributes while retaining the explicitly owned appearance.
+    //
+    // AGENT-GUARD: never remove the positive implicit-size floor or the
+    // contentModel-backed ListView. Offscreen QML can report a zero-sized
+    // Menu as opened, but a real Wayland compositor rejects that surface.
+    implicitWidth: Math.max(200,
+                            implicitContentWidth + leftPadding + rightPadding)
+    implicitHeight: Math.max(1,
+                             implicitContentHeight + topPadding + bottomPadding)
+
+    contentItem: ListView {
+        implicitWidth: 200
+        implicitHeight: contentHeight
+        model: root.contentModel
+        currentIndex: root.currentIndex
+        interactive: contentHeight + root.topPadding + root.bottomPadding
+                     > root.height
+        clip: true
+    }
+
     // Instantiated from Templates (project precedent — Controls ships no menu
     // primitive), so the menu owns its surface and palette instead of relying
     // on an ambient QQC2 style or app palette.
@@ -185,6 +209,10 @@ T.Menu {
             padding: isSeparator ? 2 : 6
             leftPadding: isSeparator ? 2 : 10
             rightPadding: isSeparator ? 2 : 10
+            implicitWidth: Math.max(implicitContentWidth + leftPadding
+                                    + rightPadding, 1)
+            implicitHeight: Math.max(implicitContentHeight + topPadding
+                                     + bottomPadding, 1)
 
             onTriggered: root.dispatch(String(modelData.kind ?? ""),
                                        String(modelData.targetId ?? ""),

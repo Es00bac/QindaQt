@@ -168,6 +168,13 @@ surface hosts the desktop-icons entry (see its bullet below):
   configurable left/right placement and icon size, and a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose
   XFCE-style Applications menu sits behind a configurable modifier key. An
+  explicitly styled `Templates.Menu` owns a content-model `ListView` and a
+  positive implicit size before it opens. This is a Wayland process-safety
+  contract, not only presentation: committing a zero-width or zero-height
+  popup makes the compositor disconnect the shell. The offscreen desktop
+  surface row therefore checks both dimensions before and after a physical
+  right-click dispatch in addition to checking the menu's visible contents.
+  An
   unmodified middle click on empty desktop space also opens the same
   Applications popup directly at the pointer, in any style, without opening
   the context menu, clamped so it stays fully inside the surface near the

@@ -87,6 +87,7 @@ private Q_SLOTS:
     void placementSettingSwitchesAnchorEdge();
     void selectionAndDoubleClickDispatchThroughTheBoundary();
     void contextMenuStyleSwitchesItemSets();
+    void contextMenuWindowHasPositiveSizeBeforeOpening();
     void modifierRightClickOpensApplicationsPopup();
     void middleClickOpensApplicationsPopupAtEmptyArea();
     void middleClickOpensApplicationsPopupAtThePointer();
@@ -294,6 +295,32 @@ void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
         menu->setProperty("visible", false);
         QTRY_VERIFY(!menu->property("opened").toBool());
     }
+}
+
+void DesktopSurfaceQmlTests::contextMenuWindowHasPositiveSizeBeforeOpening()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *menu = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    QVERIFY(menu != nullptr);
+
+    // A Window popup commits its configured size to Wayland as it opens.
+    // Zero in either dimension is a protocol error that disconnects the
+    // entire shell before the popup can render.
+    QVERIFY(menu->property("width").toReal() > 0.0);
+    QVERIFY(menu->property("height").toReal() > 0.0);
+
+    host.clickWindow(Qt::RightButton, Qt::NoModifier, kEmptySpot);
+    QTRY_VERIFY(menu->property("opened").toBool());
+    QVERIFY(menu->property("width").toReal() > 0.0);
+    QVERIFY(menu->property("height").toReal() > 0.0);
+    menu->setProperty("visible", false);
 }
 
 void DesktopSurfaceQmlTests::modifierRightClickOpensApplicationsPopup()
