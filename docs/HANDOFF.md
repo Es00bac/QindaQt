@@ -1,5 +1,27 @@
 # Integration handoff
 
+## Authenticated File Manager network browsing (September 12)
+
+Exact Kimi candidate `28e5c160df1399b78f57653b25f0b3bef852b6f1`
+was independently rejected for superseded-job lifetime and a contradictory
+public authentication contract. The same reviewer accepted exact four-path
+repair `45b08b30768f3e56bf714b9a63d57351d1ab704c`; the lineage is integrated as
+`32d7a8c2` plus `b9a6311f`. File Manager now leaves ordinary SMB/SFTP
+credential prompting to KIO's standard UI delegate without reading, storing,
+logging, or accepting credentials itself, rejects URL userinfo, and cancels a
+superseded listing before refresh or remote-to-remote replacement. On the
+integrated tree, the two focused network rows pass 2/2, documentation validates
+250 documents, strict MkDocs passes, and the diff check is clean. Remote
+regular-file opening is a separate active descendant; installed/live network
+access and real credentials were not exercised.
+
+Worker and reviewer terminals used the existing direct-TTY, independent
+user-systemd lifetime rule, and long integration gates use the existing
+bounded asynchronous-checkpoint rule in the
+[flow-team workflow](wiki/contributing/flow-team-workflow.md). A terminal title
+or queued assignment is not execution evidence; routing records the observed
+provider process, session, first product tools, and exact candidate transition.
+
 ## Small-team usable-fix wave (September 12)
 
 The File Manager worker's exact candidate
