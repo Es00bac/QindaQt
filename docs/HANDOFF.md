@@ -307,6 +307,10 @@ at roomy widths it remains 36 px. Smaller geometry reports an incomplete
 layout and omits the grip instead of drawing over an action. The focused
 `qindaqt.member-handle-layout` row covers both chrome styles, frame states,
 geometry invariants, and handle-only pixels without touching a live compositor.
+Exact candidate `1e9a6b43` received independent GLM acceptance and is integrated
+as `ca32dd1a`; the manager's warning-fatal affected build and all eight focused
+decoration/hybrid-chrome rows pass on the integrated tree. Installed/live
+compositor adoption remains a separate release action.
 
 ### Bliss Luna taskbar repair (ADR-0124 amendment)
 
