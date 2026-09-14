@@ -76,6 +76,8 @@ private Q_SLOTS:
     void mapsSubmissionAndFencesCompletions();
     void excludesTopologyAppliesBothWays();
     void ownerChangeTimeoutAndStopAreUncertain();
+    void replaysEstablishedFactsWhenTheObserverBindsLate();
+    void stopClearsTheLateBindReplay();
 };
 
 void DisplayWriterBrightnessPortTests::forwardsOnlyCurrentOwnerFramesLater()
@@ -101,6 +103,62 @@ void DisplayWriterBrightnessPortTests::forwardsOnlyCurrentOwnerFramesLater()
     h.management->publishDevices(4, {state(6'000)});
     QTRY_COMPARE(h.observer.frames.size(), 3);
     QCOMPARE(h.observer.frames.at(2), DeviceBrightnessFrame{});
+}
+
+void DisplayWriterBrightnessPortTests::replaysEstablishedFactsWhenTheObserverBindsLate()
+{
+    // Real startup order: the outer runtime starts this port before the
+    // resident service binds as observer (session-safety readiness gates that
+    // bind). Facts published in between must replay on bind, queued — never
+    // synchronously — or the authority never learns external brightness.
+    auto fake = std::make_unique<FakeOutputManagementPort>();
+    FakeOutputManagementPort *management = fake.get();
+    WriterTransactionPort port(std::move(fake), std::make_unique<FakeJournalStore>(), 200);
+    QCOMPARE(port.start(), PortStartStatus::Started);
+    management->publishOwner(4, true);
+    management->publishDevices(4, {state(6'000)});
+
+    RecordingObserver observer;
+    port.setObserver(&observer);
+    QVERIFY2(observer.frames.isEmpty(), "binding must not reenter synchronously");
+    QTRY_COMPARE(observer.frames.size(), 1);
+    QCOMPARE(observer.frames.constFirst(),
+             (DeviceBrightnessFrame{.ownerGeneration = 4,
+                                    .devices = {{.connectorName = QStringLiteral("DP-1"),
+                                                 .runtimeUuid = QStringLiteral("uuid-dp"),
+                                                 .enabled = true,
+                                                 .capable = true,
+                                                 .observed = true,
+                                                 .value = 6'000}}}));
+
+    // A generation replacement before any bind still replays only current
+    // truth, and the late observer must never see the superseded generation.
+    RecordingObserver observer2;
+    management->publishOwner(5, true);
+    management->publishDevices(5, {state(3'000)});
+    QTRY_COMPARE(observer.frames.size(), 2);
+    port.setObserver(&observer2);
+    QTRY_COMPARE(observer2.frames.size(), 1);
+    QCOMPARE(observer2.frames.constFirst().ownerGeneration, 5);
+    QCOMPARE(observer2.frames.constFirst().devices.constFirst().value, 3'000);
+}
+
+void DisplayWriterBrightnessPortTests::stopClearsTheLateBindReplay()
+{
+    auto fake = std::make_unique<FakeOutputManagementPort>();
+    FakeOutputManagementPort *management = fake.get();
+    WriterTransactionPort port(std::move(fake), std::make_unique<FakeJournalStore>(), 200);
+    QCOMPARE(port.start(), PortStartStatus::Started);
+    management->publishOwner(4, true);
+    management->publishDevices(4, {state(6'000)});
+    port.stop();
+    // After stop, a fresh observer binds to no truth: no replay, ever.
+    RecordingObserver observer;
+    port.setObserver(&observer);
+    QCoreApplication::processEvents();
+    QTest::qWait(50);
+    QCoreApplication::processEvents();
+    QVERIFY(observer.frames.isEmpty());
 }
 
 void DisplayWriterBrightnessPortTests::mapsSubmissionAndFencesCompletions()

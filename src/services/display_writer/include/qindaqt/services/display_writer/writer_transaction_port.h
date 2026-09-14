@@ -100,6 +100,14 @@ private:
     quint64 m_machineLineage = 0;
     quint64 m_ownerGeneration = 0;
     quint64 m_nextRequestId = 1;
+    // The latest accepted device fact frame. AGENT-NOTE: frames publish only
+    // on change, and the outer runtime starts this port before the resident
+    // service binds as observer (session-safety readiness gates that bind);
+    // without the recorded frame the late bind would wait for the next
+    // compositor change forever — the exact startup lost-wakeup that left
+    // external brightness incapable in production.
+    DisplayService::DeviceBrightnessFrame m_lastDevicesFrame;
+    bool m_hasDevicesFrame = false;
     bool m_started = false;
     bool m_available = false;
 };
