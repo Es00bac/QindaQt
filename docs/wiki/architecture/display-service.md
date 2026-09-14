@@ -448,7 +448,12 @@ changes. The machine would also read a same-fingerprint newer revision during
 **Observation.** D4's own output-management connection is the observation
 authority. The transaction port forwards device facts on a later event-loop
 turn: either the complete ready device set for its owner generation, or
-generation zero with no devices. A model-owned `BrightnessAuthority` joins each
+generation zero with no devices. The port records the latest accepted frame
+and replays it, queued, when an observer binds late — the outer runtime starts
+this port before the resident service binds (session-safety readiness gates
+that bind), so frames published during startup must not vanish waiting for the
+next compositor change. Facts published with no observer bound are never
+double-delivered later; the replay is the late binder's only copy. A model-owned `BrightnessAuthority` joins each
 snapshot output to exactly one device whose connector and runtime UUID both
 match exactly once. Anything else publishes a cleared row. Losing the accepted
 snapshot withdraws the publication; losing device authority clears every row.

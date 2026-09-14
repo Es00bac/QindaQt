@@ -77,6 +77,8 @@ void WriterTransactionPort::stop()
     m_started = false;
     m_available = false;
     m_ownerGeneration = 0;
+    m_hasDevicesFrame = false;
+    m_lastDevicesFrame = {};
     outputManagementDevicesObserved(0, {});
     if (wasAvailable) {
         Q_EMIT mutationAuthorityChanged(false);
@@ -102,6 +104,24 @@ void WriterTransactionPort::setObserver(
     DisplayService::TransactionPortObserver *observer)
 {
     m_observer = observer;
+    // AGENT-GUARD: replay the current accepted device facts to a late binder
+    // (the resident service binds only after session-safety readiness, while
+    // the compositor publishes brightness devices during runtime startup).
+    // Delivered queued, like every live frame, so binding never reenters the
+    // caller synchronously and never receives a stale-generation frame.
+    if (m_observer == nullptr || !m_hasDevicesFrame || !m_started || !m_available
+        || m_lastDevicesFrame.ownerGeneration != m_ownerGeneration) {
+        return;
+    }
+    const DisplayService::DeviceBrightnessFrame frame = m_lastDevicesFrame;
+    QMetaObject::invokeMethod(
+        this,
+        [this, frame] {
+            if (m_observer != nullptr) {
+                m_observer->brightnessDevicesObserved(frame);
+            }
+        },
+        Qt::QueuedConnection);
 }
 
 void WriterTransactionPort::beginMachineLineage(const quint64 machineLineage)
@@ -311,13 +331,27 @@ void WriterTransactionPort::outputManagementDevicesObserved(
                                      .value = device.brightness});
         }
     }
+    // Record accepted facts for the late-binder replay; an owner-loss frame
+    // (generation zero) clears them so a rebind never resurrects dead truth.
+    if (!frame.devices.isEmpty()) {
+        m_lastDevicesFrame = frame;
+        m_hasDevicesFrame = true;
+    } else if (frame.ownerGeneration == 0) {
+        m_hasDevicesFrame = false;
+        m_lastDevicesFrame = {};
+    }
     // Queued like completions so the port never reenters the D2 observer
     // synchronously and device facts keep their arrival order.
+    // AGENT-GUARD: the forwarding observer is captured at publication, not at
+    // delivery: a frame published while no resident observer was bound must
+    // not land later just because the binding raced the event loop. The late
+    // binder instead receives exactly one replay from setObserver().
+    auto *const forwardingObserver = m_observer;
     QMetaObject::invokeMethod(
         this,
-        [this, frame] {
-            if (m_observer != nullptr) {
-                m_observer->brightnessDevicesObserved(frame);
+        [this, forwardingObserver, frame] {
+            if (m_observer == forwardingObserver && forwardingObserver != nullptr) {
+                forwardingObserver->brightnessDevicesObserved(frame);
             }
         },
         Qt::QueuedConnection);
