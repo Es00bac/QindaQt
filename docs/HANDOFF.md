@@ -1,5 +1,34 @@
 # Integration handoff
 
+## September 14 external-monitor brightness repair
+
+Exact feature source `5de74c81221bb1aa2df2306b3659e20745f145e5` is installed
+as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r6`; packaging commit `e4cf50b2`
+adds the pinned ebuild and Manifest. The display transaction port dropped
+compositor brightness device frames published before the resident service
+bound as observer (session-safety readiness gates that bind), and never
+replayed them, so every external output stayed incapable in production. The
+port now records the latest accepted frame and replays it, queued, on a late
+bind, and drops frames published with no observer bound at publication time
+so the replay is the late binder's only copy. Proven live against the running
+compositor under production startup order: both outputs publish capable and
+observed with their current brightness multiplier.
+
+Focused evidence: display-writer rows 8/8 including the two new late-bind
+regression rows, the full display label 68/68, power label 50/51 (the
+settings-power-installed-route row fails identically on the base tree — an
+environment-dependent relocation timeout outside this change), the
+documentation validator over all 261 pages. Portage inherited
+`MAKEOPTS=-j24 -l24` and completed the exact r6 upgrade; `qcheck` reports
+1,340/1,340 files good and the display service has complete shared-library
+closure. The live Display1 service was respawned manually with the session
+environment (the session log records "Could not update the user service
+activation environment", which leaves the user manager with a stale bus
+address and breaks systemd-managed resident-service restarts until relogin —
+a session-side defect for the platform queue, not a product regression from
+this change). The running session now publishes both external outputs as
+brightness-capable.
+
 ## September 13 marquee selection and multi-file operations
 
 Exact feature source `0937baaa3c2cd08a3864f565c1bf68d0d9ce59b4` is

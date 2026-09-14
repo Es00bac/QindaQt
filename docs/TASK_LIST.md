@@ -5,10 +5,15 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
-## Installed delivery checkpoint (September 13)
+## Installed delivery checkpoint (September 14)
 
-Exact source `0937baaa3c2cd08a3864f565c1bf68d0d9ce59b4` is installed through
-Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r5`. Revision r5 adds
+Exact source `5de74c81221bb1aa2df2306b3659e20745f145e5` is installed through
+Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r6`. Revision r6 repairs
+external-monitor brightness: the display transaction port now records the
+latest accepted compositor brightness device frame and replays it, queued,
+when the resident service binds late, so startup no longer loses the facts
+that make external outputs brightness-capable; both monitors now publish
+sliders in Power Settings on the running session. Revision r5 adds
 rubber-band marquee selection to Desktop icons and both File Manager views
 (Shift unions, Control toggles, empty click clears), Ctrl/Shift-click and
 Ctrl+A multi-selection, Desktop group drag with per-icon persisted placement,
@@ -16,7 +21,7 @@ Delete-to-Trash and a selection-scoped Cut/Copy/Delete icon menu, a
 clipboard-gated Paste on the desktop menu (composed through the existing
 FileBoundary seam so desktop clipboard policy stays byte-identical to File
 Manager), alternating Details-row backgrounds in File Manager, and a 16-128
-logical-pixel icon size range everywhere. The prior r4 source The earlier repair
+logical-pixel icon size range everywhere. The earlier repair
 restores the shared session bus and supervised global-shortcut daemon, safe Display service
 activation, live decoration-control placement, all six selectable appearance
 themes, desktop applet editing and Desktop Icons, Dock task-list connectivity,
