@@ -275,10 +275,19 @@ The existing `qindaqt-session` supervisor owns publication because it is alive
 after the child compositor socket exists. For each generation it:
 
 1. proves the sanitized child socket exists under the private runtime root;
-2. calls systemd user-manager
-   `org.freedesktop.systemd1.Manager.SetEnvironment(as)` and the D-Bus daemon
-   `org.freedesktop.DBus.UpdateActivationEnvironment(a{ss})`, publishing equal
-   `WAYLAND_DISPLAY` and `QINDAQT_SESSION_WAYLAND_SOCKET` values;
+2. publishes equal `WAYLAND_DISPLAY` and `QINDAQT_SESSION_WAYLAND_SOCKET`
+   values to the D-Bus daemon with
+   `org.freedesktop.DBus.UpdateActivationEnvironment(a{ss})` over the session
+   bus, and to the systemd user manager with `SetEnvironment(as)` routed
+   through sd-bus to the manager's private control endpoint whenever that
+   socket exists (the endpoint is not a message bus and never answers Hello,
+   so a QtDBus connection to it deadlocks; the session-bus
+   `org.freedesktop.systemd1` name is used only when a manager actually owns
+   it — on a private dbus-run-session bus the name is unowned and calling it
+   activates a second, failing user manager, the exact failure this routing
+   repaired in the supervisor's own publication path; see
+   [compositor session](compositor-session.md#activation-environment-at-session-entry)
+   and `session_supervisor`'s `systemd_manager_port`);
 3. awaits both replies; and
 4. activates `org.qindaqt.Power1` only after publication succeeds.
 

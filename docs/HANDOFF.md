@@ -31,11 +31,12 @@ documentation validator over all 261 pages. Portage inherited
 1,340/1,340 files good, qindaqt-session links libsystemd, and
 qindaqt-settings has complete shared-library closure. The running session's
 manager environment was corrected live through the repaired mechanism; the
-supervisor fix takes effect at the next login. A remaining related finding
-for the platform queue: the Power1 session-arbiter publication flow calls
-`org.freedesktop.systemd1.Manager.SetEnvironment` on the session bus with
-the same pre-repair pattern (power-service.md); it is outside the stated
-follow-ups and untouched here.
+supervisor fix takes effect at the next login. A remaining related item:
+the Power1 session-bound activation is an unimplemented PB-2 design contract
+(power-service.md) whose text prescribed the same session-bus
+`org.freedesktop.systemd1.Manager.SetEnvironment` pattern the supervisor
+repair replaced; the contract text is corrected in this change so the future
+implementation routes through sd-bus like the supervisor does.
 
 ## September 14 external-monitor brightness repair
 
