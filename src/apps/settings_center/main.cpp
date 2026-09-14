@@ -91,7 +91,10 @@ namespace {
   return roots;
 }
 
-void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
+// Resolves the QML root this exact binary is allowed to import its own
+// QindaQt modules from: the developer tree only for the exact build
+// executable, otherwise the binary-relative install prefix.
+[[nodiscard]] QString ownQmlRoot() {
   const QFileInfo applicationFile(QCoreApplication::applicationFilePath());
   const QString applicationDirectory = applicationFile.absolutePath();
   const QString applicationPath = applicationFile.canonicalFilePath();
@@ -104,11 +107,48 @@ void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
   // and turns package verification into a false positive.
   if (!buildExecutablePath.isEmpty() &&
       applicationPath == buildExecutablePath) {
-    engine.addImportPath(QStringLiteral(QINDAQT_BUILD_QML_IMPORT_PATH));
+    return QStringLiteral(QINDAQT_BUILD_QML_IMPORT_PATH);
   }
-  engine.addImportPath(
-      QDir(applicationDirectory)
-          .absoluteFilePath(QStringLiteral(QINDAQT_INSTALL_QML_RELATIVE_PATH)));
+  return QDir(applicationDirectory)
+      .absoluteFilePath(QStringLiteral(QINDAQT_INSTALL_QML_RELATIVE_PATH));
+}
+
+void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
+  engine.addImportPath(ownQmlRoot());
+}
+
+// AGENT-CONTRACT: every first-party module Main.qml imports must exist in
+// this binary's own QML root. The QML engine also searches the Qt install's
+// default import path, so without this preflight a relocated or partially
+// installed copy silently borrows a same-named module from the system
+// package — the exact condition the installed-route poisons must fail on.
+// A missing module fails closed with the same exit the import failure would
+// produce, before any engine work.
+[[nodiscard]] bool ownSettingsModulesPresent(const QString &qmlRoot,
+                                             QString *missing) {
+  // Exactly the route modules the executable does not statically embed and
+  // must therefore resolve as directories from its own prefix. The Customize
+  // and *Backend modules are static libraries linked into this binary (like
+  // the stage-closure's embedded-module list), so they need no directory.
+  static const char *const requiredModules[] = {
+      "QindaQt/SettingsApp/Appearance",   "QindaQt/SettingsApp/Display",
+      "QindaQt/SettingsApp/Network",
+      "QindaQt/SettingsApp/Audio",        "QindaQt/SettingsApp/Bluetooth",
+      "QindaQt/SettingsApp/Power",        "QindaQt/SettingsApp/Clipboard",
+      "QindaQt/SettingsApp/Color",        "QindaQt/SettingsApp/Accessibility",
+      "QindaQt/SettingsApp/Input",
+  };
+  for (const char *module : requiredModules) {
+    const QString directory = QDir(qmlRoot).filePath(QString::fromLatin1(module));
+    if (!QFileInfo::exists(directory)) {
+      if (missing != nullptr) {
+        *missing = QString::fromLatin1(module) + QStringLiteral(" (root ")
+                   + qmlRoot + QLatin1Char(')');
+      }
+      return false;
+    }
+  }
+  return true;
 }
 
 [[nodiscard]] QStringList resolveThemeDirectories(
@@ -208,6 +248,13 @@ int main(int argc, char **argv) {
     std::fprintf(stderr, "qindaqt-settings: unknown page: %s\n",
                  qPrintable(page));
     return 2;
+  }
+
+  QString missingModule;
+  if (!ownSettingsModulesPresent(ownQmlRoot(), &missingModule)) {
+    std::fprintf(stderr, "qindaqt-settings: required Settings module missing: %s\n",
+                 qPrintable(missingModule));
+    return 3;
   }
 
   QQmlApplicationEngine engine;

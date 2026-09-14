@@ -230,6 +230,14 @@ ctest --test-dir build/dev --output-on-failure \
   reinstalls and proves all eleven routes, including the Customize catalogs and
   the Bluetooth, Power, Clipboard, Color, and Accessibility modules, from only
   the complete relocated prefix; and
+- the same no-borrowing contract is enforced at startup, not only by the
+  test: before any engine work the executable preflights its own QML root for
+  every directory-resolved route module (the Customize and `*Backend` modules
+  are statically linked into the binary and need no directory) and exits 3
+  with a typed diagnostic when one is missing, because the QML engine's
+  default import path would otherwise resolve a same-named module from the
+  system Qt install — the condition that previously let relocated copies
+  silently borrow modules instead of failing the poison; and
 - the same installed row repeats hostile-intent rejection.
 
 This is an offscreen software-renderer and sanitized package boundary. It does

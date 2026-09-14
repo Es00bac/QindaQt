@@ -1,13 +1,43 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "activation_environment.h"
+#include "systemd_manager_port.h"
 #include <QDebug>
 #include <QMap>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusMetaType>
 
 namespace QindaQt::SessionSupervisor {
+namespace {
+
+// Sends SetEnvironment(assignments) to the systemd user manager along the
+// resolved route. Returns false when the manager is unreachable or the call
+// fails, so the caller reports once instead of twice.
+bool setManagerEnvironment(const SystemdManagerRoute &route,
+                           const QDBusConnection &bus,
+                           const QStringList &assignments)
+{
+    const auto makeCall = [&assignments] {
+        QDBusMessage manager = QDBusMessage::createMethodCall(
+            QStringLiteral("org.freedesktop.systemd1"), QStringLiteral("/org/freedesktop/systemd1"),
+            QStringLiteral("org.freedesktop.systemd1.Manager"), QStringLiteral("SetEnvironment"));
+        manager.setArguments({assignments});
+        return manager;
+    };
+    if (route.kind == SystemdManagerRoute::Kind::SessionBusName) {
+        return bus.call(makeCall(), QDBus::Block, 2000).type() != QDBusMessage::ErrorMessage;
+    }
+    if (route.kind == SystemdManagerRoute::Kind::Native) {
+        return nativeSetManagerEnvironment(route.address, assignments,
+                                           route.requiresBusHello);
+    }
+    return false;
+}
+
+} // namespace
+
 void publishActivationEnvironment(const QDBusConnection &bus,
-                                  const QProcessEnvironment &environment)
+                                  const QProcessEnvironment &environment,
+                                  const QString &systemdPrivateSocketPath)
 {
     if (!bus.isConnected()) return;
     QMap<QString, QString> values;
@@ -36,11 +66,9 @@ void publishActivationEnvironment(const QDBusConnection &bus,
     // desktop; services must receive the current session's connection values.
     if (bus.call(broker, QDBus::Block, 2000).type() == QDBusMessage::ErrorMessage)
         qWarning("Could not update the D-Bus activation environment");
-    QDBusMessage manager = QDBusMessage::createMethodCall(
-        QStringLiteral("org.freedesktop.systemd1"), QStringLiteral("/org/freedesktop/systemd1"),
-        QStringLiteral("org.freedesktop.systemd1.Manager"), QStringLiteral("SetEnvironment"));
-    manager.setArguments({assignments});
-    if (bus.call(manager, QDBus::Block, 2000).type() == QDBusMessage::ErrorMessage)
+    if (!setManagerEnvironment(
+            resolveSystemdManagerRoute(bus, systemdPrivateSocketPath), bus, assignments)) {
         qWarning("Could not update the user service activation environment");
+    }
 }
 }

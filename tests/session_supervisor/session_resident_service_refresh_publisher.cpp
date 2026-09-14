@@ -9,11 +9,20 @@
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
+    // Optional leading `--socket <path>`: explicit systemd private-socket
+    // path for the hermetic lane; everything else stays unit names, exactly
+    // like the session supervisor call.
+    QString socketPath;
     QStringList unitNames;
     for (int i = 1; i < argc; ++i) {
-        unitNames.append(QString::fromLocal8Bit(argv[i]));
+        const QString arg = QString::fromLocal8Bit(argv[i]);
+        if (arg == QStringLiteral("--socket") && i + 1 < argc) {
+            socketPath = QString::fromLocal8Bit(argv[++i]);
+        } else {
+            unitNames.append(arg);
+        }
     }
     QindaQt::SessionSupervisor::refreshResidentServices(
-        QDBusConnection::sessionBus(), unitNames);
+        QDBusConnection::sessionBus(), unitNames, socketPath);
     return 0;
 }

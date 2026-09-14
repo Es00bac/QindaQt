@@ -560,10 +560,19 @@ broker. See
 Before the supervisor starts shell consumers, it updates the D-Bus broker and
 systemd user manager with KWin’s current desktop connection variables. This
 prevents independently activated services from inheriting a retired Wayland
-socket. Calls are bounded and failure is diagnostic rather than fatal. See
+socket. The broker is updated over the session bus; the manager call is routed
+through sd-bus to the manager's private control endpoint whenever that socket
+exists (it is not a message bus and never answers Hello, so a QtDBus
+connection to it deadlocks), and through `org.freedesktop.systemd1` on the
+session bus only when a manager actually owns that name — on a private
+dbus-run-session bus the name is unowned and calling it activates a second,
+failing user manager, which is exactly the production failure this routing
+repaired. Calls are bounded and failure is diagnostic rather than fatal. See
 [ADR-0082](../adr/0082-publish-session-activation-environment.md). The private-bus
 `qindaqt.session-activation-environment` gate verifies the current socket and
-limited variable set without touching the host manager.
+limited variable set without touching the host manager, and a second lane
+drives an sd-bus `SetEnvironment` against a fake manager on an explicit
+bus endpoint.
 
 Republishing the environment only changes what *future* activations receive.
 A systemd user service that is already resident from a prior desktop and
@@ -578,8 +587,9 @@ the environment and before any desktop consumer starts, the supervisor
 therefore calls `refreshResidentServices` with the fixed, reviewed unit list
 from `residentServiceRefreshUnits()`, in order (the portal backend before the
 frontend that routes to it), requesting a restart of each one through
-systemd's `RestartUnit`, which enqueues a job and does not itself wait for
-the restart to finish. This starts a unit that has not yet run in this
+systemd's `RestartUnit` (routed through sd-bus exactly like the
+`SetEnvironment` publication above), which enqueues a job and does not itself
+wait for the restart to finish. This starts a unit that has not yet run in this
 session and restarts one that already holds a stale socket or cached
 routing, without a full logout and without touching any other resident
 service or its preferences. Each D-Bus call is bounded and best-effort; a
@@ -588,4 +598,6 @@ See
 [ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md). The
 private-bus `qindaqt.session-resident-service-refresh` gate covers both the
 mechanism (against a fake user manager, including one unit failing to restart
-without stopping the request for the rest) and the fixed production list.
+without stopping the request for the rest) and the fixed production list, and
+a second lane drives sd-bus `RestartUnit` calls against a fake manager on an
+explicit bus endpoint.

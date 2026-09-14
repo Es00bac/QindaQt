@@ -27,8 +27,11 @@ namespace QindaQt::SessionSupervisor {
 [[nodiscard]] QStringList residentServiceRefreshUnits();
 
 // Requests a restart of each named systemd user unit by calling
-// `RestartUnit(name, "replace")` on the supplied session bus, in the order
-// given. Call after publishActivationEnvironment and before starting desktop
+// `RestartUnit(name, "replace")` on the systemd user manager — through its
+// private control socket when it exists, otherwise through the supplied
+// session bus when the manager actually owns org.freedesktop.systemd1 there
+// — in the order given. `systemdPrivateSocketPath` overrides the socket
+// location for hermetic tests. Call after publishActivationEnvironment and before starting desktop
 // consumers. AGENT-CONTRACT: a unit already resident from a prior desktop
 // keeps its stale Wayland connection or cached routing until the process
 // itself restarts; SetEnvironment only changes the environment future
@@ -40,6 +43,7 @@ namespace QindaQt::SessionSupervisor {
 // unit or transport failure is logged and does not stop the session, and no
 // unit outside the fixed list is touched.
 void refreshResidentServices(const QDBusConnection &bus,
-                             const QStringList &unitNames);
+                             const QStringList &unitNames,
+                             const QString &systemdPrivateSocketPath = {});
 
 } // namespace QindaQt::SessionSupervisor
