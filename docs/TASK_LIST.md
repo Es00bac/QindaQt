@@ -7,8 +7,14 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Installed delivery checkpoint (September 14)
 
-Exact source `5de74c81221bb1aa2df2306b3659e20745f145e5` is installed through
-Portage as `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r6`. Revision r6 repairs
+Exact source `a3312f53` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260913-r7`. Revision r7 routes the session
+supervisor's systemd user-manager calls through sd-bus (the manager's private
+endpoint never answers Hello, so QtDBus deadlocked and the session-bus name
+spawned a failing second manager), and makes the Settings Center preflight
+its own QML root for directory-resolved route modules before engine work so
+relocated copies can no longer silently borrow modules from the system Qt
+install. The prior r6 source Revision r6 repairs
 external-monitor brightness: the display transaction port now records the
 latest accepted compositor brightness device frame and replays it, queued,
 when the resident service binds late, so startup no longer loses the facts
