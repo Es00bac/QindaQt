@@ -14,6 +14,8 @@ target_sources(
         src/polkit_agent_selection.cpp
         src/resident_service_refresh.cpp
         src/resident_service_refresh.h
+        src/systemd_manager_port.cpp
+        src/systemd_manager_port.h
         src/supervised_process_launcher.cpp
         src/tokenized_process_launcher.cpp
         src/session_process_supervisor.cpp
@@ -30,9 +32,15 @@ target_sources(
             include/qindaqt/session_supervisor/session_process_supervisor.h
             include/qindaqt/session_supervisor/session_service.h
 )
+# sd-bus reaches the systemd user manager's private control endpoint, which
+# is not a message bus and never answers Hello (see systemd_manager_port.h).
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
+
 target_link_libraries(
     qindaqt_session_supervisor_support
     PUBLIC QindaQt::NotificationPresentationProtocol Qt6::Core Qt6::DBus
+    PRIVATE PkgConfig::libsystemd
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)
 set_target_properties(

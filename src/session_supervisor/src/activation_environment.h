@@ -5,8 +5,15 @@
 
 namespace QindaQt::SessionSupervisor {
 // Called after KWin supplies its socket and before any desktop consumers start.
-// Uses the supplied session bus only; failures are reported and do not stop the
-// desktop. Only desktop connection variables and explicit Qt appearance selections are exported.
+// The daemon's activation environment is updated over the supplied session
+// bus; the systemd user manager's SetEnvironment is routed to the manager's
+// private control socket whenever it exists (the session-bus name is used
+// only when the manager actually owns it, never activating a second user
+// manager on a private-bus session). Failures are reported and do not stop
+// the desktop. Only desktop connection variables and explicit Qt appearance
+// selections are exported. `systemdPrivateSocketPath` overrides the socket
+// location for hermetic tests.
 void publishActivationEnvironment(const QDBusConnection &bus,
-                                  const QProcessEnvironment &environment);
+                                  const QProcessEnvironment &environment,
+                                  const QString &systemdPrivateSocketPath = {});
 }
