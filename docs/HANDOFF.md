@@ -1,5 +1,42 @@
 # Integration handoff
 
+## September 14 manager-routing and Settings module-integrity repairs
+
+Exact feature source `a3312f53` is installed as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260913-r7`; packaging commit `8e1051c0`
+adds the pinned ebuild and Manifest. Two follow-up defects from the r6
+adoption are repaired. First, the session supervisor's `SetEnvironment` and
+`RestartUnit` calls targeted `org.freedesktop.systemd1` on the session bus,
+which a private dbus-run-session bus does not host — the name activated a
+second, failing user manager, so the manager kept a stale bus address across
+logins and systemd-managed resident-service restarts silently failed. The
+calls now route to the manager's private control endpoint through sd-bus (the
+endpoint is not a message bus and never answers Hello, which is why a QtDBus
+connection deadlocked) whenever that socket exists, and use the session-bus
+name only when a manager actually owns it. libsystemd is a link-only
+addition; sys-apps/systemd was already a declared runtime dependency. Second,
+the Settings Center executable preflights its own QML root for every
+directory-resolved route module and exits 3 with a typed diagnostic when one
+is missing, because the QML engine's default import path otherwise resolves
+a same-named module from the system Qt install — the condition that let
+relocated copies silently borrow modules and defeated every
+settings-*-installed-route poison once the package was installed.
+
+Focused evidence: session label 49/49 (new sd-bus lanes against a fake
+manager plus forced-deterministic session-bus fallback lanes), settings label
+80/80 (all seven installed-route poisons plus settings-app-installed-routes),
+desktop.virtual.stage-closure passes with the embedded-module exemption, the
+documentation validator over all 261 pages. Portage inherited
+`MAKEOPTS=-j24 -l24` and completed the exact r7 upgrade; `qcheck` reports
+1,340/1,340 files good, qindaqt-session links libsystemd, and
+qindaqt-settings has complete shared-library closure. The running session's
+manager environment was corrected live through the repaired mechanism; the
+supervisor fix takes effect at the next login. A remaining related finding
+for the platform queue: the Power1 session-arbiter publication flow calls
+`org.freedesktop.systemd1.Manager.SetEnvironment` on the session bus with
+the same pre-repair pattern (power-service.md); it is outside the stated
+follow-ups and untouched here.
+
 ## September 14 external-monitor brightness repair
 
 Exact feature source `5de74c81221bb1aa2df2306b3659e20745f145e5` is installed
