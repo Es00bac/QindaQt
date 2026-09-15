@@ -209,6 +209,17 @@ HybridRuntimeResult HybridInteractionRuntime::adoptIndependentLayout(
     return execute(Hybrid::AdoptIndependentLayout{std::move(container)});
 }
 
+HybridRuntimeResult HybridInteractionRuntime::replaceMemberWindow(
+    const QString &containerId, const QString &outgoingWindowId,
+    const QString &incomingWindowId)
+{
+    if (!ready()) {
+        return rejected(m_initializationError);
+    }
+    return execute(Hybrid::ReplaceMemberWindow{containerId, outgoingWindowId,
+                                               incomingWindowId});
+}
+
 HybridRuntimeResult HybridInteractionRuntime::commitMemberDock(
     const HybridInput::InteractionIntent &intent)
 {

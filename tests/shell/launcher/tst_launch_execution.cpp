@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "launch_execution.h"
+#include "qindaqt/shell_launcher/launch_execution.h"
 
 #include <QtTest>
 
