@@ -135,6 +135,16 @@ item, not a native overlay window.
 - Theme decoration tokens may place the outer controls on either side and lay
   tabs left-to-right or right-to-left. This presentation choice never changes
   page order, stable IDs, keyboard traversal, or persistence semantics.
+- A container may pin its content-area aspect ratio through the group menu's
+  Aspect Ratio submenu (unlock, lock the frame's current ratio, or a 16:9 /
+  4:3 / 21:9 / 1:1 preset). While pinned, outer pointer and keyboard resizes
+  derive the follower edge from the locked ratio — the rectangle grouped
+  content (for example a windowed game) actually occupies — while minimum
+  frame sizes still win and the follower stays anchored at the baseline edge
+  the drag does not move. Maximize fills the work area and is deliberately
+  unconstrained; restore returns the saved frame. The lock is process-local
+  placement state like the maximize restore frame.
+  See [ADR-0162](../adr/0162-container-aspect-ratio-lock.md).
 - A container may be rolled up ("shaded") to a compact, still-visible,
   still-movable identity badge through the shared-row control or group menu,
   distinct from whole-container minimize/iconify: a shaded container is never

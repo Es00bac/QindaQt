@@ -123,7 +123,9 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
         || !destinationsValid(state->outputs,
                               QLatin1StringView("output"), error)
         || !destinationsValid(state->containerColors,
-                              QLatin1StringView("container color"), error)) {
+                              QLatin1StringView("container color"), error)
+        || !destinationsValid(state->aspectRatios,
+                              QLatin1StringView("aspect ratio"), error)) {
         return false;
     }
 
@@ -243,6 +245,19 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
             GroupContextMenuCommandKind::MoveToOutput, true));
     }
     outputMenu->setEnabled(!state->outputs.isEmpty());
+
+    auto *const aspectMenu = addMenu(menuText("Aspect Ratio"));
+    aspectMenu->setObjectName(QStringLiteral("qindaqt-context-aspect"));
+    auto *const aspectGroup = new QActionGroup(aspectMenu);
+    aspectGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);
+    for (const auto &destination : std::as_const(state->aspectRatios)) {
+        aspectGroup->addAction(addDestinationAction(
+            aspectMenu, destination,
+            QStringLiteral("qindaqt-context-aspect-"),
+            GroupContextMenuCommandKind::SetContainerAspectRatio,
+            /*checkable=*/true));
+    }
+    aspectMenu->setEnabled(!state->aspectRatios.isEmpty());
     return true;
 }
 

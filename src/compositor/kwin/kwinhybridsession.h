@@ -193,6 +193,11 @@ private:
     void initializeGroupContextMenu();
     void showGroupContextMenu(const QString &containerId,
                               const QPointF &globalPosition);
+    // Routes an Aspect Ratio submenu selection ("unlocked", "current", or a
+    // preset id) into the placement controller's pin (ADR-0162).
+    [[nodiscard]] bool applyAspectRatioSelection(const QString &containerId,
+                                                 const QString &selectionId,
+                                                 QString *error = nullptr);
     void adoptMemberContext(const QString &containerId,
                             const QString &sourceWindowId);
     void invalidateChromePublication();

@@ -41,6 +41,10 @@ struct GroupContextMenuState final
     QVector<GroupContextMenuDestination> workspaces;
     QVector<GroupContextMenuDestination> activities;
     QVector<GroupContextMenuDestination> outputs;
+    // Aspect-lock choices (ADR-0162): "unlocked", "current" (lock the frame's
+    // present ratio), then the fixed presets. selected marks the active lock;
+    // "current" is never selected because a captured ratio has no stable id.
+    QVector<GroupContextMenuDestination> aspectRatios;
 };
 
 enum class GroupContextMenuCommandKind {
@@ -59,6 +63,7 @@ enum class GroupContextMenuCommandKind {
     ToggleActivity,
     MoveToOutput,
     SavedWorkspaces,
+    SetContainerAspectRatio,
 };
 
 struct GroupContextMenuCommand final

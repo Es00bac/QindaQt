@@ -39,6 +39,78 @@ QString interactionContainerId(const HybridInput::InteractionIntent &intent)
     return intent.source.containerId;
 }
 
+// AGENT-NOTE: The aspect lock pins the content-area ratio, so its math needs
+// the same chrome offsets sceneMetrics() bakes into contentInsets from the
+// default ChromeMetrics (outerBorder 1, titleBarHeight 28). Keep these three
+// helpers in sync with that construction; see ADR-0162.
+qreal aspectChromeHorizontal()
+{
+    const HybridChrome::ChromeMetrics metrics;
+    return 2.0 * metrics.outerBorder;
+}
+
+qreal aspectChromeVertical()
+{
+    const HybridChrome::ChromeMetrics metrics;
+    return 2.0 * metrics.outerBorder + metrics.titleBarHeight;
+}
+
+// AGENT-CONTRACT: A pinned resize always keeps the content-area ratio exact
+// (within integer rounding): the drag's dominant axis leads, the follower
+// extent is derived from the ratio, and the follower edge stays anchored at
+// the baseline edge the drag does not move. Minimum frame sizes win over the
+// lock: the clamped extent becomes the leader and the follower is re-derived
+// from it, so the clamp point still satisfies the ratio. Violating this by
+// applying raw drag deltas would silently distort every grouped game window.
+void applyAspectRatioLock(const QRect &baseline, Qt::Edges edges, double ratio,
+                          int &x, int &y, int &width, int &height)
+{
+    const qreal chromeHorizontal = aspectChromeHorizontal();
+    const qreal chromeVertical = aspectChromeVertical();
+    const bool horizontalDrag = edges.testFlag(Qt::LeftEdge)
+        || edges.testFlag(Qt::RightEdge);
+    const bool verticalDrag = edges.testFlag(Qt::TopEdge)
+        || edges.testFlag(Qt::BottomEdge);
+    // Width leads on horizontal-edge and corner drags; height leads only for
+    // a pure vertical-edge drag, so a corner drag stays predictable.
+    const bool widthLeads = horizontalDrag || !verticalDrag;
+    const auto outerWidthFromContentHeight = [&](qreal contentHeight) {
+        return qRound(contentHeight * ratio + chromeHorizontal);
+    };
+    const auto outerHeightFromContentWidth = [&](qreal contentWidth) {
+        return qRound(contentWidth / ratio + chromeVertical);
+    };
+
+    int newWidth = width;
+    int newHeight = height;
+    if (widthLeads) {
+        newHeight = outerHeightFromContentWidth(width - chromeHorizontal);
+        if (newHeight < MinimumOuterHeight) {
+            newHeight = MinimumOuterHeight;
+            newWidth = outerWidthFromContentHeight(newHeight - chromeVertical);
+        }
+    } else {
+        newWidth = outerWidthFromContentHeight(height - chromeVertical);
+        if (newWidth < MinimumOuterWidth) {
+            newWidth = MinimumOuterWidth;
+            newHeight = outerHeightFromContentWidth(newWidth - chromeHorizontal);
+        }
+    }
+
+    // Keep the follower's baseline edge fixed. When width leads, the vertical
+    // position follows the lock: dragging the top edge grows/shrinks downward
+    // from the baseline bottom; otherwise the top stays put. Symmetrically
+    // for height leading with the left/right edges.
+    if (newHeight != height && edges.testFlag(Qt::TopEdge)) {
+        y = baseline.y() + baseline.height() - newHeight;
+    }
+    if (newWidth != width && edges.testFlag(Qt::LeftEdge)) {
+        x = baseline.x() + baseline.width() - newWidth;
+    }
+    width = newWidth;
+    height = newHeight;
+}
+
 HybridInput::IntentPhase intentPhase(HybridChrome::DragPhase phase)
 {
     switch (phase) {
@@ -285,7 +357,8 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
         return DirectInteractionResult::handled();
     }
 
-    const auto requested = resizedFrame(*found, intent.delta);
+    const auto requested = resizedFrame(*found, intent.delta,
+                                        m_aspectPins.value(containerId));
     if (requested != found->applied) {
         if (!reflow(containerId, requested, &error)) {
             // See the matching move path: a failed terminal phase must not
@@ -344,7 +417,8 @@ DividerGeometryResult HybridContainerPlacementController::dividerRatio(
 }
 
 QRect HybridContainerPlacementController::resizedFrame(
-    const FrameDrag &drag, const QPointF &delta)
+    const FrameDrag &drag, const QPointF &delta,
+    const std::optional<double> &pinnedContentRatio)
 {
     int x = drag.baseline.x();
     int y = drag.baseline.y();
@@ -377,7 +451,50 @@ QRect HybridContainerPlacementController::resizedFrame(
         }
         height = MinimumOuterHeight;
     }
+    if (pinnedContentRatio && *pinnedContentRatio > 0.0
+        && std::isfinite(*pinnedContentRatio)) {
+        applyAspectRatioLock(drag.baseline, drag.edges, *pinnedContentRatio,
+                             x, y, width, height);
+    }
     return {x, y, width, height};
+}
+
+bool HybridContainerPlacementController::setAspectRatioPin(
+    const QString &containerId, std::optional<double> contentRatio, QString *error)
+{
+    if (!container(containerId)) {
+        assignError(error, QStringLiteral("container is unknown"));
+        return false;
+    }
+    if (!contentRatio) {
+        m_aspectPins.remove(containerId);
+        return true;
+    }
+    if (!std::isfinite(*contentRatio) || *contentRatio <= 0.0) {
+        assignError(error, QStringLiteral("aspect ratio must be finite and positive"));
+        return false;
+    }
+    m_aspectPins.insert(containerId, *contentRatio);
+    return true;
+}
+
+std::optional<double> HybridContainerPlacementController::aspectRatioPin(
+    const QString &containerId) const noexcept
+{
+    const auto found = m_aspectPins.constFind(containerId);
+    return found == m_aspectPins.cend() ? std::nullopt
+                                        : std::optional<double>(*found);
+}
+
+double HybridContainerPlacementController::contentAspectRatioForOuterFrame(
+    const QRect &outerFrame) noexcept
+{
+    const qreal contentWidth = qreal(outerFrame.width()) - aspectChromeHorizontal();
+    const qreal contentHeight = qreal(outerFrame.height()) - aspectChromeVertical();
+    if (contentWidth <= 0.0 || contentHeight <= 0.0) {
+        return 0.0;
+    }
+    return double(contentWidth / contentHeight);
 }
 
 bool HybridContainerPlacementController::handleOuterResize(
@@ -552,6 +669,7 @@ void HybridContainerPlacementController::forgetContainer(
     m_moveDrags.remove(containerId);
     m_resizeDrags.remove(containerId);
     m_maximizeRestoreFrames.remove(containerId);
+    m_aspectPins.remove(containerId);
     m_shadeStripFrames.remove(containerId);
     m_shadeRestoreSizes.remove(containerId);
 }
