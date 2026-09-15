@@ -5,9 +5,26 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
-## Installed delivery checkpoint (September 14)
+## Installed delivery checkpoint (September 15)
 
-Exact source `a3312f53` is installed through Portage as
+Exact source `e7b76451` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260915-r1` (superseding r7). This
+checkpoint adds three user outcomes: the container aspect-ratio lock behind
+the group menu's Aspect Ratio submenu (content-area ratio, ADR-0162), a
+user-visible name for every container with a never-blank rolled-up badge
+label (ADR-0163), and workspace picker slots — the File Manager Applications
+browser (Go > Applications, Ctrl+Shift+A; `--choose-application` picker mode)
+over the shared application catalog, and Reopen-dialog slots that reopen with
+a picker the launched application atomically replaces
+(`ReplaceMemberWindow`, ADR-0164/0165). Installed verification: the packaged
+binaries answer the new chooser route and aspect/naming surfaces; the
+release gate rows `kwin-abi-pin`, `rejects-conflicting-kwin-abi`,
+`kwin-plugin-nested`, and `installed-plugin-discovery` pass on the pinned
+source. In-session everyday acceptance (locking a game container, reading a
+rolled-up badge name, reopening a layout with a picker replacement) remains
+the user's validation step.
+
+The prior checkpoint: exact source `a3312f53` was installed as
 `gui-wm/qindaqt-desktop-0.1.0_pre20260913-r7`. Revision r7 routes the session
 supervisor's systemd user-manager calls through sd-bus (the manager's private
 endpoint never answers Hello, so QtDBus deadlocked and the session-bus name
