@@ -69,7 +69,9 @@ public:
     return true;
   }
   bool restore(const Workspace &workspace, const Core::WindowContainer &layout,
+               const QMap<QString, QString> &pickerSlotWindows,
                QString *error) override {
+    Q_UNUSED(pickerSlotWindows);
     if (!restoreSucceeds) {
       if (error)
         *error = QStringLiteral("Window inventory changed");

@@ -47,8 +47,13 @@ public:
   virtual bool launchApplication(const QString &desktopEntryId,
                                  const QStringList &urls,
                                  QString *error) = 0;
+  // ADR-0165: pickerSlotWindows maps slot ids restored with a File Manager
+  // picker placeholder to the picker window bound into that slot. The port
+  // registers the pending replacement after adoption commits; slots absent
+  // from the map restore as plain windows.
   virtual bool restore(const Workspaces::Workspace &workspace,
                        const Core::WindowContainer &boundLayout,
+                       const QMap<QString, QString> &pickerSlotWindows,
                        QString *error) = 0;
 };
 

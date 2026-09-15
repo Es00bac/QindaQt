@@ -13,6 +13,8 @@
 #include <QPalette>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QDateTime>
+#include <QHash>
 #include <QPointF>
 #include <QRectF>
 #include <QSet>
@@ -64,6 +66,16 @@ class MemberChromeVisibilityController;
 // Owns the production Hybrid collaborator graph for one KWin plugin lifetime.
 // The registry is borrowed and must outlive this object. All calls and Qt
 // signals are serialized on KWin's compositor/GUI thread.
+// One restored slot currently occupied by a File Manager picker window that
+// is being replaced by a launched application (ADR-0165).
+struct PendingPickerReplacement final
+{
+    QString containerId;
+    QString desktopEntryId;
+    QDateTime expiresAt;
+    bool launched = false;
+};
+
 class KWinHybridSession final : public QObject
 {
     Q_OBJECT
@@ -190,7 +202,27 @@ private:
     void addManagedWindow(const QString &windowId);
     void forgetManagedWindow(const QString &windowId);
     void handleWindowsChanged();
+public:
+    // Workspace picker replacement (ADR-0165): a restored layout may bind a
+    // File Manager picker window into a slot; the picker's chosen application
+    // replaces it atomically when its window arrives. register/chooser are
+    // public because the workspace UI port and the control endpoint call
+    // them; correlation and expiry stay private lifecycle details.
+    [[nodiscard]] bool registerPickerReplacement(const QString &containerId,
+                                                 const QString &pickerWindowId,
+                                                 const QString &desktopEntryId,
+                                                 QString *error = nullptr);
+    // Runs on the compositor thread from the control endpoint: the ACTIVE
+    // window must be a registered picker, so a caller can never name someone
+    // else's placeholder. Returns the endpoint JSON payload.
+    [[nodiscard]] QByteArray handleWorkspaceChooserRequest(
+        const QString &desktopEntryId);
     void initializeGroupContextMenu();
+
+private:
+    void correlateArrivingWindow(const QString &windowId);
+    void purgeExpiredPickerReplacements();
+    void forgetPickerReplacement(const QString &pickerWindowId) noexcept;
     void showGroupContextMenu(const QString &containerId,
                               const QPointF &globalPosition);
     // Routes an Aspect Ratio submenu selection ("unlocked", "current", or a
@@ -269,6 +301,11 @@ private:
     std::unique_ptr<KWinInteractionFilter> m_inputFilter;
     std::unique_ptr<HybridShortcutManager> m_shortcuts;
     std::unique_ptr<WorkspacesApps::DesktopApplications> m_workspaceApplications;
+    // AGENT-CONTRACT: Keyed by the picker member's window id; entries expire
+    // (see PendingPickerReplacement::expiresAt) so a picker that never
+    // chooses cannot hold a slot hostage. Every mutation runs on the
+    // compositor thread alongside the topology it drives.
+    QHash<QString, PendingPickerReplacement> m_pendingPickerReplacements;
     std::unique_ptr<KWinWorkspaceUiPort> m_workspacePort;
     std::unique_ptr<KWinWorkspaceController> m_workspaceController;
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;

@@ -2,6 +2,7 @@
 #include "model/applications_controller.h"
 
 #include "qindaqt/application_catalog/launch_support.h"
+#include "model/workspace_chooser_client.h"
 
 #include <QProcess>
 
@@ -129,6 +130,29 @@ QString ApplicationsController::breadcrumb() const
         }
     }
     return crumb;
+}
+
+void ApplicationsController::setChooserMode(bool enabled)
+{
+    if (m_chooserMode == enabled) {
+        return;
+    }
+    m_chooserMode = enabled;
+    Q_EMIT chooserModeChanged();
+}
+
+void ApplicationsController::chooseForWorkspace(const QString &entryId)
+{
+    // AGENT-CONTRACT: the picker never names its own window; the compositor
+    // resolves the choice against the active window, which is this picker
+    // while the user clicks in it (ADR-0165). The window stays open until
+    // the compositor swaps it out and closes it.
+    const auto reply = chooseApplicationOnCompositor(entryId);
+    if (reply.accepted()) {
+        Q_EMIT chooserSucceeded();
+        return;
+    }
+    setLastError(reply.message);
 }
 
 void ApplicationsController::setLastError(QString message)

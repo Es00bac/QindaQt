@@ -374,6 +374,35 @@ bool applyRelease(WindowTopology &topology,
     return true;
 }
 
+bool applyReplaceMember(WindowTopology &topology,
+                        const ReplaceMemberWindow &command,
+                        QString *error) {
+  auto fail = [error](const QString &message) {
+    if (error)
+      *error = message;
+    return false;
+  };
+  auto &containers = TopologyMutationAccess::containers(topology);
+  const auto found = containers.constFind(command.containerId);
+  if (found == containers.constEnd())
+    return fail(QStringLiteral("A container with this identity does not exist"));
+  auto &independent = TopologyMutationAccess::independentWindows(topology);
+  if (!independent.contains(command.incomingWindowId))
+    return fail(QStringLiteral(
+        "The replacement window is no longer available. Refresh and try again."));
+  // AGENT-GUARD: Mutate a candidate first and touch the independent set only
+  // after the rebind succeeds, so a rejected command leaves both truth
+  // sources untouched (one publish-or-nothing transaction).
+  Core::WindowContainer candidate = *found;
+  if (!candidate.replaceWindow(command.outgoingWindowId,
+                               command.incomingWindowId, error))
+    return false;
+  independent.insert(command.outgoingWindowId);
+  independent.remove(command.incomingWindowId);
+  containers.insert(command.containerId, candidate);
+  return true;
+}
+
 } // namespace
 
 bool TopologyMutation::apply(WindowTopology &candidate,
@@ -385,6 +414,8 @@ bool TopologyMutation::apply(WindowTopology &candidate,
             using Command = std::decay_t<decltype(typedCommand)>;
             if constexpr (std::is_same_v<Command, AdoptIndependentLayout>) {
                 return TopologyAdoptionMutation::apply(candidate, typedCommand, error);
+            } else if constexpr (std::is_same_v<Command, ReplaceMemberWindow>) {
+                return applyReplaceMember(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, AddIndependentWindow>) {
                 return applyAddIndependent(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, ForgetWindow>) {

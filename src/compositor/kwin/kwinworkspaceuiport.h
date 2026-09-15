@@ -34,6 +34,11 @@ struct WorkspaceUiPortCallbacks final {
     std::function<bool(const QString &, const QString &, QString *)> renameContainer;
     std::function<bool(const QString &, const QString &, QString *)> setContainerColor;
     std::function<void()> invalidateScenePublication;
+    // ADR-0165: registers a restored picker slot for later replacement. Runs
+    // only after the adoption transaction committed.
+    std::function<bool(const QString &containerId, const QString &pickerWindowId,
+                       const QString &desktopEntryId, QString *)>
+        registerPickerReplacement;
 };
 
 // Small owned facts make the eligibility rule testable without a KWin process.
@@ -100,6 +105,7 @@ public:
                            QString *error) override;
     bool restore(const Workspaces::Workspace &workspace,
                  const Core::WindowContainer &boundLayout,
+                 const QMap<QString, QString> &pickerSlotWindows,
                  QString *error) override;
 
 Q_SIGNALS:

@@ -392,6 +392,12 @@ say so — the workspace picker route launches them through the compositor.
 Browsing to any folder path exits the browser; the documents launch contract
 above is unchanged.
 
+Launched with `--choose-application`, the browser becomes a workspace picker
+(ADR-0165): activations hand the entry to the compositor instead of starting
+it directly, so terminal and D-Bus-activatable applications are also
+choosable; the picker window closes when the compositor swaps the launched
+application into the layout.
+
 ## Ownership, lifetime, and failures
 
 - `DirectoryEntry`/`ListingResult`/`LaunchResult` (`model/file_manager_types.h`,

@@ -37,6 +37,10 @@ class ApplicationsController final : public QObject
     // Human-readable breadcrumb of the open folder, empty at the root.
     Q_PROPERTY(QString breadcrumb READ breadcrumb NOTIFY treeChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
+    // Chooser mode (ADR-0165): activations become workspace picker choices
+    // instead of direct launches.
+    Q_PROPERTY(bool chooserMode READ chooserMode WRITE setChooserMode
+               NOTIFY chooserModeChanged)
 
 public:
     explicit ApplicationsController(QStringList dataRoots,
@@ -52,6 +56,9 @@ public:
         return m_lastError;
     }
 
+    [[nodiscard]] bool chooserMode() const noexcept { return m_chooserMode; }
+    void setChooserMode(bool enabled);
+
     // Rescans the injected roots synchronously and rebuilds the tree. Scan
     // diagnostics (unreadable roots, ceiling hits) land in lastError as one
     // bounded summary, never as a hard failure.
@@ -63,11 +70,18 @@ public:
     // Launches the entry when its document plans a plain process; otherwise
     // records the typed limitation in lastError.
     Q_INVOKABLE void activateEntry(const QString &entryId);
+    // Chooser-mode activation: hands the entry to the compositor's picker
+    // route, which launches it and swaps it into the waiting slot. The
+    // chooserSucceeded signal fires on acceptance so the picker window can
+    // close itself; a rejection lands in lastError and the picker stays.
+    Q_INVOKABLE void chooseForWorkspace(const QString &entryId);
 
 Q_SIGNALS:
     void readyChanged();
     void treeChanged();
     void lastErrorChanged();
+    void chooserModeChanged();
+    void chooserSucceeded();
 
 private:
     struct OpenFolder final
@@ -85,6 +99,7 @@ private:
     QindaQt::ApplicationCatalog::CategoryNode m_tree;
     OpenFolder m_open;
     bool m_ready = false;
+    bool m_chooserMode = false;
     QString m_lastError;
 };
 

@@ -21,6 +21,7 @@ private slots:
     void movesMemberIntoSplitPreservingLeafId();
     void movesMemberToTargetPageRoot();
     void activatesPagesAndResizesSplitsAtomically();
+    void replacesPickerMemberPreservingStructure();
     void rejectsDuplicateOwnershipAndMergeCollisions();
 };
 
@@ -414,6 +415,42 @@ void TopologyCommandsTest::movesMemberToTargetPageRoot()
     // The two-member source drops to one member and unwraps to independence.
     QVERIFY(!repository.topology().container(QStringLiteral("source")));
     QVERIFY(repository.topology().isIndependent(QStringLiteral("window-a")));
+    QVERIFY(repository.topology().validate().valid);
+}
+
+void TopologyCommandsTest::replacesPickerMemberPreservingStructure()
+{
+    auto container = splitContainer(QStringLiteral("layout"),
+                                    QStringLiteral("layout"),
+                                    QStringLiteral("picker-window"),
+                                    QStringLiteral("window-b"));
+    QString error;
+    QVERIFY(container.splitWindow(
+        {.targetWindowId = QStringLiteral("window-b"),
+         .newWindowId = QStringLiteral("window-c"),
+         .newLeafNodeId = QStringLiteral("layout-leaf-c"),
+         .splitNodeId = QStringLiteral("layout-inner"),
+         .orientation = Core::SplitOrientation::Vertical,
+         .ratio = 0.55,
+         .position = Core::InsertPosition::Second},
+        &error));
+    TopologyRepository repository(topology({QStringLiteral("app-window")}, {container}));
+    AlwaysReadyFactory scene;
+    TopologyCoordinator coordinator(repository, scene);
+
+    const auto replaced = coordinator.execute(ReplaceMemberWindow{
+        .containerId = QStringLiteral("layout"),
+        .outgoingWindowId = QStringLiteral("picker-window"),
+        .incomingWindowId = QStringLiteral("app-window"),
+    });
+    QVERIFY2(replaced.committed(), qPrintable(replaced.message));
+    const auto *after = repository.topology().container(QStringLiteral("layout"));
+    QVERIFY(after);
+    // The arriving window took the picker's leaf: same node id, same split.
+    QCOMPARE(after->findWindow(QStringLiteral("app-window"))->id(),
+             QStringLiteral("layout-leaf-a"));
+    QVERIFY(repository.topology().isIndependent(QStringLiteral("picker-window")));
+    QVERIFY(!repository.topology().isIndependent(QStringLiteral("app-window")));
     QVERIFY(repository.topology().validate().valid);
 }
 

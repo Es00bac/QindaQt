@@ -151,6 +151,7 @@ bool KWinWorkspaceUiPort::launchApplication(const QString &desktopEntryId,
 
 bool KWinWorkspaceUiPort::restore(const Workspaces::Workspace &workspace,
                                   const Core::WindowContainer &boundLayout,
+                                  const QMap<QString, QString> &pickerSlotWindows,
                                   QString *error)
 {
     if (!workspace.validate(error)) {
@@ -190,6 +191,33 @@ bool KWinWorkspaceUiPort::restore(const Workspaces::Workspace &workspace,
     // Preserve its template identity so a later Save updates the same document.
     m_workspaceIds.insert(boundLayout.id(), workspace.id);
     m_selectedContainerId = boundLayout.id();
+    // ADR-0165: adoption committed, so the picker slots' placeholders are
+    // real members now; register each for replacement by its saved
+    // application. A rejected registration keeps the slot as a plain picker
+    // window and is reported through the launch-failure channel.
+    for (auto slotIt = pickerSlotWindows.constBegin();
+         slotIt != pickerSlotWindows.constEnd(); ++slotIt) {
+        const auto slot = std::find_if(
+            workspace.applicationSlots.cbegin(), workspace.applicationSlots.cend(),
+            [&slotIt](const Workspaces::ApplicationSlot &candidate) {
+                return candidate.id == slotIt.key();
+            });
+        if (slot == workspace.applicationSlots.cend()) {
+            continue;
+        }
+        QString registrationError;
+        if (!m_callbacks.registerPickerReplacement
+            || !m_callbacks.registerPickerReplacement(boundLayout.id(),
+                                                      slotIt.value(),
+                                                      slot->desktopEntryId,
+                                                      &registrationError)) {
+            Q_EMIT launchFailed(slot->desktopEntryId,
+                                registrationError.isEmpty()
+                                    ? QStringLiteral(
+                                          "The picker replacement could not be armed.")
+                                    : registrationError);
+        }
+    }
     if (!m_callbacks.renameContainer || !m_callbacks.setContainerColor
         || !m_callbacks.renameContainer(boundLayout.id(), workspace.name,
                                         &presentationError)

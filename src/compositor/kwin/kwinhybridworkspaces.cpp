@@ -47,6 +47,13 @@ void KWinHybridSession::initializeSavedWorkspaces()
         synchronizeChrome();
         Q_EMIT shellVisibilityStateChanged();
     };
+    callbacks.registerPickerReplacement = [this](const QString &containerId,
+                                                 const QString &pickerWindowId,
+                                                 const QString &desktopEntryId,
+                                                 QString *error) {
+        return registerPickerReplacement(containerId, pickerWindowId,
+                                         desktopEntryId, error);
+    };
     m_workspacePort = std::make_unique<KWinWorkspaceUiPort>(
         m_registry, *m_runtime, *m_workspaceApplications, std::move(callbacks));
     // AGENT-CONTRACT: This explicit directory is shared across compositor

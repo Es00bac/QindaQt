@@ -11,6 +11,10 @@ import QtQuick.Layouts
 ColumnLayout {
     id: root
     required property var applicationsController
+    // ADR-0165: in chooser mode every entry activation becomes a workspace
+    // choice, so terminal/D-Bus entries are enabled too (the compositor
+    // launches them) and the view explains its purpose.
+    property bool chooserMode: false
 
     spacing: 0
 
@@ -36,6 +40,15 @@ ColumnLayout {
                   : qsTr("Applications")
             font.bold: true
         }
+    }
+
+    Label {
+        objectName: "chooserHint"
+        Layout.fillWidth: true
+        visible: root.chooserMode
+        text: qsTr("Pick the application that will replace this picker in the layout.")
+        wrapMode: Text.WordWrap
+        font.italic: true
     }
 
     ListView {
@@ -75,8 +88,10 @@ ColumnLayout {
             id: entryDelegate
             required property var modelData
             width: entryColumn.width
-            enabled: modelData.launchable
-            onClicked: root.applicationsController.activateEntry(modelData.id)
+            enabled: root.chooserMode || modelData.launchable
+            onClicked: root.chooserMode
+                ? root.applicationsController.chooseForWorkspace(modelData.id)
+                : root.applicationsController.activateEntry(modelData.id)
 
             contentItem: RowLayout {
                 spacing: 8
@@ -97,6 +112,7 @@ ColumnLayout {
                     Label {
                         Layout.fillWidth: true
                         visible: entryDelegate.modelData.message.length > 0
+                                 && !root.chooserMode
                         text: entryDelegate.modelData.message
                         elide: Text.ElideRight
                         color: palette.placeholderText

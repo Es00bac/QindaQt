@@ -11,6 +11,8 @@ TopologyCommandKind commandKind(const TopologyCommand &command) noexcept
         []<typename Command>(const Command &) {
             if constexpr (std::is_same_v<Command, AdoptIndependentLayout>) {
                 return TopologyCommandKind::AdoptIndependentLayout;
+            } else if constexpr (std::is_same_v<Command, ReplaceMemberWindow>) {
+                return TopologyCommandKind::ReplaceMemberWindow;
             } else if constexpr (std::is_same_v<Command, AddIndependentWindow>) {
                 return TopologyCommandKind::AddIndependentWindow;
             } else if constexpr (std::is_same_v<Command, ForgetWindow>) {

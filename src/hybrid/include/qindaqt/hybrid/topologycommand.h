@@ -248,6 +248,18 @@ struct AdoptIndependentLayout final
     Core::WindowContainer container;
 };
 
+// ADR-0165: swaps a workspace picker placeholder for the application window
+// that replaces it. The outgoing leaf keeps its node id, page membership, and
+// every surrounding ratio; the picker returns to the independent set and the
+// incoming window joins the container in one transaction. The incoming window
+// must currently be independent.
+struct ReplaceMemberWindow final
+{
+    QString containerId;
+    QString outgoingWindowId;
+    QString incomingWindowId;
+};
+
 using TopologyCommand = std::variant<AddIndependentWindow,
                                      ForgetWindow,
                                      DockIndependentWindows,
@@ -268,7 +280,8 @@ using TopologyCommand = std::variant<AddIndependentWindow,
                                      ReparentMemberToPageRoot,
                                      DetachMember,
                                      ReleaseContainer,
-                                     AdoptIndependentLayout>;
+                                     AdoptIndependentLayout,
+                                     ReplaceMemberWindow>;
 
 enum class TopologyCommandKind {
     AddIndependentWindow,
@@ -292,6 +305,7 @@ enum class TopologyCommandKind {
     DetachMember,
     ReleaseContainer,
     AdoptIndependentLayout,
+    ReplaceMemberWindow,
 };
 
 [[nodiscard]] TopologyCommandKind commandKind(const TopologyCommand &command) noexcept;

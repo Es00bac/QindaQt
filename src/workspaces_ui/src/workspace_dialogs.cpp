@@ -234,6 +234,38 @@ private:
                 updatePlan();
               });
       rowLayout->addWidget(launch);
+      // ADR-0165: "picker instead" marks the slot to reopen with a File
+      // Manager picker placeholder; the launched app then replaces it. The
+      // picker window itself is assigned to the slot like any other window
+      // (restore never guesses), so the combo still drives the binding.
+      auto *picker = new QPushButton(tr("Picker instead"), row);
+      picker->setObjectName(QStringLiteral("picker_") + slot.id);
+      picker->setCheckable(true);
+      picker->setChecked(m_chooseLater.contains(slot.id));
+      picker->setToolTip(
+          tr("Reopen this place with an application picker that the launched "
+             "application replaces"));
+      const QString pickerSlotId = slot.id;
+      connect(picker, &QPushButton::toggled, this,
+              [this, pickerSlotId, picker](bool checked) {
+                if (checked) {
+                  m_chooseLater.insert(pickerSlotId);
+                  QString error;
+                  if (!m_port.launchApplication(QStringLiteral("org.qindaqt.FileManager"),
+                                                {}, &error)) {
+                    setResultText(error.isEmpty()
+                                      ? tr("Could not open the picker.")
+                                      : error);
+                    picker->setChecked(false);
+                    return;
+                  }
+                  setResultText(
+                      tr("Picker opened. Refresh, then assign it to this place."));
+                } else {
+                  m_chooseLater.remove(pickerSlotId);
+                }
+              });
+      rowLayout->addWidget(picker);
       auto *label = new QLabel(slot.label, this);
       label->setToolTip(tr("Desktop entry ID: %1").arg(slot.desktopEntryId));
       if (application)
@@ -292,7 +324,15 @@ private:
     QString error;
     const auto container = Workspaces::instantiate(
         m_workspace, plan, QUuid::createUuid().toString(QUuid::WithoutBraces), &error);
-    if (!container || !m_port.restore(m_workspace, *container, &error)) {
+    if (!container) {
+      setResultText(error.isEmpty() ? tr("The workspace could not be restored.") : error);
+      return;
+    }
+    QMap<QString, QString> pickerSlotWindows;
+    for (const auto &slotId : std::as_const(m_chooseLater))
+      pickerSlotWindows.insert(
+          slotId, m_explicit.value(slotId, plan.windowsBySlot.value(slotId)));
+    if (!m_port.restore(m_workspace, *container, pickerSlotWindows, &error)) {
       setResultText(error.isEmpty() ? tr("The workspace could not be restored.") : error);
       return;
     }
@@ -306,6 +346,7 @@ private:
   WorkspaceUiPort &m_port;
   QList<WorkspaceWindow> m_windows;
   QMap<QString, QString> m_explicit;
+  QSet<QString> m_chooseLater;
   QMap<QString, QComboBox *> m_boxes;
   QFormLayout *m_form = nullptr;
   QLabel m_note;

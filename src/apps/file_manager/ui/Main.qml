@@ -26,6 +26,10 @@ ApplicationWindow {
     // The Applications browser (ADR-0164) replaces the folder views while
     // true. Browsing to any folder path exits it; "go.applications" enters.
     property bool applicationsMode: false
+    // ADR-0165: --choose-application turns the Applications browser into a
+    // workspace picker; a successful choice quits the picker window after
+    // the compositor closes it (see chooserSucceeded handling below).
+    property bool chooserMode: false
 
     // Set by FileContextMenu immediately before it activates "edit.paste" for
     // a background (empty-space) invocation, and cleared by it immediately
@@ -79,6 +83,16 @@ ApplicationWindow {
 
     Shortcut { sequence: "Ctrl+="; onActivated: root.coordinator.activateAction("view.zoom-in") }
     Shortcut { sequence: "Ctrl+R"; onActivated: root.coordinator.activateAction("view.refresh") }
+
+    Connections {
+        target: root.applicationsController
+        // The compositor closes the picker when the chosen application's
+        // window replaces it, so the picker itself only needs to quit cleanly
+        // through the standard arbitration once the choice is accepted.
+        function onChooserSucceeded() {
+            root.coordinator.requestQuit("application-chosen")
+        }
+    }
 
     Connections {
         target: root.navigationController
@@ -341,6 +355,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 applicationsController: root.applicationsController
+                chooserMode: root.chooserMode
             }
         }
 

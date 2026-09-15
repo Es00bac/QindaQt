@@ -52,6 +52,7 @@ target_sources(
         model/listing_order.cpp
         model/applications_controller.cpp
         model/navigation_controller.cpp
+        model/workspace_chooser_client.cpp
         model/navigation_history.cpp
         model/navigation_status.h
         model/places_controller.cpp
@@ -94,6 +95,7 @@ target_sources(
         model/listing_order.h
         model/local_directory_lister.h
         model/navigation_controller.h
+        model/workspace_chooser_client.h
         model/navigation_history.h
         model/places_controller.h
         model/search_controller.h

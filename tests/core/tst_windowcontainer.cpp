@@ -18,6 +18,7 @@ private slots:
     void removingActivePageSelectsItsNeighbor();
     void detachesWholePageAndPreservesItsTree();
     void rejectsInvalidMutationsAtomically();
+    void replaceWindowRebindsTheLeafPreservingStructure();
     void serializesRoundTrip();
     void rejectsMalformedJson();
     void identifiesSingletonForCompositorUnwrap();
@@ -310,6 +311,41 @@ void WindowContainerTest::rejectsInvalidMutationsAtomically()
     QVERIFY(!container.detachWindow(QStringLiteral("missing"), &error));
     QCOMPARE(container.toJson(), before);
     QVERIFY(container.validate().valid);
+}
+
+void WindowContainerTest::replaceWindowRebindsTheLeafPreservingStructure()
+{
+    WindowContainer container(QStringLiteral("container"));
+    QString error;
+    QVERIFY(container.addPage(QStringLiteral("page-1"), QStringLiteral("leaf-a"),
+                              QStringLiteral("picker-window"), &error));
+    QVERIFY(container.splitWindow(
+        {.targetWindowId = QStringLiteral("picker-window"),
+         .newWindowId = QStringLiteral("window-b"),
+         .newLeafNodeId = QStringLiteral("leaf-b"),
+         .splitNodeId = QStringLiteral("split-1"),
+         .orientation = SplitOrientation::Horizontal,
+         .ratio = 0.6,
+         .position = InsertPosition::Second},
+        &error));
+
+    // The arriving application takes the picker's leaf in place: the leaf
+    // node id and the split survive (ADR-0165's in-place replacement).
+    QVERIFY(container.replaceWindow(QStringLiteral("picker-window"),
+                                    QStringLiteral("app-window"), &error));
+    const auto *leaf = container.findWindow(QStringLiteral("app-window"));
+    QVERIFY(leaf);
+    QCOMPARE(leaf->id(), QStringLiteral("leaf-a"));
+    QVERIFY(container.findWindow(QStringLiteral("picker-window")) == nullptr);
+    QVERIFY(container.validate().valid);
+    // Failure cases leave the container untouched.
+    QVERIFY(!container.replaceWindow(QStringLiteral("missing"),
+                                     QStringLiteral("other"), &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(!container.replaceWindow(QStringLiteral("app-window"),
+                                     QStringLiteral("window-b"), &error));
+    QVERIFY(container.validate().valid);
+    QVERIFY(container.findWindow(QStringLiteral("app-window")));
 }
 
 void WindowContainerTest::serializesRoundTrip()

@@ -73,6 +73,22 @@ value with fresh live window identities while retaining page order, active
 page, split orientation and ratios. It does not mutate the session. The
 compositor must revalidate live eligibility and publish adoption atomically.
 
+## Picker slots (reopen with a placeholder)
+
+A slot may reopen as a *picker* instead of its saved application: the Reopen
+dialog's **Picker instead** toggle launches a File Manager picker window
+(the [Applications browser](../apps/file-manager.md)), which is then assigned
+to the slot like any other window — assignment stays explicit and the restore
+never guesses. After adoption the compositor arms a pending replacement keyed
+by the picker member; when the user picks an application there, the
+compositor launches it through the desktop-entry adapter and atomically
+rebinds the picker's leaf to the arriving window
+(`ReplaceMemberWindow`), preserving the leaf id and every ratio, then closes
+the picker. The chooser route resolves against the active window, so a
+caller can never name another window's placeholder, and pending entries
+expire so an unchosen picker cannot hold a slot forever. See
+[ADR-0165](../adr/0165-workspace-picker-slots-replaced-by-launched-applications.md).
+
 ## Native Save and Reopen dialogs
 
 `WorkspaceLibraryDialog(QString storageRoot, WorkspaceUiPort &, QWidget *)`

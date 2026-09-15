@@ -118,6 +118,11 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
             ? m_hybridSession->diagnostics()
             : QJsonObject{{QStringLiteral("ready"), false}};
     });
+    m_endpoint->setWorkspaceChooserHandler([this](const QString &desktopEntryId) {
+        return m_hybridSession
+            ? m_hybridSession->handleWorkspaceChooserRequest(desktopEntryId)
+            : QByteArray();
+    });
     m_endpoint->setHybridStateProviders(
         [this] {
             return m_hybridSession ? m_hybridSession->publicContainers() : QJsonArray{};

@@ -108,6 +108,14 @@ public:
     [[nodiscard]] std::optional<DetachedWindow> detachWindow(const QString &windowId,
                                                              QString *error = nullptr);
     [[nodiscard]] bool removeWindow(const QString &windowId, QString *error = nullptr);
+    // Rebinds one member leaf to a different window id in place: the leaf
+    // node id, page membership, split topology, and every ratio survive
+    // untouched (ADR-0165's workspace picker replacement). Fails — leaving
+    // the container unchanged — when the outgoing id is unknown or the
+    // incoming id is already a member of this container.
+    [[nodiscard]] bool replaceWindow(const QString &outgoingWindowId,
+                                     const QString &incomingWindowId,
+                                     QString *error = nullptr);
 
     [[nodiscard]] ValidationResult validate() const;
     [[nodiscard]] QJsonObject toJson() const;

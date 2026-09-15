@@ -40,6 +40,11 @@ public:
     using HybridSnapshotProvider =
         std::function<std::optional<QJsonObject>(const QString &)>;
     using DevelopmentCompositorReinitializer = std::function<bool()>;
+    // ADR-0165: resolves a workspace picker's application choice. The handler
+    // (the Hybrid session) validates that the ACTIVE window is a registered
+    // picker placeholder before touching topology; an unset handler disables
+    // the route entirely.
+    using WorkspaceChooserHandler = std::function<QByteArray(const QString &)>;
 
     KWinControlEndpoint(ContainerControlBridge &bridge,
                         ManagedWindowRegistry &registry,
@@ -64,6 +69,7 @@ public:
     // public slot rejects production sessions before invoking it.
     void setDevelopmentCompositorReinitializer(
         DevelopmentCompositorReinitializer reinitializer);
+    void setWorkspaceChooserHandler(WorkspaceChooserHandler handler);
 
     // Process-local compositor policy uses this path during lifecycle
     // reconciliation. It deliberately bypasses only the external D-Bus gate;
@@ -85,6 +91,8 @@ public Q_SLOTS:
                                                       const QString &position,
                                                       double ratio);
     Q_SCRIPTABLE [[nodiscard]] QByteArray ReleaseContainer(const QString &containerId);
+    Q_SCRIPTABLE QByteArray ChooseApplicationForActivePicker(
+        const QString &desktopEntryId);
     Q_SCRIPTABLE [[nodiscard]] QByteArray Snapshot(const QString &containerId) const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray Submit(const QByteArray &requestJson);
     Q_SCRIPTABLE [[nodiscard]] QByteArray InjectTestInput(const QByteArray &requestJson);
@@ -112,6 +120,7 @@ private:
     HybridContainersProvider m_hybridContainers;
     HybridSnapshotProvider m_hybridSnapshot;
     DevelopmentCompositorReinitializer m_developmentCompositorReinitializer;
+    WorkspaceChooserHandler m_workspaceChooser;
     DevelopmentInputController m_developmentInput;
     DevelopmentOutputController m_developmentOutput;
     QList<QPointer<KWin::LayerSurfaceV1Interface>> m_developmentLayerSurfaces;

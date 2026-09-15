@@ -286,6 +286,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinworkspacecontroller.cpp
             kwin/kwinworkspacecontroller.h
             kwin/kwinhybridworkspaces.cpp
+            kwin/kwinhybridworkspacepickers.cpp
             kwin/hybridinteractionplacement.cpp
             kwin/hybridchromedragtranslator.cpp
             kwin/hybridchromedragtranslator.h
