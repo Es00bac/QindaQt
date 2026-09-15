@@ -60,15 +60,32 @@ Compositor::ContainerAppearance HybridContainerAppearanceStore::appearance(
     return m_byContainer.value(containerId);
 }
 
+QString HybridContainerAppearanceStore::displayName(const QString &containerId)
+{
+    const auto overrideName = m_byContainer.constFind(containerId);
+    if (overrideName != m_byContainer.cend() && !overrideName->name.isEmpty()) {
+        return overrideName->name;
+    }
+    const auto generated = m_generatedNames.constFind(containerId);
+    if (generated != m_generatedNames.cend()) {
+        return *generated;
+    }
+    const auto name = QStringLiteral("Container %1").arg(++m_nameCounter);
+    m_generatedNames.insert(containerId, name);
+    return name;
+}
+
 void HybridContainerAppearanceStore::forgetContainer(
     const QString &containerId) noexcept
 {
     m_byContainer.remove(containerId);
+    m_generatedNames.remove(containerId);
 }
 
 void HybridContainerAppearanceStore::clear() noexcept
 {
     m_byContainer.clear();
+    m_generatedNames.clear();
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

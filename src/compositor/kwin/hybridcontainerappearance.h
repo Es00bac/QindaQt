@@ -36,11 +36,22 @@ public:
     [[nodiscard]] Compositor::ContainerAppearance appearance(
         const QString &containerId) const;
 
+    // The user-visible container name: the rename override when one exists,
+    // otherwise a stable generated "Container N" (ADR-0163). Never empty, so
+    // surfaces that need a name (the rolled-up badge) always have one. The
+    // generated value is memoized for the container's lifetime and survives
+    // a later blank setName (which only clears the override). Not const:
+    // first observation assigns the next number. The counter is
+    // process-monotonic so two live containers can never share a number.
+    [[nodiscard]] QString displayName(const QString &containerId);
+
     void forgetContainer(const QString &containerId) noexcept;
     void clear() noexcept;
 
 private:
     QHash<QString, Compositor::ContainerAppearance> m_byContainer;
+    QHash<QString, QString> m_generatedNames;
+    int m_nameCounter = 0;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

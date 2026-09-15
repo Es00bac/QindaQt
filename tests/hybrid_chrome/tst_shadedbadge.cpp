@@ -109,6 +109,49 @@ private slots:
         QVERIFY(inactiveTint != activeTint);
     }
 
+    void badgeLabelPaintsWithGeneratedNameAndWithoutAnyTitle()
+    {
+        // ADR-0163 regression guard: a rolled-up badge must never paint an
+        // empty label area. The session passes the generated "Container N"
+        // name for never-renamed containers; a badge without any title still
+        // paints the active tab's title as the fallback.
+        const auto surface = ChromePalette{}.surface;
+        for (const auto &containerTitle : {QStringLiteral("Container 1"), QString()}) {
+            ChromeLayoutRequest request;
+            request.containerId = QStringLiteral("container-shaded");
+            request.outerRect = QRectF(0.0, 0.0,
+                                       ChromeShadedBadge::badgeWidth(ChromeMetrics{}, 1)
+                                           + 2.0 * ChromeMetrics{}.outerBorder,
+                                       31.0);
+            request.shaded = true;
+            request.containerTitle = containerTitle;
+            request.tabs = {{QStringLiteral("page-a"),
+                             QStringLiteral("SuperTuxKart"), true}};
+            const auto plan = ChromeLayoutEngine::build(request);
+            QVERIFY(plan);
+            QVERIFY(plan->badgeLabelRect.isValid());
+            QVERIFY(plan->badgeLabelRect.width() >= 48.0);
+
+            const auto image = render(*plan);
+            const auto labelTopLeft = physicalPoint(
+                plan->badgeLabelRect.topLeft() + QPointF(5.0, 8.0),
+                plan->devicePixelRatio);
+            bool labelInkFound = false;
+            for (int dy = 0; dy < 16 && !labelInkFound; ++dy) {
+                for (int dx = 0; dx < 120 && !labelInkFound; ++dx) {
+                    const auto pixel = image.pixelColor(labelTopLeft + QPoint(dx, dy));
+                    labelInkFound = pixel.alpha() > 0
+                        && (qAbs(pixel.red() - surface.red()) > 24
+                            || qAbs(pixel.green() - surface.green()) > 24
+                            || qAbs(pixel.blue() - surface.blue()) > 24);
+                }
+            }
+            QVERIFY2(labelInkFound, qPrintable(containerTitle.isEmpty()
+                ? QStringLiteral("empty-title fallback label did not paint")
+                : QStringLiteral("generated-name label did not paint")));
+        }
+    }
+
     void badgeUnsetIdentityUsesAccentDerivation()
     {
         // Negative control: an unset identity color drives the whole badge
