@@ -18,6 +18,7 @@ private Q_SLOTS:
     void setColorRejectsInvalidHexAndLeavesPriorValue();
     void forgetContainerRemovesBothFields();
     void containersAreIndependent();
+    void displayNameGeneratesStableNamesAndHonorsOverrides();
 };
 
 void HybridContainerAppearanceStoreTests::unknownContainerHasNoOverride()
@@ -97,6 +98,35 @@ void HybridContainerAppearanceStoreTests::containersAreIndependent()
     store.clear();
     QCOMPARE(store.appearance(QStringLiteral("alpha")), ContainerAppearance{});
     QCOMPARE(store.appearance(QStringLiteral("beta")), ContainerAppearance{});
+}
+
+void HybridContainerAppearanceStoreTests::displayNameGeneratesStableNamesAndHonorsOverrides()
+{
+    HybridContainerAppearanceStore store;
+    QString error;
+
+    // First observation assigns sequential numbers; repeat queries stay
+    // stable for the container's lifetime (ADR-0163).
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 1"));
+    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container 2"));
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 1"));
+
+    // The rename override wins, and clearing it falls back to the memoized
+    // generated name instead of minting a new number.
+    QVERIFY(store.setName(QStringLiteral("alpha"), QStringLiteral("Games"), &error));
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Games"));
+    QVERIFY(store.setName(QStringLiteral("alpha"), QStringLiteral("   "), &error));
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 1"));
+
+    // Forgetting a container retires its memoized name; the counter never
+    // reuses a number, so two live containers can never share a name.
+    store.forgetContainer(QStringLiteral("alpha"));
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 3"));
+    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container 2"));
+
+    // clear() resets the whole generated map; the counter keeps advancing.
+    store.clear();
+    QCOMPARE(store.displayName(QStringLiteral("gamma")), QStringLiteral("Container 4"));
 }
 
 QTEST_GUILESS_MAIN(HybridContainerAppearanceStoreTests)

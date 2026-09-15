@@ -158,7 +158,10 @@ item, not a native overlay window.
   hidden member revealed or focused by a KWin activation. The badge width is
   derived from chrome metrics and tab count, capped by the former container
   width, so roll-up genuinely shrinks the frame. It paints the container
-  identity color, names the active page, and keeps bounded page pills; clicking
+  identity color, names the container (the rename override, else a stable
+  generated `Container N`,
+  [ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
+  and the active page, and keeps bounded page pills; clicking
   a pill activates that page and unrolls. Unroll restores the exact frames,
   content, and the member focus held at roll-up. See
   [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
@@ -168,7 +171,12 @@ item, not a native overlay window.
   persistence-neutral `Core::WindowContainer` model below): the rename
   replaces the derived title in the shared row and the collapsed dock/task
   entry, and the color replaces the shared row's accent (active-tab
-  underline, rename text, focus cue). Neither survives a compositor restart
+  underline, rename text, focus cue). A container that was never renamed
+  still presents a stable generated `Container N` name on surfaces that
+  require one (the rolled-up badge); the rename prompt keeps prefilling the
+  raw override, not the generated name
+  ([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)).
+  Neither survives a compositor restart
   yet; see [Hybrid container chrome](hybrid-chrome.md) for the exact
   boundary a future persistence owner reads/writes through.
 - The shared title row keeps a visible native-title toggle and group-management

@@ -513,6 +513,13 @@ void KWinHybridSession::synchronizeChrome()
         options.memberTitlesVisible = memberTitlesVisible(containerId);
         const auto appearance = m_appearance.appearance(containerId);
         options.containerTitle = appearance.name;
+        if (options.shaded && options.containerTitle.isEmpty()) {
+            // ADR-0163: while shaded, the badge label is the container's only
+            // naming surface, so a never-renamed container carries its stable
+            // generated "Container N" name there. The unshaded shared row
+            // keeps the override-only contract (empty paints no row title).
+            options.containerTitle = m_appearance.displayName(containerId);
+        }
         if (!appearance.colorHex.isEmpty()) {
             options.style.palette.accent = QColor(appearance.colorHex);
         }

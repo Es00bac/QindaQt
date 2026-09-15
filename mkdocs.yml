@@ -281,3 +281,4 @@ nav:
       - "ADR-0160: select installed KWin window decorations explicitly": adr/0160-select-installed-kwin-window-decorations.md
       - "ADR-0161: persist and mutate desktop icons behind owned boundaries": adr/0161-persist-and-mutate-desktop-icons.md
       - "ADR-0162: container aspect-ratio lock": adr/0162-container-aspect-ratio-lock.md
+      - "ADR-0163: generated container names for the rolled-up badge": adr/0163-generated-container-names-for-the-rolled-up-badge.md
