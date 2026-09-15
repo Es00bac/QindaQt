@@ -171,6 +171,14 @@ reports the refusal truthfully (covered by a focused test).
 
 ### Bounded execution
 
+The execution-key grammar itself (`LaunchExecutionParser`,
+`ExecFieldCodeExpander`, `ExecPlan`, and the `ExecutionBounds` ceilings)
+is pure L0 public API (`qindaqt/shell_launcher/launch_execution.h`) since
+[ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md),
+so apps-side consumers plan launches through the same hardened parser
+instead of a copy; the runtime's `LaunchExecutor` remains the launcher's
+only execution path.
+
 `LaunchExecutor` turns an L0 launch intent into a process start with no shell
 interpolation. Every launch first resolves through the catalog's single
 `makeLaunchIntent` resolver — an entry the catalog does not publish (unknown,

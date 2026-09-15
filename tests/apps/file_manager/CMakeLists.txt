@@ -423,3 +423,8 @@ set_tests_properties(qindaqt.file-manager-viewport PROPERTIES
 qt_add_resources(qindaqt_file_manager_browsing_ui_tests file_manager_browsing_artwork
     PREFIX /qindaqt/file-manager
     FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_applications_controller_tests
+    tst_applications_controller.cpp
+    qindaqt.file-manager-applications-controller
+)

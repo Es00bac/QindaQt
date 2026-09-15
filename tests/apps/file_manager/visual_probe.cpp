@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_browsing_actions.h"
+#include "model/applications_controller.h"
 #include "model/clipboard_controller.h"
 #include "model/entry_properties.h"
 #include "model/local_directory_lister.h"
@@ -70,6 +71,7 @@ int main(int argc, char **argv) {
   SearchController search;
   PlacesController places(
       std::make_unique<BookmarksStore>(temporary.filePath("state")));
+  ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   coordinator.setApplicationName("QindaQt Files");
   coordinator.setWindowTitle("Little projects");
@@ -101,6 +103,8 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(&search))},
        {"placesController",
         QVariant::fromValue(static_cast<QObject *>(&places))},
+       {"applicationsController",
+        QVariant::fromValue(static_cast<QObject *>(&applications))},
        {"coordinator",
         QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
   engine.load(

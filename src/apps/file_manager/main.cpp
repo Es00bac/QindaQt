@@ -3,6 +3,7 @@
 #include "app_shell/file_manager_browsing_actions.h"
 #include "app_shell/file_manager_mutation_actions.h"
 #include "app_shell/file_manager_transfer_actions.h"
+#include "model/applications_controller.h"
 #include "model/bookmarks_store.h"
 #include "model/clipboard_controller.h"
 #include "model/entry_properties.h"
@@ -264,6 +265,20 @@ int main(int argc, char **argv) {
                        QStandardPaths::GenericStateLocation))
                   .filePath(QStringLiteral("qindaqt-file-manager"))));
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
+  // ADR-0164: the composition root resolves the XDG data roots; the
+  // applications controller itself never reads the environment. The first
+  // synchronous scan happens here so the browser opens ready.
+  QStringList applicationDataRoots;
+  for (const auto &location :
+       QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+    if (!applicationDataRoots.contains(location)) {
+      applicationDataRoots.append(location);
+    }
+  }
+  auto applicationsController =
+      std::make_unique<QindaQt::Apps::FileManager::ApplicationsController>(
+          applicationDataRoots);
+  applicationsController->refresh();
   const QString appShellError = configureAppShell(
       *appCoordinator, *controller, *mutationController, *clipboardController);
   if (!appShellError.isEmpty()) {
@@ -300,6 +315,8 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(searchController.get()))},
        {QStringLiteral("placesController"),
         QVariant::fromValue(static_cast<QObject *>(placesController.get()))},
+       {QStringLiteral("applicationsController"),
+        QVariant::fromValue(static_cast<QObject *>(applicationsController.get()))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));

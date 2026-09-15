@@ -10,6 +10,7 @@ target_sources(
     PRIVATE
         src/application_catalog.cpp
         src/desktop_entry_parser.cpp
+        src/launch_execution.cpp
         src/launcher_category_model.cpp
         src/launcher_pinned_recent.cpp
         src/launcher_presentation.cpp
@@ -20,6 +21,7 @@ target_sources(
         FILES
             include/qindaqt/shell_launcher/application_catalog.h
             include/qindaqt/shell_launcher/desktop_entry_parser.h
+            include/qindaqt/shell_launcher/launch_execution.h
             include/qindaqt/shell_launcher/launcher_bounds.h
             include/qindaqt/shell_launcher/launcher_category_model.h
             include/qindaqt/shell_launcher/launcher_pinned_recent.h
@@ -73,7 +75,6 @@ function(qindaqt_add_launcher_runtime)
         PRIVATE
             "${module_dir}/src/application_scanner.cpp"
             "${module_dir}/src/launch_activator.cpp"
-            "${module_dir}/src/launch_execution.cpp"
             "${module_dir}/src/launch_executor.cpp"
             "${module_dir}/src/launch_spawner.cpp"
             "${module_dir}/src/launcher_applet_controller.cpp"

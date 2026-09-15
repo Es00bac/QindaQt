@@ -50,6 +50,7 @@ target_sources(
         model/clipboard_controller.cpp
         model/entry_properties.cpp
         model/listing_order.cpp
+        model/applications_controller.cpp
         model/navigation_controller.cpp
         model/navigation_history.cpp
         model/navigation_status.h
@@ -83,6 +84,7 @@ target_sources(
         preview/theme_icon_provider.h
         runtime/file_manager_application.h
         model/bookmarks_store.h
+        model/applications_controller.h
         model/clipboard_controller.h
         model/directory_lister.h
         model/entry_properties.h
@@ -123,6 +125,7 @@ target_link_libraries(
         qindaqt_file_manager_desktop_boundary
         QindaQt::AppShell
         QindaQt::AppShellMenuExport
+        QindaQt::ApplicationCatalog
         Qt6::Core
         Qt6::Gui
         Qt6::Quick
@@ -175,6 +178,7 @@ qt_add_qml_module(
         ui/ViewportNavigation.qml
         ui/ZoomWheelHandler.qml
         ui/StatePane.qml
+        ui/ApplicationsView.qml
         ui/MutationDialogs.qml
         ui/PropertiesDialog.qml
         ui/FileContextMenu.qml

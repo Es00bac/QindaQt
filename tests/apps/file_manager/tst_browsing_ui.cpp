@@ -3,6 +3,7 @@
 #include "app_shell/file_manager_browsing_actions.h"
 #include "app_shell/file_manager_transfer_actions.h"
 #include "fakes.h"
+#include "model/applications_controller.h"
 #include "model/clipboard_controller.h"
 #include "model/entry_properties.h"
 #include "model/local_directory_lister.h"
@@ -71,6 +72,7 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   EntryPropertiesController properties;
   SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
+  ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
   bindFileManagerBrowsingActions(coordinator, navigation);
@@ -92,6 +94,7 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
       {"propertiesController", QVariant::fromValue(static_cast<QObject *>(&properties))},
       {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
+      {"applicationsController", QVariant::fromValue(static_cast<QObject *>(&applications))},
       {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   QVERIFY(!engine.rootObjects().isEmpty());
@@ -211,6 +214,7 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
   EntryPropertiesController properties;
   SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
+  ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
   bindFileManagerBrowsingActions(coordinator, navigation);
@@ -229,6 +233,7 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
       {"propertiesController", QVariant::fromValue(static_cast<QObject *>(&properties))},
       {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
+      {"applicationsController", QVariant::fromValue(static_cast<QObject *>(&applications))},
       {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   QVERIFY(!engine.rootObjects().isEmpty());
@@ -481,6 +486,7 @@ void BrowsingUiTests::contextMenuDisablesDuringMutation() {
   EntryPropertiesController properties;
   SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
+  ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
   bindFileManagerBrowsingActions(coordinator, navigation);
@@ -516,6 +522,7 @@ void BrowsingUiTests::contextMenuDisablesDuringMutation() {
       {"propertiesController", QVariant::fromValue(static_cast<QObject *>(&properties))},
       {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
+      {"applicationsController", QVariant::fromValue(static_cast<QObject *>(&applications))},
       {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   QVERIFY(!engine.rootObjects().isEmpty());
