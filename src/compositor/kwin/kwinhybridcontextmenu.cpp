@@ -21,6 +21,8 @@
 #include <QLineEdit>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <utility>
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -47,6 +49,29 @@ QString outputLabel(const KWin::LogicalOutput &output)
                                           : output.description();
 }
 
+// Aspect-lock presets (ADR-0162). The ids are the menu destination ids and
+// dispatch keys; keep them stable, the rename dialog and saved state may
+// reference them in later slices.
+struct AspectRatioPreset
+{
+    QString id;
+    QString label;
+    double ratio;
+};
+
+constexpr double AspectRatioMatchTolerance = 0.01;
+
+const std::array<AspectRatioPreset, 4> &aspectRatioPresets()
+{
+    static const std::array<AspectRatioPreset, 4> presets{{
+        {QStringLiteral("16-9"), QStringLiteral("16:9"), 16.0 / 9.0},
+        {QStringLiteral("4-3"), QStringLiteral("4:3"), 4.0 / 3.0},
+        {QStringLiteral("21-9"), QStringLiteral("21:9"), 21.0 / 9.0},
+        {QStringLiteral("1-1"), QStringLiteral("1:1"), 1.0},
+    }};
+    return presets;
+}
+
 std::optional<GroupContextMenuState> contextState(
     const KWin::Window &window,
     QString *error)
@@ -71,6 +96,7 @@ std::optional<GroupContextMenuState> contextState(
         .workspaces = {},
         .activities = {},
         .outputs = {},
+        .aspectRatios = {},
     };
     for (auto *desktop : desktopManager->desktops()) {
         if (!desktop) {
@@ -126,6 +152,7 @@ bool applyContextCommand(
     case GroupContextMenuCommandKind::ToggleShadeGroup:
     case GroupContextMenuCommandKind::RenameContainer:
     case GroupContextMenuCommandKind::SetContainerColor:
+    case GroupContextMenuCommandKind::SetContainerAspectRatio:
         return fail(error, QStringLiteral("group action requires session policy"));
     case GroupContextMenuCommandKind::SetKeepAbove:
         window.setKeepAbove(command.enabled);
@@ -223,6 +250,20 @@ void KWinHybridSession::initializeGroupContextMenu()
                     {swatch.colorHex, swatch.label,
                      swatch.colorHex == appearance.colorHex});
             }
+            const auto pin = m_placement
+                ? m_placement->aspectRatioPin(containerId) : std::nullopt;
+            state->aspectRatios.append(
+                {QStringLiteral("unlocked"), QStringLiteral("Unlocked"),
+                 !pin.has_value()});
+            state->aspectRatios.append(
+                {QStringLiteral("current"), QStringLiteral("Lock current"), false});
+            for (const auto &preset : aspectRatioPresets()) {
+                state->aspectRatios.append(
+                    {preset.id, preset.label,
+                     pin.has_value()
+                         && std::abs(*pin - preset.ratio)
+                             <= AspectRatioMatchTolerance});
+            }
             const QString activeId = m_registry.windowId(
                 KWin::workspace()->activeWindow());
             state->activeMemberId =
@@ -293,6 +334,9 @@ void KWinHybridSession::initializeGroupContextMenu()
                         ? QString{} : command.destinationId;
                 return setContainerColor(containerId, colorHex, error);
             }
+            case GroupContextMenuCommandKind::SetContainerAspectRatio:
+                return applyAspectRatioSelection(containerId,
+                                                 command.destinationId, error);
             default:
                 break;
             }
@@ -310,6 +354,41 @@ void KWinHybridSession::initializeGroupContextMenu()
             return applyContextCommand(*representative, command, error);
         });
     m_groupContextMenu->setPalette(m_nativePalette);
+}
+
+bool KWinHybridSession::applyAspectRatioSelection(const QString &containerId,
+                                                  const QString &selectionId,
+                                                  QString *error)
+{
+    if (!m_placement) {
+        return fail(error, QStringLiteral("container placement is unavailable"));
+    }
+    if (selectionId == QLatin1StringView("unlocked")) {
+        return m_placement->setAspectRatioPin(containerId, std::nullopt, error);
+    }
+    if (selectionId == QLatin1StringView("current")) {
+        const auto layout = m_sceneFactory
+            ? m_sceneFactory->committedLayout(containerId) : std::nullopt;
+        if (!layout || !layout->outerFrame.isValid()) {
+            return fail(error,
+                        QStringLiteral("container has no committed frame to lock"));
+        }
+        const double ratio =
+            HybridContainerPlacementController::contentAspectRatioForOuterFrame(
+                layout->outerFrame);
+        if (!(ratio > 0.0)) {
+            return fail(error,
+                        QStringLiteral("container frame has no lockable ratio"));
+        }
+        return m_placement->setAspectRatioPin(containerId, ratio, error);
+    }
+    for (const auto &preset : aspectRatioPresets()) {
+        if (preset.id == selectionId) {
+            return m_placement->setAspectRatioPin(containerId, preset.ratio,
+                                                  error);
+        }
+    }
+    return fail(error, QStringLiteral("unknown aspect-ratio selection"));
 }
 
 void KWinHybridSession::showGroupContextMenu(

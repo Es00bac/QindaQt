@@ -49,6 +49,7 @@ GroupContextMenuState populatedState()
             {QStringLiteral("left"), QStringLiteral("Left Display"), true},
             {QStringLiteral("right"), QStringLiteral("Right Display"), false},
         },
+        .aspectRatios = {},
     };
 }
 
@@ -63,6 +64,7 @@ private Q_SLOTS:
     void defersDispatchWithStableContainerIdentity();
     void rejectsStaleOrMalformedState();
     void exposesShadeRenameAndColorControls();
+    void exposesAspectRatioLockChoices();
 };
 
 void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
@@ -329,6 +331,71 @@ void KWinGroupContextMenuTest::exposesShadeRenameAndColorControls()
         shadedMenu, QStringLiteral("qindaqt-context-toggle-shade"));
     QVERIFY(unshade);
     QCOMPARE(unshade->text(), QStringLiteral("Unroll group"));
+}
+
+void KWinGroupContextMenuTest::exposesAspectRatioLockChoices()
+{
+    QVector<std::pair<QString, GroupContextMenuCommand>> commands;
+    auto state = populatedState();
+    state.aspectRatios = {
+        {QStringLiteral("unlocked"), QStringLiteral("Unlocked"), true},
+        {QStringLiteral("current"), QStringLiteral("Lock current"), false},
+        {QStringLiteral("16-9"), QStringLiteral("16:9"), false},
+        {QStringLiteral("1-1"), QStringLiteral("1:1"), false},
+    };
+    KWinGroupContextMenu menu(
+        [&state](const QString &containerId, QString *)
+            -> std::optional<GroupContextMenuState> {
+            return containerId == QStringLiteral("group-a")
+                ? std::optional(state) : std::nullopt;
+        },
+        [&commands](const QString &containerId,
+                    const GroupContextMenuCommand &command,
+                    QString *) {
+            commands.append({containerId, command});
+            return true;
+        });
+
+    QString error;
+    QVERIFY2(menu.prepare(QStringLiteral("group-a"), &error), qPrintable(error));
+    auto *const unlocked = actionNamed(
+        menu, QStringLiteral("qindaqt-context-aspect-unlocked"));
+    auto *const lockCurrent = actionNamed(
+        menu, QStringLiteral("qindaqt-context-aspect-current"));
+    auto *const sixteenNine = actionNamed(
+        menu, QStringLiteral("qindaqt-context-aspect-16-9"));
+    QVERIFY(unlocked && lockCurrent && sixteenNine);
+    QCOMPARE(unlocked->text(), QStringLiteral("Unlocked"));
+    QCOMPARE(lockCurrent->text(), QStringLiteral("Lock current"));
+    QVERIFY(unlocked->isCheckable() && unlocked->isChecked());
+    QVERIFY(!sixteenNine->isChecked());
+
+    menu.show();
+    QVERIFY(menu.isVisible());
+    sixteenNine->trigger();
+    QVERIFY(commands.isEmpty());
+    menu.hide();
+    QTRY_COMPARE(commands.size(), 1);
+    const GroupContextMenuCommand expectedPin{
+        GroupContextMenuCommandKind::SetContainerAspectRatio,
+        QStringLiteral("16-9"), true};
+    QCOMPARE(commands.constFirst().first, QStringLiteral("group-a"));
+    QCOMPARE(commands.constFirst().second, expectedPin);
+
+    // Malformed aspect destinations poison the whole prepare, like every
+    // other destination group.
+    auto duplicate = populatedState();
+    duplicate.aspectRatios.append(
+        {QStringLiteral("16-9"), QStringLiteral("16:9"), false});
+    duplicate.aspectRatios.append(
+        {QStringLiteral("16-9"), QStringLiteral("16:9"), false});
+    KWinGroupContextMenu badMenu(
+        [duplicate](const QString &, QString *) { return std::optional(duplicate); },
+        [](const QString &, const GroupContextMenuCommand &, QString *) {
+            return true;
+        });
+    QVERIFY(!badMenu.prepare(QStringLiteral("group-a"), &error));
+    QVERIFY(error.contains(QStringLiteral("aspect ratio")));
 }
 
 QTEST_MAIN(KWinGroupContextMenuTest)

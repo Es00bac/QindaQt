@@ -5,6 +5,8 @@
 
 #include <QtTest>
 
+#include <limits>
+
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
 
@@ -164,6 +166,13 @@ private Q_SLOTS:
     void reportsReflowFailureWithoutAdvancingAppliedFrame();
     void failedCommitReleasesPlacementBaseline();
     void rejectsUnavailableOrInconsistentResizeState();
+    void aspectPinKeepsRatioOnEdgeAndCornerDrags();
+    void aspectPinAnchorsTheFollowerEdgeOnTopLeftDrags();
+    void aspectPinYieldsToMinimumFrameSizes();
+    void aspectPinSurvivesMaximizeRestoreButMaximizeIgnoresIt();
+    void aspectPinCancelRestoresBaselineAndUnpinRestoresFreeResize();
+    void keyboardResizeComposesWithAspectPin();
+    void aspectPinValidationContentRatioHelperAndForget();
 };
 
 void HybridContainerPlacementTest::movesFromOneStableBaselineAndCancels()
@@ -498,6 +507,193 @@ void HybridContainerPlacementTest::rejectsUnavailableOrInconsistentResizeState()
         resizeIntent(HybridInput::IntentPhase::Begin));
     QVERIFY(!maximized.accepted);
     QVERIFY(maximized.message.contains(QStringLiteral("maximized")));
+}
+
+void HybridContainerPlacementTest::aspectPinKeepsRatioOnEdgeAndCornerDrags()
+{
+    // The fixture baseline outer frame is 800x600, so its content-area ratio
+    // is (800-2)/(600-30) = 798/570 -- exactly what "Lock current" captures.
+    Fixture fixture;
+    const double lockedRatio = 798.0 / 570.0;
+    QString error;
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  lockedRatio, &error));
+
+    // Corner drag: width leads, height follows the ratio from the dragged
+    // width; the top-left corner stays anchored.
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin)).accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(160, 0)))
+                .accepted);
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 960, 714));
+    // Cumulative deltas that only inflate the follower axis change nothing.
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(160, 60)))
+                .accepted);
+    QCOMPARE(fixture.requestedFrames.size(), qsizetype{1});
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Commit, QPointF(160, 60)))
+                .accepted);
+
+    // A pure vertical-edge drag makes height lead instead; a fresh fixture
+    // keeps the original 800x600 baseline.
+    Fixture fresh;
+    QVERIFY(fresh.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                798.0 / 570.0, &error));
+    QVERIFY(fresh.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin, {}, Qt::BottomEdge))
+                .accepted);
+    QVERIFY(fresh.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(0, 95),
+                     Qt::BottomEdge)).accepted);
+    QCOMPARE(fresh.layout.outerFrame, QRect(100, 100, 933, 695));
+}
+
+void HybridContainerPlacementTest::aspectPinAnchorsTheFollowerEdgeOnTopLeftDrags()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  798.0 / 570.0, &error));
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin, {},
+                     Qt::LeftEdge | Qt::TopEdge)).accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(-30, -10),
+                     Qt::LeftEdge | Qt::TopEdge)).accepted);
+    // Width leads; the height follower is anchored at the baseline bottom
+    // edge because the drag moves the top edge.
+    QCOMPARE(fixture.layout.outerFrame, QRect(70, 79, 830, 621));
+}
+
+void HybridContainerPlacementTest::aspectPinYieldsToMinimumFrameSizes()
+{
+    // A very wide pin: shrinking past the minimum width re-derives the height
+    // from the clamped width, which then violates the minimum height, so the
+    // clamp cascades and the frame rests at the ratio-exact minimum pair.
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                 21.0 / 9.0, &error));
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin, {}, Qt::RightEdge))
+                .accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(-700, 0),
+                     Qt::RightEdge)).accepted);
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 305, 160));
+
+    // A very tall pin with height leading: the width follower grows to keep
+    // the ratio instead of dropping below the minimum height.
+    Fixture tall;
+    QVERIFY(tall.controller.setAspectRatioPin(QStringLiteral("group"), 12.0,
+                                              &error));
+    QVERIFY(tall.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin, {}, Qt::BottomEdge))
+                .accepted);
+    QVERIFY(tall.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(0, -500),
+                     Qt::BottomEdge)).accepted);
+    QCOMPARE(tall.layout.outerFrame, QRect(100, 100, 1562, 160));
+}
+
+void HybridContainerPlacementTest::aspectPinSurvivesMaximizeRestoreButMaximizeIgnoresIt()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"), 1.0,
+                                                 &error));
+    QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.layout.outerFrame, QRect(0, 0, 1920, 1040));
+    QVERIFY(fixture.controller.restore(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+    QVERIFY(fixture.controller.aspectRatioPin(QStringLiteral("group")).has_value());
+}
+
+void HybridContainerPlacementTest::aspectPinCancelRestoresBaselineAndUnpinRestoresFreeResize()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  798.0 / 570.0, &error));
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin)).accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(160, 0)))
+                .accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Cancel, QPointF(160, 0)))
+                .accepted);
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  std::nullopt, &error));
+    QVERIFY(!fixture.controller.aspectRatioPin(QStringLiteral("group"))
+                 .has_value());
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin)).accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(20, 10)))
+                .accepted);
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 820, 610));
+}
+
+void HybridContainerPlacementTest::keyboardResizeComposesWithAspectPin()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  798.0 / 570.0, &error));
+    const auto edges = Qt::LeftEdge | Qt::TopEdge;
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin, {}, edges)).accepted);
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Update, QPointF(-25, -15), edges))
+                .accepted);
+    QCOMPARE(fixture.layout.outerFrame, QRect(75, 82, 825, 618));
+}
+
+void HybridContainerPlacementTest::aspectPinValidationContentRatioHelperAndForget()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(!fixture.controller.setAspectRatioPin(QStringLiteral("missing"),
+                                                   1.0, &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(!fixture.controller.setAspectRatioPin(QStringLiteral("group"), -1.0,
+                                                  &error));
+    QVERIFY(!fixture.controller.setAspectRatioPin(
+        QStringLiteral("group"),
+        std::numeric_limits<double>::quiet_NaN(), &error));
+    QVERIFY(!fixture.controller.setAspectRatioPin(
+        QStringLiteral("group"),
+        std::numeric_limits<double>::infinity(), &error));
+    QVERIFY(!fixture.controller.aspectRatioPin(QStringLiteral("group"))
+                 .has_value());
+
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"), 2.0,
+                                                 &error));
+    QCOMPARE(fixture.controller.aspectRatioPin(QStringLiteral("group")),
+             std::optional<double>(2.0));
+    // Clearing an unlocked container is an idempotent success.
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  std::nullopt, &error));
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"),
+                                                  std::nullopt, &error));
+
+    QVERIFY(fixture.controller.setAspectRatioPin(QStringLiteral("group"), 3.0,
+                                                 &error));
+    fixture.controller.forgetContainer(QStringLiteral("group"));
+    QVERIFY(!fixture.controller.aspectRatioPin(QStringLiteral("group"))
+                 .has_value());
+
+    QCOMPARE(HybridContainerPlacementController::contentAspectRatioForOuterFrame(
+                 QRect(100, 100, 800, 600)),
+             798.0 / 570.0);
+    QCOMPARE(HybridContainerPlacementController::contentAspectRatioForOuterFrame(
+                 QRect(0, 0, 2, 30)),
+             0.0);
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

@@ -53,6 +53,23 @@ public:
 
     [[nodiscard]] bool maximize(const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool restore(const QString &containerId, QString *error = nullptr);
+
+    // Aspect-ratio lock (ADR-0162). The pin holds the wanted content-area
+    // ratio (outer frame minus shared chrome) and constrains every subsequent
+    // outer pointer/keyboard resize. Process-local like the maximize restore
+    // frame; cleared by forgetContainer(). nullopt clears the lock; a pinned
+    // ratio must be finite and positive, otherwise the store is unchanged and
+    // *error is set. Maximize deliberately ignores the lock; unmaximize
+    // restores the saved (locked-shape) frame unchanged.
+    [[nodiscard]] bool setAspectRatioPin(const QString &containerId,
+                                         std::optional<double> contentRatio,
+                                         QString *error = nullptr);
+    [[nodiscard]] std::optional<double> aspectRatioPin(
+        const QString &containerId) const noexcept;
+    // The content-area ratio an outer frame currently has, using the same
+    // chrome offsets as the lock itself; 0.0 when the frame cannot express
+    // one. The session's "Lock current" menu action reads this.
+    [[nodiscard]] static double contentAspectRatioForOuterFrame(const QRect &outerFrame) noexcept;
     // Re-resolves KWin's current maximize area for every maximized container.
     // Successful refreshes preserve the independent restore frame; failures
     // remain maximized so a later work-area transition can retry them.
@@ -101,7 +118,8 @@ private:
         const QString &containerId,
         const HybridInput::InteractionIntent &intent);
     [[nodiscard]] static QRect resizedFrame(const FrameDrag &drag,
-                                            const QPointF &delta);
+                                            const QPointF &delta,
+                                            const std::optional<double> &pinnedContentRatio);
     static void assignError(QString *error, QString message);
 
     HybridTopologyLookup m_topology;
@@ -112,6 +130,7 @@ private:
     QHash<QString, FrameDrag> m_moveDrags;
     QHash<QString, FrameDrag> m_resizeDrags;
     QHash<QString, QRect> m_maximizeRestoreFrames;
+    QHash<QString, double> m_aspectPins;
     QHash<QString, QRect> m_shadeStripFrames;
     // Original (pre-shade) size only; position is not tracked here because
     // the strip's own current position (which may have moved under drag) is
