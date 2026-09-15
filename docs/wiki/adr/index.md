@@ -167,3 +167,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0162: container aspect-ratio lock](0162-container-aspect-ratio-lock.md)
 - [ADR-0163: generated container names for the rolled-up badge](0163-generated-container-names-for-the-rolled-up-badge.md)
 - [ADR-0164: one shared application catalog behind the file manager applications browser](0164-shared-application-catalog-and-file-manager-applications-browser.md)
+- [ADR-0165: workspace picker slots replaced by launched applications](0165-workspace-picker-slots-replaced-by-launched-applications.md)

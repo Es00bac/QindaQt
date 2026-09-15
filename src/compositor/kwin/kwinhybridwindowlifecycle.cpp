@@ -36,6 +36,9 @@ void KWinHybridSession::addManagedWindow(const QString &windowId)
     if (result.topologyChanged()) {
         synchronizeChrome();
     }
+    // ADR-0165: an arriving window may be the application a picker launched;
+    // correlation swaps it into the waiting slot.
+    correlateArrivingWindow(windowId);
 }
 
 void KWinHybridSession::forgetManagedWindow(const QString &windowId)
@@ -49,6 +52,9 @@ void KWinHybridSession::forgetManagedWindow(const QString &windowId)
                  qPrintable(error));
         return;
     }
+
+    // A picker closed by its user drops its pending replacement (ADR-0165).
+    forgetPickerReplacement(windowId);
 
     // AGENT-GUARD: Add/Forget scene transactions re-plan every group. Member
     // focus must be gone first, while PreserveCurrent activation retains the

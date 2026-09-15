@@ -174,6 +174,20 @@ bool LayoutNode::setSplitRatio(const QString &splitNodeId, double ratio) noexcep
         || m_second->setSplitRatio(splitNodeId, ratio);
 }
 
+bool LayoutNode::replaceWindowId(const QString &outgoingWindowId,
+                                 const QString &incomingWindowId) noexcept
+{
+    if (isLeaf()) {
+        if (m_windowId != outgoingWindowId) {
+            return false;
+        }
+        m_windowId = incomingWindowId;
+        return true;
+    }
+    return m_first->replaceWindowId(outgoingWindowId, incomingWindowId)
+        || m_second->replaceWindowId(outgoingWindowId, incomingWindowId);
+}
+
 LayoutNode::RemovalOutcome LayoutNode::removeWindow(const QString &windowId,
                                                     QString *removedLeafNodeId)
 {

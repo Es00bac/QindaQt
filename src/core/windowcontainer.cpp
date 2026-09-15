@@ -382,6 +382,47 @@ bool WindowContainer::removeWindow(const QString &windowId, QString *error)
     return detachWindow(windowId, error).has_value();
 }
 
+bool WindowContainer::replaceWindow(const QString &outgoingWindowId,
+                                    const QString &incomingWindowId,
+                                    QString *error)
+{
+    if (outgoingWindowId.isEmpty() || incomingWindowId.isEmpty()) {
+        if (error) {
+            *error = QStringLiteral("window IDs must not be empty");
+        }
+        return false;
+    }
+    if (!findWindow(outgoingWindowId)) {
+        if (error) {
+            *error = QStringLiteral("window '%1' is not a member of this container")
+                         .arg(outgoingWindowId);
+        }
+        return false;
+    }
+    if (findWindow(incomingWindowId)) {
+        if (error) {
+            *error = QStringLiteral("window '%1' is already a member of this container")
+                         .arg(incomingWindowId);
+        }
+        return false;
+    }
+    // The member-at-most-once invariant guarantees at most one leaf matches;
+    // validate() below remains the mutation's standing safety net.
+    bool replaced = false;
+    for (auto &page : m_pages) {
+        replaced = page.m_root.replaceWindowId(outgoingWindowId, incomingWindowId)
+            || replaced;
+    }
+    if (!replaced) {
+        if (error) {
+            *error = QStringLiteral("window '%1' is not a member of this container")
+                         .arg(outgoingWindowId);
+        }
+        return false;
+    }
+    return true;
+}
+
 ValidationResult WindowContainer::validate() const
 {
     if (m_id.isEmpty()) {

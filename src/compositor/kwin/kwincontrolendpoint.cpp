@@ -407,6 +407,26 @@ QByteArray KWinControlEndpoint::DockWindows(const QString &targetWindowId,
     return ControlCodec::compactJson(object);
 }
 
+void KWinControlEndpoint::setWorkspaceChooserHandler(
+    WorkspaceChooserHandler handler)
+{
+    m_workspaceChooser = std::move(handler);
+}
+
+QByteArray KWinControlEndpoint::ChooseApplicationForActivePicker(
+    const QString &desktopEntryId)
+{
+    // ADR-0165: deliberately not gated by the development mutations flag --
+    // this is the production workspace-picker route. The handler's own
+    // validation (the active window must be a registered picker placeholder)
+    // is the external gate.
+    if (!m_workspaceChooser) {
+        return response(QStringLiteral("rejected"), QStringLiteral("control-disabled"),
+                        QStringLiteral("workspace picker replacement is unavailable"));
+    }
+    return m_workspaceChooser(desktopEntryId);
+}
+
 QByteArray KWinControlEndpoint::ReleaseContainer(const QString &containerId)
 {
     if (!m_mutationsEnabled) {

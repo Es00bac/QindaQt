@@ -84,6 +84,12 @@ private:
                                    double ratio,
                                    InsertPosition position);
     [[nodiscard]] bool setSplitRatio(const QString &splitNodeId, double ratio) noexcept;
+    // Rebinds one leaf's window identity in place. The leaf node id, its
+    // position, and every surrounding split/ratio are untouched; the caller
+    // (WindowContainer::replaceWindow) owns duplicate-membership validation.
+    // Returns false when no leaf carries the outgoing id.
+    [[nodiscard]] bool replaceWindowId(const QString &outgoingWindowId,
+                                       const QString &incomingWindowId) noexcept;
     [[nodiscard]] RemovalOutcome removeWindow(const QString &windowId,
                                               QString *removedLeafNodeId);
     [[nodiscard]] LayoutNode *findWindowMutable(const QString &windowId) noexcept;

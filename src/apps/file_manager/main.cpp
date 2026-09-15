@@ -91,6 +91,9 @@ void registerCommandLineOptions(QCommandLineParser &parser) {
                     QStringLiteral("Deprecated no-op (ADR-0116): no per-app theme catalog is read"),
                     QStringLiteral("path")});
   parser.addOption(
+      {QStringLiteral("choose-application"),
+       QStringLiteral("Run as a workspace application picker (ADR-0165)")});
+  parser.addOption(
       {QStringLiteral("check-qml-root"),
        QStringLiteral("Construct the QML root for an installed-package probe and exit")});
   parser.addOption(
@@ -317,6 +320,7 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(placesController.get()))},
        {QStringLiteral("applicationsController"),
         QVariant::fromValue(static_cast<QObject *>(applicationsController.get()))},
+       {QStringLiteral("chooserMode"), parser.isSet(QStringLiteral("choose-application"))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
