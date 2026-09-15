@@ -3,6 +3,7 @@
 #include "app_shell/file_manager_browsing_actions.h"
 #include "app_shell/file_manager_mutation_actions.h"
 #include "fakes.h"
+#include "model/applications_controller.h"
 #include "model/clipboard_controller.h"
 #include "model/entry_properties.h"
 #include "model/navigation_controller.h"
@@ -106,6 +107,7 @@ struct RemoteMutationRouteFixture final {
     clipboard = std::make_unique<ClipboardController>(*mutation, *QGuiApplication::clipboard());
     properties = std::make_unique<EntryPropertiesController>();
     search = std::make_unique<SearchController>();
+    applications = std::make_unique<ApplicationsController>(QStringList{});
     places = std::make_unique<PlacesController>(
         std::make_unique<BookmarksStore>(temporaryPath + QStringLiteral("/state")));
 
@@ -136,6 +138,7 @@ struct RemoteMutationRouteFixture final {
         {"propertiesController", QVariant::fromValue(static_cast<QObject *>(properties.get()))},
         {"searchController", QVariant::fromValue(static_cast<QObject *>(search.get()))},
         {"placesController", QVariant::fromValue(static_cast<QObject *>(places.get()))},
+        {"applicationsController", QVariant::fromValue(static_cast<QObject *>(applications.get()))},
         {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
     engine->load(QUrl::fromLocalFile(sourceRoot + QStringLiteral("/src/apps/file_manager/ui/Main.qml")));
     if (engine->rootObjects().isEmpty()) {
@@ -178,6 +181,7 @@ struct RemoteMutationRouteFixture final {
   std::unique_ptr<ClipboardController> clipboard;
   std::unique_ptr<EntryPropertiesController> properties;
   std::unique_ptr<SearchController> search;
+  std::unique_ptr<ApplicationsController> applications;
   std::unique_ptr<PlacesController> places;
   // Owned by the QML engine (see init()); not deleted here.
   PreviewProvider *previews = nullptr;

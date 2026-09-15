@@ -378,6 +378,20 @@ rather than blocking navigation, crashing, or silently doing nothing. See
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md) for the full
 rationale and boundary.
 
+## Applications browser
+
+`go.applications` (Ctrl+Shift+A) swaps the folder views for a Finder-style
+installed-application browser: the fixed launcher category groups as
+top-level folders, registered XDG additional categories nested inside, and a
+breadcrumb/back row for drill-down. Entries and hierarchy come from the
+shared `application_catalog` module (launcher-L0 parsers, no second parsing
+authority; [ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
+Activating an entry starts it directly only when its planned argv is a plain
+process; terminal-required and D-Bus-activatable entries stay inert here and
+say so — the workspace picker route launches them through the compositor.
+Browsing to any folder path exits the browser; the documents launch contract
+above is unchanged.
+
 ## Ownership, lifetime, and failures
 
 - `DirectoryEntry`/`ListingResult`/`LaunchResult` (`model/file_manager_types.h`,

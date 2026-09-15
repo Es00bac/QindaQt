@@ -282,3 +282,4 @@ nav:
       - "ADR-0161: persist and mutate desktop icons behind owned boundaries": adr/0161-persist-and-mutate-desktop-icons.md
       - "ADR-0162: container aspect-ratio lock": adr/0162-container-aspect-ratio-lock.md
       - "ADR-0163: generated container names for the rolled-up badge": adr/0163-generated-container-names-for-the-rolled-up-badge.md
+      - "ADR-0164: one shared application catalog behind the file manager applications browser": adr/0164-shared-application-catalog-and-file-manager-applications-browser.md

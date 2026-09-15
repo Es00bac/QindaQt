@@ -2,7 +2,7 @@
 #include "launch_executor.h"
 
 #include "application_scanner.h"
-#include "launch_execution.h"
+#include "qindaqt/shell_launcher/launch_execution.h"
 
 namespace QindaQt::Shell::Launcher {
 

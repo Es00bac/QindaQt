@@ -19,9 +19,13 @@ ApplicationWindow {
     required property var propertiesController
     required property var searchController
     required property var placesController
+    required property var applicationsController
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
+    // The Applications browser (ADR-0164) replaces the folder views while
+    // true. Browsing to any folder path exits it; "go.applications" enters.
+    property bool applicationsMode: false
 
     // Set by FileContextMenu immediately before it activates "edit.paste" for
     // a background (empty-space) invocation, and cleared by it immediately
@@ -76,6 +80,15 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+="; onActivated: root.coordinator.activateAction("view.zoom-in") }
     Shortcut { sequence: "Ctrl+R"; onActivated: root.coordinator.activateAction("view.refresh") }
 
+    Connections {
+        target: root.navigationController
+        // Browsing to any folder exits the Applications browser; the folder
+        // views are the default surface and a Places click must land there.
+        function onCurrentPathChanged() {
+            root.applicationsMode = false
+        }
+    }
+
     EntrySelection {
         id: entrySelection
         objectName: "entrySelection"
@@ -104,7 +117,10 @@ ApplicationWindow {
         target: root.coordinator
         function onActionRequested(actionId) {
             const navigation = root.navigationController
-            if (actionId === "go.back") {
+            if (actionId === "go.applications") {
+                root.applicationsMode = true
+                return
+            } else if (actionId === "go.back") {
                 navigation.goBack()
             } else if (actionId === "go.forward") {
                 navigation.goForward()
@@ -238,6 +254,7 @@ ApplicationWindow {
         Toolbar {
             id: toolbar
             Layout.fillWidth: true
+            visible: !root.applicationsMode
             navigationController: root.navigationController
             mutationController: root.mutationController
             appCoordinator: root.coordinator
@@ -260,57 +277,70 @@ ApplicationWindow {
             onBrowseRequested: root.activeView().focusView()
         }
 
-        RowLayout {
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 0
+            currentIndex: root.applicationsMode ? 1 : 0
 
-            PlacesSidebar {
-                Layout.preferredWidth: root.width < 680 ? 148 : 196
-                Layout.fillHeight: true
-                navigationController: root.navigationController
-                placesController: root.placesController
-                appCoordinator: root.coordinator
-                mutationController: root.mutationController
-                clipboardController: root.clipboardController
-            }
-
-            StackLayout {
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
+                spacing: 0
+
+                PlacesSidebar {
+                    Layout.preferredWidth: root.width < 680 ? 148 : 196
+                    Layout.fillHeight: true
+                    navigationController: root.navigationController
+                    placesController: root.placesController
+                    appCoordinator: root.coordinator
+                    mutationController: root.mutationController
+                    clipboardController: root.clipboardController
+                }
 
                 StackLayout {
-                    currentIndex: root.navigationController.viewMode === "grid" ? 1 : 0
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
 
-                    EntryList {
-                        id: entryList
-                        iconSize: root.navigationController.iconSize
-                        onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
-                        selection: entrySelection
-                        navigationController: root.navigationController
-                        appCoordinator: root.coordinator
-                        mutationController: root.mutationController
-                        clipboardController: root.clipboardController
+                    StackLayout {
+                        currentIndex: root.navigationController.viewMode === "grid" ? 1 : 0
+
+                        EntryList {
+                            id: entryList
+                            iconSize: root.navigationController.iconSize
+                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
+                            selection: entrySelection
+                            navigationController: root.navigationController
+                            appCoordinator: root.coordinator
+                            mutationController: root.mutationController
+                            clipboardController: root.clipboardController
+                        }
+
+                        EntryGrid {
+                            id: entryGrid
+                            iconSize: root.navigationController.iconSize
+                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
+                            selection: entrySelection
+                            navigationController: root.navigationController
+                            appCoordinator: root.coordinator
+                            mutationController: root.mutationController
+                            clipboardController: root.clipboardController
+                        }
                     }
 
-                    EntryGrid {
-                        id: entryGrid
-                        iconSize: root.navigationController.iconSize
-                        onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
-                        selection: entrySelection
-                        navigationController: root.navigationController
-                        appCoordinator: root.coordinator
-                        mutationController: root.mutationController
-                        clipboardController: root.clipboardController
+                    StatePane {
+                        statusKey: root.navigationController.statusKey
+                        statusMessage: root.navigationController.statusMessage
+                        onRetryRequested: root.navigationController.refresh()
                     }
                 }
+            }
 
-                StatePane {
-                    statusKey: root.navigationController.statusKey
-                    statusMessage: root.navigationController.statusMessage
-                    onRetryRequested: root.navigationController.refresh()
-                }
+            ApplicationsView {
+                objectName: "applicationsView"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                applicationsController: root.applicationsController
             }
         }
 
