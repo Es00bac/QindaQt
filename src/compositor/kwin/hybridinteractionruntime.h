@@ -133,6 +133,11 @@ public:
     // scene preparation and topology publication remain one transaction.
     [[nodiscard]] HybridRuntimeResult adoptIndependentLayout(
         Core::WindowContainer container);
+    // ADR-0165: atomically swaps a picker placeholder member for the arriving
+    // application window (picker returns to the independent set).
+    [[nodiscard]] HybridRuntimeResult replaceMemberWindow(
+        const QString &containerId, const QString &outgoingWindowId,
+        const QString &incomingWindowId);
     [[nodiscard]] ReleaseAllResult releaseAll();
 
 private:
