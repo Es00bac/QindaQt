@@ -1266,3 +1266,43 @@ click activation and fullscreen behavior.
 Queue implementation after the container identity/dock candidate integrates,
 so hover handling and name/color projection do not collide. This remains open;
 no preview or hover-raise runtime completion is claimed.
+
+### Container aspect lock, roll-up naming, and workspace picker slots (user addition, 2026-09-15)
+
+Three user outcomes landed on `main` this wave, each with its wiki pages and
+ADR integrated in the same change:
+
+- Container aspect-ratio lock (ADR-0162, integrated at `a991f6c6`): the group
+  menu's Aspect Ratio submenu locks the content-area ratio (current frame or
+  16:9/4:3/21:9/1:1); pointer and keyboard outer resizes keep it, minimum
+  sizes win, maximize ignores it, and the lock is process-local placement
+  state. A container reduced to a single window still unwraps, so the lock
+  applies to grouped content only.
+- Container naming (ADR-0163, integrated at `c36efb06`): every container has
+  a user-visible name — the rename override or a stable generated
+  `Container N` — and the rolled-up badge label is never anonymous. The
+  unshaded shared row, the rename prefill, and dock/task titles keep their
+  existing contracts.
+- Workspace picker slots (ADR-0164 `53b3bc10`, ADR-0165 `03ba2c89`): the File
+  Manager gains an Applications browser over one shared application catalog
+  (`src/application_catalog`, launcher-L0 parsers; the execution-key grammar
+  is now launcher-L0 public API), and `--choose-application` turns it into a
+  workspace picker. A Reopen-dialog slot can reopen with a picker instead of
+  its saved application; the chosen application is launched by the
+  compositor and atomically replaces the picker via the new
+  `ReplaceMemberWindow` topology command, preserving the leaf id and every
+  ratio. The chooser route on `org.qindaqt.Compositor1` validates that the
+  active window is a registered picker; pendings expire and a manually
+  closed picker disarms.
+
+Verification on the integrated tree: full build clean under the strict
+warning set; core, hybrid, compositor (75), workspaces, file-manager (46),
+launcher (19), application-catalog (4), and docs suites pass 166/166; the
+file manager `--check-qml-root` probe loads warning-free in normal and
+`--choose-application` modes. Still open for this wave: installed-session
+acceptance of all three outcomes in the packaged desktop, the nested
+two-session picker replacement scenario, and compositor-restart persistence
+of aspect locks, generated names, and pending replacements (none of the
+process-local state persists yet, by design of the current session model).
+The pre-existing `compositor.kwin-plugin-dependency-contract` failure
+reproduces on the clean tree and is unrelated.
