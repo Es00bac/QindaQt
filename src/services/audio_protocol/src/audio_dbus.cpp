@@ -94,11 +94,25 @@ void registerDBusTypes()
     qRegisterMetaType<Handle>();
     qRegisterMetaType<Device>();
     qRegisterMetaType<Stream>();
+    qRegisterMetaType<Level>();
+    qRegisterMetaType<MatrixSend>();
+    qRegisterMetaType<Strip>();
+    qRegisterMetaType<Bus>();
+    qRegisterMetaType<Console>();
     qRegisterMetaType<Snapshot>();
     qRegisterMetaType<OperationResult>();
     qDBusRegisterMetaType<Handle>();
     qDBusRegisterMetaType<Device>();
     qDBusRegisterMetaType<Stream>();
+    // AGENT-GUARD: the console's members must be registered BEFORE Console and
+    // Snapshot. qDBusRegisterMetaType builds a signature by marshalling a
+    // default value, so an unregistered nested type would be baked into the
+    // parent's signature as a variant and every console would fail to decode.
+    qDBusRegisterMetaType<Level>();
+    qDBusRegisterMetaType<MatrixSend>();
+    qDBusRegisterMetaType<Strip>();
+    qDBusRegisterMetaType<Bus>();
+    qDBusRegisterMetaType<Console>();
     qDBusRegisterMetaType<Snapshot>();
     qDBusRegisterMetaType<OperationResult>();
 }
@@ -178,6 +192,122 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Stream &value)
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, const Level &value)
+{
+    argument.beginStructure();
+    argument << value.peakDb << value.rmsDb << value.known;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Level &value)
+{
+    argument.beginStructure();
+    argument >> value.peakDb >> value.rmsDb >> value.known;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const MatrixSend &value)
+{
+    argument.beginStructure();
+    argument << value.busIndex << value.enabled << value.gainDb;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, MatrixSend &value)
+{
+    argument.beginStructure();
+    argument >> value.busIndex >> value.enabled >> value.gainDb;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Strip &value)
+{
+    argument.beginStructure();
+    argument << value.id << static_cast<quint32>(value.kind) << value.index
+             << value.label << value.sourceEpoch << value.sourceSerial
+             << value.sourceKnown << value.gainDb << value.muted << value.soloed
+             << value.mono << value.pan;
+    writeChannelVolumes(argument, value.channelTrimDb);
+    writeArray(argument, value.sends);
+    argument << value.level;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Strip &value)
+{
+    quint32 kind = 0;
+    value.wireValid = true;
+    argument.beginStructure();
+    argument >> value.id >> kind >> value.index >> value.label >> value.sourceEpoch
+        >> value.sourceSerial >> value.sourceKnown >> value.gainDb >> value.muted
+        >> value.soloed >> value.mono >> value.pan;
+    readChannelVolumes(argument, value.channelTrimDb, value.wireValid);
+    readBoundedArray(argument, value.sends, kMaxSendsPerStrip, value.wireValid);
+    argument >> value.level;
+    argument.endStructure();
+    value.kind = static_cast<StripKind>(kind);
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Bus &value)
+{
+    argument.beginStructure();
+    argument << value.id << static_cast<quint32>(value.kind) << value.index
+             << value.label << value.targetEpoch << value.targetSerial
+             << value.targetKnown << value.gainDb << value.muted << value.mono
+             << value.level;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Bus &value)
+{
+    quint32 kind = 0;
+    value.wireValid = true;
+    argument.beginStructure();
+    argument >> value.id >> kind >> value.index >> value.label >> value.targetEpoch
+        >> value.targetSerial >> value.targetKnown >> value.gainDb >> value.muted
+        >> value.mono >> value.level;
+    argument.endStructure();
+    value.kind = static_cast<BusKind>(kind);
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Console &value)
+{
+    argument.beginStructure();
+    writeArray(argument, value.strips);
+    writeArray(argument, value.buses);
+    argument << value.soloActive;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Console &value)
+{
+    value.wireValid = true;
+    argument.beginStructure();
+    readBoundedArray(argument, value.strips, kMaxStrips, value.wireValid);
+    readBoundedArray(argument, value.buses, kMaxBuses, value.wireValid);
+    argument >> value.soloActive;
+    argument.endStructure();
+    // AGENT-GUARD: a member that overflowed its own bound must invalidate the
+    // whole console, or a client would publish a strip whose routing silently
+    // lost sends.
+    for (const Strip &strip : value.strips) {
+        value.wireValid = value.wireValid && strip.wireValid;
+    }
+    for (const Bus &bus : value.buses) {
+        value.wireValid = value.wireValid && bus.wireValid;
+    }
+    return argument;
+}
+
 QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value)
 {
     argument.beginStructure();
@@ -188,6 +318,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value)
     writeArray(argument, value.outputs);
     writeArray(argument, value.inputs);
     writeArray(argument, value.streams);
+    argument << value.console;
     argument.endStructure();
     return argument;
 }
@@ -213,6 +344,8 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Snapshot &value)
     for (const Stream &stream : value.streams) {
         value.wireValid = value.wireValid && stream.wireValid;
     }
+    argument >> value.console;
+    value.wireValid = value.wireValid && value.console.wireValid;
     argument.endStructure();
     value.availability = static_cast<Availability>(availability);
     value.capabilities = Capabilities::fromInt(capabilities);

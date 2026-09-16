@@ -2,6 +2,12 @@
 
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
+#include <qindaqt/services/audio_protocol/audio_gain.h>
+
+#include <QSet>
+
+#include <cmath>
+
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 
 #include <QtCore/QSet>
@@ -113,6 +119,136 @@ QString boundedSafeDiagnostic(QString value)
     return QString::fromUtf8(bytes);
 }
 
+namespace
+{
+
+[[nodiscard]] bool validGainDb(double value)
+{
+    return std::isfinite(value) && value >= kMinGainDb && value <= kMaxGainDb;
+}
+
+[[nodiscard]] bool validMeterDb(double value)
+{
+    // A meter reads dBFS and must never be fed the fader's range; an out-of-band
+    // value here means a producer confused the two scales.
+    return std::isfinite(value) && value >= kSilentMeterDb && value <= kMaxMeterDb;
+}
+
+[[nodiscard]] bool validLevel(const Level &level)
+{
+    return validMeterDb(level.peakDb) && validMeterDb(level.rmsDb)
+        && level.rmsDb <= level.peakDb;
+}
+
+[[nodiscard]] bool validConsoleIdentity(const QString &id, const QString &label)
+{
+    return !id.isEmpty() && isBoundedText(id, kMaxConsoleIdUtf8Bytes)
+        && isBoundedText(label, kMaxConsoleLabelUtf8Bytes);
+}
+
+} // namespace
+
+ValidationResult validateConsole(const Console &console)
+{
+    if (!console.wireValid) {
+        return rejected(QStringLiteral("oversized-payload"));
+    }
+    if (console.strips.size() > kMaxStrips || console.buses.size() > kMaxBuses) {
+        return rejected(QStringLiteral("oversized-payload"));
+    }
+
+    QSet<QString> busIds;
+    QSet<quint32> busIndices;
+    for (const Bus &bus : console.buses) {
+        if (!bus.wireValid) {
+            return rejected(QStringLiteral("oversized-payload"));
+        }
+        if (!validConsoleIdentity(bus.id, bus.label)) {
+            return rejected(QStringLiteral("invalid-bus-identity"));
+        }
+        // AGENT-GUARD: a duplicate id or index would let two console cells
+        // address the same bus, so a routing change would land on whichever
+        // the consumer happened to iterate first.
+        if (busIds.contains(bus.id) || busIndices.contains(bus.index)) {
+            return rejected(QStringLiteral("duplicate-bus"));
+        }
+        if (bus.index >= static_cast<quint32>(kMaxBuses)) {
+            return rejected(QStringLiteral("invalid-bus-index"));
+        }
+        if (bus.kind != BusKind::Physical && bus.kind != BusKind::Virtual) {
+            return rejected(QStringLiteral("invalid-bus-kind"));
+        }
+        if (!validGainDb(bus.gainDb) || !validLevel(bus.level)) {
+            return rejected(QStringLiteral("invalid-bus-level"));
+        }
+        busIds.insert(bus.id);
+        busIndices.insert(bus.index);
+    }
+
+    QSet<QString> stripIds;
+    for (const Strip &strip : console.strips) {
+        if (!strip.wireValid) {
+            return rejected(QStringLiteral("oversized-payload"));
+        }
+        if (!validConsoleIdentity(strip.id, strip.label)) {
+            return rejected(QStringLiteral("invalid-strip-identity"));
+        }
+        if (stripIds.contains(strip.id)) {
+            return rejected(QStringLiteral("duplicate-strip"));
+        }
+        if (strip.kind != StripKind::HardwareInput
+            && strip.kind != StripKind::VirtualInput) {
+            return rejected(QStringLiteral("invalid-strip-kind"));
+        }
+        if (!validGainDb(strip.gainDb) || !validLevel(strip.level)) {
+            return rejected(QStringLiteral("invalid-strip-level"));
+        }
+        if (!std::isfinite(strip.pan) || strip.pan < kMinPan || strip.pan > kMaxPan) {
+            return rejected(QStringLiteral("invalid-strip-pan"));
+        }
+        if (strip.channelTrimDb.size() > kMaxChannelsPerDevice) {
+            return rejected(QStringLiteral("oversized-payload"));
+        }
+        for (const double trim : strip.channelTrimDb) {
+            if (!validGainDb(trim)) {
+                return rejected(QStringLiteral("invalid-strip-trim"));
+            }
+        }
+        if (strip.sends.size() > kMaxSendsPerStrip) {
+            return rejected(QStringLiteral("oversized-payload"));
+        }
+        QSet<quint32> sendTargets;
+        for (const MatrixSend &send : strip.sends) {
+            // AGENT-GUARD: every send must name a bus this console actually
+            // publishes. A send to an unknown bus is a routing instruction
+            // nothing can carry out, and silently dropping it would leave the
+            // user's matrix showing a connection that does not exist.
+            if (!busIndices.contains(send.busIndex)) {
+                return rejected(QStringLiteral("send-without-bus"));
+            }
+            if (sendTargets.contains(send.busIndex)) {
+                return rejected(QStringLiteral("duplicate-send"));
+            }
+            if (!validGainDb(send.gainDb)) {
+                return rejected(QStringLiteral("invalid-send-gain"));
+            }
+            sendTargets.insert(send.busIndex);
+        }
+        stripIds.insert(strip.id);
+    }
+
+    // soloActive is published truth, not a hint: a console that disagrees with
+    // its own strips would dim the wrong faders.
+    bool anySolo = false;
+    for (const Strip &strip : console.strips) {
+        anySolo = anySolo || strip.soloed;
+    }
+    if (console.soloActive != anySolo) {
+        return rejected(QStringLiteral("inconsistent-solo"));
+    }
+    return {.accepted = true, .reasonCode = {}};
+}
+
 ValidationResult validateSnapshot(const Snapshot &snapshot)
 {
     if (!snapshot.wireValid) {
@@ -129,7 +265,11 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
         | static_cast<quint32>(Capability::SetMute)
         | static_cast<quint32>(Capability::MoveStream)
         | static_cast<quint32>(Capability::SetChannelVolumes)
-        | static_cast<quint32>(Capability::ManageVirtualDevices);
+        | static_cast<quint32>(Capability::ManageVirtualDevices)
+        | static_cast<quint32>(Capability::Console)
+        | static_cast<quint32>(Capability::SetConsoleGain)
+        | static_cast<quint32>(Capability::SetConsoleRouting)
+        | static_cast<quint32>(Capability::ConsoleMeters);
     if ((static_cast<quint32>(snapshot.capabilities.toInt()) & ~knownCapabilities) != 0) {
         return rejected(QStringLiteral("invalid-capabilities"));
     }
@@ -141,6 +281,9 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
     if (snapshot.outputs.size() > kMaxOutputs || snapshot.inputs.size() > kMaxInputs
         || snapshot.streams.size() > kMaxStreams) {
         return rejected(QStringLiteral("oversized-payload"));
+    }
+    if (const auto console = validateConsole(snapshot.console); !console.accepted) {
+        return console;
     }
     if (snapshot.epoch == 0 || snapshot.revision == 0) {
         return rejected(QStringLiteral("invalid-lineage"));

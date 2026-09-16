@@ -14,6 +14,25 @@ namespace QindaQt::Audio
 namespace
 {
 
+// A console operation needs the console slice plus the right mutator bit; the
+// gain and routing bits are separate so a service can publish a read-only
+// console (ADR-0173).
+// What a console-capable service advertises. The gain and routing bits are
+// separate so a future read-only console can publish the model without the
+// mutators.
+[[nodiscard]] Capabilities consoleCapabilities()
+{
+    return Capabilities{} | Capability::Console | Capability::SetConsoleGain
+        | Capability::SetConsoleRouting | Capability::ConsoleMeters;
+}
+
+[[nodiscard]] bool hasConsoleCapability(Capabilities capabilities)
+{
+    return capabilities.testFlag(Capability::Console)
+        && (capabilities.testFlag(Capability::SetConsoleGain)
+            || capabilities.testFlag(Capability::SetConsoleRouting));
+}
+
 bool hasCapability(const Capabilities capabilities, const Capability capability)
 {
     return capabilities.testFlag(capability);
@@ -181,6 +200,24 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
     }
 
     switch (request.kind) {
+    case OperationKind::SetStripGain:
+    case OperationKind::SetStripMute:
+    case OperationKind::SetStripSolo:
+    case OperationKind::SetStripMono:
+    case OperationKind::SetStripPan:
+    case OperationKind::SetStripTrim:
+    case OperationKind::SetStripSend:
+    case OperationKind::SetBusGain:
+    case OperationKind::SetBusMute:
+    case OperationKind::SetBusMono:
+    case OperationKind::SetBusTarget:
+        // Console operations (ADR-0173) are admitted by the console model,
+        // which owns the strip and bus identities they name. There is no
+        // device or stream handle here to pre-check against the snapshot.
+        if (!hasConsoleCapability(m_snapshot.capabilities)) {
+            return QStringLiteral("unsupported");
+        }
+        break;
     case OperationKind::SetDefault:
         if (!hasCapability(m_snapshot.capabilities, Capability::SetDefault)) {
             return QStringLiteral("unsupported");
@@ -313,8 +350,69 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
     return {};
 }
 
+bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noexcept
+{
+    switch (kind) {
+    case OperationKind::SetStripGain:
+    case OperationKind::SetStripMute:
+    case OperationKind::SetStripSolo:
+    case OperationKind::SetStripMono:
+    case OperationKind::SetStripPan:
+    case OperationKind::SetStripTrim:
+    case OperationKind::SetStripSend:
+    case OperationKind::SetBusGain:
+    case OperationKind::SetBusMute:
+    case OperationKind::SetBusMono:
+    case OperationKind::SetBusTarget:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void AudioOperationCoordinator::republishConsole()
+{
+    m_snapshot.console = m_console.console();
+    // A console change is a real revision: clients diff on lineage, so a fader
+    // move that left the revision alone would not reach any of them.
+    if (m_snapshot.revision != std::numeric_limits<quint64>::max()) {
+        ++m_snapshot.revision;
+    }
+    Q_EMIT snapshotChanged(m_snapshot);
+    Q_EMIT invalidated(m_snapshot.epoch, m_snapshot.revision);
+}
+
 OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &request)
 {
+    // AGENT-CONTRACT: console operations are applied HERE and never submitted
+    // to the graph backend (ADR-0173). The console is QindaQt's own state - the
+    // backend only ever realises the routing it implies - so a console change
+    // completes synchronously instead of waiting on a graph round trip, which
+    // is what makes a fader feel attached to the sound.
+    if (isConsoleOperation(request.kind)) {
+        const QString rejection = validateRequest(request);
+        if (!rejection.isEmpty()) {
+            return {.pending = false,
+                    .operationId = 0,
+                    .immediateResult = immediate(request,
+                                                 rejection == QStringLiteral("unsupported")
+                                                     ? OperationStatus::Unsupported
+                                                     : OperationStatus::Rejected,
+                                                 rejection)};
+        }
+        QString reasonCode;
+        if (!m_console.apply(request, &reasonCode)) {
+            return {.pending = false,
+                    .operationId = 0,
+                    .immediateResult = immediate(request, OperationStatus::Rejected,
+                                                 reasonCode)};
+        }
+        republishConsole();
+        return {.pending = false,
+                .operationId = 0,
+                .immediateResult = immediate(request, OperationStatus::Succeeded, {})};
+    }
+
     const QString rejection = validateRequest(request);
     if (!rejection.isEmpty()) {
         const OperationStatus status = rejection == QStringLiteral("unsupported")
@@ -408,6 +506,11 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         unavailable.outputs.clear();
         unavailable.inputs.clear();
         unavailable.streams.clear();
+        // The console survives a malformed backend payload: it is the user's
+        // own configuration, not a projection of the graph, and blanking it
+        // would lose their routing because a daemon hiccuped.
+        unavailable.console = m_console.console();
+        unavailable.capabilities = consoleCapabilities();
         makePendingUncertain(unavailable, QStringLiteral("backend-malformed"));
         m_snapshot = unavailable;
         m_hasBackendSnapshot = true;
@@ -420,6 +523,12 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         makePendingUncertain(snapshot, QStringLiteral("authority-replaced"));
     }
     m_snapshot = snapshot;
+    // AGENT-GUARD: the console belongs to THIS coordinator, not to the graph
+    // backend, so every backend snapshot must have it folded back in. Without
+    // this a device appearing or disappearing would blank the user's whole
+    // console - faders, routing and all - on the next publication.
+    m_snapshot.console = m_console.console();
+    m_snapshot.capabilities |= consoleCapabilities();
     m_hasBackendSnapshot = true;
     m_minimumRestartEpoch = 0;
     Q_EMIT snapshotChanged(m_snapshot);

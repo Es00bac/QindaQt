@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <qindaqt/services/audio_service/console_model.h>
+
 #include <qindaqt/services/audio_service/audio_backend.h>
 
 #include <QtCore/QHash>
@@ -30,6 +32,9 @@ public:
     explicit AudioOperationCoordinator(AudioBackend *backend, QObject *parent = nullptr);
 
     [[nodiscard]] const Snapshot &snapshot() const noexcept;
+    // The console this coordinator owns (ADR-0173). Exposed so a persistence
+    // owner can save and restore it without going through the wire.
+    [[nodiscard]] ConsoleModel &consoleModel() noexcept { return m_console; }
     [[nodiscard]] OperationSubmission submit(const OperationRequest &request);
     void start();
     void stop();
@@ -57,11 +62,17 @@ private:
                                             OperationStatus status,
                                             const QString &reasonCode) const;
     [[nodiscard]] QString validateRequest(const OperationRequest &request) const;
+    // True for the operation kinds the console model owns; those never reach
+    // the graph backend.
+    [[nodiscard]] static bool isConsoleOperation(OperationKind kind) noexcept;
+    // Republishes the snapshot with the console's current value folded in.
+    void republishConsole();
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
     void publishRestartingSnapshot();
 
     AudioBackend *m_backend = nullptr;
     Snapshot m_snapshot;
+    ConsoleModel m_console;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;

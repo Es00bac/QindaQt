@@ -96,6 +96,103 @@ void AudioServiceObject::RemoveVirtualDevice(const Handle &device)
                     .muted = false});
 }
 
+namespace {
+
+// Console operations (ADR-0173) are addressed by console id, not by a graph
+// handle, so they share this builder rather than each spelling out the whole
+// OperationRequest. The console model is what validates identity and range;
+// no policy is duplicated here.
+[[nodiscard]] OperationRequest consoleRequest(OperationKind kind, const QString &id)
+{
+    OperationRequest request;
+    request.kind = kind;
+    request.consoleId = id;
+    return request;
+}
+
+} // namespace
+
+void AudioServiceObject::SetStripGain(const QString &strip, const double gainDb)
+{
+    auto request = consoleRequest(OperationKind::SetStripGain, strip);
+    request.gainDb = gainDb;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetStripMute(const QString &strip, const bool muted)
+{
+    auto request = consoleRequest(OperationKind::SetStripMute, strip);
+    request.muted = muted;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetStripSolo(const QString &strip, const bool soloed)
+{
+    auto request = consoleRequest(OperationKind::SetStripSolo, strip);
+    request.enabled = soloed;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetStripMono(const QString &strip, const bool mono)
+{
+    auto request = consoleRequest(OperationKind::SetStripMono, strip);
+    request.enabled = mono;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetStripPan(const QString &strip, const double pan)
+{
+    auto request = consoleRequest(OperationKind::SetStripPan, strip);
+    request.pan = pan;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetStripTrim(const QString &strip,
+                                      const QVector<double> &trimDb)
+{
+    auto request = consoleRequest(OperationKind::SetStripTrim, strip);
+    request.channelVolumes = trimDb;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetStripSend(const QString &strip, const quint32 busIndex,
+                                      const bool enabled, const double gainDb)
+{
+    auto request = consoleRequest(OperationKind::SetStripSend, strip);
+    request.busIndex = busIndex;
+    request.enabled = enabled;
+    request.gainDb = gainDb;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetBusGain(const QString &bus, const double gainDb)
+{
+    auto request = consoleRequest(OperationKind::SetBusGain, bus);
+    request.gainDb = gainDb;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetBusMute(const QString &bus, const bool muted)
+{
+    auto request = consoleRequest(OperationKind::SetBusMute, bus);
+    request.muted = muted;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetBusMono(const QString &bus, const bool mono)
+{
+    auto request = consoleRequest(OperationKind::SetBusMono, bus);
+    request.enabled = mono;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetBusTarget(const QString &bus, const Handle &device)
+{
+    auto request = consoleRequest(OperationKind::SetBusTarget, bus);
+    request.primary = device;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {
