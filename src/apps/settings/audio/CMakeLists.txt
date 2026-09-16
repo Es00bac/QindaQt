@@ -40,8 +40,10 @@ qt_add_qml_module(
         qml/AudioConsoleBus.qml
         qml/AudioConsoleBusRack.qml
         qml/AudioConsoleDevicePicker.qml
+        qml/AudioConsoleFader.qml
+        qml/AudioConsoleKnob.qml
+        qml/AudioConsolePad.qml
         qml/AudioConsoleRack.qml
-        qml/AudioConsoleRackDial.qml
         qml/AudioConsoleMeter.qml
         qml/AudioConsolePresets.qml
         qml/AudioConsoleSection.qml

@@ -2,15 +2,18 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import QindaQt.Tokens 1.0
 
-// One console meter (ADR-0174): an RMS bar with a falling peak marker.
+// One console meter (ADR-0174): a segmented LED column with a falling peak
+// marker — the classic desk meter, drawn from design tokens rather than a
+// bitmap theme.
 //
 // AGENT-CONTRACT: the reading comes from the model's `consoleLevels` channel,
 // NOT from the strip or bus row. Rows are republished only when the console's
 // configuration changes; levels arrive many times a second on their own
 // notification, and binding a meter to a row would leave it frozen.
-Rectangle {
+Item {
     id: meter
 
     // {peakDb, rmsDb, known} for one console id, or undefined before the first
@@ -18,7 +21,7 @@ Rectangle {
     required property var reading
 
     // The bottom of the drawn scale. Matches the console's minimum fader gain
-    // so the meter and the fader legend describe the same span.
+    // so the meter and the fader describe the same span.
     readonly property real floorDb: -60.0
     readonly property bool known: reading !== undefined && reading.known === true
 
@@ -57,41 +60,65 @@ Rectangle {
         }
     }
 
-    implicitWidth: 10
-    implicitHeight: 160
-    radius: 4
-    color: Tokens.bg.raised
+    implicitWidth: 12
+    implicitHeight: 150
     Accessible.ignored: true
 
+
+    // The well behind the segments; the segments themselves are the bar, so
+    // the bar keeps the name the probe scripts know it by.
     Rectangle {
-        id: bar
+        anchors.fill: parent
+        radius: Tokens.radius.s
+        color: Tokens.bg.base
+    }
+
+    ColumnLayout {
+        id: meterBar
         objectName: "meterBar"
-        width: parent.width
-        radius: parent.radius
-        anchors.bottom: parent.bottom
-        visible: meter.known
-        height: parent.height * meter.rmsFraction
-        // Colour is read off the PEAK, not the bar's own RMS height: what the
-        // user needs to see is that the signal is about to clip, and a peak can
-        // be at full scale while the RMS bar is still halfway down.
-        color: !meter.known || meter.reading.peakDb < -12.0
-            ? Tokens.status.success.foreground
-            : (meter.reading.peakDb < -3.0
-                ? Tokens.status.warning.foreground
-                : Tokens.danger.default)
+        anchors.fill: parent
+        anchors.margins: 1
+        spacing: 1
+
+        Repeater {
+            // Bottom segment = floorDb, top segment = 0 dBFS. The count is
+            // fixed rather than derived from height so a resized meter keeps
+            // the same segment feel; height stretches the segments instead.
+            model: 25
+            delegate: Rectangle {
+                required property int index
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: 1
+                readonly property real segmentDb:
+                    meter.floorDb + (index + 1) * (0.0 - meter.floorDb) / 25
+                readonly property bool lit: meter.known && meter.reading.rmsDb >= segmentDb
+                // AGENT-NOTE: status.*.background IS the lamp colour;
+                // *.foreground is the contrast colour for text sitting on
+                // the lamp, which reads as black-on-dark here.
+                color: !lit
+                    ? Tokens.bg.raised
+                    : segmentDb > -3.0 ? Tokens.danger.default
+                      : segmentDb > -12.0 ? Tokens.status.warning.background
+                        : Tokens.status.success.background
+            }
+        }
     }
 
     Rectangle {
         objectName: "meterPeakHold"
-        width: parent.width
+        width: parent.width - 2
         height: 2
+        x: 1
         visible: meter.known && meter.heldFraction > 0.0
-        color: Tokens.fg.default
-        y: Math.max(0.0, (parent.height - height) * (1.0 - meter.heldFraction))
+        color: meter.reading !== undefined && meter.reading.peakDb > -3.0
+            ? Tokens.danger.default : Tokens.fg.default
+        // fraction 1 is 0 dBFS at the TOP of the column.
+        y: 1 + (parent.height - 4) * (1.0 - meter.heldFraction)
     }
 
     // Unity reference. A console is read against 0 dBFS, so the top of the
-    // scale is marked rather than left to be inferred from the track's edge.
+    // scale is marked rather than left to be inferred from the well's edge.
     Rectangle {
         width: parent.width
         height: 1

@@ -56,4 +56,8 @@ ComboBox {
     onActivated: index => picker.picked(entries[index].serial)
     Accessible.name: accessibleName
     font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
+    // The console cards are 120px wide; a form-height (40px) picker would eat
+    // a third of the card. The popup still opens at full size — only the
+    // closed face is compact.
+    implicitHeight: 24
 }
