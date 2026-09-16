@@ -61,8 +61,8 @@ T.Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.space["5"]
-        spacing: Tokens.space["3"]
+        anchors.margins: Tokens.space["4"]
+        spacing: Tokens.space["2"]
 
         Label {
             objectName: "audioPageHeading"
@@ -171,7 +171,7 @@ T.Page {
 
                 ColumnLayout {
                     width: parent.width
-                    spacing: Tokens.space["4"]
+                    spacing: Tokens.space["3"]
 
                     Label {
                         Layout.fillWidth: true

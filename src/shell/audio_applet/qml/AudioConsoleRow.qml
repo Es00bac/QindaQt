@@ -61,9 +61,11 @@ RowLayout {
                 radius: parent.radius
                 width: parent.width * row.meterFraction
                 visible: row.levelKnown
+                // status.*.background is the lamp colour; *.foreground is
+                // its contrast pair (dark), which vanishes on a dark meter.
                 color: !row.levelKnown || row.reading.peakDb < -12.0
-                    ? Tokens.status.success.foreground
-                    : (row.reading.peakDb < -3.0 ? Tokens.status.warning.foreground
+                    ? Tokens.status.success.background
+                    : (row.reading.peakDb < -3.0 ? Tokens.status.warning.background
                                                  : Tokens.danger.default)
             }
         }
