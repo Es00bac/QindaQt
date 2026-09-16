@@ -25,18 +25,18 @@ carries the whole processing chain below.
 
 | Feature | QindaQt design | Status |
 | --- | --- | --- |
-| 5 hardware input strips | `Strip` with `StripKind::HardwareInput`, following a capture device | planned |
-| 3 virtual input strips (VAIO / AUX / VAIO3) | `Strip` with `StripKind::VirtualInput` over managed null sinks, so each application gets its own fader | planned |
+| 5 hardware input strips | `Strip` with `StripKind::HardwareInput`, following a capture device | **done** |
+| 3 virtual input strips (VAIO / AUX / VAIO3) | `Strip` with `StripKind::VirtualInput` over managed null sinks, so each application gets its own fader | **done** |
 | Per-strip device selection | `SetStripSource` against the device slice | planned |
-| Fader with dB readout | `Strip::gainDb`, one gain law ([ADR-0171](../adr/0171-one-gain-law-for-the-audio-console.md)) | planned |
-| Mute | `Strip::muted` | planned |
-| Solo | `Strip::soloed` + published `Console::soloActive` | planned |
-| Mono | `Strip::mono` | planned |
-| Pan / Intellipan | `Strip::pan`; the 2D pan needs a second axis for surround | partial design |
+| Fader with dB readout | `Strip::gainDb`, one gain law ([ADR-0171](../adr/0171-one-gain-law-for-the-audio-console.md)) | **done** |
+| Mute | `Strip::muted` | **done** |
+| Solo | `Strip::soloed` + published `Console::soloActive` | **done** |
+| Mono | `Strip::mono` | **done** |
+| Pan / Intellipan | `Strip::pan` on the wire and in the model; the 2D pan needs a second axis for surround, and pan is not yet applied to the graph | partial |
 | Per-channel gain/trim | `Strip::channelTrimDb` | planned |
-| Level meters (per strip) | `Strip::level`, dBFS peak + RMS | planned |
-| Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | planned |
-| Per-send gain | `MatrixSend::gainDb` — the matrix is not just on/off | planned |
+| Level meters (per strip) | `Strip::level`, dBFS peak + RMS; on the wire, validated and drawn, but nothing publishes readings yet | partial |
+| Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | **done** |
+| Per-send gain | `MatrixSend::gainDb` — the matrix is not just on/off; realised as the loopback's volume | **done** |
 | Gate | `filter-chain` gate node; threshold, attack, hold, release, sidechain BP | gap |
 | Denoiser | `filter-chain` (rnnoise is already an OBS/PipeWire-adjacent dependency) | gap |
 | Compressor | `filter-chain` compressor; ratio, attack, release, knee, GI/GO | gap |
@@ -55,12 +55,12 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 
 | Feature | QindaQt design | Status |
 | --- | --- | --- |
-| 5 physical buses | `Bus` with `BusKind::Physical` driving a real sink | planned |
-| 3 virtual buses | `Bus` with `BusKind::Virtual` as managed null sinks other apps record from | planned |
+| 5 physical buses | `Bus` with `BusKind::Physical` driving a real sink | **done** |
+| 3 virtual buses | `Bus` with `BusKind::Virtual` as managed null sinks other apps record from | **done** |
 | Per-bus device selection | `SetBusTarget` | planned |
-| Fader with dB readout | `Bus::gainDb` | planned |
-| Mute / Mono | `Bus::muted`, `Bus::mono` | planned |
-| Level meters | `Bus::level` | planned |
+| Fader with dB readout | `Bus::gainDb` | **done** |
+| Mute / Mono | `Bus::muted`, `Bus::mono` | **done** |
+| Level meters | `Bus::level`; on the wire and drawn, no readings published yet | partial |
 | Bus EQ (6-band parametric, per channel) | `filter-chain` EQ per bus, with memory slots | gap |
 | Bus modes (Normal, Amix, Bmix, Repeat, Composite, TV Mix, Upmix 2.1/4.1/6.1, Center/LFE/Rear only) | channel-matrix mode per bus | gap |
 | Per-bus monitoring delay (Bluetooth/HDMI alignment) | `filter-chain` delay, 0–500 ms — ADR-0123 slice S2 | planned |
@@ -93,7 +93,7 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | MIDI in/out mapping to console controls | MIDI binding layer over the operation kinds | gap |
 | Remote control API | `org.qindaqt.Audio1` **is** the remote API, and it is a better one than a DLL | partial |
 | System tray presence | the QindaQt audio applet | partial |
-| Presets / saved configurations | console state persisted through Settings1 | planned |
+| Presets / saved configurations | the console persists its own document; named presets are not built | partial |
 | Startup configuration | applied at service start | planned |
 
 ## 6. Engine and system
@@ -108,11 +108,18 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 
 ## 7. What QindaQt has today
 
-Audio1 v2 (ADR-0123 slice S1) publishes devices, streams, per-channel volumes
-and channel maps, and manages virtual devices. The one gain law
-([ADR-0171](../adr/0171-one-gain-law-for-the-audio-console.md)) is shipped. The
-console model in section 1 and 2 is being built; everything marked **gap** above
-has no implementation.
+Audio1 v3 ([ADR-0173](../adr/0173-the-mixing-console-slice-of-audio1.md))
+publishes a real console: 5 hardware and 3 virtual input strips, A1–A5 and
+B1–B3 buses, and a rectangular routing matrix whose every cell carries its own
+gain. Each enabled send is a live `libpipewire-module-loopback` whose playback
+node's volume **is** that cell's fader, so the matrix routes real audio rather
+than describing an intention. Mute, solo and bus mute silence an edge without
+tearing it down. The console persists, survives its devices disappearing, and
+is operated from the Settings Audio route.
 
-Measured against this page, the honest completion figure is small. The page
-exists so that figure is visible rather than implied.
+What is emphatically not here yet: metering publishes no readings, pan is
+modelled but not applied to the graph, and every per-strip and per-bus processor
+— gate, denoiser, compressor, limiter, EQ, bus modes — is a **gap**, as are the
+recorder, VBAN and macro buttons.
+
+This page exists so that distance is visible rather than implied.

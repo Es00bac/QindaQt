@@ -264,6 +264,101 @@ OperationResult AudioClient::localResult(const OperationRequest &request,
             .wireValid = true};
 }
 
+namespace {
+
+// Console requests differ only in kind and a couple of fields, so they share a
+// builder rather than each spelling out the whole OperationRequest (ADR-0173).
+[[nodiscard]] OperationRequest consoleRequest(OperationKind kind, const QString &id)
+{
+    OperationRequest request;
+    request.kind = kind;
+    request.consoleId = id;
+    return request;
+}
+
+} // namespace
+
+quint64 AudioClient::setStripGain(const QString &stripId, const double gainDb)
+{
+    auto request = consoleRequest(OperationKind::SetStripGain, stripId);
+    request.gainDb = gainDb;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setStripMuted(const QString &stripId, const bool muted)
+{
+    auto request = consoleRequest(OperationKind::SetStripMute, stripId);
+    request.muted = muted;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setStripSoloed(const QString &stripId, const bool soloed)
+{
+    auto request = consoleRequest(OperationKind::SetStripSolo, stripId);
+    request.enabled = soloed;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setStripMono(const QString &stripId, const bool mono)
+{
+    auto request = consoleRequest(OperationKind::SetStripMono, stripId);
+    request.enabled = mono;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setStripPan(const QString &stripId, const double pan)
+{
+    auto request = consoleRequest(OperationKind::SetStripPan, stripId);
+    request.pan = pan;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setStripTrim(const QString &stripId,
+                                  const QVector<double> &trimDb)
+{
+    auto request = consoleRequest(OperationKind::SetStripTrim, stripId);
+    request.channelVolumes = trimDb;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setStripSend(const QString &stripId, const quint32 busIndex,
+                                  const bool enabled, const double gainDb)
+{
+    auto request = consoleRequest(OperationKind::SetStripSend, stripId);
+    request.busIndex = busIndex;
+    request.enabled = enabled;
+    request.gainDb = gainDb;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setBusGain(const QString &busId, const double gainDb)
+{
+    auto request = consoleRequest(OperationKind::SetBusGain, busId);
+    request.gainDb = gainDb;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setBusMuted(const QString &busId, const bool muted)
+{
+    auto request = consoleRequest(OperationKind::SetBusMute, busId);
+    request.muted = muted;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setBusMono(const QString &busId, const bool mono)
+{
+    auto request = consoleRequest(OperationKind::SetBusMono, busId);
+    request.enabled = mono;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setBusTarget(const QString &busId, const Handle &device)
+{
+    auto request = consoleRequest(OperationKind::SetBusTarget, busId);
+    request.primary = device;
+    return beginOperation(request);
+}
+
 quint64 AudioClient::beginOperation(const OperationRequest &request)
 {
     if (m_nextRequestId == 0 || m_nextRequestId == std::numeric_limits<quint64>::max()) {

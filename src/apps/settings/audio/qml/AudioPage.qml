@@ -187,6 +187,14 @@ T.Page {
                         Accessible.name: text
                     }
 
+                    // The console comes first: it is the surface a user
+                    // operates continuously, while the device lists below it
+                    // are configuration they visit occasionally.
+                    AudioConsoleSection {
+                        id: consoleSection
+                        audioSettings: root.audioSettings
+                    }
+
                     AudioDeviceSection {
                         id: outputSection
                         audioSettings: root.audioSettings
