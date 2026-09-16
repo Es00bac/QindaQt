@@ -231,6 +231,7 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
     case OperationKind::SetBusTarget:
     case OperationKind::SetStripSource:
     case OperationKind::SetStripProcessing:
+    case OperationKind::SetBusProcessing:
         // Console operations (ADR-0173) are admitted by the console model,
         // which owns the strip and bus identities they name. There is no
         // device or stream handle here to pre-check against the snapshot.
@@ -552,6 +553,7 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     // rather than only when the user touches the console.
     publishConsoleEndpoints();
     publishProcessing();
+    publishBusProcessing();
     publishRouting();
     publishMetering();
     m_hasBackendSnapshot = true;

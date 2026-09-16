@@ -38,7 +38,7 @@ carries the whole processing chain below.
 | Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | **done** |
 | Per-send gain | `MatrixSend::gainDb` — the matrix is not just on/off; realised as the loopback's volume | **done** |
 | Gate | swh `gate` in the strip's filter-chain; threshold, attack, hold, release, range ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
-| Denoiser | `filter-chain` (rnnoise is already an OBS/PipeWire-adjacent dependency) | gap |
+| Denoiser | RNNoise (`noise_suppressor_mono`) first in the strip chain, voice-activity threshold dial ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** |
 | Compressor | swh `sc4m`; threshold, ratio, attack, release, knee, makeup ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
 | Limiter | swh `hardLimiter` brick wall at the ceiling; no release ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
 | Strip EQ (3-band) | PipeWire builtin biquads: low shelf, peaking mid with Q, high shelf ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
@@ -61,8 +61,8 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | Fader with dB readout | `Bus::gainDb` | **done** |
 | Mute / Mono | `Bus::muted`, `Bus::mono` | **done** |
 | Level meters | Real dBFS peak + RMS, read from the bus device's monitor ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) | **done** |
-| Bus EQ (6-band parametric, per channel) | `filter-chain` EQ per bus, with memory slots | gap |
-| Bus modes (Normal, Amix, Bmix, Repeat, Composite, TV Mix, Upmix 2.1/4.1/6.1, Center/LFE/Rear only) | channel-matrix mode per bus | gap |
+| Bus EQ | Three-band equalizer per physical bus, one per channel, in the bus chain ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** |
+| Bus modes | Stereo subset: normal, swap, left-to-both, right-to-both, as the bus chain's output mapping ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)); surround upmixes not modelled | partial |
 | Per-bus monitoring delay (Bluetooth/HDMI alignment) | `filter-chain` delay, 0–500 ms — ADR-0123 slice S2 | planned |
 | Virtual surround / HRIR | convolver sinks — ADR-0123 slice S3 | planned |
 
@@ -131,7 +131,10 @@ Each strip has a rack — gate, compressor, three-band EQ, limiter — realised 
 one filter-chain per strip and persisted with the console
 ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)).
 
-What is emphatically not here yet: the denoiser, bus EQ and bus modes, the
-recorder, VBAN and macro buttons.
+A strip is denoised before its gate, and a physical bus has its own rack
+([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)).
+
+What is emphatically not here yet: the recorder, VBAN and macro buttons, and
+the surround bus modes.
 
 This page exists so that distance is visible rather than implied.

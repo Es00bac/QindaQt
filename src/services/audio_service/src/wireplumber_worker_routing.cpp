@@ -48,7 +48,7 @@ void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &ed
     for (const BackendRoutingEdge &edge : edges) {
         bool sourceIsSink = edge.sourceIsSink;
         const QString source = stripReadNode(edge.stripId, edge.source, &sourceIsSink);
-        const QString target = nodeNameForHandle(edge.target);
+        const QString target = busWriteNode(edge.busId, edge.target);
         if (source.isEmpty() || target.isEmpty()) {
             continue;
         }

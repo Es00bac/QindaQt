@@ -32,6 +32,7 @@ public:
     void applyMetering(const QList<BackendMeterTarget> &targets) override;
     void applyConsoleEndpoints(const QList<BackendConsoleEndpoint> &endpoints) override;
     void applyProcessing(const QList<BackendProcessingChain> &chains) override;
+    void applyBusProcessing(const QList<BackendBusChain> &chains) override;
 
 private:
     [[nodiscard]] quint64 advanceRunGeneration();

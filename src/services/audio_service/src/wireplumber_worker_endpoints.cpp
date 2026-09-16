@@ -4,6 +4,8 @@
 #include "wireplumber_graph_p.h"
 #include "wireplumber_worker_p.h"
 
+#include <QtCore/QSet>
+
 #include <pipewire/pipewire.h>
 #include <pipewire/impl-module.h>
 
@@ -31,6 +33,42 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
     if (context == nullptr || core == nullptr) {
         return;
     }
+    // AGENT-GUARD: a physical bus's pre-rack sink exists only while its rack
+    // does. Strip sinks and virtual-bus sinks linger by design; this one was
+    // created for a rack the user has now switched off, and left behind it
+    // would sit in every device picker as a sink nothing feeds. It is
+    // destroyed through the registry, since a lingering object outlives the
+    // proxy that made it.
+    QSet<QString> wantedBusSinks;
+    for (const BackendConsoleEndpoint &endpoint : endpoints) {
+        if (endpoint.isBus) {
+            wantedBusSinks.insert(ConsoleEndpoints::busSinkNodeName(endpoint.consoleId));
+        }
+    }
+    // Driven by the GRAPH, not by this run's proxies: the leftover may have
+    // been made by a previous run of the service.
+    const QString busPrefix =
+        QLatin1String(ConsoleEndpoints::kConsoleNodeNamePrefix) + QStringLiteral("bus.");
+    for (const QString &name : WirePlumberGraph::nodeNamesWithPrefix(m_manager, busPrefix)) {
+        // Only the sink itself: its `.source`, `.rack.*` and stream siblings
+        // are modules that die with their owner.
+        if (name.mid(busPrefix.size()).contains(QLatin1Char('.'))
+            && !name.mid(busPrefix.size()).startsWith(QStringLiteral("a"))) {
+            continue;
+        }
+        const QString tail = name.mid(busPrefix.size());
+        if (tail.count(QLatin1Char('.')) != 0 || wantedBusSinks.contains(name)) {
+            continue;
+        }
+        if (auto node = WirePlumberGraph::findNodeByName(m_manager, name); node.has_value()) {
+            wp_global_proxy_request_destroy(WP_GLOBAL_PROXY(node->node));
+        }
+        const auto proxy = m_endpointProxies.find(name.toStdString());
+        if (proxy != m_endpointProxies.end()) {
+            pw_proxy_destroy(static_cast<struct pw_proxy *>(proxy->second));
+            m_endpointProxies.erase(proxy);
+        }
+    }
     for (const BackendConsoleEndpoint &endpoint : endpoints) {
         if (endpoint.consoleId.isEmpty()) {
             continue;
@@ -47,7 +85,7 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
             || WirePlumberGraph::findNodeByName(m_manager, sinkName).has_value()) {
             continue;
         }
-        if (endpoint.isBus) {
+        if (endpoint.isBus && !endpoint.physicalBusSink) {
             const QByteArray arguments = ConsoleEndpoints::busModuleArguments(
                 endpoint.consoleId, endpoint.description);
             if (arguments.isEmpty()) {
@@ -61,8 +99,11 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
             }
             continue;
         }
-        const auto properties = ConsoleEndpoints::stripSinkProperties(
-            endpoint.consoleId, endpoint.description);
+        // A strip's sink, or a physical bus's pre-rack sink: the same null sink
+        // under the endpoint's own name.
+        const auto properties = endpoint.physicalBusSink
+            ? ConsoleEndpoints::busSinkProperties(endpoint.consoleId, endpoint.description)
+            : ConsoleEndpoints::stripSinkProperties(endpoint.consoleId, endpoint.description);
         if (properties.isEmpty()) {
             continue;
         }

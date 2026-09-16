@@ -69,6 +69,16 @@ struct MatrixSend {
 // restores the user's dial positions rather than defaults. Times are
 // milliseconds, levels dBFS, gains dB; the graph applies them in this order:
 // gate, compressor, equalizer, limiter.
+// The denoiser (ADR-0180): RNNoise, first in the chain so the gate and the
+// compressor act on the cleaned signal. `vadThreshold` is the voice-activity
+// confidence, 0-100 %, below which the plugin mutes the frame outright.
+struct DenoiserSettings {
+    bool enabled = false;
+    double vadThreshold = 50.0;
+
+    friend bool operator==(const DenoiserSettings &, const DenoiserSettings &) = default;
+};
+
 struct GateSettings {
     bool enabled = false;
     double thresholdDb = -40.0;
@@ -117,12 +127,30 @@ struct EqualizerSettings {
 };
 
 struct StripProcessing {
+    DenoiserSettings denoiser;
     GateSettings gate;
     CompressorSettings compressor;
     EqualizerSettings equalizer;
     LimiterSettings limiter;
 
     friend bool operator==(const StripProcessing &, const StripProcessing &) = default;
+};
+
+// What a bus can do to its mix on the way out (ADR-0180): a three-band
+// equalizer and a channel mode. The modes are the stereo-desktop subset of the
+// reference console's bus modes; the surround upmixes are not modelled.
+enum class BusMode : quint32 {
+    Normal = 0,
+    SwapChannels = 1,
+    LeftToBoth = 2,
+    RightToBoth = 3,
+};
+
+struct BusProcessing {
+    EqualizerSettings equalizer;
+    BusMode mode = BusMode::Normal;
+
+    friend bool operator==(const BusProcessing &, const BusProcessing &) = default;
 };
 
 struct Strip {
@@ -183,6 +211,8 @@ struct Bus {
     Level level;
     // As Strip::pinnedSource, for the output the bus drives.
     QString pinnedTarget = {};
+    // The bus rack (ADR-0180). Appended last.
+    BusProcessing processing = {};
 
     bool wireValid = true;
 
@@ -227,6 +257,9 @@ Q_DECLARE_METATYPE(QindaQt::Audio::Level)
 Q_DECLARE_METATYPE(QindaQt::Audio::MatrixSend)
 Q_DECLARE_METATYPE(QindaQt::Audio::LevelReading)
 Q_DECLARE_METATYPE(QList<QindaQt::Audio::LevelReading>)
+Q_DECLARE_METATYPE(QindaQt::Audio::DenoiserSettings)
+Q_DECLARE_METATYPE(QindaQt::Audio::BusMode)
+Q_DECLARE_METATYPE(QindaQt::Audio::BusProcessing)
 Q_DECLARE_METATYPE(QindaQt::Audio::GateSettings)
 Q_DECLARE_METATYPE(QindaQt::Audio::CompressorSettings)
 Q_DECLARE_METATYPE(QindaQt::Audio::LimiterSettings)

@@ -169,6 +169,11 @@ public:
     lastProcessing = processing;
     return true;
   }
+  Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing) {
+    lastConsoleId = busId;
+    lastProcessing = processing;
+    return true;
+  }
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial) {
     lastConsoleId = stripId;
     lastPinSerial = serial;

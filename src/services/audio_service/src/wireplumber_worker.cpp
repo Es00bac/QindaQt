@@ -391,6 +391,7 @@ void WirePlumberWorker::rebuild()
     // Racks before routing and metering: both read the processed sink of a
     // strip whose rack is running.
     applyProcessingOnWorker(m_declaredProcessing);
+    applyBusProcessingOnWorker(m_declaredBusProcessing);
     applyRoutingOnWorker(m_declaredRouting);
     applySendVolumes();
     // Same reasoning for meters: a device that just appeared is now readable,

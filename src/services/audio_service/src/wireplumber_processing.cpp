@@ -14,6 +14,10 @@ namespace {
 // swh-plugins file names, labels and control names (LADSPA), verified with
 // `analyseplugin` on swh-plugins 0.4.17. The file name carries the plugin's
 // unique id; `plugin =` is that basename without the extension.
+// noise-suppression-for-voice (RNNoise) LADSPA: one mono suppressor per
+// channel, like the rest of the chain.
+constexpr char kDenoiserPlugin[] = "librnnoise_ladspa";
+constexpr char kDenoiserLabel[] = "noise_suppressor_mono";
 constexpr char kGatePlugin[] = "gate_1410";
 constexpr char kGateLabel[] = "gate";
 // The MONO variants on purpose: the chain is instantiated once per channel
@@ -38,6 +42,17 @@ QString number(const double value)
 double clampTo(const double value, const double low, const double high)
 {
     return value < low ? low : (value > high ? high : value);
+}
+
+QString denoiserNode(const DenoiserSettings &denoiser)
+{
+    // VAD threshold in percent; the grace periods are left at the plugin's
+    // defaults, which are tuned for speech.
+    return QStringLiteral(
+               "{ type = ladspa name = denoise plugin = %1 label = %2 control = {"
+               " \"VAD Threshold (%)\" = %3 } }")
+        .arg(QLatin1String(kDenoiserPlugin), QLatin1String(kDenoiserLabel),
+             number(clampTo(denoiser.vadThreshold, 0.0, 99.0)));
 }
 
 QString gateNode(const GateSettings &gate)
@@ -116,8 +131,8 @@ QString processingChainNodeName(const QString &stripId)
 
 bool processingActive(const StripProcessing &p)
 {
-    return p.gate.enabled || p.compressor.enabled || p.equalizer.enabled
-        || p.limiter.enabled;
+    return p.denoiser.enabled || p.gate.enabled || p.compressor.enabled
+        || p.equalizer.enabled || p.limiter.enabled;
 }
 
 QByteArray processingModuleArguments(const QString &stripId, const QString &sourceNodeName,
@@ -133,6 +148,10 @@ QByteArray processingModuleArguments(const QString &stripId, const QString &sour
     // Enabled blocks in processing order; the chain links each to the next.
     QStringList nodes;
     QStringList order;
+    if (processing.denoiser.enabled) {
+        nodes << denoiserNode(processing.denoiser);
+        order << QStringLiteral("denoise");
+    }
     if (processing.gate.enabled) {
         nodes << gateNode(processing.gate);
         order << QStringLiteral("gate");
@@ -178,9 +197,93 @@ QByteArray processingModuleArguments(const QString &stripId, const QString &sour
         .toUtf8();
 }
 
+QString busSinkNodeNameFor(const QString &busId)
+{
+    return ConsoleEndpoints::busSinkNodeName(busId);
+}
+
+QString busChainNodeName(const QString &busId)
+{
+    return QLatin1String(ConsoleEndpoints::kConsoleNodeNamePrefix) + busId
+        + QStringLiteral(".rack");
+}
+
+bool busProcessingActive(const BusProcessing &p)
+{
+    return p.equalizer.enabled || p.mode != BusMode::Normal;
+}
+
+QByteArray busProcessingModuleArguments(const QString &busId, const QString &deviceNodeName,
+                                        const BusProcessing &processing)
+{
+    const QString chain = busChainNodeName(busId);
+    const QString sink = busSinkNodeNameFor(busId);
+    if (!routingNameIsEmbeddable(chain) || !routingNameIsEmbeddable(sink)
+        || !routingNameIsEmbeddable(deviceNodeName) || !busProcessingActive(processing)) {
+        return {};
+    }
+    // AGENT-CONTRACT: a bus rack is an explicit STEREO graph - one equalizer
+    // per channel - because the channel modes are about which channel goes
+    // where, which a per-channel duplicated graph cannot express. Left is
+    // channel 1, right channel 2. An equalizer that is off still exists with
+    // its gains at zero: the mode alone can need the chain.
+    const EqualizerSettings &eq = processing.equalizer;
+    const double lowGain = eq.enabled ? eq.lowGainDb : 0.0;
+    const double midGain = eq.enabled ? eq.midGainDb : 0.0;
+    const double highGain = eq.enabled ? eq.highGainDb : 0.0;
+    QStringList nodes;
+    QStringList links;
+    for (const QString &side : {QStringLiteral("l"), QStringLiteral("r")}) {
+        nodes << QStringLiteral(
+                     "{ type = builtin name = eq_%1_low label = bq_lowshelf control = {"
+                     " \"Freq\" = %2 \"Q\" = 0.707 \"Gain\" = %3 } }"
+                     " { type = builtin name = eq_%1_mid label = bq_peaking control = {"
+                     " \"Freq\" = %4 \"Q\" = %5 \"Gain\" = %6 } }"
+                     " { type = builtin name = eq_%1_high label = bq_highshelf control = {"
+                     " \"Freq\" = %7 \"Q\" = 0.707 \"Gain\" = %8 } }")
+                     .arg(side, number(eq.lowHz), number(lowGain), number(eq.midHz),
+                          number(eq.midQ), number(midGain), number(eq.highHz),
+                          number(highGain));
+        links << QStringLiteral("{ output = \"eq_%1_low:Out\" input = \"eq_%1_mid:In\" }"
+                                " { output = \"eq_%1_mid:Out\" input = \"eq_%1_high:In\" }")
+                     .arg(side);
+    }
+    // The mode is the output port mapping: which chain end feeds which
+    // channel of the device.
+    QString outputs;
+    switch (processing.mode) {
+    case BusMode::Normal:
+        outputs = QStringLiteral("\"eq_l_high:Out\" \"eq_r_high:Out\"");
+        break;
+    case BusMode::SwapChannels:
+        outputs = QStringLiteral("\"eq_r_high:Out\" \"eq_l_high:Out\"");
+        break;
+    case BusMode::LeftToBoth:
+        outputs = QStringLiteral("\"eq_l_high:Out\" \"eq_l_high:Out\"");
+        break;
+    case BusMode::RightToBoth:
+        outputs = QStringLiteral("\"eq_r_high:Out\" \"eq_r_high:Out\"");
+        break;
+    }
+    return QStringLiteral(
+               "{ node.name = \"%1\" node.description = \"QindaQt bus rack %2\""
+               " capture.props = { node.name = \"%1.capture\" target.object = \"%3\""
+               " stream.capture.sink = true node.dont-fallback = true audio.position = [ FL FR ] }"
+               " playback.props = { node.name = \"%1.playback\" target.object = \"%4\""
+               " node.dont-fallback = true audio.position = [ FL FR ] }"
+               " filter.graph = { nodes = [ %5 ] links = [ %6 ]"
+               " inputs = [ \"eq_l_low:In\" \"eq_r_low:In\" ] outputs = [ %7 ] } }")
+        .arg(chain, busId, sink, deviceNodeName, nodes.join(QLatin1Char(' ')),
+             links.join(QLatin1Char(' ')), outputs)
+        .toUtf8();
+}
+
 QList<QPair<QByteArray, double>> processingControls(const StripProcessing &p)
 {
     QList<QPair<QByteArray, double>> controls;
+    if (p.denoiser.enabled) {
+        controls << qMakePair(QByteArray("denoise:VAD Threshold (%)"), p.denoiser.vadThreshold);
+    }
     if (p.gate.enabled) {
         controls << qMakePair(QByteArray("gate:Threshold (dB)"), p.gate.thresholdDb)
                  << qMakePair(QByteArray("gate:Attack (ms)"), p.gate.attackMs)

@@ -27,6 +27,7 @@ private Q_SLOTS:
     void aPinnedDeviceIsThatElementsAlone();
     void meterReadingsStreamWithoutTouchingLineage();
     void aRackIsDeclaredOnlyWhenActiveAndBound();
+    void aBusRackNeedsItsOwnSinkAndOnlyOnAPhysicalBus();
 };
 
 // ADR-0174. A console that is not attached to the graph draws faders wired to
@@ -324,6 +325,56 @@ void AudioConsoleBindingTests::aRackIsDeclaredOnlyWhenActiveAndBound()
     rack.processing.compressor.enabled = false;
     QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
     QVERIFY(backend.processing.isEmpty());
+}
+
+// ADR-0180. A bus rack is declared for a physical bus with a rack and a device,
+// together with the pre-rack sink its sends will play into; a virtual bus never
+// gets one.
+void AudioConsoleBindingTests::aBusRackNeedsItsOwnSinkAndOnlyOnAPhysicalBus()
+{
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    const Console console = coordinator.snapshot().console;
+    const QString physical = console.buses.at(0).id;  // bound to the default output
+    QVERIFY(console.buses.at(0).targetKnown);
+    QString virtualBus;
+    for (const Bus &bus : console.buses) {
+        if (bus.kind == BusKind::Virtual) {
+            virtualBus = bus.id;
+        }
+    }
+    QVERIFY(!virtualBus.isEmpty());
+    const qsizetype endpointsBefore = backend.endpoints.size();
+
+    OperationRequest rack;
+    rack.kind = OperationKind::SetBusProcessing;
+    rack.consoleId = physical;
+    rack.busProcessing.mode = BusMode::SwapChannels;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.busProcessing.size(), 1);
+    QCOMPARE(backend.busProcessing.at(0).busId, physical);
+    QCOMPARE(backend.busProcessing.at(0).target.serial, 10u);
+    // ...and its pre-rack sink is now an endpoint the backend must create.
+    QCOMPARE(backend.endpoints.size(), endpointsBefore + 1);
+    bool declaredSink = false;
+    for (const BackendConsoleEndpoint &endpoint : backend.endpoints) {
+        declaredSink = declaredSink || (endpoint.consoleId == physical && endpoint.physicalBusSink);
+    }
+    QVERIFY(declaredSink);
+
+    // Back to normal: the chain and the sink are withdrawn together.
+    rack.busProcessing.mode = BusMode::Normal;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    QVERIFY(backend.busProcessing.isEmpty());
+    QCOMPARE(backend.endpoints.size(), endpointsBefore);
+
+    // A virtual bus accepts the rack in its model and never declares a chain.
+    rack.consoleId = virtualBus;
+    rack.busProcessing.equalizer.enabled = true;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    QVERIFY(backend.busProcessing.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(AudioConsoleBindingTests)

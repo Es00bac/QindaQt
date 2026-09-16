@@ -4,6 +4,8 @@
 
 #include <qindaqt/services/audio_protocol/audio_types.h>
 
+#include <QtCore/QStringList>
+
 #include <wp/wp.h>
 
 #include <optional>
@@ -42,5 +44,10 @@ struct NodeLookup {
 // serials are assigned by PipeWire when the module loads.
 [[nodiscard]] std::optional<NodeLookup> findNodeByName(WpObjectManager *manager,
                                                        const QString &nodeName);
+// Every node whose `node.name` starts with the prefix. The console uses it to
+// find its own leftovers - a lingering sink from a previous run - which no
+// proxy of this run can name.
+[[nodiscard]] QStringList nodeNamesWithPrefix(WpObjectManager *manager,
+                                              const QString &prefix);
 
 } // namespace QindaQt::Audio::WirePlumberGraph

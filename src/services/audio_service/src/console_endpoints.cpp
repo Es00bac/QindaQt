@@ -50,6 +50,25 @@ QList<QPair<QByteArray, QByteArray>> stripSinkProperties(const QString &stripId,
     };
 }
 
+QList<QPair<QByteArray, QByteArray>> busSinkProperties(const QString &busId,
+                                                       const QString &description)
+{
+    const QString sink = busSinkNodeName(busId);
+    if (!routingNameIsEmbeddable(sink) || !routingNameIsEmbeddable(description)) {
+        return {};
+    }
+    return {
+        {"factory.name", "support.null-audio-sink"},
+        {"node.name", sink.toUtf8()},
+        {"node.description", (description + QStringLiteral(" (bus)")).toUtf8()},
+        {"media.class", "Audio/Sink"},
+        {"audio.position", "[ FL FR ]"},
+        {"monitor.channel-volumes", "true"},
+        {"node.autoconnect", "false"},
+        {"object.linger", "true"},
+    };
+}
+
 QByteArray busModuleArguments(const QString &busId, const QString &description)
 {
     const QString sink = busSinkNodeName(busId);
