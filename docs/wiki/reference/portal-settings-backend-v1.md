@@ -56,6 +56,21 @@ the requested implementation interface. The first available match wins.
 QindaQt's `.portal` declaration continues to advertise only Settings, so no
 fallback family can resolve to the QindaQt process.
 
+Every family routed to `kde` depends on the KDE backend running under the
+compatibility identity QindaQt's systemd drop-in supplies
+([ADR-0088](../adr/0088-enable-kde-remote-desktop-for-qindaqt.md)). That backend
+registers ScreenCast, Screenshot, RemoteDesktop, InputCapture and
+GlobalShortcuts **only** with `XDG_CURRENT_DESKTOP=KDE`: measured on the same
+binary and compositor, the KDE identity yields 19 impl interfaces and the
+QindaQt identity 11, with none of the capture ones. The drop-in therefore also
+overrides the unit to `Type=exec`
+([ADR-0170](../adr/0170-survive-a-private-session-bus-for-dbus-units.md)),
+because on a session running the private bus QindaQt bootstraps itself the
+systemd user manager cannot observe a `Type=dbus` unit taking its name, kills
+the working backend at `TimeoutStartSec`, and D-Bus activation respawns it
+without the drop-in - leaving screen capture unavailable desktop-wide. The
+`qindaqt.portal-kde-compat` row asserts both halves.
+
 GlobalShortcuts lists only `kde` rather than the uniform `kde;gtk;lxqt` order
 used for the other reviewed families: the installed `xdg-desktop-portal-gtk`
 and `xdg-desktop-portal-lxqt` backends do not advertise

@@ -172,3 +172,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0167: one desktop across every output](0167-one-desktop-across-every-output.md)
 - [ADR-0168: a generated container name never displaces a real title](0168-a-generated-name-never-displaces-a-real-title.md)
 - [ADR-0169: report the program behind an opaque window class](0169-report-the-program-behind-an-opaque-window-class.md)
+- [ADR-0170: judge the KDE portal backend's start by exec, not by a bus name](0170-survive-a-private-session-bus-for-dbus-units.md)
