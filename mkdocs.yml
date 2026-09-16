@@ -96,6 +96,8 @@ nav:
       - Audio1 version 2: reference/audio1-v2.md
       - "VoiceMeeter Potato parity target": reference/voicemeeter-potato-parity.md
       - "Request checklist: audio, OBS, file manager, tray, roll-up, Wine": reference/qindaqt-request-checklist.md
+      - "Audio macro buttons": reference/audio-macro-buttons.md
+      - "Audio VBAN streams": reference/audio-vban-streams.md
       - Audio1 version 1 (historical): reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
       - Session1 version 1: reference/session1-v1.md
@@ -303,3 +305,6 @@ nav:
       - "ADR-0180: a bus has a rack too, and a strip hears clean": adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md
       - "ADR-0181: the tray rides the console": adr/0181-the-tray-rides-the-console.md
       - "ADR-0182: a preset is the console under a name": adr/0182-a-preset-is-the-console-under-a-name.md
+      - "ADR-0183: a macro button is a list of console operations": adr/0183-a-macro-button-is-a-list-of-console-operations.md
+      - "ADR-0184: the recorder is a stream and a writer thread": adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md
+      - "ADR-0185: VBAN is a document and two threads": adr/0185-vban-is-a-document-and-two-threads.md

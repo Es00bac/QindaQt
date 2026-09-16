@@ -30,6 +30,9 @@ private Q_SLOTS:
     void aRackIsDeclaredOnlyWhenActiveAndBound();
     void aBusRackNeedsItsOwnSinkAndOnlyOnAPhysicalBus();
     void presetsSaveLoadAndDeleteTheWholeConsole();
+    void aMacroRunsItsActionsAndStopsAtTheFirstRefusal();
+    void aRecordingIsOneBusToOneFileAndWithdrawsOnFailure();
+    void vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanRun();
 };
 
 // ADR-0174. A console that is not attached to the graph draws faders wired to
@@ -440,6 +443,159 @@ void AudioConsoleBindingTests::presetsSaveLoadAndDeleteTheWholeConsole()
     remove.displayName = QStringLiteral("Stream Night");
     QCOMPARE(coordinator.submit(remove).immediateResult.status, OperationStatus::Succeeded);
     QVERIFY(coordinator.snapshot().console.presets.isEmpty());
+}
+
+// ADR-0183. A macro is its actions, run as ordinary console operations.
+void AudioConsoleBindingTests::aMacroRunsItsActionsAndStopsAtTheFirstRefusal()
+{
+    QTemporaryDir dir;
+    const QString macroPath = dir.filePath(QStringLiteral("audio-macros.json"));
+    {
+        QFile file(macroPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(R"({"macros":[
+            {"name":"Stream","actions":[
+                {"op":"strip.mute","strip":"strip.hw.2","on":true},
+                {"op":"strip.gain","strip":"strip.hw.1","gainDb":-6},
+                {"op":"strip.gain","strip":"strip.hw.1","gainDb":500},
+                {"op":"strip.mute","strip":"strip.hw.3","on":true}]}]})");
+    }
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend, nullptr, dir.filePath(QStringLiteral("presets")),
+                                          macroPath);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    QCOMPARE(coordinator.snapshot().console.macros, QStringList{QStringLiteral("Stream")});
+
+    OperationRequest run;
+    run.kind = OperationKind::RunMacro;
+    run.displayName = QStringLiteral("Stream");
+    const OperationSubmission result = coordinator.submit(run);
+    // The third action is out of range: the first two applied, the macro
+    // stopped there and said why, and the fourth never ran.
+    QCOMPARE(result.immediateResult.status, OperationStatus::Rejected);
+    QCOMPARE(result.immediateResult.reasonCode, QStringLiteral("gain-out-of-range"));
+    const Console console = coordinator.snapshot().console;
+    QVERIFY(console.strips.at(1).muted);
+    QCOMPARE(console.strips.at(0).gainDb, -6.0);
+    QVERIFY(!console.strips.at(2).muted);
+
+    run.displayName = QStringLiteral("never written");
+    QCOMPARE(coordinator.submit(run).immediateResult.reasonCode, QStringLiteral("unknown-macro"));
+}
+
+// ADR-0184. One recording at a time, of a bound bus; the graph's failure
+// withdraws it so the console never shows a recording that is not happening.
+void AudioConsoleBindingTests::aRecordingIsOneBusToOneFileAndWithdrawsOnFailure()
+{
+    QTemporaryDir dir;
+    qputenv("QINDAQT_AUDIO_RECORDING_DIR", dir.path().toUtf8());
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    const Console console = coordinator.snapshot().console;
+    const QString bound = console.buses.at(0).id;
+    const QString unbound = console.buses.at(3).id;
+    QVERIFY(!console.buses.at(3).targetKnown);
+
+    OperationRequest start;
+    start.kind = OperationKind::StartRecording;
+    start.consoleId = unbound;
+    start.displayName = QStringLiteral("flac");
+    QCOMPARE(coordinator.submit(start).immediateResult.reasonCode, QStringLiteral("bus-unbound"));
+    start.consoleId = bound;
+    start.displayName = QStringLiteral("mp3");
+    QCOMPARE(coordinator.submit(start).immediateResult.reasonCode, QStringLiteral("unknown-format"));
+
+    start.displayName = QStringLiteral("flac");
+    QCOMPARE(coordinator.submit(start).immediateResult.status, OperationStatus::Succeeded);
+    const Recording recording = coordinator.snapshot().console.recording;
+    QVERIFY(recording.active);
+    QCOMPARE(recording.busId, bound);
+    QVERIFY(recording.path.startsWith(dir.path()));
+    QVERIFY(recording.path.endsWith(QStringLiteral(".flac")));
+    QVERIFY(recording.startedAtMs > 0);
+    QVERIFY(backend.recording.active);
+    QCOMPARE(backend.recording.target.serial, 10u);
+    QCOMPARE(backend.recording.format, QStringLiteral("flac"));
+    // One at a time.
+    QCOMPARE(coordinator.submit(start).immediateResult.reasonCode, QStringLiteral("recording-busy"));
+
+    backend.failRecording(QStringLiteral("recording-write-failed"));
+    QVERIFY(!coordinator.snapshot().console.recording.active);
+    QVERIFY(!backend.recording.active);
+
+    QCOMPARE(coordinator.submit(start).immediateResult.status, OperationStatus::Succeeded);
+    OperationRequest stop;
+    stop.kind = OperationKind::StopRecording;
+    QCOMPARE(coordinator.submit(stop).immediateResult.status, OperationStatus::Succeeded);
+    QVERIFY(!coordinator.snapshot().console.recording.active);
+    QVERIFY(!backend.recording.active);
+    qunsetenv("QINDAQT_AUDIO_RECORDING_DIR");
+}
+
+// ADR-0185. Streams come from the user's document; the console only switches
+// them, and only an enabled stream that can run reaches the graph.
+void AudioConsoleBindingTests::vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanRun()
+{
+    QTemporaryDir dir;
+    const QString vbanPath = dir.filePath(QStringLiteral("audio-vban.json"));
+    {
+        QFile file(vbanPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(R"({"outgoing":[
+            {"name":"Desk","bus":"bus.a1","host":"192.0.2.10","port":6980},
+            {"name":"Nowhere","bus":"bus.a5","host":"192.0.2.11"}],
+          "incoming":[{"name":"Laptop","port":6981},{"name":"bad name with spaces and more than sixteen","port":1}]})");
+    }
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend, nullptr, dir.filePath(QStringLiteral("p")),
+                                          dir.filePath(QStringLiteral("m.json")), vbanPath);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    const QList<VbanStream> published = coordinator.snapshot().console.vban;
+    QCOMPARE(published.size(), 3);
+    for (const VbanStream &stream : published) {
+        QVERIFY(!stream.enabled);
+        QVERIFY(!stream.active);
+    }
+    QVERIFY(backend.vban.isEmpty());
+
+    OperationRequest on;
+    on.kind = OperationKind::SetVbanEnabled;
+    on.enabled = true;
+    on.displayName = QStringLiteral("Desk");
+    QCOMPARE(coordinator.submit(on).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.vban.size(), 1);
+    QCOMPARE(backend.vban.at(0).name, QStringLiteral("Desk"));
+    QCOMPARE(backend.vban.at(0).target.serial, 10u);
+    QCOMPARE(backend.vban.at(0).host, QStringLiteral("192.0.2.10"));
+    // Enabled but its bus has no device: switched on, not running.
+    on.displayName = QStringLiteral("Nowhere");
+    QCOMPARE(coordinator.submit(on).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.vban.size(), 1);
+    on.displayName = QStringLiteral("Laptop");
+    QCOMPARE(coordinator.submit(on).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.vban.size(), 2);
+    bool desk = false, nowhere = false, laptop = false;
+    for (const VbanStream &stream : coordinator.snapshot().console.vban) {
+        if (stream.name == QStringLiteral("Desk")) desk = stream.enabled && stream.active;
+        if (stream.name == QStringLiteral("Nowhere")) nowhere = stream.enabled && !stream.active;
+        if (stream.name == QStringLiteral("Laptop")) laptop = stream.enabled && stream.active && !stream.outgoing;
+    }
+    QVERIFY(desk && nowhere && laptop);
+    on.displayName = QStringLiteral("never defined");
+    QCOMPARE(coordinator.submit(on).immediateResult.reasonCode, QStringLiteral("unknown-vban-stream"));
+
+    OperationRequest off = on;
+    off.displayName = QStringLiteral("Desk");
+    off.enabled = false;
+    QCOMPARE(coordinator.submit(off).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.vban.size(), 1);
+    // The switch is the user's decision and persists with the console.
+    QCOMPARE(coordinator.consoleModel().enabledVbanStreams(),
+             (QStringList{QStringLiteral("Nowhere"), QStringLiteral("Laptop")}));
 }
 
 QTEST_GUILESS_MAIN(AudioConsoleBindingTests)

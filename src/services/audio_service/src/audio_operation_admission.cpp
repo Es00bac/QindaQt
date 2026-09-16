@@ -114,6 +114,10 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
     case OperationKind::SavePreset:
     case OperationKind::LoadPreset:
     case OperationKind::DeletePreset:
+    case OperationKind::RunMacro:
+    case OperationKind::StartRecording:
+    case OperationKind::StopRecording:
+    case OperationKind::SetVbanEnabled:
         // Console operations (ADR-0173) are admitted by the console model,
         // which owns the strip and bus identities they name. There is no
         // device or stream handle here to pre-check against the snapshot.

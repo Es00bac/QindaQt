@@ -107,6 +107,8 @@ void registerDBusTypes()
     qRegisterMetaType<BusProcessing>();
     qRegisterMetaType<Strip>();
     qRegisterMetaType<Bus>();
+    qRegisterMetaType<Recording>();
+    qRegisterMetaType<VbanStream>();
     qRegisterMetaType<Console>();
     qRegisterMetaType<Snapshot>();
     qRegisterMetaType<OperationResult>();
@@ -130,6 +132,8 @@ void registerDBusTypes()
     qDBusRegisterMetaType<BusProcessing>();
     qDBusRegisterMetaType<Strip>();
     qDBusRegisterMetaType<Bus>();
+    qDBusRegisterMetaType<Recording>();
+    qDBusRegisterMetaType<VbanStream>();
     qDBusRegisterMetaType<Console>();
     qDBusRegisterMetaType<Snapshot>();
     qDBusRegisterMetaType<OperationResult>();
@@ -434,12 +438,47 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Bus &value)
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, const Recording &value)
+{
+    argument.beginStructure();
+    argument << value.active << value.busId << value.path << value.startedAtMs;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Recording &value)
+{
+    argument.beginStructure();
+    argument >> value.active >> value.busId >> value.path >> value.startedAtMs;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const VbanStream &value)
+{
+    argument.beginStructure();
+    argument << value.name << value.outgoing << value.busId << value.host << value.port
+             << value.enabled << value.active;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, VbanStream &value)
+{
+    argument.beginStructure();
+    argument >> value.name >> value.outgoing >> value.busId >> value.host >> value.port
+        >> value.enabled >> value.active;
+    argument.endStructure();
+    return argument;
+}
+
 QDBusArgument &operator<<(QDBusArgument &argument, const Console &value)
 {
     argument.beginStructure();
     writeArray(argument, value.strips);
     writeArray(argument, value.buses);
-    argument << value.soloActive << value.presets;
+    argument << value.soloActive << value.presets << value.macros << value.recording;
+    writeArray(argument, value.vban);
     argument.endStructure();
     return argument;
 }
@@ -450,7 +489,8 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Console &value)
     argument.beginStructure();
     readBoundedArray(argument, value.strips, kMaxStrips, value.wireValid);
     readBoundedArray(argument, value.buses, kMaxBuses, value.wireValid);
-    argument >> value.soloActive >> value.presets;
+    argument >> value.soloActive >> value.presets >> value.macros >> value.recording;
+    readBoundedArray(argument, value.vban, kMaxVbanStreams, value.wireValid);
     argument.endStructure();
     // AGENT-GUARD: a member that overflowed its own bound must invalidate the
     // whole console, or a client would publish a strip whose routing silently

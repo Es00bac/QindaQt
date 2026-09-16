@@ -38,6 +38,22 @@ qindaqt_enable_warnings(qindaqt_audio_console_endpoints_tests)
 add_test(NAME qindaqt.audio-console-endpoints COMMAND qindaqt_audio_console_endpoints_tests)
 set_tests_properties(qindaqt.audio-console-endpoints PROPERTIES LABELS "audio;service;pure")
 
+qt_add_executable(qindaqt_audio_vban_packet_tests tst_vban_packet.cpp)
+target_link_libraries(
+    qindaqt_audio_vban_packet_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_vban_packet_tests)
+add_test(NAME qindaqt.audio-vban-packet COMMAND qindaqt_audio_vban_packet_tests)
+set_tests_properties(qindaqt.audio-vban-packet PROPERTIES LABELS "audio;service;pure")
+
+qt_add_executable(qindaqt_audio_macro_store_tests tst_macro_store.cpp)
+target_link_libraries(
+    qindaqt_audio_macro_store_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_macro_store_tests)
+add_test(NAME qindaqt.audio-macro-store COMMAND qindaqt_audio_macro_store_tests)
+set_tests_properties(qindaqt.audio-macro-store PROPERTIES LABELS "audio;service;pure")
+
 qt_add_executable(qindaqt_audio_preset_store_tests tst_preset_store.cpp)
 target_link_libraries(
     qindaqt_audio_preset_store_tests PRIVATE QindaQt::AudioService Qt6::Test

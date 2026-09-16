@@ -3,7 +3,9 @@
 #pragma once
 
 #include <qindaqt/services/audio_service/console_model.h>
+#include <qindaqt/services/audio_service/macro_store.h>
 #include <qindaqt/services/audio_service/preset_store.h>
+#include <qindaqt/services/audio_service/vban_store.h>
 
 #include <qindaqt/services/audio_service/audio_backend.h>
 
@@ -33,7 +35,8 @@ public:
     // `presetDirectory` empty selects PresetStore::defaultDirectory(); a test
     // passes a temporary directory.
     explicit AudioOperationCoordinator(AudioBackend *backend, QObject *parent = nullptr,
-                                       QString presetDirectory = {});
+                                       QString presetDirectory = {}, QString macroPath = {},
+                                       QString vbanPath = {});
 
     [[nodiscard]] const Snapshot &snapshot() const noexcept;
     // The console this coordinator owns (ADR-0173). Exposed so a persistence
@@ -58,6 +61,7 @@ private Q_SLOTS:
                              const QindaQt::Audio::BackendOperationOutcome &outcome);
     void acceptLevels(quint64 generation,
                       const QList<QindaQt::Audio::LevelReading> &levels);
+    void acceptRecordingFailure(quint64 generation, const QString &reasonCode);
 
 private:
     struct PendingOperation {
@@ -77,6 +81,16 @@ private:
     // are whole documents through the preset store.
     [[nodiscard]] static bool isPresetOperation(OperationKind kind) noexcept;
     [[nodiscard]] QString applyPreset(const OperationRequest &request);
+    // Runs a macro's actions in order as ordinary console operations; stops
+    // at the first one refused and reports its reason (ADR-0183).
+    [[nodiscard]] QString runMacro(const OperationRequest &request);
+    // The recorder (ADR-0184): one recording at a time, declared to the backend.
+    [[nodiscard]] QString applyRecordingRequest(const OperationRequest &request);
+    void publishRecording();
+    // VBAN (ADR-0185): the defined streams with the user's switches, declared
+    // to the backend when enabled and, for an outgoing one, bound.
+    [[nodiscard]] QList<VbanStream> vbanStreams() const;
+    void publishVban();
     // Republishes the snapshot with the console's current value folded in.
     void republishConsole();
     // Re-derives the backend routing from the console and the currently
@@ -103,6 +117,11 @@ private:
     Snapshot m_snapshot;
     ConsoleModel m_console;
     PresetStore m_presets;
+    MacroStore m_macros;
+    VbanStore m_vban;
+    QList<BackendVbanStream> m_publishedVban;
+    Recording m_recording;
+    BackendRecording m_publishedRecording;
     QList<BackendRoutingEdge> m_publishedRouting;
     QList<BackendMeterTarget> m_publishedMetering;
     QList<BackendConsoleEndpoint> m_publishedEndpoints;

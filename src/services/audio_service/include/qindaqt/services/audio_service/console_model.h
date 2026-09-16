@@ -84,6 +84,12 @@ public:
     };
     [[nodiscard]] QList<RoutingEdge> routing() const;
 
+    // VBAN switches (ADR-0185): which stream names the user has enabled. The
+    // streams themselves are defined elsewhere; this is only the user's
+    // decision about each, persisted with the rest.
+    [[nodiscard]] QStringList enabledVbanStreams() const { return m_enabledVban; }
+    void setVbanEnabled(const QString &name, bool enabled);
+
     // Persistence. The document carries only the user's decisions - labels,
     // gains, mutes, routing - never live device handles or meter readings.
     [[nodiscard]] QJsonObject toJson() const;
@@ -99,6 +105,7 @@ private:
 
     QList<Strip> m_strips;
     QList<Bus> m_buses;
+    QStringList m_enabledVban;
 };
 
 } // namespace QindaQt::Audio

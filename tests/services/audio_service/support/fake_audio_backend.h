@@ -62,6 +62,18 @@ public:
     {
         busProcessing = chains;
     }
+    void applyVban(const QList<Audio::BackendVbanStream> &streams) override
+    {
+        vban = streams;
+    }
+    void applyRecording(const Audio::BackendRecording &declared) override
+    {
+        recording = declared;
+    }
+    void failRecording(const QString &reason)
+    {
+        Q_EMIT recordingFailed(generation, reason);
+    }
 
     void publishLevels(const QList<Audio::LevelReading> &levels)
     {
@@ -103,6 +115,8 @@ public:
     QList<Audio::BackendConsoleEndpoint> endpoints;
     QList<Audio::BackendProcessingChain> processing;
     QList<Audio::BackendBusChain> busProcessing;
+    Audio::BackendRecording recording;
+    QList<Audio::BackendVbanStream> vban;
     int processingCalls = 0;
     int endpointCalls = 0;
     int routingCalls = 0;

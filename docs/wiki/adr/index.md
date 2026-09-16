@@ -185,3 +185,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0180: a bus has a rack too, and a strip hears clean](0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)
 - [ADR-0181: the tray rides the console](0181-the-tray-rides-the-console.md)
 - [ADR-0182: a preset is the console under a name](0182-a-preset-is-the-console-under-a-name.md)
+- [ADR-0183: a macro button is a list of console operations](0183-a-macro-button-is-a-list-of-console-operations.md)
+- [ADR-0184: the recorder is a stream and a writer thread](0184-the-recorder-is-a-stream-and-a-writer-thread.md)
+- [ADR-0185: VBAN is a document and two threads](0185-vban-is-a-document-and-two-threads.md)

@@ -88,11 +88,13 @@ WirePlumberWorker::WirePlumberWorker(const quint64 initialEpoch,
                                      SnapshotCallback snapshotCallback,
                                      OutcomeCallback outcomeCallback,
                                      LevelsCallback levelsCallback,
-                                     WirePlumberWorkerLifecycleHooks lifecycleHooks)
+                                     WirePlumberWorkerLifecycleHooks lifecycleHooks,
+                                     RecordingFailedCallback recordingFailedCallback)
     : m_epoch(initialEpoch == 0 ? 1 : initialEpoch)
     , m_snapshotCallback(std::move(snapshotCallback))
     , m_outcomeCallback(std::move(outcomeCallback))
     , m_levelsCallback(std::move(levelsCallback))
+    , m_recordingFailedCallback(std::move(recordingFailedCallback))
     , m_lifecycleHooks(std::move(lifecycleHooks))
 {
 }
@@ -393,6 +395,9 @@ void WirePlumberWorker::rebuild()
     applyProcessingOnWorker(m_declaredProcessing);
     applyBusProcessingOnWorker(m_declaredBusProcessing);
     applyRoutingOnWorker(m_declaredRouting);
+    // A recording declared before its device was in the graph starts now.
+    applyRecordingOnWorker(m_declaredRecording);
+    applyVbanOnWorker(m_declaredVban);
     applySendVolumes();
     // Same reasoning for meters: a device that just appeared is now readable,
     // and a daemon replacement destroyed every capture stream this worker had.
@@ -548,6 +553,10 @@ void WirePlumberWorker::cleanupCore()
     // are loaded into THIS pw_context; leaving them would either leak modules
     // across a reconnect or destroy them against a context that no longer
     // exists. The declared routing is kept so the next connection rebuilds it.
+    // A recording ends with the core: its stream lives in this context. The
+    // file it wrote stays complete.
+    m_recorder.stop();
+    stopAllVban();
     unloadAllRouting();
     unloadAllProcessing();
     unloadAllEndpoints();

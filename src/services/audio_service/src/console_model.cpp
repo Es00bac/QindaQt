@@ -468,6 +468,15 @@ QList<ConsoleModel::RoutingEdge> ConsoleModel::routing() const
     return edges;
 }
 
+void ConsoleModel::setVbanEnabled(const QString &name, const bool enabled)
+{
+    m_enabledVban.removeAll(name);
+    if (enabled && isBoundedText(name, kMaxVbanNameUtf8Bytes) && !name.isEmpty()
+        && m_enabledVban.size() < kMaxVbanStreams) {
+        m_enabledVban.append(name);
+    }
+}
+
 QJsonObject ConsoleModel::toJson() const
 {
     QJsonArray strips;
@@ -508,11 +517,16 @@ QJsonObject ConsoleModel::toJson() const
     }
     return QJsonObject{{QStringLiteral("schemaVersion"), int(kSchemaVersion)},
                        {QStringLiteral("strips"), strips},
-                       {QStringLiteral("buses"), buses}};
+                       {QStringLiteral("buses"), buses},
+                       {QStringLiteral("vbanEnabled"), QJsonArray::fromStringList(m_enabledVban)}};
 }
 
 void ConsoleModel::loadJson(const QJsonObject &document)
 {
+    m_enabledVban.clear();
+    for (const QJsonValue &value : document.value(QStringLiteral("vbanEnabled")).toArray()) {
+        setVbanEnabled(value.toString(), true);
+    }
     const auto readGain = [](const QJsonValue &value, double fallback) {
         const double candidate = value.toDouble(fallback);
         return finiteGain(candidate) ? candidate : fallback;

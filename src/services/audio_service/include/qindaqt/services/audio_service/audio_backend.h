@@ -115,6 +115,31 @@ struct BackendBusChain {
     friend bool operator==(const BackendBusChain &, const BackendBusChain &) = default;
 };
 
+// The one recording the console wants running (ADR-0184), or none.
+struct BackendRecording {
+    bool active = false;
+    QString busId;
+    // The node to read: the bus's device, from its monitor.
+    Handle target;
+    QString path;
+    // "flac" or "wav".
+    QString format;
+
+    friend bool operator==(const BackendRecording &, const BackendRecording &) = default;
+};
+
+// One VBAN stream the graph should carry (ADR-0185).
+struct BackendVbanStream {
+    QString name;
+    bool outgoing = true;
+    // Outgoing: the bus's device, read from its monitor. Incoming: unused.
+    Handle target;
+    QString host;
+    quint32 port = 6980;
+
+    friend bool operator==(const BackendVbanStream &, const BackendVbanStream &) = default;
+};
+
 // AGENT-CONTRACT: Implementations receive requests on the Qt main thread and
 // publish only immutable value copies through these signals. start() returns a
 // fresh nonzero generation before that run can publish; every value carries the
@@ -172,6 +197,14 @@ public:
     {
         Q_UNUSED(chains)
     }
+    virtual void applyRecording(const BackendRecording &recording)
+    {
+        Q_UNUSED(recording)
+    }
+    virtual void applyVban(const QList<BackendVbanStream> &streams)
+    {
+        Q_UNUSED(streams)
+    }
 
 Q_SIGNALS:
     void snapshotReady(quint64 generation,
@@ -182,6 +215,9 @@ Q_SIGNALS:
     // levels must not force a snapshot revision (see LevelReading).
     void levelsReady(quint64 generation,
                      const QList<QindaQt::Audio::LevelReading> &levels);
+    // The recording stopped on its own (a write error, the file system full);
+    // the console must withdraw it rather than show a recording that is not.
+    void recordingFailed(quint64 generation, const QString &reasonCode);
 };
 
 } // namespace QindaQt::Audio

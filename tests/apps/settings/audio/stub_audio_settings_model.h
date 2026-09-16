@@ -50,6 +50,9 @@ class StubAudioSettingsModel final : public QObject {
   Q_PROPERTY(QVariantMap consoleLevels MEMBER consoleLevels NOTIFY
                  consoleLevelsChanged)
   Q_PROPERTY(QStringList consolePresets MEMBER consolePresets NOTIFY viewChanged)
+  Q_PROPERTY(QStringList consoleMacros MEMBER consoleMacros NOTIFY viewChanged)
+  Q_PROPERTY(QVariantMap consoleRecording MEMBER consoleRecording NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList consoleVban MEMBER consoleVban NOTIFY viewChanged)
 
 public:
   bool loading = false;
@@ -80,6 +83,23 @@ public:
   QVariantMap consoleLevels;
   QStringList consolePresets = {QStringLiteral("Stream night"), QStringLiteral("Podcast")};
   QString lastPresetName;
+  QStringList consoleMacros = {QStringLiteral("Mute mic")};
+  QString lastMacroName;
+  QVariantMap consoleRecording = {{QStringLiteral("active"), false},
+                                  {QStringLiteral("busId"), QString()},
+                                  {QStringLiteral("path"), QString()},
+                                  {QStringLiteral("startedAtMs"), qulonglong(0)}};
+  QString lastRecordingBus;
+  bool recordingStopped = false;
+  QVariantList consoleVban = {QVariantMap{{QStringLiteral("name"), QStringLiteral("Stream1")},
+                                          {QStringLiteral("outgoing"), true},
+                                          {QStringLiteral("busId"), QStringLiteral("bus.a2")},
+                                          {QStringLiteral("host"), QStringLiteral("192.0.2.1")},
+                                          {QStringLiteral("port"), 6980},
+                                          {QStringLiteral("enabled"), false},
+                                          {QStringLiteral("active"), false}}};
+  QString lastVbanName;
+  bool lastVbanEnabled = false;
   QString lastConsoleId;
   double lastFaderPosition = -1.0;
   bool lastConsoleFlag = false;
@@ -182,6 +202,23 @@ public:
   }
   Q_INVOKABLE bool deletePreset(QString name) {
     lastPresetName = name;
+    return true;
+  }
+  Q_INVOKABLE bool setVbanEnabled(QString name, bool enabled) {
+    lastVbanName = name;
+    lastVbanEnabled = enabled;
+    return true;
+  }
+  Q_INVOKABLE bool startRecording(QString busId, QString format) {
+    lastRecordingBus = busId + QStringLiteral(".") + format;
+    return true;
+  }
+  Q_INVOKABLE bool stopRecording() {
+    recordingStopped = true;
+    return true;
+  }
+  Q_INVOKABLE bool runMacro(QString name) {
+    lastMacroName = name;
     return true;
   }
   Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing) {

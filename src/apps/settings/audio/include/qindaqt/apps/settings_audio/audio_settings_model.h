@@ -61,6 +61,9 @@ class AudioSettingsModel final : public QObject {
   // view signal would rebuild every strip and bus delegate at meter rate.
   Q_PROPERTY(QVariantMap consoleLevels READ consoleLevels NOTIFY consoleLevelsChanged)
   Q_PROPERTY(QStringList consolePresets READ consolePresets NOTIFY viewChanged)
+  Q_PROPERTY(QStringList consoleMacros READ consoleMacros NOTIFY viewChanged)
+  Q_PROPERTY(QVariantMap consoleRecording READ consoleRecording NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList consoleVban READ consoleVban NOTIFY viewChanged)
 
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
@@ -81,6 +84,9 @@ public:
   // already holds, so the first read is correct before any reading arrives.
   [[nodiscard]] QVariantMap consoleLevels() const;
   [[nodiscard]] QStringList consolePresets() const;
+  [[nodiscard]] QStringList consoleMacros() const;
+  [[nodiscard]] QVariantMap consoleRecording() const;
+  [[nodiscard]] QVariantList consoleVban() const;
 
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const;
@@ -140,6 +146,13 @@ public:
   Q_INVOKABLE bool savePreset(QString name);
   Q_INVOKABLE bool loadPreset(QString name);
   Q_INVOKABLE bool deletePreset(QString name);
+  // Runs a macro button (ADR-0183).
+  Q_INVOKABLE bool runMacro(QString name);
+  // The recorder (ADR-0184): one bus at a time, "flac" or "wav".
+  Q_INVOKABLE bool startRecording(QString busId, QString format);
+  Q_INVOKABLE bool stopRecording();
+  // VBAN (ADR-0185): switch a defined stream on or off.
+  Q_INVOKABLE bool setVbanEnabled(QString name, bool enabled);
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
   Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);
   Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);
