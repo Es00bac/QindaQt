@@ -170,3 +170,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0165: workspace picker slots replaced by launched applications](0165-workspace-picker-slots-replaced-by-launched-applications.md)
 - [ADR-0166: announce a StatusNotifier host, not only a watcher](0166-announce-a-status-notifier-host.md)
 - [ADR-0167: one desktop across every output](0167-one-desktop-across-every-output.md)
+- [ADR-0168: a generated container name never displaces a real title](0168-a-generated-name-never-displaces-a-real-title.md)

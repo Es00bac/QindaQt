@@ -259,11 +259,17 @@ complete outer frame. Close opens a nonblocking **Close All**, **Ungroup**, or
 same atomic release path as detach and teardown. The shade control rolls the
 whole group up to a compact identity badge at its current position. Its width
 shrinks to the metric-derived control/label/tab-pill footprint, capped by the
-former container width; the badge uses the container color, the container
-name (the rename override, else a stable generated `Container N`,
-[ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
-plus the active-page label, and up to eight page pills plus a bounded
-overflow counter.
+former container width; the badge uses the container color, and up to eight page pills plus a bounded
+overflow counter. Its label spends the reserved 48-140 px on whichever text the
+user can actually recognise
+([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)): a
+container the user renamed reads `<name> · <active page>`, a container that was
+never renamed reads the active page title alone, and the stable generated
+`Container N`
+([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
+appears only when there is no page title to show. A generated placeholder is
+never prefixed to real text - doing so elided the page title out of the badge,
+so a title readable on the unrolled row vanished when rolled up.
 No member is minimized (the container never becomes one collapsed dock
 entry) and no member's real frame is resized, but every member's content and
 pointer input are genuinely hidden while shaded, and only the shared-chrome

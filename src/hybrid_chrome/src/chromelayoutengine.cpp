@@ -332,6 +332,7 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     plan.containerFocused = request.containerFocused;
     plan.memberTitlesVisible = request.memberTitlesVisible;
     plan.containerTitle = request.containerTitle;
+    plan.containerTitleIsGenerated = request.containerTitleIsGenerated;
     // AGENT-CONTRACT: Shades resolve exactly once here so the renderer, the
     // shaded badge, and the Appearance preview all paint identical values
     // (ADR-0139). An invalid identityColor resolves through the theme accent.

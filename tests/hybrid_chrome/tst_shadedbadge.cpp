@@ -14,6 +14,32 @@ using namespace QindaQt::HybridChrome;
 
 namespace {
 
+// The label the badge would paint, resolved by the same rule paint() uses.
+// Asserting the text keeps the intent legible where a pixel probe would only
+// say "some ink appeared".
+QString badgeLabelText(const ChromeRenderPlan &plan)
+{
+    QString foremost;
+    for (const auto &tab : plan.tabs) {
+        if (tab.active) {
+            foremost = tab.title;
+            break;
+        }
+    }
+    if (foremost.isEmpty() && !plan.tabs.isEmpty()) {
+        foremost = plan.tabs.constFirst().title;
+    }
+    if (plan.containerTitle.isEmpty()) {
+        return foremost;
+    }
+    if (!plan.containerTitleIsGenerated) {
+        return foremost.isEmpty()
+            ? plan.containerTitle
+            : plan.containerTitle + QStringLiteral(" \u00B7 ") + foremost;
+    }
+    return foremost.isEmpty() ? plan.containerTitle : foremost;
+}
+
 ChromeRenderPlan badgePlan(qsizetype tabCount)
 {
     ChromeLayoutRequest request;
@@ -150,6 +176,49 @@ private slots:
                 ? QStringLiteral("empty-title fallback label did not paint")
                 : QStringLiteral("generated-name label did not paint")));
         }
+    }
+
+    // ADR-0168 regression for the reported "name shows on the container window,
+    // disappears when rolled up, unrolling brings it back". ADR-0163 made the
+    // session pass a GENERATED "Container N" whenever no rename existed, and
+    // the badge prefixed it unconditionally. The label rect is 48-140 px, so
+    // "Container 7 \u00B7 " consumed most of it and elided the page title - the
+    // only text the user recognised - out of the badge. A generated placeholder
+    // must never displace real text.
+    void generatedNameNeverDisplacesTheRealTitle()
+    {
+        const QString pageTitle = QStringLiteral("Quarterly Planning Notes");
+
+        ChromeLayoutRequest generated;
+        generated.containerId = QStringLiteral("container-shaded");
+        generated.outerRect = QRectF(0.0, 0.0,
+                                     ChromeShadedBadge::badgeWidth(ChromeMetrics{}, 1)
+                                         + 2.0 * ChromeMetrics{}.outerBorder,
+                                     31.0);
+        generated.shaded = true;
+        generated.containerTitle = QStringLiteral("Container 7");
+        generated.containerTitleIsGenerated = true;
+        generated.tabs = {{QStringLiteral("page-a"), pageTitle, true}};
+        const auto generatedPlan = ChromeLayoutEngine::build(generated);
+        QVERIFY(generatedPlan);
+        QCOMPARE(badgeLabelText(*generatedPlan), pageTitle);
+
+        // A container the user actually named keeps the name, ahead of the page.
+        ChromeLayoutRequest renamed = generated;
+        renamed.containerTitle = QStringLiteral("Planning");
+        renamed.containerTitleIsGenerated = false;
+        const auto renamedPlan = ChromeLayoutEngine::build(renamed);
+        QVERIFY(renamedPlan);
+        QCOMPARE(badgeLabelText(*renamedPlan),
+                 QStringLiteral("Planning \u00B7 ") + pageTitle);
+
+        // ADR-0163's promise still holds: with no page title to show, the
+        // generated placeholder is what keeps the badge from being anonymous.
+        ChromeLayoutRequest anonymous = generated;
+        anonymous.tabs = {{QStringLiteral("page-a"), QString(), true}};
+        const auto anonymousPlan = ChromeLayoutEngine::build(anonymous);
+        QVERIFY(anonymousPlan);
+        QCOMPARE(badgeLabelText(*anonymousPlan), QStringLiteral("Container 7"));
     }
 
     void badgeUnsetIdentityUsesAccentDerivation()

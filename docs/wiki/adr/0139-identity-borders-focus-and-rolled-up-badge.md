@@ -2,8 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-09-11
-- Superseded by: ADR-0163 (badge label clause only — the label format;
-  every other decision here stands)
+- Superseded by: ADR-0163, then ADR-0168 (badge label clause only — the label
+  format; every other decision here stands)
 
 ## Context
 
