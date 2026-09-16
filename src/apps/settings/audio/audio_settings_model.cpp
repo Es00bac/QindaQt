@@ -82,6 +82,10 @@ AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
           &AudioSettingsModel::viewChanged);
   connect(&m_client, &AudioClient::operationCompleted, this,
           &AudioSettingsModel::handleOperationCompleted);
+  // Meters get their own narrow notification so a level frame never rebuilds
+  // the whole view (ADR-0174).
+  connect(&m_client, &AudioClient::levelsChanged, this,
+          &AudioSettingsModel::consoleLevelsChanged);
 }
 
 bool AudioSettingsModel::loading() const noexcept {

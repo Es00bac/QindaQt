@@ -213,9 +213,19 @@ void AudioProtocolTests::fixedSignatures()
              "((tt)ussdbbbbbbadasb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Stream>()),
              "((tt)uss(tt)bdbbbbbbadas)");
+    // The console (ADR-0173) and the meter reading (ADR-0174) are part of the
+    // fixed wire shape: pinning them here is what makes a field added in the
+    // middle of a struct a loud failure instead of a silent reinterpretation on
+    // a client built against the older definition.
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Level>()), "(ddb)");
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<LevelReading>()),
+             "(s(ddb))");
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
+             "(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
              "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)"
-             "a((tt)uss(tt)bdbbbbbbadas))");
+             "a((tt)uss(tt)bdbbbbbbadas)"
+             "(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }

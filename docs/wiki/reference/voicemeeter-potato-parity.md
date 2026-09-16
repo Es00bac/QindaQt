@@ -27,14 +27,14 @@ carries the whole processing chain below.
 | --- | --- | --- |
 | 5 hardware input strips | `Strip` with `StripKind::HardwareInput`, following a capture device | **done** |
 | 3 virtual input strips (VAIO / AUX / VAIO3) | `Strip` with `StripKind::VirtualInput` over managed null sinks, so each application gets its own fader | **done** |
-| Per-strip device selection | `SetStripSource` against the device slice | planned |
+| Per-strip device selection | Hardware strips follow the graph automatically, default device first ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)); an explicit `SetStripSource` pin is still planned | partial |
 | Fader with dB readout | `Strip::gainDb`, one gain law ([ADR-0171](../adr/0171-one-gain-law-for-the-audio-console.md)) | **done** |
 | Mute | `Strip::muted` | **done** |
 | Solo | `Strip::soloed` + published `Console::soloActive` | **done** |
 | Mono | `Strip::mono` | **done** |
 | Pan / Intellipan | `Strip::pan` on the wire and in the model; the 2D pan needs a second axis for surround, and pan is not yet applied to the graph | partial |
 | Per-channel gain/trim | `Strip::channelTrimDb` | planned |
-| Level meters (per strip) | `Strip::level`, dBFS peak + RMS; on the wire, validated and drawn, but nothing publishes readings yet | partial |
+| Level meters (per strip) | Real dBFS peak + RMS from a `pw_stream` capture per bound strip, streamed on the `Levels` signal ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) with a falling peak marker | **done** |
 | Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | **done** |
 | Per-send gain | `MatrixSend::gainDb` — the matrix is not just on/off; realised as the loopback's volume | **done** |
 | Gate | `filter-chain` gate node; threshold, attack, hold, release, sidechain BP | gap |
@@ -60,7 +60,7 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | Per-bus device selection | `SetBusTarget` | planned |
 | Fader with dB readout | `Bus::gainDb` | **done** |
 | Mute / Mono | `Bus::muted`, `Bus::mono` | **done** |
-| Level meters | `Bus::level`; on the wire and drawn, no readings published yet | partial |
+| Level meters | Real dBFS peak + RMS, read from the bus device's monitor ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) | **done** |
 | Bus EQ (6-band parametric, per channel) | `filter-chain` EQ per bus, with memory slots | gap |
 | Bus modes (Normal, Amix, Bmix, Repeat, Composite, TV Mix, Upmix 2.1/4.1/6.1, Center/LFE/Rear only) | channel-matrix mode per bus | gap |
 | Per-bus monitoring delay (Bluetooth/HDMI alignment) | `filter-chain` delay, 0–500 ms — ADR-0123 slice S2 | planned |
@@ -117,9 +117,15 @@ than describing an intention. Mute, solo and bus mute silence an edge without
 tearing it down. The console persists, survives its devices disappearing, and
 is operated from the Settings Audio route.
 
-What is emphatically not here yet: metering publishes no readings, pan is
-modelled but not applied to the graph, and every per-strip and per-bus processor
-— gate, denoiser, compressor, limiter, EQ, bus modes — is a **gap**, as are the
-recorder, VBAN and macro buttons.
+Meters are real. Hardware strips and physical buses attach themselves to the
+graph out of the box, and each bound endpoint is read by its own capture stream
+whose peak and RMS stream to every surface on a dedicated `Levels` signal
+([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)).
+
+What is emphatically not here yet: virtual strips and buses have no managed
+sinks, so they neither carry audio nor meter; pan is modelled but not applied to
+the graph; and every per-strip and per-bus processor — gate, denoiser,
+compressor, limiter, EQ, bus modes — is a **gap**, as are the recorder, VBAN and
+macro buttons.
 
 This page exists so that distance is visible rather than implied.

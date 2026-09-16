@@ -38,6 +38,7 @@ private slots:
     void routingCarriesPerSendGain();
     void soloSilencesWithoutTearingRoutingDown();
     void aDisabledSendKeepsItsGain();
+    void meterBatchesApplyClearAndRejectStrangers();
     void persistenceRoundTripsTheUsersDecisions();
     void aCorruptDocumentLoadsWhatItCan();
 };
@@ -282,6 +283,52 @@ void ConsoleModelTests::aCorruptDocumentLoadsWhatItCan()
     QCOMPARE(model.console().strips.at(0).gainDb, 0.0);
     QCOMPARE(model.console().strips.at(2).gainDb, -7.5);
     QVERIFY(validateConsole(model.console()).accepted);
+}
+
+// ADR-0174. Meters arrive as whole batches at frame rate, so the batch itself
+// is the unit that has to behave: it applies to whatever it names, it rejects
+// anything it should not have named, and an empty batch means metering stopped.
+void ConsoleModelTests::meterBatchesApplyClearAndRejectStrangers()
+{
+    ConsoleModel model;
+    const QString stripId = model.console().strips.at(0).id;
+    const QString busId = model.console().buses.at(0).id;
+
+    QVERIFY(model.publishLevels(
+        {LevelReading{stripId, Level{.peakDb = -6.0, .rmsDb = -12.0, .known = true}},
+         LevelReading{busId, Level{.peakDb = -2.0, .rmsDb = -9.0, .known = true}},
+         // Names nothing this console publishes: a meter must never bring an
+         // element into existence.
+         LevelReading{QStringLiteral("strip.invented"),
+                      Level{.peakDb = -1.0, .rmsDb = -1.0, .known = true}}}));
+    Console console = model.console();
+    QCOMPARE(console.strips.at(0).level.peakDb, -6.0);
+    QCOMPARE(console.strips.at(0).level.rmsDb, -12.0);
+    QVERIFY(console.strips.at(0).level.known);
+    QCOMPARE(console.buses.at(0).level.peakDb, -2.0);
+    QCOMPARE(console.strips.size(), model.console().strips.size());
+    QVERIFY(validateConsole(console).accepted);
+
+    // An identical batch changes nothing, which is what lets the service skip
+    // resending a still console.
+    QVERIFY(!model.publishLevels(
+        {LevelReading{stripId, Level{.peakDb = -6.0, .rmsDb = -12.0, .known = true}},
+         LevelReading{busId, Level{.peakDb = -2.0, .rmsDb = -9.0, .known = true}}}));
+
+    // An RMS above its own peak is impossible and is refused outright rather
+    // than clamped, so a malformed producer cannot move the meter at all.
+    QVERIFY(!model.publishLevels(
+        {LevelReading{stripId, Level{.peakDb = -20.0, .rmsDb = -3.0, .known = true}}}));
+    QCOMPARE(model.console().strips.at(0).level.peakDb, -6.0);
+
+    // Empty batch: metering stopped, so every meter goes back to unknown
+    // instead of freezing on its last reading.
+    QVERIFY(model.publishLevels({}));
+    console = model.console();
+    QVERIFY(!console.strips.at(0).level.known);
+    QVERIFY(!console.buses.at(0).level.known);
+    QCOMPARE(console.strips.at(0).level.peakDb, kSilentMeterDb);
+    QVERIFY(!model.publishLevels({}));
 }
 
 QTEST_APPLESS_MAIN(ConsoleModelTests)

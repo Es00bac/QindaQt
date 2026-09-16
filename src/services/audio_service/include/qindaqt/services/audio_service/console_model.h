@@ -57,6 +57,11 @@ public:
     // off the top of its scale.
     void publishStripLevel(const QString &stripId, Level level);
     void publishBusLevel(const QString &busId, Level level);
+    // Applies a whole batch of readings, whichever elements they name. An EMPTY
+    // batch means metering has stopped and every meter goes back to unknown, so
+    // a console shows an idle meter rather than freezing on its last reading.
+    // Returns true when anything actually changed.
+    [[nodiscard]] bool publishLevels(const QList<LevelReading> &levels);
 
     // The routing the console currently implies: one entry per ENABLED send,
     // in a deterministic order. The backend diffs this against the graph it has

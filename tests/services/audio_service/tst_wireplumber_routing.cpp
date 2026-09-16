@@ -47,7 +47,7 @@ void WirePlumberRoutingTests::argumentsNameBothEndpointsAndTheSend()
     const QByteArray arguments = routingModuleArguments(
         QStringLiteral("strip.virtual.1"), QStringLiteral("bus.b1"),
         QStringLiteral("alsa_input.pci-0000_00_1f.3.analog-stereo"),
-        QStringLiteral("qindaqt.virtual.bus.b1"), 1.0);
+        QStringLiteral("qindaqt.virtual.bus.b1"), true, 1.0);
     QVERIFY(!arguments.isEmpty());
     const QString text = QString::fromUtf8(arguments);
     // Capture from the strip's node, playback into the bus's node: a send that
@@ -59,9 +59,25 @@ void WirePlumberRoutingTests::argumentsNameBothEndpointsAndTheSend()
     QVERIFY(text.contains(QStringLiteral("qindaqt.virtual.bus.b1")));
     QVERIFY(text.contains(routingNodeName(QStringLiteral("strip.virtual.1"),
                                           QStringLiteral("bus.b1"))));
-    // A strip is a SINK the applications play into, so the capture side has to
-    // take its monitor rather than treat it as a source.
+    // A VIRTUAL strip is a SINK the applications play into, so the capture side
+    // has to take its monitor rather than treat it as a source.
     QVERIFY(text.contains(QStringLiteral("stream.capture.sink = true")));
+    // AGENT-GUARD: target.object, not the deprecated node.target - only
+    // target.object resolves a node name, and node.target silently attaches the
+    // send to the default device instead.
+    QVERIFY(!text.contains(QStringLiteral("node.target")));
+    // AGENT-GUARD: an enabled cell must actually carry audio. A passive link
+    // will not resume a suspended device, so a passive send is a routing the
+    // console draws and never plays.
+    QVERIFY(!text.contains(QStringLiteral("node.passive")));
+
+    // A HARDWARE strip is a capture source, and asking for its monitor finds
+    // nothing at all.
+    const QString hardware = QString::fromUtf8(routingModuleArguments(
+        QStringLiteral("strip.hw.1"), QStringLiteral("bus.a1"),
+        QStringLiteral("alsa_input.pci-0000_00_1f.3.analog-stereo"),
+        QStringLiteral("alsa_output.pci-0000_00_1f.3.analog-stereo"), false, 1.0));
+    QVERIFY(hardware.contains(QStringLiteral("stream.capture.sink = false")));
 
     // AGENT-GUARD: the PLAYBACK node carries the send's own name, because that
     // is the node whose volume is this cell's gain and the worker finds it by
@@ -85,11 +101,11 @@ void WirePlumberRoutingTests::hostileDeviceNamesCannotInjectProperties()
     QVERIFY(!routingNameIsEmbeddable(crafted));
     QVERIFY(routingModuleArguments(QStringLiteral("strip.hw.1"),
                                    QStringLiteral("bus.a1"), crafted,
-                                   QStringLiteral("sink"), 1.0)
+                                   QStringLiteral("sink"), false, 1.0)
                 .isEmpty());
     QVERIFY(routingModuleArguments(QStringLiteral("strip.hw.1"),
                                    QStringLiteral("bus.a1"),
-                                   QStringLiteral("source"), crafted, 1.0)
+                                   QStringLiteral("source"), crafted, false, 1.0)
                 .isEmpty());
     QVERIFY(!routingNameIsEmbeddable(QStringLiteral("back\\slash")));
     QVERIFY(!routingNameIsEmbeddable(QStringLiteral("new\nline")));
@@ -102,7 +118,7 @@ void WirePlumberRoutingTests::unusableNamesProduceNoArguments()
                                              QLatin1Char('x'))));
     QVERIFY(routingModuleArguments(QStringLiteral("strip.hw.1"),
                                    QStringLiteral("bus.a1"), QString(),
-                                   QStringLiteral("sink"), 1.0)
+                                   QStringLiteral("sink"), false, 1.0)
                 .isEmpty());
     // An ordinary name with dots, dashes and digits stays usable.
     QVERIFY(routingNameIsEmbeddable(

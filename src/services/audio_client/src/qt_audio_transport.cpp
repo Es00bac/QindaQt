@@ -180,6 +180,10 @@ void QtAudioTransport::setOwner(const QString &owner)
                                  QString::fromLatin1(kInterfaceName),
                                  QStringLiteral("Changed"), this,
                                  SLOT(onChanged(quint64,quint64)));
+        d->connection.disconnect(
+            d->owner, QString::fromLatin1(kObjectPath),
+            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
+            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
     }
     d->ownerResolved = true;
     d->owner = owner;
@@ -188,6 +192,10 @@ void QtAudioTransport::setOwner(const QString &owner)
                               QString::fromLatin1(kInterfaceName),
                               QStringLiteral("Changed"), this,
                               SLOT(onChanged(quint64,quint64)));
+        d->connection.connect(
+            d->owner, QString::fromLatin1(kObjectPath),
+            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
+            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
     }
     Q_EMIT ownerChanged(d->owner);
 }
@@ -196,6 +204,13 @@ void QtAudioTransport::onChanged(const quint64 epoch, const quint64 revision)
 {
     if (d->running && !d->owner.isEmpty()) {
         Q_EMIT invalidated(d->owner, epoch, revision);
+    }
+}
+
+void QtAudioTransport::onLevels(const QList<LevelReading> &levels)
+{
+    if (d->running && !d->owner.isEmpty()) {
+        Q_EMIT levelsReceived(d->owner, levels);
     }
 }
 

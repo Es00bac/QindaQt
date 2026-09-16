@@ -57,7 +57,9 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"SetBusMono\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"mono\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetBusTarget\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
-        "name=\"revision\" type=\"t\"/></signal></interface>")
+        "name=\"revision\" type=\"t\"/></signal>"
+        "<signal name=\"Levels\"><arg name=\"levels\" type=\"a(s(ddb))\"/>"
+        "</signal></interface>")
 
 public:
     explicit AudioServiceObject(AudioOperationCoordinator *coordinator,
@@ -96,6 +98,10 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);
+    // Meter readings at meter rate. Deliberately NOT accompanied by a lineage
+    // change: a client applies these onto the snapshot it already holds, and a
+    // missed batch is simply a skipped frame of animation.
+    Q_SCRIPTABLE void Levels(const QList<QindaQt::Audio::LevelReading> &levels);
 
 private:
     void beginOperation(const OperationRequest &request);

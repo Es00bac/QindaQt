@@ -19,6 +19,8 @@ AudioServiceObject::AudioServiceObject(AudioOperationCoordinator *coordinator,
             &AudioServiceObject::Changed);
     connect(m_coordinator, &AudioOperationCoordinator::operationCompleted, this,
             &AudioServiceObject::finishOperation);
+    connect(m_coordinator, &AudioOperationCoordinator::levelsChanged, this,
+            &AudioServiceObject::Levels);
 }
 
 Snapshot AudioServiceObject::GetSnapshot() const

@@ -36,6 +36,11 @@ Q_SIGNALS:
     void snapshotReply(const QString &owner, quint64 requestId, bool transportSuccess,
                        const QindaQt::Audio::Snapshot &snapshot,
                        const QString &reasonCode);
+    // Meter readings from the bound owner (ADR-0174). Carries no lineage: a
+    // batch is applied onto whatever snapshot the client already holds, and a
+    // dropped batch is one skipped frame rather than a state divergence.
+    void levelsReceived(const QString &owner,
+                        const QList<QindaQt::Audio::LevelReading> &levels);
     void operationReply(const QString &owner, quint64 requestId, bool transportSuccess,
                         const QindaQt::Audio::OperationResult &result,
                         const QString &reasonCode);

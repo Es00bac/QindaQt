@@ -75,21 +75,9 @@ ColumnLayout {
             }
         }
 
-        Rectangle {
+        AudioConsoleMeter {
             objectName: "consoleBusMeter_" + root.bus.id
-            implicitWidth: 8
-            implicitHeight: 160
-            radius: 4
-            color: Tokens.bg.raised
-            Rectangle {
-                width: parent.width
-                radius: parent.radius
-                anchors.bottom: parent.bottom
-                color: Tokens.accent.default
-                visible: root.bus.level.known
-                height: parent.height * Math.max(0.0, Math.min(1.0,
-                    (root.bus.level.peakDb + 60.0) / 60.0))
-            }
+            reading: root.model.consoleLevels[root.bus.id]
         }
     }
 

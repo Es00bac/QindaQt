@@ -32,7 +32,7 @@ bool routingNameIsEmbeddable(const QString &nodeName)
 QByteArray routingModuleArguments(const QString &stripId, const QString &busId,
                                   const QString &sourceNodeName,
                                   const QString &targetNodeName,
-                                  const double linear)
+                                  const bool sourceIsSink, const double linear)
 {
     if (!routingNameIsEmbeddable(sourceNodeName)
         || !routingNameIsEmbeddable(targetNodeName)) {
@@ -42,9 +42,15 @@ QByteArray routingModuleArguments(const QString &stripId, const QString &busId,
     if (!routingNameIsEmbeddable(name)) {
         return {};
     }
-    // node.passive keeps a send from holding the graph awake on its own: the
-    // loopback follows whether real audio is flowing rather than pinning both
-    // devices open for as long as the console has a cell switched on.
+    // AGENT-GUARD: target.object, never the deprecated node.target. Only
+    // target.object resolves a node NAME; node.target expects an object id and
+    // silently autoconnects the default device instead, which puts the send on
+    // the wrong endpoints while looking like it worked.
+    //
+    // AGENT-GUARD: neither side is passive. An enabled matrix cell is the user
+    // saying "carry this audio"; a passive link will not resume a suspended
+    // device, so a passive send is a routing the console draws and never plays.
+    //
     // AGENT-CONTRACT: the PLAYBACK side carries the send's node name, because
     // that is the node whose volume is this matrix cell's gain. The worker
     // finds it by exactly this name to apply the fader, so the two must not
@@ -52,12 +58,16 @@ QByteArray routingModuleArguments(const QString &stripId, const QString &busId,
     const QString arguments =
         QStringLiteral(
             "{ node.name = \"%1\" node.description = \"QindaQt send %2 -> %3\""
-            " capture.props = { node.name = \"%1.capture\" node.target = \"%4\""
-            " stream.capture.sink = true node.passive = true }"
-            " playback.props = { node.name = \"%1\" node.target = \"%5\""
-            " node.passive = true channelmix.normalize = false }"
+            " capture.props = { node.name = \"%1.capture\" target.object = \"%4\""
+            " stream.capture.sink = %6 }"
+            " playback.props = { node.name = \"%1\" target.object = \"%5\""
+            " channelmix.normalize = false }"
             " target.object = \"%5\" }")
-            .arg(name, stripId, busId, sourceNodeName, targetNodeName);
+            .arg(name, stripId, busId, sourceNodeName, targetNodeName,
+                 // Only a strip that IS a sink - a virtual strip's null sink -
+                 // is read from its monitor. Asking for a hardware capture
+                 // device's monitor finds nothing and the send stays silent.
+                 sourceIsSink ? QStringLiteral("true") : QStringLiteral("false"));
     Q_UNUSED(linear)
     return arguments.toUtf8();
 }

@@ -176,3 +176,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0171: one gain law for the audio console](0171-one-gain-law-for-the-audio-console.md)
 - [ADR-0172: Applications is a place, and a docked window can replace itself](0172-applications-is-a-place-and-a-docked-window-can-replace-itself.md)
 - [ADR-0173: the mixing-console slice of Audio1](0173-the-mixing-console-slice-of-audio1.md)
+- [ADR-0174: meters are a stream, not a snapshot](0174-meters-are-a-stream-not-a-snapshot.md)

@@ -44,12 +44,16 @@ Q_SIGNALS:
     void invalidated(quint64 epoch, quint64 revision);
     void operationCompleted(quint64 operationId,
                             const QindaQt::Audio::OperationResult &result);
+    // Meter readings, forwarded at meter rate without touching lineage.
+    void levelsChanged(const QList<QindaQt::Audio::LevelReading> &levels);
 
 private Q_SLOTS:
     void acceptSnapshot(quint64 generation,
                         const QindaQt::Audio::Snapshot &snapshot);
     void acceptBackendResult(quint64 generation, quint64 operationId,
                              const QindaQt::Audio::BackendOperationOutcome &outcome);
+    void acceptLevels(quint64 generation,
+                      const QList<QindaQt::Audio::LevelReading> &levels);
 
 private:
     struct PendingOperation {
@@ -69,7 +73,14 @@ private:
     void republishConsole();
     // Re-derives the backend routing from the console and the currently
     // resolvable devices, and declares it to the backend when it changed.
+    // Follows the graph with the console's endpoints. Without this the console
+    // is a set of faders wired to nothing: no routing is buildable and no meter
+    // has a node to read, so the rack would draw but never move.
+    void autoBindConsole(const Snapshot &snapshot);
     void publishRouting();
+    // Re-derives which console elements are metrable right now and declares
+    // them to the backend when the set changed.
+    void publishMetering();
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
     void publishRestartingSnapshot();
 
@@ -77,6 +88,7 @@ private:
     Snapshot m_snapshot;
     ConsoleModel m_console;
     QList<BackendRoutingEdge> m_publishedRouting;
+    QList<BackendMeterTarget> m_publishedMetering;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;

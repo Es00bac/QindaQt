@@ -206,7 +206,7 @@ void WirePlumberResetLifecycleTests::stoppedResetSourceCannotPoisonRestart()
     const qsizetype descriptorsBefore = openFileDescriptorCount();
     WirePlumberWorker worker(
         100, [&snapshots](Snapshot snapshot) { snapshots.append(std::move(snapshot)); },
-        [](quint64, BackendOperationOutcome) {},
+        [](quint64, BackendOperationOutcome) {}, [](QList<LevelReading>) {},
         {.disconnectResetScheduled = [&scheduler] { scheduler.resetScheduled(); },
          .stopTaskQueued = [&scheduler] { scheduler.stopTaskQueued(); }});
 

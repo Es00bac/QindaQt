@@ -55,7 +55,7 @@ QString preflightOperation(const Snapshot &snapshot, const OperationRequest &req
         && snapshot.availability != Availability::Degraded) {
         return QStringLiteral("unavailable");
     }
-    const bool targeted = request.kind != OperationKind::CreateVirtualDevice;
+    const bool targeted = operationTargetsHandle(request.kind);
     if (targeted && (!request.primary.isValid() || request.primary.epoch != snapshot.epoch)) {
         return QStringLiteral("stale-handle");
     }

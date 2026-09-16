@@ -56,6 +56,10 @@ class AudioSettingsModel final : public QObject {
   Q_PROPERTY(bool consoleSoloActive READ consoleSoloActive NOTIFY viewChanged)
   Q_PROPERTY(QVariantList consoleStrips READ consoleStrips NOTIFY viewChanged)
   Q_PROPERTY(QVariantList consoleBuses READ consoleBuses NOTIFY viewChanged)
+  // Meters, on their own notification (ADR-0174). Deliberately NOT part of
+  // viewChanged: levels arrive many times a second, and hanging them off the
+  // view signal would rebuild every strip and bus delegate at meter rate.
+  Q_PROPERTY(QVariantMap consoleLevels READ consoleLevels NOTIFY consoleLevelsChanged)
 
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
@@ -72,6 +76,9 @@ public:
   [[nodiscard]] bool consoleSoloActive() const;
   [[nodiscard]] QVariantList consoleStrips() const;
   [[nodiscard]] QVariantList consoleBuses() const;
+  // Console id to {peakDb, rmsDb, known}. Built from the snapshot the client
+  // already holds, so the first read is correct before any reading arrives.
+  [[nodiscard]] QVariantMap consoleLevels() const;
 
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const;
@@ -134,6 +141,7 @@ public:
 
 Q_SIGNALS:
   void viewChanged();
+  void consoleLevelsChanged();
   void actionRejected(const QString &reason);
 
 private:

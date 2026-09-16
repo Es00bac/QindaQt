@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "stub_audio_fixture.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QVariantList>
 #include <QtCore/QVariantMap>
@@ -41,6 +43,12 @@ class StubAudioSettingsModel final : public QObject {
                  viewChanged)
   Q_PROPERTY(bool canManageVirtualDevices MEMBER canManageVirtualDevices NOTIFY
                  viewChanged)
+  Q_PROPERTY(bool consoleAvailable MEMBER consoleAvailable NOTIFY viewChanged)
+  Q_PROPERTY(bool consoleSoloActive MEMBER consoleSoloActive NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList consoleStrips MEMBER consoleStrips NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList consoleBuses MEMBER consoleBuses NOTIFY viewChanged)
+  Q_PROPERTY(QVariantMap consoleLevels MEMBER consoleLevels NOTIFY
+                 consoleLevelsChanged)
 
 public:
   bool loading = false;
@@ -64,6 +72,15 @@ public:
   QVariantList virtualDevices;
   bool canSetChannelVolumes = true;
   bool canManageVirtualDevices = true;
+  bool consoleAvailable = true;
+  bool consoleSoloActive = false;
+  QVariantList consoleStrips;
+  QVariantList consoleBuses;
+  QVariantMap consoleLevels;
+  QString lastConsoleId;
+  double lastFaderPosition = -1.0;
+  bool lastConsoleFlag = false;
+  int lastBusIndex = -1;
   int reloadCount = 0;
   quint64 defaultSerial = 0;
   quint64 deviceVolumeSerial = 0;
@@ -83,126 +100,15 @@ public:
   int createCount = 0;
   quint64 removeVirtualSerial = 0;
 
-  static QVariantList channelRows(const QStringList &positions,
-                                  const int volumePercent) {
-    QVariantList rows;
-    for (int index = 0; index < positions.size(); ++index) {
-      rows.append(QVariantMap{
-          {QStringLiteral("index"), index},
-          {QStringLiteral("position"), positions.at(index)},
-          {QStringLiteral("volumePercent"), volumePercent},
-          {QStringLiteral("level01"), volumePercent / 100.0},
-      });
-    }
-    return rows;
-  }
-
   explicit StubAudioSettingsModel(QObject *parent = nullptr)
       : QObject(parent) {
-    outputDevices = {
-        QVariantMap{
-            {QStringLiteral("serial"), qulonglong(10)},
-            {QStringLiteral("kindText"), QStringLiteral("Output device")},
-            {QStringLiteral("displayName"), QStringLiteral("Desk Speakers")},
-            {QStringLiteral("volumePercent"), 50},
-            {QStringLiteral("volumeKnown"), true},
-            {QStringLiteral("muted"), false},
-            {QStringLiteral("muteKnown"), true},
-            {QStringLiteral("isDefault"), true},
-            {QStringLiteral("setDefaultAvailable"), true},
-            {QStringLiteral("volumeAvailable"), true},
-            {QStringLiteral("muteAvailable"), true},
-            {QStringLiteral("channelVolumes"),
-             channelRows({QStringLiteral("FL"), QStringLiteral("FR")}, 50)},
-            {QStringLiteral("channelVolumeAvailable"), true},
-            {QStringLiteral("virtualDevice"), false},
-            {QStringLiteral("stateText"), QStringLiteral("Default")},
-        },
-        QVariantMap{
-            {QStringLiteral("serial"), qulonglong(12)},
-            {QStringLiteral("kindText"), QStringLiteral("Output device")},
-            {QStringLiteral("displayName"),
-             QStringLiteral("Surround Headphones")},
-            {QStringLiteral("volumePercent"), 25},
-            {QStringLiteral("volumeKnown"), true},
-            {QStringLiteral("muted"), false},
-            {QStringLiteral("muteKnown"), true},
-            {QStringLiteral("isDefault"), false},
-            {QStringLiteral("setDefaultAvailable"), true},
-            {QStringLiteral("volumeAvailable"), true},
-            {QStringLiteral("muteAvailable"), true},
-            {QStringLiteral("channelVolumes"),
-             channelRows({QStringLiteral("FL"), QStringLiteral("FR"),
-                          QStringLiteral("FC"), QStringLiteral("LFE"),
-                          QStringLiteral("SL"), QStringLiteral("SR")},
-                         25)},
-            {QStringLiteral("channelVolumeAvailable"), true},
-            {QStringLiteral("virtualDevice"), false},
-            {QStringLiteral("stateText"), QStringLiteral("Volume 25%")},
-        },
-    };
-    inputDevices = {
-        QVariantMap{
-            {QStringLiteral("serial"), qulonglong(20)},
-            {QStringLiteral("kindText"), QStringLiteral("Input device")},
-            {QStringLiteral("displayName"),
-             QStringLiteral("Desk Microphone")},
-            {QStringLiteral("volumePercent"), 75},
-            {QStringLiteral("volumeKnown"), true},
-            {QStringLiteral("muted"), false},
-            {QStringLiteral("muteKnown"), true},
-            {QStringLiteral("isDefault"), true},
-            {QStringLiteral("setDefaultAvailable"), true},
-            {QStringLiteral("volumeAvailable"), true},
-            {QStringLiteral("muteAvailable"), true},
-            {QStringLiteral("channelVolumes"),
-             channelRows({QStringLiteral("FL"), QStringLiteral("FR")}, 75)},
-            {QStringLiteral("channelVolumeAvailable"), true},
-            {QStringLiteral("virtualDevice"), false},
-            {QStringLiteral("stateText"), QStringLiteral("Default")},
-        },
-    };
-    streams = {
-        QVariantMap{
-            {QStringLiteral("serial"), qulonglong(30)},
-            {QStringLiteral("directionText"), QStringLiteral("Playback")},
-            {QStringLiteral("applicationName"), QStringLiteral("Player")},
-            {QStringLiteral("mediaName"), QStringLiteral("Music")},
-            {QStringLiteral("targetName"), QStringLiteral("Desk Speakers")},
-            {QStringLiteral("volumePercent"), 75},
-            {QStringLiteral("volumeKnown"), true},
-            {QStringLiteral("muted"), false},
-            {QStringLiteral("muteKnown"), true},
-            {QStringLiteral("volumeAvailable"), true},
-            {QStringLiteral("muteAvailable"), true},
-        },
-        QVariantMap{
-            {QStringLiteral("serial"), qulonglong(40)},
-            {QStringLiteral("directionText"), QStringLiteral("Recording")},
-            {QStringLiteral("applicationName"), QStringLiteral("Talk")},
-            {QStringLiteral("mediaName"), QStringLiteral("Call")},
-            {QStringLiteral("targetName"),
-             QStringLiteral("Desk Microphone")},
-            {QStringLiteral("volumePercent"), 40},
-            {QStringLiteral("volumeKnown"), true},
-            {QStringLiteral("muted"), true},
-            {QStringLiteral("muteKnown"), true},
-            {QStringLiteral("volumeAvailable"), true},
-            {QStringLiteral("muteAvailable"), true},
-        },
-    };
-    virtualDevices = {
-        QVariantMap{
-            {QStringLiteral("serial"), qulonglong(14)},
-            {QStringLiteral("kindText"),
-             QStringLiteral("Virtual output device")},
-            {QStringLiteral("displayName"), QStringLiteral("Game Bus")},
-            {QStringLiteral("channelCount"), 2},
-            {QStringLiteral("channelMap"),
-             QStringLiteral("FL · FR")},
-            {QStringLiteral("removeAvailable"), true},
-        },
-    };
+    outputDevices = makeOutputDevices();
+    inputDevices = makeInputDevices();
+    streams = makeStreams();
+    virtualDevices = makeVirtualDevices();
+    consoleStrips = makeConsoleStrips();
+    consoleBuses = makeConsoleBuses();
+    consoleLevels = makeConsoleLevels();
   }
 
   Q_INVOKABLE bool reload() {
@@ -253,8 +159,68 @@ public:
     return true;
   }
 
+  // The console intent surface (ADR-0173) and the fader conversions QML draws
+  // with. Every entry mirrors the real model exactly; the surface comparison
+  // row is what keeps them from drifting apart.
+  Q_INVOKABLE bool setStripFader(QString stripId, double position) {
+    lastConsoleId = stripId;
+    lastFaderPosition = position;
+    return true;
+  }
+  Q_INVOKABLE bool setStripMuted(QString stripId, bool muted) {
+    lastConsoleId = stripId;
+    lastConsoleFlag = muted;
+    return true;
+  }
+  Q_INVOKABLE bool setStripSoloed(QString stripId, bool soloed) {
+    lastConsoleId = stripId;
+    lastConsoleFlag = soloed;
+    return true;
+  }
+  Q_INVOKABLE bool setStripMono(QString stripId, bool mono) {
+    lastConsoleId = stripId;
+    lastConsoleFlag = mono;
+    return true;
+  }
+  Q_INVOKABLE bool setStripPan(QString stripId, double pan) {
+    lastConsoleId = stripId;
+    lastFaderPosition = pan;
+    return true;
+  }
+  Q_INVOKABLE bool setStripSend(QString stripId, int busIndex, bool enabled,
+                                double gainDb) {
+    lastConsoleId = stripId;
+    lastBusIndex = busIndex;
+    lastConsoleFlag = enabled;
+    lastFaderPosition = gainDb;
+    return true;
+  }
+  Q_INVOKABLE bool setBusFader(QString busId, double position) {
+    lastConsoleId = busId;
+    lastFaderPosition = position;
+    return true;
+  }
+  Q_INVOKABLE bool setBusMuted(QString busId, bool muted) {
+    lastConsoleId = busId;
+    lastConsoleFlag = muted;
+    return true;
+  }
+  Q_INVOKABLE bool setBusMono(QString busId, bool mono) {
+    lastConsoleId = busId;
+    lastConsoleFlag = mono;
+    return true;
+  }
+  Q_INVOKABLE double faderPositionForGain(double gainDb) {
+    return gainDb >= 0.0 ? 1.0 : 0.75;
+  }
+  Q_INVOKABLE double gainForFaderPosition(double position) {
+    return position >= 1.0 ? 12.0 : 0.0;
+  }
+  Q_INVOKABLE double unityFaderPosition() { return 0.75; }
+
 Q_SIGNALS:
   void viewChanged();
+  void consoleLevelsChanged();
 };
 
 } // namespace QindaQt::Apps::SettingsAudio::TestSupport

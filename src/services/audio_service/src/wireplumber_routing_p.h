@@ -37,7 +37,10 @@ namespace QindaQt::Audio
                                                 const QString &busId,
                                                 const QString &sourceNodeName,
                                                 const QString &targetNodeName,
-                                                double linear);
+                                                // True only when the strip's
+                                                // source is itself a sink, so
+                                                // its audio is on the monitor.
+                                                bool sourceIsSink, double linear);
 
 // True when a node name is safe to embed in a module argument.
 [[nodiscard]] bool routingNameIsEmbeddable(const QString &nodeName);
