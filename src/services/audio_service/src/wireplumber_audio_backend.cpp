@@ -104,4 +104,12 @@ void WirePlumberAudioBackend::submit(const quint64 operationId,
     m_worker->submit(operationId, request);
 }
 
+void WirePlumberAudioBackend::applyRouting(const QList<BackendRoutingEdge> &edges)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyRouting(edges);
+}
+
 } // namespace QindaQt::Audio

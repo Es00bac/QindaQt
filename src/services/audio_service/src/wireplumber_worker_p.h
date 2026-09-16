@@ -12,6 +12,7 @@
 #include <mutex>
 #include <optional>
 #include <thread>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -39,6 +40,10 @@ public:
     void start();
     void stop();
     void submit(quint64 operationId, OperationRequest request);
+    // Declares the console's complete routing (ADR-0173). Called from the Qt
+    // thread; the work is marshalled onto the worker thread like every other
+    // graph mutation.
+    void applyRouting(QList<BackendRoutingEdge> edges);
 
 private:
     struct ComponentLoad;
@@ -60,6 +65,11 @@ private:
     void advanceEpoch();
     void invalidatePending(const QString &reasonCode);
     void submitOnWorker(quint64 operationId, const OperationRequest &request);
+    // Diffs the declared routing against the loopback modules this worker has
+    // loaded, then loads and unloads exactly the difference.
+    void applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges);
+    void unloadAllRouting();
+    [[nodiscard]] QString nodeNameForHandle(const Handle &handle) const;
     void beginNodeActivation(quint64 operationId, WpNode *node);
     void failPendingOperation(quint64 operationId, const QString &reasonCode);
     void beginSync(quint64 operationId, GObject *hold = nullptr);
@@ -107,6 +117,10 @@ private:
     WpPlugin *m_mixer = nullptr;
     WpPlugin *m_defaultNodes = nullptr;
     GSource *m_disconnectResetSource = nullptr;
+    // Loopback modules this worker loaded, keyed by the send's node name. The
+    // value is the pw_impl_module the worker must destroy to remove the send.
+    std::unordered_map<std::string, void *> m_routingModules;
+    QList<BackendRoutingEdge> m_declaredRouting;
 
     std::mutex m_lifecycleMutex;
     std::condition_variable m_contextReady;
