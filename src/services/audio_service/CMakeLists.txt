@@ -19,6 +19,7 @@ target_sources(
         src/audio_service_object.cpp
         src/audio_service_object_p.h
         src/resident_audio_service.cpp
+        src/audio_console_operations.cpp
         src/console_model.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
