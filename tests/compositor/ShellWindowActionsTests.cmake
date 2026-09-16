@@ -24,6 +24,19 @@ set_tests_properties(
     compositor.shell-task-facts PROPERTIES LABELS "unit;compositor;task-list"
 )
 
+qt_add_executable(qindaqt_foreign_window_identity_tests tst_foreignwindowidentity.cpp)
+target_link_libraries(
+    qindaqt_foreign_window_identity_tests
+    PRIVATE QindaQt::CompositorShellActions Qt6::Test
+)
+add_test(
+    NAME compositor.foreign-window-identity
+    COMMAND qindaqt_foreign_window_identity_tests
+)
+set_tests_properties(
+    compositor.foreign-window-identity PROPERTIES LABELS "unit;compositor;task-list"
+)
+
 qt_add_executable(qindaqt_container_appearance_tests tst_containerappearance.cpp)
 target_link_libraries(
     qindaqt_container_appearance_tests
