@@ -5,6 +5,17 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 16, r3)
+
+Exact source `fe2f37d8` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260915-r3` (superseding r2). This
+checkpoint adds per-strip and per-bus device pins by device name, persisted
+and surfaced as a picker on every hardware strip and physical bus in the
+Settings console (ADR-0178), and grants the packaged audio unit write access
+to the console document (ADR-0176). Installed verification: the packaged
+audio service accepts `SetStripSource` and `SetBusTarget` on the live session
+and publishes the pin in its schema-5 snapshot.
+
 ## Installed delivery checkpoint (September 16)
 
 Exact source `dbff18a0` is installed through Portage as
