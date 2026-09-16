@@ -81,6 +81,9 @@ private:
     // Re-derives which console elements are metrable right now and declares
     // them to the backend when the set changed.
     void publishMetering();
+    // Declares the virtual strips' and buses' graph endpoints to the backend
+    // when the set changed (ADR-0175).
+    void publishConsoleEndpoints();
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
     void publishRestartingSnapshot();
 
@@ -89,6 +92,7 @@ private:
     ConsoleModel m_console;
     QList<BackendRoutingEdge> m_publishedRouting;
     QList<BackendMeterTarget> m_publishedMetering;
+    QList<BackendConsoleEndpoint> m_publishedEndpoints;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;

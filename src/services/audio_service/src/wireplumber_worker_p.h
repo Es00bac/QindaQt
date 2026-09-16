@@ -50,6 +50,9 @@ public:
     // Declares the console's complete metering (ADR-0174), marshalled onto the
     // worker thread the same way routing is.
     void applyMetering(QList<BackendMeterTarget> targets);
+    // Declares the console's virtual endpoints (ADR-0175), marshalled onto the
+    // worker thread like routing and metering.
+    void applyConsoleEndpoints(QList<BackendConsoleEndpoint> endpoints);
 
 private:
     struct ComponentLoad;
@@ -80,6 +83,11 @@ private:
     // Rebuilds the meter capture streams to match the declaration, and starts
     // or stops the poll timer according to whether anything is metered.
     void applyMeteringOnWorker(const QList<BackendMeterTarget> &targets);
+    // Creates every declared endpoint the graph does not already have: a
+    // strip's sink server-side through the raw core API, a bus as a loopback
+    // module in this worker's context.
+    void applyConsoleEndpointsOnWorker(const QList<BackendConsoleEndpoint> &endpoints);
+    void unloadAllEndpoints();
     void startMeterPolling();
     void stopMeterPolling();
     void pollMeters();
@@ -140,6 +148,18 @@ private:
     std::unordered_map<std::string, void *> m_routingModules;
     QList<BackendRoutingEdge> m_declaredRouting;
     QList<BackendMeterTarget> m_declaredMetering;
+    QList<BackendConsoleEndpoint> m_declaredEndpoints;
+    // Bus loopback modules this worker loaded, keyed by the bus sink's node
+    // name; destroyed with the core like the send loopbacks. The record, not
+    // the graph, says an endpoint is already on its way: a new node takes
+    // several rebuilds to be announced, and asking the graph in that window
+    // would create a copy per rebuild.
+    std::unordered_map<std::string, void *> m_endpointModules;
+    // Raw proxies for the strip sinks this core asked the daemon for, keyed
+    // the same way. Destroying a proxy does not destroy its lingering node;
+    // the map exists for the duplicate guard and to release the proxies with
+    // the core.
+    std::unordered_map<std::string, void *> m_endpointProxies;
     MeterBank m_meters;
     GSource *m_meterSource = nullptr;
     // The last set of readings handed upstream. Identical readings are not

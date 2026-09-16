@@ -177,3 +177,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0172: Applications is a place, and a docked window can replace itself](0172-applications-is-a-place-and-a-docked-window-can-replace-itself.md)
 - [ADR-0173: the mixing-console slice of Audio1](0173-the-mixing-console-slice-of-audio1.md)
 - [ADR-0174: meters are a stream, not a snapshot](0174-meters-are-a-stream-not-a-snapshot.md)
+- [ADR-0175: virtual strips and buses are nodes the console owns](0175-virtual-strips-and-buses-are-nodes-the-console-owns.md)
+- [ADR-0176: the console remembers itself](0176-the-console-remembers-itself.md)
+- [ADR-0177: pan is balance on the send](0177-pan-is-balance-on-the-send.md)

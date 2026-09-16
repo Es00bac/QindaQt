@@ -32,7 +32,7 @@ carries the whole processing chain below.
 | Mute | `Strip::muted` | **done** |
 | Solo | `Strip::soloed` + published `Console::soloActive` | **done** |
 | Mono | `Strip::mono` | **done** |
-| Pan / Intellipan | `Strip::pan` on the wire and in the model; the 2D pan needs a second axis for surround, and pan is not yet applied to the graph | partial |
+| Pan / Intellipan | `Strip::pan` applied as balance on every send's two playback channels ([ADR-0177](../adr/0177-pan-is-balance-on-the-send.md)); the 2D Intellipan axis for surround buses is not built | partial |
 | Per-channel gain/trim | `Strip::channelTrimDb` | planned |
 | Level meters (per strip) | Real dBFS peak + RMS from a `pw_stream` capture per bound strip, streamed on the `Levels` signal ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) with a falling peak marker | **done** |
 | Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | **done** |
@@ -122,10 +122,13 @@ graph out of the box, and each bound endpoint is read by its own capture stream
 whose peak and RMS stream to every surface on a dedicated `Levels` signal
 ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)).
 
-What is emphatically not here yet: virtual strips and buses have no managed
-sinks, so they neither carry audio nor meter; pan is modelled but not applied to
-the graph; and every per-strip and per-bus processor — gate, denoiser,
-compressor, limiter, EQ, bus modes — is a **gap**, as are the recorder, VBAN and
-macro buttons.
+Virtual strips and buses are real nodes the console owns
+([ADR-0175](../adr/0175-virtual-strips-and-buses-are-nodes-the-console-owns.md)):
+an application that picks "Virtual Input" as its output gets its own fader, and
+a streamer's software records a submix from "B1".
+
+What is emphatically not here yet: every
+per-strip and per-bus processor — gate, denoiser, compressor, limiter, EQ, bus
+modes — is a **gap**, as are the recorder, VBAN and macro buttons.
 
 This page exists so that distance is visible rather than implied.

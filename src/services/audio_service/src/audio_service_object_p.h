@@ -21,7 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "

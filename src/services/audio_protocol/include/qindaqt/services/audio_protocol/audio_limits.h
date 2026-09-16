@@ -7,11 +7,15 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 3;
+inline constexpr quint32 kSchemaVersion = 4;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
 inline constexpr qsizetype kMaxDisplayNameUtf8Bytes = 256;
+// PipeWire `node.name`: the device's stable identity (schema 4). Unlike a
+// serial it survives the daemon restarting and the machine rebooting, which is
+// what lets a console remember WHICH microphone a strip was set to.
+inline constexpr qsizetype kMaxNodeNameUtf8Bytes = 256;
 inline constexpr qsizetype kMaxApplicationNameUtf8Bytes = 256;
 inline constexpr qsizetype kMaxReasonCodeUtf8Bytes = 64;
 inline constexpr qsizetype kMaxDiagnosticUtf8Bytes = 512;

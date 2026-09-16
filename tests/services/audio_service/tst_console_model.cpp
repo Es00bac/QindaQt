@@ -39,6 +39,7 @@ private slots:
     void soloSilencesWithoutTearingRoutingDown();
     void aDisabledSendKeepsItsGain();
     void meterBatchesApplyClearAndRejectStrangers();
+    void routingCarriesTheStripsPan();
     void persistenceRoundTripsTheUsersDecisions();
     void aCorruptDocumentLoadsWhatItCan();
 };
@@ -329,6 +330,33 @@ void ConsoleModelTests::meterBatchesApplyClearAndRejectStrangers()
     QVERIFY(!console.buses.at(0).level.known);
     QCOMPARE(console.strips.at(0).level.peakDb, kSilentMeterDb);
     QVERIFY(!model.publishLevels({}));
+}
+
+// ADR-0177. Pan is applied per send, so every edge out of a strip must carry
+// the strip's pan.
+void ConsoleModelTests::routingCarriesTheStripsPan()
+{
+    ConsoleModel model;
+    const QString stripId = model.console().strips.at(0).id;
+    QString reason;
+    for (const quint32 busIndex : {0U, 2U}) {
+        auto send = strip(OperationKind::SetStripSend, stripId);
+        send.busIndex = busIndex;
+        send.enabled = true;
+        send.gainDb = 0.0;
+        QVERIFY(model.apply(send, &reason));
+    }
+    auto pan = strip(OperationKind::SetStripPan, stripId);
+    pan.pan = -0.5;
+    QVERIFY(model.apply(pan, &reason));
+    int edges = 0;
+    for (const ConsoleModel::RoutingEdge &edge : model.routing()) {
+        if (edge.stripId == stripId) {
+            QCOMPARE(edge.pan, -0.5);
+            ++edges;
+        }
+    }
+    QCOMPARE(edges, 2);
 }
 
 QTEST_APPLESS_MAIN(ConsoleModelTests)

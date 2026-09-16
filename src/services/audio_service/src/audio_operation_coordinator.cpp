@@ -135,6 +135,11 @@ void AudioOperationCoordinator::start()
     }
     m_backendGeneration = generation;
     m_running = true;
+    // The virtual endpoints are declared from the first moment the backend
+    // runs, not from the first snapshot: they are what the console is made of,
+    // and a restarted backend rebuilds them from this declaration.
+    m_publishedEndpoints.clear();
+    publishConsoleEndpoints();
     if (m_hasBackendSnapshot) {
         publishRestartingSnapshot();
     }
@@ -504,6 +509,7 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     // A new graph generation can make an endpoint resolvable that was not
     // before, so the routing is re-derived against every accepted snapshot
     // rather than only when the user touches the console.
+    publishConsoleEndpoints();
     publishRouting();
     publishMetering();
     m_hasBackendSnapshot = true;

@@ -251,6 +251,54 @@ bool isCaptureClass(const QString &mediaClass)
     return mediaClass.startsWith(QStringLiteral("Stream/Input/Audio"));
 }
 
+// The device half of a snapshot row. Split from buildSnapshot so the graph
+// walk reads as a walk, and so each projection is one place to extend.
+[[nodiscard]] Device projectDevice(WpPipewireObject *node, const bool output,
+                                   const Handle handle, const VolumeState &volume,
+                                   const QStringList &channelMap,
+                                   const bool mixerPresent)
+{
+    Device device;
+    device.handle = handle;
+    device.kind = output ? DeviceKind::Output : DeviceKind::Input;
+    device.name = preferredNodeName(node);
+    device.description = description(node);
+    device.nodeName = boundedText(wp_pipewire_object_get_property(node, PW_KEY_NODE_NAME),
+                                  kMaxNodeNameUtf8Bytes);
+    device.volume = volume.volume;
+    device.volumeKnown = volume.volumeKnown;
+    device.muted = volume.muted;
+    device.muteKnown = volume.muteKnown;
+    device.canSetVolume = volume.volumeKnown && mixerPresent;
+    device.canSetMute = volume.muteKnown && mixerPresent;
+    device.channelVolumes = projectedChannelVolumes(volume, channelMap);
+    device.channelMap = channelMap;
+    device.virtualDevice = isManagedVirtualNode(node);
+    return device;
+}
+
+[[nodiscard]] Stream projectStream(WpPipewireObject *node, const bool playback,
+                                   const Handle handle, const VolumeState &volume,
+                                   const QStringList &channelMap,
+                                   const bool mixerPresent, const bool canMove)
+{
+    Stream stream;
+    stream.handle = handle;
+    stream.direction = playback ? StreamDirection::Playback : StreamDirection::Capture;
+    stream.applicationName = applicationName(node);
+    stream.mediaName = mediaName(node);
+    stream.volume = volume.volume;
+    stream.volumeKnown = volume.volumeKnown;
+    stream.muted = volume.muted;
+    stream.muteKnown = volume.muteKnown;
+    stream.canSetVolume = volume.volumeKnown && mixerPresent;
+    stream.canSetMute = volume.muteKnown && mixerPresent;
+    stream.canMove = canMove;
+    stream.channelVolumes = projectedChannelVolumes(volume, channelMap);
+    stream.channelMap = channelMap;
+    return stream;
+}
+
 } // namespace
 
 NodeLookup::NodeLookup(NodeLookup &&other) noexcept
@@ -377,45 +425,21 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
         const QStringList channelMap = channelMapOf(node);
         result.truncatedOrMalformed = result.truncatedOrMalformed || volume.malformed;
 
+        const Handle handle{.epoch = epoch, .serial = *serial};
+        const bool mixerPresent = mixer != nullptr;
         if (output || input) {
-            Device device;
-            device.handle = {.epoch = epoch, .serial = *serial};
-            device.kind = output ? DeviceKind::Output : DeviceKind::Input;
-            device.name = preferredNodeName(node);
-            device.description = description(node);
-            device.volume = volume.volume;
-            device.volumeKnown = volume.volumeKnown;
-            device.muted = volume.muted;
-            device.muteKnown = volume.muteKnown;
-            device.isDefault = boundId
-                == (device.kind == DeviceKind::Output ? defaultOutputId : defaultInputId);
-            device.canSetVolume = volume.volumeKnown && mixer != nullptr;
-            device.canSetMute = volume.muteKnown && mixer != nullptr;
-            device.channelVolumes = projectedChannelVolumes(volume, channelMap);
-            device.channelMap = channelMap;
-            device.virtualDevice = isManagedVirtualNode(node);
-            if (device.kind == DeviceKind::Output) {
+            Device device = projectDevice(node, output, handle, volume, channelMap,
+                                          mixerPresent);
+            device.isDefault = boundId == (output ? defaultOutputId : defaultInputId);
+            if (output) {
                 result.snapshot.outputs.push_back(std::move(device));
             } else {
                 result.snapshot.inputs.push_back(std::move(device));
             }
         } else {
-            Stream stream;
-            stream.handle = {.epoch = epoch, .serial = *serial};
-            stream.direction = playback ? StreamDirection::Playback
-                                        : StreamDirection::Capture;
-            stream.applicationName = applicationName(node);
-            stream.mediaName = mediaName(node);
-            stream.volume = volume.volume;
-            stream.volumeKnown = volume.volumeKnown;
-            stream.muted = volume.muted;
-            stream.muteKnown = volume.muteKnown;
-            stream.canSetVolume = volume.volumeKnown && mixer != nullptr;
-            stream.canSetMute = volume.muteKnown && mixer != nullptr;
-            stream.canMove = capabilities.testFlag(Capability::MoveStream);
-            stream.channelVolumes = projectedChannelVolumes(volume, channelMap);
-            stream.channelMap = channelMap;
-            result.snapshot.streams.push_back(std::move(stream));
+            result.snapshot.streams.push_back(
+                projectStream(node, playback, handle, volume, channelMap, mixerPresent,
+                              capabilities.testFlag(Capability::MoveStream)));
         }
         g_value_unset(&value);
     }
@@ -471,10 +495,16 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
         retainedInputs.insert(device.handle.serial);
     }
     for (Stream &stream : result.snapshot.streams) {
-        const QSet<quint64> &targets = stream.direction == StreamDirection::Playback
-            ? retainedOutputs
-            : retainedInputs;
-        if (stream.targetKnown && !targets.contains(stream.target.serial)) {
+        // A playback stream targets an output. A capture stream targets an
+        // input - or an OUTPUT, when it reads that device's monitor: every
+        // console meter and every send from a virtual strip does exactly this,
+        // and a rule that only knew inputs judged each of them "target unknown"
+        // and degraded every snapshot the console ever produced.
+        const bool compatible = stream.direction == StreamDirection::Playback
+            ? retainedOutputs.contains(stream.target.serial)
+            : (retainedInputs.contains(stream.target.serial)
+               || retainedOutputs.contains(stream.target.serial));
+        if (stream.targetKnown && !compatible) {
             stream.target = {};
             stream.targetKnown = false;
             result.truncatedOrMalformed = true;

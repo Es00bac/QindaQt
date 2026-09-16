@@ -52,4 +52,19 @@ inline constexpr double kUnityGainDb = 0.0;
 // re-deriving the taper.
 [[nodiscard]] double unityFaderPosition();
 
+// Pan as BALANCE (ADR-0177): the centre is unity on both sides, and moving the
+// control attenuates the far side only, reaching silence at the stop. Chosen
+// over constant-power because the console's fader legend says 0 dB, and a law
+// that put both sides at -3 dB when the control is centred would make the
+// legend lie for every strip that has never been panned.
+struct PanGains {
+    double left = 1.0;
+    double right = 1.0;
+
+    friend bool operator==(const PanGains &, const PanGains &) = default;
+};
+// pan is -1.0 (hard left) to +1.0 (hard right); NaN reads as centre and
+// anything beyond the stops is clamped to them.
+[[nodiscard]] PanGains panGains(double pan);
+
 } // namespace QindaQt::Audio

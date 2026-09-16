@@ -9,6 +9,7 @@
 #include <qindaqt/services/audio_service/resident_audio_service.h>
 
 #include <QtCore/QProcess>
+#include <QtCore/QTemporaryDir>
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
@@ -100,10 +101,16 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
         QDBusConnection::connectToBus(bus.address, firstConnectionName);
     QVERIFY(firstConnection.isConnected());
 
+    // AGENT-GUARD: a resident service persists its console (ADR-0176). A test
+    // host must be given its own path, or it reads and rewrites the user's
+    // real console document.
+    QTemporaryDir consoleDir;
+    QVERIFY(consoleDir.isValid());
+    const QString consolePath = consoleDir.filePath(QStringLiteral("audio-console.json"));
     auto firstBackend = std::make_unique<FakeAudioBackend>();
     FakeAudioBackend *firstBackendPtr = firstBackend.get();
     auto firstHost = std::make_unique<ResidentAudioService>(
-        std::move(firstBackend), firstConnection, serviceName);
+        std::move(firstBackend), firstConnection, serviceName, nullptr, consolePath);
     QCOMPARE(firstHost->start(), ServiceStartStatus::Started);
     firstBackendPtr->publish(audioSnapshot(41, 2));
 
@@ -121,7 +128,7 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
              qPrintable(introspectionReply.error().message()));
     const QString introspection = introspectionReply.value();
     QVERIFY(introspection.contains(
-        QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)")));
+        QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"ad\" direction=\"in\"")));
 
@@ -189,7 +196,7 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
     auto secondBackend = std::make_unique<FakeAudioBackend>();
     FakeAudioBackend *secondBackendPtr = secondBackend.get();
     auto secondHost = std::make_unique<ResidentAudioService>(
-        std::move(secondBackend), secondConnection, serviceName);
+        std::move(secondBackend), secondConnection, serviceName, nullptr, consolePath);
     QCOMPARE(secondHost->start(), ServiceStartStatus::Started);
     secondBackendPtr->publish(audioSnapshot(42, 1));
     QTRY_COMPARE(client.state(), ClientState::Ready);

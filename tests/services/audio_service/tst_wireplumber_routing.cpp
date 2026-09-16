@@ -90,6 +90,11 @@ void WirePlumberRoutingTests::argumentsNameBothEndpointsAndTheSend()
     // The capture side takes a distinct name so the two never collide in a
     // by-name lookup.
     QVERIFY(text.contains(QStringLiteral("%1.capture").arg(send)));
+    // The playback side is always stereo, so pan has two channels to work on
+    // even when the strip's source is a mono microphone (ADR-0177).
+    QVERIFY(text.contains(QStringLiteral("playback.props = {")));
+    const QString playback = text.mid(text.indexOf(QStringLiteral("playback.props")));
+    QVERIFY(playback.contains(QStringLiteral("audio.position = [ FL FR ]")));
 }
 
 void WirePlumberRoutingTests::hostileDeviceNamesCannotInjectProperties()

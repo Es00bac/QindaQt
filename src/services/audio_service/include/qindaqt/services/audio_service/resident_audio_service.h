@@ -3,8 +3,10 @@
 #pragma once
 
 #include <qindaqt/services/audio_service/audio_operation_coordinator.h>
+#include <qindaqt/services/audio_service/console_store.h>
 
 #include <QtCore/QObject>
+#include <QtCore/QTimer>
 #include <QtDBus/QDBusConnection>
 
 #include <memory>
@@ -31,9 +33,13 @@ class ResidentAudioService : public QObject
     Q_OBJECT
 
 public:
+    // `consolePath` is where the console persists (ADR-0176); empty selects
+    // ConsoleStore::defaultPath(). A test passes a temporary path so it never
+    // touches the user's console.
     explicit ResidentAudioService(std::unique_ptr<AudioBackend> backend,
                                   const QDBusConnection &connection,
-                                  QString serviceName = {}, QObject *parent = nullptr);
+                                  QString serviceName = {}, QObject *parent = nullptr,
+                                  QString consolePath = {});
     ~ResidentAudioService() override;
 
     [[nodiscard]] ServiceStartStatus start();
@@ -42,8 +48,14 @@ public:
     [[nodiscard]] AudioOperationCoordinator *coordinator() noexcept;
 
 private:
+    void saveConsole();
+
     std::unique_ptr<AudioBackend> m_backend;
     std::unique_ptr<AudioOperationCoordinator> m_coordinator;
+    ConsoleStore m_consoleStore;
+    // Coalesces a burst of fader moves into one write; the store itself
+    // skips a write when nothing in the document changed.
+    QTimer m_consoleSaveTimer;
     std::unique_ptr<AudioServiceObject> m_serviceObject;
     QDBusConnection m_connection;
     QString m_serviceName;

@@ -146,7 +146,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
              << value.canSetMute;
     writeChannelVolumes(argument, value.channelVolumes);
     writeChannelMap(argument, value.channelMap);
-    argument << value.virtualDevice;
+    argument << value.virtualDevice << value.nodeName;
     argument.endStructure();
     return argument;
 }
@@ -161,7 +161,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value)
         >> value.canSetVolume >> value.canSetMute;
     readChannelVolumes(argument, value.channelVolumes, value.wireValid);
     readChannelMap(argument, value.channelMap, value.wireValid);
-    argument >> value.virtualDevice;
+    argument >> value.virtualDevice >> value.nodeName;
     argument.endStructure();
     value.kind = static_cast<DeviceKind>(kind);
     return argument;

@@ -312,7 +312,7 @@ QList<ConsoleModel::RoutingEdge> ConsoleModel::routing() const
                 continue;
             }
             edges.append(RoutingEdge{strip.id, bus->id, send.busIndex, send.gainDb,
-                                     audible && !bus->muted});
+                                     audible && !bus->muted, strip.pan});
         }
     }
     return edges;

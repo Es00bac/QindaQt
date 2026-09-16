@@ -61,7 +61,11 @@ QByteArray routingModuleArguments(const QString &stripId, const QString &busId,
             " capture.props = { node.name = \"%1.capture\" target.object = \"%4\""
             " stream.capture.sink = %6 }"
             " playback.props = { node.name = \"%1\" target.object = \"%5\""
-            " channelmix.normalize = false }"
+            // Always stereo on the way out, whatever the source is: pan is two
+            // channel volumes on this node (ADR-0177), and a mono microphone
+            // would otherwise have nothing to pan on. The loopback's own
+            // channel mixer does the upmix.
+            " audio.position = [ FL FR ] channelmix.normalize = false }"
             " target.object = \"%5\" }")
             .arg(name, stripId, busId, sourceNodeName, targetNodeName,
                  // Only a strip that IS a sink - a virtual strip's null sink -
