@@ -212,11 +212,15 @@ public:
                                                  const QString &pickerWindowId,
                                                  const QString &desktopEntryId,
                                                  QString *error = nullptr);
-    // Runs on the compositor thread from the control endpoint: the ACTIVE
-    // window must be a registered picker, so a caller can never name someone
-    // else's placeholder. Returns the endpoint JSON payload.
+    // Runs on the compositor thread from the control endpoint. The ACTIVE
+    // window must either be a registered picker, or belong to the caller
+    // (ADR-0172: a docked window replacing ITSELF with the application its
+    // user chose). `callerProcessId` is the bus daemon's credential for the
+    // calling connection and is compared against KWin's authenticated client
+    // PID; a caller can therefore never name someone else's window. Returns
+    // the endpoint JSON payload.
     [[nodiscard]] QByteArray handleWorkspaceChooserRequest(
-        const QString &desktopEntryId);
+        const QString &desktopEntryId, qint64 callerProcessId);
     void initializeGroupContextMenu();
 
 private:

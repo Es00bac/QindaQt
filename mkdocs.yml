@@ -290,3 +290,4 @@ nav:
       - "ADR-0169: report the program behind an opaque window class": adr/0169-report-the-program-behind-an-opaque-window-class.md
       - "ADR-0170: judge the KDE portal backend's start by exec, not by a bus name": adr/0170-survive-a-private-session-bus-for-dbus-units.md
       - "ADR-0171: one gain law for the audio console": adr/0171-one-gain-law-for-the-audio-console.md
+      - "ADR-0172: Applications is a place, and a docked window can replace itself": adr/0172-applications-is-a-place-and-a-docked-window-can-replace-itself.md

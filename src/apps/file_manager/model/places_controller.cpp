@@ -50,6 +50,14 @@ QVariantList PlacesController::places() const {
     list.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                          QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
+  // AGENT-NOTE (ADR-0164/ADR-0172): Applications is a place, not a folder.
+  // It carries the same empty path as Network for the same reason -- there is
+  // no navigable directory behind it -- and PlacesSidebar routes it into the
+  // Applications browser instead of NavigationController::navigateTo().
+  // Before this it was reachable only from the Go menu, which is not where a
+  // user looks for "the thing that says Applications".
+  list.append(placeMap(QStringLiteral("applications"),
+                       QStringLiteral("Applications"), QString()));
   // AGENT-NOTE (S5): this place exposes the route to network browsing
   // without pretending a connection exists -- an empty path is never a
   // navigable location, so PlacesSidebar routes it to the location bar

@@ -244,6 +244,21 @@ void ApplicationsController::activateEntry(const QString &entryId)
                          .arg(entryId));
         return;
     }
+    // ADR-0172: when this window is docked in a container, the application the
+    // user picked takes its PLACE rather than opening somewhere else. The
+    // compositor owns that decision: it accepts only when the calling window is
+    // the active one and is a container member, and it performs the launch and
+    // the atomic swap itself. A rejection is the ordinary undocked case, so it
+    // falls through to a plain launch rather than surfacing an error.
+    //
+    // AGENT-NOTE: the compositor route is tried FIRST because it also owns the
+    // full desktop-entry launch facility. Terminal-required and
+    // D-Bus-activatable entries, which cannot be spawned below, therefore work
+    // while docked even though the local fallback still refuses them.
+    if (chooseApplicationOnCompositor(entryId).accepted()) {
+        Q_EMIT chooserSucceeded();
+        return;
+    }
     const auto preparation = QindaQt::ApplicationCatalog::planApplicationLaunch(
         scanned->documentText, QString(), scanned->entry.name,
         scanned->desktopFilePath);

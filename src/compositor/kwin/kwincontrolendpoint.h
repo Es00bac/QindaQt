@@ -8,6 +8,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
+#include <QtDBus/QDBusContext>
 #include <QPointer>
 
 #include <functional>
@@ -29,7 +30,12 @@ class KWinInputAdapter;
 class KWinOutputInventory;
 class KWinShellVisibilityPublisher;
 
-class KWinControlEndpoint final : public QObject
+// AGENT-CONTRACT: QDBusContext gives the exported methods the calling
+// message, and through it the caller's authenticated PID. ADR-0172 needs it:
+// a window may ask to replace ITSELF with an application, and "itself" can
+// only be established from the bus daemon's credentials - never from an
+// argument the caller supplies.
+class KWinControlEndpoint final : public QObject, protected QDBusContext
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Compositor1")
@@ -44,7 +50,12 @@ public:
     // (the Hybrid session) validates that the ACTIVE window is a registered
     // picker placeholder before touching topology; an unset handler disables
     // the route entirely.
-    using WorkspaceChooserHandler = std::function<QByteArray(const QString &)>;
+    // (desktopEntryId, callerProcessId). The PID is the bus daemon's
+    // credential for the calling connection, or 0 when it could not be
+    // established; the handler must refuse a self-replacement in that case
+    // rather than fall back to trusting the active window (ADR-0172).
+    using WorkspaceChooserHandler =
+        std::function<QByteArray(const QString &, qint64)>;
 
     KWinControlEndpoint(ContainerControlBridge &bridge,
                         ManagedWindowRegistry &registry,
@@ -70,6 +81,7 @@ public:
     void setDevelopmentCompositorReinitializer(
         DevelopmentCompositorReinitializer reinitializer);
     void setWorkspaceChooserHandler(WorkspaceChooserHandler handler);
+
 
     // Process-local compositor policy uses this path during lifecycle
     // reconciliation. It deliberately bypasses only the external D-Bus gate;
@@ -120,6 +132,9 @@ private:
     HybridContainersProvider m_hybridContainers;
     HybridSnapshotProvider m_hybridSnapshot;
     DevelopmentCompositorReinitializer m_developmentCompositorReinitializer;
+    // Bus-daemon credential for the current call; 0 when unavailable.
+    [[nodiscard]] qint64 callerProcessId() const;
+
     WorkspaceChooserHandler m_workspaceChooser;
     DevelopmentInputController m_developmentInput;
     DevelopmentOutputController m_developmentOutput;
