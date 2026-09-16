@@ -32,6 +32,7 @@ bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noe
     case OperationKind::SetBusTarget:
     case OperationKind::SetStripSource:
     case OperationKind::SetStripProcessing:
+    case OperationKind::SetBusProcessing:
         return true;
     default:
         return false;
@@ -269,14 +270,25 @@ void AudioOperationCoordinator::publishConsoleEndpoints()
     const Console console = m_console.console();
     for (const Strip &strip : console.strips) {
         if (strip.kind == StripKind::VirtualInput) {
-            endpoints.append(BackendConsoleEndpoint{
-                .consoleId = strip.id, .isBus = false, .description = strip.label});
+            endpoints.append(BackendConsoleEndpoint{.consoleId = strip.id,
+                                                    .isBus = false,
+                                                    .physicalBusSink = false,
+                                                    .description = strip.label});
         }
     }
     for (const Bus &bus : console.buses) {
         if (bus.kind == BusKind::Virtual) {
-            endpoints.append(BackendConsoleEndpoint{
-                .consoleId = bus.id, .isBus = true, .description = bus.label});
+            endpoints.append(BackendConsoleEndpoint{.consoleId = bus.id,
+                                                    .isBus = true,
+                                                    .physicalBusSink = false,
+                                                    .description = bus.label});
+        } else if (bus.processing.equalizer.enabled || bus.processing.mode != BusMode::Normal) {
+            // A physical bus with a rack needs somewhere for its sends to land
+            // before the rack; without one, nothing to process.
+            endpoints.append(BackendConsoleEndpoint{.consoleId = bus.id,
+                                                    .isBus = true,
+                                                    .physicalBusSink = true,
+                                                    .description = bus.label});
         }
     }
     if (endpoints == m_publishedEndpoints) {
@@ -314,6 +326,31 @@ void AudioOperationCoordinator::publishProcessing()
     }
 }
 
+void AudioOperationCoordinator::publishBusProcessing()
+{
+    QList<BackendBusChain> chains;
+    const Console console = m_console.console();
+    for (const Bus &bus : console.buses) {
+        const bool active = bus.processing.equalizer.enabled
+            || bus.processing.mode != BusMode::Normal;
+        // Only a physical bus: a virtual bus's sink IS what applications
+        // record, and the reference console has no rack on B buses either.
+        if (bus.kind != BusKind::Physical || !active || !bus.targetKnown) {
+            continue;
+        }
+        chains.append(BackendBusChain{.busId = bus.id,
+                                      .target = Handle{bus.targetEpoch, bus.targetSerial},
+                                      .processing = bus.processing});
+    }
+    if (chains == m_publishedBusProcessing) {
+        return;
+    }
+    m_publishedBusProcessing = chains;
+    if (m_backend != nullptr && m_running) {
+        m_backend->applyBusProcessing(m_publishedBusProcessing);
+    }
+}
+
 void AudioOperationCoordinator::acceptLevels(const quint64 generation,
                                              const QList<LevelReading> &levels)
 {
@@ -335,8 +372,10 @@ void AudioOperationCoordinator::republishConsole()
 {
     publishConsoleEndpoints();
     // Processing before routing: a send from a processed strip reads the
-    // processed sink, which must be declared before the routing that uses it.
+    // processed source, and a send into a bus with a rack plays into the
+    // bus's sink; both must be declared before the routing that uses them.
     publishProcessing();
+    publishBusProcessing();
     publishRouting();
     publishMetering();
     m_snapshot.console = m_console.console();

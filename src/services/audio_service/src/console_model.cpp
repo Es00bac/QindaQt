@@ -18,6 +18,9 @@ namespace {
 QJsonObject processingToJson(const StripProcessing &p)
 {
     return QJsonObject{
+        {QStringLiteral("denoiser"),
+         QJsonObject{{QStringLiteral("on"), p.denoiser.enabled},
+                     {QStringLiteral("vadThreshold"), p.denoiser.vadThreshold}}},
         {QStringLiteral("gate"),
          QJsonObject{{QStringLiteral("on"), p.gate.enabled},
                      {QStringLiteral("thresholdDb"), p.gate.thresholdDb},
@@ -48,6 +51,43 @@ QJsonObject processingToJson(const StripProcessing &p)
                      {QStringLiteral("releaseMs"), p.limiter.releaseMs}}}};
 }
 
+QJsonObject busProcessingToJson(const BusProcessing &p)
+{
+    return QJsonObject{
+        {QStringLiteral("equalizer"),
+         QJsonObject{{QStringLiteral("on"), p.equalizer.enabled},
+                     {QStringLiteral("lowHz"), p.equalizer.lowHz},
+                     {QStringLiteral("lowGainDb"), p.equalizer.lowGainDb},
+                     {QStringLiteral("midHz"), p.equalizer.midHz},
+                     {QStringLiteral("midGainDb"), p.equalizer.midGainDb},
+                     {QStringLiteral("midQ"), p.equalizer.midQ},
+                     {QStringLiteral("highHz"), p.equalizer.highHz},
+                     {QStringLiteral("highGainDb"), p.equalizer.highGainDb}}},
+        {QStringLiteral("mode"), int(p.mode)}};
+}
+
+BusProcessing busProcessingFromJson(const QJsonObject &object, const BusProcessing &fallback)
+{
+    if (object.isEmpty()) {
+        return fallback;
+    }
+    const auto number = [](const QJsonObject &block, const char *key, const double current) {
+        return block.value(QLatin1String(key)).toDouble(current);
+    };
+    BusProcessing p = fallback;
+    const QJsonObject eq = object.value(QStringLiteral("equalizer")).toObject();
+    p.equalizer.enabled = eq.value(QStringLiteral("on")).toBool(p.equalizer.enabled);
+    p.equalizer.lowHz = number(eq, "lowHz", p.equalizer.lowHz);
+    p.equalizer.lowGainDb = number(eq, "lowGainDb", p.equalizer.lowGainDb);
+    p.equalizer.midHz = number(eq, "midHz", p.equalizer.midHz);
+    p.equalizer.midGainDb = number(eq, "midGainDb", p.equalizer.midGainDb);
+    p.equalizer.midQ = number(eq, "midQ", p.equalizer.midQ);
+    p.equalizer.highHz = number(eq, "highHz", p.equalizer.highHz);
+    p.equalizer.highGainDb = number(eq, "highGainDb", p.equalizer.highGainDb);
+    p.mode = static_cast<BusMode>(object.value(QStringLiteral("mode")).toInt(int(p.mode)));
+    return p;
+}
+
 StripProcessing processingFromJson(const QJsonObject &object, const StripProcessing &fallback)
 {
     if (object.isEmpty()) {
@@ -57,6 +97,9 @@ StripProcessing processingFromJson(const QJsonObject &object, const StripProcess
         return block.value(QLatin1String(key)).toDouble(current);
     };
     StripProcessing p = fallback;
+    const QJsonObject dn = object.value(QStringLiteral("denoiser")).toObject();
+    p.denoiser.enabled = dn.value(QStringLiteral("on")).toBool(p.denoiser.enabled);
+    p.denoiser.vadThreshold = number(dn, "vadThreshold", p.denoiser.vadThreshold);
     const QJsonObject gate = object.value(QStringLiteral("gate")).toObject();
     p.gate.enabled = gate.value(QStringLiteral("on")).toBool(p.gate.enabled);
     p.gate.thresholdDb = number(gate, "thresholdDb", p.gate.thresholdDb);
@@ -281,7 +324,8 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
     case OperationKind::SetBusGain:
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
-    case OperationKind::SetBusTarget: {
+    case OperationKind::SetBusTarget:
+    case OperationKind::SetBusProcessing: {
         Bus *const bus = findBus(request.consoleId);
         if (bus == nullptr) {
             return reject(reasonCode, "unknown-bus");
@@ -298,6 +342,12 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
             return true;
         case OperationKind::SetBusMono:
             bus->mono = request.enabled;
+            return true;
+        case OperationKind::SetBusProcessing:
+            if (!validBusProcessing(request.busProcessing)) {
+                return reject(reasonCode, "processing-out-of-range");
+            }
+            bus->processing = request.busProcessing;
             return true;
         case OperationKind::SetBusTarget:
             if (!isBoundedText(request.nodeName, kMaxNodeNameUtf8Bytes)) {
@@ -452,7 +502,9 @@ QJsonObject ConsoleModel::toJson() const
                                  {QStringLiteral("gainDb"), bus.gainDb},
                                  {QStringLiteral("muted"), bus.muted},
                                  {QStringLiteral("mono"), bus.mono},
-                                 {QStringLiteral("target"), bus.pinnedTarget}});
+                                 {QStringLiteral("target"), bus.pinnedTarget},
+                                 {QStringLiteral("processing"),
+                                  busProcessingToJson(bus.processing)}});
     }
     return QJsonObject{{QStringLiteral("schemaVersion"), int(kSchemaVersion)},
                        {QStringLiteral("strips"), strips},
@@ -533,6 +585,11 @@ void ConsoleModel::loadJson(const QJsonObject &document)
         const QString target = object.value(QStringLiteral("target")).toString();
         if (isBoundedText(target, kMaxNodeNameUtf8Bytes)) {
             bus->pinnedTarget = target;
+        }
+        const BusProcessing busRack = busProcessingFromJson(
+            object.value(QStringLiteral("processing")).toObject(), bus->processing);
+        if (validBusProcessing(busRack)) {
+            bus->processing = busRack;
         }
     }
 }

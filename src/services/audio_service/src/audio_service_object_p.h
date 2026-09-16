@@ -21,7 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s)b))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))b))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -57,7 +57,8 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"SetBusMono\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"mono\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetBusTarget\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripSource\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
-        "<method name=\"SetStripProcessing\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"processing\" type=\"((bddddd)(bdddddd)(bddddddd)(bdd))\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetBusProcessing\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"processing\" type=\"((bddddddd)u)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripProcessing\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"processing\" type=\"((bd)(bddddd)(bdddddd)(bddddddd)(bdd))\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
         "name=\"revision\" type=\"t\"/></signal>"
         "<signal name=\"Levels\"><arg name=\"levels\" type=\"a(s(ddb))\"/>"
@@ -104,6 +105,9 @@ public Q_SLOTS:
     // Replaces the strip's whole processing rack (ADR-0179).
     Q_SCRIPTABLE void SetStripProcessing(const QString &strip,
                                          const QindaQt::Audio::StripProcessing &processing);
+    // Replaces the bus's rack (ADR-0180).
+    Q_SCRIPTABLE void SetBusProcessing(const QString &bus,
+                                       const QindaQt::Audio::BusProcessing &processing);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);

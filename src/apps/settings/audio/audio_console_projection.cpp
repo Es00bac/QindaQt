@@ -17,9 +17,62 @@ namespace {
 
 using namespace QindaQt::Audio;
 
+[[nodiscard]] QVariantMap equalizerMap(const EqualizerSettings &eq)
+{
+    return QVariantMap{{QStringLiteral("enabled"), eq.enabled},
+                       {QStringLiteral("lowHz"), eq.lowHz},
+                       {QStringLiteral("lowGainDb"), eq.lowGainDb},
+                       {QStringLiteral("midHz"), eq.midHz},
+                       {QStringLiteral("midGainDb"), eq.midGainDb},
+                       {QStringLiteral("midQ"), eq.midQ},
+                       {QStringLiteral("highHz"), eq.highHz},
+                       {QStringLiteral("highGainDb"), eq.highGainDb}};
+}
+
+[[nodiscard]] QString busModeToken(const BusMode mode)
+{
+    switch (mode) {
+    case BusMode::Normal:
+        return QStringLiteral("normal");
+    case BusMode::SwapChannels:
+        return QStringLiteral("swap");
+    case BusMode::LeftToBoth:
+        return QStringLiteral("left");
+    case BusMode::RightToBoth:
+        return QStringLiteral("right");
+    }
+    return QStringLiteral("normal");
+}
+
+[[nodiscard]] BusMode busModeFromToken(const QString &token, const BusMode fallback)
+{
+    if (token == QStringLiteral("normal")) {
+        return BusMode::Normal;
+    }
+    if (token == QStringLiteral("swap")) {
+        return BusMode::SwapChannels;
+    }
+    if (token == QStringLiteral("left")) {
+        return BusMode::LeftToBoth;
+    }
+    if (token == QStringLiteral("right")) {
+        return BusMode::RightToBoth;
+    }
+    return fallback;
+}
+
+[[nodiscard]] QVariantMap busProcessingMap(const BusProcessing &p)
+{
+    return QVariantMap{{QStringLiteral("equalizer"), equalizerMap(p.equalizer)},
+                       {QStringLiteral("mode"), busModeToken(p.mode)}};
+}
+
 [[nodiscard]] QVariantMap processingMap(const StripProcessing &p)
 {
     return QVariantMap{
+        {QStringLiteral("denoiser"),
+         QVariantMap{{QStringLiteral("enabled"), p.denoiser.enabled},
+                     {QStringLiteral("vadThreshold"), p.denoiser.vadThreshold}}},
         {QStringLiteral("gate"),
          QVariantMap{{QStringLiteral("enabled"), p.gate.enabled},
                      {QStringLiteral("thresholdDb"), p.gate.thresholdDb},
@@ -67,6 +120,9 @@ using namespace QindaQt::Audio;
         return value.isValid() ? value.toBool() : current;
     };
     StripProcessing p = fallback;
+    const QVariantMap dn = block("denoiser");
+    p.denoiser.enabled = flag(dn, p.denoiser.enabled);
+    p.denoiser.vadThreshold = number(dn, "vadThreshold", p.denoiser.vadThreshold);
     const QVariantMap gate = block("gate");
     p.gate.enabled = flag(gate, p.gate.enabled);
     p.gate.thresholdDb = number(gate, "thresholdDb", p.gate.thresholdDb);
@@ -195,6 +251,7 @@ QVariantList AudioSettingsModel::consoleBuses() const
             {QStringLiteral("targetSerial"), bus.targetKnown ? bus.targetSerial : 0},
             {QStringLiteral("pinned"), !bus.pinnedTarget.isEmpty()},
             {QStringLiteral("pinnedTarget"), bus.pinnedTarget},
+            {QStringLiteral("processing"), busProcessingMap(bus.processing)},
             {QStringLiteral("level"), levelMap(bus.level)}});
     }
     return rows;
@@ -247,6 +304,53 @@ bool AudioSettingsModel::setStripProcessing(QString stripId, QVariantMap process
         return false;
     }
     if (m_client.setStripProcessing(stripId, rack) == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
+}
+
+bool AudioSettingsModel::setBusProcessing(QString busId, QVariantMap processing)
+{
+    const Snapshot snapshot = m_client.snapshot();
+    if (!consoleAvailable()
+        || !snapshot.capabilities.testFlag(Capability::SetConsoleGain)) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    const Bus *current = nullptr;
+    for (const Bus &bus : snapshot.console.buses) {
+        if (bus.id == busId) {
+            current = &bus;
+        }
+    }
+    if (current == nullptr) {
+        rejectAction(QStringLiteral("stale-handle"));
+        return false;
+    }
+    BusProcessing rack = current->processing;
+    const QVariantMap eq = processing.value(QStringLiteral("equalizer")).toMap();
+    const auto number = [&eq](const char *key, const double fallback) {
+        bool ok = false;
+        const double parsed = eq.value(QLatin1String(key)).toDouble(&ok);
+        return ok ? parsed : fallback;
+    };
+    if (eq.contains(QStringLiteral("enabled"))) {
+        rack.equalizer.enabled = eq.value(QStringLiteral("enabled")).toBool();
+    }
+    rack.equalizer.lowHz = number("lowHz", rack.equalizer.lowHz);
+    rack.equalizer.lowGainDb = number("lowGainDb", rack.equalizer.lowGainDb);
+    rack.equalizer.midHz = number("midHz", rack.equalizer.midHz);
+    rack.equalizer.midGainDb = number("midGainDb", rack.equalizer.midGainDb);
+    rack.equalizer.midQ = number("midQ", rack.equalizer.midQ);
+    rack.equalizer.highHz = number("highHz", rack.equalizer.highHz);
+    rack.equalizer.highGainDb = number("highGainDb", rack.equalizer.highGainDb);
+    rack.mode = busModeFromToken(processing.value(QStringLiteral("mode")).toString(), rack.mode);
+    if (!validBusProcessing(rack)) {
+        rejectAction(QStringLiteral("processing-out-of-range"));
+        return false;
+    }
+    if (m_client.setBusProcessing(busId, rack) == 0) {
         rejectAction(QString());
         return false;
     }

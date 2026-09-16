@@ -34,6 +34,7 @@ foreach(source IN LISTS route_cpp)
         # deliberately no generic "apply this request" escape hatch through
         # which the route could reach the rest of Audio1.
         "Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing)"
+        "Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing)"
         "Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial)"
         "Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial)"
         "Q_INVOKABLE bool setStripFader(QString stripId, double position)"

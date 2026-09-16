@@ -58,6 +58,11 @@ public:
         ++processingCalls;
     }
 
+    void applyBusProcessing(const QList<Audio::BackendBusChain> &chains) override
+    {
+        busProcessing = chains;
+    }
+
     void publishLevels(const QList<Audio::LevelReading> &levels)
     {
         Q_EMIT levelsReady(generation, levels);
@@ -97,6 +102,7 @@ public:
     QList<Audio::BackendMeterTarget> metering;
     QList<Audio::BackendConsoleEndpoint> endpoints;
     QList<Audio::BackendProcessingChain> processing;
+    QList<Audio::BackendBusChain> busProcessing;
     int processingCalls = 0;
     int endpointCalls = 0;
     int routingCalls = 0;

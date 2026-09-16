@@ -22,6 +22,7 @@ struct ValidationResult {
 // The rack's bounds (ADR-0179), shared by the console gate, the model's apply
 // and the client's preflight so all three refuse exactly the same values.
 [[nodiscard]] bool validStripProcessing(const StripProcessing &processing);
+[[nodiscard]] bool validBusProcessing(const BusProcessing &processing);
 [[nodiscard]] ValidationResult validateOperationResult(const OperationResult &result);
 // True when the operation names a device or stream by HANDLE in `primary`, and
 // so must be checked against the retained snapshot's lineage before anything

@@ -98,11 +98,13 @@ void registerDBusTypes()
     qRegisterMetaType<LevelReading>();
     qRegisterMetaType<QList<LevelReading>>();
     qRegisterMetaType<MatrixSend>();
+    qRegisterMetaType<DenoiserSettings>();
     qRegisterMetaType<GateSettings>();
     qRegisterMetaType<CompressorSettings>();
     qRegisterMetaType<LimiterSettings>();
     qRegisterMetaType<EqualizerSettings>();
     qRegisterMetaType<StripProcessing>();
+    qRegisterMetaType<BusProcessing>();
     qRegisterMetaType<Strip>();
     qRegisterMetaType<Bus>();
     qRegisterMetaType<Console>();
@@ -119,11 +121,13 @@ void registerDBusTypes()
     qDBusRegisterMetaType<LevelReading>();
     qDBusRegisterMetaType<QList<LevelReading>>();
     qDBusRegisterMetaType<MatrixSend>();
+    qDBusRegisterMetaType<DenoiserSettings>();
     qDBusRegisterMetaType<GateSettings>();
     qDBusRegisterMetaType<CompressorSettings>();
     qDBusRegisterMetaType<LimiterSettings>();
     qDBusRegisterMetaType<EqualizerSettings>();
     qDBusRegisterMetaType<StripProcessing>();
+    qDBusRegisterMetaType<BusProcessing>();
     qDBusRegisterMetaType<Strip>();
     qDBusRegisterMetaType<Bus>();
     qDBusRegisterMetaType<Console>();
@@ -254,6 +258,40 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, MatrixSend &value
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, const DenoiserSettings &value)
+{
+    argument.beginStructure();
+    argument << value.enabled << value.vadThreshold;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, DenoiserSettings &value)
+{
+    argument.beginStructure();
+    argument >> value.enabled >> value.vadThreshold;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const BusProcessing &value)
+{
+    argument.beginStructure();
+    argument << value.equalizer << static_cast<quint32>(value.mode);
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, BusProcessing &value)
+{
+    quint32 mode = 0;
+    argument.beginStructure();
+    argument >> value.equalizer >> mode;
+    argument.endStructure();
+    value.mode = static_cast<BusMode>(mode);
+    return argument;
+}
+
 QDBusArgument &operator<<(QDBusArgument &argument, const GateSettings &value)
 {
     argument.beginStructure();
@@ -327,7 +365,8 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EqualizerSettings
 QDBusArgument &operator<<(QDBusArgument &argument, const StripProcessing &value)
 {
     argument.beginStructure();
-    argument << value.gate << value.compressor << value.equalizer << value.limiter;
+    argument << value.denoiser << value.gate << value.compressor << value.equalizer
+             << value.limiter;
     argument.endStructure();
     return argument;
 }
@@ -335,7 +374,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const StripProcessing &value)
 const QDBusArgument &operator>>(const QDBusArgument &argument, StripProcessing &value)
 {
     argument.beginStructure();
-    argument >> value.gate >> value.compressor >> value.equalizer >> value.limiter;
+    argument >> value.denoiser >> value.gate >> value.compressor >> value.equalizer
+        >> value.limiter;
     argument.endStructure();
     return argument;
 }
@@ -376,7 +416,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Bus &value)
     argument << value.id << static_cast<quint32>(value.kind) << value.index
              << value.label << value.targetEpoch << value.targetSerial
              << value.targetKnown << value.gainDb << value.muted << value.mono
-             << value.level << value.pinnedTarget;
+             << value.level << value.pinnedTarget << value.processing;
     argument.endStructure();
     return argument;
 }
@@ -388,7 +428,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Bus &value)
     argument.beginStructure();
     argument >> value.id >> kind >> value.index >> value.label >> value.targetEpoch
         >> value.targetSerial >> value.targetKnown >> value.gainDb >> value.muted
-        >> value.mono >> value.level >> value.pinnedTarget;
+        >> value.mono >> value.level >> value.pinnedTarget >> value.processing;
     argument.endStructure();
     value.kind = static_cast<BusKind>(kind);
     return argument;

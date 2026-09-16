@@ -435,6 +435,13 @@ quint64 AudioClient::setStripProcessing(const QString &stripId,
     return beginOperation(request);
 }
 
+quint64 AudioClient::setBusProcessing(const QString &busId, const BusProcessing &processing)
+{
+    auto request = consoleRequest(OperationKind::SetBusProcessing, busId);
+    request.busProcessing = processing;
+    return beginOperation(request);
+}
+
 quint64 AudioClient::beginOperation(const OperationRequest &request)
 {
     if (m_nextRequestId == 0 || m_nextRequestId == std::numeric_limits<quint64>::max()) {

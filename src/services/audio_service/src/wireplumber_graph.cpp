@@ -593,4 +593,25 @@ std::optional<NodeLookup> findNode(WpObjectManager *manager, const quint64 seria
     return std::nullopt;
 }
 
+QStringList nodeNamesWithPrefix(WpObjectManager *manager, const QString &prefix)
+{
+    QStringList names;
+    if (manager == nullptr || prefix.isEmpty()) {
+        return names;
+    }
+    const QByteArray wanted = prefix.toUtf8();
+    WpIterator *iterator = wp_object_manager_new_filtered_iterator(manager, WP_TYPE_NODE, nullptr);
+    GValue value = G_VALUE_INIT;
+    while (wp_iterator_next(iterator, &value)) {
+        auto *node = WP_PIPEWIRE_OBJECT(g_value_get_object(&value));
+        const gchar *name = wp_pipewire_object_get_property(node, PW_KEY_NODE_NAME);
+        if (name != nullptr && g_str_has_prefix(name, wanted.constData())) {
+            names.append(QString::fromUtf8(name));
+        }
+        g_value_unset(&value);
+    }
+    wp_iterator_unref(iterator);
+    return names;
+}
+
 } // namespace QindaQt::Audio::WirePlumberGraph

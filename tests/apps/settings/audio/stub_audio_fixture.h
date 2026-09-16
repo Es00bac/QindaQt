@@ -168,6 +168,8 @@ inline QVariantList consoleSends(const QList<int> &enabledBuses) {
 
 inline QVariantMap defaultRack() {
   return QVariantMap{
+      {QStringLiteral("denoiser"),
+       QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("vadThreshold"), 50.0}}},
       {QStringLiteral("gate"),
        QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("thresholdDb"), -40.0},
                    {QStringLiteral("attackMs"), 5.0}, {QStringLiteral("holdMs"), 50.0},
@@ -211,6 +213,17 @@ inline QVariantMap consoleStripRow(const QString &id, const QString &label,
   };
 }
 
+inline QVariantMap defaultBusRack() {
+  return QVariantMap{
+      {QStringLiteral("equalizer"),
+       QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("lowHz"), 120.0},
+                   {QStringLiteral("lowGainDb"), 0.0}, {QStringLiteral("midHz"), 1000.0},
+                   {QStringLiteral("midGainDb"), 0.0}, {QStringLiteral("midQ"), 1.0},
+                   {QStringLiteral("highHz"), 8000.0}, {QStringLiteral("highGainDb"), 0.0}}},
+      {QStringLiteral("mode"), QStringLiteral("normal")},
+  };
+}
+
 inline QVariantMap consoleBusRow(const QString &id, const int index,
                                  const QString &label, const bool isVirtual,
                                  const bool bound) {
@@ -227,6 +240,7 @@ inline QVariantMap consoleBusRow(const QString &id, const int index,
       {QStringLiteral("targetSerial"), bound ? qulonglong(10) : qulonglong(0)},
       {QStringLiteral("pinned"), false},
       {QStringLiteral("pinnedTarget"), QString()},
+      {QStringLiteral("processing"), defaultBusRack()},
       {QStringLiteral("level"), consoleLevel(-96.0, -96.0, false)},
   };
 }

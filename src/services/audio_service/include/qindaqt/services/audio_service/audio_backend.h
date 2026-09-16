@@ -81,6 +81,10 @@ struct BackendMeterTarget {
 struct BackendConsoleEndpoint {
     QString consoleId;
     bool isBus = false;
+    // A PHYSICAL bus's intermediate sink (ADR-0180): exists only while the
+    // bus has an active rack, so the default console adds no devices. Sends
+    // then play into it and the rack plays into the device.
+    bool physicalBusSink = false;
     // What the user sees in every application's device picker.
     QString description;
 
@@ -99,6 +103,16 @@ struct BackendProcessingChain {
 
     friend bool operator==(const BackendProcessingChain &,
                            const BackendProcessingChain &) = default;
+};
+
+// One physical bus's active rack (ADR-0180): the device the bus drives, and
+// the rack to run between the bus's own sink and that device.
+struct BackendBusChain {
+    QString busId;
+    Handle target;
+    BusProcessing processing;
+
+    friend bool operator==(const BackendBusChain &, const BackendBusChain &) = default;
 };
 
 // AGENT-CONTRACT: Implementations receive requests on the Qt main thread and
@@ -151,6 +165,10 @@ public:
     // Declares every strip rack that should be running. Declarative like the
     // rest; a backend with no graph may ignore it.
     virtual void applyProcessing(const QList<BackendProcessingChain> &chains)
+    {
+        Q_UNUSED(chains)
+    }
+    virtual void applyBusProcessing(const QList<BackendBusChain> &chains)
     {
         Q_UNUSED(chains)
     }

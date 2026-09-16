@@ -78,6 +78,9 @@ public:
     // Replaces the strip's whole processing rack (ADR-0179).
     [[nodiscard]] quint64 setStripProcessing(const QString &stripId,
                                              const StripProcessing &processing);
+    // Replaces the bus's rack (ADR-0180).
+    [[nodiscard]] quint64 setBusProcessing(const QString &busId,
+                                           const BusProcessing &processing);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);

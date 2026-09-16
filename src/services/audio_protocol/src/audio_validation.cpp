@@ -103,13 +103,35 @@ namespace {
 
 } // namespace
 
+namespace {
+
+[[nodiscard]] bool validEqualizer(const EqualizerSettings &eq)
+{
+    return within(eq.lowHz, kMinEqHz, kMaxEqHz) && within(eq.midHz, kMinEqHz, kMaxEqHz)
+        && within(eq.highHz, kMinEqHz, kMaxEqHz)
+        && within(eq.lowGainDb, kMinEqGainDb, kMaxEqGainDb)
+        && within(eq.midGainDb, kMinEqGainDb, kMaxEqGainDb)
+        && within(eq.highGainDb, kMinEqGainDb, kMaxEqGainDb)
+        && within(eq.midQ, kMinEqQ, kMaxEqQ);
+}
+
+} // namespace
+
+bool validBusProcessing(const BusProcessing &processing)
+{
+    return validEqualizer(processing.equalizer)
+        && (processing.mode == BusMode::Normal || processing.mode == BusMode::SwapChannels
+            || processing.mode == BusMode::LeftToBoth || processing.mode == BusMode::RightToBoth);
+}
+
 bool validStripProcessing(const StripProcessing &processing)
 {
     const GateSettings &gate = processing.gate;
     const CompressorSettings &compressor = processing.compressor;
-    const EqualizerSettings &eq = processing.equalizer;
     const LimiterSettings &limiter = processing.limiter;
-    return within(gate.thresholdDb, kMinThresholdDb, kMaxThresholdDb)
+    return within(processing.denoiser.vadThreshold, 0.0, 100.0)
+        && validEqualizer(processing.equalizer)
+        && within(gate.thresholdDb, kMinThresholdDb, kMaxThresholdDb)
         && within(gate.attackMs, kMinTimeMs, kMaxTimeMs)
         && within(gate.holdMs, kMinTimeMs, kMaxTimeMs)
         && within(gate.releaseMs, kMinTimeMs, kMaxTimeMs)
@@ -121,13 +143,7 @@ bool validStripProcessing(const StripProcessing &processing)
         && within(compressor.kneeDb, 0.0, kMaxEqGainDb)
         && within(compressor.makeupDb, 0.0, kMaxEqGainDb)
         && within(limiter.ceilingDb, kMinThresholdDb, kMaxThresholdDb)
-        && within(limiter.releaseMs, kMinTimeMs, kMaxTimeMs)
-        && within(eq.lowHz, kMinEqHz, kMaxEqHz) && within(eq.midHz, kMinEqHz, kMaxEqHz)
-        && within(eq.highHz, kMinEqHz, kMaxEqHz)
-        && within(eq.lowGainDb, kMinEqGainDb, kMaxEqGainDb)
-        && within(eq.midGainDb, kMinEqGainDb, kMaxEqGainDb)
-        && within(eq.highGainDb, kMinEqGainDb, kMaxEqGainDb)
-        && within(eq.midQ, kMinEqQ, kMaxEqQ);
+        && within(limiter.releaseMs, kMinTimeMs, kMaxTimeMs);
 }
 
 bool operationTargetsHandle(const OperationKind kind) noexcept
@@ -146,6 +162,7 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
     case OperationKind::SetStripProcessing:
+    case OperationKind::SetBusProcessing:
         return false;
     // SetBusTarget and SetStripSource name a console element AND the device it
     // should follow, so a valid handle is checked like any other; an INVALID
@@ -251,6 +268,9 @@ ValidationResult validateConsole(const Console &console)
         }
         if (!validGainDb(bus.gainDb) || !validLevel(bus.level)) {
             return rejected(QStringLiteral("invalid-bus-level"));
+        }
+        if (!validBusProcessing(bus.processing)) {
+            return rejected(QStringLiteral("invalid-bus-processing"));
         }
         busIds.insert(bus.id);
         busIndices.insert(bus.index);

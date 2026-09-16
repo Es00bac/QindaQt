@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 6;
+inline constexpr quint32 kSchemaVersion = 7;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;

@@ -210,6 +210,13 @@ void AudioServiceObject::SetStripProcessing(const QString &strip,
     beginOperation(request);
 }
 
+void AudioServiceObject::SetBusProcessing(const QString &bus, const BusProcessing &processing)
+{
+    auto request = consoleRequest(OperationKind::SetBusProcessing, bus);
+    request.busProcessing = processing;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

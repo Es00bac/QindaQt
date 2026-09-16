@@ -33,6 +33,15 @@ namespace QindaQt::Audio
                                                    const QString &sourceNodeName,
                                                    bool sourceIsSink,
                                                    const StripProcessing &processing);
+// The bus rack (ADR-0180): captures the bus's own sink and plays into the
+// device the bus drives, with one equalizer per channel and the channel mode
+// as the output mapping. Only a physical bus has one; a virtual bus's sink IS
+// what other applications record.
+[[nodiscard]] QString busChainNodeName(const QString &busId);
+[[nodiscard]] bool busProcessingActive(const BusProcessing &processing);
+[[nodiscard]] QByteArray busProcessingModuleArguments(const QString &busId,
+                                                      const QString &deviceNodeName,
+                                                      const BusProcessing &processing);
 // The chain's control values as "<node>:<control>" -> value, for updating a
 // running chain without rebuilding it. Only enabled blocks are listed.
 [[nodiscard]] QList<QPair<QByteArray, double>>

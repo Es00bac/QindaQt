@@ -226,6 +226,7 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
     case OperationKind::SetBusTarget:
     case OperationKind::SetStripSource:
     case OperationKind::SetStripProcessing:
+    case OperationKind::SetBusProcessing:
         rejectConsoleOperation(operationId);
         return;
     case OperationKind::SetDefault: {

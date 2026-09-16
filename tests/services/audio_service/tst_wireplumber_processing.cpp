@@ -18,6 +18,8 @@ private slots:
     void enabledBlocksAreChainedInOrder();
     void namesAndControlsMatchThePlugins();
     void controlsListOnlyEnabledBlocks();
+    void theDenoiserComesFirst();
+    void aBusRackIsAStereoGraphWithTheModeAsItsOutputs();
 };
 
 void WirePlumberProcessingTests::anIdleRackHasNoChain()
@@ -118,6 +120,66 @@ void WirePlumberProcessingTests::controlsListOnlyEnabledBlocks()
         sawMakeup = sawMakeup || (name == "comp:Makeup gain (dB)" && value == 2.5);
     }
     QVERIFY(sawMakeup);
+}
+
+// ADR-0180. RNNoise runs before the gate so the gate judges cleaned audio.
+void WirePlumberProcessingTests::theDenoiserComesFirst()
+{
+    StripProcessing rack;
+    rack.denoiser.enabled = true;
+    rack.denoiser.vadThreshold = 65.0;
+    rack.gate.enabled = true;
+    QVERIFY(processingActive(rack));
+    const QString text = QString::fromUtf8(processingModuleArguments(
+        QStringLiteral("strip.hw.1"), QStringLiteral("alsa_input.x"), false, rack));
+    QVERIFY(text.contains(QStringLiteral("plugin = librnnoise_ladspa label = noise_suppressor_mono")));
+    QVERIFY(text.contains(QStringLiteral("\"VAD Threshold (%)\" = 65.000")));
+    QVERIFY(text.contains(QStringLiteral("inputs = [ \"denoise:Input\" ]")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"denoise:Output\" input = \"gate:Input\" }")));
+    StripProcessing only;
+    only.denoiser.enabled = true;
+    QVERIFY(processingActive(only));
+    QCOMPARE(processingControls(only).size(), 1);
+}
+
+void WirePlumberProcessingTests::aBusRackIsAStereoGraphWithTheModeAsItsOutputs()
+{
+    BusProcessing idle;
+    QVERIFY(!busProcessingActive(idle));
+    QVERIFY(busProcessingModuleArguments(QStringLiteral("bus.a1"), QStringLiteral("alsa_output.x"), idle)
+                .isEmpty());
+
+    BusProcessing rack;
+    rack.equalizer.enabled = true;
+    rack.equalizer.highGainDb = -3.0;
+    const QString text = QString::fromUtf8(busProcessingModuleArguments(
+        QStringLiteral("bus.a1"), QStringLiteral("alsa_output.x"), rack));
+    QVERIFY(!text.isEmpty());
+    // Captures the bus's own sink, plays into the device it drives.
+    QVERIFY(text.contains(QStringLiteral("target.object = \"qindaqt.console.bus.a1\"")));
+    QVERIFY(text.contains(QStringLiteral("stream.capture.sink = true")));
+    QVERIFY(text.contains(QStringLiteral("playback.props = { node.name = \"qindaqt.console.bus.a1.rack.playback\" target.object = \"alsa_output.x\"")));
+    // One equalizer per channel, explicitly.
+    QVERIFY(text.contains(QStringLiteral("name = eq_l_high")));
+    QVERIFY(text.contains(QStringLiteral("name = eq_r_high")));
+    QVERIFY(text.contains(QStringLiteral("inputs = [ \"eq_l_low:In\" \"eq_r_low:In\" ]")));
+    QVERIFY(text.contains(QStringLiteral("outputs = [ \"eq_l_high:Out\" \"eq_r_high:Out\" ]")));
+    QCOMPARE(text.count(QStringLiteral("\"Gain\" = -3.000")), 2);
+
+    // A mode alone needs the chain, with the equalizer flat.
+    BusProcessing swap;
+    swap.mode = BusMode::SwapChannels;
+    swap.equalizer.lowGainDb = 9.0; // off, so must not reach the graph
+    QVERIFY(busProcessingActive(swap));
+    const QString swapped = QString::fromUtf8(busProcessingModuleArguments(
+        QStringLiteral("bus.a2"), QStringLiteral("alsa_output.y"), swap));
+    QVERIFY(swapped.contains(QStringLiteral("outputs = [ \"eq_r_high:Out\" \"eq_l_high:Out\" ]")));
+    QVERIFY(!swapped.contains(QStringLiteral("\"Gain\" = 9.000")));
+    BusProcessing left;
+    left.mode = BusMode::LeftToBoth;
+    QVERIFY(QString::fromUtf8(busProcessingModuleArguments(QStringLiteral("bus.a3"),
+                                                          QStringLiteral("alsa_output.z"), left))
+                .contains(QStringLiteral("outputs = [ \"eq_l_high:Out\" \"eq_l_high:Out\" ]")));
 }
 
 QTEST_APPLESS_MAIN(WirePlumberProcessingTests)

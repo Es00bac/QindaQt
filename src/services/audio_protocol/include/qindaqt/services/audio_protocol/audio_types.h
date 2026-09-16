@@ -77,6 +77,8 @@ enum class OperationKind : quint32 {
     // the four blocks: a client always holds the current rack and sends it
     // back with one control changed, which keeps the surface to one method.
     SetStripProcessing = 19,
+    // Replaces a bus's whole rack (ADR-0180).
+    SetBusProcessing = 20,
 };
 
 enum class OperationStatus : quint32 {
@@ -218,6 +220,8 @@ struct OperationRequest {
     QString nodeName = {};
     // SetStripProcessing: the rack to apply.
     StripProcessing processing = {};
+    // SetBusProcessing: the bus rack to apply.
+    BusProcessing busProcessing = {};
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

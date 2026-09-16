@@ -56,11 +56,12 @@ public:
     void applyConsoleEndpoints(QList<BackendConsoleEndpoint> endpoints);
     // Declares the active strip racks (ADR-0179), marshalled like the rest.
     void applyProcessing(QList<BackendProcessingChain> chains);
+    void applyBusProcessing(QList<BackendBusChain> chains);
     // Called from a module's own destroy event: PipeWire took it down (a
     // stream that could not connect). Drops the entry only if it still holds
     // THAT module - the key may already belong to its replacement. Public
     // only because the event lands in a free C callback.
-    enum class ModuleKind { Send, Chain };
+    enum class ModuleKind { Send, Chain, BusChain };
     void forgetModule(ModuleKind kind, const std::string &key, void *module);
     // Attaches the destroy listener; every loaded module goes through it.
     void watchModule(ModuleKind kind, const std::string &key, void *module);
@@ -103,6 +104,10 @@ private:
     // running chains match the declaration; a changed rack is a reload.
     void applyProcessingOnWorker(const QList<BackendProcessingChain> &chains);
     void unloadAllProcessing();
+    void applyBusProcessingOnWorker(const QList<BackendBusChain> &chains);
+    // Where a send into a bus should play: the bus's own sink when the bus
+    // has a running rack, otherwise the device. Empty when neither exists.
+    [[nodiscard]] QString busWriteNode(const QString &busId, const Handle &device) const;
     // AGENT-GUARD: an impl module is never destroyed from inside a PipeWire or
     // WirePlumber dispatch. Every worker mutation runs in an objects-changed
     // callback, and destroying a module's client-node streams while the
@@ -192,6 +197,8 @@ private:
     // argument they were loaded with so a changed rack is detected as a
     // difference rather than re-derived.
     std::unordered_map<std::string, LoadedModule> m_processingModules;
+    QList<BackendBusChain> m_declaredBusProcessing;
+    std::unordered_map<std::string, LoadedModule> m_busProcessingModules;
     std::vector<void *> m_modulesPendingDestroy;
     GSource *m_moduleDestroySource = nullptr;
     // Bus loopback modules this worker loaded, keyed by the bus sink's node

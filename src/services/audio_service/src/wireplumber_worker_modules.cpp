@@ -59,7 +59,9 @@ void WirePlumberWorker::watchModule(const ModuleKind kind, const std::string &ke
 void WirePlumberWorker::forgetModule(const ModuleKind kind, const std::string &key,
                                      void *const module)
 {
-    auto &map = kind == ModuleKind::Send ? m_routingModules : m_processingModules;
+    auto &map = kind == ModuleKind::Send ? m_routingModules
+        : kind == ModuleKind::Chain    ? m_processingModules
+                                       : m_busProcessingModules;
     const auto it = map.find(key);
     if (it != map.end() && it->second.module == module) {
         map.erase(it);

@@ -131,6 +131,9 @@ public:
   // under "processing" with any controls changed; refused whole when a value
   // is out of range.
   Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing);
+  // A bus's rack (ADR-0180): "equalizer" as for a strip, and "mode" as one of
+  // normal, swap, left, right.
+  Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing);
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
   Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);
   Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);

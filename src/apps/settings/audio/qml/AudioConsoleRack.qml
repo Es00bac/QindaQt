@@ -46,6 +46,14 @@ ColumnLayout {
     }
 
     Block {
+        blockName: "denoiser"
+        title: qsTr("Denoiser")
+        AudioConsoleRackDial { label: qsTr("Voice threshold"); unit: " %"; from: 0; to: 100
+            value: parent.settings.vadThreshold ?? 50; enabledControl: parent.on && rack.enabledControls
+            onCommitted: v => rack.send("denoiser", "vadThreshold", v) }
+    }
+
+    Block {
         blockName: "gate"
         title: qsTr("Gate")
         AudioConsoleRackDial { label: qsTr("Threshold"); unit: " dB"; from: -80; to: 0

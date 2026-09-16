@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "console_endpoints_p.h"
 #include "wireplumber_graph_p.h"
 #include "wireplumber_processing_p.h"
 #include "wireplumber_worker_p.h"
@@ -90,11 +91,90 @@ void WirePlumberWorker::applyProcessingOnWorker(const QList<BackendProcessingCha
     }
 }
 
+void WirePlumberWorker::applyBusProcessing(QList<BackendBusChain> chains)
+{
+    invoke([this, chains = std::move(chains)] { applyBusProcessingOnWorker(chains); });
+}
+
+void WirePlumberWorker::applyBusProcessingOnWorker(const QList<BackendBusChain> &chains)
+{
+    m_declaredBusProcessing = chains;
+    if (m_core == nullptr || m_manager == nullptr) {
+        return;
+    }
+    struct pw_context *const context = wp_core_get_pw_context(m_core);
+    if (context == nullptr) {
+        return;
+    }
+    std::unordered_map<std::string, QByteArray> wanted;
+    for (const BackendBusChain &chain : chains) {
+        const QString device = nodeNameForHandle(chain.target);
+        // The bus's own sink must exist before a chain can capture it; it is
+        // declared as an endpoint and appears a graph event later.
+        if (device.isEmpty()
+            || !WirePlumberGraph::findNodeByName(m_manager,
+                                                 ConsoleEndpoints::busSinkNodeName(chain.busId))
+                    .has_value()) {
+            continue;
+        }
+        const QByteArray arguments =
+            busProcessingModuleArguments(chain.busId, device, chain.processing);
+        if (!arguments.isEmpty()) {
+            wanted.emplace(chain.busId.toStdString(), arguments);
+        }
+    }
+    for (auto it = m_busProcessingModules.begin(); it != m_busProcessingModules.end();) {
+        const auto want = wanted.find(it->first);
+        if (want == wanted.end() || want->second != it->second.arguments) {
+            destroyModuleLater(it->second.module);
+            it = m_busProcessingModules.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    for (const auto &[busId, arguments] : wanted) {
+        if (m_busProcessingModules.find(busId) != m_busProcessingModules.end()) {
+            continue;
+        }
+        struct pw_impl_module *const module = pw_context_load_module(
+            context, "libpipewire-module-filter-chain", arguments.constData(), nullptr);
+        if (moduleDebug()) {
+            fprintf(stderr, "qindaqt-audio: bus filter-chain for %s -> %s\n  %s\n", busId.c_str(),
+                    module != nullptr ? "loaded" : "REFUSED", arguments.constData());
+        }
+        if (module == nullptr) {
+            continue;
+        }
+        watchModule(ModuleKind::BusChain, busId, module);
+        m_busProcessingModules.emplace(busId,
+                                       LoadedModule{.module = module, .arguments = arguments});
+    }
+}
+
+QString WirePlumberWorker::busWriteNode(const QString &busId, const Handle &device) const
+{
+    // A running bus rack interposes itself: the sends play into the bus's own
+    // sink and the rack plays into the device. Until the rack runs, the sends
+    // play into the device as before.
+    if (m_busProcessingModules.find(busId.toStdString()) != m_busProcessingModules.end()) {
+        const QString sink = ConsoleEndpoints::busSinkNodeName(busId);
+        if (WirePlumberGraph::findNodeByName(m_manager, sink).has_value()) {
+            return sink;
+        }
+    }
+    return nodeNameForHandle(device);
+}
+
 void WirePlumberWorker::unloadAllProcessing()
 {
     std::unordered_map<std::string, LoadedModule> loaded;
     loaded.swap(m_processingModules);
     for (auto &[stripId, entry] : loaded) {
+        pw_impl_module_destroy(static_cast<struct pw_impl_module *>(entry.module));
+    }
+    std::unordered_map<std::string, LoadedModule> buses;
+    buses.swap(m_busProcessingModules);
+    for (auto &[busId, entry] : buses) {
         pw_impl_module_destroy(static_cast<struct pw_impl_module *>(entry.module));
     }
 }

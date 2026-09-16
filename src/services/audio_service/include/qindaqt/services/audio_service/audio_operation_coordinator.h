@@ -87,6 +87,7 @@ private:
     // Declares the strips whose racks are active and whose device the graph
     // has (ADR-0179), when the set or any rack changed.
     void publishProcessing();
+    void publishBusProcessing();
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
     void publishRestartingSnapshot();
 
@@ -97,6 +98,7 @@ private:
     QList<BackendMeterTarget> m_publishedMetering;
     QList<BackendConsoleEndpoint> m_publishedEndpoints;
     QList<BackendProcessingChain> m_publishedProcessing;
+    QList<BackendBusChain> m_publishedBusProcessing;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;

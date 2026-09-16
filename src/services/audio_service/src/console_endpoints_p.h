@@ -56,6 +56,10 @@ inline constexpr char kConsoleNodeNamePrefix[] = "qindaqt.console.";
 // factory. Empty when the id or description is unusable.
 [[nodiscard]] QList<QPair<QByteArray, QByteArray>>
 stripSinkProperties(const QString &stripId, const QString &description);
+// Properties for a PHYSICAL bus's pre-rack null sink (ADR-0180), under the
+// same name a virtual bus's sink would have.
+[[nodiscard]] QList<QPair<QByteArray, QByteArray>>
+busSinkProperties(const QString &busId, const QString &description);
 // libpipewire-module-loopback arguments for a virtual bus. Empty when the id or
 // description cannot be embedded safely.
 [[nodiscard]] QByteArray busModuleArguments(const QString &busId,

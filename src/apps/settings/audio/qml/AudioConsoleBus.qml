@@ -19,6 +19,7 @@ ColumnLayout {
 
     spacing: Tokens.space["2"]
     objectName: "consoleBus_" + bus.id
+    property bool rackVisible: false
 
     Label {
         Layout.fillWidth: true
@@ -78,6 +79,27 @@ ColumnLayout {
         AudioConsoleMeter {
             objectName: "consoleBusMeter_" + root.bus.id
             reading: root.model.consoleLevels[root.bus.id]
+        }
+    }
+
+    Button {
+        objectName: "consoleBusRackToggle_" + root.bus.id
+        Layout.alignment: Qt.AlignHCenter
+        visible: !root.bus.virtual
+        text: qsTr("Rack")
+        checkable: true
+        checked: root.rackVisible
+        onToggled: root.rackVisible = checked
+        Accessible.name: qsTr("Rack for bus %1").arg(root.bus.label)
+    }
+    Loader {
+        Layout.fillWidth: true
+        active: root.rackVisible && !root.bus.virtual
+        visible: active
+        sourceComponent: AudioConsoleBusRack {
+            model: root.model
+            bus: root.bus
+            enabledControls: root.enabledControls
         }
     }
 
