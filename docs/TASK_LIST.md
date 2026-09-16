@@ -5,6 +5,17 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 16, r5)
+
+Exact source `fcedb223` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260915-r5` (superseding r4). This
+checkpoint installs the strip denoiser (RNNoise before the gate) and the
+physical-bus rack — a three-band equalizer and stereo channel modes, with a
+pre-rack sink that exists only while the rack does (ADR-0180) — and declares
+`media-libs/noise-suppression-for-voice` as a runtime dependency. Installed
+verification: the packaged service loads the denoiser chain and a bus chain
+on the live graph and tears both down cleanly.
+
 ## Installed delivery checkpoint (September 16, r4)
 
 Exact source `ea0ee25e` is installed through Portage as
