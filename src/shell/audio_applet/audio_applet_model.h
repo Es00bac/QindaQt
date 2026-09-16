@@ -6,6 +6,8 @@
 
 #include <QtCore/QSet>
 #include <QtCore/QVariantList>
+
+#include <utility>
 #include <optional>
 
 namespace QindaQt::Shell::AudioApplet {
@@ -109,6 +111,45 @@ public:
 // Pure projection of one Audio1 snapshot plus the controller's pending-request
 // set into the bounded applet presentation state. It carries no object
 // machinery, no transport, and no snapshot retention beyond one build.
+// One console strip in the tray (ADR-0181): the fader, mute and meter of a
+// strip, enough to ride a level without opening Settings.
+class ConsoleRow {
+    Q_GADGET
+    Q_PROPERTY(QString id READ id CONSTANT)
+    Q_PROPERTY(QString label READ label CONSTANT)
+    Q_PROPERTY(double faderPosition READ faderPosition CONSTANT)
+    Q_PROPERTY(bool muted READ muted CONSTANT)
+    Q_PROPERTY(bool isVirtual READ isVirtual CONSTANT)
+    Q_PROPERTY(bool bound READ bound CONSTANT)
+
+public:
+    ConsoleRow() = default;
+    ConsoleRow(QString id, QString label, double faderPosition, bool muted,
+               bool isVirtual, bool bound)
+        : m_id(std::move(id))
+        , m_label(std::move(label))
+        , m_faderPosition(faderPosition)
+        , m_muted(muted)
+        , m_isVirtual(isVirtual)
+        , m_bound(bound)
+    {
+    }
+    [[nodiscard]] QString id() const { return m_id; }
+    [[nodiscard]] QString label() const { return m_label; }
+    [[nodiscard]] double faderPosition() const noexcept { return m_faderPosition; }
+    [[nodiscard]] bool muted() const noexcept { return m_muted; }
+    [[nodiscard]] bool isVirtual() const noexcept { return m_isVirtual; }
+    [[nodiscard]] bool bound() const noexcept { return m_bound; }
+
+private:
+    QString m_id;
+    QString m_label;
+    double m_faderPosition = 0.0;
+    bool m_muted = false;
+    bool m_isVirtual = false;
+    bool m_bound = false;
+};
+
 class AudioAppletModel {
 public:
     // AGENT-GUARD: A snapshot whose wireValid flag is false must never reach
@@ -134,6 +175,12 @@ public:
     [[nodiscard]] const QString &defaultOutputLabel() const noexcept
     {
         return m_defaultOutputLabel;
+    }
+    // The console's strips within the tray's budget (ADR-0181); empty when
+    // the service publishes no console.
+    [[nodiscard]] const QList<ConsoleRow> &consoleRows() const noexcept
+    {
+        return m_consoleRows;
     }
     [[nodiscard]] const QString &defaultInputLabel() const noexcept
     {
@@ -161,6 +208,7 @@ private:
     QString m_phaseReasonCode;
     QString m_defaultOutputLabel;
     QString m_defaultInputLabel;
+    QList<ConsoleRow> m_consoleRows;
     QList<DeviceRow> m_deviceRows;
     QList<StreamRow> m_streamRows;
     int m_overflowDeviceCount = 0;

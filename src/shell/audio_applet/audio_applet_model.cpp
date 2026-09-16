@@ -2,6 +2,8 @@
 
 #include "audio_applet_model.h"
 
+#include <qindaqt/services/audio_protocol/audio_gain.h>
+
 #include <QtCore/QCoreApplication>
 
 #include <algorithm>
@@ -124,6 +126,18 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
     // protocol's ascending-serial order, outputs before inputs. The default
     // labels stay correct even when the default device falls outside the
     // window; the overflow count explains what was hidden.
+    // The console (ADR-0181): every strip the service publishes, in console
+    // order, within a budget that keeps the tray a tray. Bound or not - an
+    // unbound strip still shows its fader so a mute set in Settings reads
+    // here too.
+    constexpr qsizetype kMaxConsoleRows = 8;
+    for (const Audio::Strip &strip : snapshot->console.strips) {
+        if (model.m_consoleRows.size() >= kMaxConsoleRows)
+            break;
+        model.m_consoleRows.append(ConsoleRow(
+            strip.id, strip.label, Audio::faderPositionFromGainDb(strip.gainDb), strip.muted,
+            strip.kind == Audio::StripKind::VirtualInput, strip.sourceKnown));
+    }
     const int deviceBudget = qMax(0, kMaxDeviceRows);
     for (const Audio::Device &device : snapshot->outputs) {
         if (model.m_deviceRows.size() >= deviceBudget)

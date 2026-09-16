@@ -19,13 +19,14 @@ the work items that move rows there.
 | Pan applied to the graph ([ADR-0177](../adr/0177-pan-is-balance-on-the-send.md)) | **done** (installed r2) |
 | Per-strip / per-bus explicit device pins ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | built and tested, commit pending |
 | Gate, compressor, limiter, EQ per strip ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** (installed r4) |
-| Denoiser per strip ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | built, verified live, commit pending |
-| Bus EQ and bus modes ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | built, verified live, commit pending (stereo modes; surround upmixes not modelled) |
+| Denoiser per strip ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | committed; installing as r5 |
+| Bus EQ and bus modes ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | committed; installing as r5 (stereo modes; surround upmixes not modelled) |
 | Recorder / player | gap |
 | VBAN | gap |
 | Macro buttons | gap |
 | Presets | gap |
-| Settings route complete for every control above; audio applet reflects the console | partial (console rack, faders, matrix, meters present) |
+| Settings route complete for every control above | **done** for every row above: strips, buses, matrix, meters, pins, strip and bus racks |
+| Audio applet reflects the console ([ADR-0181](../adr/0181-the-tray-rides-the-console.md)) | built and tested, commit pending |
 | Installed and running on the live session | r4 (through ADR-0179) |
 
 ## 2. OBS integration

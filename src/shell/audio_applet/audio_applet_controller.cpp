@@ -2,6 +2,10 @@
 
 #include "audio_applet_controller.h"
 
+#include <cmath>
+
+#include <qindaqt/services/audio_protocol/audio_gain.h>
+
 #include <QtCore/QSet>
 
 namespace QindaQt::Shell::AudioApplet {
@@ -143,6 +147,46 @@ void AudioAppletController::publishFeedback(const QString &message)
         return;
     m_feedback = message;
     Q_EMIT feedbackChanged();
+}
+
+QVariantList AudioAppletController::consoleRows() const
+{
+    QVariantList rows;
+    rows.reserve(m_model.consoleRows().size());
+    for (const ConsoleRow &row : m_model.consoleRows())
+        rows.append(QVariant::fromValue(row));
+    return rows;
+}
+
+QVariantMap AudioAppletController::consoleLevels() const
+{
+    QVariantMap levels;
+    if (!m_readGranted || !m_client->hasSnapshot())
+        return levels;
+    const Snapshot snapshot = m_client->snapshot();
+    for (const Audio::Strip &strip : snapshot.console.strips) {
+        levels.insert(strip.id,
+                      QVariantMap{{QStringLiteral("peakDb"), strip.level.peakDb},
+                                  {QStringLiteral("rmsDb"), strip.level.rmsDb},
+                                  {QStringLiteral("known"), strip.level.known}});
+    }
+    return levels;
+}
+
+bool AudioAppletController::requestStripFader(QString stripId, double position)
+{
+    // AGENT-GUARD: the same grant that gates every other intent; the fader
+    // scale is the service's own law, never a linear mapping done here.
+    if (!m_controlGranted || stripId.isEmpty() || !std::isfinite(position))
+        return false;
+    return m_client->setStripGain(stripId, Audio::gainDbFromFaderPosition(position)) != 0;
+}
+
+bool AudioAppletController::requestStripMute(QString stripId, bool muted)
+{
+    if (!m_controlGranted || stripId.isEmpty())
+        return false;
+    return m_client->setStripMuted(stripId, muted) != 0;
 }
 
 bool AudioAppletController::requestVolume(quint64 serial, bool isStream,
