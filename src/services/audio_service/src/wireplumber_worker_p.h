@@ -65,6 +65,8 @@ private:
     void advanceEpoch();
     void invalidatePending(const QString &reasonCode);
     void submitOnWorker(quint64 operationId, const OperationRequest &request);
+    // Fails a console operation that reached the graph backend by mistake.
+    void rejectConsoleOperation(quint64 operationId);
     // Diffs the declared routing against the loopback modules this worker has
     // loaded, then loads and unloads exactly the difference.
     void applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges);

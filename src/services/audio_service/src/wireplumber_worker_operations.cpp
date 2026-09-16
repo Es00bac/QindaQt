@@ -171,6 +171,19 @@ qsizetype retainedChannelCount(const Snapshot &snapshot, const quint64 serial)
 
 } // namespace
 
+// AGENT-CONTRACT: console operations are state the ConsoleModel owns
+// (ADR-0173); the graph backend only ever realises the ROUTING that state
+// implies. One arriving here means the service layer forwarded something it
+// should have applied itself, so it fails loudly rather than being silently
+// dropped.
+void WirePlumberWorker::rejectConsoleOperation(const quint64 operationId)
+{
+    m_outcomeCallback(operationId,
+                      {.status = BackendOperationStatus::Failed,
+                       .reasonCode = QStringLiteral("not-a-graph-operation"),
+                       .diagnostic = {}});
+}
+
 void WirePlumberWorker::submitOnWorker(const quint64 operationId,
                                        const OperationRequest &request)
 {
@@ -211,15 +224,7 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
     case OperationKind::SetBusTarget:
-        // AGENT-CONTRACT: console operations are state the ConsoleModel owns
-        // (ADR-0173); the graph backend only ever realises the ROUTING that
-        // state implies. One arriving here means the service layer forwarded
-        // something it should have applied itself, so it fails loudly rather
-        // than being silently dropped.
-        m_outcomeCallback(operationId,
-                          {.status = BackendOperationStatus::Failed,
-                           .reasonCode = QStringLiteral("not-a-graph-operation"),
-                           .diagnostic = {}});
+        rejectConsoleOperation(operationId);
         return;
     case OperationKind::SetDefault: {
         if (m_defaultNodes == nullptr || primary->nodeName.isEmpty()
