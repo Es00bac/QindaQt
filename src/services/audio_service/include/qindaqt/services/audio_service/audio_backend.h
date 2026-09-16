@@ -37,6 +37,9 @@ struct BackendRoutingEdge {
     // it right now, and the edge simply cannot be carried yet.
     Handle source;
     Handle target;
+    // True when the strip's source is a sink whose monitor carries the audio -
+    // a virtual strip - rather than a capture device.
+    bool sourceIsSink = false;
     double gainDb = 0.0;
     // False while the strip is muted, or silenced by another strip's solo, or
     // its destination bus is muted. The connection STAYS; only its level goes
@@ -45,6 +48,27 @@ struct BackendRoutingEdge {
 
     friend bool operator==(const BackendRoutingEdge &,
                            const BackendRoutingEdge &) = default;
+};
+
+// One console element the service wants a meter for (ADR-0174). Metering is
+// declared separately from routing because a strip must show its input level
+// even when the user has not assigned it to any bus yet.
+struct BackendMeterTarget {
+    QString consoleId;
+    // The device to read. An invalid handle is not a target: the console knows
+    // the endpoint but the graph does not have it right now.
+    Handle device;
+    // True when the audio must be taken from the device's monitor rather than
+    // read as a capture source - virtual input strips and every bus are sinks.
+    bool captureSink = false;
+    // A passive meter reads only while something else already has the device
+    // open. Metering an INPUT non-passively switches the user's microphone on
+    // and lights their camera's recording indicator, so a capture meter stays
+    // passive until the user has asked for that input to be live.
+    bool passive = true;
+
+    friend bool operator==(const BackendMeterTarget &,
+                           const BackendMeterTarget &) = default;
 };
 
 // AGENT-CONTRACT: Implementations receive requests on the Qt main thread and
@@ -80,12 +104,23 @@ public:
     {
         Q_UNUSED(edges)
     }
+    // Declares the complete set of elements to meter. Declarative for the same
+    // reason routing is: the caller states what should be metered, never what
+    // to start or stop.
+    virtual void applyMetering(const QList<BackendMeterTarget> &targets)
+    {
+        Q_UNUSED(targets)
+    }
 
 Q_SIGNALS:
     void snapshotReady(quint64 generation,
                        const QindaQt::Audio::Snapshot &snapshot);
     void operationFinished(quint64 generation, quint64 operationId,
                            const QindaQt::Audio::BackendOperationOutcome &outcome);
+    // Meter readings, at meter rate. Deliberately not part of snapshotReady:
+    // levels must not force a snapshot revision (see LevelReading).
+    void levelsReady(quint64 generation,
+                     const QList<QindaQt::Audio::LevelReading> &levels);
 };
 
 } // namespace QindaQt::Audio

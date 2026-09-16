@@ -76,23 +76,11 @@ ColumnLayout {
             }
         }
 
-        // Meter. `known` is false until the service has observed real audio, so
-        // an idle meter reads as idle rather than as silence.
-        Rectangle {
+        // Meter. Read from the live level channel, not from the strip row:
+        // rows change only when the console is reconfigured.
+        AudioConsoleMeter {
             objectName: "consoleStripMeter_" + root.strip.id
-            implicitWidth: 8
-            implicitHeight: 160
-            radius: 4
-            color: Tokens.bg.raised
-            Rectangle {
-                width: parent.width
-                radius: parent.radius
-                anchors.bottom: parent.bottom
-                color: Tokens.accent.default
-                visible: root.strip.level.known
-                height: parent.height * Math.max(0.0, Math.min(1.0,
-                    (root.strip.level.peakDb + 60.0) / 60.0))
-            }
+            reading: root.model.consoleLevels[root.strip.id]
         }
     }
 

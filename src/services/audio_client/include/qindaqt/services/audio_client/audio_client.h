@@ -77,6 +77,10 @@ Q_SIGNALS:
     void snapshotChanged(const QindaQt::Audio::Snapshot &snapshot);
     void operationCompleted(quint64 requestId,
                             const QindaQt::Audio::OperationResult &result);
+    // Meter readings, already folded into snapshot(). Emitted INSTEAD of
+    // snapshotChanged: a surface that rebuilt its whole console model twenty
+    // times a second would be unusable, so meters get their own narrow signal.
+    void levelsChanged(const QList<QindaQt::Audio::LevelReading> &levels);
 
 private Q_SLOTS:
     void acceptOwner(const QString &owner);
@@ -87,6 +91,8 @@ private Q_SLOTS:
     void acceptOperationReply(const QString &owner, quint64 requestId,
                               bool transportSuccess, const OperationResult &result,
                               const QString &reasonCode);
+    void acceptLevels(const QString &owner,
+                      const QList<QindaQt::Audio::LevelReading> &levels);
     void onFetchTimeout();
     void onOperationTimeout();
 

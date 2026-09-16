@@ -21,6 +21,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Stream &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Stream &value);
 QDBusArgument &operator<<(QDBusArgument &argument, const Level &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Level &value);
+QDBusArgument &operator<<(QDBusArgument &argument, const LevelReading &value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, LevelReading &value);
 QDBusArgument &operator<<(QDBusArgument &argument, const MatrixSend &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, MatrixSend &value);
 QDBusArgument &operator<<(QDBusArgument &argument, const Strip &value);

@@ -4,6 +4,8 @@
 
 #include <qindaqt/services/audio_service/audio_backend.h>
 
+#include "wireplumber_meters_p.h"
+
 #include <wp/wp.h>
 
 #include <atomic>
@@ -31,9 +33,10 @@ class WirePlumberWorker final
 public:
     using SnapshotCallback = std::function<void(Snapshot)>;
     using OutcomeCallback = std::function<void(quint64, BackendOperationOutcome)>;
+    using LevelsCallback = std::function<void(QList<LevelReading>)>;
 
     WirePlumberWorker(quint64 initialEpoch, SnapshotCallback snapshotCallback,
-                      OutcomeCallback outcomeCallback,
+                      OutcomeCallback outcomeCallback, LevelsCallback levelsCallback,
                       WirePlumberWorkerLifecycleHooks lifecycleHooks = {});
     ~WirePlumberWorker();
 
@@ -44,6 +47,9 @@ public:
     // thread; the work is marshalled onto the worker thread like every other
     // graph mutation.
     void applyRouting(QList<BackendRoutingEdge> edges);
+    // Declares the console's complete metering (ADR-0174), marshalled onto the
+    // worker thread the same way routing is.
+    void applyMetering(QList<BackendMeterTarget> targets);
 
 private:
     struct ComponentLoad;
@@ -71,6 +77,12 @@ private:
     // loaded, then loads and unloads exactly the difference.
     void applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges);
     void unloadAllRouting();
+    // Rebuilds the meter capture streams to match the declaration, and starts
+    // or stops the poll timer according to whether anything is metered.
+    void applyMeteringOnWorker(const QList<BackendMeterTarget> &targets);
+    void startMeterPolling();
+    void stopMeterPolling();
+    void pollMeters();
     // Applies each declared send's gain to its loopback's playback node.
     void applySendVolumes();
     [[nodiscard]] QString nodeNameForHandle(const Handle &handle) const;
@@ -92,6 +104,7 @@ private:
     static void onCoreDisconnected(WpCore *core, gpointer data);
     static void onCoreSync(GObject *source, GAsyncResult *result, gpointer data);
     static void onNodeActivated(GObject *source, GAsyncResult *result, gpointer data);
+    static gboolean dispatchMeterPoll(gpointer data);
     static gboolean dispatchDisconnectReset(gpointer data);
     static void deleteDisconnectReset(gpointer data);
 
@@ -107,6 +120,7 @@ private:
 
     SnapshotCallback m_snapshotCallback;
     OutcomeCallback m_outcomeCallback;
+    LevelsCallback m_levelsCallback;
     WirePlumberWorkerLifecycleHooks m_lifecycleHooks;
     std::optional<Snapshot> m_lastSnapshot;
     std::unordered_map<quint64, quint64> m_pendingOperations;
@@ -125,6 +139,12 @@ private:
     // value is the pw_impl_module the worker must destroy to remove the send.
     std::unordered_map<std::string, void *> m_routingModules;
     QList<BackendRoutingEdge> m_declaredRouting;
+    QList<BackendMeterTarget> m_declaredMetering;
+    MeterBank m_meters;
+    GSource *m_meterSource = nullptr;
+    // The last set of readings handed upstream. Identical readings are not
+    // resent, so a silent console costs nothing on the bus.
+    QList<LevelReading> m_lastLevels;
 
     std::mutex m_lifecycleMutex;
     std::condition_variable m_contextReady;

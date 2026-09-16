@@ -117,6 +117,23 @@ struct Bus {
     friend bool operator==(const Bus &, const Bus &) = default;
 };
 
+// One console element's meter, addressed by console id (ADR-0173).
+//
+// AGENT-CONTRACT: meters move at frame rate; snapshots do not. A snapshot is
+// the console's CONFIGURATION and is republished only when the user or the
+// graph changes something, while readings stream on their own signal many
+// times a second. Folding meters into snapshot republication would mean
+// rebuilding and revalidating the whole console dozens of times a second and
+// would make every revision number meaningless.
+struct LevelReading {
+    // A strip or bus id from the same console. A reading naming neither is
+    // dropped by the client rather than creating an element.
+    QString id;
+    Level level;
+
+    friend bool operator==(const LevelReading &, const LevelReading &) = default;
+};
+
 struct Console {
     QList<Strip> strips = {};
     QList<Bus> buses = {};
@@ -136,6 +153,8 @@ Q_DECLARE_METATYPE(QindaQt::Audio::StripKind)
 Q_DECLARE_METATYPE(QindaQt::Audio::BusKind)
 Q_DECLARE_METATYPE(QindaQt::Audio::Level)
 Q_DECLARE_METATYPE(QindaQt::Audio::MatrixSend)
+Q_DECLARE_METATYPE(QindaQt::Audio::LevelReading)
+Q_DECLARE_METATYPE(QList<QindaQt::Audio::LevelReading>)
 Q_DECLARE_METATYPE(QindaQt::Audio::Strip)
 Q_DECLARE_METATYPE(QindaQt::Audio::Bus)
 Q_DECLARE_METATYPE(QindaQt::Audio::Console)

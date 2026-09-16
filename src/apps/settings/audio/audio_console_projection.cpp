@@ -73,6 +73,19 @@ QVariantList AudioSettingsModel::consoleStrips() const
     return rows;
 }
 
+QVariantMap AudioSettingsModel::consoleLevels() const
+{
+    const Snapshot snapshot = m_client.snapshot();
+    QVariantMap levels;
+    for (const Strip &strip : snapshot.console.strips) {
+        levels.insert(strip.id, levelMap(strip.level));
+    }
+    for (const Bus &bus : snapshot.console.buses) {
+        levels.insert(bus.id, levelMap(bus.level));
+    }
+    return levels;
+}
+
 QVariantList AudioSettingsModel::consoleBuses() const
 {
     const Snapshot snapshot = m_client.snapshot();

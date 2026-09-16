@@ -95,6 +95,8 @@ void registerDBusTypes()
     qRegisterMetaType<Device>();
     qRegisterMetaType<Stream>();
     qRegisterMetaType<Level>();
+    qRegisterMetaType<LevelReading>();
+    qRegisterMetaType<QList<LevelReading>>();
     qRegisterMetaType<MatrixSend>();
     qRegisterMetaType<Strip>();
     qRegisterMetaType<Bus>();
@@ -109,6 +111,8 @@ void registerDBusTypes()
     // default value, so an unregistered nested type would be baked into the
     // parent's signature as a variant and every console would fail to decode.
     qDBusRegisterMetaType<Level>();
+    qDBusRegisterMetaType<LevelReading>();
+    qDBusRegisterMetaType<QList<LevelReading>>();
     qDBusRegisterMetaType<MatrixSend>();
     qDBusRegisterMetaType<Strip>();
     qDBusRegisterMetaType<Bus>();
@@ -204,6 +208,22 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Level &value)
 {
     argument.beginStructure();
     argument >> value.peakDb >> value.rmsDb >> value.known;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const LevelReading &value)
+{
+    argument.beginStructure();
+    argument << value.id << value.level;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, LevelReading &value)
+{
+    argument.beginStructure();
+    argument >> value.id >> value.level;
     argument.endStructure();
     return argument;
 }

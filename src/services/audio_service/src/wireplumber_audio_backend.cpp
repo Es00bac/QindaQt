@@ -57,6 +57,23 @@ WirePlumberAudioBackend::WirePlumberAudioBackend(QObject *parent)
                     Q_EMIT operationFinished(generation, operationId, outcome);
                 },
                 Qt::QueuedConnection);
+        },
+        [this](QList<LevelReading> levels) {
+            const quint64 generation = m_runGeneration.load(std::memory_order_acquire);
+            if (!m_running.load(std::memory_order_acquire)) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                this,
+                [this, generation, levels = std::move(levels)] {
+                    if (!m_running.load(std::memory_order_acquire)
+                        || generation
+                            != m_runGeneration.load(std::memory_order_acquire)) {
+                        return;
+                    }
+                    Q_EMIT levelsReady(generation, levels);
+                },
+                Qt::QueuedConnection);
         });
 }
 
@@ -110,6 +127,14 @@ void WirePlumberAudioBackend::applyRouting(const QList<BackendRoutingEdge> &edge
         return;
     }
     m_worker->applyRouting(edges);
+}
+
+void WirePlumberAudioBackend::applyMetering(const QList<BackendMeterTarget> &targets)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyMetering(targets);
 }
 
 } // namespace QindaQt::Audio

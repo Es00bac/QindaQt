@@ -251,6 +251,38 @@ void ConsoleModel::publishStripLevel(const QString &stripId, Level level)
     }
 }
 
+bool ConsoleModel::publishLevels(const QList<LevelReading> &levels)
+{
+    bool changed = false;
+    if (levels.isEmpty()) {
+        for (Strip &strip : m_strips) {
+            changed = changed || strip.level != Level{};
+            strip.level = Level{};
+        }
+        for (Bus &bus : m_buses) {
+            changed = changed || bus.level != Level{};
+            bus.level = Level{};
+        }
+        return changed;
+    }
+    for (const LevelReading &reading : levels) {
+        // A reading that names nothing this console publishes is dropped: a
+        // meter must never bring an element into existence.
+        if (Strip *const strip = findStrip(reading.id); strip != nullptr) {
+            const Level before = strip->level;
+            publishStripLevel(reading.id, reading.level);
+            changed = changed || strip->level != before;
+            continue;
+        }
+        if (Bus *const bus = findBus(reading.id); bus != nullptr) {
+            const Level before = bus->level;
+            publishBusLevel(reading.id, reading.level);
+            changed = changed || bus->level != before;
+        }
+    }
+    return changed;
+}
+
 void ConsoleModel::publishBusLevel(const QString &busId, Level level)
 {
     if (level.known

@@ -33,6 +33,7 @@ private Q_SLOTS:
     void onServiceOwnerChanged(const QString &service, const QString &oldOwner,
                                const QString &newOwner);
     void onChanged(quint64 epoch, quint64 revision);
+    void onLevels(const QList<QindaQt::Audio::LevelReading> &levels);
 
 private:
     void setOwner(const QString &owner);

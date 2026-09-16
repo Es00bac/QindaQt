@@ -115,6 +115,8 @@ AudioOperationCoordinator::AudioOperationCoordinator(AudioBackend *backend, QObj
             &AudioOperationCoordinator::acceptSnapshot);
     connect(m_backend, &AudioBackend::operationFinished, this,
             &AudioOperationCoordinator::acceptBackendResult);
+    connect(m_backend, &AudioBackend::levelsReady, this,
+            &AudioOperationCoordinator::acceptLevels);
 }
 
 const Snapshot &AudioOperationCoordinator::snapshot() const noexcept
@@ -191,9 +193,7 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
                        && m_snapshot.availability != Availability::Degraded)) {
         return QStringLiteral("unavailable");
     }
-    // CreateVirtualDevice names no existing object; every other kind targets a
-    // handle from the retained snapshot.
-    const bool targeted = request.kind != OperationKind::CreateVirtualDevice;
+    const bool targeted = operationTargetsHandle(request.kind);
     if (targeted
         && (!request.primary.isValid() || request.primary.epoch != m_snapshot.epoch)) {
         return QStringLiteral("stale-handle");
@@ -491,6 +491,10 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         makePendingUncertain(snapshot, QStringLiteral("authority-replaced"));
     }
     m_snapshot = snapshot;
+    // Follow the graph with the console's endpoints BEFORE folding the console
+    // in, so this publication already carries the bindings this snapshot made
+    // possible rather than showing them one revision late.
+    autoBindConsole(snapshot);
     // AGENT-GUARD: the console belongs to THIS coordinator, not to the graph
     // backend, so every backend snapshot must have it folded back in. Without
     // this a device appearing or disappearing would blank the user's whole
@@ -501,6 +505,7 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     // before, so the routing is re-derived against every accepted snapshot
     // rather than only when the user touches the console.
     publishRouting();
+    publishMetering();
     m_hasBackendSnapshot = true;
     m_minimumRestartEpoch = 0;
     Q_EMIT snapshotChanged(m_snapshot);

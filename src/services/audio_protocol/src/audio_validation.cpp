@@ -94,6 +94,36 @@ bool validChannelLayout(const QVector<double> &channelVolumes, const QStringList
 
 } // namespace
 
+bool operationTargetsHandle(const OperationKind kind) noexcept
+{
+    switch (kind) {
+    case OperationKind::CreateVirtualDevice:
+    // Console operations (ADR-0173) name a strip or bus id, never a handle.
+    case OperationKind::SetStripGain:
+    case OperationKind::SetStripMute:
+    case OperationKind::SetStripSolo:
+    case OperationKind::SetStripMono:
+    case OperationKind::SetStripPan:
+    case OperationKind::SetStripTrim:
+    case OperationKind::SetStripSend:
+    case OperationKind::SetBusGain:
+    case OperationKind::SetBusMute:
+    case OperationKind::SetBusMono:
+        return false;
+    // SetBusTarget names a bus AND the device it should drive, so its handle is
+    // checked like any other.
+    case OperationKind::SetBusTarget:
+    case OperationKind::SetDefault:
+    case OperationKind::SetVolume:
+    case OperationKind::SetMute:
+    case OperationKind::MoveStream:
+    case OperationKind::SetChannelVolumes:
+    case OperationKind::RemoveVirtualDevice:
+        return true;
+    }
+    return true;
+}
+
 bool isBoundedText(const QString &value, const qsizetype maxUtf8Bytes)
 {
     return !value.contains(QChar::Null) && value.toUtf8().size() <= maxUtf8Bytes;

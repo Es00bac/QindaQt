@@ -29,6 +29,7 @@ public:
     void stop() override;
     void submit(quint64 operationId, const OperationRequest &request) override;
     void applyRouting(const QList<BackendRoutingEdge> &edges) override;
+    void applyMetering(const QList<BackendMeterTarget> &targets) override;
 
 private:
     [[nodiscard]] quint64 advanceRunGeneration();

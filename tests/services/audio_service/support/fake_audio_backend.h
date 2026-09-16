@@ -35,6 +35,27 @@ public:
         operations.push_back({operationId, request});
     }
 
+    void applyRouting(const QList<Audio::BackendRoutingEdge> &edges) override
+    {
+        routing = edges;
+        ++routingCalls;
+    }
+    void applyMetering(const QList<Audio::BackendMeterTarget> &targets) override
+    {
+        metering = targets;
+        ++meteringCalls;
+    }
+
+    void publishLevels(const QList<Audio::LevelReading> &levels)
+    {
+        Q_EMIT levelsReady(generation, levels);
+    }
+    void publishLevelsForGeneration(const quint64 runGeneration,
+                                    const QList<Audio::LevelReading> &levels)
+    {
+        Q_EMIT levelsReady(runGeneration, levels);
+    }
+
     void publish(const Audio::Snapshot &snapshot)
     {
         publishForGeneration(generation, snapshot);
@@ -60,11 +81,24 @@ public:
     };
 
     QList<RecordedOperation> operations;
+    QList<Audio::BackendRoutingEdge> routing;
+    QList<Audio::BackendMeterTarget> metering;
+    int routingCalls = 0;
+    int meteringCalls = 0;
     int startCalls = 0;
     int stopCalls = 0;
     quint64 generation = 0;
     bool running = false;
 };
+
+// The capability bits the coordinator adds because IT owns the console; the
+// graph backend never publishes them (ADR-0173).
+inline Audio::Capabilities consoleCapabilityBits()
+{
+    return Audio::Capabilities{} | Audio::Capability::Console
+        | Audio::Capability::SetConsoleGain | Audio::Capability::SetConsoleRouting
+        | Audio::Capability::ConsoleMeters;
+}
 
 inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                                      const quint64 revision = 3)
@@ -137,6 +171,20 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                          .channelVolumes = {0.75, 0.75},
                          .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}}};
     return snapshot;
+}
+
+// What the coordinator actually publishes for a given backend snapshot: the
+// graph the backend described, plus the console the coordinator owns and the
+// capabilities that console adds. Tests compare against THIS rather than the
+// raw backend value, because a coordinator that dropped the user's console on
+// every graph publication would otherwise look correct.
+inline Audio::Snapshot publishedSnapshot(const Audio::Snapshot &backendSnapshot,
+                                         const Audio::Console &console)
+{
+    Audio::Snapshot expected = backendSnapshot;
+    expected.console = console;
+    expected.capabilities |= consoleCapabilityBits();
+    return expected;
 }
 
 // Simulates the backend completing a CreateVirtualDevice: emits the outcome

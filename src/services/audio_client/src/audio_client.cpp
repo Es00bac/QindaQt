@@ -32,6 +32,67 @@ AudioClient::AudioClient(AudioTransport *transport, QObject *parent)
             &AudioClient::acceptSnapshotReply);
     connect(m_transport, &AudioTransport::operationReply, this,
             &AudioClient::acceptOperationReply);
+    connect(m_transport, &AudioTransport::levelsReceived, this,
+            &AudioClient::acceptLevels);
+}
+
+void AudioClient::acceptLevels(const QString &owner, const QList<LevelReading> &levels)
+{
+    // Bound to the exact owner like every other transport value, and dropped
+    // before there is a snapshot to apply them to: a reading has no meaning
+    // without the console it names.
+    if (owner.isEmpty() || owner != m_owner || !m_snapshot.has_value()) {
+        return;
+    }
+    QList<LevelReading> applied;
+    applied.reserve(levels.size());
+    for (const LevelReading &reading : levels) {
+        // AGENT-GUARD: fail closed on the meter invariant. A service that sends
+        // a level above full scale or an RMS above its own peak is malformed,
+        // and drawing it would put a meter off the top of the scale.
+        const Level &level = reading.level;
+        if (level.known
+            && (!std::isfinite(level.peakDb) || !std::isfinite(level.rmsDb)
+                || level.peakDb > kMaxMeterDb || level.peakDb < kSilentMeterDb
+                || level.rmsDb > level.peakDb || level.rmsDb < kSilentMeterDb)) {
+            continue;
+        }
+        bool matched = false;
+        for (Strip &strip : m_snapshot->console.strips) {
+            if (strip.id == reading.id) {
+                strip.level = level;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            for (Bus &bus : m_snapshot->console.buses) {
+                if (bus.id == reading.id) {
+                    bus.level = level;
+                    matched = true;
+                    break;
+                }
+            }
+        }
+        if (matched) {
+            applied.append(reading);
+        }
+    }
+    if (levels.isEmpty()) {
+        // Metering stopped upstream: clear every meter so the console shows an
+        // idle scale rather than freezing on its last reading.
+        for (Strip &strip : m_snapshot->console.strips) {
+            strip.level = Level{};
+        }
+        for (Bus &bus : m_snapshot->console.buses) {
+            bus.level = Level{};
+        }
+        Q_EMIT levelsChanged({});
+        return;
+    }
+    if (!applied.isEmpty()) {
+        Q_EMIT levelsChanged(applied);
+    }
 }
 
 void AudioClient::start()

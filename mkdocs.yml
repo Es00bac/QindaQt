@@ -293,3 +293,4 @@ nav:
       - "ADR-0171: one gain law for the audio console": adr/0171-one-gain-law-for-the-audio-console.md
       - "ADR-0172: Applications is a place, and a docked window can replace itself": adr/0172-applications-is-a-place-and-a-docked-window-can-replace-itself.md
       - "ADR-0173: the mixing-console slice of Audio1": adr/0173-the-mixing-console-slice-of-audio1.md
+      - "ADR-0174: meters are a stream, not a snapshot": adr/0174-meters-are-a-stream-not-a-snapshot.md
