@@ -66,7 +66,7 @@ require_declaration("src/shell/desktop_controls/qml/DesktopControlButton.qml" "d
 # Start menu (docs/wiki/shell/start-menu.md) and the desktop surface's icon
 # view (docs/wiki/adr/0125-host-desktop-zone-applets.md).
 require_declaration("src/shell/start_menu/qml/StartMenuApplet.qml" "startMenuButton")
-require_declaration("src/shell/desktop_surface/qml/DesktopIconsView.qml" "desktopIconsTile")
+require_declaration("src/shell/desktop_surface/qml/DesktopIconTile.qml" "desktopIconsTile")
 
 # AGENT-GUARD: this is the complete literal name set selected by built-in
 # summary policy. The fixture is the intersection of the Breeze and
@@ -97,7 +97,7 @@ endforeach()
 require_icon("src/shell/launcher/qml/LauncherApplet.qml" "start-here-kde")
 require_icon("src/shell/start_menu/qml/StartMenuApplet.qml" "start-here-kde")
 require_icon("src/shell/start_menu/qml/StartMenuPopup.qml" "system-log-out")
-require_icon("src/shell/desktop_surface/qml/DesktopIconsView.qml" "folder")
+require_icon("src/shell/desktop_surface/qml/DesktopIconTile.qml" "folder")
 require_icon("src/shell/clipboard_applet/qml/ClipboardPanelApplet.qml" "edit-paste")
 require_icon("src/shell/status_notifier/applet/qml/StatusNotifierApplet.qml"
              "view-more-symbolic")

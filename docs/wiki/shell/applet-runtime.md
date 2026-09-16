@@ -165,9 +165,22 @@ surface hosts the desktop-icons entry (see its bullet below):
   handler through `launchLocalFile`; folder tiles open QindaQt File Manager
   through the identity-fenced `openLocalFolder` boundary rather than a shell reach-through (see
   [module boundaries](../architecture/module-boundaries.md)), with
-  configurable left/right default placement and icon size. Every tile can be
-  dragged freely within its output; a bounded atomic layout store persists
-  positions per output and filesystem identity, so rename retains placement.
+  configurable left/right default placement and icon size. The desktop is ONE
+  desktop across every output
+  ([ADR-0167](../adr/0167-one-desktop-across-every-output.md)): a single
+  shell-owned layout store keeps one global-coordinate placement per
+  filesystem identity, so rename retains placement and no entry is ever drawn
+  twice. Each per-output surface draws only the icons whose centre its output
+  owns, icons nobody has placed flow onto the primary output, and an icon over
+  no output at all falls back to the primary rather than becoming unreachable.
+  A tile is dragged 1:1 with the pointer, a multi-icon drag is clamped as one
+  rigid group, and a drag may cross an output seam - the dragging surface
+  publishes volatile live positions through the shared store so the receiving
+  output draws the icon before the drop, and only the drop itself is
+  persisted. A dropped icon settles on the nearest free grid cell
+  (`snapToGrid`, default true) and glides there; placement animations are
+  suppressed until the surface has a real size, so nothing flies in at
+  startup.
   Each tile has its own Open/Rename context menu, and rename crosses only File
   Manager's public identity-fenced mutation boundary. The surface also owns a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose

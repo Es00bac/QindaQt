@@ -169,3 +169,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0164: one shared application catalog behind the file manager applications browser](0164-shared-application-catalog-and-file-manager-applications-browser.md)
 - [ADR-0165: workspace picker slots replaced by launched applications](0165-workspace-picker-slots-replaced-by-launched-applications.md)
 - [ADR-0166: announce a StatusNotifier host, not only a watcher](0166-announce-a-status-notifier-host.md)
+- [ADR-0167: one desktop across every output](0167-one-desktop-across-every-output.md)

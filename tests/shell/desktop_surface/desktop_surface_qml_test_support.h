@@ -7,6 +7,7 @@
 // and hosts it offscreen. Runs under QT_FATAL_WARNINGS.
 
 #include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/shell/desktop_surface/desktop_icon_layout_store.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QEventLoop>
@@ -16,6 +17,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
+#include <QStandardPaths>
 #include <QVariantMap>
 #include <QtTest>
 
@@ -178,9 +180,28 @@ inline QVariantList makeApplets(const QVariantMap &settings)
 struct SurfaceHost {
     std::unique_ptr<QQmlEngine> engine;
     std::unique_ptr<QQuickWindow> window;
+    // The one shared placement store, owned here exactly as
+    // DesktopSurfaceController owns it in production (ADR-0167). Tests that
+    // host two surfaces pass the SAME store to both.
+    std::unique_ptr<QindaQt::Shell::DesktopSurface::DesktopIconLayoutStore>
+        layoutStore;
+
+    // Every host writes its placements under the redirected data home the
+    // fixtures already establish, so nothing touches the real user layout.
+    static QString storagePath()
+    {
+        return QStandardPaths::writableLocation(
+                   QStandardPaths::GenericDataLocation)
+            + QStringLiteral("/qindaqt/desktop-icon-layout.json");
+    }
 
     bool create(QObject *access, QObject *launcherAccess,
-                const QVariantMap &settings, QString *error)
+                const QVariantMap &settings, QString *error,
+                const QVariantList &outputRects = {},
+                const QString &screenName = QStringLiteral("OFFSCREEN0"),
+                const QString &primaryOutputName = {},
+                QindaQt::Shell::DesktopSurface::DesktopIconLayoutStore
+                    *sharedStore = nullptr)
     {
         engine = std::make_unique<QQmlEngine>();
         engine->addImportPath(
@@ -196,12 +217,23 @@ struct SurfaceHost {
             *error = component.errorString();
             return false;
         }
+        if (sharedStore == nullptr) {
+            layoutStore = std::make_unique<
+                QindaQt::Shell::DesktopSurface::DesktopIconLayoutStore>(
+                storagePath());
+            sharedStore = layoutStore.get();
+        }
         QVariantMap initialProperties{
             {QStringLiteral("applets"), makeApplets(settings)},
             {QStringLiteral("access"), QVariant::fromValue(access)},
             {QStringLiteral("launcherAccess"),
              QVariant::fromValue(launcherAccess)},
-            {QStringLiteral("screenName"), QStringLiteral("OFFSCREEN0")},
+            {QStringLiteral("screenName"), screenName},
+            {QStringLiteral("layoutStore"),
+             QVariant::fromValue(static_cast<QObject *>(sharedStore))},
+            {QStringLiteral("outputRects"), outputRects},
+            {QStringLiteral("primaryOutputName"),
+             primaryOutputName.isEmpty() ? screenName : primaryOutputName},
         };
         QObject *created =
             component.createWithInitialProperties(initialProperties);

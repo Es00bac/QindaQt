@@ -2,8 +2,12 @@
 #pragma once
 
 #include <QHash>
+#include <QList>
+#include <QMetaObject>
 #include <QObject>
 #include <QVariantList>
+
+#include <memory>
 
 class QGuiApplication;
 class QQmlEngine;
@@ -22,6 +26,8 @@ class LayoutProfile;
 
 namespace QindaQt::Shell::DesktopSurface {
 
+class DesktopIconLayoutStore;
+
 // Per-output background-layer surface hosting the desktop-icons applet
 // (ADR-0125): places as selectable icon tiles, a styled right-click context
 // menu, and a modifier-gated Applications popup. Strictly additive: a profile
@@ -32,6 +38,12 @@ namespace QindaQt::Shell::DesktopSurface {
 // grants), and must outlive this controller; the QML root receives them as
 // plain QObject* and never downcasts. ShellRuntimeApplication::resetRuntime()
 // destroys this controller before either borrowed facade.
+//
+// AGENT-CONTRACT (ADR-0167): the desktop is one desktop spread over several
+// output surfaces, not one desktop per output. This controller owns the single
+// DesktopIconLayoutStore and injects the same object, plus the global output
+// geometry, into every surface. Each surface then draws only the icons its own
+// output owns. Never let a surface construct its own store.
 class DesktopSurfaceController final : public QObject {
   Q_OBJECT
 public:
@@ -70,15 +82,28 @@ public:
     return static_cast<int>(m_windows.size());
   }
 
+  // Test seam: the store every surface shares. Never null.
+  [[nodiscard]] DesktopIconLayoutStore &layoutStore() const noexcept
+  {
+    return *m_layoutStore;
+  }
+
 private:
   void reconcile();
   void createWindow(QScreen *screen);
+  // Global-frame {name, x, y, width, height} for every connected output.
+  [[nodiscard]] QVariantList outputRects() const;
+  [[nodiscard]] QString primaryOutputName() const;
+  // Republishes output geometry to live windows and rewatches every screen.
+  void refreshOutputs();
 
   QGuiApplication &m_app;
   QQmlEngine &m_engine;
   BorrowedFacades m_facades;
   QVariantList m_inventory;
   QHash<QScreen *, QQuickWindow *> m_windows;
+  std::unique_ptr<DesktopIconLayoutStore> m_layoutStore;
+  QList<QMetaObject::Connection> m_screenConnections;
   bool m_started = false;
 };
 

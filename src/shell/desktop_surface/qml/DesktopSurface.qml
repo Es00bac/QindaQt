@@ -26,6 +26,12 @@ Window {
     required property var access
     required property var launcherAccess
     required property string screenName
+    // The ONE shared placement store for the whole desktop, plus the global
+    // output geometry that turns a global placement into this output's local
+    // one. All three are injected by DesktopSurfaceController; see ADR-0167.
+    required property var layoutStore
+    property var outputRects: []
+    property string primaryOutputName: screenName
 
     visible: false
     color: "transparent"
@@ -108,11 +114,6 @@ Window {
         objectName: "desktopContentsController"
     }
 
-    DesktopIconLayoutStore {
-        id: desktopIconLayout
-        objectName: "desktopIconLayoutStore"
-    }
-
     // Full-surface input, stacked UNDER the icons view: a plain Item does not
     // accept pointer events, so tile clicks reach the tiles and empty-area
     // clicks fall through to here — except left clicks, which the icons
@@ -162,8 +163,10 @@ Window {
         anchors.fill: parent
         settings: root.appletSettings
         contents: desktopContents
-        layoutStore: desktopIconLayout
+        layoutStore: root.layoutStore
         screenName: root.screenName
+        outputRects: root.outputRects
+        primaryOutputName: root.primaryOutputName
     }
 
     Item {

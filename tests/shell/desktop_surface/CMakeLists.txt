@@ -104,6 +104,17 @@ qindaqt_add_desktop_surface_test(
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )
+# One desktop across several outputs (ADR-0167): ownership, the primary-output
+# default, manual placement onto another output, a drag across the seam, and an
+# output going away. Split from the single-surface interaction row because it
+# hosts two surfaces over one shared placement store.
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_icon_multi_output_tests
+    tst_desktop_icon_multi_output.cpp
+    qindaqt.desktop-icon-multi-output
+    SUPPORT desktop_surface_qml_test_support.h
+    OFFSCREEN
+)
 # Clipboard composition under the offscreen platform: foreign uri-list
 # adoption pastes into the redirected Desktop; an own cut reports its mode
 # and refuses the paste-into-itself no-op. Needs a QGuiApplication, so it

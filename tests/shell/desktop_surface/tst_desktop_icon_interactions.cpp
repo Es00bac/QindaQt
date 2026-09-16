@@ -40,6 +40,7 @@ private Q_SLOTS:
     void init();
     void cleanup();
     void contextMenuOpensAtThePointerAndOffersRename();
+    void aDragTracksThePointerExactly();
     void iconCanBeDraggedAndItsPositionIsStored();
     void marqueeSelectsCrossedIconsAndAnEmptyClickClears();
     void ctrlClickTogglesWhileShiftClickRanges();
@@ -100,6 +101,40 @@ void DesktopIconInteractionTests::contextMenuOpensAtThePointerAndOffersRename()
              false);
 }
 
+// Former-red regression for the user-reported "desktop icons do not move
+// smoothly". The tile's MouseArea is anchored to the tile, so measuring the
+// drag delta in tile coordinates moved the measuring frame with the icon and
+// every event after the first reported (delta_n - delta_n-1) instead of
+// delta_n: the icon lagged, jumped backwards and fought the pointer. The drag
+// must now follow the pointer exactly, including a move back toward the press
+// point.
+void DesktopIconInteractionTests::aDragTracksThePointerExactly()
+{
+    QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Track me.txt")));
+    StubLauncher launcher;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(nullptr, &launcher, {}, &error), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    QQuickItem *tile = host.visualItemsNamed(QStringLiteral("desktopIconsTile")).constFirst();
+    QTRY_VERIFY(tile->x() >= 6.0 && tile->y() >= 6.0);
+
+    const QPointF origin(tile->x(), tile->y());
+    const QPointF press = tile->mapToScene(QPointF(tile->width() / 2, tile->height() / 2));
+    QTest::mousePress(host.window.get(), Qt::LeftButton, Qt::NoModifier, press.toPoint());
+
+    // Each step asserts the ABSOLUTE offset from the press point, so an error
+    // that accumulates or alternates is caught on the very next event.
+    const QList<QPoint> offsets{{30, 20}, {90, 60}, {45, 25}, {140, 95}};
+    for (const QPoint &offset : offsets) {
+        QTest::mouseMove(host.window.get(), (press + offset).toPoint(), 10);
+        QCOMPARE(tile->x(), origin.x() + offset.x());
+        QCOMPARE(tile->y(), origin.y() + offset.y());
+    }
+    QTest::mouseRelease(host.window.get(), Qt::LeftButton, Qt::NoModifier,
+                        (press + offsets.constLast()).toPoint());
+}
+
 void DesktopIconInteractionTests::iconCanBeDraggedAndItsPositionIsStored()
 {
     QVERIFY(writeFile(m_home->path() + QStringLiteral("/Desktop/Move me.txt")));
@@ -119,14 +154,14 @@ void DesktopIconInteractionTests::iconCanBeDraggedAndItsPositionIsStored()
                         (start + QPointF(180, 120)).toPoint());
     QTRY_VERIFY(tile->x() > 100.0);
 
-    auto *store = host.child<QObject>(QStringLiteral("desktopIconLayoutStore"));
+    // The drop snaps to the nearest free grid cell and GLIDES there, so the
+    // resting position is only truthful once that animation has settled.
+    const QString layoutKey = tile->property("layoutKey").toString();
     QVariantMap stored;
-    QVERIFY(store != nullptr);
-    QVERIFY(QMetaObject::invokeMethod(store, "position", Q_RETURN_ARG(QVariantMap, stored),
-                                      Q_ARG(QString, QStringLiteral("OFFSCREEN0")),
-                                      Q_ARG(QString, tile->property("layoutKey").toString())));
-    QCOMPARE(stored.value(QStringLiteral("x")).toReal(), tile->x());
-    QCOMPARE(stored.value(QStringLiteral("y")).toReal(), tile->y());
+    QVERIFY(host.layoutStore != nullptr);
+    QTRY_VERIFY(!(stored = host.layoutStore->position(layoutKey)).isEmpty());
+    QTRY_COMPARE(tile->x(), stored.value(QStringLiteral("x")).toReal());
+    QTRY_COMPARE(tile->y(), stored.value(QStringLiteral("y")).toReal());
 }
 
 namespace {
@@ -300,21 +335,23 @@ void DesktopIconInteractionTests::groupDragMovesAndPersistsTheWholeSelection()
                 alphaCenter + QPointF(120, 70)});
     QVERIFY(alphaTile->x() > alphaStart.x());
     QVERIFY(gammaTile->x() > gammaStart.x());
-    QCOMPARE(alphaTile->x() - alphaStart.x(), gammaTile->x() - gammaStart.x());
-    QCOMPARE(alphaTile->y() - alphaStart.y(), gammaTile->y() - gammaStart.y());
+    // Both selected icons carry the SAME translation. The group is clamped as
+    // one rigid set, so reaching a desktop edge can never collapse it into a
+    // pile; each then settles onto its own grid cell, which preserves the
+    // offsets because the cells are the same pitch.
+    QTRY_COMPARE(alphaTile->x() - alphaStart.x(), gammaTile->x() - gammaStart.x());
+    QTRY_COMPARE(alphaTile->y() - alphaStart.y(), gammaTile->y() - gammaStart.y());
     // The unselected icon stays put.
     QCOMPARE(betaTile->x(), betaStart.x());
     QCOMPARE(betaTile->y(), betaStart.y());
 
-    auto *store = host.child<QObject>(QStringLiteral("desktopIconLayoutStore"));
-    QVERIFY(store != nullptr);
+    QVERIFY(host.layoutStore != nullptr);
     for (const QQuickItem *tile : {alphaTile, gammaTile}) {
-        QVariantMap stored;
-        QVERIFY(QMetaObject::invokeMethod(store, "position", Q_RETURN_ARG(QVariantMap, stored),
-                                          Q_ARG(QString, QStringLiteral("OFFSCREEN0")),
-                                          Q_ARG(QString, tile->property("layoutKey").toString())));
-        QCOMPARE(stored.value(QStringLiteral("x")).toReal(), tile->x());
-        QCOMPARE(stored.value(QStringLiteral("y")).toReal(), tile->y());
+        const QString layoutKey = tile->property("layoutKey").toString();
+        const QVariantMap stored = host.layoutStore->position(layoutKey);
+        QVERIFY(!stored.isEmpty());
+        QTRY_COMPARE(tile->x(), stored.value(QStringLiteral("x")).toReal());
+        QTRY_COMPARE(tile->y(), stored.value(QStringLiteral("y")).toReal());
     }
 }
 
