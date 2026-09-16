@@ -233,6 +233,26 @@ Item {
             }
         }
 
+        // The console (ADR-0181): the strips' faders, mutes and meters, so a
+        // level can be ridden from the tray without opening Settings.
+        C.Label {
+            objectName: "audioConsoleHeading"
+            visible: root.showLists && (root.controller?.consoleRows?.length ?? 0) > 0
+            text: qsTr("Console")
+            font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
+            opacity: 0.7
+        }
+        Repeater {
+            objectName: "audioConsoleRows"
+            model: root.showLists ? (root.controller?.consoleRows ?? []) : []
+            delegate: AudioConsoleRow {
+                required property var modelData
+                Layout.fillWidth: true
+                controller: root.controller
+                strip: modelData
+            }
+        }
+
         C.Label {
             objectName: "audioStreamOverflow"
             Layout.fillWidth: true

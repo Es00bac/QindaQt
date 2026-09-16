@@ -43,6 +43,10 @@ class AudioAppletController final : public QObject {
                    stateReprojected)
     Q_PROPERTY(QVariantList deviceRows READ deviceRows NOTIFY stateReprojected)
     Q_PROPERTY(QVariantList streamRows READ streamRows NOTIFY stateReprojected)
+    // The console's strips (ADR-0181), and their meters on a narrow channel
+    // of their own so a level frame never reprojects the applet.
+    Q_PROPERTY(QVariantList consoleRows READ consoleRows NOTIFY stateReprojected)
+    Q_PROPERTY(QVariantMap consoleLevels READ consoleLevels NOTIFY consoleLevelsChanged)
     Q_PROPERTY(QString defaultOutputLabel READ defaultOutputLabel NOTIFY
                    stateReprojected)
     Q_PROPERTY(QString defaultInputLabel READ defaultInputLabel NOTIFY
@@ -109,9 +113,16 @@ public:
     Q_INVOKABLE bool requestVolume(quint64 serial, bool isStream,
                                    double volume);
     Q_INVOKABLE bool requestMute(quint64 serial, bool isStream, bool muted);
+    // Console strip intents (ADR-0181), addressed by console id. Complete at
+    // the service synchronously, so they carry no pending state here.
+    Q_INVOKABLE bool requestStripFader(QString stripId, double position);
+    Q_INVOKABLE bool requestStripMute(QString stripId, bool muted);
+    [[nodiscard]] QVariantList consoleRows() const;
+    [[nodiscard]] QVariantMap consoleLevels() const;
     Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:
+    void consoleLevelsChanged();
     void stateReprojected();
     void feedbackChanged();
 

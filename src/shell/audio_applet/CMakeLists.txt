@@ -54,6 +54,7 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_AUDIO_APPLET_QML_OUTPUT_DIRECTORY}"
     QML_FILES
         qml/AudioApplet.qml
+        qml/AudioConsoleRow.qml
         qml/AudioDeviceRow.qml
         qml/AudioStreamRow.qml
     DEPENDENCIES

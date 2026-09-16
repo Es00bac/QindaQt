@@ -183,3 +183,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0178: a pin is a name, not a handle](0178-a-pin-is-a-name-not-a-handle.md)
 - [ADR-0179: the rack is one value per strip](0179-the-rack-is-one-value-per-strip.md)
 - [ADR-0180: a bus has a rack too, and a strip hears clean](0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)
+- [ADR-0181: the tray rides the console](0181-the-tray-rides-the-console.md)
