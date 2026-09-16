@@ -15,6 +15,10 @@ PrivateTmp=true
 ProtectClock=true
 ProtectControlGroups=true
 ProtectHome=read-only
+# The console persists its document under $XDG_CONFIG_HOME/qindaqt (ADR-0176);
+# without this carve-out ProtectHome refuses the write and the console
+# silently forgets itself on every restart.
+ReadWritePaths=%h/.config/qindaqt
 ProtectHostname=true
 ProtectKernelLogs=true
 ProtectKernelModules=true

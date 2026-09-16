@@ -125,6 +125,10 @@ public:
   // converted through the one gain law (ADR-0171), so a slider and the dB
   // legend beside it can never disagree.
   Q_INVOKABLE bool setStripFader(QString stripId, double position);
+  // Device pins (ADR-0178). `serial` names a device from inputDevices (for a
+  // strip) or outputDevices (for a bus); 0 returns the element to automatic.
+  Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
+  Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);
   Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);
   Q_INVOKABLE bool setStripSoloed(QString stripId, bool soloed);
   Q_INVOKABLE bool setStripMono(QString stripId, bool mono);
@@ -172,6 +176,7 @@ private:
                                           double level, bool muted);
   // One admission-and-dispatch path for every console control, so an enabled
   // control can never be locally refused and a disabled one never dispatched.
+  [[nodiscard]] bool dispatchPin(bool strip, QString consoleId, quint64 serial);
   [[nodiscard]] bool dispatchConsoleIntent(ConsoleIntent intent, QString consoleId,
                                             quint32 busIndex, double value,
                                             bool flag);

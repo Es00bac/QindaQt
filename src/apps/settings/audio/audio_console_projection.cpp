@@ -67,6 +67,13 @@ QVariantList AudioSettingsModel::consoleStrips() const
             // configurable; it is drawn as unbound rather than removed, so the
             // user's routing does not vanish with the hardware.
             {QStringLiteral("bound"), strip.sourceKnown},
+            // The device the strip follows right now, and whether that is the
+            // user's pin or the automatic choice (ADR-0178). A picker shows
+            // the pin when there is one, so an absent pinned device reads as
+            // "this microphone, unplugged" rather than as "nothing".
+            {QStringLiteral("sourceSerial"), strip.sourceKnown ? strip.sourceSerial : 0},
+            {QStringLiteral("pinned"), !strip.pinnedSource.isEmpty()},
+            {QStringLiteral("pinnedSource"), strip.pinnedSource},
             {QStringLiteral("sends"), sends},
             {QStringLiteral("level"), levelMap(strip.level)}});
     }
@@ -102,6 +109,9 @@ QVariantList AudioSettingsModel::consoleBuses() const
             {QStringLiteral("muted"), bus.muted},
             {QStringLiteral("mono"), bus.mono},
             {QStringLiteral("bound"), bus.targetKnown},
+            {QStringLiteral("targetSerial"), bus.targetKnown ? bus.targetSerial : 0},
+            {QStringLiteral("pinned"), !bus.pinnedTarget.isEmpty()},
+            {QStringLiteral("pinnedTarget"), bus.pinnedTarget},
             {QStringLiteral("level"), levelMap(bus.level)}});
     }
     return rows;
@@ -126,6 +136,43 @@ bool AudioSettingsModel::setStripFader(QString stripId, const double position)
 {
     return dispatchConsoleIntent(ConsoleIntent::StripGain, std::move(stripId), 0,
                                  gainDbFromFaderPosition(position), false);
+}
+
+bool AudioSettingsModel::setStripSource(QString stripId, const quint64 serial)
+{
+    return dispatchPin(true, std::move(stripId), serial);
+}
+
+bool AudioSettingsModel::setBusTarget(QString busId, const quint64 serial)
+{
+    return dispatchPin(false, std::move(busId), serial);
+}
+
+bool AudioSettingsModel::dispatchPin(const bool strip, QString consoleId,
+                                     const quint64 serial)
+{
+    // Same gate as every console intent: a pin re-routes, so it needs the
+    // routing capability.
+    const Snapshot snapshot = m_client.snapshot();
+    if (!consoleAvailable()
+        || !snapshot.capabilities.testFlag(Capability::SetConsoleRouting)) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    if (consoleId.isEmpty()) {
+        rejectAction(QStringLiteral("stale-handle"));
+        return false;
+    }
+    // Serial 0 is "automatic": sent as an invalid handle, which the service
+    // reads as clearing the pin (ADR-0178).
+    const Handle device = serial == 0 ? Handle{} : Handle{snapshot.epoch, serial};
+    const quint64 requestId = strip ? m_client.setStripSource(consoleId, device)
+                                    : m_client.setBusTarget(consoleId, device);
+    if (requestId == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
 }
 
 bool AudioSettingsModel::setStripMuted(QString stripId, const bool muted)

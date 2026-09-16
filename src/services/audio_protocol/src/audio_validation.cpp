@@ -110,9 +110,12 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
         return false;
-    // SetBusTarget names a bus AND the device it should drive, so its handle is
-    // checked like any other.
+    // SetBusTarget and SetStripSource name a console element AND the device it
+    // should follow, so a valid handle is checked like any other; an INVALID
+    // handle on these two means "back to automatic" and is admitted by the
+    // callers as such (ADR-0178).
     case OperationKind::SetBusTarget:
+    case OperationKind::SetStripSource:
     case OperationKind::SetDefault:
     case OperationKind::SetVolume:
     case OperationKind::SetMute:
@@ -193,7 +196,8 @@ ValidationResult validateConsole(const Console &console)
         if (!bus.wireValid) {
             return rejected(QStringLiteral("oversized-payload"));
         }
-        if (!validConsoleIdentity(bus.id, bus.label)) {
+        if (!validConsoleIdentity(bus.id, bus.label)
+            || !isBoundedText(bus.pinnedTarget, kMaxNodeNameUtf8Bytes)) {
             return rejected(QStringLiteral("invalid-bus-identity"));
         }
         // AGENT-GUARD: a duplicate id or index would let two console cells
@@ -220,7 +224,8 @@ ValidationResult validateConsole(const Console &console)
         if (!strip.wireValid) {
             return rejected(QStringLiteral("oversized-payload"));
         }
-        if (!validConsoleIdentity(strip.id, strip.label)) {
+        if (!validConsoleIdentity(strip.id, strip.label)
+            || !isBoundedText(strip.pinnedSource, kMaxNodeNameUtf8Bytes)) {
             return rejected(QStringLiteral("invalid-strip-identity"));
         }
         if (stripIds.contains(strip.id)) {

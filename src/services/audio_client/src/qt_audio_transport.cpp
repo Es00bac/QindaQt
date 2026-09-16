@@ -329,6 +329,10 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("SetBusTarget");
         arguments = {request.consoleId, QVariant::fromValue(request.primary)};
         break;
+    case OperationKind::SetStripSource:
+        method = QStringLiteral("SetStripSource");
+        arguments = {request.consoleId, QVariant::fromValue(request.primary)};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

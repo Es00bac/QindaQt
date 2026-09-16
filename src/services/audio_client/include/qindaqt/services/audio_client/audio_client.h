@@ -71,6 +71,10 @@ public:
     [[nodiscard]] quint64 setBusMuted(const QString &busId, bool muted);
     [[nodiscard]] quint64 setBusMono(const QString &busId, bool mono);
     [[nodiscard]] quint64 setBusTarget(const QString &busId, const Handle &device);
+    // Pins a strip to a capture device (ADR-0178). An invalid handle clears
+    // the pin and returns the strip to automatic binding; the same is true of
+    // setBusTarget for a bus.
+    [[nodiscard]] quint64 setStripSource(const QString &stripId, const Handle &device);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);

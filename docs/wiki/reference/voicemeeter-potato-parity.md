@@ -27,7 +27,7 @@ carries the whole processing chain below.
 | --- | --- | --- |
 | 5 hardware input strips | `Strip` with `StripKind::HardwareInput`, following a capture device | **done** |
 | 3 virtual input strips (VAIO / AUX / VAIO3) | `Strip` with `StripKind::VirtualInput` over managed null sinks, so each application gets its own fader | **done** |
-| Per-strip device selection | Hardware strips follow the graph automatically, default device first ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)); an explicit `SetStripSource` pin is still planned | partial |
+| Per-strip device selection | Automatic by default ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)); a per-strip and per-bus pin by device name, persisted, with a picker in Settings ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | **done** |
 | Fader with dB readout | `Strip::gainDb`, one gain law ([ADR-0171](../adr/0171-one-gain-law-for-the-audio-console.md)) | **done** |
 | Mute | `Strip::muted` | **done** |
 | Solo | `Strip::soloed` + published `Console::soloActive` | **done** |

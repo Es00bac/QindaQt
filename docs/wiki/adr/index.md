@@ -180,3 +180,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0175: virtual strips and buses are nodes the console owns](0175-virtual-strips-and-buses-are-nodes-the-console-owns.md)
 - [ADR-0176: the console remembers itself](0176-the-console-remembers-itself.md)
 - [ADR-0177: pan is balance on the send](0177-pan-is-balance-on-the-send.md)
+- [ADR-0178: a pin is a name, not a handle](0178-a-pin-is-a-name-not-a-handle.md)

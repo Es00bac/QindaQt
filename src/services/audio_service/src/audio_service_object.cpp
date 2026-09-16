@@ -195,6 +195,13 @@ void AudioServiceObject::SetBusTarget(const QString &bus, const Handle &device)
     beginOperation(request);
 }
 
+void AudioServiceObject::SetStripSource(const QString &strip, const Handle &device)
+{
+    auto request = consoleRequest(OperationKind::SetStripSource, strip);
+    request.primary = device;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

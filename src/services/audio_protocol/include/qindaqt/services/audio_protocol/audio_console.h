@@ -91,6 +91,11 @@ struct Strip {
     // One entry per bus the console publishes, in bus index order.
     QList<MatrixSend> sends = {};
     Level level;
+    // The user's explicit choice of device, as a node.name (ADR-0178). Empty
+    // means automatic: the service binds the strip to whatever hardware is
+    // available. A pin is honoured even when the device is absent - the strip
+    // then stays unbound rather than quietly following another microphone.
+    QString pinnedSource = {};
 
     bool wireValid = true;
 
@@ -111,6 +116,8 @@ struct Bus {
     bool muted = false;
     bool mono = false;
     Level level;
+    // As Strip::pinnedSource, for the output the bus drives.
+    QString pinnedTarget = {};
 
     bool wireValid = true;
 

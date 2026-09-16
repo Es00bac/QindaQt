@@ -81,6 +81,7 @@ public:
   double lastFaderPosition = -1.0;
   bool lastConsoleFlag = false;
   int lastBusIndex = -1;
+  quint64 lastPinSerial = 0;
   int reloadCount = 0;
   quint64 defaultSerial = 0;
   quint64 deviceVolumeSerial = 0;
@@ -162,6 +163,16 @@ public:
   // The console intent surface (ADR-0173) and the fader conversions QML draws
   // with. Every entry mirrors the real model exactly; the surface comparison
   // row is what keeps them from drifting apart.
+  Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial) {
+    lastConsoleId = stripId;
+    lastPinSerial = serial;
+    return true;
+  }
+  Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial) {
+    lastConsoleId = busId;
+    lastPinSerial = serial;
+    return true;
+  }
   Q_INVOKABLE bool setStripFader(QString stripId, double position) {
     lastConsoleId = stripId;
     lastFaderPosition = position;
