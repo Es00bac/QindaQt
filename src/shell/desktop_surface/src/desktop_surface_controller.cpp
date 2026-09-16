@@ -3,6 +3,7 @@
 
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
+#include "qindaqt/shell/desktop_surface/desktop_icon_layout_store.h"
 
 #include <LayerShellQt/Window>
 #include <QGuiApplication>
@@ -34,13 +35,77 @@ DesktopSurfaceController::DesktopSurfaceController(QGuiApplication &app,
                                                    QQmlEngine &engine,
                                                    BorrowedFacades facades,
                                                    QObject *parent)
-    : QObject(parent), m_app(app), m_engine(engine), m_facades(facades)
+    : QObject(parent), m_app(app), m_engine(engine), m_facades(facades),
+      m_layoutStore(std::make_unique<DesktopIconLayoutStore>())
 {
+  // AGENT-GUARD: output geometry is a live fact. An icon's owning output is
+  // derived from it, so a hotplug, a resolution change, or a different primary
+  // must reach every surface or icons would be drawn by the wrong output or by
+  // none at all.
+  connect(&m_app, &QGuiApplication::primaryScreenChanged, this,
+          [this] { refreshOutputs(); });
+  connect(&m_app, &QGuiApplication::screenAdded, this,
+          [this](QScreen *) { refreshOutputs(); });
+  connect(&m_app, &QGuiApplication::screenRemoved, this,
+          [this](QScreen *) { refreshOutputs(); });
 }
 
 DesktopSurfaceController::~DesktopSurfaceController()
 {
+    for (const auto &connection : std::as_const(m_screenConnections)) {
+        disconnect(connection);
+    }
     qDeleteAll(m_windows);
+}
+
+QVariantList DesktopSurfaceController::outputRects() const
+{
+    QVariantList rects;
+    const auto screens = m_app.screens();
+    rects.reserve(screens.size());
+    for (const QScreen *screen : screens) {
+        const QRect geometry = screen->geometry();
+        rects.append(QVariantMap{
+            {QStringLiteral("name"), screen->name()},
+            {QStringLiteral("x"), geometry.x()},
+            {QStringLiteral("y"), geometry.y()},
+            {QStringLiteral("width"), geometry.width()},
+            {QStringLiteral("height"), geometry.height()}});
+    }
+    return rects;
+}
+
+QString DesktopSurfaceController::primaryOutputName() const
+{
+    const QScreen *primary = m_app.primaryScreen();
+    if (primary != nullptr) {
+        return primary->name();
+    }
+    const auto screens = m_app.screens();
+    return screens.isEmpty() ? QString() : screens.constFirst()->name();
+}
+
+void DesktopSurfaceController::refreshOutputs()
+{
+    for (const auto &connection : std::as_const(m_screenConnections)) {
+        disconnect(connection);
+    }
+    m_screenConnections.clear();
+    for (QScreen *screen : m_app.screens()) {
+        m_screenConnections.append(connect(screen, &QScreen::geometryChanged,
+                                           this,
+                                           [this](const QRect &) { refreshOutputs(); }));
+    }
+
+    const QVariantList rects = outputRects();
+    const QString primary = primaryOutputName();
+    for (QQuickWindow *window : std::as_const(m_windows)) {
+        window->setProperty("outputRects", rects);
+        window->setProperty("primaryOutputName", primary);
+    }
+    if (m_started) {
+        reconcile();
+    }
 }
 
 void DesktopSurfaceController::adoptProfile(
@@ -72,7 +137,7 @@ void DesktopSurfaceController::adoptProfile(
 void DesktopSurfaceController::start()
 {
     m_started = true;
-    reconcile();
+    refreshOutputs();
 }
 
 void DesktopSurfaceController::reconcile()
@@ -122,7 +187,11 @@ void DesktopSurfaceController::createWindow(QScreen *screen)
           QVariant::fromValue(m_facades.desktopControlsAccess)},
          {QStringLiteral("launcherAccess"),
           QVariant::fromValue(m_facades.launcherAccess)},
-         {QStringLiteral("screenName"), screen->name()}});
+         {QStringLiteral("screenName"), screen->name()},
+         {QStringLiteral("layoutStore"),
+          QVariant::fromValue(static_cast<QObject *>(m_layoutStore.get()))},
+         {QStringLiteral("outputRects"), outputRects()},
+         {QStringLiteral("primaryOutputName"), primaryOutputName()}});
     auto *raw = qobject_cast<QQuickWindow *>(object);
     if (!raw) {
         qWarning().noquote()

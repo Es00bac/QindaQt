@@ -2,21 +2,39 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QindaQt.Shell.Icons 1.0 as ShellIcons
 
-// Desktop-directory icons with free placement, persistent per-output
-// geometry, activation, marquee/keyboard multi-selection, and
-// selection-scoped file operations (Trash, clipboard cut/copy/paste) through
-// the DesktopContentsController boundary. Selection state lives here as the
-// `selectedIds` set plus the current/anchor `selectedId`; every operation
-// consumes the selected rows through the controller, which re-validates each
+// Desktop-directory icons: activation, marquee/keyboard multi-selection, drag
+// placement, and selection-scoped file operations (Trash, clipboard cut/copy/
+// paste) through the DesktopContentsController boundary. Every operation
+// consumes the selected rows through that controller, which re-validates each
 // entry against the listing-time identity before mutating anything.
+//
+// This view owns composition, input and the live drag. Two collaborators hold
+// the rest: DesktopIconPlacement answers where each icon lives and which
+// output draws it, and DesktopIconSelection owns the selected-id set.
+//
+// AGENT-CONTRACT (ADR-0167): the desktop is ONE desktop. Placements live in
+// global layout coordinates in the shared DesktopIconLayoutStore, and every
+// per-output surface renders only the icons its own output owns, so an icon
+// appears exactly once across all outputs. Never reintroduce a per-output
+// placement namespace: that is what produced two independent sets of icons on
+// a two-output session.
 Item {
     id: root
     required property var settings
     required property var contents
     required property var layoutStore
     required property string screenName
+
+    // Global-frame geometry of every connected output, as
+    // {name, x, y, width, height}, and the name of the output that unplaced
+    // icons flow onto. Both are injected by DesktopSurfaceController from the
+    // platform's screen truth. Defaults keep a single-surface host (tests, a
+    // one-output session) behaving exactly as a local-coordinate surface.
+    property var outputRects: []
+    property string primaryOutputName: screenName
+    // Programmatic movement glides; a dragged icon never does (see the tile).
+    property bool animatePlacement: true
 
     readonly property bool placementRight: String(settings?.placement ?? "left") === "right"
     readonly property int iconSize: {
@@ -28,181 +46,149 @@ Item {
     readonly property real tileHeight: iconSize + 40
     readonly property var rows: contents.rows
     readonly property bool canPaste: contents.canPaste === true
-    // Multi-selection: the id set, the current entry, and the shift-range
-    // anchor. `selectedId` remains the single "current" id the surface
-    // contract and its tests read after a plain click.
-    property var selectedIds: ({})
-    property string selectedId: ""
-    property string anchorId: ""
+    readonly property bool snapToGrid: settings?.snapToGrid !== false
+
+    readonly property DesktopIconPlacement placement: DesktopIconPlacement {
+        rows: root.rows
+        layoutStore: root.layoutStore
+        screenName: root.screenName
+        outputRects: root.outputRects
+        primaryOutputName: root.primaryOutputName
+        tileWidth: root.tileWidth
+        tileHeight: root.tileHeight
+        placementRight: root.placementRight
+        surfaceWidth: root.width
+        surfaceHeight: root.height
+        animate: root.animatePlacement
+    }
+    readonly property DesktopIconSelection selection: DesktopIconSelection {
+        rows: root.rows
+    }
+
+    // The surface contract and its tests read these off the view itself.
+    readonly property var selectedIds: selection.selectedIds
+    readonly property string selectedId: selection.currentId
+
     property string contextEntryId: ""
     property string contextEntryLabel: ""
 
-    function clearSelection() {
-        selectedIds = ({})
-        selectedId = ""
-        anchorId = ""
-    }
-    function isSelected(entryId) { return selectedIds[entryId] !== undefined }
-    function selectionCount() { return Object.keys(selectedIds).length }
-    function selectedRows() {
-        const rows = []
-        for (const row of root.rows) {
-            if (isSelected(row.id))
-                rows.push(row)
-        }
-        return rows
-    }
-    function selectOnly(tile) {
-        const next = ({})
-        next[tile.entryId] = true
-        selectedIds = next
-        selectedId = tile.entryId
-        anchorId = tile.entryId
-    }
-    function toggle(tile) {
-        const next = Object.assign({}, selectedIds)
-        if (next[tile.entryId] !== undefined) {
-            delete next[tile.entryId]
-            if (selectedId === tile.entryId)
-                selectedId = ""
-        } else {
-            next[tile.entryId] = true
-            selectedId = tile.entryId
-            anchorId = tile.entryId
-        }
-        selectedIds = next
-    }
-    function rangeTo(tile) {
-        const entries = root.rows
-        let anchor = -1
-        for (let i = 0; i < entries.length; ++i) {
-            if (entries[i].id === root.anchorId) {
-                anchor = i
-                break
-            }
-        }
-        let target = -1
-        for (let i = 0; i < entries.length; ++i) {
-            if (entries[i].id === tile.entryId) {
-                target = i
-                break
-            }
-        }
-        if (target < 0)
-            return
-        if (anchor < 0)
-            anchor = target
-        const next = Object.assign({}, selectedIds)
-        for (let i = Math.min(anchor, target); i <= Math.max(anchor, target); ++i)
-            next[entries[i].id] = true
-        selectedIds = next
-        selectedId = tile.entryId
-    }
-    function selectAll() {
-        const next = ({})
-        for (const row of root.rows)
-            next[row.id] = true
-        selectedIds = next
-        if (root.rows.length > 0) {
-            selectedId = root.rows[root.rows.length - 1].id
-            anchorId = selectedId
-        }
-    }
-    function applyMarquee(ids, modifiers) {
-        if (modifiers & Qt.ControlModifier) {
-            const next = Object.assign({}, selectedIds)
-            for (const id of ids) {
-                if (next[id] !== undefined)
-                    delete next[id]
-                else
-                    next[id] = true
-            }
-            selectedIds = next
-            if (ids.length > 0)
-                selectedId = ids[ids.length - 1]
-        } else if (modifiers & Qt.ShiftModifier) {
-            if (ids.length === 0)
-                return
-            const next = Object.assign({}, selectedIds)
-            for (const id of ids)
-                next[id] = true
-            selectedIds = next
-            selectedId = ids[ids.length - 1]
-        } else {
-            const next = ({})
-            for (const id of ids)
-                next[id] = true
-            selectedIds = next
-            selectedId = ids.length > 0 ? ids[ids.length - 1] : ""
-            anchorId = selectedId
-        }
-    }
+    function isSelected(entryId) { return selection.isSelected(entryId) }
+    function selectionCount() { return selection.count() }
+    function clearSelection() { selection.clear() }
+    function selectAll() { selection.selectAll() }
+
+    // --- file operations, all through the contents controller boundary -----
     function openEntry(entryId) { contents.open(entryId) }
     function trashSelection() {
-        const rows = selectedRows()
-        if (rows.length > 0)
-            contents.trashEntries(rows)
+        const picked = selection.selectedRows()
+        if (picked.length > 0)
+            contents.trashEntries(picked)
     }
     function cutSelectionOps() {
-        const rows = selectedRows()
-        if (rows.length > 0)
-            contents.cutSelection(rows)
+        const picked = selection.selectedRows()
+        if (picked.length > 0)
+            contents.cutSelection(picked)
     }
     function copySelectionOps() {
-        const rows = selectedRows()
-        if (rows.length > 0)
-            contents.copySelection(rows)
+        const picked = selection.selectedRows()
+        if (picked.length > 0)
+            contents.copySelection(picked)
     }
     function pasteClipboard() { contents.pasteIntoDesktop() }
-    function fallbackPosition(index) {
-        const margin = 6
-        const spacing = 4
-        const rowsPerColumn = Math.max(1, Math.floor((height - 2 * margin + spacing)
-                                                     / (tileHeight + spacing)))
-        const column = Math.floor(index / rowsPerColumn)
-        const row = index % rowsPerColumn
-        return {
-            x: placementRight
-               ? width - margin - tileWidth - column * (tileWidth + spacing)
-               : margin + column * (tileWidth + spacing),
-            y: margin + row * (tileHeight + spacing)
-        }
-    }
-    function clampX(x) { return Math.max(0, Math.min(x, Math.max(0, width - tileWidth))) }
-    function clampY(y) { return Math.max(0, Math.min(y, Math.max(0, height - tileHeight))) }
-    function restoreTile(tile) {
-        const stored = layoutStore.position(screenName, tile.layoutKey)
-        const fallback = fallbackPosition(tile.index)
-        tile.x = clampX(stored.x === undefined ? fallback.x : Number(stored.x))
-        tile.y = clampY(stored.y === undefined ? fallback.y : Number(stored.y))
-    }
-    function restoreAllTiles() {
-        for (let i = 0; i < tileRepeater.count; ++i) {
-            const tile = tileRepeater.itemAt(i)
-            if (tile !== null)
-                restoreTile(tile)
-        }
-    }
     function reflow() {
-        clearSelection()
-        layoutStore.clearScreen(screenName)
+        selection.clear()
+        layoutStore.clearAll()
         contents.refresh()
-        Qt.callLater(restoreAllTiles)
     }
-    function captureGroupStart() {
-        const start = []
-        for (let i = 0; i < tileRepeater.count; ++i) {
-            const item = tileRepeater.itemAt(i)
-            if (item !== null && isSelected(item.entryId))
-                start.push({ tile: item, x: item.x, y: item.y })
+
+    // --- drag, owned by the surface holding the pointer grab ---------------
+    property var dragKeys: []
+    property var dragStart: ({})
+    readonly property bool dragInFlight: dragKeys.length > 0
+    function isDragKey(layoutKey) { return dragKeys.indexOf(layoutKey) >= 0 }
+    // This output draws an icon it owns, and also any icon THIS surface is
+    // dragging, so a delegate is never destroyed out from under the pointer
+    // grab as the icon crosses an output boundary.
+    function drawsRow(layoutKey) {
+        return (dragInFlight && isDragKey(layoutKey))
+            || placement.ownsRow(layoutKey)
+    }
+
+    function beginDrag(tile) {
+        const keys = []
+        const start = ({})
+        const wholeSelection = selection.isSelected(tile.entryId)
+        for (const row of rows) {
+            const key = String(row.layoutKey)
+            const included = wholeSelection ? selection.isSelected(row.id)
+                                            : row.id === tile.entryId
+            if (!included)
+                continue
+            const point = placement.positions[key]
+            if (point === undefined)
+                continue
+            keys.push(key)
+            start[key] = { x: point.x, y: point.y }
         }
-        return start
+        dragStart = start
+        dragKeys = keys
     }
+    function moveDrag(dx, dy) {
+        // AGENT-GUARD: clamp the group's TRANSLATION once, not each icon
+        // separately. Per-icon clamping collapsed a multi-icon drag into a
+        // pile as soon as one icon reached a desktop edge.
+        const bounds = placement.desktopBounds
+        let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity
+        for (const key of dragKeys) {
+            const start = dragStart[key]
+            minX = Math.max(minX, bounds.x - start.x)
+            maxX = Math.min(maxX, bounds.x + bounds.width - tileWidth - start.x)
+            minY = Math.max(minY, bounds.y - start.y)
+            maxY = Math.min(maxY, bounds.y + bounds.height - tileHeight - start.y)
+        }
+        const moveX = minX > maxX ? dx : Math.max(minX, Math.min(maxX, dx))
+        const moveY = minY > maxY ? dy : Math.max(minY, Math.min(maxY, dy))
+        const batch = ({})
+        for (const key of dragKeys) {
+            const start = dragStart[key]
+            batch[key] = { x: start.x + moveX, y: start.y + moveY }
+        }
+        layoutStore.updateDrag(batch)
+    }
+    function commitDrag() {
+        for (const key of dragKeys) {
+            const live = layoutStore.dragPosition(key)
+            if (live.x === undefined)
+                continue
+            const dropped = { x: Number(live.x), y: Number(live.y) }
+            const target = snapToGrid
+                ? placement.snapGlobal(dropped, key, dragKeys) : dropped
+            layoutStore.setPosition(key, target.x, target.y)
+        }
+        dragKeys = []
+        dragStart = ({})
+        layoutStore.endDrag()
+    }
+    function cancelDrag(tile, modifiers) {
+        const hadGroup = dragKeys.length > 1
+        dragKeys = []
+        dragStart = ({})
+        layoutStore.endDrag()
+        // Pressing an already-selected tile keeps the set for a potential
+        // group drag; a plain click without movement collapses to it.
+        if (modifiers === Qt.NoModifier && hadGroup)
+            selection.selectOnly(tile.entryId)
+    }
+
+    // --- input surfaces ----------------------------------------------------
     function layoutTiles() {
         const tiles = []
         for (let i = 0; i < tileRepeater.count; ++i) {
             const item = tileRepeater.itemAt(i)
-            if (item !== null)
+            // Only icons this output actually shows can be marquee-selected on
+            // it; a hidden delegate standing in for another output's icon must
+            // not be swept by a band drawn here.
+            if (item !== null && item.visible)
                 tiles.push({ id: item.entryId, item: item })
         }
         return tiles
@@ -222,22 +208,9 @@ Item {
         iconContextMenu.popup()
     }
 
-    // Any directory change (refresh, trash, paste) revalidates selection:
-    // ids that no longer name a listed entry drop out, mirroring the File
-    // Manager selection reconcile contract.
     Connections {
         target: root.contents
-        function onRowsChanged() {
-            const next = ({})
-            for (const row of root.rows) {
-                if (root.isSelected(row.id))
-                    next[row.id] = true
-            }
-            if (Object.keys(next).length !== Object.keys(root.selectedIds).length)
-                root.selectedIds = next
-            if (root.selectedId !== "" && next[root.selectedId] === undefined)
-                root.selectedId = ""
-        }
+        function onRowsChanged() { root.selection.reconcile() }
     }
 
     // Desktop-wide keyboard gestures: Delete trashes the current selection
@@ -251,9 +224,18 @@ Item {
         }
     }
 
-    onWidthChanged: Qt.callLater(restoreAllTiles)
-    onHeightChanged: Qt.callLater(restoreAllTiles)
-    Component.onCompleted: Qt.callLater(restoreAllTiles)
+    // One-time upgrade of a superseded per-output arrangement. Only the
+    // primary surface runs it, and it keeps that output's arrangement while
+    // dropping the other outputs' conflicting copies - see ADR-0167 for why a
+    // merge is not possible.
+    Component.onCompleted: {
+        if (root.screenName === root.primaryOutputName
+                && root.layoutStore.hasLegacyLayout()) {
+            root.layoutStore.migrateLegacyLayout(root.screenName,
+                                                 root.placement.ownRect.x,
+                                                 root.placement.ownRect.y)
+        }
+    }
 
     // Marquee input sits UNDER the tile layer: icon presses are consumed by
     // the tiles above it; only empty-desktop presses start a band here.
@@ -262,7 +244,7 @@ Item {
         objectName: "desktopMarqueeBand"
         anchors.fill: parent
         tiles: root.layoutTiles
-        onFinished: (ids, modifiers) => root.applyMarquee(ids, modifiers)
+        onFinished: (ids, modifiers) => root.selection.applyMarquee(ids, modifiers)
     }
 
     Item {
@@ -272,141 +254,8 @@ Item {
         Repeater {
             id: tileRepeater
             model: root.rows
-            Rectangle {
-                id: tile
-                objectName: "desktopIconsTile"
-                required property var modelData
-                required property int index
-                readonly property string entryId: String(modelData.id)
-                readonly property string entryLabel: String(modelData.label)
-                readonly property string layoutKey: String(modelData.layoutKey)
-                readonly property bool selected: root.isSelected(entryId)
-                property bool dragged: false
-                width: root.tileWidth
-                height: root.tileHeight
-                radius: 4
-                color: selected ? "#33ffffff"
-                      : tileInput.containsMouse ? "#22ffffff" : "transparent"
-                // The delegate can complete before its containing Window has
-                // received output geometry. Defer once so every fallback is
-                // computed against the real surface rather than stacking at
-                // 0,0 during construction.
-                Component.onCompleted: Qt.callLater(() => root.restoreTile(tile))
-                Keys.onReturnPressed: root.openEntry(entryId)
-                Keys.onEnterPressed: root.openEntry(entryId)
-
-                MouseArea {
-                    id: tileInput
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-                    cursorShape: pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-
-                    property real pressX: 0
-                    property real pressY: 0
-                    property bool moved: false
-                    // Start positions of every selected tile while a group
-                    // drag is in flight; empty for a no-selection drag.
-                    property var groupStart: []
-
-                    onPressed: (mouse) => {
-                        tile.dragged = false
-                        moved = false
-                        if (mouse.button === Qt.LeftButton) {
-                            if (mouse.modifiers & Qt.ControlModifier) {
-                                root.toggle(tile)
-                            } else if (mouse.modifiers & Qt.ShiftModifier) {
-                                root.rangeTo(tile)
-                            } else if (!root.isSelected(tile.entryId)) {
-                                root.selectOnly(tile)
-                            }
-                            pressX = mouse.x
-                            pressY = mouse.y
-                            groupStart = root.isSelected(tile.entryId)
-                                         ? root.captureGroupStart() : []
-                            tile.forceActiveFocus(Qt.MouseFocusReason)
-                        } else if (mouse.button === Qt.RightButton
-                                   && !root.isSelected(tile.entryId)) {
-                            root.selectOnly(tile)
-                        }
-                        // AGENT-GUARD: Qt.MiddleButton stays claimed as a
-                        // no-op so a middle click over a tile never falls
-                        // through to the surface input's Applications popup.
-                    }
-                    onPositionChanged: (mouse) => {
-                        if (!pressed || groupStart.length === 0)
-                            return
-                        const dx = mouse.x - pressX
-                        const dy = mouse.y - pressY
-                        if (!moved && Math.abs(dx) + Math.abs(dy) < 3)
-                            return
-                        moved = true
-                        tile.dragged = true
-                        for (const entry of groupStart) {
-                            entry.tile.x = root.clampX(entry.x + dx)
-                            entry.tile.y = root.clampY(entry.y + dy)
-                        }
-                    }
-                    onReleased: (mouse) => {
-                        if (mouse.button !== Qt.LeftButton)
-                            return
-                        if (tile.dragged) {
-                            // Persist the whole group; a rename keeps each
-                            // tile's identity-keyed position.
-                            for (const entry of groupStart) {
-                                root.layoutStore.setPosition(root.screenName,
-                                                             entry.tile.layoutKey,
-                                                             entry.tile.x, entry.tile.y)
-                            }
-                        } else if (mouse.modifiers === Qt.NoModifier
-                                   && groupStart.length > 1) {
-                            // Pressing an already-selected tile keeps the set
-                            // for a potential group drag; a plain click
-                            // without movement collapses the selection to it.
-                            root.selectOnly(tile)
-                        }
-                        groupStart = []
-                        tile.dragged = false
-                    }
-                    onClicked: (mouse) => {
-                        if (mouse.button === Qt.RightButton)
-                            root.openIconMenu(tile, mouse.x, mouse.y)
-                    }
-                    onDoubleClicked: (mouse) => {
-                        if (mouse.button === Qt.LeftButton && !tile.dragged)
-                            root.openEntry(tile.entryId)
-                    }
-                }
-
-                ShellIcons.Icon {
-                    objectName: "desktopIconsTileIcon"
-                    anchors.top: parent.top
-                    anchors.topMargin: 4
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    name: String(tile.modelData.iconName) || "folder"
-                    size: root.iconSize
-                    fallbackText: tile.entryLabel
-                    Accessible.ignored: true
-                }
-                Text {
-                    objectName: "desktopIconsTileLabel"
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 4
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 8
-                    text: tile.entryLabel
-                    color: "#ffffff"
-                    style: Text.Raised
-                    styleColor: "#80000000"
-                    horizontalAlignment: Text.AlignHCenter
-                    elide: Text.ElideMiddle
-                    font.pixelSize: 12
-                    Accessible.ignored: true
-                }
-                Accessible.role: Accessible.Button
-                Accessible.name: String(modelData.accessibleName)
-                Accessible.selected: tile.selected
-                Accessible.onPressAction: root.openEntry(tile.entryId)
+            DesktopIconTile {
+                view: root
             }
         }
     }

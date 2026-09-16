@@ -24,7 +24,8 @@
       "placement": {"type": "string", "enum": ["left", "right"], "default": "left"},
       "iconSize": {"type": "integer", "minimum": 16, "maximum": 128, "default": 48},
       "contextMenuStyle": {"type": "string", "enum": ["windows", "mac", "traditional"], "default": "windows"},
-      "applicationsMenuModifier": {"type": "string", "enum": ["none", "shift", "ctrl", "alt"], "default": "shift"}
+      "applicationsMenuModifier": {"type": "string", "enum": ["none", "shift", "ctrl", "alt"], "default": "shift"},
+      "snapToGrid": {"type": "boolean", "default": true}
     }
   }
 }
