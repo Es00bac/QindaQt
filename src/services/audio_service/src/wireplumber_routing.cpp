@@ -45,13 +45,17 @@ QByteArray routingModuleArguments(const QString &stripId, const QString &busId,
     // node.passive keeps a send from holding the graph awake on its own: the
     // loopback follows whether real audio is flowing rather than pinning both
     // devices open for as long as the console has a cell switched on.
+    // AGENT-CONTRACT: the PLAYBACK side carries the send's node name, because
+    // that is the node whose volume is this matrix cell's gain. The worker
+    // finds it by exactly this name to apply the fader, so the two must not
+    // drift apart.
     const QString arguments =
         QStringLiteral(
             "{ node.name = \"%1\" node.description = \"QindaQt send %2 -> %3\""
-            " capture.props = { node.target = \"%4\" stream.capture.sink = true"
-            " node.passive = true }"
-            " playback.props = { node.target = \"%5\" node.passive = true"
-            " channelmix.normalize = false }"
+            " capture.props = { node.name = \"%1.capture\" node.target = \"%4\""
+            " stream.capture.sink = true node.passive = true }"
+            " playback.props = { node.name = \"%1\" node.target = \"%5\""
+            " node.passive = true channelmix.normalize = false }"
             " target.object = \"%5\" }")
             .arg(name, stripId, busId, sourceNodeName, targetNodeName);
     Q_UNUSED(linear)

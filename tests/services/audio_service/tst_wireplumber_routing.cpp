@@ -62,6 +62,18 @@ void WirePlumberRoutingTests::argumentsNameBothEndpointsAndTheSend()
     // A strip is a SINK the applications play into, so the capture side has to
     // take its monitor rather than treat it as a source.
     QVERIFY(text.contains(QStringLiteral("stream.capture.sink = true")));
+
+    // AGENT-GUARD: the PLAYBACK node carries the send's own name, because that
+    // is the node whose volume is this cell's gain and the worker finds it by
+    // exactly this name. If the two ever drift apart the fader silently stops
+    // reaching the audio while the console still shows it moving.
+    const QString send = routingNodeName(QStringLiteral("strip.virtual.1"),
+                                         QStringLiteral("bus.b1"));
+    QVERIFY(text.contains(QStringLiteral("playback.props = { node.name = \"%1\"")
+                              .arg(send)));
+    // The capture side takes a distinct name so the two never collide in a
+    // by-name lookup.
+    QVERIFY(text.contains(QStringLiteral("%1.capture").arg(send)));
 }
 
 void WirePlumberRoutingTests::hostileDeviceNamesCannotInjectProperties()
