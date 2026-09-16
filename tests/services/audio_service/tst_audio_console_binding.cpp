@@ -12,6 +12,7 @@
 #include <qindaqt/services/audio_service/audio_operation_coordinator.h>
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 
+#include <QtCore/QTemporaryDir>
 #include <QtTest>
 
 using namespace QindaQt::Audio;
@@ -28,6 +29,7 @@ private Q_SLOTS:
     void meterReadingsStreamWithoutTouchingLineage();
     void aRackIsDeclaredOnlyWhenActiveAndBound();
     void aBusRackNeedsItsOwnSinkAndOnlyOnAPhysicalBus();
+    void presetsSaveLoadAndDeleteTheWholeConsole();
 };
 
 // ADR-0174. A console that is not attached to the graph draws faders wired to
@@ -325,6 +327,14 @@ void AudioConsoleBindingTests::aRackIsDeclaredOnlyWhenActiveAndBound()
     rack.processing.compressor.enabled = false;
     QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
     QVERIFY(backend.processing.isEmpty());
+
+    // AGENT-GUARD: every block counts, the denoiser included. The coordinator
+    // once kept its own list of blocks that predated the denoiser, and a
+    // denoiser-only rack was accepted and shown but never reached the graph.
+    rack.processing.denoiser.enabled = true;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.processing.size(), 1);
+    QVERIFY(backend.processing.at(0).processing.denoiser.enabled);
 }
 
 // ADR-0180. A bus rack is declared for a physical bus with a rack and a device,
@@ -375,6 +385,61 @@ void AudioConsoleBindingTests::aBusRackNeedsItsOwnSinkAndOnlyOnAPhysicalBus()
     rack.busProcessing.equalizer.enabled = true;
     QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
     QVERIFY(backend.busProcessing.isEmpty());
+}
+
+// ADR-0182. A preset is the whole console under a name: saving publishes the
+// name, loading restores the document and rebinds, deleting withdraws it.
+void AudioConsoleBindingTests::presetsSaveLoadAndDeleteTheWholeConsole()
+{
+    QTemporaryDir presets;
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend, nullptr, presets.path());
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    const QString stripId = coordinator.snapshot().console.strips.at(0).id;
+
+    OperationRequest gain;
+    gain.kind = OperationKind::SetStripGain;
+    gain.consoleId = stripId;
+    gain.gainDb = -12.0;
+    QCOMPARE(coordinator.submit(gain).immediateResult.status, OperationStatus::Succeeded);
+
+    OperationRequest save;
+    save.kind = OperationKind::SavePreset;
+    save.displayName = QStringLiteral("Stream Night");
+    QCOMPARE(coordinator.submit(save).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(coordinator.snapshot().console.presets, QStringList{QStringLiteral("Stream Night")});
+
+    gain.gainDb = 0.0;
+    QCOMPARE(coordinator.submit(gain).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(coordinator.snapshot().console.strips.at(0).gainDb, 0.0);
+
+    OperationRequest load;
+    load.kind = OperationKind::LoadPreset;
+    load.displayName = QStringLiteral("Stream Night");
+    QCOMPARE(coordinator.submit(load).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(coordinator.snapshot().console.strips.at(0).gainDb, -12.0);
+    // Loaded state is bound again right away, not one publication later.
+    QVERIFY(coordinator.snapshot().console.strips.at(0).sourceKnown);
+
+    OperationRequest missing;
+    missing.kind = OperationKind::LoadPreset;
+    missing.displayName = QStringLiteral("never saved");
+    const OperationSubmission rejected = coordinator.submit(missing);
+    QCOMPARE(rejected.immediateResult.status, OperationStatus::Rejected);
+    QCOMPARE(rejected.immediateResult.reasonCode, QStringLiteral("unknown-preset"));
+
+    OperationRequest hostile;
+    hostile.kind = OperationKind::SavePreset;
+    hostile.displayName = QStringLiteral("///");
+    QCOMPARE(coordinator.submit(hostile).immediateResult.reasonCode,
+             QStringLiteral("invalid-preset-name"));
+
+    OperationRequest remove;
+    remove.kind = OperationKind::DeletePreset;
+    remove.displayName = QStringLiteral("Stream Night");
+    QCOMPARE(coordinator.submit(remove).immediateResult.status, OperationStatus::Succeeded);
+    QVERIFY(coordinator.snapshot().console.presets.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(AudioConsoleBindingTests)

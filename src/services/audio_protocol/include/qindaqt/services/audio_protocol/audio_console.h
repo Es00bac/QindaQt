@@ -7,6 +7,7 @@
 #include <QtCore/QList>
 #include <QtCore/QMetaType>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <QtCore/QVector>
 
 namespace QindaQt::Audio
@@ -243,6 +244,9 @@ struct Console {
     // every surface agrees on the state that silences un-soloed strips, and so
     // a client that shows only part of the console still dims correctly.
     bool soloActive = false;
+    // The names of the saved presets (ADR-0182), in stored order. Published so
+    // every surface offers the same list without a second round trip.
+    QStringList presets = {};
 
     bool wireValid = true;
 

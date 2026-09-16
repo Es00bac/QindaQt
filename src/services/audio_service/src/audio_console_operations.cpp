@@ -9,6 +9,8 @@
 
 #include "console_endpoints_p.h"
 
+#include <qindaqt/services/audio_protocol/audio_validation.h>
+
 #include <QtCore/QSet>
 
 #include <algorithm>
@@ -33,6 +35,9 @@ bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noe
     case OperationKind::SetStripSource:
     case OperationKind::SetStripProcessing:
     case OperationKind::SetBusProcessing:
+    case OperationKind::SavePreset:
+    case OperationKind::LoadPreset:
+    case OperationKind::DeletePreset:
         return true;
     default:
         return false;
@@ -180,6 +185,45 @@ void AudioOperationCoordinator::autoBindConsole(const Snapshot &snapshot)
     }
 }
 
+bool AudioOperationCoordinator::isPresetOperation(const OperationKind kind) noexcept
+{
+    return kind == OperationKind::SavePreset || kind == OperationKind::LoadPreset
+        || kind == OperationKind::DeletePreset;
+}
+
+QString AudioOperationCoordinator::applyPreset(const OperationRequest &request)
+{
+    const QString name = request.displayName.trimmed();
+    if (name.isEmpty() || !isBoundedText(name, kMaxPresetNameUtf8Bytes)
+        || PresetStore::slugFor(name).isEmpty()) {
+        return QStringLiteral("invalid-preset-name");
+    }
+    switch (request.kind) {
+    case OperationKind::SavePreset:
+        return m_presets.save(name, m_console) ? QString{} : QStringLiteral("preset-store-failed");
+    case OperationKind::LoadPreset: {
+        // AGENT-GUARD: loaded into a scratch model first. A preset that fails
+        // the console gate must not half-apply onto the live console.
+        ConsoleModel candidate = m_console;
+        if (!m_presets.load(name, candidate)) {
+            return QStringLiteral("unknown-preset");
+        }
+        if (!validateConsole(candidate.console()).accepted) {
+            return QStringLiteral("preset-malformed");
+        }
+        m_console = candidate;
+        // Bindings are live state and are not in the document; re-derive them
+        // from the retained graph right away.
+        autoBindConsole(m_snapshot);
+        return {};
+    }
+    case OperationKind::DeletePreset:
+        return m_presets.remove(name) ? QString{} : QStringLiteral("unknown-preset");
+    default:
+        return QStringLiteral("unsupported");
+    }
+}
+
 void AudioOperationCoordinator::publishRouting()
 {
     // AGENT-CONTRACT: the console names its endpoints by console id; the graph
@@ -282,7 +326,7 @@ void AudioOperationCoordinator::publishConsoleEndpoints()
                                                     .isBus = true,
                                                     .physicalBusSink = false,
                                                     .description = bus.label});
-        } else if (bus.processing.equalizer.enabled || bus.processing.mode != BusMode::Normal) {
+        } else if (busProcessingActive(bus.processing)) {
             // A physical bus with a rack needs somewhere for its sends to land
             // before the rack; without one, nothing to process.
             endpoints.append(BackendConsoleEndpoint{.consoleId = bus.id,
@@ -306,9 +350,7 @@ void AudioOperationCoordinator::publishProcessing()
     const Console console = m_console.console();
     for (const Strip &strip : console.strips) {
         const StripProcessing &p = strip.processing;
-        const bool active = p.gate.enabled || p.compressor.enabled || p.equalizer.enabled
-            || p.limiter.enabled;
-        if (!active || !strip.sourceKnown) {
+        if (!stripProcessingActive(p) || !strip.sourceKnown) {
             continue;
         }
         chains.append(BackendProcessingChain{
@@ -331,11 +373,10 @@ void AudioOperationCoordinator::publishBusProcessing()
     QList<BackendBusChain> chains;
     const Console console = m_console.console();
     for (const Bus &bus : console.buses) {
-        const bool active = bus.processing.equalizer.enabled
-            || bus.processing.mode != BusMode::Normal;
         // Only a physical bus: a virtual bus's sink IS what applications
         // record, and the reference console has no rack on B buses either.
-        if (bus.kind != BusKind::Physical || !active || !bus.targetKnown) {
+        if (bus.kind != BusKind::Physical || !busProcessingActive(bus.processing)
+            || !bus.targetKnown) {
             continue;
         }
         chains.append(BackendBusChain{.busId = bus.id,
@@ -379,6 +420,7 @@ void AudioOperationCoordinator::republishConsole()
     publishRouting();
     publishMetering();
     m_snapshot.console = m_console.console();
+    m_snapshot.console.presets = m_presets.names();
     // A console change is a real revision: clients diff on lineage, so a fader
     // move that left the revision alone would not reach any of them.
     if (m_snapshot.revision != std::numeric_limits<quint64>::max()) {

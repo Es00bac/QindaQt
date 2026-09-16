@@ -184,3 +184,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0179: the rack is one value per strip](0179-the-rack-is-one-value-per-strip.md)
 - [ADR-0180: a bus has a rack too, and a strip hears clean](0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)
 - [ADR-0181: the tray rides the console](0181-the-tray-rides-the-console.md)
+- [ADR-0182: a preset is the console under a name](0182-a-preset-is-the-console-under-a-name.md)

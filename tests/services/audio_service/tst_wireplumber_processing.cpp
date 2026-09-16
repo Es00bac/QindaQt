@@ -6,6 +6,8 @@
 
 #include "../../../src/services/audio_service/src/wireplumber_processing_p.h"
 
+#include <qindaqt/services/audio_protocol/audio_validation.h>
+
 #include <QtTest>
 
 using namespace QindaQt::Audio;

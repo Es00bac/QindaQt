@@ -439,7 +439,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Console &value)
     argument.beginStructure();
     writeArray(argument, value.strips);
     writeArray(argument, value.buses);
-    argument << value.soloActive;
+    argument << value.soloActive << value.presets;
     argument.endStructure();
     return argument;
 }
@@ -450,7 +450,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Console &value)
     argument.beginStructure();
     readBoundedArray(argument, value.strips, kMaxStrips, value.wireValid);
     readBoundedArray(argument, value.buses, kMaxBuses, value.wireValid);
-    argument >> value.soloActive;
+    argument >> value.soloActive >> value.presets;
     argument.endStructure();
     // AGENT-GUARD: a member that overflowed its own bound must invalidate the
     // whole console, or a client would publish a strip whose routing silently

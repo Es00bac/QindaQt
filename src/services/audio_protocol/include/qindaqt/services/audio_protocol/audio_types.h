@@ -79,6 +79,10 @@ enum class OperationKind : quint32 {
     SetStripProcessing = 19,
     // Replaces a bus's whole rack (ADR-0180).
     SetBusProcessing = 20,
+    // Presets (ADR-0182): the name travels in `displayName`.
+    SavePreset = 21,
+    LoadPreset = 22,
+    DeletePreset = 23,
 };
 
 enum class OperationStatus : quint32 {

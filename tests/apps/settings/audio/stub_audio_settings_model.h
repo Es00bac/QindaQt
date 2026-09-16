@@ -49,6 +49,7 @@ class StubAudioSettingsModel final : public QObject {
   Q_PROPERTY(QVariantList consoleBuses MEMBER consoleBuses NOTIFY viewChanged)
   Q_PROPERTY(QVariantMap consoleLevels MEMBER consoleLevels NOTIFY
                  consoleLevelsChanged)
+  Q_PROPERTY(QStringList consolePresets MEMBER consolePresets NOTIFY viewChanged)
 
 public:
   bool loading = false;
@@ -77,6 +78,8 @@ public:
   QVariantList consoleStrips;
   QVariantList consoleBuses;
   QVariantMap consoleLevels;
+  QStringList consolePresets = {QStringLiteral("Stream night"), QStringLiteral("Podcast")};
+  QString lastPresetName;
   QString lastConsoleId;
   double lastFaderPosition = -1.0;
   bool lastConsoleFlag = false;
@@ -167,6 +170,18 @@ public:
   Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing) {
     lastConsoleId = stripId;
     lastProcessing = processing;
+    return true;
+  }
+  Q_INVOKABLE bool savePreset(QString name) {
+    lastPresetName = name;
+    return true;
+  }
+  Q_INVOKABLE bool loadPreset(QString name) {
+    lastPresetName = name;
+    return true;
+  }
+  Q_INVOKABLE bool deletePreset(QString name) {
+    lastPresetName = name;
     return true;
   }
   Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing) {

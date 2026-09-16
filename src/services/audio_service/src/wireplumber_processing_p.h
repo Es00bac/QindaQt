@@ -38,7 +38,7 @@ namespace QindaQt::Audio
 // as the output mapping. Only a physical bus has one; a virtual bus's sink IS
 // what other applications record.
 [[nodiscard]] QString busChainNodeName(const QString &busId);
-[[nodiscard]] bool busProcessingActive(const BusProcessing &processing);
+// busProcessingActive() is the protocol's (audio_validation.h).
 [[nodiscard]] QByteArray busProcessingModuleArguments(const QString &busId,
                                                       const QString &deviceNodeName,
                                                       const BusProcessing &processing);
