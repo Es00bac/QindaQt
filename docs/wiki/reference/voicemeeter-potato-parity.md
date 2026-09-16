@@ -93,7 +93,7 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | MIDI in/out mapping to console controls | MIDI binding layer over the operation kinds | gap |
 | Remote control API | `org.qindaqt.Audio1` **is** the remote API, and it is a better one than a DLL | partial |
 | System tray presence | the QindaQt audio applet | partial |
-| Presets / saved configurations | the console persists its own document; named presets are not built | partial |
+| Presets / saved configurations | Named copies of the console document, saved, loaded and deleted through Audio1 and published in the snapshot ([ADR-0182](../adr/0182-a-preset-is-the-console-under-a-name.md)); no rename yet | **done** |
 | Startup configuration | applied at service start | planned |
 
 ## 6. Engine and system

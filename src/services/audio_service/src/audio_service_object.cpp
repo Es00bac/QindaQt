@@ -217,6 +217,30 @@ void AudioServiceObject::SetBusProcessing(const QString &bus, const BusProcessin
     beginOperation(request);
 }
 
+void AudioServiceObject::SavePreset(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::SavePreset;
+    request.displayName = name;
+    beginOperation(request);
+}
+
+void AudioServiceObject::LoadPreset(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::LoadPreset;
+    request.displayName = name;
+    beginOperation(request);
+}
+
+void AudioServiceObject::DeletePreset(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::DeletePreset;
+    request.displayName = name;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

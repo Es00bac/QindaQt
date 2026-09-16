@@ -60,6 +60,7 @@ class AudioSettingsModel final : public QObject {
   // viewChanged: levels arrive many times a second, and hanging them off the
   // view signal would rebuild every strip and bus delegate at meter rate.
   Q_PROPERTY(QVariantMap consoleLevels READ consoleLevels NOTIFY consoleLevelsChanged)
+  Q_PROPERTY(QStringList consolePresets READ consolePresets NOTIFY viewChanged)
 
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
@@ -79,6 +80,7 @@ public:
   // Console id to {peakDb, rmsDb, known}. Built from the snapshot the client
   // already holds, so the first read is correct before any reading arrives.
   [[nodiscard]] QVariantMap consoleLevels() const;
+  [[nodiscard]] QStringList consolePresets() const;
 
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const;
@@ -134,6 +136,10 @@ public:
   // A bus's rack (ADR-0180): "equalizer" as for a strip, and "mode" as one of
   // normal, swap, left, right.
   Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing);
+  // Presets (ADR-0182): whole console documents under a name.
+  Q_INVOKABLE bool savePreset(QString name);
+  Q_INVOKABLE bool loadPreset(QString name);
+  Q_INVOKABLE bool deletePreset(QString name);
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
   Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);
   Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);
@@ -184,6 +190,7 @@ private:
   // One admission-and-dispatch path for every console control, so an enabled
   // control can never be locally refused and a disabled one never dispatched.
   [[nodiscard]] bool dispatchPin(bool strip, QString consoleId, quint64 serial);
+  [[nodiscard]] bool dispatchPreset(Audio::OperationKind kind, QString name);
   [[nodiscard]] bool dispatchConsoleIntent(ConsoleIntent intent, QString consoleId,
                                             quint32 busIndex, double value,
                                             bool flag);

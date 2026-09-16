@@ -44,6 +44,12 @@ ColumnLayout {
         Label {
             objectName: "audioConsoleSoloNotice"
             // Solo silences every other strip, which is a state a user can
+        AudioConsolePresets {
+            Layout.fillWidth: true
+            model: root.audioSettings
+            enabledControls: (root.audioSettings.ready ?? false) && !(root.audioSettings.busy ?? false)
+        }
+
             // leave switched on by accident and then not understand.
             visible: root.audioSettings.consoleSoloActive ?? false
             text: qsTr("Solo active — other inputs are silenced")

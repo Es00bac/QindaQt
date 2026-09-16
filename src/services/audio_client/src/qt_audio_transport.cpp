@@ -341,6 +341,18 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("SetBusProcessing");
         arguments = {request.consoleId, QVariant::fromValue(request.busProcessing)};
         break;
+    case OperationKind::SavePreset:
+        method = QStringLiteral("SavePreset");
+        arguments = {request.displayName};
+        break;
+    case OperationKind::LoadPreset:
+        method = QStringLiteral("LoadPreset");
+        arguments = {request.displayName};
+        break;
+    case OperationKind::DeletePreset:
+        method = QStringLiteral("DeletePreset");
+        arguments = {request.displayName};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

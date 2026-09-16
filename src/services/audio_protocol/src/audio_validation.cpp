@@ -117,6 +117,17 @@ namespace {
 
 } // namespace
 
+bool stripProcessingActive(const StripProcessing &p) noexcept
+{
+    return p.denoiser.enabled || p.gate.enabled || p.compressor.enabled
+        || p.equalizer.enabled || p.limiter.enabled;
+}
+
+bool busProcessingActive(const BusProcessing &p) noexcept
+{
+    return p.equalizer.enabled || p.mode != BusMode::Normal;
+}
+
 bool validBusProcessing(const BusProcessing &processing)
 {
     return validEqualizer(processing.equalizer)
@@ -163,6 +174,9 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::SetBusMono:
     case OperationKind::SetStripProcessing:
     case OperationKind::SetBusProcessing:
+    case OperationKind::SavePreset:
+    case OperationKind::LoadPreset:
+    case OperationKind::DeletePreset:
         return false;
     // SetBusTarget and SetStripSource name a console element AND the device it
     // should follow, so a valid handle is checked like any other; an INVALID
@@ -337,6 +351,14 @@ ValidationResult validateConsole(const Console &console)
     bool anySolo = false;
     for (const Strip &strip : console.strips) {
         anySolo = anySolo || strip.soloed;
+    }
+    if (console.presets.size() > kMaxPresets) {
+        return rejected(QStringLiteral("oversized-payload"));
+    }
+    for (const QString &preset : console.presets) {
+        if (preset.isEmpty() || !isBoundedText(preset, kMaxPresetNameUtf8Bytes)) {
+            return rejected(QStringLiteral("invalid-preset-name"));
+        }
     }
     if (console.soloActive != anySolo) {
         return rejected(QStringLiteral("inconsistent-solo"));

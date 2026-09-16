@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 7;
+inline constexpr quint32 kSchemaVersion = 8;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -70,5 +70,8 @@ inline constexpr double kMaxEqHz = 20000.0;
 inline constexpr double kMinEqQ = 0.1;
 inline constexpr double kMaxEqQ = 10.0;
 inline constexpr double kMinRangeDb = -90.0;
+// Presets (ADR-0182): named copies of the console document.
+inline constexpr qsizetype kMaxPresets = 64;
+inline constexpr qsizetype kMaxPresetNameUtf8Bytes = 64;
 
 } // namespace QindaQt::Audio

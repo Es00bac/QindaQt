@@ -9,6 +9,7 @@ target_sources(
     qindaqt_audio_client
     PRIVATE
         src/audio_client.cpp
+        src/audio_client_console.cpp
         src/audio_client_completion.cpp
         src/audio_client_preflight.cpp
         src/audio_client_preflight_p.h

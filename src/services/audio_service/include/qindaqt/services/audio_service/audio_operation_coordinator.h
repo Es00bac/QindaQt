@@ -3,6 +3,7 @@
 #pragma once
 
 #include <qindaqt/services/audio_service/console_model.h>
+#include <qindaqt/services/audio_service/preset_store.h>
 
 #include <qindaqt/services/audio_service/audio_backend.h>
 
@@ -29,7 +30,10 @@ class AudioOperationCoordinator : public QObject
     Q_OBJECT
 
 public:
-    explicit AudioOperationCoordinator(AudioBackend *backend, QObject *parent = nullptr);
+    // `presetDirectory` empty selects PresetStore::defaultDirectory(); a test
+    // passes a temporary directory.
+    explicit AudioOperationCoordinator(AudioBackend *backend, QObject *parent = nullptr,
+                                       QString presetDirectory = {});
 
     [[nodiscard]] const Snapshot &snapshot() const noexcept;
     // The console this coordinator owns (ADR-0173). Exposed so a persistence
@@ -69,6 +73,10 @@ private:
     // True for the operation kinds the console model owns; those never reach
     // the graph backend.
     [[nodiscard]] static bool isConsoleOperation(OperationKind kind) noexcept;
+    // Presets (ADR-0182) are applied by the coordinator, not the model: they
+    // are whole documents through the preset store.
+    [[nodiscard]] static bool isPresetOperation(OperationKind kind) noexcept;
+    [[nodiscard]] QString applyPreset(const OperationRequest &request);
     // Republishes the snapshot with the console's current value folded in.
     void republishConsole();
     // Re-derives the backend routing from the console and the currently
@@ -94,6 +102,7 @@ private:
     AudioBackend *m_backend = nullptr;
     Snapshot m_snapshot;
     ConsoleModel m_console;
+    PresetStore m_presets;
     QList<BackendRoutingEdge> m_publishedRouting;
     QList<BackendMeterTarget> m_publishedMetering;
     QList<BackendConsoleEndpoint> m_publishedEndpoints;

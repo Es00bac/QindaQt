@@ -5,6 +5,8 @@
 #include "console_endpoints_p.h"
 #include "wireplumber_routing_p.h"
 
+#include <qindaqt/services/audio_protocol/audio_validation.h>
+
 #include <QtCore/QStringList>
 
 namespace QindaQt::Audio
@@ -131,8 +133,7 @@ QString processingChainNodeName(const QString &stripId)
 
 bool processingActive(const StripProcessing &p)
 {
-    return p.denoiser.enabled || p.gate.enabled || p.compressor.enabled
-        || p.equalizer.enabled || p.limiter.enabled;
+    return stripProcessingActive(p);
 }
 
 QByteArray processingModuleArguments(const QString &stripId, const QString &sourceNodeName,
@@ -208,10 +209,6 @@ QString busChainNodeName(const QString &busId)
         + QStringLiteral(".rack");
 }
 
-bool busProcessingActive(const BusProcessing &p)
-{
-    return p.equalizer.enabled || p.mode != BusMode::Normal;
-}
 
 QByteArray busProcessingModuleArguments(const QString &busId, const QString &deviceNodeName,
                                         const BusProcessing &processing)

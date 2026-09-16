@@ -23,6 +23,12 @@ struct ValidationResult {
 // and the client's preflight so all three refuse exactly the same values.
 [[nodiscard]] bool validStripProcessing(const StripProcessing &processing);
 [[nodiscard]] bool validBusProcessing(const BusProcessing &processing);
+// True when the rack needs a chain on the graph. ONE definition, used by the
+// coordinator that declares chains and the worker that builds them: the
+// coordinator once had its own copy that predated the denoiser, and a
+// denoiser-only rack was accepted, persisted, shown - and never loaded.
+[[nodiscard]] bool stripProcessingActive(const StripProcessing &processing) noexcept;
+[[nodiscard]] bool busProcessingActive(const BusProcessing &processing) noexcept;
 [[nodiscard]] ValidationResult validateOperationResult(const OperationResult &result);
 // True when the operation names a device or stream by HANDLE in `primary`, and
 // so must be checked against the retained snapshot's lineage before anything

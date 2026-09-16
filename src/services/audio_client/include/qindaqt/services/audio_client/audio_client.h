@@ -81,6 +81,10 @@ public:
     // Replaces the bus's rack (ADR-0180).
     [[nodiscard]] quint64 setBusProcessing(const QString &busId,
                                            const BusProcessing &processing);
+    // Presets (ADR-0182); the names are in snapshot().console.presets.
+    [[nodiscard]] quint64 savePreset(const QString &name);
+    [[nodiscard]] quint64 loadPreset(const QString &name);
+    [[nodiscard]] quint64 deletePreset(const QString &name);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);

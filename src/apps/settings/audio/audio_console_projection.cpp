@@ -310,6 +310,59 @@ bool AudioSettingsModel::setStripProcessing(QString stripId, QVariantMap process
     return true;
 }
 
+QStringList AudioSettingsModel::consolePresets() const
+{
+    return m_client.snapshot().console.presets;
+}
+
+bool AudioSettingsModel::savePreset(QString name)
+{
+    return dispatchPreset(OperationKind::SavePreset, std::move(name));
+}
+
+bool AudioSettingsModel::loadPreset(QString name)
+{
+    return dispatchPreset(OperationKind::LoadPreset, std::move(name));
+}
+
+bool AudioSettingsModel::deletePreset(QString name)
+{
+    return dispatchPreset(OperationKind::DeletePreset, std::move(name));
+}
+
+bool AudioSettingsModel::dispatchPreset(const OperationKind kind, QString name)
+{
+    const Snapshot snapshot = m_client.snapshot();
+    if (!consoleAvailable() || !snapshot.capabilities.testFlag(Capability::SetConsoleGain)) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    name = name.trimmed();
+    if (name.isEmpty()) {
+        rejectAction(QStringLiteral("invalid-preset-name"));
+        return false;
+    }
+    quint64 requestId = 0;
+    switch (kind) {
+    case OperationKind::SavePreset:
+        requestId = m_client.savePreset(name);
+        break;
+    case OperationKind::LoadPreset:
+        requestId = m_client.loadPreset(name);
+        break;
+    case OperationKind::DeletePreset:
+        requestId = m_client.deletePreset(name);
+        break;
+    default:
+        break;
+    }
+    if (requestId == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
+}
+
 bool AudioSettingsModel::setBusProcessing(QString busId, QVariantMap processing)
 {
     const Snapshot snapshot = m_client.snapshot();

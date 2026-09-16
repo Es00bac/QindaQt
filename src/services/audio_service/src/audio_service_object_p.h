@@ -21,7 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))b))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))bas))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -57,6 +57,9 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"SetBusMono\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"mono\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetBusTarget\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripSource\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SavePreset\"><arg name=\"name\" type=\"s\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"LoadPreset\"><arg name=\"name\" type=\"s\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"DeletePreset\"><arg name=\"name\" type=\"s\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetBusProcessing\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"processing\" type=\"((bddddddd)u)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripProcessing\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"processing\" type=\"((bd)(bddddd)(bdddddd)(bddddddd)(bdd))\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
@@ -108,6 +111,10 @@ public Q_SLOTS:
     // Replaces the bus's rack (ADR-0180).
     Q_SCRIPTABLE void SetBusProcessing(const QString &bus,
                                        const QindaQt::Audio::BusProcessing &processing);
+    // Presets (ADR-0182): whole console documents under a name.
+    Q_SCRIPTABLE void SavePreset(const QString &name);
+    Q_SCRIPTABLE void LoadPreset(const QString &name);
+    Q_SCRIPTABLE void DeletePreset(const QString &name);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);

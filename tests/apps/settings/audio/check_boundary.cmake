@@ -35,6 +35,9 @@ foreach(source IN LISTS route_cpp)
         # which the route could reach the rest of Audio1.
         "Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing)"
         "Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing)"
+        "Q_INVOKABLE bool savePreset(QString name)"
+        "Q_INVOKABLE bool loadPreset(QString name)"
+        "Q_INVOKABLE bool deletePreset(QString name)"
         "Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial)"
         "Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial)"
         "Q_INVOKABLE bool setStripFader(QString stripId, double position)"

@@ -15,6 +15,8 @@ add_library(QindaQt::AudioService ALIAS qindaqt_audio_service)
 target_sources(
     qindaqt_audio_service
     PRIVATE
+        src/audio_operation_admission.cpp
+        src/audio_operation_admission_p.h
         src/audio_operation_coordinator.cpp
         src/audio_service_object.cpp
         src/audio_service_object_p.h
@@ -24,6 +26,7 @@ target_sources(
         src/console_endpoints_p.h
         src/console_model.cpp
         src/console_store.cpp
+        src/preset_store.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
         src/wireplumber_meters.cpp
@@ -48,6 +51,7 @@ target_sources(
             include/qindaqt/services/audio_service/audio_backend.h
             include/qindaqt/services/audio_service/console_model.h
             include/qindaqt/services/audio_service/console_store.h
+            include/qindaqt/services/audio_service/preset_store.h
             include/qindaqt/services/audio_service/audio_operation_coordinator.h
             include/qindaqt/services/audio_service/resident_audio_service.h
             include/qindaqt/services/audio_service/wireplumber_audio_backend.h
