@@ -25,6 +25,9 @@ ColumnLayout {
 
     spacing: Tokens.space["2"]
     objectName: "consoleStrip_" + strip.id
+    // Owned here rather than on the toggle so a model republish that rebuilds
+    // the row keeps the rack open.
+    property bool rackVisible: false
 
     Label {
         Layout.fillWidth: true
@@ -81,6 +84,28 @@ ColumnLayout {
         AudioConsoleMeter {
             objectName: "consoleStripMeter_" + root.strip.id
             reading: root.model.consoleLevels[root.strip.id]
+        }
+    }
+
+    // The rack (ADR-0179) folds away: a console strip is narrow, and four
+    // blocks of dials only matter while the user is shaping this input.
+    Button {
+        objectName: "consoleRackToggle_" + root.strip.id
+        Layout.alignment: Qt.AlignHCenter
+        text: qsTr("Rack")
+        checkable: true
+        checked: root.rackVisible
+        onToggled: root.rackVisible = checked
+        Accessible.name: qsTr("Processing rack for %1").arg(root.strip.label)
+    }
+    Loader {
+        Layout.fillWidth: true
+        active: root.rackVisible
+        visible: active
+        sourceComponent: AudioConsoleRack {
+            model: root.model
+            strip: root.strip
+            enabledControls: root.enabledControls
         }
     }
 

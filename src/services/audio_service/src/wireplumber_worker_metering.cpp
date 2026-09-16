@@ -40,13 +40,18 @@ void WirePlumberWorker::applyMeteringOnWorker(const QList<BackendMeterTarget> &t
         // A target whose device is not in the graph right now is simply not
         // metered; it comes back on the next rebuild without the console
         // having to restate anything.
-        const QString nodeName = nodeNameForHandle(target.device);
+        bool captureSink = target.captureSink;
+        // A strip with a running rack is metered after it (ADR-0179); a bus
+        // never has one and reads its device as before.
+        const QString nodeName = target.consoleId.startsWith(QLatin1String("strip."))
+            ? stripReadNode(target.consoleId, target.device, &captureSink)
+            : nodeNameForHandle(target.device);
         if (target.consoleId.isEmpty() || nodeName.isEmpty()) {
             continue;
         }
         resolved.append(MeterBank::Target{.consoleId = target.consoleId,
                                           .nodeName = nodeName,
-                                          .captureSink = target.captureSink,
+                                          .captureSink = captureSink,
                                           .passive = target.passive});
     }
     m_meters.configure(context, resolved);

@@ -63,6 +63,68 @@ struct MatrixSend {
     friend bool operator==(const MatrixSend &, const MatrixSend &) = default;
 };
 
+// The per-strip processing rack (ADR-0179): what the reference console puts
+// between the input and the fader. Each block is independently switchable and
+// keeps its settings while off, so turning a compressor off and on again
+// restores the user's dial positions rather than defaults. Times are
+// milliseconds, levels dBFS, gains dB; the graph applies them in this order:
+// gate, compressor, equalizer, limiter.
+struct GateSettings {
+    bool enabled = false;
+    double thresholdDb = -40.0;
+    double attackMs = 5.0;
+    double holdMs = 50.0;
+    double releaseMs = 200.0;
+    // How far the gate closes, in dB below unity; -90 is effectively silence.
+    double rangeDb = -60.0;
+
+    friend bool operator==(const GateSettings &, const GateSettings &) = default;
+};
+
+struct CompressorSettings {
+    bool enabled = false;
+    double thresholdDb = -18.0;
+    double ratio = 3.0;
+    double attackMs = 10.0;
+    double releaseMs = 100.0;
+    double kneeDb = 6.0;
+    double makeupDb = 0.0;
+
+    friend bool operator==(const CompressorSettings &, const CompressorSettings &) = default;
+};
+
+struct LimiterSettings {
+    bool enabled = false;
+    double ceilingDb = -1.0;
+    double releaseMs = 50.0;
+
+    friend bool operator==(const LimiterSettings &, const LimiterSettings &) = default;
+};
+
+// Three bands like the reference console's strip EQ: a low shelf, a peaking
+// mid with its own width, and a high shelf.
+struct EqualizerSettings {
+    bool enabled = false;
+    double lowHz = 120.0;
+    double lowGainDb = 0.0;
+    double midHz = 1000.0;
+    double midGainDb = 0.0;
+    double midQ = 1.0;
+    double highHz = 8000.0;
+    double highGainDb = 0.0;
+
+    friend bool operator==(const EqualizerSettings &, const EqualizerSettings &) = default;
+};
+
+struct StripProcessing {
+    GateSettings gate;
+    CompressorSettings compressor;
+    EqualizerSettings equalizer;
+    LimiterSettings limiter;
+
+    friend bool operator==(const StripProcessing &, const StripProcessing &) = default;
+};
+
 struct Strip {
     // Stable console identity, independent of the graph node behind it: a
     // strip keeps its fader and routing when its device disappears and comes
@@ -96,6 +158,9 @@ struct Strip {
     // available. A pin is honoured even when the device is absent - the strip
     // then stays unbound rather than quietly following another microphone.
     QString pinnedSource = {};
+    // The rack (ADR-0179). Appended last so the fields before it keep their
+    // wire order.
+    StripProcessing processing = {};
 
     bool wireValid = true;
 
@@ -162,6 +227,11 @@ Q_DECLARE_METATYPE(QindaQt::Audio::Level)
 Q_DECLARE_METATYPE(QindaQt::Audio::MatrixSend)
 Q_DECLARE_METATYPE(QindaQt::Audio::LevelReading)
 Q_DECLARE_METATYPE(QList<QindaQt::Audio::LevelReading>)
+Q_DECLARE_METATYPE(QindaQt::Audio::GateSettings)
+Q_DECLARE_METATYPE(QindaQt::Audio::CompressorSettings)
+Q_DECLARE_METATYPE(QindaQt::Audio::LimiterSettings)
+Q_DECLARE_METATYPE(QindaQt::Audio::EqualizerSettings)
+Q_DECLARE_METATYPE(QindaQt::Audio::StripProcessing)
 Q_DECLARE_METATYPE(QindaQt::Audio::Strip)
 Q_DECLARE_METATYPE(QindaQt::Audio::Bus)
 Q_DECLARE_METATYPE(QindaQt::Audio::Console)

@@ -8,6 +8,7 @@
 #include "qindaqt/apps/settings_audio/audio_settings_model.h"
 
 #include <qindaqt/services/audio_protocol/audio_gain.h>
+#include <qindaqt/services/audio_protocol/audio_validation.h>
 
 #include <QtCore/QVariantMap>
 
@@ -15,6 +16,87 @@ namespace QindaQt::Apps::SettingsAudio {
 namespace {
 
 using namespace QindaQt::Audio;
+
+[[nodiscard]] QVariantMap processingMap(const StripProcessing &p)
+{
+    return QVariantMap{
+        {QStringLiteral("gate"),
+         QVariantMap{{QStringLiteral("enabled"), p.gate.enabled},
+                     {QStringLiteral("thresholdDb"), p.gate.thresholdDb},
+                     {QStringLiteral("attackMs"), p.gate.attackMs},
+                     {QStringLiteral("holdMs"), p.gate.holdMs},
+                     {QStringLiteral("releaseMs"), p.gate.releaseMs},
+                     {QStringLiteral("rangeDb"), p.gate.rangeDb}}},
+        {QStringLiteral("compressor"),
+         QVariantMap{{QStringLiteral("enabled"), p.compressor.enabled},
+                     {QStringLiteral("thresholdDb"), p.compressor.thresholdDb},
+                     {QStringLiteral("ratio"), p.compressor.ratio},
+                     {QStringLiteral("attackMs"), p.compressor.attackMs},
+                     {QStringLiteral("releaseMs"), p.compressor.releaseMs},
+                     {QStringLiteral("kneeDb"), p.compressor.kneeDb},
+                     {QStringLiteral("makeupDb"), p.compressor.makeupDb}}},
+        {QStringLiteral("equalizer"),
+         QVariantMap{{QStringLiteral("enabled"), p.equalizer.enabled},
+                     {QStringLiteral("lowHz"), p.equalizer.lowHz},
+                     {QStringLiteral("lowGainDb"), p.equalizer.lowGainDb},
+                     {QStringLiteral("midHz"), p.equalizer.midHz},
+                     {QStringLiteral("midGainDb"), p.equalizer.midGainDb},
+                     {QStringLiteral("midQ"), p.equalizer.midQ},
+                     {QStringLiteral("highHz"), p.equalizer.highHz},
+                     {QStringLiteral("highGainDb"), p.equalizer.highGainDb}}},
+        {QStringLiteral("limiter"),
+         QVariantMap{{QStringLiteral("enabled"), p.limiter.enabled},
+                     {QStringLiteral("ceilingDb"), p.limiter.ceilingDb},
+                     {QStringLiteral("releaseMs"), p.limiter.releaseMs}}}};
+}
+
+[[nodiscard]] StripProcessing processingFromMap(const QVariantMap &map,
+                                               const StripProcessing &fallback)
+{
+    const auto block = [&map](const char *name) {
+        return map.value(QLatin1String(name)).toMap();
+    };
+    const auto number = [](const QVariantMap &b, const char *key, const double current) {
+        const QVariant value = b.value(QLatin1String(key));
+        bool ok = false;
+        const double parsed = value.toDouble(&ok);
+        return ok ? parsed : current;
+    };
+    const auto flag = [](const QVariantMap &b, const bool current) {
+        const QVariant value = b.value(QStringLiteral("enabled"));
+        return value.isValid() ? value.toBool() : current;
+    };
+    StripProcessing p = fallback;
+    const QVariantMap gate = block("gate");
+    p.gate.enabled = flag(gate, p.gate.enabled);
+    p.gate.thresholdDb = number(gate, "thresholdDb", p.gate.thresholdDb);
+    p.gate.attackMs = number(gate, "attackMs", p.gate.attackMs);
+    p.gate.holdMs = number(gate, "holdMs", p.gate.holdMs);
+    p.gate.releaseMs = number(gate, "releaseMs", p.gate.releaseMs);
+    p.gate.rangeDb = number(gate, "rangeDb", p.gate.rangeDb);
+    const QVariantMap comp = block("compressor");
+    p.compressor.enabled = flag(comp, p.compressor.enabled);
+    p.compressor.thresholdDb = number(comp, "thresholdDb", p.compressor.thresholdDb);
+    p.compressor.ratio = number(comp, "ratio", p.compressor.ratio);
+    p.compressor.attackMs = number(comp, "attackMs", p.compressor.attackMs);
+    p.compressor.releaseMs = number(comp, "releaseMs", p.compressor.releaseMs);
+    p.compressor.kneeDb = number(comp, "kneeDb", p.compressor.kneeDb);
+    p.compressor.makeupDb = number(comp, "makeupDb", p.compressor.makeupDb);
+    const QVariantMap eq = block("equalizer");
+    p.equalizer.enabled = flag(eq, p.equalizer.enabled);
+    p.equalizer.lowHz = number(eq, "lowHz", p.equalizer.lowHz);
+    p.equalizer.lowGainDb = number(eq, "lowGainDb", p.equalizer.lowGainDb);
+    p.equalizer.midHz = number(eq, "midHz", p.equalizer.midHz);
+    p.equalizer.midGainDb = number(eq, "midGainDb", p.equalizer.midGainDb);
+    p.equalizer.midQ = number(eq, "midQ", p.equalizer.midQ);
+    p.equalizer.highHz = number(eq, "highHz", p.equalizer.highHz);
+    p.equalizer.highGainDb = number(eq, "highGainDb", p.equalizer.highGainDb);
+    const QVariantMap lim = block("limiter");
+    p.limiter.enabled = flag(lim, p.limiter.enabled);
+    p.limiter.ceilingDb = number(lim, "ceilingDb", p.limiter.ceilingDb);
+    p.limiter.releaseMs = number(lim, "releaseMs", p.limiter.releaseMs);
+    return p;
+}
 
 [[nodiscard]] QVariantMap levelMap(const Level &level)
 {
@@ -74,6 +156,7 @@ QVariantList AudioSettingsModel::consoleStrips() const
             {QStringLiteral("sourceSerial"), strip.sourceKnown ? strip.sourceSerial : 0},
             {QStringLiteral("pinned"), !strip.pinnedSource.isEmpty()},
             {QStringLiteral("pinnedSource"), strip.pinnedSource},
+            {QStringLiteral("processing"), processingMap(strip.processing)},
             {QStringLiteral("sends"), sends},
             {QStringLiteral("level"), levelMap(strip.level)}});
     }
@@ -136,6 +219,38 @@ bool AudioSettingsModel::setStripFader(QString stripId, const double position)
 {
     return dispatchConsoleIntent(ConsoleIntent::StripGain, std::move(stripId), 0,
                                  gainDbFromFaderPosition(position), false);
+}
+
+bool AudioSettingsModel::setStripProcessing(QString stripId, QVariantMap processing)
+{
+    const Snapshot snapshot = m_client.snapshot();
+    if (!consoleAvailable()
+        || !snapshot.capabilities.testFlag(Capability::SetConsoleGain)) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    const Strip *current = nullptr;
+    for (const Strip &strip : snapshot.console.strips) {
+        if (strip.id == stripId) {
+            current = &strip;
+        }
+    }
+    if (current == nullptr) {
+        rejectAction(QStringLiteral("stale-handle"));
+        return false;
+    }
+    // Missing keys keep the strip's current values, so a control can send only
+    // the block it changed; the service still judges the whole rack.
+    const StripProcessing rack = processingFromMap(processing, current->processing);
+    if (!validStripProcessing(rack)) {
+        rejectAction(QStringLiteral("processing-out-of-range"));
+        return false;
+    }
+    if (m_client.setStripProcessing(stripId, rack) == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
 }
 
 bool AudioSettingsModel::setStripSource(QString stripId, const quint64 serial)

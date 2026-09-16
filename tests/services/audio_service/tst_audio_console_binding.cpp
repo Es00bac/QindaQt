@@ -26,6 +26,7 @@ private Q_SLOTS:
     void virtualEndpointsAreDeclaredAndBoundByName();
     void aPinnedDeviceIsThatElementsAlone();
     void meterReadingsStreamWithoutTouchingLineage();
+    void aRackIsDeclaredOnlyWhenActiveAndBound();
 };
 
 // ADR-0174. A console that is not attached to the graph draws faders wired to
@@ -288,6 +289,41 @@ void AudioConsoleBindingTests::meterReadingsStreamWithoutTouchingLineage()
     backend.publishLevels(
         {LevelReading{stripId, Level{.peakDb = -1.0, .rmsDb = -1.0, .known = true}}});
     QCOMPARE(levels.count(), 1);
+}
+
+// ADR-0179. A rack reaches the graph only when a block is on and the strip's
+// device is present; switching every block off withdraws it.
+void AudioConsoleBindingTests::aRackIsDeclaredOnlyWhenActiveAndBound()
+{
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    QVERIFY(backend.processing.isEmpty());
+    const Console console = coordinator.snapshot().console;
+    const QString bound = console.strips.at(0).id;    // has the default input
+    const QString unbound = console.strips.at(4).id;  // no fifth input in the fixture
+    QVERIFY(console.strips.at(0).sourceKnown);
+    QVERIFY(!console.strips.at(4).sourceKnown);
+
+    OperationRequest rack;
+    rack.kind = OperationKind::SetStripProcessing;
+    rack.consoleId = unbound;
+    rack.processing.compressor.enabled = true;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    // Enabled on a strip with no device: nothing to run it on, nothing declared.
+    QVERIFY(backend.processing.isEmpty());
+
+    rack.consoleId = bound;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    QCOMPARE(backend.processing.size(), 1);
+    QCOMPARE(backend.processing.at(0).stripId, bound);
+    QCOMPARE(backend.processing.at(0).source.serial, 20u);
+    QVERIFY(backend.processing.at(0).processing.compressor.enabled);
+
+    rack.processing.compressor.enabled = false;
+    QCOMPARE(coordinator.submit(rack).immediateResult.status, OperationStatus::Succeeded);
+    QVERIFY(backend.processing.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(AudioConsoleBindingTests)

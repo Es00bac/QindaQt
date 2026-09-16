@@ -98,6 +98,11 @@ void registerDBusTypes()
     qRegisterMetaType<LevelReading>();
     qRegisterMetaType<QList<LevelReading>>();
     qRegisterMetaType<MatrixSend>();
+    qRegisterMetaType<GateSettings>();
+    qRegisterMetaType<CompressorSettings>();
+    qRegisterMetaType<LimiterSettings>();
+    qRegisterMetaType<EqualizerSettings>();
+    qRegisterMetaType<StripProcessing>();
     qRegisterMetaType<Strip>();
     qRegisterMetaType<Bus>();
     qRegisterMetaType<Console>();
@@ -114,6 +119,11 @@ void registerDBusTypes()
     qDBusRegisterMetaType<LevelReading>();
     qDBusRegisterMetaType<QList<LevelReading>>();
     qDBusRegisterMetaType<MatrixSend>();
+    qDBusRegisterMetaType<GateSettings>();
+    qDBusRegisterMetaType<CompressorSettings>();
+    qDBusRegisterMetaType<LimiterSettings>();
+    qDBusRegisterMetaType<EqualizerSettings>();
+    qDBusRegisterMetaType<StripProcessing>();
     qDBusRegisterMetaType<Strip>();
     qDBusRegisterMetaType<Bus>();
     qDBusRegisterMetaType<Console>();
@@ -244,6 +254,92 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, MatrixSend &value
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, const GateSettings &value)
+{
+    argument.beginStructure();
+    argument << value.enabled << value.thresholdDb << value.attackMs << value.holdMs
+             << value.releaseMs << value.rangeDb;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, GateSettings &value)
+{
+    argument.beginStructure();
+    argument >> value.enabled >> value.thresholdDb >> value.attackMs >> value.holdMs
+        >> value.releaseMs >> value.rangeDb;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const CompressorSettings &value)
+{
+    argument.beginStructure();
+    argument << value.enabled << value.thresholdDb << value.ratio << value.attackMs
+             << value.releaseMs << value.kneeDb << value.makeupDb;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, CompressorSettings &value)
+{
+    argument.beginStructure();
+    argument >> value.enabled >> value.thresholdDb >> value.ratio >> value.attackMs
+        >> value.releaseMs >> value.kneeDb >> value.makeupDb;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const LimiterSettings &value)
+{
+    argument.beginStructure();
+    argument << value.enabled << value.ceilingDb << value.releaseMs;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, LimiterSettings &value)
+{
+    argument.beginStructure();
+    argument >> value.enabled >> value.ceilingDb >> value.releaseMs;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const EqualizerSettings &value)
+{
+    argument.beginStructure();
+    argument << value.enabled << value.lowHz << value.lowGainDb << value.midHz
+             << value.midGainDb << value.midQ << value.highHz << value.highGainDb;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, EqualizerSettings &value)
+{
+    argument.beginStructure();
+    argument >> value.enabled >> value.lowHz >> value.lowGainDb >> value.midHz
+        >> value.midGainDb >> value.midQ >> value.highHz >> value.highGainDb;
+    argument.endStructure();
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StripProcessing &value)
+{
+    argument.beginStructure();
+    argument << value.gate << value.compressor << value.equalizer << value.limiter;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, StripProcessing &value)
+{
+    argument.beginStructure();
+    argument >> value.gate >> value.compressor >> value.equalizer >> value.limiter;
+    argument.endStructure();
+    return argument;
+}
+
 QDBusArgument &operator<<(QDBusArgument &argument, const Strip &value)
 {
     argument.beginStructure();
@@ -253,7 +349,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Strip &value)
              << value.mono << value.pan;
     writeChannelVolumes(argument, value.channelTrimDb);
     writeArray(argument, value.sends);
-    argument << value.level << value.pinnedSource;
+    argument << value.level << value.pinnedSource << value.processing;
     argument.endStructure();
     return argument;
 }
@@ -268,7 +364,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Strip &value)
         >> value.soloed >> value.mono >> value.pan;
     readChannelVolumes(argument, value.channelTrimDb, value.wireValid);
     readBoundedArray(argument, value.sends, kMaxSendsPerStrip, value.wireValid);
-    argument >> value.level >> value.pinnedSource;
+    argument >> value.level >> value.pinnedSource >> value.processing;
     argument.endStructure();
     value.kind = static_cast<StripKind>(kind);
     return argument;

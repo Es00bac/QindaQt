@@ -58,9 +58,15 @@ QByteArray routingModuleArguments(const QString &stripId, const QString &busId,
     const QString arguments =
         QStringLiteral(
             "{ node.name = \"%1\" node.description = \"QindaQt send %2 -> %3\""
+            // AGENT-GUARD: node.dont-fallback on both sides. Without it a send
+            // whose target is momentarily absent is linked to the DEFAULT
+            // device instead - a microphone strip quietly reading the webcam -
+            // and never moved back. Unlinked until the target returns is the
+            // only honest state.
             " capture.props = { node.name = \"%1.capture\" target.object = \"%4\""
-            " stream.capture.sink = %6 }"
+            " stream.capture.sink = %6 node.dont-fallback = true }"
             " playback.props = { node.name = \"%1\" target.object = \"%5\""
+            " node.dont-fallback = true"
             // Always stereo on the way out, whatever the source is: pan is two
             // channel volumes on this node (ADR-0177), and a mono microphone
             // would otherwise have nothing to pan on. The loopback's own

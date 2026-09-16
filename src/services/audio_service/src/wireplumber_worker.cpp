@@ -13,6 +13,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace QindaQt::Audio
 {
@@ -387,6 +388,9 @@ void WirePlumberWorker::rebuild()
     // Endpoints first: a virtual strip or bus that does not exist yet cannot be
     // routed or metered, and creating it publishes the snapshot that binds it.
     applyConsoleEndpointsOnWorker(m_declaredEndpoints);
+    // Racks before routing and metering: both read the processed sink of a
+    // strip whose rack is running.
+    applyProcessingOnWorker(m_declaredProcessing);
     applyRoutingOnWorker(m_declaredRouting);
     applySendVolumes();
     // Same reasoning for meters: a device that just appeared is now readable,
@@ -532,11 +536,19 @@ void WirePlumberWorker::scheduleReconnect()
 
 void WirePlumberWorker::cleanupCore()
 {
+    // Anything still queued for deferred destruction goes with the core, now
+    // and synchronously: after this the context it lives in is gone.
+    if (m_moduleDestroySource != nullptr) {
+        g_source_destroy(m_moduleDestroySource);
+        g_source_unref(std::exchange(m_moduleDestroySource, nullptr));
+    }
+    flushPendingModuleDestroys();
     // AGENT-GUARD: unload the console's loopbacks before the core goes. They
     // are loaded into THIS pw_context; leaving them would either leak modules
     // across a reconnect or destroy them against a context that no longer
     // exists. The declared routing is kept so the next connection rebuilds it.
     unloadAllRouting();
+    unloadAllProcessing();
     unloadAllEndpoints();
     // The meter streams belong to this pw_context too, and outlive it no
     // better than the loopbacks do.

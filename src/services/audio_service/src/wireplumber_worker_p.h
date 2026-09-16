@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace QindaQt::Audio
 {
@@ -53,6 +54,16 @@ public:
     // Declares the console's virtual endpoints (ADR-0175), marshalled onto the
     // worker thread like routing and metering.
     void applyConsoleEndpoints(QList<BackendConsoleEndpoint> endpoints);
+    // Declares the active strip racks (ADR-0179), marshalled like the rest.
+    void applyProcessing(QList<BackendProcessingChain> chains);
+    // Called from a module's own destroy event: PipeWire took it down (a
+    // stream that could not connect). Drops the entry only if it still holds
+    // THAT module - the key may already belong to its replacement. Public
+    // only because the event lands in a free C callback.
+    enum class ModuleKind { Send, Chain };
+    void forgetModule(ModuleKind kind, const std::string &key, void *module);
+    // Attaches the destroy listener; every loaded module goes through it.
+    void watchModule(ModuleKind kind, const std::string &key, void *module);
 
 private:
     struct ComponentLoad;
@@ -88,6 +99,26 @@ private:
     // module in this worker's context.
     void applyConsoleEndpointsOnWorker(const QList<BackendConsoleEndpoint> &endpoints);
     void unloadAllEndpoints();
+    // Loads, replaces and unloads one filter-chain per active rack so that the
+    // running chains match the declaration; a changed rack is a reload.
+    void applyProcessingOnWorker(const QList<BackendProcessingChain> &chains);
+    void unloadAllProcessing();
+    // AGENT-GUARD: an impl module is never destroyed from inside a PipeWire or
+    // WirePlumber dispatch. Every worker mutation runs in an objects-changed
+    // callback, and destroying a module's client-node streams while the
+    // protocol dispatch that delivered the callback is still iterating them
+    // is a use-after-free inside libpipewire (seen as a SIGSEGV in
+    // audioconvert when a send was reloaded onto a freshly loaded rack). The
+    // module is handed to an idle source on the worker context and destroyed
+    // on the next loop iteration instead.
+    void destroyModuleLater(void *module);
+    void flushPendingModuleDestroys();
+    static gboolean dispatchModuleDestroys(gpointer data);
+    // The node a strip's sends and meter should read: the processed sink when
+    // the strip has a running rack, otherwise its device. Empty when the
+    // device is not in the graph.
+    [[nodiscard]] QString stripReadNode(const QString &stripId, const Handle &device,
+                                        bool *readsSink) const;
     void startMeterPolling();
     void stopMeterPolling();
     void pollMeters();
@@ -143,12 +174,26 @@ private:
     WpPlugin *m_mixer = nullptr;
     WpPlugin *m_defaultNodes = nullptr;
     GSource *m_disconnectResetSource = nullptr;
-    // Loopback modules this worker loaded, keyed by the send's node name. The
-    // value is the pw_impl_module the worker must destroy to remove the send.
-    std::unordered_map<std::string, void *> m_routingModules;
+    // A module this worker loaded, with the argument it was loaded with, so a
+    // changed endpoint is detected as a difference and reloaded. Diffing by
+    // name alone kept a send on its old device after a re-pin or a rack
+    // starting, because the send's NAME never changes.
+    struct LoadedModule {
+        void *module = nullptr;
+        QByteArray arguments;
+    };
+    // Loopback modules this worker loaded, keyed by the send's node name.
+    std::unordered_map<std::string, LoadedModule> m_routingModules;
     QList<BackendRoutingEdge> m_declaredRouting;
     QList<BackendMeterTarget> m_declaredMetering;
     QList<BackendConsoleEndpoint> m_declaredEndpoints;
+    QList<BackendProcessingChain> m_declaredProcessing;
+    // Filter-chain modules this worker loaded, keyed by strip id, with the
+    // argument they were loaded with so a changed rack is detected as a
+    // difference rather than re-derived.
+    std::unordered_map<std::string, LoadedModule> m_processingModules;
+    std::vector<void *> m_modulesPendingDestroy;
+    GSource *m_moduleDestroySource = nullptr;
     // Bus loopback modules this worker loaded, keyed by the bus sink's node
     // name; destroyed with the core like the send loopbacks. The record, not
     // the graph, says an endpoint is already on its way: a new node takes

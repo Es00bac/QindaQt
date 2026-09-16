@@ -22,6 +22,14 @@ ConsoleStore::ConsoleStore(QString path)
 
 QString ConsoleStore::defaultPath()
 {
+    // AGENT-GUARD: a second service run against the same graph - a probe, a
+    // test harness - must never share the user's document with the resident
+    // one. Two writers on one file would interleave, and a probe's routing
+    // would be restored into the user's console.
+    const QByteArray override = qgetenv("QINDAQT_AUDIO_CONSOLE_PATH");
+    if (!override.isEmpty()) {
+        return QString::fromUtf8(override);
+    }
     return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
         .filePath(QStringLiteral("qindaqt/audio-console.json"));
 }

@@ -22,6 +22,14 @@ qindaqt_enable_warnings(qindaqt_audio_console_binding_tests)
 add_test(NAME qindaqt.audio-console-binding COMMAND qindaqt_audio_console_binding_tests)
 set_tests_properties(qindaqt.audio-console-binding PROPERTIES LABELS "audio;service")
 
+qt_add_executable(qindaqt_audio_processing_tests tst_wireplumber_processing.cpp)
+target_link_libraries(
+    qindaqt_audio_processing_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_processing_tests)
+add_test(NAME qindaqt.audio-processing COMMAND qindaqt_audio_processing_tests)
+set_tests_properties(qindaqt.audio-processing PROPERTIES LABELS "audio;service;pure")
+
 qt_add_executable(qindaqt_audio_console_endpoints_tests tst_console_endpoints.cpp)
 target_link_libraries(
     qindaqt_audio_console_endpoints_tests PRIVATE QindaQt::AudioService Qt6::Test

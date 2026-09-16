@@ -202,6 +202,14 @@ void AudioServiceObject::SetStripSource(const QString &strip, const Handle &devi
     beginOperation(request);
 }
 
+void AudioServiceObject::SetStripProcessing(const QString &strip,
+                                            const StripProcessing &processing)
+{
+    auto request = consoleRequest(OperationKind::SetStripProcessing, strip);
+    request.processing = processing;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

@@ -223,11 +223,17 @@ void AudioProtocolTests::fixedSignatures()
              "(s(ddb))");
     // Schema 5 appends the device pin (ADR-0178) to both structs.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
-             "(a(suusttbdbbbdada(ubd)(ddb)s)a(suusttbdbb(ddb)s)b)");
+             "(a(suusttbdbbbdada(ubd)(ddb)s((bddddd)(bdddddd)(bddddddd)(bdd)))"
+             "a(suusttbdbb(ddb)s)b)");
+    // The rack (ADR-0179): gate, compressor, equalizer, limiter, in the order
+    // the graph applies them.
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<StripProcessing>()),
+             "((bddddd)(bdddddd)(bddddddd)(bdd))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
              "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)"
              "a((tt)uss(tt)bdbbbbbbadas)"
-             "(a(suusttbdbbbdada(ubd)(ddb)s)a(suusttbdbb(ddb)s)b))");
+             "(a(suusttbdbbbdada(ubd)(ddb)s((bddddd)(bdddddd)(bddddddd)(bdd)))"
+             "a(suusttbdbb(ddb)s)b))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }

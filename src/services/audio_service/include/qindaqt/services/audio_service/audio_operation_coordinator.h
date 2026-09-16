@@ -84,6 +84,9 @@ private:
     // Declares the virtual strips' and buses' graph endpoints to the backend
     // when the set changed (ADR-0175).
     void publishConsoleEndpoints();
+    // Declares the strips whose racks are active and whose device the graph
+    // has (ADR-0179), when the set or any rack changed.
+    void publishProcessing();
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
     void publishRestartingSnapshot();
 
@@ -93,6 +96,7 @@ private:
     QList<BackendRoutingEdge> m_publishedRouting;
     QList<BackendMeterTarget> m_publishedMetering;
     QList<BackendConsoleEndpoint> m_publishedEndpoints;
+    QList<BackendProcessingChain> m_publishedProcessing;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;

@@ -39,6 +39,8 @@ qt_add_qml_module(
         qml/AudioChannelStrip.qml
         qml/AudioConsoleBus.qml
         qml/AudioConsoleDevicePicker.qml
+        qml/AudioConsoleRack.qml
+        qml/AudioConsoleRackDial.qml
         qml/AudioConsoleMeter.qml
         qml/AudioConsoleSection.qml
         qml/AudioConsoleStrip.qml

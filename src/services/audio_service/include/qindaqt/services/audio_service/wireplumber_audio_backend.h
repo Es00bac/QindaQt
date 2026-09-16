@@ -31,6 +31,7 @@ public:
     void applyRouting(const QList<BackendRoutingEdge> &edges) override;
     void applyMetering(const QList<BackendMeterTarget> &targets) override;
     void applyConsoleEndpoints(const QList<BackendConsoleEndpoint> &endpoints) override;
+    void applyProcessing(const QList<BackendProcessingChain> &chains) override;
 
 private:
     [[nodiscard]] quint64 advanceRunGeneration();

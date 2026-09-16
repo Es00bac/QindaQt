@@ -37,11 +37,11 @@ carries the whole processing chain below.
 | Level meters (per strip) | Real dBFS peak + RMS from a `pw_stream` capture per bound strip, streamed on the `Levels` signal ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) with a falling peak marker | **done** |
 | Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | **done** |
 | Per-send gain | `MatrixSend::gainDb` — the matrix is not just on/off; realised as the loopback's volume | **done** |
-| Gate | `filter-chain` gate node; threshold, attack, hold, release, sidechain BP | gap |
+| Gate | swh `gate` in the strip's filter-chain; threshold, attack, hold, release, range ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
 | Denoiser | `filter-chain` (rnnoise is already an OBS/PipeWire-adjacent dependency) | gap |
-| Compressor | `filter-chain` compressor; ratio, attack, release, knee, GI/GO | gap |
-| Limiter | `filter-chain` limiter with dB ceiling | gap |
-| Strip EQ | per-strip parametric EQ cells | gap |
+| Compressor | swh `sc4m`; threshold, ratio, attack, release, knee, makeup ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
+| Limiter | swh `hardLimiter` brick wall at the ceiling; no release ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
+| Strip EQ (3-band) | PipeWire builtin biquads: low shelf, peaking mid with Q, high shelf ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
 | Karaoke modes (K-m, K-1, K-2, K-v) | mid/side cancellation modes on a stereo strip | gap |
 | Audibility | voice-band emphasis | gap |
 | Reverb send | shared FX bus + per-strip send | gap |
@@ -127,8 +127,11 @@ Virtual strips and buses are real nodes the console owns
 an application that picks "Virtual Input" as its output gets its own fader, and
 a streamer's software records a submix from "B1".
 
-What is emphatically not here yet: every
-per-strip and per-bus processor — gate, denoiser, compressor, limiter, EQ, bus
-modes — is a **gap**, as are the recorder, VBAN and macro buttons.
+Each strip has a rack — gate, compressor, three-band EQ, limiter — realised as
+one filter-chain per strip and persisted with the console
+([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)).
+
+What is emphatically not here yet: the denoiser, bus EQ and bus modes, the
+recorder, VBAN and macro buttons.
 
 This page exists so that distance is visible rather than implied.

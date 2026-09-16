@@ -70,6 +70,9 @@ void WirePlumberRoutingTests::argumentsNameBothEndpointsAndTheSend()
     // will not resume a suspended device, so a passive send is a routing the
     // console draws and never plays.
     QVERIFY(!text.contains(QStringLiteral("node.passive")));
+    // AGENT-GUARD: never the default device by accident. An absent target
+    // leaves the side unlinked instead of reading whatever is default.
+    QCOMPARE(text.count(QStringLiteral("node.dont-fallback = true")), 2);
 
     // A HARDWARE strip is a capture source, and asking for its monitor finds
     // nothing at all.

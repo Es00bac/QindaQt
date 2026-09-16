@@ -75,6 +75,9 @@ public:
     // the pin and returns the strip to automatic binding; the same is true of
     // setBusTarget for a bus.
     [[nodiscard]] quint64 setStripSource(const QString &stripId, const Handle &device);
+    // Replaces the strip's whole processing rack (ADR-0179).
+    [[nodiscard]] quint64 setStripProcessing(const QString &stripId,
+                                             const StripProcessing &processing);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);
