@@ -34,4 +34,22 @@ if(dropin MATCHES "XDG_CURRENT_DESKTOP=QindaQt"
     message(FATAL_ERROR "KDE compatibility drop-in must not change QindaQt's identity")
 endif()
 
+# ADR-0170: the identity above only matters if it reaches the process that ends
+# up owning the bus name. On a session running the private bus QindaQt
+# bootstraps itself, the systemd user manager cannot observe a Type=dbus unit
+# taking its name, terminates the working backend at TimeoutStartSec, and D-Bus
+# activation respawns it without this drop-in - registering no ScreenCast at
+# all. Judging the start by exec success is observable on any bus.
+# Anchored to a line of its own: the explanation above mentions Type=exec in
+# prose, and a contract test that its own comment satisfies proves nothing.
+if(NOT dropin MATCHES "[\r\n]Type=exec[\r\n]")
+    message(FATAL_ERROR
+        "KDE portal drop-in must override Type=dbus so a private-bus session "
+        "cannot have systemd terminate the identity-carrying backend")
+endif()
+if(NOT dropin MATCHES "BusName=[\r\n]")
+    message(FATAL_ERROR
+        "KDE portal drop-in must clear BusName= alongside Type=exec")
+endif()
+
 message(STATUS "KDE portal compatibility activation contract is valid")
