@@ -190,6 +190,16 @@ struct ChromeLayoutRequest final
     // tabs as the only page-identity presentation, exactly as before this
     // field existed.
     QString containerTitle;
+    // True when `containerTitle` is a GENERATED placeholder ("Container N",
+    // ADR-0163) rather than something a user typed.
+    //
+    // AGENT-GUARD (ADR-0168): a generated placeholder must never displace real
+    // text. The rolled-up badge has a 48-140 px label; unconditionally
+    // prefixing "Container N · " elided the user's actual title out of it, so
+    // a title that was visible on the unrolled row vanished when rolled up.
+    // The badge therefore uses a generated name only when there is no page
+    // title to show.
+    bool containerTitleIsGenerated = false;
     // Container identity and keyboard-hint inputs (CONTRACTS §2.4,
     // ADR-0139). An invalid identityColor means "derive every identity shade
     // from the theme accent"; a missing or empty tabTitleOverrides entry
@@ -259,6 +269,8 @@ struct ChromeRenderPlan final
     bool containerFocused = false;
     bool memberTitlesVisible = true;
     QString containerTitle;
+    // See ChromeLayoutRequest::containerTitleIsGenerated (ADR-0168).
+    bool containerTitleIsGenerated = false;
     // Identity inputs echoed onto the plan (CONTRACTS §2.4) plus the shades
     // derived once here, so renderer, badge, and preview all paint the same
     // values (ADR-0139).

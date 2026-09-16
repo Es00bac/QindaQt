@@ -5,7 +5,8 @@
 - **Owners:** Platform (compositor container appearance)
 - **Supersedes:** ADR-0139's badge label clause (the label format only; all
   other ADR-0139 decisions stand)
-- **Superseded by:** None
+- **Superseded by:** ADR-0168 (badge label clause only — a generated name is
+  now a fallback rather than a prefix; every other decision here stands)
 
 ## Context
 

@@ -130,8 +130,15 @@ void ChromeShadedBadge::paint(QPainter &painter, const ChromeRenderPlan &plan)
     painter.setRenderHint(QPainter::Antialiasing, true);
     const QFontMetricsF metrics(painter.font());
 
-    // Label: "<container name> · <foremost tab>" with the name only when the
-    // container was renamed; elided into its reserved rect.
+    // Label: "<container name> · <foremost tab>" when the user named this
+    // container, the page title alone when they did not, and the generated
+    // placeholder only when there is no page title either. Elided into the
+    // reserved rect.
+    //
+    // AGENT-GUARD (ADR-0168): never prefix a GENERATED name. The label rect is
+    // 48-140 px, so "Container 7 · " consumed most of it and elided away the
+    // title the user could still read on the unrolled row - the reported
+    // "name disappears when rolled up".
     QString foremost;
     for (const auto &tab : plan.tabs) {
         if (tab.active) {
@@ -142,9 +149,16 @@ void ChromeShadedBadge::paint(QPainter &painter, const ChromeRenderPlan &plan)
     if (foremost.isEmpty() && !plan.tabs.isEmpty()) {
         foremost = plan.tabs.constFirst().title;
     }
-    auto label = plan.containerTitle.isEmpty()
-        ? foremost
-        : plan.containerTitle + QStringLiteral(" · ") + foremost;
+    QString label;
+    if (plan.containerTitle.isEmpty()) {
+        label = foremost;
+    } else if (!plan.containerTitleIsGenerated) {
+        label = foremost.isEmpty()
+            ? plan.containerTitle
+            : plan.containerTitle + QStringLiteral(" · ") + foremost;
+    } else {
+        label = foremost.isEmpty() ? plan.containerTitle : foremost;
+    }
     if (!label.isEmpty() && plan.badgeLabelRect.width() > 12.0) {
         const auto elided = metrics.elidedText(
             label, Qt::ElideRight, qRound(plan.badgeLabelRect.width() - 8.0));

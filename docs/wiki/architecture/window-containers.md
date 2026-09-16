@@ -158,10 +158,12 @@ item, not a native overlay window.
   hidden member revealed or focused by a KWin activation. The badge width is
   derived from chrome metrics and tab count, capped by the former container
   width, so roll-up genuinely shrinks the frame. It paints the container
-  identity color, names the container (the rename override, else a stable
-  generated `Container N`,
-  [ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
-  and the active page, and keeps bounded page pills; clicking
+  identity color and a label that prefers real text over a placeholder
+  ([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)):
+  `<rename> · <active page>` when the user named the container, the active page
+  title alone when they did not, and the generated `Container N`
+  ([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
+  only when no page title exists. It keeps bounded page pills; clicking
   a pill activates that page and unrolls. Unroll restores the exact frames,
   content, and the member focus held at roll-up. See
   [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)

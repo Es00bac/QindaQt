@@ -35,6 +35,9 @@ struct HybridChromePlanOptions final
     // ContainerAppearance rename override; empty means "no override" (see
     // ChromeLayoutRequest::containerTitle).
     QString containerTitle;
+    // True when containerTitle is the generated "Container N" placeholder
+    // rather than a user rename (ADR-0168).
+    bool containerTitleIsGenerated = false;
     // Container identity and keyboard-hint inputs (CONTRACTS §2.4, wire W1/W2,
     // ADR-0139). Defaults reproduce today's output: an invalid identityColor
     // derives every identity shade from the theme accent, a missing or empty
