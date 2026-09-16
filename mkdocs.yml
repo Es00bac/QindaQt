@@ -285,3 +285,8 @@ nav:
       - "ADR-0164: one shared application catalog behind the file manager applications browser": adr/0164-shared-application-catalog-and-file-manager-applications-browser.md
       - "ADR-0165: workspace picker slots replaced by launched applications": adr/0165-workspace-picker-slots-replaced-by-launched-applications.md
       - "ADR-0166: announce a StatusNotifier host, not only a watcher": adr/0166-announce-a-status-notifier-host.md
+      - "ADR-0167: one desktop across every output": adr/0167-one-desktop-across-every-output.md
+      - "ADR-0168: a generated container name never displaces a real title": adr/0168-a-generated-name-never-displaces-a-real-title.md
+      - "ADR-0169: report the program behind an opaque window class": adr/0169-report-the-program-behind-an-opaque-window-class.md
+      - "ADR-0170: judge the KDE portal backend's start by exec, not by a bus name": adr/0170-survive-a-private-session-bus-for-dbus-units.md
+      - "ADR-0171: one gain law for the audio console": adr/0171-one-gain-law-for-the-audio-console.md
