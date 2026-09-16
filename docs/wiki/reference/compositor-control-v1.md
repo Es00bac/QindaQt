@@ -610,7 +610,19 @@ Every `Containers` entry contains `id`, `revision`, and `authority`. The older
 per-container transaction bridge reports `authority: "control-bridge"` and its
 own container revision. Process-local groups report
 `authority: "hybrid-process"` and the actual session topology revision, never a
-fabricated zero. `Snapshot` routes by authority and returns `status: "ok"`, the
+fabricated zero, plus three naming and state fields
+([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)):
+
+| Field | Meaning |
+| --- | --- |
+| `name` | The user's rename override. Empty when the container has never been renamed. |
+| `displayName` | What a surface would paint right now: the override, else the generated `Container N` once one has been assigned. Empty only for a container no surface has named yet. |
+| `shaded` | Whether the container is currently rolled up. |
+
+`displayName` is reported, never assigned: reading it cannot consume a
+generated number, so inspecting a session can never renumber a container.
+These fields exist so a live session can be asked whether a rename actually
+took effect, which was previously unobservable from outside the compositor. `Snapshot` routes by authority and returns `status: "ok"`, the
 protocol, container ID, matching revision and authority, and the schema-1 model
 under `snapshot`. These reads do not make `Submit`, `DockWindows`, or
 `ReleaseContainer` Hybrid mutators.

@@ -97,8 +97,20 @@ QJsonArray KWinHybridSession::publicContainers() const
     }
     const auto revision = QString::number(topologyRevision());
     for (const auto &containerId : m_runtime->topology().containerIds()) {
+        // AGENT-CONTRACT: naming is reported, never assigned, from here.
+        // `name` is the user's rename override and is empty when the container
+        // has never been renamed; `displayName` is what a surface would paint
+        // and is empty only for a container no surface has named yet
+        // (ADR-0163). Without these a live session offers no way at all to
+        // tell whether a rename took effect.
         result.append(QJsonObject{{QStringLiteral("id"), containerId},
                                   {QStringLiteral("revision"), revision},
+                                  {QStringLiteral("name"),
+                                   m_appearance.appearance(containerId).name},
+                                  {QStringLiteral("displayName"),
+                                   m_appearance.assignedDisplayName(containerId)},
+                                  {QStringLiteral("shaded"),
+                                   m_placement && m_placement->isShaded(containerId)},
                                   {QStringLiteral("authority"),
                                    QStringLiteral("hybrid-process")}});
     }

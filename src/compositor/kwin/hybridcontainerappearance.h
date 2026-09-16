@@ -45,6 +45,16 @@ public:
     // process-monotonic so two live containers can never share a number.
     [[nodiscard]] QString displayName(const QString &containerId);
 
+    // The name a surface WOULD show right now, without assigning one: the
+    // rename override, else the generated name if this container has already
+    // been observed, else empty.
+    //
+    // AGENT-GUARD: this is the read for diagnostics and control replies, and
+    // it is const on purpose. Calling displayName() from an observer would
+    // burn a generated number as a side effect of merely looking, so a
+    // container could be renumbered by being inspected.
+    [[nodiscard]] QString assignedDisplayName(const QString &containerId) const;
+
     void forgetContainer(const QString &containerId) noexcept;
     void clear() noexcept;
 
