@@ -67,12 +67,16 @@ private:
     [[nodiscard]] static bool isConsoleOperation(OperationKind kind) noexcept;
     // Republishes the snapshot with the console's current value folded in.
     void republishConsole();
+    // Re-derives the backend routing from the console and the currently
+    // resolvable devices, and declares it to the backend when it changed.
+    void publishRouting();
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
     void publishRestartingSnapshot();
 
     AudioBackend *m_backend = nullptr;
     Snapshot m_snapshot;
     ConsoleModel m_console;
+    QList<BackendRoutingEdge> m_publishedRouting;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;

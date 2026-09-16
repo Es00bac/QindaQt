@@ -370,8 +370,45 @@ bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noe
     }
 }
 
+void AudioOperationCoordinator::publishRouting()
+{
+    // AGENT-CONTRACT: the console names its endpoints by console id; the graph
+    // needs the device handles behind them. Resolving here keeps the console
+    // model free of graph concepts and keeps the backend free of console ones.
+    QList<BackendRoutingEdge> edges;
+    const Console console = m_console.console();
+    for (const ConsoleModel::RoutingEdge &edge : m_console.routing()) {
+        BackendRoutingEdge backendEdge;
+        backendEdge.stripId = edge.stripId;
+        backendEdge.busId = edge.busId;
+        backendEdge.gainDb = edge.gainDb;
+        backendEdge.audible = edge.audible;
+        for (const Strip &strip : console.strips) {
+            if (strip.id == edge.stripId && strip.sourceKnown) {
+                backendEdge.source = Handle{strip.sourceEpoch, strip.sourceSerial};
+                break;
+            }
+        }
+        for (const Bus &bus : console.buses) {
+            if (bus.id == edge.busId && bus.targetKnown) {
+                backendEdge.target = Handle{bus.targetEpoch, bus.targetSerial};
+                break;
+            }
+        }
+        edges.append(std::move(backendEdge));
+    }
+    if (edges == m_publishedRouting) {
+        return;
+    }
+    m_publishedRouting = edges;
+    if (m_backend != nullptr && m_running) {
+        m_backend->applyRouting(m_publishedRouting);
+    }
+}
+
 void AudioOperationCoordinator::republishConsole()
 {
+    publishRouting();
     m_snapshot.console = m_console.console();
     // A console change is a real revision: clients diff on lineage, so a fader
     // move that left the revision alone would not reach any of them.
@@ -529,6 +566,10 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     // console - faders, routing and all - on the next publication.
     m_snapshot.console = m_console.console();
     m_snapshot.capabilities |= consoleCapabilities();
+    // A new graph generation can make an endpoint resolvable that was not
+    // before, so the routing is re-derived against every accepted snapshot
+    // rather than only when the user touches the console.
+    publishRouting();
     m_hasBackendSnapshot = true;
     m_minimumRestartEpoch = 0;
     Q_EMIT snapshotChanged(m_snapshot);

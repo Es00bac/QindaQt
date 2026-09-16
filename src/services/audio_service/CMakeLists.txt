@@ -4,6 +4,10 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus)
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 pkg_check_modules(WirePlumber REQUIRED IMPORTED_TARGET wireplumber-0.5>=0.5)
+# The console realises each matrix send as a libpipewire-module-loopback, which
+# needs PipeWire's own module API; WirePlumber wraps the graph but does not
+# expose module loading (ADR-0173).
+pkg_check_modules(PipeWire REQUIRED IMPORTED_TARGET libpipewire-0.3>=1.0)
 
 qt_add_library(qindaqt_audio_service STATIC)
 add_library(QindaQt::AudioService ALIAS qindaqt_audio_service)
@@ -18,6 +22,8 @@ target_sources(
         src/console_model.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
+        src/wireplumber_routing.cpp
+        src/wireplumber_routing_p.h
         src/wireplumber_graph_p.h
         src/wireplumber_worker.cpp
         src/wireplumber_worker_operations.cpp
@@ -35,7 +41,7 @@ target_sources(
 target_link_libraries(
     qindaqt_audio_service
     PUBLIC QindaQt::AudioProtocol Qt6::Core Qt6::DBus
-    PRIVATE PkgConfig::WirePlumber Threads::Threads
+    PRIVATE PkgConfig::WirePlumber PkgConfig::PipeWire Threads::Threads
 )
 target_compile_features(qindaqt_audio_service PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_audio_service PRIVATE QT_NO_KEYWORDS)

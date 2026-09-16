@@ -22,6 +22,17 @@ qindaqt_enable_warnings(qindaqt_audio_console_model_tests)
 add_test(NAME qindaqt.audio-console-model COMMAND qindaqt_audio_console_model_tests)
 set_tests_properties(qindaqt.audio-console-model PROPERTIES LABELS "service;audio")
 
+# The loopback argument shape (ADR-0173). Pure string construction, so it needs
+# no daemon; the point is that a malformed module argument is invisible at
+# runtime and must be caught here.
+qt_add_executable(qindaqt_audio_routing_tests tst_wireplumber_routing.cpp)
+target_link_libraries(
+    qindaqt_audio_routing_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_routing_tests)
+add_test(NAME qindaqt.audio-routing COMMAND qindaqt_audio_routing_tests)
+set_tests_properties(qindaqt.audio-routing PROPERTIES LABELS "service;audio")
+
 # AGENT-GUARD: This defaults ON for broad build jobs. The pinned native plugin
 # lane disables only these process-launching rows because Gentoo's official
 # binhost has no PipeWire `extra` variant providing pw-cat.

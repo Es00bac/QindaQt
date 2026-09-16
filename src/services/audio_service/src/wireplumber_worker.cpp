@@ -2,6 +2,15 @@
 
 #include "wireplumber_worker_p.h"
 
+#include "wireplumber_routing_p.h"
+
+#include <qindaqt/services/audio_protocol/audio_gain.h>
+
+#include <pipewire/pipewire.h>
+// pw_context_load_module / pw_impl_module_destroy live in the impl API, which
+// pipewire.h does not pull in.
+#include <pipewire/impl-module.h>
+
 #include "wireplumber_graph_p.h"
 
 #include <qindaqt/services/audio_protocol/audio_limits.h>
@@ -147,6 +156,86 @@ void WirePlumberWorker::submit(const quint64 operationId, OperationRequest reque
     invoke([this, operationId, request = std::move(request)] {
         submitOnWorker(operationId, request);
     });
+}
+
+void WirePlumberWorker::applyRouting(QList<BackendRoutingEdge> edges)
+{
+    invoke([this, edges = std::move(edges)] { applyRoutingOnWorker(edges); });
+}
+
+QString WirePlumberWorker::nodeNameForHandle(const Handle &handle) const
+{
+    if (handle.epoch != m_epoch || !handle.isValid()) {
+        return {};
+    }
+    const auto node = WirePlumberGraph::findNode(m_manager, handle.serial);
+    return node.has_value() ? node->nodeName : QString{};
+}
+
+void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges)
+{
+    m_declaredRouting = edges;
+    if (m_core == nullptr || m_manager == nullptr) {
+        return;
+    }
+    struct pw_context *const context = wp_core_get_pw_context(m_core);
+    if (context == nullptr) {
+        return;
+    }
+
+    // Everything the console wants that can actually be carried right now: an
+    // edge whose strip or bus has no live node is simply not buildable yet and
+    // is left out rather than approximated.
+    std::unordered_map<std::string, QByteArray> wanted;
+    for (const BackendRoutingEdge &edge : edges) {
+        const QString source = nodeNameForHandle(edge.source);
+        const QString target = nodeNameForHandle(edge.target);
+        if (source.isEmpty() || target.isEmpty()) {
+            continue;
+        }
+        const QByteArray arguments = routingModuleArguments(
+            edge.stripId, edge.busId, source, target,
+            edge.audible ? linearFromGainDb(edge.gainDb) : 0.0);
+        if (arguments.isEmpty()) {
+            continue;
+        }
+        wanted.emplace(routingNodeName(edge.stripId, edge.busId).toStdString(),
+                       arguments);
+    }
+
+    // AGENT-GUARD: unload before load. A send whose endpoints changed must have
+    // its old module destroyed first, or two loopbacks briefly carry the same
+    // cell and the user hears it at double level.
+    for (auto it = m_routingModules.begin(); it != m_routingModules.end();) {
+        if (wanted.find(it->first) == wanted.end()) {
+            pw_impl_module_destroy(static_cast<struct pw_impl_module *>(it->second));
+            it = m_routingModules.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    for (const auto &[name, arguments] : wanted) {
+        if (m_routingModules.find(name) != m_routingModules.end()) {
+            continue;
+        }
+        struct pw_impl_module *const module = pw_context_load_module(
+            context, "libpipewire-module-loopback", arguments.constData(), nullptr);
+        if (module == nullptr) {
+            // A refused module is reported through the snapshot's diagnostic on
+            // the next publication rather than failing the whole console: the
+            // rest of the user's routing must keep working.
+            continue;
+        }
+        m_routingModules.emplace(name, module);
+    }
+}
+
+void WirePlumberWorker::unloadAllRouting()
+{
+    for (auto &[name, module] : m_routingModules) {
+        pw_impl_module_destroy(static_cast<struct pw_impl_module *>(module));
+    }
+    m_routingModules.clear();
 }
 
 void WirePlumberWorker::invoke(std::function<void()> task)
@@ -375,6 +464,12 @@ void WirePlumberWorker::rebuild()
         graph.snapshot.availability = Availability::Degraded;
         graph.snapshot.reasonCode = QStringLiteral("wireplumber-api-degraded");
     }
+    // AGENT-GUARD: re-apply the console's declared routing against the graph as
+    // it now is. A device that just appeared makes an edge buildable that was
+    // not a moment ago, and a daemon replacement destroyed every loopback this
+    // worker had loaded - without this the user's matrix would come back empty
+    // after a PipeWire restart even though the console still shows it.
+    applyRoutingOnWorker(m_declaredRouting);
     publish(std::move(graph.snapshot));
 }
 
@@ -515,6 +610,11 @@ void WirePlumberWorker::scheduleReconnect()
 
 void WirePlumberWorker::cleanupCore()
 {
+    // AGENT-GUARD: unload the console's loopbacks before the core goes. They
+    // are loaded into THIS pw_context; leaving them would either leak modules
+    // across a reconnect or destroy them against a context that no longer
+    // exists. The declared routing is kept so the next connection rebuilds it.
+    unloadAllRouting();
     cancelDisconnectReset();
     cancelComponentLoads();
     cancelNodeActivations();
