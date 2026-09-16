@@ -5,6 +5,18 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 16, r4)
+
+Exact source `ea0ee25e` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260915-r4` (superseding r3). This
+checkpoint installs the strip rack — gate, compressor, three-band EQ and
+limiter per strip, one filter-chain each, persisted with the console and
+folded into every hardware strip in the Settings console (ADR-0179) — and
+declares `media-plugins/swh-plugins` as the runtime dependency that provides
+the dynamics. Installed verification: with a rack switched on, the packaged
+service loads the chain, the strip's sends and meter move onto the processed
+source, and switching it off tears the chain down.
+
 ## Installed delivery checkpoint (September 16, r3)
 
 Exact source `fe2f37d8` is installed through Portage as
