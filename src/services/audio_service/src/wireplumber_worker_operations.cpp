@@ -200,6 +200,27 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
 
     bool accepted = false;
     switch (request.kind) {
+    case OperationKind::SetStripGain:
+    case OperationKind::SetStripMute:
+    case OperationKind::SetStripSolo:
+    case OperationKind::SetStripMono:
+    case OperationKind::SetStripPan:
+    case OperationKind::SetStripTrim:
+    case OperationKind::SetStripSend:
+    case OperationKind::SetBusGain:
+    case OperationKind::SetBusMute:
+    case OperationKind::SetBusMono:
+    case OperationKind::SetBusTarget:
+        // AGENT-CONTRACT: console operations are state the ConsoleModel owns
+        // (ADR-0173); the graph backend only ever realises the ROUTING that
+        // state implies. One arriving here means the service layer forwarded
+        // something it should have applied itself, so it fails loudly rather
+        // than being silently dropped.
+        m_outcomeCallback(operationId,
+                          {.status = BackendOperationStatus::Failed,
+                           .reasonCode = QStringLiteral("not-a-graph-operation"),
+                           .diagnostic = {}});
+        return;
     case OperationKind::SetDefault: {
         if (m_defaultNodes == nullptr || primary->nodeName.isEmpty()
             || (!isOutputDevice(primary->mediaClass)

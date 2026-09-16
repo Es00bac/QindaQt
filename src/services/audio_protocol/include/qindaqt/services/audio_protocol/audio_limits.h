@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 2;
+inline constexpr quint32 kSchemaVersion = 3;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -19,6 +19,26 @@ inline constexpr qsizetype kMaxInFlightOperations = 64;
 inline constexpr qsizetype kMaxChannelsPerDevice = 32;
 inline constexpr qsizetype kMaxChannelNameUtf8Bytes = 24;
 inline constexpr qsizetype kMaxVirtualNameUtf8Bytes = 96;
+
+// Console bounds (ADR-0173). The reference console offers 5 hardware and 3
+// virtual input strips against 5 physical and 3 virtual output buses; these
+// ceilings leave room above that without letting a hostile snapshot allocate
+// without limit. The matrix is bounded by construction: every strip carries at
+// most one send per published bus.
+inline constexpr qsizetype kMaxStrips = 32;
+inline constexpr qsizetype kMaxBuses = 16;
+inline constexpr qsizetype kMaxSendsPerStrip = kMaxBuses;
+inline constexpr qsizetype kMaxConsoleIdUtf8Bytes = 64;
+inline constexpr qsizetype kMaxConsoleLabelUtf8Bytes = 128;
+
+// A meter reads dBFS, where 0 is full scale. This floor is the "no signal"
+// value a console shows at rest; it is NOT the fader's kMinGainDb, and the two
+// scales must never be interchanged.
+inline constexpr double kSilentMeterDb = -96.0;
+inline constexpr double kMaxMeterDb = 0.0;
+// Pan travel, hard left to hard right.
+inline constexpr double kMinPan = -1.0;
+inline constexpr double kMaxPan = 1.0;
 
 // AGENT-CONTRACT: Only nodes whose node.name carries this prefix may be
 // destroyed through RemoveVirtualDevice. The WirePlumber adapter refuses to

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <qindaqt/services/audio_protocol/audio_console.h>
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 
 #include <QtCore/QFlags>
@@ -38,6 +39,12 @@ enum class Capability : quint32 {
     MoveStream = 1U << 3U,
     SetChannelVolumes = 1U << 4U,
     ManageVirtualDevices = 1U << 5U,
+    // Console slice (ADR-0173). A client that does not know these bits ignores
+    // the console entirely and keeps working against devices and streams.
+    Console = 1U << 6U,
+    SetConsoleGain = 1U << 7U,
+    SetConsoleRouting = 1U << 8U,
+    ConsoleMeters = 1U << 9U,
 };
 Q_DECLARE_FLAGS(Capabilities, Capability)
 
@@ -49,6 +56,20 @@ enum class OperationKind : quint32 {
     SetChannelVolumes = 4,
     CreateVirtualDevice = 5,
     RemoveVirtualDevice = 6,
+    // AGENT-GUARD: these numbers are wire values. Append only; renumbering an
+    // existing kind silently reinterprets an in-flight request from an older
+    // client as a different operation.
+    SetStripGain = 7,
+    SetStripMute = 8,
+    SetStripSolo = 9,
+    SetStripMono = 10,
+    SetStripPan = 11,
+    SetStripTrim = 12,
+    SetStripSend = 13,
+    SetBusGain = 14,
+    SetBusMute = 15,
+    SetBusMono = 16,
+    SetBusTarget = 17,
 };
 
 enum class OperationStatus : quint32 {
@@ -139,6 +160,9 @@ struct Snapshot {
     QList<Device> outputs;
     QList<Device> inputs;
     QList<Stream> streams;
+    // The mixing console (ADR-0173). Empty when the service publishes no
+    // console, which is how a v3 service reports the S1-only state.
+    Console console;
 
     // AGENT-GUARD: D-Bus decoding sets this false when an array exceeded its
     // bound while still consuming the complete argument. Clients must validate
@@ -162,6 +186,17 @@ struct OperationRequest {
     DeviceKind deviceKind = DeviceKind::Output;
     QString displayName = {};
     quint32 channels = 0;
+
+    // Console operations (ADR-0173) address a strip or bus by its stable
+    // console id rather than by a graph handle, so a request survives the
+    // device behind it disappearing and returning.
+    QString consoleId = {};
+    // SetStripSend: the destination bus and whether the send is on.
+    quint32 busIndex = 0;
+    bool enabled = false;
+    // Gain in dB for every console gain operation; pan for SetStripPan.
+    double gainDb = 0.0;
+    double pan = 0.0;
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

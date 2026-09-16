@@ -21,8 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)"
-        "a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)a((tt)uss(tt)bdbbbbbbadas))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -46,6 +45,17 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"RemoveVirtualDevice\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
         "direction=\"out\"/></method>"
+        "<method name=\"SetStripGain\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"gainDb\" type=\"d\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripMute\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"muted\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripSolo\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"soloed\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripMono\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"mono\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripPan\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"pan\" type=\"d\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripTrim\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"trimDb\" type=\"ad\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripSend\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"busIndex\" type=\"u\" direction=\"in\"/><arg name=\"enabled\" type=\"b\" direction=\"in\"/><arg name=\"gainDb\" type=\"d\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetBusGain\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"gainDb\" type=\"d\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetBusMute\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"muted\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetBusMono\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"mono\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetBusTarget\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
         "name=\"revision\" type=\"t\"/></signal></interface>")
 
@@ -66,6 +76,23 @@ public Q_SLOTS:
     Q_SCRIPTABLE void CreateVirtualDevice(quint32 kind, const QString &displayName,
                                           quint32 channels);
     Q_SCRIPTABLE void RemoveVirtualDevice(const QindaQt::Audio::Handle &device);
+
+    // Console operations (ADR-0173). Each addresses a strip or bus by its
+    // stable console id, so a call stays meaningful across the device behind
+    // it disappearing and coming back.
+    Q_SCRIPTABLE void SetStripGain(const QString &strip, double gainDb);
+    Q_SCRIPTABLE void SetStripMute(const QString &strip, bool muted);
+    Q_SCRIPTABLE void SetStripSolo(const QString &strip, bool soloed);
+    Q_SCRIPTABLE void SetStripMono(const QString &strip, bool mono);
+    Q_SCRIPTABLE void SetStripPan(const QString &strip, double pan);
+    Q_SCRIPTABLE void SetStripTrim(const QString &strip, const QVector<double> &trimDb);
+    Q_SCRIPTABLE void SetStripSend(const QString &strip, quint32 busIndex,
+                                   bool enabled, double gainDb);
+    Q_SCRIPTABLE void SetBusGain(const QString &bus, double gainDb);
+    Q_SCRIPTABLE void SetBusMute(const QString &bus, bool muted);
+    Q_SCRIPTABLE void SetBusMono(const QString &bus, bool mono);
+    Q_SCRIPTABLE void SetBusTarget(const QString &bus,
+                                   const QindaQt::Audio::Handle &device);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);

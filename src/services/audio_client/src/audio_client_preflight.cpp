@@ -12,6 +12,16 @@ namespace QindaQt::Audio
 namespace
 {
 
+// A console operation needs the console slice plus the right mutator bit; the
+// gain and routing bits are separate so a service can publish a read-only
+// console (ADR-0173).
+[[nodiscard]] bool hasConsoleCapability(Capabilities capabilities)
+{
+    return capabilities.testFlag(Capability::Console)
+        && (capabilities.testFlag(Capability::SetConsoleGain)
+            || capabilities.testFlag(Capability::SetConsoleRouting));
+}
+
 const Device *findDevice(const Snapshot &snapshot, const Handle &handle)
 {
     for (const Device &device : snapshot.outputs) {
@@ -52,6 +62,24 @@ QString preflightOperation(const Snapshot &snapshot, const OperationRequest &req
     const Device *device = findDevice(snapshot, request.primary);
     const Stream *stream = findStream(snapshot, request.primary);
     switch (request.kind) {
+    case OperationKind::SetStripGain:
+    case OperationKind::SetStripMute:
+    case OperationKind::SetStripSolo:
+    case OperationKind::SetStripMono:
+    case OperationKind::SetStripPan:
+    case OperationKind::SetStripTrim:
+    case OperationKind::SetStripSend:
+    case OperationKind::SetBusGain:
+    case OperationKind::SetBusMute:
+    case OperationKind::SetBusMono:
+    case OperationKind::SetBusTarget:
+        // Console operations (ADR-0173) are admitted by the console model,
+        // which owns the strip and bus identities they name. There is no
+        // device or stream handle here to pre-check against the snapshot.
+        if (!hasConsoleCapability(snapshot.capabilities)) {
+            return QStringLiteral("unsupported");
+        }
+        return QString{};
     case OperationKind::SetDefault:
         if (!snapshot.capabilities.testFlag(Capability::SetDefault)) {
             return QStringLiteral("unsupported");

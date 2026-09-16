@@ -1,0 +1,389 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+#include <qindaqt/services/audio_service/console_model.h>
+
+#include <qindaqt/services/audio_protocol/audio_gain.h>
+#include <qindaqt/services/audio_protocol/audio_limits.h>
+#include <qindaqt/services/audio_protocol/audio_validation.h>
+
+#include <QtCore/QJsonArray>
+
+#include <algorithm>
+#include <cmath>
+
+namespace QindaQt::Audio
+{
+namespace {
+
+[[nodiscard]] bool reject(QString *reasonCode, const char *code)
+{
+    if (reasonCode != nullptr) {
+        *reasonCode = QString::fromLatin1(code);
+    }
+    return false;
+}
+
+[[nodiscard]] bool finiteGain(double value)
+{
+    return std::isfinite(value) && value >= kMinGainDb && value <= kMaxGainDb;
+}
+
+} // namespace
+
+ConsoleModel::ConsoleModel()
+{
+    // AGENT-NOTE: the default layout is the reference console's, so a fresh
+    // install already looks like the product users are comparing against
+    // rather than an empty rack they must assemble first.
+    for (int index = 0; index < kHardwareStrips; ++index) {
+        Strip strip;
+        strip.id = QStringLiteral("strip.hw.%1").arg(index + 1);
+        strip.kind = StripKind::HardwareInput;
+        strip.index = static_cast<quint32>(index);
+        strip.label = QStringLiteral("Hardware Input %1").arg(index + 1);
+        m_strips.append(std::move(strip));
+    }
+    for (int index = 0; index < kVirtualStrips; ++index) {
+        Strip strip;
+        strip.id = QStringLiteral("strip.virtual.%1").arg(index + 1);
+        strip.kind = StripKind::VirtualInput;
+        strip.index = static_cast<quint32>(kHardwareStrips + index);
+        strip.label = index == 0 ? QStringLiteral("Virtual Input")
+                                 : QStringLiteral("Virtual Input %1").arg(index + 1);
+        m_strips.append(std::move(strip));
+    }
+    for (int index = 0; index < kPhysicalBuses; ++index) {
+        Bus bus;
+        bus.id = QStringLiteral("bus.a%1").arg(index + 1);
+        bus.kind = BusKind::Physical;
+        bus.index = static_cast<quint32>(index);
+        bus.label = QStringLiteral("A%1").arg(index + 1);
+        m_buses.append(std::move(bus));
+    }
+    for (int index = 0; index < kVirtualBuses; ++index) {
+        Bus bus;
+        bus.id = QStringLiteral("bus.b%1").arg(index + 1);
+        bus.kind = BusKind::Virtual;
+        bus.index = static_cast<quint32>(kPhysicalBuses + index);
+        bus.label = QStringLiteral("B%1").arg(index + 1);
+        m_buses.append(std::move(bus));
+    }
+    // Every strip carries a send for every bus, so the matrix is rectangular
+    // and a client can index it without asking which cells exist.
+    for (Strip &strip : m_strips) {
+        strip.sends.reserve(m_buses.size());
+        for (const Bus &bus : m_buses) {
+            strip.sends.append(MatrixSend{bus.index, false, 0.0});
+        }
+    }
+}
+
+Console ConsoleModel::console() const
+{
+    Console console;
+    console.strips = m_strips;
+    console.buses = m_buses;
+    console.soloActive = std::any_of(m_strips.cbegin(), m_strips.cend(),
+                                     [](const Strip &strip) { return strip.soloed; });
+    return console;
+}
+
+Strip *ConsoleModel::findStrip(const QString &id)
+{
+    const auto it = std::find_if(m_strips.begin(), m_strips.end(),
+                                 [&id](const Strip &strip) { return strip.id == id; });
+    return it == m_strips.end() ? nullptr : &*it;
+}
+
+Bus *ConsoleModel::findBus(const QString &id)
+{
+    const auto it = std::find_if(m_buses.begin(), m_buses.end(),
+                                 [&id](const Bus &bus) { return bus.id == id; });
+    return it == m_buses.end() ? nullptr : &*it;
+}
+
+const Bus *ConsoleModel::findBusByIndex(quint32 index) const
+{
+    const auto it = std::find_if(m_buses.cbegin(), m_buses.cend(),
+                                 [index](const Bus &bus) { return bus.index == index; });
+    return it == m_buses.cend() ? nullptr : &*it;
+}
+
+bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
+{
+    switch (request.kind) {
+    case OperationKind::SetStripGain:
+    case OperationKind::SetStripMute:
+    case OperationKind::SetStripSolo:
+    case OperationKind::SetStripMono:
+    case OperationKind::SetStripPan:
+    case OperationKind::SetStripTrim:
+    case OperationKind::SetStripSend: {
+        Strip *const strip = findStrip(request.consoleId);
+        if (strip == nullptr) {
+            return reject(reasonCode, "unknown-strip");
+        }
+        switch (request.kind) {
+        case OperationKind::SetStripGain:
+            if (!finiteGain(request.gainDb)) {
+                return reject(reasonCode, "gain-out-of-range");
+            }
+            strip->gainDb = request.gainDb;
+            return true;
+        case OperationKind::SetStripMute:
+            strip->muted = request.muted;
+            return true;
+        case OperationKind::SetStripSolo:
+            strip->soloed = request.enabled;
+            return true;
+        case OperationKind::SetStripMono:
+            strip->mono = request.enabled;
+            return true;
+        case OperationKind::SetStripPan:
+            if (!std::isfinite(request.pan) || request.pan < kMinPan
+                || request.pan > kMaxPan) {
+                return reject(reasonCode, "pan-out-of-range");
+            }
+            strip->pan = request.pan;
+            return true;
+        case OperationKind::SetStripTrim: {
+            if (request.channelVolumes.size() > kMaxChannelsPerDevice) {
+                return reject(reasonCode, "too-many-channels");
+            }
+            for (const double trim : request.channelVolumes) {
+                if (!finiteGain(trim)) {
+                    return reject(reasonCode, "gain-out-of-range");
+                }
+            }
+            strip->channelTrimDb = request.channelVolumes;
+            return true;
+        }
+        case OperationKind::SetStripSend: {
+            if (findBusByIndex(request.busIndex) == nullptr) {
+                return reject(reasonCode, "unknown-bus");
+            }
+            if (!finiteGain(request.gainDb)) {
+                return reject(reasonCode, "gain-out-of-range");
+            }
+            for (MatrixSend &send : strip->sends) {
+                if (send.busIndex == request.busIndex) {
+                    // AGENT-GUARD: enabled and gainDb move together here on
+                    // purpose, but a client that only means to toggle sends the
+                    // gain it already read back, so turning a send off and on
+                    // again never silently resets it to unity.
+                    send.enabled = request.enabled;
+                    send.gainDb = request.gainDb;
+                    return true;
+                }
+            }
+            return reject(reasonCode, "unknown-bus");
+        }
+        default:
+            break;
+        }
+        return reject(reasonCode, "unsupported-operation");
+    }
+    case OperationKind::SetBusGain:
+    case OperationKind::SetBusMute:
+    case OperationKind::SetBusMono:
+    case OperationKind::SetBusTarget: {
+        Bus *const bus = findBus(request.consoleId);
+        if (bus == nullptr) {
+            return reject(reasonCode, "unknown-bus");
+        }
+        switch (request.kind) {
+        case OperationKind::SetBusGain:
+            if (!finiteGain(request.gainDb)) {
+                return reject(reasonCode, "gain-out-of-range");
+            }
+            bus->gainDb = request.gainDb;
+            return true;
+        case OperationKind::SetBusMute:
+            bus->muted = request.muted;
+            return true;
+        case OperationKind::SetBusMono:
+            bus->mono = request.enabled;
+            return true;
+        case OperationKind::SetBusTarget:
+            bus->targetEpoch = request.primary.epoch;
+            bus->targetSerial = request.primary.serial;
+            bus->targetKnown = request.primary.isValid();
+            return true;
+        default:
+            break;
+        }
+        return reject(reasonCode, "unsupported-operation");
+    }
+    default:
+        break;
+    }
+    return reject(reasonCode, "unsupported-operation");
+}
+
+void ConsoleModel::bindStripSource(const QString &stripId, Handle source, bool known)
+{
+    if (Strip *const strip = findStrip(stripId); strip != nullptr) {
+        strip->sourceEpoch = source.epoch;
+        strip->sourceSerial = source.serial;
+        strip->sourceKnown = known && source.isValid();
+    }
+}
+
+void ConsoleModel::bindBusTarget(const QString &busId, Handle target, bool known)
+{
+    if (Bus *const bus = findBus(busId); bus != nullptr) {
+        bus->targetEpoch = target.epoch;
+        bus->targetSerial = target.serial;
+        bus->targetKnown = known && target.isValid();
+    }
+}
+
+void ConsoleModel::publishStripLevel(const QString &stripId, Level level)
+{
+    if (level.known
+        && (!std::isfinite(level.peakDb) || !std::isfinite(level.rmsDb)
+            || level.peakDb > kMaxMeterDb || level.peakDb < kSilentMeterDb
+            || level.rmsDb > level.peakDb || level.rmsDb < kSilentMeterDb)) {
+        return;
+    }
+    if (Strip *const strip = findStrip(stripId); strip != nullptr) {
+        strip->level = level;
+    }
+}
+
+void ConsoleModel::publishBusLevel(const QString &busId, Level level)
+{
+    if (level.known
+        && (!std::isfinite(level.peakDb) || !std::isfinite(level.rmsDb)
+            || level.peakDb > kMaxMeterDb || level.peakDb < kSilentMeterDb
+            || level.rmsDb > level.peakDb || level.rmsDb < kSilentMeterDb)) {
+        return;
+    }
+    if (Bus *const bus = findBus(busId); bus != nullptr) {
+        bus->level = level;
+    }
+}
+
+QList<ConsoleModel::RoutingEdge> ConsoleModel::routing() const
+{
+    const bool soloActive = std::any_of(m_strips.cbegin(), m_strips.cend(),
+                                        [](const Strip &strip) { return strip.soloed; });
+    QList<RoutingEdge> edges;
+    for (const Strip &strip : m_strips) {
+        const bool audible = !strip.muted && (!soloActive || strip.soloed);
+        for (const MatrixSend &send : strip.sends) {
+            if (!send.enabled) {
+                continue;
+            }
+            const Bus *const bus = findBusByIndex(send.busIndex);
+            if (bus == nullptr) {
+                continue;
+            }
+            edges.append(RoutingEdge{strip.id, bus->id, send.busIndex, send.gainDb,
+                                     audible && !bus->muted});
+        }
+    }
+    return edges;
+}
+
+QJsonObject ConsoleModel::toJson() const
+{
+    QJsonArray strips;
+    for (const Strip &strip : m_strips) {
+        QJsonArray sends;
+        for (const MatrixSend &send : strip.sends) {
+            sends.append(QJsonObject{{QStringLiteral("bus"), int(send.busIndex)},
+                                     {QStringLiteral("on"), send.enabled},
+                                     {QStringLiteral("gainDb"), send.gainDb}});
+        }
+        QJsonArray trims;
+        for (const double trim : strip.channelTrimDb) {
+            trims.append(trim);
+        }
+        strips.append(QJsonObject{{QStringLiteral("id"), strip.id},
+                                  {QStringLiteral("label"), strip.label},
+                                  {QStringLiteral("gainDb"), strip.gainDb},
+                                  {QStringLiteral("muted"), strip.muted},
+                                  {QStringLiteral("soloed"), strip.soloed},
+                                  {QStringLiteral("mono"), strip.mono},
+                                  {QStringLiteral("pan"), strip.pan},
+                                  {QStringLiteral("trimDb"), trims},
+                                  {QStringLiteral("sends"), sends}});
+    }
+    QJsonArray buses;
+    for (const Bus &bus : m_buses) {
+        buses.append(QJsonObject{{QStringLiteral("id"), bus.id},
+                                 {QStringLiteral("label"), bus.label},
+                                 {QStringLiteral("gainDb"), bus.gainDb},
+                                 {QStringLiteral("muted"), bus.muted},
+                                 {QStringLiteral("mono"), bus.mono}});
+    }
+    return QJsonObject{{QStringLiteral("schemaVersion"), int(kSchemaVersion)},
+                       {QStringLiteral("strips"), strips},
+                       {QStringLiteral("buses"), buses}};
+}
+
+void ConsoleModel::loadJson(const QJsonObject &document)
+{
+    const auto readGain = [](const QJsonValue &value, double fallback) {
+        const double candidate = value.toDouble(fallback);
+        return finiteGain(candidate) ? candidate : fallback;
+    };
+    for (const QJsonValue &entry : document.value(QStringLiteral("strips")).toArray()) {
+        const QJsonObject object = entry.toObject();
+        Strip *const strip = findStrip(object.value(QStringLiteral("id")).toString());
+        if (strip == nullptr) {
+            continue;
+        }
+        const QString label = object.value(QStringLiteral("label")).toString();
+        if (isBoundedText(label, kMaxConsoleLabelUtf8Bytes) && !label.isEmpty()) {
+            strip->label = label;
+        }
+        strip->gainDb = readGain(object.value(QStringLiteral("gainDb")), strip->gainDb);
+        strip->muted = object.value(QStringLiteral("muted")).toBool(strip->muted);
+        strip->soloed = object.value(QStringLiteral("soloed")).toBool(strip->soloed);
+        strip->mono = object.value(QStringLiteral("mono")).toBool(strip->mono);
+        const double pan = object.value(QStringLiteral("pan")).toDouble(strip->pan);
+        if (std::isfinite(pan) && pan >= kMinPan && pan <= kMaxPan) {
+            strip->pan = pan;
+        }
+        QVector<double> trims;
+        for (const QJsonValue &trim : object.value(QStringLiteral("trimDb")).toArray()) {
+            if (trims.size() >= kMaxChannelsPerDevice) {
+                break;
+            }
+            const double value = trim.toDouble(0.0);
+            trims.append(finiteGain(value) ? value : 0.0);
+        }
+        strip->channelTrimDb = trims;
+        for (const QJsonValue &sendValue :
+             object.value(QStringLiteral("sends")).toArray()) {
+            const QJsonObject sendObject = sendValue.toObject();
+            const auto busIndex =
+                static_cast<quint32>(sendObject.value(QStringLiteral("bus")).toInt(-1));
+            for (MatrixSend &send : strip->sends) {
+                if (send.busIndex != busIndex) {
+                    continue;
+                }
+                send.enabled = sendObject.value(QStringLiteral("on")).toBool(false);
+                send.gainDb = readGain(sendObject.value(QStringLiteral("gainDb")), 0.0);
+            }
+        }
+    }
+    for (const QJsonValue &entry : document.value(QStringLiteral("buses")).toArray()) {
+        const QJsonObject object = entry.toObject();
+        Bus *const bus = findBus(object.value(QStringLiteral("id")).toString());
+        if (bus == nullptr) {
+            continue;
+        }
+        const QString label = object.value(QStringLiteral("label")).toString();
+        if (isBoundedText(label, kMaxConsoleLabelUtf8Bytes) && !label.isEmpty()) {
+            bus->label = label;
+        }
+        bus->gainDb = readGain(object.value(QStringLiteral("gainDb")), bus->gainDb);
+        bus->muted = object.value(QStringLiteral("muted")).toBool(bus->muted);
+        bus->mono = object.value(QStringLiteral("mono")).toBool(bus->mono);
+    }
+}
+
+} // namespace QindaQt::Audio

@@ -15,6 +15,10 @@ struct ValidationResult {
 };
 
 [[nodiscard]] ValidationResult validateSnapshot(const Snapshot &snapshot);
+// The console slice's admission gate (ADR-0173). Exposed separately so a
+// producer can check what it is about to publish without building a whole
+// snapshot around it.
+[[nodiscard]] ValidationResult validateConsole(const Console &console);
 [[nodiscard]] ValidationResult validateOperationResult(const OperationResult &result);
 [[nodiscard]] bool isBoundedText(const QString &value, qsizetype maxUtf8Bytes);
 [[nodiscard]] QString boundedSafeDiagnostic(QString value);

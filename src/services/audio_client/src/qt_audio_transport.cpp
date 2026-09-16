@@ -266,6 +266,54 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("RemoveVirtualDevice");
         arguments = {QVariant::fromValue(request.primary)};
         break;
+    // Console operations (ADR-0173). Each names a strip or bus by its stable
+    // console id rather than a graph handle, so a request stays valid across a
+    // device disappearing and returning.
+    case OperationKind::SetStripGain:
+        method = QStringLiteral("SetStripGain");
+        arguments = {request.consoleId, request.gainDb};
+        break;
+    case OperationKind::SetStripMute:
+        method = QStringLiteral("SetStripMute");
+        arguments = {request.consoleId, request.muted};
+        break;
+    case OperationKind::SetStripSolo:
+        method = QStringLiteral("SetStripSolo");
+        arguments = {request.consoleId, request.enabled};
+        break;
+    case OperationKind::SetStripMono:
+        method = QStringLiteral("SetStripMono");
+        arguments = {request.consoleId, request.enabled};
+        break;
+    case OperationKind::SetStripPan:
+        method = QStringLiteral("SetStripPan");
+        arguments = {request.consoleId, request.pan};
+        break;
+    case OperationKind::SetStripTrim:
+        method = QStringLiteral("SetStripTrim");
+        arguments = {request.consoleId, QVariant::fromValue(request.channelVolumes)};
+        break;
+    case OperationKind::SetStripSend:
+        method = QStringLiteral("SetStripSend");
+        arguments = {request.consoleId, request.busIndex, request.enabled,
+                     request.gainDb};
+        break;
+    case OperationKind::SetBusGain:
+        method = QStringLiteral("SetBusGain");
+        arguments = {request.consoleId, request.gainDb};
+        break;
+    case OperationKind::SetBusMute:
+        method = QStringLiteral("SetBusMute");
+        arguments = {request.consoleId, request.muted};
+        break;
+    case OperationKind::SetBusMono:
+        method = QStringLiteral("SetBusMono");
+        arguments = {request.consoleId, request.enabled};
+        break;
+    case OperationKind::SetBusTarget:
+        method = QStringLiteral("SetBusTarget");
+        arguments = {request.consoleId, QVariant::fromValue(request.primary)};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

@@ -15,6 +15,7 @@ target_sources(
         src/audio_service_object.cpp
         src/audio_service_object_p.h
         src/resident_audio_service.cpp
+        src/console_model.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
         src/wireplumber_graph_p.h
@@ -26,6 +27,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/services/audio_service/audio_backend.h
+            include/qindaqt/services/audio_service/console_model.h
             include/qindaqt/services/audio_service/audio_operation_coordinator.h
             include/qindaqt/services/audio_service/resident_audio_service.h
             include/qindaqt/services/audio_service/wireplumber_audio_backend.h
