@@ -9,12 +9,14 @@ target_sources(
     qindaqt_audio_protocol
     PRIVATE
         src/audio_dbus.cpp
+        src/audio_gain.cpp
         src/audio_validation.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/services/audio_protocol/audio_dbus.h
+            include/qindaqt/services/audio_protocol/audio_gain.h
             include/qindaqt/services/audio_protocol/audio_limits.h
             include/qindaqt/services/audio_protocol/audio_types.h
             include/qindaqt/services/audio_protocol/audio_validation.h

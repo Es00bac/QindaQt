@@ -8,6 +8,16 @@ qindaqt_enable_warnings(qindaqt_audio_protocol_tests)
 add_test(NAME qindaqt.audio-protocol COMMAND qindaqt_audio_protocol_tests)
 set_tests_properties(qindaqt.audio-protocol PROPERTIES TIMEOUT 20 LABELS "service;audio")
 
+# The shared gain law (ADR-0171). Split from the wire row by failure mode: it
+# is pure arithmetic with no bus, no daemon and no timeout risk.
+qt_add_executable(qindaqt_audio_gain_tests tst_audio_gain.cpp)
+target_link_libraries(
+    qindaqt_audio_gain_tests PRIVATE QindaQt::AudioProtocol Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_gain_tests)
+add_test(NAME qindaqt.audio-gain COMMAND qindaqt_audio_gain_tests)
+set_tests_properties(qindaqt.audio-gain PROPERTIES TIMEOUT 20 LABELS "service;audio")
+
 find_program(QINDAQT_PROTOCOL_DBUS_DAEMON NAMES dbus-daemon REQUIRED)
 target_compile_definitions(
     qindaqt_audio_protocol_tests
