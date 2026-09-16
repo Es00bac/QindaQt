@@ -33,6 +33,8 @@ foreach(source IN LISTS route_cpp)
         # one console control, addressed by console id, and there is
         # deliberately no generic "apply this request" escape hatch through
         # which the route could reach the rest of Audio1.
+        "Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial)"
+        "Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial)"
         "Q_INVOKABLE bool setStripFader(QString stripId, double position)"
         "Q_INVOKABLE bool setStripMuted(QString stripId, bool muted)"
         "Q_INVOKABLE bool setStripSoloed(QString stripId, bool soloed)"

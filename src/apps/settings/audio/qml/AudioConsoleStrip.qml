@@ -91,6 +91,21 @@ ColumnLayout {
         Accessible.ignored: true
     }
 
+    // Which microphone this strip follows (ADR-0178). "Automatic" lets the
+    // service choose; picking a device pins it, and a pinned device that is
+    // unplugged keeps the strip unbound rather than handing it another one.
+    AudioConsoleDevicePicker {
+        objectName: "consoleStripSource_" + root.strip.id
+        Layout.fillWidth: true
+        visible: !root.strip.virtual
+        devices: root.model.inputDevices ?? []
+        boundSerial: root.strip.sourceSerial ?? 0
+        pinned: root.strip.pinned ?? false
+        enabled: root.enabledControls
+        accessibleName: qsTr("Input for %1").arg(root.strip.label)
+        onPicked: serial => root.model.setStripSource(root.strip.id, serial)
+    }
+
     RowLayout {
         Layout.alignment: Qt.AlignHCenter
         spacing: Tokens.space["1"]

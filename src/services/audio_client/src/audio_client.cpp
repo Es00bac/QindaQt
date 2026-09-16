@@ -420,6 +420,13 @@ quint64 AudioClient::setBusTarget(const QString &busId, const Handle &device)
     return beginOperation(request);
 }
 
+quint64 AudioClient::setStripSource(const QString &stripId, const Handle &device)
+{
+    auto request = consoleRequest(OperationKind::SetStripSource, stripId);
+    request.primary = device;
+    return beginOperation(request);
+}
+
 quint64 AudioClient::beginOperation(const OperationRequest &request)
 {
     if (m_nextRequestId == 0 || m_nextRequestId == std::numeric_limits<quint64>::max()) {

@@ -88,6 +88,18 @@ ColumnLayout {
         Accessible.ignored: true
     }
 
+    AudioConsoleDevicePicker {
+        objectName: "consoleBusTarget_" + root.bus.id
+        Layout.fillWidth: true
+        visible: !root.bus.virtual
+        devices: root.model.outputDevices ?? []
+        boundSerial: root.bus.targetSerial ?? 0
+        pinned: root.bus.pinned ?? false
+        enabled: root.enabledControls
+        accessibleName: qsTr("Output for bus %1").arg(root.bus.label)
+        onPicked: serial => root.model.setBusTarget(root.bus.id, serial)
+    }
+
     RowLayout {
         Layout.alignment: Qt.AlignHCenter
         spacing: Tokens.space["1"]

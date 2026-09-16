@@ -221,12 +221,13 @@ void AudioProtocolTests::fixedSignatures()
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Level>()), "(ddb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<LevelReading>()),
              "(s(ddb))");
+    // Schema 5 appends the device pin (ADR-0178) to both structs.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
-             "(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b)");
+             "(a(suusttbdbbbdada(ubd)(ddb)s)a(suusttbdbb(ddb)s)b)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
              "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)"
              "a((tt)uss(tt)bdbbbbbbadas)"
-             "(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))");
+             "(a(suusttbdbbbdada(ubd)(ddb)s)a(suusttbdbb(ddb)s)b))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }

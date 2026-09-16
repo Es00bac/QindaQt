@@ -298,3 +298,4 @@ nav:
       - "ADR-0175: virtual strips and buses are nodes the console owns": adr/0175-virtual-strips-and-buses-are-nodes-the-console-owns.md
       - "ADR-0176: the console remembers itself": adr/0176-the-console-remembers-itself.md
       - "ADR-0177: pan is balance on the send": adr/0177-pan-is-balance-on-the-send.md
+      - "ADR-0178: a pin is a name, not a handle": adr/0178-a-pin-is-a-name-not-a-handle.md

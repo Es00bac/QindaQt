@@ -40,6 +40,7 @@ private slots:
     void aDisabledSendKeepsItsGain();
     void meterBatchesApplyClearAndRejectStrangers();
     void routingCarriesTheStripsPan();
+    void pinsAreNamesThatPersistAndClear();
     void persistenceRoundTripsTheUsersDecisions();
     void aCorruptDocumentLoadsWhatItCan();
 };
@@ -357,6 +358,46 @@ void ConsoleModelTests::routingCarriesTheStripsPan()
         }
     }
     QCOMPARE(edges, 2);
+}
+
+// ADR-0178. A pin is the device's NAME - the one identity that survives a
+// reboot - never a handle, and it goes into the document with everything else
+// the user decided.
+void ConsoleModelTests::pinsAreNamesThatPersistAndClear()
+{
+    ConsoleModel model;
+    const QString stripId = model.console().strips.at(1).id;
+    const QString busId = model.console().buses.at(0).id;
+    QString reason;
+
+    auto pinStrip = strip(OperationKind::SetStripSource, stripId);
+    pinStrip.nodeName = QStringLiteral("alsa_input.usb-Razer-00.mono-fallback");
+    QVERIFY(model.apply(pinStrip, &reason));
+    auto pinBus = strip(OperationKind::SetBusTarget, busId);
+    pinBus.nodeName = QStringLiteral("alsa_output.pci-0000_0d_00.4.analog-stereo");
+    QVERIFY(model.apply(pinBus, &reason));
+    QCOMPARE(model.console().strips.at(1).pinnedSource, pinStrip.nodeName);
+    QCOMPARE(model.console().buses.at(0).pinnedTarget, pinBus.nodeName);
+    // AGENT-GUARD: a pin is not a binding. The graph binds on the next
+    // publication; the model must not pretend the device is there.
+    QVERIFY(!model.console().strips.at(1).sourceKnown);
+    QVERIFY(validateConsole(model.console()).accepted);
+
+    ConsoleModel restored;
+    restored.loadJson(model.toJson());
+    QCOMPARE(restored.console().strips.at(1).pinnedSource, pinStrip.nodeName);
+    QCOMPARE(restored.console().buses.at(0).pinnedTarget, pinBus.nodeName);
+
+    // An empty name clears the pin: back to automatic.
+    auto clear = strip(OperationKind::SetStripSource, stripId);
+    QVERIFY(model.apply(clear, &reason));
+    QVERIFY(model.console().strips.at(1).pinnedSource.isEmpty());
+
+    // A name over the bound is refused, and changes nothing.
+    auto huge = strip(OperationKind::SetBusTarget, busId);
+    huge.nodeName = QString(kMaxNodeNameUtf8Bytes + 1, QLatin1Char('x'));
+    QVERIFY(!model.apply(huge, &reason));
+    QCOMPARE(model.console().buses.at(0).pinnedTarget, pinBus.nodeName);
 }
 
 QTEST_APPLESS_MAIN(ConsoleModelTests)

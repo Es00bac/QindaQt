@@ -56,6 +56,16 @@ bool validBackendReasonCode(const QString &reasonCode)
     return true;
 }
 
+const Device *findDevice(const QList<Device> &devices, const Handle &handle)
+{
+    for (const Device &device : devices) {
+        if (device.handle == handle) {
+            return &device;
+        }
+    }
+    return nullptr;
+}
+
 const Device *findDevice(const Snapshot &snapshot, const Handle &handle)
 {
     const auto inspect = [&](const QList<Device> &devices) -> const Device * {
@@ -198,7 +208,10 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
                        && m_snapshot.availability != Availability::Degraded)) {
         return QStringLiteral("unavailable");
     }
-    const bool targeted = operationTargetsHandle(request.kind);
+    const bool clearsPin = (request.kind == OperationKind::SetStripSource
+                            || request.kind == OperationKind::SetBusTarget)
+        && !request.primary.isValid();
+    const bool targeted = operationTargetsHandle(request.kind) && !clearsPin;
     if (targeted
         && (!request.primary.isValid() || request.primary.epoch != m_snapshot.epoch)) {
         return QStringLiteral("stale-handle");
@@ -216,6 +229,7 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
     case OperationKind::SetBusTarget:
+    case OperationKind::SetStripSource:
         // Console operations (ADR-0173) are admitted by the console model,
         // which owns the strip and bus identities they name. There is no
         // device or stream handle here to pre-check against the snapshot.
@@ -373,13 +387,39 @@ OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &re
                                                      : OperationStatus::Rejected,
                                                  rejection)};
         }
+        // The two pin operations arrive with a device HANDLE and are applied
+        // as a device NAME (ADR-0178): the handle is what the client holds,
+        // the name is what survives a reboot. Resolved here, against the
+        // retained snapshot, so the console model never learns about handles.
+        OperationRequest resolved = request;
+        if (request.kind == OperationKind::SetStripSource
+            || request.kind == OperationKind::SetBusTarget) {
+            resolved.nodeName.clear();
+            if (request.primary.isValid()) {
+                const Device *const device = request.kind == OperationKind::SetStripSource
+                    ? findDevice(m_snapshot.inputs, request.primary)
+                    : findDevice(m_snapshot.outputs, request.primary);
+                // A live handle that is not a device of the right kind - an
+                // output offered to a strip - is a client error, not a pin.
+                if (device == nullptr || device->nodeName.isEmpty()) {
+                    return {.pending = false,
+                            .operationId = 0,
+                            .immediateResult = immediate(request, OperationStatus::Rejected,
+                                                         QStringLiteral("stale-handle"))};
+                }
+                resolved.nodeName = device->nodeName;
+            }
+        }
         QString reasonCode;
-        if (!m_console.apply(request, &reasonCode)) {
+        if (!m_console.apply(resolved, &reasonCode)) {
             return {.pending = false,
                     .operationId = 0,
                     .immediateResult = immediate(request, OperationStatus::Rejected,
                                                  reasonCode)};
         }
+        // A pin changes which device the element follows; rebind against the
+        // retained graph now rather than waiting for the next publication.
+        autoBindConsole(m_snapshot);
         republishConsole();
         return {.pending = false,
                 .operationId = 0,

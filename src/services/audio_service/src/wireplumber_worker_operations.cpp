@@ -224,6 +224,7 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
     case OperationKind::SetBusTarget:
+    case OperationKind::SetStripSource:
         rejectConsoleOperation(operationId);
         return;
     case OperationKind::SetDefault: {

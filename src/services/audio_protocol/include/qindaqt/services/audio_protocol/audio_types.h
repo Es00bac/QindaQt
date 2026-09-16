@@ -70,6 +70,9 @@ enum class OperationKind : quint32 {
     SetBusMute = 15,
     SetBusMono = 16,
     SetBusTarget = 17,
+    // Pins a strip to a capture device by name (ADR-0178). An invalid handle
+    // clears the pin and returns the strip to automatic binding.
+    SetStripSource = 18,
 };
 
 enum class OperationStatus : quint32 {
@@ -204,6 +207,11 @@ struct OperationRequest {
     // Gain in dB for every console gain operation; pan for SetStripPan.
     double gainDb = 0.0;
     double pan = 0.0;
+    // SetStripSource / SetBusTarget: the device's node.name, resolved by the
+    // service from `primary` before the console model sees the request. Not a
+    // wire field - the methods take a handle - which is why it is not part of
+    // any marshalling.
+    QString nodeName = {};
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

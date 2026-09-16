@@ -118,7 +118,8 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
     case OperationKind::SetStripMono:
     case OperationKind::SetStripPan:
     case OperationKind::SetStripTrim:
-    case OperationKind::SetStripSend: {
+    case OperationKind::SetStripSend:
+    case OperationKind::SetStripSource: {
         Strip *const strip = findStrip(request.consoleId);
         if (strip == nullptr) {
             return reject(reasonCode, "unknown-strip");
@@ -158,6 +159,17 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
             strip->channelTrimDb = request.channelVolumes;
             return true;
         }
+        case OperationKind::SetStripSource:
+            // AGENT-CONTRACT: the pin is the device's NAME, resolved by the
+            // coordinator from the handle the client sent. Empty clears it.
+            // The binding itself is not touched here: the coordinator rebinds
+            // against the graph on the next publication, which is also what
+            // makes a pin to an absent device leave the strip unbound.
+            if (!isBoundedText(request.nodeName, kMaxNodeNameUtf8Bytes)) {
+                return reject(reasonCode, "invalid-device-name");
+            }
+            strip->pinnedSource = request.nodeName;
+            return true;
         case OperationKind::SetStripSend: {
             if (findBusByIndex(request.busIndex) == nullptr) {
                 return reject(reasonCode, "unknown-bus");
@@ -205,9 +217,14 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
             bus->mono = request.enabled;
             return true;
         case OperationKind::SetBusTarget:
-            bus->targetEpoch = request.primary.epoch;
-            bus->targetSerial = request.primary.serial;
-            bus->targetKnown = request.primary.isValid();
+            if (!isBoundedText(request.nodeName, kMaxNodeNameUtf8Bytes)) {
+                return reject(reasonCode, "invalid-device-name");
+            }
+            // A pin, not a binding (ADR-0178): the handle the client sent is
+            // resolved to a name by the coordinator, and the graph binds it.
+            // Writing the handle here, as this once did, was overwritten by
+            // automatic binding on the very next publication.
+            bus->pinnedTarget = request.nodeName;
             return true;
         default:
             break;
@@ -340,7 +357,8 @@ QJsonObject ConsoleModel::toJson() const
                                   {QStringLiteral("mono"), strip.mono},
                                   {QStringLiteral("pan"), strip.pan},
                                   {QStringLiteral("trimDb"), trims},
-                                  {QStringLiteral("sends"), sends}});
+                                  {QStringLiteral("sends"), sends},
+                                  {QStringLiteral("source"), strip.pinnedSource}});
     }
     QJsonArray buses;
     for (const Bus &bus : m_buses) {
@@ -348,7 +366,8 @@ QJsonObject ConsoleModel::toJson() const
                                  {QStringLiteral("label"), bus.label},
                                  {QStringLiteral("gainDb"), bus.gainDb},
                                  {QStringLiteral("muted"), bus.muted},
-                                 {QStringLiteral("mono"), bus.mono}});
+                                 {QStringLiteral("mono"), bus.mono},
+                                 {QStringLiteral("target"), bus.pinnedTarget}});
     }
     return QJsonObject{{QStringLiteral("schemaVersion"), int(kSchemaVersion)},
                        {QStringLiteral("strips"), strips},
@@ -375,6 +394,10 @@ void ConsoleModel::loadJson(const QJsonObject &document)
         strip->muted = object.value(QStringLiteral("muted")).toBool(strip->muted);
         strip->soloed = object.value(QStringLiteral("soloed")).toBool(strip->soloed);
         strip->mono = object.value(QStringLiteral("mono")).toBool(strip->mono);
+        const QString source = object.value(QStringLiteral("source")).toString();
+        if (isBoundedText(source, kMaxNodeNameUtf8Bytes)) {
+            strip->pinnedSource = source;
+        }
         const double pan = object.value(QStringLiteral("pan")).toDouble(strip->pan);
         if (std::isfinite(pan) && pan >= kMinPan && pan <= kMaxPan) {
             strip->pan = pan;
@@ -415,6 +438,10 @@ void ConsoleModel::loadJson(const QJsonObject &document)
         bus->gainDb = readGain(object.value(QStringLiteral("gainDb")), bus->gainDb);
         bus->muted = object.value(QStringLiteral("muted")).toBool(bus->muted);
         bus->mono = object.value(QStringLiteral("mono")).toBool(bus->mono);
+        const QString target = object.value(QStringLiteral("target")).toString();
+        if (isBoundedText(target, kMaxNodeNameUtf8Bytes)) {
+            bus->pinnedTarget = target;
+        }
     }
 }
 

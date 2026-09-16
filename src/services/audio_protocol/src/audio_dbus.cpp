@@ -253,7 +253,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Strip &value)
              << value.mono << value.pan;
     writeChannelVolumes(argument, value.channelTrimDb);
     writeArray(argument, value.sends);
-    argument << value.level;
+    argument << value.level << value.pinnedSource;
     argument.endStructure();
     return argument;
 }
@@ -268,7 +268,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Strip &value)
         >> value.soloed >> value.mono >> value.pan;
     readChannelVolumes(argument, value.channelTrimDb, value.wireValid);
     readBoundedArray(argument, value.sends, kMaxSendsPerStrip, value.wireValid);
-    argument >> value.level;
+    argument >> value.level >> value.pinnedSource;
     argument.endStructure();
     value.kind = static_cast<StripKind>(kind);
     return argument;
@@ -280,7 +280,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Bus &value)
     argument << value.id << static_cast<quint32>(value.kind) << value.index
              << value.label << value.targetEpoch << value.targetSerial
              << value.targetKnown << value.gainDb << value.muted << value.mono
-             << value.level;
+             << value.level << value.pinnedTarget;
     argument.endStructure();
     return argument;
 }
@@ -292,7 +292,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Bus &value)
     argument.beginStructure();
     argument >> value.id >> kind >> value.index >> value.label >> value.targetEpoch
         >> value.targetSerial >> value.targetKnown >> value.gainDb >> value.muted
-        >> value.mono >> value.level;
+        >> value.mono >> value.level >> value.pinnedTarget;
     argument.endStructure();
     value.kind = static_cast<BusKind>(kind);
     return argument;

@@ -55,7 +55,12 @@ QString preflightOperation(const Snapshot &snapshot, const OperationRequest &req
         && snapshot.availability != Availability::Degraded) {
         return QStringLiteral("unavailable");
     }
-    const bool targeted = operationTargetsHandle(request.kind);
+    // An invalid handle on the two pin kinds means "back to automatic" and is
+    // admitted (ADR-0178); a valid one is checked like any other.
+    const bool clearsPin = (request.kind == OperationKind::SetStripSource
+                            || request.kind == OperationKind::SetBusTarget)
+        && !request.primary.isValid();
+    const bool targeted = operationTargetsHandle(request.kind) && !clearsPin;
     if (targeted && (!request.primary.isValid() || request.primary.epoch != snapshot.epoch)) {
         return QStringLiteral("stale-handle");
     }
@@ -73,6 +78,7 @@ QString preflightOperation(const Snapshot &snapshot, const OperationRequest &req
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
     case OperationKind::SetBusTarget:
+    case OperationKind::SetStripSource:
         // Console operations (ADR-0173) are admitted by the console model,
         // which owns the strip and bus identities they name. There is no
         // device or stream handle here to pre-check against the snapshot.

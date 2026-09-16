@@ -21,7 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s)a(suusttbdbb(ddb)s)b))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -56,6 +56,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"SetBusMute\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"muted\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetBusMono\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"mono\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetBusTarget\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"SetStripSource\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
         "name=\"revision\" type=\"t\"/></signal>"
         "<signal name=\"Levels\"><arg name=\"levels\" type=\"a(s(ddb))\"/>"
@@ -95,6 +96,10 @@ public Q_SLOTS:
     Q_SCRIPTABLE void SetBusMono(const QString &bus, bool mono);
     Q_SCRIPTABLE void SetBusTarget(const QString &bus,
                                    const QindaQt::Audio::Handle &device);
+    // Pins a strip to a capture device (ADR-0178); an invalid handle returns
+    // the strip to automatic binding.
+    Q_SCRIPTABLE void SetStripSource(const QString &strip,
+                                     const QindaQt::Audio::Handle &device);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);
