@@ -228,6 +228,39 @@ void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &ed
         }
         m_routingModules.emplace(name, module);
     }
+    applySendVolumes();
+}
+
+void WirePlumberWorker::applySendVolumes()
+{
+    if (m_mixer == nullptr || m_manager == nullptr) {
+        return;
+    }
+    // AGENT-CONTRACT: the send's gain is the VOLUME of its loopback playback
+    // node, which is what makes every matrix cell independently adjustable.
+    // It is re-applied on every graph change rather than only at load, because
+    // the node does not exist until PipeWire has finished creating the module.
+    for (const BackendRoutingEdge &edge : m_declaredRouting) {
+        const QString name = routingNodeName(edge.stripId, edge.busId);
+        if (m_routingModules.find(name.toStdString()) == m_routingModules.end()) {
+            continue;
+        }
+        const auto node = WirePlumberGraph::findNodeByName(m_manager, name);
+        if (!node.has_value()) {
+            continue;
+        }
+        // A silenced edge is carried at zero rather than removed, so unmuting
+        // or unsoloing is instant instead of a graph rebuild.
+        const double linear = edge.audible ? linearFromGainDb(edge.gainDb) : 0.0;
+        GVariantBuilder builder;
+        g_variant_builder_init(&builder, G_VARIANT_TYPE_VARDICT);
+        g_variant_builder_add(&builder, "{sv}", "volume", g_variant_new_double(linear));
+        GVariant *dictionary = g_variant_builder_end(&builder);
+        gboolean result = FALSE;
+        g_signal_emit_by_name(m_mixer, "set-volume", node->boundId, dictionary,
+                              &result);
+        g_variant_unref(dictionary);
+    }
 }
 
 void WirePlumberWorker::unloadAllRouting()
@@ -470,6 +503,7 @@ void WirePlumberWorker::rebuild()
     // worker had loaded - without this the user's matrix would come back empty
     // after a PipeWire restart even though the console still shows it.
     applyRoutingOnWorker(m_declaredRouting);
+    applySendVolumes();
     publish(std::move(graph.snapshot));
 }
 

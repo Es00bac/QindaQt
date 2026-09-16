@@ -71,6 +71,8 @@ private:
     // loaded, then loads and unloads exactly the difference.
     void applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges);
     void unloadAllRouting();
+    // Applies each declared send's gain to its loopback's playback node.
+    void applySendVolumes();
     [[nodiscard]] QString nodeNameForHandle(const Handle &handle) const;
     void beginNodeActivation(quint64 operationId, WpNode *node);
     void failPendingOperation(quint64 operationId, const QString &reasonCode);

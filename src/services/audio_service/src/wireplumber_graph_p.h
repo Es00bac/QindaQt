@@ -37,5 +37,10 @@ struct NodeLookup {
                                         quint64 revision, Capabilities capabilities);
 [[nodiscard]] std::optional<NodeLookup> findNode(WpObjectManager *manager,
                                                  quint64 serial);
+// Finds a node by its `node.name`. The console's send loopbacks are addressed
+// this way because their names are deterministic (ADR-0173) while their object
+// serials are assigned by PipeWire when the module loads.
+[[nodiscard]] std::optional<NodeLookup> findNodeByName(WpObjectManager *manager,
+                                                       const QString &nodeName);
 
 } // namespace QindaQt::Audio::WirePlumberGraph
