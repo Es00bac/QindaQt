@@ -52,25 +52,39 @@ Control {
                 required property var modelData
                 iconName: modelData.id === "home" ? "user-home"
                     : modelData.id === "trash" ? "user-trash"
+                    : modelData.id === "applications" ? "folder-applications"
                     : modelData.id === "network" ? "network-workgroup" : "drive-harddisk"
+
+                // Places with no navigable path behind them. Both open a route
+                // rather than a directory, so neither may be emphasized by
+                // path comparison, navigated to, or used as a drop target.
+                readonly property bool routePlace: modelData.id === "network"
+                    || modelData.id === "applications"
 
                 objectName: "placeButton_" + modelData.id
                 Layout.fillWidth: true
                 text: modelData.name
-                emphasized: modelData.id !== "network"
+                emphasized: !routePlace
                     && root.navigationController.currentPath === modelData.path
                 // The Network place exposes the route to smb/sftp browsing
                 // without pretending a connection exists (S5): it opens the
                 // editable location bar instead of navigating anywhere.
+                // Applications opens the installed-application browser through
+                // the same action the Go menu uses, so there is one route.
                 Accessible.description: modelData.id === "network"
-                    ? qsTr("Enter a network location") : qsTr("Open %1").arg(modelData.path)
+                    ? qsTr("Enter a network location")
+                    : modelData.id === "applications"
+                    ? qsTr("Browse installed applications")
+                    : qsTr("Open %1").arg(modelData.path)
                 onClicked: modelData.id === "network"
                     ? root.appCoordinator.activateAction("view.focus-location")
+                    : modelData.id === "applications"
+                    ? root.appCoordinator.activateAction("go.applications")
                     : root.navigationController.navigateTo(modelData.path)
 
                 DropArea {
                     anchors.fill: parent
-                    enabled: modelData.id !== "trash" && modelData.id !== "network"
+                    enabled: modelData.id !== "trash" && !routePlace
                     onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
                     onDropped: (drop) => {
                         const action = EntryDrag.dispatch(

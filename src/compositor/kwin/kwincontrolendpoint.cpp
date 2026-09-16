@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwincontrolendpoint.h"
 
+#include <QtDBus/QDBusConnectionInterface>
+#include <QtDBus/QDBusReply>
+
 #include "kwininputadapter.h"
 #include "kwinoutputinventory.h"
 #include "kwinshellvisibilitypublisher.h"
@@ -418,13 +421,34 @@ QByteArray KWinControlEndpoint::ChooseApplicationForActivePicker(
 {
     // ADR-0165: deliberately not gated by the development mutations flag --
     // this is the production workspace-picker route. The handler's own
-    // validation (the active window must be a registered picker placeholder)
-    // is the external gate.
+    // validation (the active window must be a registered picker placeholder,
+    // or must belong to this caller) is the external gate.
     if (!m_workspaceChooser) {
         return response(QStringLiteral("rejected"), QStringLiteral("control-disabled"),
                         QStringLiteral("workspace picker replacement is unavailable"));
     }
-    return m_workspaceChooser(desktopEntryId);
+    return m_workspaceChooser(desktopEntryId, callerProcessId());
+}
+
+qint64 KWinControlEndpoint::callerProcessId() const
+{
+    // AGENT-GUARD: the PID comes from the BUS DAEMON's credentials for the
+    // calling connection, never from an argument. ADR-0172 lets a window
+    // replace itself; if a caller could name its own PID it could name any
+    // window's and replace someone else's application instead.
+    if (!calledFromDBus()) {
+        return 0;
+    }
+    const QDBusConnection bus = connection();
+    auto *const interface = bus.interface();
+    if (interface == nullptr) {
+        return 0;
+    }
+    const QDBusReply<uint> reply = interface->servicePid(message().service());
+    if (!reply.isValid()) {
+        return 0;
+    }
+    return static_cast<qint64>(reply.value());
 }
 
 QByteArray KWinControlEndpoint::ReleaseContainer(const QString &containerId)

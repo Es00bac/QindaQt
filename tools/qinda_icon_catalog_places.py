@@ -5,7 +5,7 @@
 AGENT-NOTE: `user-trash` renders `TRASH_D`, a bin silhouette, never the
 folder outline -- conflating the two was the withdrawn candidate's defect.
 """
-from qinda_icon_shapes import APRICOT, BLUE, FOLDER_D, INK, PORCELAIN, TRASH_D, Icon, dot, filled, ring, rect, stroke, strokes
+from qinda_icon_shapes import AMBER, APRICOT, BLUE, FOLDER_D, INK, PORCELAIN, TRASH_D, VIOLET, Icon, dot, filled, ring, rect, stroke, strokes
 
 GROUP = "places"
 
@@ -23,6 +23,25 @@ def _folder(mark_symbolic: str, mark_color: str) -> Icon:
 
 CANON = {
     "folder": _folder("", ""),
+    # The Applications place. Two rounded app tiles with a third mark rounded
+    # to a dot: the broken grid is what keeps it friendly rather than another
+    # square of squares, and three large marks stay legible at the 16 px a
+    # places sidebar actually draws (four smaller ones turn to mud, and an INK
+    # mark reads as a hole punched in the folder). The symbolic cut strokes all
+    # three marks - a FILLED dot beside two outlined tiles reads as a pair of
+    # goggles rather than as app tiles. The symbolic cut therefore uses TWO
+    # offset tiles and no third mark: any two-marks-above-one-below arrangement
+    # reads as a face in monochrome, and two marks cannot. They are also drawn
+    # larger and thinner, because the catalog's default 6 px stroke closes a
+    # 13 px tile into a solid blob. In a sidebar whose siblings
+    # are Home, File System, Trash and Network, a folder silhouette is what a
+    # place looks like, so the tiles are a mark ON a folder, not a bare grid.
+    "folder-applications": _folder(
+        rect(16, 28, 16, 16, rx=5, width=4) + rect(34, 37, 14, 14, rx=5, width=4),
+        rect(18, 31, 13, 13, rx=4.5, fill=AMBER)
+        + rect(35, 31, 13, 13, rx=4.5, fill=BLUE)
+        + dot(26, 49, 6, VIOLET),
+    ),
     "folder-documents": _folder(strokes("M20 34h16", "M20 40h10", width=3), strokes("M20 34h16", "M20 40h10", color=INK, width=3)),
     "folder-download": _folder(stroke("M28 28v10") + stroke("M22 34 28 40 34 34"), stroke("M28 28v10", color=INK) + stroke("M22 34 28 40 34 34", color=INK)),
     "folder-music": _folder(

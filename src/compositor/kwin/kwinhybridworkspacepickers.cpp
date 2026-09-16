@@ -86,15 +86,46 @@ bool KWinHybridSession::registerPickerReplacement(const QString &containerId,
 }
 
 QByteArray KWinHybridSession::handleWorkspaceChooserRequest(
-    const QString &desktopEntryId)
+    const QString &desktopEntryId, qint64 callerProcessId)
 {
     purgeExpiredPickerReplacements();
-    const QString activeWindowId =
-        m_registry.windowId(KWin::workspace()->activeWindow());
-    const auto pendingIt = m_pendingPickerReplacements.find(activeWindowId);
+    auto *const activeWindow =
+        KWin::workspace() ? KWin::workspace()->activeWindow() : nullptr;
+    const QString activeWindowId = m_registry.windowId(activeWindow);
+    auto pendingIt = m_pendingPickerReplacements.find(activeWindowId);
     if (pendingIt == m_pendingPickerReplacements.end()) {
-        return chooserResponse(QStringLiteral("rejected"),
-                               QStringLiteral("The active window is not a workspace picker."));
+        // ADR-0172: a window may replace ITSELF. An application browsing the
+        // installed applications while docked in a container asks for the
+        // chosen application to take its place, which is the same atomic
+        // ReplaceMemberWindow transaction a restored picker uses.
+        //
+        // AGENT-GUARD: the active window must belong to THIS caller, compared
+        // against KWin's authenticated client PID. Without that check any
+        // client on the bus could replace whatever window happened to be
+        // focused - someone else's application - by calling this route.
+        if (activeWindow == nullptr || callerProcessId <= 0
+            || static_cast<qint64>(activeWindow->pid()) != callerProcessId) {
+            return chooserResponse(
+                QStringLiteral("rejected"),
+                QStringLiteral("The active window is not a workspace picker."));
+        }
+        const QString containerId = m_registry.owner(activeWindowId);
+        if (containerId.isEmpty()) {
+            return chooserResponse(
+                QStringLiteral("rejected"),
+                QStringLiteral("This window is not docked in a container."));
+        }
+        QString registrationError;
+        if (!registerPickerReplacement(containerId, activeWindowId,
+                                       desktopEntryId, &registrationError)) {
+            return chooserResponse(QStringLiteral("rejected"), registrationError);
+        }
+        pendingIt = m_pendingPickerReplacements.find(activeWindowId);
+        if (pendingIt == m_pendingPickerReplacements.end()) {
+            return chooserResponse(
+                QStringLiteral("rejected"),
+                QStringLiteral("The replacement could not be registered."));
+        }
     }
     if (pendingIt->launched) {
         return chooserResponse(QStringLiteral("rejected"),

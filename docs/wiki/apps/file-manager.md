@@ -380,17 +380,32 @@ rationale and boundary.
 
 ## Applications browser
 
+**Applications** is a place in the sidebar, beside Home, File System, Trash and
+Network, drawn with the `folder-applications` glyph
+([ADR-0172](../adr/0172-applications-is-a-place-and-a-docked-window-can-replace-itself.md)).
+It carries an empty path for the same reason Network does - there is no
+navigable directory behind it - so neither is emphasized by path comparison,
+navigated to, nor accepted as a drop target; activating it raises the same
+`go.applications` action, so there is exactly one route into the browser.
+
 `go.applications` (Ctrl+Shift+A) swaps the folder views for a Finder-style
 installed-application browser: the fixed launcher category groups as
 top-level folders, registered XDG additional categories nested inside, and a
 breadcrumb/back row for drill-down. Entries and hierarchy come from the
 shared `application_catalog` module (launcher-L0 parsers, no second parsing
 authority; [ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
-Activating an entry starts it directly only when its planned argv is a plain
-process; terminal-required and D-Bus-activatable entries stay inert here and
-say so — the workspace picker route launches them through the compositor.
-Browsing to any folder path exits the browser; the documents launch contract
-above is unchanged.
+Activating an entry asks the compositor first (ADR-0172). When this window is
+the active one and is docked in a container, the chosen application **takes its
+place**: the compositor launches it and swaps it in through the same atomic
+`ReplaceMemberWindow` transaction a restored picker uses, gated on the bus
+daemon's credential for the caller matching KWin's authenticated client PID for
+that window, so a caller can only ever replace its own. A rejection is the
+ordinary undocked case and falls back silently to a plain detached launch,
+which starts an entry only when its planned argv is a plain process;
+terminal-required and D-Bus-activatable entries stay inert on that path and say
+so, while the compositor route handles them because it owns the full
+desktop-entry launch facility. Browsing to any folder path exits the browser;
+the documents launch contract above is unchanged.
 
 Launched with `--choose-application`, the browser becomes a workspace picker
 (ADR-0165): activations hand the entry to the compositor instead of starting

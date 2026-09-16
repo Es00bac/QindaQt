@@ -54,6 +54,11 @@ void TestPlacesController::fixedPlacesArePublishedInOrder() {
     expected.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                              QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
+  // Applications and Network are route places: both carry an empty path
+  // because there is no navigable directory behind either, and the sidebar
+  // opens a route rather than navigating.
+  expected.append(placeMap(QStringLiteral("applications"),
+                           QStringLiteral("Applications"), QString()));
   expected.append(placeMap(QStringLiteral("network"), QStringLiteral("Network"), QString()));
   QCOMPARE(controller.places(), expected);
 }

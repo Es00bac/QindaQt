@@ -51,6 +51,7 @@ private Q_SLOTS:
     void browsesFoldersAndEntries();
     void reportsLaunchabilityAndTypedLimitations();
     void launchesPlainProcessesDetached();
+    void anUnavailableCompositorFallsBackToALocalLaunch();
 };
 
 void ApplicationsControllerTests::browsesFoldersAndEntries()
@@ -149,6 +150,35 @@ void ApplicationsControllerTests::launchesPlainProcessesDetached()
                                         "Name=Broken\n")));
     controller.refresh();
     controller.activateEntry(QStringLiteral("broken"));
+    QVERIFY(!controller.lastError().isEmpty());
+}
+
+// ADR-0172 routes an activation through the compositor first, so a docked
+// window is REPLACED by the application its user picked. That route must be a
+// pure addition: with no compositor answering on the bus - a file manager run
+// outside a QindaQt session, or before the compositor is up - activation still
+// has to launch the application the old way rather than report a failure.
+void ApplicationsControllerTests::anUnavailableCompositorFallsBackToALocalLaunch()
+{
+    QTemporaryDir root;
+    QVERIFY(writeDesktop(root.filePath("applications/spawn.desktop"),
+                         entryText("Spawn", "/usr/bin/true", {})));
+    ApplicationsController controller({root.path()});
+    controller.refresh();
+
+    // This fixture has no org.qindaqt.Compositor1 on its bus at all.
+    controller.activateEntry(QStringLiteral("spawn"));
+    QVERIFY2(controller.lastError().isEmpty(),
+             qPrintable(controller.lastError()));
+
+    // The typed local limitations still apply on the fallback path: a
+    // compositor rejection must not be reported as if the entry were fine.
+    QVERIFY(writeDesktop(root.filePath("applications/dbusonly.desktop"),
+                         QStringLiteral("[Desktop Entry]\nType=Application\n"
+                                        "Name=DbusOnly\nExec=\n"
+                                        "DBusActivatable=true\n")));
+    controller.refresh();
+    controller.activateEntry(QStringLiteral("dbusonly"));
     QVERIFY(!controller.lastError().isEmpty());
 }
 
