@@ -19,6 +19,7 @@ private Q_SLOTS:
     void forgetContainerRemovesBothFields();
     void containersAreIndependent();
     void displayNameGeneratesStableNamesAndHonorsOverrides();
+  void assignedDisplayNameReportsWithoutAssigning();
 };
 
 void HybridContainerAppearanceStoreTests::unknownContainerHasNoOverride()
@@ -127,6 +128,29 @@ void HybridContainerAppearanceStoreTests::displayNameGeneratesStableNamesAndHono
     // clear() resets the whole generated map; the counter keeps advancing.
     store.clear();
     QCOMPARE(store.displayName(QStringLiteral("gamma")), QStringLiteral("Container 4"));
+}
+
+// A diagnostic read must never burn a generated number: an observer that
+// called displayName() would renumber a container simply by inspecting it.
+void HybridContainerAppearanceStoreTests::assignedDisplayNameReportsWithoutAssigning()
+{
+  HybridContainerAppearanceStore store;
+  // Never observed: nothing to report, and nothing assigned by asking.
+  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")), QString());
+  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")), QString());
+  // The first real observation assigns "Container 1"; a container observed
+  // afterwards must still get "Container 2", proving the reads above consumed
+  // no number.
+  QCOMPARE(store.displayName(QStringLiteral("c1")), QStringLiteral("Container 1"));
+  QCOMPARE(store.displayName(QStringLiteral("c2")), QStringLiteral("Container 2"));
+  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")),
+           QStringLiteral("Container 1"));
+  // A rename wins, and clearing it falls back to the memoized generated name.
+  QVERIFY(store.setName(QStringLiteral("c1"), QStringLiteral("Games")));
+  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")), QStringLiteral("Games"));
+  QVERIFY(store.setName(QStringLiteral("c1"), QString()));
+  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")),
+           QStringLiteral("Container 1"));
 }
 
 QTEST_GUILESS_MAIN(HybridContainerAppearanceStoreTests)

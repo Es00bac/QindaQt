@@ -75,6 +75,16 @@ QString HybridContainerAppearanceStore::displayName(const QString &containerId)
     return name;
 }
 
+QString HybridContainerAppearanceStore::assignedDisplayName(
+    const QString &containerId) const
+{
+    const auto overrideName = m_byContainer.constFind(containerId);
+    if (overrideName != m_byContainer.cend() && !overrideName->name.isEmpty()) {
+        return overrideName->name;
+    }
+    return m_generatedNames.value(containerId);
+}
+
 void HybridContainerAppearanceStore::forgetContainer(
     const QString &containerId) noexcept
 {
