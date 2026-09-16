@@ -46,13 +46,14 @@ void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &ed
     // is left out rather than approximated.
     std::unordered_map<std::string, QByteArray> wanted;
     for (const BackendRoutingEdge &edge : edges) {
-        const QString source = nodeNameForHandle(edge.source);
+        bool sourceIsSink = edge.sourceIsSink;
+        const QString source = stripReadNode(edge.stripId, edge.source, &sourceIsSink);
         const QString target = nodeNameForHandle(edge.target);
         if (source.isEmpty() || target.isEmpty()) {
             continue;
         }
         const QByteArray arguments = routingModuleArguments(
-            edge.stripId, edge.busId, source, target, edge.sourceIsSink,
+            edge.stripId, edge.busId, source, target, sourceIsSink,
             edge.audible ? linearFromGainDb(edge.gainDb) : 0.0);
         if (arguments.isEmpty()) {
             continue;
@@ -65,8 +66,11 @@ void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &ed
     // its old module destroyed first, or two loopbacks briefly carry the same
     // cell and the user hears it at double level.
     for (auto it = m_routingModules.begin(); it != m_routingModules.end();) {
-        if (wanted.find(it->first) == wanted.end()) {
-            pw_impl_module_destroy(static_cast<struct pw_impl_module *>(it->second));
+        const auto want = wanted.find(it->first);
+        // Gone, or here with different endpoints: a send whose source moved
+        // (a re-pin, a rack starting) is a different send under the same name.
+        if (want == wanted.end() || want->second != it->second.arguments) {
+            destroyModuleLater(it->second.module);
             it = m_routingModules.erase(it);
         } else {
             ++it;
@@ -84,7 +88,8 @@ void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &ed
             // rest of the user's routing must keep working.
             continue;
         }
-        m_routingModules.emplace(name, module);
+        watchModule(ModuleKind::Send, name, module);
+        m_routingModules.emplace(name, LoadedModule{.module = module, .arguments = arguments});
     }
     applySendVolumes();
 }
@@ -142,10 +147,13 @@ void WirePlumberWorker::applySendVolumes()
 
 void WirePlumberWorker::unloadAllRouting()
 {
-    for (auto &[name, module] : m_routingModules) {
-        pw_impl_module_destroy(static_cast<struct pw_impl_module *>(module));
+    // Take the map first: each destroy fires the module's destroy event, which
+    // would otherwise erase from the map being walked.
+    std::unordered_map<std::string, LoadedModule> loaded;
+    loaded.swap(m_routingModules);
+    for (auto &[name, entry] : loaded) {
+        pw_impl_module_destroy(static_cast<struct pw_impl_module *>(entry.module));
     }
-    m_routingModules.clear();
 }
 
 } // namespace QindaQt::Audio

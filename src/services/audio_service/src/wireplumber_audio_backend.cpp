@@ -146,4 +146,12 @@ void WirePlumberAudioBackend::applyConsoleEndpoints(
     m_worker->applyConsoleEndpoints(endpoints);
 }
 
+void WirePlumberAudioBackend::applyProcessing(const QList<BackendProcessingChain> &chains)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyProcessing(chains);
+}
+
 } // namespace QindaQt::Audio

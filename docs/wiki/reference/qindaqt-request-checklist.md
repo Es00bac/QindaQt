@@ -18,7 +18,8 @@ the work items that move rows there.
 | Persistence across restarts and logins ([ADR-0176](../adr/0176-the-console-remembers-itself.md)) | **done** (installed r2, document written on the live session) |
 | Pan applied to the graph ([ADR-0177](../adr/0177-pan-is-balance-on-the-send.md)) | **done** (installed r2) |
 | Per-strip / per-bus explicit device pins ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | built and tested, commit pending |
-| Gate, denoiser, compressor, limiter, EQ per strip | gap |
+| Gate, compressor, limiter, EQ per strip ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | built, verified on the live graph, commit pending |
+| Denoiser per strip (rnnoise, overlay package) | gap |
 | Bus EQ and bus modes | gap |
 | Recorder / player | gap |
 | VBAN | gap |

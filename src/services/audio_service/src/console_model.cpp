@@ -15,6 +15,79 @@ namespace QindaQt::Audio
 {
 namespace {
 
+QJsonObject processingToJson(const StripProcessing &p)
+{
+    return QJsonObject{
+        {QStringLiteral("gate"),
+         QJsonObject{{QStringLiteral("on"), p.gate.enabled},
+                     {QStringLiteral("thresholdDb"), p.gate.thresholdDb},
+                     {QStringLiteral("attackMs"), p.gate.attackMs},
+                     {QStringLiteral("holdMs"), p.gate.holdMs},
+                     {QStringLiteral("releaseMs"), p.gate.releaseMs},
+                     {QStringLiteral("rangeDb"), p.gate.rangeDb}}},
+        {QStringLiteral("compressor"),
+         QJsonObject{{QStringLiteral("on"), p.compressor.enabled},
+                     {QStringLiteral("thresholdDb"), p.compressor.thresholdDb},
+                     {QStringLiteral("ratio"), p.compressor.ratio},
+                     {QStringLiteral("attackMs"), p.compressor.attackMs},
+                     {QStringLiteral("releaseMs"), p.compressor.releaseMs},
+                     {QStringLiteral("kneeDb"), p.compressor.kneeDb},
+                     {QStringLiteral("makeupDb"), p.compressor.makeupDb}}},
+        {QStringLiteral("equalizer"),
+         QJsonObject{{QStringLiteral("on"), p.equalizer.enabled},
+                     {QStringLiteral("lowHz"), p.equalizer.lowHz},
+                     {QStringLiteral("lowGainDb"), p.equalizer.lowGainDb},
+                     {QStringLiteral("midHz"), p.equalizer.midHz},
+                     {QStringLiteral("midGainDb"), p.equalizer.midGainDb},
+                     {QStringLiteral("midQ"), p.equalizer.midQ},
+                     {QStringLiteral("highHz"), p.equalizer.highHz},
+                     {QStringLiteral("highGainDb"), p.equalizer.highGainDb}}},
+        {QStringLiteral("limiter"),
+         QJsonObject{{QStringLiteral("on"), p.limiter.enabled},
+                     {QStringLiteral("ceilingDb"), p.limiter.ceilingDb},
+                     {QStringLiteral("releaseMs"), p.limiter.releaseMs}}}};
+}
+
+StripProcessing processingFromJson(const QJsonObject &object, const StripProcessing &fallback)
+{
+    if (object.isEmpty()) {
+        return fallback;
+    }
+    const auto number = [](const QJsonObject &block, const char *key, const double current) {
+        return block.value(QLatin1String(key)).toDouble(current);
+    };
+    StripProcessing p = fallback;
+    const QJsonObject gate = object.value(QStringLiteral("gate")).toObject();
+    p.gate.enabled = gate.value(QStringLiteral("on")).toBool(p.gate.enabled);
+    p.gate.thresholdDb = number(gate, "thresholdDb", p.gate.thresholdDb);
+    p.gate.attackMs = number(gate, "attackMs", p.gate.attackMs);
+    p.gate.holdMs = number(gate, "holdMs", p.gate.holdMs);
+    p.gate.releaseMs = number(gate, "releaseMs", p.gate.releaseMs);
+    p.gate.rangeDb = number(gate, "rangeDb", p.gate.rangeDb);
+    const QJsonObject comp = object.value(QStringLiteral("compressor")).toObject();
+    p.compressor.enabled = comp.value(QStringLiteral("on")).toBool(p.compressor.enabled);
+    p.compressor.thresholdDb = number(comp, "thresholdDb", p.compressor.thresholdDb);
+    p.compressor.ratio = number(comp, "ratio", p.compressor.ratio);
+    p.compressor.attackMs = number(comp, "attackMs", p.compressor.attackMs);
+    p.compressor.releaseMs = number(comp, "releaseMs", p.compressor.releaseMs);
+    p.compressor.kneeDb = number(comp, "kneeDb", p.compressor.kneeDb);
+    p.compressor.makeupDb = number(comp, "makeupDb", p.compressor.makeupDb);
+    const QJsonObject eq = object.value(QStringLiteral("equalizer")).toObject();
+    p.equalizer.enabled = eq.value(QStringLiteral("on")).toBool(p.equalizer.enabled);
+    p.equalizer.lowHz = number(eq, "lowHz", p.equalizer.lowHz);
+    p.equalizer.lowGainDb = number(eq, "lowGainDb", p.equalizer.lowGainDb);
+    p.equalizer.midHz = number(eq, "midHz", p.equalizer.midHz);
+    p.equalizer.midGainDb = number(eq, "midGainDb", p.equalizer.midGainDb);
+    p.equalizer.midQ = number(eq, "midQ", p.equalizer.midQ);
+    p.equalizer.highHz = number(eq, "highHz", p.equalizer.highHz);
+    p.equalizer.highGainDb = number(eq, "highGainDb", p.equalizer.highGainDb);
+    const QJsonObject lim = object.value(QStringLiteral("limiter")).toObject();
+    p.limiter.enabled = lim.value(QStringLiteral("on")).toBool(p.limiter.enabled);
+    p.limiter.ceilingDb = number(lim, "ceilingDb", p.limiter.ceilingDb);
+    p.limiter.releaseMs = number(lim, "releaseMs", p.limiter.releaseMs);
+    return p;
+}
+
 [[nodiscard]] bool reject(QString *reasonCode, const char *code)
 {
     if (reasonCode != nullptr) {
@@ -119,7 +192,8 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
     case OperationKind::SetStripPan:
     case OperationKind::SetStripTrim:
     case OperationKind::SetStripSend:
-    case OperationKind::SetStripSource: {
+    case OperationKind::SetStripSource:
+    case OperationKind::SetStripProcessing: {
         Strip *const strip = findStrip(request.consoleId);
         if (strip == nullptr) {
             return reject(reasonCode, "unknown-strip");
@@ -159,6 +233,15 @@ bool ConsoleModel::apply(const OperationRequest &request, QString *reasonCode)
             strip->channelTrimDb = request.channelVolumes;
             return true;
         }
+        case OperationKind::SetStripProcessing:
+            // The whole rack at once (ADR-0179), refused whole when any value
+            // is out of range: a half-applied rack would leave the user's
+            // compressor at one setting and their gate at another.
+            if (!validStripProcessing(request.processing)) {
+                return reject(reasonCode, "processing-out-of-range");
+            }
+            strip->processing = request.processing;
+            return true;
         case OperationKind::SetStripSource:
             // AGENT-CONTRACT: the pin is the device's NAME, resolved by the
             // coordinator from the handle the client sent. Empty clears it.
@@ -358,7 +441,9 @@ QJsonObject ConsoleModel::toJson() const
                                   {QStringLiteral("pan"), strip.pan},
                                   {QStringLiteral("trimDb"), trims},
                                   {QStringLiteral("sends"), sends},
-                                  {QStringLiteral("source"), strip.pinnedSource}});
+                                  {QStringLiteral("source"), strip.pinnedSource},
+                                  {QStringLiteral("processing"),
+                                   processingToJson(strip.processing)}});
     }
     QJsonArray buses;
     for (const Bus &bus : m_buses) {
@@ -397,6 +482,13 @@ void ConsoleModel::loadJson(const QJsonObject &document)
         const QString source = object.value(QStringLiteral("source")).toString();
         if (isBoundedText(source, kMaxNodeNameUtf8Bytes)) {
             strip->pinnedSource = source;
+        }
+        // A rack that fails the bounds is left at the strip's current rack
+        // rather than partially applied.
+        const StripProcessing processing = processingFromJson(
+            object.value(QStringLiteral("processing")).toObject(), strip->processing);
+        if (validStripProcessing(processing)) {
+            strip->processing = processing;
         }
         const double pan = object.value(QStringLiteral("pan")).toDouble(strip->pan);
         if (std::isfinite(pan) && pan >= kMinPan && pan <= kMaxPan) {

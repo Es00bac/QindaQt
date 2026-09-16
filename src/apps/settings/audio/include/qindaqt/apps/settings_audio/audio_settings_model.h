@@ -127,6 +127,10 @@ public:
   Q_INVOKABLE bool setStripFader(QString stripId, double position);
   // Device pins (ADR-0178). `serial` names a device from inputDevices (for a
   // strip) or outputDevices (for a bus); 0 returns the element to automatic.
+  // The strip's whole rack (ADR-0179), as the map consoleStrips publishes
+  // under "processing" with any controls changed; refused whole when a value
+  // is out of range.
+  Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing);
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
   Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);
   Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);

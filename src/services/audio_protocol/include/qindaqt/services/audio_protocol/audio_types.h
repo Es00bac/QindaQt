@@ -73,6 +73,10 @@ enum class OperationKind : quint32 {
     // Pins a strip to a capture device by name (ADR-0178). An invalid handle
     // clears the pin and returns the strip to automatic binding.
     SetStripSource = 18,
+    // Replaces a strip's whole processing rack (ADR-0179). One operation for
+    // the four blocks: a client always holds the current rack and sends it
+    // back with one control changed, which keeps the surface to one method.
+    SetStripProcessing = 19,
 };
 
 enum class OperationStatus : quint32 {
@@ -212,6 +216,8 @@ struct OperationRequest {
     // wire field - the methods take a handle - which is why it is not part of
     // any marshalling.
     QString nodeName = {};
+    // SetStripProcessing: the rack to apply.
+    StripProcessing processing = {};
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

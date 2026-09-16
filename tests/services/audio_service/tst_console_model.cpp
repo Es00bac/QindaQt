@@ -41,6 +41,7 @@ private slots:
     void meterBatchesApplyClearAndRejectStrangers();
     void routingCarriesTheStripsPan();
     void pinsAreNamesThatPersistAndClear();
+    void theRackIsAppliedWholeAndPersists();
     void persistenceRoundTripsTheUsersDecisions();
     void aCorruptDocumentLoadsWhatItCan();
 };
@@ -398,6 +399,44 @@ void ConsoleModelTests::pinsAreNamesThatPersistAndClear()
     huge.nodeName = QString(kMaxNodeNameUtf8Bytes + 1, QLatin1Char('x'));
     QVERIFY(!model.apply(huge, &reason));
     QCOMPARE(model.console().buses.at(0).pinnedTarget, pinBus.nodeName);
+}
+
+// ADR-0179. The rack is one value: applied whole, refused whole, and kept
+// with its settings while a block is switched off.
+void ConsoleModelTests::theRackIsAppliedWholeAndPersists()
+{
+    ConsoleModel model;
+    const QString stripId = model.console().strips.at(0).id;
+    QString reason;
+    auto rack = strip(OperationKind::SetStripProcessing, stripId);
+    rack.processing.gate.enabled = true;
+    rack.processing.gate.thresholdDb = -35.0;
+    rack.processing.compressor.enabled = true;
+    rack.processing.compressor.ratio = 4.0;
+    rack.processing.compressor.makeupDb = 3.0;
+    rack.processing.equalizer.midGainDb = -2.5;
+    rack.processing.limiter.enabled = true;
+    rack.processing.limiter.ceilingDb = -0.5;
+    QVERIFY(model.apply(rack, &reason));
+    QCOMPARE(model.console().strips.at(0).processing, rack.processing);
+    QVERIFY(validateConsole(model.console()).accepted);
+
+    // One value out of range refuses the WHOLE rack; nothing moved.
+    auto bad = rack;
+    bad.processing.compressor.ratio = 50.0;
+    QVERIFY(!model.apply(bad, &reason));
+    QCOMPARE(reason, QStringLiteral("processing-out-of-range"));
+    QCOMPARE(model.console().strips.at(0).processing, rack.processing);
+
+    // Off keeps the dial positions.
+    auto off = rack;
+    off.processing.compressor.enabled = false;
+    QVERIFY(model.apply(off, &reason));
+    QCOMPARE(model.console().strips.at(0).processing.compressor.ratio, 4.0);
+
+    ConsoleModel restored;
+    restored.loadJson(model.toJson());
+    QCOMPARE(restored.console().strips.at(0).processing, off.processing);
 }
 
 QTEST_APPLESS_MAIN(ConsoleModelTests)

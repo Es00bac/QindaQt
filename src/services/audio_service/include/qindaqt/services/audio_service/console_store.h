@@ -29,7 +29,8 @@ public:
     explicit ConsoleStore(QString path);
 
     // `$XDG_CONFIG_HOME/qindaqt/audio-console.json`, beside the settings
-    // service's own document.
+    // service's own document; `QINDAQT_AUDIO_CONSOLE_PATH` overrides it for a
+    // probe or test run beside the resident service.
     [[nodiscard]] static QString defaultPath();
     [[nodiscard]] const QString &path() const noexcept { return m_path; }
 

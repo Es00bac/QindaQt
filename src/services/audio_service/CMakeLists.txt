@@ -28,12 +28,16 @@ target_sources(
         src/wireplumber_graph.cpp
         src/wireplumber_meters.cpp
         src/wireplumber_meters_p.h
+        src/wireplumber_processing.cpp
+        src/wireplumber_processing_p.h
         src/wireplumber_routing.cpp
         src/wireplumber_routing_p.h
         src/wireplumber_graph_p.h
         src/wireplumber_worker.cpp
         src/wireplumber_worker_endpoints.cpp
         src/wireplumber_worker_metering.cpp
+        src/wireplumber_worker_modules.cpp
+        src/wireplumber_worker_processing.cpp
         src/wireplumber_worker_operations.cpp
         src/wireplumber_worker_routing.cpp
         src/wireplumber_worker_p.h

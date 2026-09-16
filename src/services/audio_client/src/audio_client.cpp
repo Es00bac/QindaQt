@@ -427,6 +427,14 @@ quint64 AudioClient::setStripSource(const QString &stripId, const Handle &device
     return beginOperation(request);
 }
 
+quint64 AudioClient::setStripProcessing(const QString &stripId,
+                                        const StripProcessing &processing)
+{
+    auto request = consoleRequest(OperationKind::SetStripProcessing, stripId);
+    request.processing = processing;
+    return beginOperation(request);
+}
+
 quint64 AudioClient::beginOperation(const OperationRequest &request)
 {
     if (m_nextRequestId == 0 || m_nextRequestId == std::numeric_limits<quint64>::max()) {

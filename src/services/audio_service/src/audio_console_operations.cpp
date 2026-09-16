@@ -31,6 +31,7 @@ bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noe
     case OperationKind::SetBusMono:
     case OperationKind::SetBusTarget:
     case OperationKind::SetStripSource:
+    case OperationKind::SetStripProcessing:
         return true;
     default:
         return false;
@@ -287,6 +288,32 @@ void AudioOperationCoordinator::publishConsoleEndpoints()
     }
 }
 
+void AudioOperationCoordinator::publishProcessing()
+{
+    QList<BackendProcessingChain> chains;
+    const Console console = m_console.console();
+    for (const Strip &strip : console.strips) {
+        const StripProcessing &p = strip.processing;
+        const bool active = p.gate.enabled || p.compressor.enabled || p.equalizer.enabled
+            || p.limiter.enabled;
+        if (!active || !strip.sourceKnown) {
+            continue;
+        }
+        chains.append(BackendProcessingChain{
+            .stripId = strip.id,
+            .source = Handle{strip.sourceEpoch, strip.sourceSerial},
+            .sourceIsSink = strip.kind == StripKind::VirtualInput,
+            .processing = p});
+    }
+    if (chains == m_publishedProcessing) {
+        return;
+    }
+    m_publishedProcessing = chains;
+    if (m_backend != nullptr && m_running) {
+        m_backend->applyProcessing(m_publishedProcessing);
+    }
+}
+
 void AudioOperationCoordinator::acceptLevels(const quint64 generation,
                                              const QList<LevelReading> &levels)
 {
@@ -307,6 +334,9 @@ void AudioOperationCoordinator::acceptLevels(const quint64 generation,
 void AudioOperationCoordinator::republishConsole()
 {
     publishConsoleEndpoints();
+    // Processing before routing: a send from a processed strip reads the
+    // processed sink, which must be declared before the routing that uses it.
+    publishProcessing();
     publishRouting();
     publishMetering();
     m_snapshot.console = m_console.console();

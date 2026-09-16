@@ -94,6 +94,42 @@ bool validChannelLayout(const QVector<double> &channelVolumes, const QStringList
 
 } // namespace
 
+namespace {
+
+[[nodiscard]] bool within(const double value, const double low, const double high)
+{
+    return std::isfinite(value) && value >= low && value <= high;
+}
+
+} // namespace
+
+bool validStripProcessing(const StripProcessing &processing)
+{
+    const GateSettings &gate = processing.gate;
+    const CompressorSettings &compressor = processing.compressor;
+    const EqualizerSettings &eq = processing.equalizer;
+    const LimiterSettings &limiter = processing.limiter;
+    return within(gate.thresholdDb, kMinThresholdDb, kMaxThresholdDb)
+        && within(gate.attackMs, kMinTimeMs, kMaxTimeMs)
+        && within(gate.holdMs, kMinTimeMs, kMaxTimeMs)
+        && within(gate.releaseMs, kMinTimeMs, kMaxTimeMs)
+        && within(gate.rangeDb, kMinRangeDb, 0.0)
+        && within(compressor.thresholdDb, kMinThresholdDb, kMaxThresholdDb)
+        && within(compressor.ratio, kMinRatio, kMaxRatio)
+        && within(compressor.attackMs, kMinTimeMs, kMaxTimeMs)
+        && within(compressor.releaseMs, kMinTimeMs, kMaxTimeMs)
+        && within(compressor.kneeDb, 0.0, kMaxEqGainDb)
+        && within(compressor.makeupDb, 0.0, kMaxEqGainDb)
+        && within(limiter.ceilingDb, kMinThresholdDb, kMaxThresholdDb)
+        && within(limiter.releaseMs, kMinTimeMs, kMaxTimeMs)
+        && within(eq.lowHz, kMinEqHz, kMaxEqHz) && within(eq.midHz, kMinEqHz, kMaxEqHz)
+        && within(eq.highHz, kMinEqHz, kMaxEqHz)
+        && within(eq.lowGainDb, kMinEqGainDb, kMaxEqGainDb)
+        && within(eq.midGainDb, kMinEqGainDb, kMaxEqGainDb)
+        && within(eq.highGainDb, kMinEqGainDb, kMaxEqGainDb)
+        && within(eq.midQ, kMinEqQ, kMaxEqQ);
+}
+
 bool operationTargetsHandle(const OperationKind kind) noexcept
 {
     switch (kind) {
@@ -109,6 +145,7 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::SetBusGain:
     case OperationKind::SetBusMute:
     case OperationKind::SetBusMono:
+    case OperationKind::SetStripProcessing:
         return false;
     // SetBusTarget and SetStripSource name a console element AND the device it
     // should follow, so a valid handle is checked like any other; an INVALID
@@ -240,6 +277,9 @@ ValidationResult validateConsole(const Console &console)
         }
         if (!std::isfinite(strip.pan) || strip.pan < kMinPan || strip.pan > kMaxPan) {
             return rejected(QStringLiteral("invalid-strip-pan"));
+        }
+        if (!validStripProcessing(strip.processing)) {
+            return rejected(QStringLiteral("invalid-strip-processing"));
         }
         if (strip.channelTrimDb.size() > kMaxChannelsPerDevice) {
             return rejected(QStringLiteral("oversized-payload"));

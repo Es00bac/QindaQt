@@ -88,6 +88,19 @@ struct BackendConsoleEndpoint {
                            const BackendConsoleEndpoint &) = default;
 };
 
+// One strip's active processing rack (ADR-0179): the device to read, and the
+// rack to run on it. Declared only for strips with at least one block enabled
+// and a device the graph currently has.
+struct BackendProcessingChain {
+    QString stripId;
+    Handle source;
+    bool sourceIsSink = false;
+    StripProcessing processing;
+
+    friend bool operator==(const BackendProcessingChain &,
+                           const BackendProcessingChain &) = default;
+};
+
 // AGENT-CONTRACT: Implementations receive requests on the Qt main thread and
 // publish only immutable value copies through these signals. start() returns a
 // fresh nonzero generation before that run can publish; every value carries the
@@ -134,6 +147,12 @@ public:
     virtual void applyConsoleEndpoints(const QList<BackendConsoleEndpoint> &endpoints)
     {
         Q_UNUSED(endpoints)
+    }
+    // Declares every strip rack that should be running. Declarative like the
+    // rest; a backend with no graph may ignore it.
+    virtual void applyProcessing(const QList<BackendProcessingChain> &chains)
+    {
+        Q_UNUSED(chains)
     }
 
 Q_SIGNALS:

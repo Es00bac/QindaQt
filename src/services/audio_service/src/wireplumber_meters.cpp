@@ -38,6 +38,8 @@ constexpr char kMeterNamePrefix[] = "qindaqt.meter.";
 
 struct MeterBank::Stream final {
     pw_stream *stream = nullptr;
+    QString nodeName;
+    bool captureSink = false;
     spa_hook listener{};
     // AGENT-GUARD: the only state shared with PipeWire's realtime data thread.
     // Written exclusively by on_process, read and reset exclusively by the
@@ -126,7 +128,13 @@ void MeterBank::configure(pw_context *const context, const QList<Target> &target
         }
     }
     for (auto it = m_streams.begin(); it != m_streams.end();) {
-        it = wanted.contains(it->first) ? std::next(it) : m_streams.erase(it);
+        const auto want = wanted.constFind(it->first);
+        // Same id, different node or direction - a strip whose rack just
+        // started - is a different meter: the old stream would keep reading
+        // the device and the meter would never show the processed signal.
+        const bool keep = want != wanted.cend() && it->second->nodeName == (*want)->nodeName
+            && it->second->captureSink == (*want)->captureSink;
+        it = keep ? std::next(it) : m_streams.erase(it);
     }
 
     for (auto it = wanted.cbegin(); it != wanted.cend(); ++it) {
@@ -134,6 +142,8 @@ void MeterBank::configure(pw_context *const context, const QList<Target> &target
             continue;
         }
         auto stream = std::make_unique<Stream>();
+        stream->nodeName = it.value()->nodeName;
+        stream->captureSink = it.value()->captureSink;
         const QByteArray meterName =
             (QString::fromLatin1(kMeterNamePrefix) + it.key()).toUtf8();
         const QByteArray targetName = it.value()->nodeName.toUtf8();

@@ -166,6 +166,28 @@ inline QVariantList consoleSends(const QList<int> &enabledBuses) {
   return sends;
 }
 
+inline QVariantMap defaultRack() {
+  return QVariantMap{
+      {QStringLiteral("gate"),
+       QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("thresholdDb"), -40.0},
+                   {QStringLiteral("attackMs"), 5.0}, {QStringLiteral("holdMs"), 50.0},
+                   {QStringLiteral("releaseMs"), 200.0}, {QStringLiteral("rangeDb"), -60.0}}},
+      {QStringLiteral("compressor"),
+       QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("thresholdDb"), -18.0},
+                   {QStringLiteral("ratio"), 3.0}, {QStringLiteral("attackMs"), 10.0},
+                   {QStringLiteral("releaseMs"), 100.0}, {QStringLiteral("kneeDb"), 6.0},
+                   {QStringLiteral("makeupDb"), 0.0}}},
+      {QStringLiteral("equalizer"),
+       QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("lowHz"), 120.0},
+                   {QStringLiteral("lowGainDb"), 0.0}, {QStringLiteral("midHz"), 1000.0},
+                   {QStringLiteral("midGainDb"), 0.0}, {QStringLiteral("midQ"), 1.0},
+                   {QStringLiteral("highHz"), 8000.0}, {QStringLiteral("highGainDb"), 0.0}}},
+      {QStringLiteral("limiter"),
+       QVariantMap{{QStringLiteral("enabled"), false}, {QStringLiteral("ceilingDb"), -1.0},
+                   {QStringLiteral("releaseMs"), 50.0}}},
+  };
+}
+
 inline QVariantMap consoleStripRow(const QString &id, const QString &label,
                                    const bool isVirtual, const bool bound,
                                    const QList<int> &enabledBuses) {
@@ -183,6 +205,7 @@ inline QVariantMap consoleStripRow(const QString &id, const QString &label,
       {QStringLiteral("sourceSerial"), bound ? qulonglong(20) : qulonglong(0)},
       {QStringLiteral("pinned"), false},
       {QStringLiteral("pinnedSource"), QString()},
+      {QStringLiteral("processing"), defaultRack()},
       {QStringLiteral("sends"), consoleSends(enabledBuses)},
       {QStringLiteral("level"), consoleLevel(-96.0, -96.0, false)},
   };

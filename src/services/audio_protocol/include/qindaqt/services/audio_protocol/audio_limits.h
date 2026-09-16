@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 5;
+inline constexpr quint32 kSchemaVersion = 6;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -53,5 +53,22 @@ inline constexpr char kVirtualDeviceNamePrefix[] = "qindaqt.virtual.";
 inline constexpr char kServiceName[] = "org.qindaqt.Audio1";
 inline constexpr char kObjectPath[] = "/org/qindaqt/Audio1";
 inline constexpr char kInterfaceName[] = "org.qindaqt.Audio1";
+
+// Strip processing bounds (ADR-0179). Every processor parameter the console
+// publishes is checked against these, so a client can draw a control with a
+// known range and the graph is never handed a value the plugin cannot take.
+inline constexpr double kMinThresholdDb = -80.0;
+inline constexpr double kMaxThresholdDb = 0.0;
+inline constexpr double kMinTimeMs = 0.0;
+inline constexpr double kMaxTimeMs = 2000.0;
+inline constexpr double kMinRatio = 1.0;
+inline constexpr double kMaxRatio = 20.0;
+inline constexpr double kMinEqGainDb = -24.0;
+inline constexpr double kMaxEqGainDb = 24.0;
+inline constexpr double kMinEqHz = 20.0;
+inline constexpr double kMaxEqHz = 20000.0;
+inline constexpr double kMinEqQ = 0.1;
+inline constexpr double kMaxEqQ = 10.0;
+inline constexpr double kMinRangeDb = -90.0;
 
 } // namespace QindaQt::Audio
