@@ -264,6 +264,13 @@ inline bool buildResolverFixtures(const QString &base)
         || !writeTextFile(apps1 + QStringLiteral("/legacy-client.desktop"),
                           entry(QStringLiteral("Legacy Client"), QStringLiteral("legacy-icon"))
                               + QStringLiteral("StartupWMClass=LegacyClass\n"))
+        // A Wine/Proton launcher entry exactly as winemenubuilder and users
+        // write them: the class it declares is the Windows executable, which is
+        // what ADR-0169 makes the compositor report for an opaque launcher
+        // class like `steam_app_0`.
+        || !writeTextFile(apps1 + QStringLiteral("/battlenet.desktop"),
+                          entry(QStringLiteral("Battle.net"), QStringLiteral("battlenet"))
+                              + QStringLiteral("StartupWMClass=battle.net.exe\n"))
         || !writeTextFile(apps2 + QStringLiteral("/org.example.Foo.desktop"),
                           entry(QStringLiteral("FooShadow"), QStringLiteral("shadow-icon")))
         || !writeTextFile(outside + QStringLiteral("/org.example.Outside.desktop"),

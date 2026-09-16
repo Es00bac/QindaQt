@@ -29,6 +29,7 @@ private slots:
     void startupWmClassMatchesBeforeTail();
     void displayNamesFollowTheSameEntryMatching();
     void applicationDisplayNameFallsBackToPrettifiedIds();
+    void wineExecutableIdsResolveTheirLauncherEntry();
 
 private:
     QString m_apps1;
@@ -126,7 +127,44 @@ void ShellIconsResolverTest::repeatedScansAreDeterministic()
     QCOMPARE(again.entryCount(), m_resolver->entryCount());
     QCOMPARE(again.iconNameForAppId(QStringLiteral("dolphin")),
              m_resolver->iconNameForAppId(QStringLiteral("dolphin")));
-    QCOMPARE(m_resolver->entryCount(), 4);
+    // Five icon-claiming fixture entries, including the Wine launcher entry.
+    QCOMPARE(m_resolver->entryCount(), 5);
+}
+
+// ADR-0169 end to end on the shell side: once the compositor reports the real
+// executable instead of an opaque `steam_app_0`, the EXISTING desktop-entry
+// lookup already resolves the name and icon the user expects, because a
+// Wine/Proton launcher entry declares that executable as its StartupWMClass.
+void ShellIconsResolverTest::wineExecutableIdsResolveTheirLauncherEntry()
+{
+    // The compositor reports "Battle.net.exe"; the entry declares
+    // "battle.net.exe". Matching is case-insensitive.
+    QCOMPARE(m_resolver->iconNameForAppId(QStringLiteral("Battle.net.exe")),
+             QStringLiteral("battlenet"));
+    QCOMPARE(m_resolver->displayNameForAppId(QStringLiteral("Battle.net.exe")),
+             QStringLiteral("Battle.net"));
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("Battle.net.exe"),
+                                                QStringLiteral("steam_app_0")),
+             QStringLiteral("Battle.net"));
+
+    // A Windows program with no launcher entry at all still reads as a name
+    // rather than a filename: the `.exe` suffix is dropped.
+    QCOMPARE(DesktopEntryIconResolver::prettifiedApplicationId(
+                 QStringLiteral("RealGame.exe")),
+             QStringLiteral("RealGame"));
+    // ADR-0169 makes the compositor report the executable as BOTH the id and
+    // the name for an opaque class, so that is what the shell receives.
+    QCOMPARE(m_resolver->applicationDisplayName(QStringLiteral("Unmatched.exe"),
+                                                QStringLiteral("Unmatched.exe")),
+             QStringLiteral("Unmatched"));
+    // "Battle.net" keeps its dot: it is a product name, not a reverse-DNS id.
+    QCOMPARE(DesktopEntryIconResolver::prettifiedApplicationId(
+                 QStringLiteral("Battle.net.exe")),
+             QStringLiteral("Battle.net"));
+    // The reverse-DNS tail rule is untouched for real ids.
+    QCOMPARE(DesktopEntryIconResolver::prettifiedApplicationId(
+                 QStringLiteral("org.qindaqt.Terminal")),
+             QStringLiteral("Terminal"));
 }
 
 void ShellIconsResolverTest::startupWmClassMatchesBeforeTail()

@@ -79,9 +79,22 @@ case-insensitive reverse-DNS tail (`org.kde.dolphin` answers `dolphin`), with
 a trailing `.desktop` ignored. `applicationDisplayName(appId, reportedName)`
 is the presentation name: the entry name for the app id, else for the
 compositor-reported resource class, else `prettifiedApplicationId`, which
-turns a reverse-DNS id into its last segment (`org.qindaqt.Terminal` becomes
-`Terminal`) and keeps any other name. This is the seam the task list uses to
-show window icons and names from the compositor's app id. The icon-theme
+drops a `.exe` suffix and keeps the rest whole (`Battle.net.exe` becomes
+`Battle.net`), otherwise turns a reverse-DNS id into its last segment
+(`org.qindaqt.Terminal` becomes `Terminal`) and keeps any other name. A
+Windows executable is a filename, not a reverse-DNS id, so the tail rule must
+never be applied to one. This is the seam the task list uses to show window
+icons and names from the compositor's app id.
+
+Wine and Proton windows reach this seam with a usable key because the
+compositor repairs opaque launcher classes first
+([ADR-0169](../adr/0169-report-the-program-behind-an-opaque-window-class.md)):
+a window whose class is empty, `steam_app_<digits>`, or a Wine shim is reported
+under the program actually behind it, read from the client's command line
+through KWin's authenticated PID. `Battle.net.exe` then matches the
+`StartupWMClass=battle.net.exe` its launcher entry already declares, so the
+existing lookup yields `Battle.net` and the `battlenet` icon with no special
+case here. The icon-theme
 directory ceiling covers standard `hicolor` inventories whose later entries
 hold common application sizes such as `48x48`, `128x128`, `512x512`, and
 `scalable/apps`; those entries must not degrade into typed placeholders merely

@@ -9,6 +9,7 @@ add_library(qindaqt_compositor_shell_actions STATIC
     src/shellwindowidentity.cpp
     src/shellwindowactions.cpp
     src/containerappearance.cpp
+    src/foreignwindowidentity.cpp
 )
 add_library(QindaQt::CompositorShellActions ALIAS qindaqt_compositor_shell_actions)
 target_sources(
@@ -22,6 +23,7 @@ target_sources(
             include/qindaqt/compositor/shellwindowidentity.h
             include/qindaqt/compositor/shelltaskfacts.h
             include/qindaqt/compositor/containerappearance.h
+            include/qindaqt/compositor/foreignwindowidentity.h
 )
 target_compile_features(qindaqt_compositor_shell_actions PUBLIC cxx_std_20)
 target_link_libraries(qindaqt_compositor_shell_actions PUBLIC Qt6::Core)

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinshelltaskfacts.h"
+#include "qindaqt/compositor/foreignwindowidentity.h"
 
 #include "hybridtaskidentitypolicy.h"
 #include "kwinhybridsession.h"
@@ -15,6 +16,7 @@
 #include <window.h>
 #include <workspace.h>
 
+#include <QFile>
 #include <QHash>
 #include <QSet>
 #include <QTimer>
@@ -29,6 +31,26 @@ void setError(QString *error, QString message)
     if (error) {
         *error = std::move(message);
     }
+}
+
+// Bounded read of another process's command line, used only to recover the
+// program behind an opaque launcher class (ADR-0169).
+//
+// AGENT-GUARD: `pid` must be KWin's authenticated client PID (wl_client
+// credentials, or XRes LOCAL_CLIENT_PID on X11) - never a client-supplied
+// `_NET_WM_PID`, which a window can set to any value and would let one client
+// borrow another program's identity. The read is capped and failure is silent:
+// an exited or unreadable process simply yields no better identity.
+[[nodiscard]] QByteArray clientCommandLine(pid_t pid)
+{
+    if (pid <= 1) {
+        return {};
+    }
+    QFile cmdline(QStringLiteral("/proc/%1/cmdline").arg(static_cast<qint64>(pid)));
+    if (!cmdline.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return cmdline.read(8192);
 }
 
 struct ContainerProjection final
@@ -266,14 +288,22 @@ KWinShellTaskFactsPublisher::sample(QString *error)
             setError(error, QStringLiteral("grouped task window has no atomic role"));
             return std::nullopt;
         }
-        QString applicationId = window->desktopFileName();
-        if (applicationId.isEmpty()) {
-            applicationId = window->resourceClass();
+        // ADR-0169: a window whose class is an opaque launcher key
+        // (`steam_app_<n>`, a Wine shim, or nothing at all) is reported as the
+        // program actually behind it, read from the client's own command line
+        // through KWin's authenticated PID. Every other class is left exactly
+        // as reported. This stays raw identity; naming and icon policy remain
+        // in the shell.
+        const QString resourceClass = window->resourceClass();
+        QString clientExecutable;
+        if (Compositor::isOpaqueLauncherClass(resourceClass)) {
+            clientExecutable =
+                Compositor::executableFromCommandLine(clientCommandLine(window->pid()));
         }
-        QString applicationName = window->resourceClass();
-        if (applicationName.isEmpty()) {
-            applicationName = applicationId;
-        }
+        const QString applicationId = Compositor::resolveApplicationId(
+            window->desktopFileName(), resourceClass, clientExecutable);
+        const QString applicationName = Compositor::resolveApplicationName(
+            resourceClass, clientExecutable, applicationId);
         const bool groupedMaximized = !containerId.isEmpty()
             && m_hybrid.isContainerMaximized(containerId);
         // AGENT-CONTRACT: A container rename (ContainerAppearance::name) is a

@@ -93,9 +93,18 @@ QString DesktopEntryIconResolver::prettifiedApplicationId(const QString &applica
     if (name.endsWith(QLatin1String(".desktop"), Qt::CaseInsensitive)) {
         name.chop(8);
     }
-    const QStringList segments = name.split(QLatin1Char('.'));
-    if (segments.size() > 1 && std::all_of(segments.cbegin(), segments.cend(), isIdSegment)) {
-        name = segments.constLast();
+    // AGENT-GUARD: a Windows executable name is a FILENAME, not a reverse-DNS
+    // id. Applying the tail rule to it turns "Battle.net.exe" into "Exe",
+    // which is how a Wine/Proton program with no launcher entry would be
+    // labelled (ADR-0169). Drop the suffix and keep the rest whole.
+    if (name.endsWith(QLatin1String(".exe"), Qt::CaseInsensitive)) {
+        name.chop(4);
+    } else {
+        const QStringList segments = name.split(QLatin1Char('.'));
+        if (segments.size() > 1
+            && std::all_of(segments.cbegin(), segments.cend(), isIdSegment)) {
+            name = segments.constLast();
+        }
     }
     if (!name.isEmpty() && name.front().isLower()) {
         name.front() = name.front().toUpper();
