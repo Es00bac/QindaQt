@@ -20,15 +20,44 @@ orientations, and every stock profile family places one tray slot.
 `src/shell/runtime/statusnotifierappletcomposition.{h,cpp}` is the
 shell-private production composition root, mirroring the Clipboard
 composition. It evaluates the audited manifest/policy grants fail-closed,
-owns the `StatusNotifierWatcherService` and the `StatusNotifierMonitorAdapter`
-(registry + item monitor + icon renderer) on the shell's injected session bus,
-and exposes only the `StatusNotifierAppletController` facade to the panel
-factory; nothing else gains StatusNotifier bus authority. The controller's
+owns the `StatusNotifierWatcherService`, the `StatusNotifierHostRegistration`
+and the `StatusNotifierMonitorAdapter` (registry + item monitor + icon
+renderer) on the shell's injected session bus, and exposes only the
+`StatusNotifierAppletController` facade to the panel factory; nothing else
+gains StatusNotifier bus authority. The controller's
 degradation acknowledgement routes through the composed adapter seam to the
 registry. A watcher name owned elsewhere fails closed into the watcher's
 truthful degraded state instead of a shell startup failure. With
-`status-items.read` denied, neither the watcher nor the adapter is started and
-observation is withheld entirely. Production icon-theme roots are the
+`status-items.read` denied, neither the watcher, the host registration nor the
+adapter is started and observation is withheld entirely.
+
+### Host registration
+
+Serving the watcher is not the same as being a host, and the specification
+draws the distinction deliberately: an item consults
+`IsStatusNotifierHostRegistered` (and the `StatusNotifierHostRegistered`
+signal) before deciding whether to present itself, and may hide its icon or
+fall back to the legacy XEmbed tray when no host exists. Until
+[ADR-0166](../adr/0166-announce-a-status-notifier-host.md) the shell served the
+watcher and never registered a host, so that property stayed false on a live
+session and well-behaved items had no reason to appear.
+
+`src/shell/status_notifier/host/` owns the conventional per-process name
+`org.kde.StatusNotifierHost-<pid>` and registers it with the watcher *over the
+bus*, so the traffic is identical to any other conformant host and the code is
+unchanged when a foreign watcher owns the name. The call is asynchronous
+because in production the callee is this same process on this same connection.
+A watcher that is not up yet is not an error: the component follows
+`NameOwnerChanged` (filtered to the bus daemon as sender) and completes the
+handshake when a watcher appears, re-registers against a replacement, and drops
+its claim when the watcher leaves. The announcement is gated on
+`status-items.read` so a shell that cannot draw items never claims a tray
+exists.
+
+This covers the StatusNotifierItem protocol only. Applications that speak just
+the legacy XEmbed tray protocol — most Wine/Proton programs and older toolkits
+— still have nowhere to dock, because QindaQt owns no `_NET_SYSTEM_TRAY_S0`
+selection. Production icon-theme roots are the
 `icons` directories beneath every freedesktop generic data location; the icon
 renderer canonicalizes and confines every lookup beneath them.
 
@@ -181,7 +210,8 @@ ctest --test-dir build/dev \
 | `qindaqt.status-notifier-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal, Space/Return activation and Shift+F10/Menu context opening with exact generation-fenced arguments, Escape dismissal. |
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
 | `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through; plus the shell-composition pair (adapter/watcher boundary only, no registry/item-client/icon internals, no own bus connections) with its own poison case. |
-| `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, and the explicit `status-items.read` denial withholding all observation. |
+| `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + host registration + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, `IsStatusNotifierHostRegistered` reading true for a third-party connection (ADR-0166; former-red), a real Wine item shape (empty `IconName`, pixmap-only, `/NO_DBUSMENU`) reaching `ready` and rendering from its pixmap rather than the placeholder, and the explicit `status-items.read` denial withholding all observation and claiming no host name. |
+| `qindaqt.status-notifier-host-registration` | The host role in isolation: the conventional `org.kde.StatusNotifierHost-<pid>` shape, a live watcher reporting no host until one registers and the host's unique name then appearing in the watcher's host set, registration against a watcher that starts later, the claim dropping and re-registering across watcher loss and replacement, and fail-closed behavior on a disconnected bus. |
 | `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: an empty tray has zero extent and no amber marker; Tab reaches a real item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without invoking an application action. |
 | `qindaqt.status-notifier-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset, generation-fence contract and staged-module instantiation at the installed boundary. |
 | `qindaqt.status-notifier-applet-runtime-installed-package` | Source-poisoned `StatusNotifierAppletRuntime` stage containing the shell, manifest/profile/theme/policy, and the complete generated StatusNotifier QML module. |

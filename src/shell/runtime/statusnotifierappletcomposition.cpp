@@ -8,6 +8,7 @@
 #include "qindaqt/applets/manifest_catalog.h"
 #include "qindaqt/shell/status_notifier/applet/status_notifier_applet_controller.h"
 #include "qindaqt/shell/status_notifier/applet/status_notifier_monitor_adapter.h"
+#include "qindaqt/shell/status_notifier/host/status_notifier_host_registration.h"
 #include "qindaqt/shell/status_notifier/watcher/status_notifier_watcher_service.h"
 
 #include <QDebug>
@@ -83,17 +84,34 @@ StatusNotifierAppletComposition::StatusNotifierAppletComposition(
                 << "QindaQt shell could not start the StatusNotifier watcher:"
                 << watcherError;
         }
+        // AGENT-CONTRACT (ADR-0166): announce the host only once this shell can
+        // actually observe items. `read` is the capability that lets the
+        // adapter project them, so registering a host without it would tell
+        // every item a tray is present while nothing could ever draw them.
+        // Ordering matters: the watcher starts first so our own service
+        // accepts the registration instead of the call waiting for a watcher.
+        m_hostRegistration =
+            std::make_unique<StatusNotifier::StatusNotifierHostRegistration>(sessionBus);
+        QString hostError;
+        if (!m_hostRegistration->start(&hostError)) {
+            qWarning().noquote()
+                << "QindaQt shell could not register a StatusNotifier host:"
+                << hostError;
+        }
         m_adapter->start();
     }
 }
 
 StatusNotifierAppletComposition::~StatusNotifierAppletComposition()
 {
-    // AGENT-GUARD: stop the adapter before the watcher service so the
-    // monitor's sink detaches from the registry while every collaborator is
-    // still alive; both stop() calls are idempotent.
+    // AGENT-GUARD: stop the adapter before the host registration and the
+    // watcher service so the monitor's sink detaches from the registry while
+    // every collaborator is still alive; every stop() call is idempotent.
     if (m_adapter) {
         m_adapter->stop();
+    }
+    if (m_hostRegistration) {
+        m_hostRegistration->stop();
     }
     if (m_watcher) {
         m_watcher->stop();

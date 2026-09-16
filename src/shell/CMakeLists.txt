@@ -300,6 +300,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             # `No module named "QindaQt.Shell.DesktopSurface" found`.
             qindaqt_desktop_surface_qmlplugin
             QindaQt::ShellWorkspacesDBus
+            QindaQt::StatusNotifierHost
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
             QindaQt::PanelBlur

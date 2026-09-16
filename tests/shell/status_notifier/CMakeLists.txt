@@ -50,6 +50,24 @@ if(NOT TARGET QindaQt::StatusNotifierIcon)
         " before the status-notifier icon tests")
 endif()
 
+if(NOT TARGET QindaQt::StatusNotifierHost)
+    message(FATAL_ERROR
+        "QindaQt::StatusNotifierHost is missing; the host-registration library"
+        " must build before the status-notifier transport tests")
+endif()
+
+qt_add_executable(qindaqt_status_notifier_host_registration_tests
+    tst_status_notifier_host_registration.cpp
+    status_notifier_private_bus_test_support.h)
+target_link_libraries(qindaqt_status_notifier_host_registration_tests
+    PRIVATE QindaQt::StatusNotifierHost QindaQt::StatusNotifierWatcher
+            Qt6::Core Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_status_notifier_host_registration_tests)
+add_test(NAME qindaqt.status-notifier-host-registration
+    COMMAND qindaqt_status_notifier_host_registration_tests)
+set_tests_properties(qindaqt.status-notifier-host-registration
+    PROPERTIES LABELS "shell;status-notifier")
+
 qt_add_executable(qindaqt_status_notifier_watcher_tests tst_status_notifier_watcher.cpp)
 target_link_libraries(qindaqt_status_notifier_watcher_tests
     PRIVATE QindaQt::StatusNotifierWatcher Qt6::Core Qt6::DBus Qt6::Test)
