@@ -1,0 +1,179 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import QtQuick.Controls as T
+import QtQuick.Layouts
+import QindaQt.Controls 1.0
+import QindaQt.Tokens 1.0
+
+// One input channel strip (ADR-0173): a vertical fader with a dB legend, the
+// mute/solo/mono buttons, a pan control, and one assignment button per bus.
+//
+// AGENT-CONTRACT: the fader is driven by POSITION and converted through the
+// model's gain law, never by mapping dB linearly onto the slider. The legend
+// beside it reads the same conversion, so the number and the knob cannot
+// disagree.
+ColumnLayout {
+    id: root
+
+    required property var model
+    required property var strip
+    required property var buses
+    required property bool soloActive
+    required property bool enabledControls
+
+    spacing: Tokens.space["2"]
+    objectName: "consoleStrip_" + strip.id
+
+    Label {
+        Layout.fillWidth: true
+        text: root.strip.label
+        elide: Text.ElideRight
+        horizontalAlignment: Text.AlignHCenter
+        // A strip whose device is absent stays usable; it is dimmed rather
+        // than removed so the user's routing does not vanish with the device.
+        opacity: root.strip.bound ? 1.0 : 0.55
+        Accessible.name: root.strip.bound
+            ? text : qsTr("%1, no device connected").arg(text)
+    }
+
+    RowLayout {
+        Layout.alignment: Qt.AlignHCenter
+        spacing: Tokens.space["1"]
+
+        T.Slider {
+            id: fader
+            objectName: "consoleStripFader_" + root.strip.id
+            orientation: Qt.Vertical
+            implicitHeight: 160
+            from: 0.0
+            to: 1.0
+            enabled: root.enabledControls
+            value: root.strip.faderPosition
+            onMoved: root.model.setStripFader(root.strip.id, value)
+            Accessible.name: qsTr("%1 level").arg(root.strip.label)
+            Accessible.description: qsTr("%1 decibels")
+                .arg(Math.round(root.model.gainForFaderPosition(value) * 10) / 10)
+
+            background: Rectangle {
+                x: fader.leftPadding + fader.availableWidth / 2 - width / 2
+                y: fader.topPadding
+                implicitWidth: 6
+                width: implicitWidth
+                height: fader.availableHeight
+                radius: 3
+                color: Tokens.bg.raised
+                // The unity mark: a console operator finds 0 dB by eye, so the
+                // scale draws it rather than leaving the fader unlabelled.
+                Rectangle {
+                    width: 14
+                    height: 2
+                    x: -4
+                    y: fader.availableHeight * (1.0 - root.model.unityFaderPosition())
+                    color: Tokens.outline.strong
+                }
+            }
+        }
+
+        // Meter. `known` is false until the service has observed real audio, so
+        // an idle meter reads as idle rather than as silence.
+        Rectangle {
+            objectName: "consoleStripMeter_" + root.strip.id
+            implicitWidth: 8
+            implicitHeight: 160
+            radius: 4
+            color: Tokens.bg.raised
+            Rectangle {
+                width: parent.width
+                radius: parent.radius
+                anchors.bottom: parent.bottom
+                color: Tokens.accent.default
+                visible: root.strip.level.known
+                height: parent.height * Math.max(0.0, Math.min(1.0,
+                    (root.strip.level.peakDb + 60.0) / 60.0))
+            }
+        }
+    }
+
+    Label {
+        Layout.alignment: Qt.AlignHCenter
+        text: qsTr("%1 dB").arg(Math.round(root.strip.gainDb * 10) / 10)
+        font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
+        Accessible.ignored: true
+    }
+
+    RowLayout {
+        Layout.alignment: Qt.AlignHCenter
+        spacing: Tokens.space["1"]
+
+        Button {
+            objectName: "consoleStripMute_" + root.strip.id
+            text: qsTr("M")
+            checkable: true
+            checked: root.strip.muted
+            enabled: root.enabledControls
+            onToggled: root.model.setStripMuted(root.strip.id, checked)
+            Accessible.name: qsTr("Mute %1").arg(root.strip.label)
+        }
+        Button {
+            objectName: "consoleStripSolo_" + root.strip.id
+            text: qsTr("S")
+            checkable: true
+            checked: root.strip.soloed
+            enabled: root.enabledControls
+            onToggled: root.model.setStripSoloed(root.strip.id, checked)
+            Accessible.name: qsTr("Solo %1").arg(root.strip.label)
+        }
+        Button {
+            objectName: "consoleStripMono_" + root.strip.id
+            text: qsTr("Mono")
+            checkable: true
+            checked: root.strip.mono
+            enabled: root.enabledControls
+            onToggled: root.model.setStripMono(root.strip.id, checked)
+            Accessible.name: qsTr("Mono %1").arg(root.strip.label)
+        }
+    }
+
+    // The matrix column for this strip: one button per bus, which together
+    // with the other strips' columns is the routing matrix.
+    GridLayout {
+        Layout.alignment: Qt.AlignHCenter
+        columns: 4
+        columnSpacing: Tokens.space["1"]
+        rowSpacing: Tokens.space["1"]
+
+        Repeater {
+            model: root.buses
+            Button {
+                required property var modelData
+                objectName: "consoleSend_" + root.strip.id + "_" + modelData.index
+                text: modelData.label
+                checkable: true
+                enabled: root.enabledControls
+                checked: {
+                    for (const send of root.strip.sends) {
+                        if (send.busIndex === modelData.index)
+                            return send.enabled
+                    }
+                    return false
+                }
+                onToggled: {
+                    // The send's existing gain is sent back unchanged, so
+                    // toggling a cell never silently resets the level the user
+                    // dialled in for it.
+                    let gain = 0.0
+                    for (const send of root.strip.sends) {
+                        if (send.busIndex === modelData.index)
+                            gain = send.gainDb
+                    }
+                    root.model.setStripSend(root.strip.id, modelData.index,
+                                            checked, gain)
+                }
+                Accessible.name: qsTr("Send %1 to %2")
+                    .arg(root.strip.label).arg(modelData.label)
+            }
+        }
+    }
+}

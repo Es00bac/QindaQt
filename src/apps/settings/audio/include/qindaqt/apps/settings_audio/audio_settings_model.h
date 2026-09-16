@@ -50,6 +50,12 @@ class AudioSettingsModel final : public QObject {
                  viewChanged)
   Q_PROPERTY(bool canManageVirtualDevices READ canManageVirtualDevices NOTIFY
                  viewChanged)
+  // The mixing console (ADR-0173). `consoleAvailable` is false on a service
+  // that publishes no console, and every console control disables with it.
+  Q_PROPERTY(bool consoleAvailable READ consoleAvailable NOTIFY viewChanged)
+  Q_PROPERTY(bool consoleSoloActive READ consoleSoloActive NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList consoleStrips READ consoleStrips NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList consoleBuses READ consoleBuses NOTIFY viewChanged)
 
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
@@ -62,6 +68,10 @@ public:
   [[nodiscard]] bool stale() const;
   [[nodiscard]] bool busy() const noexcept;
   [[nodiscard]] bool reloadAvailable() const noexcept;
+  [[nodiscard]] bool consoleAvailable() const;
+  [[nodiscard]] bool consoleSoloActive() const;
+  [[nodiscard]] QVariantList consoleStrips() const;
+  [[nodiscard]] QVariantList consoleBuses() const;
 
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const;
@@ -104,6 +114,24 @@ public:
                                        int channels);
   Q_INVOKABLE bool removeVirtualDevice(quint64 serial);
 
+  // Console intents. Faders are driven by POSITION (0..1) from the UI and
+  // converted through the one gain law (ADR-0171), so a slider and the dB
+  // legend beside it can never disagree.
+  Q_INVOKABLE bool setStripFader(QString stripId, double position);
+  Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);
+  Q_INVOKABLE bool setStripSoloed(QString stripId, bool soloed);
+  Q_INVOKABLE bool setStripMono(QString stripId, bool mono);
+  Q_INVOKABLE bool setStripPan(QString stripId, double pan);
+  Q_INVOKABLE bool setStripSend(QString stripId, int busIndex, bool enabled,
+                                double gainDb);
+  Q_INVOKABLE bool setBusFader(QString busId, double position);
+  Q_INVOKABLE bool setBusMuted(QString busId, bool muted);
+  Q_INVOKABLE bool setBusMono(QString busId, bool mono);
+  // Pure helpers so QML draws the same scale the service applies.
+  [[nodiscard]] Q_INVOKABLE double faderPositionForGain(double gainDb) const;
+  [[nodiscard]] Q_INVOKABLE double gainForFaderPosition(double position) const;
+  [[nodiscard]] Q_INVOKABLE double unityFaderPosition() const;
+
 Q_SIGNALS:
   void viewChanged();
   void actionRejected(const QString &reason);
@@ -114,6 +142,12 @@ private:
   enum class Intent { SetDefault, DeviceVolume, DeviceMute, StreamVolume,
                        StreamMute, DeviceChannelVolume, CreateVirtual,
                        RemoveVirtual };
+
+  // Console intents (ADR-0173). Kept separate from Intent because they carry a
+  // console id rather than a graph serial, and nothing about them can go stale
+  // the way a device handle can.
+  enum class ConsoleIntent { StripGain, StripMute, StripSolo, StripMono,
+                              StripPan, StripSend, BusGain, BusMute, BusMono };
 
   struct PendingIntent {
     quint64 requestId = 0;
@@ -128,6 +162,11 @@ private:
   [[nodiscard]] QString actionFailureText(const QString &reason) const;
   [[nodiscard]] bool dispatchDeviceIntent(quint64 serial, const Intent intent,
                                           double level, bool muted);
+  // One admission-and-dispatch path for every console control, so an enabled
+  // control can never be locally refused and a disabled one never dispatched.
+  [[nodiscard]] bool dispatchConsoleIntent(ConsoleIntent intent, QString consoleId,
+                                            quint32 busIndex, double value,
+                                            bool flag);
   [[nodiscard]] bool dispatchStreamIntent(quint64 serial, const Intent intent,
                                           double level, bool muted);
   void trackPending(quint64 requestId, quint64 serial, const Intent intent);

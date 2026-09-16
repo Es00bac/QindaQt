@@ -29,6 +29,24 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex, double level)"
         "Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels)"
         "Q_INVOKABLE bool removeVirtualDevice(quint64 serial)"
+        # Console intents (ADR-0173). The surface stays CLOSED: each entry is
+        # one console control, addressed by console id, and there is
+        # deliberately no generic "apply this request" escape hatch through
+        # which the route could reach the rest of Audio1.
+        "Q_INVOKABLE bool setStripFader(QString stripId, double position)"
+        "Q_INVOKABLE bool setStripMuted(QString stripId, bool muted)"
+        "Q_INVOKABLE bool setStripSoloed(QString stripId, bool soloed)"
+        "Q_INVOKABLE bool setStripMono(QString stripId, bool mono)"
+        "Q_INVOKABLE bool setStripPan(QString stripId, double pan)"
+        "Q_INVOKABLE bool setStripSend(QString stripId, int busIndex, bool enabled, double gainDb)"
+        "Q_INVOKABLE bool setBusFader(QString busId, double position)"
+        "Q_INVOKABLE bool setBusMuted(QString busId, bool muted)"
+        "Q_INVOKABLE bool setBusMono(QString busId, bool mono)"
+        # Pure conversions so QML draws the same fader scale the service
+        # applies; they dispatch nothing.
+        "Q_INVOKABLE double faderPositionForGain(double gainDb)"
+        "Q_INVOKABLE double gainForFaderPosition(double position)"
+        "Q_INVOKABLE double unityFaderPosition()"
     )
     foreach(invokable IN LISTS invokables)
         string(REGEX REPLACE "[ \t\r\n]+" " " normalized "${invokable}")

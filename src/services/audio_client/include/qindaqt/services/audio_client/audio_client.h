@@ -55,6 +55,23 @@ public:
                                               quint32 channels);
     [[nodiscard]] quint64 removeVirtualDevice(const Handle &device);
 
+    // Console operations (ADR-0173). Each addresses a strip or bus by its
+    // stable console id; there is no graph handle to go stale, so a request
+    // stays meaningful across the device behind it disappearing.
+    [[nodiscard]] quint64 setStripGain(const QString &stripId, double gainDb);
+    [[nodiscard]] quint64 setStripMuted(const QString &stripId, bool muted);
+    [[nodiscard]] quint64 setStripSoloed(const QString &stripId, bool soloed);
+    [[nodiscard]] quint64 setStripMono(const QString &stripId, bool mono);
+    [[nodiscard]] quint64 setStripPan(const QString &stripId, double pan);
+    [[nodiscard]] quint64 setStripTrim(const QString &stripId,
+                                       const QVector<double> &trimDb);
+    [[nodiscard]] quint64 setStripSend(const QString &stripId, quint32 busIndex,
+                                       bool enabled, double gainDb);
+    [[nodiscard]] quint64 setBusGain(const QString &busId, double gainDb);
+    [[nodiscard]] quint64 setBusMuted(const QString &busId, bool muted);
+    [[nodiscard]] quint64 setBusMono(const QString &busId, bool mono);
+    [[nodiscard]] quint64 setBusTarget(const QString &busId, const Handle &device);
+
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);
     void snapshotChanged(const QindaQt::Audio::Snapshot &snapshot);

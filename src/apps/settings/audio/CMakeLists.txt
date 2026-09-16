@@ -6,6 +6,7 @@ target_sources(
     qindaqt_settings_audio
     PRIVATE
         audio_settings_model.cpp
+        audio_console_projection.cpp
         audio_settings_projection.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -36,6 +37,9 @@ qt_add_qml_module(
     TYPEINFO qindaqt_settings_audio.qmltypes
     QML_FILES
         qml/AudioChannelStrip.qml
+        qml/AudioConsoleBus.qml
+        qml/AudioConsoleSection.qml
+        qml/AudioConsoleStrip.qml
         qml/AudioDeviceSection.qml
         qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
