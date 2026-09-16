@@ -202,6 +202,7 @@ private Q_SLOTS:
     void operationResultLineage();
     void rejectsInconsistentCapabilitiesDefaultsAndDiagnostics();
     void snapshotRoundTripsOverDBus();
+    void aCaptureStreamMayReadAnOutputsMonitor();
     void hostileChannelArraysFailClosedOverDBus();
 };
 
@@ -210,7 +211,7 @@ void AudioProtocolTests::fixedSignatures()
     registerDBusTypes();
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()), "(tt)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Device>()),
-             "((tt)ussdbbbbbbadasb)");
+             "((tt)ussdbbbbbbadasbs)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Stream>()),
              "((tt)uss(tt)bdbbbbbbadas)");
     // The console (ADR-0173) and the meter reading (ADR-0174) are part of the
@@ -223,11 +224,33 @@ void AudioProtocolTests::fixedSignatures()
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
              "(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
-             "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasb)a((tt)ussdbbbbbbadasb)"
+             "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)"
              "a((tt)uss(tt)bdbbbbbbadas)"
              "(a(suusttbdbbbdada(ubd)(ddb))a(suusttbdbb(ddb))b))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
+}
+
+// ADR-0175. Console meters and sends from virtual strips capture a SINK's
+// monitor, so a capture stream targeting an output device is a real shape and
+// must pass; a playback stream into an input device remains impossible.
+void AudioProtocolTests::aCaptureStreamMayReadAnOutputsMonitor()
+{
+    Snapshot snapshot = validSnapshot();
+    QVERIFY(!snapshot.outputs.isEmpty());
+    QVERIFY(!snapshot.inputs.isEmpty());
+    QVERIFY(!snapshot.streams.isEmpty());
+    Stream &stream = snapshot.streams.first();
+    stream.direction = StreamDirection::Capture;
+    stream.target = snapshot.outputs.first().handle;
+    stream.targetKnown = true;
+    QVERIFY2(validateSnapshot(snapshot).accepted,
+             qPrintable(validateSnapshot(snapshot).reasonCode));
+
+    stream.direction = StreamDirection::Playback;
+    stream.target = snapshot.inputs.first().handle;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("invalid-stream-target"));
 }
 
 void AudioProtocolTests::acceptsCanonicalSnapshot()

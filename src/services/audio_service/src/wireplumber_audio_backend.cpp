@@ -137,4 +137,13 @@ void WirePlumberAudioBackend::applyMetering(const QList<BackendMeterTarget> &tar
     m_worker->applyMetering(targets);
 }
 
+void WirePlumberAudioBackend::applyConsoleEndpoints(
+    const QList<BackendConsoleEndpoint> &endpoints)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyConsoleEndpoints(endpoints);
+}
+
 } // namespace QindaQt::Audio

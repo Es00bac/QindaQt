@@ -14,6 +14,22 @@ set_tests_properties(qindaqt.audio-service PROPERTIES LABELS "service;audio")
 
 # The console's own state (ADR-0173). Split from the service row by failure
 # mode: pure model logic with no backend, no bus and no daemon.
+qt_add_executable(qindaqt_audio_console_endpoints_tests tst_console_endpoints.cpp)
+target_link_libraries(
+    qindaqt_audio_console_endpoints_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_console_endpoints_tests)
+add_test(NAME qindaqt.audio-console-endpoints COMMAND qindaqt_audio_console_endpoints_tests)
+set_tests_properties(qindaqt.audio-console-endpoints PROPERTIES LABELS "audio;service;pure")
+
+qt_add_executable(qindaqt_audio_console_store_tests tst_console_store.cpp)
+target_link_libraries(
+    qindaqt_audio_console_store_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_console_store_tests)
+add_test(NAME qindaqt.audio-console-store COMMAND qindaqt_audio_console_store_tests)
+set_tests_properties(qindaqt.audio-console-store PROPERTIES LABELS "audio;service;pure")
+
 qt_add_executable(qindaqt_audio_console_model_tests tst_console_model.cpp)
 target_link_libraries(
     qindaqt_audio_console_model_tests PRIVATE QindaQt::AudioService Qt6::Test

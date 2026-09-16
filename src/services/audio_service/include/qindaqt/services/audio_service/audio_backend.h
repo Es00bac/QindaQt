@@ -41,6 +41,9 @@ struct BackendRoutingEdge {
     // a virtual strip - rather than a capture device.
     bool sourceIsSink = false;
     double gainDb = 0.0;
+    // -1.0 hard left to +1.0 hard right, applied as balance on the send's
+    // two playback channels (ADR-0177).
+    double pan = 0.0;
     // False while the strip is muted, or silenced by another strip's solo, or
     // its destination bus is muted. The connection STAYS; only its level goes
     // to silence, so unmuting is instant instead of a graph rebuild.
@@ -69,6 +72,20 @@ struct BackendMeterTarget {
 
     friend bool operator==(const BackendMeterTarget &,
                            const BackendMeterTarget &) = default;
+};
+
+// One graph endpoint a console's VIRTUAL strip or bus is made of (ADR-0175):
+// the null sink an application plays into for a strip, or the sink-plus-source
+// pair other applications record from for a bus. The backend creates whichever
+// of these the daemon does not already have.
+struct BackendConsoleEndpoint {
+    QString consoleId;
+    bool isBus = false;
+    // What the user sees in every application's device picker.
+    QString description;
+
+    friend bool operator==(const BackendConsoleEndpoint &,
+                           const BackendConsoleEndpoint &) = default;
 };
 
 // AGENT-CONTRACT: Implementations receive requests on the Qt main thread and
@@ -110,6 +127,13 @@ public:
     virtual void applyMetering(const QList<BackendMeterTarget> &targets)
     {
         Q_UNUSED(targets)
+    }
+    // Declares the complete set of virtual endpoints the console needs to
+    // exist. Declarative like routing: the console states what its virtual
+    // strips and buses are, never "create this now".
+    virtual void applyConsoleEndpoints(const QList<BackendConsoleEndpoint> &endpoints)
+    {
+        Q_UNUSED(endpoints)
     }
 
 Q_SIGNALS:

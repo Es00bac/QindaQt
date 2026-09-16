@@ -338,6 +338,7 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
             if (!device.wireValid
                 || !isBoundedText(device.name, kMaxDisplayNameUtf8Bytes)
                 || !isBoundedText(device.description, kMaxDisplayNameUtf8Bytes)
+                || !isBoundedText(device.nodeName, kMaxNodeNameUtf8Bytes)
                 || !validLevel(device.volume)
                 || !validChannelLayout(device.channelVolumes, device.channelMap)
                 || (device.canSetVolume
@@ -403,9 +404,12 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
             return rejected(QStringLiteral("invalid-stream"));
         }
         if (stream.targetKnown) {
+            // A capture stream may read an output device's monitor (ADR-0175);
+            // a playback stream into an input is still impossible.
             const bool compatible = stream.direction == StreamDirection::Playback
                 ? outputSerials.contains(stream.target.serial)
-                : inputSerials.contains(stream.target.serial);
+                : (inputSerials.contains(stream.target.serial)
+                   || outputSerials.contains(stream.target.serial));
             if (!validHandleForEpoch(stream.target, snapshot.epoch) || !compatible) {
                 return rejected(QStringLiteral("invalid-stream-target"));
             }

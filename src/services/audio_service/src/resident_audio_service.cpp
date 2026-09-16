@@ -14,9 +14,12 @@ namespace QindaQt::Audio
 
 ResidentAudioService::ResidentAudioService(std::unique_ptr<AudioBackend> backend,
                                            const QDBusConnection &connection,
-                                           QString serviceName, QObject *parent)
+                                           QString serviceName, QObject *parent,
+                                           QString consolePath)
     : QObject(parent)
     , m_backend(std::move(backend))
+    , m_consoleStore(consolePath.isEmpty() ? ConsoleStore::defaultPath()
+                                           : std::move(consolePath))
     , m_connection(connection)
     , m_serviceName(serviceName.isEmpty() ? QString::fromLatin1(kServiceName)
                                          : std::move(serviceName))
@@ -24,8 +27,27 @@ ResidentAudioService::ResidentAudioService(std::unique_ptr<AudioBackend> backend
     Q_ASSERT(m_backend != nullptr);
     registerDBusTypes();
     m_coordinator = std::make_unique<AudioOperationCoordinator>(m_backend.get());
+    // Restore BEFORE the backend runs: the first graph publication then binds
+    // the user's console rather than a default one that is replaced a moment
+    // later, and the virtual endpoints are declared with the user's labels.
+    (void)m_consoleStore.load(m_coordinator->consoleModel());
     m_serviceObject =
         std::make_unique<AudioServiceObject>(m_coordinator.get(), m_connection);
+
+    m_consoleSaveTimer.setSingleShot(true);
+    m_consoleSaveTimer.setInterval(500);
+    connect(&m_consoleSaveTimer, &QTimer::timeout, this,
+            &ResidentAudioService::saveConsole);
+    // Every publication, not only console operations: a graph change can
+    // change nothing the document carries, and the store already skips an
+    // identical write, so this costs a serialisation and nothing more.
+    connect(m_coordinator.get(), &AudioOperationCoordinator::snapshotChanged, this,
+            [this] { m_consoleSaveTimer.start(); });
+}
+
+void ResidentAudioService::saveConsole()
+{
+    (void)m_consoleStore.save(m_coordinator->consoleModel());
 }
 
 ResidentAudioService::~ResidentAudioService()
@@ -65,6 +87,9 @@ ServiceStartStatus ResidentAudioService::start()
 void ResidentAudioService::stop()
 {
     if (m_coordinator != nullptr) {
+        // A pending debounce must not be lost to a shutdown.
+        m_consoleSaveTimer.stop();
+        saveConsole();
         m_coordinator->stop();
     }
     if (m_nameRegistered) {

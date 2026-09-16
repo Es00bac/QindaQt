@@ -384,6 +384,9 @@ void WirePlumberWorker::rebuild()
     // not a moment ago, and a daemon replacement destroyed every loopback this
     // worker had loaded - without this the user's matrix would come back empty
     // after a PipeWire restart even though the console still shows it.
+    // Endpoints first: a virtual strip or bus that does not exist yet cannot be
+    // routed or metered, and creating it publishes the snapshot that binds it.
+    applyConsoleEndpointsOnWorker(m_declaredEndpoints);
     applyRoutingOnWorker(m_declaredRouting);
     applySendVolumes();
     // Same reasoning for meters: a device that just appeared is now readable,
@@ -534,6 +537,7 @@ void WirePlumberWorker::cleanupCore()
     // across a reconnect or destroy them against a context that no longer
     // exists. The declared routing is kept so the next connection rebuilds it.
     unloadAllRouting();
+    unloadAllEndpoints();
     // The meter streams belong to this pw_context too, and outlive it no
     // better than the loopbacks do.
     stopMeterPolling();

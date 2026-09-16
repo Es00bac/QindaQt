@@ -114,6 +114,13 @@ struct Device {
     // True only for managed null devices whose node.name carries the virtual
     // prefix; such devices may be removed through RemoveVirtualDevice.
     bool virtualDevice = false;
+    // The node's `node.name` (schema 4). `name` is for people and changes with
+    // locale and user renames; this is for identity. It is what a console
+    // stores to find the same device again after a reboot, when every serial
+    // has changed. Appended last so the fields before it keep their wire order.
+    // The default member initializer keeps every existing designated
+    // initializer of Device valid under -Werror=missing-field-initializers.
+    QString nodeName = {};
 
     // AGENT-GUARD: D-Bus decoding sets this false when a nested channel array
     // exceeded its bound while still consuming the complete argument. Snapshot

@@ -110,9 +110,28 @@ void WirePlumberWorker::applySendVolumes()
         // A silenced edge is carried at zero rather than removed, so unmuting
         // or unsoloing is instant instead of a graph rebuild.
         const double linear = edge.audible ? linearFromGainDb(edge.gainDb) : 0.0;
+        // Pan is the two playback channels at different gains (ADR-0177). The
+        // send is always stereo (see routingModuleArguments), so the keys are
+        // exactly "0" and "1".
+        const PanGains pan = panGains(edge.pan);
         GVariantBuilder builder;
         g_variant_builder_init(&builder, G_VARIANT_TYPE_VARDICT);
-        g_variant_builder_add(&builder, "{sv}", "volume", g_variant_new_double(linear));
+        // AGENT-CONTRACT: mixer-api set-volume takes per-channel state as
+        // {channelVolumes: a{sv}} keyed by decimal channel index with nested
+        // {"volume": d}; a plain "volume" would set both channels alike.
+        GVariantBuilder channels;
+        g_variant_builder_init(&channels, G_VARIANT_TYPE("a{sv}"));
+        const double perChannel[2] = {linear * pan.left, linear * pan.right};
+        for (int index = 0; index < 2; ++index) {
+            GVariantBuilder one;
+            g_variant_builder_init(&one, G_VARIANT_TYPE_VARDICT);
+            g_variant_builder_add(&one, "{sv}", "volume",
+                                  g_variant_new_double(perChannel[index]));
+            g_variant_builder_add(&channels, "{sv}", index == 0 ? "0" : "1",
+                                  g_variant_builder_end(&one));
+        }
+        g_variant_builder_add(&builder, "{sv}", "channelVolumes",
+                              g_variant_builder_end(&channels));
         GVariant *dictionary = g_variant_builder_end(&builder);
         gboolean result = FALSE;
         g_signal_emit_by_name(m_mixer, "set-volume", node->boundId, dictionary,

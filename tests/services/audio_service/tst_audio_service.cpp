@@ -2,6 +2,8 @@
 
 #include "support/fake_audio_backend.h"
 
+#include "../../../src/services/audio_service/src/console_endpoints_p.h"
+
 #include <qindaqt/services/audio_service/audio_operation_coordinator.h>
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/services/audio_protocol/audio_validation.h>
@@ -27,6 +29,7 @@ private Q_SLOTS:
     void rejectsStoppedSupersededAndRegressedBackendValues();
     void malformedBackendOutcomesBecomeProtocolValidFailures();
     void consoleEndpointsFollowTheGraph();
+    void virtualEndpointsAreDeclaredAndBoundByName();
     void meterReadingsStreamWithoutTouchingLineage();
 };
 
@@ -469,6 +472,81 @@ void AudioServiceTests::consoleEndpointsFollowTheGraph()
     QVERIFY(!backend.metering.at(0).captureSink);
     QCOMPARE(backend.metering.at(1).consoleId, firstBus.id);
     QVERIFY(backend.metering.at(1).captureSink);
+}
+
+// ADR-0175. A virtual strip is a sink applications play into and a virtual
+// bus is a sink-plus-source other applications record from; the console
+// declares them and binds to them by NAME, because that is the one identity
+// that survives the daemon restarting.
+void AudioServiceTests::virtualEndpointsAreDeclaredAndBoundByName()
+{
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    coordinator.start();
+    // Declared from the moment the backend runs - before any snapshot - so the
+    // sinks exist by the time the first snapshot could bind them.
+    QCOMPARE(backend.endpointCalls, 1);
+    int strips = 0;
+    int buses = 0;
+    for (const BackendConsoleEndpoint &endpoint : backend.endpoints) {
+        QVERIFY(!endpoint.description.isEmpty());
+        (endpoint.isBus ? buses : strips) += 1;
+    }
+    QCOMPARE(strips, 3);
+    QCOMPARE(buses, 3);
+
+    // Without the nodes in the graph the virtual endpoints stay unbound, and
+    // nothing else is claimed in their place.
+    backend.publish(audioSnapshot());
+    for (const Strip &strip : coordinator.snapshot().console.strips) {
+        if (strip.kind == StripKind::VirtualInput) {
+            QVERIFY(!strip.sourceKnown);
+        }
+    }
+
+    const QString virtualStrip = QStringLiteral("strip.virtual.1");
+    const QString virtualBus = QStringLiteral("bus.b1");
+    backend.publish(snapshotWithConsoleEndpoints(
+        ConsoleEndpoints::stripSinkNodeName(virtualStrip),
+        ConsoleEndpoints::busSinkNodeName(virtualBus), 7, 4));
+    const Console console = coordinator.snapshot().console;
+    const Strip *boundStrip = nullptr;
+    for (const Strip &strip : console.strips) {
+        if (strip.id == virtualStrip) {
+            boundStrip = &strip;
+        }
+        // AGENT-GUARD: the console's own sinks are not hardware. A hardware
+        // strip must never claim one, or it would meter a bus's own output.
+        if (strip.kind == StripKind::HardwareInput && strip.sourceKnown) {
+            QVERIFY(strip.sourceSerial != 50 && strip.sourceSerial != 51);
+        }
+    }
+    QVERIFY(boundStrip != nullptr);
+    QVERIFY(boundStrip->sourceKnown);
+    QCOMPARE(boundStrip->sourceSerial, 50u);
+    const Bus *boundBus = nullptr;
+    for (const Bus &bus : console.buses) {
+        if (bus.id == virtualBus) {
+            boundBus = &bus;
+        }
+        if (bus.kind == BusKind::Physical && bus.targetKnown) {
+            QVERIFY(bus.targetSerial != 50 && bus.targetSerial != 51);
+        }
+    }
+    QVERIFY(boundBus != nullptr);
+    QVERIFY(boundBus->targetKnown);
+    QCOMPARE(boundBus->targetSerial, 51u);
+
+    // A virtual strip's audio is on its sink's monitor, so its meter and any
+    // send from it read the sink rather than a capture port.
+    bool stripMetered = false;
+    for (const BackendMeterTarget &target : backend.metering) {
+        if (target.consoleId == virtualStrip) {
+            stripMetered = true;
+            QVERIFY(target.captureSink);
+        }
+    }
+    QVERIFY(stripMetered);
 }
 
 void AudioServiceTests::meterReadingsStreamWithoutTouchingLineage()

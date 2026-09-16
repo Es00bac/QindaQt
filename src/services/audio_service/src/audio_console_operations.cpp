@@ -7,6 +7,8 @@
 
 #include <qindaqt/services/audio_service/audio_operation_coordinator.h>
 
+#include "console_endpoints_p.h"
+
 #include <algorithm>
 
 namespace QindaQt::Audio
@@ -43,10 +45,11 @@ namespace {
 {
     QList<Device> candidates;
     for (const Device &device : devices) {
-        // Managed virtual devices are the console's OWN endpoints, not hardware
-        // the user plugged in; claiming them here would have a strip metering a
-        // bus's own sink.
-        if (!device.virtualDevice) {
+        // Neither a user-managed virtual device nor one of the console's own
+        // endpoints is hardware the user plugged in; claiming either here would
+        // have a hardware strip metering a bus's own sink.
+        if (!device.virtualDevice
+            && !ConsoleEndpoints::isConsoleOwnedNodeName(device.nodeName)) {
             candidates.append(device);
         }
     }
@@ -68,6 +71,22 @@ namespace {
 
 } // namespace
 
+namespace {
+
+// The handle of the output device with this exact node.name, or an invalid
+// handle when the graph does not have it (yet).
+[[nodiscard]] Handle outputNamed(const Snapshot &snapshot, const QString &nodeName)
+{
+    for (const Device &device : snapshot.outputs) {
+        if (device.nodeName == nodeName) {
+            return device.handle;
+        }
+    }
+    return {};
+}
+
+} // namespace
+
 void AudioOperationCoordinator::autoBindConsole(const Snapshot &snapshot)
 {
     const QList<Handle> inputs = bindableDevices(snapshot.inputs, snapshot.defaultInput);
@@ -76,7 +95,12 @@ void AudioOperationCoordinator::autoBindConsole(const Snapshot &snapshot)
     const Console console = m_console.console();
     qsizetype nextInput = 0;
     for (const Strip &strip : console.strips) {
-        if (strip.kind != StripKind::HardwareInput) {
+        if (strip.kind == StripKind::VirtualInput) {
+            // A virtual strip IS its own sink (ADR-0175): it is bound the
+            // moment the graph has the node of that name, and to nothing else.
+            const Handle sink =
+                outputNamed(snapshot, ConsoleEndpoints::stripSinkNodeName(strip.id));
+            m_console.bindStripSource(strip.id, sink, sink.isValid());
             continue;
         }
         // A strip beyond the number of real inputs is left UNBOUND rather than
@@ -92,7 +116,12 @@ void AudioOperationCoordinator::autoBindConsole(const Snapshot &snapshot)
     }
     qsizetype nextOutput = 0;
     for (const Bus &bus : console.buses) {
-        if (bus.kind != BusKind::Physical) {
+        if (bus.kind == BusKind::Virtual) {
+            // Sends play into the bus's SINK; the source applications record
+            // from is the other half of the same loopback and needs no binding.
+            const Handle sink =
+                outputNamed(snapshot, ConsoleEndpoints::busSinkNodeName(bus.id));
+            m_console.bindBusTarget(bus.id, sink, sink.isValid());
             continue;
         }
         const bool available = nextOutput < outputs.size();
@@ -116,6 +145,7 @@ void AudioOperationCoordinator::publishRouting()
         backendEdge.stripId = edge.stripId;
         backendEdge.busId = edge.busId;
         backendEdge.gainDb = edge.gainDb;
+        backendEdge.pan = edge.pan;
         backendEdge.audible = edge.audible;
         for (const Strip &strip : console.strips) {
             if (strip.id == edge.stripId && strip.sourceKnown) {
@@ -187,6 +217,31 @@ void AudioOperationCoordinator::publishMetering()
     }
 }
 
+void AudioOperationCoordinator::publishConsoleEndpoints()
+{
+    QList<BackendConsoleEndpoint> endpoints;
+    const Console console = m_console.console();
+    for (const Strip &strip : console.strips) {
+        if (strip.kind == StripKind::VirtualInput) {
+            endpoints.append(BackendConsoleEndpoint{
+                .consoleId = strip.id, .isBus = false, .description = strip.label});
+        }
+    }
+    for (const Bus &bus : console.buses) {
+        if (bus.kind == BusKind::Virtual) {
+            endpoints.append(BackendConsoleEndpoint{
+                .consoleId = bus.id, .isBus = true, .description = bus.label});
+        }
+    }
+    if (endpoints == m_publishedEndpoints) {
+        return;
+    }
+    m_publishedEndpoints = endpoints;
+    if (m_backend != nullptr && m_running) {
+        m_backend->applyConsoleEndpoints(m_publishedEndpoints);
+    }
+}
+
 void AudioOperationCoordinator::acceptLevels(const quint64 generation,
                                              const QList<LevelReading> &levels)
 {
@@ -206,6 +261,7 @@ void AudioOperationCoordinator::acceptLevels(const quint64 generation,
 
 void AudioOperationCoordinator::republishConsole()
 {
+    publishConsoleEndpoints();
     publishRouting();
     publishMetering();
     m_snapshot.console = m_console.console();

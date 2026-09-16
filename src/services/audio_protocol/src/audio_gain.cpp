@@ -75,4 +75,14 @@ double unityFaderPosition()
     return faderPositionFromGainDb(kUnityGainDb);
 }
 
+PanGains panGains(const double pan)
+{
+    if (std::isnan(pan)) {
+        return {};
+    }
+    const double clamped = std::clamp(pan, -1.0, 1.0);
+    return {.left = clamped > 0.0 ? 1.0 - clamped : 1.0,
+            .right = clamped < 0.0 ? 1.0 + clamped : 1.0};
+}
+
 } // namespace QindaQt::Audio

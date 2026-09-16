@@ -9,6 +9,8 @@
 
 #include <QtTest>
 
+#include <limits>
+
 #include <cmath>
 
 using namespace QindaQt::Audio;
@@ -22,6 +24,7 @@ private slots:
     void nonFiniteAndOutOfRangeInputClampInsteadOfPropagating();
     void theFaderTaperRoundTripsWithoutDrift();
     void theTaperIsMonotonicAndPutsUnityInTheWorkingRange();
+    void theBalanceLawKeepsUnityAtCentre();
 };
 
 void AudioGainTests::decibelsMapToAmplitudeAtTheKnownPoints()
@@ -100,6 +103,31 @@ void AudioGainTests::theTaperIsMonotonicAndPutsUnityInTheWorkingRange()
     QVERIFY(unity > 0.6);
     QVERIFY(unity < 0.95);
     QVERIFY(std::abs(gainDbFromFaderPosition(unity) - kUnityGainDb) < 1e-9);
+}
+
+// ADR-0177. The fader legend says 0 dB; a centred pan must not quietly make
+// that -3 dB.
+void AudioGainTests::theBalanceLawKeepsUnityAtCentre()
+{
+    QCOMPARE(panGains(0.0), (PanGains{1.0, 1.0}));
+    QCOMPARE(panGains(-1.0), (PanGains{1.0, 0.0}));
+    QCOMPARE(panGains(1.0), (PanGains{0.0, 1.0}));
+    QCOMPARE(panGains(0.5), (PanGains{0.5, 1.0}));
+    QCOMPARE(panGains(-0.25), (PanGains{1.0, 0.75}));
+    // Beyond the stops is the stop; not-a-number is the centre. Neither may
+    // reach the graph as a gain outside [0, 1].
+    QCOMPARE(panGains(7.0), (PanGains{0.0, 1.0}));
+    QCOMPARE(panGains(-7.0), (PanGains{1.0, 0.0}));
+    QCOMPARE(panGains(std::numeric_limits<double>::quiet_NaN()), (PanGains{1.0, 1.0}));
+    double previousLeft = 2.0;
+    double previousRight = -1.0;
+    for (int step = -100; step <= 100; ++step) {
+        const PanGains gains = panGains(step / 100.0);
+        QVERIFY(gains.left <= previousLeft);
+        QVERIFY(gains.right >= previousRight);
+        previousLeft = gains.left;
+        previousRight = gains.right;
+    }
 }
 
 QTEST_APPLESS_MAIN(AudioGainTests)

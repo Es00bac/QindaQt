@@ -45,6 +45,12 @@ public:
         metering = targets;
         ++meteringCalls;
     }
+    void applyConsoleEndpoints(
+        const QList<Audio::BackendConsoleEndpoint> &declared) override
+    {
+        endpoints = declared;
+        ++endpointCalls;
+    }
 
     void publishLevels(const QList<Audio::LevelReading> &levels)
     {
@@ -83,6 +89,8 @@ public:
     QList<RecordedOperation> operations;
     QList<Audio::BackendRoutingEdge> routing;
     QList<Audio::BackendMeterTarget> metering;
+    QList<Audio::BackendConsoleEndpoint> endpoints;
+    int endpointCalls = 0;
     int routingCalls = 0;
     int meteringCalls = 0;
     int startCalls = 0;
@@ -126,7 +134,8 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                          .canSetMute = true,
                          .channelVolumes = {0.5, 0.5},
                          .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
-                         .virtualDevice = false},
+                         .virtualDevice = false,
+                         .nodeName = QStringLiteral("alsa_output.pci-0000_00_1f.3.analog-stereo")},
                         {.handle = {.epoch = epoch, .serial = 11},
                          .kind = Audio::DeviceKind::Output,
                          .name = QStringLiteral("Virtual Output"),
@@ -140,7 +149,8 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                          .canSetMute = true,
                          .channelVolumes = {0.25, 0.75},
                          .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
-                         .virtualDevice = true}};
+                         .virtualDevice = true,
+                         .nodeName = QStringLiteral("qindaqt.virtual.game-bus")}};
     snapshot.inputs = {{.handle = {.epoch = epoch, .serial = 20},
                         .kind = Audio::DeviceKind::Input,
                         .name = QStringLiteral("Input"),
@@ -154,7 +164,8 @@ inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,
                         .canSetMute = true,
                         .channelVolumes = {0.5, 0.5},
                         .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
-                        .virtualDevice = false}};
+                        .virtualDevice = false,
+                        .nodeName = QStringLiteral("alsa_input.pci-0000_00_1f.3.analog-stereo")}};
     snapshot.streams = {{.handle = {.epoch = epoch, .serial = 30},
                          .direction = Audio::StreamDirection::Playback,
                          .applicationName = QStringLiteral("Player"),
@@ -187,6 +198,37 @@ inline Audio::Snapshot publishedSnapshot(const Audio::Snapshot &backendSnapshot,
     return expected;
 }
 
+// A snapshot in which the graph already has the console's own endpoint nodes
+// (ADR-0175): the sink a virtual strip is made of and the sink half of a
+// virtual bus. Appended after the fixture's devices in serial order.
+inline Audio::Snapshot snapshotWithConsoleEndpoints(const QString &stripSinkNodeName,
+                                                    const QString &busSinkNodeName,
+                                                    const quint64 epoch = 7,
+                                                    const quint64 revision = 3)
+{
+    Audio::Snapshot snapshot = audioSnapshot(epoch, revision);
+    const auto endpoint = [epoch](const quint64 serial, const QString &nodeName) {
+        return Audio::Device{.handle = {.epoch = epoch, .serial = serial},
+                             .kind = Audio::DeviceKind::Output,
+                             .name = nodeName,
+                             .description = nodeName,
+                             .volume = 1.0,
+                             .volumeKnown = true,
+                             .muted = false,
+                             .muteKnown = true,
+                             .isDefault = false,
+                             .canSetVolume = true,
+                             .canSetMute = true,
+                             .channelVolumes = {1.0, 1.0},
+                             .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
+                             .virtualDevice = false,
+                             .nodeName = nodeName};
+    };
+    snapshot.outputs.push_back(endpoint(50, stripSinkNodeName));
+    snapshot.outputs.push_back(endpoint(51, busSinkNodeName));
+    return snapshot;
+}
+
 // Simulates the backend completing a CreateVirtualDevice: emits the outcome
 // and publishes a snapshot with the newly created managed virtual device
 // appended, mirroring what the WirePlumber adapter observes after the fence.
@@ -208,7 +250,8 @@ inline void fulfillVirtualDeviceCreation(FakeAudioBackend &backend,
                                 .canSetMute = true,
                                 .channelVolumes = {1.0, 1.0},
                                 .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")},
-                                .virtualDevice = true});
+                                .virtualDevice = true,
+                                .nodeName = QStringLiteral("qindaqt.virtual.virtual-output-2")});
     std::sort(snapshot.outputs.begin(), snapshot.outputs.end(),
               [](const Audio::Device &left, const Audio::Device &right) {
                   return left.handle.serial < right.handle.serial;

@@ -20,7 +20,10 @@ target_sources(
         src/audio_service_object_p.h
         src/resident_audio_service.cpp
         src/audio_console_operations.cpp
+        src/console_endpoints.cpp
+        src/console_endpoints_p.h
         src/console_model.cpp
+        src/console_store.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
         src/wireplumber_meters.cpp
@@ -29,6 +32,7 @@ target_sources(
         src/wireplumber_routing_p.h
         src/wireplumber_graph_p.h
         src/wireplumber_worker.cpp
+        src/wireplumber_worker_endpoints.cpp
         src/wireplumber_worker_metering.cpp
         src/wireplumber_worker_operations.cpp
         src/wireplumber_worker_routing.cpp
@@ -39,6 +43,7 @@ target_sources(
         FILES
             include/qindaqt/services/audio_service/audio_backend.h
             include/qindaqt/services/audio_service/console_model.h
+            include/qindaqt/services/audio_service/console_store.h
             include/qindaqt/services/audio_service/audio_operation_coordinator.h
             include/qindaqt/services/audio_service/resident_audio_service.h
             include/qindaqt/services/audio_service/wireplumber_audio_backend.h

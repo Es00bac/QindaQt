@@ -76,6 +76,9 @@ public:
         // torn down, so unsoloing restores the mix instantly instead of
         // rebuilding the graph.
         bool audible = true;
+        // The strip's pan, carried per edge because that is where the graph
+        // applies it: every send out of the strip is panned identically.
+        double pan = 0.0;
 
         friend bool operator==(const RoutingEdge &, const RoutingEdge &) = default;
     };
