@@ -5,6 +5,17 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 16, r6)
+
+Exact source `a4b7f54c` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260915-r6` (superseding r5). This
+checkpoint installs the console's strips in the tray applet — fader, mute and
+meter per strip (ADR-0181) — console presets saved, loaded and deleted through
+Audio1 and published in the snapshot (ADR-0182), and the fix for a
+denoiser-only rack never being declared to the graph. Installed verification:
+a denoiser-only rack on the packaged service loads its chain; the tray shows
+the strips; a preset round-trips through the packaged service.
+
 ## Installed delivery checkpoint (September 16, r5)
 
 Exact source `fcedb223` is installed through Portage as
