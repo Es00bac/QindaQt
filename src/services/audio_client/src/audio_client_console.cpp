@@ -147,4 +147,35 @@ quint64 AudioClient::deletePreset(const QString &name)
     return beginOperation(request);
 }
 
+quint64 AudioClient::runMacro(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::RunMacro;
+    request.displayName = name;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::startRecording(const QString &busId, const QString &format)
+{
+    auto request = consoleRequest(OperationKind::StartRecording, busId);
+    request.displayName = format;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::stopRecording()
+{
+    OperationRequest request;
+    request.kind = OperationKind::StopRecording;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::setVbanEnabled(const QString &name, const bool enabled)
+{
+    OperationRequest request;
+    request.kind = OperationKind::SetVbanEnabled;
+    request.displayName = name;
+    request.enabled = enabled;
+    return beginOperation(request);
+}
+
 } // namespace QindaQt::Audio

@@ -237,6 +237,34 @@ struct LevelReading {
     friend bool operator==(const LevelReading &, const LevelReading &) = default;
 };
 
+// What the recorder is doing (ADR-0184). One recording at a time, of one bus,
+// to one file. `startedAtMs` is wall-clock epoch milliseconds so a surface can
+// show elapsed time without the service republishing every second.
+struct Recording {
+    bool active = false;
+    QString busId;
+    QString path;
+    quint64 startedAtMs = 0;
+
+    friend bool operator==(const Recording &, const Recording &) = default;
+};
+
+// One VBAN stream as the console knows it (ADR-0185). Outgoing: a bus sent to
+// `host:port` under `name`. Incoming: packets named `name` arriving on `port`,
+// presented as a virtual source. `enabled` is the user's switch; `active` is
+// whether the graph currently carries it.
+struct VbanStream {
+    QString name;
+    bool outgoing = true;
+    QString busId;
+    QString host;
+    quint32 port = 6980;
+    bool enabled = false;
+    bool active = false;
+
+    friend bool operator==(const VbanStream &, const VbanStream &) = default;
+};
+
 struct Console {
     QList<Strip> strips = {};
     QList<Bus> buses = {};
@@ -247,6 +275,10 @@ struct Console {
     // The names of the saved presets (ADR-0182), in stored order. Published so
     // every surface offers the same list without a second round trip.
     QStringList presets = {};
+    // The names of the macro buttons (ADR-0183), in file order.
+    QStringList macros = {};
+    Recording recording = {};
+    QList<VbanStream> vban = {};
 
     bool wireValid = true;
 
@@ -271,4 +303,6 @@ Q_DECLARE_METATYPE(QindaQt::Audio::EqualizerSettings)
 Q_DECLARE_METATYPE(QindaQt::Audio::StripProcessing)
 Q_DECLARE_METATYPE(QindaQt::Audio::Strip)
 Q_DECLARE_METATYPE(QindaQt::Audio::Bus)
+Q_DECLARE_METATYPE(QindaQt::Audio::Recording)
+Q_DECLARE_METATYPE(QindaQt::Audio::VbanStream)
 Q_DECLARE_METATYPE(QindaQt::Audio::Console)

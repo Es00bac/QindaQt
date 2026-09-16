@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 8;
+inline constexpr quint32 kSchemaVersion = 11;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -73,5 +73,15 @@ inline constexpr double kMinRangeDb = -90.0;
 // Presets (ADR-0182): named copies of the console document.
 inline constexpr qsizetype kMaxPresets = 64;
 inline constexpr qsizetype kMaxPresetNameUtf8Bytes = 64;
+// Macro buttons (ADR-0183): named sequences of console operations.
+inline constexpr qsizetype kMaxMacros = 32;
+inline constexpr qsizetype kMaxMacroActions = 16;
+inline constexpr qsizetype kMaxMacroNameUtf8Bytes = 64;
+// The recorder (ADR-0184).
+inline constexpr qsizetype kMaxRecordingPathUtf8Bytes = 1024;
+// VBAN (ADR-0185): network audio streams defined in a user-owned document.
+inline constexpr qsizetype kMaxVbanStreams = 16;
+inline constexpr qsizetype kMaxVbanNameUtf8Bytes = 16;
+inline constexpr qsizetype kMaxVbanHostUtf8Bytes = 253;
 
 } // namespace QindaQt::Audio

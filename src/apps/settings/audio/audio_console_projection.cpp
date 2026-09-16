@@ -315,6 +315,86 @@ QStringList AudioSettingsModel::consolePresets() const
     return m_client.snapshot().console.presets;
 }
 
+QStringList AudioSettingsModel::consoleMacros() const
+{
+    return m_client.snapshot().console.macros;
+}
+
+QVariantMap AudioSettingsModel::consoleRecording() const
+{
+    const Recording recording = m_client.snapshot().console.recording;
+    return QVariantMap{{QStringLiteral("active"), recording.active},
+                       {QStringLiteral("busId"), recording.busId},
+                       {QStringLiteral("path"), recording.path},
+                       {QStringLiteral("startedAtMs"), recording.startedAtMs}};
+}
+
+QVariantList AudioSettingsModel::consoleVban() const
+{
+    QVariantList rows;
+    for (const VbanStream &stream : m_client.snapshot().console.vban) {
+        rows.append(QVariantMap{{QStringLiteral("name"), stream.name},
+                                {QStringLiteral("outgoing"), stream.outgoing},
+                                {QStringLiteral("busId"), stream.busId},
+                                {QStringLiteral("host"), stream.host},
+                                {QStringLiteral("port"), stream.port},
+                                {QStringLiteral("enabled"), stream.enabled},
+                                {QStringLiteral("active"), stream.active}});
+    }
+    return rows;
+}
+
+bool AudioSettingsModel::setVbanEnabled(QString name, const bool enabled)
+{
+    if (!consoleAvailable()
+        || !m_client.snapshot().capabilities.testFlag(Capability::SetConsoleRouting)) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    if (m_client.setVbanEnabled(name.trimmed(), enabled) == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
+}
+
+bool AudioSettingsModel::startRecording(QString busId, QString format)
+{
+    const Snapshot snapshot = m_client.snapshot();
+    if (!consoleAvailable() || !snapshot.capabilities.testFlag(Capability::SetConsoleGain)) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    if (busId.isEmpty()
+        || (format != QStringLiteral("flac") && format != QStringLiteral("wav"))) {
+        rejectAction(QStringLiteral("unknown-format"));
+        return false;
+    }
+    if (m_client.startRecording(busId, format) == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
+}
+
+bool AudioSettingsModel::stopRecording()
+{
+    if (!consoleAvailable()) {
+        rejectAction(QStringLiteral("unsupported"));
+        return false;
+    }
+    if (m_client.stopRecording() == 0) {
+        rejectAction(QString());
+        return false;
+    }
+    return true;
+}
+
+bool AudioSettingsModel::runMacro(QString name)
+{
+    return dispatchPreset(OperationKind::RunMacro, std::move(name));
+}
+
 bool AudioSettingsModel::savePreset(QString name)
 {
     return dispatchPreset(OperationKind::SavePreset, std::move(name));
@@ -352,6 +432,9 @@ bool AudioSettingsModel::dispatchPreset(const OperationKind kind, QString name)
         break;
     case OperationKind::DeletePreset:
         requestId = m_client.deletePreset(name);
+        break;
+    case OperationKind::RunMacro:
+        requestId = m_client.runMacro(name);
         break;
     default:
         break;

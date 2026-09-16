@@ -19,15 +19,15 @@ the work items that move rows there.
 | Pan applied to the graph ([ADR-0177](../adr/0177-pan-is-balance-on-the-send.md)) | **done** (installed r2) |
 | Per-strip / per-bus explicit device pins ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | built and tested, commit pending |
 | Gate, compressor, limiter, EQ per strip ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** (installed r4) |
-| Denoiser per strip ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | committed; a denoiser-only rack was never declared to the graph in r5 (fixed, one shared active-rack predicate); installing as r6 |
-| Bus EQ and bus modes ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | committed; installing as r5 (stereo modes; surround upmixes not modelled) |
-| Recorder / player | gap |
-| VBAN | gap |
-| Macro buttons | gap |
-| Presets ([ADR-0182](../adr/0182-a-preset-is-the-console-under-a-name.md)) | committed; installing as r6 |
+| Denoiser per strip ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** (installed r6; a denoiser-only rack loads on the packaged service) |
+| Bus EQ and bus modes ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** (installed r5; stereo modes, surround upmixes not modelled) |
+| Recorder ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)) | built (bus to FLAC/WAV), build/commit pending the suite; player not built |
+| VBAN ([ADR-0185](../adr/0185-vban-is-a-document-and-two-threads.md)) | built (audio sub-protocol, document-defined streams), build/commit pending the suite |
+| Macro buttons ([ADR-0183](../adr/0183-a-macro-button-is-a-list-of-console-operations.md)) | built (file-defined; run from Settings), build/commit pending the suite |
+| Presets ([ADR-0182](../adr/0182-a-preset-is-the-console-under-a-name.md)) | **done** (installed r6; verified round trip on the packaged service) |
 | Settings route complete for every control above | **done** for every row above: strips, buses, matrix, meters, pins, strip and bus racks |
-| Audio applet reflects the console ([ADR-0181](../adr/0181-the-tray-rides-the-console.md)) | committed; installing as r6 |
-| Installed and running on the live session | r4 (through ADR-0179) |
+| Audio applet reflects the console ([ADR-0181](../adr/0181-the-tray-rides-the-console.md)) | **done** (installed r6) |
+| Installed and running on the live session | r6 (through ADR-0182 and the active-rack fix) |
 
 ## 2. OBS integration
 

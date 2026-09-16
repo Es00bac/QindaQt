@@ -85,6 +85,13 @@ public:
     [[nodiscard]] quint64 savePreset(const QString &name);
     [[nodiscard]] quint64 loadPreset(const QString &name);
     [[nodiscard]] quint64 deletePreset(const QString &name);
+    // Runs a macro button (ADR-0183); names are in snapshot().console.macros.
+    [[nodiscard]] quint64 runMacro(const QString &name);
+    // The recorder (ADR-0184): state is in snapshot().console.recording.
+    [[nodiscard]] quint64 startRecording(const QString &busId, const QString &format);
+    [[nodiscard]] quint64 stopRecording();
+    // VBAN (ADR-0185): streams are in snapshot().console.vban.
+    [[nodiscard]] quint64 setVbanEnabled(const QString &name, bool enabled);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);

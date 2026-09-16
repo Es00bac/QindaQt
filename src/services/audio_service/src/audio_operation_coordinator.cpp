@@ -67,11 +67,14 @@ const Device *findDevice(const QList<Device> &devices, const Handle &handle)
 } // namespace
 
 AudioOperationCoordinator::AudioOperationCoordinator(AudioBackend *backend, QObject *parent,
-                                                     QString presetDirectory)
+                                                     QString presetDirectory, QString macroPath,
+                                                     QString vbanPath)
     : QObject(parent)
     , m_backend(backend)
     , m_presets(presetDirectory.isEmpty() ? PresetStore::defaultDirectory()
                                           : std::move(presetDirectory))
+    , m_macros(macroPath.isEmpty() ? MacroStore::defaultPath() : std::move(macroPath))
+    , m_vban(vbanPath.isEmpty() ? VbanStore::defaultPath() : std::move(vbanPath))
 {
     Q_ASSERT(m_backend != nullptr);
     m_snapshot.schemaVersion = kSchemaVersion;
@@ -86,6 +89,8 @@ AudioOperationCoordinator::AudioOperationCoordinator(AudioBackend *backend, QObj
             &AudioOperationCoordinator::acceptBackendResult);
     connect(m_backend, &AudioBackend::levelsReady, this,
             &AudioOperationCoordinator::acceptLevels);
+    connect(m_backend, &AudioBackend::recordingFailed, this,
+            &AudioOperationCoordinator::acceptRecordingFailure);
 }
 
 const Snapshot &AudioOperationCoordinator::snapshot() const noexcept
@@ -204,7 +209,42 @@ OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &re
             }
         }
         QString reasonCode;
-        if (isPresetOperation(request.kind)) {
+        if (request.kind == OperationKind::SetVbanEnabled) {
+            const QString name = request.displayName.trimmed();
+            bool known = false;
+            for (const VbanStream &stream : m_vban.load()) {
+                known = known || stream.name == name;
+            }
+            if (!known) {
+                return {.pending = false,
+                        .operationId = 0,
+                        .immediateResult = immediate(request, OperationStatus::Rejected,
+                                                     QStringLiteral("unknown-vban-stream"))};
+            }
+            m_console.setVbanEnabled(name, request.enabled);
+        } else if (request.kind == OperationKind::StartRecording
+                   || request.kind == OperationKind::StopRecording) {
+            reasonCode = applyRecordingRequest(request);
+            if (!reasonCode.isEmpty()) {
+                return {.pending = false,
+                        .operationId = 0,
+                        .immediateResult = immediate(request, OperationStatus::Rejected,
+                                                     reasonCode)};
+            }
+        } else if (request.kind == OperationKind::RunMacro) {
+            reasonCode = runMacro(request);
+            if (!reasonCode.isEmpty()) {
+                // AGENT-GUARD: a stopped macro keeps the actions it already
+                // applied (see runMacro). The early return must not skip the
+                // republish, or clients sit on a console snapshot that
+                // predates the applied prefix until the next console change.
+                republishConsole();
+                return {.pending = false,
+                        .operationId = 0,
+                        .immediateResult = immediate(request, OperationStatus::Rejected,
+                                                     reasonCode)};
+            }
+        } else if (isPresetOperation(request.kind)) {
             reasonCode = applyPreset(request);
             if (!reasonCode.isEmpty()) {
                 return {.pending = false,
@@ -325,6 +365,9 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         // would lose their routing because a daemon hiccuped.
         unavailable.console = m_console.console();
         unavailable.console.presets = m_presets.names();
+        unavailable.console.macros = MacroStore::names(m_macros.load());
+        unavailable.console.recording = m_recording;
+        unavailable.console.vban = vbanStreams();
         unavailable.capabilities = consoleCapabilities();
         makePendingUncertain(unavailable, QStringLiteral("backend-malformed"));
         m_snapshot = unavailable;
@@ -348,6 +391,9 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     // console - faders, routing and all - on the next publication.
     m_snapshot.console = m_console.console();
     m_snapshot.console.presets = m_presets.names();
+    m_snapshot.console.macros = MacroStore::names(m_macros.load());
+    m_snapshot.console.recording = m_recording;
+    m_snapshot.console.vban = vbanStreams();
     m_snapshot.capabilities |= consoleCapabilities();
     // A new graph generation can make an endpoint resolvable that was not
     // before, so the routing is re-derived against every accepted snapshot
@@ -357,6 +403,8 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     publishBusProcessing();
     publishRouting();
     publishMetering();
+    publishRecording();
+    publishVban();
     m_hasBackendSnapshot = true;
     m_minimumRestartEpoch = 0;
     Q_EMIT snapshotChanged(m_snapshot);

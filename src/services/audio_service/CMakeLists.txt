@@ -9,6 +9,9 @@ pkg_check_modules(WirePlumber REQUIRED IMPORTED_TARGET wireplumber-0.5>=0.5)
 # expose module loading (ADR-0173).
 pkg_check_modules(PipeWire REQUIRED IMPORTED_TARGET libpipewire-0.3>=1.0)
 
+# The recorder (ADR-0184) writes FLAC and WAV through libsndfile.
+pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
+
 qt_add_library(qindaqt_audio_service STATIC)
 add_library(QindaQt::AudioService ALIAS qindaqt_audio_service)
 
@@ -26,6 +29,7 @@ target_sources(
         src/console_endpoints_p.h
         src/console_model.cpp
         src/console_store.cpp
+        src/macro_store.cpp
         src/preset_store.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
@@ -41,6 +45,15 @@ target_sources(
         src/wireplumber_worker_metering.cpp
         src/wireplumber_worker_modules.cpp
         src/wireplumber_worker_processing.cpp
+        src/wireplumber_worker_recording.cpp
+        src/wireplumber_worker_vban.cpp
+        src/wireplumber_vban.cpp
+        src/wireplumber_vban_p.h
+        src/vban_packet.cpp
+        src/vban_store.cpp
+        src/vban_packet_p.h
+        src/wireplumber_recorder.cpp
+        src/wireplumber_recorder_p.h
         src/wireplumber_worker_operations.cpp
         src/wireplumber_worker_routing.cpp
         src/wireplumber_worker_p.h
@@ -51,7 +64,9 @@ target_sources(
             include/qindaqt/services/audio_service/audio_backend.h
             include/qindaqt/services/audio_service/console_model.h
             include/qindaqt/services/audio_service/console_store.h
+            include/qindaqt/services/audio_service/macro_store.h
             include/qindaqt/services/audio_service/preset_store.h
+            include/qindaqt/services/audio_service/vban_store.h
             include/qindaqt/services/audio_service/audio_operation_coordinator.h
             include/qindaqt/services/audio_service/resident_audio_service.h
             include/qindaqt/services/audio_service/wireplumber_audio_backend.h
@@ -59,7 +74,7 @@ target_sources(
 target_link_libraries(
     qindaqt_audio_service
     PUBLIC QindaQt::AudioProtocol Qt6::Core Qt6::DBus
-    PRIVATE PkgConfig::WirePlumber PkgConfig::PipeWire Threads::Threads
+    PRIVATE PkgConfig::WirePlumber PkgConfig::PipeWire PkgConfig::SNDFILE Threads::Threads
 )
 target_compile_features(qindaqt_audio_service PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_audio_service PRIVATE QT_NO_KEYWORDS)

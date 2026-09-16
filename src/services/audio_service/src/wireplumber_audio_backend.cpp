@@ -74,6 +74,25 @@ WirePlumberAudioBackend::WirePlumberAudioBackend(QObject *parent)
                     Q_EMIT levelsReady(generation, levels);
                 },
                 Qt::QueuedConnection);
+        },
+        // make_unique cannot deduce the hooks from a bare brace list.
+        WirePlumberWorkerLifecycleHooks{},
+        [this](QString reason) {
+            const quint64 generation = m_runGeneration.load(std::memory_order_acquire);
+            if (!m_running.load(std::memory_order_acquire)) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                this,
+                [this, generation, reason = std::move(reason)] {
+                    if (!m_running.load(std::memory_order_acquire)
+                        || generation
+                            != m_runGeneration.load(std::memory_order_acquire)) {
+                        return;
+                    }
+                    Q_EMIT recordingFailed(generation, reason);
+                },
+                Qt::QueuedConnection);
         });
 }
 
@@ -160,6 +179,22 @@ void WirePlumberAudioBackend::applyBusProcessing(const QList<BackendBusChain> &c
         return;
     }
     m_worker->applyBusProcessing(chains);
+}
+
+void WirePlumberAudioBackend::applyRecording(const BackendRecording &recording)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyRecording(recording);
+}
+
+void WirePlumberAudioBackend::applyVban(const QList<BackendVbanStream> &streams)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyVban(streams);
 }
 
 } // namespace QindaQt::Audio

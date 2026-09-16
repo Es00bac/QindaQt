@@ -241,6 +241,37 @@ void AudioServiceObject::DeletePreset(const QString &name)
     beginOperation(request);
 }
 
+void AudioServiceObject::RunMacro(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::RunMacro;
+    request.displayName = name;
+    beginOperation(request);
+}
+
+void AudioServiceObject::StartRecording(const QString &bus, const QString &format)
+{
+    auto request = consoleRequest(OperationKind::StartRecording, bus);
+    request.displayName = format;
+    beginOperation(request);
+}
+
+void AudioServiceObject::StopRecording()
+{
+    OperationRequest request;
+    request.kind = OperationKind::StopRecording;
+    beginOperation(request);
+}
+
+void AudioServiceObject::SetVbanEnabled(const QString &name, const bool enabled)
+{
+    OperationRequest request;
+    request.kind = OperationKind::SetVbanEnabled;
+    request.displayName = name;
+    request.enabled = enabled;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

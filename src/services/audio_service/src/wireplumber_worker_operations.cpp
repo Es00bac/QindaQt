@@ -230,6 +230,10 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
     case OperationKind::SavePreset:
     case OperationKind::LoadPreset:
     case OperationKind::DeletePreset:
+    case OperationKind::RunMacro:
+    case OperationKind::StartRecording:
+    case OperationKind::StopRecording:
+    case OperationKind::SetVbanEnabled:
         rejectConsoleOperation(operationId);
         return;
     case OperationKind::SetDefault: {

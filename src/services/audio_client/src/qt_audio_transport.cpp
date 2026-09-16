@@ -353,6 +353,21 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("DeletePreset");
         arguments = {request.displayName};
         break;
+    case OperationKind::RunMacro:
+        method = QStringLiteral("RunMacro");
+        arguments = {request.displayName};
+        break;
+    case OperationKind::StartRecording:
+        method = QStringLiteral("StartRecording");
+        arguments = {request.consoleId, request.displayName};
+        break;
+    case OperationKind::StopRecording:
+        method = QStringLiteral("StopRecording");
+        break;
+    case OperationKind::SetVbanEnabled:
+        method = QStringLiteral("SetVbanEnabled");
+        arguments = {request.displayName, request.enabled};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

@@ -33,6 +33,8 @@ public:
     void applyConsoleEndpoints(const QList<BackendConsoleEndpoint> &endpoints) override;
     void applyProcessing(const QList<BackendProcessingChain> &chains) override;
     void applyBusProcessing(const QList<BackendBusChain> &chains) override;
+    void applyRecording(const BackendRecording &recording) override;
+    void applyVban(const QList<BackendVbanStream> &streams) override;
 
 private:
     [[nodiscard]] quint64 advanceRunGeneration();

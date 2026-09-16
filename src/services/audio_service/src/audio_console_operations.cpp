@@ -8,9 +8,11 @@
 #include <qindaqt/services/audio_service/audio_operation_coordinator.h>
 
 #include "console_endpoints_p.h"
+#include "wireplumber_recorder_p.h"
 
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QSet>
 
 #include <algorithm>
@@ -38,6 +40,10 @@ bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noe
     case OperationKind::SavePreset:
     case OperationKind::LoadPreset:
     case OperationKind::DeletePreset:
+    case OperationKind::RunMacro:
+    case OperationKind::StartRecording:
+    case OperationKind::StopRecording:
+    case OperationKind::SetVbanEnabled:
         return true;
     default:
         return false;
@@ -222,6 +228,40 @@ QString AudioOperationCoordinator::applyPreset(const OperationRequest &request)
     default:
         return QStringLiteral("unsupported");
     }
+}
+
+QString AudioOperationCoordinator::runMacro(const OperationRequest &request)
+{
+    const QString name = request.displayName.trimmed();
+    const QList<Macro> macros = m_macros.load();
+    const Macro *macro = nullptr;
+    for (const Macro &candidate : macros) {
+        if (candidate.name == name) {
+            macro = &candidate;
+        }
+    }
+    if (macro == nullptr) {
+        return QStringLiteral("unknown-macro");
+    }
+    // AGENT-GUARD: each action is an ordinary console operation and is
+    // admitted like one. The first refusal stops the macro and is reported;
+    // actions before it stay applied, which is what a stopped sequence means.
+    for (const MacroAction &action : macro->actions) {
+        const QString rejection = validateRequest(action.request);
+        if (!rejection.isEmpty()) {
+            return rejection;
+        }
+        QString reasonCode;
+        if (isPresetOperation(action.request.kind)) {
+            reasonCode = applyPreset(action.request);
+        } else if (!m_console.apply(action.request, &reasonCode)) {
+            // reasonCode set by apply
+        }
+        if (!reasonCode.isEmpty()) {
+            return reasonCode;
+        }
+    }
+    return {};
 }
 
 void AudioOperationCoordinator::publishRouting()
@@ -409,6 +449,132 @@ void AudioOperationCoordinator::acceptLevels(const quint64 generation,
     Q_EMIT levelsChanged(levels);
 }
 
+QString AudioOperationCoordinator::applyRecordingRequest(const OperationRequest &request)
+{
+    if (request.kind == OperationKind::StopRecording) {
+        m_recording = {};
+        return {};
+    }
+    if (m_recording.active) {
+        return QStringLiteral("recording-busy");
+    }
+    const QString format = request.displayName.trimmed().toLower();
+    if (!recordingFormatIsKnown(format)) {
+        return QStringLiteral("unknown-format");
+    }
+    const Console console = m_console.console();
+    const Bus *bus = nullptr;
+    for (const Bus &candidate : console.buses) {
+        if (candidate.id == request.consoleId) {
+            bus = &candidate;
+        }
+    }
+    if (bus == nullptr) {
+        return QStringLiteral("unknown-bus");
+    }
+    // A bus with no device has nothing to record; saying so beats a file of
+    // silence.
+    if (!bus->targetKnown) {
+        return QStringLiteral("bus-unbound");
+    }
+    m_recording.active = true;
+    m_recording.busId = bus->id;
+    m_recording.path = recordingPathFor(bus->id, format);
+    m_recording.startedAtMs = static_cast<quint64>(QDateTime::currentMSecsSinceEpoch());
+    return {};
+}
+
+void AudioOperationCoordinator::publishRecording()
+{
+    BackendRecording recording;
+    if (m_recording.active) {
+        const Console console = m_console.console();
+        for (const Bus &bus : console.buses) {
+            if (bus.id == m_recording.busId && bus.targetKnown) {
+                recording.active = true;
+                recording.busId = bus.id;
+                recording.target = Handle{bus.targetEpoch, bus.targetSerial};
+                recording.path = m_recording.path;
+                recording.format = m_recording.path.section(QLatin1Char('.'), -1);
+            }
+        }
+    }
+    if (recording == m_publishedRecording) {
+        return;
+    }
+    m_publishedRecording = recording;
+    if (m_backend != nullptr && m_running) {
+        m_backend->applyRecording(m_publishedRecording);
+    }
+}
+
+void AudioOperationCoordinator::acceptRecordingFailure(const quint64 generation,
+                                                       const QString &reasonCode)
+{
+    if (generation != m_backendGeneration || !m_running || !m_recording.active) {
+        return;
+    }
+    // The graph stopped the recording (a write error, a device gone): the
+    // console must not keep showing a recording that is not happening.
+    Q_UNUSED(reasonCode)
+    m_recording = {};
+    republishConsole();
+}
+
+QList<VbanStream> AudioOperationCoordinator::vbanStreams() const
+{
+    QList<VbanStream> streams = m_vban.load();
+    const QStringList enabled = m_console.enabledVbanStreams();
+    for (VbanStream &stream : streams) {
+        stream.enabled = enabled.contains(stream.name);
+        bool declared = false;
+        for (const BackendVbanStream &published : m_publishedVban) {
+            declared = declared || published.name == stream.name;
+        }
+        // Active means "declared to the graph": enabled, and for an outgoing
+        // stream, its bus has a device.
+        stream.active = declared;
+    }
+    return streams;
+}
+
+void AudioOperationCoordinator::publishVban()
+{
+    QList<BackendVbanStream> wanted;
+    const QStringList enabled = m_console.enabledVbanStreams();
+    const Console console = m_console.console();
+    for (const VbanStream &stream : m_vban.load()) {
+        if (!enabled.contains(stream.name)) {
+            continue;
+        }
+        BackendVbanStream declared;
+        declared.name = stream.name;
+        declared.outgoing = stream.outgoing;
+        declared.host = stream.host;
+        declared.port = stream.port;
+        if (stream.outgoing) {
+            bool bound = false;
+            for (const Bus &bus : console.buses) {
+                if (bus.id == stream.busId && bus.targetKnown) {
+                    declared.target = Handle{bus.targetEpoch, bus.targetSerial};
+                    bound = true;
+                }
+            }
+            if (!bound) {
+                continue;
+            }
+        }
+        wanted.append(declared);
+    }
+    if (wanted == m_publishedVban) {
+        return;
+    }
+    m_publishedVban = wanted;
+    if (m_backend != nullptr && m_running) {
+        m_backend->applyVban(m_publishedVban);
+    }
+}
+
 void AudioOperationCoordinator::republishConsole()
 {
     publishConsoleEndpoints();
@@ -419,8 +585,13 @@ void AudioOperationCoordinator::republishConsole()
     publishBusProcessing();
     publishRouting();
     publishMetering();
+    publishRecording();
+    publishVban();
     m_snapshot.console = m_console.console();
     m_snapshot.console.presets = m_presets.names();
+    m_snapshot.console.macros = MacroStore::names(m_macros.load());
+    m_snapshot.console.recording = m_recording;
+    m_snapshot.console.vban = vbanStreams();
     // A console change is a real revision: clients diff on lineage, so a fader
     // move that left the revision alone would not reach any of them.
     if (m_snapshot.revision != std::numeric_limits<quint64>::max()) {

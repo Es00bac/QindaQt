@@ -70,10 +70,10 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 
 | Feature | QindaQt design | Status |
 | --- | --- | --- |
-| Multitrack recorder (up to 8 channels) | capture node fanned from selected strips/buses | gap |
-| Record format selection (WAV/AIFF/MP3…) | encoder selection on the recorder | gap |
-| Source selection (any bus or strip set) | recorder input matrix | gap |
-| Transport: record / play / pause / loop | recorder transport state on the wire | gap |
+| Multitrack recorder (up to 8 channels) | One bus at a time, stereo, to FLAC or WAV ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)); not multitrack | partial |
+| Record format selection (WAV/AIFF/MP3…) | FLAC or WAV, chosen when the recording starts ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)); no AIFF or MP3 | partial |
+| Source selection (any bus or strip set) | Any bus, chosen by its Record button ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)); strips not yet | partial |
+| Transport: record / play / pause / loop | Record and stop ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)); no play, pause or loop | partial |
 | File playback into buses (tape/cassette) | playback node routed like a strip | gap |
 
 ## 4. Network audio — VBAN
@@ -83,13 +83,13 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | 8 incoming VBAN streams | ADR-0123 slice S5 | gap |
 | 8 outgoing VBAN streams | ADR-0123 slice S5 | gap |
 | Per-stream IP, port, name, sample rate, format, quality | VBAN stream config on the wire | gap |
-| VBAN text / MIDI / service channels | later than audio streams | gap |
+| VBAN | In-tree audio sub-protocol, 48 kHz stereo PCM16: a bus sent to a host, a remote stream received as a source; streams defined in a document, switched in Settings ([ADR-0185](../adr/0185-vban-is-a-document-and-two-threads.md)); no MIDI/serial/text, no other rates | partial |
 
 ## 5. Control surfaces and automation
 
 | Feature | QindaQt design | Status |
 | --- | --- | --- |
-| Macro buttons with scripting | QindaQt applet + a bounded action vocabulary | gap |
+| Macro buttons | Named lists of console operations in a user-owned document, run through `RunMacro` and shown as buttons in the Settings console ([ADR-0183](../adr/0183-a-macro-button-is-a-list-of-console-operations.md)); no in-app editor or global shortcuts yet | partial |
 | MIDI in/out mapping to console controls | MIDI binding layer over the operation kinds | gap |
 | Remote control API | `org.qindaqt.Audio1` **is** the remote API, and it is a better one than a DLL | partial |
 | System tray presence | the QindaQt audio applet | partial |
@@ -134,7 +134,16 @@ one filter-chain per strip and persisted with the console
 A strip is denoised before its gate, and a physical bus has its own rack
 ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)).
 
-What is emphatically not here yet: the recorder, VBAN and macro buttons, and
-the surround bus modes.
+Macro buttons are file-defined lists of console operations
+([ADR-0183](../adr/0183-a-macro-button-is-a-list-of-console-operations.md)).
+
+Any bus can be recorded to a file from the console
+([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)).
+
+VBAN sends a bus to another machine and receives a remote stream as a source
+([ADR-0185](../adr/0185-vban-is-a-document-and-two-threads.md)).
+
+What is emphatically not here yet: the player half of the recorder, VBAN's
+non-audio sub-protocols, and the surround bus modes.
 
 This page exists so that distance is visible rather than implied.

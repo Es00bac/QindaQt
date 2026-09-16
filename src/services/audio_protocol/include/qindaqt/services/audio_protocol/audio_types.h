@@ -83,6 +83,14 @@ enum class OperationKind : quint32 {
     SavePreset = 21,
     LoadPreset = 22,
     DeletePreset = 23,
+    // Runs a macro button's actions in order (ADR-0183); name in displayName.
+    RunMacro = 24,
+    // The recorder (ADR-0184): StartRecording names the bus in consoleId and
+    // the format ("flac" or "wav") in displayName; StopRecording needs nothing.
+    StartRecording = 25,
+    StopRecording = 26,
+    // Switches a VBAN stream on or off (ADR-0185); name in displayName.
+    SetVbanEnabled = 27,
 };
 
 enum class OperationStatus : quint32 {

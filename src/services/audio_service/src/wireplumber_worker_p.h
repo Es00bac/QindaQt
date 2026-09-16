@@ -5,6 +5,8 @@
 #include <qindaqt/services/audio_service/audio_backend.h>
 
 #include "wireplumber_meters_p.h"
+#include "wireplumber_recorder_p.h"
+#include "wireplumber_vban_p.h"
 
 #include <wp/wp.h>
 
@@ -35,10 +37,12 @@ public:
     using SnapshotCallback = std::function<void(Snapshot)>;
     using OutcomeCallback = std::function<void(quint64, BackendOperationOutcome)>;
     using LevelsCallback = std::function<void(QList<LevelReading>)>;
+    using RecordingFailedCallback = std::function<void(QString)>;
 
     WirePlumberWorker(quint64 initialEpoch, SnapshotCallback snapshotCallback,
                       OutcomeCallback outcomeCallback, LevelsCallback levelsCallback,
-                      WirePlumberWorkerLifecycleHooks lifecycleHooks = {});
+                      WirePlumberWorkerLifecycleHooks lifecycleHooks = {},
+                      RecordingFailedCallback recordingFailedCallback = {});
     ~WirePlumberWorker();
 
     void start();
@@ -57,6 +61,9 @@ public:
     // Declares the active strip racks (ADR-0179), marshalled like the rest.
     void applyProcessing(QList<BackendProcessingChain> chains);
     void applyBusProcessing(QList<BackendBusChain> chains);
+    // Starts or stops the one recording (ADR-0184).
+    void applyRecording(BackendRecording recording);
+    void applyVban(QList<BackendVbanStream> streams);
     // Called from a module's own destroy event: PipeWire took it down (a
     // stream that could not connect). Drops the entry only if it still holds
     // THAT module - the key may already belong to its replacement. Public
@@ -105,6 +112,9 @@ private:
     void applyProcessingOnWorker(const QList<BackendProcessingChain> &chains);
     void unloadAllProcessing();
     void applyBusProcessingOnWorker(const QList<BackendBusChain> &chains);
+    void applyRecordingOnWorker(const BackendRecording &recording);
+    void applyVbanOnWorker(const QList<BackendVbanStream> &streams);
+    void stopAllVban();
     // Where a send into a bus should play: the bus's own sink when the bus
     // has a running rack, otherwise the device. Empty when neither exists.
     [[nodiscard]] QString busWriteNode(const QString &busId, const Handle &device) const;
@@ -165,6 +175,16 @@ private:
     SnapshotCallback m_snapshotCallback;
     OutcomeCallback m_outcomeCallback;
     LevelsCallback m_levelsCallback;
+    RecordingFailedCallback m_recordingFailedCallback;
+    BackendRecording m_declaredRecording;
+    Recorder m_recorder;
+    QList<BackendVbanStream> m_declaredVban;
+    struct VbanRun {
+        BackendVbanStream declared;
+        std::unique_ptr<VbanSender> sender;
+        std::unique_ptr<VbanReceiver> receiver;
+    };
+    std::unordered_map<std::string, VbanRun> m_vbanRuns;
     WirePlumberWorkerLifecycleHooks m_lifecycleHooks;
     std::optional<Snapshot> m_lastSnapshot;
     std::unordered_map<quint64, quint64> m_pendingOperations;

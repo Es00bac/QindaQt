@@ -177,6 +177,10 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::SavePreset:
     case OperationKind::LoadPreset:
     case OperationKind::DeletePreset:
+    case OperationKind::RunMacro:
+    case OperationKind::StartRecording:
+    case OperationKind::StopRecording:
+    case OperationKind::SetVbanEnabled:
         return false;
     // SetBusTarget and SetStripSource name a console element AND the device it
     // should follow, so a valid handle is checked like any other; an INVALID
@@ -358,6 +362,31 @@ ValidationResult validateConsole(const Console &console)
     for (const QString &preset : console.presets) {
         if (preset.isEmpty() || !isBoundedText(preset, kMaxPresetNameUtf8Bytes)) {
             return rejected(QStringLiteral("invalid-preset-name"));
+        }
+    }
+    if (console.macros.size() > kMaxMacros) {
+        return rejected(QStringLiteral("oversized-payload"));
+    }
+    for (const QString &macro : console.macros) {
+        if (macro.isEmpty() || !isBoundedText(macro, kMaxMacroNameUtf8Bytes)) {
+            return rejected(QStringLiteral("invalid-macro-name"));
+        }
+    }
+    if (!isBoundedText(console.recording.busId, kMaxConsoleIdUtf8Bytes)
+        || !isBoundedText(console.recording.path, kMaxRecordingPathUtf8Bytes)
+        || (console.recording.active && (console.recording.busId.isEmpty()
+                                         || console.recording.path.isEmpty()))) {
+        return rejected(QStringLiteral("invalid-recording"));
+    }
+    if (console.vban.size() > kMaxVbanStreams) {
+        return rejected(QStringLiteral("oversized-payload"));
+    }
+    for (const VbanStream &stream : console.vban) {
+        if (stream.name.isEmpty() || !isBoundedText(stream.name, kMaxVbanNameUtf8Bytes)
+            || !isBoundedText(stream.busId, kMaxConsoleIdUtf8Bytes)
+            || !isBoundedText(stream.host, kMaxVbanHostUtf8Bytes) || stream.port == 0
+            || stream.port > 65535 || (stream.outgoing && stream.busId.isEmpty())) {
+            return rejected(QStringLiteral("invalid-vban-stream"));
         }
     }
     if (console.soloActive != anySolo) {
