@@ -5,6 +5,27 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 16)
+
+Exact source `dbff18a0` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260915-r2` (superseding r1). This
+checkpoint installs the audio console as a console rather than a drawing of
+one: real meters and a console attached to the user's hardware (ADR-0174),
+virtual strips and buses as nodes the console owns — "Virtual Input" gives an
+application its own fader and "B1" is a submix other applications record
+(ADR-0175) — a console that remembers itself across restarts and logins
+(ADR-0176), and pan applied as balance on every send (ADR-0177). It also
+carries the tray host registration (ADR-0166), one desktop across every
+output (ADR-0167), the never-displaced rolled-up title (ADR-0168), Wine and
+Proton window identity (ADR-0169), the portal screen-capture fix (ADR-0170),
+the one gain law (ADR-0171), the File Manager Applications place (ADR-0172)
+and the console slice itself (ADR-0173). Installed verification: the packaged
+audio service publishes a schema-4 snapshot with the console's endpoint
+nodes present in the live graph and the `Levels` signal flowing. In-session
+everyday acceptance (assigning a microphone strip to A1 and watching both
+meters move, choosing "Virtual Input" as an application's output) remains the
+user's validation step.
+
 ## Installed delivery checkpoint (September 15)
 
 Exact source `e7b76451` is installed through Portage as
