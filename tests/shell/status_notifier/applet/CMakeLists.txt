@@ -77,7 +77,7 @@ target_link_libraries(
     qindaqt_status_notifier_applet_adapter_tests
     PRIVATE
         QindaQt::ShellStatusNotifierAppletRuntime
-        QindaQt::StatusNotifierWatcher
+        QindaQt::StatusNotifierHost QindaQt::StatusNotifierWatcher
         Qt6::Core
         Qt6::DBus
         Qt6::Gui
@@ -115,7 +115,7 @@ target_link_libraries(
     PRIVATE
         QindaQt::AppletRuntime
         QindaQt::ShellStatusNotifierAppletRuntime
-        QindaQt::StatusNotifierWatcher
+        QindaQt::StatusNotifierHost QindaQt::StatusNotifierWatcher
         Qt6::Core
         Qt6::DBus
         Qt6::Gui
@@ -354,7 +354,7 @@ qt_add_executable(qindaqt_tray_native_probe tray_native_probe.cpp
 target_include_directories(qindaqt_tray_native_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(qindaqt_tray_native_probe PRIVATE
     QindaQt::ShellStatusNotifierAppletRuntime qindaqt_shell_status_notifier_applet_runtimeplugin
-    QindaQt::StatusNotifierWatcher QindaQt::GlobalMenuDbusMenu QindaQt::TokensQml
+    QindaQt::StatusNotifierHost QindaQt::StatusNotifierWatcher QindaQt::GlobalMenuDbusMenu QindaQt::TokensQml
     qindaqt_themes qindaqt_shell_iconsplugin Qt6::Test Qt6::Quick)
 target_compile_definitions(qindaqt_tray_native_probe PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}" QINDAQT_TRAY_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")

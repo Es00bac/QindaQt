@@ -16,6 +16,7 @@
 
 #include <QDBusMessage>
 #include <QDBusPendingCall>
+#include <QDBusVariant>
 #include <QDir>
 #include <QFile>
 #include <QStandardPaths>
@@ -40,6 +41,57 @@ void registerItemOnWatcher(QDBusConnection &itemConnection, const QString &path)
     QDBusPendingCall pending = itemConnection.asyncCall(message);
     QTRY_VERIFY_WITH_TIMEOUT(pending.isFinished(), 5'000);
     QCOMPARE(pending.reply().type(), QDBusMessage::ReplyMessage);
+}
+
+// Reads IsStatusNotifierHostRegistered the way a conformant item does, from a
+// connection that is neither the composition's nor the item's.
+[[nodiscard]] bool readHostRegistered(QDBusConnection &connection, bool *ok)
+{
+    auto message = QDBusMessage::createMethodCall(
+        QString::fromLatin1(kWatcherServiceName),
+        QString::fromLatin1(kWatcherObjectPath),
+        QStringLiteral("org.freedesktop.DBus.Properties"),
+        QStringLiteral("Get"));
+    message << QString::fromLatin1(kWatcherInterfaceName)
+            << QStringLiteral("IsStatusNotifierHostRegistered");
+    QDBusPendingCall pending = connection.asyncCall(message);
+    while (!pending.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    }
+    const QDBusMessage reply = pending.reply();
+    *ok = reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty();
+    if (!*ok) {
+        return false;
+    }
+    return reply.arguments().constFirst().value<QDBusVariant>().variant().toBool();
+}
+
+// True when any org.kde.StatusNotifierHost-* name is owned on the bus. Used
+// where no watcher exists to answer the property, so the only observable fact
+// is whether this process announced itself as a host at all.
+[[nodiscard]] bool anyHostNameOwned(QDBusConnection &connection, bool *ok)
+{
+    auto message = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("ListNames"));
+    QDBusPendingCall pending = connection.asyncCall(message);
+    while (!pending.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    }
+    const QDBusMessage reply = pending.reply();
+    *ok = reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty();
+    if (!*ok) {
+        return false;
+    }
+    const QStringList names = reply.arguments().constFirst().toStringList();
+    for (const QString &name : names) {
+        if (name.startsWith(QStringLiteral("org.kde.StatusNotifierHost-"))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool loadCatalogAndPolicy(Applets::ManifestCatalog *catalog,
@@ -69,6 +121,8 @@ class StatusNotifierAppletCompositionPrivateBusTests final : public QObject
 
 private slots:
     void composesPopulationDispatchOwnerLossAndAcknowledgement();
+    void announcesAHostSoConformantItemsPresentThemselves();
+    void projectsAPixmapOnlyItemWithNoExportedMenu();
     void withholdsObservationWhenReadDenied();
 };
 
@@ -219,9 +273,141 @@ void StatusNotifierAppletCompositionPrivateBusTests::
         // Acknowledgement fails closed to a no-op under read denial.
         controller->acknowledgeDegraded();
         QCOMPARE(controller->phaseText(), QStringLiteral("unavailable"));
+        // ADR-0166: a shell that cannot observe items must not announce a host
+        // either, or every item would be told a tray exists while nothing
+        // could ever draw it. No watcher runs under read denial, so the
+        // observable fact is that no host name was claimed.
+        auto probeConnection =
+            connectToPrivateBus(bus.address(), QStringLiteral("composition-denied-probe"));
+        bool ok = false;
+        QCOMPARE(anyHostNameOwned(probeConnection, &ok), false);
+        QVERIFY(ok);
+        QDBusConnection::disconnectFromBus(QStringLiteral("composition-denied-probe"));
     }
 
     QDBusConnection::disconnectFromBus(QStringLiteral("composition-denied"));
+}
+
+// ADR-0166 regression. On the user's live session the shell owned
+// org.kde.StatusNotifierWatcher while IsStatusNotifierHostRegistered stayed
+// false, because nothing ever called RegisterStatusNotifierHost. A conformant
+// item is entitled to hide its icon or fall back to the legacy XEmbed tray in
+// that state, which is how a "broken" tray presents to a user. This row fails
+// on any build where the composition serves a watcher without announcing a
+// host.
+void StatusNotifierAppletCompositionPrivateBusTests::
+    announcesAHostSoConformantItemsPresentThemselves()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto compositionConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-host"));
+    auto itemConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-host-item"));
+
+    Applets::ManifestCatalog catalog;
+    AppletHost::CapabilityPolicy policy;
+    QVERIFY(loadCatalogAndPolicy(
+        &catalog, &policy,
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/applet-policy/default.json")));
+
+    {
+        Shell::StatusNotifierAppletComposition composition(
+            catalog, policy, compositionConnection, {});
+        QVERIFY(composition.access() != nullptr);
+
+        bool ok = false;
+        QTRY_VERIFY_WITH_TIMEOUT(readHostRegistered(itemConnection, &ok), 5'000);
+        QVERIFY(ok);
+    }
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-host"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-host-item"));
+}
+
+// The exact shape of a real Wine tray item observed on the user's live session
+// (Battle.net, Id "wine-0x100de-0"): an EMPTY IconName with a 16x16 ARGB
+// IconPixmap, no exported dbusmenu (Menu is the placeholder "/NO_DBUSMENU"),
+// no overlay and no tooltip. Such an item must reach Ready and render from its
+// pixmap rather than being dropped or drawn as a placeholder.
+void StatusNotifierAppletCompositionPrivateBusTests::
+    projectsAPixmapOnlyItemWithNoExportedMenu()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto compositionConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-wine"));
+    auto itemConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-wine-item"));
+
+    Applets::ManifestCatalog catalog;
+    AppletHost::CapabilityPolicy policy;
+    QVERIFY(loadCatalogAndPolicy(
+        &catalog, &policy,
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/applet-policy/default.json")));
+
+    {
+        Shell::StatusNotifierAppletComposition composition(
+            catalog, policy, compositionConnection, {});
+        auto *controller = composition.access();
+        QVERIFY(controller != nullptr);
+
+        auto item = std::make_unique<FakeStatusNotifierItem>();
+        item->id = QStringLiteral("wine-0x100de-0");
+        item->title = QStringLiteral("Battle.net");
+        item->category = QStringLiteral("ApplicationStatus");
+        item->status = QStringLiteral("Active");
+        item->iconName = QString();
+        item->overlayIconName = QString();
+        item->attentionIconName = QString();
+        item->itemIsMenu = false;
+        item->menu = QDBusObjectPath(QStringLiteral("/NO_DBUSMENU"));
+        // Opaque mid-grey 16x16 in ARGB32 byte order, as a real item sends it.
+        QByteArray argb;
+        argb.reserve(16 * 16 * 4);
+        for (int pixel = 0; pixel < 16 * 16; ++pixel) {
+            argb.append(char(0xFF));
+            argb.append(char(0x80));
+            argb.append(char(0x80));
+            argb.append(char(0x80));
+        }
+        item->iconPixmap = {FakeStatusNotifierItem::pixmap(16, 16, argb)};
+
+        QVERIFY(registerFakeItem(itemConnection,
+                                 QStringLiteral("/StatusNotifierItem"),
+                                 item.get()));
+        registerItemOnWatcher(itemConnection, QStringLiteral("/StatusNotifierItem"));
+
+        QTRY_COMPARE_WITH_TIMEOUT(controller->phaseText(), QStringLiteral("ready"),
+                                  5'000);
+        QCOMPARE(controller->itemCount(), 1);
+        const auto row = controller->itemRows().constFirst()
+                             .value<StatusNotifierApplet::StatusNotifierItemRow>();
+        QCOMPARE(row.identity, QStringLiteral("wine-0x100de-0"));
+        QCOMPARE(row.title, QStringLiteral("Battle.net"));
+        // No exported menu must neither suppress the item nor be mistaken for
+        // a real menu.
+        QCOMPARE(row.hasMenu, false);
+        QCOMPARE(controller->hasExportedMenu(row.uniqueName, row.objectPath,
+                                             row.generation),
+                 false);
+        // The decisive assertion: the item is drawn from its wire pixmap, not
+        // from the neutral placeholder an icon-name-less item would otherwise
+        // fall back to.
+        QCOMPARE(row.iconIsPlaceholder, false);
+        QVERIFY(row.iconDataUrl.startsWith(QStringLiteral("data:image/png;base64,")));
+    }
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-wine"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-wine-item"));
 }
 
 QTEST_GUILESS_MAIN(StatusNotifierAppletCompositionPrivateBusTests)

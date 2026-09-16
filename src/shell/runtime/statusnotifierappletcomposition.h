@@ -16,6 +16,7 @@ class ManifestCatalog;
 }
 
 namespace QindaQt::StatusNotifier {
+class StatusNotifierHostRegistration;
 class StatusNotifierWatcherService;
 }
 
@@ -27,9 +28,10 @@ class StatusNotifierMonitorAdapter;
 namespace QindaQt::Shell {
 
 // Shell-private production composition root for the status-notifier tray
-// applet. It owns the S1 StatusNotifierWatcher service and the S2 monitor
-// adapter (registry + item monitor + icon renderer) on the injected session
-// bus and exposes only the least-authority controller facade to the panel.
+// applet. It owns the S1 StatusNotifierWatcher service, the specification's
+// host-side registration, and the S2 monitor adapter (registry + item monitor
+// + icon renderer) on the injected session bus, and exposes only the
+// least-authority controller facade to the panel.
 // The controller's degradation acknowledgement routes through the composed
 // adapter seam; nothing outside this object gains StatusNotifier bus
 // authority.
@@ -49,11 +51,17 @@ public:
     [[nodiscard]] StatusNotifierApplet::StatusNotifierAppletController *access() const noexcept;
 
 private:
-    // AGENT-CONTRACT: reverse destruction is controller -> adapter -> watcher
-    // service. The injected connection is borrowed and must outlive this
-    // object; the shell removes panel windows (and therefore every QML
-    // consumer of the controller) before resetting this composition.
+    // AGENT-CONTRACT: reverse destruction is controller -> adapter -> host
+    // registration -> watcher service. The injected connection is borrowed
+    // and must outlive this object; the shell removes panel windows (and
+    // therefore every QML consumer of the controller) before resetting this
+    // composition.
     std::unique_ptr<StatusNotifier::StatusNotifierWatcherService> m_watcher;
+    // AGENT-CONTRACT: serving the watcher is not the same as being a host.
+    // Without this registration `IsStatusNotifierHostRegistered` stays false
+    // and conformant items may hide their icon or fall back to XEmbed
+    // (ADR-0166), which is exactly how a "broken" tray presents to a user.
+    std::unique_ptr<StatusNotifier::StatusNotifierHostRegistration> m_hostRegistration;
     std::unique_ptr<StatusNotifierApplet::StatusNotifierMonitorAdapter> m_adapter;
     std::unique_ptr<StatusNotifierApplet::StatusNotifierAppletController> m_access;
 };

@@ -35,6 +35,7 @@ install(
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
+add_subdirectory(host)
 add_subdirectory(icon)
 add_subdirectory(item_client)
 add_subdirectory(watcher)
