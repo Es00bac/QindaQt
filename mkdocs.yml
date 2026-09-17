@@ -309,4 +309,4 @@ nav:
       - "ADR-0183: a macro button is a list of console operations": adr/0183-a-macro-button-is-a-list-of-console-operations.md
       - "ADR-0184: the recorder is a stream and a writer thread": adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md
       - "ADR-0185: VBAN is a document and two threads": adr/0185-vban-is-a-document-and-two-threads.md
-      - "ADR-0186: Smart lights speak to luminaires from the shell process": adr/0186-smart-lights-speak-to-luminaires-from-the-shell-process.md
+      - "ADR-0187: Smart lights speak to luminaires from the shell process": adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md

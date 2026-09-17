@@ -1,4 +1,4 @@
-# ADR-0186: Smart lights speak to luminaires from the shell process
+# ADR-0187: Smart lights speak to luminaires from the shell process
 
 - **Status:** Accepted
 - **Date:** 2026-09-17
