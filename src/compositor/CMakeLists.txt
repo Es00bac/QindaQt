@@ -304,6 +304,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridchromeplanbuilder.cpp
             kwin/hybridchromeplanbuilder.h
             kwin/hybridcontainerplacement.cpp
+            kwin/hybridcontainershade.cpp
             kwin/hybridcontainerplacement.h
             kwin/hybridcontainerappearance.cpp
             kwin/hybridcontainerappearance.h

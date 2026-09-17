@@ -5,6 +5,7 @@
 #include "qindaqt/hybrid_input/interactiontypes.h"
 #include "qindaqt/compositor/containerappearance.h"
 #include "qindaqt/compositor/shellwindowactions.h"
+#include "hybridchromeplanbuilder.h"
 #include "hybridcontainerappearance.h"
 #include "hybridshadecontroller.h"
 #include "hybridtaskidentitypolicy.h"
@@ -108,6 +109,11 @@ public:
                                          const QString &colorHex,
                                          QString *error = nullptr);
     [[nodiscard]] QJsonObject diagnostics() const;
+    // The label a rolled-up container's badge shows and the width it was
+    // measured at (ADR-0189). Diagnostics and nested-row evidence only; the
+    // layout path gets the same values through HybridChromePlanBuilder.
+    [[nodiscard]] HybridChromePlanBuilder::ShadedLabel shadedBadgeLabel(
+        const QString &containerId) const;
     [[nodiscard]] QJsonArray publicContainers() const;
     [[nodiscard]] QVector<TaskContainerIdentity> taskIdentityPlans() const;
     [[nodiscard]] std::optional<QJsonObject>

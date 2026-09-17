@@ -10,11 +10,13 @@
 
 namespace QindaQt::Compositor::KWinIntegration {
 
-int HybridShadeStripGeometry::stripWidth(qsizetype tabCount,
-                                         const QRect &containerFrame)
+int HybridShadeStripGeometry::stripWidth(const qsizetype tabCount,
+                                         const QRect &containerFrame,
+                                         const qreal labelWidth)
 {
     const HybridChrome::ChromeMetrics metrics;
-    const qreal width = HybridChrome::ChromeShadedBadge::badgeWidth(metrics, tabCount)
+    const qreal width = HybridChrome::ChromeShadedBadge::badgeWidth(metrics, tabCount,
+                                                                    labelWidth)
         + 2.0 * metrics.outerBorder;
     return qBound(1, qCeil(width), qMax(1, containerFrame.width()));
 }

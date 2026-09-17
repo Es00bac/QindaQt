@@ -23,6 +23,7 @@ if(COMMAND qindaqt_enable_warnings)
                 qindaqt_hybrid_group_stacking_tests
                 qindaqt_hybrid_chrome_sync_tests
                 qindaqt_hybrid_chrome_plan_builder_tests
+                qindaqt_hybrid_container_shade_tests
                 qindaqt_hybridmemberpolicy_tests
                 qindaqt_hybridtransientpolicy_tests
                 qindaqt_hybrid_chrome_drag_translator_tests
