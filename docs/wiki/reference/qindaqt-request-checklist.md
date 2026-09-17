@@ -61,7 +61,8 @@ the work items that move rows there.
 | Item | Status |
 |---|---|
 | A user-set name stays on the rolled-up badge ([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)) | committed |
-| Names persist across compositor restarts | gap |
+| The badge is wide enough to read the page title, and follows it as it changes ([ADR-0189](../adr/0189-size-the-rolled-up-badge-to-its-label.md)) | committed |
+| Names persist across compositor restarts | gap — blocked on a persistence owner for container identity: the appearance store is process-local by contract, nothing saves or restores live container topology at compositor start, and the explicit saved-workspace path adopts with a fresh container ID, so a name has nothing stable to attach to |
 
 ## 6. Wine / Proton window identity
 

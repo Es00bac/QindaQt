@@ -477,6 +477,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_container_placement_tests
         tst_hybridcontainerplacement.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
     )
     target_include_directories(
@@ -496,6 +497,8 @@ if(TARGET qindaqt_kwin_input_adapter)
         NAME compositor.hybrid-container-placement
         COMMAND qindaqt_hybrid_container_placement_tests
     )
+
+    include("${CMAKE_CURRENT_LIST_DIR}/ContainerShadeTests.cmake")
 
     qt_add_executable(
         qindaqt_hybrid_container_appearance_tests

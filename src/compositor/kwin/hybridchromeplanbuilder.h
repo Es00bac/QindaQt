@@ -66,6 +66,23 @@ public:
         const HybridChromePlanOptions &options,
         const HybridWindowTitleLookup &titleLookup,
         QString *error = nullptr);
+
+    // The rolled-up badge label this container would show right now, and the
+    // label rect width to reserve for it (ADR-0189).
+    //
+    // AGENT-CONTRACT: the session needs the width *before* build(), because
+    // the strip frame it passes back in as options.shadedOuterFrame is what
+    // build() lays the badge out inside. Both this and build()'s shaded branch
+    // resolve the label through the same private page-title derivation, so the
+    // width the strip reserves and the text the badge paints cannot diverge.
+    struct ShadedLabel final {
+        QString text;
+        qreal width = 0.0;
+    };
+    [[nodiscard]] static ShadedLabel shadedLabel(
+        const Core::WindowContainer &container,
+        const HybridChromePlanOptions &options,
+        const HybridWindowTitleLookup &titleLookup);
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

@@ -2,6 +2,8 @@
 #include "hybridcontainerplacement.h"
 
 #include "hybridshadestripgeometry.h"
+
+#include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 
 #include <QtMath>
@@ -18,22 +20,9 @@ constexpr int MinimumOuterHeight = 160;
 constexpr double MinimumSplitRatio = 0.01;
 constexpr double MaximumSplitRatio = 0.99;
 
-// AGENT-NOTE: The shaded strip's height is the shared chrome row plus its
-// outer border plus one logical pixel of content margin, matching the
-// qindaMacOS style's single-row layout (no separate tab strip beneath it) so
-// a shaded container reads as one compact title bar rather than a partially
-// collapsed window. The +1 is load-bearing: ChromeLayoutEngine::build()
-// rejects a request whose inner height is not strictly greater than
-// metrics.titleBarHeight (it needs a nonzero content rect below the row), so
-// shading to exactly titleBarHeight + 2*outerBorder would make every
-// subsequent chrome-plan rebuild fail. Kept in sync with ChromeMetrics
-// defaults; see docs/wiki/architecture/hybrid-chrome.md.
-int shadedOuterHeight()
-{
-    const HybridChrome::ChromeMetrics metrics;
-    return qMax(1, qCeil(metrics.titleBarHeight + 2.0 * metrics.outerBorder + 1.0));
-}
-
+// AGENT-NOTE: whole-container roll-up (shade/unshade/resizeShadeStrip and the
+// strip frame) lives in hybridcontainershade.cpp, a second translation unit of
+// this same class, because this file is at its shape limit.
 QString interactionContainerId(const HybridInput::InteractionIntent &intent)
 {
     return intent.source.containerId;
@@ -564,79 +553,6 @@ bool HybridContainerPlacementController::restore(
     return true;
 }
 
-bool HybridContainerPlacementController::shade(
-    const QString &containerId, QString *error)
-{
-    if (isShaded(containerId)) {
-        return true;
-    }
-    if (isMaximized(containerId)) {
-        assignError(error, QStringLiteral("restore a maximized container before shading it"));
-        return false;
-    }
-    const auto current = m_layout ? m_layout(containerId) : std::nullopt;
-    if (!current || !current->outerFrame.isValid()) {
-        assignError(error, QStringLiteral("container has no valid frame to shade"));
-        return false;
-    }
-    // AGENT-GUARD: The real committed layout is never reflowed for shade
-    // (see ADR-0099's follow-up correction): member windows keep their exact
-    // frame so no live app is resized to fake being hidden. The strip frame
-    // is purely this controller's own bookkeeping; the KWin adapter is
-    // responsible for actually hiding member content/input. ADR-0139: the
-    // strip is a content-sized badge anchored at the frame's left edge.
-    const auto *snapshot = container(containerId);
-    const auto tabCount = snapshot ? snapshot->pages().size() : qsizetype{1};
-    m_shadeStripFrames.insert(
-        containerId,
-        QRect(current->outerFrame.topLeft(),
-              QSize(HybridShadeStripGeometry::stripWidth(tabCount,
-                                                         current->outerFrame),
-                    shadedOuterHeight())));
-    m_shadeRestoreSizes.insert(containerId, current->outerFrame.size());
-    if (m_changed) {
-        m_changed();
-    }
-    return true;
-}
-
-bool HybridContainerPlacementController::unshade(
-    const QString &containerId, QString *error)
-{
-    const auto stripFound = m_shadeStripFrames.constFind(containerId);
-    const auto sizeFound = m_shadeRestoreSizes.constFind(containerId);
-    if (stripFound == m_shadeStripFrames.cend()
-        || sizeFound == m_shadeRestoreSizes.cend()) {
-        assignError(error, QStringLiteral("container is not shaded"));
-        return false;
-    }
-    // AGENT-CONTRACT: the strip's current position may have moved under drag
-    // since shade() was called; unrolling restores the original size at that
-    // (possibly moved) position, so "moving the rolled strip" genuinely
-    // relocates where the container reappears. This is the one legitimate
-    // reflow in the shade lifecycle: a real, intentional full restore.
-    const QRect restoreFrame(stripFound->topLeft(), *sizeFound);
-    if (!reflow(containerId, restoreFrame, error)) {
-        return false;
-    }
-    m_shadeStripFrames.erase(stripFound);
-    m_shadeRestoreSizes.remove(containerId);
-    m_moveDrags.remove(containerId);
-    return true;
-}
-
-std::optional<QRect> HybridContainerPlacementController::shadedFrame(
-    const QString &containerId) const
-{
-    const auto found = m_shadeStripFrames.constFind(containerId);
-    return found == m_shadeStripFrames.cend() ? std::nullopt
-                                              : std::optional<QRect>(*found);
-}
-
-QStringList HybridContainerPlacementController::shadedContainerIds() const
-{
-    return m_shadeStripFrames.keys();
-}
 
 QStringList HybridContainerPlacementController::refreshMaximizedAreas()
 {

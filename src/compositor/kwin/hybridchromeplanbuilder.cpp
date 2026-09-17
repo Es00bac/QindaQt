@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridchromeplanbuilder.h"
 
+#include <QFontMetricsF>
+
 #include "qindaqt/hybrid_chrome/chromelayoutengine.h"
+#include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
 
 #include <QRectF>
 #include <QStringList>
@@ -132,6 +135,36 @@ QRectF expectedContentRect(const ChromeLayoutRequest &request)
 
 } // namespace
 
+HybridChromePlanBuilder::ShadedLabel HybridChromePlanBuilder::shadedLabel(
+    const Core::WindowContainer &container,
+    const HybridChromePlanOptions &options,
+    const HybridWindowTitleLookup &titleLookup)
+{
+    // The foremost page is the active one; an empty active title falls back to
+    // the first page, exactly as the badge used to derive it while painting.
+    // A tab-title override wins, because that is what the pill shows.
+    QString foremost;
+    const auto *active = container.page(container.activePageId());
+    if (active) {
+        foremost = pageTitle(*active, titleLookup);
+    }
+    if (foremost.isEmpty() && !container.pages().isEmpty()) {
+        foremost = pageTitle(container.pages().constFirst(), titleLookup);
+    }
+    const QString foremostId = active ? container.activePageId()
+        : (container.pages().isEmpty() ? QString{}
+                                       : container.pages().constFirst().id());
+    const auto overridden = options.tabTitleOverrides.constFind(foremostId);
+    if (overridden != options.tabTitleOverrides.cend() && !overridden->isEmpty()) {
+        foremost = *overridden;
+    }
+    const QString text = HybridChrome::ChromeShadedBadge::resolveLabel(
+        options.containerTitle, options.containerTitleIsGenerated, foremost);
+    return {text,
+            HybridChrome::ChromeShadedBadge::labelWidthFor(
+                text, QFontMetricsF(HybridChrome::ChromeShadedBadge::labelFont()))};
+}
+
 std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
     const Core::WindowContainer &container,
     const HybridConstraints::ConstraintSolution &solution,
@@ -169,6 +202,9 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
             .memberTitlesVisible = options.memberTitlesVisible,
             .containerTitle = options.containerTitle,
             .containerTitleIsGenerated = options.containerTitleIsGenerated,
+            // Filled in below, once the label has been resolved and measured.
+            .badgeLabelText = {},
+            .badgeLabelWidth = 0.0,
             .identityColor = options.identityColor,
             .tabTitleOverrides = options.tabTitleOverrides,
             .indexBadge = options.indexBadge,
@@ -185,6 +221,10 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
                                        pageTitle(page, titleLookup),
                                        page.id() == container.activePageId()});
         }
+        // ADR-0189: one resolution, shared with the session's strip sizing.
+        const auto label = shadedLabel(container, options, titleLookup);
+        shadedRequest.badgeLabelText = label.text;
+        shadedRequest.badgeLabelWidth = label.width;
         return HybridChrome::ChromeLayoutEngine::build(shadedRequest, error);
     }
     if (solution.outerFrame.isEmpty() || solution.outerFrame != solution.outerFrame.normalized()) {
@@ -201,6 +241,9 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         .memberTitlesVisible = options.memberTitlesVisible,
         .containerTitle = options.containerTitle,
         .containerTitleIsGenerated = options.containerTitleIsGenerated,
+        // Badge label fields belong to the shaded branch above only.
+        .badgeLabelText = {},
+        .badgeLabelWidth = 0.0,
         .identityColor = options.identityColor,
         .tabTitleOverrides = options.tabTitleOverrides,
         .indexBadge = options.indexBadge,

@@ -7,6 +7,7 @@
 #include "qindaqt/hybrid_input/interactiontypes.h"
 
 #include <QPointF>
+#include <QtMath>
 #include <QtTest>
 
 #include <optional>
@@ -18,17 +19,16 @@ namespace {
 
 constexpr qreal TestDoubleClickIntervalMs = 30.0;
 
+qreal measuredLabelWidth(const QString &label)
+{
+    return ChromeShadedBadge::labelWidthFor(
+        label, QFontMetricsF(ChromeShadedBadge::labelFont()));
+}
+
 ChromeRenderPlan shadedBadgePlan(qsizetype tabCount, qreal widthOverride = 0.0)
 {
     ChromeLayoutRequest request;
     request.containerId = QStringLiteral("container-shaded");
-    // Size the badge to its content-driven strip width unless the caller
-    // overrides (for the degradation case).
-    const qreal width = widthOverride > 0.0
-        ? widthOverride
-        : ChromeShadedBadge::badgeWidth(ChromeMetrics{}, tabCount)
-            + 2.0 * ChromeMetrics{}.outerBorder;
-    request.outerRect = QRectF(120.0, 90.0, width, 31.0);
     request.shaded = true;
     request.containerFocused = true;
     request.identityColor = QColor(QStringLiteral("#b65447"));
@@ -38,6 +38,20 @@ ChromeRenderPlan shadedBadgePlan(qsizetype tabCount, qreal widthOverride = 0.0)
                              QStringLiteral("Tab %1").arg(index),
                              index == 0});
     }
+    // ADR-0189: the caller resolves and measures the label, then sizes the
+    // strip for that measurement.
+    request.badgeLabelText = ChromeShadedBadge::resolveLabel(
+        request.containerTitle, false,
+        request.tabs.isEmpty() ? QString() : request.tabs.constFirst().title);
+    request.badgeLabelWidth = measuredLabelWidth(request.badgeLabelText);
+    // Size the badge to its content-driven strip width unless the caller
+    // overrides (for the degradation case).
+    const qreal width = widthOverride > 0.0
+        ? widthOverride
+        : ChromeShadedBadge::badgeWidth(ChromeMetrics{}, tabCount,
+                                        request.badgeLabelWidth)
+            + 2.0 * ChromeMetrics{}.outerBorder;
+    request.outerRect = QRectF(120.0, 90.0, width, 31.0);
     auto plan = ChromeLayoutEngine::build(request);
     if (!plan) {
         qFatal("shaded badge fixture plan failed to build");
@@ -73,16 +87,50 @@ private slots:
     void stripWidthGrowsWithTabsAndStaysInsideItsFrame()
     {
         const QRect frame(100, 100, 800, 600);
+        const qreal label = ChromeShadedBadge::LabelMinimumWidth;
         int previous = 0;
         for (const auto tabs : {qsizetype{1}, qsizetype{2}, qsizetype{8}, qsizetype{12}}) {
-            const auto width = HybridShadeStripGeometry::stripWidth(tabs, frame);
+            const auto width = HybridShadeStripGeometry::stripWidth(tabs, frame, label);
             QVERIFY(width > 0);
             QVERIFY(width <= frame.width());
             QVERIFY(width > previous);
             previous = width;
         }
         // Anchored inside a narrow frame, the strip never exceeds it.
-        QCOMPARE(HybridShadeStripGeometry::stripWidth(12, QRect(0, 0, 40, 30)), 40);
+        QCOMPARE(HybridShadeStripGeometry::stripWidth(12, QRect(0, 0, 40, 30), label),
+                 40);
+    }
+
+    // ADR-0189: the user-visible outcome. A rolled-up container with a long
+    // page title gets a wider strip, so the title is readable instead of
+    // elided into a fixed 140 px label.
+    void stripWidthGrowsWithTheBadgeLabel()
+    {
+        const QRect frame(100, 100, 1600, 900);
+        const qreal shortLabel = measuredLabelWidth(QStringLiteral("Inbox"));
+        const qreal longLabel = measuredLabelWidth(
+            QStringLiteral("Quarterly revenue model, revision 12"));
+        QVERIFY(longLabel > shortLabel);
+
+        const int narrow = HybridShadeStripGeometry::stripWidth(3, frame, shortLabel);
+        const int wide = HybridShadeStripGeometry::stripWidth(3, frame, longLabel);
+        QVERIFY2(wide > narrow,
+                 qPrintable(QStringLiteral("strip did not grow: %1 vs %2")
+                                .arg(narrow)
+                                .arg(wide)));
+        // The growth is exactly the label growth, not a guess.
+        QCOMPARE(wide - narrow, qCeil(longLabel) - qCeil(shortLabel));
+
+        // Clamped both ways, and still never wider than its own frame.
+        QCOMPARE(HybridShadeStripGeometry::stripWidth(3, frame, 0.0),
+                 HybridShadeStripGeometry::stripWidth(
+                     3, frame, ChromeShadedBadge::LabelMinimumWidth));
+        QCOMPARE(HybridShadeStripGeometry::stripWidth(3, frame, 100000.0),
+                 HybridShadeStripGeometry::stripWidth(
+                     3, frame, ChromeShadedBadge::LabelMaximumWidth));
+        QCOMPARE(HybridShadeStripGeometry::stripWidth(3, QRect(0, 0, 60, 30),
+                                                      longLabel),
+                 60);
     }
 
     void badgeLayoutHoldsForOneTwoEightAndTwelveTabs()

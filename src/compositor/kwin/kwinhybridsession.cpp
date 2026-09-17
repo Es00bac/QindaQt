@@ -505,9 +505,6 @@ void KWinHybridSession::synchronizeChrome()
         options.devicePixelRatio = containerScale(containerId);
         options.maximized = m_placement && m_placement->isMaximized(containerId);
         options.shaded = m_placement && m_placement->isShaded(containerId);
-        if (options.shaded) {
-            options.shadedOuterFrame = QRectF(*m_placement->shadedFrame(containerId));
-        }
         options.containerFocused = activeOwner && *activeOwner == containerId;
         options.focusedMemberId = options.containerFocused ? activeWindowId : QString{};
         options.memberTitlesVisible = memberTitlesVisible(containerId);
@@ -531,13 +528,24 @@ void KWinHybridSession::synchronizeChrome()
         // derived border/tint/stripe/ring shades. An empty colorHex yields an
         // invalid QColor, which falls back to the theme accent.
         options.identityColor = QColor(appearance.colorHex);
+        const HybridWindowTitleLookup titleLookup = [this](const QString &windowId) {
+            const auto *window = m_registry.window(windowId);
+            return window ? window->caption() : QString{};
+        };
+        if (options.shaded) {
+            // ADR-0189: size the strip for the label this badge is about to
+            // paint. shade() could only reserve the label minimum, and a page
+            // title changes while a container stays rolled up, so the width is
+            // resolved here — where the container name, the generated-name
+            // decision and the live page titles are all already in hand — and
+            // re-resolved on every chrome synchronization.
+            const auto label =
+                HybridChromePlanBuilder::shadedLabel(*container, options, titleLookup);
+            (void)m_placement->resizeShadeStrip(containerId, label.width);
+            options.shadedOuterFrame = QRectF(*m_placement->shadedFrame(containerId));
+        }
         const auto plan = HybridChromePlanBuilder::build(
-            *container, layout->activePage, options,
-            [this](const QString &windowId) {
-                const auto *window = m_registry.window(windowId);
-                return window ? window->caption() : QString{};
-            },
-            &error);
+            *container, layout->activePage, options, titleLookup, &error);
         if (!plan) {
             qWarning("QindaQt Hybrid chrome plan failed: %s", qPrintable(error));
             invalidateChromePublication();
