@@ -10,7 +10,10 @@ Restart=on-failure
 RestartSec=1s
 NoNewPrivileges=true
 PrivateDevices=true
-PrivateTmp=true
+# AGENT-NOTE: no PrivateTmp here. The QindaQt session runs its own session
+# bus with the socket under /tmp, and PrivateTmp gives the unit a private
+# tmpfs where that socket does not exist, so the service can never reach
+# its constructing bus and fails to start entirely.
 ProtectClock=true
 ProtectControlGroups=true
 # AGENT-GUARD: `true` also hides /run/user and therefore the session-bus and
