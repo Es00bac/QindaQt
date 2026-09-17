@@ -26,8 +26,9 @@ indicator, so the user could not see or reach most of an application's menus.
 
 A second, independent cap made it worse: `maximumVisibleEntries` defaulted to
 8, so the ninth top-level menu folded into "+N" even on a panel with hundreds
-of spare pixels. The manifest's `sizing.mainAxis.preferred: 520` was not
-involved — nothing consumes `preferred` for layout.
+of spare pixels. The global-menu manifest's `sizing.mainAxis.preferred`, 520 at
+the time, was not involved: nothing consumes `preferred` for layout at all —
+it is loaded, validated and then ignored.
 
 ## Decision
 
@@ -82,6 +83,13 @@ letting it sit under the menu bar.
 - `runtime.mainAxisMinimum` is a new key in the resolved applet map. It is
   additive; a consumer that does not read it is unaffected, and a layout
   document written by hand without it behaves as if the minimum were zero.
+- The global-menu manifest's `sizing.mainAxis.preferred` is raised from 520 to
+  720, which is closer to what a full application menu bar actually wants. The
+  change is inert today and deliberately so: `minimum` is the only sizing value
+  with a consumer, and the applet's real desire is measured in QML per
+  application. It is recorded here so the next reader does not mistake an
+  unexplained number for a layout input. If `preferred` ever gains a consumer,
+  every manifest's value needs auditing before it is trusted.
 - The equal-share rule is still the documented behaviour for vertical panels
   and the dock, so ADR-0118's guarantee holds wherever it still applies.
 
