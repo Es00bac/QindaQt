@@ -190,3 +190,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0185: VBAN is a document and two threads](0185-vban-is-a-document-and-two-threads.md)
 - [ADR-0186: write internal brightness through logind](0186-write-internal-brightness-through-logind.md)
 - [ADR-0187: Smart lights speak to luminaires from the shell process](0187-smart-lights-speak-to-luminaires-from-the-shell-process.md)
+- [ADR-0188: serve the panel start zone first](0188-serve-the-panel-start-zone-first.md)

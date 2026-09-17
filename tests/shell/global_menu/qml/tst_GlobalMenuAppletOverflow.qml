@@ -146,20 +146,78 @@ Item {
             verifyFits(applet);
         }
 
-        function test_wideHostCollapsesOnlyAtTheCountCap() {
+        // The default entry cap used to be 8, so a wide panel still folded an
+        // application's 9th top-level menu into "+N". Width pressure is now the
+        // only thing that folds, and this row is the oracle for that.
+        function test_wideHostShowsEveryEntry() {
             fakeAccess.available = true;
             fakeAccess.items = numberedMenuItems(12, "Item ");
             const applet = createApplet({
                 "width": 2000
             });
             const indicator = findChild(applet, "globalMenuOverflowIndicator");
-            verify(indicator && indicator.visible);
-            compare(indicator.text, "+4");
-            compare(indicator.Accessible.name, "4 more menu entries");
+            verify(indicator !== null);
+            // AGENT-GUARD: if this row fails with clampedEntryLimit 8 the
+            // runner resolved the *installed* QindaQt.Shell.GlobalMenu module
+            // instead of this build's, because the qmlplugin target was not
+            // built in the build root. Build `qindaqt_global_menu_qmlplugin`;
+            // the source default is the protocol limit, never 8.
+            compare(applet.clampedEntryLimit, 128);
+            verify(!indicator.visible);
+            compare(applet.overflowCount, 0);
             const entries = [];
             collectEntries(applet, entries);
-            compare(entries.length, 8);
+            compare(entries.length, 12);
             verify(applet.clip);
+            verifyFits(applet);
+        }
+
+        // A real application menu bar on the width the stock 1920 panel now
+        // grants its start zone: every entry is reachable without the
+        // indicator, which is the user-visible outcome of the zone-budget
+        // change in PanelContent.
+        function test_fourteenRealEntriesFitTheStockStartZoneWidth() {
+            fakeAccess.available = true;
+            const titles = ["File", "Edit", "Selection", "View", "Go", "Run",
+                            "Terminal", "Window", "Project", "Build", "Debug",
+                            "Refactor", "Tools", "Help"];
+            const items = [];
+            for (let i = 0; i < titles.length; ++i)
+                items.push(createItem("m" + i, titles[i]));
+            fakeAccess.items = items;
+            const applet = createApplet({
+                "width": 1532
+            });
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            verify(indicator !== null);
+            verify(!indicator.visible);
+            compare(applet.overflowCount, 0);
+            const entries = [];
+            collectEntries(applet, entries);
+            compare(entries.length, 14);
+            // Entries are laid out in order with no gaps swallowed.
+            for (let i = 1; i < entries.length; ++i)
+                verify(entries[i].x >= entries[i - 1].x + entries[i - 1].width);
+            verifyFits(applet);
+        }
+
+        // The cap is still a real property: a host that passes a smaller one
+        // deliberately still gets "+N", so raising the default did not remove
+        // the mechanism.
+        function test_explicitSmallerCapStillFolds() {
+            fakeAccess.available = true;
+            fakeAccess.items = numberedMenuItems(12, "Item ");
+            const applet = createApplet({
+                "width": 2000,
+                "maximumVisibleEntries": 5
+            });
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            verify(indicator && indicator.visible);
+            compare(indicator.text, "+7");
+            compare(indicator.Accessible.name, "7 more menu entries");
+            const entries = [];
+            collectEntries(applet, entries);
+            compare(entries.length, 5);
             verifyFits(applet);
         }
 

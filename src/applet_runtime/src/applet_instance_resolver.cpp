@@ -94,8 +94,9 @@ ResolvedAppletInstance resolveManifest(
         }
     }
     granted.sort();
-    return {instance, manifest.name, manifest.entryPoint.value,
-            std::move(granted), host.mode, Status::Ready, {}};
+    return {instance,   manifest.name, manifest.entryPoint.value,
+            std::move(granted), host.mode,     Status::Ready,
+            {},         manifest.sizing.mainAxis.minimum};
 }
 
 } // namespace
@@ -117,7 +118,9 @@ QVariantMap ResolvedAppletInstance::toVariantMap() const
                                AppletHost::toString(hostMode)},
                               {QStringLiteral("grantedCapabilities"),
                                grantedCapabilities},
-                              {QStringLiteral("diagnostic"), diagnostic}});
+                              {QStringLiteral("diagnostic"), diagnostic},
+                              {QStringLiteral("mainAxisMinimum"),
+                               mainAxisMinimum}});
     return result;
 }
 

@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls as T
 import QindaQt.Tokens 1.0
+import "PanelZoneBudget.js" as ZoneBudget
 
 Item {
     id: root
@@ -250,19 +251,19 @@ Item {
     }
 
     readonly property real extent: Math.max(0, (horizontal ? width : height) - contentInset * 2)
+
+    // Zone budgets are pure arithmetic in PanelZoneBudget.js (ADR-0188).
+    readonly property var zoneDemands: ({start: startZone.desiredExtent,
+        center: centerZone.desiredExtent, end: endZone.desiredExtent})
+    readonly property var zoneBudget: (horizontal && !dockMode)
+        ? ZoneBudget.byReadingOrder(extent, zoneDemands,
+            {start: startZone.minimumExtent, center: centerZone.minimumExtent,
+             end: endZone.minimumExtent})
+        : ZoneBudget.balanced(extent, zoneDemands)
     function zoneExtent(zone) {
-        const zones = [startZone, centerZone, endZone]
-            .filter(item => item.desiredExtent > 0)
-            .sort((a, b) => a.desiredExtent - b.desiredExtent)
-        let remaining = extent
-        for (let i = 0; i < zones.length; ++i) {
-            const budget = Math.min(zones[i].desiredExtent,
-                                    remaining / (zones.length - i))
-            if (zones[i] === zone)
-                return budget
-            remaining -= budget
-        }
-        return 0
+        return zone === startZone ? zoneBudget.start
+            : zone === endZone ? zoneBudget.end
+            : zone === centerZone ? zoneBudget.center : 0
     }
     readonly property real centerOffset: Math.max(contentInset + zoneExtent(startZone),
         Math.min(contentInset + extent - zoneExtent(endZone) - zoneExtent(centerZone),

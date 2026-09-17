@@ -49,6 +49,7 @@ qt_add_qml_module(
         qml/PanelAppletColumn.qml
         qml/PanelAppletRow.qml
         qml/PanelContent.qml
+        qml/PanelZoneBudget.js
         qml/PanelSurface.qml
         qml/PreviewControls.qml
         qml/WindowGroupPreview.qml
@@ -245,6 +246,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/PanelAppletColumn.qml
             qml/PanelAppletRow.qml
             qml/PanelContent.qml
+            qml/PanelZoneBudget.js
             qml/ShortcutNoteCard.qml
             qml/RuntimePanel.qml
         DEPENDENCIES
