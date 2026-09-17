@@ -17,6 +17,7 @@ target_sources(
         src/resident_power_service.cpp
         src/unavailable_power_collaborators.cpp
         src/adapters/logind_action_authority.cpp
+        src/adapters/logind_backlight_writer.cpp
         src/adapters/logind_session_collaborator.cpp
         src/adapters/power_profiles_collaborator.cpp
         src/adapters/production_battery_collaborator.cpp
@@ -37,7 +38,9 @@ target_sources(
             include/qindaqt/services/power_service/power_service_coordinator.h
             include/qindaqt/services/power_service/resident_power_service.h
             include/qindaqt/services/power_service/unavailable_power_collaborators.h
+            include/qindaqt/services/power_service/adapters/backlight_writer.h
             include/qindaqt/services/power_service/adapters/logind_action_authority.h
+            include/qindaqt/services/power_service/adapters/logind_backlight_writer.h
             include/qindaqt/services/power_service/adapters/logind_session_collaborator.h
             include/qindaqt/services/power_service/adapters/power_profiles_collaborator.h
             include/qindaqt/services/power_service/adapters/production_battery_collaborator.h
