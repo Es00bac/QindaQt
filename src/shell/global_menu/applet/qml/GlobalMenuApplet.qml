@@ -12,7 +12,9 @@ Item {
     property bool vertical: false
     // Explicit top-level popup edge; empty follows the hosting panel's edge.
     property string panelEdge: ""
-    property int maximumVisibleEntries: 8
+    // AGENT-CONTRACT: the protocol's per-item child limit, not a presentation
+    // choice; width pressure alone folds entries (ADR-0188, global-menu.md).
+    property int maximumVisibleEntries: 128
     readonly property int clampedEntryLimit: Math.max(1, Math.floor(maximumVisibleEntries))
     readonly property var colors: theme.colors ?? ({})
     readonly property bool available: access !== null && Boolean(access.available)

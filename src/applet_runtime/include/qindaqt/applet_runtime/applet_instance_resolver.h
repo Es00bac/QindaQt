@@ -34,6 +34,17 @@ struct ResolvedAppletInstance {
     AppletHost::HostMode hostMode = AppletHost::HostMode::Rejected;
     AppletResolutionStatus status = AppletResolutionStatus::MissingManifest;
     QString diagnostic;
+    // AGENT-CONTRACT: the resolved manifest's declared `sizing.mainAxis.minimum`,
+    // republished as `runtime.mainAxisMinimum` so the panel's zone budget can
+    // honour it. The shell reserves the sum of a zone's applet minimums before
+    // giving a greedy neighbour the rest (ADR-0188), which is the only reason a
+    // declared minimum is more than documentation. Zero unless a manifest
+    // resolved Ready.
+    //
+    // AGENT-GUARD: this member is last because several returns above build the
+    // struct positionally; a new field inserted earlier silently shifts
+    // host mode and status into the wrong slots.
+    int mainAxisMinimum = 0;
 
     [[nodiscard]] bool ready() const noexcept;
     [[nodiscard]] QVariantMap toVariantMap() const;

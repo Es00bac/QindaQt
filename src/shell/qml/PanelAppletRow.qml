@@ -68,6 +68,29 @@ Flickable {
         && (dockHorizontalTileLimit < minimumFittedDockTileSize
             || dockVerticalTileLimit < minimumFittedDockTileSize)
     readonly property real desiredExtent: vertical ? grid.implicitHeight : grid.implicitWidth
+    // The extent this zone must keep to still paint every one of its applets
+    // at the minimum its own manifest declares (`sizing.mainAxis.minimum`,
+    // republished by the applet resolver as `runtime.mainAxisMinimum`).
+    //
+    // AGENT-CONTRACT: PanelContent's horizontal zone budget reserves this for
+    // the zones that yield before giving a greedy zone the rest, so a wide
+    // global menu can never squeeze the clock or the tray to nothing. It is
+    // capped by desiredExtent because an applet that currently paints nothing
+    // (an empty live strip collapses its chip to zero width) needs no
+    // reservation at all; without that cap an invisible applet would steal
+    // width from a visible one.
+    readonly property real minimumExtent: (vertical || dockMode)
+        ? 0 : Math.min(desiredExtent, declaredMinimumExtent)
+    readonly property real declaredMinimumExtent: {
+        let total = 0
+        let count = 0
+        for (const applet of zoneApplets) {
+            const declared = Number((applet.runtime ?? {}).mainAxisMinimum ?? 0)
+            total += Number.isFinite(declared) && declared > 0 ? declared : 0
+            ++count
+        }
+        return total + Math.max(0, count - 1) * grid.spacing
+    }
     contentWidth: vertical ? width : grid.implicitWidth
     contentHeight: vertical ? grid.implicitHeight : height
     flickableDirection: vertical ? Flickable.VerticalFlick : Flickable.HorizontalFlick

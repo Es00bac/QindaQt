@@ -154,6 +154,13 @@ add_test(
 )
 
 add_test(
+    NAME qindaqt.panel-zone-budget-offscreen
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_panelzonebudget.qml"
+)
+
+add_test(
     NAME qindaqt.luna-taskbar-offscreen
     COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
         -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
@@ -162,6 +169,7 @@ add_test(
 
 set_tests_properties(
     qindaqt.panel-geometry-offscreen
+    qindaqt.panel-zone-budget-offscreen
     qindaqt.luna-taskbar-offscreen
     qindaqt.decoration-hover
     qindaqt.notification-surfaces-offscreen

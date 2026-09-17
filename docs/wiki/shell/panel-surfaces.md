@@ -131,10 +131,27 @@ render typed placeholders without changing the applet's accessible identity.
 Each panel creates three disjoint zone viewports, with one configured applet
 instance in its selected zone and one lazily constructed implementation.
 Unselected orientations, zones, and built-in implementations are not instantiated.
-Zone budgets satisfy small natural demands first and share the remaining
-extent equally among overflowing zones. Long task strips cannot reduce small
-neighboring controls to unusable slivers. Overflow remains reachable by scrolling the zone;
-it cannot paint over neighboring controls. `rows` distributes consecutive
+A horizontal panel allocates its zones in reading order of importance: start,
+then end, then center. The start zone hosts the active application's menu bar,
+whose natural demand is genuinely unbounded, so it is served first and bounded
+only by what its neighbours have declared they need; the end zone takes what is
+left over after the center's declared minimum; the center zone takes the
+remainder, capped at its own demand
+([ADR-0188](../adr/0188-serve-the-panel-start-zone-first.md)). A zone's
+declared minimum is the sum of its applets' manifest
+`sizing.mainAxis.minimum` values plus the row spacing, republished by the
+applet resolver as `runtime.mainAxisMinimum` and capped at the zone's current
+natural demand so an applet that paints nothing reserves nothing. Long task
+strips therefore still cannot reduce small neighboring controls to unusable
+slivers, and a wide global menu cannot either. Every allocation is clamped to
+what remains, so the three budgets never exceed the panel's content box even
+when no zone can have its declared minimum.
+
+Vertical panels and the dock keep the previous rule: small natural demands
+first, then the remaining extent shared equally among overflowing zones. They
+have no reading order to prefer, and the dock resolves its own tile-fitting
+pressure before the zone budget applies. Overflow remains reachable by
+scrolling the zone; it cannot paint over neighboring controls. `rows` distributes consecutive
 applets across actual horizontal rows (vertical columns on side panels),
 sharing the panel cross-axis extent rather than stretching one row.
 Zone viewports are the content clip authority; live `AppletChip` content is
