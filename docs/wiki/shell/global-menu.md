@@ -534,7 +534,14 @@ extent — so no real label or affordance can ever be clipped by the limit.
 Hosts below the documented minimum extent degrade to indicator-only (and
 the indicator hides itself when even it cannot fit) rather than painting
 partial content inside the clipped root. A clamped
-`maximumVisibleEntries` acts as the count cap on top of the measured fit.
+`maximumVisibleEntries` acts as the count cap on top of the measured fit. Its
+default is the protocol's own per-item child limit
+(`menu_limits.h` `kMaxChildrenPerItem`, 128), not a presentation choice: width
+pressure alone decides what folds, so an application's ninth top-level menu is
+not hidden on a panel with room to spare
+([ADR-0188](../adr/0188-serve-the-panel-start-zone-first.md)). A host may still
+pass a smaller value deliberately, and the "+N" indicator then appears at that
+count.
 Provider-owned top-level names intentionally remain visible because they are
 the menu affordances. Width pressure moves complete entries behind the `+N`
 indicator; an admitted entry never independently elides its provider-owned
