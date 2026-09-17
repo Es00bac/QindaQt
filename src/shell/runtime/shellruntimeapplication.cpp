@@ -6,6 +6,7 @@
 #include "../common/shelltokenpublisher.h"
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
+#include "smartlightsappletcomposition.h"
 #include "desktopcontrolscomposition.h"
 #include "power_applet_controller.h"
 #include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
@@ -541,7 +542,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_bluetoothApplet->access(), m_powerApplet->access(),
             m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
             m_taskListApplet->access(),
-            m_statusNotifierApplet->access());
+            m_statusNotifierApplet->access(), m_smartLightsApplet->access());
     m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
     // The panel right-click configuration facade composes over the shared
     // Settings1 client and the Settings route launcher (both owned above).
@@ -668,6 +669,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_clipboardApplet.reset();
     m_audioApplet.reset();
     m_bluetoothApplet.reset();
+    m_smartLightsApplet.reset();
     m_powerApplet.reset();
     m_notificationCenterAccess.reset();
     // The bridge borrows the token publisher and theme catalog; release it

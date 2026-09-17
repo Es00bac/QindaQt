@@ -49,6 +49,9 @@ class BluetoothAppletController;
 namespace PowerApplet {
 class PowerAppletController;
 }
+namespace SmartLightsApplet {
+class SmartLightsAppletController;
+}
 namespace Launcher {
 class LauncherAppletController;
 }
@@ -70,7 +73,8 @@ public:
                               GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess,
                               ShellClipboardApplet::ClipboardAppletController *clipboardAppletAccess,
                               ShellTaskListApplet::TaskListAppletController *taskListAppletAccess,
-                              StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess);
+                              StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess,
+                              SmartLightsApplet::SmartLightsAppletController *smartLightsAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -116,6 +120,7 @@ private:
     ShellClipboardApplet::ClipboardAppletController *m_clipboardAppletAccess = nullptr;
     ShellTaskListApplet::TaskListAppletController *m_taskListAppletAccess = nullptr;
     StatusNotifierApplet::StatusNotifierAppletController *m_statusNotifierAppletAccess = nullptr;
+    SmartLightsApplet::SmartLightsAppletController *m_smartLightsAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
     QObject *m_panelQuickConfig = nullptr;
     std::unique_ptr<QQmlComponent> m_component;

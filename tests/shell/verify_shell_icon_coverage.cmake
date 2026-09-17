@@ -41,6 +41,7 @@ require_declaration("src/shell/launcher/qml/LauncherApplet.qml" "launcherAppletI
 require_declaration("src/shell/audio_applet/qml/AudioApplet.qml" "audioAppletIcon")
 require_declaration("src/shell/bluetooth_applet/qml/BluetoothApplet.qml" "bluetoothAppletIcon")
 require_declaration("src/shell/power_applet/qml/PowerApplet.qml" "powerAppletIcon")
+require_declaration("src/shell/smart_lights_applet/qml/SmartLightsApplet.qml" "smartLightsAppletIcon")
 require_declaration("src/shell/clipboard_applet/qml/ClipboardPanelApplet.qml" "clipboardPanelIcon")
 require_declaration("src/shell/task_list/applet/qml/TaskListEntryButton.qml" "taskListEntryIcon")
 require_declaration("src/shell/status_notifier/applet/qml/StatusNotifierItemDelegate.qml" "statusNotifierItemIcon")
@@ -93,6 +94,11 @@ endforeach()
 foreach(icon_name IN ITEMS network-bluetooth-activated
                            network-bluetooth-inactive-symbolic)
     require_icon("src/shell/bluetooth_applet/qml/BluetoothApplet.qml" "${icon_name}")
+endforeach()
+# The Smart Lights chip uses the freedesktop brightness-* pair rather than a
+# QindaQt-only name, so the panel still shows a glyph under Breeze.
+foreach(icon_name IN ITEMS brightness-high brightness-low)
+    require_icon("src/shell/smart_lights_applet/qml/SmartLightsApplet.qml" "${icon_name}")
 endforeach()
 require_icon("src/shell/launcher/qml/LauncherApplet.qml" "start-here-kde")
 require_icon("src/shell/start_menu/qml/StartMenuApplet.qml" "start-here-kde")

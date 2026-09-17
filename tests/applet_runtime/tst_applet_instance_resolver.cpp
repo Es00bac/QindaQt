@@ -100,6 +100,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.power"),
         QStringLiteral("qindaqt.applets.quick-launch"),
         QStringLiteral("qindaqt.applets.show-desktop"),
+        QStringLiteral("qindaqt.applets.smart-lights"),
         QStringLiteral("qindaqt.applets.start-menu"),
         QStringLiteral("qindaqt.applets.status-notifier"),
         QStringLiteral("qindaqt.applets.system-menu"),
