@@ -12,8 +12,10 @@ namespace QindaQt::HybridChrome {
 namespace {
 
 constexpr qreal BadgeClusterGap = 8.0;
-constexpr qreal BadgeLabelMinimumWidth = 48.0;
-constexpr qreal BadgeLabelMaximumWidth = 140.0;
+// The label rect paints its text inset by this much on each side, so the
+// reserved width must include it or a measured label is elided by its own
+// padding.
+constexpr qreal BadgeLabelTextInset = 4.0;
 constexpr qreal BadgePillHeight = 10.0;
 constexpr qreal BadgePillWidth = 14.0;
 constexpr qreal BadgePillSpacing = 4.0;
@@ -42,6 +44,41 @@ qreal pillsWidth(qsizetype pillCount, qsizetype overflowCount)
 }
 
 } // namespace
+
+QString ChromeShadedBadge::resolveLabel(const QString &containerTitle,
+                                        const bool containerTitleIsGenerated,
+                                        const QString &foremostTitle)
+{
+    // AGENT-GUARD (ADR-0168): never prefix a GENERATED name. Prefixing
+    // "Container 7 · " consumed most of the label and elided away the title
+    // the user could still read on the unrolled row — the reported "name
+    // disappears when rolled up".
+    if (containerTitle.isEmpty()) {
+        return foremostTitle;
+    }
+    if (containerTitleIsGenerated) {
+        return foremostTitle.isEmpty() ? containerTitle : foremostTitle;
+    }
+    return foremostTitle.isEmpty()
+        ? containerTitle
+        : containerTitle + QStringLiteral(" · ") + foremostTitle;
+}
+
+QFont ChromeShadedBadge::labelFont()
+{
+    return QFont();
+}
+
+qreal ChromeShadedBadge::labelWidthFor(const QString &label,
+                                       const QFontMetricsF &metrics)
+{
+    if (label.isEmpty()) {
+        return LabelMinimumWidth;
+    }
+    const qreal advance = metrics.horizontalAdvance(label);
+    return qBound(LabelMinimumWidth, advance + 2.0 * BadgeLabelTextInset,
+                  LabelMaximumWidth);
+}
 
 void ChromeShadedBadge::layout(ChromeRenderPlan *plan, const ChromeLayoutRequest &request)
 {
@@ -94,16 +131,29 @@ void ChromeShadedBadge::layout(ChromeRenderPlan *plan, const ChromeLayoutRequest
     const qsizetype tabCount = request.tabs.size();
     qsizetype pillCount = std::min(tabCount, MaxPills);
     qsizetype overflowCount = tabCount - pillCount;
-    qreal labelWidth = qMin(BadgeLabelMaximumWidth,
-                            qMax(BadgeLabelMinimumWidth,
+    // ADR-0189: the label's desired width is measured by the caller and
+    // carried on the request, so the strip geometry and this layout reserve
+    // the same number. A request that carries none (an old caller, or an
+    // unshaded request reaching here) falls back to the minimum rather than to
+    // a fixed guess, because a guess is what used to elide real titles.
+    const qreal desiredLabelWidth = request.badgeLabelWidth > 0.0
+        ? qBound(LabelMinimumWidth, request.badgeLabelWidth, LabelMaximumWidth)
+        : LabelMinimumWidth;
+    qreal labelWidth = qMin(desiredLabelWidth,
+                            qMax(LabelMinimumWidth,
                                  available - pillsWidth(pillCount, overflowCount)
                                      - BadgeClusterGap));
+    // AGENT-GUARD: pills yield before the label does. The label is the only
+    // thing on a rolled-up badge that says which page this is, so a strip that
+    // cannot hold both drops pills into "+N" first and keeps the label at its
+    // measured width for as long as the minimum allows.
     while (pillCount > 1
            && labelWidth + pillsWidth(pillCount, overflowCount) > available) {
         --pillCount;
         ++overflowCount;
     }
 
+    plan->badgeLabelText = request.badgeLabelText;
     const qreal pillY = row.center().y() - BadgePillHeight / 2.0;
     qreal cursor = contentLeft;
     plan->badgeLabelRect = {cursor, row.top(), qMax(0.0, labelWidth), row.height()};
@@ -130,40 +180,33 @@ void ChromeShadedBadge::paint(QPainter &painter, const ChromeRenderPlan &plan)
     painter.setRenderHint(QPainter::Antialiasing, true);
     const QFontMetricsF metrics(painter.font());
 
-    // Label: "<container name> · <foremost tab>" when the user named this
-    // container, the page title alone when they did not, and the generated
-    // placeholder only when there is no page title either. Elided into the
-    // reserved rect.
-    //
-    // AGENT-GUARD (ADR-0168): never prefix a GENERATED name. The label rect is
-    // 48-140 px, so "Container 7 · " consumed most of it and elided away the
-    // title the user could still read on the unrolled row - the reported
-    // "name disappears when rolled up".
-    QString foremost;
-    for (const auto &tab : plan.tabs) {
-        if (tab.active) {
-            foremost = tab.title;
-            break;
+    // ADR-0189: the label was resolved once by the caller, measured there, and
+    // carried on the plan. Re-deriving it here is what let the strip be sized
+    // for one string and painted with another. The fallback keeps an old plan
+    // (or a fixture that sets no label text) rendering the same text it always
+    // did.
+    QString label = plan.badgeLabelText;
+    if (label.isEmpty()) {
+        QString foremost;
+        for (const auto &tab : plan.tabs) {
+            if (tab.active) {
+                foremost = tab.title;
+                break;
+            }
         }
-    }
-    if (foremost.isEmpty() && !plan.tabs.isEmpty()) {
-        foremost = plan.tabs.constFirst().title;
-    }
-    QString label;
-    if (plan.containerTitle.isEmpty()) {
-        label = foremost;
-    } else if (!plan.containerTitleIsGenerated) {
-        label = foremost.isEmpty()
-            ? plan.containerTitle
-            : plan.containerTitle + QStringLiteral(" · ") + foremost;
-    } else {
-        label = foremost.isEmpty() ? plan.containerTitle : foremost;
+        if (foremost.isEmpty() && !plan.tabs.isEmpty()) {
+            foremost = plan.tabs.constFirst().title;
+        }
+        label = resolveLabel(plan.containerTitle, plan.containerTitleIsGenerated,
+                             foremost);
     }
     if (!label.isEmpty() && plan.badgeLabelRect.width() > 12.0) {
         const auto elided = metrics.elidedText(
-            label, Qt::ElideRight, qRound(plan.badgeLabelRect.width() - 8.0));
+            label, Qt::ElideRight,
+            qRound(plan.badgeLabelRect.width() - 2.0 * BadgeLabelTextInset));
         painter.setPen(plan.identity.badgeInk);
-        painter.drawText(plan.badgeLabelRect.adjusted(4.0, 0.0, -4.0, 0.0),
+        painter.drawText(plan.badgeLabelRect.adjusted(BadgeLabelTextInset, 0.0,
+                                                      -BadgeLabelTextInset, 0.0),
                          Qt::AlignVCenter | Qt::AlignLeft, elided);
     }
 
@@ -192,7 +235,9 @@ void ChromeShadedBadge::paint(QPainter &painter, const ChromeRenderPlan &plan)
     painter.restore();
 }
 
-qreal ChromeShadedBadge::badgeWidth(const ChromeMetrics &metrics, qsizetype tabCount)
+qreal ChromeShadedBadge::badgeWidth(const ChromeMetrics &metrics,
+                                    const qsizetype tabCount,
+                                    const qreal labelWidth)
 {
     const qreal inset = metrics.containerControlClusterInset;
     const qreal controlsWidth = 3.0 * metrics.containerControlExtent
@@ -200,7 +245,8 @@ qreal ChromeShadedBadge::badgeWidth(const ChromeMetrics &metrics, qsizetype tabC
     const qreal pillCount = std::min<qreal>(static_cast<qreal>(qMax<qsizetype>(tabCount, 0)),
                                             static_cast<qreal>(MaxPills));
     const qreal overflowCount = qMax<qreal>(static_cast<qreal>(tabCount) - MaxPills, 0.0);
-    return 2.0 * inset + controlsWidth + BadgeClusterGap + BadgeLabelMaximumWidth
+    const qreal label = qBound(LabelMinimumWidth, labelWidth, LabelMaximumWidth);
+    return 2.0 * inset + controlsWidth + BadgeClusterGap + label
         + BadgeClusterGap + pillsWidth(static_cast<qsizetype>(pillCount),
                                        static_cast<qsizetype>(overflowCount));
 }

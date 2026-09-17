@@ -91,6 +91,16 @@ public:
     // The strip's current logical frame while shaded (moves under drag);
     // nullopt when the container is not shaded.
     [[nodiscard]] std::optional<QRect> shadedFrame(const QString &containerId) const;
+    // Re-sizes a shaded container's strip for a badge label of labelWidth
+    // logical pixels, keeping its current top-left. Returns true when the
+    // width actually changed, so the caller can skip republishing chrome.
+    //
+    // AGENT-CONTRACT: shade() sizes the strip for the label minimum because it
+    // cannot see page titles; the session calls this from its chrome
+    // synchronization, where the resolved label is already in hand, so a strip
+    // grows and shrinks as its foremost page title changes while rolled up
+    // (ADR-0189). The strip never exceeds the frame it was shaded from.
+    [[nodiscard]] bool resizeShadeStrip(const QString &containerId, qreal labelWidth);
     // Diagnostics-only enumeration (see KWinHybridSession::diagnostics());
     // production code should use isShaded()/shadedFrame() per container.
     [[nodiscard]] QStringList shadedContainerIds() const;

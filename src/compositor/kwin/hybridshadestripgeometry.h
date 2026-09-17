@@ -15,10 +15,19 @@ class HybridShadeStripGeometry final
 {
 public:
     // Outer strip width (badge content width plus its border) for a
-    // container with tabCount pages, never wider than the container frame it
-    // anchors to and never smaller than one logical pixel.
+    // container with tabCount pages and a badge label of labelWidth logical
+    // pixels, never wider than the container frame it anchors to and never
+    // smaller than one logical pixel.
+    //
+    // AGENT-GUARD: labelWidth is what makes a rolled-up strip grow with its
+    // title (ADR-0189). Measure it with
+    // ChromeShadedBadge::labelWidthFor(ChromeShadedBadge::resolveLabel(...))
+    // so the reserved width and the painted text agree; passing a constant
+    // reintroduces the defect where a long title was elided into a fixed
+    // 140 px label.
     [[nodiscard]] static int stripWidth(qsizetype tabCount,
-                                        const QRect &containerFrame);
+                                        const QRect &containerFrame,
+                                        qreal labelWidth);
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

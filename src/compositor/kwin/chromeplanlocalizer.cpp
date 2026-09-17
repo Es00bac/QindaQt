@@ -37,6 +37,17 @@ HybridChrome::ChromeRenderPlan localizeChromeRenderPlan(
         translateRect(&divider.visualRect, offset);
         translateRect(&divider.hitRect, offset);
     }
+    // AGENT-GUARD: the rolled-up badge's own rectangles. They were missed when
+    // the badge was added (ADR-0139), so the badge label and the keyboard
+    // selection chip were painted at *global* coordinates inside a
+    // frame-local image and clipped away entirely — a rolled-up container
+    // showed controls and pills but never its title, which is the defect
+    // ADR-0163 and ADR-0168 both tried to fix by changing the label *text*
+    // while nothing was being drawn at all. Every painted rectangle on
+    // ChromeRenderPlan must appear in this function; a new one that does not
+    // is invisible rather than misplaced, which is why it can go unnoticed.
+    translateRect(&plan.badgeLabelRect, offset);
+    translateRect(&plan.indexBadgeRect, offset);
     return plan;
 }
 

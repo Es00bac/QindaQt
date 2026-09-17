@@ -4,7 +4,12 @@
 #include "qindaqt/hybrid_constraints/constraint_solver.h"
 
 #include <QHash>
+#include <QImage>
+#include <QPainter>
 #include <QtTest>
+
+#include "qindaqt/hybrid_chrome/chromerenderer.h"
+#include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
@@ -65,6 +70,7 @@ class HybridChromePlanBuilderTest final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void productionShadedPlanPaintsItsLabel();
     void buildsQindaMacPlanInStableTopologyOrder();
     void forwardsSessionMemberTitleChoice();
     void usesActualWindowFramesForBoundedMembers();
@@ -197,8 +203,84 @@ void HybridChromePlanBuilderTest::rejectsStaleCommittedGeometry()
     QCOMPARE(error, QStringLiteral("committed solution contains stale active-page geometry"));
 }
 
+
+// ADR-0189, end to end through the compositor's own builder. The pure
+// badge rows build a request by hand; this one builds the *production*
+// shaded plan and paints it, because the two halves agreeing separately is
+// exactly what let a correctly-sized strip ship with an unpainted label.
+void HybridChromePlanBuilderTest::productionShadedPlanPaintsItsLabel()
+{
+    Core::WindowContainer container(QStringLiteral("group"));
+    QString error;
+    QVERIFY2(container.addPage(QStringLiteral("work"), QStringLiteral("leaf"),
+                               QStringLiteral("window-a"), &error),
+             qPrintable(error));
+
+    HybridChromePlanOptions options;
+    options.shaded = true;
+    options.containerTitle = QStringLiteral("Container 7");
+    options.containerTitleIsGenerated = true;
+    const QString caption =
+        QStringLiteral("Quarterly revenue model, revision 12");
+    const auto titleLookup = [&caption](const QString &) { return caption; };
+
+    const auto label =
+        HybridChromePlanBuilder::shadedLabel(container, options, titleLookup);
+    QCOMPARE(label.text, caption);
+    QVERIFY(label.width > 140.0);
+    options.shadedOuterFrame =
+        QRectF(0.0, 0.0,
+               HybridChrome::ChromeShadedBadge::badgeWidth(options.metrics, 1, label.width)
+                   + 2.0 * options.metrics.outerBorder,
+               31.0);
+
+    const auto plan = HybridChromePlanBuilder::build(
+        container, {}, options, titleLookup, &error);
+    QVERIFY2(plan.has_value(), qPrintable(error));
+    QCOMPARE(plan->badgeLabelText, caption);
+    QVERIFY(plan->badgeLabelRect.width() > 140.0);
+
+    QImage image(plan->outerFrame.size().toSize(),
+                 QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        HybridChrome::ChromeRenderer::paint(painter, *plan, {});
+    }
+
+    // Glyph ink only.
+    //
+    // AGENT-GUARD: bound *both* axes to the label rect, inset past the
+    // identity frame. ChromeRenderer strokes a 2 px full-perimeter frame in
+    // identity.border on shaded plans too, so scanning the whole image height
+    // counts border pixels at every column and a blank label passes. That
+    // mistake was made here and caught by blanking the label as a negative
+    // control.
+    const auto surface = plan->style.palette.surface;
+    const QRectF band = plan->badgeLabelRect.adjusted(4.0, 3.0, -4.0, -3.0);
+    QVERIFY(band.isValid() && !band.isEmpty());
+    int inkPixels = 0;
+    for (int x = qMax(0, qRound(band.left()));
+         x <= qMin(image.width() - 1, qRound(band.right())); ++x) {
+        for (int y = qMax(0, qRound(band.top()));
+             y <= qMin(image.height() - 1, qRound(band.bottom())); ++y) {
+            const auto pixel = image.pixelColor(x, y);
+            if (pixel.alpha() > 0
+                && (qAbs(pixel.red() - surface.red()) > 24
+                    || qAbs(pixel.green() - surface.green()) > 24
+                    || qAbs(pixel.blue() - surface.blue()) > 24)) {
+                ++inkPixels;
+            }
+        }
+    }
+    QVERIFY2(inkPixels > 20,
+             qPrintable(QStringLiteral("label rect %1 wide painted %2 ink pixels")
+                            .arg(plan->badgeLabelRect.width())
+                            .arg(inkPixels)));
+}
+
 } // namespace QindaQt::Compositor::KWinIntegration
 
-QTEST_GUILESS_MAIN(QindaQt::Compositor::KWinIntegration::HybridChromePlanBuilderTest)
+QTEST_MAIN(QindaQt::Compositor::KWinIntegration::HybridChromePlanBuilderTest)
 
 #include "tst_hybridchromeplanbuilder.moc"

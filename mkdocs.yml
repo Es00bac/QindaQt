@@ -311,3 +311,4 @@ nav:
       - "ADR-0185: VBAN is a document and two threads": adr/0185-vban-is-a-document-and-two-threads.md
       - "ADR-0186: write internal brightness through logind": adr/0186-write-internal-brightness-through-logind.md
       - "ADR-0187: Smart lights speak to luminaires from the shell process": adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md
+      - "ADR-0189: paint the rolled-up badge label, and size the badge to it": adr/0189-size-the-rolled-up-badge-to-its-label.md
