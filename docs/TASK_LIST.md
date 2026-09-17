@@ -5,6 +5,22 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 17, r1)
+
+Exact source `ab853c68` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260917-r1` (superseding pre20260917).
+This checkpoint repairs the Smart Lights applet on the installed desktop:
+the pre20260917 shell listed the powered luminaire with live state while no
+switch or slider did anything, because the Wiz model adopted the ephemeral
+source port of a `syncPilot` push as the light's control endpoint and every
+later poll and control datagram left for a port the light never reads. Only a
+reply now teaches the endpoint port. Installed verification: the shell was
+refreshed onto the new binary without ending the session; a 50-second capture
+of the replacement shell saw five pushes arrive from port 51501 and all
+fourteen datagrams it sent afterwards go to UDP 38899, with eleven poll
+replies answered. All eight smart-lights rows pass and the documentation
+validator covers 291 pages.
+
 ## Installed delivery checkpoint (September 16, r7)
 
 Exact source `a11aef14` is installed through Portage as
