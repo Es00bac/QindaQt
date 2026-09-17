@@ -67,6 +67,7 @@ private Q_SLOTS:
     void refusesMacLessRepliesWhenTheAddressIsAmbiguous();
     void walksTheReachabilityLadder();
     void followsAddressChanges();
+    void neverLearnsTheControlPortFromAPush();
     void ordersDevicesDeterministically();
     void storedLabelWinsOverDerivedName();
     void newEpochDropsInventoryButKeepsLabels();
@@ -211,6 +212,36 @@ void WizModelTests::followsAddressChanges()
     QVERIFY(model.observe(QStringLiteral("10.0.0.99"), 38899, pilot(firstMac, true)));
     QCOMPARE(model.snapshot().devices.size(), 1);
     QCOMPARE(model.endpoint(firstMac)->address, QStringLiteral("10.0.0.99"));
+}
+
+void WizModelTests::neverLearnsTheControlPortFromAPush()
+{
+    // AGENT-GUARD in WizModel: firmware 1.38.0 pushes syncPilot from an
+    // ephemeral source port. Adopting it sent every poll and control datagram
+    // to a port the light never reads while the row kept looking live.
+    WizModel model;
+    model.start();
+    static_cast<void>(model.observe(QStringLiteral("10.0.0.252"), 38899,
+                                    pilot(secondMac, false)));
+    QCOMPARE(model.endpoint(secondMac)->port, quint16{38899});
+
+    DecodedMessage push = pilot(secondMac, true);
+    push.method = Method::SyncPilot;
+    push.unsolicited = true;
+    QVERIFY(model.observe(QStringLiteral("10.0.0.252"), 51501, push));
+    // The push is fresh truth about the light...
+    QVERIFY(model.device(secondMac)->pilot.on);
+    QCOMPARE(model.device(secondMac)->reachability, Reachability::Online);
+    // ...but not about where to reach it.
+    QCOMPARE(model.endpoint(secondMac)->port, quint16{38899});
+
+    // A light first seen through a push has no endpoint port at all; the
+    // client then falls back to the control port instead of guessing.
+    DecodedMessage firstContact = pilot(firstMac, true);
+    firstContact.method = Method::SyncPilot;
+    firstContact.unsolicited = true;
+    QVERIFY(model.observe(QStringLiteral("10.0.0.234"), 59321, firstContact));
+    QCOMPARE(model.endpoint(firstMac)->port, quint16{0});
 }
 
 void WizModelTests::ordersDevicesDeterministically()

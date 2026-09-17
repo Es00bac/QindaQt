@@ -186,6 +186,19 @@ integration, not installed/live-desktop adoption: the desktop is installed
 through Portage, so the applet reaches the running session only through a
 package build.
 
+Live use on the installed `pre20260917` desktop exposed a third firmware fact
+and the defect behind "the applet sees the light but cannot control it": a
+registered luminaire pushes `syncPilot` from an ephemeral source port, and the
+model adopted that port as the device's control endpoint, so every later poll
+and control datagram went where the light never listens while the pushes kept
+the row looking live. A packet capture of the shell showed polls leaving for
+ports 51501 and 59321. Only a reply now teaches the endpoint port; the decoder
+marks pushes unsolicited, and the protocol, model, and client rows replay the
+captured datagram. The same session measured the luminaire's link at roughly a
+third of pings lost and replies of up to 1.2 s, which the 1.5 s deadline and
+single retry tolerate but which will still surface an occasional "did not
+confirm" notice; that is the radio, not the stack.
+
 ### Movable, editable Desktop icons and cursor-positioned menus (September 13)
 
 Installed r4 fixes both compositor-corner popup placements by parenting each

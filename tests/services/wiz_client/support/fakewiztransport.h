@@ -73,9 +73,17 @@ public:
         return listenerMac;
     }
 
+    // A reply, which the firmware sends from the control port.
     void deliver(const QString &address, const QByteArray &datagram)
     {
-        Q_EMIT datagramReceived(address, 38899, datagram);
+        deliverFrom(address, 38899, datagram);
+    }
+
+    // A datagram from an arbitrary source port, as an unsolicited push is.
+    void deliverFrom(const QString &address, const quint16 port,
+                     const QByteArray &datagram)
+    {
+        Q_EMIT datagramReceived(address, port, datagram);
     }
 
     void fail(const QString &reason) { Q_EMIT transportFailed(reason); }

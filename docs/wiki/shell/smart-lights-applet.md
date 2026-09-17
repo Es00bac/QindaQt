@@ -40,6 +40,17 @@ holds UDP 38900 the same datagram also subscribes to the light's unsolicited
 state pushes; when it does not, the client sends the unsubscribed form rather
 than asking a device to push to an address nobody reads.
 
+A push (`syncPilot`) is accepted as fresh state and as proof that the light is
+reachable, but never as routing. Firmware 1.38.0 sends pushes from an
+ephemeral source port while the light listens only on UDP 38899, so only the
+port a *reply* came from becomes a device's control endpoint. The first
+installed build learned the port from pushes too, which sent every later poll
+and control datagram to a port nothing read: the row kept showing live state
+from the pushes while every switch and slider was dead, until the next
+discovery answer repaired the port and the next push broke it again. The
+decoder marks a `params` payload as unsolicited and the model refuses its port;
+all three service rows cover the captured datagram.
+
 A newly seen device is then asked what it is (`getSystemConfig`) and what it
 can do (`getModelConfig`). Until both have been answered the device is
 projected with power control only:
@@ -120,9 +131,9 @@ with it.
 
 | Row | Covers |
 | --- | --- |
-| `qindaqt.wiz-protocol` | Decode bounds, hostile values, capability inference, lane collapse, clamping |
-| `qindaqt.wiz-model` | Identity, revision discipline, reachability ladder, ordering, inventory bound |
-| `qindaqt.wiz-client` | Discovery, interrogation, acknowledgement, device error, retry/uncertainty, serialization, transport loss |
+| `qindaqt.wiz-protocol` | Decode bounds, hostile values, push versus reply, capability inference, lane collapse, clamping |
+| `qindaqt.wiz-model` | Identity, revision discipline, reachability ladder, push source ports never become endpoints, ordering, inventory bound |
+| `qindaqt.wiz-client` | Discovery, interrogation, acknowledgement, device error, retry/uncertainty, serialization, control port survives a push, transport loss |
 | `qindaqt.smart-lights-store` | Round trip, schema refusal, partial-document handling, atomic save, quarantine |
 | `qindaqt.smart-lights-applet-presentation` | Grant gating, capability projection, summary counting, preset applicability |
 | `qindaqt.smart-lights-applet-request-state` | Admission, lineage matching, uncertainty, authority loss |

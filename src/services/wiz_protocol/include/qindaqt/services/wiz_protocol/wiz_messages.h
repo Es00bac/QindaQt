@@ -63,6 +63,14 @@ struct DecodedMessage {
     QString errorMessage;
     // True when the device acknowledged a mutation (setPilot, registration).
     bool acknowledged = false;
+    // True when the payload arrived as `params`: a notification the device
+    // pushed on its own, not a reply to something this host sent.
+    //
+    // AGENT-GUARD (verified on firmware 1.38.0): a push leaves the luminaire
+    // from an ephemeral source port (51501 and 59321 were observed), not from
+    // the control port it listens on. Nothing may learn routing from where a
+    // push came from; WizModel::observe is where that rule is enforced.
+    bool unsolicited = false;
     bool pilotKnown = false;
     PilotState pilot;
     bool systemConfigKnown = false;
