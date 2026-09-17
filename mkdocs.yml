@@ -53,6 +53,7 @@ nav:
       - Display color model: architecture/display-color-model.md
       - Night light: architecture/night-light.md
       - Audio service: architecture/audio-service.md
+      - OBS console bridge: architecture/obs-bridge.md
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
       - PowerDevil idle preferences: architecture/powerdevil-idle.md
@@ -336,3 +337,4 @@ nav:
       - "ADR-0203: an ordinary window rolls up to its icon": adr/0203-an-ordinary-window-rolls-up-to-its-icon.md
       - "ADR-0204: the on-screen keyboard is the compositor's input method": adr/0204-the-on-screen-keyboard-is-the-compositors-input-method.md
       - "ADR-0205: touch edges and touch preferences belong to the compositor": adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md
+      - "ADR-0208: console buses are OBS sources": adr/0208-console-buses-are-obs-sources.md
