@@ -90,6 +90,18 @@ public:
   Q_INVOKABLE bool setOutputScale(const QString &stableId, double scale);
   Q_INVOKABLE bool setOutputTransform(const QString &stableId, const QString &transformStr);
   Q_INVOKABLE bool setOutputPosition(const QString &stableId, int x, int y);
+  // Mirrors `stableId` onto `sourceStableId`, or stops mirroring it when
+  // `sourceStableId` is empty (the "Extend" choice).
+  //
+  // AGENT-CONTRACT: Display1 models mirroring as one field —
+  // `replicationSourceStableId` — and validates only that it names another
+  // existing output. Everything else is this model's policy: a mirrored output
+  // must be enabled, must not mirror itself, must not mirror an output that is
+  // itself mirroring (no chains), and takes the source's position, because a
+  // mirrored output shows the same pixels in the same place. Refuses without
+  // touching the draft.
+  Q_INVOKABLE bool setOutputMirror(const QString &stableId,
+                                   const QString &sourceStableId);
 
   Q_INVOKABLE bool cancelDraft();
   Q_INVOKABLE bool applyDraft();

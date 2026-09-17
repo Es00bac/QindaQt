@@ -57,6 +57,7 @@ qt_add_qml_module(
         qml/DisplayPage.qml
         qml/DisplayPreviewBanner.qml
         qml/DisplayScaleSection.qml
+        qml/DisplayMirrorRow.qml
         qml/DisplayTransformSection.qml
         qml/DisplayArrangementCanvas.qml
         qml/DisplayArrangementGeometry.js
@@ -121,6 +122,7 @@ install(
         qml/DisplayPage.qml
         qml/DisplayPreviewBanner.qml
         qml/DisplayScaleSection.qml
+        qml/DisplayMirrorRow.qml
         qml/DisplayTransformSection.qml
         qml/DisplayArrangementCanvas.qml
         qml/DisplayArrangementGeometry.js

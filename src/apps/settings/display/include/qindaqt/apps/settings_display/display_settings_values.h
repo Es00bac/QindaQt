@@ -43,6 +43,12 @@ struct OutputDraft {
   quint32 priority = 0;
   QString replicationSourceStableId;
   QList<FormattedMode> modes;
+  // Where this output sat before it started mirroring, so choosing Extend
+  // again puts it back where the user had it rather than at a canonical
+  // position to the right of everything else. Draft-local: it is not part of
+  // the Display1 wire and never reaches a candidate.
+  QPoint positionBeforeMirror;
+  bool hasPositionBeforeMirror = false;
 
   [[nodiscard]] QVariantMap toVariantMap() const;
 };
