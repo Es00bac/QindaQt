@@ -4,6 +4,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QThread>
 #include <QtCore/QUuid>
 #include <QtCore/QVariant>
 #include <QtDBus/QDBusMetaType>
@@ -136,9 +137,22 @@ void FakeLogindBacklightService::setUnknownSessionPath(const QString &path)
     m_unknownSessionPath = path;
 }
 
+void FakeLogindBacklightService::setActiveProbeDelayMs(const int delayMs)
+{
+    const QMutexLocker locker(&m_mutex);
+    m_activeProbeDelayMs = delayMs;
+}
+
+int FakeLogindBacklightService::activeProbeCalls() const
+{
+    const QMutexLocker locker(&m_mutex);
+    return m_activeProbeCalls;
+}
+
 void FakeLogindBacklightService::resetCounters()
 {
     const QMutexLocker locker(&m_mutex);
+    m_activeProbeCalls = 0;
     m_brightnessCalls.clear();
     m_listSessionsCalls = 0;
 }
@@ -191,7 +205,7 @@ bool FakeLogindBacklightService::handleMessage(const QDBusMessage &message,
         return false;
     }
     // Serves on the worker thread while the test thread configures the fake.
-    const QMutexLocker locker(&m_mutex);
+    QMutexLocker locker(&m_mutex);
     const QString member = message.member();
     const QString path = message.path();
 
@@ -256,8 +270,18 @@ bool FakeLogindBacklightService::handleMessage(const QDBusMessage &message,
             return true;
         }
         if (property == QStringLiteral("Active")) {
+            ++m_activeProbeCalls;
+            const int delayMs = m_activeProbeDelayMs;
             reply.setArguments(
                 {QVariant::fromValue(QDBusVariant(QVariant(session->active)))});
+            if (delayMs > 0) {
+                // AGENT-GUARD: stall with the lock released. The test thread is
+                // blocked inside the writer's own call, but it must still be
+                // able to read these counters afterwards without waiting for
+                // every queued stall.
+                locker.unlock();
+                QThread::msleep(static_cast<unsigned long>(delayMs));
+            }
             m_connection.send(reply);
             return true;
         }

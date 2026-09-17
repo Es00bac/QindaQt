@@ -97,9 +97,15 @@ public:
     // Stops answering SetBrightness for the named path, as a dead session
     // object would.
     void setUnknownSessionPath(const QString &path);
+    // Sleeps this long before every session `Active` property reply, standing
+    // in for a logind that accepts connections and then stalls. Used to prove
+    // the writer's resolution budget, not its per-call timeout: a real stall
+    // would take 2 s per call and no test may wait that long.
+    void setActiveProbeDelayMs(int delayMs);
 
     [[nodiscard]] QList<BrightnessCall> brightnessCalls() const;
     [[nodiscard]] int listSessionsCalls() const;
+    [[nodiscard]] int activeProbeCalls() const;
     void resetCounters();
 
     QString introspect(const QString &path) const override;
@@ -119,6 +125,8 @@ private:
     QString m_brightnessErrorName;
     QString m_brightnessErrorText;
     QString m_unknownSessionPath;
+    int m_activeProbeDelayMs = 0;
+    int m_activeProbeCalls = 0;
     int m_listSessionsCalls = 0;
     bool m_autoSessionExists = true;
     bool m_listSessionsFails = false;

@@ -271,7 +271,10 @@ that session reports a non-empty `Seat` — `auto` is the *caller's* session, an
 an ssh shell or a system-scope unit has no seat. Otherwise the writer selects
 this uid's seat session from `Manager.ListSessions`, preferring the active one,
 and caches it. A stale-object or no-reply error re-resolves once and retries;
-a refusal does not.
+a refusal does not. Each call is capped at 2 s and resolution as a whole at 3 s,
+so a logind that stalls every reply cannot block the resident service for one
+timeout per examined session; a failed probe is then not repeated for two
+seconds, because the sysfs source asks `available()` on every rescan.
 
 A denied write completes `Failed`. Its reason code is `backlight-read-only`
 when no writer is composed, `logind-unavailable` when no seat session could be

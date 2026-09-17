@@ -30,11 +30,14 @@ namespace QindaQt::Power::Upstream {
 // `auto` only when it actually reports a seat, and otherwise picks this uid's
 // seat session from Manager.ListSessions, preferring the active one.
 //
-// Threading: write() blocks on one bounded system-bus round trip. Callers
+// Threading: write() blocks on bounded system-bus round trips. Callers
 // serialize internal-brightness requests one at a time
-// (ProductionBatteryCollaborator), so the resident service can stall for at
-// most one timeout per request. Do not make this asynchronous without moving
-// the whole BacklightWriter seam to a callback contract.
+// (ProductionBatteryCollaborator), so requests are delayed rather than lost or
+// reordered. Each individual call is capped, and resolution as a whole is
+// capped too: a logind that accepts connections but stalls every reply cannot
+// turn one request into dozens of sequential timeouts. Do not make this
+// asynchronous without moving the whole BacklightWriter seam to a callback
+// contract.
 class LogindBacklightWriter final : public BacklightWriter
 {
 public:
@@ -49,6 +52,10 @@ public:
     // Test seam: the uid whose seat session is selected from ListSessions.
     // Production leaves this at the real uid of the running process.
     void setSubjectUid(quint32 uid);
+    // Test seam: the wall-clock budget one resolution attempt may spend on
+    // bus calls. Production leaves this at the packaged default; a test uses a
+    // few milliseconds so proving the budget does not cost seconds.
+    void setResolutionBudgetMs(qint64 budgetMs);
     // Observability for tests and diagnostics; empty until a session resolves.
     [[nodiscard]] QString resolvedSessionPath() const;
 
@@ -62,6 +69,8 @@ private:
     };
 
     bool resolveSession();
+    // True while the current resolution attempt still has budget left.
+    [[nodiscard]] bool withinResolutionBudget(const QElapsedTimer &deadline) const;
     [[nodiscard]] bool sessionReportsSeat(const QString &sessionPath) const;
     [[nodiscard]] bool sessionIsActive(const QString &sessionPath) const;
     [[nodiscard]] QStringList seatSessionPathsForSubject() const;
@@ -72,6 +81,7 @@ private:
     QString m_sessionPath;
     QString m_diagnostic;
     QElapsedTimer m_lastFailedProbe;
+    qint64 m_resolutionBudgetMs;
     quint32 m_subjectUid;
     bool m_resolved = false;
 };

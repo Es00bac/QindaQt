@@ -100,11 +100,18 @@ user is sitting at.
 - `ProtectKernelTunables=true` in the installed unit is no longer a blocker.
   `/sys` stays readable for observation, and the write leaves the unit over
   `AF_UNIX`, which `RestrictAddressFamilies` already allows.
-- The write is one bounded (2 s) blocking system-bus round trip. Callers
-  already serialize internal-brightness requests one at a time
-  (`ProductionBatteryCollaborator`), so the resident service can stall for at
-  most one timeout per request. Making the seam asynchronous is a separate
-  change to the whole `BacklightWriter` contract, not a local edit.
+- The write blocks on bounded system-bus round trips. Each individual call is
+  capped at 2 s, and because one *resolution* can issue the `auto` seat probe,
+  `ListSessions`, and one `Active` probe per candidate, resolution as a whole is
+  capped at 3 s of wall clock: a logind that accepts connections and then stalls
+  every reply cannot turn one request into dozens of sequential timeouts. When
+  the budget runs out with a seated candidate already in hand, that candidate is
+  used rather than reporting unavailable — an inactive seat session of this uid
+  is the right panel far more often than no panel at all. Callers already
+  serialize internal-brightness requests one at a time
+  (`ProductionBatteryCollaborator`), so a stall delays requests rather than
+  losing or reordering them. Making the seam asynchronous is a separate change
+  to the whole `BacklightWriter` contract, not a local edit.
 - A session with no seat — an ssh shell, a system-scope unit — still cannot
   change the brightness of a seat it does not own, and now says so with
   `logind-unavailable` instead of blaming file permissions.
