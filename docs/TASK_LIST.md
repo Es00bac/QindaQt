@@ -5,6 +5,25 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 16, r7)
+
+Exact source `a11aef14` is installed through Portage as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260916-r2` (superseding r6). This
+checkpoint installs console macro buttons — named lists of console
+operations in the user's own document, run through `RunMacro` (ADR-0183) —
+bus recording to a FLAC file through libsndfile, one bus at a time
+(ADR-0184), VBAN send/receive streams declared from the user's document
+(ADR-0185), and the condensed desk-density mixing console in Settings:
+wrapping card flows with LED-segment meters, on-handle fader readouts,
+zero-padding routing pads, and a single full-width rotary-knob rack band,
+with no horizontal scrolling anywhere in the surface. It declares
+`media-libs/libsndfile` as a runtime dependency, and removes `PrivateTmp`
+from the session service units so a service restarted on the session's own
+bus (socket under /tmp) can still reach it. Installed verification:
+the packaged service runs a macro over D-Bus on a private session bus; the
+audio page, settings navigation, and audio applet suites pass 15/15; the
+audio label passes 29/29.
+
 ## Installed delivery checkpoint (September 16, r6)
 
 Exact source `a4b7f54c` is installed through Portage as
