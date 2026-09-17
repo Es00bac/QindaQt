@@ -170,7 +170,7 @@ own configuration. Four new modules keep the layering honest: a pure protocol
 (wire format, decode bounds, capability inference, admission rules), a pure
 model (inventory, reachability, revision accounting), a client over injected
 transport and clock seams, and the single UDP socket implementation.
-[ADR-0186](wiki/adr/0186-smart-lights-speak-to-luminaires-from-the-shell-process.md)
+[ADR-0187](wiki/adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md)
 records why this stack composes in the shell process instead of behind a
 resident service, and the
 [applet page](wiki/shell/smart-lights-applet.md) documents the contracts.

@@ -16,7 +16,7 @@ without a network.
 
 The architecture decision that keeps this stack in the shell process rather
 than behind a resident service is
-[ADR-0186](../adr/0186-smart-lights-speak-to-luminaires-from-the-shell-process.md).
+[ADR-0187](../adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md).
 
 ## Module boundary
 
