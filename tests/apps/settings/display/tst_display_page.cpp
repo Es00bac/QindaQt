@@ -37,6 +37,8 @@ private Q_SLOTS:
   void initTestCase();
   void testPageRenderingAndControls();
   void testScaleAndOrientationInteraction();
+  void testMirrorRowOffersExtendAndEveryOtherOutput();
+  void testOutputCardNamesRotationAndMirroring();
   void testArrangementPositionSynchronizationOnSwitchAndRevert();
   void testAbandonedPositionEditCannotCrossOutputSelection();
   void testExternalPositionRefreshCannotBeResurrectedOnBlur();
@@ -132,6 +134,117 @@ void DisplayPageTest::testScaleAndOrientationInteraction() {
 
   QMetaObject::invokeMethod(applyBtn, "clicked");
   QCOMPARE(m_model->appliedCount, 1);
+}
+
+// ADR-0190: the mirror row is the only surface that writes
+// `replicationSourceStableId`, so its choice set is the contract. It offers
+// Extend plus one button per *other enabled, not-itself-mirrored* output,
+// which is exactly what the model accepts — offering a choice the model
+// refuses would be a dead control.
+void DisplayPageTest::testMirrorRowOffersExtendAndEveryOtherOutput() {
+  // Two outputs: with one there is nothing to mirror onto, which the row says
+  // rather than offering a dead button.
+  m_model->setupTwoOutputs();
+  m_model->unavailable = false;
+  m_model->inTransaction = false;
+  m_model->mirrorSetCount = 0;
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+
+  auto *row = findItemByObjectName(pageItem, QStringLiteral("displayMirrorChoiceRow"));
+  QVERIFY2(row != nullptr, "the mirror row is not on the page");
+  auto *extendBtn =
+      findItemByObjectName(pageItem, QStringLiteral("displayMirrorExtendButton"));
+  QVERIFY(extendBtn != nullptr);
+  // Extend is the current state: nothing is mirroring anything yet.
+  QCOMPARE(extendBtn->property("checked").toBool(), true);
+
+  // The second stub output is HDMI-1; the selected one is DP-1.
+  auto *mirrorBtn =
+      findItemByObjectName(pageItem, QStringLiteral("displayMirrorButton_HDMI-1"));
+  QVERIFY2(mirrorBtn != nullptr, "no mirror button for the other output");
+  QCOMPARE(mirrorBtn->property("checked").toBool(), false);
+  QCOMPARE(mirrorBtn->property("available").toBool(), true);
+  // An output is never offered as its own mirror source.
+  QVERIFY(findItemByObjectName(pageItem, QStringLiteral("displayMirrorButton_DP-1"))
+          == nullptr);
+
+  QMetaObject::invokeMethod(mirrorBtn, "clicked");
+  QCOMPARE(m_model->mirrorSetCount, 1);
+  QCOMPARE(m_model->lastMirrorStableId, m_model->selectedOutputId);
+  QVERIFY(!m_model->lastMirrorSourceId.isEmpty());
+  QCOMPARE(m_model->selectedOutput
+               .value(QStringLiteral("replicationSourceStableId"))
+               .toString(),
+           m_model->lastMirrorSourceId);
+
+  // Extend clears it, through the same operation with an empty source.
+  QMetaObject::invokeMethod(extendBtn, "clicked");
+  QCOMPARE(m_model->mirrorSetCount, 2);
+  QVERIFY(m_model->lastMirrorSourceId.isEmpty());
+}
+
+// The reported defect was "there is no rotation control" on a laptop whose
+// Display1 reported the output enabled and editable: the Orientation section
+// is the fifth on a long page, and nothing above it said the display was
+// rotated. The card now says so.
+void DisplayPageTest::testOutputCardNamesRotationAndMirroring() {
+  m_model->setupTwoOutputs();
+  m_model->unavailable = false;
+  m_model->inTransaction = false;
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+
+  auto *summary =
+      findItemByObjectName(pageItem, QStringLiteral("displayOutputCardStateSummary"));
+  QVERIFY(summary != nullptr);
+  // A normal, unmirrored display says nothing extra rather than padding the
+  // card with "Rotated 0°".
+  QCOMPARE(summary->property("text").toString(), QString());
+  QCOMPARE(summary->property("visible").toBool(), false);
+
+  auto *orientBtn =
+      findItemByObjectName(pageItem, QStringLiteral("displayOrientationButton_90"));
+  QVERIFY(orientBtn != nullptr);
+  QMetaObject::invokeMethod(orientBtn, "clicked");
+
+  summary = findItemByObjectName(pageItem,
+                                 QStringLiteral("displayOutputCardStateSummary"));
+  QVERIFY(summary != nullptr);
+  QCOMPARE(summary->property("visible").toBool(), true);
+  QVERIFY2(summary->property("text").toString().contains(QStringLiteral("90")),
+           qPrintable(summary->property("text").toString()));
+
+  auto *mirrorBtn =
+      findItemByObjectName(pageItem, QStringLiteral("displayMirrorButton_HDMI-1"));
+  QVERIFY(mirrorBtn != nullptr);
+  QMetaObject::invokeMethod(mirrorBtn, "clicked");
+  summary = findItemByObjectName(pageItem,
+                                 QStringLiteral("displayOutputCardStateSummary"));
+  QVERIFY(summary != nullptr);
+  const QString both = summary->property("text").toString();
+  QVERIFY2(both.contains(QStringLiteral("90")), qPrintable(both));
+  QVERIFY2(both.contains(QStringLiteral("Mirror")), qPrintable(both));
 }
 
 void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() {

@@ -313,3 +313,4 @@ nav:
       - "ADR-0187: Smart lights speak to luminaires from the shell process": adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md
       - "ADR-0188: serve the panel start zone first": adr/0188-serve-the-panel-start-zone-first.md
       - "ADR-0189: paint the rolled-up badge label, and size the badge to it": adr/0189-size-the-rolled-up-badge-to-its-label.md
+      - "ADR-0190: mirroring is one field on the mirrored output": adr/0190-mirroring-is-one-field-on-the-mirrored-output.md

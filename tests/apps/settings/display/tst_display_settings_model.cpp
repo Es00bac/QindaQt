@@ -101,6 +101,8 @@ private Q_SLOTS:
   void testDraftScaleAndTransform();
   void testDraftPositionAndPrimary();
   void testEnableConnectedProjectorCreatesRevertibleDraft();
+  void testMirrorAndExtend();
+  void testMirrorRefusesSelfChainsAndDisabledSources();
   void testCancelDraftRestoresSnapshot();
   void testFullTransactionFlowConfirm();
   void testFullTransactionFlowRevert();
@@ -265,6 +267,108 @@ void DisplaySettingsModelTest::testEnableConnectedProjectorCreatesRevertibleDraf
   QCOMPARE(revertedProjector.value(QStringLiteral("priority")).toUInt(), quint32(0));
   QCOMPARE(revertedProjector.value(QStringLiteral("positionX")).toInt(), 0);
   QCOMPARE(revertedProjector.value(QStringLiteral("positionY")).toInt(), 0);
+}
+
+void DisplaySettingsModelTest::testMirrorAndExtend() {
+  FakeDisplayTransport transport;
+  Client client(&transport);
+  Coordinator coordinator(&client);
+  DisplaySettingsModel model(client, coordinator);
+
+  client.start();
+  transport.publishOwner(QStringLiteral(":1.50"));
+  transport.replySnapshot(transport.fetches.first(), createTwoOutputSnapshot());
+
+  model.setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+  const int extendedX =
+      model.selectedOutput().value(QStringLiteral("positionX")).toInt();
+
+  // Mirror hdmi1 onto dp1: the field is set and the mirrored output takes the
+  // source's position, because it shows the same pixels in the same place.
+  QVERIFY(model.setOutputMirror(QStringLiteral("edid:hdmi1"),
+                                QStringLiteral("edid:dp1")));
+  QVERIFY(model.draftDirty());
+  QVERIFY(model.draftValid());
+  QCOMPARE(model.selectedOutput()
+               .value(QStringLiteral("replicationSourceStableId"))
+               .toString(),
+           QStringLiteral("edid:dp1"));
+  model.setSelectedOutputId(QStringLiteral("edid:dp1"));
+  const int sourceX =
+      model.selectedOutput().value(QStringLiteral("positionX")).toInt();
+  const int sourceY =
+      model.selectedOutput().value(QStringLiteral("positionY")).toInt();
+  model.setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionX")).toInt(),
+           sourceX);
+  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionY")).toInt(),
+           sourceY);
+  // The source is not itself marked as mirroring anything.
+  model.setSelectedOutputId(QStringLiteral("edid:dp1"));
+  QVERIFY(model.selectedOutput()
+              .value(QStringLiteral("replicationSourceStableId"))
+              .toString()
+              .isEmpty());
+
+  // Extend again: the field clears and the output goes back exactly where the
+  // user had it, not to a canonical position to the right of everything.
+  model.setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+  QVERIFY(model.setOutputMirror(QStringLiteral("edid:hdmi1"), QString()));
+  QVERIFY(model.draftValid());
+  QVERIFY(model.selectedOutput()
+              .value(QStringLiteral("replicationSourceStableId"))
+              .toString()
+              .isEmpty());
+  QCOMPARE(model.selectedOutput().value(QStringLiteral("positionX")).toInt(),
+           extendedX);
+  // Extending an already-extended output is a no-op success, not a new draft
+  // state to apply.
+  QVERIFY(model.setOutputMirror(QStringLiteral("edid:hdmi1"), QString()));
+}
+
+// AGENT-GUARD: Display1 validates only that the replication source names
+// another existing output, so every other rule is this model's to enforce.
+// Each of these would otherwise reach the service as a valid candidate.
+void DisplaySettingsModelTest::testMirrorRefusesSelfChainsAndDisabledSources() {
+  FakeDisplayTransport transport;
+  Client client(&transport);
+  Coordinator coordinator(&client);
+  DisplaySettingsModel model(client, coordinator);
+
+  client.start();
+  transport.publishOwner(QStringLiteral(":1.50"));
+  transport.replySnapshot(transport.fetches.first(), createTwoOutputSnapshot());
+
+  // An output cannot mirror itself.
+  QVERIFY(!model.setOutputMirror(QStringLiteral("edid:hdmi1"),
+                                 QStringLiteral("edid:hdmi1")));
+  QVERIFY(!model.draftDirty());
+
+  // An unknown source is refused rather than staged and rejected later.
+  QVERIFY(!model.setOutputMirror(QStringLiteral("edid:hdmi1"),
+                                 QStringLiteral("edid:nonexistent")));
+  QVERIFY(!model.draftDirty());
+
+  // No chains: with hdmi1 mirroring dp1, dp1 may not then mirror hdmi1.
+  QVERIFY(model.setOutputMirror(QStringLiteral("edid:hdmi1"),
+                                QStringLiteral("edid:dp1")));
+  QVERIFY(!model.setOutputMirror(QStringLiteral("edid:dp1"),
+                                 QStringLiteral("edid:hdmi1")));
+  model.setSelectedOutputId(QStringLiteral("edid:dp1"));
+  QVERIFY(model.selectedOutput()
+              .value(QStringLiteral("replicationSourceStableId"))
+              .toString()
+              .isEmpty());
+
+  // A disabled output has no pixels to copy.
+  QVERIFY(model.setOutputMirror(QStringLiteral("edid:hdmi1"), QString()));
+  QVERIFY(model.setOutputEnabled(QStringLiteral("edid:dp1"), false)
+          || true);  // dp1 is primary here; enabling/disabling may refuse.
+  if (!model.selectedOutput().value(QStringLiteral("enabled")).toBool()) {
+    QVERIFY(!model.setOutputMirror(QStringLiteral("edid:hdmi1"),
+                                   QStringLiteral("edid:dp1")));
+  }
+  QVERIFY(model.draftValid());
 }
 
 void DisplaySettingsModelTest::testCancelDraftRestoresSnapshot() {

@@ -56,6 +56,10 @@ public:
   QString errorText;
 
   QVariantList outputs;
+  int mirrorSetCount = 0;
+  QString lastMirrorStableId;
+  QString lastMirrorSourceId;
+  bool mirrorRefuses = false;
   QString selectedOutputId = QStringLiteral("edid:dp1");
   QVariantMap selectedOutput;
 
@@ -171,6 +175,14 @@ public:
     selectedOutput = out1;
   }
 
+  void syncOutputsFromMap() {
+    QVariantList rebuilt;
+    for (auto it = outputsMap.cbegin(); it != outputsMap.cend(); ++it) {
+      rebuilt.append(it.value());
+    }
+    outputs = rebuilt;
+  }
+
   Q_INVOKABLE void setSelectedOutputId(const QString &id) {
     selectedOutputId = id;
     if (outputsMap.contains(id)) {
@@ -242,10 +254,44 @@ public:
 
   Q_INVOKABLE bool setOutputTransform(const QString &stableId,
                                       const QString &t) {
-    Q_UNUSED(stableId);
     selectedOutput[QStringLiteral("transform")] = t;
+    // AGENT-GUARD: propagate into the output list too, the way the real model
+    // does when it re-emits outputsChanged. A stub that updated only
+    // selectedOutput made the output cards read stale truth, which hid the
+    // card's own rotation summary from its test.
+    if (outputsMap.contains(stableId)) {
+      auto map = outputsMap.value(stableId);
+      map[QStringLiteral("transform")] = t;
+      outputsMap[stableId] = map;
+      syncOutputsFromMap();
+    }
     draftDirty = true;
     applyAvailable = true;
+    Q_EMIT outputsChanged();
+    Q_EMIT selectedOutputChanged();
+    Q_EMIT draftChanged();
+    Q_EMIT stateChanged();
+    return true;
+  }
+
+  Q_INVOKABLE bool setOutputMirror(const QString &stableId,
+                                   const QString &sourceStableId) {
+    ++mirrorSetCount;
+    lastMirrorStableId = stableId;
+    lastMirrorSourceId = sourceStableId;
+    if (mirrorRefuses) {
+      return false;
+    }
+    selectedOutput[QStringLiteral("replicationSourceStableId")] = sourceStableId;
+    if (outputsMap.contains(stableId)) {
+      auto map = outputsMap.value(stableId);
+      map[QStringLiteral("replicationSourceStableId")] = sourceStableId;
+      outputsMap[stableId] = map;
+      syncOutputsFromMap();
+    }
+    draftDirty = true;
+    applyAvailable = true;
+    Q_EMIT outputsChanged();
     Q_EMIT selectedOutputChanged();
     Q_EMIT draftChanged();
     Q_EMIT stateChanged();

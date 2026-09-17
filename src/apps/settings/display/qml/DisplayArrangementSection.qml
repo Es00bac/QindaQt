@@ -232,6 +232,14 @@ ColumnLayout {
         }
     }
 
+    // Mirroring belongs with arrangement: it is the other answer to "where do
+    // these two displays sit", and the position controls below are meaningless
+    // for a mirrored output.
+    DisplayMirrorRow {
+        displaySettings: root.displaySettings
+        editorBusy: root.editorBusy
+    }
+
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Exact position (X, Y)")
