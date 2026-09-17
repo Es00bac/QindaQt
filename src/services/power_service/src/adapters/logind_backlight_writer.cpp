@@ -27,6 +27,15 @@ constexpr int kCallTimeoutMs = 2000;
 // ListSessions on a shared machine is short; this cap keeps a hostile or
 // broken reply from turning resolution into an unbounded property sweep.
 constexpr qsizetype kMaxExaminedSessions = 64;
+// AGENT-GUARD: capping each call is not enough. One resolution can issue the
+// `auto` seat probe, ListSessions, and one Active probe per candidate, so a
+// logind that accepts connections and then stalls every reply for the full
+// per-call timeout would block the resident service for kMaxExaminedSessions
+// timeouts in a row. Resolution therefore also has a wall-clock budget: once
+// it is spent, the attempt reports unavailable and the negative-probe backoff
+// takes over. Whatever the platform does, one request costs at most this plus
+// one write call.
+constexpr qint64 kResolutionBudgetMs = 3000;
 // A negative probe is retried at most this often, because the sysfs source
 // calls available() on every rescan and rescan follows every write.
 constexpr qint64 kNegativeProbeBackoffMs = 2000;
@@ -48,12 +57,21 @@ bool errorIsStale(const QString &name)
 
 LogindBacklightWriter::LogindBacklightWriter(const QDBusConnection &systemBus)
     : m_bus(systemBus)
+    , m_resolutionBudgetMs(kResolutionBudgetMs)
     , m_subjectUid(static_cast<quint32>(::getuid()))
 {
     m_diagnostic = QString::fromLatin1(kUnavailableToken);
 }
 
 LogindBacklightWriter::~LogindBacklightWriter() = default;
+
+void LogindBacklightWriter::setResolutionBudgetMs(const qint64 budgetMs)
+{
+    m_resolutionBudgetMs = budgetMs;
+    m_resolved = false;
+    m_sessionPath.clear();
+    m_lastFailedProbe.invalidate();
+}
 
 void LogindBacklightWriter::setSubjectUid(const quint32 uid)
 {
@@ -90,6 +108,12 @@ bool LogindBacklightWriter::available()
     return false;
 }
 
+bool LogindBacklightWriter::withinResolutionBudget(
+    const QElapsedTimer &deadline) const
+{
+    return deadline.elapsed() < m_resolutionBudgetMs;
+}
+
 bool LogindBacklightWriter::resolveSession()
 {
     m_resolved = false;
@@ -98,6 +122,8 @@ bool LogindBacklightWriter::resolveSession()
     if (!m_bus.isConnected()) {
         return false;
     }
+    QElapsedTimer deadline;
+    deadline.start();
 
     // `auto` is the caller's own session and the answer we want whenever this
     // process really runs inside the graphical session.
@@ -105,6 +131,9 @@ bool LogindBacklightWriter::resolveSession()
         m_sessionPath = QString::fromLatin1(kAutoSessionPath);
         m_resolved = true;
         return true;
+    }
+    if (!withinResolutionBudget(deadline)) {
+        return false;
     }
 
     // Otherwise this process is outside a seat session (an ssh shell, a
@@ -116,6 +145,12 @@ bool LogindBacklightWriter::resolveSession()
     for (const QString &candidate : candidates) {
         if (firstSeated.isEmpty()) {
             firstSeated = candidate;
+        }
+        if (!withinResolutionBudget(deadline)) {
+            // Out of budget with a seated candidate in hand: prefer it over
+            // reporting unavailable. An inactive seat session of this uid is
+            // still the right panel far more often than no panel at all.
+            break;
         }
         if (sessionIsActive(candidate)) {
             m_sessionPath = candidate;

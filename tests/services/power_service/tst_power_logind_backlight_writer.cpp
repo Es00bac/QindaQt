@@ -56,6 +56,7 @@ private Q_SLOTS:
     void staleSessionIsReResolvedOnceAndRetried();
     void rejectsAnEmptyDeviceName();
     void disconnectedBusIsUnavailable();
+    void aStallingLogindCannotSpendOneTimeoutPerSession();
 
 private:
     std::unique_ptr<PrivateBus> m_bus;
@@ -264,6 +265,40 @@ void PowerLogindBacklightWriterTests::disconnectedBusIsUnavailable()
     QCOMPARE(orphan.unavailableDiagnostic(), QStringLiteral("logind-unavailable"));
     QCOMPARE(orphan.write(QString::fromLatin1(kDevice), 1).reasonCode,
              QStringLiteral("logind-unavailable"));
+}
+
+// The per-call timeout is not enough on its own: one resolution can issue the
+// `auto` seat probe, ListSessions, and one `Active` probe per candidate, so a
+// logind that accepts connections and then stalls every reply would block the
+// resident service for one timeout per examined session. Resolution therefore
+// has its own wall-clock budget. The budget is injected here so proving it
+// costs milliseconds instead of minutes.
+void PowerLogindBacklightWriterTests::aStallingLogindCannotSpendOneTimeoutPerSession()
+{
+    m_logind->setAutoSession(QString(), false);
+    // Four seated candidates, none active, so resolution would probe all four.
+    QList<FakeLogindBacklightService::SessionSpec> sessions;
+    for (int index = 0; index < 4; ++index) {
+        sessions.push_back(session(
+            QString::number(index), kSubjectUid, QStringLiteral("seat0"),
+            QStringLiteral("/org/freedesktop/login1/session/_%1").arg(index),
+            false));
+    }
+    m_logind->setSessions(sessions);
+    m_logind->setActiveProbeDelayMs(40);
+    m_writer->setResolutionBudgetMs(60);
+
+    QVERIFY(m_writer->available());
+    // Two probes fit the budget; the third is refused and the first seated
+    // candidate is used instead of reporting the panel unavailable.
+    QCOMPARE(m_logind->activeProbeCalls(), 2);
+    QCOMPARE(m_writer->resolvedSessionPath(),
+             QStringLiteral("/org/freedesktop/login1/session/_0"));
+    m_logind->setActiveProbeDelayMs(0);
+    QCOMPARE(m_writer->write(QString::fromLatin1(kDevice), 9).status,
+             Upstream::BacklightWriteStatus::Succeeded);
+    QCOMPARE(m_logind->brightnessCalls().constFirst().sessionPath,
+             QStringLiteral("/org/freedesktop/login1/session/_0"));
 }
 
 QTEST_MAIN(PowerLogindBacklightWriterTests)
