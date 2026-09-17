@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QList>
+#include <QPair>
 #include <QRawFont>
 #include <QStringList>
 #include <QTest>
@@ -54,6 +55,47 @@ constexpr quint32 kWholeFontChecksum = 0xB1B0AFBAU;
 [[nodiscard]] QString vendoredPath(const char *fileName)
 {
     return QStringLiteral(QINDAQT_CONTROLS_FONT_DIR "/") + QString::fromLatin1(fileName);
+}
+
+// The family names the shipped theme catalog requests, paired with the
+// repository-owned family each one must be redirected to. Read from the
+// *source* catalog, not the pinned copies, because the pinned copies already
+// name the vendored families.
+[[nodiscard]] QList<QPair<QString, QString>> catalogSubstitutionTargets()
+{
+    const QString sourceDir = QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes");
+    QList<QPair<QString, QString>> pairs;
+    const QStringList catalog = QDir(sourceDir).entryList({QStringLiteral("*.json")},
+                                                          QDir::Files, QDir::Name);
+    for (const QString &fileName : catalog) {
+        QFile file(sourceDir + QLatin1Char('/') + fileName);
+        if (!file.open(QIODevice::ReadOnly)) {
+            continue;
+        }
+        QJsonParseError parseError{};
+        const QJsonDocument document =
+            QJsonDocument::fromJson(file.readAll(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+            continue;
+        }
+        const QJsonObject theme = document.object();
+        const QPair<const char *, const char *> keys[] = {
+            {"fontFamily", "QindaQt Sans"},
+            {"monoFontFamily", "QindaQt Sans Mono"},
+        };
+        for (const auto &key : keys) {
+            const QString family = theme.value(QLatin1String(key.first)).toString();
+            if (family.isEmpty()) {
+                continue;
+            }
+            const QPair<QString, QString> pair{family,
+                                               QString::fromLatin1(key.second)};
+            if (!pairs.contains(pair)) {
+                pairs.push_back(pair);
+            }
+        }
+    }
+    return pairs;
 }
 
 [[nodiscard]] QByteArray nameTableFor(const QString &path)
@@ -114,24 +156,78 @@ void ControlsFontPinningTests::initTestCase()
     pinDeterministicFonts();
 }
 
+// AGENT-GUARD: this row must never name a concrete real-world font family as
+// its probe, and must never ask the host which families exist.
+// `QFont::insertSubstitution` is consulted only when the engine cannot resolve
+// the requested family (see control_test_support.cpp), and what the engine can
+// resolve is not knowable from `QFontDatabase::families()`: fontconfig
+// aliasing resolves names that are not listed there. Two concrete probes have
+// already gone red for reasons that had nothing to do with QindaQt — "Inter",
+// after the host installed Inter under ~/.local/share/fonts, and
+// "JetBrains Mono", which fontconfig resolves to itself while it is absent
+// from the family list. The probes are therefore synthetic families no font
+// can declare, one per substitution target, so this row proves the redirection
+// mechanism and nothing about the machine it runs on.
+//
+// The product guarantee that no theme family can render host bytes is asserted
+// separately by pinnedThemeCatalogNamesOnlyRegisteredFamilies(): the pinned
+// theme copies name only repository-owned families, so the fixture never
+// requests a host family in the first place. Substitution is the belt to that
+// set of braces, and this row tests the belt.
 void ControlsFontPinningTests::substitutionResolvesVendoredBytes()
 {
-    QFont request(QStringLiteral("Inter"));
-    request.setPixelSize(14);
-    const QRawFont resolved = QRawFont::fromFont(request);
-    QVERIFY2(resolved.isValid(), "engine did not resolve the substituted family");
-    QVERIFY2(resolved.familyName().compare(QStringLiteral("QindaQt Sans"),
-                                           Qt::CaseInsensitive)
-                 == 0,
-             qPrintable(QStringLiteral("substitution resolved to family %1")
-                            .arg(resolved.familyName())));
-    QCOMPARE(resolved.styleName(), QStringLiteral("Regular"));
+    struct Probe {
+        const char *absentFamily;
+        const char *vendoredFamily;
+        const char *vendoredFile;
+    };
+    // Suffixed with a fixed nonce so no future host font can collide.
+    constexpr Probe probes[] = {
+        {"QindaQt Absent Probe Sans 8f3c1d", "QindaQt Sans",
+         "NotoSans-Regular.ttf"},
+        {"QindaQt Absent Probe Mono 8f3c1d", "QindaQt Sans Mono",
+         "NotoSansMono-Regular.ttf"},
+    };
 
-    const QString regularPath = vendoredPath("NotoSans-Regular.ttf");
-    const QByteArray expectedTable = nameTableFor(regularPath);
-    QVERIFY2(!expectedTable.isEmpty(),
-             "vendored regular fixture has no name table");
-    QCOMPARE(resolved.fontTable("name"), expectedTable);
+    for (const Probe &probe : probes) {
+        const QString absent = QString::fromLatin1(probe.absentFamily);
+        const QString vendored = QString::fromLatin1(probe.vendoredFamily);
+        const QByteArray expectedTable = nameTableFor(vendoredPath(probe.vendoredFile));
+        QVERIFY2(!expectedTable.isEmpty(),
+                 qPrintable(QStringLiteral("vendored fixture %1 has no name table")
+                                .arg(QString::fromLatin1(probe.vendoredFile))));
+
+        QFont::insertSubstitution(absent, vendored);
+        QFont request(absent);
+        request.setPixelSize(14);
+        const QRawFont resolved = QRawFont::fromFont(request);
+        QVERIFY2(resolved.isValid(),
+                 qPrintable(QStringLiteral("engine did not resolve %1").arg(absent)));
+        QVERIFY2(resolved.familyName().compare(vendored, Qt::CaseInsensitive) == 0,
+                 qPrintable(QStringLiteral("%1 resolved to family %2, expected %3")
+                                .arg(absent, resolved.familyName(), vendored)));
+        QCOMPARE(resolved.styleName(), QStringLiteral("Regular"));
+        // The bytes, not just the name: a host face that happened to claim the
+        // vendored family would still fail here.
+        QCOMPARE(resolved.fontTable("name"), expectedTable);
+    }
+
+    // The belt is also actually fastened: every family the shipped catalog
+    // requests has a substitution registered onto the matching vendored
+    // family. `QFont::substitutes` reads the table directly, so this holds
+    // whether or not the host has the family installed — which is exactly the
+    // host-independence the probes above are built for.
+    const QList<QPair<QString, QString>> targets = catalogSubstitutionTargets();
+    QVERIFY2(!targets.isEmpty(), "the shipped theme catalog names no font families");
+    for (const auto &target : targets) {
+        const QStringList registered = QFont::substitutes(target.first);
+        QVERIFY2(registered.contains(target.second, Qt::CaseInsensitive),
+                 qPrintable(QStringLiteral("catalog family %1 has substitutes [%2], "
+                                           "expected to include %3")
+                                .arg(target.first,
+                                     registered.join(QLatin1String(", ")),
+                                     target.second)));
+    }
 }
 
 void ControlsFontPinningTests::registeredFamiliesServeVendoredBytes()
