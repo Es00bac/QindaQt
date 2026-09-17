@@ -289,9 +289,19 @@ void PowerLogindBacklightWriterTests::aStallingLogindCannotSpendOneTimeoutPerSes
     m_writer->setResolutionBudgetMs(60);
 
     QVERIFY(m_writer->available());
-    // Two probes fit the budget; the third is refused and the first seated
-    // candidate is used instead of reporting the panel unavailable.
-    QCOMPARE(m_logind->activeProbeCalls(), 2);
+    // At most two probes fit the budget, and the rest are refused, so the
+    // first seated candidate is used instead of reporting the panel
+    // unavailable.
+    //
+    // AGENT-GUARD: this is a range, not an equality. The exact count depends
+    // on how long the untimed `auto` and `ListSessions` calls took, so a
+    // loaded machine can legitimately fit one probe instead of two. Pinning it
+    // to 2 makes the row fail under load for no product reason; the invariant
+    // that matters is that the budget stopped the scan well before all four
+    // candidates were probed, which the mutation check confirms.
+    const int probes = m_logind->activeProbeCalls();
+    QVERIFY2(probes >= 1 && probes <= 2,
+             qPrintable(QStringLiteral("probes=%1").arg(probes)));
     QCOMPARE(m_writer->resolvedSessionPath(),
              QStringLiteral("/org/freedesktop/login1/session/_0"));
     m_logind->setActiveProbeDelayMs(0);

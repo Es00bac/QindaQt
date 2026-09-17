@@ -32,9 +32,11 @@ constexpr qsizetype kMaxExaminedSessions = 64;
 // logind that accepts connections and then stalls every reply for the full
 // per-call timeout would block the resident service for kMaxExaminedSessions
 // timeouts in a row. Resolution therefore also has a wall-clock budget: once
-// it is spent, the attempt reports unavailable and the negative-probe backoff
-// takes over. Whatever the platform does, one request costs at most this plus
-// one write call.
+// it is spent, the attempt stops probing and either uses a seated candidate it
+// already found or reports unavailable, and the negative-probe backoff takes
+// over. The check runs *before* each call, so a call admitted just under the
+// budget still runs to its own timeout: one resolution is bounded by the
+// budget plus one call, and one request by that plus the write call.
 constexpr qint64 kResolutionBudgetMs = 3000;
 // A negative probe is retried at most this often, because the sysfs source
 // calls available() on every rescan and rescan follows every write.
