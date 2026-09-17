@@ -235,6 +235,12 @@ does not alter task-list, launcher, or pin persistence. A copied or renamed
 center-bottom panel retains the treatment when its applets retain that setting;
 the `dock` and `smart-shelf` IDs remain legacy fallbacks only.
 
+Both stock dock panels use the `overlay` layer. Reservation follows the layer
+(see [Panel visibility](panel-visibility.md)): `normal` and `above` panels
+reserve work area while visible, `overlay` and `below` never do. An
+auto-hiding dock on a reserving layer would push maximized windows up on
+every reveal, so a dock that hides must stay on `overlay`.
+
 Dock tiles receive a 60-logical-pixel presentation budget inside a 72-pixel
 surface with token spacing for a bottom gap and hover allowance. Dock panels
 solve at full edge length: the painted rounded shelf hugs its occupied center

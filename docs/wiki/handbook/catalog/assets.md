@@ -72,14 +72,14 @@ Desktop applets (root `desktop` section): `desktop-icons` → `desktop-icons` (`
 
 ### qindaqt — QindaQt
 
-Source: `data/profiles/qindaqt.json`. A calm command bar with a window-aware smart shelf.
+Source: `data/profiles/qindaqt.json`. A calm command bar with a window-aware smart shelf. The shelf sits on the `overlay` layer, so its intelligent auto-hide reveals overlap windows instead of reserving work area and resizing maximized windows on every reveal.
 
 Default theme: `qinda-dark`. Workflow: `{"overview":"compact","workspacePolicy":"static","launcher":"smart-shelf","menu":"global","taskList":"grouped","globalMenu":true}`.
 
 | Panel | Geometry and policy | Ordered applet instances |
 | --- | --- | --- |
 | command-bar | edge=`"top"`; layer=`"above"`; hideMode=`"never"`; alignment=`"fill"`; rows=`1`; thickness=`30`; length=`1.0` | `brand` → `launcher` (`{"zone":"start"}`); `menu` → `global-menu` (`{"zone":"start"}`); `workspaces` → `workspace-switcher` (`{"zone":"center"}`); `status` → `system-status` (`{"zone":"end"}`); `bluetooth` → `bluetooth` (`{"zone":"end"}`); `power` → `power` (`{"zone":"end"}`); `audio` → `audio` (`{"zone":"end"}`); `clipboard` → `clipboard` (`{"zone":"end"}`); `status-notifier` → `status-notifier` (`{"zone":"end"}`); `notifications` → `notification-center` (`{"zone":"end"}`); `clock` → `clock` (`{"zone":"end"}`) |
-| smart-shelf | edge=`"bottom"`; layer=`"above"`; hideMode=`"intelligent"`; alignment=`"center"`; rows=`1`; thickness=`54`; length=`0.52` | `apps` → `application-launcher` (`{"zone":"center"}`); `hosted-task-list` → `task-list` (`{"zone":"center"}`); `tasks` → `grouped-task-list` (`{"zone":"center"}`) |
+| smart-shelf | edge=`"bottom"`; layer=`"overlay"`; hideMode=`"intelligent"`; alignment=`"center"`; rows=`1`; thickness=`54`; length=`0.52` | `apps` → `application-launcher` (`{"zone":"center"}`); `hosted-task-list` → `task-list` (`{"zone":"center"}`); `tasks` → `grouped-task-list` (`{"zone":"center"}`) |
 
 ### unity-inspired — Command Rail
 
