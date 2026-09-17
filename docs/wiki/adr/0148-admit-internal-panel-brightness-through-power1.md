@@ -4,7 +4,7 @@
 - **Date:** 2026-09-12
 - **Owners:** Power platform service and the Power Settings route
 - **Supersedes:** ADR-0060's exclusion of a Power1 display-brightness method
-- **Superseded by:** None
+- **Superseded by:** [ADR-0186](0186-write-internal-brightness-through-logind.md), for the sysfs-only write rule and the read-only refusal state
 
 ## Context
 
@@ -56,6 +56,15 @@ on the observed value. If the observed value differs, the wait ends at once
 and that value is shown.
 
 ## Consequences
+
+> **Narrowed by [ADR-0186](0186-write-internal-brightness-through-logind.md).**
+> Everything below about the target rule, ordering, readback and no-replay still
+> holds. What no longer holds is the sysfs-only write: a panel whose kernel
+> attribute this process cannot write is delegated to the user's seat session
+> through logind instead of being published read-only. The consequences below
+> that describe a read-only panel, a pending hardening decision, or
+> `ProtectKernelTunables` as a blocker describe the state *before* that change,
+> not current truth.
 
 - The built-in panel can be adjusted in Settings wherever the resident service
   may write the injected sysfs root.

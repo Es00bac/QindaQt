@@ -24,7 +24,7 @@ The route presents only validated, bounded public snapshot copies:
 | Power supplies | AC-adapter presence plus up to eight batteries or UPS devices, with state, exact percentage or coarse level, upstream time estimate, and textual warning severity | Read-only inventory |
 | Power profiles | Active profile and at most four supported profiles | Select a different profile only when the exact snapshot admits it |
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
-| Internal brightness | Normalized 0–10000 position, exact observed raw value/maximum, and the reason a panel is not adjustable | Keyboard- and pointer-operable slider for the panel the shared Power1 target rule admits ([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)); read-only, ambiguous, lower-preference, and unavailable panels show a disabled slider or no value, with visible text |
+| Internal brightness | Normalized 0–10000 position, exact observed raw value/maximum, and the reason a panel is not adjustable | Keyboard- and pointer-operable slider for the panel the shared Power1 target rule admits ([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)), including a panel whose kernel attribute is root-owned and is therefore written through the seat session ([ADR-0186](../adr/0186-write-internal-brightness-through-logind.md)); ambiguous, lower-preference, and unavailable panels show a disabled slider or no value, with visible text |
 | External display brightness | Normalized 0–10000 level Display1 publishes for each enabled external output, joined to the exact topology revision, and the reason an output is not adjustable | Keyboard- and pointer-operable slider for each output Display1 admits ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)); outputs without KWin brightness control or a reported level, mirrored outputs, and ambiguously identified outputs stay listed with visible text and never dispatch; internal panels stay with Power1 and disabled outputs are not listed |
 | Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
 | Screen lock | Saved automatic-idle-lock preference and timeout, resume-lock preference, and unlock grace | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled; toggle lock-after-wake and choose the stored grace delay |
@@ -111,6 +111,17 @@ and submits the exact raw value. Returning a gesture to the admitted normalized
 value cancels its queued predecessor; a distinct normalized position that
 rounds to the current raw value is also a no-op. A different target or profile
 remains fenced while a debounce is queued.
+
+A panel whose `/sys/class/backlight/<device>/brightness` is root-owned — the
+normal case on a laptop — is still a live slider: Power1 delegates the write to
+the user's seat session
+([ADR-0186](../adr/0186-write-internal-brightness-through-logind.md)) and the
+route sees no difference. The route only ever shows brightness as unavailable
+when Power1 says so, and the two reasons it can now give are that no seat
+session could be resolved (`logind-unavailable`, presented as "Brightness
+cannot be changed without a seat session") and that no writer is composed at
+all (`backlight-read-only`, presented as "Brightness is read-only on this
+computer").
 
 Every submitted operation pins request ID, kind, owner, epoch, revision, target,
 and expected result. Success never edits presented truth optimistically. The

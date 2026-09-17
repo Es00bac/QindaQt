@@ -108,6 +108,11 @@ QString internalRefusal(const Power::Snapshot &snapshot,
   }
   if (device.diagnostic == QStringLiteral("backlight-read-only"))
     return tr("Brightness is read-only on this computer");
+  // ADR-0186: the kernel attribute is root-owned on every real laptop, so a
+  // read-only panel is normal and the honest reason is that the session
+  // service that would write it for us is not reachable.
+  if (device.diagnostic == QStringLiteral("logind-unavailable"))
+    return tr("Brightness cannot be changed without a seat session");
   return internalReason(device);
 }
 
