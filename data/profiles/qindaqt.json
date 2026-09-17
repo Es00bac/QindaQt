@@ -31,7 +31,7 @@
       ]
     },
     {
-      "id": "smart-shelf", "edge": "bottom", "layer": "above", "hideMode": "intelligent",
+      "id": "smart-shelf", "edge": "bottom", "layer": "overlay", "hideMode": "intelligent",
       "alignment": "center", "rows": 1, "thickness": 72, "length": 1.0,
       "applets": [
         {"id": "apps", "plugin": "launcher", "settings": {"zone": "center", "dockMode": true}},
