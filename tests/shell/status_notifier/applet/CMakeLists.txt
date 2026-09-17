@@ -230,6 +230,7 @@ if(TARGET qindaqt-shell)
         PRIVATE
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
+            QindaQt::ShellSmartLightsAppletRuntime
             QindaQt::ShellClipboardAppletRuntime
             QindaQt::ShellLauncherQml
             QindaQt::ShellPowerAppletRuntime
@@ -238,6 +239,7 @@ if(TARGET qindaqt-shell)
             QindaQt::GlobalMenuQml
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
+            qindaqt_shell_smart_lights_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin
             qindaqt_shell_task_list_appletplugin
