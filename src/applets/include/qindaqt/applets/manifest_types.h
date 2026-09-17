@@ -43,6 +43,8 @@ enum class Capability {
     ClipboardWrite,
     BluetoothRead,
     BluetoothControl,
+    SmartLightRead,
+    SmartLightControl,
     DisplayRead,
     DisplayControl,
     SettingsRead,

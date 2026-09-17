@@ -7,6 +7,7 @@ import QindaQt.Shell.ClipboardApplet 1.0 as ClipboardAppletModule
 import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
+import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
 import QindaQt.Shell.TaskList 1.0 as TaskListModule
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierModule
 import QindaQt.Shell.StartMenu 1.0 as StartMenuModule
@@ -23,6 +24,7 @@ Item {
     property var bluetoothAppletAccess: null
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
+    property var smartLightsAppletAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
@@ -52,6 +54,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.bluetooth"
     readonly property bool powerReady:
         ready && entryPoint === "qindaqt.applets.power"
+    readonly property bool smartLightsReady:
+        ready && entryPoint === "qindaqt.applets.smart-lights"
     readonly property bool clipboardPreview:
         !liveApplets && String(applet.plugin ?? "") === "clipboard"
     readonly property bool clipboardReady:
@@ -77,7 +81,8 @@ Item {
     readonly property bool desktopControlReady: desktopControlComponent !== null
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || powerReady || clipboardReady || launcherReady || globalMenuReady
+        || powerReady || smartLightsReady || clipboardReady || launcherReady
+        || globalMenuReady
         || taskListReady || statusNotifierReady || desktopControlReady
         || startMenuReady
     readonly property bool selected:
@@ -109,6 +114,7 @@ Item {
             : root.audioReady ? audioComponent
             : root.bluetoothReady ? bluetoothComponent
             : root.powerReady ? powerComponent
+            : root.smartLightsReady ? smartLightsComponent
             : root.clipboardReady ? clipboardComponent
             : root.launcherReady ? launcherComponent
             : root.globalMenuReady ? globalMenuComponent
@@ -162,6 +168,17 @@ Item {
             anchors.fill: parent
             visible: root.powerReady
             access: root.powerAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: smartLightsComponent
+        SmartLightsAppletModule.SmartLightsApplet {
+            anchors.fill: parent
+            visible: root.smartLightsReady
+            access: root.smartLightsAppletAccess
             theme: root.theme
             vertical: root.vertical
         }

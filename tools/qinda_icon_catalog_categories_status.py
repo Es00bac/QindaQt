@@ -9,7 +9,7 @@ deliberately reused, and only where the reused motif is genuinely the same
 semantic modifier.
 """
 from qinda_icon_shapes import (
-    APRICOT, BELL_CLAPPER_D, BELL_D, BLUE, INK, JADE, PORCELAIN, VIOLET,
+    AMBER, APRICOT, BELL_CLAPPER_D, BELL_D, BLUE, INK, JADE, PORCELAIN, VIOLET,
     Icon, dot, filled, ring, rect, stroke, strokes,
 )
 
@@ -90,6 +90,29 @@ CANON = {
     "software-update-available": Icon(
         STATUS_GROUP, stroke("M32 12v26") + stroke("M22 28 32 38 42 28") + stroke("M16 46h32", width=4),
         stroke("M32 12v26", color=JADE, width=6) + stroke("M22 28 32 38 42 28", color=JADE, width=6) + stroke("M16 46h32", color=INK, width=4),
+    ),
+    # Smart-light panel states (docs/wiki/shell/smart-lights-applet.md). The
+    # freedesktop brightness-* names are used because they resolve in Breeze
+    # too, so the applet never renders as a blank chip off this theme.
+    "brightness-high": Icon(
+        STATUS_GROUP,
+        ring(32, 32, 10, width=5)
+        + strokes("M32 18V11", "M32 46v7", "M18 32h-7", "M46 32h7",
+                  "M21.5 21.5 16.5 16.5", "M42.5 42.5 47.5 47.5",
+                  "M42.5 21.5 47.5 16.5", "M21.5 42.5 16.5 47.5", width=4),
+        ring(32, 32, 10, width=5, color=APRICOT)
+        + strokes("M32 18V11", "M32 46v7", "M18 32h-7", "M46 32h7",
+                  "M21.5 21.5 16.5 16.5", "M42.5 42.5 47.5 47.5",
+                  "M42.5 21.5 47.5 16.5", "M21.5 42.5 16.5 47.5",
+                  width=4, color=AMBER),
+    ),
+    "brightness-low": Icon(
+        STATUS_GROUP,
+        ring(32, 32, 10, width=5)
+        + strokes("M32 19v-4", "M32 45v4", "M19 32h-4", "M45 32h4", width=4),
+        ring(32, 32, 10, width=5, color=BLUE)
+        + strokes("M32 19v-4", "M32 45v4", "M19 32h-4", "M45 32h4",
+                  width=4, color=BLUE),
     ),
     "notification-new": Icon(
         STATUS_GROUP, stroke(BELL_D, width=5) + stroke(BELL_CLAPPER_D, width=5) + dot(46, 14, 4),

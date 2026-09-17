@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 26);
+    QCOMPARE(catalog.manifests().size(), 27);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -54,6 +54,8 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("audio"),
         QStringLiteral("clipboard"),
         QStringLiteral("status-notifier"),
+        // Smart lights (docs/wiki/shell/smart-lights-applet.md).
+        QStringLiteral("smart-lights"),
         // Desktop controls (docs/wiki/shell/desktop-controls.md).
         QStringLiteral("active-application"),
         QStringLiteral("application-tiles"),
