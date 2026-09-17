@@ -200,6 +200,18 @@ struct ChromeLayoutRequest final
     // The badge therefore uses a generated name only when there is no page
     // title to show.
     bool containerTitleIsGenerated = false;
+    // The resolved rolled-up badge label and its measured width in logical
+    // pixels (ADR-0189). Only a shaded request sets them; an unshaded request
+    // leaves them empty and zero.
+    //
+    // AGENT-CONTRACT: the *caller* resolves and measures, because the badge's
+    // strip frame has to be sized before any painter exists — that is the
+    // whole reason the label is not recomputed inside paint(). Build both with
+    // ChromeShadedBadge::resolveLabel() and ::labelWidthFor() so the width the
+    // strip reserves and the text the badge paints can never disagree. A zero
+    // width falls back to the label minimum, never to a fixed guess.
+    QString badgeLabelText;
+    qreal badgeLabelWidth = 0.0;
     // Container identity and keyboard-hint inputs (CONTRACTS §2.4,
     // ADR-0139). An invalid identityColor means "derive every identity shade
     // from the theme accent"; a missing or empty tabTitleOverrides entry
@@ -296,6 +308,9 @@ struct ChromeRenderPlan final
     // and container name), the pill overflow count behind "+N", and the
     // keyboard selection chip rect. Empty/zero when not shown.
     QRectF badgeLabelRect;
+    // The resolved label the badge paints, echoed from the request so paint()
+    // never re-derives it (ADR-0189).
+    QString badgeLabelText;
     int badgeOverflowCount = 0;
     QRectF indexBadgeRect;
 };

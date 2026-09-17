@@ -260,7 +260,27 @@ same atomic release path as detach and teardown. The shade control rolls the
 whole group up to a compact identity badge at its current position. Its width
 shrinks to the metric-derived control/label/tab-pill footprint, capped by the
 former container width; the badge uses the container color, and up to eight page pills plus a bounded
-overflow counter. Its label spends the reserved 48-140 px on whichever text the
+overflow counter.
+
+The label is painted at all, and measured rather than fitted into a constant
+([ADR-0189](../adr/0189-size-the-rolled-up-badge-to-its-label.md)). Both badge
+rectangles are translated into the scene item's image-local space by
+`localizeChromeRenderPlan`, which is what puts the label on screen: until that
+was fixed, a rolled-up container drew its controls and pills frame-local and
+its label at global coordinates, outside the image. One
+resolution produces both the text and its width — the text's advance plus the
+label rect's 4 px padding on each side, clamped to 48-320 logical pixels — and
+both travel on the layout request, so the strip frame the compositor sizes and
+the string the badge paints can never disagree. `shade()` reserves the minimum
+because the placement controller has neither page titles nor a font; chrome
+synchronization then resizes the strip to the measured label, which is also how
+a strip grows and shrinks as its foremost page title changes while the
+container stays rolled up. The strip keeps its top-left and never outgrows the
+frame it was shaded from. When a strip cannot hold both, page pills drop into
+the "+N" counter before the label gives up any of its measured width: the label
+is the only thing on a rolled-up badge that says which page this is.
+
+That label spends its width on whichever text the
 user can actually recognise
 ([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)): a
 container the user renamed reads `<name> · <active page>`, a container that was
@@ -269,7 +289,9 @@ never renamed reads the active page title alone, and the stable generated
 ([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
 appears only when there is no page title to show. A generated placeholder is
 never prefixed to real text - doing so elided the page title out of the badge,
-so a title readable on the unrolled row vanished when rolled up.
+so a title readable on the unrolled row vanished when rolled up. Container
+names are not persisted: they live only for the container's process lifetime
+(see ADR-0189's consequences for exactly why a restart cannot keep them yet).
 No member is minimized (the container never becomes one collapsed dock
 entry) and no member's real frame is resized, but every member's content and
 pointer input are genuinely hidden while shaded, and only the shared-chrome

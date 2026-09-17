@@ -8,6 +8,9 @@
 #include "kwinhybridgroupstacking.h"
 #include "kwininteractionfilter.h"
 #include "kwintaskidentitymanager.h"
+#include "managedwindowregistry.h"
+
+#include <window.h>
 
 namespace QindaQt::Compositor::KWinIntegration {
 
@@ -37,6 +40,37 @@ bool KWinHybridSession::isContainerMaximized(
     return m_placement && m_placement->isMaximized(containerId);
 }
 
+HybridChromePlanBuilder::ShadedLabel KWinHybridSession::shadedBadgeLabel(
+    const QString &containerId) const
+{
+    const auto *container = m_runtime ? m_runtime->topology().container(containerId)
+                                      : nullptr;
+    if (container == nullptr) {
+        return {};
+    }
+    // Mirrors synchronizeChrome()'s shaded branch: the generated name is used
+    // only when no rename exists (ADR-0163/0168), and the title lookup is the
+    // same caption read.
+    // AGENT-NOTE: only the title fields matter to shadedLabel(); the metrics
+    // and style chromePlanOptions() would add are unused by it, and that
+    // helper is file-local to kwinhybridsession.cpp. Keeping this local avoids
+    // widening that boundary for a diagnostic.
+    HybridChromePlanOptions options;
+    options.shaded = true;
+    const auto appearance = m_appearance.appearance(containerId);
+    options.containerTitle = appearance.name;
+    options.containerTitleIsGenerated = false;
+    if (options.containerTitle.isEmpty()) {
+        options.containerTitle = m_appearance.assignedDisplayName(containerId);
+        options.containerTitleIsGenerated = !options.containerTitle.isEmpty();
+    }
+    const HybridWindowTitleLookup titleLookup = [this](const QString &windowId) {
+        const auto *window = m_registry.window(windowId);
+        return window ? window->caption() : QString{};
+    };
+    return HybridChromePlanBuilder::shadedLabel(*container, options, titleLookup);
+}
+
 QJsonObject KWinHybridSession::diagnostics() const
 {
     const int chromeOverlayCount = m_chromeManager
@@ -57,12 +91,44 @@ QJsonObject KWinHybridSession::diagnostics() const
     if (m_placement) {
         for (const auto &shadedId : m_placement->shadedContainerIds()) {
             if (const auto frame = m_placement->shadedFrame(shadedId)) {
+                // ADR-0189: the label and the width it was measured at, so a
+                // nested row can prove the strip was sized for the title the
+                // badge actually paints instead of a constant. Diagnostics
+                // only; nothing reads these to make a decision.
+                const auto label = shadedBadgeLabel(shadedId);
+                // The *published* plan's own label and reserved rect, so a
+                // nested row sees what is actually painted rather than a
+                // recomputation that could agree while the plan does not.
+                QString plannedLabel;
+                QRectF plannedLabelRect;
+                if (m_chromeManager) {
+                    if (const auto planned = m_chromeManager->plan(shadedId)) {
+                        plannedLabel = planned->badgeLabelText;
+                        // AGENT-GUARD: the chrome manager stores the *global*
+                        // plan; only the scene overlay localizes a copy. So
+                        // translate here, because a pixel probe needs the rect
+                        // relative to the strip frame it adds as the origin —
+                        // reporting the global rect and adding the origin
+                        // again double-counts it and finds no ink at all.
+                        plannedLabelRect = planned->badgeLabelRect.translated(
+                            -planned->outerFrame.topLeft());
+                    }
+                }
                 shadedStripFrames.append(QJsonObject{
                     {QStringLiteral("containerId"), shadedId},
                     {QStringLiteral("x"), frame->x()},
                     {QStringLiteral("y"), frame->y()},
                     {QStringLiteral("width"), frame->width()},
-                    {QStringLiteral("height"), frame->height()}});
+                    {QStringLiteral("height"), frame->height()},
+                    {QStringLiteral("badgeLabel"), label.text},
+                    {QStringLiteral("badgeLabelWidth"), label.width},
+                    {QStringLiteral("paintedBadgeLabel"), plannedLabel},
+                    {QStringLiteral("paintedBadgeLabelRectX"), plannedLabelRect.x()},
+                    {QStringLiteral("paintedBadgeLabelRectY"), plannedLabelRect.y()},
+                    {QStringLiteral("paintedBadgeLabelRectWidth"),
+                     plannedLabelRect.width()},
+                    {QStringLiteral("paintedBadgeLabelRectHeight"),
+                     plannedLabelRect.height()}});
             }
         }
     }

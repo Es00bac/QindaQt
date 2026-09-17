@@ -6,6 +6,8 @@
 #include "qindaqt/hybrid_chrome/chromerenderer.h"
 
 #include <QPainter>
+#include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+#include <QFontMetricsF>
 #include <QtTest>
 
 using namespace QindaQt;
@@ -27,6 +29,7 @@ private Q_SLOTS:
     void rejectsInvalidOrStaleSnapshotsAtomically();
     void publishesAShadedBadgeWithTabsButWithoutMemberGeometry();
     void localizesAndPaintsLiveContainerControls();
+    void localizesTheRolledUpBadgeRectsSoItsLabelIsPainted();
 };
 
 void KWinChromeManagerTests::reconcilesOneOverlayPerContainerAndTearsDownSafely()
@@ -215,6 +218,87 @@ void KWinChromeManagerTests::localizesAndPaintsLiveContainerControls()
     }
     QVERIFY2(controlPixelChanged,
              "live scene-local rendering must produce visible container-control pixels");
+}
+
+// ADR-0189. The badge's own rectangles were the only painted geometry
+// localizeChromeRenderPlan never translated, so a rolled-up container painted
+// its controls and pills at frame-local coordinates and its label at *global*
+// ones — outside the scene item's image, clipped away, invisible. That is why
+// a rolled-up container never showed a title, and why ADR-0163 and ADR-0168
+// both rewrote the label *text* without the user seeing any change: nothing
+// was being drawn. This row fails if either badge rect is dropped again.
+void KWinChromeManagerTests::localizesTheRolledUpBadgeRectsSoItsLabelIsPainted()
+{
+    const QString label = QStringLiteral("Quarterly revenue model, revision 12");
+    const qreal labelWidth = HybridChrome::ChromeShadedBadge::labelWidthFor(
+        label, QFontMetricsF(HybridChrome::ChromeShadedBadge::labelFont()));
+    QVERIFY(labelWidth > 140.0);
+
+    HybridChrome::ChromeLayoutRequest request;
+    request.containerId = QStringLiteral("alpha");
+    request.shaded = true;
+    request.containerFocused = true;
+    request.indexBadge = 3;
+    request.badgeLabelText = label;
+    request.badgeLabelWidth = labelWidth;
+    request.tabs = {{QStringLiteral("page"), label, true}};
+    const QPointF origin(137.0, 83.0);
+    request.outerRect = QRectF(
+        origin,
+        QSizeF(HybridChrome::ChromeShadedBadge::badgeWidth(
+                   HybridChrome::ChromeMetrics{}, 1, labelWidth)
+                   + 2.0 * HybridChrome::ChromeMetrics{}.outerBorder,
+               31.0));
+    const auto global = HybridChrome::ChromeLayoutEngine::build(request);
+    QVERIFY(global.has_value());
+    QVERIFY(global->badgeLabelRect.isValid());
+    // Built in global space, the label sits where the strip does.
+    QVERIFY(global->badgeLabelRect.left() >= origin.x());
+
+    const auto local = localizeChromeRenderPlan(*global, global->outerFrame.topLeft());
+    QCOMPARE(local.outerFrame.topLeft(), QPointF{});
+    QCOMPARE(local.badgeLabelRect,
+             global->badgeLabelRect.translated(-global->outerFrame.topLeft()));
+    if (global->indexBadgeRect.isValid()) {
+        QCOMPARE(local.indexBadgeRect,
+                 global->indexBadgeRect.translated(-global->outerFrame.topLeft()));
+    }
+    // AGENT-GUARD: the real consequence, not just the arithmetic — the label
+    // has to land inside the image the scene item paints.
+    QVERIFY2(local.outerFrame.contains(local.badgeLabelRect),
+             qPrintable(QStringLiteral("label rect %1,%2 %3x%4 is outside the "
+                                       "frame %5x%6")
+                            .arg(local.badgeLabelRect.x())
+                            .arg(local.badgeLabelRect.y())
+                            .arg(local.badgeLabelRect.width())
+                            .arg(local.badgeLabelRect.height())
+                            .arg(local.outerFrame.width())
+                            .arg(local.outerFrame.height())));
+
+    QImage image(local.outerFrame.size().toSize(),
+                 QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        HybridChrome::ChromeRenderer::paint(painter, local);
+    }
+    const auto surface = local.style.palette.surface;
+    int inkPixels = 0;
+    const QRect probe = local.badgeLabelRect.toAlignedRect().intersected(image.rect());
+    for (int x = probe.left(); x <= probe.right(); ++x) {
+        for (int y = probe.top(); y <= probe.bottom(); ++y) {
+            const auto pixel = image.pixelColor(x, y);
+            if (pixel.alpha() > 0
+                && (qAbs(pixel.red() - surface.red()) > 24
+                    || qAbs(pixel.green() - surface.green()) > 24
+                    || qAbs(pixel.blue() - surface.blue()) > 24)) {
+                ++inkPixels;
+            }
+        }
+    }
+    QVERIFY2(inkPixels > 20,
+             qPrintable(QStringLiteral("the badge label painted %1 ink pixels")
+                            .arg(inkPixels)));
 }
 
 void KWinChromeManagerTests::sceneOverlayBoundaryRoutesNativeInputAndOwnsVisibility()
