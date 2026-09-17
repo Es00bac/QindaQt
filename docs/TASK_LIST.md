@@ -161,6 +161,31 @@ gestures because production test-input injection is intentionally disabled.
 
 ## Active outcomes
 
+### Smart Lights panel applet for Wiz luminaires (September 17)
+
+A new first-party applet finds Wiz luminaires on the local network, reads what
+each one can actually do, and offers power, brightness, white temperature,
+colour, scene, and speed control plus named arrangements saved to the user's
+own configuration. Four new modules keep the layering honest: a pure protocol
+(wire format, decode bounds, capability inference, admission rules), a pure
+model (inventory, reachability, revision accounting), a client over injected
+transport and clock seams, and the single UDP socket implementation.
+[ADR-0186](wiki/adr/0186-smart-lights-speak-to-luminaires-from-the-shell-process.md)
+records why this stack composes in the shell process instead of behind a
+resident service, and the
+[applet page](wiki/shell/smart-lights-applet.md) documents the contracts.
+
+Verification on branch `smart-lights-applet`: a strict Debug build of the whole
+tree, eight focused rows (protocol, model, client, store, presentation, request
+state, controller, offscreen QML) passing, and the documentation validator. Two
+real ESP25_SHRGB_01 luminaires on firmware 1.38.0 were discovered, interrogated,
+dimmed, recoloured, renamed, saved as an arrangement, and restored through the
+production controller; that run is what exposed the firmware's MAC-less
+getModelConfig reply, now covered by a regression row. This is source
+integration, not installed/live-desktop adoption: the desktop is installed
+through Portage, so the applet reaches the running session only through a
+package build.
+
 ### Movable, editable Desktop icons and cursor-positioned menus (September 13)
 
 Installed r4 fixes both compositor-corner popup placements by parenting each

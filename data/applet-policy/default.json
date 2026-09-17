@@ -81,6 +81,34 @@
       "capability": "status-items.activate",
       "decision": "grant",
       "reason": "The audited Status Notifier applet may dispatch generation-fenced activate, secondary-activate, and context-menu intents; execution stays with the item owners."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "smart-lights",
+      "capability": "smart-lights.read",
+      "decision": "grant",
+      "reason": "The audited Smart Lights applet may observe the bounded luminaire inventory its injected client discovered on the local network."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "smart-lights",
+      "capability": "smart-lights.control",
+      "decision": "grant",
+      "reason": "The audited Smart Lights applet may dispatch capability-validated power, brightness, white-temperature, colour, scene, and preset intents; admission and datagram construction stay with the Wiz client."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "smart-lights.read",
+      "decision": "deny",
+      "reason": "Local-network device inventory reveals what hardware the user owns; third-party applets have no smart-light read authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "smart-lights.control",
+      "decision": "deny",
+      "reason": "Sending datagrams to household devices stays with the audited applet; a third-party package may not actuate the user's lighting."
     }
   ]
 }

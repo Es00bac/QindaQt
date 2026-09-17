@@ -3,6 +3,7 @@
 
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
+#include "smartlightsappletcomposition.h"
 #include "globalmenuappletcomposition.h"
 #include "launcherappletcomposition.h"
 #include "../common/shelliconconfiguration.h"
@@ -80,6 +81,8 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
         std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
     m_bluetoothApplet =
         std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
+    m_smartLightsApplet =
+        std::make_unique<SmartLightsAppletComposition>(m_applets, m_appletPolicy);
     m_powerApplet =
         std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
     const QDBusConnection sessionBus = QDBusConnection::sessionBus();

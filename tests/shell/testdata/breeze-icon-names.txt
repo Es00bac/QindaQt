@@ -11,6 +11,8 @@ battery-060
 battery-080
 battery-100
 battery-missing
+brightness-high
+brightness-low
 clock
 dashboard-show
 dialog-warning

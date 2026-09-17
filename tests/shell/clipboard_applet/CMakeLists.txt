@@ -163,6 +163,7 @@ add_custom_target(
         qindaqt_shell_clipboard_applet_runtimeplugin
         qindaqt_shell_audio_applet_runtimeplugin
         qindaqt_shell_bluetooth_applet_runtimeplugin
+        qindaqt_shell_smart_lights_applet_runtimeplugin
         qindaqt_shell_power_applet_runtimeplugin
         qindaqt_shell_status_notifier_applet_runtimeplugin
         qindaqt_shell_desktop_controls_runtimeplugin
@@ -190,6 +191,7 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellClipboardAppletRuntime
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
+            QindaQt::ShellSmartLightsAppletRuntime
             QindaQt::ShellPowerAppletRuntime
             QindaQt::ShellLauncherQml
             QindaQt::ShellTaskListApplet
@@ -199,6 +201,7 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellIcons
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
+            qindaqt_shell_smart_lights_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin
             qindaqt_shell_status_notifier_applet_runtimeplugin

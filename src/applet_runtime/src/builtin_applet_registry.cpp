@@ -27,6 +27,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.clipboard"),
         QStringLiteral("qindaqt.applets.task-list"),
         QStringLiteral("qindaqt.applets.status-notifier"),
+        QStringLiteral("qindaqt.applets.smart-lights"),
         // Desktop controls (docs/wiki/shell/desktop-controls.md): each entry
         // is rendered by the compiled QindaQt.Shell.DesktopControls module
         // over an existing shell facade or the authenticated workspace adapter.

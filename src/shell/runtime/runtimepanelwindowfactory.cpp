@@ -8,6 +8,7 @@
 #include "launcher_applet_controller.h"
 #include "notificationcenterappletaccess.h"
 #include "power_applet_controller.h"
+#include "smart_lights_applet_controller.h"
 #include "qindaqt/shell/global_menu/applet/globalmenuappletaccess.h"
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_controller.h"
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
@@ -126,7 +127,8 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess,
                                                      ShellClipboardApplet::ClipboardAppletController *clipboardAppletAccess,
                                                      ShellTaskListApplet::TaskListAppletController *taskListAppletAccess,
-                                                     StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess)
+                                                     StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess,
+                                                     SmartLightsApplet::SmartLightsAppletController *smartLightsAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
     , m_panels(resolvePanelInventory(profile, applets, policy))
@@ -139,6 +141,7 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
     , m_clipboardAppletAccess(clipboardAppletAccess)
     , m_taskListAppletAccess(taskListAppletAccess)
     , m_statusNotifierAppletAccess(statusNotifierAppletAccess)
+    , m_smartLightsAppletAccess(smartLightsAppletAccess)
 {
 }
 
@@ -271,6 +274,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
          QVariant::fromValue(m_taskListAppletAccess)},
         {QStringLiteral("statusNotifierAppletAccess"),
          QVariant::fromValue(m_statusNotifierAppletAccess)},
+        {QStringLiteral("smartLightsAppletAccess"),
+         QVariant::fromValue(m_smartLightsAppletAccess)},
     };
     QObject *created = m_component->createWithInitialProperties(initialProperties);
     auto *window = qobject_cast<QQuickWindow *>(created);
