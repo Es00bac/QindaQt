@@ -392,8 +392,102 @@ overlap; it grows to 36 px when space permits. Narrower geometry is explicitly
 incomplete and paints no grip. A modifier-free vertical wheel over the
 container title row, a tab or control, or a member handlebar rolls the
 container up (wheel away from the user) or down. Over an ordinary window's
-title bar the decoration rolls that window. See
-[ADR-0131](../adr/0131-contained-window-handlebar-and-wheel-roll-up.md).
+title bar the same wheel rolls that window up to its icon chip (next section),
+not into KWin's shade. See
+[ADR-0131](../adr/0131-contained-window-handlebar-and-wheel-roll-up.md) and
+[ADR-0191](../adr/0191-an-ordinary-window-rolls-up-to-its-icon.md).
+
+## Iconified windows
+
+An independent (ungrouped), server-decorated window rolls up to a floating
+application-icon chip when a modifier-free wheel turns away from the user over
+its decoration title bar. `KWinInteractionFilter` consumes that axis event at
+Decoration order, before native KDecoration, and asks the session to iconify
+the topmost input owner under the pointer; popups, panels, dialogs, grouped
+members, and client-side decorated windows (which have no title bar the
+compositor knows) never qualify. The decoration itself no longer shades on
+wheel; KWin's shade remains reachable from the window menu.
+
+Iconified is a session-local state like shade, never a container state and
+never persisted. `HybridIconifyController` (pure) records each rolled-up
+window's restore frame, chip frame, and focus at roll-up, and knows which
+platform treatment to undo; `KWinIconifyPlatform` (`kwinhybridiconify.cpp`)
+applies the ADR-0099 technique per window: `Window::setHidden` removes the
+window from pointer targeting and the focus chain, `WindowItem::refVisible`
+keeps its scene item paintable so the chip parented to it renders, the
+window's own container and shadow items are hidden explicitly, its opacity is
+held at 0.999 against the occlusion ghost, and its transients hide and restore
+with it. Focus moves to the next shown window.
+
+The chip is shared chrome, not a window. `ChromeIconChip` (`src/hybrid_chrome`)
+lays out and paints a 48-logical-pixel identity pill anchored at the title
+bar's leading edge and clamped into the output: the raised surface with an
+identity border (the theme accent; a container-style identity color is
+accepted), the application icon KWin resolved for the window, a hover label
+with the caption beside the pill (flipped to the left at the output's edge), a
+close glyph straddling the pill's top-right edge while hovered, and the
+identity glow while hovered. `KWinIconChipPresenter` paints it as a paint-only
+scene `ImageItem` parented to the window's own `WindowItem`, exactly like
+container chrome ([ADR-0005](../adr/0005-scene-resident-hybrid-chrome.md)):
+it creates no `QWindow`, input surface, or managed client, so it is reachable
+only through the compositor's own pointer routing. A minimized iconified
+window shows no chip until it is unminimized. Chip scene items are released
+before a compositor scene teardown and recreated, with the hide treatment
+re-applied to the new `WindowItem`, after `compositingToggled(true)`.
+
+Pointer input over a chip goes through `HybridIconChipRouter`, a sibling of
+the chrome pointer router with the same modifier semantics. Hit testing walks
+KWin's live stack from the top: an exposed chip wins, and any real input owner
+above the iconified window covers it; a chip stacked above a container's
+anchor makes container chrome yield the point. With no modifier held:
+
+- a left press on the body raises the window (and so the chip) at once;
+- a drag past Qt's drag distance moves the chip, and the restore frame moves
+  with it, so the window reappears with its title bar under the chip; the
+  chip stays inside its output;
+- a double-click on the body, or a wheel toward the user, unrolls and
+  activates; a wheel away from the user over a chip is swallowed;
+- the close glyph closes the window; a right click opens a small
+  **Unroll**/**Close** menu whose commands run after the popup hides;
+- Escape or a lost release cancels a chip drag.
+
+Any held modifier passes the event through, which is what lets the exact
+`Meta+Shift+Left` chord reach the `InteractionController` with the chip as its
+source: `KWinInteractionTargetResolver` reports an exposed chip as the hidden
+window's own `IconChip` source kind, which docks exactly like a member title
+except that a release over nothing still commits (an independent title's
+would cancel). On a valid drop the session un-iconifies first
+(restore frame, no activation) and then hands the window to the ordinary
+docking runtime, so it joins the container as a tab or an edge split at its
+restore size; a drop with no target moves the chip to the drop point; Escape
+leaves it where it was. See
+[Window containers](window-containers.md) "Dock, rearrange, and detach".
+
+KWin activation is an unroll, never a reassert. `Workspace::activateWindow()`
+clears `isHidden()`; the platform reports the reveal, the controller forgets
+the window and undoes the treatment, and the window reappears at its restore
+frame as a real, focusable client. Dock and task-list **Activate**, a client's
+own activation token, and an unminimize all unroll. Closing the window while
+iconified drops the record and the chip. Compositor shutdown restores every
+iconified window at its recorded frame before release.
+
+Task facts publish `iconified` for the window
+([Task list](../shell/task-list.md)); the task list keeps the entry, because
+the window is still on screen as its chip, and shows it as a rolled hint.
+The `Capabilities.hybrid` diagnostics report `iconifiedWindowCount`,
+`visibleIconChipCount`, and every `iconifiedWindows` chip and restore frame
+([Compositor1 reference](../reference/compositor-control-v1.md)).
+
+Focused rows: `qindaqt.hybrid-chrome-icon-chip` (layout, clamping into
+bounds, scaling, hit precedence, icon ink, hover-only glyphs, the placeholder
+glyph), `compositor.hybrid-iconify-controller` (platform rollback on refusal,
+restore-once, chip relocation within bounds moving the restore frame,
+reveal-as-unroll, close, shutdown restore order), and
+`compositor.hybrid-icon-chip-router` (raise on press, double-click unroll,
+close release, thresholded cumulative drag, context menu, cancel and
+invalidation, wheel direction, modifier pass-through). The nested
+`compositor.iconify-visibility.*` rows judge the real scene; see the
+[testing harness](../development/testing-harness.md) "Iconified window proof".
 
 ## Compositor scene restart
 

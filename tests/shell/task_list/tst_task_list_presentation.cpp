@@ -154,6 +154,16 @@ private slots:
         QCOMPARE(TaskListPresentationModel::accessibleName(container),
                  QStringLiteral("Files — Projects, 3 windows, minimized"));
 
+        // ADR-0191: a window rolled up to its icon chip says so, after
+        // minimized and before urgent, so screen readers hear the state.
+        TaskEntry rolled;
+        rolled.applicationName = QStringLiteral("Files");
+        rolled.title = QStringLiteral("Projects");
+        rolled.iconified = true;
+        rolled.urgent = true;
+        QCOMPARE(TaskListPresentationModel::accessibleName(rolled),
+                 QStringLiteral("Files — Projects, rolled up, urgent"));
+
         TaskEntry singletonContainer = container;
         singletonContainer.windowCount = 1;
         singletonContainer.minimized = false;

@@ -536,6 +536,8 @@ if(TARGET qindaqt_kwin_input_adapter)
         COMMAND qindaqt_hybrid_shade_controller_tests
     )
 
+    include("${CMAKE_CURRENT_LIST_DIR}/IconifyTests.cmake")
+
     qt_add_executable(
         qindaqt_hybrid_grouped_geometry_reconciler_tests
         tst_hybridgroupedgeometryreconciler.cpp

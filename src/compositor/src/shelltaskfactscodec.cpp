@@ -158,7 +158,8 @@ bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
     const QJsonObject object = value.toObject();
     if (!exactKeys(object, {"id", "applicationId", "applicationName", "title",
                             "colorHex", "role", "windowType", "ownerRole", "active",
-                            "minimized", "maximized", "fullscreen", "demandsAttention",
+                            "minimized", "iconified", "maximized", "fullscreen",
+                            "demandsAttention",
                             "outputId", "workspaceIds", "onAllWorkspaces",
                             "containerId"})) {
         return false;
@@ -192,6 +193,7 @@ bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
                            &window->owner)
         && boolean("active", &window->active)
         && boolean("minimized", &window->minimized)
+        && boolean("iconified", &window->iconified)
         && boolean("maximized", &window->maximized)
         && boolean("fullscreen", &window->fullscreen)
         && boolean("demandsAttention", &window->demandsAttention)

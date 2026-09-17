@@ -70,6 +70,18 @@ move to the pointer drop. Explicit member docking/rearrangement uses exact
 title or client region. Production paints it as a member-anchored KWin scene
 item, not a native overlay window.
 
+An iconified window's chip (an ordinary window rolled up to its application
+icon, [ADR-0191](../adr/0191-an-ordinary-window-rolls-up-to-its-icon.md)) is a
+legal source for the exact `Meta+Shift+Left` gesture: the target resolver
+reports an exposed chip as that hidden window's `IconChip` source, the same
+targets reveal, and on a valid drop the window is unrolled at its restore size
+and then docked through the same semantic path as a title drag, so it lands as
+a tab or an edge split exactly where the drop says. A drop with no target
+commits without a target (only this source kind does) and leaves the chip at
+the drop point; Escape leaves it where it was. Container members are
+never iconified; see [Hybrid container chrome](hybrid-chrome.md)
+"Iconified windows".
+
 ## Container behavior
 
 - Move, minimize, maximize, pin, workspace assignment, and output movement on
