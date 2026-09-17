@@ -134,12 +134,30 @@ Item {
             verify(center.x + center.width <= end.x + 0.01)
             verify(end.x + end.width <= panel.width - 4 + 0.01)
         }
+        // ADR-0188's headline numbers, asserted exactly.
+        //
+        // AGENT-GUARD: every applet in this harness is the stub TaskList chip
+        // with implicitWidth 96, and `minimumExtent` is capped at the zone's
+        // current desiredExtent. A single end applet therefore reserves 96
+        // however large its declared minimum, which makes the assertion pass
+        // under the *old* balanced rule too. The end zone needs enough applets
+        // for its natural demand to exceed the reservation being tested, or
+        // this row silently stops discriminating between the two rules.
+        //
+        // Stock top panel: end reserves 332 (four applets declaring 80, plus
+        // three 4 px gaps; natural demand 4*96 + 3*4 = 396 > 332) and center
+        // reserves 48 (one applet declaring 48; demand 96 > 48). The start
+        // zone's ceiling is then `extent - 332 - 48`: 978 at 1366, 1532 at
+        // 1920, 2172 at 2560.
         function test_startZoneBudgetHoldsAtEveryStockResolution() {
-            const widths = [1366, 1920, 2560]
-            for (const width of widths) {
-                panel.width = width
-                const items = [root.specWithMinimum("tasks", "center", 48),
-                               root.specWithMinimum("clock", "end", 332)]
+            const cases = [{width: 1366, ceiling: 978},
+                           {width: 1920, ceiling: 1532},
+                           {width: 2560, ceiling: 2172}]
+            for (const testCase of cases) {
+                panel.width = testCase.width
+                const items = [root.specWithMinimum("tasks", "center", 48)]
+                for (let i = 0; i < 4; ++i)
+                    items.push(root.specWithMinimum("status" + i, "end", 80))
                 for (let i = 0; i < 24; ++i)
                     items.push(root.specWithMinimum("menu" + i, "start", 20))
                 panel.panel = { edge: "top", rows: 1, applets: items }
@@ -147,12 +165,33 @@ Item {
                 const start = findChild(panel, "panelZoneStart")
                 const center = findChild(panel, "panelZoneCenter")
                 const end = findChild(panel, "panelZoneEnd")
-                const extent = width - 8
-                verify(start.width > extent / 3)
+                const extent = testCase.width - 8
+                // The reservations the ceiling is computed from are real.
+                compare(end.minimumExtent, 332)
+                compare(center.minimumExtent, 48)
+                verify(end.desiredExtent > 332)
+                verify(center.desiredExtent > 48)
+                // The start zone must want more than its ceiling, or the
+                // ceiling is not the thing being measured. (At 2560 its 24
+                // stub chips want 2396, which is under the 2552 content box
+                // but still over the 2172 ceiling.)
+                verify(start.desiredExtent > testCase.ceiling)
+                // The ceiling itself, to the pixel.
+                compare(start.width, testCase.ceiling)
+                compare(start.width, extent - 332 - 48)
+                // The yielding zones keep exactly their reservation and no
+                // more: serving the start zone up to `extent - minEnd -
+                // minCenter` leaves precisely those two minimums behind, which
+                // is the trade this rule makes. Their content scrolls inside
+                // the viewport it still has.
+                compare(end.width, 332)
+                compare(center.width, 48)
+                verify(end.desiredExtent > end.width)
+                verify(center.desiredExtent > center.width)
                 verify(start.width + center.width + end.width <= extent + 0.01)
                 verify(start.x + start.width <= center.x + 0.01)
                 verify(center.x + center.width <= end.x + 0.01)
-                verify(end.x + end.width <= width - 4 + 0.01)
+                verify(end.x + end.width <= testCase.width - 4 + 0.01)
             }
             panel.width = 160
         }

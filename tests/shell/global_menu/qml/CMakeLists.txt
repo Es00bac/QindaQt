@@ -14,6 +14,23 @@ file(COPY "${PROJECT_SOURCE_DIR}/tests/shell/qml/imports/QindaQt"
 file(REMOVE_RECURSE
      "${global_menu_panel_imports}/QindaQt/Shell/GlobalMenu")
 
+# AGENT-CONTRACT: every row below imports the *compiled* GlobalMenu module from
+# the build tree. This fixture proves that module is actually there, so a row
+# can no longer pass against the installed one (see
+# verify_build_tree_module.cmake).
+add_test(
+    NAME qindaqt.global-menu-qml-build-tree-module
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DMODULE_DIR=${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/GlobalMenu
+        -DPLUGIN_FILE=$<TARGET_FILE:qindaqt_global_menu_qmlplugin>
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_build_tree_module.cmake"
+)
+set_tests_properties(
+    qindaqt.global-menu-qml-build-tree-module
+    PROPERTIES FIXTURES_SETUP qindaqt_global_menu_build_tree_module
+)
+
 add_test(
     NAME qindaqt.global-menu-applet-qml-offscreen
     COMMAND
@@ -130,4 +147,18 @@ set_tests_properties(
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
         LABELS "shell;global-menu;runtime;offscreen;keyboard;hostile"
+)
+
+# The compiled-module rows fail closed when the plugin is unbuilt.
+set_tests_properties(
+    qindaqt.global-menu-applet-qml-accessibility-offscreen
+    qindaqt.global-menu-applet-qml-offscreen
+    qindaqt.global-menu-applet-qml-overflow-offscreen
+    qindaqt.global-menu-applet-qml-vertical-boundary-offscreen
+    qindaqt.global-menu-native-submenu-qml-offscreen
+    qindaqt.global-menu-native-switch-qml-offscreen
+    qindaqt.global-menu-panel-hit-targets-qml-offscreen
+    qindaqt.global-menu-popup-placement-qml-offscreen
+    qindaqt.global-menu-production-panel-keyboard-qml-offscreen
+    PROPERTIES FIXTURES_REQUIRED qindaqt_global_menu_build_tree_module
 )
