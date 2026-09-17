@@ -4,6 +4,7 @@
 #include <QtGlobal>
 
 #include <cmath>
+#include <utility>
 
 namespace QindaQt::Apps::SettingsAppearance {
 namespace {
@@ -54,6 +55,11 @@ QStringList AppearanceKeys::scopedKeys()
                      QLatin1String(FontSubpixelOrder), QLatin1String(Wallpaper),
                      QLatin1String(WallpaperMode), QLatin1String(UiScale)};
     keys.append(Decoration::ChromePreferences::settingsKeys());
+    // Decoration document choices (ADR-0207) ride the same appearance scope,
+    // followed by the two accessibility switches the route offers.
+    keys.append(Decoration::ChromePreferences::decorationKeys());
+    keys.append(QLatin1String(ReducedTransparency));
+    keys.append(QLatin1String(ReducedMotion));
     return keys;
 }
 
@@ -265,6 +271,22 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
                         QStringLiteral("expected a known chrome arrangement token"));
         }
     }
+    for (const QString &key : Decoration::ChromePreferences::decorationKeys()) {
+        const QVariant value = values.value(key);
+        if (value.metaType().id() != QMetaType::QString
+            || !decoded.chrome.setToken(key, value.toString())) {
+            return fail(key, QStringLiteral("expected \"theme\" or a decoration document id"));
+        }
+    }
+    for (const auto &[key, member] :
+         {std::pair{AppearanceKeys::ReducedTransparency, &AppearanceValues::reducedTransparency},
+          std::pair{AppearanceKeys::ReducedMotion, &AppearanceValues::reducedMotion}}) {
+        const QVariant value = values.value(QLatin1String(key));
+        if (value.metaType().id() != QMetaType::Bool) {
+            return fail(QLatin1String(key), QStringLiteral("expected a Boolean"));
+        }
+        decoded.*member = value.toBool();
+    }
 
     return decoded;
 }
@@ -286,6 +308,8 @@ QVariantMap AppearanceValues::toVariantMap() const
              wallpaperModeToken(wallpaperMode)},
             {QLatin1String(AppearanceKeys::UiScale), uiScale}};
     map.insert(chrome.toSettingsValues());
+    map.insert(QLatin1String(AppearanceKeys::ReducedTransparency), reducedTransparency);
+    map.insert(QLatin1String(AppearanceKeys::ReducedMotion), reducedMotion);
     return map;
 }
 

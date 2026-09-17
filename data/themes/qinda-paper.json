@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-paper",
+  "name": "Qinda Paper",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 6,
+  "motionDuration": 130,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#EFE9DD",
+    "surface": "#F8F4EA",
+    "surfaceRaised": "#FFFDF7",
+    "border": "#A89E8C",
+    "text": "#2A241C",
+    "textMuted": "#5E5648",
+    "accent": "#8A5A2B",
+    "accentText": "#FFF7EA",
+    "danger": "#B0433A"
+  },
+  "decoration": {
+    "buttonPlacement": "right",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "symbols",
+    "hoverGlyphs": false,
+    "titleBarColor": "#F3EDDF",
+    "titleBarInactiveColor": "#EBE4D4",
+    "closeColor": "#B0433A",
+    "minimizeColor": "#8A5A2B",
+    "maximizeColor": "#4E7A4A"
+  },
+  "decorationTheme": "paper",
+  "surfaces": {
+    "panel": {
+      "opacity": 0.96,
+      "blur": false,
+      "border": 1.0,
+      "highlight": false,
+      "shadow": 0.6
+    },
+    "popup": {
+      "opacity": 1.0,
+      "blur": false,
+      "shadow": 0.8
+    },
+    "menu": {
+      "opacity": 1.0,
+      "blur": false,
+      "shadow": 0.8
+    },
+    "containerChrome": {
+      "opacity": 1.0,
+      "blur": false,
+      "shadow": 0.7
+    },
+    "decoration": {
+      "opacity": 1.0,
+      "blur": false,
+      "shadow": 0.7
+    },
+    "desktopIcons": {
+      "opacity": 0.0,
+      "blur": false,
+      "border": 0.0
+    }
+  },
+  "radii": {
+    "panel": 6,
+    "popup": 6,
+    "menu": 4,
+    "containerChrome": 6,
+    "decoration": 6
+  },
+  "motion": {
+    "popup": {
+      "duration": 130,
+      "easing": "decelerate"
+    },
+    "menu": {
+      "duration": 100,
+      "easing": "decelerate"
+    },
+    "rollup": {
+      "duration": 140,
+      "easing": "standard"
+    },
+    "hover": {
+      "duration": 60,
+      "easing": "linear"
+    }
+  },
+  "accent": {
+    "mode": "fixed"
+  }
+}

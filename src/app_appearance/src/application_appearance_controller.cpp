@@ -39,6 +39,21 @@ Themes::LoadResult loadTheme(const QString &id,
 }
 } // namespace
 
+QStringList standardDecorationDirectories(const QString &explicitDirectory) {
+  QStringList result;
+  if (!explicitDirectory.isEmpty()) {
+    result.append(QFileInfo(explicitDirectory).absoluteFilePath());
+  }
+  result.append(QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
+                                          QStringLiteral("qindaqt/decorations"),
+                                          QStandardPaths::LocateDirectory));
+  result.append(
+      QDir(QCoreApplication::applicationDirPath())
+          .absoluteFilePath(QStringLiteral("../share/qindaqt/decorations")));
+  result.removeDuplicates();
+  return result;
+}
+
 QStringList standardThemeDirectories(const QString &explicitDirectory) {
   QStringList result;
   if (!explicitDirectory.isEmpty()) {

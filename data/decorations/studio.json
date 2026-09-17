@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "studio",
+  "name": "Studio",
+  "description": "Opaque console bars with outline glyphs on the right, square corners, and a short hard shadow.",
+  "buttonPlacement": "right",
+  "tabDirection": "left-to-right",
+  "buttonStyle": "glyph",
+  "hoverGlyphs": false,
+  "material": {
+    "opacity": 1.0,
+    "blur": false,
+    "border": 1.0,
+    "highlight": false,
+    "shadow": 0.6
+  },
+  "cornerRadius": 2,
+  "shadow": {
+    "extent": 8,
+    "opacity": 0.4
+  },
+  "memberHandle": "dots",
+  "containerBadge": "square"
+}

@@ -658,6 +658,15 @@ rewritten. The row environment otherwise keeps the documented host fontconfig
 configuration, because an empty configuration re-wraps text and removes the
 fallback glyph the baselines contain instead of pinning bytes.
 
+The matrix covers the five schema v1 themes above and, since theme schema v2
+([ADR-0206](../adr/0206-theme-schema-v2-surfaces-motion-and-decoration-themes.md)),
+two v2 themes with reviewed baselines of their own: `qinda-glass-dark`
+(translucent, blurred materials) and `qinda-paper` (opaque), each at the three
+widths and the two scales. Their rows prove the controls render from the
+additive `material` and per-surface `motion` token groups exactly as from a
+v1 theme; the rows are generated the same way and the baselines live under
+`tests/controls/baselines/<scale>/`.
+
 Four focused rows guard the pin. `qindaqt.controls-font-pinning` requires the
 engine resolving the schema's `Inter` family to resolve to the
 repository-owned `QindaQt Sans` family and to serve a name table
@@ -3671,6 +3680,22 @@ four straight edges while leaving the interior transparent. It also inspects
 the public KDecoration shadow image, padding, center stretch cell, falloff, and
 the maximized no-shadow result. The nested desktop screenshot remains the gate
 for compositor placement and edge separation against the wallpaper.
+
+`qindaqt.decoration-theme-formats` and `qindaqt.decoration-documents` gate
+decoration theme documents ([ADR-0207](../adr/0207-decoration-themes-are-their-own-documents.md)):
+every shipped document loads with six distinct personalities, colors are
+optional, invalid values are rejected, and the resolution that the compositor
+and the Appearance previews share (theme surface, then the selected or paired
+document, then the user's arrangement) is checked for v1 themes (the shipped
+chrome, no material keys in the map), for the pairing and override
+precedence, for material round trips through the chrome map, and for Luna
+Classic over a v2 theme and Glass over a Luna theme. `hybrid-chrome.renderer`
+adds a material row: the default material paints the shipped pixels, opacity
+scales the surface alpha, the highlight adds the catch light and the border
+strength dims the identity frame. `qindaqt.shell-capture-matrix` captures
+every stock profile under `qinda-glass-dark` and `qinda-paper` beside its
+existing rows, so panel and popup dressings are recorded over a translucent
+dark and an opaque light theme.
 
 `qindaqt.member-handle-layout` exercises the contained-window handlebar at its
 108-logical-pixel supported minimum and at a roomy width. It covers classic

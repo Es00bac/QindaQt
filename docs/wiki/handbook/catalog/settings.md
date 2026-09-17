@@ -25,6 +25,8 @@ All **48 keys** in active `data/settings/schema-v2.json` are listed below. JSON 
 | `appearance.containerButtonSide` | string | `"theme"` | `{"allowedValues":["theme","left","right"]}` |
 | `appearance.containerTabOrder` | string | `"theme"` | `{"allowedValues":["theme","left-to-right","right-to-left"]}` |
 | `appearance.containerButtonGlyphs` | string | `"theme"` | `{"allowedValues":["theme","always","hover"]}` |
+| `appearance.windowDecoration` | string | `"theme"` | `{"nonEmpty":true}` |
+| `appearance.containerDecoration` | string | `"theme"` | `{"nonEmpty":true}` |
 
 ## fonts
 

@@ -44,6 +44,10 @@ public:
         const AccessibilityInputs &inputs = {});
 
     [[nodiscard]] static double relativeLuminance(const QColor &color);
+    // The color a surface shows at `opacity` over `backdrop` (sRGB blend, as
+    // the scene composites it); shared by the contrast guardrail and tests.
+    [[nodiscard]] static QColor compositeOver(const QColor &surface, double opacity,
+                                              const QColor &backdrop);
     [[nodiscard]] static double contrastRatio(const QColor &foreground,
                                               const QColor &background);
 };

@@ -43,7 +43,8 @@ bool validatesPublicShape(const QVariantMap &tokens)
                        QStringLiteral("space"),
                        QStringLiteral("type"),
                        QStringLiteral("motion"),
-                       QStringLiteral("elevation")},
+                       QStringLiteral("elevation"),
+                       QStringLiteral("material")},
                       "QST-1 top-level")) {
         return false;
     }
@@ -68,8 +69,14 @@ bool validatesPublicShape(const QVariantMap &tokens)
                   QStringLiteral("subtitle"), QStringLiteral("title"),
                   QStringLiteral("display")}},
         {"motion", {QStringLiteral("instant"), QStringLiteral("short"),
-                    QStringLiteral("base"), QStringLiteral("long")}},
+                    QStringLiteral("base"), QStringLiteral("long"),
+                    QStringLiteral("popup"), QStringLiteral("menu"),
+                    QStringLiteral("rollup"), QStringLiteral("hover")}},
         {"elevation", {QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}},
+        // Theming v2 (ADR-0206) surface materials, additive to QST revision 1.
+        {"material", {QStringLiteral("panel"), QStringLiteral("popup"), QStringLiteral("menu"),
+                      QStringLiteral("containerChrome"), QStringLiteral("decoration"),
+                      QStringLiteral("desktopIcons")}},
     };
     for (const auto &group : groups) {
         if (!hasExactKeys(tokens.value(QLatin1String(group.group)).toMap(),
@@ -87,6 +94,21 @@ bool validatesPublicShape(const QVariantMap &tokens)
         if (!hasExactKeys(pair,
                           {QStringLiteral("background"), QStringLiteral("foreground")},
                           status)) {
+            return false;
+        }
+    }
+    for (const auto *surface : {"panel", "popup", "menu", "containerChrome", "decoration",
+                                "desktopIcons"}) {
+        const QVariantMap material = tokens.value(QStringLiteral("material"))
+                                         .toMap()
+                                         .value(QLatin1String(surface))
+                                         .toMap();
+        if (!hasExactKeys(material,
+                          {QStringLiteral("opacity"), QStringLiteral("blur"),
+                           QStringLiteral("tint"), QStringLiteral("border"),
+                           QStringLiteral("highlight"), QStringLiteral("radius"),
+                           QStringLiteral("shadow")},
+                          surface)) {
             return false;
         }
     }

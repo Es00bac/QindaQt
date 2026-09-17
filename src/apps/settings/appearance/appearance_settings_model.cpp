@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 
+#include "qindaqt/app_appearance/application_appearance_controller.h"
+#include "qindaqt/themes/decoration_theme_loader.h"
+
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_protocol/settings_wire_status.h"
 
@@ -45,7 +48,19 @@ AppearanceSettingsModel::AppearanceSettingsModel(
     connect(&m_client, &SettingsClient::commitUncertain,
             this, &AppearanceSettingsModel::handleUncertain);
 
+    // Decoration documents (ADR-0207) ship beside the themes; a missing or
+    // malformed catalog costs only the choosers, never the route.
+    m_decorations = Themes::DecorationThemeLoader::loadDirectories(
+                        AppAppearance::standardDecorationDirectories())
+                        .value_or(QVector<Themes::DecorationThemeSpec>{});
     m_validation = validateAppearanceDraft(m_draft, installedThemeIds());
+    refreshValidationAndPreview();
+}
+
+void AppearanceSettingsModel::setDecorationDocuments(
+    QVector<Themes::DecorationThemeSpec> documents)
+{
+    m_decorations = std::move(documents);
     refreshValidationAndPreview();
 }
 

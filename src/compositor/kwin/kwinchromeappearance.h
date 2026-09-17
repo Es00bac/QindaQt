@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/decoration_painter/decoration_painter.h"
+#include "qindaqt/themes/decoration_theme_spec.h"
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 
 #include <QDBusConnection>
@@ -53,6 +54,7 @@ Q_SIGNALS:
 private:
   void publish();
   void refreshPreferences();
+  void refreshDecorationPreferences();
   void observeWindow(const QString &windowId);
   void publishWindow(const QString &windowId);
 
@@ -63,6 +65,12 @@ private:
   std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
       m_preferencesTransport;
   std::unique_ptr<Services::SettingsClient::SettingsClient> m_preferencesSettings;
+  // Decoration document choices (ADR-0207) ride a third purpose-scoped
+  // client so an older Settings1 schema costs only the pairing.
+  std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
+      m_decorationTransport;
+  std::unique_ptr<Services::SettingsClient::SettingsClient> m_decorationSettings;
+  QVector<Themes::DecorationThemeSpec> m_decorations;
   Decoration::ChromePreferences m_preferences;
   HybridChrome::ChromeStyle m_containerStyle =
       HybridChrome::ChromeStyle::qindaMacOS({});

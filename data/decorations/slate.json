@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "slate",
+  "name": "Slate",
+  "description": "Matte slate bars with flat symbols on the right, medium corners, and a firm shadow.",
+  "buttonPlacement": "right",
+  "tabDirection": "left-to-right",
+  "buttonStyle": "symbols",
+  "hoverGlyphs": false,
+  "material": {
+    "opacity": 0.94,
+    "blur": false,
+    "border": 0.8,
+    "highlight": true,
+    "shadow": 1.1
+  },
+  "cornerRadius": 8,
+  "shadow": {
+    "extent": 14,
+    "opacity": 0.34
+  },
+  "memberHandle": "dots",
+  "containerBadge": "square"
+}

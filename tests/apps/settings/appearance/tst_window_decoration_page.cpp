@@ -54,6 +54,8 @@ Scene createScene()
         {QStringLiteral("appearance.containerButtonSide"), QStringLiteral("theme")},
         {QStringLiteral("appearance.containerTabOrder"), QStringLiteral("theme")},
         {QStringLiteral("appearance.containerButtonGlyphs"), QStringLiteral("theme")},
+        {QStringLiteral("appearance.windowDecoration"), QStringLiteral("theme")},
+        {QStringLiteral("appearance.containerDecoration"), QStringLiteral("theme")},
     };
 
     scene.view = std::make_unique<QQuickView>();

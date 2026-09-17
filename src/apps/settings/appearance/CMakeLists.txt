@@ -71,6 +71,9 @@ qt_add_qml_module(
         appearance_container_preview.cpp
     QML_FILES
         qml/DecorationChoiceCard.qml
+        qml/DecorationDocumentCard.qml
+        qml/DecorationDocumentChooser.qml
+        qml/ThemeThumbnailCard.qml
         qml/WindowDecorationChooser.qml
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
@@ -127,6 +130,9 @@ install(
 install(
     FILES
         qml/DecorationChoiceCard.qml
+        qml/DecorationDocumentCard.qml
+        qml/DecorationDocumentChooser.qml
+        qml/ThemeThumbnailCard.qml
         qml/WindowDecorationChooser.qml
         qml/AppearanceFontSection.qml
         qml/AppearancePage.qml

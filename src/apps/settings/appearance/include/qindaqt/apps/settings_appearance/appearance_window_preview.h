@@ -3,7 +3,9 @@
 
 #include <QColor>
 #include <QFont>
+#include <QImage>
 #include <QQuickPaintedItem>
+#include <QUrl>
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
@@ -32,6 +34,9 @@ class AppearanceWindowPreview : public QQuickPaintedItem {
     Q_PROPERTY(QFont toolkitFont READ toolkitFont WRITE setToolkitFont
                    NOTIFY toolkitFontChanged)
     Q_PROPERTY(QColor canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
+    // A local wallpaper file painted behind the windows (cover-scaled) so a
+    // translucent material previews against the desktop it will sit on.
+    Q_PROPERTY(QUrl wallpaper READ wallpaper WRITE setWallpaper NOTIFY wallpaperChanged)
     Q_PROPERTY(QString caption READ caption WRITE setCaption NOTIFY captionChanged)
     Q_PROPERTY(bool showInactiveWindow READ showInactiveWindow
                    WRITE setShowInactiveWindow NOTIFY showInactiveWindowChanged)
@@ -52,6 +57,10 @@ public:
     void setToolkitFont(const QFont &font);
     [[nodiscard]] QColor canvas() const { return m_canvas; }
     void setCanvas(const QColor &canvas);
+    [[nodiscard]] QUrl wallpaper() const { return m_wallpaper; }
+    void setWallpaper(const QUrl &wallpaper);
+    // True when a wallpaper image is loaded and painted.
+    [[nodiscard]] bool wallpaperLoaded() const { return !m_wallpaperImage.isNull(); }
     [[nodiscard]] QString caption() const { return m_caption; }
     void setCaption(const QString &caption);
     [[nodiscard]] bool showInactiveWindow() const { return m_showInactiveWindow; }
@@ -68,6 +77,7 @@ Q_SIGNALS:
     void toolkitPaletteChanged();
     void toolkitFontChanged();
     void canvasChanged();
+    void wallpaperChanged();
     void captionChanged();
     void showInactiveWindowChanged();
 
@@ -81,6 +91,8 @@ private:
     QVariantMap m_toolkitPalette;
     QFont m_toolkitFont;
     QColor m_canvas;
+    QUrl m_wallpaper;
+    QImage m_wallpaperImage;
     QString m_caption = QStringLiteral("QindaQt Settings");
     bool m_showInactiveWindow = true;
     QStyle *m_style = nullptr;
