@@ -43,8 +43,16 @@ bool kindFromTypeFile(const QString &typeText, BacklightKind &kind)
 } // namespace
 
 SysfsBacklightSource::SysfsBacklightSource(QString rootPath, QObject *parent)
+    : SysfsBacklightSource(std::move(rootPath), nullptr, parent)
+{
+}
+
+SysfsBacklightSource::SysfsBacklightSource(QString rootPath,
+                                           std::unique_ptr<BacklightWriter> writer,
+                                           QObject *parent)
     : QObject(parent)
     , m_rootPath(std::move(rootPath))
+    , m_writer(std::move(writer))
 {
 }
 
@@ -191,13 +199,22 @@ void SysfsBacklightSource::rescan()
             device.observed = observed;
             const QFileInfo brightness(deviceDirectory
                                        + QStringLiteral("/brightness"));
+            // ADR-0186: a device is usable when this process can write the
+            // kernel attribute *or* the injected writer can do it for us. On
+            // laptops the attribute is 0644 root:root, so the writer is the
+            // only path and refusing here would make every panel read-only.
             if (brightness.isWritable()) {
+                device.status = BacklightStatus::Ok;
+                device.reason = BacklightReason::None;
+            } else if (m_writer != nullptr && m_writer->available()) {
                 device.status = BacklightStatus::Ok;
                 device.reason = BacklightReason::None;
             } else {
                 device.status = BacklightStatus::Unavailable;
                 device.reason = BacklightReason::LogindError;
-                device.diagnostic = QStringLiteral("backlight-read-only");
+                device.diagnostic = m_writer != nullptr
+                    ? m_writer->unavailableDiagnostic()
+                    : QStringLiteral("backlight-read-only");
             }
         } else {
             device.observedKnown = false;
@@ -247,11 +264,27 @@ BacklightWriteOutcome SysfsBacklightSource::writeBrightness(const QString &opaqu
                 .diagnostic = {}};
     }
 
-    const QString directory = m_rootPath + QLatin1Char('/') + target->deviceName;
-    QFile file(directory + QStringLiteral("/brightness"));
-    // AGENT-GUARD: writes never escalate privileges and never fall back to
-    // another path; a denied write is truthful unavailable, not an error to
-    // route around.
+    const QString deviceName = target->deviceName;
+    const QString directory = m_rootPath + QLatin1Char('/') + deviceName;
+    const QString brightnessPath = directory + QStringLiteral("/brightness");
+    // ADR-0186: when this process cannot write the kernel attribute, delegate
+    // to the injected writer instead of failing closed. Delegation is not
+    // escalation: the writer asks a service that already holds the authority,
+    // and a refusal there is still reported truthfully below.
+    if (m_writer != nullptr && !QFileInfo(brightnessPath).isWritable()) {
+        BacklightWriteOutcome delegated = m_writer->write(deviceName, value);
+        if (delegated.status == BacklightWriteStatus::Succeeded) {
+            // Same rule as the direct path: re-read the kernel's own view
+            // rather than treating the request as an observation.
+            rescan();
+        }
+        return delegated;
+    }
+
+    QFile file(brightnessPath);
+    // AGENT-GUARD: the direct write never escalates privileges and never falls
+    // back to another sysfs path; a denied write with no writer injected is
+    // truthful unavailable, not an error to route around.
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         return {.status = BacklightWriteStatus::Failed,
                 .reasonCode = QStringLiteral("backlight-read-only"),

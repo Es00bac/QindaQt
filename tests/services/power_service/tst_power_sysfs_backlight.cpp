@@ -4,6 +4,8 @@
 #include <qindaqt/services/power_protocol/power_types.h>
 #include <qindaqt/services/power_service/adapters/sysfs_backlight_source.h>
 
+#include "support/sysfs_backlight_fixture.h"
+
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QTemporaryDir>
@@ -14,52 +16,9 @@
 #include <memory>
 
 using namespace QindaQt::Power;
+using QindaQt::Tests::BacklightFixture;
 
 namespace {
-
-struct BacklightFixture
-{
-    explicit BacklightFixture(const QTemporaryDir &root)
-        : rootPath(root.path())
-    {
-    }
-
-    QString makeDevice(const QString &name, const QByteArray &type,
-                       const QByteArray &maximum, const QByteArray &brightness,
-                       const QByteArray &actual = QByteArray())
-    {
-        const QString directory = rootPath + QLatin1Char('/') + name;
-        if (!QDir().mkpath(directory)) {
-            return {};
-        }
-        write(directory + QStringLiteral("/type"), type);
-        write(directory + QStringLiteral("/max_brightness"), maximum);
-        write(directory + QStringLiteral("/brightness"), brightness);
-        if (!actual.isNull()) {
-            write(directory + QStringLiteral("/actual_brightness"), actual);
-        }
-        return directory;
-    }
-
-    static void write(const QString &path, const QByteArray &content)
-    {
-        QFile file(path);
-        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
-        file.write(content);
-        file.close();
-    }
-
-    static QByteArray read(const QString &path)
-    {
-        QFile file(path);
-        if (!file.open(QIODevice::ReadOnly)) {
-            return {};
-        }
-        return file.readAll();
-    }
-
-    QString rootPath;
-};
 
 Upstream::SysfsBacklightSource *startedSource(const QString &rootPath,
                                               QSignalSpy **spyOut = nullptr)

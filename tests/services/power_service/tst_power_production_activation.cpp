@@ -372,6 +372,14 @@ void PowerProductionActivationTests::productionModeAppliesInternalBrightnessWith
     // Permission revoked after publication. The service's watcher republishes
     // the panel read-only; the client then refuses locally, and an exact raw
     // request that bypasses the client is refused by the service itself.
+    //
+    // AGENT-NOTE: production now also composes the logind writer (ADR-0186),
+    // and this fixture's fake logind serves only the Manager action surface —
+    // it answers neither the session `Seat` property nor `ListSessions`. No
+    // seat session can therefore be resolved, which is the honest reason the
+    // panel is unwritable here, and it is the diagnostic the route shows.
+    // A real session resolves a seat and this panel stays adjustable; that
+    // path is proven in qindaqt.power-service-logind-backlight-writer.
     QFile brightness(brightnessPath);
     const QFileDevice::Permissions original = brightness.permissions();
     QVERIFY(brightness.setPermissions(QFileDevice::ReadOwner));
@@ -379,7 +387,7 @@ void PowerProductionActivationTests::productionModeAppliesInternalBrightnessWith
         client.snapshot().internalBacklights.constFirst().status
                 == BacklightStatus::Unavailable
             && client.snapshot().internalBacklights.constFirst().diagnostic
-                == QStringLiteral("backlight-read-only"),
+                == QStringLiteral("logind-unavailable"),
         5'000);
     const Handle readOnly = client.snapshot().internalBacklights.constFirst().handle;
     QVERIFY(client.setInternalBrightness(readOnly, 50) != 0);
