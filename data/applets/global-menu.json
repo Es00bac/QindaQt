@@ -13,7 +13,7 @@
     "orientations": ["horizontal", "vertical"]
   },
   "sizing": {
-    "mainAxis": {"minimum": 160, "preferred": 520, "stretch": true},
+    "mainAxis": {"minimum": 160, "preferred": 720, "stretch": true},
     "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 64, "stretch": false}
   },
   "capabilities": ["global-menu.read", "windows.activate"],

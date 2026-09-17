@@ -62,6 +62,7 @@ private slots:
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
     void globalMenuResolvesOnVerticalPanelsWithLeastAuthority();
     void desktopControlsResolveReadyInEveryStockPlacement();
+    void republishesTheDeclaredMainAxisMinimum();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -639,6 +640,77 @@ void AppletInstanceResolverTests::desktopControlsResolveReadyInEveryStockPlaceme
         fixture.catalog, fixture.policy, fixture.registry);
     QCOMPARE(AppletRuntime::toString(activeApplication.status),
              QStringLiteral("placement-rejected"));
+}
+
+// ADR-0188: the panel's zone budget reserves the sum of a zone's applet
+// minimums before giving a greedy zone the rest, so this republication is the
+// only reason `sizing.mainAxis.minimum` is more than documentation. Without
+// this row the shell could silently receive zero for every applet and the
+// clock, tray and workspace switcher would be squeezed to nothing by a wide
+// global menu.
+void AppletInstanceResolverTests::republishesTheDeclaredMainAxisMinimum()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+
+    // Exactly the declared values of the stock top panel's three zones.
+    const struct {
+        const char *plugin;
+        const char *zone;
+        int declared;
+    } expected[] = {
+        {"global-menu", "start", 160},   {"system-menu", "start", 28},
+        {"workspace-switcher", "center", 48}, {"clock", "end", 56},
+        {"status-notifier", "end", 32},  {"power", "end", 40},
+    };
+    for (const auto &expectation : expected) {
+        const QString plugin = QString::fromLatin1(expectation.plugin);
+        const auto *manifest = fixture.catalog.findById(plugin);
+        QVERIFY2(manifest != nullptr, qPrintable(plugin));
+        // Pinned to the manifest as well as to a literal, so a manifest edit
+        // cannot quietly move the panel layout.
+        QCOMPARE(manifest->sizing.mainAxis.minimum, expectation.declared);
+
+        auto spec = instance(plugin);
+        spec.settings[QStringLiteral("zone")] =
+            QString::fromLatin1(expectation.zone);
+        const auto resolved = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            spec, Profiles::Edge::Top, fixture.catalog, fixture.policy,
+            fixture.registry);
+        QCOMPARE(AppletRuntime::toString(resolved.status), QStringLiteral("ready"));
+        QCOMPARE(resolved.mainAxisMinimum, expectation.declared);
+        // The shell reads it off the runtime map, so that is what must carry it.
+        const QVariantMap runtime =
+            resolved.toVariantMap().value(QStringLiteral("runtime")).toMap();
+        QVERIFY(runtime.contains(QStringLiteral("mainAxisMinimum")));
+        QCOMPARE(runtime.value(QStringLiteral("mainAxisMinimum")).toInt(),
+                 expectation.declared);
+    }
+
+    // A failed resolution reserves nothing rather than inventing a minimum.
+    const auto missing = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("weather-forecast")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QCOMPARE(AppletRuntime::toString(missing.status),
+             QStringLiteral("missing-manifest"));
+    QCOMPARE(missing.mainAxisMinimum, 0);
+    QCOMPARE(missing.toVariantMap()
+                 .value(QStringLiteral("runtime"))
+                 .toMap()
+                 .value(QStringLiteral("mainAxisMinimum"))
+                 .toInt(),
+             0);
+
+    auto rejected = instance(QStringLiteral("clock"));
+    rejected.settings[QStringLiteral("zone")] = QStringLiteral("diagonal");
+    const auto placementRejected =
+        AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            rejected, Profiles::Edge::Top, fixture.catalog, fixture.policy,
+            fixture.registry);
+    QCOMPARE(AppletRuntime::toString(placementRejected.status),
+             QStringLiteral("placement-rejected"));
+    QCOMPARE(placementRejected.mainAxisMinimum, 0);
 }
 
 QTEST_GUILESS_MAIN(AppletInstanceResolverTests)

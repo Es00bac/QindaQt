@@ -188,3 +188,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0183: a macro button is a list of console operations](0183-a-macro-button-is-a-list-of-console-operations.md)
 - [ADR-0184: the recorder is a stream and a writer thread](0184-the-recorder-is-a-stream-and-a-writer-thread.md)
 - [ADR-0185: VBAN is a document and two threads](0185-vban-is-a-document-and-two-threads.md)
+- [ADR-0188: serve the panel start zone first](0188-serve-the-panel-start-zone-first.md)
