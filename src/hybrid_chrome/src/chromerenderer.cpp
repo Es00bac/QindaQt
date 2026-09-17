@@ -112,6 +112,55 @@ void paintLabel(QPainter &painter,
     painter.drawText(rect.adjusted(6.0, 0.0, -6.0, 0.0), Qt::AlignCenter, elided);
 }
 
+// Theming v2 material helpers (ADR-0207).
+QColor withMaterialOpacity(QColor color, const ChromeMaterial &material)
+{
+    color.setAlphaF(static_cast<float>(color.alphaF()
+                                       * std::clamp(material.opacity, 0.0, 1.0)));
+    return color;
+}
+
+QColor materialTint(const ChromeMaterial &material)
+{
+    QColor tint = material.tint;
+    if (tint.alphaF() >= 1.0F) {
+        tint.setAlphaF(0.35F);
+    }
+    return tint;
+}
+
+// The title row and tab strip fills. A translucent row repaints its rect
+// from transparent (inside the frame clip, so corners stay round) instead of
+// stacking on the frame fill, which would double the alpha wherever rows
+// overlap; the catch light sits directly under the three-row identity
+// stripe that paintIdentityFrame lays along the title row's top edge.
+void paintMaterialRows(QPainter &painter, const ChromeRenderPlan &plan, qreal frameRadius)
+{
+    const auto &material = plan.style.material;
+    const auto fillRow = [&](const QRectF &rect, const QColor &color) {
+        if (material.opacity < 1.0) {
+            painter.setCompositionMode(QPainter::CompositionMode_Source);
+            painter.fillRect(rect, Qt::transparent);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            if (material.tint.isValid()) {
+                painter.fillRect(rect, materialTint(material));
+            }
+        }
+        painter.fillRect(rect, withMaterialOpacity(color, material));
+    };
+    fillRow(plan.outerTitleBar, plan.style.palette.surfaceRaised);
+    if (plan.tabStrip.isValid() && !plan.tabStrip.isEmpty()) {
+        fillRow(plan.tabStrip, plan.style.palette.surface);
+    }
+    if (material.highlight && plan.outerTitleBar.height() > 4.0) {
+        const QColor raised = plan.style.palette.surfaceRaised;
+        painter.fillRect(QRectF(plan.outerTitleBar.left() + frameRadius / 2.0,
+                                plan.outerTitleBar.top() + 3.0,
+                                plan.outerTitleBar.width() - frameRadius, 1.0),
+                         QColor(255, 255, 255, qGray(raised.rgb()) < 128 ? 46 : 120));
+    }
+}
+
 // Identity frame, focus glow, title-row stripe, and the keyboard selection
 // chip (ADR-0139). Called after the row content so the stripe stays crisp.
 void paintIdentityFrame(QPainter &painter, const ChromeRenderPlan &plan,
@@ -121,10 +170,13 @@ void paintIdentityFrame(QPainter &painter, const ChromeRenderPlan &plan,
     const qreal frameThickness = plan.containerFocused && !plan.shaded
         ? std::max(plan.borderHairline * 3.0, 3.0)
         : std::max(plan.borderHairline * 2.0, 2.0);
-    painter.setPen(QPen(plan.containerFocused || plan.shaded
-                            ? plan.identity.border
-                            : plan.identity.borderDimmed,
-                        frameThickness));
+    // The material's border strength scales the identity frame's alpha
+    // (ADR-0207); 1.0 keeps the shipped frame.
+    QColor frameColor = plan.containerFocused || plan.shaded
+        ? plan.identity.border : plan.identity.borderDimmed;
+    frameColor.setAlphaF(static_cast<float>(
+        frameColor.alphaF() * std::clamp(plan.style.material.border, 0.0, 1.0)));
+    painter.setPen(QPen(frameColor, frameThickness));
     painter.drawPath(framePath);
     if (plan.containerFocused && !plan.shaded) {
         auto glowPen = QPen(plan.identity.glow, std::max(frameThickness * 2.0, 6.0));
@@ -173,9 +225,14 @@ void ChromeRenderer::paint(QPainter &painter,
     painter.fillRect(plan.outerFrame, Qt::transparent);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.setRenderHint(QPainter::Antialiasing, true);
+    // Theming v2 material (ADR-0207): the surface carries the document's
+    // opacity and optional tint; a square badge style flattens the shaded
+    // frame. Defaults reproduce the shipped chrome pixel for pixel.
+    const auto &material = plan.style.material;
+    const qreal frameRadius = plan.shaded && material.squareBadge
+        ? std::min<qreal>(3.0, plan.metrics.cornerRadius) : plan.metrics.cornerRadius;
     QPainterPath framePath;
-    framePath.addRoundedRect(plan.outerFrame, plan.metrics.cornerRadius,
-                             plan.metrics.cornerRadius);
+    framePath.addRoundedRect(plan.outerFrame, frameRadius, frameRadius);
     QPainterPath paintClip = framePath;
     for (const auto &member : plan.members) {
         QPainterPath nativeWindow;
@@ -186,12 +243,12 @@ void ChromeRenderer::paint(QPainter &painter,
     // hole. The scene item may cover the group's whole outer geometry, but it
     // must never blend over application content or KDecoration pixels.
     painter.setClipPath(paintClip);
-    painter.fillPath(framePath, plan.style.palette.surface);
+    if (material.tint.isValid() && material.opacity < 1.0) {
+        painter.fillPath(framePath, materialTint(material));
+    }
+    painter.fillPath(framePath, withMaterialOpacity(plan.style.palette.surface, material));
     if (!plan.shaded) {
-        painter.fillRect(plan.outerTitleBar, plan.style.palette.surfaceRaised);
-        if (plan.tabStrip.isValid() && !plan.tabStrip.isEmpty()) {
-            painter.fillRect(plan.tabStrip, plan.style.palette.surface);
-        }
+        paintMaterialRows(painter, plan, frameRadius);
         // AGENT-CONTRACT: containerTitle is the user's rename override (see
         // ContainerAppearance); it paints in the leftover outer-title drag
         // region beside tabs/controls, in the resolved identity text color.
@@ -207,9 +264,15 @@ void ChromeRenderer::paint(QPainter &painter,
         for (const auto &tab : plan.tabs) {
             const auto fill = tab.active ? plan.identity.tabTint
                                          : plan.style.palette.surface;
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(fill);
-            painter.drawRoundedRect(tab.rect.adjusted(0.0, 2.0, 0.0, -2.0), 6.0, 6.0);
+            // An inactive pill is the strip's own surface color: invisible
+            // on an opaque strip, and on a translucent one it would only
+            // stack alpha, so it is skipped there. The active pill keeps its
+            // opaque identity tint.
+            if (tab.active || material.opacity >= 1.0) {
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(fill);
+                painter.drawRoundedRect(tab.rect.adjusted(0.0, 2.0, 0.0, -2.0), 6.0, 6.0);
+            }
             paintLabel(painter, tab.rect, tab.title,
                        tab.active ? plan.identity.textOnFill
                                   : plan.style.palette.textMuted);

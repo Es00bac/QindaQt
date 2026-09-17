@@ -88,6 +88,7 @@ ColumnLayout {
         toolkitFont: root.appearanceSettings.previewToolkitFont
                      ?? Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.body })
         canvas: root.appearanceSettings.previewCanvasColor ?? Tokens.bg.base
+        wallpaper: root.appearanceSettings.previewWallpaper ?? ""
         caption: qsTr("Report.txt")
         Accessible.role: Accessible.Graphic
         Accessible.name: qsTr("Application window preview")
@@ -105,6 +106,20 @@ ColumnLayout {
             wrapMode: Text.Wrap
             Accessible.name: text
         }
+    }
+
+    // The decoration document (ADR-0207) is chosen before the arrangement
+    // rows that refine it; "Theme" keeps the color theme's own pairing.
+    DecorationDocumentChooser {
+        id: windowDocumentChooser
+        visible: root.qindaQtDecorationSelected
+        appearanceSettings: root.appearanceSettings
+        editorBusy: root.editorBusy
+        settingsKey: "appearance.windowDecoration"
+        kind: "window"
+        title: qsTr("Window decoration")
+        description: qsTr("Title bar material, corners and shadow for application windows")
+        objectPrefix: "appearanceWindowDecorationDocument"
     }
 
     ChromeChoice {
@@ -186,9 +201,20 @@ ColumnLayout {
         toolkitFont: root.appearanceSettings.previewToolkitFont
                      ?? Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.body })
         canvas: root.appearanceSettings.previewCanvasColor ?? Tokens.bg.base
+        wallpaper: root.appearanceSettings.previewWallpaper ?? ""
         Accessible.role: Accessible.Graphic
         Accessible.name: qsTr("Container preview")
         Accessible.description: qsTr("A container of two windows with its tabs and buttons as the desktop draws them")
+    }
+
+    DecorationDocumentChooser {
+        appearanceSettings: root.appearanceSettings
+        editorBusy: root.editorBusy
+        settingsKey: "appearance.containerDecoration"
+        kind: "container"
+        title: qsTr("Container decoration")
+        description: qsTr("Chrome material, corners and badge style for containers")
+        objectPrefix: "appearanceContainerDecorationDocument"
     }
 
     ChromeChoice {

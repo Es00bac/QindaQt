@@ -118,6 +118,20 @@
       "constraints": { "allowedValues": ["theme", "always", "hover"] }
     },
     {
+      "key": "appearance.windowDecoration",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "nonEmpty": true }
+    },
+    {
+      "key": "appearance.containerDecoration",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "nonEmpty": true }
+    },
+    {
       "key": "fonts.family",
       "domain": "fonts",
       "type": "string",

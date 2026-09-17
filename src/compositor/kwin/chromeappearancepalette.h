@@ -7,6 +7,8 @@
 #include <QPalette>
 #include <QVariantMap>
 
+#include <optional>
+
 namespace QindaQt::Themes {
 class ThemeSpec;
 }
@@ -26,5 +28,11 @@ decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
 decorationPaletteProperties(const HybridChrome::ChromePalette &palette,
                             const Themes::ThemeSpec &theme,
                             const Decoration::ChromePreferences &preferences);
+// The same map with the theme's v2 decoration surface, an optional
+// decoration document, then the user's arrangement applied (ADR-0207).
+[[nodiscard]] QVariantMap decorationPaletteProperties(
+    const HybridChrome::ChromePalette &palette, const Themes::ThemeSpec &theme,
+    const std::optional<Themes::DecorationThemeSpec> &document,
+    const Decoration::ChromePreferences &preferences);
 
 } // namespace QindaQt::Compositor::KWinIntegration

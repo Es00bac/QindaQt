@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/hybrid_chrome/chrometypes.h"
+#include "qindaqt/themes/decoration_theme_spec.h"
 #include "qindaqt/themes/theme_spec.h"
 
 #include <QColor>
@@ -14,6 +15,8 @@
 #include <QSizeF>
 #include <QString>
 #include <QVariantMap>
+
+#include <optional>
 
 class QPainter;
 
@@ -87,6 +90,18 @@ struct DecorationChrome {
     // handlebar byte-identical.
     QColor identityColor;
     bool memberFocused = false;
+    // Theming v2 material (ADR-0207). Every default reproduces the shipped
+    // chrome, and toVariantMap omits defaults, so untouched themes publish a
+    // byte-identical map.
+    double titleOpacity = 1.0;
+    bool titleBlur = false;
+    bool titleHighlight = false;
+    QColor titleTint;
+    double cornerRadius = DecorationCornerRadius;
+    double shadowExtent = 12.0;
+    double shadowOpacity = 0.30;
+    // grip, dots, or plain (contained-window handlebar, ADR-0131).
+    QString handleStyle = QStringLiteral("grip");
 
     [[nodiscard]] static DecorationChrome
     fromChromePalette(const HybridChrome::ChromePalette &palette,
@@ -149,6 +164,12 @@ struct DecorationFrameVisual {
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
                                                           const QColor &surface,
                                                           bool maximized);
+// The same style with the chrome's authored radius and shadow (ADR-0207).
+[[nodiscard]] DecorationVisualStyle decorationVisualStyleFor(const DecorationChrome &chrome,
+                                                             bool maximized);
+// The theme-scaled corner radius the title and frame paint with: the chrome's
+// authored radius for a floating window, zero when maximized.
+[[nodiscard]] qreal decorationFrameRadius(const DecorationChrome &chrome, bool maximized);
 [[nodiscard]] QMarginsF decorationBorders(bool maximized);
 [[nodiscard]] QMarginsF decorationResizeOnlyBorders(bool maximized,
                                                     bool containerMember);
@@ -203,6 +224,12 @@ decorationButtonKinds(const DecorationChrome &chrome);
 // Stable Settings1 keys for the two chrome sets (ADR-0129). They mirror
 // data/settings/schema-v2.json and are part of the Appearance route scope.
 namespace ChromePreferenceKeys {
+// Decoration theme document ids for windows and containers (ADR-0207);
+// "theme" follows the color theme's own pairing. Scoped by their own
+// purpose-scoped client, never added to settingsKeys(): an older resident
+// Settings1 that does not know them must cost only the decoration choice.
+inline constexpr QLatin1String WindowDecoration{"appearance.windowDecoration"};
+inline constexpr QLatin1String ContainerDecoration{"appearance.containerDecoration"};
 inline constexpr QLatin1String WindowButtonStyle{"appearance.windowButtonStyle"};
 inline constexpr QLatin1String WindowButtonSide{"appearance.windowButtonSide"};
 inline constexpr QLatin1String WindowButtons{"appearance.windowButtons"};
@@ -225,8 +252,13 @@ struct ChromePreferences {
     QString containerButtonSide = QStringLiteral("theme");
     QString containerTabOrder = QStringLiteral("theme");
     QString containerButtonGlyphs = QStringLiteral("theme");
+    // Decoration document ids (ADR-0207): "theme" or a document id.
+    QString windowDecoration = QStringLiteral("theme");
+    QString containerDecoration = QStringLiteral("theme");
 
     [[nodiscard]] static QStringList settingsKeys();
+    // The two decoration-document keys, scoped separately (see above).
+    [[nodiscard]] static QStringList decorationKeys();
     // Allowed tokens for one key, default first; empty for an unknown key.
     [[nodiscard]] static QStringList tokens(const QString &key);
     // Tolerant: a missing, mistyped, or unknown value keeps its default.
@@ -246,6 +278,43 @@ struct ChromePreferences {
 // keeps the Qinda macOS arrangement otherwise, then applies preferences.
 [[nodiscard]] HybridChrome::ChromeStyle
 resolveContainerStyle(const Themes::ThemeSpec &theme, const ChromePreferences &preferences);
+
+// Theming v2 (ADR-0207): a decoration theme document layered over the color
+// theme. The document's arrangement, material, radius, shadow, and handle
+// style replace the theme's; its colors apply only where authored, so a
+// neutral document keeps the palette's own button colors.
+[[nodiscard]] DecorationChrome applyDecorationTheme(DecorationChrome chrome,
+                                                    const Themes::DecorationThemeSpec &document);
+[[nodiscard]] HybridChrome::ChromeStyle
+applyDecorationTheme(HybridChrome::ChromeStyle style,
+                     const Themes::DecorationThemeSpec &document);
+// The document a preference token selects: the named document when it is
+// installed, else the color theme's own `decorationTheme` pairing, else none.
+// "theme" (or any unknown id) means "follow the color theme".
+[[nodiscard]] std::optional<Themes::DecorationThemeSpec>
+selectDecorationTheme(const Themes::ThemeSpec &theme,
+                      const QVector<Themes::DecorationThemeSpec> &installed,
+                      const QString &preference);
+// Full resolution: theme, optional document, then the user's arrangement.
+[[nodiscard]] DecorationChrome
+resolveWindowChrome(const Themes::ThemeSpec &theme,
+                    const std::optional<Themes::DecorationThemeSpec> &document,
+                    const ChromePreferences &preferences);
+// The same layering over an already-derived chrome (the compositor derives
+// its window chrome from the shared chrome palette): the theme's own v2
+// decoration surface, then the document, then the user's arrangement.
+[[nodiscard]] DecorationChrome
+decorateWindowChrome(DecorationChrome chrome, const Themes::ThemeSpec &theme,
+                     const std::optional<Themes::DecorationThemeSpec> &document,
+                     const ChromePreferences &preferences);
+[[nodiscard]] HybridChrome::ChromeStyle
+resolveContainerStyle(const Themes::ThemeSpec &theme,
+                      const std::optional<Themes::DecorationThemeSpec> &document,
+                      const ChromePreferences &preferences);
+// The color theme's own material for container chrome (schema v2 surfaces),
+// applied by the resolvers above before any document.
+[[nodiscard]] HybridChrome::ChromeMaterial
+containerMaterialForTheme(const Themes::ThemeSpec &theme);
 [[nodiscard]] QVariantMap containerStyleToVariantMap(const HybridChrome::ChromeStyle &style);
 // Tolerant: absent or mistyped keys keep ChromeStyle's defaults.
 [[nodiscard]] HybridChrome::ChromeStyle containerStyleFromVariantMap(const QVariantMap &map);

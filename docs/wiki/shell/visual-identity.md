@@ -38,6 +38,32 @@ One document, directory or shell session occupies one ordinary app window.
 QindaQt containers own task grouping, tabs and window splits; first-party apps
 do not build parallel task-management systems.
 
+## Materials and the theme catalog
+
+Since [ADR-0206](../adr/0206-theme-schema-v2-surfaces-motion-and-decoration-themes.md)
+a theme authors a material per surface (panel, popup, menu, container
+chrome, window decoration, desktop icon plates): opacity, blur, an optional
+vibrancy tint, border strength, an inner catch light and a shadow multiplier,
+plus a radius per surface and a duration and easing per named motion. The
+chrome personality (button placement and style, title material, corners,
+shadow, member handle, container badge) is a separate decoration document
+([ADR-0207](../adr/0207-decoration-themes-are-their-own-documents.md)) that
+a color theme pairs with and the user may swap.
+
+| Theme | Character | Decoration |
+| --- | --- | --- |
+| Qinda Glass light / dark | Frosted panels and title bars with a catch light, wide corners, soft deep shadow | Glass: traffic lights on the left |
+| Qinda Slate | Cool graphite, faintly translucent chrome, square badges | Slate: flat symbols on the right, dotted handles |
+| Qinda Paper | Warm opaque paper, small radii, light shadow | Paper: flat symbols on the right, plain handles |
+| Qinda Aurora | Deep teal glass with a tinted blur and the widest corners | Aurora: traffic lights on the left |
+| Qinda Studio | Opaque console dark, sharp corners, square badges | Studio: console glyphs on the right |
+| Luna Classic (document only) | The worn Luna bar on any palette | Glyphs on the right, square badges |
+
+The six schema v1 themes keep their authored chrome and paint every surface
+opaque. Text never sits on a material the contrast gate has not checked:
+QST raises a surface's opacity until both text roles pass over black and
+white, and Reduce transparency turns every material solid.
+
 ## Wallpaper collection
 
 | Wallpaper | Character |

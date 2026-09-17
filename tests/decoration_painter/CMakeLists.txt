@@ -27,3 +27,19 @@ set_tests_properties(
     qindaqt.member-handle-layout
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+qt_add_executable(qindaqt_decoration_documents_tests tst_decoration_documents.cpp)
+target_link_libraries(
+    qindaqt_decoration_documents_tests
+    PRIVATE QindaQt::DecorationPainter qindaqt_themes Qt6::Gui Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_decoration_documents_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_decoration_documents_tests)
+add_test(NAME qindaqt.decoration-documents COMMAND qindaqt_decoration_documents_tests)
+set_tests_properties(
+    qindaqt.decoration-documents
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

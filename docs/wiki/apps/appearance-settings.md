@@ -20,8 +20,8 @@ One page covers the appearance preference set stored through Settings1:
 
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
-| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get; six visible built-in theme cards with authored decoration presets; the system/light/dark scheme choice; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme` |
-| Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
+| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get, over the draft wallpaper; twelve built-in theme cards, each a rendered thumbnail of that theme's chrome with its paired decoration document and its panel material (ADR-0206); the system/light/dark scheme choice; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
+| Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the decoration painter; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; a **Container decoration** chooser painted by the compositor's container renderer; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
 | Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
@@ -54,6 +54,14 @@ The theme-card flow reports its wrapped height to the scroll layout, so later
 cards are visible rather than existing only in the model or preview. External
 legacy themes may still use the schema's unauthored compatibility fallback.
 See [ADR-0159](../adr/0159-author-distinct-decoration-presets-for-every-builtin-theme.md).
+Since [ADR-0207](../adr/0207-decoration-themes-are-their-own-documents.md)
+a theme may instead name a decoration document from `data/decorations`, and
+the two chooser keys select `theme` (follow the color theme's pairing) or any
+installed document id for windows and for containers separately; the
+arrangement rows still refine whichever document is in effect. The chooser
+cards, the theme thumbnails and both previews are painted by the same
+renderers from the draft theme, document, arrangement and wallpaper, so the
+route never shows a mock of a material.
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio

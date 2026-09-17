@@ -133,8 +133,9 @@ the rendering/output boundary.
 | `radius` | `s`, `m`, `l` | `cornerRadius / 2`, `cornerRadius`, `min(32, cornerRadius × 1.5)` |
 | `space` | `1`…`6` | Fixed 2, 4, 8, 12, 16, 24 logical-pixel grid |
 | `type` | families plus five sizes | Theme families; base × 0.85, 1.0, 1.25, 1.5, and 2.0 after text scale |
-| `motion` | `instant`, `short`, `base`, `long` | 0; `max(80, base × 0.6)`; base; base × 1.75, in milliseconds |
+| `motion` | `instant`, `short`, `base`, `long`; `popup`, `menu`, `rollup`, `hover` | 0; `max(80, base × 0.6)`; base; base × 1.75, in milliseconds; then one `{duration, easing}` per named surface motion from schema v2 (defaults `motionDuration`, `standard`), every duration capped at 80 ms under reduced motion ([ADR-0206](../adr/0206-theme-schema-v2-surfaces-motion-and-decoration-themes.md)) |
 | `elevation` | `1`…`3` | Three bounded offset/opacity levels; reduced transparency removes shadow opacity and background blur |
+| `material` | `panel`, `popup`, `menu`, `containerChrome`, `decoration`, `desktopIcons`, each `opacity`, `blur`, `tint`, `border`, `highlight`, `radius`, `shadow` | The theme's schema v2 surface entry (v1: opaque, radius `cornerRadius`, blur from `blurEnabled` for panel/popup/menu) after the translucent-surface guardrail below; reduced transparency and high contrast publish every surface opaque, unblurred and untinted |
 | `accessibility` | `reducedMotion`, `reducedTransparency`, `highContrast` | Read-only projection of the normalized caller inputs for presentation choices that cannot be expressed by a color role; it adds no settings authority to QML |
 
 Default alpha roles remain overlays so controls can apply them to their
@@ -164,10 +165,27 @@ and source-over arithmetic are QST-1 compatibility behavior; changing one
 requires exact loader-backed property tests and review as a compatible QST-1
 correction or a token revision.
 
+### Translucent-surface guardrail
+
+A surface published with `material.<surface>.opacity` below 1 composites
+over whatever lies behind it, which QST cannot know. The deriver therefore
+publishes the authored opacity raised, in steps of 0.02, until `fg.default`
+and `fg.muted` keep at least 4.5:1 against the surface's paint color
+composited over black and over white (`DesignTokenDeriver::compositeOver`).
+Panels, popups, menus and container chrome paint `bg.raised`; window title
+bars paint `bg.highest`; desktop icon plates paint `bg.base`. An opaque
+surface is untouched, so a schema v1 theme publishes exactly its authored
+palette. Consumers paint the published opacity as given; lowering it locally
+would step outside the gate.
+
 ## WCAG pair scope
 
-The built-in-data gate covers exactly QindaQt Pearl, QindaQt Velvet,
-QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS, and QindaQt Bliss.
+The built-in-data gate covers exactly the twelve shipped themes: QindaQt
+Pearl, QindaQt Velvet, QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS,
+QindaQt Bliss, and the schema v2 Qinda Glass (light and dark), Qinda Slate,
+Qinda Paper, Qinda Aurora, and Qinda Studio. A second row proves every
+published surface material keeps both text roles at 4.5:1 over black and
+over white at its published opacity.
 QST-1 uses the
 WCAG 2.2 contrast algorithm and requires:
 

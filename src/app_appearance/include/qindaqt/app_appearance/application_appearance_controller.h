@@ -75,5 +75,9 @@ private:
 
 [[nodiscard]] QStringList
 standardThemeDirectories(const QString &explicitDirectory = {});
+// Decoration theme documents (ADR-0207) live beside the color themes:
+// `$XDG_DATA_DIRS/qindaqt/decorations`, then beside the installed executable.
+[[nodiscard]] QStringList
+standardDecorationDirectories(const QString &explicitDirectory = {});
 
 } // namespace QindaQt::AppAppearance

@@ -95,6 +95,24 @@ struct ChromePalette final
     [[nodiscard]] bool isValid(QString *error = nullptr) const;
 };
 
+// Theming v2 (ADR-0206/0188): how the shared row and outer frame are
+// painted. Defaults reproduce the opaque chrome that shipped before.
+struct ChromeMaterial final
+{
+    // 0.0 translucent .. 1.0 opaque, applied to the surface and title fills.
+    qreal opacity = 1.0;
+    // Optional vibrancy tint painted over the (blurred) backdrop first.
+    QColor tint;
+    // Hairline border strength 0.0 .. 1.0 (scales the identity frame alpha).
+    qreal border = 1.0;
+    // One-pixel inner catch light under the top edge of the shared row.
+    bool highlight = false;
+    // Rolled-up badge corners: true paints square corners (ADR-0207).
+    bool squareBadge = false;
+
+    friend bool operator==(const ChromeMaterial &, const ChromeMaterial &) = default;
+};
+
 struct ChromeStyle final
 {
     ButtonSide buttonSide = ButtonSide::Right;
@@ -102,6 +120,7 @@ struct ChromeStyle final
     ButtonStyle buttonStyle = ButtonStyle::Symbols;
     bool hoverGlyphs = false;
     ChromePalette palette;
+    ChromeMaterial material;
 
     // AGENT-CONTRACT: Palette values come from the resolved theme. This
     // factory owns Qinda macOS behavior without duplicating theme color data.
@@ -201,7 +220,7 @@ struct ChromeLayoutRequest final
     // title to show.
     bool containerTitleIsGenerated = false;
     // The resolved rolled-up badge label and its measured width in logical
-    // pixels (ADR-0189). Only a shaded request sets them; an unshaded request
+    // pixels (ADR-0207). Only a shaded request sets them; an unshaded request
     // leaves them empty and zero.
     //
     // AGENT-CONTRACT: the *caller* resolves and measures, because the badge's
@@ -309,7 +328,7 @@ struct ChromeRenderPlan final
     // keyboard selection chip rect. Empty/zero when not shown.
     QRectF badgeLabelRect;
     // The resolved label the badge paints, echoed from the request so paint()
-    // never re-derives it (ADR-0189).
+    // never re-derives it (ADR-0207).
     QString badgeLabelText;
     int badgeOverflowCount = 0;
     QRectF indexBadgeRect;

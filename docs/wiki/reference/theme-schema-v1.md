@@ -2,6 +2,9 @@
 
 This page records the theme format accepted by `src/themes`. Themes are data
 only: they select semantic tokens and metrics but cannot load code.
+[Schema v2](theme-schema-v2.md) adds per-surface materials, radii, motions, an
+accent mode, and decoration theme documents; every v1 document keeps loading
+unchanged.
 
 ## Root object
 

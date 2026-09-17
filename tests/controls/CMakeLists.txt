@@ -107,6 +107,8 @@ set(qindaqt_controls_visual_themes
     qinda-dark
     qinda-high-contrast
     qinda-macos
+    qinda-glass-dark
+    qinda-paper
 )
 foreach(theme IN LISTS qindaqt_controls_visual_themes)
     foreach(profile IN ITEMS compact ordinary large)

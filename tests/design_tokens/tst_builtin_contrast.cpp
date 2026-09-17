@@ -31,13 +31,14 @@ class BuiltInContrastTests final : public QObject {
 
 private slots:
     void everyBuiltInMeetsDocumentedPairs();
+    void everyBuiltInTranslucentSurfaceKeepsTextContrast();
 };
 
 void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
 {
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 6);
+    QCOMPARE(loaded.size(), 12);
 
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -84,6 +85,55 @@ void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
                             tokens.foreground().defaultColor, tokens.background().raised, 7.0);
         }
     }
+}
+
+void BuiltInContrastTests::everyBuiltInTranslucentSurfaceKeepsTextContrast()
+{
+    // ADR-0206 guardrail, checked on the shipped catalog: every published
+    // surface material keeps fg.default and fg.muted at 4.5:1 over the
+    // surface composited on black and on white at its published opacity.
+    const auto loaded = ThemeLoader::fromDirectory(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
+    QCOMPARE(loaded.size(), 12);
+    int translucentSurfaces = 0;
+    for (const auto &result : loaded) {
+        QVERIFY2(result.ok, qPrintable(result.error));
+        const auto derived = DesignTokenDeriver::derive(result.theme);
+        QVERIFY2(derived.ok(), qPrintable(derived.diagnostic));
+        const DesignTokens &tokens = *derived.tokens;
+        const auto &material = tokens.material();
+        const struct {
+            const char *name;
+            const SurfaceMaterialTokens *surface;
+            QColor paint;
+        } surfaces[] = {
+            {"panel", &material.panel, tokens.background().raised},
+            {"popup", &material.popup, tokens.background().raised},
+            {"menu", &material.menu, tokens.background().raised},
+            {"containerChrome", &material.containerChrome, tokens.background().raised},
+            {"decoration", &material.decoration, tokens.background().highest},
+            {"desktopIcons", &material.desktopIcons, tokens.background().base},
+        };
+        for (const auto &entry : surfaces) {
+            if (entry.surface->opacity < 1.0) {
+                ++translucentSurfaces;
+            }
+            for (const QColor &backdrop : {QColor(Qt::black), QColor(Qt::white)}) {
+                const QColor composite = DesignTokenDeriver::compositeOver(
+                    entry.paint, entry.surface->opacity, backdrop);
+                const QString label = QString::fromLatin1(entry.name)
+                    + (backdrop == QColor(Qt::black) ? QStringLiteral(" over black")
+                                                     : QStringLiteral(" over white"));
+                requireContrast(result.theme.id, QStringLiteral("fg.default/") + label,
+                                tokens.foreground().defaultColor, composite, 4.5);
+                requireContrast(result.theme.id, QStringLiteral("fg.muted/") + label,
+                                tokens.foreground().muted, composite, 4.5);
+            }
+        }
+    }
+    // The v2 catalog ships translucent surfaces; the guardrail must have had
+    // something to guard.
+    QVERIFY(translucentSurfaces > 0);
 }
 
 QTEST_GUILESS_MAIN(BuiltInContrastTests)
