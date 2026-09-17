@@ -149,7 +149,10 @@ The exact wire method and signal surface is recorded in the
 
 ## PB-2 production upstream adapters
 
-Production composition injects one bus connection and one sysfs root. UPower
+Production composition injects one bus connection, one sysfs root, and one
+privileged backlight writer bound to that same bus
+([ADR-0186](../adr/0186-write-internal-brightness-through-logind.md)); the
+`unavailable` upstream mode composes none of them. UPower
 provides the root `OnBattery` property and an atomic enumeration of battery,
 UPS, and line-power devices. Line power contributes AC truth only through its
 `Online` property. Only battery/UPS devices with `PowerSupply=true` enter the
@@ -238,8 +241,43 @@ The production battery collaborator applies admitted requests on later
 event-loop turns, one at a time, and only while the battery domain is
 published. For each request it re-checks the rule, writes, and publishes the
 re-read observation before completing. The result's observed revision
-therefore carries the kernel's answer. A denied write completes `Failed` with
-`backlight-read-only`.
+therefore carries the kernel's answer.
+
+### Internal-panel brightness requests
+
+The write itself has two paths, and sysfs is always the observation source
+([ADR-0186](../adr/0186-write-internal-brightness-through-logind.md)):
+
+- when this process can write `/sys/class/backlight/<device>/brightness`, it
+  writes it directly;
+- otherwise the write is delegated to the injected `BacklightWriter`. In
+  production that is `LogindBacklightWriter`, which calls
+  `org.freedesktop.login1.Session.SetBrightness(ssu)` with subsystem
+  `backlight`, the sysfs device name, and the raw value, on the user's own seat
+  session. On ordinary laptop hardware the attribute is `0644 root:root`, so
+  this is the only working path.
+
+`BacklightWriter` is an abstract, transport-free seam. The sysfs source is
+fenced by `check_boundary.cmake` from naming a bus, a daemon or a session, so
+it knows only that a privileged writer exists and whether it is available.
+
+Admission follows the same rule: a device is `Ok` when the attribute is
+writable by this process **or** the writer reports available. A successful
+delegated write is followed by the same `actual_brightness` re-read as a direct
+write, so an observation is never inferred from a request.
+
+Session resolution accepts `/org/freedesktop/login1/session/auto` only when
+that session reports a non-empty `Seat` — `auto` is the *caller's* session, and
+an ssh shell or a system-scope unit has no seat. Otherwise the writer selects
+this uid's seat session from `Manager.ListSessions`, preferring the active one,
+and caches it. A stale-object or no-reply error re-resolves once and retries;
+a refusal does not.
+
+A denied write completes `Failed`. Its reason code is `backlight-read-only`
+when no writer is composed, `logind-unavailable` when no seat session could be
+resolved, and `logind-refused` when logind answered and said no. The first two
+also appear as the device diagnostic, so the Settings route can explain the
+state instead of showing a dead control.
 
 The rule cannot see connectors. The topology and KWin registration rules below
 remain the contract for the later provider slice, which may narrow admission.
@@ -335,8 +373,13 @@ UPower enumeration/property changes/device removal/owner replacement and
 hostile payloads; modern and legacy Power Profiles plus cookie holds; logind
 session truth, inhibitors, sleep observation, actions, owner fencing, and
 duplicate operation lineage; bounded sysfs enumeration/write/read-only cases;
-and D-Bus activation of the built process against all fakes on a private
-daemon. The production activation row is the build-root replacement for the
+`qindaqt.power-service-logind-backlight-writer` for seat-session resolution
+(`auto` accepted only with a real seat, `ListSessions` fallback filtered by uid
+and seat, active preferred, stale session re-resolved once and retried,
+refusal reported without losing the session, failed probe not repeated per
+rescan) plus the sysfs rows that admit and delegate a read-only attribute
+through an injected writer; and D-Bus activation of the built process against
+all fakes on a private daemon. The production activation row is the build-root replacement for the
 legacy activation row: it proves descriptor-triggered name activation, exact
 unique-owner establishment, descriptor/unit contents, exit when the
 constructing bus dies, and a fresh owner, epoch, and process on an independent
@@ -375,12 +418,14 @@ Power Profiles provider, logind policy, polkit subject, suspend/resume cycle,
 physical backlight mutation, idle hint, keyboard backlight, KWin Wayland
 provider, external monitor, hardware key, or host-session integration. The
 logind action boundary has no Power1 v1 or shell presentation route.
-Internal-panel mutation is proven only against fixture roots. The installed
-unit's `ProtectKernelTunables=true` mounts `/sys` read-only, so a packaged
-service publishes the panel read-only until a separate hardening decision
-grants write access. A physical panel, that hardening change, PowerDevil's
-concurrent brightness ownership, and connector topology each require their own
-executable and hardware evidence.
+Internal-panel mutation is proven only against fixture roots and a private-bus
+fake logind. The installed unit's `ProtectKernelTunables=true` mounts `/sys`
+read-only, which is no longer a blocker: observation only reads it, and the
+delegated write leaves the unit over `AF_UNIX`, which
+`RestrictAddressFamilies` already allows
+([ADR-0186](../adr/0186-write-internal-brightness-through-logind.md)). A
+physical panel, PowerDevil's concurrent brightness ownership, and connector
+topology each require their own executable and hardware evidence.
 
 ## Consumer-triggered recovery
 

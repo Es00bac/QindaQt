@@ -4,7 +4,7 @@
 - **Date:** 2026-09-02
 - **Owners:** Power platform service
 - **Supersedes:** ADR-0024's requirement that every internal-brightness write use logind
-- **Superseded by:** [ADR-0148](0148-admit-internal-panel-brightness-through-power1.md), for the exclusion of a Power1 display-brightness method only
+- **Superseded by:** [ADR-0148](0148-admit-internal-panel-brightness-through-power1.md), for the exclusion of a Power1 display-brightness method only; [ADR-0186](0186-write-internal-brightness-through-logind.md), for the sysfs-only write rule below
 
 ## Context
 
@@ -52,6 +52,14 @@ only that file when it is writable, never escalates privileges, and re-reads
 observed truth afterward. This direct primitive supersedes ADR-0024's blanket
 logind-write requirement; it does not create a Power1 v1 display-brightness
 method or change KWin's adaptive-brightness authority.
+
+[ADR-0186](0186-write-internal-brightness-through-logind.md) supersedes the
+sysfs-*only* half of that rule: on real hardware the attribute is root-owned,
+so a write this process cannot perform is delegated to the user's seat session
+through logind rather than reported unavailable. The rest of this paragraph
+still holds — the adapter touches only its injected root, reads the same
+bounded values, re-reads observed truth after any write, and nothing escalates
+privileges.
 
 ## Consequences
 

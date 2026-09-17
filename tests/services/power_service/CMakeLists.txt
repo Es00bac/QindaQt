@@ -60,6 +60,7 @@ set_tests_properties(
 qt_add_executable(
     qindaqt_power_sysfs_backlight_tests
     tst_power_sysfs_backlight.cpp
+    support/sysfs_backlight_fixture.h
 )
 target_link_libraries(
     qindaqt_power_sysfs_backlight_tests
@@ -78,6 +79,50 @@ add_test(
 set_tests_properties(
     qindaqt.power-service-sysfs-backlight
     PROPERTIES LABELS "service;power" TIMEOUT 30
+)
+
+qt_add_executable(
+    qindaqt_power_backlight_writer_seam_tests
+    tst_power_backlight_writer_seam.cpp
+    support/sysfs_backlight_fixture.h
+)
+target_link_libraries(
+    qindaqt_power_backlight_writer_seam_tests
+    PRIVATE QindaQt::PowerService Qt6::Core Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_power_backlight_writer_seam_tests
+    PRIVATE QINDAQT_TEST_SCRATCH_DIR="${CMAKE_CURRENT_BINARY_DIR}/scratch"
+)
+qindaqt_enable_warnings(qindaqt_power_backlight_writer_seam_tests)
+add_test(
+    NAME qindaqt.power-service-backlight-writer-seam
+    COMMAND qindaqt_power_backlight_writer_seam_tests
+)
+set_tests_properties(
+    qindaqt.power-service-backlight-writer-seam
+    PROPERTIES LABELS "service;power" TIMEOUT 30
+)
+
+qt_add_executable(
+    qindaqt_power_logind_backlight_writer_tests
+    tst_power_logind_backlight_writer.cpp
+    support/fake_logind_backlight_service.cpp
+    support/fake_logind_backlight_service.h
+    support/private_bus.h
+)
+target_link_libraries(
+    qindaqt_power_logind_backlight_writer_tests
+    PRIVATE QindaQt::PowerService Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_power_logind_backlight_writer_tests)
+add_test(
+    NAME qindaqt.power-service-logind-backlight-writer
+    COMMAND qindaqt_power_logind_backlight_writer_tests
+)
+set_tests_properties(
+    qindaqt.power-service-logind-backlight-writer
+    PROPERTIES LABELS "service;power;dbus" TIMEOUT 30
 )
 
 qt_add_executable(

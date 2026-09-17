@@ -4,7 +4,7 @@
 - **Date:** 2026-09-12
 - **Owners:** Power platform service and the Power Settings route
 - **Supersedes:** ADR-0060's exclusion of a Power1 display-brightness method
-- **Superseded by:** None
+- **Superseded by:** [ADR-0186](0186-write-internal-brightness-through-logind.md), for the sysfs-only write rule and the read-only refusal state
 
 ## Context
 
