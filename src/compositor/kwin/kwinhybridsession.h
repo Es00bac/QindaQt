@@ -25,6 +25,8 @@
 #include <memory>
 #include <optional>
 
+class QMenu;
+
 namespace QindaQt::WorkspacesApps { class DesktopApplications; }
 
 namespace QindaQt::HybridInput {
@@ -42,6 +44,12 @@ class ContainerClosePrompt;
 enum class ContainerCloseDecision;
 class HybridContainerPlacementController;
 class HybridGroupedGeometryReconciler;
+class HybridIconChipRouter;
+class HybridIconifyController;
+class HybridIconifyPlatform;
+struct IconChipDrag;
+struct IconChipPointerDecision;
+struct IconChipPointerHit;
 class HybridInteractionRuntime;
 class HybridShortcutManager;
 enum class HybridSemanticCommand;
@@ -53,6 +61,7 @@ class KWinGroupContextMenu;
 class KWinGroupContextManager;
 class KWinHybridSceneFactory;
 class KWinHybridGroupStacking;
+class KWinIconChipPresenter;
 class KWinInteractionFilter;
 class KWinInteractionTargetResolver;
 class KWinMemberPolicyManager;
@@ -95,6 +104,23 @@ public:
     [[nodiscard]] qsizetype containerCount() const noexcept;
     [[nodiscard]] bool isContainerMaximized(const QString &containerId) const noexcept;
     [[nodiscard]] bool isContainerShaded(const QString &containerId) const noexcept;
+    // ADR-0191: an independent window rolled up to its icon chip. Session-
+    // local like shade; never persisted, never a container state.
+    [[nodiscard]] bool isWindowIconified(const QString &windowId) const noexcept;
+    // Rolls an independent, server-decorated normal window up to a chip
+    // anchored at its title bar's leading edge. Rejects grouped members,
+    // minimized windows, and windows without a scene item.
+    [[nodiscard]] bool iconifyWindow(const QString &windowId, QString *error = nullptr);
+    // Explicit unroll at the recorded (chip-following) frame; activate hands
+    // the window focus like a title-bar press would.
+    [[nodiscard]] bool restoreIconifiedWindow(const QString &windowId,
+                                              bool activate,
+                                              QString *error = nullptr);
+    // Diagnostics: one entry per iconified window with its chip and restore
+    // frames (see docs/wiki/reference/compositor-control-v1.md).
+    [[nodiscard]] QJsonArray iconifiedWindowsJson() const;
+    [[nodiscard]] qsizetype iconifiedWindowCount() const noexcept;
+    [[nodiscard]] qsizetype visibleIconChipCount() const noexcept;
     // AGENT-CONTRACT: Public boundary for a future persistence owner
     // (workspaces) to read/write process-local rename/color state. Renaming
     // and recoloring are pure presentation-layer mutations dispatched from
@@ -255,6 +281,29 @@ private:
     void applyWheelShade(const QString &containerId, bool shade);
     void forgetShadedContainer(const QString &containerId);
     void restoreShadeForShutdown();
+    // Iconified windows (ADR-0191); implemented in kwinhybridiconify.cpp.
+    void ensureIconify();
+    void initializeIconifyInput();
+    void initializeTargetResolver();
+    [[nodiscard]] std::optional<QString> iconChipSourceAt(const QPointF &position) const;
+    [[nodiscard]] std::optional<IconChipPointerHit> iconChipHitAt(
+        const QPointF &position) const;
+    // True when an exposed chip above the container anchor covers position,
+    // so container chrome yields ordinary input to the chip.
+    [[nodiscard]] bool iconChipCoversAbove(const QString &anchorWindowId,
+                                           const QPointF &position) const;
+    [[nodiscard]] std::optional<QString> iconifyWheelTargetAt(
+        const QPointF &position) const;
+    void dispatchIconChipDecision(const IconChipPointerDecision &decision);
+    void handleIconChipDrag(const IconChipDrag &drag);
+    void showIconChipMenu(const QString &windowId, const QPointF &globalPosition);
+    void handleIconifiedReveal(const QString &windowId);
+    void handleIconifiedClosed(const QString &windowId);
+    [[nodiscard]] bool publishIconChip(const QString &windowId, QString *error = nullptr);
+    void synchronizeIconChips();
+    void releaseIconChipSceneItems() noexcept;
+    void restoreIconifiedForShutdown();
+    [[nodiscard]] QRectF iconChipBounds(const QString &windowId) const;
     void minimizeContainer(const QString &containerId);
     [[nodiscard]] bool unminimizeContainer(const QString &containerId,
                                            QString *error = nullptr);
@@ -323,6 +372,14 @@ private:
     HybridContainerAppearanceStore m_appearance;
     std::unique_ptr<HybridShadeMemberPlatform> m_shadeMemberPlatform;
     std::unique_ptr<HybridShadeController> m_shadeController;
+    std::unique_ptr<HybridIconifyPlatform> m_iconifyPlatform;
+    std::unique_ptr<HybridIconifyController> m_iconify;
+    std::unique_ptr<HybridIconChipRouter> m_iconChipRouter;
+    std::unique_ptr<KWinIconChipPresenter> m_iconChips;
+    std::unique_ptr<QMenu> m_iconChipMenu;
+    // Chip top-left at the press that began an ordinary chip drag, keyed by
+    // window id; the router reports cumulative deltas against that press.
+    QHash<QString, QPointF> m_iconChipDragBaselines;
     QSet<QString> m_minimizedContainers;
     QString m_lastGroupStackingFailure;
     bool m_synchronizingChrome = false;

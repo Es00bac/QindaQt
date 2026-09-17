@@ -469,8 +469,8 @@ production-dock qualification consumer.
 
 `Capabilities.developmentInput` always describes the fixed input schema with
 `enabled`, `available`, `schemaVersion`, `maxEvents`,
-`maxLogicalCoordinateMagnitude`, `maxRelativeDeltaMagnitude`, `deviceId`, and
-`eventTypes`. Only an explicit isolated development scenario can make `enabled`
+`maxLogicalCoordinateMagnitude`, `maxRelativeDeltaMagnitude`,
+`maxAxisDeltaMagnitude`, `deviceId`, and `eventTypes`. Only an explicit isolated development scenario can make `enabled`
 true. That session constructs the `qindaqt-development-input` keyboard/pointer
 device and adds it to KWin's normal input redirection; events pass through the
 same observer, consuming filter, and Hybrid controller as admitted seat input.
@@ -499,11 +499,18 @@ of these shapes:
 {"type":"key","key":"enter","pressed":true}
 {"type":"key","key":"v","pressed":true}
 {"type":"button","button":"left","pressed":true}
+{"type":"pointer-axis","axis":"vertical","delta":-15.0}
 ```
 
 Absolute coordinates must be finite logical values between -1,000,000 and
 1,000,000. Relative deltas must be finite logical values between -10,000 and
-10,000. Relative input exists to qualify KWin's native pointer-lock and
+10,000. Axis deltas (`vertical` or `horizontal`) must be finite, non-zero
+logical values between -1,000 and 1,000; they follow libinput's convention, so
+a negative vertical delta turns the wheel away from the user, and one 15-unit
+notch is emitted as one 120-unit v120 step from a wheel source, never inverted
+(natural scrolling is a seat setting). They exist so the iconified-window rows
+([ADR-0191](../adr/0191-an-ordinary-window-rolls-up-to-its-icon.md)) can roll
+windows up and down through KWin's ordinary axis pipeline. Relative input exists to qualify KWin's native pointer-lock and
 relative-pointer path inside the isolated compositor; it uses the same delta
 for accelerated and unaccelerated device values.
 The complete key allowlist is left Meta, left Alt, left Shift, F1, F11, C,
@@ -599,6 +606,9 @@ When the process-local runtime is constructed, `Capabilities` includes a
 | `quarantinedContainerCount` | JSON integer | Containers whose chrome and input are persistently suppressed after context adoption and release both failed; ordinary reconciliation cannot clear this state |
 | `publishedGroupStackingCount` | JSON integer | Containers with a currently verified contiguous active-member stack block and scene anchor; a failed synchronization or raise removes the affected publication before hiding chrome |
 | `lastGroupStackingFailure` | JSON string | Most recent group-stack synchronization or raise failure since the last successful complete stack synchronization; empty after a successful synchronization |
+| `iconifiedWindowCount` | JSON integer | Independent windows currently rolled up to their icon chips ([ADR-0191](../adr/0191-an-ordinary-window-rolls-up-to-its-icon.md)) |
+| `visibleIconChipCount` | JSON integer | Chips whose scene item is visible and attached to a live `WindowItem` (a minimized iconified window shows none) |
+| `iconifiedWindows` | JSON array | One object per iconified window: `windowId`, `chipFrame` and `restoreFrame` (`x`, `y`, `width`, `height` in global logical pixels), and `chipVisible` |
 
 This object is an operational snapshot taken synchronously with
 `Capabilities`; it emits no dedicated change signal and does not expose

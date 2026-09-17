@@ -176,6 +176,8 @@ void KWinShellTaskFactsPublisher::trackWindow(KWin::Window *window)
                                this, changed));
     connections.append(connect(window, &KWin::Window::minimizedChanged,
                                this, changed));
+    connections.append(connect(window, &KWin::Window::hiddenChanged,
+                               this, changed));
     connections.append(connect(window, &KWin::Window::maximizedChanged,
                                this, changed));
     connections.append(connect(window, &KWin::Window::demandsAttentionChanged,
@@ -339,6 +341,9 @@ KWinShellTaskFactsPublisher::sample(QString *error)
                 : ShellTaskWindowOwner::Application,
             .active = window->isActive(),
             .minimized = window->isMinimized(),
+            // ADR-0191: rolled up to its icon chip (independent windows only);
+            // the task list renders a rolled hint, never a second entry.
+            .iconified = m_hybrid.isWindowIconified(windowId),
             .maximized = window->maximizeMode() == KWin::MaximizeFull
                 || groupedMaximized,
             .fullscreen = window->isFullScreen(),

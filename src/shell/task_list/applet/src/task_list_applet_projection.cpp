@@ -33,6 +33,7 @@ TaskListAppletRow entryRow(const ShellTaskList::TaskEntry &entry,
   row.windowCount = entry.windowCount;
   row.active = entry.active;
   row.minimized = entry.minimized;
+  row.iconified = entry.iconified;
   row.urgent = entry.urgent;
   row.memberWindowIds = entry.memberWindowIds;
   row.generationRevision = generationRevision;
@@ -59,6 +60,7 @@ TaskListAppletRow memberRow(const ShellTaskList::TaskEntry &container,
   window.active =
       container.active && member.windowId == container.primaryWindowId;
   window.minimized = container.minimized;
+  window.iconified = container.iconified;
   window.urgent = member.urgent;
   TaskListAppletRow row = entryRow(window, pendingTaskIds, generationRevision);
   row.windowId = member.windowId;

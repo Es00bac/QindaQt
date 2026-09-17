@@ -2,6 +2,7 @@
 #include "kwininteractionfilter.h"
 
 #include "hybridchromepointerrouter.h"
+#include "hybridiconchiprouter.h"
 
 #include <core/inputdevice.h>
 #include <input.h>
@@ -122,6 +123,11 @@ bool KWinInteractionFilter::installed() const
     return m_filter != nullptr && m_earlyFilter != nullptr;
 }
 
+void KWinInteractionFilter::setIconifyHooks(IconifyInputHooks hooks)
+{
+    m_iconify = std::move(hooks);
+}
+
 bool KWinInteractionFilter::beginKeyboardDock(const HybridInput::HitTarget &source)
 {
     if (m_chromeRouter && m_chromeRouter->active()) {
@@ -161,12 +167,18 @@ void KWinInteractionFilter::cancelChrome()
     if (m_chromeRouter) {
         static_cast<void>(dispatchChrome(m_chromeRouter->cancel()));
     }
+    if (m_iconify.chipRouter) {
+        static_cast<void>(dispatchChip(m_iconify.chipRouter->cancel()));
+    }
 }
 
 void KWinInteractionFilter::invalidateChromeTargets()
 {
     if (m_chromeRouter) {
         static_cast<void>(dispatchChrome(m_chromeRouter->invalidateTargets()));
+    }
+    if (m_iconify.chipRouter) {
+        static_cast<void>(dispatchChip(m_iconify.chipRouter->invalidateTargets()));
     }
 }
 
@@ -191,6 +203,10 @@ bool KWinInteractionFilter::pointerMotion(KWin::PointerMotionEvent *event)
         && dispatchChrome(m_chromeRouter->pointerMove(normalized))) {
         return true;
     }
+    if (!m_controller.active() && m_iconify.chipRouter
+        && dispatchChip(m_iconify.chipRouter->pointerMove(normalized))) {
+        return true;
+    }
     return dispatch(m_controller.pointerMove(normalized));
 }
 
@@ -213,6 +229,16 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
             return true;
         }
     }
+    if (!m_controller.active() && m_iconify.chipRouter) {
+        // Chips take the ordinary sequence after container chrome; a chip
+        // stacked above chrome is denied to the chrome resolver instead.
+        const auto chipDecision = event->state == KWin::PointerButtonState::Pressed
+            ? m_iconify.chipRouter->pointerPress(normalized)
+            : m_iconify.chipRouter->pointerRelease(normalized);
+        if (dispatchChip(chipDecision)) {
+            return true;
+        }
+    }
     return dispatch(event->state == KWin::PointerButtonState::Pressed
                         ? m_controller.pointerPress(normalized)
                         : m_controller.pointerRelease(normalized));
@@ -223,13 +249,32 @@ bool KWinInteractionFilter::pointerAxis(KWin::PointerAxisEvent *event)
     // ADR-0131: wheel roll-up over shared chrome and member handlebars. KWin
     // reports a wheel turned away from the user as a negative vertical delta
     // unless natural scrolling inverted it, so the physical direction decides.
-    if (!event || event->orientation != Qt::Vertical || m_controller.active()
-        || !m_chromeRouter) {
+    if (!event || event->orientation != Qt::Vertical || m_controller.active()) {
         return false;
     }
     const qreal awayFromUser = event->inverted ? event->delta : -event->delta;
-    return dispatchChrome(
-        m_chromeRouter->pointerWheel(event->position, event->modifiers, awayFromUser));
+    if (m_chromeRouter
+        && dispatchChrome(m_chromeRouter->pointerWheel(event->position, event->modifiers,
+                                                       awayFromUser))) {
+        return true;
+    }
+    // ADR-0191: a wheel over an iconified window's chip unrolls it; a wheel
+    // away from the user over an independent window's decoration title bar
+    // rolls that window up before native KDecoration sees the event.
+    if (m_iconify.chipRouter
+        && dispatchChip(m_iconify.chipRouter->pointerWheel(event->position, event->modifiers,
+                                                           awayFromUser))) {
+        return true;
+    }
+    if (m_iconify.titleWheelTarget && m_iconify.iconify && awayFromUser > 0.0
+        && event->modifiers == Qt::NoModifier) {
+        const auto windowId = m_iconify.titleWheelTarget(event->position);
+        if (windowId && !windowId->isEmpty()) {
+            m_iconify.iconify(*windowId);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool KWinInteractionFilter::keyboardKey(KWin::KeyboardKeyEvent *event)
@@ -241,6 +286,11 @@ bool KWinInteractionFilter::keyboardKey(KWin::KeyboardKeyEvent *event)
         && event->state != KWin::KeyboardKeyState::Released
         && event->key == Qt::Key_Escape) {
         return dispatchChrome(m_chromeRouter->cancel());
+    }
+    if (m_iconify.chipRouter && m_iconify.chipRouter->active()
+        && event->state != KWin::KeyboardKeyState::Released
+        && event->key == Qt::Key_Escape) {
+        return dispatchChip(m_iconify.chipRouter->cancel());
     }
     return dispatch(m_controller.keyEvent(
         {.key = event->key,
@@ -316,6 +366,14 @@ bool KWinInteractionFilter::dispatchChrome(ChromePointerDecision decision)
 {
     if (m_chromeSink && hasChromeDecisionOutput(decision)) {
         m_chromeSink(decision);
+    }
+    return decision.consumed;
+}
+
+bool KWinInteractionFilter::dispatchChip(IconChipPointerDecision decision)
+{
+    if (m_iconify.chipSink && hasIconChipDecisionOutput(decision)) {
+        m_iconify.chipSink(decision);
     }
     return decision.consumed;
 }

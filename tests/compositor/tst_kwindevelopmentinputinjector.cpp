@@ -31,6 +31,11 @@ struct RegistrarState final
     QList<quint32> buttons;
     QList<KWin::PointerButtonState> buttonStates;
     QList<std::chrono::microseconds> timestamps;
+    QList<KWin::PointerAxis> axes;
+    QList<qreal> axisDeltas;
+    QList<qint32> axisDeltasV120;
+    QList<KWin::PointerAxisSource> axisSources;
+    QList<bool> axisInverted;
 };
 
 class RecordingRegistrar final : public DevelopmentInputDeviceRegistrar
@@ -89,6 +94,19 @@ public:
                          [state](KWin::InputDevice *) {
                              state->eventOrder.append(QStringLiteral("frame"));
                          });
+        QObject::connect(
+            device, &KWin::InputDevice::pointerAxisChanged, device,
+            [state](KWin::PointerAxis axis, qreal delta, qint32 deltaV120,
+                    KWin::PointerAxisSource source, bool inverted,
+                    std::chrono::microseconds timestamp, KWin::InputDevice *) {
+                state->eventOrder.append(QStringLiteral("pointer-axis"));
+                state->axes.append(axis);
+                state->axisDeltas.append(delta);
+                state->axisDeltasV120.append(deltaV120);
+                state->axisSources.append(source);
+                state->axisInverted.append(inverted);
+                state->timestamps.append(timestamp);
+            });
     }
 
     void removeInputDevice(KWin::InputDevice *device) override
@@ -112,6 +130,7 @@ class KWinDevelopmentInputInjectorTest final : public QObject
 private Q_SLOTS:
     void emitsThroughTheRegisteredCombinationDevice();
     void emitsRelativePointerThroughTheRegisteredDevice();
+    void emitsWheelNotchesThroughTheRegisteredDevice();
     void translatesFullscreenAndShellProbeKeys();
     void removesDeviceBeforeOwnedLifetimeEnds();
     void remainsUnavailableWithoutARegistrarBackend();
@@ -283,6 +302,45 @@ void KWinDevelopmentInputInjectorTest::emitsRelativePointerThroughTheRegisteredD
     QCOMPARE(state->unacceleratedDeltas,
              QList<QPointF>({QPointF(18.5, -9.25)}));
     QCOMPARE(state->timestamps.size(), 1);
+}
+
+void KWinDevelopmentInputInjectorTest::emitsWheelNotchesThroughTheRegisteredDevice()
+{
+    const auto state = std::make_shared<RegistrarState>();
+    KWinDevelopmentInputInjector injector(
+        std::make_unique<RecordingRegistrar>(state));
+    DevelopmentInputBatch batch;
+    batch.events = {
+        {.type = DevelopmentInputEventType::PointerAxis,
+         .position = {},
+         .key = DevelopmentInputKey::LeftMeta,
+         .pressed = false,
+         .button = DevelopmentInputButton::Left,
+         .axis = DevelopmentInputAxis::Vertical,
+         .axisDelta = -15.0},
+        {.type = DevelopmentInputEventType::PointerAxis,
+         .position = {},
+         .key = DevelopmentInputKey::LeftMeta,
+         .pressed = false,
+         .button = DevelopmentInputButton::Left,
+         .axis = DevelopmentInputAxis::Horizontal,
+         .axisDelta = 7.5},
+    };
+
+    QVERIFY(injector.inject(batch));
+    QCOMPARE(state->eventOrder,
+             QStringList({QStringLiteral("pointer-axis"), QStringLiteral("frame"),
+                          QStringLiteral("pointer-axis"), QStringLiteral("frame")}));
+    QCOMPARE(state->axes, QList<KWin::PointerAxis>({KWin::PointerAxis::Vertical,
+                                                    KWin::PointerAxis::Horizontal}));
+    QCOMPARE(state->axisDeltas, QList<qreal>({-15.0, 7.5}));
+    // One 15-unit notch is one 120-unit v120 step, as libinput reports it.
+    QCOMPARE(state->axisDeltasV120, QList<qint32>({-120, 60}));
+    QCOMPARE(state->axisSources, QList<KWin::PointerAxisSource>({
+                                     KWin::PointerAxisSource::Wheel,
+                                     KWin::PointerAxisSource::Wheel}));
+    QCOMPARE(state->axisInverted, QList<bool>({false, false}));
+    QCOMPARE(state->timestamps.size(), 2);
 }
 
 void KWinDevelopmentInputInjectorTest::translatesFullscreenAndShellProbeKeys()

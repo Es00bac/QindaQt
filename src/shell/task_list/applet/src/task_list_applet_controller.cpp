@@ -113,6 +113,7 @@ QVariantList TaskListAppletController::rowsToVariant(
     map.insert(QStringLiteral("windowCount"), row.windowCount);
     map.insert(QStringLiteral("active"), row.active);
     map.insert(QStringLiteral("minimized"), row.minimized);
+    map.insert(QStringLiteral("iconified"), row.iconified);
     map.insert(QStringLiteral("urgent"), row.urgent);
     map.insert(QStringLiteral("keyboardIndex"), row.keyboardIndex);
     // The presentation model formats the accessible name; re-derive it with
@@ -127,6 +128,7 @@ QVariantList TaskListAppletController::rowsToVariant(
       named.windowCount = row.windowCount;
       named.active = row.active;
       named.minimized = row.minimized;
+      named.iconified = row.iconified;
       named.urgent = row.urgent;
       map.insert(QStringLiteral("accessibleName"),
                  ShellTaskList::TaskListPresentationModel::accessibleName(named));

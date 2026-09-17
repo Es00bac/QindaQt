@@ -224,7 +224,8 @@ HybridRuntimeResult HybridInteractionRuntime::commitMemberDock(
     const HybridInput::InteractionIntent &intent)
 {
     if ((intent.source.kind != HybridInput::HitKind::MemberTitle
-        && intent.source.kind != HybridInput::HitKind::Tab)
+        && intent.source.kind != HybridInput::HitKind::Tab
+        && intent.source.kind != HybridInput::HitKind::IconChip)
         || intent.source.memberId.isEmpty()) {
         return rejected(QStringLiteral("member dock source is invalid"));
     }

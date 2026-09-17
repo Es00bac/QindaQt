@@ -100,6 +100,32 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
         return event;
     }
 
+    if (type.toString() == QStringLiteral("pointer-axis")) {
+        if (!hasExactlyFields(object, {QStringLiteral("type"), QStringLiteral("axis"),
+                                       QStringLiteral("delta")})
+            || !object.value(QStringLiteral("axis")).isString()
+            || !object.value(QStringLiteral("delta")).isDouble()) {
+            return std::nullopt;
+        }
+        const auto delta = object.value(QStringLiteral("delta")).toDouble();
+        if (!std::isfinite(delta) || qFuzzyIsNull(delta)
+            || std::abs(delta) > DevelopmentInputCodec::MaxAxisDeltaMagnitude) {
+            return std::nullopt;
+        }
+        DevelopmentInputEvent event;
+        event.type = DevelopmentInputEventType::PointerAxis;
+        event.axisDelta = delta;
+        const auto axis = object.value(QStringLiteral("axis")).toString();
+        if (axis == QStringLiteral("vertical")) {
+            event.axis = DevelopmentInputAxis::Vertical;
+        } else if (axis == QStringLiteral("horizontal")) {
+            event.axis = DevelopmentInputAxis::Horizontal;
+        } else {
+            return std::nullopt;
+        }
+        return event;
+    }
+
     if (type.toString() == QStringLiteral("key")) {
         if (!hasExactlyFields(object, {QStringLiteral("type"), QStringLiteral("key"),
                                        QStringLiteral("pressed")})
@@ -302,11 +328,13 @@ QJsonObject DevelopmentInputController::capabilities() const
              DevelopmentInputCodec::MaxLogicalCoordinateMagnitude},
             {QStringLiteral("maxRelativeDeltaMagnitude"),
              DevelopmentInputCodec::MaxRelativeDeltaMagnitude},
+            {QStringLiteral("maxAxisDeltaMagnitude"),
+             DevelopmentInputCodec::MaxAxisDeltaMagnitude},
             {QStringLiteral("deviceId"), developmentInputDeviceId()},
             {QStringLiteral("eventTypes"),
              QJsonArray{QStringLiteral("pointer-absolute"),
                         QStringLiteral("pointer-relative"), QStringLiteral("key"),
-                        QStringLiteral("button")}}};
+                        QStringLiteral("button"), QStringLiteral("pointer-axis")}}};
 }
 
 QString developmentInputDeviceId()

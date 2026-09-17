@@ -78,7 +78,7 @@ inline QJsonObject taskWindowJson(
     const QString &role = QStringLiteral("standalone"),
     const QString &containerId = {}, bool active = false,
     bool minimized = false, bool attention = false,
-    const QString &colorHex = {}) {
+    const QString &colorHex = {}, bool iconified = false) {
   return {{QStringLiteral("id"), id},
           {QStringLiteral("applicationId"), applicationId},
           {QStringLiteral("applicationName"), applicationId},
@@ -89,6 +89,7 @@ inline QJsonObject taskWindowJson(
           {QStringLiteral("ownerRole"), QStringLiteral("application")},
           {QStringLiteral("active"), active},
           {QStringLiteral("minimized"), minimized},
+          {QStringLiteral("iconified"), iconified},
           {QStringLiteral("maximized"), false},
           {QStringLiteral("fullscreen"), false},
           {QStringLiteral("demandsAttention"), attention},

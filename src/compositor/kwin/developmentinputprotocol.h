@@ -16,6 +16,16 @@ enum class DevelopmentInputEventType {
     PointerRelative,
     Key,
     Button,
+    // A wheel step through KWin's normal axis pipeline (ADR-0191 rows). The
+    // logical delta follows libinput's sign convention: negative turns the
+    // wheel away from the user. deltaV120 is derived as delta * 8, so one
+    // 15-unit notch is one 120-unit step.
+    PointerAxis,
+};
+
+enum class DevelopmentInputAxis {
+    Vertical,
+    Horizontal,
 };
 
 enum class DevelopmentInputKey {
@@ -53,6 +63,8 @@ struct DevelopmentInputEvent final
     DevelopmentInputKey key = DevelopmentInputKey::LeftMeta;
     bool pressed = false;
     DevelopmentInputButton button = DevelopmentInputButton::Left;
+    DevelopmentInputAxis axis = DevelopmentInputAxis::Vertical;
+    qreal axisDelta = 0.0;
 };
 
 struct DevelopmentInputBatch final
@@ -78,6 +90,9 @@ public:
     // 10k-logical-pixel delta covers nested pointer-lock probes without
     // accepting unbounded values into KWin's input pipeline.
     static constexpr qreal MaxRelativeDeltaMagnitude = 10'000.0;
+    // One wheel notch is 15 logical units; a bounded burst covers every
+    // nested roll-up/unroll probe without accepting unbounded scroll energy.
+    static constexpr qreal MaxAxisDeltaMagnitude = 1'000.0;
 
     [[nodiscard]] static std::optional<DevelopmentInputBatch>
     parse(const QByteArray &requestJson, DevelopmentInputFailure *failure = nullptr);

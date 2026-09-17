@@ -55,21 +55,14 @@ bool QindaDecoration::containerMember() const
 
 void QindaDecoration::wheelEvent(QWheelEvent *event)
 {
-    // ADR-0131: the wheel over a title bar rolls the window up (turned away
-    // from the user) and back down. Container members never get here for a
-    // wheel over their handlebar: the compositor's chrome router consumes it
-    // first and rolls the whole container.
-    if (event == nullptr || containerMember() || !window()->isShadeable()
-        || !titleBar().contains(event->position())) {
-        KDecoration3::Decoration::wheelEvent(event);
-        return;
-    }
-    const int delta = event->angleDelta().y();
-    const bool shaded = window()->isShaded();
-    if ((delta > 0 && !shaded) || (delta < 0 && shaded)) {
-        requestToggleShade();
-    }
-    event->accept();
+    // ADR-0191 supersedes ADR-0131's decoration roll-up: a modifier-free wheel
+    // over an independent window's title bar is consumed by the QindaQt
+    // compositor plugin (KWinInteractionFilter) before it reaches KDecoration
+    // and rolls the window up to its icon chip; a wheel over a container
+    // member's handlebar is consumed by the chrome router and rolls the whole
+    // container. The decoration therefore never shades on wheel any more.
+    // KWin's native shade stays reachable from the window menu.
+    KDecoration3::Decoration::wheelEvent(event);
 }
 
 bool QindaDecoration::init()

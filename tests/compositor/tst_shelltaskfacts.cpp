@@ -127,6 +127,8 @@ void ShellTaskFactsTests::roleAndOwnerProvenanceRoundTripsAndRejectsHostileValue
     auto facts = candidate();
     facts.windows[0].type = ShellTaskWindowType::NonNormal;
     facts.windows[0].owner = ShellTaskWindowOwner::BoundShell;
+    // ADR-0191: the rolled-up hint round-trips as its own boolean.
+    facts.windows[0].iconified = true;
     ShellTaskFactsStore store(QString::fromLatin1(Epoch));
     QString error;
     QCOMPARE(store.publish(facts, &error), ShellTaskFactsPublishResult::Published);
@@ -134,6 +136,8 @@ void ShellTaskFactsTests::roleAndOwnerProvenanceRoundTripsAndRejectsHostileValue
     QVERIFY2(decoded.has_value(), qPrintable(error));
     QCOMPARE(decoded->facts.windows[0].type, ShellTaskWindowType::NonNormal);
     QCOMPARE(decoded->facts.windows[0].owner, ShellTaskWindowOwner::BoundShell);
+    QVERIFY(decoded->facts.windows[0].iconified);
+    QVERIFY(!decoded->facts.windows[1].iconified);
 
     QJsonObject root = QJsonDocument::fromJson(store.snapshotJson()).object();
     QJsonArray windows = root.value(QStringLiteral("windows")).toArray();

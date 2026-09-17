@@ -43,6 +43,7 @@ bool HitTarget::isValid() const
         return !containerId.isEmpty();
     case HitKind::MemberTitle:
     case HitKind::Tab:
+    case HitKind::IconChip:
         return !memberId.isEmpty();
     case HitKind::Divider:
         return !containerId.isEmpty() && !dividerId.isEmpty();
@@ -154,8 +155,12 @@ InteractionDecision InteractionController::pointerRelease(const PointerEvent &ev
         if (m_kind == InteractionKind::MemberDock) {
             commit.target = m_resolver.pointerDockTarget(m_source, event.position);
             // AGENT-GUARD: A missing target commits a detach gesture only for
-            // an existing group member. Independent windows cannot be detached.
-            if (!commit.target.isValid() && m_source.containerId.isEmpty()) {
+            // an existing group member. Independent windows cannot be detached,
+            // except an iconified window's chip (ADR-0191), whose no-target
+            // commit tells the session to leave the chip at the drop point;
+            // Escape still cancels it.
+            if (!commit.target.isValid() && m_source.containerId.isEmpty()
+                && m_source.kind != HitKind::IconChip) {
                 commit.phase = IntentPhase::Cancel;
             }
         }
@@ -338,6 +343,7 @@ InteractionKind InteractionController::kindForHit(HitKind kind) const
     switch (kind) {
     case HitKind::MemberTitle:
     case HitKind::Tab:
+    case HitKind::IconChip:
         return InteractionKind::MemberDock;
     case HitKind::OuterTitle:
         return InteractionKind::ContainerMove;

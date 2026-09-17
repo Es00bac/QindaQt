@@ -61,6 +61,9 @@ struct TaskWindowFact {
   QString containerId;
   bool active = false;
   bool minimized = false;
+  // ADR-0191: the window is rolled up to its icon chip (still on screen, so
+  // still a task; never true for a container member).
+  bool iconified = false;
   bool urgent = false;
 
   friend bool operator==(const TaskWindowFact &,
@@ -111,6 +114,7 @@ struct TaskEntry {
   TaskWindowOwner owner = TaskWindowOwner::Application;
   bool active = false;
   bool minimized = false;
+  bool iconified = false;
   bool urgent = false;
 
   friend bool operator==(const TaskEntry &, const TaskEntry &) = default;

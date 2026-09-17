@@ -98,6 +98,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     add_library(qindaqt_hybrid_chrome_pointer_router STATIC
         kwin/hybridchromepointerrouter.cpp
         kwin/hybridchromepointerrouter.h
+        kwin/hybridiconchiprouter.cpp
+        kwin/hybridiconchiprouter.h
     )
     target_compile_features(qindaqt_hybrid_chrome_pointer_router PUBLIC cxx_std_20)
     target_include_directories(
@@ -310,6 +312,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridcontainerappearance.h
             kwin/hybridshadecontroller.cpp
             kwin/hybridshadecontroller.h
+            kwin/hybridiconifycontroller.cpp
+            kwin/hybridiconifycontroller.h
             kwin/hybridshadestripgeometry.cpp
             kwin/hybridshadestripgeometry.h
             kwin/hybridgroupedgeometryreconciler.cpp
@@ -364,6 +368,12 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridwindowlifecycle.cpp
             kwin/kwinhybridcontainerappearance.cpp
             kwin/kwinhybridshade.cpp
+            kwin/kwinhybridiconify.cpp
+            kwin/kwinhybridiconifyinput.cpp
+            kwin/kwiniconchippresenter.cpp
+            kwin/kwiniconchippresenter.h
+            kwin/kwiniconifyplatform.cpp
+            kwin/kwiniconifyplatform.h
             kwin/kwinmemberpolicy.cpp
             kwin/kwinmemberpolicy.h
             kwin/kwinmemberpolicyplatform.cpp

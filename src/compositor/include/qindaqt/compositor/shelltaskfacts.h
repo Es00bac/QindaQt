@@ -60,6 +60,10 @@ struct ShellTaskWindow final {
     ShellTaskWindowOwner owner = ShellTaskWindowOwner::Application;
     bool active = false;
     bool minimized = false;
+    // ADR-0191: an independent window rolled up to its icon chip. It stays a
+    // task-list entry (unlike minimized it is still on screen as the chip);
+    // never true for a container member.
+    bool iconified = false;
     bool maximized = false;
     bool fullscreen = false;
     bool demandsAttention = false;

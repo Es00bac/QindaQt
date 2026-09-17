@@ -67,6 +67,8 @@ struct TaskListAppletRow {
   quint32 windowCount = 1;
   bool active = false;
   bool minimized = false;
+  // Rolled up to its icon chip (ADR-0191): rendered as a quiet hint.
+  bool iconified = false;
   bool urgent = false;
   int keyboardIndex = 0;
   QString accessibleName;

@@ -38,18 +38,31 @@ KWinInteractionTargetResolver::KWinInteractionTargetResolver(
     const ChromeHitProvider *chrome,
     ChromeExposureResolver chromeExposure,
     ContainerContentFrameResolver containerContentFrame,
-    DraggedPageMembersResolver draggedPageMembers)
+    DraggedPageMembersResolver draggedPageMembers,
+    IconChipResolver iconChip)
     : m_registry(registry)
     , m_chrome(chrome)
     , m_chromeExposure(std::move(chromeExposure))
     , m_containerContentFrame(std::move(containerContentFrame))
     , m_draggedPageMembers(std::move(draggedPageMembers))
+    , m_iconChip(std::move(iconChip))
 {
 }
 
 HybridInput::HitTarget KWinInteractionTargetResolver::hitTest(
     const QPointF &position) const
 {
+    if (m_iconChip) {
+        // ADR-0191: an exposed chip is the hidden window's own drag source;
+        // the session un-iconifies on a targeted commit and moves the chip on
+        // a no-target commit (which only this kind produces).
+        const auto chipWindowId = m_iconChip(position);
+        if (chipWindowId && !chipWindowId->isEmpty()
+            && m_registry.window(*chipWindowId)) {
+            return {HybridInput::HitKind::IconChip,
+                    m_registry.owner(*chipWindowId), *chipWindowId, {}};
+        }
+    }
     auto *window = topmostInputOwnerAt(position);
     HybridInput::HitTarget nativeTitle;
     QString nativeOwner;
