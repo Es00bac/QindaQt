@@ -37,6 +37,27 @@ T.AbstractButton {
                                             .arg(root.outputData.logicalWidth)
                                             .arg(root.outputData.logicalHeight)
                                             .arg(Math.round((root.outputData.scale ?? 1) * 100))
+    // Non-default orientation and mirroring, named on the card so both are
+    // visible without scrolling to their sections.
+    readonly property string rotationSummary: {
+        switch (String(root.outputData.transform ?? "normal")) {
+        case "90": return qsTr("Rotated 90°")
+        case "180": return qsTr("Rotated 180°")
+        case "270": return qsTr("Rotated 270°")
+        default: return ""
+        }
+    }
+    readonly property string stateSummaryText: {
+        const parts = []
+        if (root.rotationSummary !== "") {
+            parts.push(root.rotationSummary)
+        }
+        if (String(root.outputData.replicationSourceStableId ?? "") !== "") {
+            parts.push(qsTr("Mirroring another display"))
+        }
+        return parts.join(qsTr(" · "))
+    }
+
     signal selectedRequested()
 
     implicitWidth: 200
@@ -55,8 +76,10 @@ T.AbstractButton {
                                         .arg(root.outputData.connectorName)
                                         .arg(root.outputData.primary ? qsTr(", Primary") : "")
     Accessible.description: root.outputData.enabled
-                            ? qsTr("Enabled, %1×%2").arg(root.outputData.logicalWidth)
+                            ? qsTr("Enabled, %1×%2%3").arg(root.outputData.logicalWidth)
                                                    .arg(root.outputData.logicalHeight)
+                                                   .arg(root.stateSummaryText === ""
+                                                        ? "" : ". " + root.stateSummaryText)
                             : qsTr("Disabled. Select it, then turn on Enable display.")
     Accessible.checkable: true
     Accessible.checked: root.selected
@@ -149,6 +172,23 @@ T.AbstractButton {
             font.family: Tokens.type.fontFamily
             font.pointSize: Tokens.type.caption
             color: root.outputData.enabled ? Tokens.fg.default : Tokens.fg.disabled
+        }
+
+        // AGENT-NOTE: rotation and mirroring are stated here because the
+        // controls for them are the fourth and fifth things on a long page.
+        // The user's report was that there is "no rotation control" on a
+        // laptop whose Display1 reports the output enabled and editable — it
+        // was simply below the fold, and nothing above it said the display was
+        // rotated at all.
+        Label {
+            objectName: "displayOutputCardStateSummary"
+            Layout.fillWidth: true
+            visible: root.outputData.enabled && text !== ""
+            text: root.stateSummaryText
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.caption
+            color: Tokens.fg.muted
+            elide: Text.ElideRight
         }
     }
 

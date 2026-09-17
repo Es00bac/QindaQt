@@ -207,6 +207,69 @@ bool DisplaySettingsModel::setOutputTransform(const QString &stableId,
   return true;
 }
 
+bool DisplaySettingsModel::setOutputMirror(const QString &stableId,
+                                           const QString &sourceStableId) {
+  if (!canEdit()) {
+    return false;
+  }
+  auto *out = findDraftOutput(stableId);
+  if (out == nullptr) {
+    return false;
+  }
+  if (sourceStableId.isEmpty()) {
+    if (out->replicationSourceStableId.isEmpty()) {
+      return true;
+    }
+    // Extend: the output keeps its own pixels again, and needs somewhere of
+    // its own to be. Prefer where it was before it started mirroring — the
+    // user put it there — and fall back to the canonical placement only when
+    // that is unknown, for example after a snapshot replaced the draft.
+    out->replicationSourceStableId.clear();
+    out->position = out->hasPositionBeforeMirror
+        ? out->positionBeforeMirror
+        : positionForNewlyEnabledOutput(m_draftOutputs, stableId);
+    out->hasPositionBeforeMirror = false;
+  } else {
+    if (sourceStableId == stableId) {
+      return false;
+    }
+    const auto *source = findDraftOutput(sourceStableId);
+    if (source == nullptr || !source->enabled) {
+      return false;
+    }
+    // No chains: mirroring a mirror would make the replication source
+    // ambiguous for anything that resolves it transitively, and Display1's
+    // own validation does not forbid it.
+    if (!source->replicationSourceStableId.isEmpty()) {
+      return false;
+    }
+    if (!out->enabled) {
+      if (!setOutputEnabled(stableId, true)) {
+        return false;
+      }
+      out = findDraftOutput(stableId);
+      if (out == nullptr) {
+        return false;
+      }
+    }
+    // A mirrored output shows the same pixels in the same place. Anything
+    // else would leave the diagram claiming two positions for one image.
+    if (out->replicationSourceStableId.isEmpty()) {
+      out->positionBeforeMirror = out->position;
+      out->hasPositionBeforeMirror = true;
+    }
+    out->replicationSourceStableId = sourceStableId;
+    out->position = findDraftOutput(sourceStableId)->position;
+  }
+
+  validateDraft();
+  Q_EMIT outputsChanged();
+  Q_EMIT selectedOutputChanged();
+  Q_EMIT draftChanged();
+  Q_EMIT stateChanged();
+  return true;
+}
+
 bool DisplaySettingsModel::setOutputPosition(const QString &stableId, int x,
                                              int y) {
   if (!canEdit()) {
