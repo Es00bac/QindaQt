@@ -243,6 +243,7 @@ std::optional<DecodedMessage> decodeMessage(const QByteArray &datagram)
     QJsonValue payload = root.value(QStringLiteral("result"));
     if (!payload.isObject()) {
         payload = root.value(QStringLiteral("params"));
+        message.unsolicited = payload.isObject();
     }
     if (!payload.isObject()) {
         return message;
