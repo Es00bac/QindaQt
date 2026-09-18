@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/session/desktop_controls/airplane_mode_key_controller.h"
 #include "qindaqt/session/desktop_controls/battery_notification_policy.h"
 #include "qindaqt/session/desktop_controls/desktop_shortcut_set.h"
 #include "qindaqt/session/desktop_controls/freedesktop_feedback_notifier.h"
+#include "qindaqt/session/desktop_controls/mic_mute_key_controller.h"
 #include "qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h"
 #include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
 #include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
@@ -9,6 +11,8 @@
 
 #include <qindaqt/services/audio_client/audio_client.h>
 #include <qindaqt/services/audio_client/qt_audio_transport.h>
+#include <qindaqt/services/network_client/network_client.h>
+#include <qindaqt/services/network_qt_transport/qt_network_transport.h>
 #include <qindaqt/services/power_client/power_client.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
@@ -42,6 +46,28 @@ QString audioUnavailableText(const QString &reasonCode)
         return QStringLiteral("Audio is busy; try again in a moment.");
     }
     return QStringLiteral("Audio control is unavailable (%1).").arg(reasonCode);
+}
+
+QString micMuteUnavailableText(const QString &reasonCode)
+{
+    if (reasonCode == QLatin1String("no-default-input")) {
+        return QStringLiteral("No default microphone is selected.");
+    }
+    if (reasonCode == QLatin1String("mute-unsupported")) {
+        return QStringLiteral("The default microphone does not support mute.");
+    }
+    return QStringLiteral("Microphone control is unavailable (%1).").arg(reasonCode);
+}
+
+QString airplaneModeUnavailableText(const QString &reasonCode)
+{
+    if (reasonCode == QLatin1String("no-wifi-radio")) {
+        return QStringLiteral("No Wi-Fi radio was reported.");
+    }
+    if (reasonCode == QLatin1String("no-snapshot")) {
+        return QStringLiteral("Network state is not available yet.");
+    }
+    return QStringLiteral("Airplane mode is unavailable (%1).").arg(reasonCode);
 }
 
 } // namespace
@@ -104,6 +130,56 @@ int main(int argc, char *argv[])
                              QStringLiteral("audio-volume-muted"));
                      });
 
+    QindaQt::Session::DesktopControls::MicMuteKeyController micMuteController(audioClient);
+    QObject::connect(
+        &micMuteController,
+        &QindaQt::Session::DesktopControls::MicMuteKeyController::micMuteFeedbackRequested,
+        &notifier, [&notifier](bool muted) {
+            notifier.showNotice(
+                QStringLiteral("Microphone"),
+                muted ? QStringLiteral("Microphone muted") : QStringLiteral("Microphone unmuted"),
+                muted ? QStringLiteral("microphone-sensitivity-muted")
+                     : QStringLiteral("microphone-sensitivity-high"));
+        });
+    QObject::connect(
+        &micMuteController,
+        &QindaQt::Session::DesktopControls::MicMuteKeyController::micMuteUnavailable,
+        &notifier, [&notifier](const QString &reasonCode) {
+            notifier.showNotice(QStringLiteral("Microphone"),
+                                micMuteUnavailableText(reasonCode),
+                                QStringLiteral("microphone-sensitivity-muted"));
+        });
+
+    QindaQt::Network::Client::QtNetworkTransport networkTransport(sessionBus);
+    QindaQt::Network::Client::NetworkClient networkClient(networkTransport);
+    QString networkError;
+    if (!networkClient.start(&networkError)) {
+        QTextStream(stderr) << "qindaqt-desktop-controls: network client failed: "
+                            << networkError << '\n';
+    }
+
+    QindaQt::Session::DesktopControls::AirplaneModeKeyController airplaneModeController(
+        networkClient);
+    QObject::connect(
+        &airplaneModeController,
+        &QindaQt::Session::DesktopControls::AirplaneModeKeyController::airplaneModeFeedbackRequested,
+        &notifier, [&notifier](bool airplaneModeOn) {
+            notifier.showNotice(
+                QStringLiteral("Airplane mode"),
+                airplaneModeOn ? QStringLiteral("Airplane mode on")
+                              : QStringLiteral("Airplane mode off"),
+                airplaneModeOn ? QStringLiteral("airplane-mode")
+                              : QStringLiteral("network-wireless"));
+        });
+    QObject::connect(
+        &airplaneModeController,
+        &QindaQt::Session::DesktopControls::AirplaneModeKeyController::airplaneModeUnavailable,
+        &notifier, [&notifier](const QString &reasonCode) {
+            notifier.showNotice(QStringLiteral("Airplane mode"),
+                                airplaneModeUnavailableText(reasonCode),
+                                QStringLiteral("airplane-mode"));
+        });
+
     QindaQt::Session::DesktopControls::KGlobalAccelRegistrar registrar;
     QindaQt::Session::DesktopControls::DesktopShortcutSet shortcuts(
         registrar,
@@ -114,6 +190,9 @@ int main(int argc, char *argv[])
             .brightnessUp = {},
             .brightnessDown = {},
             .takeScreenshot = {},
+            .toggleMicMute = [&micMuteController] { micMuteController.toggleMicMute(); },
+            .toggleAirplaneMode =
+                [&airplaneModeController] { airplaneModeController.toggleAirplaneMode(); },
         },
         &application,
         QindaQt::Session::DesktopControls::DesktopShortcutRegistrationOptions{

@@ -21,6 +21,30 @@ set_tests_properties(qindaqt.session-desktop-controls-volume-keys PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "session;session-desktop-controls;model")
 
+qt_add_executable(qindaqt_mic_mute_key_controller_tests
+    tst_mic_mute_key_controller.cpp fake_audio_transport.h)
+target_link_libraries(qindaqt_mic_mute_key_controller_tests
+    PRIVATE qindaqt_desktop_controls Qt6::Test)
+qindaqt_enable_warnings(qindaqt_mic_mute_key_controller_tests)
+add_test(NAME qindaqt.session-desktop-controls-mic-mute-key
+    COMMAND qindaqt_mic_mute_key_controller_tests)
+set_tests_properties(qindaqt.session-desktop-controls-mic-mute-key PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "session;session-desktop-controls;model")
+
+qt_add_executable(qindaqt_airplane_mode_key_controller_tests
+    tst_airplane_mode_key_controller.cpp)
+target_include_directories(qindaqt_airplane_mode_key_controller_tests
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../services/network_protocol")
+target_link_libraries(qindaqt_airplane_mode_key_controller_tests
+    PRIVATE qindaqt_desktop_controls QindaQt::NetworkClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_airplane_mode_key_controller_tests)
+add_test(NAME qindaqt.session-desktop-controls-airplane-mode-key
+    COMMAND qindaqt_airplane_mode_key_controller_tests)
+set_tests_properties(qindaqt.session-desktop-controls-airplane-mode-key PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "session;session-desktop-controls;model")
+
 qt_add_executable(qindaqt_brightness_key_controller_tests
     tst_brightness_key_controller.cpp)
 target_link_libraries(qindaqt_brightness_key_controller_tests

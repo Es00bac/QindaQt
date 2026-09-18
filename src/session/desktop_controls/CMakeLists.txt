@@ -8,12 +8,14 @@ add_library(QindaQt::DesktopControls ALIAS qindaqt_desktop_controls)
 target_sources(
     qindaqt_desktop_controls
     PRIVATE
+        src/airplane_mode_key_controller.cpp
         src/battery_notification_policy.cpp
         src/brightness_key_controller.cpp
         src/desktop_shortcut_set.cpp
         src/freedesktop_feedback_notifier.cpp
         src/idle_display_preferences.cpp
         src/idle_display_policy.cpp
+        src/mic_mute_key_controller.cpp
         src/powerdevil_brightness_feedback_observer.cpp
         src/powerdevil_idle_preferences_binding.cpp
         src/screenshot_launcher.cpp
@@ -23,6 +25,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/session/desktop_controls/airplane_mode_key_controller.h
             include/qindaqt/session/desktop_controls/battery_notification_policy.h
             include/qindaqt/session/desktop_controls/brightness_key_controller.h
             include/qindaqt/session/desktop_controls/desktop_shortcut_set.h
@@ -31,6 +34,7 @@ target_sources(
             include/qindaqt/session/desktop_controls/idle_display_preferences.h
             include/qindaqt/session/desktop_controls/idle_display_policy.h
             include/qindaqt/session/desktop_controls/idle_tracker.h
+            include/qindaqt/session/desktop_controls/mic_mute_key_controller.h
             include/qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h
             include/qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h
             include/qindaqt/session/desktop_controls/screenshot_launcher.h
@@ -42,6 +46,7 @@ target_link_libraries(
     qindaqt_desktop_controls
     PUBLIC
         QindaQt::AudioClient
+        QindaQt::NetworkClient
         QindaQt::PowerClient
         QindaQt::PowerService
         QindaQt::PowerDevilIdle
@@ -99,6 +104,8 @@ if(TARGET KF6::GlobalAccel AND TARGET QindaQt::PowerDevilIdle)
             QindaQt::DesktopControls
             QindaQt::DesktopControlsProduction
             QindaQt::AudioClient
+            QindaQt::NetworkClient
+            QindaQt::NetworkQtTransport
             QindaQt::PowerService
             QindaQt::SettingsClient
             Qt6::Core
