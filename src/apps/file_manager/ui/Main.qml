@@ -22,6 +22,9 @@ ApplicationWindow {
     required property var applicationsController
     required property var networkLocationsController
     required property var transferQueueController
+    required property var preferencesController
+    required property var discoveryController
+    required property var mountManager
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
@@ -145,8 +148,10 @@ ApplicationWindow {
                 return
             } else if (actionId === "network.connect") {
                 root.networkMode = true
-                connectToServerDialog.prepare()
-                connectToServerDialog.open()
+                windowServices.openConnectDialog("")
+                return
+            } else if (actionId === "app.preferences") {
+                windowServices.openPreferences()
                 return
             } else if (actionId === "go.back") {
                 navigation.goBack()
@@ -233,48 +238,9 @@ ApplicationWindow {
 
     // In-window menu authority, hidden when the global-menu export claims the
     // window (composeFileManagerMenuExport flips inWindowMenuVisible).
-    menuBar: MenuBar {
-        id: exportedMenuBar
-        objectName: "appShellMenuBar"
+    menuBar: ExportedMenuBar {
+        coordinator: root.coordinator
         visible: root.inWindowMenuVisible
-
-        Instantiator {
-            model: root.coordinator.menus
-
-            delegate: Menu {
-                id: exportedMenu
-                required property var modelData
-                title: modelData.label
-
-                Instantiator {
-                    model: exportedMenu.modelData.actions
-
-                    delegate: Action {
-                        required property var modelData
-                        text: modelData.label
-                        enabled: modelData.enabled
-                        checkable: modelData.checkable
-                        checked: modelData.checked
-                        shortcut: modelData.shortcut
-                        onTriggered: root.coordinator.activateAction(modelData.id)
-                    }
-
-                    onObjectAdded: function(index, object) {
-                        exportedMenu.insertAction(index, object)
-                    }
-                    onObjectRemoved: function(index, object) {
-                        exportedMenu.removeAction(object)
-                    }
-                }
-            }
-
-            onObjectAdded: function(index, object) {
-                exportedMenuBar.insertMenu(index, object)
-            }
-            onObjectRemoved: function(index, object) {
-                exportedMenuBar.removeMenu(object)
-            }
-        }
     }
 
     // Degraded AppShell integrations remain usable; keep the notice's title
@@ -390,8 +356,10 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 networkLocationsController: root.networkLocationsController
+                discoveryController: root.discoveryController
                 onOpenRequested: (url) => root.navigationController.navigateTo(url)
                 onConnectRequested: root.coordinator.activateAction("network.connect")
+                onSaveRequested: (url) => windowServices.openConnectDialog(url)
             }
         }
 
@@ -426,6 +394,7 @@ ApplicationWindow {
         navigationController: root.navigationController
         mutationController: root.mutationController
         transferQueueController: root.transferQueueController
+        confirmTrash: root.preferencesController.confirmTrash
     }
 
     PropertiesDialog {
@@ -434,9 +403,13 @@ ApplicationWindow {
         controller: root.propertiesController
     }
 
-    ConnectToServerDialog {
-        id: connectToServerDialog
+    WindowServices {
+        id: windowServices
+        anchors.fill: parent
+        navigationController: root.navigationController
         networkLocationsController: root.networkLocationsController
-        onSaved: (url) => root.navigationController.navigateTo(url)
+        preferencesController: root.preferencesController
+        discoveryController: root.discoveryController
+        mountManager: root.mountManager
     }
 }

@@ -10,9 +10,7 @@
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
 #include "model/search_controller.h"
-#include "network/network_locations_controller.h"
-#include "network/network_locations_store.h"
-#include "network/transfer_queue_controller.h"
+#include "window_fixtures.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 #include "preview/preview_provider.h"
@@ -33,25 +31,6 @@
 #include <qindaqt/app_shell/application_coordinator.h>
 
 using namespace QindaQt::Apps::FileManager;
-
-namespace {
-
-// The two S6 network controllers every window harness in this file needs.
-// None of these rows transfers anything, so the queue gets no worker; the
-// saved-location inventory lives in the row's own temporary directory.
-struct NetworkFixtures final {
-  explicit NetworkFixtures(const QString &stateDirectory)
-      : locations(std::make_unique<NetworkLocationsStore>(stateDirectory)),
-        transfers(nullptr) {}
-
-  [[nodiscard]] QObject *locationsObject() { return &locations; }
-  [[nodiscard]] QObject *transfersObject() { return &transfers; }
-
-  NetworkLocationsController locations;
-  TransferQueueController transfers;
-};
-
-} // namespace
 
 class BrowsingUiTests final : public QObject {
   Q_OBJECT
@@ -94,7 +73,7 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   EntryPropertiesController properties;
   SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
-  NetworkFixtures network(temporary.filePath("state"));
+  Test::WindowSupportControllers support(temporary.path());
   ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
@@ -110,7 +89,7 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   engine.addImageProvider("previews", previews);
   engine.addImageProvider("theme-icons", new ThemeIconProvider());
   previews->setGeneration(navigation.listingGeneration());
-  engine.setInitialProperties({
+  QVariantMap initialProperties{
       {"navigationController", QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {"mutationController", QVariant::fromValue(static_cast<QObject *>(&mutation))},
       {"clipboardController", QVariant::fromValue(static_cast<QObject *>(&clipboard))},
@@ -118,9 +97,9 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
       {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
       {"applicationsController", QVariant::fromValue(static_cast<QObject *>(&applications))},
-      {"networkLocationsController", QVariant::fromValue(network.locationsObject())},
-      {"transferQueueController", QVariant::fromValue(network.transfersObject())},
-      {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
+      {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}};
+  support.insertInto(initialProperties);
+  engine.setInitialProperties(initialProperties);
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   QVERIFY(!engine.rootObjects().isEmpty());
   auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
@@ -239,7 +218,7 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
   EntryPropertiesController properties;
   SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
-  NetworkFixtures network(temporary.filePath("state"));
+  Test::WindowSupportControllers support(temporary.path());
   ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
@@ -252,7 +231,7 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
   engine.addImageProvider("previews", previews);
   engine.addImageProvider("theme-icons", new ThemeIconProvider());
   previews->setGeneration(navigation.listingGeneration());
-  engine.setInitialProperties({
+  QVariantMap initialProperties{
       {"navigationController", QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {"mutationController", QVariant::fromValue(static_cast<QObject *>(&mutation))},
       {"clipboardController", QVariant::fromValue(static_cast<QObject *>(&clipboard))},
@@ -260,9 +239,9 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
       {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
       {"applicationsController", QVariant::fromValue(static_cast<QObject *>(&applications))},
-      {"networkLocationsController", QVariant::fromValue(network.locationsObject())},
-      {"transferQueueController", QVariant::fromValue(network.transfersObject())},
-      {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
+      {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}};
+  support.insertInto(initialProperties);
+  engine.setInitialProperties(initialProperties);
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   QVERIFY(!engine.rootObjects().isEmpty());
   auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
@@ -514,7 +493,7 @@ void BrowsingUiTests::contextMenuDisablesDuringMutation() {
   EntryPropertiesController properties;
   SearchController search;
   PlacesController places(std::make_unique<BookmarksStore>(temporary.filePath("state")));
-  NetworkFixtures network(temporary.filePath("state"));
+  Test::WindowSupportControllers support(temporary.path());
   ApplicationsController applications(QStringList{});
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   QVERIFY(coordinator.replaceActions(fileManagerActionCatalog()).ok());
@@ -544,7 +523,7 @@ void BrowsingUiTests::contextMenuDisablesDuringMutation() {
   engine.addImageProvider("previews", previews);
   engine.addImageProvider("theme-icons", new ThemeIconProvider());
   previews->setGeneration(navigation.listingGeneration());
-  engine.setInitialProperties({
+  QVariantMap initialProperties{
       {"navigationController", QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {"mutationController", QVariant::fromValue(static_cast<QObject *>(&mutation))},
       {"clipboardController", QVariant::fromValue(static_cast<QObject *>(&clipboard))},
@@ -552,9 +531,9 @@ void BrowsingUiTests::contextMenuDisablesDuringMutation() {
       {"searchController", QVariant::fromValue(static_cast<QObject *>(&search))},
       {"placesController", QVariant::fromValue(static_cast<QObject *>(&places))},
       {"applicationsController", QVariant::fromValue(static_cast<QObject *>(&applications))},
-      {"networkLocationsController", QVariant::fromValue(network.locationsObject())},
-      {"transferQueueController", QVariant::fromValue(network.transfersObject())},
-      {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
+      {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}};
+  support.insertInto(initialProperties);
+  engine.setInitialProperties(initialProperties);
   engine.load(QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   QVERIFY(!engine.rootObjects().isEmpty());
   auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());

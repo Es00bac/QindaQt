@@ -11,6 +11,8 @@
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
+#include "model/preferences_controller.h"
+#include "model/preferences_store.h"
 #include "model/search_controller.h"
 #include "network/kio_network_directory_backend.h"
 #include "network/kio_fuse_remote_file_opener.h"
@@ -18,7 +20,11 @@
 #include "network/kio_remote_folder_creator.h"
 #include "network/kio_remote_mover.h"
 #include "network/kio_remote_renamer.h"
+#include "network/avahi_service_discovery.h"
+#include "network/discovery_controller.h"
 #include "network/kio_transfer_worker.h"
+#include "network/network_mount_manager.h"
+#include "network/systemd_user_units.h"
 #include "network/network_locations_controller.h"
 #include "network/network_locations_store.h"
 #include "network/transfer_queue_controller.h"
@@ -39,6 +45,7 @@
 #include <QFile>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QDBusConnection>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QVariant>
@@ -152,11 +159,19 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
   return roots;
 }
 
-// The one app-local state root: bookmarks and saved network locations are
-// separate schemas in the same $XDG_STATE_HOME directory (ADR-0090/0194).
+// The one app-local state root: bookmarks, saved network locations and
+// preferences are separate schemas in the same $XDG_STATE_HOME directory
+// (ADR-0090/0194/0198).
 [[nodiscard]] QString fileManagerStateDirectory() {
   return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation))
       .filePath(QStringLiteral("qindaqt-file-manager"));
+}
+
+// ADR-0199: the user's own systemd unit directory. Nothing is written there
+// unless a saved location asks to be mounted at login.
+[[nodiscard]] QString systemdUserUnitDirectory() {
+  return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
+      .filePath(QStringLiteral("systemd/user"));
 }
 
 // A search result set only becomes the visible listing while the window still
@@ -205,13 +220,70 @@ void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &sear
       QStringLiteral("connectSchemeBox"), QStringLiteral("connectHostField"),
       QStringLiteral("connectPathField"), QStringLiteral("connectNameField"),
       QStringLiteral("transferQueueBanner"),
-      QStringLiteral("transferRefusalBanner")};
+      QStringLiteral("transferRefusalBanner"),
+      // ADR-0197/0198: the nearby section and the preferences window are part
+      // of the installed package's contract too.
+      QStringLiteral("nearbyServersSection"), QStringLiteral("preferencesWindow"),
+      QStringLiteral("preferencesTabBar"), QStringLiteral("preferencesGeneralPage"),
+      QStringLiteral("preferencesViewsPage"),
+      QStringLiteral("preferencesNetworkPage"),
+      QStringLiteral("preferencesTrashPage")};
   for (const QString &objectName : requiredObjects) {
     if (!root->findChild<QObject *>(objectName)) {
       return objectName;
     }
   }
   return {};
+}
+
+// The five owners the network and preference surfaces need, composed
+// together so the composition root stays within the function-length budget
+// and so their wiring -- units follow the saved locations, discovery follows
+// the preference -- lives in one reviewable place.
+struct NetworkComposition final {
+  std::unique_ptr<QindaQt::Apps::FileManager::NetworkLocationsController> locations;
+  std::unique_ptr<QindaQt::Apps::FileManager::TransferQueueController> transfers;
+  std::unique_ptr<QindaQt::Apps::FileManager::PreferencesController> preferences;
+  std::unique_ptr<QindaQt::Apps::FileManager::DiscoveryController> discovery;
+  std::unique_ptr<QindaQt::Apps::FileManager::NetworkMountManager> mounts;
+};
+
+[[nodiscard]] NetworkComposition composeNetworkSurfaces(const QString &stateDirectory) {
+  NetworkComposition composed;
+  composed.locations =
+      std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsController>(
+          std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsStore>(
+              stateDirectory));
+  composed.transfers =
+      std::make_unique<QindaQt::Apps::FileManager::TransferQueueController>(
+          std::make_unique<QindaQt::Apps::FileManager::KioTransferWorker>());
+  composed.preferences =
+      std::make_unique<QindaQt::Apps::FileManager::PreferencesController>(
+          std::make_unique<QindaQt::Apps::FileManager::PreferencesStore>(
+              stateDirectory));
+  // ADR-0197: Avahi lives on the system bus. Browsing starts only when the
+  // preference says so, so the controller is created stopped.
+  composed.discovery =
+      std::make_unique<QindaQt::Apps::FileManager::DiscoveryController>(
+          std::make_unique<QindaQt::Apps::FileManager::AvahiServiceDiscovery>(
+              QDBusConnection::systemBus()));
+  composed.mounts =
+      std::make_unique<QindaQt::Apps::FileManager::NetworkMountManager>(
+          systemdUserUnitDirectory(), QDir::homePath(),
+          std::make_unique<QindaQt::Apps::FileManager::SystemctlUserUnits>());
+  // ADR-0199: the units on disk follow the saved locations, here and on every
+  // change. Nothing is written unless a location asked for a mount.
+  const auto synchronizeMounts = [manager = composed.mounts.get(),
+                                  locations = composed.locations.get()] {
+    manager->synchronize(locations->locationValues());
+  };
+  QObject::connect(
+      composed.locations.get(),
+      &QindaQt::Apps::FileManager::NetworkLocationsController::locationsChanged,
+      composed.mounts.get(), synchronizeMounts);
+  synchronizeMounts();
+  composed.discovery->setEnabled(composed.preferences->discoverNearbyServers());
+  return composed;
 }
 
 // Runs whichever --check-* probe mode was requested. Returns the process
@@ -357,15 +429,7 @@ int main(int argc, char **argv) {
   auto placesController =
       std::make_unique<QindaQt::Apps::FileManager::PlacesController>(
           std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(stateDirectory));
-  // ADR-0194/0195: saved network locations and the transfer queue are owned
-  // here, beside the places store, and are handed to QML as plain models.
-  auto networkLocationsController =
-      std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsController>(
-          std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsStore>(
-              stateDirectory));
-  auto transferQueueController =
-      std::make_unique<QindaQt::Apps::FileManager::TransferQueueController>(
-          std::make_unique<QindaQt::Apps::FileManager::KioTransferWorker>());
+  NetworkComposition network = composeNetworkSurfaces(stateDirectory);
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
   // The first synchronous application scan happens here so the browser opens
   // ready.
@@ -399,9 +463,15 @@ int main(int argc, char **argv) {
        {QStringLiteral("applicationsController"),
         QVariant::fromValue(static_cast<QObject *>(applicationsController.get()))},
        {QStringLiteral("networkLocationsController"),
-        QVariant::fromValue(static_cast<QObject *>(networkLocationsController.get()))},
+        QVariant::fromValue(static_cast<QObject *>(network.locations.get()))},
        {QStringLiteral("transferQueueController"),
-        QVariant::fromValue(static_cast<QObject *>(transferQueueController.get()))},
+        QVariant::fromValue(static_cast<QObject *>(network.transfers.get()))},
+       {QStringLiteral("preferencesController"),
+        QVariant::fromValue(static_cast<QObject *>(network.preferences.get()))},
+       {QStringLiteral("discoveryController"),
+        QVariant::fromValue(static_cast<QObject *>(network.discovery.get()))},
+       {QStringLiteral("mountManager"),
+        QVariant::fromValue(static_cast<QObject *>(network.mounts.get()))},
        {QStringLiteral("chooserMode"), parser.isSet(QStringLiteral("choose-application"))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});

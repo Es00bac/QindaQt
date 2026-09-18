@@ -7,9 +7,7 @@
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
-#include "network/network_locations_controller.h"
-#include "network/network_locations_store.h"
-#include "network/transfer_queue_controller.h"
+#include "window_fixtures.h"
 #include "model/search_controller.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
@@ -75,10 +73,8 @@ int main(int argc, char **argv) {
   PlacesController places(
       std::make_unique<BookmarksStore>(temporary.filePath("state")));
   ApplicationsController applications(QStringList{});
-  NetworkLocationsController networkLocations(
-      std::make_unique<NetworkLocationsStore>(temporary.filePath("state")));
-  // The probe renders; it never transfers, so the queue gets no worker.
-  TransferQueueController transfers(nullptr);
+  // The probe renders; it never transfers, discovers, or mounts.
+  Test::WindowSupportControllers support(temporary.path());
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   coordinator.setApplicationName("QindaQt Files");
   coordinator.setWindowTitle("Little projects");
@@ -97,7 +93,7 @@ int main(int argc, char **argv) {
   navigation.navigateTo(folder);
   navigation.setViewMode(qEnvironmentVariable("QINDAQT_FILES_PROBE_VIEW", "grid"));
   navigation.zoomBy(qEnvironmentVariableIntValue("QINDAQT_FILES_PROBE_ZOOM_STEPS"));
-  engine.setInitialProperties(
+  QVariantMap initialProperties{
       {{"navigationController",
         QVariant::fromValue(static_cast<QObject *>(&navigation))},
        {"mutationController",
@@ -112,12 +108,10 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(&places))},
        {"applicationsController",
         QVariant::fromValue(static_cast<QObject *>(&applications))},
-       {"networkLocationsController",
-        QVariant::fromValue(static_cast<QObject *>(&networkLocations))},
-       {"transferQueueController",
-        QVariant::fromValue(static_cast<QObject *>(&transfers))},
        {"coordinator",
-        QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
+        QVariant::fromValue(static_cast<QObject *>(&coordinator))}}};
+  support.insertInto(initialProperties);
+  engine.setInitialProperties(initialProperties);
   engine.load(
       QUrl::fromLocalFile(sourceRoot + "/src/apps/file_manager/ui/Main.qml"));
   if (engine.rootObjects().isEmpty())

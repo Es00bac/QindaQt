@@ -7,6 +7,7 @@
 #include <QStringList>
 
 #include <cerrno>
+#include <cstring>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -162,6 +163,42 @@ StateFile::WriteResult StateFile::write(const QByteArray &bytes) const {
   }
   ::close(directoryDescriptor);
   return {};
+}
+
+StateFile::WriteResult StateFile::remove() const {
+  int directoryError = 0;
+  const int directoryDescriptor =
+      openStateDirectory(m_directory, false, &directoryError);
+  if (directoryDescriptor < 0) {
+    // Nothing to remove when the root is not even there.
+    return directoryError == ENOENT
+               ? WriteResult{}
+               : WriteResult{.error = Error::InvalidRoot, .systemDiagnostic = {}};
+  }
+  struct stat status {};
+  if (::fstatat(directoryDescriptor, m_fileName.constData(), &status,
+                AT_SYMLINK_NOFOLLOW) != 0) {
+    const int statError = errno;
+    ::close(directoryDescriptor);
+    return statError == ENOENT
+               ? WriteResult{}
+               : WriteResult{.error = Error::InvalidRoot, .systemDiagnostic = {}};
+  }
+  // AGENT-GUARD: only ever unlink a regular file that the O_NOFOLLOW walk
+  // proved is inside the injected root. A symlink or a directory here is
+  // someone else's, and is left exactly as it is.
+  if (!S_ISREG(status.st_mode)) {
+    ::close(directoryDescriptor);
+    return {.error = Error::NotRegular, .systemDiagnostic = {}};
+  }
+  const bool removed = ::unlinkat(directoryDescriptor, m_fileName.constData(), 0) == 0;
+  const int unlinkError = errno;
+  ::close(directoryDescriptor);
+  if (removed || unlinkError == ENOENT) {
+    return {};
+  }
+  return {.error = Error::WriteFailed,
+          .systemDiagnostic = QString::fromLocal8Bit(::strerror(unlinkError))};
 }
 
 } // namespace QindaQt::Apps::FileManager

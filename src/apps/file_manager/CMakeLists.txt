@@ -56,9 +56,14 @@ target_sources(
         model/navigation_history.cpp
         model/navigation_status.h
         model/places_controller.cpp
+        model/preferences.cpp
+        model/preferences_controller.cpp
+        model/preferences_store.cpp
         model/search_controller.cpp
         model/state_file.cpp
+        network/avahi_service_discovery.cpp
         network/connect_request.cpp
+        network/discovery_controller.cpp
         network/kio_network_directory_backend.cpp
         network/kio_fuse_remote_file_opener.cpp
         network/kio_remote_file_opener.cpp
@@ -67,14 +72,17 @@ target_sources(
         network/kio_remote_mover.cpp
         network/kio_remote_renamer.cpp
         network/kio_transfer_worker.cpp
+        network/mount_unit.cpp
         network/network_location.cpp
         network/network_locations_controller.cpp
         network/network_locations_store.cpp
+        network/network_mount_manager.cpp
         network/remote_copy_to_controller.cpp
         network/remote_create_folder_controller.cpp
         network/remote_move_to_controller.cpp
         network/remote_open_controller.cpp
         network/remote_rename_controller.cpp
+        network/systemd_user_units.cpp
         network/transfer_queue_controller.cpp
         network/transfer_router.cpp
         network/transfer_types.cpp
@@ -106,9 +114,14 @@ target_sources(
         model/workspace_chooser_client.h
         model/navigation_history.h
         model/places_controller.h
+        model/preferences.h
+        model/preferences_controller.h
+        model/preferences_store.h
         model/search_controller.h
         model/state_file.h
+        network/avahi_service_discovery.h
         network/connect_request.h
+        network/discovery_controller.h
         network/kio_network_directory_backend.h
         network/kio_fuse_remote_file_opener.h
         network/kio_remote_file_opener.h
@@ -117,10 +130,12 @@ target_sources(
         network/kio_remote_mover.h
         network/kio_remote_renamer.h
         network/kio_transfer_worker.h
+        network/mount_unit.h
         network/network_directory_backend.h
         network/network_location.h
         network/network_locations_controller.h
         network/network_locations_store.h
+        network/network_mount_manager.h
         network/remote_copy_to_controller.h
         network/remote_copier.h
         network/remote_create_folder_controller.h
@@ -131,6 +146,8 @@ target_sources(
         network/remote_open_controller.h
         network/remote_rename_controller.h
         network/remote_renamer.h
+        network/service_discovery.h
+        network/systemd_user_units.h
         network/transfer_queue_controller.h
         network/transfer_router.h
         network/transfer_types.h
@@ -200,7 +217,17 @@ qt_add_qml_module(
         ui/ApplicationsView.qml
         ui/MutationDialogs.qml
         ui/StatusBanners.qml
+        ui/ExportedMenuBar.qml
+        ui/PresentationDefaults.qml
+        ui/WindowServices.qml
         ui/NetworkHub.qml
+        ui/NearbyServersSection.qml
+        ui/NearbyServerRow.qml
+        ui/PreferencesWindow.qml
+        ui/PreferencesGeneralPage.qml
+        ui/PreferencesViewsPage.qml
+        ui/PreferencesNetworkPage.qml
+        ui/PreferencesTrashPage.qml
         ui/NetworkLocationCard.qml
         ui/ConnectToServerDialog.qml
         ui/TransferQueueBanner.qml
