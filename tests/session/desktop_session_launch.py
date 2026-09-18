@@ -208,10 +208,21 @@ def _start_fractional_parent(
     wait_for_path(parent_bus_path, state, 5)
     # AGENT-GUARD: The raw parent owns this namespace-private bus, never the
     # QindaQt child or host bus, so it cannot claim the child's global actions.
+    # AGENT-GUARD: the raw parent must stay raw. The system kwin_wayland
+    # auto-loads whatever QindaQt compositor plugin is installed on the host,
+    # and that plugin manages the child compositor's nested window like any
+    # toplevel (it came out 1278x731 at scale 1 instead of the scenario's
+    # logical size, failing every fractional-scale matrix row on 2026-09-18).
+    # A private config home switches the plugin off for the parent only; the
+    # child keeps the sandbox's XDG_CONFIG_HOME and the build-tree plugin.
+    parent_config = Path(environment["XDG_CONFIG_HOME"]).parent / ".config-parent"
+    parent_config.mkdir(parents=True, exist_ok=True)
+    (parent_config / "kwinrc").write_text("[Plugins]\nqindaqt_compositorEnabled=false\n")
     parent_environment.update({
         "DBUS_SESSION_BUS_ADDRESS": f"unix:path={parent_bus_path}",
         "QT_NO_XDG_DESKTOP_PORTAL": "1",
         "GTK_USE_PORTAL": "0",
+        "XDG_CONFIG_HOME": str(parent_config),
     })
     parent = spawn_logged_process(
         "parent-compositor",
