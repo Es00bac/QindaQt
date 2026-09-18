@@ -1,4 +1,4 @@
-# ADR-0191: the KDE portal drop-in must not try to clear `BusName=`
+# ADR-0192: the KDE portal drop-in must not try to clear `BusName=`
 
 - **Status:** Accepted
 - **Date:** 2026-09-18

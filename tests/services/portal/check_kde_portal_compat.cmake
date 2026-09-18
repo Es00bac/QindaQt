@@ -47,7 +47,7 @@ if(NOT dropin MATCHES "[\r\n]Type=exec[\r\n]")
         "KDE portal drop-in must override Type=dbus so a private-bus session "
         "cannot have systemd terminate the identity-carrying backend")
 endif()
-# ADR-0191 corrects ADR-0170: systemd 261 does not accept a bare `BusName=`
+# ADR-0192 corrects ADR-0170: systemd 261 does not accept a bare `BusName=`
 # as "clear the inherited value" for this directive (unlike list-type
 # settings such as ExecStart=). It logs "Invalid bus name, ignoring" on
 # every unit (re)start and the value stays whatever the packaged unit set,
@@ -58,7 +58,7 @@ if(dropin MATCHES "[\r\n]BusName=[\r\n]")
     message(FATAL_ERROR
         "KDE portal drop-in must not declare an empty BusName=: systemd "
         "does not treat that as clearing the inherited value, it logs "
-        "'Invalid bus name, ignoring' on every start instead (ADR-0191)")
+        "'Invalid bus name, ignoring' on every start instead (ADR-0192)")
 endif()
 
 message(STATUS "KDE portal compatibility activation contract is valid")

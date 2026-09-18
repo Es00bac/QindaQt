@@ -47,26 +47,31 @@ cycle itself, which only a **(user)** pass on the real hardware can prove.
   UPower's configured thresholds on `qinda-top`
   (`/etc/UPower/UPower.conf`): `PercentageLow=20.0`, `PercentageCritical=5.0`,
   `PercentageAction=2.0`, matching `PLAN.md`'s 20%/5%.
-- **AC-vs-battery automatic profile switching: open, not implemented.**
-  `PLAN.md` describes this as "PowerDevil per-group setting", but the
-  installed `powerdevil_powerprofileaction.so` (`strings`-inspected) exposes
-  only `configuredProfile`/`currentProfile`/`setProfile`/`holdProfile` — a
-  thin wrapper over `org.freedesktop.UPower.PowerProfiles` with no
-  AC/Battery-scoped key anywhere in the binary. Live: `configuredProfile`
-  is empty and `currentProfile` is `performance` while the laptop is
-  discharging on battery at 82%, confirming PowerDevil is not switching
-  profiles by source today. Building this is a QindaQt policy (new Settings1
-  preference for the AC/Battery profile choice, a session policy watching
-  `PowerClient`'s `source.acPresent`/`onBattery` edge, a Settings row to
-  configure it, and an applet quick switch) — a vertical slice on the order
-  of the battery-notification one above, deliberately left for a follow-up
-  pass rather than shipped half-built (a Settings1 schema addition with no
-  route to configure it is worse than not adding it).
+- **AC-vs-battery automatic profile switching: PowerDevil owns the key, and
+  wiring it is lane O8-b.** An earlier version of this page said no
+  AC/Battery-scoped key existed anywhere in PowerDevil. That was wrong: it was
+  concluded from `strings` on `powerdevil_powerprofileaction.so`, which is a
+  thin wrapper over `org.freedesktop.UPower.PowerProfiles` and genuinely has no
+  such key — but the setting lives elsewhere.
+  `kde-plasma/powerdevil-6.6.6-r1` carries it in
+  `kcm_powerdevilprofilesconfig.so` and the `ProfileSettings`
+  KConfigSkeleton (`PowerProfileChanged()`, `isPowerProfileImmutable`,
+  a `PowerProfileModel`), and it is stored in `powerdevilrc` as
+  `[AC][Performance] PowerProfile=`, `[Battery][Performance] …` and
+  `[LowBattery][Performance] …`, taking the names
+  power-profiles-daemon reports (`performance`, `balanced`, `power-saver`; all
+  three exist on `qinda-top`). PowerDevil applies it on a power-source change,
+  so this is a key to write the way
+  [powerdevil-idle](../architecture/powerdevil-idle.md) writes the Display keys
+  — reparse before write, bounded values, the same adoption path — not a policy
+  QindaQt has to build. Live observation stands: `configuredProfile` is empty
+  and `currentProfile` was `performance` while discharging at 82%, which is
+  what an unwritten key looks like.
 
 ## Row 11 — Journal hygiene
 
 - **Portal drop-in `BusName=` warning: fixed.** See
-  [ADR-0191](../adr/0191-portal-dropin-busname-cannot-be-cleared.md).
+  [ADR-0192](../adr/0192-portal-dropin-busname-cannot-be-cleared.md).
 - **All QindaQt D-Bus services under the user manager:** confirmed —
   `systemctl --user list-units 'qindaqt*'` shows all six (`audio`,
   `bluetooth`, `clipboard-host`, `display`, `network`, `power`) `loaded
@@ -74,24 +79,24 @@ cycle itself, which only a **(user)** pass on the real hardware can prove.
   [ADR-0170](../adr/0170-survive-a-private-session-bus-for-dbus-units.md)
   recorded for `qindaqt-clipboard-host`/`qindaqt-display-service` on
   2026-09-16 is not currently reproducing).
-- **Open finding, not fixed: early-session QindaQt coredumps.**
-  `journalctl --user -b -p warning` on `qinda-top` shows `systemd-coredump`
-  entries for `qindaqt_control`, `qindaqt_clipboa[rd]`, and
-  `qindaqt_status_*` clustered in two early-boot/early-session windows
-  (2026-09-16 21:32–23:01 and 2026-09-17 00:07–00:32), overlapping in time
-  with repeated `pipewire ... spa.dbus: Failed to connect to session bus:
-  ... no-session-bus: No such file or directory` lines — consistent with a
-  race where these processes start before the session's private D-Bus bus
-  (`SessionBusBootstrap`, ADR-0170) is fully up, though no causal link is
-  proven. No coredump has recurred in the most recent several hours
-  (`coredumpctl list --since '6 hours ago'` shows only unrelated `sdrangel`
-  and `office_quick` test crashes), and `coredumpctl list
-  xdg-desktop-portal-kde` / `qindaqt_control` return no retained dumps to
-  inspect further (rotated out). Reproducing or fixing this needs either a
-  fresh login cycle on the laptop (explicitly out of scope for an
-  implementer: "never touch the live desktop or the laptop session") or the
-  next natural session restart to be watched live. None of the three crashing
-  binaries fall under O8's leased paths
-  (`src/apps/settings/{input,power}`, `src/session/desktop_controls`,
-  `src/shell/power_applet`, notification policy, the portal drop-in); this
-  is flagged for the PM to route.
+- **Not a finding after all: those "QindaQt" coredumps are other lanes' test
+  binaries.** An earlier version of this page reported `qindaqt_control`,
+  `qindaqt_clipboa[rd]` and `qindaqt_status_*` coredumps in two early-session
+  windows and hypothesised a race against `SessionBusBootstrap` (ADR-0170).
+  The attribution was wrong and the hypothesis unsupported. `coredumpctl info`
+  on the retained dumps resolves the executables to
+  `…/work_space/smart_lights/build/dev/tests/…`: a deliberately-aborting
+  negative fixture (`qindaqt_controls_font_fixture_negative_tests`, six of the
+  eight), `qindaqt_status_notifier_applet_qml_tests`,
+  `qindaqt_clipboard_applet_qml_tests` and `qmltestrunner`. The journal's
+  15-character `comm` truncation is what made
+  `qindaqt_controls_font_fixture…` read as `qindaqt_control`. In the first
+  claimed window (2026-09-16 21:32–23:01) there are **zero** QindaQt coredumps
+  at all; the dumps there are `xdg-desktop-por` (three, at portal restarts) and
+  `ZCode`.
+
+  No installed QindaQt process has been observed to crash on this machine, so
+  row 11's "no QindaQt coredumps" half is in better shape than this page
+  claimed. What remains for row 11 is the repeated-warnings half, measured
+  against a fresh session. The PM's own probe of the current boot agrees: see
+  the counted warning list on the board.
