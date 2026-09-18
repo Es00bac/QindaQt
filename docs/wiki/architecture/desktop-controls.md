@@ -33,6 +33,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
+| Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
 | Polkit authentication UI | polkit daemon | optional supervisor child, distribution agent binary |
 
 Nothing here modifies the compositor, the Power1 v1 wire protocol, or the
@@ -60,6 +61,7 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `FreedesktopFeedbackNotifier` | one replaceable notification per feedback category, bounded text, fail-quiet on host loss |
 | `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
+| `BatteryNotificationPolicy` | edge-triggered low/critical/action battery notifications from `PowerClient::snapshotChanged`; see [Battery notifications](#battery-notifications) |
 
 The production process keeps `KGlobalAccelRegistrar` for volume and mute only.
 Spectacle owns the installed Print action, preserving its own user remapping and
@@ -79,6 +81,33 @@ client; the resident process reads it through the same seam. A transiently
 absent Settings1 owner keeps the documented default rather than silently
 disabling the policy. The screen-lock preference (`kscreenlockerrc` Daemon
 group) is untouched and independent.
+
+## Battery notifications
+
+`BatteryNotificationPolicy` connects to the resident `Power1` `PowerClient`
+(the same public client the Settings Power route and applet use) and reacts
+to `snapshot.composite.warning`, UPower's own `WarningLevel` for the
+coalesced system battery. QindaQt names no percentage thresholds itself —
+`WarningLevel` is already computed upstream from `UPower.conf`'s
+`PercentageLow`/`PercentageCritical`/`PercentageAction` (20/5/2 on
+`qinda-top`, confirmed live).
+
+- Fires **once per crossing** into `Low`, `Critical`, or `Action` (an
+  ordinal comparison against the last notified level), never once per
+  snapshot tick. A level at or below the last notified one is not a new
+  crossing.
+- A level below `Low` (charging, plugged in, or the battery becoming
+  temporarily unreported) resets the edge, so the next discharge into `Low`
+  notifies again.
+- `composite.present == false` (no battery at all, e.g. a desktop machine)
+  never notifies and keeps the edge reset.
+- Delivered through `FreedesktopFeedbackNotifier::showBattery`, its own
+  replaces-id category (never collides with the volume/brightness/notice
+  OSD popups): `expire_timeout = 0` (stays until dismissed, unlike the
+  1.2 s key-feedback flash) and the freedesktop `urgency` hint (`1` for
+  `Low`, `2`/critical for `Critical` and `Action`), so a notification host
+  or do-not-disturb policy does not auto-dismiss or hide a battery warning
+  the way it may a transient one.
 
 ## Inhibition and availability boundary
 
@@ -110,8 +139,15 @@ idle-preference mapping and PowerDevil binding coalescing/recovery/failure
 boundaries; the retained screenshot launcher helper against a fixture;
 notifier wire shape and replaces-id reuse against a private
 `dbus-run-session` fake; supervisor optional-child startup, one-restart budget,
-and skip-on-absence; and the Settings Power model and page behavior for the
-new section.
+and skip-on-absence; the Settings Power model and page behavior for the
+new section; and `BatteryNotificationPolicy`'s crossing-edge logic (fires
+once into Low, replaces with Critical and raises urgency, resets on recovery,
+never fires with no battery present) against a fake `PowerClient` transport
+and a private-bus notification fake. The live UPower thresholds cited above
+(`PercentageLow=20.0`, `PercentageCritical=5.0`, `PercentageAction=2.0`) were
+read from `/etc/UPower/UPower.conf` on `qinda-top` as a read-only `ssh`
+probe; no notification was triggered against the live session, and no
+package was installed to verify end-to-end delivery there.
 
 Focused rows use fixtures, fake transports, and private buses only. The separate
 `desktop.daily-controls.live` installed row accepts only a manager-granted private

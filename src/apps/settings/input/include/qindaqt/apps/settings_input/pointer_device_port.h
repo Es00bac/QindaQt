@@ -13,10 +13,18 @@ namespace QindaQt::Apps::SettingsInput {
 // AGENT-CONTRACT: `properties` holds only the KWin device properties this
 // route consumes, under their exact KWin names (camelCase, for example
 // "naturalScroll", "pointerAcceleration"). Capability and default properties
-// ride along under the KWin names "supportsNaturalScroll" and
-// "defaultNaturalScroll", so consumers can hide unsupported controls and
-// name defaults without a second transport round trip. Everything is a
-// plain bool/double/string; no transport types leak into this value type.
+// ride along under KWin's own names, which are not uniform: most are
+// "supports<Prop>" / "<prop>EnabledByDefault" (for example
+// "supportsNaturalScroll" / "naturalScrollEnabledByDefault"), but tap
+// capability has no boolean flag at all — it is the integer
+// "tapFingerCount" (0 = the device cannot tap), shared by tap-to-click and
+// tap-and-drag. Verified against the live org.kde.KWin.InputDevice
+// interface (qinda-top, event4); do not reintroduce a
+// "supportsTapToClick"/"supportsTapAndDrag"/"defaultTapToClick" name, KWin
+// has never exposed them and every row gated on them renders permanently
+// hidden. So consumers can hide unsupported controls and name defaults
+// without a second transport round trip. Everything is a plain
+// bool/double/int/string; no transport types leak into this value type.
 struct PointerDeviceSnapshot {
     QString deviceId; // authority object leaf, e.g. "event25"
     QString name;     // human-readable device name

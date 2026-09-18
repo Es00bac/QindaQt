@@ -86,7 +86,10 @@ PointerDeviceSnapshot touchpadSnapshot()
     snapshot.name = QStringLiteral("Fake Touchpad");
     snapshot.touchpad = true;
     snapshot.properties = QVariantMap{
-        {QStringLiteral("supportsTapToClick"), true},
+        // Real KWin reports tap capability as an integer finger count, not a
+        // boolean supports* flag (verified against the live qinda-top
+        // touchpad, event4: tapFingerCount == 3).
+        {QStringLiteral("tapFingerCount"), 3},
         {QStringLiteral("tapToClick"), true},
         {QStringLiteral("supportsDisableWhileTyping"), false},
     };
@@ -158,10 +161,22 @@ void PointerDevicesModelTest::selectionExposesAvailabilityTruth()
     model.refresh();
     // The first row is selected automatically.
     QVERIFY(model.selection() != nullptr);
-    // Supports flag true -> visible.
+    // tapFingerCount > 0 -> tap rows visible.
     QVERIFY(model.selection()->tapToClickAvailable());
+    QVERIFY(model.selection()->tapAndDragAvailable());
     // Supports flag false -> hidden even though a live value rode along.
     QVERIFY(!model.selection()->disableWhileTypingAvailable());
+
+    // A touchpad reporting tapFingerCount == 0 cannot tap at all.
+    PointerDeviceSnapshot noTap = touchpadSnapshot();
+    noTap.properties[QStringLiteral("tapFingerCount")] = 0;
+    port.scripted.clear();
+    port.scripted.append(noTap);
+    PointerDevicesModel noTapModel(port);
+    noTapModel.refresh();
+    QVERIFY(!noTapModel.selection()->tapToClickAvailable());
+    QVERIFY(!noTapModel.selection()->tapAndDragAvailable());
+
     // Touchpad-only rows are unavailable on a plain pointer.
     port.scripted.clear();
     port.scripted.append(mouseSnapshot());

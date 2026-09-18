@@ -22,6 +22,15 @@ double snapshotDouble(const QVariantMap &properties, const QString &name,
                                                : fallback;
 }
 
+// AGENT-GUARD: KWin's real InputDevice interface has no boolean
+// supportsTapToClick/supportsTapAndDrag property; tap capability is the
+// integer tapFingerCount (0 = the device cannot tap at all). Both tap-to-click
+// and tap-and-drag share this one capability signal.
+bool snapshotHasTapCapability(const QVariantMap &properties) {
+    const QVariant value = properties.value(QStringLiteral("tapFingerCount"));
+    return value.canConvert<int>() && value.toInt() > 0;
+}
+
 } // namespace
 
 PointerDeviceSelection::PointerDeviceSelection(const PointerDevicePort &port,
@@ -67,11 +76,9 @@ void PointerDeviceSelection::setSnapshot(
         m_properties, QStringLiteral("supportsMiddleEmulation"));
     m_middleEmulation =
         snapshotBool(m_properties, QStringLiteral("middleEmulation"));
-    m_tapToClickAvailable = m_touchpad && snapshotBool(
-        m_properties, QStringLiteral("supportsTapToClick"));
+    m_tapToClickAvailable = m_touchpad && snapshotHasTapCapability(m_properties);
     m_tapToClick = snapshotBool(m_properties, QStringLiteral("tapToClick"));
-    m_tapAndDragAvailable = m_touchpad && snapshotBool(
-        m_properties, QStringLiteral("supportsTapAndDrag"));
+    m_tapAndDragAvailable = m_touchpad && snapshotHasTapCapability(m_properties);
     m_tapAndDrag = snapshotBool(m_properties, QStringLiteral("tapAndDrag"));
     m_disableWhileTypingAvailable =
         m_touchpad &&
