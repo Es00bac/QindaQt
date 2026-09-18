@@ -3,7 +3,7 @@
 `qindaqt-settings --page startup` chooses what launches at login: enable or
 disable an installed application's autostart entry, add a custom command,
 and remove a command this route itself added. The design and the write
-boundary are [ADR-0193](../adr/0193-startup-applications-route.md).
+boundary are [ADR-0214](../adr/0214-startup-applications-route.md).
 
 ## What the route shows
 

@@ -237,6 +237,12 @@ target_link_libraries(
         qindaqt_settings_datetime
         qindaqt_settings_datetime_qml
         qindaqt_settings_datetime_qmlplugin
+        qindaqt_settings_default_apps_qml
+        qindaqt_settings_default_apps_qmlplugin
+        qindaqt_settings_about_computer_qml
+        qindaqt_settings_about_computer_qmlplugin
+        qindaqt_settings_startup_qml
+        qindaqt_settings_startup_qmlplugin
         qindaqt_settings_clipboard_qml
         qindaqt_settings_clipboard_qmlplugin
         qindaqt_settings_color_backend_qml
@@ -258,6 +264,9 @@ add_dependencies(
     qindaqt_settings_power_qmlplugin
     qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_qmlplugin
+    qindaqt_settings_default_apps_qmlplugin
+    qindaqt_settings_about_computer_qmlplugin
+    qindaqt_settings_startup_qmlplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_window_lifecycle_tests)
