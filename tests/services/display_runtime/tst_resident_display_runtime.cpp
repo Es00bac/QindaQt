@@ -23,6 +23,7 @@ private Q_SLOTS:
     void durabilityUncertaintyNeverForwards();
     void suspendAndOwnerReplacementFenceLateCompletion();
     void authorityLossIsTerminalAndRevokesMutation();
+    void residentNameAlreadyOwnedIsReportedDistinctlyFromOtherFailures();
 };
 
 void ResidentDisplayRuntimeTest::
@@ -81,6 +82,37 @@ void ResidentDisplayRuntimeTest::rejectsFailedStartupAuthoritiesBeforeResident()
     QCOMPARE(residentFailure.output->stopCalls, 1);
     QCOMPARE(residentFailure.safety->stopCalls, 1);
     QVERIFY(!residentFailure.inventory->started);
+}
+
+void ResidentDisplayRuntimeTest::
+    residentNameAlreadyOwnedIsReportedDistinctlyFromOtherFailures()
+{
+    RuntimeFixture fixture;
+    QVERIFY2(fixture.initialize(), qPrintable(fixture.failure));
+
+    // A live sibling already owns the well-known name the resident service
+    // will try to register: claim it first on a second connection to the
+    // same private bus.
+    const QString siblingConnectionName =
+        DisplayService::TestSupport::privateConnectionName(
+            QStringLiteral("d6-runtime-sibling"));
+    QDBusConnection sibling =
+        QDBusConnection::connectToBus(fixture.bus.address(), siblingConnectionName);
+    QVERIFY(sibling.isConnected());
+    QVERIFY(sibling.registerService(
+        QStringLiteral("org.qindaqt.Display1.RuntimeTest")));
+
+    QSignalSpy fatalSpy(fixture.runtime.get(),
+                        &ResidentDisplayRuntime::fatalError);
+    QCOMPARE(fixture.runtime->start(), RuntimeStartStatus::TerminallyFailed);
+    QCOMPARE(fatalSpy.size(), 1);
+    QCOMPARE(fatalSpy.constFirst().constFirst().toString(),
+             QStringLiteral("resident-name-already-owned"));
+    QVERIFY(fixture.runtime->hasFailed());
+    QVERIFY(!fixture.runtime->isReady());
+
+    sibling.unregisterService(QStringLiteral("org.qindaqt.Display1.RuntimeTest"));
+    QDBusConnection::disconnectFromBus(siblingConnectionName);
 }
 
 void ResidentDisplayRuntimeTest::
