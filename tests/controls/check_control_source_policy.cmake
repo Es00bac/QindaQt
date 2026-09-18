@@ -6,8 +6,14 @@ endif()
 
 file(GLOB qml_files "${QINDAQT_CONTROLS_SOURCE_DIR}/*.qml")
 list(LENGTH qml_files qml_count)
-if(NOT qml_count EQUAL 19)
-    message(FATAL_ERROR "Expected 19 public Controls QML files, found ${qml_count}")
+# AGENT-CONTRACT: this number is the public Controls surface, and it is meant
+# to be edited deliberately. Adding a control means adding it to the expected
+# deploy-path list in tests/controls/CMakeLists.txt AND bumping this count AND
+# the matching one in run_installed_controls_consumer.cmake. TouchContextArea
+# was added with the list updated and both counts left behind, which is how two
+# rows went red on main.
+if(NOT qml_count EQUAL 20)
+    message(FATAL_ERROR "Expected 20 public Controls QML files, found ${qml_count}")
 endif()
 
 set(allowed_imports
