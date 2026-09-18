@@ -1,5 +1,108 @@
 # Integration handoff
 
+## September 17-18 wave — Checkpoint L, "usable on the laptop"
+
+`gui-wm/qindaqt-desktop-0.1.0_pre20260917-r6` pins `65babc42` and is installed
+on both machines. It is **r6, not r5**: r5 was taken by an interim cut while
+Checkpoint L's candidates were still in review, and two revisions must never
+share a name — that mistake at r1 left the two machines running different
+software under one version string for twenty minutes.
+
+Every lane below was independently reviewed at its exact SHA before merging.
+Four of them were rejected first and merged only after repair, and in three
+cases the rejection was the thing that made the feature real rather than
+apparently-real.
+
+### What is new for you on the laptop
+
+- **The touchpad's tap settings are visible at all.** The Settings section read
+  three KWin properties (`supportsTapToClick`, `supportsTapAndDrag`,
+  `defaultTapToClick`) that KWin's `InputDevice` interface has never exposed,
+  so the section was hidden on every machine regardless of hardware.
+- **Low and critical battery notify once per crossing**, from UPower's own
+  warning levels, and the power profile now follows the power source —
+  `[AC]`, `[Battery]` and `[LowBattery]` each get their own profile through
+  PowerDevil's own key. That key was nearly not written at all: it was first
+  reported not to exist, from a `strings` read of the wrong binary.
+- **A pen display maps to its own screen and stays mapped across a re-plug.**
+  The first attempt keyed the mapping on KWin's `deviceGroupId`, which is a
+  hash of a libinput pointer address and cannot survive unplugging anything;
+  the review caught it against KWin's source. It now keys on
+  vendor/product/name, which is KWin's own persistence key.
+- **A finger drives container chrome**: tap is a click, a held finger opens the
+  menu a right-click would, and a second finger's swipe rolls a container up or
+  down. The first attempt used a long-press component that six of its seven
+  consumers never imported — an unresolved QML type is a load error, so the
+  desktop and the file manager had no long press at all.
+- **Audio controls stop fighting you.** In the applet a drag is no longer
+  killed by the control destroying itself on its own dispatch; in Settings the
+  console fader no longer disables itself mid-drag on a global busy flag.
+- **Network locations**: Connect to server, saved `sftp://` locations that
+  survive a restart, browsing and opening in place, and copying both ways
+  through a transfer queue.
+- **The Wiz smart-lights control-port fix is back.** It was on the laptop under
+  r1, and my own Checkpoint A cut dropped it by pinning a commit that predated
+  it; the laptop ran a pre-fix applet until r3.
+
+### Still open, and not claimed as done
+
+- **AC-versus-battery profile switching is proven in tests, not on hardware.**
+  The remaining proof is a Settings write read back from
+  `~/.config/powerdevilrc` and one AC-unplug transition on `qinda-top`.
+- **Row 11's "fresh session" half.** The repeated-warnings count can only be
+  measured against a session started after this install. The portal drop-in's
+  invalid `BusName=` line is fixed; the coredumps that were attributed to
+  QindaQt turned out to be another checkout's test binaries, so that half of
+  the row was never the problem it looked like.
+- **The O14 remainder — on-screen keyboard, touch edges, the Touch page — is
+  rejected and not in this package.** Its Touchscreen switch wrote a preference
+  nothing read, while the page reported "The touchscreen is off" and the
+  touchscreen kept working.
+- **The Settings audio route refuses rapid same-target requests where the
+  applet coalesces them.** Both are honest; they are not the same behaviour
+  under a fast drag. Making them match is a decision, not a bug fix.
+- **Five `windowManagement.*` Settings1 keys have no consumer at all.** Focus
+  policy, docking modifier, snap distance, session restore, close-container
+  policy are fully specified in the schema and read by nothing, so a "Windows
+  and workspaces" page would today be controls that write keys nobody obeys.
+
+### What we need you to confirm by hand, on the laptop
+
+Everything below was proved as far as a test or an `ssh` probe can prove it.
+These five are the parts only a person at the machine can answer, and each one
+says what "working" looks like so a "no" is as useful as a "yes".
+
+Do them after the one logout/login that this package needs (the KWin plugin
+and the decoration adopt only at the next login).
+
+1. **Brightness** — the slider in Settings and the `Fn` brightness keys both
+   move the panel, and the panel actually changes. This shipped in r2; we are
+   asking because the r2 install happened without anyone confirming it, and
+   the underlying write path changed (it now goes through logind rather than
+   sysfs, which is why it works on this machine at all).
+2. **Lid and lock** — close the lid, wait for it to settle, open it. Expected:
+   it suspends, and on wake you get the lock screen rather than the desktop.
+   The policy is verified (`lidAction=Sleep`, `triggersLidAction=true`, and
+   KScreenLocker's `LockOnResume` default); what we cannot test is the hardware
+   actually suspending and resuming.
+3. **Pen display** — plug the Wacom in. Expected: one notification, once, not
+   repeated; the pen draws where the tip is, on the Wacom and not on the
+   built-in panel; the Pen & tablet page offers map/area/calibration/pressure.
+   Then unplug and re-plug: the mapping must survive, not reset.
+4. **Touch** — on a touchscreen surface: a tap is a click; a long press opens
+   the same context menu a right-click would, on the desktop, on a panel, and
+   in the file manager. Tell us if a long press does nothing, opens the wrong
+   menu, or needs an unnatural hold.
+5. **The r2 repairs, now that you can see them** — the global menu takes the
+   width it needs instead of a third of the panel; a rolled-up container shows
+   its title on the badge (this one has never been visible before: the label
+   was being painted outside the frame and clipped away); a rotated or mirrored
+   display says so on its card in Display settings.
+
+If any of these is wrong, the exact wording of what you saw is more useful to
+us than a diagnosis — several defects this wave were misdiagnosed from a
+plausible-sounding summary and only found from the literal symptom.
+
 ## September 17 wave — Checkpoint A
 
 Integrated on `main` so far, each with an independent exact-SHA review by
