@@ -26,6 +26,10 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | --- | --- | --- |
 | Volume/mute media keys | KGlobalAccel (compositor-provided) | `qindaqt-desktop-controls` shortcut set |
 | Volume and mute mutation | resident `Audio1` | public `AudioClient` on the default output |
+| Microphone mute media key | KGlobalAccel (compositor-provided) | `qindaqt-desktop-controls` shortcut set |
+| Microphone mute mutation | resident `Audio1` | public `AudioClient` on the default input |
+| Airplane-mode (Wi-Fi/WWAN) media key | KGlobalAccel (compositor-provided) | `qindaqt-desktop-controls` shortcut set |
+| Wi-Fi/WWAN radio enable | resident `Network1` | public `NetworkClient::setRadio` |
 | Brightness media keys | PowerDevil 6.6.6 `ScreenBrightnessAgent` | PowerDevil's registered shortcuts |
 | Internal/external brightness mutation | PowerDevil `org.kde.ScreenBrightness` | session-owned PowerDevil |
 | Print screenshot | Spectacle desktop action | installed Spectacle owns Print and its capture UI |
@@ -55,6 +59,8 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | --- | --- |
 | `DesktopShortcutSet` | one QAction per media key with stable ids, registered through the `ShortcutRegistrar` seam (production: KGlobalAccel Autoloading; user remapping survives restarts) |
 | `VolumeKeyController` | ±5% steps and mute toggle on the snapshot's default output, capability-gated, optimistic feedback, honest unavailable reasons |
+| `MicMuteKeyController` | mute toggle on the snapshot's default input, mirrors `VolumeKeyController`'s mute path exactly |
+| `AirplaneModeKeyController` | toggles the Wi-Fi radio over the public `NetworkClient`; see [Airplane mode and microphone mute](#airplane-mode-and-microphone-mute) |
 | `PowerDevilBrightnessFeedbackObserver` | filters PowerDevil keyboard feedback, reads the public per-display maximum, and emits normalized notifier feedback |
 | `BrightnessKeyController` | retained sysfs fixture seam for migration coverage; not instantiated or registered by production |
 | `ScreenshotLauncher` | retained launch-fixture seam; it is not instantiated by the resident process because Spectacle owns Print |
@@ -63,7 +69,8 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
 | `BatteryNotificationPolicy` | edge-triggered low/critical/action battery notifications from `PowerClient::snapshotChanged`; see [Battery notifications](#battery-notifications) |
 
-The production process keeps `KGlobalAccelRegistrar` for volume and mute only.
+The production process keeps `KGlobalAccelRegistrar` for volume, mute,
+microphone mute, and airplane mode.
 Spectacle owns the installed Print action, preserving its own user remapping and
 capture-mode choices. PowerDevil owns monitor-brightness shortcut registration
 and the idle display-off policy; QindaQt only observes its documented public
@@ -109,6 +116,48 @@ coalesced system battery. QindaQt names no percentage thresholds itself —
   or do-not-disturb policy does not auto-dismiss or hide a battery warning
   the way it may a transient one.
 
+## Airplane mode and microphone mute
+
+`MicMuteKeyController` (`XF86AudioMicMute` → `Qt::Key_MicMute`) mirrors
+`VolumeKeyController::toggleMute()` exactly, against the snapshot's default
+*input* device instead of its default output.
+
+`AirplaneModeKeyController` (`XF86WLAN` → `Qt::Key_WLAN`) reads the current
+Wi-Fi radio's `softwareEnabled` state from the public `NetworkClient`'s
+snapshot and calls `setRadio(Wifi, !current)`. **Only Wi-Fi is toggled,
+even when a WWAN (cellular) radio is present.** `NetworkClient` (like every
+other resident client in this codebase) admits one operation at a time; a
+first implementation that issued `setRadio(Wwan, ...)` immediately after
+`setRadio(Wifi, ...)` in the same synchronous call found the second request
+silently rejected as busy every time (caught by
+`presentWwanRadioIsNeverToggled`, a test written expecting the opposite and
+failing honestly instead). Sequencing a WWAN follow-up correctly would mean
+waiting for the Wi-Fi operation's `operationFinished` signal before
+dispatching the second request — real state-machine complexity (what
+happens to a second key press while that follow-up is pending, what the
+combined feedback signal reports) that this controller does not take on.
+
+**`XF86RFKill` has no Qt key mapping and is not wired.** Qt's public `Key`
+enum has `Key_WLAN` but no `Key_RFKill`/`Key_Flight`/`Key_Airplane`
+constant, and the installed `libQt6Gui.so`'s compiled keysym table has no
+entry for the `XF86RFKill` X11 keysym at all (confirmed by binary string
+search; `XF86WLAN`, by contrast, is present as both a distinct XKB symbol
+and a mapped Qt key). A physical key whose hardware scancode maps to
+`KEY_RFKILL` rather than `KEY_WLAN` (both exist as separate entries in
+`/usr/share/X11/xkb/symbols/inet`, so this is keyboard-model dependent)
+produces no Qt key event through `QShortcut`/`QAction`/KGlobalAccel the way
+every other media key in this codebase does, and is a known, undemonstrated
+gap rather than a silently claimed capability. Which keysym `qinda-top`'s
+own physical airplane-mode key actually sends needs a hands-on
+**(user)** press-and-observe check.
+
+**Bluetooth is not toggled by either key.** A conventional "airplane mode"
+often also disables Bluetooth, which would mean composing a second public
+client (`BluetoothClient::setAdapterPower`, itself needing adapter-handle
+enumeration from its own snapshot). Left out to keep
+`AirplaneModeKeyController` to one client, matching every other controller
+in this module; a bounded follow-up if wanted.
+
 ## Inhibition and availability boundary
 
 Idle inhibition is delegated to PowerDevil's policy authority:
@@ -132,8 +181,15 @@ never needs to be re-sent.
 
 ## Verification and non-claims
 
-Focused executable evidence covers: volume/mute/screenshot shortcut ids and
-dispatch; PowerDevil brightness feedback filtering, range normalization, and
+Focused executable evidence covers: volume/mute/mic-mute/airplane-mode/
+screenshot shortcut ids and dispatch; microphone mute toggling against a
+fake `AudioClient` input snapshot (capability-gated, unsupported/no-default
+reasons, rejected/uncertain operation handling); airplane-mode radio
+toggling against a fake `NetworkClient` transport (Wi-Fi toggling in both
+directions, a present or absent WWAN radio never generating a second
+request, missing-snapshot and missing-radio unavailable reasons, rejected/
+uncertain operation handling); PowerDevil brightness feedback filtering,
+range normalization, and
 owner absence; sysfs fixture brightness stepping remains migration coverage;
 idle-preference mapping and PowerDevil binding coalescing/recovery/failure
 boundaries; the retained screenshot launcher helper against a fixture;

@@ -41,6 +41,14 @@ public:
         }
     }
 
+    // AGENT-GUARD: a record's activeBindingChanged callback captures `this`
+    // of the DesktopShortcutSet that registered it. Once that set is
+    // destroyed (every test function that shares this registrar constructs
+    // its own, short-lived set), an unreset record from an earlier test is a
+    // dangling callback; reportActiveBinding() would invoke it on freed
+    // memory. Callers must reset() between test functions.
+    void reset() { m_records.clear(); }
+
     [[nodiscard]] const QList<Record> &records() const noexcept { return m_records; }
 
     ShortcutRegistration m_nextResult{true, true};
@@ -63,6 +71,7 @@ class DesktopShortcutSetTest final : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    void init();
     void registersEveryMediaKeyWithStableIdsAndDefaults();
     void triggersDispatchToTheMatchingCallback();
     void activeBindingChangesAreReportedPerAction();
@@ -74,6 +83,13 @@ private:
     RecordingRegistrar m_registrar;
 };
 
+void DesktopShortcutSetTest::init() {
+    // Every DesktopShortcutSet constructed against m_registrar in one test
+    // function is destroyed when that function returns; its captured
+    // activeBindingChanged callbacks must not survive into the next test.
+    m_registrar.reset();
+}
+
 void DesktopShortcutSetTest::registersEveryMediaKeyWithStableIdsAndDefaults() {
     const std::array<QPair<const char *, Qt::Key>,
                      static_cast<std::size_t>(DesktopShortcutAction::Count)>
@@ -84,6 +100,8 @@ void DesktopShortcutSetTest::registersEveryMediaKeyWithStableIdsAndDefaults() {
             {"qindaqt_brightness_up", Qt::Key_MonBrightnessUp},
             {"qindaqt_brightness_down", Qt::Key_MonBrightnessDown},
             {"qindaqt_take_screenshot", Qt::Key_Print},
+            {"qindaqt_mic_mute", Qt::Key_MicMute},
+            {"qindaqt_airplane_mode", Qt::Key_WLAN},
         }};
 
     int volumeUps = 0;
@@ -95,6 +113,8 @@ void DesktopShortcutSetTest::registersEveryMediaKeyWithStableIdsAndDefaults() {
                                .brightnessUp = [] {},
                                .brightnessDown = [] {},
                                .takeScreenshot = [] {},
+                               .toggleMicMute = [] {},
+                               .toggleAirplaneMode = [] {},
                            });
 
     QCOMPARE(m_registrar.records().size(),
@@ -115,6 +135,8 @@ void DesktopShortcutSetTest::triggersDispatchToTheMatchingCallback() {
     int volumeUps = 0;
     int mutes = 0;
     int prints = 0;
+    int micMutes = 0;
+    int airplaneToggles = 0;
     DesktopShortcutSet set(m_registrar,
                            DesktopShortcutTriggers{
                                .volumeUp = [&volumeUps] { ++volumeUps; },
@@ -123,16 +145,23 @@ void DesktopShortcutSetTest::triggersDispatchToTheMatchingCallback() {
                                .brightnessUp = [] {},
                                .brightnessDown = [] {},
                                .takeScreenshot = [&prints] { ++prints; },
+                               .toggleMicMute = [&micMutes] { ++micMutes; },
+                               .toggleAirplaneMode =
+                                   [&airplaneToggles] { ++airplaneToggles; },
                            });
 
     emit set.action(DesktopShortcutAction::VolumeUp)->trigger();
     emit set.action(DesktopShortcutAction::ToggleMute)->trigger();
     emit set.action(DesktopShortcutAction::ToggleMute)->trigger();
     emit set.action(DesktopShortcutAction::TakeScreenshot)->trigger();
+    emit set.action(DesktopShortcutAction::ToggleMicMute)->trigger();
+    emit set.action(DesktopShortcutAction::ToggleAirplaneMode)->trigger();
 
     QCOMPARE(volumeUps, 1);
     QCOMPARE(mutes, 2);
     QCOMPARE(prints, 1);
+    QCOMPARE(micMutes, 1);
+    QCOMPARE(airplaneToggles, 1);
 }
 
 void DesktopShortcutSetTest::activeBindingChangesAreReportedPerAction() {
@@ -144,6 +173,8 @@ void DesktopShortcutSetTest::activeBindingChangesAreReportedPerAction() {
                                .brightnessUp = [] {},
                                .brightnessDown = [] {},
                                .takeScreenshot = [] {},
+                               .toggleMicMute = [] {},
+                               .toggleAirplaneMode = [] {},
                            });
     QVERIFY(set.activeBindingPresent(DesktopShortcutAction::VolumeUp));
 
@@ -170,6 +201,8 @@ void DesktopShortcutSetTest::rejectedRegistrationIsObservable() {
                                .brightnessUp = [] {},
                                .brightnessDown = [] {},
                                .takeScreenshot = [] {},
+                               .toggleMicMute = [] {},
+                               .toggleAirplaneMode = [] {},
                            });
     QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::VolumeUp));
     QVERIFY(!set.activeBindingPresent(DesktopShortcutAction::VolumeUp));
@@ -187,6 +220,8 @@ void DesktopShortcutSetTest::brightnessRegistrationCanBeDisabledForPowerDevilOwn
             .brightnessUp = [] {},
             .brightnessDown = [] {},
             .takeScreenshot = [] {},
+            .toggleMicMute = [] {},
+            .toggleAirplaneMode = [] {},
         },
         nullptr,
         DesktopShortcutRegistrationOptions{.registerBrightness = false});
@@ -206,7 +241,8 @@ void DesktopShortcutSetTest::screenshotRegistrationCanBeDisabledForSpectacleOwne
         registrar,
         DesktopShortcutTriggers{.volumeUp = [] {}, .volumeDown = [] {}, .toggleMute = [] {},
                                 .brightnessUp = [] {}, .brightnessDown = [] {},
-                                .takeScreenshot = [] {}},
+                                .takeScreenshot = [] {}, .toggleMicMute = [] {},
+                                .toggleAirplaneMode = [] {}},
         nullptr,
         DesktopShortcutRegistrationOptions{.registerBrightness = true,
                                            .registerScreenshot = false});
