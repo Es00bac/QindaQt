@@ -66,6 +66,46 @@ apparently-real.
   policy are fully specified in the schema and read by nothing, so a "Windows
   and workspaces" page would today be controls that write keys nobody obeys.
 
+### What was verified on the laptop over ssh, and what it did not reach
+
+Probed 2026-09-18 10:42 against a session that started at **10:39:32**, after
+r6 was installed at 10:22:59 — so this is a genuinely fresh session, not the
+one that predates the package.
+
+- **Services (row 8).** All six QindaQt user units — audio, bluetooth,
+  clipboard-host, display, network, power — are `active running`. The Audio1
+  unit in particular starts and stays up at login, which is what row 8 asks.
+- **Touchpad properties (row 3).** KWin reports `tapFingerCount 3`,
+  `tapToClick true`, `tapToClickEnabledByDefault true`, `tapAndDrag true`.
+  These are exactly the property names O8's repair reads, so the Settings
+  section now asks KWin for things KWin actually publishes, and tap-to-click is
+  on by default on this machine.
+- **Journal hygiene (row 11).** In this session: **zero** `Invalid bus name`
+  lines — the portal drop-in repair holds — and **zero** QindaQt coredumps. No
+  repeated QindaQt warning of any kind. The ten `pipewire … Failed to connect
+  to session bus … /tmp/qin…` lines from the previous session are gone. What
+  remains is third-party: `xdg-desktop-portal` RealtimeKit (3),
+  `plasma-xdg-desktop-portal-kde` dumping core once, `plasma-kactivitymanagerd`,
+  a WirePlumber BlueZ MIDI registration failure, and the keyring's usual
+  `discover_other_daemon`.
+
+What ssh could **not** reach, and why:
+
+- **The power profile (row 5) has not been written yet.** `powerdevilrc` has
+  `[AC][Display]`, `[Battery][Display]` and their `SuspendAndShutdown`
+  siblings, but no `[AC][Performance] PowerProfile=`. That is correct for a key
+  nothing has set — it proves the group naming this lane targets is real, and
+  it proves nothing about the switching working. Setting a profile in Settings
+  and re-reading the file is the next step, then one AC unplug.
+- **No tablet is connected**, so row 6 cannot be checked from here at all.
+- **No saved network locations exist yet** (`~/.local/state/qindaqt-file-manager`
+  holds none), so row 9 needs a location saved before the copy test means
+  anything.
+- **Settings is still running from 09:29**, before this package. `qindaqt-shell`
+  restarted at 10:39 and is on r6, but the Settings window predates it —
+  **close and reopen Settings** before judging any Settings page below, or you
+  will be looking at r5's.
+
 ### What we need you to confirm by hand, on the laptop
 
 Everything below was proved as far as a test or an `ssh` probe can prove it.
