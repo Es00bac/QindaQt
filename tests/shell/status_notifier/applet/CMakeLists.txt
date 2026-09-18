@@ -241,6 +241,7 @@ if(TARGET qindaqt-shell)
             qindaqt_shell_bluetooth_applet_runtimeplugin
             qindaqt_shell_smart_lights_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
+            qindaqt_shell_obs_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin
             qindaqt_shell_task_list_appletplugin
             qindaqt_shell_desktop_controls_runtimeplugin
