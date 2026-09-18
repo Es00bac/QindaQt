@@ -144,7 +144,15 @@ bool WizModel::observe(const QString &address, const quint16 port,
     if (!address.isEmpty()) {
         device.identity.address = address;
     }
-    if (port != 0) {
+    // AGENT-GUARD (verified on firmware 1.38.0): a syncPilot push leaves the
+    // luminaire from an ephemeral source port (51501 and 59321 were observed)
+    // while the light listens only on Limits::controlPort, so only a reply may
+    // teach the endpoint port. Recording a push's port sent every later poll
+    // and control datagram to a port nothing reads: the row kept updating
+    // from pushes while every switch and slider was dead, until the next
+    // discovery answer happened to repair the port and the next push broke it
+    // again.
+    if (port != 0 && !message.unsolicited) {
         device.identity.port = port;
     }
 

@@ -14,8 +14,9 @@ namespace QindaQt::Wiz
 namespace Limits
 {
 
-// The vendor's control port. Devices answer unicast and broadcast on it and
-// send their own notifications from it.
+// The vendor's control port. Devices listen on it for unicast and broadcast
+// requests and answer from it. Their own pushes (syncPilot) leave from an
+// ephemeral port instead, so a push's source port is never a place to send.
 inline constexpr quint16 controlPort = 38899;
 
 // A device reply is a single small JSON object. Anything larger is refused

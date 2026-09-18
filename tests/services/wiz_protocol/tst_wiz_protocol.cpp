@@ -20,6 +20,9 @@ constexpr auto pilotReply = R"({"method":"getPilot","env":"pro","result":{"mac":
 constexpr auto modelReply = R"({"method":"getModelConfig","env":"pro","result":{"devTotal":1,"headTotal":1,"ps":3,"minDimLevel":1,"lightType":1,"cctRange":[2200,2700,6500,6500]}})";
 constexpr auto systemReply = R"({"method":"getSystemConfig","env":"pro","result":{"mac":"d8a011769356","homeId":16201343,"roomId":27370616,"moduleName":"ESP25_SHRGB_01","fwVersion":"1.38.0"}})";
 constexpr auto errorReply = R"({"method":"setPilot","env":"pro","error":{"code":-32602,"message":"Invalid params"}})";
+// Captured verbatim from a registered luminaire on the same firmware. It
+// arrived from source port 51501, not from the control port.
+constexpr auto pushNotification = R"({"method":"syncPilot","env":"pro","params":{"mac":"d8a011696c62","rssi":-55,"devices":1,"src":"hb","mqttCd":0,"ts":1789671389,"state":true,"sceneId":0,"r":0,"g":35,"b":255,"c":0,"w":48,"dimming":26}})";
 
 [[nodiscard]] Device colourLight()
 {
@@ -47,6 +50,7 @@ class WizProtocolTests : public QObject
 private Q_SLOTS:
     void decodesPilotReply();
     void decodesErrorWithoutPayload();
+    void marksPushesUnsolicited();
     void refusesOversizedAndMalformedDatagrams();
     void refusesOutOfRangeNumbers();
     void keepsMissingFieldsUnknown();
@@ -73,6 +77,24 @@ void WizProtocolTests::decodesPilotReply()
     QCOMPARE(message->pilot.blue, quint8{255});
     QCOMPARE(message->pilot.signalDbm, qint16{-59});
     QCOMPARE(message->pilot.mode(), LightMode::Color);
+}
+
+void WizProtocolTests::marksPushesUnsolicited()
+{
+    // The model relies on this bit to refuse a push's source port as the
+    // device's control endpoint; see the AGENT-GUARD in WizModel::observe.
+    const auto push = decodeMessage(QByteArray(pushNotification));
+    QVERIFY(push.has_value());
+    QCOMPARE(push->method, Method::SyncPilot);
+    QVERIFY(push->unsolicited);
+    QCOMPARE(push->mac, QStringLiteral("d8a011696c62"));
+    QVERIFY(push->pilotKnown);
+    QVERIFY(push->pilot.on);
+    QCOMPARE(static_cast<int>(push->pilot.dimmingPercent), 26);
+
+    const auto reply = decodeMessage(QByteArray(pilotReply));
+    QVERIFY(reply.has_value());
+    QVERIFY(!reply->unsolicited);
 }
 
 void WizProtocolTests::decodesErrorWithoutPayload()

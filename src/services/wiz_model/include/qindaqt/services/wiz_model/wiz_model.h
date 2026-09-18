@@ -49,9 +49,11 @@ public:
     // firmware sent without its own identity.
     [[nodiscard]] QString deviceAtAddress(const QString &address) const;
 
-    // Ingests one decoded datagram from `address`. Returns true when the
-    // snapshot changed. A message without a usable MAC is ignored: identity
-    // must come from the device, never from its current IP address.
+    // Ingests one decoded datagram from `address`:`port`. Returns true when
+    // the snapshot changed. A message without a usable MAC is ignored:
+    // identity must come from the device, never from its current IP address.
+    // The port becomes the device's control endpoint only for a reply; a push
+    // proves reachability and carries state, but its source port is ephemeral.
     bool observe(const QString &address, quint16 port, const DecodedMessage &message);
 
     // A poll to this device went unanswered. Repeated misses walk the device

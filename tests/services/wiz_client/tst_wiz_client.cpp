@@ -42,6 +42,20 @@ const QString deviceAddress = QStringLiteral("10.0.0.234");
         R"({"method":"getModelConfig","env":"pro","result":{"devTotal":1,"headTotal":1,"minDimLevel":1,"lightType":1,"cctRange":[2200,2700,6500,6500]}})");
 }
 
+// AGENT-NOTE: copied from firmware 1.38.0. A registered luminaire pushes this
+// from an ephemeral source port (51501 was observed), not from the control
+// port; the tests deliver it from that port for the same reason the model
+// reply above omits its `mac`.
+[[nodiscard]] QByteArray pushNotification(const bool on)
+{
+    return QStringLiteral(
+               R"({"method":"syncPilot","env":"pro","params":{"mac":"%1","rssi":-55,"devices":1,"src":"hb","mqttCd":0,"ts":1789671389,"state":%2,"sceneId":0,"r":0,"g":35,"b":255,"c":0,"w":48,"dimming":26}})")
+        .arg(deviceMac, on ? QStringLiteral("true") : QStringLiteral("false"))
+        .toUtf8();
+}
+
+constexpr quint16 pushSourcePort = 51501;
+
 constexpr auto setPilotAck = R"({"method":"setPilot","result":{"success":true}})";
 constexpr auto setPilotError =
     R"({"method":"setPilot","error":{"code":-32602,"message":"Invalid params"}})";
@@ -89,6 +103,7 @@ private Q_SLOTS:
     void stopCompletesQueuedWork();
     void transportFailureEndsAuthority();
     void doesNotSubscribeWithoutAListenerAddress();
+    void keepsControllingOnTheControlPortAfterAPush();
 };
 
 void WizClientTests::broadcastsDiscoveryOnStart()
@@ -421,6 +436,37 @@ void WizClientTests::doesNotSubscribeWithoutAListenerAddress()
     QCOMPARE(transport.broadcasts.size(), 1);
     // A light is never asked to push notifications nobody can receive.
     QVERIFY(transport.broadcasts.first().contains("\"register\":false"));
+}
+
+void WizClientTests::keepsControllingOnTheControlPortAfterAPush()
+{
+    Fixture fixture;
+    QVERIFY(fixture.client.snapshot().devices.first().pilot.on);
+
+    // The push is accepted as state: the light says it is now off.
+    fixture.transport.deliverFrom(deviceAddress, pushSourcePort, pushNotification(false));
+    QVERIFY(!fixture.client.snapshot().devices.first().pilot.on);
+
+    // AGENT-GUARD: before this row existed, that one datagram redirected every
+    // later poll and control to port 51501, where nothing listens. The row
+    // kept updating from pushes while every control was dead.
+    OperationRequest request;
+    request.kind = OperationKind::SetPower;
+    request.targetMac = deviceMac;
+    request.state.setPower = true;
+    request.state.on = true;
+    static_cast<void>(fixture.client.dispatch(request));
+    QCOMPARE(fixture.transport.unicastCount("setPilot"), 1);
+    QCOMPARE(fixture.transport.unicasts.last().address, deviceAddress);
+    QCOMPARE(fixture.transport.unicasts.last().port, quint16{38899});
+
+    fixture.transport.deliver(deviceAddress, QByteArray(setPilotAck));
+    fixture.clock.now += 5000;
+    fixture.client.tick();
+    QVERIFY(fixture.transport.unicastCount("getPilot") >= 2);
+    for (const FakeWizTransport::Sent &sent : fixture.transport.unicasts) {
+        QCOMPARE(sent.port, quint16{38899});
+    }
 }
 
 QTEST_MAIN(WizClientTests)
