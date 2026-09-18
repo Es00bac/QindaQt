@@ -50,12 +50,15 @@ AppearancePreview::resolve(const AppearanceValues &values,
 DesignTokens::AccessibilityInputs
 AppearancePreview::accessibilityInputs(const AppearanceValues &values,
                                        const Themes::ThemeSpec &theme) const {
-  // Accessibility-domain settings (text scale, reduced motion/transparency)
-  // belong to their own Settings route and must not be guessed here. Font
-  // size is an explicit caller input; high contrast follows the dedicated
-  // theme variant, matching the text-editor composition.
+  // Text scale belongs to the Accessibility route and is never guessed
+  // here. Font size is an explicit caller input; high contrast follows the
+  // dedicated theme variant, matching the text-editor composition.
   DesignTokens::AccessibilityInputs inputs;
   inputs.basePointSize = values.fontPointSize;
+  // Reduce transparency and reduce motion ride this route's draft
+  // (ADR-0206) so the preview shows the switches before Apply.
+  inputs.reducedTransparency = values.reducedTransparency;
+  inputs.reducedMotion = values.reducedMotion;
   inputs.highContrast = theme.variant == QStringLiteral("high-contrast");
   return inputs;
 }

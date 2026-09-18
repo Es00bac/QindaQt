@@ -29,6 +29,11 @@ inline constexpr QLatin1String FontPointSize{"fonts.pointSize"};
 inline constexpr QLatin1String FontAntialiasing{"fonts.antialiasing"};
 inline constexpr QLatin1String FontHinting{"fonts.hinting"};
 inline constexpr QLatin1String FontSubpixelOrder{"fonts.subpixelOrder"};
+// Accessibility switches shared with the Accessibility route (ADR-0206): the
+// Appearance route offers them beside the translucent materials they govern,
+// and the preview derives its tokens from the same draft.
+inline constexpr QLatin1String ReducedTransparency{"accessibility.reducedTransparency"};
+inline constexpr QLatin1String ReducedMotion{"accessibility.reducedMotion"};
 
 // Deterministic commit order; also the SettingsClient scope for the route.
 // The eight chrome arrangement keys (ADR-0129) follow the appearance keys.
@@ -67,8 +72,12 @@ struct AppearanceValues final {
     bool fontAntialiasing = true;
     FontHinting fontHinting{FontHinting::Slight};
     SubpixelOrder fontSubpixelOrder{SubpixelOrder::Rgb};
-    // Window decoration and container chrome arrangement (ADR-0129).
+    // Window decoration and container chrome arrangement (ADR-0129) and the
+    // decoration document pairing (ADR-0207).
     Decoration::ChromePreferences chrome;
+    // Reduce transparency / reduce motion (accessibility domain).
+    bool reducedTransparency = false;
+    bool reducedMotion = false;
 
     [[nodiscard]] bool operator==(const AppearanceValues &) const = default;
 

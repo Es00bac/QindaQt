@@ -56,6 +56,7 @@ ColumnLayout {
         toolkitFont: root.appearanceSettings.previewToolkitFont
                      ?? Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.body })
         canvas: root.appearanceSettings.previewCanvasColor ?? Tokens.bg.base
+        wallpaper: root.appearanceSettings.previewWallpaper ?? ""
         caption: qsTr("QindaQt Settings")
         Accessible.role: Accessible.Graphic
         Accessible.name: qsTr("Preview of the %1 theme").arg(
@@ -95,15 +96,19 @@ ColumnLayout {
                 }
             }
 
-            delegate: ThemeCard {
+            // Rendered thumbnails (ADR-0206): each card paints the theme's
+            // real chrome over the draft wallpaper instead of swatches.
+            delegate: ThemeThumbnailCard {
                 id: themeCard
 
                 required property var modelData
 
                 objectName: "appearanceThemeCard_" + themeCard.modelData.id
                 themeName: themeCard.modelData.name
-                description: ""
-                previewTokens: themeCard.modelData.previewTokens
+                description: qsTr("Select the %1 theme").arg(themeCard.modelData.name)
+                previewTokens: themeCard.modelData.previewTokens ?? null
+                previewChrome: themeCard.modelData.previewChrome ?? ({})
+                wallpaper: root.appearanceSettings.previewWallpaper ?? ""
                 available: root.appearanceSettings.canEdit && !root.editorBusy
                 checked: root.draftValue("appearance.theme")
                          === themeCard.modelData.id
@@ -146,6 +151,48 @@ ColumnLayout {
             descriptionPrefix: qsTr("Preferred color scheme")
             onChoicePicked: token => root.setDraft(
                                 "appearance.colorScheme", token)
+        }
+    }
+
+    // Translucency and motion are accessibility switches (ADR-0206) offered
+    // here beside the materials they govern; the preview follows the draft.
+    FormRow {
+        Layout.fillWidth: true
+        label: qsTr("Translucency")
+        description: ""
+        editor: translucencySwitch
+        T.ToolTip.visible: translucencyHover.hovered
+        T.ToolTip.delay: 600
+        T.ToolTip.text: qsTr("Frosted panels, menus and title bars; off paints every surface solid")
+        HoverHandler { id: translucencyHover }
+
+        Switch {
+            id: translucencySwitch
+            objectName: "appearanceTranslucencySwitch"
+            checked: !(root.draftValue("accessibility.reducedTransparency") ?? false)
+            enabled: root.appearanceSettings.canEdit && !root.editorBusy
+            accessibleDescription: qsTr("Translucent surfaces on or off")
+            onToggled: root.setDraft("accessibility.reducedTransparency", !checked)
+        }
+    }
+
+    FormRow {
+        Layout.fillWidth: true
+        label: qsTr("Motion")
+        description: ""
+        editor: motionSwitch
+        T.ToolTip.visible: motionHover.hovered
+        T.ToolTip.delay: 600
+        T.ToolTip.text: qsTr("Animated menus, popups and roll-ups; off keeps every transition instant")
+        HoverHandler { id: motionHover }
+
+        Switch {
+            id: motionSwitch
+            objectName: "appearanceMotionSwitch"
+            checked: !(root.draftValue("accessibility.reducedMotion") ?? false)
+            enabled: root.appearanceSettings.canEdit && !root.editorBusy
+            accessibleDescription: qsTr("Interface motion on or off")
+            onToggled: root.setDraft("accessibility.reducedMotion", !checked)
         }
     }
 

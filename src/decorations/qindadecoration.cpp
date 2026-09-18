@@ -424,11 +424,9 @@ void QindaDecoration::showContextMenu(const QPointF &position)
 
 void QindaDecoration::updateVisualStyle()
 {
-    const auto group = window()->isActive() ? QPalette::Active : QPalette::Inactive;
-    auto style = decorationVisualStyle(
-        paletteColor("border", QPalette::Mid, group),
-        paletteColor("surface", QPalette::Window, group),
-        window()->isMaximized());
+    // The chrome map carries the decoration theme's radius, shadow and title
+    // material (ADR-0207); a v1 theme resolves to the shipped constants.
+    auto style = decorationVisualStyleFor(chromeState(), window()->isMaximized());
     if (containerMember()) {
         style.cornerRadius = DecorationMemberCornerRadius;
     }

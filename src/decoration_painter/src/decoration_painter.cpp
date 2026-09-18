@@ -33,16 +33,6 @@ QPointF onBar(const QRectF &bar, QRandomGenerator &generator)
                    bar.top() + generator.bounded(int(bar.height())));
 }
 
-QColor mapColor(const QVariantMap &map, const char *key)
-{
-    const auto value = map.value(QString::fromLatin1(key));
-    if (value.canConvert<QColor>()) {
-        const auto color = value.value<QColor>();
-        return color.isValid() ? color : QColor();
-    }
-    return {};
-}
-
 QColor themeColor(const Themes::ThemeSpec &theme, const char *key, QColor fallback)
 {
     const auto candidate = theme.colors.value(QString::fromLatin1(key));
@@ -97,82 +87,6 @@ DecorationChrome DecorationChrome::fromTheme(const Themes::ThemeSpec &theme)
     return fromChromePalette(chromePaletteForTheme(theme), theme);
 }
 
-DecorationChrome DecorationChrome::fromVariantMap(const QVariantMap &map)
-{
-    DecorationChrome chrome;
-    chrome.surface = mapColor(map, "surface");
-    chrome.surfaceRaised = mapColor(map, "surfaceRaised");
-    chrome.border = mapColor(map, "border");
-    chrome.text = mapColor(map, "text");
-    chrome.textMuted = mapColor(map, "textMuted");
-    chrome.close = mapColor(map, "close");
-    chrome.minimize = mapColor(map, "minimize");
-    chrome.maximize = mapColor(map, "maximize");
-    const auto style = map.value(QStringLiteral("buttonStyle"));
-    if (style.metaType().id() == QMetaType::QString && !style.toString().isEmpty()) {
-        chrome.buttonStyle = style.toString();
-    }
-    const auto token = [&map](const char *name, const QStringList &allowed,
-                              const QString &fallback) {
-        const auto value = map.value(QString::fromLatin1(name));
-        return value.metaType().id() == QMetaType::QString && allowed.contains(value.toString())
-            ? value.toString() : fallback;
-    };
-    chrome.buttonSide = token("buttonSide", {QStringLiteral("left"), QStringLiteral("right")}, {});
-    chrome.buttons = token("buttons", {QStringLiteral("all"), QStringLiteral("minimize-close"),
-                                       QStringLiteral("close")},
-                           QStringLiteral("all"));
-    chrome.titleAlignment = token("titleAlignment",
-                                  {QStringLiteral("center"), QStringLiteral("left")},
-                                  QStringLiteral("center"));
-    chrome.titleBar = mapColor(map, "titleBar");
-    chrome.titleBarInactive = mapColor(map, "titleBarInactive");
-    chrome.restore = mapColor(map, "restore");
-    chrome.identityColor = mapColor(map, "identityColor");
-    chrome.memberFocused = map.value(QStringLiteral("memberFocused")).toBool();
-    return chrome;
-}
-
-QVariantMap DecorationChrome::toVariantMap() const
-{
-    QVariantMap map{{QStringLiteral("surface"), surface},
-                    {QStringLiteral("surfaceRaised"), surfaceRaised},
-                    {QStringLiteral("border"), border},
-                    {QStringLiteral("text"), text},
-                    {QStringLiteral("textMuted"), textMuted},
-                    {QStringLiteral("close"), close},
-                    {QStringLiteral("minimize"), minimize},
-                    {QStringLiteral("maximize"), maximize},
-                    {QStringLiteral("buttonStyle"), buttonStyle}};
-    if (!buttonSide.isEmpty()) {
-        map.insert(QStringLiteral("buttonSide"), buttonSide);
-    }
-    if (buttons != QLatin1String("all")) {
-        map.insert(QStringLiteral("buttons"), buttons);
-    }
-    if (titleAlignment != QLatin1String("center")) {
-        map.insert(QStringLiteral("titleAlignment"), titleAlignment);
-    }
-    if (titleBar.isValid()) {
-        map.insert(QStringLiteral("titleBar"), titleBar);
-    }
-    if (titleBarInactive.isValid()) {
-        map.insert(QStringLiteral("titleBarInactive"), titleBarInactive);
-    }
-    if (restore.isValid()) {
-        map.insert(QStringLiteral("restore"), restore);
-    }
-    // Identity emphasis keys are additive and optional (ADR-0139): absent
-    // keys keep neutral members byte-identical.
-    if (identityColor.isValid()) {
-        map.insert(QStringLiteral("identityColor"), identityColor);
-    }
-    if (memberFocused) {
-        map.insert(QStringLiteral("memberFocused"), true);
-    }
-    return map;
-}
-
 bool DecorationChrome::glyphChrome() const
 {
     return buttonStyle == QStringLiteral("glyph");
@@ -197,6 +111,20 @@ DecorationVisualStyle decorationVisualStyle(const QColor &border,
     style.shadowColor = inkShadow(surface);
     style.framed = !maximized;
     return style;
+}
+
+DecorationVisualStyle decorationVisualStyleFor(const DecorationChrome &chrome, bool maximized)
+{
+    auto style = decorationVisualStyle(chrome.border, chrome.surface, maximized);
+    style.cornerRadius = chrome.cornerRadius;
+    style.shadowExtent = chrome.shadowExtent;
+    style.shadowOpacity = chrome.shadowOpacity;
+    return style;
+}
+
+qreal decorationFrameRadius(const DecorationChrome &chrome, bool maximized)
+{
+    return maximized ? 0.0 : chrome.cornerRadius;
 }
 
 QColor decorationMemberHandleFillColor(const DecorationChrome &chrome,
@@ -428,27 +356,45 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
     painter.setRenderHint(QPainter::Antialiasing, true);
     const QRectF bounds(QPointF(0.0, 0.0), frame.size);
     const qreal titleHeight = DecorationTitleHeight;
-    const qreal radius = frame.maximized ? 0.0 : DecorationCornerRadius;
+    const qreal radius = decorationFrameRadius(chrome, frame.maximized);
     const QColor title = decorationTitleColor(chrome, frame.active);
     const bool worn = chrome.wornLuna();
     if (worn) {
         paintWornLunaTitle(painter, QRectF(0.0, 0.0, frame.size.width(), titleHeight),
                            title, decorationWearSeed(frame.caption, frame.size.width()));
     } else {
+        // Theming v2 (ADR-0207): the title fill carries the document's
+        // material opacity, an optional vibrancy tint beneath it, and a
+        // one-pixel catch light under the top edge. At the defaults (opaque,
+        // no tint, no highlight) this paints exactly what shipped before.
+        QColor fill = title;
+        fill.setAlphaF(static_cast<float>(std::clamp(chrome.titleOpacity, 0.0, 1.0)
+                                          * title.alphaF()));
         QPainterPath titlePath;
         titlePath.addRoundedRect(QRectF(0.0, 0.0, frame.size.width(),
                                         titleHeight + radius),
                                  radius, radius);
-        painter.fillPath(titlePath, title);
-        painter.fillRect(QRectF(0.0, titleHeight - radius, frame.size.width(), radius),
-                         title);
+        const QRectF seam(0.0, titleHeight - radius, frame.size.width(), radius);
+        if (chrome.titleTint.isValid() && chrome.titleOpacity < 1.0) {
+            QColor tint = chrome.titleTint;
+            if (tint.alphaF() >= 1.0F) {
+                tint.setAlphaF(0.35F);
+            }
+            painter.fillPath(titlePath, tint);
+            painter.fillRect(seam, tint);
+        }
+        painter.fillPath(titlePath, fill);
+        painter.fillRect(seam, fill);
+        if (chrome.titleHighlight) {
+            const QColor highlight(255, 255, 255, qGray(title.rgb()) < 128 ? 46 : 120);
+            painter.fillRect(QRectF(radius / 2.0, 1.0, frame.size.width() - radius, 1.0),
+                             highlight);
+        }
         painter.setPen(QPen(chrome.border, 0.75));
         painter.drawLine(QPointF(0.0, titleHeight - 0.5),
                          QPointF(frame.size.width(), titleHeight - 0.5));
     }
-    paintDecorationFrame(painter, bounds,
-                         decorationVisualStyle(chrome.border, chrome.surface,
-                                               frame.maximized));
+    paintDecorationFrame(painter, bounds, decorationVisualStyleFor(chrome, frame.maximized));
     painter.restore();
 }
 

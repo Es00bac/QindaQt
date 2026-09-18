@@ -177,8 +177,15 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     // list with itself. Every client-scoped key must be defined by the
     // authority that will validate its optimistic commits.
     const auto keys = AppearanceKeys::scopedKeys();
-    // Ten appearance keys plus the chrome arrangement keys (ADR-0129).
-    QCOMPARE(keys.size(), 10 + QindaQt::Decoration::ChromePreferences::settingsKeys().size());
+    // Ten appearance keys plus the chrome arrangement keys (ADR-0129), the
+    // two decoration document choices (ADR-0207) and the two accessibility
+    // switches the route offers (ADR-0206).
+    QCOMPARE(keys.size(), 10 + QindaQt::Decoration::ChromePreferences::settingsKeys().size()
+                              + QindaQt::Decoration::ChromePreferences::decorationKeys().size()
+                              + 2);
+    QVERIFY(keys.contains(QStringLiteral("accessibility.reducedTransparency")));
+    QVERIFY(keys.contains(QStringLiteral("accessibility.reducedMotion")));
+    QCOMPARE(QindaQt::Decoration::ChromePreferences::decorationKeys().size(), 2);
     for (const QString &key : keys) {
         QVERIFY2(schema->definition(key) != nullptr, qPrintable(key));
     }
@@ -272,6 +279,38 @@ void AppearanceValuesTests::chromeArrangementTokensDecodeStrictlyAndRoundTrip()
     QVariantMap mistyped = map;
     mistyped.insert(QStringLiteral("appearance.containerButtonGlyphs"), 1);
     QVERIFY(!AppearanceValues::fromVariantMap(mistyped).has_value());
+
+    // Decoration document choices default to the theme's pairing and accept
+    // any well-formed document id; an empty or malformed id is rejected.
+    QCOMPARE(map.value(QStringLiteral("appearance.windowDecoration")).toString(),
+             QStringLiteral("theme"));
+    QVariantMap paired = map;
+    paired.insert(QStringLiteral("appearance.windowDecoration"), QStringLiteral("luna-classic"));
+    paired.insert(QStringLiteral("appearance.containerDecoration"), QStringLiteral("glass"));
+    const auto decodedPairing = AppearanceValues::fromVariantMap(paired);
+    QVERIFY(decodedPairing.has_value());
+    QCOMPARE(decodedPairing->chrome.windowDecoration, QStringLiteral("luna-classic"));
+    QCOMPARE(decodedPairing->chrome.containerDecoration, QStringLiteral("glass"));
+    QCOMPARE(decodedPairing->toVariantMap(), paired);
+    QVariantMap malformed = map;
+    malformed.insert(QStringLiteral("appearance.windowDecoration"), QStringLiteral("../etc"));
+    QVERIFY(!AppearanceValues::fromVariantMap(malformed, &error).has_value());
+    QVERIFY(error.contains(QStringLiteral("appearance.windowDecoration")));
+
+    // The accessibility switches decode strictly as Booleans and round trip.
+    QCOMPARE(map.value(QStringLiteral("accessibility.reducedTransparency")).toBool(), false);
+    QVariantMap flattened = map;
+    flattened.insert(QStringLiteral("accessibility.reducedTransparency"), true);
+    flattened.insert(QStringLiteral("accessibility.reducedMotion"), true);
+    const auto decodedFlat = AppearanceValues::fromVariantMap(flattened);
+    QVERIFY(decodedFlat.has_value());
+    QVERIFY(decodedFlat->reducedTransparency);
+    QVERIFY(decodedFlat->reducedMotion);
+    QCOMPARE(decodedFlat->toVariantMap(), flattened);
+    QVariantMap stringy = map;
+    stringy.insert(QStringLiteral("accessibility.reducedMotion"), QStringLiteral("true"));
+    QVERIFY(!AppearanceValues::fromVariantMap(stringy, &error).has_value());
+    QVERIFY(error.contains(QStringLiteral("accessibility.reducedMotion")));
 }
 
 QTEST_GUILESS_MAIN(AppearanceValuesTests)

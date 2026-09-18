@@ -10,6 +10,8 @@ set(themes
     qinda-dark
     qinda-high-contrast
     qinda-macos
+    qinda-glass-dark
+    qinda-paper
 )
 set(rows)
 if(QINDAQT_SCALE STREQUAL "100")

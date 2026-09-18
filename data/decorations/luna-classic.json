@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "luna-classic",
+  "name": "Luna Classic",
+  "description": "The worn Luna title bar with console glyphs on the right and square corners, on any color theme.",
+  "buttonPlacement": "right",
+  "tabDirection": "left-to-right",
+  "buttonStyle": "glyph",
+  "hoverGlyphs": true,
+  "titleBarColor": "#2B6FD4",
+  "titleBarInactiveColor": "#7E96B8",
+  "closeColor": "#2D6BE4",
+  "minimizeColor": "#E23B3B",
+  "maximizeColor": "#3DA53D",
+  "restoreColor": "#E87BD0",
+  "material": {
+    "opacity": 1.0,
+    "blur": false,
+    "border": 1.0,
+    "highlight": false,
+    "shadow": 0.9
+  },
+  "cornerRadius": 4,
+  "shadow": {
+    "extent": 8,
+    "opacity": 0.35
+  },
+  "memberHandle": "plain",
+  "containerBadge": "square"
+}

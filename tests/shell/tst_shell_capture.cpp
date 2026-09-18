@@ -48,7 +48,23 @@ void ShellCaptureTest::capturesRequiredResolution_data()
         QTest::newRow(qPrintable(preset)) << QSize(1920, 1080) << preset
                                         << QStringLiteral("qinda-dark");
     }
-
+    // Theming v2 (ADR-0206): every stock profile under one translucent dark
+    // theme and one opaque light theme, so panel, popup and chrome materials
+    // are captured over each dressing.
+    const QStringList everyProfile{
+        QStringLiteral("qindaqt"), QStringLiteral("macos-inspired"),
+        QStringLiteral("gnome-inspired"), QStringLiteral("mate-inspired"),
+        QStringLiteral("minimal"), QStringLiteral("nextstep-inspired"),
+        QStringLiteral("unity-inspired"), QStringLiteral("windows-classic"),
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
+        QStringLiteral("qinda-bliss")};
+    for (const auto *theme : {"qinda-glass-dark", "qinda-paper"}) {
+        for (const auto &preset : everyProfile) {
+            const QByteArray tag = QByteArray(theme) + '-' + preset.toLatin1();
+            QTest::newRow(tag.constData()) << QSize(1920, 1080) << preset
+                                          << QString::fromLatin1(theme);
+        }
+    }
 }
 
 void ShellCaptureTest::capturesRequiredResolution()

@@ -44,6 +44,7 @@ class TokenFacade final : public QObject {
     Q_PROPERTY(QVariantMap type READ type NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap motion READ motion NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap elevation READ elevation NOTIFY tokensChanged FINAL)
+    Q_PROPERTY(QVariantMap material READ material NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap accessibility READ accessibility NOTIFY tokensChanged FINAL)
     // Touch mode (ADR-0193): `available` when a touchscreen is present,
     // `active` while the last input was a finger, and the sizes controls
@@ -73,6 +74,7 @@ public:
     [[nodiscard]] QVariantMap type() const;
     [[nodiscard]] QVariantMap motion() const;
     [[nodiscard]] QVariantMap elevation() const;
+    [[nodiscard]] QVariantMap material() const;
     [[nodiscard]] QVariantMap accessibility() const;
     [[nodiscard]] QVariantMap touch() const;
     // Sets the touch state directly (compositions and tests); the facade

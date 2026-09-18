@@ -35,6 +35,9 @@ constexpr ThemeRow kThemes[] = {
     {"qinda-dark", "qinda-dark.json"},
     {"qinda-high-contrast", "qinda-high-contrast.json"},
     {"qinda-macos", "qinda-macos.json"},
+    // Schema v2 themes (ADR-0206): one translucent dark, one opaque light.
+    {"qinda-glass-dark", "qinda-glass-dark.json"},
+    {"qinda-paper", "qinda-paper.json"},
 };
 
 int channelDistance(QRgb first, QRgb second)

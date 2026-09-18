@@ -188,10 +188,16 @@ void AppearancePreviewTests::userDirectoryMergesWithoutHidingBuiltIns()
          QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")},
         &error);
     QVERIFY2(merged.has_value(), qPrintable(error));
-    QCOMPARE(merged->size(), 6);
+    // Six schema v1 themes plus the six schema v2 themes (ADR-0206); the
+    // user copy of qinda-macos shadows the shipped one, never duplicates it.
+    QCOMPARE(merged->size(), 12);
     QSet<QString> ids;
     for (const ThemeSpec &theme : *merged) {
         ids.insert(theme.id);
+    }
+    for (const auto *v2 : {"qinda-glass-light", "qinda-glass-dark", "qinda-slate",
+                           "qinda-paper", "qinda-aurora", "qinda-studio"}) {
+        QVERIFY2(ids.contains(QString::fromLatin1(v2)), v2);
     }
     QVERIFY(ids.contains(QStringLiteral("qinda-dark")));
     QVERIFY(ids.contains(QStringLiteral("qinda-light")));

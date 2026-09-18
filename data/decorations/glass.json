@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "glass",
+  "name": "Glass",
+  "description": "Frosted title bars with a catch light, traffic lights on the left, wide corners, and a soft deep shadow.",
+  "buttonPlacement": "left",
+  "tabDirection": "left-to-right",
+  "buttonStyle": "traffic-lights",
+  "hoverGlyphs": true,
+  "material": {
+    "opacity": 0.84,
+    "blur": true,
+    "border": 0.6,
+    "highlight": true,
+    "shadow": 1.2
+  },
+  "cornerRadius": 14,
+  "shadow": {
+    "extent": 20,
+    "opacity": 0.28
+  },
+  "memberHandle": "grip",
+  "containerBadge": "pill"
+}

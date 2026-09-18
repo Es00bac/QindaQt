@@ -64,11 +64,18 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
         next.wallpaperMode = *mode;
     } else if (key == QLatin1String(AppearanceKeys::UiScale)) {
         if (!requireDouble(&next.uiScale)) return false;
-    } else if (Decoration::ChromePreferences::settingsKeys().contains(key)) {
+    } else if (Decoration::ChromePreferences::settingsKeys().contains(key)
+               || Decoration::ChromePreferences::decorationKeys().contains(key)) {
         if (value.metaType().id() != QMetaType::QString
             || !next.chrome.setToken(key, value.toString())) {
             return false;
         }
+    } else if (key == QLatin1String(AppearanceKeys::ReducedTransparency)) {
+        if (value.metaType().id() != QMetaType::Bool) return false;
+        next.reducedTransparency = value.toBool();
+    } else if (key == QLatin1String(AppearanceKeys::ReducedMotion)) {
+        if (value.metaType().id() != QMetaType::Bool) return false;
+        next.reducedMotion = value.toBool();
     } else {
         return false;
     }

@@ -121,6 +121,7 @@ QVariantMap TokenFacade::space() const { return nestedMap(m_all, QStringLiteral(
 QVariantMap TokenFacade::type() const { return nestedMap(m_all, QStringLiteral("type")); }
 QVariantMap TokenFacade::motion() const { return nestedMap(m_all, QStringLiteral("motion")); }
 QVariantMap TokenFacade::elevation() const { return nestedMap(m_all, QStringLiteral("elevation")); }
+QVariantMap TokenFacade::material() const { return nestedMap(m_all, QStringLiteral("material")); }
 QVariantMap TokenFacade::accessibility() const
 {
     return nestedMap(m_all, QStringLiteral("accessibility"));

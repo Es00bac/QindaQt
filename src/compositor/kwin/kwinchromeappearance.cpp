@@ -6,6 +6,7 @@
 #include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/themes/decoration_theme_loader.h"
 
 #include <KDecoration3/Decoration>
 #include <QtQml/qqml.h>
@@ -46,6 +47,22 @@ KWinChromeAppearance::KWinChromeAppearance(ManagedWindowRegistry &registry,
   connect(m_preferencesSettings.get(),
           &Services::SettingsClient::SettingsClient::snapshotChanged, this,
           &KWinChromeAppearance::refreshPreferences);
+  QString decorationError;
+  if (auto loaded = Themes::DecorationThemeLoader::loadDirectories(
+          AppAppearance::standardDecorationDirectories(), &decorationError))
+    m_decorations = *loaded;
+  else
+    qWarning("QindaQt decoration documents unavailable: %s",
+             qPrintable(decorationError));
+  m_decorationTransport =
+      std::make_unique<Services::SettingsClient::QtSettingsTransport>(bus);
+  m_decorationSettings =
+      std::make_unique<Services::SettingsClient::SettingsClient>(
+          *m_decorationTransport,
+          Decoration::ChromePreferences::decorationKeys());
+  connect(m_decorationSettings.get(),
+          &Services::SettingsClient::SettingsClient::snapshotChanged, this,
+          &KWinChromeAppearance::refreshDecorationPreferences);
   connect(&m_registry, &ManagedWindowRegistry::managedWindowAdded, this,
           &KWinChromeAppearance::observeWindow);
   for (const auto &id : m_registry.windowIds())
@@ -58,6 +75,10 @@ KWinChromeAppearance::KWinChromeAppearance(ManagedWindowRegistry &registry,
   if (!m_preferencesSettings->start(&error))
     qWarning("QindaQt chrome preferences could not start Settings1: %s",
              qPrintable(error));
+  error.clear();
+  if (!m_decorationSettings->start(&error))
+    qWarning("QindaQt decoration pairing could not start Settings1: %s",
+             qPrintable(error));
   publish();
 }
 
@@ -65,12 +86,28 @@ KWinChromeAppearance::~KWinChromeAppearance() = default;
 
 void KWinChromeAppearance::refreshPreferences() {
   const auto &snapshot = m_preferencesSettings->snapshot();
-  const auto next = snapshot
+  auto next = snapshot
       ? Decoration::ChromePreferences::fromSettingsValues(snapshot->values)
       : Decoration::ChromePreferences{};
+  // The arrangement snapshot never carries the pairing keys; keep them.
+  next.windowDecoration = m_preferences.windowDecoration;
+  next.containerDecoration = m_preferences.containerDecoration;
   if (next == m_preferences)
     return;
   m_preferences = next;
+  publish();
+}
+
+void KWinChromeAppearance::refreshDecorationPreferences() {
+  const auto &snapshot = m_decorationSettings->snapshot();
+  const auto pairing = snapshot
+      ? Decoration::ChromePreferences::fromSettingsValues(snapshot->values)
+      : Decoration::ChromePreferences{};
+  if (pairing.windowDecoration == m_preferences.windowDecoration &&
+      pairing.containerDecoration == m_preferences.containerDecoration)
+    return;
+  m_preferences.windowDecoration = pairing.windowDecoration;
+  m_preferences.containerDecoration = pairing.containerDecoration;
   publish();
 }
 
@@ -78,8 +115,16 @@ void KWinChromeAppearance::publish() {
   const auto &theme = m_appearance->theme();
   m_palette = chromePaletteForTheme(theme);
   m_nativePalette = nativePaletteForTheme(theme);
-  m_qmlPalette = decorationPaletteProperties(m_palette, theme, m_preferences);
-  m_containerStyle = Decoration::resolveContainerStyle(theme, m_preferences);
+  // ADR-0207: the theme names its decoration pairing; the user's explicit
+  // choice wins when that document is installed.
+  const auto windowDocument = Decoration::selectDecorationTheme(
+      theme, m_decorations, m_preferences.windowDecoration);
+  const auto containerDocument = Decoration::selectDecorationTheme(
+      theme, m_decorations, m_preferences.containerDecoration);
+  m_qmlPalette = decorationPaletteProperties(m_palette, theme, windowDocument,
+                                             m_preferences);
+  m_containerStyle =
+      Decoration::resolveContainerStyle(theme, containerDocument, m_preferences);
   m_qmlPalette.insert(QStringLiteral("accent"),
                       m_nativePalette.color(QPalette::Highlight));
   m_qmlPalette.insert(QStringLiteral("accentText"),
