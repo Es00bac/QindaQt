@@ -14,6 +14,7 @@ target_sources(
         src/gesture_state_machine.cpp
         src/intent_translator.cpp
         src/keyboard_navigation.cpp
+        src/live_editor_host.cpp
         src/user_profile_store.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -27,6 +28,7 @@ target_sources(
             include/qindaqt/shell_customization_editor/gesture_state_machine.h
             include/qindaqt/shell_customization_editor/intent_translator.h
             include/qindaqt/shell_customization_editor/keyboard_navigation.h
+            include/qindaqt/shell_customization_editor/live_editor_host.h
             include/qindaqt/shell_customization_editor/user_profile_store.h
 )
 

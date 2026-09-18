@@ -61,6 +61,8 @@ enum class IntentKind {
     ConfigurePanel,
     MovePanel,
     ConfigureAppletSettings,
+    AddPanel,
+    RemovePanel,
 };
 
 struct InsertAppletIntent final {
@@ -121,13 +123,28 @@ struct ConfigureAppletSettingsIntent final {
     QVariantMap settings;
 };
 
+// Whole-panel intents (live customization, ADR "host the customization
+// editor live in the shell"). They map one-to-one onto the engine's existing
+// AddPanelCommand / RemovePanelCommand; the panel spec is complete because the
+// engine validates it against the profile schema and the current outputs.
+struct AddPanelIntent final {
+    Profiles::PanelSpec panel;
+    std::optional<QString> beforePanelId;
+};
+
+struct RemovePanelIntent final {
+    QString panelId;
+};
+
 using CustomizationIntent = std::variant<InsertAppletIntent,
                                          MoveAppletIntent,
                                          RemoveAppletIntent,
                                          DuplicateAppletIntent,
                                          ConfigurePanelIntent,
                                          MovePanelIntent,
-                                         ConfigureAppletSettingsIntent>;
+                                         ConfigureAppletSettingsIntent,
+                                         AddPanelIntent,
+                                         RemovePanelIntent>;
 
 [[nodiscard]] IntentKind intentKind(const CustomizationIntent &intent) noexcept;
 
@@ -147,6 +164,9 @@ using CustomizationIntent = std::variant<InsertAppletIntent,
                                                   const std::optional<QString> &beforePanelId);
 [[nodiscard]] CustomizationIntent configureAppletSettingsIntent(
     const QString &panelId, const QString &appletId, const QVariantMap &settings);
+[[nodiscard]] CustomizationIntent addPanelIntent(const Profiles::PanelSpec &panel,
+                                                 const std::optional<QString> &beforePanelId);
+[[nodiscard]] CustomizationIntent removePanelIntent(const QString &panelId);
 
 // Structural validation only. Existence, manifest compatibility, collision,
 // and layout acceptance are engine authority (evaluate()/execute()); this pass

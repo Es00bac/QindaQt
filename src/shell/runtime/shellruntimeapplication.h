@@ -80,6 +80,8 @@ class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
 class LauncherAppletComposition;
 class EdgeGestureSubscriber;
+class LiveCustomizationController;
+class LiveCustomizationShortcut;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
@@ -123,6 +125,10 @@ private:
     void initializeAppearanceBridge(bool explicitThemeSelection);
     void initializeWallpaper();
     void initializeDesktopSurface(const Profiles::LayoutProfile &profile);
+    // Live customization (Meta+right-click menus, edit mode): the controller
+    // hosts the Customize editor trio over the live profile and hands the
+    // panel windows and desktop surfaces one borrowed facade.
+    void initializeLiveCustomization(const Profiles::LayoutProfile &profile);
     void startSettingsClients();
     void restartWindowActionsIdentity();
     void initializePanelVisibility(const Profiles::LayoutProfile &profile);
@@ -145,6 +151,10 @@ private:
     // startup and every adoption call this once the selection has settled.
     void followGlobalMenuLayout(const Profiles::LayoutProfile &profile);
     void refreshProfileStoreWatch();
+    // The writable user store joins the remembered catalog directories as
+    // soon as it exists (it may be created by the first Apply of this
+    // session), so a reload can see the copy that shadows a built-in id.
+    void ensureUserProfileStoreInCatalog();
     void resetRuntime();
 
     QGuiApplication &m_application;
@@ -210,6 +220,12 @@ private:
     std::unique_ptr<Services::SettingsClient::SettingsClient>
         m_quietingSettingsClient;
     std::unique_ptr<NotificationQuietingSettingsBridge> m_quietingSettingsBridge;
+    // Purpose-scoped Settings1 client for shell.customization.chord (an
+    // absent optional key must never poison the shell's main scope).
+    std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
+        m_customizationSettingsTransport;
+    std::unique_ptr<Services::SettingsClient::SettingsClient>
+        m_customizationSettingsClient;
     std::unique_ptr<SettingsRouteLauncher> m_settingsRouteLauncher;
     std::unique_ptr<Services::NotificationPresentationModel::
                         NotificationPresentationController>
@@ -234,6 +250,8 @@ private:
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
     std::unique_ptr<TaskOrderPersistence> m_taskOrderPersistence;
     std::unique_ptr<PanelQuickConfig> m_panelQuickConfig;
+    std::unique_ptr<LiveCustomizationController> m_liveCustomization;
+    std::unique_ptr<LiveCustomizationShortcut> m_liveCustomizationShortcut;
     std::unique_ptr<StatusNotifierAppletComposition> m_statusNotifierApplet;
     std::unique_ptr<DesktopControlsComposition> m_desktopControls;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;

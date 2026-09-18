@@ -217,6 +217,11 @@ void RuntimePanelWindowFactory::setPanelQuickConfig(QObject *access) noexcept
     m_panelQuickConfig = access;
 }
 
+void RuntimePanelWindowFactory::setLiveCustomization(QObject *access) noexcept
+{
+    m_liveCustomization = access;
+}
+
 bool RuntimePanelWindowFactory::ensureComponent(QString *error)
 {
     if (m_component && m_component->isReady()) {
@@ -310,6 +315,10 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
     if (m_panelQuickConfig != nullptr) {
         window->setProperty("panelQuickConfig",
                             QVariant::fromValue(m_panelQuickConfig));
+    }
+    if (m_liveCustomization != nullptr) {
+        window->setProperty("liveCustomization",
+                            QVariant::fromValue(m_liveCustomization));
     }
     window->setObjectName(QStringLiteral("qindaqt-panel-%1").arg(surfaceId));
     // The dock presents every task row (the zone viewport scrolls) instead of
