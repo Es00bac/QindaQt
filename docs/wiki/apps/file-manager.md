@@ -524,6 +524,12 @@ job.
 - A confirmed success emits `transferCommitted(destinationFolder)`; the window
   re-reads the listing only when that is the folder on screen. The queue never
   navigates or refreshes.
+- Only the *destination* travels in that signal, so a queued **move** leaves the
+  source folder's listing stale: after a local-to-remote move the local folder
+  keeps showing the moved entry until the user navigates away or refreshes. The
+  single-child remote-move path does refresh the browsed folder, so the two move
+  paths differ here. Carrying the source set alongside the destination is the
+  repair; it is not in this slice.
 - `TransferQueueBanner.qml` shows what is running, its progress, how many are
   waiting, and Pause/Resume and Cancel all; a refusal gets its own banner.
 

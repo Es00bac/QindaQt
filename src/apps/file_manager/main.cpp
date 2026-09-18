@@ -153,7 +153,7 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
 }
 
 // The one app-local state root: bookmarks and saved network locations are
-// separate schemas in the same $XDG_STATE_HOME directory (ADR-0090/0191).
+// separate schemas in the same $XDG_STATE_HOME directory (ADR-0090/0194).
 [[nodiscard]] QString fileManagerStateDirectory() {
   return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation))
       .filePath(QStringLiteral("qindaqt-file-manager"));
@@ -196,7 +196,7 @@ void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &sear
       QStringLiteral("emptyTrashConfirmationDialog"),
       QStringLiteral("propertiesDialog"),
       QStringLiteral("filterSubfoldersToggle"),
-      // ADR-0194/0192: the network surfaces are part of the installed
+      // ADR-0194/0195: the network surfaces are part of the installed
       // package's contract, so a packaging change that drops one fails the
       // probe instead of shipping a Network place that opens nothing.
       QStringLiteral("networkHub"), QStringLiteral("connectToServerButton"),
@@ -357,7 +357,7 @@ int main(int argc, char **argv) {
   auto placesController =
       std::make_unique<QindaQt::Apps::FileManager::PlacesController>(
           std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(stateDirectory));
-  // ADR-0194/0192: saved network locations and the transfer queue are owned
+  // ADR-0194/0195: saved network locations and the transfer queue are owned
   // here, beside the places store, and are handed to QML as plain models.
   auto networkLocationsController =
       std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsController>(
