@@ -16,6 +16,7 @@ target_sources(
             include/qindaqt/apps/settings_power/screen_lock_settings.h
             include/qindaqt/apps/settings_power/idle_display_settings.h
             include/qindaqt/apps/settings_power/lid_power_button_settings.h
+            include/qindaqt/apps/settings_power/automatic_power_profile_policy_port.h
 )
 target_link_libraries(
     qindaqt_settings_power
@@ -44,10 +45,13 @@ qt_add_qml_module(
         power_route_composition.cpp
         qt_powerdevil_lid_port.h
         qt_powerdevil_lid_port.cpp
+        qt_powerdevil_profile_port.h
+        qt_powerdevil_profile_port.cpp
 )
 target_link_libraries(
     qindaqt_settings_power_backend_qml
-    PRIVATE qindaqt_settings_power QindaQt::PowerDevilLid QindaQt::SessionActions
+    PRIVATE qindaqt_settings_power QindaQt::PowerDevilLid QindaQt::PowerDevilProfile
+            QindaQt::SessionActions
             QindaQt::TokensQml
             Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick
 )

@@ -37,6 +37,9 @@ class PowerSettingsModel final : public QObject {
   // ADR-0132: injected opaque lid/power-button policy port. The model owns no
   // policy authority and never imports the adapter behind it.
   Q_PROPERTY(QObject *lidPolicy READ lidPolicy CONSTANT)
+  // Checkpoint L row 5: injected opaque automatic AC/Battery/LowBattery
+  // power-profile policy port, same boundary discipline as lidPolicy.
+  Q_PROPERTY(QObject *profilePolicy READ profilePolicy CONSTANT)
   // ADR-0150: injected opaque external-display brightness rows over the public
   // Display client. Display1 serializes that mutation, so its fence is
   // independent of this model's Power1 operation fence.
@@ -61,6 +64,7 @@ public:
                               QObject *sessionActions = nullptr,
                               QObject *lidPolicy = nullptr,
                               QObject *externalBrightness = nullptr,
+                              QObject *profilePolicy = nullptr,
                               QObject *parent = nullptr);
 
   [[nodiscard]] bool loading() const noexcept;
@@ -75,6 +79,9 @@ public:
   [[nodiscard]] QObject *lidPolicy() const noexcept;
   [[nodiscard]] QObject *externalBrightness() const noexcept {
     return m_externalBrightness;
+  }
+  [[nodiscard]] QObject *profilePolicy() const noexcept {
+    return m_profilePolicy;
   }
   [[nodiscard]] bool lidPresent() const noexcept;
   [[nodiscard]] QString statusText() const;
@@ -158,6 +165,7 @@ private:
   QObject *m_sessionActions = nullptr;
   QObject *m_lidPolicy = nullptr;
   QObject *m_externalBrightness = nullptr;
+  QObject *m_profilePolicy = nullptr;
   QTimer m_debounceTimer;
   QTimer m_convergenceTimer;
   std::optional<DebouncedBrightness> m_debounce;
