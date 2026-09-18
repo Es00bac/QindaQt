@@ -41,6 +41,29 @@ set_tests_properties(
     qindaqt.audio-applet-controller PROPERTIES LABELS "shell;audio;runtime"
 )
 
+# ADR-0191's control-ownership rows, split out so neither suite crosses the
+# 600-line file limit; both share support/audio_applet_controller_fixture.h.
+qt_add_executable(
+    qindaqt_audio_applet_coalescing_tests
+    tst_audio_applet_coalescing.cpp
+)
+target_include_directories(
+    qindaqt_audio_applet_coalescing_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../services/audio_client"
+)
+target_link_libraries(
+    qindaqt_audio_applet_coalescing_tests
+    PRIVATE QindaQt::ShellAudioAppletRuntime Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_applet_coalescing_tests)
+add_test(
+    NAME qindaqt.audio-applet-coalescing
+    COMMAND qindaqt_audio_applet_coalescing_tests
+)
+set_tests_properties(
+    qindaqt.audio-applet-coalescing PROPERTIES LABELS "shell;audio;runtime"
+)
+
 qt_add_executable(qindaqt_audio_applet_qml_tests tst_audio_applet_qml.cpp)
 target_include_directories(
     qindaqt_audio_applet_qml_tests

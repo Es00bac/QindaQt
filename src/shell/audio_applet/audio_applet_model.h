@@ -4,6 +4,7 @@
 
 #include <qindaqt/services/audio_protocol/audio_types.h>
 
+#include <QtCore/QHash>
 #include <QtCore/QSet>
 #include <QtCore/QVariantList>
 
@@ -26,6 +27,18 @@ enum class Phase {
     Unavailable,
 };
 
+// The value a control last asked for, held until the service echoes it
+// ([ADR-0191]). A row that fell straight back to the snapshot the moment the
+// finger lifted would put the handle back where it started for the whole round
+// trip, and the next step would then ask for the same value again instead of
+// advancing.
+struct RequestedValue {
+    double volume = 0.0;
+    bool muted = false;
+    bool hasVolume = false;
+    bool hasMute = false;
+};
+
 // One bounded, QML-readable output-device row. Values are presentation
 // projections of one validated Audio1 Device; they never carry handles,
 // D-Bus objects, or client authority.
@@ -42,6 +55,10 @@ class DeviceRow {
     Q_PROPERTY(bool canSetVolume READ canSetVolume CONSTANT)
     Q_PROPERTY(bool canSetMute READ canSetMute CONSTANT)
     Q_PROPERTY(bool pending READ pending CONSTANT)
+    // Provenance of the two mutable values, so a test can tell the user's
+    // outstanding intent from service truth.
+    Q_PROPERTY(bool volumeIsRequested READ volumeIsRequested CONSTANT)
+    Q_PROPERTY(bool mutedIsRequested READ mutedIsRequested CONSTANT)
 
 public:
     quint64 m_serial = 0;
@@ -55,6 +72,8 @@ public:
     bool m_canSetVolume = false;
     bool m_canSetMute = false;
     bool m_pending = false;
+    bool m_volumeIsRequested = false;
+    bool m_mutedIsRequested = false;
 
     [[nodiscard]] quint64 serial() const noexcept { return m_serial; }
     [[nodiscard]] const QString &label() const noexcept { return m_label; }
@@ -67,6 +86,14 @@ public:
     [[nodiscard]] bool canSetVolume() const noexcept { return m_canSetVolume; }
     [[nodiscard]] bool canSetMute() const noexcept { return m_canSetMute; }
     [[nodiscard]] bool pending() const noexcept { return m_pending; }
+    [[nodiscard]] bool volumeIsRequested() const noexcept
+    {
+        return m_volumeIsRequested;
+    }
+    [[nodiscard]] bool mutedIsRequested() const noexcept
+    {
+        return m_mutedIsRequested;
+    }
 };
 
 // One bounded, QML-readable application-stream row. Move targets are not part
@@ -83,6 +110,8 @@ class StreamRow {
     Q_PROPERTY(bool canSetVolume READ canSetVolume CONSTANT)
     Q_PROPERTY(bool canSetMute READ canSetMute CONSTANT)
     Q_PROPERTY(bool pending READ pending CONSTANT)
+    Q_PROPERTY(bool volumeIsRequested READ volumeIsRequested CONSTANT)
+    Q_PROPERTY(bool mutedIsRequested READ mutedIsRequested CONSTANT)
 
 public:
     quint64 m_serial = 0;
@@ -95,6 +124,8 @@ public:
     bool m_canSetVolume = false;
     bool m_canSetMute = false;
     bool m_pending = false;
+    bool m_volumeIsRequested = false;
+    bool m_mutedIsRequested = false;
 
     [[nodiscard]] quint64 serial() const noexcept { return m_serial; }
     [[nodiscard]] const QString &label() const noexcept { return m_label; }
@@ -106,6 +137,14 @@ public:
     [[nodiscard]] bool canSetVolume() const noexcept { return m_canSetVolume; }
     [[nodiscard]] bool canSetMute() const noexcept { return m_canSetMute; }
     [[nodiscard]] bool pending() const noexcept { return m_pending; }
+    [[nodiscard]] bool volumeIsRequested() const noexcept
+    {
+        return m_volumeIsRequested;
+    }
+    [[nodiscard]] bool mutedIsRequested() const noexcept
+    {
+        return m_mutedIsRequested;
+    }
 };
 
 // Pure projection of one Audio1 snapshot plus the controller's pending-request
@@ -159,7 +198,8 @@ public:
     [[nodiscard]] static AudioAppletModel
     project(Phase phase, const QString &phaseReasonCode,
             const Audio::Snapshot *snapshot,
-            const QSet<quint64> &pendingSerials);
+            const QSet<quint64> &pendingSerials,
+            const QHash<quint64, RequestedValue> &requestedBySerial = {});
 
     // Non-finite values are rejected (nullopt) rather than clamped, matching
     // the Audio1 rule that out-of-domain levels fail closed. Finite values are
