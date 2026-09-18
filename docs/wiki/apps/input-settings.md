@@ -1,15 +1,18 @@
 # Settings Input route
 
 The Input route (`qindaqt-settings --page input`) changes how pointers,
-keyboards, and global shortcuts behave. KWin and kglobalaccel stay the
+tablets, keyboards, and global shortcuts behave. KWin and kglobalaccel stay the
 authorities; [ADR-0134](../adr/0134-input-and-shortcut-settings.md) records the
-decision and the verified protocols.
+decision and the verified protocols, and
+[ADR-0197](../adr/0197-pen-displays-map-themselves-and-ask-once.md) records how
+a pen display finds its own screen.
 
 ## Tabs
 
 | Tab | What it changes | Authority |
 | --- | --- | --- |
 | Mouse & touchpad | Pointer speed, acceleration profile, natural scrolling, left-handed, scroll speed, middle-click emulation; touchpads add tap to click, tap and drag, disable while typing, and scroll method | KWin device properties over D-Bus |
+| Pen & tablet | Which screen the pen draws on, the mapped area, rotation and left-handed, pen mode, calibration, the pressure curve and tip threshold, enabling the tablet, and what the pad has | KWin device properties over D-Bus |
 | Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `kcminputrc [Keyboard]` and `kxkbrc [Layout]` |
 | Shortcuts | Every global shortcut, searchable; change by pressing keys, conflicts named, reset, clear; custom command shortcuts | kglobalaccel |
 
@@ -29,10 +32,68 @@ Every other `supports*`/`default*` pair follows the pattern
 `supports<Prop>`/`<prop>EnabledByDefault`, which the earlier version also got
 wrong for several rows; see the `AGENT-CONTRACT` in `pointer_device_port.h`
 for the confirmed name list before adding a new capability row.
+## Pen & tablet
+
+One row per tablet, not per device: a pen and its pad share a vendor, a
+product and a base name, and are one entry. That triple — the same one KWin
+keys its own per-device configuration on — is also what a remembered mapping
+is stored under, so a choice survives unplugging the tablet. KWin's
+`deviceGroupId` is deliberately not used for this: it hashes a pointer
+address and changes on every re-plug. A tablet is listed when KWin reports
+`tabletTool` or `tabletPad` on it.
+
+| Control | What it writes | Shown when |
+| --- | --- | --- |
+| Map to | `outputName` (a named screen), `mapToWorkspace` (every screen), or neither (KWin's default: the active screen) | Always |
+| Screen | `outputName` | Map to is "a specific screen" |
+| Fit the whole screen / Keep the tablet's proportions | `outputArea` | The device reports a mapped rectangle; the proportions button also needs a physical `size` |
+| Rotation, Left-handed | `rotation`, `leftHanded` | `supportsRotation`, `supportsLeftHanded` |
+| Pen mode | `tabletToolIsRelative` | The device is a tablet tool |
+| Enable this tablet | `enabled`, on the pen and its pad | `supportsDisableEvents` |
+| Calibrate… / Reset | `calibrationMatrix` | `supportsCalibrationMatrix`, and the tablet is mapped to a named screen |
+| Soft end, Firm end | `pressureCurve` | The device is a tablet tool |
+| Tip threshold | `pressureRangeMin` | `supportsPressureRange` |
+| Pad summary | nothing — it states what KWin reported | The tablet has a pad |
+
+"Map to" and the screen picker are one decision: both go through one
+`applyMapping()` that clears `mapToWorkspace` before naming an output and sets
+it afterwards, so the pen never spends a frame on the wrong screen.
+
+The calibration wizard opens a full-screen window **on the screen the pen is
+mapped to**, resets the tablet to its own calibration first, draws four
+crosshairs, and fits the four measured points onto them. It measures the
+stylus rather than the cursor, so a stray touchpad tap cannot become a
+sample. A tablet that follows the active screen has no fixed surface to
+calibrate against, so the button is unavailable until a screen is chosen. Measurements that are collinear or coincident are refused rather than
+written — a collapsed matrix would lose the pen entirely.
+
+KWin reads exactly two control points of the pressure curve and always adds
+`(1, 1)` as the end point, so "Soft end" and "Firm end" are those two points.
+A curve KWin could not read is refused before it reaches the wire. Pad
+buttons, rings and strips arrive as ordinary keys; KWin publishes their counts
+and no binding interface, so the pad section names the hardware and sends the
+user to Shortcuts.
+
+## Opening a destination directly
+
+`qindaqt-settings --page input --destination tablet --select <deviceGroupId>`
+opens the Pen & tablet destination with one tablet selected. Both values are
+opaque to the Settings process: an unknown destination keeps the route's
+default and an unconnected device id opens the destination anyway, so a stale
+link from an old notification never costs the user the route. The pen-display
+notification and the Display card's "Pen & tablet settings…" both use this.
 
 ## Applying changes
 
-- Pointer properties apply the moment KWin accepts them.
+- Choosing a screen under **Map to** both tells KWin and records the choice,
+  so the session's automatic mapping never overrides it afterwards. If the
+  choice cannot be recorded the row says so rather than implying it will be
+  remembered.
+- Pointer and tablet properties apply the moment KWin accepts them, and KWin
+  persists a tablet's screen by output UUID under
+  `[Libinput][<vendor>][<product>][<name>] OutputUuid=` in `kcminputrc`, so it
+  survives re-plug and login. A refused write leaves the row showing what the
+  device actually is and says why.
 - Keyboard and layout writes save the file, then announce the change to the
   running KWin (`org.kde.kconfig.notify ConfigChanged` on `/kcminputrc` or
   `/kxkbrc`). If no KWin is on the bus, the status says the change applies at the
@@ -50,6 +111,11 @@ for the confirmed name list before adding a new capability row.
   configuration, keyboard layouts, shortcuts), their models, the
   `InputRouteComposition` QML singleton that builds the production adapters,
   and the QML pages.
+- The tablet port, its hotplug watcher, the output matcher, the mapping ledger
+  and the calibration/area geometry live in `src/services/tablet_devices`
+  (`QindaQt::TabletDevices`), shared with the session process so the screen a
+  pen is mapped to and the screen the Display card badges cannot disagree. The
+  route adds only `TabletDevicesModel` and `TabletDeviceSelection` over it.
 - The keyboard ports share `announceConfigChange`, which refuses file names that
   cannot form a D-Bus object path, so relocated test files never reach a real
   desktop watcher.
@@ -65,3 +131,7 @@ for the confirmed name list before adding a new capability row.
 | `qindaqt.settings-input-shortcut-port` | The kglobalaccel wire contract, read-back truth, command components, malformed replies |
 | `qindaqt.settings-input-pointer-devices-model`, `-keyboard-models`, `-shortcuts-model` | Presentation truth and write paths over fakes |
 | `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, conflict capture, capture keys, keyboard navigation, unavailable notices |
+| `qindaqt.settings-input-tablet-model` | Grouping a pen with its pad, selection surviving a refresh, deep-link selection, capability gating, the mapping write order, a refused write, the area helpers, reset |
+| `qindaqt.settings-input-tablet-page` | Offscreen Pen & tablet destination: every control for a capable tablet, unsupported controls hidden, the empty and degraded states, the deep link, and a proof that the loaded QML plugin is this build's and not the installed one |
+| `qindaqt.services-tablet-devices-port` | Tablet listing and hotplug against a fake KWin on a private bus: only tablets, flattened `(dd)`/`(dddd)` structs, typed writes, the closed writable table |
+| `qindaqt.services-tablet-devices-policy-values` | The output matcher, the ledger document, the calibration fit and its degenerate refusals, letterboxing, pressure-curve validation |

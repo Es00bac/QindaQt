@@ -20,6 +20,7 @@ SettingsRouteLauncher::SettingsRouteLauncher(Launch launch, QObject *parent)
         if (containedDevelopmentLaunch) {
             m_containedProcess = std::make_unique<QProcess>();
             m_containedPage = QStringLiteral("notifications");
+            m_containedArguments = {QStringLiteral("--page"), m_containedPage};
             m_launch = [this, containedProgram](QString *error) {
                 if (m_containedProcess->state() != QProcess::NotRunning) {
                     return true;
@@ -34,8 +35,7 @@ SettingsRouteLauncher::SettingsRouteLauncher(Launch launch, QObject *parent)
                     return false;
                 }
                 m_containedProcess->setProgram(program.absoluteFilePath());
-                m_containedProcess->setArguments(
-                    {QStringLiteral("--page"), m_containedPage});
+                m_containedProcess->setArguments(m_containedArguments);
                 m_containedProcess->setProcessChannelMode(QProcess::ForwardedChannels);
                 m_containedProcess->start();
                 if (!m_containedProcess->waitForStarted(3'000)) {
@@ -48,12 +48,15 @@ SettingsRouteLauncher::SettingsRouteLauncher(Launch launch, QObject *parent)
                 return true;
             };
         } else {
-            m_launch = [](QString *error) {
+            // AGENT-GUARD: This closure must launch the page openRoute() was
+            // asked for, not a fixed one. It previously hard-coded
+            // "notifications", so every other route opened the wrong page.
+            m_launch = [this](QString *error) {
                 const bool started = QProcess::startDetached(
-                    QStringLiteral("qindaqt-settings"),
-                    {QStringLiteral("--page"), QStringLiteral("notifications")});
+                    QStringLiteral("qindaqt-settings"), m_containedArguments);
                 if (!started && error != nullptr) {
-                    *error = QStringLiteral("Could not open Notification settings");
+                    *error = QStringLiteral("Could not open settings page %1")
+                                 .arg(m_containedPage);
                 }
                 return started;
             };
@@ -85,17 +88,27 @@ bool SettingsRouteLauncher::openCustomize()
     return openRoute(QStringLiteral("customize"));
 }
 
-bool SettingsRouteLauncher::openRoute(const QString &page)
+bool SettingsRouteLauncher::openRoute(const QString &page,
+                                     const QString &destination,
+                                     const QString &selection)
 {
     QString error;
     bool started = false;
     m_containedPage = page;
+    m_containedArguments = {QStringLiteral("--page"), page};
+    if (!destination.isEmpty()) {
+        m_containedArguments << QStringLiteral("--destination") << destination;
+    }
+    // A selection without a destination names nothing the Settings process
+    // could resolve, so it is dropped rather than sent as a lone argument.
+    if (!destination.isEmpty() && !selection.isEmpty()) {
+        m_containedArguments << QStringLiteral("--select") << selection;
+    }
     if (m_launch) {
         started = m_launch(&error);
     } else {
-        started = QProcess::startDetached(
-            QStringLiteral("qindaqt-settings"),
-            {QStringLiteral("--page"), page});
+        started = QProcess::startDetached(QStringLiteral("qindaqt-settings"),
+                                          m_containedArguments);
         if (!started) {
             error = QStringLiteral("Could not open settings page %1").arg(page);
         }

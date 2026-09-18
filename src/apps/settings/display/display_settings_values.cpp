@@ -5,6 +5,8 @@
 #include <QtCore/QCoreApplication>
 #include <algorithm>
 
+#include <qindaqt/services/tablet_devices/tablet_output_matcher.h>
+
 namespace QindaQt::Apps::SettingsDisplay {
 
 QVariantMap FormattedMode::toVariantMap() const {
@@ -33,6 +35,12 @@ QVariantMap OutputDraft::toVariantMap() const {
       {QStringLiteral("manufacturer"), manufacturer},
       {QStringLiteral("model"), model},
       {QStringLiteral("internal"), internal},
+      // AGENT-CONTRACT: One shared vendor table decides what a pen display
+      // is (Services::TabletDevices::isDisplayTabletVendor), so the Display
+      // card's badge and the session's auto-mapping can never disagree about
+      // which screen belongs to a tablet.
+      {QStringLiteral("penDisplay"),
+       Services::TabletDevices::isDisplayTabletVendor(manufacturer)},
       {QStringLiteral("enabled"), enabled},
       {QStringLiteral("primary"), primary},
       {QStringLiteral("modeId"), modeId},

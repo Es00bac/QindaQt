@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 #include <functional>
 #include <memory>
@@ -22,13 +23,21 @@ public:
     Q_INVOKABLE bool openNotifications();
     // Opens the Settings app's Customize (panel editing) route.
     Q_INVOKABLE bool openCustomize();
-    Q_INVOKABLE bool openRoute(const QString &page);
+    // AGENT-CONTRACT: `destination` names a tab within the page and
+    // `selection` an item to select there; both are optional and both are
+    // passed through verbatim as `--destination` / `--select`. The Settings
+    // process treats an unknown value as "open the page anyway", so a stale
+    // id never costs the user the route.
+    Q_INVOKABLE bool openRoute(const QString &page,
+                               const QString &destination = {},
+                               const QString &selection = {});
 Q_SIGNALS:
     void errorTextChanged();
 private:
     Launch m_launch;
     std::unique_ptr<QProcess> m_containedProcess;
     QString m_containedPage;
+    QStringList m_containedArguments;
     QString m_error;
 };
 

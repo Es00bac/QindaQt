@@ -34,6 +34,9 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
+| Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
+| Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
+| Pen display announcement and its actions | resident notification host | `TabletArrivalNotifier` with `ActionInvoked` routing |
 | Polkit authentication UI | polkit daemon | optional supervisor child, distribution agent binary |
 
 Nothing here modifies the compositor, the Power1 v1 wire protocol, or the
@@ -62,6 +65,10 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
 | `BatteryNotificationPolicy` | edge-triggered low/critical/action battery notifications from `PowerClient::snapshotChanged`; see [Battery notifications](#battery-notifications) |
+| `TabletMappingPolicy` | maps a tablet tool to its own screen once, re-maps when the screen arrives after the tablet, and never overrides a recorded user choice |
+| `Settings1TabletMappings` (shared library) | purpose-scoped Settings1 read/write of `input.tabletMappings`, used by **both** the session policy and the Settings route so a choice made in Settings is not re-decided a moment later; stays unloaded until a real document arrives |
+| `TabletArrivalNotifier` | one replaceable announcement per device group with the `setup` / `internal` / `dismiss` actions, ignoring every `ActionInvoked` that is not its own |
+| `TabletRouteLauncher` | the `--page input --destination tablet --select <group>` deep link, resolved sibling-first like `ScreenshotLauncher` |
 
 The production process keeps `KGlobalAccelRegistrar` for volume and mute only.
 Spectacle owns the installed Print action, preserving its own user remapping and
@@ -70,6 +77,42 @@ and the idle display-off policy; QindaQt only observes its documented public
 brightness signal and binds its idle preference. The retained KIdleTime,
 DPMS, and sysfs classes are migration seams for focused tests and are not
 instantiated by the resident process.
+
+## Tablet mapping contract
+
+A pen display is a screen and a tablet at once, and KWin maps a tablet tool
+with an empty `outputName` to the active output — which is why a pen plugged
+into the laptop drew on the laptop's panel.
+[ADR-0197](../adr/0197-pen-displays-map-themselves-and-ask-once.md) records the
+decision; the operational shape is:
+
+- The policy reconciles on start, on `deviceAdded` / `deviceRemoved`, when the
+  process's screens change, and when the ledger changes. It writes only
+  properties whose value differs.
+- An output is a tablet's own screen when its EDID manufacturer is a
+  display-tablet vendor or its model shares a distinctive word with the
+  tablet's name. An internal panel (`eDP`/`LVDS`/`DSI`) is never a match, and
+  two equally good candidates are ambiguous: nothing is written.
+- `input.tabletMappings` is one Settings1 `object` whose members are tablet
+  identities — `vendor:product:name`, the same triple KWin keys its own
+  per-device configuration on. **Never KWin's `deviceGroupId`**, which hashes
+  the libinput device group's pointer address and changes on every re-plug;
+  a record keyed on that could never be found again. Records written under
+  the old key are dropped when the ledger is read. A member carries the choice, the output name, whether the
+  user made the choice, and whether the tablet has been announced. Settings1
+  rejects a whole snapshot on one unknown key (ADR-0126), so this key has its
+  own client, separate from the idle-preference client, and needs a restart of
+  the resident settings service before it is accepted.
+- One announcement per device group. A re-plug of a known tablet is silent;
+  the one exception is a mapping that actually changed, which is the
+  USB-before-HDMI case.
+- `--no-tablet-policy` disables the whole feature for a session, the same way
+  `--no-idle-policy` disables idle display-off.
+
+Output identity comes from `QScreen`: KWin fills a Wayland output's make and
+model from the EDID and Qt republishes them, with `name()` being the connector
+`outputName` takes. The process needs no Display1 client for one string per
+output.
 
 ## Preference contract
 

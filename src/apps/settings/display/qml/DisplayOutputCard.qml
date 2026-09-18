@@ -72,9 +72,11 @@ T.AbstractButton {
 
     Accessible.role: Accessible.RadioButton
     Accessible.name: (root.ordinal > 0 ? qsTr("Display %1: ").arg(root.ordinal) : "")
-                     + qsTr("%1 (%2)%3").arg(root.outputData.label)
-                                        .arg(root.outputData.connectorName)
-                                        .arg(root.outputData.primary ? qsTr(", Primary") : "")
+                     + qsTr("%1 (%2)%3%4").arg(root.outputData.label)
+                                          .arg(root.outputData.connectorName)
+                                          .arg(root.outputData.primary ? qsTr(", Primary") : "")
+                                          .arg((root.outputData.penDisplay ?? false)
+                                               ? qsTr(", Pen display") : "")
     Accessible.description: root.outputData.enabled
                             ? qsTr("Enabled, %1×%2%3").arg(root.outputData.logicalWidth)
                                                    .arg(root.outputData.logicalHeight)
@@ -136,6 +138,30 @@ T.AbstractButton {
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 color: root.outputData.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            }
+
+            // A pen display is the one screen a tablet belongs to; saying so
+            // here is what makes the Pen & tablet route findable from the
+            // card the user is already looking at.
+            Rectangle {
+                objectName: "displayOutputCardPenBadge"
+                visible: root.outputData.penDisplay ?? false
+                implicitWidth: penBadgeText.implicitWidth + Tokens.space["2"] * 2
+                implicitHeight: penBadgeText.implicitHeight + Tokens.space["1"]
+                radius: Tokens.radius.s
+                color: Tokens.bg.highest
+                border.width: 1
+                border.color: Tokens.outline.strong
+
+                Text {
+                    id: penBadgeText
+                    anchors.centerIn: parent
+                    text: qsTr("Pen display")
+                    font.family: Tokens.type.fontFamily
+                    font.pointSize: Tokens.type.caption
+                    font.weight: Font.DemiBold
+                    color: Tokens.fg.muted
+                }
             }
 
             Rectangle {

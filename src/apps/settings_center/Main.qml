@@ -279,6 +279,8 @@ T.ApplicationWindow {
             objectName: "displayPage"
             displaySettings: root.displaySettings
             onCloseRequested: root.close()
+            onPenSettingsRequested: root.navigation.selectRouteDestination(
+                                        "input", "tablet")
         }
     }
 
@@ -352,6 +354,8 @@ T.ApplicationWindow {
         InputPage {
             objectName: "inputPage"
             inputSettings: InputRouteComposition
+            initialDestination: root.navigation.requestedDestination
+            initialSelection: root.navigation.requestedSelection
             onCloseRequested: root.close()
         }
     }

@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "settings_navigation_controller.h"
 
+#include <utility>
+
 namespace QindaQt::Apps::SettingsCenter {
 
 SettingsNavigationController::SettingsNavigationController(
     const SettingsRouteRegistry &registry, const QString &initialRouteId,
-    QObject *parent)
-    : QObject(parent), m_registry(registry) {
+    QString requestedDestination, QString requestedSelection, QObject *parent)
+    : QObject(parent), m_registry(registry),
+      m_requestedDestination(std::move(requestedDestination)),
+      m_requestedSelection(std::move(requestedSelection)) {
   // AGENT-CONTRACT: Initialize with the requested route if valid, or the first
   // available route.
   if (m_registry.hasRoute(initialRouteId)) {
@@ -131,6 +135,24 @@ QVariantMap SettingsNavigationController::routeAt(int index) const {
     return {};
   }
   return m_registry.routes().at(index).toVariantMap();
+}
+
+bool SettingsNavigationController::selectRouteDestination(
+    const QString &routeId, const QString &destination,
+    const QString &selection) {
+  if (!m_registry.hasRoute(routeId)) {
+    Q_EMIT routeSelectionRejected(routeId, QStringLiteral("unknown-route"));
+    return false;
+  }
+  // The deep link moves before the route does, so the page created by the
+  // route change already reads the destination it should open.
+  if (m_requestedDestination != destination ||
+      m_requestedSelection != selection) {
+    m_requestedDestination = destination;
+    m_requestedSelection = selection;
+    Q_EMIT requestedDeepLinkChanged();
+  }
+  return selectRoute(routeId);
 }
 
 } // namespace QindaQt::Apps::SettingsCenter
