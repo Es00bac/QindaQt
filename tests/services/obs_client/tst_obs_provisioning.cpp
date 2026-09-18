@@ -42,6 +42,7 @@ private Q_SLOTS:
     void inspectNamesWhatIsMissingRatherThanJustFailing();
     void readingSettingsNeverReturnsThePassword();
     void theSceneCollectionLeavesTheConsoleBusesToTheBridge();
+    void theKeyringIsNeverConsultedBeforeObsSaysItIsSetUp();
 };
 
 void ObsProvisioningTest::aGeneratedPasswordIsLongAndNotRepeated() {
@@ -216,6 +217,52 @@ void ObsProvisioningTest::theSceneCollectionLeavesTheConsoleBusesToTheBridge() {
     // would fight the bridge on every console change.
     QVERIFY(!ids.contains(QStringLiteral("qindaqt_console_bus")));
     QVERIFY(!ids.contains(QStringLiteral("qindaqt_console_strip")));
+}
+
+// The first gate a connecting surface applies. It exists so the Secret Service
+// is asked for the obs-websocket password ONLY once OBS's own config says the
+// control server is set up — a desktop with no OBS must never generate keyring
+// traffic, however long the session runs.
+//
+// It also carries the first-run case the 2026-09-18 end-to-end check found: at
+// shell start there is usually no config at all, because the user sets OBS up
+// afterwards from Settings -> Streaming. "Not set up yet" has to be an ordinary
+// answer this returns, not a permanent verdict.
+void ObsProvisioningTest::theKeyringIsNeverConsultedBeforeObsSaysItIsSetUp()
+{
+    WebSocketSettings configured;
+    configured.serverEnabled = true;
+    configured.serverPort = 4455;
+
+    // No config on disk at all: the shell started before the user set OBS up.
+    QVERIFY(!obsControlUrl(configured, false).has_value());
+
+    // Config present but the control server switched off: OBS is installed and
+    // deliberately not offering control. Asking the keyring would be wrong.
+    WebSocketSettings disabled = configured;
+    disabled.serverEnabled = false;
+    QVERIFY(!obsControlUrl(disabled, true).has_value());
+
+    // Set up: a loopback URL on the configured port, never any other host.
+    const auto url = obsControlUrl(configured, true);
+    QVERIFY(url.has_value());
+    QCOMPARE(*url, QStringLiteral("ws://127.0.0.1:4455"));
+
+    WebSocketSettings moved = configured;
+    moved.serverPort = 4460;
+    QCOMPARE(*obsControlUrl(moved, true), QStringLiteral("ws://127.0.0.1:4460"));
+
+    // Port zero means "unset" in obs-websocket's own document, so the
+    // documented default stands in rather than producing ws://127.0.0.1:0.
+    WebSocketSettings unset = configured;
+    unset.serverPort = 0;
+    QCOMPARE(*obsControlUrl(unset, true), QStringLiteral("ws://127.0.0.1:4455"));
+
+    // Out of range is refused rather than clamped: a nonsense port is a corrupt
+    // config, not a connection target.
+    WebSocketSettings nonsense = configured;
+    nonsense.serverPort = 70000;
+    QVERIFY(!obsControlUrl(nonsense, true).has_value());
 }
 
 QTEST_APPLESS_MAIN(ObsProvisioningTest)

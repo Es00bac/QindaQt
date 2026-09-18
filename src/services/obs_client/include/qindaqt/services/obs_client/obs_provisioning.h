@@ -3,6 +3,8 @@
 
 #include <QJsonObject>
 #include <QString>
+
+#include <optional>
 #include <QStringList>
 
 namespace QindaQt::Obs {
@@ -93,5 +95,17 @@ inline constexpr char SceneCollectionName[] = "QindaQt";
 
 // `$XDG_CONFIG_HOME/obs-studio`, or the documented fallback.
 [[nodiscard]] QString defaultObsConfigRoot();
+
+// The loopback URL to connect to, or nothing while OBS is not set up for
+// control yet.
+//
+// AGENT-CONTRACT: this is the FIRST gate a connecting surface applies, and it
+// reads only OBS's own configuration. A caller must not ask the Secret Service
+// for the password until this returns a URL, so a desktop with no OBS never
+// generates keyring traffic however long it runs. `found` is the out-parameter
+// from readWebSocketSettings; a config that is absent or has the server
+// disabled yields nothing.
+[[nodiscard]] std::optional<QString>
+obsControlUrl(const WebSocketSettings &settings, bool found);
 
 } // namespace QindaQt::Obs
