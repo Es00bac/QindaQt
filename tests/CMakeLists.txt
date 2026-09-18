@@ -155,3 +155,8 @@ if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/desktop_surface)
     add_subdirectory(shell)
 endif()
+
+# The OBS console bridge rows exist only where the module builds (ADR-0208).
+if(TARGET obs-qindaqt)
+    add_subdirectory(obs)
+endif()

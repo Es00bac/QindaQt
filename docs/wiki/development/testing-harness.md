@@ -580,6 +580,22 @@ the source tree, overrides under the private XDG roots), the driver commits
 seat's only touch device stops (Compositor1 `Capabilities` reports the
 development input device unavailable and `InjectTestInput` refuses a
 finger), then commits `true` and proves it comes back.
+## OBS console bridge rows
+
+The OBS bridge ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md))
+is selected with `-R '^qindaqt\.obs-bridge-'` and exists only where the
+OBS development files let `src/obs` build. `qindaqt.obs-bridge-sync` is pure:
+the projection from an Audio1 snapshot to the console's OBS sources (names,
+codes, capture rules, unique names) and the sync plan against what OBS
+holds. `qindaqt.obs-bridge-libobs` starts libobs headless in-process, with no
+frontend and no D-Bus, registers the two source types and drives the sync
+through real sources and mixer channels: creation, rename in place, retarget,
+removal with the channel freed, and adoption of a source restored from a
+scene collection. `qindaqt.obs-bridge-module-load` loads the built
+`obs-qindaqt.so` through `obs_open_module` the way OBS does and creates both
+types. None of them touches the user's OBS or the live console; the installed
+check (OBS lists the buses, a strip meters, a rename follows) is a package
+gate on the desktop.
 
 ## Current design-token proof
 
