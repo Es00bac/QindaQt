@@ -56,16 +56,22 @@ const Stream *findStream(const Snapshot &snapshot, const quint64 serial) {
 
 } // namespace
 
-// AGENT-GUARD: This predicate mirrors the public AudioClient's dispatch
-// preflight exactly (retained snapshot presence, snapshot availability,
-// capability bit) plus the client's serialized single-operation fence. The
-// per-target can-set flags are combined by the callers. Widening it here
-// silently enables controls the client refuses; narrowing it hides controls
-// the client admits, breaking the availability/admission equality contract.
+// AGENT-GUARD: mirrors the public AudioClient's dispatch preflight (retained
+// snapshot presence, snapshot availability, capability bit); per-target
+// can-set flags are combined by the callers. Widening it enables controls
+// the client refuses; narrowing it hides controls the client admits,
+// breaking the availability/admission equality contract. Deliberately does
+// NOT check client.operationPending(): that is a transport-serialization
+// detail (the client has one request truly in flight, its own m_operation),
+// not per-row availability -- gating every row on it disabled the whole
+// page for one control's request (the shell audio applet's ADR-0191 bug,
+// here at the model layer). A dispatch racing the client's own fence is
+// accepted and resolves locally as Busy/"operation-busy" (see
+// AudioClient::beginOperation), already handled in actionFailureText()
+// below -- never silently dropped.
 bool AudioSettingsModel::snapshotAdmitsOperation(
     const AudioClient &client, const Capability capability) {
-  if (client.operationPending() || !client.hasSnapshot()
-      || client.owner().isEmpty()) {
+  if (!client.hasSnapshot() || client.owner().isEmpty()) {
     return false;
   }
   const Snapshot snapshot = client.snapshot();
@@ -151,6 +157,10 @@ bool AudioSettingsModel::setDefaultDevice(const quint64 serial) {
     rejectAction(QStringLiteral("unsupported"));
     return false;
   }
+  if (serialPending(serial)) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   const Snapshot snapshot = m_client.snapshot();
   const Device *output =
       findDevice(snapshot, serial, DeviceKind::Output);
@@ -179,6 +189,10 @@ bool AudioSettingsModel::dispatchDeviceIntent(const quint64 serial,
                                     : Capability::SetMute;
   if (!snapshotAdmitsOperation(m_client, capability)) {
     rejectAction(QStringLiteral("unsupported"));
+    return false;
+  }
+  if (serialPending(serial)) {
+    rejectAction(QStringLiteral("operation-in-flight"));
     return false;
   }
   if (intent == Intent::DeviceVolume) {
@@ -226,6 +240,10 @@ bool AudioSettingsModel::dispatchStreamIntent(const quint64 serial,
                                     : Capability::SetMute;
   if (!snapshotAdmitsOperation(m_client, capability)) {
     rejectAction(QStringLiteral("unsupported"));
+    return false;
+  }
+  if (serialPending(serial)) {
+    rejectAction(QStringLiteral("operation-in-flight"));
     return false;
   }
   if (intent == Intent::StreamVolume) {
@@ -288,6 +306,10 @@ bool AudioSettingsModel::setDeviceChannelVolume(const quint64 serial,
     rejectAction(QStringLiteral("unsupported"));
     return false;
   }
+  if (serialPending(serial)) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   const std::optional<double> clamped = clampedLevel(level);
   if (!clamped.has_value()) {
     rejectAction(QStringLiteral("invalid-volume"));
@@ -331,6 +353,10 @@ bool AudioSettingsModel::createVirtualDevice(QString kindToken,
     rejectAction(QStringLiteral("unsupported"));
     return false;
   }
+  if (serialPending(0)) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   const QString token = kindToken.trimmed();
   const QString name = displayName.trimmed();
   const bool outputKind =
@@ -366,6 +392,10 @@ bool AudioSettingsModel::removeVirtualDevice(const quint64 serial) {
     rejectAction(QStringLiteral("unsupported"));
     return false;
   }
+  if (serialPending(serial)) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   const Snapshot snapshot = m_client.snapshot();
   const Device *output =
       findDevice(snapshot, serial, DeviceKind::Output);
@@ -395,7 +425,8 @@ bool AudioSettingsModel::removeVirtualDevice(const quint64 serial) {
 void AudioSettingsModel::trackPending(const quint64 requestId,
                                       const quint64 serial,
                                       const Intent intent) {
-  m_pending = PendingIntent{requestId, serial, intent};
+  m_pendingBySerial.insert(serial, PendingIntent{requestId, intent});
+  m_serialByRequestId.insert(requestId, serial);
 }
 
 void AudioSettingsModel::beginIntentMessage(const Intent intent) {
@@ -431,13 +462,18 @@ void AudioSettingsModel::beginIntentMessage(const Intent intent) {
 
 void AudioSettingsModel::handleOperationCompleted(
     const quint64 requestId, const OperationResult &result) {
-  // AGENT-GUARD: Only the tracked request's completion is presentation
-  // truth. Late, foreign, or superseded request IDs are dropped; reacting to
-  // them would let a retired lineage surface as fresh feedback.
-  if (!m_pending.has_value() || m_pending->requestId != requestId) {
+  // AGENT-GUARD: Only a tracked request's completion is presentation truth.
+  // Late, foreign, or superseded request IDs are dropped; reacting to them
+  // would let a retired lineage surface as fresh feedback. Lookup is by
+  // requestId -> serial, then serial removes its own pending entry only, so
+  // one target completing never touches another target's in-flight state.
+  const auto serialIt = m_serialByRequestId.constFind(requestId);
+  if (serialIt == m_serialByRequestId.constEnd()) {
     return;
   }
-  m_pending.reset();
+  const quint64 serial = *serialIt;
+  m_pendingBySerial.remove(serial);
+  m_serialByRequestId.remove(requestId);
 
   if (result.status == OperationStatus::Succeeded) {
     m_localError.clear();
@@ -485,6 +521,11 @@ QString AudioSettingsModel::actionFailureText(const QString &reason) const {
   }
   if (reason == QStringLiteral("operation-in-flight")) {
     return translateAudio("Another audio change is still in progress.");
+  }
+  if (reason == QStringLiteral("operation-busy")) {
+    // The client's own single-operation fence was held by a different
+    // target's request when this one reached it; not a local rejection.
+    return translateAudio("The audio service is busy; try again in a moment.");
   }
   if (reason == QStringLiteral("unavailable")) {
     return translateAudio("The audio service is not available right now.");
