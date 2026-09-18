@@ -217,11 +217,15 @@ target_link_libraries(
         qindaqt_settings_customize_qml
         qindaqt_settings_customize_qmlplugin
         # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
-        # Color, and Input backend modules are static, so any in-process
-        # Main.qml host must link them.
+        # Color, Input and Streaming backend modules are static, so any
+        # in-process Main.qml host must link them. Adding a route to Main.qml
+        # without adding it here fails at load with "plugin not found", which
+        # reads as a defect in whatever test happened to run next.
         qindaqt_settings_power
         qindaqt_settings_power_backend_qml
         qindaqt_settings_power_backend_qmlplugin
+        qindaqt_settings_streaming_backend_qml
+        qindaqt_settings_streaming_backend_qmlplugin
         qindaqt_settings_clipboard_qml
         qindaqt_settings_clipboard_qmlplugin
         qindaqt_settings_color_backend_qml
