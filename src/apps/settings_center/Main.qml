@@ -26,6 +26,7 @@ T.ApplicationWindow {
 
     required property var navigation
     required property var quietingSettings
+    required property var quietingSchedule
     required property var appearanceSettings
     property var windowDecorationSettings: null
     property var displaySettings: null
@@ -261,6 +262,7 @@ T.ApplicationWindow {
         NotificationsPage {
             objectName: "notificationsPage"
             quietingSettings: root.quietingSettings
+            quietingSchedule: root.quietingSchedule
         }
     }
 

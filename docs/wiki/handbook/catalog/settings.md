@@ -95,6 +95,9 @@ configuration instead ([ADR-0134](../../adr/0134-input-and-shortcut-settings.md)
 | `services.clipboardHistory` | boolean | `false` | None beyond type |
 | `services.notifications` | boolean | `true` | None beyond type |
 | `services.doNotDisturb` | boolean | `false` | None beyond type |
+| `services.doNotDisturbSchedule` | boolean | `false` | None beyond type |
+| `services.doNotDisturbStartMinutes` | integer | `1320` | `{"minimum":0,"maximum":1439}` |
+| `services.doNotDisturbEndMinutes` | integer | `420` | `{"minimum":0,"maximum":1439}` |
 | `services.bluetooth` | boolean | `true` | None beyond type |
 | `services.metricsHistory` | boolean | `false` | None beyond type |
 | `services.xwaylandOnDemand` | boolean | `true` | None beyond type |

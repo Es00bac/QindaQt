@@ -36,6 +36,7 @@ qt_add_qml_module(
     QML_FILES
         Main.qml
         NotificationsPage.qml
+        QuietHoursSection.qml
         SettingsSidebar.qml
         SettingsCompactHeader.qml
         SettingsNavButton.qml
@@ -67,6 +68,7 @@ target_link_libraries(
     qindaqt_settings_color_backend_qml
     qindaqt_settings_color_backend_qmlplugin
     qindaqt_settings_accessibility
+    qindaqt_settings_notifications
     qindaqt_settings_input_backend_qml
     qindaqt_settings_input_backend_qmlplugin
     qindaqt_settings_streaming_backend_qml

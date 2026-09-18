@@ -68,7 +68,14 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     m_quietingSettingsClient =
         std::make_unique<Services::SettingsClient::SettingsClient>(
             *m_quietingSettingsTransport,
-            QStringList{QStringLiteral("services.doNotDisturb")});
+            // ADR-0201 adds the schedule keys to the same purpose-scoped
+            // client. All four are schema keys with defaults, so widening the
+            // scope by them cannot make a present value read "unavailable" --
+            // which is the property the comment above protects.
+            QStringList{QStringLiteral("services.doNotDisturb"),
+                        QStringLiteral("services.doNotDisturbSchedule"),
+                        QStringLiteral("services.doNotDisturbStartMinutes"),
+                        QStringLiteral("services.doNotDisturbEndMinutes")});
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
         m_applets, m_appletPolicy, std::move(launcherRoots),
         *m_settingsClient, QDBusConnection::sessionBus());

@@ -111,8 +111,9 @@ retry and uncertain writes are never replayed. A fixed **Notification
 settings…** action opens the ordinary application. Presentation DND is
 read-only to QML, and the capability-empty applet receives only a read-only
 indicator. The separate lock-state privacy gate below cannot be weakened by
-this preference. Scheduling, application exceptions, and inhibition remain
-future work. See [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
+this preference. Application exceptions and inhibition remain future work;
+scheduling is answered by the quiet-hours window below. See
+[ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 
 Notification center, popup, and card actions use the active theme's surface,
 border, text, muted, and accent pairs directly. Checked controls use accent
@@ -126,6 +127,45 @@ conflict action reappears only after a fresh baseline proves the original
 choice still differs. Confirmed validation, persistence, or revision-exhaustion
 failures stay visible on both the settings page and shell center after the
 automatic refresh; a new user write explicitly dismisses that diagnostic.
+
+## Quiet hours
+
+Quiet hours are a second, independent reason for the popup policy to admit
+only critical urgency. They are three additive Settings1 keys —
+`services.doNotDisturbSchedule` (Boolean, default `false`),
+`services.doNotDisturbStartMinutes` (integer, `0..1439`, default `1320`, that
+is 22:00) and `services.doNotDisturbEndMinutes` (integer, `0..1439`, default
+`420`, that is 07:00) — and a pure predicate over a minute-of-day clock.
+
+**Nothing schedules anything, and nothing writes `services.doNotDisturb` on
+the user's behalf.** There is no timer, no unit and no wake-up: the window is
+evaluated when a notification arrives, so there is no drift to correct and no
+edge to miss across a suspend or a shell restart. The user's own Do Not
+Disturb switch keeps meaning exactly what they set it to; `allowsPopup`
+admits everything only when neither Do Not Disturb nor the window is in
+force, and otherwise admits only critical urgency (`2`) — the same rule Do
+Not Disturb already had, reached by either of two reasons.
+
+A window whose start is greater than its end wraps midnight: 22:00 to 07:00
+is quiet from ten at night until seven the next morning. A window whose ends
+are **equal is empty, not all day** — a user who has not chosen two distinct
+times has not asked for silence, and the Notifications page says so in words
+rather than quieting the machine.
+
+The shell's `NotificationQuietingSettingsBridge` carries the three keys from
+its purpose-scoped Settings1 client into the policy alongside
+`services.doNotDisturb`; the client requests those four keys and nothing
+else, for the same reason the Do Not Disturb section gives. A snapshot that
+is absent, or whose schedule keys are unreadable, leaves the previously
+applied window in force rather than guessing a new one.
+
+On the Notifications route, the schedule switch and the two 24-hour time
+fields publish only what the settings service last confirmed. The fields
+commit on Enter or focus loss, never per keystroke, so a half-typed hour
+cannot become the time the machine quiets; a time the model refuses — the
+input mask admits `99:99`, which is not a time — puts the field straight back
+to the time that is really set. See
+[ADR-0201](../adr/0201-quiet-hours-are-a-window-the-service-owns.md).
 
 ## Lock-state privacy
 
