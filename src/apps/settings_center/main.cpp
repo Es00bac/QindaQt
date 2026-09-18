@@ -136,7 +136,7 @@ void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
       "QindaQt/SettingsApp/Audio",        "QindaQt/SettingsApp/Bluetooth",
       "QindaQt/SettingsApp/Power",        "QindaQt/SettingsApp/Clipboard",
       "QindaQt/SettingsApp/Color",        "QindaQt/SettingsApp/Accessibility",
-      "QindaQt/SettingsApp/Input",
+      "QindaQt/SettingsApp/Input",   "QindaQt/SettingsApp/Streaming",
   };
   for (const char *module : requiredModules) {
     const QString directory = QDir(qmlRoot).filePath(QString::fromLatin1(module));

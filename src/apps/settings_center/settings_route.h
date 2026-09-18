@@ -19,6 +19,7 @@ enum class SettingsRouteComponent {
   Color,
   Accessibility,
   Input,
+  Streaming,
 };
 
 [[nodiscard]] QString

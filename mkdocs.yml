@@ -84,6 +84,7 @@ nav:
       - Notification presentation: shell/notification-presentation.md
       - Power applet presentation: shell/power-applet.md
       - Smart Lights applet: shell/smart-lights-applet.md
+      - "OBS applet": shell/obs-applet.md
       - Status notifier tray: shell/status-tray.md
       - Visual identity: shell/visual-identity.md
       - Shell iconography: shell/iconography.md
@@ -137,6 +138,7 @@ nav:
       - Settings Color route: apps/color-settings.md
       - Settings Accessibility route: apps/accessibility-settings.md
       - Settings Input route: apps/input-settings.md
+      - "Settings Streaming route": apps/streaming-settings.md
       - Terminal: apps/terminal.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -314,4 +316,6 @@ nav:
       - "ADR-0188: serve the panel start zone first": adr/0188-serve-the-panel-start-zone-first.md
       - "ADR-0189: paint the rolled-up badge label, and size the badge to it": adr/0189-size-the-rolled-up-badge-to-its-label.md
       - "ADR-0190: mirroring is one field on the mirrored output": adr/0190-mirroring-is-one-field-on-the-mirrored-output.md
+      - "ADR-0198: one obs-websocket client for the desktop": adr/0198-one-obs-websocket-client-for-the-desktop.md
+      - "ADR-0199: QindaQt provisions OBS and owns one secret": adr/0199-qindaqt-provisions-obs-and-owns-one-secret.md
       - "ADR-0191: a control survives reprojection and owns its value": adr/0191-a-control-survives-reprojection.md
