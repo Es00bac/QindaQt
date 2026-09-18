@@ -136,6 +136,8 @@ T.ToolButton {
         onClicked: contextMenu.popup()
     }
 
+    C.TouchContextArea { objectName: "taskListEntryTouchContext"; anchors.fill: parent; onContextRequested: contextMenu.popup() }
+
     contentItem: Item {
         RowLayout {
             id: rowLayout

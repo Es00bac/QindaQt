@@ -42,6 +42,7 @@ private Q_SLOTS:
     void emitsThresholdedCumulativeDragLifecycle();
     void cancelsOwnedGrabAndClearsHoverOutsideChrome();
     void rollsContainersWithTheWheelOverChromeAndHandlebars();
+    void touchHitTestReachesNearbyOwnedTargetsOnly();
 };
 
 void HybridChromePointerRouterTests::reportsRaiseOnlyDecisionAsDispatchable()
@@ -347,6 +348,50 @@ void HybridChromePointerRouterTests::rollsContainersWithTheWheelOverChromeAndHan
     const auto held = router.pointerWheel({8.0, 5.0}, Qt::NoModifier, 120.0);
     QVERIFY(!held.consumed);
     QVERIFY(held.shadeRequests.isEmpty());
+}
+
+void HybridChromePointerRouterTests::touchHitTestReachesNearbyOwnedTargetsOnly()
+{
+    // A tab occupies x 100-160 on the title row (y 0-28); a member title bar
+    // sits below it; everything else is nothing.
+    const auto tab = hit(HybridChrome::HitKind::Tab, QStringLiteral("page-a"), 0);
+    const auto memberTitle = hit(HybridChrome::HitKind::MemberTitleDrag,
+                                 QStringLiteral("member-a"));
+    HybridChromePointerRouter router([tab, memberTitle](const QPointF &position)
+                                         -> std::optional<ChromePointerHit> {
+        if (position.y() >= 0.0 && position.y() < 28.0 && position.x() >= 100.0
+            && position.x() < 160.0) {
+            return tab;
+        }
+        if (position.y() >= 28.0 && position.y() < 60.0) {
+            return memberTitle;
+        }
+        return std::nullopt;
+    });
+    // Exactly on the tab: the exact point wins.
+    const auto exact = router.hitNear({120.0, 10.0}, 40.0);
+    QVERIFY(exact.has_value());
+    QCOMPARE(exact->hit, tab);
+    QCOMPARE(exact->position, QPointF(120.0, 10.0));
+    // 25 px left of the tab: a probe at the half radius lands on it.
+    const auto near = router.hitNear({80.0, 10.0}, 40.0);
+    QVERIFY(near.has_value());
+    QCOMPARE(near->hit, tab);
+    QCOMPARE(near->position, QPointF(100.0, 10.0));
+    // Beyond the radius: nothing.
+    QVERIFY(!router.hitNear({40.0, 10.0}, 40.0).has_value());
+    // A native member title is KWin's even under a finger: never returned.
+    QVERIFY(!router.hitNear({120.0, 40.0}, 40.0).has_value());
+    // A zero radius is the exact test only.
+    QVERIFY(!router.hitNear({80.0, 10.0}, 0.0).has_value());
+    // Probes never leave the finger's own output: with the tab beyond the
+    // clip's right edge the same near point finds nothing.
+    QVERIFY(!router.hitNear({80.0, 10.0}, 40.0, QRectF(0.0, 0.0, 95.0, 1080.0)).has_value());
+    QVERIFY(router.hitNear({80.0, 10.0}, 40.0, QRectF(0.0, 0.0, 1920.0, 1080.0)).has_value());
+    QVERIFY(HybridChromePointerRouter::rollTarget(tab.target));
+    QVERIFY(HybridChromePointerRouter::contextMenuTarget(tab.target));
+    QVERIFY(!HybridChromePointerRouter::contextMenuTarget(
+        hit(HybridChrome::HitKind::Divider, QStringLiteral("divider")).target));
 }
 
 QTEST_GUILESS_MAIN(HybridChromePointerRouterTests)

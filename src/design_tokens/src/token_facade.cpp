@@ -5,6 +5,9 @@
 #include "qindaqt/design_tokens/token_deriver.h"
 
 #include <QCoreApplication>
+#include <QEvent>
+#include <QInputDevice>
+#include <QMouseEvent>
 #include <QThread>
 
 #include <limits>
@@ -23,6 +26,79 @@ QVariantMap nestedMap(const QVariantMap &all, const QString &name)
 TokenFacade::TokenFacade(QObject *parent)
     : QObject(parent)
 {
+    // Touch mode (ADR-0193): a touchscreen among the seat's devices makes it
+    // available; the last input kind decides whether it is active. The
+    // application's events are the only observer a library singleton has.
+    for (const QInputDevice *device : QInputDevice::devices()) {
+        if (device != nullptr && device->type() == QInputDevice::DeviceType::TouchScreen) {
+            m_touchAvailable = true;
+            break;
+        }
+    }
+    if (auto *application = QCoreApplication::instance()) {
+        application->installEventFilter(this);
+    }
+    m_all.insert(QStringLiteral("touch"), touchMap());
+}
+
+TokenFacade::~TokenFacade()
+{
+    if (auto *application = QCoreApplication::instance()) {
+        application->removeEventFilter(this);
+    }
+}
+
+bool TokenFacade::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event != nullptr) {
+        switch (event->type()) {
+        case QEvent::TouchBegin:
+            setTouchState(true, true);
+            break;
+        case QEvent::MouseButtonPress:
+        case QEvent::Wheel:
+            // A synthesized mouse event is the finger again; a real one is a
+            // pointer, and the desktop goes back to pointer sizes.
+            if (const auto *input = dynamic_cast<const QInputEvent *>(event);
+                input != nullptr && input->device() != nullptr
+                && input->device()->type() != QInputDevice::DeviceType::TouchScreen
+                && (event->type() != QEvent::MouseButtonPress
+                    || static_cast<const QMouseEvent *>(event)->source()
+                        == Qt::MouseEventNotSynthesized)) {
+                setTouchState(m_touchAvailable, false);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+QVariantMap TokenFacade::touchMap() const
+{
+    // The 44-logical-pixel target is the smallest a fingertip lands on
+    // reliably; rows and gaps follow it. Off, every value is zero so a
+    // control's own pointer size wins in Math.max.
+    return {{QStringLiteral("available"), m_touchAvailable},
+            {QStringLiteral("active"), m_touchActive},
+            {QStringLiteral("minimumTarget"), m_touchActive ? 44.0 : 0.0},
+            {QStringLiteral("rowHeight"), m_touchActive ? 48.0 : 0.0},
+            {QStringLiteral("gap"), m_touchActive ? 8.0 : 0.0}};
+}
+
+QVariantMap TokenFacade::touch() const { return nestedMap(m_all, QStringLiteral("touch")); }
+
+void TokenFacade::setTouchState(bool available, bool active)
+{
+    const bool nextActive = available && active;
+    if (m_touchAvailable == available && m_touchActive == nextActive) {
+        return;
+    }
+    m_touchAvailable = available;
+    m_touchActive = nextActive;
+    m_all.insert(QStringLiteral("touch"), touchMap());
+    emit touchChanged();
 }
 
 bool TokenFacade::ready() const { return m_tokens != nullptr; }
@@ -121,6 +197,7 @@ void TokenFacade::rebuildMaps()
                              {QStringLiteral("reducedTransparency"),
                               inputs.reducedTransparency},
                              {QStringLiteral("highContrast"), inputs.highContrast}});
+    m_all.insert(QStringLiteral("touch"), touchMap());
 }
 
 } // namespace QindaQt::DesignTokens

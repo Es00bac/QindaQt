@@ -520,6 +520,33 @@ profile suite passed 3/3 in both Debug and Release for this contract revision.
 That evidence qualifies the persistence boundary only; it does not claim live
 shell surfaces or profile editing UI.
 
+## Touch rows
+
+Touch ([ADR-0193](../adr/0193-a-finger-is-the-left-button-and-a-held-finger-the-right.md))
+is proved at three levels. `compositor.hybrid-chrome-touch-policy` covers
+the pure policy (tap, hold, slop, drag, two-finger swipes, non-roll targets,
+the primary lifting first, fingers off the chrome while a gesture runs, a
+stale sequence, cancel) and `compositor.hybrid-chrome-pointer-router` the
+touch hit test that reaches nearby owned targets only and never past the
+output clip; `compositor.development-input-protocol`
+and `compositor.kwin-development-input-injector` cover the `touch-*`
+contacts and their frames; `qindaqt.controls-touch` drives a real touch
+device through `TouchContextArea` (a held finger requests the menu once, a
+tap and a mouse do not) and flips touch mode to grow a Button to 44 and
+back. The nested `compositor.touch-chrome.chrome.gtk-csd.{single-1080p,single-1440p-125}`
+rows run the shade harness with fingers (their runner sets
+`QINDAQT_DEVELOPMENT_INPUT_TOUCH=1`, which is what makes the development seat
+claim touch; pointer rows keep a pointer-only seat): two members are grouped by a real
+Meta+Shift drag, then a tap on the inactive tab activates it, a held finger
+on the title row opens the group menu (proved by choosing Roll up from it),
+two fingers swiping down on the strip unroll, a title drag moves the whole
+container, and two fingers swiping up roll it up again, each state captured
+from the private compositor's framebuffer. The surfaces that host
+`TouchContextArea` keep their own rows (`qindaqt.desktop-surface-offscreen-qml`,
+`qindaqt.file-manager-browsing-ui`, the task-list applet rows), which load
+the real QML and therefore catch a missing or shadowing import. The laptop's
+touch panel itself is checked by the user.
+
 ## Current design-token proof
 
 QST-1 derivation and its QML adapter are selected with:

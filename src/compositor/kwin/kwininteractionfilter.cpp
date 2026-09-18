@@ -42,6 +42,26 @@ public:
         return m_owner.keyboardKey(event);
     }
 
+    bool touchDown(KWin::TouchDownEvent *event) override
+    {
+        return m_owner.touchDown(event);
+    }
+
+    bool touchMotion(KWin::TouchMotionEvent *event) override
+    {
+        return m_owner.touchMotion(event);
+    }
+
+    bool touchUp(KWin::TouchUpEvent *event) override
+    {
+        return m_owner.touchUp(event);
+    }
+
+    bool touchCancel() override
+    {
+        return m_owner.touchCancel();
+    }
+
 private:
     KWinInteractionFilter &m_owner;
 };

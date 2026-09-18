@@ -169,16 +169,41 @@ QJsonArray KWinHybridSession::publicContainers() const
         // and is empty only for a container no surface has named yet
         // (ADR-0163). Without these a live session offers no way at all to
         // tell whether a rename took effect.
-        result.append(QJsonObject{{QStringLiteral("id"), containerId},
-                                  {QStringLiteral("revision"), revision},
-                                  {QStringLiteral("name"),
-                                   m_appearance.appearance(containerId).name},
-                                  {QStringLiteral("displayName"),
-                                   m_appearance.assignedDisplayName(containerId)},
-                                  {QStringLiteral("shaded"),
-                                   m_placement && m_placement->isShaded(containerId)},
-                                  {QStringLiteral("authority"),
-                                   QStringLiteral("hybrid-process")}});
+        QJsonObject entry{{QStringLiteral("id"), containerId},
+                          {QStringLiteral("revision"), revision},
+                          {QStringLiteral("name"),
+                           m_appearance.appearance(containerId).name},
+                          {QStringLiteral("displayName"),
+                           m_appearance.assignedDisplayName(containerId)},
+                          {QStringLiteral("shaded"),
+                           m_placement && m_placement->isShaded(containerId)},
+                          {QStringLiteral("authority"),
+                           QStringLiteral("hybrid-process")}};
+        // The published chrome plan's geometry (ADR-0193): where the outer
+        // frame, the title row and each tab are, so a harness can aim a
+        // finger at a named tab instead of guessing from member frames.
+        if (m_chromeManager) {
+            if (const auto plan = m_chromeManager->plan(containerId)) {
+                const auto rectJson = [](const QRectF &rect) {
+                    return QJsonObject{{QStringLiteral("x"), rect.x()},
+                                       {QStringLiteral("y"), rect.y()},
+                                       {QStringLiteral("width"), rect.width()},
+                                       {QStringLiteral("height"), rect.height()}};
+                };
+                QJsonArray tabs;
+                for (const auto &tab : plan->tabs) {
+                    QJsonObject tabJson = rectJson(tab.rect);
+                    tabJson.insert(QStringLiteral("tabId"), tab.tabId);
+                    tabJson.insert(QStringLiteral("title"), tab.title);
+                    tabJson.insert(QStringLiteral("active"), tab.active);
+                    tabs.append(tabJson);
+                }
+                entry.insert(QStringLiteral("outerFrame"), rectJson(plan->outerFrame));
+                entry.insert(QStringLiteral("outerTitleBar"), rectJson(plan->outerTitleBar));
+                entry.insert(QStringLiteral("tabs"), tabs);
+            }
+        }
+        result.append(entry);
     }
     return result;
 }

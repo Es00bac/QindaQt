@@ -16,6 +16,11 @@ enum class DevelopmentInputEventType {
     PointerRelative,
     Key,
     Button,
+    // Touch (ADR-0193): one finger id per contact, absolute logical
+    // coordinates like `pointer-absolute`; the injector frames each event.
+    TouchDown,
+    TouchMotion,
+    TouchUp,
 };
 
 enum class DevelopmentInputKey {
@@ -53,6 +58,8 @@ struct DevelopmentInputEvent final
     DevelopmentInputKey key = DevelopmentInputKey::LeftMeta;
     bool pressed = false;
     DevelopmentInputButton button = DevelopmentInputButton::Left;
+    // Touch contact id, 0-63.
+    qint32 touchId = 0;
 };
 
 struct DevelopmentInputBatch final
@@ -78,6 +85,7 @@ public:
     // 10k-logical-pixel delta covers nested pointer-lock probes without
     // accepting unbounded values into KWin's input pipeline.
     static constexpr qreal MaxRelativeDeltaMagnitude = 10'000.0;
+    static constexpr qint32 MaxTouchId = 63;
 
     [[nodiscard]] static std::optional<DevelopmentInputBatch>
     parse(const QByteArray &requestJson, DevelopmentInputFailure *failure = nullptr);

@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "EntryDrag.js" as EntryDrag
+import QindaQt.Controls 1.0 as C
 
 // Visual browsing shares the exact selection policy with the details view.
 Control {
@@ -101,6 +102,16 @@ Control {
                 anchors.fill: parent
                 acceptedButtons: Qt.RightButton
                 onClicked: {
+                    gridView.forceActiveFocus()
+                    contextMenu.selectionCount = 0
+                    contextMenu.popup()
+                }
+            }
+
+            C.TouchContextArea {
+                objectName: "entryGridTouchContext"
+                anchors.fill: parent
+                onContextRequested: {
                     gridView.forceActiveFocus()
                     contextMenu.selectionCount = 0
                     contextMenu.popup()
@@ -269,6 +280,19 @@ Control {
                             selection.selectOnly(delegateRoot.index)
                             selection.focusIndex(delegateRoot.index)
                             root.activateCurrent()
+                        }
+                    }
+
+                    C.TouchContextArea {
+                        objectName: "entryTouchContext"
+                        anchors.fill: parent
+                        onContextRequested: {
+                            gridView.forceActiveFocus()
+                            if (!selection.isSelected(delegateRoot.index))
+                                selection.selectOnly(delegateRoot.index)
+                            selection.focusIndex(delegateRoot.index)
+                            contextMenu.selectionCount = selection.selectedEntries().length
+                            contextMenu.popup()
                         }
                     }
 

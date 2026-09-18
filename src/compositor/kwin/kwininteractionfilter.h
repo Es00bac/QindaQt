@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "hybridchrometouchpolicy.h"
+
+#include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactioncontroller.h"
 #include "qindaqt/hybrid_input/lateshifttakeoverdetector.h"
 
+#include <QPointF>
 #include <QPointer>
+#include <QString>
+#include <QTimer>
 
 #include <functional>
 #include <memory>
@@ -16,6 +22,9 @@ struct KeyboardKeyEvent;
 struct PointerButtonEvent;
 struct PointerAxisEvent;
 struct PointerMotionEvent;
+struct TouchDownEvent;
+struct TouchMotionEvent;
+struct TouchUpEvent;
 }
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -69,6 +78,16 @@ private:
     [[nodiscard]] bool pointerButton(KWin::PointerButtonEvent *event);
     [[nodiscard]] bool pointerAxis(KWin::PointerAxisEvent *event);
     [[nodiscard]] bool keyboardKey(KWin::KeyboardKeyEvent *event);
+    // Touch over shared chrome (ADR-0193): the first finger stands in for
+    // the left button through the chrome router, a held finger opens the
+    // container menu, a second finger's vertical swipe rolls the container.
+    // Touches that land on nothing the router owns pass through untouched.
+    [[nodiscard]] bool touchDown(KWin::TouchDownEvent *event);
+    [[nodiscard]] bool touchMotion(KWin::TouchMotionEvent *event);
+    [[nodiscard]] bool touchUp(KWin::TouchUpEvent *event);
+    [[nodiscard]] bool touchCancel();
+    void expireTouchLongPress();
+    void finishTouchGesture();
     [[nodiscard]] bool dispatch(HybridInput::InteractionDecision decision);
     [[nodiscard]] bool dispatchChrome(ChromePointerDecision decision);
 
@@ -96,6 +115,12 @@ private:
     std::unique_ptr<Filter> m_filter;
     std::unique_ptr<EarlyTakeoverFilter> m_earlyFilter;
     HybridInput::LateShiftTakeoverDetector m_lateShiftDetector;
+    HybridChromeTouchPolicy m_touch;
+    QTimer m_touchTimer;
+    bool m_touchTimerConnected = false;
+    QPointF m_touchOffset;
+    QString m_touchContainerId;
+    HybridChrome::ChromeHitTarget m_touchTarget;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

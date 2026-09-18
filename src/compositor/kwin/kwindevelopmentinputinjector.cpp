@@ -118,7 +118,11 @@ public:
     bool isKeyboard() const override { return true; }
     bool isPointer() const override { return true; }
     bool isTouchpad() const override { return false; }
-    bool isTouch() const override { return false; }
+    // The seat gains touch only when a row asks for it
+    // (QINDAQT_DEVELOPMENT_INPUT_TOUCH=1, ADR-0193): a touch-capable seat
+    // switches every client to touch sizing, which pointer-mode rows must
+    // not inherit.
+    bool isTouch() const override { return m_touch; }
     bool isTabletTool() const override { return false; }
     bool isTabletPad() const override { return false; }
     bool isTabletModeSwitch() const override { return false; }
@@ -151,6 +155,18 @@ public:
             } else {
                 m_pressedKeys.remove(event.key);
             }
+            break;
+        case DevelopmentInputEventType::TouchDown:
+            Q_EMIT touchDown(event.touchId, event.position, timestamp, this);
+            Q_EMIT touchFrame(this);
+            break;
+        case DevelopmentInputEventType::TouchMotion:
+            Q_EMIT touchMotion(event.touchId, event.position, timestamp, this);
+            Q_EMIT touchFrame(this);
+            break;
+        case DevelopmentInputEventType::TouchUp:
+            Q_EMIT touchUp(event.touchId, timestamp, this);
+            Q_EMIT touchFrame(this);
             break;
         case DevelopmentInputEventType::Button:
             Q_EMIT pointerButtonChanged(
@@ -215,6 +231,7 @@ public:
 
 private:
     bool m_enabled = true;
+    const bool m_touch = qEnvironmentVariable("QINDAQT_DEVELOPMENT_INPUT_TOUCH") == QLatin1String("1");
     QSet<DevelopmentInputKey> m_pressedKeys;
     QSet<DevelopmentInputButton> m_pressedButtons;
 };

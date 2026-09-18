@@ -17,7 +17,7 @@ T.TextField {
 
     focusPolicy: Qt.StrongFocus
     selectByMouse: true
-    implicitHeight: Math.max(40,
+    implicitHeight: Math.max(40, (Tokens.touch.minimumTarget ?? 0),
                              control.contentHeight
                              + topPadding + bottomPadding)
     leftPadding: Tokens.space["4"]
