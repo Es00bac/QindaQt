@@ -547,6 +547,40 @@ from the private compositor's framebuffer. The surfaces that host
 the real QML and therefore catch a missing or shadowing import. The laptop's
 touch panel itself is checked by the user.
 
+The on-screen keyboard ([ADR-0204](../adr/0204-the-on-screen-keyboard-is-the-compositors-input-method.md))
+adds `qindaqt.osk-keyboard-model` (documents, placement, shift, pages, key
+emission), the `[Wayland] InputMethod=` seed cases of `session.sessiondefaults`,
+and the nested `compositor.touch-osk.osk.gtk-entry.{single-1080p,single-1440p-125}`
+rows: the row writes a desktop entry whose Exec is this build's
+`qindaqt-osk`, names it through `QINDAQT_OSK_DESKTOP_FILE` so the private
+session's kwinrc seeds it, and KWin launches the keyboard on its own
+input-method connection. A finger taps a GTK entry (the fixture's `entry`
+mode logs the entries' allocations and text), the keyboard becomes visible
+(KWin's `org.kde.kwin.VirtualKeyboard` `visible` property plus the
+keyboard's evidence file, `QINDAQT_OSK_EVIDENCE_FILE`, which lists the placed
+keys the flow aims at), fingers type `q`, a shifted `Q` and a backspace, an
+injected hardware key hides the keyboard and still reaches the entry, and
+the second entry brings it back, with captures `01-entry-mapped` …
+`05-osk-returns`.
+
+Touch edges ([ADR-0205](../adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md))
+add `compositor.touch-edge-actions` (mapping, decoding, reservation
+bookkeeping), `qindaqt.shell-edge-gesture-subscriber` (the shell's dispatch
+table), the nested `compositor.touch-edges.edges.{single-1080p,single-1440p-125}`
+rows (dbus-monitor on the private bus records
+`EdgeGestureTriggered`; a finger swiped 160 px in from the left, top and
+bottom edges is announced with its default action, the right edge and an
+interior swipe stay silent), and the Settings rows
+`qindaqt.settings-input-touch-model` and `qindaqt.settings-input-touch-section`
+over a fake Settings1 transport. The Touchscreen switch has its own nested
+row, `compositor.touch-chrome.enabled.gtk-csd.single-1080p`: the runner
+starts the real `qindaqt-settings-service` on the private bus (schema from
+the source tree, overrides under the private XDG roots), the driver commits
+`input.touch.enabled=false` as a Settings1 user transaction and proves the
+seat's only touch device stops (Compositor1 `Capabilities` reports the
+development input device unavailable and `InjectTestInput` refuses a
+finger), then commits `true` and proves it comes back.
+
 ## Current design-token proof
 
 QST-1 derivation and its QML adapter are selected with:

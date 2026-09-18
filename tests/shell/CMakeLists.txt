@@ -252,6 +252,23 @@ if(TARGET qindaqt-shell)
     )
 
     qt_add_executable(
+        qindaqt_edge_gesture_subscriber_tests
+        tst_edgegesturesubscriber.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/edgegesturesubscriber.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/edgegesturesubscriber.h"
+    )
+    target_include_directories(
+        qindaqt_edge_gesture_subscriber_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(qindaqt_edge_gesture_subscriber_tests PRIVATE Qt6::Core Qt6::DBus Qt6::Test)
+    target_compile_features(qindaqt_edge_gesture_subscriber_tests PRIVATE cxx_std_20)
+    add_test(
+        NAME qindaqt.shell-edge-gesture-subscriber
+        COMMAND qindaqt_edge_gesture_subscriber_tests
+    )
+
+    qt_add_executable(
         qindaqt_runtime_panel_applet_compatibility_tests
         tst_runtimepanelappletcompatibility.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/runtimepanelappletcompatibility.cpp"

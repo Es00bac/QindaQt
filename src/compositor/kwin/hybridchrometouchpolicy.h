@@ -83,6 +83,7 @@ public:
     }
     [[nodiscard]] std::optional<qint64> longPressDueMs() const;
     [[nodiscard]] const TouchPolicyConfig &config() const noexcept { return m_config; }
+    void setConfig(const TouchPolicyConfig &config) noexcept { m_config = config; }
 
 private:
     struct Finger {

@@ -214,4 +214,11 @@ void KWinInteractionFilter::finishTouchGesture()
     m_touchOffset = {};
 }
 
+void KWinInteractionFilter::setTouchPolicyConfig(const TouchPolicyConfig &config)
+{
+    // A gesture in flight keeps the thresholds it started with; the next
+    // finger uses the new ones.
+    m_touch.setConfig(config);
+}
+
 } // namespace QindaQt::Compositor::KWinIntegration

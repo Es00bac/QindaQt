@@ -2,6 +2,12 @@
 #include "qindaqtkwinplugin.h"
 
 #include "kwincontrolendpoint.h"
+#include "kwintouchedgereserver.h"
+#include "kwinonscreenkeyboardpolicy.h"
+#include "kwintouchpreferences.h"
+#include "touchedgeactions.h"
+
+#include <workspace.h>
 #include "kwinchromeappearance.h"
 #include "kwindevelopmentinputinjector.h"
 #include "kwindevelopmentoutputseam.h"
@@ -24,6 +30,7 @@
 #include "windowcontainer.h"
 
 #include <compositor.h>
+#include <core/inputdevice.h>
 #include <input.h>
 #include <main.h>
 
@@ -33,6 +40,8 @@
 #include <QPointer>
 #include <QTimer>
 #include <QUuid>
+
+#include <algorithm>
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
@@ -172,6 +181,94 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
     if (!m_registeredObject || !m_registeredShellActionObject) {
         qWarning("QindaQt compositor control could not register on the session bus");
     }
+
+    // ADR-0205: touch edges and thresholds. The reserver needs the workspace's
+    // screen edges, which exist once KWin loads plugins; without them the
+    // gestures stay off and the log says so.
+    if (KWinTouchEdgeReserver::available()) {
+        m_touchEdgeReserver = std::make_unique<KWinTouchEdgeReserver>();
+        m_touchEdges = std::make_unique<TouchEdgeGestures>(*m_touchEdgeReserver);
+        connect(m_touchEdges.get(), &TouchEdgeGestures::triggered, m_endpoint.get(),
+                &KWinControlEndpoint::announceEdgeGesture);
+        // KWin recreates its edges with the outputs and keeps only the
+        // reservations the old edges held; re-arm whenever that happens and
+        // once the first event loop turn has let the outputs settle.
+        connect(KWin::workspace(), &KWin::Workspace::outputsChanged, m_touchEdges.get(),
+                &TouchEdgeGestures::rearm);
+        QTimer::singleShot(0, m_touchEdges.get(), &TouchEdgeGestures::rearm);
+    } else {
+        qWarning("QindaQt compositor: no screen edges at plugin load; touch edge gestures are off");
+    }
+    m_onScreenKeyboard = std::make_unique<KWinOnScreenKeyboardPolicy>();
+    m_touchPreferences = std::make_unique<KWinTouchPreferences>(m_bus);
+    connect(m_touchPreferences.get(), &KWinTouchPreferences::preferencesChanged, this,
+            &QindaQtKWinPlugin::applyTouchPreferences);
+    // A touchscreen plugged in later obeys the same preference.
+    if (auto *const input = KWin::input()) {
+        connect(input, &KWin::InputRedirection::deviceAdded, this, [this](KWin::InputDevice *device) {
+            gateTouchDevice(device, m_touchPreferences->preferences().touchscreenEnabled);
+        });
+    }
+    applyTouchPreferences();
+}
+
+// AGENT-CONTRACT (ADR-0205): input.touch.enabled=false is a real stop of every
+// touch device at KWin's seat (InputDevice::setEnabled), so fingers reach
+// neither chrome, clients, edges nor the keyboard. Only devices this plugin
+// switched off are switched back on; a device the user disabled in KWin's
+// own device settings keeps that choice.
+void QindaQtKWinPlugin::gateTouchDevice(KWin::InputDevice *device, bool enabled)
+{
+    if (device == nullptr || !device->isTouch()) {
+        return;
+    }
+    const auto tracked = std::find(m_touchDevicesDisabledByPreference.begin(),
+                                   m_touchDevicesDisabledByPreference.end(), device);
+    if (!enabled) {
+        if (device->isEnabled()) {
+            device->setEnabled(false);
+            if (tracked == m_touchDevicesDisabledByPreference.end()) {
+                m_touchDevicesDisabledByPreference.append(device);
+            }
+        }
+        return;
+    }
+    if (tracked != m_touchDevicesDisabledByPreference.end()) {
+        m_touchDevicesDisabledByPreference.erase(tracked);
+        if (!device->isEnabled()) {
+            device->setEnabled(true);
+        }
+    }
+}
+
+void QindaQtKWinPlugin::applyTouchscreenEnabled(bool enabled)
+{
+    m_touchDevicesDisabledByPreference.removeAll(nullptr);
+    auto *const input = KWin::input();
+    if (input == nullptr) {
+        return;
+    }
+    const QList<KWin::InputDevice *> devices = input->devices();
+    for (KWin::InputDevice *device : devices) {
+        gateTouchDevice(device, enabled);
+    }
+}
+
+void QindaQtKWinPlugin::applyTouchPreferences()
+{
+    const TouchPreferences &preferences = m_touchPreferences->preferences();
+    applyTouchscreenEnabled(preferences.touchscreenEnabled);
+    if (m_touchEdges) {
+        m_touchEdges->apply(preferences.edges);
+    }
+    if (m_hybridSession) {
+        TouchPolicyConfig config;
+        config.longPressMs = preferences.longPressMs;
+        m_hybridSession->setTouchPolicyConfig(config);
+    }
+    if (m_onScreenKeyboard) {
+        m_onScreenKeyboard->apply(preferences.onScreenKeyboard);
+    }
 }
 
 QindaQtKWinPlugin::~QindaQtKWinPlugin()
@@ -293,3 +390,4 @@ void QindaQtKWinPlugin::reconcileClosedWindow(const QString &windowId,
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration
+

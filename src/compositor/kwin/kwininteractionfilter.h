@@ -53,6 +53,10 @@ public:
                           TakeoverSourceResolver takeoverSource = {});
     ~KWinInteractionFilter();
 
+    // ADR-0205: thresholds from the touch preferences; a gesture in flight
+    // keeps the ones it started with.
+    void setTouchPolicyConfig(const TouchPolicyConfig &config);
+
     KWinInteractionFilter(const KWinInteractionFilter &) = delete;
     KWinInteractionFilter &operator=(const KWinInteractionFilter &) = delete;
 
@@ -78,6 +82,7 @@ private:
     [[nodiscard]] bool pointerButton(KWin::PointerButtonEvent *event);
     [[nodiscard]] bool pointerAxis(KWin::PointerAxisEvent *event);
     [[nodiscard]] bool keyboardKey(KWin::KeyboardKeyEvent *event);
+    void hideOnScreenKeyboardForHardwareKey(KWin::KeyboardKeyEvent *event);
     // Touch over shared chrome (ADR-0193): the first finger stands in for
     // the left button through the chrome router, a held finger opens the
     // container menu, a second finger's vertical swipe rolls the container.

@@ -205,3 +205,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0200: nearby servers are advisory, opt-in, and only what can be opened](0200-nearby-servers-are-advisory-and-opt-in.md)
 - [ADR-0198: one obs-websocket client for the desktop](0198-one-obs-websocket-client-for-the-desktop.md)
 - [ADR-0199: QindaQt provisions OBS and owns one secret](0199-qindaqt-provisions-obs-and-owns-one-secret.md)
+- [ADR-0204: the on-screen keyboard is the compositor's input method](0204-the-on-screen-keyboard-is-the-compositors-input-method.md)
+- [ADR-0205: touch edges and touch preferences belong to the compositor](0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)

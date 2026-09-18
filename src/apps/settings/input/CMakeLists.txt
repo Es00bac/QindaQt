@@ -22,6 +22,7 @@ target_sources(
         shortcuts_model.cpp
         tablet_device_selection.cpp
         tablet_devices_model.cpp
+        touch_settings_model.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -40,10 +41,11 @@ target_sources(
             include/qindaqt/apps/settings_input/store_result.h
             include/qindaqt/apps/settings_input/tablet_device_selection.h
             include/qindaqt/apps/settings_input/tablet_devices_model.h
+            include/qindaqt/apps/settings_input/touch_settings_model.h
 )
 target_link_libraries(
     qindaqt_settings_input
-    PUBLIC KF6::ConfigCore QindaQt::TabletDevices Qt6::Core Qt6::DBus Qt6::Gui
+    PUBLIC KF6::ConfigCore QindaQt::TabletDevices QindaQt::SettingsClient Qt6::Core Qt6::DBus Qt6::Gui
 )
 target_compile_features(qindaqt_settings_input PUBLIC cxx_std_20)
 set_target_properties(
@@ -95,6 +97,7 @@ qt_add_qml_module(
         qml/InputShortcutRow.qml
         qml/InputShortcutsSection.qml
         qml/InputTabletSection.qml
+        qml/InputTouchSection.qml
         qml/ShortcutCaptureButton.qml
         qml/TabletCalibrationOverlay.qml
         qml/TabletCalibrationSection.qml
@@ -139,6 +142,7 @@ install(
         qml/InputShortcutRow.qml
         qml/InputShortcutsSection.qml
         qml/InputTabletSection.qml
+        qml/InputTouchSection.qml
         qml/ShortcutCaptureButton.qml
         qml/TabletCalibrationOverlay.qml
         qml/TabletCalibrationSection.qml

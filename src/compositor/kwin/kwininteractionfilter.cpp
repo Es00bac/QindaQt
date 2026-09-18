@@ -6,6 +6,8 @@
 #include <core/inputdevice.h>
 #include <input.h>
 #include <input_event.h>
+#include <inputmethod.h>
+#include <main.h>
 #include <window.h>
 #include <workspace.h>
 
@@ -257,6 +259,7 @@ bool KWinInteractionFilter::keyboardKey(KWin::KeyboardKeyEvent *event)
     if (!event) {
         return false;
     }
+    hideOnScreenKeyboardForHardwareKey(event);
     if (m_chromeRouter && m_chromeRouter->active()
         && event->state != KWin::KeyboardKeyState::Released
         && event->key == Qt::Key_Escape) {
@@ -267,6 +270,22 @@ bool KWinInteractionFilter::keyboardKey(KWin::KeyboardKeyEvent *event)
          .modifiers = event->modifiers,
          .pressed = event->state != KWin::KeyboardKeyState::Released,
          .autoRepeat = event->state == KWin::KeyboardKeyState::Repeated}));
+}
+
+// ADR-0204: a physical key press means the user has a keyboard, so the
+// on-screen one leaves. Keys the on-screen keyboard forwards never pass
+// through the filters (KWin notifies the seat directly), so they cannot
+// hide it; only a real or injected device key does.
+void KWinInteractionFilter::hideOnScreenKeyboardForHardwareKey(KWin::KeyboardKeyEvent *event)
+{
+    if (event->state != KWin::KeyboardKeyState::Pressed || event->device == nullptr
+        || !event->device->isKeyboard()) {
+        return;
+    }
+    auto *inputMethod = KWin::kwinApp()->inputMethod();
+    if (inputMethod != nullptr && inputMethod->isVisible()) {
+        inputMethod->hide();
+    }
 }
 
 bool KWinInteractionFilter::earlyKeyboardKey(KWin::KeyboardKeyEvent *event)
