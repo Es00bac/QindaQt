@@ -230,6 +230,9 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("accessibility")));
   QVERIFY(registry.hasRoute(QStringLiteral("input")));
   QVERIFY(registry.hasRoute(QStringLiteral("streaming")));
+  // ADR-0200: the Date & time route, registered last so every existing
+  // route's index -- which shortcuts and traversal depend on -- is unmoved.
+  QVERIFY(registry.hasRoute(QStringLiteral("datetime")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -247,6 +250,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   // Streaming is appended last, so no existing index, shortcut or traversal
   // position moves (ADR-0128).
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
+  QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 12);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());

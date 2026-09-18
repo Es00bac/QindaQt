@@ -31,6 +31,7 @@ Item {
     property Component accessibilityComponent: null
     property Component inputComponent: null
     property Component streamingComponent: null
+    property Component dateTimeComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -70,6 +71,8 @@ Item {
               ? inputLoader
             : navigation.activeRouteComponent === "streaming"
               ? streamingLoader
+            : navigation.activeRouteComponent === "datetime"
+              ? dateTimeLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -288,6 +291,21 @@ Item {
                 && host.navigation.activeRouteComponent === "streaming"
                 && host.streamingComponent !== null
         sourceComponent: host.streamingComponent
+    }
+    Loader {
+        id: dateTimeLoader
+        objectName: host.objectNamePrefix + "DateTimeLoader"
+        anchors.fill: parent
+        // AGENT-NOTE: The Date & time page takes its model from the
+        // DateTimeRouteComposition backend singleton, which is always present
+        // when the module is imported and states unavailability itself when
+        // the platform clock service cannot be reached (ADR-0200).
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "datetime"
+                && host.dateTimeComponent !== null
+        sourceComponent: host.dateTimeComponent
     }
 
     Loader {

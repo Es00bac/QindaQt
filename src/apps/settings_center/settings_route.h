@@ -20,6 +20,7 @@ enum class SettingsRouteComponent {
   Accessibility,
   Input,
   Streaming,
+  DateTime,
 };
 
 [[nodiscard]] QString

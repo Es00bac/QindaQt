@@ -41,6 +41,7 @@ qt_add_qml_module(
         SettingsNavButton.qml
         SettingsRouteHost.qml
         SettingsRouteShortcuts.qml
+        AddedRouteComponents.qml
 )
 target_link_libraries(
     qindaqt-settings PRIVATE
@@ -70,6 +71,8 @@ target_link_libraries(
     qindaqt_settings_input_backend_qmlplugin
     qindaqt_settings_streaming_backend_qml
     qindaqt_settings_streaming_backend_qmlplugin
+    qindaqt_settings_datetime_qml
+    qindaqt_settings_datetime_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
