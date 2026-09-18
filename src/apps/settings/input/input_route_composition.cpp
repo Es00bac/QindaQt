@@ -10,10 +10,17 @@
 #include <qindaqt/apps/settings_input/pointer_devices_model.h>
 #include <qindaqt/apps/settings_input/shortcut_port.h>
 #include <qindaqt/apps/settings_input/shortcuts_model.h>
+#include <qindaqt/apps/settings_input/tablet_devices_model.h>
+
+#include <qindaqt/services/tablet_devices/kwin_tablet_devices.h>
+#include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
+#include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QLoggingCategory>
 #include <QtCore/QStandardPaths>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
+
 #include <QtDBus/QDBusConnection>
 #include <QtQml/QQmlEngine>
 
@@ -53,7 +60,24 @@ public:
           pointerModel(pointerPort),
           keyboardModel(keyboardConfigPort),
           layoutsModel(layoutPort),
-          shortcutsModel(shortcutPort) {}
+          shortcutsModel(shortcutPort),
+          tabletPort(bus),
+          tabletSettingsTransport(bus),
+          tabletSettingsClient(
+              tabletSettingsTransport,
+              Services::TabletDevices::Settings1TabletMappings::scopedKey()),
+          tabletMappings(tabletSettingsClient),
+          tabletModel(tabletPort, tabletOutputs, &tabletMappings) {
+        // AGENT-CONTRACT: the ledger client starts here, not lazily: the
+        // route must be able to record a choice the moment the user makes
+        // one. A Settings1 owner that is not up yet leaves the store
+        // unloaded, and the route says the choice could not be remembered
+        // rather than pretending it was.
+        QString error;
+        if (!tabletSettingsClient.start(&error)) {
+            tabletSettingsError = error;
+        }
+    }
 
     QDBusConnection bus;
     KWinPointerDevicePort pointerPort;
@@ -66,6 +90,13 @@ public:
     KeyboardSettingsModel keyboardModel;
     KeyboardLayoutsModel layoutsModel;
     ShortcutsModel shortcutsModel;
+    Services::TabletDevices::KWinTabletDevicePort tabletPort;
+    Services::TabletDevices::ScreenTabletOutputs tabletOutputs;
+    Services::SettingsClient::QtSettingsTransport tabletSettingsTransport;
+    Services::SettingsClient::SettingsClient tabletSettingsClient;
+    Services::TabletDevices::Settings1TabletMappings tabletMappings;
+    QString tabletSettingsError;
+    TabletDevicesModel tabletModel;
 };
 
 InputRouteComposition::InputRouteComposition(QObject *parent)
@@ -89,6 +120,10 @@ QObject *InputRouteComposition::layouts() const { return &d->layoutsModel; }
 
 QObject *InputRouteComposition::shortcuts() const {
     return &d->shortcutsModel;
+}
+
+QObject *InputRouteComposition::tabletDevices() const {
+    return &d->tabletModel;
 }
 
 } // namespace QindaQt::Apps::SettingsInput

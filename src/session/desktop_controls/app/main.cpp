@@ -5,7 +5,14 @@
 #include "qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h"
 #include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
 #include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
+#include "qindaqt/session/desktop_controls/tablet_arrival_notifier.h"
+#include "qindaqt/session/desktop_controls/tablet_mapping_policy.h"
+#include "qindaqt/session/desktop_controls/tablet_route_launcher.h"
 #include "qindaqt/session/desktop_controls/volume_key_controller.h"
+
+#include <qindaqt/services/tablet_devices/kwin_tablet_devices.h>
+#include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
+#include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
 
 #include <qindaqt/services/audio_client/audio_client.h>
 #include <qindaqt/services/audio_client/qt_audio_transport.h>
@@ -63,6 +70,8 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.addOption({QStringLiteral("no-idle-policy"),
                       QStringLiteral("Do not turn displays off after user idle time.")});
+    parser.addOption({QStringLiteral("no-tablet-policy"),
+                      QStringLiteral("Do not map pen displays to their own screen.")});
     parser.process(application);
 
     const QDBusConnection sessionBus = QDBusConnection::sessionBus();
@@ -131,6 +140,81 @@ int main(int argc, char *argv[])
                             << settingsError << '\n';
     }
     QindaQt::Session::DesktopControls::Settings1IdlePreferences idlePreferences(settingsClient);
+
+    // AGENT-CONTRACT: The tablet ledger gets its own Settings1 client scoped
+    // to `input.tabletMappings`. Settings1 rejects a whole snapshot on one
+    // unknown key (ADR-0126), so widening the idle client's scope instead
+    // would put both features behind one schema risk.
+    QindaQt::Services::SettingsClient::QtSettingsTransport tabletSettingsTransport(sessionBus);
+    QindaQt::Services::SettingsClient::SettingsClient tabletSettingsClient(
+        tabletSettingsTransport,
+        QindaQt::Services::TabletDevices::Settings1TabletMappings::scopedKey());
+    QindaQt::Services::TabletDevices::Settings1TabletMappings tabletMappings(
+        tabletSettingsClient);
+    QindaQt::Services::TabletDevices::KWinTabletDevicePort tabletPort(sessionBus);
+    QindaQt::Services::TabletDevices::KWinTabletDeviceWatcher tabletWatcher(
+        sessionBus, &application);
+    QindaQt::Services::TabletDevices::ScreenTabletOutputs tabletOutputs(&application);
+    QindaQt::Session::DesktopControls::TabletMappingPolicy tabletPolicy(
+        tabletPort, tabletWatcher, tabletOutputs, tabletMappings, &application);
+    QindaQt::Session::DesktopControls::TabletArrivalNotifier tabletNotifier(
+        sessionBus, &application);
+    QindaQt::Session::DesktopControls::TabletRouteLauncher tabletRoutes({}, &application);
+    QObject::connect(
+        &tabletPolicy,
+        &QindaQt::Session::DesktopControls::TabletMappingPolicy::tabletAnnounced,
+        &tabletNotifier,
+        [&tabletNotifier](const QString &group, const QString &name,
+                          const QString &output) {
+            tabletNotifier.announce(group, name, output);
+        });
+    QObject::connect(
+        &tabletNotifier,
+        &QindaQt::Session::DesktopControls::TabletArrivalNotifier::setupRequested,
+        &tabletRoutes,
+        [&tabletRoutes](const QString &group) {
+            tabletRoutes.openTabletSettings(group);
+        });
+    QObject::connect(
+        &tabletNotifier,
+        &QindaQt::Session::DesktopControls::TabletArrivalNotifier::useActiveScreenRequested,
+        &tabletPolicy, [&tabletPolicy](const QString &group) {
+            QString error;
+            if (!tabletPolicy.applyUserChoice(
+                    group,
+                    QindaQt::Services::TabletDevices::TabletMapChoice::FollowActiveScreen,
+                    QString{}, &error)) {
+                QTextStream(stderr)
+                    << "qindaqt-desktop-controls: tablet choice failed: " << error
+                    << '\n';
+            }
+        });
+    QObject::connect(
+        &tabletPolicy,
+        &QindaQt::Session::DesktopControls::TabletMappingPolicy::mappingFailed,
+        &application, [](const QString &message) {
+            QTextStream(stderr) << "qindaqt-desktop-controls: tablet mapping: "
+                                << message << '\n';
+        });
+    if (!parser.isSet(QStringLiteral("no-tablet-policy"))) {
+        QString tabletSettingsError;
+        if (!tabletSettingsClient.start(&tabletSettingsError)) {
+            QTextStream(stderr)
+                << "qindaqt-desktop-controls: tablet settings client failed: "
+                << tabletSettingsError << '\n';
+        }
+        QString notifierError;
+        if (!tabletNotifier.start(&notifierError)) {
+            QTextStream(stderr) << "qindaqt-desktop-controls: " << notifierError
+                                << '\n';
+        }
+        QString tabletError;
+        if (!tabletPolicy.start(&tabletError)) {
+            QTextStream(stderr)
+                << "qindaqt-desktop-controls: tablet hotplug unavailable: "
+                << tabletError << '\n';
+        }
+    }
 
     QindaQt::Session::PowerDevilIdle::PowerDevilIdleAdapter powerDevilIdle(sessionBus);
     QindaQt::Session::DesktopControls::PowerDevilIdlePreferencesBinding idleBinding(

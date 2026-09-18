@@ -13,7 +13,7 @@ The Display settings route provides comprehensive monitor and layout management:
 
 | Section | Controls | Authority & Behavior |
 | --- | --- | --- |
-| Output Selector | Numbered output cards with connector name, model, resolution, refresh rate, primary badge, and a state line naming non-default rotation and mirroring | Projected from authoritative Display1 snapshot; the number is the card's inventory position and marks the same display in the arrangement. The state line exists because the Orientation controls are the fifth section on the page and a rotated display otherwise looked broken rather than rotated ([ADR-0190](../adr/0190-mirroring-is-one-field-on-the-mirrored-output.md)) |
+| Output Selector | Numbered output cards with connector name, model, resolution, refresh rate, primary badge, a **Pen display** badge, and a state line naming non-default rotation and mirroring | Projected from authoritative Display1 snapshot; the number is the card's inventory position and marks the same display in the arrangement. The state line exists because the Orientation controls are the fifth section on the page and a rotated display otherwise looked broken rather than rotated ([ADR-0190](../adr/0190-mirroring-is-one-field-on-the-mirrored-output.md)) |
 | Output State | Enable/Disable switch | Validates that at least one output remains enabled in the proposed topology |
 | Arrangement | Scaled diagram of every enabled display at its logical size, pointer drag with edge snapping, arrow-key nudges, quick placement (Left of / Right of / Above / Below a reference display), a live position readout, and a "Not in use" strip for connected-but-disabled outputs | Drafts through `setOutputPosition`; the diagram derives logical size from mode, scale, and rotation with the topology module's rounding so it stays truthful while a draft is rejected |
 | Mirroring | Extend, or mirror the selected display onto one named other display; a note when the two logical sizes differ | Writes `replicationSourceStableId` through `setOutputMirror` ([ADR-0190](../adr/0190-mirroring-is-one-field-on-the-mirrored-output.md)). The choices are exactly what the model accepts: other outputs that are enabled and not themselves mirroring. A mirrored output is enabled and takes its source's position; choosing Extend again restores the position it had before mirroring. With one display the row says there is nothing to mirror onto rather than offering a dead control |
@@ -23,6 +23,15 @@ The Display settings route provides comprehensive monitor and layout management:
 | Transform | Orientation presets (0°, 90°, 180°, 270°) | Normal, 90°, 180°, 270° clockwise rotation |
 | Primary Output | "Make Primary" toggle / button | Designates primary output for default desktop surfaces and taskbars |
 | Night light | On/off switch, schedule choice (sunset to sunrise by automatic location or manual coordinates, custom times, always on), night and day temperature sliders (1000–6500 K, 100 K steps), transition length, and one status line (active now, current temperature, next change) | Live truth from `org.kde.KWin.NightLight`; drafts write `kwinrc [NightColor]` and `knighttimerc` through the [night light service](../architecture/night-light.md) (ADR-0136). The temperature slider previews live through KWin's 15-second preview, one debounced call per settled value, withdrawn on release-without-apply or page close. When the compositor service is absent the section says so and disables its controls; when the schedule daemon is absent the schedule rows disable while temperatures stay usable. Automatic location is used only when the user picks it — the route never sees positioning data |
+
+A card carries the **Pen display** badge when its EDID manufacturer is a
+display-tablet vendor, decided by the one shared table the session uses to map
+a pen to its screen (`Services::TabletDevices::isDisplayTabletVendor`,
+[ADR-0197](../adr/0197-pen-displays-map-themselves-and-ask-once.md)), so the
+badge and the automatic mapping can never disagree. Selecting such a display
+adds a **Pen & tablet settings…** row that moves to Input → Pen & tablet. The
+Display route never writes tablet state; the tablet route stays the single
+authority for what the pen does.
 
 Output cards are Tab-focusable radio controls activated by pointer, Return,
 Enter, or Space. Coordinate text is an explicit edit session: Return, Enter,
