@@ -50,6 +50,20 @@ public:
         quieting->insert(QStringLiteral("unavailable"), false);
         quieting->insert(QStringLiteral("statusText"), QString{});
         quieting->insert(QStringLiteral("errorText"), QString{});
+        // AGENT-NOTE: Main.qml's `quietingSchedule` is a SEPARATE model from
+        // `quietingSettings` — QuietHoursSection reads available,
+        // scheduleEnabled and the two time fields off it. Handing it the
+        // settings stand-in leaves those undefined, and this harness runs with
+        // fatal warnings, so "Unable to assign [undefined] to bool" aborts the
+        // process rather than failing one row.
+        schedule->insert(QStringLiteral("available"), false);
+        schedule->insert(QStringLiteral("scheduleEnabled"), false);
+        schedule->insert(QStringLiteral("startMinutes"), 22 * 60);
+        schedule->insert(QStringLiteral("endMinutes"), 7 * 60);
+        schedule->insert(QStringLiteral("startText"), QStringLiteral("22:00"));
+        schedule->insert(QStringLiteral("endText"), QStringLiteral("07:00"));
+        schedule->insert(QStringLiteral("summaryText"), QString{});
+        schedule->insert(QStringLiteral("errorText"), QString{});
         engine.addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
         QString error;
         auto *facade = QindaQt::Apps::SettingsAppearance::ensureTokenFacade(
@@ -84,6 +98,8 @@ public:
              QVariant::fromValue(static_cast<QObject *>(&navigation))},
             {QStringLiteral("quietingSettings"),
              QVariant::fromValue(static_cast<QObject *>(quieting.get()))},
+            {QStringLiteral("quietingSchedule"),
+             QVariant::fromValue(static_cast<QObject *>(schedule.get()))},
             {QStringLiteral("appearanceSettings"),
              QVariant::fromValue(static_cast<QObject *>(&appearance))},
             {QStringLiteral("customizeSettings"),
@@ -96,6 +112,7 @@ public:
     SettingsNavigationController navigation;
     StubCustomizeSettingsModel customize;
     std::unique_ptr<QQmlPropertyMap> quieting{QQmlPropertyMap::create()};
+    std::unique_ptr<QQmlPropertyMap> schedule{QQmlPropertyMap::create()};
     QObject appearance;
     std::unique_ptr<QObject> root;
     QQuickWindow *window = nullptr;

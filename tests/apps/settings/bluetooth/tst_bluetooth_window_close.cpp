@@ -93,6 +93,8 @@ void BluetoothWindowCloseTest::waitsForDiscoveryReleaseBeforeClosing() {
   std::unique_ptr<QObject> root(component.createWithInitialProperties({
       {QStringLiteral("navigation"), QVariant::fromValue(&navigation)},
       {QStringLiteral("quietingSettings"), QVariant::fromValue(&unusedRouteModel)},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(&unusedRouteModel)},
       {QStringLiteral("appearanceSettings"), QVariant::fromValue(&unusedRouteModel)},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(&customize)},
       {QStringLiteral("bluetoothSettings"), QVariant::fromValue(&bluetooth)},
@@ -160,6 +162,8 @@ void BluetoothWindowCloseTest::unsuccessfulAcquireDuringCloseCompletesClose() {
   std::unique_ptr<QObject> root(component.createWithInitialProperties({
       {QStringLiteral("navigation"), QVariant::fromValue(&navigation)},
       {QStringLiteral("quietingSettings"),
+       QVariant::fromValue(&unusedRouteModel)},
+      {QStringLiteral("quietingSchedule"),
        QVariant::fromValue(&unusedRouteModel)},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(&unusedRouteModel)},
@@ -248,6 +252,8 @@ void BluetoothWindowCloseTest::
       {QStringLiteral("navigation"), QVariant::fromValue(&navigation)},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(&unusedRouteModel)},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(&unusedRouteModel)},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(&unusedRouteModel)},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(&customize)},
@@ -323,6 +329,8 @@ void BluetoothWindowCloseTest::compactHostProvidesBluetoothFocusPath() {
   std::unique_ptr<QObject> root(component.createWithInitialProperties({
       {QStringLiteral("navigation"), QVariant::fromValue(&navigation)},
       {QStringLiteral("quietingSettings"),
+       QVariant::fromValue(&unusedRouteModel)},
+      {QStringLiteral("quietingSchedule"),
        QVariant::fromValue(&unusedRouteModel)},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(&unusedRouteModel)},
