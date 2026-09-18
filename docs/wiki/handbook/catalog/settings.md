@@ -83,6 +83,10 @@ These five keys are live: `qindaqt-session` writes each confirmed change into
 docking chord and close policy on that reload
 ([ADR-0209](../../adr/0209-bridge-window-management-settings-into-kwinrc.md)).
 `sessionRestore` is written through but has no consumer yet.
+([ADR-0209](../../adr/0209-bridge-window-management-settings-into-kwinrc.md)).
+`sessionRestore` is written through but has no consumer yet. The Settings
+Center's [Windows & workspaces route](../../apps/windows-settings.md) edits the
+other four.
 
 ## accessibility
 

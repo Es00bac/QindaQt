@@ -44,6 +44,8 @@ private:
   // registerBuiltInRoutes(), which is at its function-length limit. A route
   // added from here on gets its own function for the same reason.
   void registerDateTimeRoute();
+  // ADR-0200: appended after every earlier route so indices stay stable.
+  void registerWindowsRoute();
 
   QList<SettingsRoute> m_routes;
 };

@@ -6,6 +6,7 @@ modular settings routes. It contains thirteen real routes: **Notifications**,
 **Bluetooth**, followed by **Power**, **Clipboard**, **Color**,
 **Accessibility**, **Input**, and **Streaming**. The shell owns route identity,
 selection, responsive
+**Accessibility**, **Input**, and **Windows & workspaces**. The shell owns route identity, selection, responsive
 presentation, and navigation accessibility. Each route continues to own its
 domain model, service scope, page state, and mutations.
 
@@ -21,7 +22,8 @@ the [Audio route](audio-settings.md); Bluetooth behavior is documented on the
 [Clipboard route](clipboard-settings.md); Color behavior is documented on the
 [Color route](color-settings.md); Accessibility behavior is documented on the
 [Accessibility route](accessibility-settings.md); Input behavior is documented on the
-[Input route](input-settings.md); notification quieting and its live
+[Input route](input-settings.md); Windows & workspaces behavior is documented on
+the [Windows & workspaces route](windows-settings.md); notification quieting and its live
 settings transaction remain documented under
 [notification presentation](../shell/notification-presentation.md).
 
@@ -42,13 +44,13 @@ icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
 must not hide one. The closed component kind is mapped to the compiled
 Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, Power,
-Clipboard, Color, or Accessibility
+Clipboard, Color, Accessibility, Input, or Windows
 component. It is not a QML URL, plugin path, or service locator.
 
 The public command accepts `--page notifications`, `--page appearance`,
 `--page display`, `--page network`, `--page customize`, `--page audio`, and
-`--page bluetooth`, `--page power`, `--page clipboard`, `--page color`, and
-`--page accessibility`. The installed `org.qindaqt.Settings.desktop` entry
+`--page bluetooth`, `--page power`, `--page clipboard`, `--page color`,
+`--page accessibility`, `--page input`, and `--page windows`. The installed `org.qindaqt.Settings.desktop` entry
 declares two freedesktop desktop actions, `appearance` and `display`, whose
 `Exec` lines launch `qindaqt-settings --page appearance` and
 `qindaqt-settings --page display`; the Desktop context menu reuses them, so
@@ -137,11 +139,22 @@ applies per key from fresh snapshots; the reserved `accessibility.screenReader`
 key is never scoped. The [Accessibility route](accessibility-settings.md)
 defines its truth, no-replay, and reserved-key boundary (ADR-0128).
 
+Windows & workspaces owns one route-local composition (like Clipboard): a
+Settings1 transport and a client scoped to exactly the four live
+`windowManagement.*` keys, passed to QML as its route model. It edits a draft
+and applies per key from fresh snapshots; the reserved
+`windowManagement.sessionRestore` key is never scoped. The
+[Windows & workspaces route](windows-settings.md) defines its boundary
+(ADR-0210).
+
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
 hosts coexist so the window can cross the responsive threshold, but the
 inactive host's twelve route Loaders are all inactive. The Accessibility
+inactive host's thirteen route Loaders are all inactive. The Accessibility
 Loader additionally requires its route model; a host composed without one
-shows the explicit unavailable notice instead of binding a page to null. Switching layouts or routes
+shows the explicit unavailable notice instead of binding a page to null. The
+Windows & workspaces loader lives in its own file and, like Input, binds the
+page to the route's composition singleton inside its component. Switching layouts or routes
 cannot duplicate a page, its focus side effects, or its settings bindings.
 Unknown component keys and unavailable descriptors select one explicit
 `DegradedNotice`; no route falls back to another domain page.
