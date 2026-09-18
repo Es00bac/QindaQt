@@ -35,32 +35,50 @@ FreedesktopFeedbackNotifier::~FreedesktopFeedbackNotifier() = default;
 void FreedesktopFeedbackNotifier::showVolume(int percent, bool muted)
 {
     notify(QStringLiteral("volume"), volumeIcon(percent, muted),
-           QStringLiteral("Volume"), volumeBody(percent, muted));
+           QStringLiteral("Volume"), volumeBody(percent, muted),
+           FeedbackExpireMilliseconds, 1);
 }
 
 void FreedesktopFeedbackNotifier::showBrightness(int percent)
 {
     notify(QStringLiteral("brightness"), QStringLiteral("video-display"),
            QStringLiteral("Brightness"),
-           QString::number(qBound(0, percent, 100)) + QStringLiteral("%"));
+           QString::number(qBound(0, percent, 100)) + QStringLiteral("%"),
+           FeedbackExpireMilliseconds, 1);
 }
 
 void FreedesktopFeedbackNotifier::showNotice(const QString &summary,
                                              const QString &body,
                                              const QString &iconName)
 {
-    notify(QStringLiteral("notice"), iconName, summary, body);
+    notify(QStringLiteral("notice"), iconName, summary, body,
+           FeedbackExpireMilliseconds, 1);
+}
+
+void FreedesktopFeedbackNotifier::showBattery(const QString &summary,
+                                              const QString &body,
+                                              const QString &iconName,
+                                              bool critical)
+{
+    // expire_timeout -1 would mean "let the server decide" (its usual
+    // default is transient); 0 is the freedesktop spec's explicit "never
+    // auto-expire" so the warning survives until dismissed.
+    notify(QStringLiteral("battery"), iconName, summary, body, 0,
+           critical ? 2 : 1);
 }
 
 void FreedesktopFeedbackNotifier::notify(const QString &category,
                                          const QString &iconName,
                                          const QString &summary,
-                                         const QString &body)
+                                         const QString &body,
+                                         int expireMilliseconds,
+                                         quint8 urgency)
 {
     quint32 &replacesId = category == QLatin1String("volume")
         ? m_volumeNotificationId
-        : (category == QLatin1String("brightness") ? m_brightnessNotificationId
-                                                   : m_noticeNotificationId);
+        : category == QLatin1String("brightness") ? m_brightnessNotificationId
+        : category == QLatin1String("battery") ? m_batteryNotificationId
+                                               : m_noticeNotificationId;
 
     QDBusMessage message = QDBusMessage::createMethodCall(
         QString::fromLatin1(kServiceName), QString::fromLatin1(kObjectPath),
@@ -72,8 +90,8 @@ void FreedesktopFeedbackNotifier::notify(const QString &category,
         summary,
         body,
         QStringList{},
-        QVariantMap{},
-        FeedbackExpireMilliseconds,
+        QVariantMap{{QStringLiteral("urgency"), QVariant::fromValue(urgency)}},
+        expireMilliseconds,
     });
     auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(message), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
@@ -83,9 +101,11 @@ void FreedesktopFeedbackNotifier::notify(const QString &category,
                 quint32 &notificationId =
                     category == QLatin1String("volume")
                         ? m_volumeNotificationId
-                        : (category == QLatin1String("brightness")
-                               ? m_brightnessNotificationId
-                               : m_noticeNotificationId);
+                    : category == QLatin1String("brightness")
+                        ? m_brightnessNotificationId
+                    : category == QLatin1String("battery")
+                        ? m_batteryNotificationId
+                        : m_noticeNotificationId;
                 if (!reply.isError()) {
                     notificationId = reply.value();
                     return;

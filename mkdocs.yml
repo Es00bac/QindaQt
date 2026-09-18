@@ -109,6 +109,7 @@ nav:
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
+      - "Laptop readiness: qinda-top": reference/laptop-readiness-qinda-top.md
   - Development:
       - Implementation roadmap: development/implementation-roadmap.md
       - Coding practices: development/coding-practices.md
@@ -315,3 +316,4 @@ nav:
       - "ADR-0189: paint the rolled-up badge label, and size the badge to it": adr/0189-size-the-rolled-up-badge-to-its-label.md
       - "ADR-0190: mirroring is one field on the mirrored output": adr/0190-mirroring-is-one-field-on-the-mirrored-output.md
       - "ADR-0191: a control survives reprojection and owns its value": adr/0191-a-control-survives-reprojection.md
+      - "ADR-0192: the KDE portal drop-in must not try to clear BusName=": adr/0192-portal-dropin-busname-cannot-be-cleared.md

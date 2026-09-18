@@ -33,8 +33,9 @@ class FakeInputDevice final : public QObject
                    supportsPointerAccelerationProfileAdaptive CONSTANT)
     Q_PROPERTY(bool supportsMiddleEmulation READ supportsMiddleEmulation
                    CONSTANT)
-    Q_PROPERTY(bool supportsTapToClick READ supportsTapToClick CONSTANT)
-    Q_PROPERTY(bool supportsTapAndDrag READ supportsTapAndDrag CONSTANT)
+    // Real KWin has no supportsTapToClick/supportsTapAndDrag booleans; tap
+    // capability is the integer finger count (0 = cannot tap).
+    Q_PROPERTY(int tapFingerCount READ tapFingerCount CONSTANT)
     Q_PROPERTY(bool supportsDisableWhileTyping READ supportsDisableWhileTyping
                    CONSTANT)
     Q_PROPERTY(bool supportsScrollTwoFinger READ supportsScrollTwoFinger
@@ -130,8 +131,10 @@ public:
     {
         return specFlag("supportsMiddleEmulation");
     }
-    bool supportsTapToClick() const { return specFlag("supportsTapToClick"); }
-    bool supportsTapAndDrag() const { return specFlag("supportsTapAndDrag"); }
+    int tapFingerCount() const
+    {
+        return m_spec.value(QStringLiteral("tapFingerCount")).toInt();
+    }
     bool supportsDisableWhileTyping() const
     {
         return specFlag("supportsDisableWhileTyping");
