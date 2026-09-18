@@ -5,10 +5,13 @@
 #include "hybridchromepointerrouter.h"
 #include "hybridcontainerplacement.h"
 #include "hybridgroupedgeometryreconciler.h"
+#include "hybridiconifycontroller.h"
 #include "hybridinteractionruntime.h"
 #include "kwinchromemanager.h"
 #include "kwindockpreview.h"
 #include "kwinhybridgroupstacking.h"
+#include "kwinhybridscene.h"
+#include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
 
@@ -45,6 +48,16 @@ QString activeRepresentative(const Core::WindowContainer &container)
 {
     const auto *page = container.page(container.activePageId());
     return page ? firstWindowId(page->root()) : QString{};
+}
+
+void collectPageWindowIds(const Core::LayoutNode &node, QStringList *windowIds)
+{
+    if (node.isLeaf()) {
+        windowIds->append(node.windowId());
+        return;
+    }
+    collectPageWindowIds(*node.firstChild(), windowIds);
+    collectPageWindowIds(*node.secondChild(), windowIds);
 }
 
 } // namespace
@@ -140,10 +153,82 @@ void KWinHybridSession::reconcileWorkAreaGeometry()
     }
 }
 
+// Composes the exact-chord target resolver: chrome hits, live-stack chrome
+// exposure, the container-edge band, tab-drag exclusions, and (ADR-0203) the
+// iconified chips that stand in for their hidden windows as drag sources.
+void KWinHybridSession::initializeTargetResolver()
+{
+    m_targetResolver = std::make_unique<KWinInteractionTargetResolver>(
+        m_registry, m_chromeManager.get(),
+        [this](const QString &containerId,
+               const QPointF &position,
+               const QSet<QString> &excludedWindowIds) {
+            return m_groupStacking
+                && m_groupStacking->chromeExposedAt(
+                    containerId, position, excludedWindowIds);
+        },
+        [this](const QString &containerId) -> std::optional<QRectF> {
+            const auto layout = m_sceneFactory->committedLayout(containerId);
+            if (!layout) {
+                return std::nullopt;
+            }
+            return QRectF(layout->activePage.contentFrame);
+        },
+        [this](const QString &containerId, const QString &pageId) -> QStringList {
+            const auto *container = m_runtime->topology().container(containerId);
+            const auto *page = container ? container->page(pageId) : nullptr;
+            if (!page) {
+                return {};
+            }
+            QStringList members;
+            collectPageWindowIds(page->root(), &members);
+            return members;
+        },
+        [this](const QPointF &position) { return iconChipSourceAt(position); });
+}
+
 void KWinHybridSession::dispatchIntent(const HybridInput::InteractionIntent &intent)
 {
     if (!ready()) {
         return;
+    }
+    if (intent.kind == HybridInput::InteractionKind::MemberDock && m_iconify
+        && m_iconify->isIconified(intent.source.memberId)) {
+        // ADR-0203: a chip is a legal exact-chord dock source. A valid drop
+        // un-iconifies first (the window becomes a real client at its
+        // restore size) and then hands the window to the ordinary docking
+        // runtime; a drop outside every target leaves the chip at the drop
+        // point; Escape leaves it where it was.
+        if (intent.phase == HybridInput::IntentPhase::Cancel) {
+            m_dockPreview->clear();
+            return;
+        }
+        if (intent.phase == HybridInput::IntentPhase::Commit && !intent.target.isValid()) {
+            const auto record = m_iconify->record(intent.source.memberId);
+            QString error;
+            if (record
+                && !m_iconify->relocateChip(intent.source.memberId,
+                                            record->chipFrame.topLeft() + intent.delta,
+                                            iconChipBounds(intent.source.memberId), &error)) {
+                qWarning("QindaQt chip drop could not move the chip: %s", qPrintable(error));
+            }
+            if (!publishIconChip(intent.source.memberId, &error)) {
+                qWarning("QindaQt chip drop could not republish the chip: %s",
+                         qPrintable(error));
+            }
+            m_dockPreview->clear();
+            Q_EMIT shellVisibilityStateChanged();
+            return;
+        }
+        if (intent.phase == HybridInput::IntentPhase::Commit) {
+            QString error;
+            if (!restoreIconifiedWindow(intent.source.memberId, false, &error)) {
+                qWarning("QindaQt chip drop could not unroll '%s': %s",
+                         qPrintable(intent.source.memberId), qPrintable(error));
+                m_dockPreview->clear();
+                return;
+            }
+        }
     }
     if (intent.phase == HybridInput::IntentPhase::Commit) {
         QString error;

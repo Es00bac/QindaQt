@@ -2243,6 +2243,54 @@ Not covered by these rows, and not claimed:
 See [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
 and [Hybrid container chrome](../architecture/hybrid-chrome.md).
 
+## Iconified window proof
+
+`HybridIconifyController`, `HybridIconChipRouter`, and `ChromeIconChip` are
+pure, so their focused rows (`compositor.hybrid-iconify-controller`,
+`compositor.hybrid-icon-chip-router`, `qindaqt.hybrid-chrome-icon-chip`)
+cannot observe the KWin scene. The `compositor.iconify-visibility.*` rows judge
+the real result ([ADR-0203](../adr/0203-an-ordinary-window-rolls-up-to-its-icon.md)).
+They reuse the shade-visibility session machinery: a private virtual
+`qindaqt-wm` from a capability-free `kwin_wayland` copy, a private D-Bus daemon
+and HOME/XDG/runtime roots below `${CMAKE_BINARY_DIR}/sv`, the full-screen
+backdrop client, development input only, and swapchain-disambiguated captures
+written with `evidence.json` under `sv/evidence/<row>/`. Wheel notches are real
+`pointer-axis` events through the development device, so the exact
+`KWinInteractionFilter` axis path that a physical wheel takes is what rolls the
+window up and down. The runner fails a row unless the flow completed, every
+verdict passed, and the private compositor mapped the build tree's
+`qindaqt_compositor.so`; it exits 77 only without `dbus-daemon`.
+
+- `basic` (1080p and 1440p@125%) maps one GTK4 server-decorated window and
+  requires, in order: a wheel away from the user over its title bar hides the
+  window, publishes exactly one visible chip anchored at the title bar's
+  leading edge, paints chip ink there, leaves the vacated area ghost-free with
+  real presses reaching the backdrop, and leaves the window inactive; an
+  ordinary drag moves the chip and its restore frame by the same delta with no
+  ghost; a wheel toward the user over the chip shows the window under the chip
+  at its original size, with its content colour and focus; a real
+  xdg-activation token unrolls at the recorded frame; a double-click unrolls;
+  `ReinitializeCompositingForTest` keeps the window iconified with one visible,
+  ghost-free chip; closing the window while iconified leaves no record, no
+  chip, and no ghost.
+- `dock` groups two client-decorated windows and requires the chip to be an
+  exact-chord dock source: a `Meta+Shift` drag of a chip onto a member's edge
+  unrolls the window into the container as a split beside the target, with its
+  content painted and no chip left; a drag onto a member tile's centre makes a
+  new tab spanning the page; with the backdrop closed, a drag onto the bare
+  desktop keeps the window iconified and moves the chip to the drop point; an
+  Escape during the chord leaves the chip and the state unchanged.
+
+Not covered by these rows, and not claimed:
+
+- The task-list rolled hint in a live shell; the `iconified` fact is proven by
+  the task-facts and task-list rows, not by a nested shell.
+- Client-side decorated windows (no title bar to wheel over), physical DRM/KMS
+  and OpenGL compositing, blur behind a chip's anchor, mixed-DPI moves of a
+  chip between outputs, and the chip's hover label and close glyph at pixel
+  level (their geometry and paint are covered offscreen).
+- The chip context menu; only the router's request is covered.
+
 ## Current Network1 N0 and N1 proof
 
 The Network boundary is qualified serially in fresh strict-warning Debug and

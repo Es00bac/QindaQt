@@ -129,6 +129,7 @@ QJsonObject stateJson(const ShellTaskFactsCandidate &candidate)
             {QStringLiteral("ownerRole"), windowOwnerName(window.owner)},
             {QStringLiteral("active"), window.active},
             {QStringLiteral("minimized"), window.minimized},
+            {QStringLiteral("iconified"), window.iconified},
             {QStringLiteral("maximized"), window.maximized},
             {QStringLiteral("fullscreen"), window.fullscreen},
             {QStringLiteral("demandsAttention"), window.demandsAttention},

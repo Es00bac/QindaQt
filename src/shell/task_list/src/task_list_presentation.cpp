@@ -18,6 +18,9 @@ TaskListPresentationModel::accessibleName(const TaskEntry &entry) {
   if (entry.minimized) {
     name += QStringLiteral(", minimized");
   }
+  if (entry.iconified) {
+    name += QStringLiteral(", rolled up");
+  }
   if (entry.urgent) {
     name += QStringLiteral(", urgent");
   }

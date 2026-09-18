@@ -188,7 +188,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0183: a macro button is a list of console operations](0183-a-macro-button-is-a-list-of-console-operations.md)
 - [ADR-0184: the recorder is a stream and a writer thread](0184-the-recorder-is-a-stream-and-a-writer-thread.md)
 - [ADR-0185: VBAN is a document and two threads](0185-vban-is-a-document-and-two-threads.md)
-- [ADR-0186: write internal brightness through logind](0186-write-internal-brightness-through-logind.md)
+- [ADR-0191: write internal brightness through logind](0186-write-internal-brightness-through-logind.md)
 - [ADR-0187: Smart lights speak to luminaires from the shell process](0187-smart-lights-speak-to-luminaires-from-the-shell-process.md)
 - [ADR-0188: serve the panel start zone first](0188-serve-the-panel-start-zone-first.md)
 - [ADR-0189: paint the rolled-up badge label, and size the badge to it](0189-size-the-rolled-up-badge-to-its-label.md)
@@ -205,3 +205,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0200: nearby servers are advisory, opt-in, and only what can be opened](0200-nearby-servers-are-advisory-and-opt-in.md)
 - [ADR-0201: one obs-websocket client for the desktop](0201-one-obs-websocket-client-for-the-desktop.md)
 - [ADR-0202: QindaQt provisions OBS and owns one secret](0202-qindaqt-provisions-obs-and-owns-one-secret.md)
+- [ADR-0203: an ordinary window rolls up to its icon](0203-an-ordinary-window-rolls-up-to-its-icon.md)

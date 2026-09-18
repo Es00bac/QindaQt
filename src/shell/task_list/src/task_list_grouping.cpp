@@ -59,6 +59,7 @@ QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
     entry.owner = fact.owner;
     entry.active = fact.active;
     entry.minimized = fact.minimized;
+    entry.iconified = fact.iconified;
     entry.urgent = fact.urgent;
     if (fact.role == TaskWindowRole::ContainerPrimary) {
       entry.taskId = fact.containerId;
