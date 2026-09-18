@@ -216,3 +216,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0211: the clock and region page acts on the platform's own services](0211-the-clock-and-region-page-acts-on-the-platforms-own-services.md)
 - [ADR-0212: quiet hours are a window the settings service owns](0212-quiet-hours-are-a-window-the-service-owns.md)
 - [ADR-0213: host the customization editor live in the shell](0213-host-the-customization-editor-live-in-the-shell.md)
+- [ADR-0214: the startup applications route shadows, never edits, system entries](0214-startup-applications-route.md)

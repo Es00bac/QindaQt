@@ -1,4 +1,4 @@
-# ADR-0193: Startup applications route shadows, never edits, system entries
+# ADR-0214: Startup applications route shadows, never edits, system entries
 
 - **Status:** Accepted
 - **Date:** 2026-09-18
