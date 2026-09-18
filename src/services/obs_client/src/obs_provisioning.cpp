@@ -288,6 +288,20 @@ ProvisioningState inspectProvisioning(const QString &root,
     return state;
 }
 
+std::optional<QString> obsControlUrl(const WebSocketSettings &settings,
+                                    const bool found) {
+    if (!found || !settings.serverEnabled) {
+        return std::nullopt;
+    }
+    const int port = settings.serverPort > 0 ? settings.serverPort : 4455;
+    if (port > 65535) {
+        return std::nullopt;
+    }
+    // Loopback only: obs-websocket has no transport security, and the
+    // transport refuses anything else anyway (ADR-0198).
+    return QStringLiteral("ws://127.0.0.1:%1").arg(port);
+}
+
 QString defaultObsConfigRoot() {
     const QString config = QStandardPaths::writableLocation(
         QStandardPaths::StandardLocation::ConfigLocation);
