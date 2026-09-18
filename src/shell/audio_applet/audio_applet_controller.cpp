@@ -3,6 +3,8 @@
 #include "audio_applet_controller.h"
 
 #include <cmath>
+#include <iterator>
+#include <optional>
 
 #include <qindaqt/services/audio_protocol/audio_gain.h>
 
@@ -231,6 +233,41 @@ void AudioAppletController::prunePendingAgainstSnapshot()
             ++serialIt;
         }
     }
+
+    // AGENT-GUARD: queued intent for a vanished serial must go with it. A
+    // value queued against a replaced epoch would otherwise dispatch against
+    // whatever object later reuses the serial.
+    auto dropQueued = [&liveSerials](QHash<quint64, QueuedRequest> &queue) {
+        auto it = queue.begin();
+        while (it != queue.end()) {
+            it = liveSerials.contains(it.key()) ? std::next(it) : queue.erase(it);
+        }
+    };
+    dropQueued(m_queuedVolumeBySerial);
+    dropQueued(m_queuedMuteBySerial);
+
+    // AGENT-GUARD: an intent is released only once the object is idle *and*
+    // the service has published something newer than the request was made
+    // against. Releasing it on completion alone would hand the handle back to
+    // a snapshot that has not carried the change yet, which is the jump-back
+    // this rule exists to prevent.
+    auto requestedIt = m_requestedBySerial.begin();
+    while (requestedIt != m_requestedBySerial.end()) {
+        const bool live = liveSerials.contains(requestedIt.key());
+        const bool settled = snapshot.epoch != requestedIt->initiatingEpoch
+            || snapshot.revision > requestedIt->initiatingRevision;
+        if (!live || (settled && !hasOutstandingWork(requestedIt.key())))
+            requestedIt = m_requestedBySerial.erase(requestedIt);
+        else
+            ++requestedIt;
+    }
+}
+
+bool AudioAppletController::hasOutstandingWork(const quint64 serial) const
+{
+    return m_pendingBySerial.contains(serial)
+        || m_queuedVolumeBySerial.contains(serial)
+        || m_queuedMuteBySerial.contains(serial);
 }
 
 void AudioAppletController::reproject()
@@ -241,7 +278,8 @@ void AudioAppletController::reproject()
     // model must never see grant policy, so the controller substitutes an
     // empty unavailable projection instead of forwarding client truth.
     if (!m_readGranted) {
-        m_model = AudioAppletModel::project(Phase::Unavailable, {}, nullptr, {});
+        m_model = AudioAppletModel::project(Phase::Unavailable, {}, nullptr, {},
+                                            {});
         Q_EMIT stateReprojected();
         return;
     }
@@ -294,9 +332,15 @@ void AudioAppletController::reproject()
         break;
     }
 
+    QHash<quint64, RequestedValue> requestedBySerial;
+    requestedBySerial.reserve(m_requestedBySerial.size());
+    for (auto it = m_requestedBySerial.constBegin();
+         it != m_requestedBySerial.constEnd(); ++it)
+        requestedBySerial.insert(it.key(), it->value);
+
     const Snapshot *projectedSnapshot = hasSnapshot ? &snapshot : nullptr;
     m_model = AudioAppletModel::project(phase, reasonCode, projectedSnapshot,
-                                        pendingSerials);
+                                        pendingSerials, requestedBySerial);
     Q_EMIT stateReprojected();
 }
 
@@ -335,13 +379,60 @@ bool AudioAppletController::beginRequest(quint64 serial, bool isStream,
         return false;
     }
 
-    const Snapshot snapshot = m_client->snapshot();
+    // ADR-0191: a request already in flight for this object does not refuse
+    // the new value, it replaces the queued one. Refusing is what made a
+    // pointer drag yield exactly one step: the slider disabled itself on
+    // pending, the controller rejected the overlap, and the drag died.
+    // The control shows this value from here on, whether it dispatches now or
+    // waits in the queue.
+    const std::optional<RequestedState> previous =
+        m_requestedBySerial.contains(serial)
+            ? std::optional<RequestedState>(m_requestedBySerial.value(serial))
+            : std::nullopt;
+    const Snapshot current = m_client->snapshot();
+    RequestedState &requested = m_requestedBySerial[serial];
+    requested.initiatingEpoch = current.epoch;
+    requested.initiatingRevision = current.revision;
+    if (kind == RequestKind::Volume) {
+        requested.value.volume = clampedVolume;
+        requested.value.hasVolume = true;
+    } else {
+        requested.value.muted = muted;
+        requested.value.hasMute = true;
+    }
 
     if (m_pendingBySerial.contains(serial)) {
-        publishFeedback(
-            QObject::tr("A change for this item is already in progress."));
+        QueuedRequest queued{kind, clampedVolume, muted, isStream};
+        if (kind == RequestKind::Volume)
+            m_queuedVolumeBySerial.insert(serial, queued);
+        else
+            m_queuedMuteBySerial.insert(serial, queued);
+        // The queued value is what the control now shows, so the projection
+        // has to carry it even though nothing was dispatched.
+        reproject();
+        return true;
+    }
+
+    if (!dispatchRequest(serial, isStream, kind, clampedVolume, muted)) {
+        // A refused request never happened; the control goes back to whatever
+        // it was showing before.
+        if (previous)
+            m_requestedBySerial.insert(serial, *previous);
+        else
+            m_requestedBySerial.remove(serial);
+        reproject();
         return false;
     }
+    return true;
+}
+
+bool AudioAppletController::dispatchRequest(quint64 serial, bool isStream,
+                                            RequestKind kind, double clampedVolume,
+                                            bool muted)
+{
+    if (!m_client->hasSnapshot())
+        return false;
+    const Snapshot snapshot = m_client->snapshot();
 
     quint64 dispatchedRequestId = 0;
     if (isStream) {
@@ -466,7 +557,46 @@ void AudioAppletController::handleOperationCompleted(
     const QString failure = requestFailureText(result, kind);
     if (!failure.isEmpty())
         publishFeedback(failure);
+    // ADR-0191: the queue drains here, which is also the rate limit. One
+    // request in flight per object means the dispatch rate is the service's
+    // own completion rate, so no fixed inter-request delay is needed and none
+    // is imposed.
+    dispatchQueuedFor(serial);
+
+    // AGENT-GUARD: a request the service did not accept releases the control's
+    // intent right here, without waiting for a newer snapshot. A refusal
+    // often changes nothing, so no new revision may ever arrive for this
+    // object, and the "wait for a newer revision" rule would park the handle
+    // on a value the service has already refused.
+    if (result.status != OperationStatus::Succeeded
+        && !hasOutstandingWork(serial)) {
+        m_requestedBySerial.remove(serial);
+    }
     reproject();
+}
+
+void AudioAppletController::dispatchQueuedFor(quint64 serial)
+{
+    if (m_pendingBySerial.contains(serial))
+        return;
+    // Mute first: a user reaching for mute wants silence now, not after the
+    // volume they were dragging lands.
+    if (const auto muteIt = m_queuedMuteBySerial.constFind(serial);
+        muteIt != m_queuedMuteBySerial.constEnd()) {
+        const QueuedRequest queued = *muteIt;
+        m_queuedMuteBySerial.remove(serial);
+        if (dispatchRequest(serial, queued.isStream, queued.kind, queued.volume,
+                            queued.muted)) {
+            return;
+        }
+    }
+    if (const auto volumeIt = m_queuedVolumeBySerial.constFind(serial);
+        volumeIt != m_queuedVolumeBySerial.constEnd()) {
+        const QueuedRequest queued = *volumeIt;
+        m_queuedVolumeBySerial.remove(serial);
+        (void)dispatchRequest(serial, queued.isStream, queued.kind,
+                              queued.volume, queued.muted);
+    }
 }
 
 } // namespace QindaQt::Shell::AudioApplet

@@ -50,16 +50,20 @@ RowLayout {
         id: volumeSlider
         objectName: "audioStreamVolume"
 
+        readonly property double level: row?.volume ?? 0.0
+        // AGENT-GUARD (ADR-0191): `pending` is not a gate here. See
+        // AudioDeviceRow: a control that disabled itself while its own request
+        // was in flight could not be dragged past one step.
         readonly property bool adjustable:
             (row?.canSetVolume ?? false) && (row?.volumeKnown ?? false)
-                 && (controller?.controlGranted ?? false) && !root.pending
+                 && (controller?.controlGranted ?? false)
 
         visible: row?.volumeKnown ?? false
         Layout.preferredWidth: 140
         from: 0.0
         to: 1.0
-        stepSize: 0.05
-        value: row?.volume ?? 0.0
+        stepSize: 0.01
+        wheelEnabled: true
         enabled: adjustable
         accessibleName: qsTr("Volume for %1").arg(root.streamName)
         accessibleDescription: root.pending
@@ -70,9 +74,20 @@ RowLayout {
                         ? qsTr("Sets the volume from 0 to 100 percent")
                         : qsTr("This application stream does not allow volume changes")
 
-        // See AudioDeviceRow: dispatch on every moved; the row's pending
-        // state disables the slider, and Qt 6.11 pressed=true during keyboard
-        // steps makes `pressed` unusable as a dispatch gate.
+        // The only binding on `value`: a pressed control owns what it shows,
+        // and `level` is the user's outstanding intent until the service
+        // answers for it (ADR-0191).
+        Binding {
+            target: volumeSlider
+            property: "value"
+            value: volumeSlider.level
+            when: !volumeSlider.pressed
+            restoreMode: Binding.RestoreNone
+        }
+
+        // Every move dispatches; the controller coalesces latest-wins per
+        // object. Qt reports pressed=true during keyboard steps, so `pressed`
+        // cannot gate dispatch.
         onMoved: if (adjustable)
                      controller.requestVolume(row.serial, true, value)
     }
@@ -80,7 +95,8 @@ RowLayout {
     C.Label {
         objectName: "audioStreamVolumePercent"
         visible: volumeSlider.visible
-        text: Math.round((row?.volume ?? 0.0) * 100) + "%"
+        // Follows the handle while it is held (ADR-0191).
+        text: Math.round(volumeSlider.value * 100) + "%"
         muted: true
     }
 
@@ -90,7 +106,7 @@ RowLayout {
 
         readonly property bool adjustable:
             (row?.canSetMute ?? false) && (row?.muteKnown ?? false)
-                 && (controller?.controlGranted ?? false) && !root.pending
+                 && (controller?.controlGranted ?? false)
 
         visible: row?.muteKnown ?? false
         text: qsTr("Mute")

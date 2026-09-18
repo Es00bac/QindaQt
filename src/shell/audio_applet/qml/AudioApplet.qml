@@ -191,15 +191,23 @@ Item {
             muted: true
         }
 
+        // AGENT-GUARD (ADR-0191): the model is the row *count*, not the row
+        // list. A Repeater handed a QVariantList regenerates every delegate
+        // whenever that list is reassigned, and the controller reassigns it on
+        // every reprojection -- including the one its own dispatch triggers.
+        // That destroyed the control the user was holding, so a pointer drag
+        // lost its grab and a keyboard step lost its focus after exactly one
+        // move. Binding the row by index keeps the item alive and updates its
+        // values in place.
         Repeater {
             objectName: "audioDeviceRows"
-            model: showLists ? controller.deviceRows : []
+            model: showLists ? controller.deviceRows.length : 0
 
             delegate: AudioDeviceRow {
-                required property var modelData
+                required property int index
 
                 Layout.fillWidth: true
-                row: modelData
+                row: root.controller.deviceRows[index] ?? null
                 controller: root.controller
             }
         }
@@ -222,13 +230,13 @@ Item {
 
         Repeater {
             objectName: "audioStreamRows"
-            model: showLists ? controller.streamRows : []
+            model: showLists ? controller.streamRows.length : 0
 
             delegate: AudioStreamRow {
-                required property var modelData
+                required property int index
 
                 Layout.fillWidth: true
-                row: modelData
+                row: root.controller.streamRows[index] ?? null
                 controller: root.controller
             }
         }
@@ -244,12 +252,12 @@ Item {
         }
         Repeater {
             objectName: "audioConsoleRows"
-            model: root.showLists ? (root.controller?.consoleRows ?? []) : []
+            model: root.showLists ? (root.controller?.consoleRows?.length ?? 0) : 0
             delegate: AudioConsoleRow {
-                required property var modelData
+                required property int index
                 Layout.fillWidth: true
                 controller: root.controller
-                strip: modelData
+                strip: root.controller.consoleRows[index] ?? null
             }
         }
 

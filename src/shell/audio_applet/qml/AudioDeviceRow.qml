@@ -54,16 +54,22 @@ RowLayout {
         readonly property double level: row?.volume ?? 0.0
         // The grant, not the row state alone, decides adjustability: a
         // policy-denied applet renders truth but can never dispatch.
+        //
+        // AGENT-GUARD (ADR-0191): `pending` is deliberately NOT here. A
+        // control that disables itself while its own request is in flight
+        // cannot be dragged: the first move dispatched, the row went pending,
+        // the slider went dead, and the drag ended one step from where it
+        // started. Pending is a subtle presentation state, never a gate.
         readonly property bool adjustable:
             (row?.canSetVolume ?? false) && (row?.volumeKnown ?? false)
-                 && (controller?.controlGranted ?? false) && !root.pending
+                 && (controller?.controlGranted ?? false)
 
         visible: row?.volumeKnown ?? false
         Layout.preferredWidth: 140
         from: 0.0
         to: 1.0
-        stepSize: 0.05
-        value: level
+        stepSize: 0.01
+        wheelEnabled: true
         enabled: adjustable
         accessibleName: qsTr("Volume for %1").arg(root.deviceName)
         accessibleDescription: root.pending
@@ -74,11 +80,24 @@ RowLayout {
                         ? qsTr("Sets the volume from 0 to 100 percent")
                         : qsTr("This device does not allow volume changes")
 
-        // AGENT-NOTE: Dispatch on every moved, like the Power applet rows.
-        // The slider disables itself while the row is pending, so a pointer
-        // drag cannot spam concurrent requests; the first move dispatches and
-        // the controller refuses overlaps. Qt 6.11 reports pressed=true during
-        // keyboard steps, so `pressed` cannot gate dispatch.
+        // AGENT-CONTRACT (ADR-0191): a pressed control owns its value. The
+        // authoritative level rebinds only when the user is not holding the
+        // handle, so an in-flight snapshot cannot yank the knob back under the
+        // finger. On release the binding resumes and the next snapshot is
+        // authoritative again.
+        Binding {
+            target: volumeSlider
+            property: "value"
+            value: volumeSlider.level
+            when: !volumeSlider.pressed
+            restoreMode: Binding.RestoreNone
+        }
+
+        // Every move dispatches; the controller coalesces latest-wins per
+        // object with one request in flight, so a drag sends the value the
+        // finger is on when the previous one completes rather than a queue of
+        // stale steps. Qt reports pressed=true during keyboard steps too, so
+        // `pressed` must not gate dispatch.
         onMoved: if (adjustable)
                      controller.requestVolume(row.serial, false, value)
     }
@@ -86,7 +105,9 @@ RowLayout {
     C.Label {
         objectName: "audioDeviceVolumePercent"
         visible: volumeSlider.visible
-        text: Math.round((row?.volume ?? 0.0) * 100) + "%"
+        // Follows the handle while it is held, the authoritative level
+        // otherwise: a readout that lagged the finger read as a stuck slider.
+        text: Math.round(volumeSlider.value * 100) + "%"
         muted: true
     }
 
@@ -94,9 +115,11 @@ RowLayout {
         id: muteSwitch
         objectName: "audioDeviceMute"
 
+        // Mute is never gated on pending either, and the controller dispatches
+        // a queued mute ahead of a queued volume (ADR-0191).
         readonly property bool adjustable:
             (row?.canSetMute ?? false) && (row?.muteKnown ?? false)
-                 && (controller?.controlGranted ?? false) && !root.pending
+                 && (controller?.controlGranted ?? false)
 
         visible: row?.muteKnown ?? false
         text: qsTr("Mute")
