@@ -216,7 +216,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 17);
+  QCOMPARE(registry.count(), 18);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -258,9 +258,13 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   // Each lane appends its route last, in merge order, so no existing index,
   // shortcut or traversal position moves (ADR-0128).
+  QCOMPARE(registry.count(), 18);
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
   QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
-  QCOMPARE(registry.count(), 18);
+  QCOMPARE(registry.indexOf(QStringLiteral("windows")), 14);
+  QCOMPARE(registry.indexOf(QStringLiteral("default-apps")), 15);
+  QCOMPARE(registry.indexOf(QStringLiteral("about-computer")), 16);
+  QCOMPARE(registry.indexOf(QStringLiteral("startup")), 17);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -371,8 +375,6 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   QCOMPARE(windows->iconName, QStringLiteral("preferences-system-windows"));
   QVERIFY(!windows->description.isEmpty());
   QVERIFY(windows->available);
-  QCOMPARE(registry.indexOf(QStringLiteral("default-apps")), 15);
-  QCOMPARE(registry.indexOf(QStringLiteral("about-computer")), 16);
   QVERIFY(registry.hasRoute(QStringLiteral("startup")));
 }
 
