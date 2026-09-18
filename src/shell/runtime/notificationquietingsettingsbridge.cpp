@@ -28,7 +28,7 @@ NotificationQuietingSettingsBridge::NotificationQuietingSettingsBridge(
         // is retained until a replacement owner publishes a full snapshot.
         m_policy.setDoNotDisturbEnabled(enabled);
     });
-    // ADR-0201: the schedule rides the same purpose-scoped client. It is read
+    // ADR-0212: the schedule rides the same purpose-scoped client. It is read
     // from the snapshot rather than through a commit state machine because the
     // shell only ever reads it -- the Settings route owns writing it.
     QObject::connect(&client, &Services::SettingsClient::SettingsClient::snapshotChanged,

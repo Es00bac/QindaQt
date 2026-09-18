@@ -68,7 +68,7 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     m_quietingSettingsClient =
         std::make_unique<Services::SettingsClient::SettingsClient>(
             *m_quietingSettingsTransport,
-            // ADR-0201 adds the schedule keys to the same purpose-scoped
+            // ADR-0212 adds the schedule keys to the same purpose-scoped
             // client. All four are schema keys with defaults, so widening the
             // scope by them cannot make a present value read "unavailable" --
             // which is the property the comment above protects.

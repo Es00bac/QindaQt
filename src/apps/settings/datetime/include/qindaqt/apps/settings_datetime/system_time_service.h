@@ -31,7 +31,7 @@ struct SystemTimeSnapshot final {
 };
 
 // AGENT-CONTRACT: the one seam through which the Date & time route reaches
-// the platform's clock and locale services (ADR-0200). An implementation
+// the platform's clock and locale services (ADR-0211). An implementation
 // reads and writes exactly these four things and nothing else: it never sets
 // the wall-clock time directly, never touches the RTC mode, never changes the
 // console or X11 keymap, and never caches a result past the next snapshot.

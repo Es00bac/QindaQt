@@ -8,7 +8,7 @@
 
 namespace QindaQt::Apps::SettingsDateTime {
 
-// The Date & time route's composition root (ADR-0200): it builds the
+// The Date & time route's composition root (ADR-0211): it builds the
 // production systemd clock/locale service and the purpose-scoped week-start
 // preference, and hands QML one model. Nothing else in the route knows which
 // bus anything lives on.

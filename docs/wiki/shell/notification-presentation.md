@@ -165,7 +165,7 @@ commit on Enter or focus loss, never per keystroke, so a half-typed hour
 cannot become the time the machine quiets; a time the model refuses — the
 input mask admits `99:99`, which is not a time — puts the field straight back
 to the time that is really set. See
-[ADR-0201](../adr/0201-quiet-hours-are-a-window-the-service-owns.md).
+[ADR-0212](../adr/0212-quiet-hours-are-a-window-the-service-owns.md).
 
 ## Lock-state privacy
 

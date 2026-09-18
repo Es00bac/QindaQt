@@ -77,7 +77,7 @@ their QObject projections and never imports transport or Settings1 authority. Th
 scoped client: the Do Not Disturb controller and the quiet-hours schedule.
 Both are purpose-scoped to the same four `services.doNotDisturb*` keys, so a
 schedule edit and a Do Not Disturb edit share one owner and one token
-sequence rather than racing two (ADR-0201).
+sequence rather than racing two (ADR-0212).
 
 Network owns one public Qt Network transport, `NetworkClient`, and
 `NetworkSettingsModel` for the process lifetime. It does not share the

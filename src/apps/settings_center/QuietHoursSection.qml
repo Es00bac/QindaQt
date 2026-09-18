@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// ADR-0201: the Do Not Disturb schedule. This section publishes only what the
+// ADR-0212: the Do Not Disturb schedule. This section publishes only what the
 // settings service last confirmed -- a refused or silently-ignored edit puts
 // every control straight back where the model still is, so the page can never
 // claim a quiet window the machine does not have.

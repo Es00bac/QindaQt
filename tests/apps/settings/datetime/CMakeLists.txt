@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# ADR-0200: the Date & time model over the seam's own fakes. No bus, no
+# ADR-0211: the Date & time model over the seam's own fakes. No bus, no
 # systemd, no polkit agent -- the environment below makes that provable
 # rather than merely intended.
 qt_add_executable(

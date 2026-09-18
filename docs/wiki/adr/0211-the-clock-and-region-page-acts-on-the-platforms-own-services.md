@@ -1,4 +1,4 @@
-# ADR-0200: The clock and region page acts on the platform's own services, and shows only what it can change
+# ADR-0211: The clock and region page acts on the platform's own services, and shows only what it can change
 
 - **Status:** Proposed
 - **Date:** 2026-09-17

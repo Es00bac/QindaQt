@@ -10,7 +10,7 @@
 namespace QindaQt::Apps::SettingsDateTime {
 
 // AGENT-CONTRACT: the same-thread projection the Date & time route binds to
-// (ADR-0200). It owns the injected SystemTimeService and WeekStartPreference
+// (ADR-0211). It owns the injected SystemTimeService and WeekStartPreference
 // for its whole lifetime, publishes one complete view, and turns a user
 // intent into exactly one platform request. It never reads the environment,
 // never runs a helper, never sets the wall clock, and never reports success

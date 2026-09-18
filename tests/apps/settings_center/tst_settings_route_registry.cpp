@@ -232,7 +232,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("accessibility")));
   QVERIFY(registry.hasRoute(QStringLiteral("input")));
   QVERIFY(registry.hasRoute(QStringLiteral("streaming")));
-  // ADR-0200: the Date & time route, registered last so every existing
+  // ADR-0211: the Date & time route, registered last so every existing
   // route's index -- which shortcuts and traversal depend on -- is unmoved.
   QVERIFY(registry.hasRoute(QStringLiteral("datetime")));
   QVERIFY(registry.hasRoute(QStringLiteral("windows")));

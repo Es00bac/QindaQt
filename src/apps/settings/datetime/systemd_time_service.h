@@ -10,7 +10,7 @@
 
 namespace QindaQt::Apps::SettingsDateTime {
 
-// Production SystemTimeService (ADR-0200) on the platform's own
+// Production SystemTimeService (ADR-0211) on the platform's own
 // `org.freedesktop.timedate1` and `org.freedesktop.locale1`, both already
 // present on every systemd machine. The bus is injected -- production passes
 // the system bus, where both live -- so a test can hand it a private one.

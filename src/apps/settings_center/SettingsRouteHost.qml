@@ -303,7 +303,7 @@ Item {
         // AGENT-NOTE: The Date & time page takes its model from the
         // DateTimeRouteComposition backend singleton, which is always present
         // when the module is imported and states unavailability itself when
-        // the platform clock service cannot be reached (ADR-0200).
+        // the platform clock service cannot be reached (ADR-0211).
         active: host.presentationActive
                 && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable

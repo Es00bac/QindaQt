@@ -12,7 +12,7 @@ class SettingsClient;
 namespace QindaQt::Apps::SettingsNotifications {
 
 // AGENT-CONTRACT: the Do Not Disturb schedule as the Notifications route sees
-// it (ADR-0201). It owns no persistence: it reads the three
+// it (ADR-0212). It owns no persistence: it reads the three
 // `services.doNotDisturb*` keys from the injected Settings1 client's snapshot
 // and writes through the same client, so what it publishes is always what the
 // service last confirmed.

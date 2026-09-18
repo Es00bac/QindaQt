@@ -256,7 +256,7 @@ LaunchArguments parseLaunchArguments(const QCoreApplication &application) {
 
 // AGENT-CONTRACT: Notifications owns one independent Settings1 transport and
 // one client scoped to the four `services.doNotDisturb*` keys. The switch and
-// the quiet-hours schedule (ADR-0201) are two projections of that one client,
+// the quiet-hours schedule (ADR-0212) are two projections of that one client,
 // so a schedule edit and a Do Not Disturb edit share an owner and a token
 // sequence instead of racing two. All four are schema keys with defaults, so
 // widening the scope by three cannot turn a present value into
