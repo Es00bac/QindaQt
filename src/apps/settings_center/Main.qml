@@ -21,6 +21,9 @@ import QindaQt.SettingsApp.InputBackend
 import QindaQt.SettingsApp.Streaming
 import QindaQt.SettingsApp.StreamingBackend
 import QindaQt.SettingsApp.Windows
+import QindaQt.SettingsApp.DefaultApplications
+import QindaQt.SettingsApp.AboutComputer
+import QindaQt.SettingsApp.Startup
 
 T.ApplicationWindow {
     id: root
@@ -197,6 +200,9 @@ T.ApplicationWindow {
             streamingComponent: streamingRouteComponent
             dateTimeComponent: addedRouteComponents.dateTime
             windowsComponent: windowsRouteComponent
+            defaultApplicationsComponent: addedRouteComponents.defaultApplications
+            aboutComputerComponent: addedRouteComponents.aboutComputer
+            startupComponent: addedRouteComponents.startup
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -251,6 +257,9 @@ T.ApplicationWindow {
             streamingComponent: streamingRouteComponent
             dateTimeComponent: addedRouteComponents.dateTime
             windowsComponent: windowsRouteComponent
+            defaultApplicationsComponent: addedRouteComponents.defaultApplications
+            aboutComputerComponent: addedRouteComponents.aboutComputer
+            startupComponent: addedRouteComponents.startup
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }

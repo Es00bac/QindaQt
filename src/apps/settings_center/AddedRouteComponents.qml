@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QindaQt.SettingsApp.DateTime
+import QindaQt.SettingsApp.DefaultApplications
+import QindaQt.SettingsApp.AboutComputer
+import QindaQt.SettingsApp.Startup
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -20,6 +23,35 @@ QtObject {
         DateTimePage {
             objectName: "dateTimePage"
             dateTimeSettings: DateTimeRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    // The Default applications route. Same shape as Date & time: the page
+    // takes its model from the module's own composition singleton.
+    readonly property Component defaultApplications: Component {
+        DefaultApplicationsPage {
+            objectName: "defaultApplicationsPage"
+            defaultApplicationsSettings: DefaultApplicationsRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    // The About this computer route. Same shape as the others: the page takes
+    // its model from the module's own composition singleton.
+    readonly property Component aboutComputer: Component {
+        AboutComputerPage {
+            objectName: "aboutComputerPage"
+            aboutComputerSettings: AboutComputerRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    // The Startup applications route.
+    readonly property Component startup: Component {
+        StartupPage {
+            objectName: "startupPage"
+            startupSettings: StartupRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

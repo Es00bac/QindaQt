@@ -98,7 +98,7 @@ shared with the applet, not fixed here (the real fix is a
 ## Composition and authority boundary
 
 The closed Settings route registry maps only the canonical `audio` id (sixth
-and last built-in route, Ctrl+6) to the compiled Audio component. Unknown and
+built-in route, Ctrl+6) to the compiled Audio component. Unknown and
 path-like startup values exit before the Audio transport or model is
 constructed. `qindaqt-settings` owns one public Audio transport, client, and
 route model on the session bus for its process lifetime; only the QObject

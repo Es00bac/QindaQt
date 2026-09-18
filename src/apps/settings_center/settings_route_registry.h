@@ -46,6 +46,16 @@ private:
   void registerDateTimeRoute();
   // ADR-0211: appended after every earlier route so indices stay stable.
   void registerWindowsRoute();
+  void registerDefaultApplicationsRoute();
+  void registerAboutComputerRoute();
+  void registerStartupRoute();
+  // AGENT-NOTE: split purely to stay under the function-lines shape limit as
+  // the built-in route list grows; the two halves have no meaning of their
+  // own beyond "first seven" / "rest", and both must run, in order, only
+  // from registerBuiltInRoutes().
+  void registerBuiltInRoutesFirstHalf();
+  void registerBuiltInRoutesSecondHalf();
+  void registerBuiltIn(const SettingsRoute &route);
 
   QList<SettingsRoute> m_routes;
 };
