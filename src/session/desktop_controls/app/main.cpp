@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/session/desktop_controls/battery_notification_policy.h"
 #include "qindaqt/session/desktop_controls/desktop_shortcut_set.h"
 #include "qindaqt/session/desktop_controls/freedesktop_feedback_notifier.h"
 #include "qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h"
@@ -8,6 +9,8 @@
 
 #include <qindaqt/services/audio_client/audio_client.h>
 #include <qindaqt/services/audio_client/qt_audio_transport.h>
+#include <qindaqt/services/power_client/power_client.h>
+#include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
@@ -73,6 +76,13 @@ int main(int argc, char *argv[])
     audioClient.start();
 
     QindaQt::Session::DesktopControls::FreedesktopFeedbackNotifier notifier(sessionBus);
+
+    QindaQt::Power::QtPowerTransport powerTransport(sessionBus);
+    QindaQt::Power::PowerClient powerClient(&powerTransport);
+    powerClient.start();
+    QindaQt::Session::DesktopControls::BatteryNotificationPolicy batteryNotifications(
+        powerClient, notifier, &application);
+    batteryNotifications.start();
 
     QindaQt::Session::DesktopControls::PowerDevilBrightnessFeedbackObserver brightnessObserver(
         sessionBus, &application);

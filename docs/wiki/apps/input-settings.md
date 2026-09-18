@@ -17,6 +17,19 @@ Rows a device does not support are hidden rather than disabled. When KWin or
 kglobalaccel is unreachable, the tab shows an unavailable notice instead of
 controls.
 
+Tap-to-click and tap-and-drag availability come from KWin's `tapFingerCount`
+integer property (0 = the device cannot tap), not from a boolean `supports*`
+flag: KWin's real `org.kde.KWin.InputDevice` interface has none for tapping.
+An earlier version of `kwin_pointer_device_port.cpp` read
+`supportsTapToClick`/`supportsTapAndDrag`/`defaultTapToClick` names that KWin
+has never exposed, which left both rows (and the Touchpad section header)
+permanently hidden regardless of hardware — confirmed against the live
+`qinda-top` touchpad (`event4`, `tapFingerCount == 3`, `tapToClick == true`).
+Every other `supports*`/`default*` pair follows the pattern
+`supports<Prop>`/`<prop>EnabledByDefault`, which the earlier version also got
+wrong for several rows; see the `AGENT-CONTRACT` in `pointer_device_port.h`
+for the confirmed name list before adding a new capability row.
+
 ## Applying changes
 
 - Pointer properties apply the moment KWin accepts them.

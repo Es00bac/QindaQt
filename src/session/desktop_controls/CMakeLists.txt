@@ -8,6 +8,7 @@ add_library(QindaQt::DesktopControls ALIAS qindaqt_desktop_controls)
 target_sources(
     qindaqt_desktop_controls
     PRIVATE
+        src/battery_notification_policy.cpp
         src/brightness_key_controller.cpp
         src/desktop_shortcut_set.cpp
         src/freedesktop_feedback_notifier.cpp
@@ -22,6 +23,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/session/desktop_controls/battery_notification_policy.h
             include/qindaqt/session/desktop_controls/brightness_key_controller.h
             include/qindaqt/session/desktop_controls/desktop_shortcut_set.h
             include/qindaqt/session/desktop_controls/dpms_controller.h
@@ -40,6 +42,7 @@ target_link_libraries(
     qindaqt_desktop_controls
     PUBLIC
         QindaQt::AudioClient
+        QindaQt::PowerClient
         QindaQt::PowerService
         QindaQt::PowerDevilIdle
         QindaQt::SettingsClient

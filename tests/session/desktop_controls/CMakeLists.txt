@@ -111,3 +111,15 @@ set_tests_properties(qindaqt.session-desktop-controls-feedback-notifier PROPERTI
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     TIMEOUT 45
     LABELS "session;session-desktop-controls;dbus")
+
+qt_add_executable(qindaqt_battery_notification_policy_tests
+    tst_battery_notification_policy.cpp)
+target_link_libraries(qindaqt_battery_notification_policy_tests
+    PRIVATE qindaqt_desktop_controls QindaQt::PowerClient Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_battery_notification_policy_tests)
+add_test(NAME qindaqt.session-desktop-controls-battery-notifications
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_battery_notification_policy_tests>)
+set_tests_properties(qindaqt.session-desktop-controls-battery-notifications PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    TIMEOUT 45
+    LABELS "session;session-desktop-controls;dbus;power")
