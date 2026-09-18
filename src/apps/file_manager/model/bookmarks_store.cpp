@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "bookmarks_store.h"
 
+#include "state_file.h"
+
 #include <QDir>
-#include <QFile>
-#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSaveFile>
 #include <QSet>
+#include <QStringList>
 
-#include <cerrno>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <utility>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
@@ -33,57 +30,56 @@ BookmarksWriteResult writeFailure(const BookmarksError error,
   return {.error = error, .diagnostic = diagnostic.left(256)};
 }
 
-int openStateDirectory(const QString &path, const bool create,
-                       int *errorNumber) {
-  if (!QDir::isAbsolutePath(path) || !path.isValidUtf16() ||
-      path.contains(QChar::Null)) {
-    *errorNumber = EINVAL;
-    return -1;
-  }
-  int current = ::open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-  if (current < 0) {
-    *errorNumber = errno;
-    return -1;
-  }
-  const QStringList components =
-      QDir::cleanPath(path).split(u'/', Qt::SkipEmptyParts);
-  for (const QString &component : components) {
-    const QByteArray name = QFile::encodeName(component);
-    int next = ::openat(current, name.constData(),
-                        O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    if (next < 0 && errno == ENOENT && create) {
-      if (::mkdirat(current, name.constData(), 0700) != 0 && errno != EEXIST) {
-        *errorNumber = errno;
-        ::close(current);
-        return -1;
-      }
-      next = ::openat(current, name.constData(),
-                      O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    }
-    if (next < 0) {
-      *errorNumber = errno;
-      ::close(current);
-      return -1;
-    }
-    ::close(current);
-    current = next;
-  }
-  return current;
+[[nodiscard]] StateFile stateFileFor(const QString &directory) {
+  return StateFile(directory, QByteArray(bookmarksFileName),
+                   BookmarksStore::maximumBytes);
 }
 
-QString descriptorFilePath(const int directoryDescriptor) {
-  return QStringLiteral("/proc/self/fd/%1/%2")
-      .arg(directoryDescriptor)
-      .arg(QString::fromLatin1(bookmarksFileName));
+// AGENT-GUARD: these two translations are the store's whole error surface.
+// Keep the wording stable -- tst_bookmarks_store.cpp and the QML banner both
+// read it, and Absent must stay diagnostic-free so a first run shows no
+// error.
+[[nodiscard]] BookmarksLoadResult loadFailureFor(const StateFile::ReadResult &read) {
+  switch (read.error) {
+  case StateFile::Error::Absent:
+    return loadFailure(BookmarksError::Absent, QString());
+  case StateFile::Error::InvalidRoot:
+    return loadFailure(BookmarksError::InvalidRoot,
+                       QStringLiteral("Bookmark state root is unsafe"));
+  case StateFile::Error::NotRegular:
+    return loadFailure(BookmarksError::Malformed,
+                       QStringLiteral("Bookmark state is not a regular file"));
+  case StateFile::Error::TooLarge:
+    return loadFailure(BookmarksError::TooLarge,
+                       QStringLiteral("Bookmark state exceeds 64 KiB"));
+  case StateFile::Error::ReadFailed:
+  case StateFile::Error::WriteFailed:
+  case StateFile::Error::None:
+    break;
+  }
+  return loadFailure(BookmarksError::ReadFailed, read.systemDiagnostic);
 }
 
-bool finalEntryIsRegularOrAbsent(const int directoryDescriptor) {
-  struct stat status {};
-  if (::fstatat(directoryDescriptor, bookmarksFileName, &status,
-                AT_SYMLINK_NOFOLLOW) == 0) {
-    return S_ISREG(status.st_mode);
+[[nodiscard]] BookmarksWriteResult
+writeFailureFor(const StateFile::WriteResult &written) {
+  switch (written.error) {
+  case StateFile::Error::InvalidRoot:
+    return writeFailure(
+        BookmarksError::InvalidRoot,
+        QStringLiteral("Bookmark state directory is unavailable or unsafe"));
+  case StateFile::Error::NotRegular:
+    return writeFailure(BookmarksError::InvalidRoot,
+                        QStringLiteral("Bookmark state target is unsafe"));
+  case StateFile::Error::TooLarge:
+    return writeFailure(BookmarksError::TooLarge,
+                        QStringLiteral("Bookmark state exceeds 64 KiB"));
+  case StateFile::Error::WriteFailed:
+  case StateFile::Error::ReadFailed:
+  case StateFile::Error::Absent:
+  case StateFile::Error::None:
+    break;
   }
-  return errno == ENOENT;
+  return writeFailure(BookmarksError::WriteFailed, written.systemDiagnostic);
 }
 
 } // namespace
@@ -92,8 +88,7 @@ BookmarksStore::BookmarksStore(QString stateDirectory)
     : m_stateDirectory(QDir::cleanPath(std::move(stateDirectory))) {}
 
 QString BookmarksStore::filePath() const {
-  return QDir(m_stateDirectory)
-      .filePath(QString::fromLatin1(bookmarksFileName));
+  return stateFileFor(m_stateDirectory).filePath();
 }
 
 bool BookmarksStore::validate(const QVector<Bookmark> &bookmarks,
@@ -123,56 +118,13 @@ bool BookmarksStore::validate(const QVector<Bookmark> &bookmarks,
 }
 
 BookmarksLoadResult BookmarksStore::load() const {
-  int directoryError = 0;
-  const int directoryDescriptor =
-      openStateDirectory(m_stateDirectory, false, &directoryError);
-  if (directoryDescriptor < 0) {
-    return loadFailure(directoryError == ENOENT
-                           ? BookmarksError::Absent
-                           : BookmarksError::InvalidRoot,
-                       directoryError == ENOENT
-                           ? QString()
-                           : QStringLiteral("Bookmark state root is unsafe"));
-  }
-  const int descriptor =
-      ::openat(directoryDescriptor, bookmarksFileName,
-               O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK);
-  const int openError = errno;
-  ::close(directoryDescriptor);
-  if (descriptor < 0) {
-    return loadFailure(
-        openError == ENOENT ? BookmarksError::Absent : BookmarksError::Malformed,
-        openError == ENOENT
-            ? QString()
-            : QStringLiteral("Bookmark state is not a regular file"));
-  }
-  struct stat status {};
-  if (::fstat(descriptor, &status) != 0 || !S_ISREG(status.st_mode)) {
-    ::close(descriptor);
-    return loadFailure(BookmarksError::Malformed,
-                       QStringLiteral("Bookmark state is not a regular file"));
-  }
-  if (status.st_size > maximumBytes) {
-    ::close(descriptor);
-    return loadFailure(BookmarksError::TooLarge,
-                       QStringLiteral("Bookmark state exceeds 64 KiB"));
-  }
-  QFile file;
-  if (!file.open(descriptor, QIODevice::ReadOnly, QFileDevice::AutoCloseHandle)) {
-    ::close(descriptor);
-    return loadFailure(BookmarksError::ReadFailed, file.errorString());
-  }
-  const QByteArray bytes = file.read(maximumBytes + 1);
-  if (file.error() != QFileDevice::NoError) {
-    return loadFailure(BookmarksError::ReadFailed, file.errorString());
-  }
-  if (bytes.size() > maximumBytes) {
-    return loadFailure(BookmarksError::TooLarge,
-                       QStringLiteral("Bookmark state exceeds 64 KiB"));
+  const StateFile::ReadResult read = stateFileFor(m_stateDirectory).read();
+  if (!read.ok()) {
+    return loadFailureFor(read);
   }
 
   QJsonParseError parseError;
-  const QJsonDocument document = QJsonDocument::fromJson(bytes, &parseError);
+  const QJsonDocument document = QJsonDocument::fromJson(read.bytes, &parseError);
   if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
     return loadFailure(BookmarksError::Malformed,
                        QStringLiteral("Bookmark state is malformed JSON"));
@@ -222,15 +174,6 @@ BookmarksStore::store(const QVector<Bookmark> &bookmarks) const {
   if (!validate(bookmarks, &diagnostic)) {
     return writeFailure(BookmarksError::Malformed, diagnostic);
   }
-  int directoryError = 0;
-  const int directoryDescriptor =
-      openStateDirectory(m_stateDirectory, true, &directoryError);
-  if (directoryDescriptor < 0) {
-    return writeFailure(
-        BookmarksError::InvalidRoot,
-        QStringLiteral("Bookmark state directory is unavailable or unsafe"));
-  }
-
   QJsonArray entries;
   for (const Bookmark &bookmark : bookmarks) {
     entries.append(QJsonObject{{QStringLiteral("name"), bookmark.name},
@@ -240,34 +183,12 @@ BookmarksStore::store(const QVector<Bookmark> &bookmarks) const {
       {QStringLiteral("version"), 1},
       {QStringLiteral("bookmarks"), entries},
   });
-  const QByteArray bytes = document.toJson(QJsonDocument::Compact);
-  if (bytes.size() > maximumBytes) {
-    ::close(directoryDescriptor);
-    return writeFailure(BookmarksError::TooLarge,
-                        QStringLiteral("Bookmark state exceeds 64 KiB"));
+  const StateFile::WriteResult written =
+      stateFileFor(m_stateDirectory)
+          .write(document.toJson(QJsonDocument::Compact));
+  if (!written.ok()) {
+    return writeFailureFor(written);
   }
-  // AGENT-GUARD: The directory descriptor is reached component-by-component
-  // with O_NOFOLLOW. Keep it open through commit so a symlinked ancestor can
-  // never redirect the inventory outside the selected state root.
-  if (!finalEntryIsRegularOrAbsent(directoryDescriptor)) {
-    ::close(directoryDescriptor);
-    return writeFailure(BookmarksError::InvalidRoot,
-                        QStringLiteral("Bookmark state target is unsafe"));
-  }
-  QSaveFile file(descriptorFilePath(directoryDescriptor));
-  file.setDirectWriteFallback(false);
-  if (!file.open(QIODevice::WriteOnly) ||
-      !file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner) ||
-      file.write(bytes) != bytes.size()) {
-    file.cancelWriting();
-    ::close(directoryDescriptor);
-    return writeFailure(BookmarksError::WriteFailed, file.errorString());
-  }
-  if (!file.commit()) {
-    ::close(directoryDescriptor);
-    return writeFailure(BookmarksError::WriteFailed, file.errorString());
-  }
-  ::close(directoryDescriptor);
   return {};
 }
 

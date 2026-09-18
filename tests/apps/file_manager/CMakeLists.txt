@@ -96,6 +96,46 @@ qindaqt_add_file_manager_test(
     tst_network_location.cpp
     qindaqt.file-manager-network-location
 )
+# ADR-0194: the saved-locations schema, its refusals, and the pure policy
+# that turns Connect-to-server dialog text into one canonical location.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_network_locations_store_tests
+    tst_network_locations_store.cpp
+    qindaqt.file-manager-network-locations-store
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_connect_request_tests
+    tst_connect_request.cpp
+    qindaqt.file-manager-connect-request
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_network_locations_controller_tests
+    tst_network_locations_controller.cpp
+    qindaqt.file-manager-network-locations-controller
+)
+# ADR-0195: the routing policy and the queue's sequencing, fencing, pause,
+# and cancellation against a recording worker double -- no KIO, no network.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_transfer_router_tests
+    tst_transfer_router.cpp
+    qindaqt.file-manager-transfer-router
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_transfer_queue_tests
+    tst_transfer_queue.cpp
+    qindaqt.file-manager-transfer-queue
+)
+# The production worker's realm boundary and retained KIO UI delegate via a
+# job-creation test seam.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_kio_transfer_worker_tests
+    tst_kio_transfer_worker.cpp
+    qindaqt.file-manager-kio-transfer-worker
+)
+target_link_libraries(
+    qindaqt_file_manager_kio_transfer_worker_tests
+    PRIVATE KF6::KIOCore
+)
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_controller_network_tests
     tst_navigation_controller_network.cpp
@@ -398,6 +438,22 @@ set_tests_properties(qindaqt.file-manager-remote-copy-guard PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
 qt_add_resources(qindaqt_file_manager_remote_copy_guard_tests file_manager_remote_copy_guard_artwork
+    PREFIX /qindaqt/file-manager
+    FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
+
+# ADR-0194: the production coordinator -> Main.qml route for the Network hub
+# and the Connect-to-server dialog, over injected fakes and a temporary state
+# directory. Asserts real rendering (parent chain to the window plus positive
+# size), not merely existence.
+qindaqt_add_file_manager_test(qindaqt_file_manager_network_hub_ui_tests
+    tst_network_hub_ui.cpp qindaqt.file-manager-network-hub-ui)
+target_link_libraries(qindaqt_file_manager_network_hub_ui_tests PRIVATE Qt6::Quick)
+target_compile_definitions(qindaqt_file_manager_network_hub_ui_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+set_tests_properties(qindaqt.file-manager-network-hub-ui PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+qt_add_resources(qindaqt_file_manager_network_hub_ui_tests file_manager_network_hub_artwork
     PREFIX /qindaqt/file-manager
     FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
 

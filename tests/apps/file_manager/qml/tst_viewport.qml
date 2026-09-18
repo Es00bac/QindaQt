@@ -49,6 +49,13 @@ TestCase {
         property var bookmarks: []
         function removeBookmark(index) {}
     }
+    QtObject {
+        id: networkLocations
+        property var placesLocations: []
+        property var locations: []
+        property string storeError: ""
+        function clearStoreError() {}
+    }
     Component {
         id: sidebarComponent
         Files.PlacesSidebar {
@@ -56,6 +63,7 @@ TestCase {
             navigationController: navigation
             placesController: places
             appCoordinator: coordinator
+            networkLocationsController: networkLocations
         }
     }
     SignalSpy { id: zoomSpy; signalName: "zoomRequested" }
