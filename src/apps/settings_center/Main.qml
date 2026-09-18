@@ -192,6 +192,7 @@ T.ApplicationWindow {
             accessibilityComponent: accessibilityRouteComponent
             inputComponent: inputRouteComponent
             streamingComponent: streamingRouteComponent
+            dateTimeComponent: addedRouteComponents.dateTime
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -244,9 +245,15 @@ T.ApplicationWindow {
             accessibilityComponent: accessibilityRouteComponent
             inputComponent: inputRouteComponent
             streamingComponent: streamingRouteComponent
+            dateTimeComponent: addedRouteComponents.dateTime
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
+    }
+
+    AddedRouteComponents {
+        id: addedRouteComponents
+        onCloseRequested: root.close()
     }
 
     Component {

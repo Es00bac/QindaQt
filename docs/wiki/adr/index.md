@@ -203,6 +203,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0198: File Manager preferences are app-local, exact, and every one of them does something](0198-file-manager-preferences-are-app-local.md)
 - [ADR-0199: mount at login is a systemd user unit the file manager writes and nothing more](0199-mount-at-login-is-a-systemd-user-unit-the-app-writes.md)
 - [ADR-0200: nearby servers are advisory, opt-in, and only what can be opened](0200-nearby-servers-are-advisory-and-opt-in.md)
+- [ADR-0200: the clock and region page acts on the platform's own services](0200-the-clock-and-region-page-acts-on-the-platforms-own-services.md)
 - [ADR-0201: one obs-websocket client for the desktop](0201-one-obs-websocket-client-for-the-desktop.md)
 - [ADR-0202: QindaQt provisions OBS and owns one secret](0202-qindaqt-provisions-obs-and-owns-one-secret.md)
 - [ADR-0203: an ordinary window rolls up to its icon](0203-an-ordinary-window-rolls-up-to-its-icon.md)

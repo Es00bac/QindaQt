@@ -40,6 +40,10 @@ private:
   void registerBuiltInRoutes();
   // Routes appended after the original ten (ADR-0128).
   void registerAppendedRoutes();
+  // ADR-0200: registered from its own function rather than appended to
+  // registerBuiltInRoutes(), which is at its function-length limit. A route
+  // added from here on gets its own function for the same reason.
+  void registerDateTimeRoute();
 
   QList<SettingsRoute> m_routes;
 };

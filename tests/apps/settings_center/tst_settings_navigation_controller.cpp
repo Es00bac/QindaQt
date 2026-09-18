@@ -154,6 +154,18 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   // selectPrevious from 0 wraps to 12 ("streaming")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
+  // ADR-0200: selectNext from 11 ("input") -> 12 ("datetime"), the route
+  // added last so nothing before it moved.
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
+  // selectNext from 12 ("datetime") wraps to 0 ("notifications")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
+
+  // selectPrevious from 0 wraps to 12 ("datetime")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
   // selectPrevious from 12 -> 11 ("input")
   QVERIFY(controller.selectPrevious());
@@ -420,6 +432,12 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt11.value(QStringLiteral("component")).toString(),
            QStringLiteral("input"));
 
+
+  const QVariantMap itemAt12 = controller.routeAt(12);
+  QCOMPARE(itemAt12.value(QStringLiteral("id")).toString(),
+           QStringLiteral("datetime"));
+  QCOMPARE(itemAt12.value(QStringLiteral("component")).toString(),
+           QStringLiteral("datetime"));
   const QVariantMap itemOutOfBounds = controller.routeAt(13);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
