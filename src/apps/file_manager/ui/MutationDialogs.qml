@@ -7,6 +7,7 @@ Item {
 
     required property var navigationController
     required property var mutationController
+    required property var transferQueueController
     property var selectedEntry: null
     property var selectedItems: []
     property string destinationKind: "copy"
@@ -27,13 +28,12 @@ Item {
             renameDialog.open()
         } else if (actionId === "file.copy" || actionId === "file.move") {
             if (selection.length < 1) return
-            // ADR-0155/0156 one-child contract (review P1 repair): a remote
-            // multi-selection must fail closed here -- before the dialog can
-            // open -- so it can never reach the local-only mutation
-            // backend's multi-item branch. Local multi copy/move is
-            // unchanged.
-            if (navigationController.remoteActive && selection.length !== 1)
-                return
+            // ADR-0195: a remote multi-selection no longer fails closed here.
+            // The accept handler dispatches strictly by the route C++ names
+            // for the exact (sources, destination) pair, and that router can
+            // never name the ADR-0155/0156 one-child owner for more than one
+            // source -- so the one-child contract is now enforced where the
+            // dispatch happens rather than by refusing to open the dialog.
             selectedItems = selection
             selectedEntry = selection[0]
             destinationKind = actionId === "file.copy" ? "copy" : "move"
@@ -61,6 +61,8 @@ Item {
                 root.navigationController.cancelRemoteCopy()
             else if (root.navigationController.remoteMoveBusy)
                 root.navigationController.cancelRemoteMove()
+            else if (root.transferQueueController.busy)
+                root.transferQueueController.cancelAll()
             else
                 root.mutationController.cancel()
         }
@@ -135,19 +137,33 @@ Item {
                ? qsTr("Copy %1 items into folder").arg(root.selectedItems.length)
                : qsTr("Move %1 items into folder").arg(root.selectedItems.length))
             : (root.destinationKind === "copy"
-               ? (root.navigationController.remoteActive
-                  ? qsTr("Copy to network folder") : qsTr("Copy to local path"))
-               : (root.navigationController.remoteActive
-                  ? qsTr("Move to network folder") : qsTr("Move to local path")))
+               ? qsTr("Copy to folder or address")
+               : qsTr("Move to folder or address"))
         standardButtons: Dialog.Ok | Dialog.Cancel
+        // ADR-0195: one owner per request, named by C++ for this exact pair
+        // of source list and destination. "local" keeps the identity-checked
+        // local mutation controller, "remote-child" the ADR-0155/0156
+        // one-child remote path, "queue" the network transfer queue, and
+        // "refuse" is handed to the queue so its own banner states why.
         onAccepted: {
-            // Review P1 repair: re-check the remote one-child Copy/Move
-            // contract at accept time so a stale remote multi-selection can
-            // never be routed anywhere even if it somehow reached the
-            // dialog. Local selections are unaffected.
-            if (root.navigationController.remoteActive
-                && root.selectedItems.length !== 1)
+            if (root.selectedItems.length < 1) return
+            const sources = root.selectedItems.map(entry => entry.path)
+            const route = root.transferQueueController.routeName(
+                sources, destinationPath.text)
+            if (route === "queue" || route === "refuse") {
+                root.transferQueueController.enqueue(
+                    sources, destinationPath.text, root.destinationKind)
                 return
+            }
+            if (route === "remote-child") {
+                if (root.destinationKind === "copy")
+                    root.navigationController.copyRemoteChild(sources[0],
+                        destinationPath.text)
+                else
+                    root.navigationController.moveRemoteChild(sources[0],
+                        destinationPath.text)
+                return
+            }
             if (root.selectedItems.length > 1) {
                 if (root.destinationKind === "copy")
                     root.mutationController.copyItemsTo(root.selectedItems,
@@ -158,20 +174,6 @@ Item {
                 return
             }
             if (!root.selectedEntry) return
-            // ADR-0155/0156: while browsing remote, Copy To and Move To go
-            // through the navigation controller's injected KIO collaborators
-            // (one listed child to a validated remote destination); locally
-            // the identity-checked local mutation controller keeps the
-            // request.
-            if (root.navigationController.remoteActive) {
-                if (root.destinationKind === "copy")
-                    root.navigationController.copyRemoteChild(root.selectedEntry.path,
-                        destinationPath.text)
-                else
-                    root.navigationController.moveRemoteChild(root.selectedEntry.path,
-                        destinationPath.text)
-                return
-            }
             if (root.destinationKind === "copy")
                 root.mutationController.copyItem(root.selectedEntry.path,
                     destinationPath.text, root.selectedEntry)
@@ -184,8 +186,7 @@ Item {
             id: destinationPath
             objectName: "destinationPathField"
             width: parent.width
-            Accessible.name: root.selectedItems.length > 1
-                ? qsTr("Destination folder") : qsTr("Absolute destination path")
+            Accessible.name: qsTr("Destination folder path or sftp/smb address")
         }
     }
 

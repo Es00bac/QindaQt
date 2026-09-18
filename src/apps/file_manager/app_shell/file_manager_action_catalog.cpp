@@ -144,6 +144,18 @@ QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
              QStringLiteral("Go"), QStringLiteral("Applications"),
              QStringLiteral("Browse installed applications by category"),
              QKeySequence(QStringLiteral("Ctrl+Shift+A")), 3, 5),
+      // ADR-0194: the Go menu's network pair. "go.network" opens the hub of
+      // saved locations; "network.connect" opens the hub with the
+      // Connect-to-server dialog already up. Alt+N joins the Go menu's other
+      // Alt shortcuts; Ctrl+Shift+S is free in this catalog.
+      action(QStringLiteral("go.network"), QStringLiteral("go"),
+             QStringLiteral("Go"), QStringLiteral("Network"),
+             QStringLiteral("Show saved network locations"),
+             QKeySequence(QStringLiteral("Alt+N")), 3, 6),
+      action(QStringLiteral("network.connect"), QStringLiteral("go"),
+             QStringLiteral("Go"), QStringLiteral("Connect to Server…"),
+             QStringLiteral("Save a network folder and open it"),
+             QKeySequence(QStringLiteral("Ctrl+Shift+S")), 3, 7),
       action(QStringLiteral("view.refresh"), QStringLiteral("view"),
              QStringLiteral("View"), QStringLiteral("Refresh"),
              QStringLiteral("Read the current folder again"),

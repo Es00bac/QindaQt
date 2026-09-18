@@ -9,6 +9,9 @@
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
 #include "model/search_controller.h"
+#include "network/network_locations_controller.h"
+#include "network/network_locations_store.h"
+#include "network/transfer_queue_controller.h"
 #include "mutation/mutation_controller.h"
 #include "preview/local_preview.h"
 #include "preview/preview_provider.h"
@@ -110,6 +113,11 @@ struct RemoteMutationRouteFixture final {
     applications = std::make_unique<ApplicationsController>(QStringList{});
     places = std::make_unique<PlacesController>(
         std::make_unique<BookmarksStore>(temporaryPath + QStringLiteral("/state")));
+    networkLocations = std::make_unique<NetworkLocationsController>(
+        std::make_unique<NetworkLocationsStore>(temporaryPath + QStringLiteral("/state")));
+    // This fixture proves the ADR-0155/0156 one-child remote path; it never
+    // dispatches a queued transfer, so the queue gets no worker.
+    transfers = std::make_unique<TransferQueueController>(nullptr);
 
     const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
     if (!catalogResult.ok()) {
@@ -139,6 +147,10 @@ struct RemoteMutationRouteFixture final {
         {"searchController", QVariant::fromValue(static_cast<QObject *>(search.get()))},
         {"placesController", QVariant::fromValue(static_cast<QObject *>(places.get()))},
         {"applicationsController", QVariant::fromValue(static_cast<QObject *>(applications.get()))},
+        {"networkLocationsController",
+         QVariant::fromValue(static_cast<QObject *>(networkLocations.get()))},
+        {"transferQueueController",
+         QVariant::fromValue(static_cast<QObject *>(transfers.get()))},
         {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
     engine->load(QUrl::fromLocalFile(sourceRoot + QStringLiteral("/src/apps/file_manager/ui/Main.qml")));
     if (engine->rootObjects().isEmpty()) {
@@ -183,6 +195,8 @@ struct RemoteMutationRouteFixture final {
   std::unique_ptr<SearchController> search;
   std::unique_ptr<ApplicationsController> applications;
   std::unique_ptr<PlacesController> places;
+  std::unique_ptr<NetworkLocationsController> networkLocations;
+  std::unique_ptr<TransferQueueController> transfers;
   // Owned by the QML engine (see init()); not deleted here.
   PreviewProvider *previews = nullptr;
   std::unique_ptr<QQmlApplicationEngine> engine;
@@ -196,27 +210,29 @@ struct RemoteMutationRouteFixture final {
 
 } // namespace
 
-// Review P1 repair (former red): selecting two remote children and invoking
-// the production Copy action must fail closed before the destination dialog
-// can open, so the local-only mutation backend's multi-item branch never
-// receives remote URL-shaped inputs. A single selection still opens the
-// dialog and routes the accepted copy to the injected remote copier.
-// ADR-0156 adds the same production-route coverage for Move To through the
-// injected mover: a remote multi-selection Move fails closed before the
-// dialog, one selected child routes to the mover, and the shared Cancel
-// action retires an in-flight remote move with a generation-fenced late
-// result.
+// The production route for remote Copy To / Move To, through the real
+// coordinator, Main.qml, and MutationDialogs.
+//
+// ADR-0195 changed *where* the ADR-0155/0156 one-child contract is enforced,
+// not whether it is: a remote multi-selection now opens the destination
+// dialog and is routed -- by C++, from the exact endpoint pair -- to the
+// transfer queue, while exactly one remote child to the same authority still
+// reaches the injected one-child copier/mover. The invariant these rows exist
+// for is unchanged and still asserted at every step: the local-only mutation
+// backend's multi-item branch never receives remote URL-shaped inputs.
+// The shared Cancel action still retires an in-flight remote copy or move
+// with a generation-fenced late result.
 class TestRemoteCopyGuard final : public QObject {
   Q_OBJECT
 
 private slots:
-  void remoteMultiSelectionCopyFailsClosedBeforeTheLocalBackend();
+  void remoteMultiSelectionCopyRoutesToTheQueueNotTheLocalBackend();
   void sharedCancelRoutesToTheInFlightRemoteCopy();
-  void remoteMultiSelectionMoveFailsClosedBeforeTheLocalBackend();
+  void remoteMultiSelectionMoveRoutesToTheQueueNotTheLocalBackend();
   void sharedCancelRoutesToTheInFlightRemoteMove();
 };
 
-void TestRemoteCopyGuard::remoteMultiSelectionCopyFailsClosedBeforeTheLocalBackend() {
+void TestRemoteCopyGuard::remoteMultiSelectionCopyRoutesToTheQueueNotTheLocalBackend() {
   QTemporaryDir temporary;
   QVERIFY(temporary.isValid());
   RemoteMutationRouteFixture fixture;
@@ -245,11 +261,23 @@ void TestRemoteCopyGuard::remoteMultiSelectionCopyFailsClosedBeforeTheLocalBacke
 
   // The shared Copy action: coordinator -> Main.qml -> MutationDialogs.dispatch.
   QVERIFY(fixture.coordinator.activateAction(QStringLiteral("file.copy")));
+  QTRY_VERIFY(destinationDialog->property("visible").toBool());
+  QObject *multiDestinationField =
+      fixture.window->findChild<QObject *>(QStringLiteral("destinationPathField"));
+  QVERIFY(multiDestinationField);
+  QVERIFY(multiDestinationField->setProperty("text", QStringLiteral("smb://server/backup")));
+  QVERIFY(QMetaObject::invokeMethod(destinationDialog, "accept", Qt::DirectConnection));
   QCoreApplication::processEvents();
-  // Fail closed: no dialog opened, and the local mutation backend saw
-  // nothing at any point.
-  QVERIFY(!destinationDialog->property("visible").toBool());
+  // ADR-0195: two sources become two queue items. The one-child copier is
+  // untouched, and the local mutation backend still saw nothing.
+  QCOMPARE(fixture.transfers->itemValues().size(), 2);
+  QCOMPARE(fixture.transfers->itemValues().constFirst().destinationFolder.toString(),
+           QStringLiteral("smb://server/backup"));
+  QCOMPARE(fixture.transfers->itemValues().constFirst().operation,
+           TransferOperation::Copy);
+  QCOMPARE(fixture.rawCopier->requests().size(), 0);
   QCOMPARE(fixture.rawRecording->executeCount(), 0);
+  QVERIFY(fixture.transfers->refusal().isEmpty());
 
   // Exactly one entry: the dialog opens and the accepted destination routes
   // to the injected copier, still never to the local backend.
@@ -314,10 +342,11 @@ void TestRemoteCopyGuard::sharedCancelRoutesToTheInFlightRemoteCopy() {
 
 // ADR-0156 former red: the pre-slice QML only fenced remote Copy, so a
 // remote multi-selection Move reached the local-only backend's multi-item
-// branch with remote URL-shaped inputs. It must fail closed before the
-// destination dialog can open; one selected child routes the accepted move
-// to the injected mover, still never to the local backend.
-void TestRemoteCopyGuard::remoteMultiSelectionMoveFailsClosedBeforeTheLocalBackend() {
+// branch with remote URL-shaped inputs. ADR-0195 routes it to the transfer
+// queue instead of refusing to open the dialog; one selected child still
+// routes the accepted move to the injected mover, and neither path ever
+// reaches the local backend.
+void TestRemoteCopyGuard::remoteMultiSelectionMoveRoutesToTheQueueNotTheLocalBackend() {
   QTemporaryDir temporary;
   QVERIFY(temporary.isValid());
   RemoteMutationRouteFixture fixture;
@@ -336,11 +365,21 @@ void TestRemoteCopyGuard::remoteMultiSelectionMoveFailsClosedBeforeTheLocalBacke
 
   // The shared Move action: coordinator -> Main.qml -> MutationDialogs.dispatch.
   QVERIFY(fixture.coordinator.activateAction(QStringLiteral("file.move")));
+  QTRY_VERIFY(destinationDialog->property("visible").toBool());
+  QObject *multiDestinationField =
+      fixture.window->findChild<QObject *>(QStringLiteral("destinationPathField"));
+  QVERIFY(multiDestinationField);
+  QVERIFY(multiDestinationField->setProperty("text", QStringLiteral("smb://server/backup")));
+  QVERIFY(QMetaObject::invokeMethod(destinationDialog, "accept", Qt::DirectConnection));
   QCoreApplication::processEvents();
-  // Fail closed: no dialog opened, and the local mutation backend saw
-  // nothing at any point.
-  QVERIFY(!destinationDialog->property("visible").toBool());
+  // ADR-0195: two sources become two queued moves. The destructive one-child
+  // mover is untouched, and the local mutation backend still saw nothing.
+  QCOMPARE(fixture.transfers->itemValues().size(), 2);
+  QCOMPARE(fixture.transfers->itemValues().constFirst().operation,
+           TransferOperation::Move);
+  QCOMPARE(fixture.rawMover->requests().size(), 0);
   QCOMPARE(fixture.rawRecording->executeCount(), 0);
+  QVERIFY(fixture.transfers->refusal().isEmpty());
 
   // Exactly one entry: the dialog opens and the accepted destination routes
   // to the injected mover, still never to the local backend.

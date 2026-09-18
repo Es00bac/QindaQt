@@ -57,6 +57,8 @@ target_sources(
         model/navigation_status.h
         model/places_controller.cpp
         model/search_controller.cpp
+        model/state_file.cpp
+        network/connect_request.cpp
         network/kio_network_directory_backend.cpp
         network/kio_fuse_remote_file_opener.cpp
         network/kio_remote_file_opener.cpp
@@ -64,12 +66,18 @@ target_sources(
         network/kio_remote_copier.cpp
         network/kio_remote_mover.cpp
         network/kio_remote_renamer.cpp
+        network/kio_transfer_worker.cpp
         network/network_location.cpp
+        network/network_locations_controller.cpp
+        network/network_locations_store.cpp
         network/remote_copy_to_controller.cpp
         network/remote_create_folder_controller.cpp
         network/remote_move_to_controller.cpp
         network/remote_open_controller.cpp
         network/remote_rename_controller.cpp
+        network/transfer_queue_controller.cpp
+        network/transfer_router.cpp
+        network/transfer_types.cpp
     PUBLIC
         app_shell/file_manager_action_catalog.h
         mutation/device_resolver.h
@@ -99,6 +107,8 @@ target_sources(
         model/navigation_history.h
         model/places_controller.h
         model/search_controller.h
+        model/state_file.h
+        network/connect_request.h
         network/kio_network_directory_backend.h
         network/kio_fuse_remote_file_opener.h
         network/kio_remote_file_opener.h
@@ -106,8 +116,11 @@ target_sources(
         network/kio_remote_copier.h
         network/kio_remote_mover.h
         network/kio_remote_renamer.h
+        network/kio_transfer_worker.h
         network/network_directory_backend.h
         network/network_location.h
+        network/network_locations_controller.h
+        network/network_locations_store.h
         network/remote_copy_to_controller.h
         network/remote_copier.h
         network/remote_create_folder_controller.h
@@ -118,6 +131,10 @@ target_sources(
         network/remote_open_controller.h
         network/remote_rename_controller.h
         network/remote_renamer.h
+        network/transfer_queue_controller.h
+        network/transfer_router.h
+        network/transfer_types.h
+        network/transfer_worker.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 find_package(KF6KIO 6.0 REQUIRED CONFIG)
@@ -182,6 +199,11 @@ qt_add_qml_module(
         ui/StatePane.qml
         ui/ApplicationsView.qml
         ui/MutationDialogs.qml
+        ui/StatusBanners.qml
+        ui/NetworkHub.qml
+        ui/NetworkLocationCard.qml
+        ui/ConnectToServerDialog.qml
+        ui/TransferQueueBanner.qml
         ui/PropertiesDialog.qml
         ui/FileContextMenu.qml
         ui/EntryDrag.js

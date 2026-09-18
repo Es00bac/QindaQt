@@ -17,6 +17,7 @@ Control {
     required property var navigationController
     required property var placesController
     required property var appCoordinator
+    required property var networkLocationsController
     // Optional drop dispatch targets; Main always passes the real controllers,
     // fixture tests may leave them null (drops then refuse politely).
     property var mutationController: null
@@ -66,18 +67,18 @@ Control {
                 text: modelData.name
                 emphasized: !routePlace
                     && root.navigationController.currentPath === modelData.path
-                // The Network place exposes the route to smb/sftp browsing
-                // without pretending a connection exists (S5): it opens the
-                // editable location bar instead of navigating anywhere.
+                // ADR-0194: the Network place opens the hub -- the saved
+                // locations and the way to add one -- rather than pretending a
+                // connection exists or dropping the user in the location bar.
                 // Applications opens the installed-application browser through
                 // the same action the Go menu uses, so there is one route.
                 Accessible.description: modelData.id === "network"
-                    ? qsTr("Enter a network location")
+                    ? qsTr("Show saved network locations")
                     : modelData.id === "applications"
                     ? qsTr("Browse installed applications")
                     : qsTr("Open %1").arg(modelData.path)
                 onClicked: modelData.id === "network"
-                    ? root.appCoordinator.activateAction("view.focus-location")
+                    ? root.appCoordinator.activateAction("go.network")
                     : modelData.id === "applications"
                     ? root.appCoordinator.activateAction("go.applications")
                     : root.navigationController.navigateTo(modelData.path)
@@ -96,6 +97,34 @@ Control {
                             drop.accepted = false
                     }
                 }
+            }
+        }
+
+        // Saved network locations the user asked to see here (ADR-0194).
+        // Activation only routes the canonical address into navigateTo, so an
+        // unreachable server lands on the ordinary navigation state pane.
+        // They are not drop targets: the drop pipeline is the identity-checked
+        // local mutation one, which has no network authority.
+        Label {
+            Layout.topMargin: 8
+            visible: root.networkLocationsController.placesLocations.length > 0
+            text: qsTr("Network")
+            color: root.palette.placeholderText
+            Accessible.ignored: true
+        }
+
+        Repeater {
+            model: root.networkLocationsController.placesLocations
+
+            PlaceButton {
+                required property var modelData
+                iconName: "folder-network"
+                objectName: "networkPlaceButton_" + modelData.index
+                Layout.fillWidth: true
+                text: modelData.name
+                emphasized: root.navigationController.currentPath === modelData.url
+                Accessible.description: qsTr("Open %1").arg(modelData.url)
+                onClicked: root.navigationController.navigateTo(modelData.url)
             }
         }
 
