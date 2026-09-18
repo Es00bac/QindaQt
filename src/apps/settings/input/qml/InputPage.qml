@@ -7,16 +7,24 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Input route page: three destinations (Mouse & touchpad, Keyboard,
-// Shortcuts) behind the same tab pattern the Appearance page uses. The
-// sections own their models; this page only hosts and navigates.
+// Input route page: four destinations (Mouse & touchpad, Pen & tablet,
+// Keyboard, Shortcuts) behind the same tab pattern the Appearance page uses.
+// The sections own their models; this page only hosts and navigates.
 T.Page {
     id: root
 
     required property var inputSettings
     signal closeRequested()
 
-    property string currentDestination: "pointers"
+    // Deep link from the pen-display notification: which destination to open
+    // and which device to select there (qindaqt-settings --destination
+    // --select). An unknown destination keeps the default.
+    property string initialDestination: ""
+    property string initialSelection: ""
+
+    property string currentDestination: root.destinations.some(
+                                            entry => entry.id === root.initialDestination)
+                                        ? root.initialDestination : "pointers"
     readonly property Item firstFocusTarget: sectionLoader.item !== null
                                              && sectionLoader.item.firstFocusTarget !== undefined
                                              ? sectionLoader.item.firstFocusTarget
@@ -24,6 +32,8 @@ T.Page {
     readonly property var destinations: [
         { id: "pointers", title: qsTr("Mouse & touchpad"), icon: "preferences-desktop-peripherals",
           description: qsTr("Pointer speed, scrolling, and touchpad behavior") },
+        { id: "tablet", title: qsTr("Pen & tablet"), icon: "input-tablet",
+          description: qsTr("Pen displays and drawing tablets: mapping, area, pressure") },
         { id: "keyboard", title: qsTr("Keyboard"), icon: "preferences-desktop-keyboard",
           description: qsTr("Key repeat, NumLock, and keyboard layouts") },
         { id: "shortcuts", title: qsTr("Shortcuts"), icon: "preferences-desktop-keyboard-shortcuts",
@@ -73,7 +83,7 @@ T.Page {
             textFormat: Text.PlainText
             Accessible.role: Accessible.Heading
             Accessible.name: text
-            Accessible.description: qsTr("Change how pointers, keyboards, and global shortcuts behave.")
+            Accessible.description: qsTr("Change how pointers, tablets, keyboards, and global shortcuts behave.")
         }
 
         // Same tab contract as the Appearance page: one accent-indicator
@@ -147,7 +157,9 @@ T.Page {
                 sourceComponent: root.currentDestination === "keyboard"
                                  ? keyboardPage
                                  : root.currentDestination === "shortcuts"
-                                   ? shortcutsPage : pointersPage
+                                   ? shortcutsPage
+                                   : root.currentDestination === "tablet"
+                                     ? tabletPage : pointersPage
                 onLoaded: item.forceActiveFocus(Qt.TabFocusReason)
             }
         }
@@ -165,6 +177,13 @@ T.Page {
         id: pointersPage
         InputPointerSection {
             inputSettings: root.inputSettings
+        }
+    }
+    Component {
+        id: tabletPage
+        InputTabletSection {
+            inputSettings: root.inputSettings
+            initialSelection: root.initialSelection
         }
     }
     Component {

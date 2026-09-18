@@ -223,6 +223,12 @@
       "default": true
     },
     {
+      "key": "input.tabletMappings",
+      "domain": "input",
+      "type": "object",
+      "default": {}
+    },
+    {
       "key": "panels.launcherPinned",
       "domain": "panels",
       "type": "string-list",

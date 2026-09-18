@@ -123,3 +123,34 @@ set_tests_properties(qindaqt.session-desktop-controls-battery-notifications PROP
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     TIMEOUT 45
     LABELS "session;session-desktop-controls;dbus;power")
+# Tablet mapping policy over in-memory fakes: no bus, no device, no
+# compositor. The rows state the promises the feature makes — map once,
+# announce once, never override a user's choice.
+qt_add_executable(qindaqt_tablet_mapping_policy_tests
+    tst_tablet_mapping_policy.cpp)
+target_link_libraries(qindaqt_tablet_mapping_policy_tests
+    PRIVATE qindaqt_desktop_controls Qt6::Test)
+qindaqt_enable_warnings(qindaqt_tablet_mapping_policy_tests)
+add_test(NAME qindaqt.session-desktop-controls-tablet-policy
+    COMMAND qindaqt_tablet_mapping_policy_tests)
+set_tests_properties(qindaqt.session-desktop-controls-tablet-policy PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "session;session-desktop-controls;model")
+
+# The pen-display announcement and its actions against a private bus.
+find_program(QINDAQT_DBUS_DAEMON_EXECUTABLE NAMES dbus-daemon REQUIRED)
+qt_add_executable(qindaqt_tablet_arrival_notifier_tests
+    tst_tablet_arrival_notifier.cpp)
+target_compile_definitions(qindaqt_tablet_arrival_notifier_tests
+    PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
+target_link_libraries(qindaqt_tablet_arrival_notifier_tests
+    PRIVATE qindaqt_desktop_controls Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_tablet_arrival_notifier_tests)
+add_test(NAME qindaqt.session-desktop-controls-tablet-notification
+    COMMAND qindaqt_tablet_arrival_notifier_tests)
+set_tests_properties(qindaqt.session-desktop-controls-tablet-notification
+    PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "session;session-desktop-controls;dbus" TIMEOUT 60 RUN_SERIAL TRUE)
+
+

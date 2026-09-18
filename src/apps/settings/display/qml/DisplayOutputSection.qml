@@ -13,6 +13,9 @@ ColumnLayout {
 
     required property var displaySettings
     required property bool editorBusy
+    // The page opens the route; this section only asks for it, so the
+    // Display route keeps no launcher of its own.
+    signal penSettingsRequested()
     readonly property Item firstFocusTarget: outputRepeater.count > 0
                                              ? outputRepeater.itemAt(0) : null
 
@@ -43,6 +46,31 @@ ColumnLayout {
                 canEdit: root.displaySettings.canEdit && !root.editorBusy
                 onSelectedRequested: root.displaySettings.setSelectedOutputId(card.modelData.stableId)
             }
+        }
+    }
+
+    // AGENT-CONTRACT: The Display route never writes tablet state. This row
+    // only names the Pen & tablet destination and opens it in a second
+    // Settings window; the tablet's own route stays the single authority for
+    // what the pen does.
+    RowLayout {
+        objectName: "displayPenSettingsRow"
+        Layout.fillWidth: true
+        visible: root.displaySettings.selectedOutput.penDisplay ?? false
+        spacing: Tokens.space["2"]
+
+        Label {
+            Layout.fillWidth: true
+            muted: true
+            text: qsTr("This is a pen display. Its pen maps to it under Input → Pen & tablet.")
+        }
+
+        Button {
+            objectName: "displayPenSettingsButton"
+            text: qsTr("Pen & tablet settings…")
+            emphasized: false
+            accessibleDescription: qsTr("Open the Pen & tablet settings for this display")
+            onClicked: root.penSettingsRequested()
         }
     }
 
