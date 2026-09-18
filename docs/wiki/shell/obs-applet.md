@@ -33,6 +33,23 @@ request is shown in OBS's own words.
 A dropped-frame warning appears only while a stream is running and only when
 OBS reported frame counts showing at least 1% dropped.
 
+## Where the chip lives
+
+The chip ships on the panel of the **QindaQt** profile only, in the end zone
+beside the other hardware chips — audio, bluetooth, power, smart lights. The
+desktop-imitation profiles (GNOME, macOS, Unity, XFCE, MATE, minimal) carry none
+of those by design, and a chip reading "OBS is not running" on a GNOME-imitation
+top bar for someone who never installed OBS is clutter rather than discovery.
+
+An existing layout — one the user has already customized, or one taken from
+another profile — does not gain the chip automatically. Add it in place with
+**Meta+right-click → Add applet → OBS**.
+
+`qindaqt.profile-formats` fails if the flagship profile stops placing it. That
+row exists because the applet first shipped with its manifest, capabilities,
+policy grant and controller all correct and no profile putting it anywhere, so
+there was nothing on screen to connect and nothing to notice was missing.
+
 ## Capabilities and composition
 
 The applet is an audited built-in declaring `streaming.read` and

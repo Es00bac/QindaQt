@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QString>
+#include <QTimer>
 
 #include <memory>
 
@@ -35,6 +36,15 @@ namespace QindaQt::Shell {
 // keyring. Without the grant nothing is sent anywhere: no socket, no
 // connection attempt, no reconnect timer.
 //
+// AGENT-CONTRACT: the start condition is re-checked, not read once. The normal
+// first run is that the shell is already up when the user sets OBS up from
+// Settings -> Streaming, so at construction there is no config and no secret.
+// Reading them once meant the applet stayed dead until the next login, which
+// is exactly what the 2026-09-18 end-to-end check saw: obs-websocket logged no
+// client for the whole session. The watch costs one stat of OBS's own config
+// file per tick and touches the keyring only once that file says OBS is set
+// up, so a desktop with no OBS never talks to the Secret Service at all.
+//
 // AGENT-GUARD: the password reaches the client and nothing else. It is never
 // held by the controller, never published into QML, and never logged.
 class ObsAppletComposition final {
@@ -49,6 +59,13 @@ public:
     [[nodiscard]] ObsApplet::ObsAppletController *access() const noexcept;
 
 private:
+    // Returns true once the client has been started; false while OBS is not
+    // set up yet. Safe to call repeatedly — it starts the client at most once.
+    [[nodiscard]] bool tryStart();
+
+    bool m_readGranted = false;
+    bool m_started = false;
+    QTimer m_provisioningWatch;
     std::unique_ptr<Obs::QtObsTransport> m_transport;
     std::unique_ptr<Obs::ObsClient> m_client;
     std::unique_ptr<Obs::SecretServiceObsStore> m_secrets;

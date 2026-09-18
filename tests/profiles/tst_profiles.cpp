@@ -30,6 +30,7 @@ private slots:
     void rejectsDuplicateIdsAcrossPanelsAndDesktop();
     void everyBuiltInProfileHasOneNotificationCenter();
     void stockProfileResolvesNonemptyDesktopInventory();
+    void theDefaultProfilePlacesTheStreamingApplet();
 };
 
 void ProfileTests::loadsEveryBuiltInProfile()
@@ -300,6 +301,39 @@ void ProfileTests::stockProfileResolvesNonemptyDesktopInventory()
              "The stock qindaqt profile must resolve a nonempty desktop inventory");
     QCOMPARE(result.profile.desktopApplets.constFirst().plugin,
              QStringLiteral("desktop-icons"));
+}
+
+// An applet nobody places is an applet nobody has. The OBS applet shipped in
+// O10 with its manifest, capabilities, policy grant and controller all correct
+// and no stock profile putting it on a panel, so the 2026-09-18 end-to-end
+// check found nothing to connect: obs-websocket logged no client for the whole
+// session.
+//
+// It sits in the flagship profile only, beside the other QindaQt hardware chips
+// (audio, bluetooth, power, smart-lights). The desktop-imitation profiles
+// deliberately carry none of those, and a chip reading "OBS is not running" on
+// a GNOME-imitation top bar for a user who never installed OBS is clutter, not
+// discovery. Existing user layouts add it through Meta+right-click.
+void ProfileTests::theDefaultProfilePlacesTheStreamingApplet()
+{
+    const auto result = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/qindaqt.json"));
+    QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+
+    qsizetype obsCount = 0;
+    QString zone;
+    for (const auto &panel : result.profile.panels) {
+        for (const auto &applet : panel.applets) {
+            if (applet.plugin != QLatin1String("obs")) {
+                continue;
+            }
+            ++obsCount;
+            zone = applet.settings.value(QStringLiteral("zone")).toString();
+        }
+    }
+
+    QCOMPARE(obsCount, 1);
+    QCOMPARE(zone, QStringLiteral("end"));
 }
 
 QTEST_GUILESS_MAIN(ProfileTests)
