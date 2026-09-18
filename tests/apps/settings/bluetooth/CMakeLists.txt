@@ -98,8 +98,16 @@ target_link_libraries(
     qindaqt_settings_customize_qmlplugin qindaqt_settings_bluetooth
     qindaqt_settings_bluetooth_qml
     # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
-    # Color, and Input backend modules are static, so any in-process Main.qml
-    # host must link them.
+    # Color, Input, Streaming and Windows backend modules are static, so any
+    # in-process Main.qml host must link them. Adding a Settings route means
+    # adding it HERE as well as to tests/apps/settings_center — three routes
+    # (Streaming, Windows, Date & time) each shipped without it and took this
+    # row down with a "plugin not found" that names the new module, not this
+    # file.
+    qindaqt_settings_streaming_backend_qml
+    qindaqt_settings_streaming_backend_qmlplugin
+    qindaqt_settings_windows_qml qindaqt_settings_windows_qmlplugin
+    qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin
     qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
@@ -118,6 +126,9 @@ add_dependencies(
     qindaqt_settings_audio_qmlplugin qindaqt_settings_power_qmlplugin
     qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_qmlplugin
+    qindaqt_settings_streaming_qml qindaqt_settings_streaming_qmlplugin
+    qindaqt_settings_windows_qml qindaqt_settings_windows_qmlplugin
+    qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin
     qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_bluetooth_window_close_tests)

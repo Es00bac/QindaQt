@@ -50,11 +50,16 @@ public:
         quieting->insert(QStringLiteral("unavailable"), false);
         quieting->insert(QStringLiteral("statusText"), QString{});
         quieting->insert(QStringLiteral("errorText"), QString{});
-        // O13 made quietingSchedule a required property of Main.qml, so the
-        // component cannot be created without one. Every key QuietHoursSection
-        // binds has to exist: errorText in particular is read as
-        // `errorText.length`, and undefined there is a TypeError, which this
-        // warning-fatal row turns into a failure with an empty message.
+        // AGENT-NOTE: O13 made `quietingSchedule` a required property of
+        // Main.qml, so the component cannot be created without one, and it is
+        // a SEPARATE model from `quietingSettings` — QuietHoursSection reads
+        // available, scheduleEnabled and the two time fields off it. Handing
+        // it the settings stand-in leaves those undefined, and this harness
+        // runs with fatal warnings, so "Unable to assign [undefined] to bool"
+        // aborts the process rather than failing one row. Every key the
+        // section binds has to exist: errorText in particular is read as
+        // `errorText.length`, and undefined there is a TypeError that shows up
+        // as a failure with an empty message.
         schedule->insert(QStringLiteral("available"), false);
         schedule->insert(QStringLiteral("scheduleEnabled"), false);
         schedule->insert(QStringLiteral("startMinutes"), 22 * 60);
