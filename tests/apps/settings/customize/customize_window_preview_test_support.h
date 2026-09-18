@@ -61,17 +61,34 @@ public:
                        .debounceMilliseconds = 0,
                        .retryMilliseconds = {10}})
         , chromeClient(chromeTransport,
-                       Decoration::ChromePreferences::settingsKeys(),
+                       chromeScopeKeys(),
                        {.requestTimeoutMilliseconds = 100,
                         .debounceMilliseconds = 0,
                         .retryMilliseconds = {10}})
     {
     }
 
-    // The chrome client is scoped to the exact ChromePreferences::settingsKeys()
-    // set (matching production wiring): a wire snapshot must carry every one
-    // of those keys or SettingsClient rejects it as out of scope. Overrides
-    // fill in on top of the "theme" defaults for every other key.
+    // AGENT-CONTRACT: the chrome scope is settingsKeys() PLUS decorationKeys(),
+    // which is what src/apps/settings/appearance/appearance_values.cpp scopes
+    // the Appearance route to, and what `toSettingsValues()` below actually
+    // emits. The two decoration keys are deliberately absent from
+    // settingsKeys() — ADR-0207 keeps them on their own purpose-scoped client
+    // so an older resident Settings1 that does not know them costs only the
+    // decoration choice instead of rejecting the whole snapshot (ADR-0126).
+    // Scoping this client to settingsKeys() alone while publishing
+    // toSettingsValues() put two out-of-scope keys on the wire, so the client
+    // rejected every snapshot and never reached Ready — which surfaced as
+    // establishWindowPreview() returning false on four rows.
+    [[nodiscard]] static QStringList chromeScopeKeys()
+    {
+        QStringList keys = Decoration::ChromePreferences::settingsKeys();
+        keys.append(Decoration::ChromePreferences::decorationKeys());
+        return keys;
+    }
+
+    // A wire snapshot must carry every key in that scope or SettingsClient
+    // rejects it as out of scope. Overrides fill in on top of the "theme"
+    // defaults for every other key.
     [[nodiscard]] static QVariantMap fullChromeValues(const QVariantMap &overrides)
     {
         return Decoration::ChromePreferences::fromSettingsValues(overrides)
