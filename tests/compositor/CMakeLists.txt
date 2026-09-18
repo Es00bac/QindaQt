@@ -56,9 +56,16 @@ if(TARGET QindaQt::HybridChrome)
         QindaQt::HybridChrome QindaQt::DecorationPainter qindaqt_themes Qt6::Test)
     add_test(NAME compositor.chrome-appearance-palette
         COMMAND qindaqt_chrome_appearance_palette_tests)
-endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/ContainerChromeBadgeTests.cmake")
+    # AGENT-GUARD: inside the HybridChrome guard, like every other module that
+    # links it. compositor.kwin-plugin-dependency-contract reconfigures THIS
+    # directory as a standalone project with KWin and KDecoration3 disabled and
+    # requires it to configure; a module outside the guard that links
+    # QindaQt::HybridChrome or qindaqt_hybrid_chrome_pointer_router fails there
+    # with "the target was not found", and the contract row reports it as the
+    # whole standalone bridge failing to configure.
+    include("${CMAKE_CURRENT_LIST_DIR}/ContainerChromeBadgeTests.cmake")
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")
 
