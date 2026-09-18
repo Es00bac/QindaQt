@@ -4,7 +4,7 @@
 - **Date:** 2026-09-11
 - **Owners:** Decorations, Compositor chrome
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0203](0203-an-ordinary-window-rolls-up-to-its-icon.md) for decision 3's wheel over an ordinary window's title bar only; the handlebar and the container wheel roll-up stand
 
 ## Context
 

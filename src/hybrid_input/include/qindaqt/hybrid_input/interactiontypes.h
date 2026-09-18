@@ -15,6 +15,11 @@ enum class HitKind {
     Tab,
     Divider,
     OuterResize,
+    // An iconified window's chip (ADR-0203): the hidden window's own drag
+    // source, carried in memberId. Docks exactly like MemberTitle, but a
+    // release with no target still commits (the session moves the chip to
+    // the drop point) instead of cancelling like an independent title.
+    IconChip,
 };
 
 enum class DockZone {

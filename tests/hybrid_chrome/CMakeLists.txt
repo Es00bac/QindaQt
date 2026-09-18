@@ -96,3 +96,25 @@ set_tests_properties(
     qindaqt.hybrid-chrome-shaded-badge
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+qt_add_executable(qindaqt_hybrid_chrome_iconchip_tests tst_iconchip.cpp)
+target_link_libraries(
+    qindaqt_hybrid_chrome_iconchip_tests
+    PRIVATE QindaQt::HybridChrome Qt6::Test
+)
+target_compile_features(qindaqt_hybrid_chrome_iconchip_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_hybrid_chrome_iconchip_tests
+    PROPERTIES CXX_EXTENSIONS OFF
+)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_hybrid_chrome_iconchip_tests)
+endif()
+add_test(
+    NAME qindaqt.hybrid-chrome-icon-chip
+    COMMAND qindaqt_hybrid_chrome_iconchip_tests
+)
+set_tests_properties(
+    qindaqt.hybrid-chrome-icon-chip
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

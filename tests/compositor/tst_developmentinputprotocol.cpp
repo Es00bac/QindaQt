@@ -69,6 +69,7 @@ class DevelopmentInputProtocolTest final : public QObject
 private Q_SLOTS:
     void parsesAndDispatchesAllowlistedEvents();
     void parsesBoundedRelativePointerMotion();
+    void parsesBoundedPointerAxisSteps();
     void parsesFullscreenAndShellProbeKeys();
     void parsesDailyControlsAndWorkspaceProbeKeys();
     void rejectsMalformedAndLimitFailures();
@@ -362,11 +363,64 @@ void DevelopmentInputProtocolTest::reportsUnavailableSinkAndCapabilities()
              QJsonArray({QStringLiteral("pointer-absolute"),
                          QStringLiteral("pointer-relative"), QStringLiteral("key"),
                          QStringLiteral("button"), QStringLiteral("touch-down"),
-                         QStringLiteral("touch-motion"), QStringLiteral("touch-up")}));
+                         QStringLiteral("touch-motion"), QStringLiteral("touch-up"),
+                         QStringLiteral("pointer-axis")}));
 
     sink.succeeds = false;
     QCOMPARE(failureCode(controller.injectTestInput(valid)),
              QStringLiteral("input-injection-unavailable"));
+}
+
+void DevelopmentInputProtocolTest::parsesBoundedPointerAxisSteps()
+{
+    // ADR-0203 rows roll windows up and down with real wheel notches: one
+    // notch is a 15-unit logical delta, negative away from the user.
+    const auto payload = request(QJsonArray{
+        QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                    {QStringLiteral("axis"), QStringLiteral("vertical")},
+                    {QStringLiteral("delta"), -15.0}},
+        QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                    {QStringLiteral("axis"), QStringLiteral("horizontal")},
+                    {QStringLiteral("delta"), 30.0}}});
+    DevelopmentInputFailure failure;
+    const auto parsed = DevelopmentInputCodec::parse(payload, &failure);
+    QVERIFY2(parsed.has_value(), qPrintable(failure.message));
+    QCOMPARE(parsed->events.size(), 2);
+    QCOMPARE(parsed->events.at(0).type, DevelopmentInputEventType::PointerAxis);
+    QCOMPARE(parsed->events.at(0).axis, DevelopmentInputAxis::Vertical);
+    QCOMPARE(parsed->events.at(0).axisDelta, -15.0);
+    QCOMPARE(parsed->events.at(1).axis, DevelopmentInputAxis::Horizontal);
+    QCOMPARE(parsed->events.at(1).axisDelta, 30.0);
+
+    const auto rejects = [](const QJsonObject &event) {
+        DevelopmentInputFailure rejection;
+        return !DevelopmentInputCodec::parse(request(QJsonArray{event}), &rejection)
+            .has_value();
+    };
+    QVERIFY(rejects(QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                                {QStringLiteral("axis"), QStringLiteral("vertical")},
+                                {QStringLiteral("delta"), 0.0}}));
+    QVERIFY(rejects(QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                                {QStringLiteral("axis"), QStringLiteral("vertical")},
+                                {QStringLiteral("delta"), 1000.5}}));
+    QVERIFY(rejects(QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                                {QStringLiteral("axis"), QStringLiteral("diagonal")},
+                                {QStringLiteral("delta"), 15.0}}));
+    QVERIFY(rejects(QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                                {QStringLiteral("axis"), QStringLiteral("vertical")},
+                                {QStringLiteral("delta"), QStringLiteral("15")}}));
+    QVERIFY(rejects(QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                                {QStringLiteral("axis"), QStringLiteral("vertical")},
+                                {QStringLiteral("delta"), 15.0},
+                                {QStringLiteral("inverted"), true}}));
+    QVERIFY(rejects(QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-axis")},
+                                {QStringLiteral("delta"), 15.0}}));
+
+    const DevelopmentInputController controller(true, nullptr);
+    const auto capabilities = controller.capabilities();
+    QCOMPARE(capabilities.value(QStringLiteral("maxAxisDeltaMagnitude")).toDouble(), 1000.0);
+    QVERIFY(capabilities.value(QStringLiteral("eventTypes")).toArray()
+                .contains(QStringLiteral("pointer-axis")));
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

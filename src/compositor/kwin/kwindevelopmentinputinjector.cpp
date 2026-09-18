@@ -168,6 +168,18 @@ public:
             Q_EMIT touchUp(event.touchId, timestamp, this);
             Q_EMIT touchFrame(this);
             break;
+        case DevelopmentInputEventType::PointerAxis:
+            // Same shape libinput produces for one wheel notch: a 15-unit
+            // logical delta with a 120-unit v120 step, source Wheel, not
+            // inverted (natural scrolling is a seat setting, not the
+            // device's). KWin's PointerAxisEvent then reaches the filters.
+            Q_EMIT pointerAxisChanged(
+                event.axis == DevelopmentInputAxis::Horizontal
+                    ? KWin::PointerAxis::Horizontal : KWin::PointerAxis::Vertical,
+                event.axisDelta, qRound(event.axisDelta * 8.0),
+                KWin::PointerAxisSource::Wheel, false, timestamp, this);
+            Q_EMIT pointerFrame(this);
+            break;
         case DevelopmentInputEventType::Button:
             Q_EMIT pointerButtonChanged(
                 linuxButtonCode(event.button),

@@ -9,6 +9,7 @@ target_sources(
     qindaqt_hybrid_chrome
     PRIVATE
         src/chromehittest.cpp
+        src/chromeiconchip.cpp
         src/chromeidentity.cpp
         src/chromelayoutengine.cpp
         src/chromerenderer.cpp
@@ -20,6 +21,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/hybrid_chrome/chromehittest.h
+            include/qindaqt/hybrid_chrome/chromeiconchip.h
             include/qindaqt/hybrid_chrome/chromeidentity.h
             include/qindaqt/hybrid_chrome/chromelayoutengine.h
             include/qindaqt/hybrid_chrome/chromerenderer.h
