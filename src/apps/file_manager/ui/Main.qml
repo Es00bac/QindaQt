@@ -20,12 +20,17 @@ ApplicationWindow {
     required property var searchController
     required property var placesController
     required property var applicationsController
+    required property var networkLocationsController
+    required property var transferQueueController
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
     // The Applications browser (ADR-0164) replaces the folder views while
     // true. Browsing to any folder path exits it; "go.applications" enters.
     property bool applicationsMode: false
+    // ADR-0194: the Network place's hub replaces the folder views while true.
+    // Browsing to any folder leaves it, exactly as the Applications browser does.
+    property bool networkMode: false
     // ADR-0165: --choose-application turns the Applications browser into a
     // workspace picker; a successful choice quits the picker window after
     // the compositor closes it (see chooserSucceeded handling below).
@@ -100,6 +105,7 @@ ApplicationWindow {
         // views are the default surface and a Places click must land there.
         function onCurrentPathChanged() {
             root.applicationsMode = false
+            root.networkMode = false
         }
     }
 
@@ -133,6 +139,14 @@ ApplicationWindow {
             const navigation = root.navigationController
             if (actionId === "go.applications") {
                 root.applicationsMode = true
+                return
+            } else if (actionId === "go.network") {
+                root.networkMode = true
+                return
+            } else if (actionId === "network.connect") {
+                root.networkMode = true
+                connectToServerDialog.prepare()
+                connectToServerDialog.open()
                 return
             } else if (actionId === "go.back") {
                 navigation.goBack()
@@ -190,6 +204,19 @@ ApplicationWindow {
 
     readonly property string displayedViewMode: root.navigationController.viewMode
     onDisplayedViewModeChanged: Qt.callLater(() => root.activeView().focusView())
+
+    // A finished network transfer only changes what is on screen when it
+    // landed in the folder being browsed; the queue itself never navigates.
+    Connections {
+        target: root.transferQueueController
+        function onTransferCommitted(destinationFolder) {
+            const destination = destinationFolder.toString()
+            const current = root.navigationController.currentPath
+            if (destination === current
+                || destination === "file://" + current)
+                root.navigationController.refresh()
+        }
+    }
 
     Connections {
         target: root.mutationController
@@ -294,7 +321,7 @@ ApplicationWindow {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: root.applicationsMode ? 1 : 0
+            currentIndex: root.networkMode ? 2 : root.applicationsMode ? 1 : 0
 
             RowLayout {
                 Layout.fillWidth: true
@@ -306,6 +333,7 @@ ApplicationWindow {
                     Layout.fillHeight: true
                     navigationController: root.navigationController
                     placesController: root.placesController
+                    networkLocationsController: root.networkLocationsController
                     appCoordinator: root.coordinator
                     mutationController: root.mutationController
                     clipboardController: root.clipboardController
@@ -357,6 +385,14 @@ ApplicationWindow {
                 applicationsController: root.applicationsController
                 chooserMode: root.chooserMode
             }
+
+            NetworkHub {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                networkLocationsController: root.networkLocationsController
+                onOpenRequested: (url) => root.navigationController.navigateTo(url)
+                onConnectRequested: root.coordinator.activateAction("network.connect")
+            }
         }
 
         FolderStatusBar {
@@ -366,60 +402,13 @@ ApplicationWindow {
             appCoordinator: root.coordinator
         }
 
-        StatusBanner {
-            objectName: "mutationProgressCard"
+        StatusBanners {
             Layout.fillWidth: true
-            visible: root.mutationController.busy
-            title: qsTr("File operation in progress")
-            message: qsTr("%1. Progress %2 percent")
-                .arg(root.mutationController.progressText)
-                .arg(root.mutationController.progressValue)
-            actionText: qsTr("Cancel")
-            onActionTriggered: root.mutationController.cancel()
-        }
-
-        StatusBanner {
-            objectName: "mutationFailureCard"
-            Layout.fillWidth: true
-            visible: root.mutationController.failureCode !== "none"
-            title: qsTr("File operation failed: %1")
-                .arg(root.mutationController.failureCode)
-            message: root.mutationController.failureMessage
-            actionText: qsTr("Dismiss")
-            onActionTriggered: root.mutationController.clearFailure()
-        }
-
-        StatusBanner {
-            objectName: "mutationResultCard"
-            Layout.fillWidth: true
-            visible: !root.mutationController.busy
-                && root.mutationController.failureCode === "none"
-                && root.mutationController.resultText.length > 0
-            title: root.mutationController.resultText
-            message: root.mutationController.canRestore
-                ? qsTr("The most recently trashed item can be restored.") : ""
-            actionText: root.mutationController.canUndo ? qsTr("Undo") : ""
-            onActionTriggered: root.mutationController.undo()
-        }
-
-        StatusBanner {
-            objectName: "launchErrorBanner"
-            Layout.fillWidth: true
-            visible: root.navigationController.launchError.length > 0
-            title: qsTr("Couldn't open the file")
-            message: root.navigationController.launchError
-            actionText: qsTr("Dismiss")
-            onActionTriggered: root.navigationController.clearLaunchError()
-        }
-
-        StatusBanner {
-            objectName: "bookmarkStoreBanner"
-            Layout.fillWidth: true
-            visible: root.placesController.storeError.length > 0
-            title: qsTr("Bookmark storage problem")
-            message: root.placesController.storeError
-            actionText: qsTr("Dismiss")
-            onActionTriggered: root.placesController.clearStoreError()
+            navigationController: root.navigationController
+            mutationController: root.mutationController
+            placesController: root.placesController
+            transferQueueController: root.transferQueueController
+            networkLocationsController: root.networkLocationsController
         }
     }
 
@@ -436,11 +425,18 @@ ApplicationWindow {
         anchors.fill: parent
         navigationController: root.navigationController
         mutationController: root.mutationController
+        transferQueueController: root.transferQueueController
     }
 
     PropertiesDialog {
         id: propertiesDialog
         objectName: "propertiesDialog"
         controller: root.propertiesController
+    }
+
+    ConnectToServerDialog {
+        id: connectToServerDialog
+        networkLocationsController: root.networkLocationsController
+        onSaved: (url) => root.navigationController.navigateTo(url)
     }
 }

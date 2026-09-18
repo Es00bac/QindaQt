@@ -24,9 +24,12 @@ the same way through the injected `RemoteMover` seam on `KIO::move()`
 (ADR-0156), and writes a remote file's edits back in place by resolving
 the canonical URL through the session KIOFuse service and opening the
 returned local write-back path through the same `KIO::OpenUrlJob` boundary
-(ADR-0157). Per-volume
-Trash, mounts, and a QindaQt credential-entry UI
-remain later slices (see the roadmap below).
+(ADR-0157). S6 makes those locations first class: saved network locations
+with a Network hub page and a Connect-to-server dialog (ADR-0194), and a
+transfer queue that copies and moves between the local machine and a network
+location in either direction (ADR-0195), with sign-in left to the platform
+(ADR-0196). Per-volume Trash, mounts, server discovery, and a preferences
+window remain later slices (see the roadmap below).
 
 The durable local-launch choice is recorded in
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md); the S1 mutation
@@ -413,6 +416,141 @@ it directly, so terminal and D-Bus-activatable applications are also
 choosable; the picker window closes when the compositor swaps the launched
 application into the layout.
 
+## First-class network locations
+
+S6 turns the Network place from a hint into a destination. Three decisions
+own it: [ADR-0194](../adr/0194-saved-network-locations-are-canonical-addresses.md)
+for what a saved location is,
+[ADR-0195](../adr/0195-one-owner-per-transfer-and-a-queue-for-the-network.md)
+for who runs a transfer, and
+[ADR-0196](../adr/0196-network-sign-in-belongs-to-the-platform.md) for who
+asks for a password.
+
+### Saved locations
+
+A saved network location is **a display name, a canonical address, and a flag
+for whether it appears in the Places sidebar** — nothing else. The inventory
+is `network-locations-v1.json`, beside `bookmarks-v1.json` under
+`$XDG_STATE_HOME/qindaqt-file-manager`, written through the shared
+symlink-refusing, size-bounded, atomically committed `StateFile` primitive
+that the bookmark inventory also uses (ADR-0090). At most 64 locations, at
+most 64 KiB.
+
+```json
+{"version":1,"locations":[
+  {"name":"Storage (desktop)","url":"sftp://qinda/mnt/storage","showInPlaces":true}
+]}
+```
+
+- A record's identity **is** its canonical address, so saving the same folder
+  twice updates one card instead of adding a second.
+- Every address entering or leaving the store must survive
+  `NetworkLocation::canonicalize()` unchanged: lower-cased `smb`/`sftp`, a
+  non-empty host, no `.` or `..` segment, and no userinfo. A record that does
+  not makes the whole inventory `Malformed` — a partly-loaded inventory would
+  quietly lose a location the user saved.
+- The reader demands an exact key set for the document and for each entry, so
+  an inventory written by a newer schema is refused rather than
+  half-understood. New fields mean `network-locations-v2` and a migration.
+- `NetworkLocationsController` publishes `locations`, the `placesLocations`
+  subset, a typed `storeError`, and the last `requestError`. A refused write
+  never changes the published list, so the sidebar can never show a location
+  the next launch would not find.
+
+### The Network hub and Connect to server
+
+The Network place (and `go.network`, Alt+N) opens `NetworkHub.qml`: the saved
+locations as cards with Open and Forget, a **Connect to Server…** button
+(`network.connect`, Ctrl+Shift+S), and a plain statement of how signing in
+works. Opening a location hands its address to
+`NavigationController::navigateTo()` exactly as a bookmark hands over a path,
+so an unreachable server lands on the ordinary navigation state pane instead
+of a second error channel.
+
+`ConnectToServerDialog.qml` collects a type (`sftp` or `smb`), a server, an
+optional port, a folder, an optional name, and the sidebar toggle. It
+validates nothing itself: `buildNetworkLocation()` — pure policy, no I/O, no
+host resolution, no environment — turns that text into one canonical record or
+one refusal, and the refusal is shown verbatim. An empty name is derived from
+the address (`/mnt/storage` on `qinda` reads as "storage on qinda").
+
+The dialog has **no user-name, password, or credential-source field**, and a
+record carries no user name. That is ADR-0196: gnome-keyring is the session's
+only Secret Service provider and QindaQt code never reads or writes collection
+contents, so the file manager collects no credential and stores no secret.
+Authentication happens inside the KIO job, through the platform's standard UI
+delegate (ADR-0151) and its own remember option. For `sftp` that usually means
+no prompt at all, because KIO's worker uses libssh and honours `~/.ssh/config`
+and the ssh agent.
+
+### Who runs a Copy To or a Move To
+
+The owner of a transfer is decided once, in C++, from the exact pair of source
+list and destination, by `TransferRouter::route()` — pure policy, no I/O, no
+stat, no server contact. `MutationDialogs.qml` asks it and dispatches to
+whichever owner it names.
+
+| Route | Owner | When |
+| --- | --- | --- |
+| `local` | `MutationController` | no endpoint is on the network |
+| `remote-child` | the ADR-0155/0156 path | exactly one source, both endpoints on one network authority |
+| `queue` | `TransferQueueController` | anything else involving a network endpoint |
+| `refuse` | nobody | an unusable endpoint, or a destination inside its own source |
+
+Because the router can never name `remote-child` for more than one source, the
+destination dialog may now open on a remote multi-selection: the ADR-0155/0156
+one-child contract is enforced where the dispatch happens rather than by
+refusing to open a dialog. An absolute local path normalizes to `file://`; a
+relative or uncleaned path is refused rather than repaired, because
+`/home/x/../etc` is not the folder the user typed.
+
+### The transfer queue
+
+`TransferQueueController` owns order, dispatch, and every piece of visible
+state for network transfers; the injected `TransferWorker` owns the platform
+job.
+
+- One source becomes one item, so a ten-file selection is ten items and a
+  single failure retires only its own item.
+- **Exactly one item runs at a time.** A saturated link makes concurrent
+  transfers slower rather than faster, and one running job keeps the
+  platform's credential prompts sequential.
+- Pause, resume, cancel, and cancel-all belong to the user; the queue never
+  retries by itself. Cancel-all retires every live item before dispatching
+  anything, so it cannot hand the platform work the user just asked to stop.
+- An item that is not Queued, Running, or Paused has been retired, and a later
+  worker result for it is dropped. That fence is what makes cancel reliable: a
+  quiet KIO kill deliberately delivers no result at all.
+- A confirmed success emits `transferCommitted(destinationFolder)`; the window
+  re-reads the listing only when that is the folder on screen. The queue never
+  navigates or refreshes.
+- `TransferQueueBanner.qml` shows what is running, its progress, how many are
+  waiting, and Pause/Resume and Cancel all; a refusal gets its own banner.
+
+`KioTransferWorker` implements the seam on `KIO::copy()`/`KIO::move()` and
+re-proves the boundary itself, ahead of the router: each endpoint must be a
+canonical `smb`/`sftp` URL or an absolute local `file://` URL, neither may
+carry userinfo, and at least one must be on the network — a purely local
+transfer must never reach KIO from here, because `MutationController` has
+identity checks this worker has not.
+
+Overwrite and conflict resolution stay with KIO's standard UI delegate
+(ADR-0151); nothing in the queue silently overwrites. Drag-and-drop across the
+boundary is deliberately **not** included: the drop pipeline is the
+identity-checked local mutation one and has no network authority.
+
+### Focused rows
+
+`qindaqt.file-manager-network-locations-store`,
+`qindaqt.file-manager-connect-request`,
+`qindaqt.file-manager-network-locations-controller`,
+`qindaqt.file-manager-transfer-router`, `qindaqt.file-manager-transfer-queue`
+(against a recording worker double — no KIO, no network, no filesystem), and
+`qindaqt.file-manager-kio-transfer-worker` (the realm boundary and the
+retained KIO UI delegate through a job-creation seam). The installed-package
+probe `--check-ui-contract` additionally requires the hub, its list and
+Connect button, the dialog and its fields, and both transfer banners.
+
 ## Ownership, lifetime, and failures
 
 - `DirectoryEntry`/`ListingResult`/`LaunchResult` (`model/file_manager_types.h`,
@@ -455,11 +593,37 @@ application into the layout.
   properties and never shows a dialog, chooses a selection, or retries on
   its own. Entry snapshots carry preformatted `sizeText`/`kindText`/
   `modifiedText` so QML delegates stay presentation-only.
+- `StateFile` (`model/state_file.h`) owns the one app-local state-file
+  primitive: the Linux `openat`/`O_NOFOLLOW` directory walk, the regular-file
+  check, the size bound, and the same-directory `QSaveFile` commit. It owns no
+  schema, no JSON, and no human-readable message; each store composes one and
+  translates its `Error` into its own typed error and diagnostics.
 - `BookmarksStore` (`model/bookmarks_store.h`) owns the versioned, bounded,
   symlink-refusing bookmark file beneath `$XDG_STATE_HOME` with atomic
-  same-directory replacement (ADR-0090). `PlacesController` owns the fixed
-  places list, bookmark add/remove/dedup/cap policy, and typed store-error
-  publication; it never navigates or lists directories.
+  same-directory replacement (ADR-0090), over that primitive.
+  `PlacesController` owns the fixed places list, bookmark add/remove/dedup/cap
+  policy, and typed store-error publication; it never navigates or lists
+  directories.
+- `NetworkLocationsStore` (`network/network_locations_store.h`) owns only the
+  `network-locations-v1` inventory over the same primitive (ADR-0194). It
+  never discovers HOME, contacts a server, resolves a host, or touches a
+  credential store. `NetworkLocationsController` owns the saved-location list
+  for one window and publishes complete snapshots plus typed store/request
+  errors; it never navigates or lists a folder, and a refused write leaves the
+  published list untouched.
+- `buildNetworkLocation()` (`network/connect_request.h`) is the one place
+  Connect-to-server dialog text becomes a saved location. Pure policy: no I/O,
+  no host resolution, no environment, so every refusal is deterministic.
+- `TransferRouter` (`network/transfer_router.h`) is pure routing policy: it
+  decides *who* runs a Copy To / Move To, never whether the source exists.
+- `TransferQueueController` (`network/transfer_queue_controller.h`) owns the
+  order, the one-at-a-time dispatch, per-item state, pause/resume/cancel, and
+  the typed refusal surface for network transfers (ADR-0195). It lists no
+  folder, shows no dialog, resolves no conflict, and never retries on its own.
+  `TransferWorker` is the injected platform seam; `KioTransferWorker` is the
+  production implementation on `KIO::copy()`/`KIO::move()`, which re-proves the
+  realm boundary independently and owns each job's lifetime (destruction kills
+  a pending job, and its prompt, quietly).
 - `MutationBackend` (`mutation/mutation_backend.h`) is the synchronous,
   worker-thread operation seam. `LocalMutationBackend` owns create, rename,
   copy, and move policy; `HomeTrash` owns only Trash/restore/empty behavior;
@@ -492,8 +656,9 @@ application into the layout.
   lends the primary window, coordinator, and session-bus connection to the
   opt-in AppShell exporter; it contains no filesystem or shell authority.
 - QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`LocationBar`/
-  `PlacesSidebar`/`EntrySelection`/`EntryList`/`EntryGrid`/`StatePane`
-  collaborators) owns only presentation: layout, keyboard routing to the
+  `PlacesSidebar`/`EntrySelection`/`EntryList`/`EntryGrid`/`StatePane`/
+  `StatusBanners`/`NetworkHub`/`NetworkLocationCard`/`ConnectToServerDialog`/
+  `TransferQueueBanner` collaborators) owns only presentation: layout, keyboard routing to the
   controller's invokable methods, accessible names/roles, and the
   presentation-owned selection. It never lists a directory or launches a file
   itself.
@@ -725,9 +890,19 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   state, no listing refresh, no shared Cancel owner), each keyed by its own
   monotonic identity, and destruction kills pending watchers and jobs
   quietly. Still open: mount-based volume
-  access (S4) and a
-  QindaQt credential-entry UI (the platform KIO prompt is used for ordinary
-  authentication); portal locations remain out of scope.
+  access (S4); portal locations remain out of scope.
+- **S6 (this slice, landed)** — first-class network locations: the
+  `network-locations-v1` saved-location inventory, the Network hub page and
+  Connect-to-server dialog (ADR-0194), and the transfer queue with its routing
+  policy and `KIO::copy()`/`KIO::move()` worker, which copies and moves
+  between the local machine and a network location in either direction
+  (ADR-0195). Sign-in stays the platform's: QindaQt collects no credential and
+  stores no secret (ADR-0196), so a QindaQt credential-entry UI is not a
+  deferral but a decided non-goal. Still open in this area: server discovery
+  over Avahi, mount-at-login under `~/Network/<name>`, a preferences window, a
+  per-location remote user name (a `network-locations-v2` field), a
+  QindaQt-owned conflict dialog, and drag-and-drop across the local/network
+  boundary.
 
 ## Bounded deferrals
 
@@ -737,12 +912,18 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  additional preview formats, portal-mediated paths, open-with,
-  and a QindaQt credential-entry UI remain explicit
-  later outcomes (S3–S5). Remote Move To (ADR-0156) is landed; batch remote
-  move remains deferred with batch remote copy. Remote write-in-place
-  (ADR-0157) covers one regular file opened through the desktop handler;
-  batch remote writes remain deferred with it.
+  additional preview formats, portal-mediated paths, and open-with remain
+  explicit later outcomes (S3–S5). A QindaQt credential-entry UI is no longer
+  among them: ADR-0196 decides that sign-in belongs to the platform.
+- Batch transfers across the local/network boundary are landed as the S6
+  transfer queue (ADR-0195). The single-child same-authority remote Copy To
+  and Move To (ADR-0155/0156) keep exactly their reviewed case, so a batch
+  within one authority runs through the queue rather than through them.
+  Remote write-in-place (ADR-0157) still covers one regular file opened
+  through the desktop handler; batch remote writes remain deferred with it.
+- Overwrite and conflict resolution during a queued transfer are KIO's
+  standard dialog, not a QindaQt one, and the queue carries no per-item
+  conflict state yet.
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
   destination in a separate confirmed action.

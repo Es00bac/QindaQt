@@ -18,6 +18,10 @@
 #include "network/kio_remote_folder_creator.h"
 #include "network/kio_remote_mover.h"
 #include "network/kio_remote_renamer.h"
+#include "network/kio_transfer_worker.h"
+#include "network/network_locations_controller.h"
+#include "network/network_locations_store.h"
+#include "network/transfer_queue_controller.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
 #include "runtime/file_manager_application.h"
@@ -41,6 +45,7 @@
 
 #include <cstdio>
 #include <memory>
+#include <optional>
 
 namespace {
 
@@ -134,6 +139,44 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
   return fixture;
 }
 
+// ADR-0164: the composition root resolves the XDG data roots; the
+// applications controller itself never reads the environment.
+[[nodiscard]] QStringList uniqueApplicationDataRoots() {
+  QStringList roots;
+  for (const auto &location :
+       QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+    if (!roots.contains(location)) {
+      roots.append(location);
+    }
+  }
+  return roots;
+}
+
+// The one app-local state root: bookmarks and saved network locations are
+// separate schemas in the same $XDG_STATE_HOME directory (ADR-0090/0191).
+[[nodiscard]] QString fileManagerStateDirectory() {
+  return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation))
+      .filePath(QStringLiteral("qindaqt-file-manager"));
+}
+
+// A search result set only becomes the visible listing while the window still
+// shows the folder the search started in; otherwise the stale results would
+// masquerade as the new location's contents.
+void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &search,
+                              QindaQt::Apps::FileManager::NavigationController &navigation) {
+  QObject::connect(
+      &search, &QindaQt::Apps::FileManager::SearchController::searchReady,
+      &navigation,
+      [&search, &navigation](
+          quint64, const QVector<QindaQt::Apps::FileManager::DirectoryEntry> &entries,
+          const QString &statusText) {
+        if (search.rootPath() != navigation.currentPath()) {
+          return;
+        }
+        navigation.showGuestListing(entries, statusText);
+      });
+}
+
 // Returns the first missing required UI object name, or an empty string when
 // the complete --check-ui-contract surface is present.
 [[nodiscard]] QString missingUiContractObject(QObject *root) {
@@ -152,13 +195,62 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
       QStringLiteral("trashConfirmationDialog"),
       QStringLiteral("emptyTrashConfirmationDialog"),
       QStringLiteral("propertiesDialog"),
-      QStringLiteral("filterSubfoldersToggle")};
+      QStringLiteral("filterSubfoldersToggle"),
+      // ADR-0194/0192: the network surfaces are part of the installed
+      // package's contract, so a packaging change that drops one fails the
+      // probe instead of shipping a Network place that opens nothing.
+      QStringLiteral("networkHub"), QStringLiteral("connectToServerButton"),
+      QStringLiteral("networkLocationList"),
+      QStringLiteral("connectToServerDialog"),
+      QStringLiteral("connectSchemeBox"), QStringLiteral("connectHostField"),
+      QStringLiteral("connectPathField"), QStringLiteral("connectNameField"),
+      QStringLiteral("transferQueueBanner"),
+      QStringLiteral("transferRefusalBanner")};
   for (const QString &objectName : requiredObjects) {
     if (!root->findChild<QObject *>(objectName)) {
       return objectName;
     }
   }
   return {};
+}
+
+// Runs whichever --check-* probe mode was requested. Returns the process
+// exit code when one ran, or nullopt when the window should simply be shown.
+// Kept out of main() so the composition root stays within the function-length
+// budget; the probes themselves are unchanged.
+[[nodiscard]] std::optional<int> runProbeMode(
+    const QCommandLineParser &parser, QObject *root,
+    QindaQt::AppShell::ApplicationCoordinator *coordinator,
+    QindaQt::Apps::FileManager::NavigationController *navigation,
+    QindaQt::Apps::FileManager::MutationController *mutation,
+    QindaQt::Apps::FileManager::ClipboardController *clipboard,
+    const QString &startPath) {
+  if (parser.isSet(QStringLiteral("check-qml-root"))) {
+    std::printf("qml-root-loaded\n");
+    return 0;
+  }
+  if (parser.isSet(QStringLiteral("check-ui-contract"))) {
+    const QString missing = missingUiContractObject(root);
+    if (!missing.isEmpty()) {
+      std::fprintf(stderr, "qindaqt-file-manager: missing UI object %s\n",
+                   qPrintable(missing));
+      return 5;
+    }
+    std::printf("mutation-ui-contract-ok\n");
+    return 0;
+  }
+  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
+    QString actionError;
+    if (!QindaQt::Apps::FileManager::verifyMutationUiActions(
+            root, coordinator, navigation, mutation, clipboard, startPath,
+            &actionError)) {
+      std::fprintf(stderr, "qindaqt-file-manager: %s\n", qPrintable(actionError));
+      return 5;
+    }
+    std::printf("mutation-ui-actions-ok\n");
+    return 0;
+  }
+  return std::nullopt;
 }
 
 } // namespace
@@ -261,26 +353,25 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::EntryPropertiesController>();
   auto searchController =
       std::make_unique<QindaQt::Apps::FileManager::SearchController>();
+  const QString stateDirectory = fileManagerStateDirectory();
   auto placesController =
       std::make_unique<QindaQt::Apps::FileManager::PlacesController>(
-          std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(
-              QDir(QStandardPaths::writableLocation(
-                       QStandardPaths::GenericStateLocation))
-                  .filePath(QStringLiteral("qindaqt-file-manager"))));
+          std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(stateDirectory));
+  // ADR-0194/0192: saved network locations and the transfer queue are owned
+  // here, beside the places store, and are handed to QML as plain models.
+  auto networkLocationsController =
+      std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsController>(
+          std::make_unique<QindaQt::Apps::FileManager::NetworkLocationsStore>(
+              stateDirectory));
+  auto transferQueueController =
+      std::make_unique<QindaQt::Apps::FileManager::TransferQueueController>(
+          std::make_unique<QindaQt::Apps::FileManager::KioTransferWorker>());
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
-  // ADR-0164: the composition root resolves the XDG data roots; the
-  // applications controller itself never reads the environment. The first
-  // synchronous scan happens here so the browser opens ready.
-  QStringList applicationDataRoots;
-  for (const auto &location :
-       QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
-    if (!applicationDataRoots.contains(location)) {
-      applicationDataRoots.append(location);
-    }
-  }
+  // The first synchronous application scan happens here so the browser opens
+  // ready.
   auto applicationsController =
       std::make_unique<QindaQt::Apps::FileManager::ApplicationsController>(
-          applicationDataRoots);
+          uniqueApplicationDataRoots());
   applicationsController->refresh();
   const QString appShellError = configureAppShell(
       *appCoordinator, *controller, *mutationController, *clipboardController);
@@ -290,20 +381,7 @@ int main(int argc, char **argv) {
     return 3;
   }
 
-  // A search result set only becomes the visible listing while the window
-  // still shows the folder the search started in; otherwise the stale results
-  // would masquerade as the new location's contents.
-  QObject::connect(
-      searchController.get(),
-      &QindaQt::Apps::FileManager::SearchController::searchReady, controller.get(),
-      [search = searchController.get(), navigation = controller.get()](
-          quint64, const QVector<QindaQt::Apps::FileManager::DirectoryEntry> &entries,
-          const QString &statusText) {
-        if (search->rootPath() != navigation->currentPath()) {
-          return;
-        }
-        navigation->showGuestListing(entries, statusText);
-      });
+  publishSearchResultsInto(*searchController, *controller);
 
   engine.setInitialProperties(
       {{QStringLiteral("navigationController"),
@@ -320,6 +398,10 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(placesController.get()))},
        {QStringLiteral("applicationsController"),
         QVariant::fromValue(static_cast<QObject *>(applicationsController.get()))},
+       {QStringLiteral("networkLocationsController"),
+        QVariant::fromValue(static_cast<QObject *>(networkLocationsController.get()))},
+       {QStringLiteral("transferQueueController"),
+        QVariant::fromValue(static_cast<QObject *>(transferQueueController.get()))},
        {QStringLiteral("chooserMode"), parser.isSet(QStringLiteral("choose-application"))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
@@ -337,37 +419,13 @@ int main(int argc, char **argv) {
       delete root;
     }
   };
-  if (parser.isSet(QStringLiteral("check-qml-root"))) {
-    std::printf("qml-root-loaded\n");
+  const std::optional<int> probeExit = runProbeMode(
+      parser, engine.rootObjects().constFirst(), appCoordinator.get(),
+      controller.get(), mutationController.get(), clipboardController.get(),
+      startPath);
+  if (probeExit.has_value()) {
     destroyRoots();
-    return 0;
-  }
-  if (parser.isSet(QStringLiteral("check-ui-contract"))) {
-    const QString missing = missingUiContractObject(engine.rootObjects().constFirst());
-    if (!missing.isEmpty()) {
-      std::fprintf(stderr, "qindaqt-file-manager: missing UI object %s\n",
-                   qPrintable(missing));
-      destroyRoots();
-      return 5;
-    }
-    std::printf("mutation-ui-contract-ok\n");
-    destroyRoots();
-    return 0;
-  }
-  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
-    QString actionError;
-    if (!QindaQt::Apps::FileManager::verifyMutationUiActions(
-            engine.rootObjects().constFirst(), appCoordinator.get(),
-            controller.get(), mutationController.get(), clipboardController.get(),
-            startPath, &actionError)) {
-      std::fprintf(stderr, "qindaqt-file-manager: %s\n",
-                   qPrintable(actionError));
-      destroyRoots();
-      return 5;
-    }
-    std::printf("mutation-ui-actions-ok\n");
-    destroyRoots();
-    return 0;
+    return *probeExit;
   }
   const int exitCode = application->exec();
   destroyRoots();

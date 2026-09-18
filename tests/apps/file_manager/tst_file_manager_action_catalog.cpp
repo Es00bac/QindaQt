@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 29);
+  QCOMPARE(actions.size(), 31);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -47,6 +47,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("view.focus-location"), QStringLiteral("go.home"),
       QStringLiteral("bookmark.add"), QStringLiteral("go.back"),
       QStringLiteral("go.forward"), QStringLiteral("go.up"), QStringLiteral("go.applications"),
+      QStringLiteral("go.network"), QStringLiteral("network.connect"),
       QStringLiteral("view.refresh")};
   QCOMPARE(identities, expected);
 
@@ -137,6 +138,26 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QCOMPARE(goHome->order, 0);
   QCOMPARE(goHome->shortcut, QKeySequence(QStringLiteral("Alt+Home")));
   QVERIFY(!goHome->checkable);
+
+  // ADR-0194: the network pair sits at the end of the Go menu, after
+  // Applications, so the ordinary folder destinations stay on top.
+  const auto network = find("go.network");
+  QVERIFY(network != actions.cend());
+  QCOMPARE(network->menuId, QStringLiteral("go"));
+  QCOMPARE(network->menuOrder, 3);
+  QCOMPARE(network->order, 6);
+  QCOMPARE(network->shortcut, QKeySequence(QStringLiteral("Alt+N")));
+  QVERIFY(!network->checkable);
+  QVERIFY(!network->destructive);
+
+  const auto connect = find("network.connect");
+  QVERIFY(connect != actions.cend());
+  QCOMPARE(connect->menuId, QStringLiteral("go"));
+  QCOMPARE(connect->menuOrder, 3);
+  QCOMPARE(connect->order, 7);
+  QCOMPARE(connect->shortcut, QKeySequence(QStringLiteral("Ctrl+Shift+S")));
+  QVERIFY(!connect->checkable);
+  QVERIFY(!connect->destructive);
 
   const auto bookmarkAdd = find("bookmark.add");
   QVERIFY(bookmarkAdd != actions.cend());
