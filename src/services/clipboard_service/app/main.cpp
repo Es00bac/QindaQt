@@ -74,7 +74,19 @@ int main(int argc, char **argv)
         }
     }
 
-    if (service.start() != Clipboard::ServiceStartStatus::Started) {
+    const Clipboard::ServiceStartStatus status = service.start();
+    // AGENT-GUARD: NameAlreadyOwned means a live sibling already provides
+    // Clipboard1 -- not a failure of this process. Exiting nonzero here
+    // would have systemd's Restart=on-failure retry a start that can only
+    // ever fail the same way again while the sibling lives, looping until
+    // StartLimitBurst; exit 0 lets the unit settle once, with the reason on
+    // the record.
+    if (status == Clipboard::ServiceStartStatus::NameAlreadyOwned) {
+        qInfo("Clipboard1 startup stopped: org.qindaqt.Clipboard1 is already "
+              "owned by a live sibling process");
+        return 0;
+    }
+    if (status != Clipboard::ServiceStartStatus::Started) {
         qCritical("Clipboard1 service registration failed");
         return 2;
     }
