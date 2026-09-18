@@ -10,7 +10,7 @@
 
     foreach(_qindaqt_desktop_route IN ITEMS
             Appearance Display Network Audio Bluetooth Power Clipboard Color
-            Accessibility Input Streaming)
+            Accessibility Input Streaming DateTime Windows)
         string(TOLOWER "${_qindaqt_desktop_route}" _qindaqt_desktop_route_id)
         set(_qindaqt_desktop_route_target "qindaqt_settings_${_qindaqt_desktop_route_id}_qml")
         set(_qindaqt_desktop_route_destination
