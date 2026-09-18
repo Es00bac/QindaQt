@@ -6,16 +6,25 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// One input channel strip (ADR-0173), condensed to a narrow card: name and
-// source on top, then a desk row of meter, fader, and the routing bank
-// (one pad per bus, mono/solo/mute below). Cards flow left-to-right and wrap
-// (AudioConsoleSection), so the console uses whatever width the window offers
-// and never scrolls horizontally.
+// One input channel strip (ADR-0173), condensed to a narrow card: name, the
+// device this strip follows, then a desk band of meter, fader, and the routing
+// bank (one pad per bus, mono/solo/mute below), then the card's actions. Cards
+// flow left-to-right and wrap (AudioConsoleSection), so the console uses
+// whatever width the window offers and never scrolls horizontally.
 //
 // AGENT-CONTRACT: the fader is driven by POSITION and converted through the
 // model's gain law, never by mapping dB linearly onto the slot. The handle
 // readout reads the same conversion, so the number and the slot cannot
 // disagree.
+//
+// AGENT-CONTRACT: the four band heights below are shared VERBATIM with
+// AudioConsoleBus.qml, and a band that does not apply to a card keeps its slot
+// rather than collapsing. Cards are read across a row like a real desk, so
+// every meter, fader and pad must sit at the same height as its neighbour's.
+// Before this rule, a virtual strip hid its device picker and floated its
+// fader above every hardware strip in the same row, and buses put their picker
+// at the bottom while strips put it at the top.
+// qindaqt.settings-audio-console-alignment fails if they drift apart.
 Rectangle {
     id: root
 
@@ -29,6 +38,11 @@ Rectangle {
     // the card keeps the rack open.
     property bool rackVisible: false
     signal rackToggled()
+
+    readonly property int headerHeight: 18
+    readonly property int assignmentHeight: 24
+    readonly property int deskHeight: 150
+    readonly property int actionHeight: 18
 
     width: 120
     implicitHeight: stripColumn.implicitHeight + Tokens.space["2"] * 2
@@ -61,8 +75,10 @@ Rectangle {
         anchors.margins: Tokens.space["2"]
         spacing: Tokens.space["1"]
 
+        // Band 1 — name.
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: root.headerHeight
             spacing: Tokens.space["1"]
 
             Label {
@@ -79,37 +95,42 @@ Rectangle {
                     ? text : qsTr("%1, no device connected").arg(text)
             }
 
-            // The rack (ADR-0179) folds away at desk level: four blocks of
-            // knobs only matter while the user is shaping this input, and an
-            // always-open rack would double every card's height.
-            AudioConsolePad {
-                objectName: "consoleRackToggle_" + root.strip.id
-                text: qsTr("Rack")
-                checkable: true
-                checked: root.rackVisible
-                available: root.enabledControls
-                onClicked: root.rackToggled()
-                Accessible.name: qsTr("Processing rack for %1").arg(root.strip.label)
+            // AGENT-NOTE: no kind caption here, deliberately. A 120 px card
+            // cannot spend width on a word the card already says twice — the
+            // stripe along the top edge is the kind colour, and a virtual
+            // strip has nothing in its assignment band. The bus card keeps its
+            // caption because "physical" and "virtual" buses differ in what
+            // they DO, not just where their audio comes from. The band
+            // geometry is what has to match, not the text in it.
+        }
+
+        // Band 2 — assignment. Which microphone this strip follows (ADR-0178).
+        // "Automatic" lets the service choose; picking a device pins it, and a
+        // pinned device that is unplugged keeps the strip unbound rather than
+        // handing it another one. A virtual strip has nothing to assign, so
+        // the slot is emptied rather than removed.
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.assignmentHeight
+
+            AudioConsoleDevicePicker {
+                objectName: "consoleStripSource_" + root.strip.id
+                anchors.fill: parent
+                opacity: root.strip.virtual ? 0.0 : 1.0
+                devices: root.model.inputDevices ?? []
+                boundSerial: root.strip.sourceSerial ?? 0
+                pinned: root.strip.pinned ?? false
+                enabled: root.enabledControls && !root.strip.virtual
+                Accessible.ignored: root.strip.virtual
+                accessibleName: qsTr("Input for %1").arg(root.strip.label)
+                onPicked: serial => root.model.setStripSource(root.strip.id, serial)
             }
         }
 
-        // Which microphone this strip follows (ADR-0178). "Automatic" lets the
-        // service choose; picking a device pins it, and a pinned device that is
-        // unplugged keeps the strip unbound rather than handing it another one.
-        AudioConsoleDevicePicker {
-            objectName: "consoleStripSource_" + root.strip.id
-            Layout.fillWidth: true
-            visible: !root.strip.virtual
-            devices: root.model.inputDevices ?? []
-            boundSerial: root.strip.sourceSerial ?? 0
-            pinned: root.strip.pinned ?? false
-            enabled: root.enabledControls
-            accessibleName: qsTr("Input for %1").arg(root.strip.label)
-            onPicked: serial => root.model.setStripSource(root.strip.id, serial)
-        }
-
+        // Band 3 — the desk.
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: root.deskHeight
             spacing: Tokens.space["1"]
 
             // Meter. Read from the live level channel, not from the strip row:
@@ -136,6 +157,7 @@ Rectangle {
             // the other strips' columns it is the routing matrix.
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.fillHeight: true
                 spacing: 1
 
                 Repeater {
@@ -171,6 +193,8 @@ Rectangle {
                             .arg(root.strip.label).arg(modelData.label)
                     }
                 }
+
+                Item { Layout.fillWidth: true; Layout.fillHeight: true }
 
                 AudioConsolePad {
                     Layout.fillWidth: true
@@ -209,6 +233,27 @@ Rectangle {
                     onToggled: root.model.setStripMuted(root.strip.id, checked)
                     Accessible.name: qsTr("Mute %1").arg(root.strip.label)
                 }
+            }
+        }
+
+        // Band 4 — actions. The rack (ADR-0179) folds away at desk level: four
+        // blocks of knobs only matter while the user is shaping this input,
+        // and an always-open rack would double every card's height.
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.actionHeight
+            spacing: Tokens.space["1"]
+
+            AudioConsolePad {
+                objectName: "consoleRackToggle_" + root.strip.id
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                text: qsTr("Rack")
+                checkable: true
+                checked: root.rackVisible
+                available: root.enabledControls
+                onClicked: root.rackToggled()
+                Accessible.name: qsTr("Processing rack for %1").arg(root.strip.label)
             }
         }
     }

@@ -60,4 +60,20 @@ ComboBox {
     // a third of the card. The popup still opens at full size — only the
     // closed face is compact.
     implicitHeight: 24
+
+    // AGENT-GUARD: the shared ComboBox renders its closed face with an
+    // editable text item, and such an item scrolls a string wider than its box
+    // to keep the cursor end visible — so a long device name lost its
+    // FIRST characters here and read as "k Microphone" instead of
+    // "Desk Microphone". This picker is never editable, so it takes an eliding
+    // Text instead, which drops characters from the end where the eye expects
+    // it. The shared control has the same defect for every non-editable
+    // consumer; fixing it there is outside this lane.
+    contentItem: Text {
+        text: picker.displayText
+        color: picker.enabled ? Tokens.fg.default : Tokens.fg.disabled
+        font: picker.font
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
+    }
 }

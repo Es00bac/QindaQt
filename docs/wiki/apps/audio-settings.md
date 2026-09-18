@@ -136,6 +136,40 @@ row's own dispatch triggers, cannot pull the handle out from under the
 pointer; keyboard steps (`pressed` is already `false`) resume the
 authoritative binding immediately after each one, same as before.
 
+## The console grid
+
+Every console card — input strip and output bus alike — is 120 px wide and is
+built from the same four bands, in the same order, at the same heights:
+
+| Band | Height | Strip | Bus |
+| --- | --- | --- | --- |
+| Name | 18 px | label, and whether the strip is hardware or virtual | label, and whether the bus is physical or virtual |
+| Assignment | 24 px | the capture device the strip follows | the output device the bus drives |
+| Desk | 150 px | meter, fader, and the routing/mono/solo/mute pads | meter, fader, and the mono/mute pads |
+| Actions | 18 px | `Rack` | `Record`, `Rack` |
+
+**A band that does not apply to a card keeps its slot rather than collapsing.**
+A virtual strip has nothing to assign and a virtual bus has no rack, so those
+controls are emptied in place. This is the rule the whole grid rests on: before
+it, a virtual strip hid the device picker a hardware strip carried and lifted
+its entire desk band above its neighbours, and buses put their picker at the
+bottom while strips put it at the top, so no two cards in a row showed their
+faders over the same pixels. A console is read across, and a ragged grid is a
+misread level. `qindaqt.settings-audio-page` fails if the two files drift
+apart.
+
+Cards flow left to right and wrap onto as many rows as the window is wide;
+there is deliberately no horizontal scroller anywhere in this surface.
+
+One presentation note that is a bug fix rather than taste: the shared
+`QindaQt.Controls` `ComboBox` draws its closed face with a read-only
+`TextField`, and a `TextField` whose text is wider than its box scrolls to keep
+the end visible — so a long device name lost its **first** characters and read
+as "k Microphone" instead of "Desk Microphone". Every non-editable picker in
+this route overrides that content item with an eliding `Text`, which drops
+characters from the end where the eye expects it. The shared control has the
+same defect for every non-editable consumer.
+
 ## Verification and stopping point
 
 Focused selection:
