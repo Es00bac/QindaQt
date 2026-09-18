@@ -33,6 +33,8 @@
 #include "tasklistappletcomposition.h"
 #include "taskorderpersistence.h"
 #include "panelquickconfig.h"
+#include "livecustomizationcontroller.h"
+#include "livecustomizationshortcut.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/services/notification_presentation/presentation_token_channel.h"
@@ -266,6 +268,7 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
 void ShellRuntimeApplication::adoptLayoutProfile(
     const QString &preferredProfileId)
 {
+    ensureUserProfileStoreInCatalog();
     QString diagnostic;
     const auto outcome = RuntimeLayoutAdoption::reloadAndSelect(
         m_profiles, m_profileCatalogDirectories, preferredProfileId,
@@ -303,6 +306,9 @@ void ShellRuntimeApplication::adoptLayoutProfile(
     }
     if (m_desktopSurface) {
         m_desktopSurface->adoptProfile(profile, m_applets, m_appletPolicy);
+    }
+    if (m_liveCustomization) {
+        m_liveCustomization->adoptProfile(profile);
     }
     followGlobalMenuLayout(profile);
     qInfo().noquote() << "QindaQt shell adopted layout profile" << profile.id;
@@ -554,6 +560,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                                                             m_settingsRouteLauncher.get());
     m_panelQuickConfig->start();
     m_windowFactory->setPanelQuickConfig(m_panelQuickConfig.get());
+    initializeLiveCustomization(profile);
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -621,10 +628,17 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
     connect(&m_application, &QGuiApplication::screenAdded, this, [this](QScreen *screen) {
         attachOutputSignals(screen);
+        if (m_liveCustomization) {
+            m_liveCustomization->outputGenerationChanged();
+        }
         scheduleOutputReconcile();
     });
-    connect(&m_application, &QGuiApplication::screenRemoved, this,
-            [this](QScreen *) { scheduleOutputReconcile(); });
+    connect(&m_application, &QGuiApplication::screenRemoved, this, [this](QScreen *) {
+        if (m_liveCustomization) {
+            m_liveCustomization->outputGenerationChanged();
+        }
+        scheduleOutputReconcile();
+    });
     connect(&m_application, &QGuiApplication::primaryScreenChanged, this,
             [this](QScreen *) { scheduleOutputReconcile(); });
     if (!startDevelopmentEvidence(options, error)) {
@@ -649,6 +663,8 @@ void ShellRuntimeApplication::resetRuntime()
     m_shellDevelopmentEvidence.reset();
     m_notificationWindows.reset();
     m_panelQuickConfig.reset();
+    m_liveCustomizationShortcut.reset();
+    m_liveCustomization.reset();
     m_settingsRouteLauncher.reset();
     m_quietingSettingsBridge.reset();
     m_outputAuthority.reset();
@@ -687,6 +703,11 @@ void ShellRuntimeApplication::resetRuntime()
     }
     m_quietingSettingsClient.reset();
     m_quietingSettingsTransport.reset();
+    if (m_customizationSettingsClient) {
+        m_customizationSettingsClient->stop();
+    }
+    m_customizationSettingsClient.reset();
+    m_customizationSettingsTransport.reset();
     m_settingsClient.reset();
     m_settingsTransport.reset();
     m_notificationPresentation.reset();

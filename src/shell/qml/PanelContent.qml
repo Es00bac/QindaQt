@@ -12,6 +12,14 @@ Item {
     // PanelQuickConfig facade (optional): backs the right-click panel menu
     // and the persisted per-panel quick settings in panels.configuration.
     property var panelQuickConfig: null
+    // LiveCustomizationController facade (optional): the Meta+right-click
+    // customization menus, the edit mode handles and the Done/Undo bar.
+    property var liveCustomization: null
+    // The output this surface is mapped on ("panelId@outputId" surfaces);
+    // edit-mode drops onto other panels resolve through it.
+    property string outputId: ""
+    readonly property bool liveCustomizationAvailable: liveHost.available
+    readonly property bool editMode: liveHost.editMode
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
@@ -153,9 +161,43 @@ Item {
             objectName: "panelConfigArea"
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
-            enabled: root.panelQuickConfig !== null
-            onClicked: panelConfigMenu.popup()
+            enabled: root.panelQuickConfig !== null || root.liveCustomizationAvailable
+            // The customization chord (Meta+right by default, one Settings1
+            // key) opens the live customization menu; a plain right click
+            // keeps the quick-config menu.
+            // AGENT-GUARD: the customization menu opens at an explicit point
+            // along the panel's far edge, never at the pointer: a popup
+            // window that starts under the pointer pre-hovers its first entry
+            // and shifts every keyboard position by one.
+            onClicked: (mouse) => {
+                if (root.chordHeld(mouse.modifiers)) {
+                    liveHost.openPanelMenu(mouse.x, mouse.y)
+                } else if (root.panelQuickConfig !== null) {
+                    panelConfigMenu.popup()
+                }
+            }
         }
+    }
+
+    // Live customization (chord, menus, edit-mode bar, drop targets) lives in
+    // its own component so this surface keeps its shape budget.
+    PanelLiveCustomization {
+        id: liveHost
+        objectName: "panelLiveCustomization"
+        panelContent: root
+        controller: root.liveCustomization
+        outputId: root.outputId
+        startZone: startZone
+        centerZone: centerZone
+        endZone: endZone
+    }
+
+    function chordHeld(modifiers) {
+        return liveHost.chordHeld(modifiers)
+    }
+
+    function dropTargetAt(x, y) {
+        return liveHost.dropTargetAt(x, y)
     }
 
     // AGENT-NOTE: Luna notification-area well (ADR-0124, "Luna taskbar
@@ -182,63 +224,16 @@ Item {
         Rectangle { objectName: "lunaTrayWellHighlight"; x: 1; width: 1; height: parent.height; color: Qt.lighter(lunaTrayWell.brightBlue, 1.35) }
     }
 
-    // Panel configuration menu (QQC2 style palette; Controls ships no menu
-    // primitive yet — task-list context menu precedent). Every quick setting
-    // persists through the PanelQuickConfig facade into Settings1.
-    T.Menu {
+    // Plain right-click quick configuration (PanelQuickConfig facade); the
+    // menu body lives in PanelQuickConfigMenu.qml for source shape.
+    PanelQuickConfigMenu {
         id: panelConfigMenu
-        objectName: "panelConfigMenu"
-        popupType: T.Popup.Window
-
-        T.MenuItem {
-            objectName: "panelConfigCustomize"
-            text: qsTr("Customize Panel…")
-            enabled: root.panelQuickConfig !== null
-            onTriggered: root.panelQuickConfig.openCustomize()
-        }
-        T.MenuSeparator {}
-        T.MenuItem {
-            objectName: "panelConfigTransparency"
-            text: qsTr("Transparency")
-            checkable: true
-            checked: root.panelTransparency
-            enabled: Tokens.ready && !Boolean(Tokens.accessibility.reducedTransparency)
-                     && !Boolean(Tokens.accessibility.highContrast)
-            onTriggered: root.applyPanelSetting("transparency", checked)
-        }
-        T.MenuItem {
-            objectName: "panelConfigDockZoom"
-            visible: root.dockMode
-            text: qsTr("Magnification")
-            checkable: true
-            checked: root.dockZoom
-            enabled: Tokens.ready && !Boolean(Tokens.accessibility.reducedMotion)
-            onTriggered: root.applyPanelSetting("dockZoom", checked)
-        }
-        T.Menu {
-            objectName: "panelConfigTileSize"
-            title: qsTr("Tile size (logical px)")
-            visible: root.dockMode
-
-            T.Slider {
-                objectName: "panelConfigTileSizeSlider"
-                width: 220; from: 32; to: 64; stepSize: 1
-                snapMode: T.Slider.SnapAlways
-                value: root.dockTileSize
-                Accessible.name: qsTr("Dock tile size in logical pixels")
-                onMoved: root.applyPanelSetting("dockTileSize", Math.round(value))
-            }
-
-            T.SpinBox {
-                objectName: "panelConfigTileSizeInput"
-                width: 220; from: 32; to: 64; stepSize: 1
-                editable: true
-                value: root.dockTileSize
-                Accessible.name: qsTr("Dock tile size in logical pixels")
-                Accessible.description: qsTr("From 32 to 64 logical pixels")
-                onValueModified: root.applyPanelSetting("dockTileSize", value)
-            }
-        }
+        panelQuickConfig: root.panelQuickConfig
+        dockMode: root.dockMode
+        panelTransparency: root.panelTransparency
+        dockZoom: root.dockZoom
+        dockTileSize: root.dockTileSize
+        onApplySetting: (key, value) => root.applyPanelSetting(key, value)
     }
 
     // AGENT-GUARD: zones receive disjoint viewport budgets. Natural content
@@ -282,6 +277,8 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        liveCustomization: root.liveCustomization
+        editorHost: root
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
@@ -314,6 +311,8 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        liveCustomization: root.liveCustomization
+        editorHost: root
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
@@ -346,6 +345,8 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        liveCustomization: root.liveCustomization
+        editorHost: root
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess

@@ -278,3 +278,96 @@ overflowing zone still shows exactly one, non-interactive, bar on the
 overflowing axis only. `qindaqt.desktop-controls-offscreen-workspaces` clicks
 the real system-status summary at its lower edge and trailing corner while
 hosted at the 26px row a stock panel hands it.
+
+## In-place customization (Meta + right-click)
+
+The desktop is customized where it is. A modifier chord on a panel's own
+material, on an applet chip, or on the desktop opens a context menu whose
+every entry is one editing gesture followed by one Apply of the user profile,
+and an edit mode adds drag handles for longer sessions. The Settings
+Customize route stays for previews and for the full property panes; both
+surfaces host the same editor domain, so the profile a menu entry persists is
+byte-identical to what the route persists for the same intent (see
+[Customization editor domain](customization-editor.md#live-host-in-the-shell)
+and [ADR-0213](../adr/0213-host-the-customization-editor-live-in-the-shell.md)).
+
+**Chord.** The default chord is Meta + right button; the one Settings1 key
+`shell.customization.chord` (`meta-right` or `meta-alt-right`) selects the
+alternative. The shell reads it through a purpose-scoped client so an absent
+key can never poison the shell's main preference scope. A plain right click
+keeps the quick-config menu documented above. Two compositor facts make the
+chord deliverable to a focus-less layer-shell panel: KWin sends keyboard
+modifiers to the pointer-focused surface, and its `[MouseBindings]`
+`CommandAll3` window action (default `Resize`) runs on layer-shell windows
+too and would consume the press, so `qindaqt-wm` seeds
+`CommandAll3=Nothing` in `kwinrc` (seed-missing only; a user's own binding
+wins). On the panel the chord is a modifier branch of the existing right-click
+`MouseArea`; on a chip it is a `TapHandler` in `AppletEditHandle` that takes
+the exclusive grab on press so the applet beneath never also opens its own
+menu, while non-chord presses fall through untouched.
+
+**Menus.** Entry order is a keyboard contract (Down moves one entry, Right
+opens a submenu, Enter activates); rows are never hidden or disabled because
+QQC2 `Menu` evicts hidden rows and skips disabled ones, which would shift
+every later position. The menus open at an explicit point on the panel's far
+edge rather than at the pointer: a popup window that maps under the pointer
+pre-hovers its first entry. Each menu owns its content view's key handling
+(`pinKeyboard`) because the Basic style's view otherwise steps keys itself
+whenever its content is a fraction taller than the popup.
+
+| Surface | Entries in order |
+| --- | --- |
+| Panel (`PanelCustomizeMenu`) | Add applet ▸ (palette admitted by the panel's orientation), Panel ▸ (Edge, Alignment, Auto-hide, Size, Length), Add panel ▸ (edge), Remove panel, Enter/Exit edit mode, Undo, Redo, Open Customize… |
+| Applet (`AppletCustomizeMenu`) | Move to start, Move to center, Move to end, Move left, Move right, Move to panel ▸, Remove "‹applet›", "‹applet›" settings ▸ (typed rows from `settingsSchema`: switches, closed choices, bounded integers) |
+| Desktop (`DesktopCustomizeMenu`) | Add panel ▸, Change wallpaper…, Desktop icons ▸ (the desktop-icons applet's typed rows), Enter/Exit edit mode, Undo, Open Customize… |
+
+"Move to ‹zone›" appends after the zone's last applet; when the applet already
+sits there in the flat list only its zone tag changes (a
+`ConfigureAppletSettings` intent), otherwise it is a `MoveApplet` with the
+computed anchor. "Move left/right" swaps with the zone neighbour; at the zone
+edge it is a harmless no-op. Add applet inserts with the first free
+`<plugin>-instance-N` id; Add panel creates `panel-N` (fill, 32px, above) on
+the chosen edge through the engine's `AddPanel` command.
+
+**Adoption.** Every accepted entry writes the user store
+(`<data>/qindaqt/profiles/<id>.json`, the same file the Settings route
+writes) and the shell adopts it immediately through its existing
+`adoptLayoutProfile` path, which rebuilds the panel maps in place. The store
+watcher would also fire, but not for the very first write on an account whose
+store directory did not exist at shell start, so the runtime now also lets
+the writable store join the remembered catalog directories as soon as it
+exists (the shadowing rule stays: user copy wins on id collision). An
+adoption of the profile the live session itself just committed keeps the
+session, so Undo walks the history of the whole edit run; a foreign edit (the
+Settings route) rebuilds it. Explicit `--profile` still locks adoption for
+the process, and an explicit `--profile-dir` excludes the user store, exactly
+as before.
+
+**Edit mode.** Meta+Shift+E (a KGlobalAccel action,
+`qindaqt_toggle_panel_edit_mode`) or the menu entry toggles it. Every chip
+shows a handle (`AppletEditHandle`); dragging one runs the editor's
+arm/begin/hover/drop protocol, resolving the target under the pointer through
+`PanelLiveCustomization.dropTargetAt`: a zone of this panel with the chip the
+drop lands before, or another panel by the solved surface geometry with its
+zone chosen by thirds along its main axis. A release over a rejected target
+cancels. A Done/Undo bar (`PanelEditBar`) sits at every panel's trailing end
+while edit mode is on; it overlays the end zone on purpose because layer-shell
+panels take no keyboard focus, so a separate focusable window (and Esc) is
+not available -- Done, Meta+Shift+E or the menu entry leave edit mode, and
+Esc closes the menus.
+
+Evidence: `qindaqt.live-customization-offscreen` and
+`qindaqt.live-customization-edit-mode-offscreen` (chord branch, entry order,
+every entry's controller call, handles, bar, drop targets, a handle drag),
+`qindaqt.desktop-surface-customize-menu`,
+`qindaqt.shell-live-customization-controller` (every action against the real
+manifest catalog and a temporary store), and the nested rows
+`shell.live-customization.{menu,editmode}.{single-1080p,single-1440p-125}`
+(`tests/session/live_customization`), which start the production shell on a
+proof profile inside a private virtual KWin, drive the chord and the menus
+through the development seat with keys only, assert the persisted profile
+after add, move, remove, undo, a desktop add-panel and undo, and a
+cross-panel edit-mode drag, capture the open menus and edit mode from the
+compositor's framebuffer, and replay the same intents through the Settings
+route's own `RepositoryCustomizeEditorHost` (`qindaqt-customize-parity-tool`)
+to compare the two profiles byte for byte.

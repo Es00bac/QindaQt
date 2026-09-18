@@ -271,6 +271,11 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_powerdevil_inhibition_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/live_customization/run_live_customization.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/live_customization/live_customization_driver.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/live_customization/live_customization_session.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/live_customization/live_customization_flows.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_driver_modes_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
@@ -616,6 +621,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         include("${CMAKE_CURRENT_SOURCE_DIR}/touch_osk/TouchOskTests.cmake")
         include("${CMAKE_CURRENT_SOURCE_DIR}/touch_edges/TouchEdgesTests.cmake")
         include("${CMAKE_CURRENT_SOURCE_DIR}/window_management/DockingChordNestedTests.cmake")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/live_customization/LiveCustomizationTests.cmake")
     endif()
 endif()
 

@@ -472,6 +472,13 @@
       "default": false
     },
     {
+      "key": "shell.customization.chord",
+      "domain": "shell",
+      "type": "string",
+      "default": "meta-right",
+      "constraints": { "allowedValues": ["meta-right", "meta-alt-right"] }
+    },
+    {
       "key": "power.idleDisplayOffMinutes",
       "domain": "power",
       "type": "integer",

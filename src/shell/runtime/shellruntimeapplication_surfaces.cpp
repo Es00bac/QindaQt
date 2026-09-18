@@ -7,6 +7,7 @@
 
 #include "desktopcontrolscomposition.h"
 #include "launcherappletcomposition.h"
+#include "livecustomizationcontroller.h"
 #include "launcher_applet_controller.h"
 #include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
 #include "qindaqt/shell/desktop_surface/desktop_surface_controller.h"
@@ -87,6 +88,7 @@ void ShellRuntimeApplication::initializeDesktopSurface(
             DesktopSurface::DesktopSurfaceController::BorrowedFacades{
                 m_desktopControls->access(), m_launcherApplet->access()});
     m_desktopSurface->adoptProfile(profile, m_applets, m_appletPolicy);
+    m_desktopSurface->setCustomizationAccess(m_liveCustomization.get());
     m_desktopSurface->start();
 }
 

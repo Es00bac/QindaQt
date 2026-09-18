@@ -150,6 +150,17 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     }
     kwin.endGroup();
 
+    kwin.beginGroup(QStringLiteral("MouseBindings"));
+    // AGENT-CONTRACT (live customization, O9): KWin's default CommandAll3 is
+    // "Resize", and its window-action filter runs that command for every
+    // client window including layer-shell panels, consuming Meta+right-click
+    // before the shell sees it. "Nothing" replays the press to the surface,
+    // and KWin already sends keyboard modifiers to the pointer-focused
+    // surface, so the shell's customization chord arrives with Meta set.
+    // Seed-missing only: a user's own MouseBindings choice always wins.
+    seedMissing(kwin, QStringLiteral("CommandAll3"), QStringLiteral("Nothing"));
+    kwin.endGroup();
+
     kwin.beginGroup(QStringLiteral("TabBox"));
     // KWin retains switch/focus authority and supplies the native model. The
     // installed package changes presentation only and consumes the

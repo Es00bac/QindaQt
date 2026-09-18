@@ -141,6 +141,33 @@ IntentValidation validateIntent(const CustomizationIntent &intent, const DropTar
         }
         return {};
     }
+    case IntentKind::AddPanel: {
+        const auto &add = std::get<AddPanelIntent>(intent);
+        if (add.panel.id.trimmed().isEmpty()) {
+            return failure(IntentErrorCode::EmptyPanelId,
+                           QStringLiteral("added panel must have an id"));
+        }
+        if (add.beforePanelId.has_value() && *add.beforePanelId == add.panel.id) {
+            return failure(IntentErrorCode::AnchorSelfReference,
+                           QStringLiteral("a panel cannot be inserted before itself"));
+        }
+        // Structural bounds only; the engine owns schema and output policy.
+        if (add.panel.rows < 1 || add.panel.thickness < 1
+            || !std::isfinite(add.panel.length) || add.panel.length <= 0.0
+            || add.panel.length > 1.0) {
+            return failure(IntentErrorCode::InvalidConfiguration,
+                           QStringLiteral("added panel geometry is out of range"));
+        }
+        return {};
+    }
+    case IntentKind::RemovePanel: {
+        const auto &remove = std::get<RemovePanelIntent>(intent);
+        if (remove.panelId.trimmed().isEmpty()) {
+            return failure(IntentErrorCode::EmptyPanelId,
+                           QStringLiteral("removed panel must not be blank"));
+        }
+        return {};
+    }
     }
     return {};
 }

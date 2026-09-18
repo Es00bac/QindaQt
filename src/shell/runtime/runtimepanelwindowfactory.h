@@ -106,6 +106,8 @@ public:
     // C++ and QML halves of this wiring may land in either order.
     void setDesktopControlsAccess(QObject *access) noexcept;
     void setPanelQuickConfig(QObject *access) noexcept;
+    // Live customization controller (Meta+right-click menus, edit mode).
+    void setLiveCustomization(QObject *access) noexcept;
 
 private:
     [[nodiscard]] bool ensureComponent(QString *error);
@@ -129,6 +131,7 @@ private:
     ObsApplet::ObsAppletController *m_obsAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
     QObject *m_panelQuickConfig = nullptr;
+    QObject *m_liveCustomization = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 
