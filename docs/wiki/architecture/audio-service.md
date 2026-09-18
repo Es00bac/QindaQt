@@ -138,6 +138,28 @@ Diagnostics are short, control-character-sanitized, and contain no raw
 properties, paths, process environments, stream data, or secrets. Stable
 reason codes are the programmatic error surface.
 
+The unit sets `TimeoutStartSec=20` (systemd's `Type=dbus` default is 90s).
+On a session running its own private bus (`SessionBusBootstrap`,
+[ADR-0170](../adr/0170-survive-a-private-session-bus-for-dbus-units.md)),
+the systemd user manager never observes this unit acquiring `BusName=`, so
+every start on such a session waits out the full timeout before D-Bus
+activation replaces it with an unmanaged process; 20s bounds that noisy wait
+without removing the underlying `Type=dbus`/private-bus mismatch, which is
+ADR-0170's decision, not this unit's alone. `main.cpp` maps
+`ServiceStartStatus::NameAlreadyOwned` (a live sibling process already owns
+`org.qindaqt.Audio1`) to exit 0 with a journal line, distinct from every
+other non-`Started` status, which stays a hard failure (exit 1): a live
+sibling is not this process's failure, and letting `Restart=on-failure`
+retry a start that can only fail the same way again would loop until
+`StartLimitBurst` for no reason. **The same `NameAlreadyOwned`-as-failure
+gap and the missing `TimeoutStartSec` exist today in `qindaqt-power-service`,
+`qindaqt-display-service` (its `main.cpp` is
+`src/services/display_runtime/app/main.cpp`), `qindaqt-bluetooth-service`,
+`qindaqt-network-service`, and `qindaqt-clipboard-host`** — confirmed by
+reading each `main.cpp` and `.service.in`, not fixed here: those modules
+have no lease in this wave's audio lane, and fixing five services' start
+paths across four other modules is a separate, appropriately-scoped slice.
+
 ## Consumer boundary
 
 This slice exports typed C++ protocol and client libraries only. The

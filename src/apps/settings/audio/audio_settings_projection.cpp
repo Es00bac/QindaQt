@@ -124,6 +124,9 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
            && snapshotAdmitsOperation(m_client, Capability::SetChannelVolumes)},
       {QStringLiteral("virtualDevice"), device.virtualDevice},
       {QStringLiteral("stateText"), state.join(QStringLiteral(" · "))},
+      // Presentation-only: a subtle "applying" state, never a gate. Rows
+      // stay enabled while pending (ADR-0191 in the shell audio applet).
+      {QStringLiteral("pending"), serialPending(device.handle.serial)},
   };
 }
 
@@ -153,6 +156,7 @@ QVariantMap AudioSettingsModel::projectStreamRow(
       {QStringLiteral("muteAvailable"),
        stream.canSetMute
            && snapshotAdmitsOperation(m_client, Capability::SetMute)},
+      {QStringLiteral("pending"), serialPending(stream.handle.serial)},
   };
 }
 

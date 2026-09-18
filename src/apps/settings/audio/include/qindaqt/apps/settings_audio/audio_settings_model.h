@@ -4,6 +4,7 @@
 
 #include <qindaqt/services/audio_client/audio_client.h>
 
+#include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QVariantList>
@@ -189,7 +190,6 @@ private:
 
   struct PendingIntent {
     quint64 requestId = 0;
-    quint64 serial = 0;
     Intent intent = Intent::SetDefault;
   };
 
@@ -198,6 +198,19 @@ private:
   void beginIntentMessage(const Intent intent);
   void rejectAction(const QString &reason);
   [[nodiscard]] QString actionFailureText(const QString &reason) const;
+  // AGENT-GUARD (mirrors ADR-0191 in the shell audio applet): pending state
+  // is keyed per target serial, never one shared optional. A shared
+  // "one pending intent" field made every row's volumeAvailable/muteAvailable
+  // (snapshotAdmitsOperation) go false the instant any single control
+  // dispatched, disabling the whole page for the duration of one request --
+  // the applet's identical bug, here at the model layer instead of the
+  // Repeater layer. `serial == 0` (CreateVirtual has no target device yet)
+  // is tracked under the reserved key 0; only one create can be in flight at
+  // a time, which matches there being only one "create" control on the page.
+  [[nodiscard]] bool serialPending(quint64 serial) const {
+    return m_pendingBySerial.contains(serial);
+  }
+  void trackPending(quint64 requestId, quint64 serial, const Intent intent);
   [[nodiscard]] bool dispatchDeviceIntent(quint64 serial, const Intent intent,
                                           double level, bool muted);
   // One admission-and-dispatch path for every console control, so an enabled
@@ -209,7 +222,6 @@ private:
                                             bool flag);
   [[nodiscard]] bool dispatchStreamIntent(quint64 serial, const Intent intent,
                                           double level, bool muted);
-  void trackPending(quint64 requestId, quint64 serial, const Intent intent);
 
   // AGENT-GUARD: One shared admission predicate backs both displayed row
   // availability (audio_settings_projection.cpp) and dispatch refusal
@@ -226,7 +238,8 @@ private:
   Audio::AudioClient &m_client;
   QString m_localError;
   QString m_operationStatusText;
-  std::optional<PendingIntent> m_pending;
+  QHash<quint64, PendingIntent> m_pendingBySerial;
+  QHash<quint64, quint64> m_serialByRequestId;
 };
 
 } // namespace QindaQt::Apps::SettingsAudio
