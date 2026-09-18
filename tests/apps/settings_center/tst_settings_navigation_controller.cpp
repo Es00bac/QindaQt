@@ -147,17 +147,25 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
-  // ADR-0200: selectNext from 12 ("streaming") -> 13 ("datetime"). Both
-  // Streaming and Date & time are appended last, in merge order, so nothing
-  // before them moved.
+  // ADR-0200: selectNext from 12 ("streaming") -> 13 ("datetime"). Streaming,
+  // Date & time and Windows & workspaces are each appended last, in merge
+  // order, so nothing before them moved.
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
-  // selectNext from 13 ("datetime") wraps to 0 ("notifications")
+  // selectNext from 13 ("datetime") -> 14 ("windows")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
+
+  // selectNext from 14 ("windows") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 13 ("datetime")
+  // selectPrevious from 0 wraps to 14 ("windows")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
+
+  // selectPrevious from 14 -> 13 ("datetime")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
@@ -258,12 +266,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(13));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
+  QVERIFY(controller.selectIndex(14));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(14));
+  QVERIFY(!controller.selectIndex(15));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -321,7 +332,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 14);
+  QCOMPARE(list.size(), 15);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -370,6 +381,18 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap inputMap = list.at(11).toMap();
   QCOMPARE(inputMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("input"));
+
+  const QVariantMap streamingMap = list.at(12).toMap();
+  QCOMPARE(streamingMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("streaming"));
+
+  const QVariantMap dateTimeMap = list.at(13).toMap();
+  QCOMPARE(dateTimeMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("datetime"));
+
+  const QVariantMap windowsMap = list.at(14).toMap();
+  QCOMPARE(windowsMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("windows"));
 
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
@@ -448,7 +471,13 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt13.value(QStringLiteral("component")).toString(),
            QStringLiteral("datetime"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(14);
+  const QVariantMap itemAt14 = controller.routeAt(14);
+  QCOMPARE(itemAt14.value(QStringLiteral("id")).toString(),
+           QStringLiteral("windows"));
+  QCOMPARE(itemAt14.value(QStringLiteral("component")).toString(),
+           QStringLiteral("windows"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(15);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

@@ -214,3 +214,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0207: a decoration theme is its own document](0207-decoration-themes-are-their-own-documents.md)
 - [ADR-0208: console buses are OBS sources](0208-console-buses-are-obs-sources.md)
 - [ADR-0209: `windowManagement.*` is bridged into kwinrc by the session, live](0209-bridge-window-management-settings-into-kwinrc.md)
+- [ADR-0210: add the Windows & workspaces Settings route over the live keys only](0210-windows-and-workspaces-settings-route.md)

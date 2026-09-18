@@ -20,6 +20,7 @@ import QindaQt.SettingsApp.Input
 import QindaQt.SettingsApp.InputBackend
 import QindaQt.SettingsApp.Streaming
 import QindaQt.SettingsApp.StreamingBackend
+import QindaQt.SettingsApp.Windows
 
 T.ApplicationWindow {
     id: root
@@ -40,6 +41,7 @@ T.ApplicationWindow {
     property var clipboardSettings: ClipboardRouteComposition.model
     property var colorSettings: ColorRouteComposition.model
     property var accessibilitySettings: null
+    property var windowsSettings: WindowsRouteComposition.model
     property bool applicationClosePending: false
     property bool bluetoothClosePending: false
 
@@ -194,6 +196,7 @@ T.ApplicationWindow {
             inputComponent: inputRouteComponent
             streamingComponent: streamingRouteComponent
             dateTimeComponent: addedRouteComponents.dateTime
+            windowsComponent: windowsRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -247,6 +250,7 @@ T.ApplicationWindow {
             inputComponent: inputRouteComponent
             streamingComponent: streamingRouteComponent
             dateTimeComponent: addedRouteComponents.dateTime
+            windowsComponent: windowsRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -374,19 +378,16 @@ T.ApplicationWindow {
     }
 
     Component {
-        id: unavailableRouteComponent
-        Item {
-            readonly property Item firstFocusTarget: unavailableNotice
-
-            Controls.DegradedNotice {
-                id: unavailableNotice
-                objectName: "settingsUnavailableNotice"
-                anchors.centerIn: parent
-                width: Math.min(parent.width - Tokens.space["6"] * 2, 380)
-                reason: root.navigation.activeRouteUnavailableReason.length > 0
-                    ? root.navigation.activeRouteUnavailableReason
-                    : qsTr("This settings page is unavailable.")
-            }
+        id: windowsRouteComponent
+        WindowsPage {
+            objectName: "windowsPage"
+            windowsSettings: root.windowsSettings
+            onCloseRequested: root.close()
         }
+    }
+
+    Component {
+        id: unavailableRouteComponent
+        SettingsUnavailableRoute { navigation: root.navigation }
     }
 }

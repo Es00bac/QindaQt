@@ -32,6 +32,7 @@ Item {
     property Component inputComponent: null
     property Component streamingComponent: null
     property Component dateTimeComponent: null
+    property Component windowsComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -73,6 +74,7 @@ Item {
               ? streamingLoader
             : navigation.activeRouteComponent === "datetime"
               ? dateTimeLoader
+            : navigation.activeRouteComponent === "windows" ? windowsLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -276,6 +278,8 @@ Item {
                 && host.inputComponent !== null
         sourceComponent: host.inputComponent
     }
+
+    SettingsWindowsRouteLoader { id: windowsLoader; host: host }
 
     Loader {
         id: streamingLoader

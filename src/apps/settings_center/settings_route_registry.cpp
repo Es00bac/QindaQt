@@ -274,6 +274,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   };
   registerBuiltIn(streamingRoute);
   registerDateTimeRoute();
+  registerWindowsRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -294,6 +295,26 @@ void SettingsRouteRegistry::registerDateTimeRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(dateTimeRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerWindowsRoute() {
+  // AGENT-GUARD: Appended last so every existing route index, shortcut, and
+  // traversal order stays stable (ADR-0128); the Windows & workspaces route
+  // continues that rule (ADR-0210).
+  const SettingsRoute windowsRoute{
+      .id = QStringLiteral("windows"),
+      .component = SettingsRouteComponent::Windows,
+      .title = QCoreApplication::translate("SettingsCenter", "Windows & workspaces"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Focus, docking chord, snapping, and window groups"),
+      .iconName = QStringLiteral("preferences-system-windows"),
+      .category = QCoreApplication::translate("SettingsCenter", "Personalization"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(windowsRoute);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }

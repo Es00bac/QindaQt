@@ -36,6 +36,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Input:
   case SettingsRouteComponent::Streaming:
   case SettingsRouteComponent::DateTime:
+  case SettingsRouteComponent::Windows:
     return true;
   }
   return false;
@@ -71,6 +72,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("streaming");
   case SettingsRouteComponent::DateTime:
     return QStringLiteral("datetime");
+  case SettingsRouteComponent::Windows:
+    return QStringLiteral("windows");
   }
   return {};
 }
