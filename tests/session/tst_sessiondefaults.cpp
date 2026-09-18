@@ -272,6 +272,9 @@ void SessionDefaultsTest::keepsAnExplicitInputMethod()
     settings.beginGroup(QStringLiteral("Wayland"));
     QCOMPARE(settings.value(QStringLiteral("InputMethod")).toString(),
              QStringLiteral("/usr/share/applications/com.github.maliit.keyboard.desktop"));
+    settings.endGroup();
+}
+
 void SessionDefaultsTest::seedsTranslucencyEffectsWithoutOverridingChoices()
 {
     // Theming v2 (ADR-0206): the blur and background-contrast effects are
