@@ -46,13 +46,19 @@ public:
     // creating a tab in) its own container instead of the one underneath.
     using DraggedPageMembersResolver = std::function<QStringList(
         const QString &containerId, const QString &pageId)>;
+    // The iconified window whose exposed chip lies under position (ADR-0203),
+    // or nothing. A chip is a legal exact-chord drag source: the window is
+    // hidden, so the ordinary input-owner walk could never find it.
+    using IconChipResolver =
+        std::function<std::optional<QString>(const QPointF &position)>;
 
     explicit KWinInteractionTargetResolver(
         const ManagedWindowRegistry &registry,
         const ChromeHitProvider *chrome = nullptr,
         ChromeExposureResolver chromeExposure = {},
         ContainerContentFrameResolver containerContentFrame = {},
-        DraggedPageMembersResolver draggedPageMembers = {});
+        DraggedPageMembersResolver draggedPageMembers = {},
+        IconChipResolver iconChip = {});
 
     [[nodiscard]] HybridInput::HitTarget hitTest(
         const QPointF &position) const override;
@@ -98,6 +104,7 @@ private:
     ChromeExposureResolver m_chromeExposure;
     ContainerContentFrameResolver m_containerContentFrame;
     DraggedPageMembersResolver m_draggedPageMembers;
+    IconChipResolver m_iconChip;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

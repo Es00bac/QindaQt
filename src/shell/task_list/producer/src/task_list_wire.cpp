@@ -133,6 +133,7 @@ TaskListFactsResult TaskListWireDecoder::decodeTaskFacts(
         .containerId = window.containerId,
         .active = representative && window.active,
         .minimized = representative && window.minimized,
+        .iconified = representative && window.iconified,
         .urgent = window.demandsAttention,
     });
   }
