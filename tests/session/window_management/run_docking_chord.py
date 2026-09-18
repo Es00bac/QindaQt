@@ -105,13 +105,19 @@ def main() -> int:
         "SHADE_OUT": str(output), "SHADE_KIND": "gtk-csd", "SHADE_FLOW": "docking-chord",
         "SHADE_PIXEL_WIDTH": str(spec.pixel_width), "SHADE_PIXEL_HEIGHT": str(spec.pixel_height),
         "SHADE_SCALE": f"{spec.scale:.12g}", "PYTHONDONTWRITEBYTECODE": "1"})
+    driver = HERE / "docking_chord_driver.py"
+    if not driver.stat().st_mode & 0o111:
+        # KWin execs the session program; a non-executable driver would idle
+        # the row to its timeout with an empty stdout. Fail fast instead.
+        print(f"session driver is not executable: {driver}", file=sys.stderr)
+        return 1
     command = [
         str(arguments.launcher), "--plugin-root", str(arguments.plugin_root),
         "--kwin", str(capability_free_kwin(arguments.kwin, arguments.output_root)),
         "--virtual", "--width", str(spec.logical_width), "--height", str(spec.logical_height),
         "--scale", f"{spec.scale:.12g}", "--output-count", str(spec.output_count),
         "--test-scenario", str(arguments.scenario), "--no-lockscreen", "--no-global-shortcuts",
-        "--session", str(HERE / "docking_chord_driver.py")]
+        "--session", str(driver)]
     with running_private_session_bus(root, Path(dbus_daemon), environment):
         completed = subprocess.run(command, env=environment, text=True, capture_output=True,
                                    timeout=420, check=False)
