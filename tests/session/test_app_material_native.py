@@ -120,6 +120,27 @@ def interrupted(signum, frame) -> None:
     raise InterruptedError('Native app matrix terminated')
 
 
+# AGENT-GUARD: Unix socket paths are limited to 108 bytes including the
+# terminator. Each row's private bus lives at <scratch>/n-XXXXXXXX/runtime/bus,
+# so a source tree deep enough (a lane worktree under .cache/small-team) pushes
+# that past the limit and dbus-daemon dies with "Socket name too long" before
+# any app is measured. Prefer the source tree's own .cache; fall back to a short
+# per-user directory under XDG_RUNTIME_DIR when the budget is blown.
+MAXIMUM_BUS_SOCKET_PATH = 100
+BUS_SUFFIX_LENGTH = len('/n-XXXXXXXX/runtime/bus')
+
+
+def private_scratch_root(source: Path) -> Path:
+    scratch = source / '.cache'
+    if len(str(scratch)) + BUS_SUFFIX_LENGTH > MAXIMUM_BUS_SOCKET_PATH:
+        base = Path(os.environ.get('XDG_RUNTIME_DIR') or tempfile.gettempdir())
+        scratch = base / f'qindaqt-nested-{os.getuid()}' / 'am'
+    scratch.mkdir(parents=True, exist_ok=True)
+    if len(str(scratch)) + BUS_SUFFIX_LENGTH > MAXIMUM_BUS_SOCKET_PATH:
+        raise RuntimeError(f'private bus socket path under {scratch} exceeds the Unix limit')
+    return scratch
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path, required=True)
@@ -134,8 +155,7 @@ def main() -> int:
     artifacts = build / 'tests/session/app-material-native'
     artifacts.mkdir(parents=True, exist_ok=True)
     (artifacts/'evidence.json').unlink(missing_ok=True)
-    scratch = source / '.cache'
-    scratch.mkdir(exist_ok=True)
+    scratch = private_scratch_root(source)
     evidence = []
     # CLI extents are logical. These rows have exact integral logical sizes.
     for pixel_width, pixel_height, scale in ((1920,1080,1.0), (1920,1200,1.0),
