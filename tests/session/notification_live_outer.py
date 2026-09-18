@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from nested_session_scenario import isolated_environment
+from nested_session_scenario import create_private_session_bus, isolated_environment
 from notification_live_process import run_private_process_group
 from notification_live_stage import stage_installed
 
@@ -70,6 +70,30 @@ def successful_inner_result(
     }
 
 
+def _private_bus_with_staged_activation(arguments: Any, root: Path):
+    """Give the repetition's bus the staged activation entries, minus Settings1.
+
+    AGENT-GUARD: a stock ``dbus-run-session`` loads the host's service
+    directories, so activation inside this "private" session started the
+    installed package's Audio1/Power1/Network1/... binaries instead of the
+    staged ones, and during the settings-outage phase any client's retry (the
+    on-screen keyboard's, since it became the compositor's input method)
+    activated the installed Settings1 and the outage assertion failed. The bus
+    now sees exactly one service directory holding the stage's own entries.
+    Settings1's entry is left out on purpose: this driver starts, stops and
+    restarts that process itself, and an activation entry would race it.
+    """
+    bus = create_private_session_bus(root, Path(arguments.dbus_runner))
+    staged = arguments.install_prefix.resolve() / "share" / "dbus-1" / "services"
+    for entry in sorted(staged.glob("*.service")):
+        if entry.name == "org.qindaqt.Settings1.service":
+            continue
+        (bus.service_directory / entry.name).write_text(
+            entry.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+    return bus
+
+
 def run_outer(arguments: Any, driver_path: Path) -> dict[str, Any]:
     """Stage once, then run each repetition on a fresh bus and XDG tree."""
     arguments.artifacts = stage_installed(arguments)
@@ -80,6 +104,7 @@ def run_outer(arguments: Any, driver_path: Path) -> dict[str, Any]:
         ) as directory:
             root = Path(directory)
             environment = isolated_environment(root)
+            bus = _private_bus_with_staged_activation(arguments, root)
             environment["QINDAQT_NOTIFICATION_LIVE_PRIVATE_BUS"] = "1"
             environment["PATH"] = (
                 str(
@@ -92,6 +117,7 @@ def run_outer(arguments: Any, driver_path: Path) -> dict[str, Any]:
             completed = run_private_process_group(
                 [
                     arguments.dbus_runner,
+                    f"--config-file={bus.configuration}",
                     "--",
                     *_inner_arguments(arguments, root, driver_path),
                 ],
