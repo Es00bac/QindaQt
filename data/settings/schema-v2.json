@@ -338,6 +338,32 @@
       "default": false
     },
     {
+      "key": "services.doNotDisturbSchedule",
+      "domain": "services",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "services.doNotDisturbStartMinutes",
+      "domain": "services",
+      "type": "integer",
+      "default": 1320,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 1439
+      }
+    },
+    {
+      "key": "services.doNotDisturbEndMinutes",
+      "domain": "services",
+      "type": "integer",
+      "default": 420,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 1439
+      }
+    },
+    {
       "key": "services.bluetooth",
       "domain": "services",
       "type": "boolean",

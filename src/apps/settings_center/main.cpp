@@ -24,6 +24,7 @@
 #include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/network_qt_transport/qt_network_transport.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
+#include "notification_schedule_model.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell/icons/icon_runtime.h"
@@ -203,6 +204,31 @@ struct AccessibilityServices {
   }
 };
 
+// AGENT-CONTRACT: Notifications owns one independent Settings1 transport and
+// one client scoped to the four `services.doNotDisturb*` keys. The switch and
+// the quiet-hours schedule (ADR-0201) are two projections of that one client,
+// so a schedule edit and a Do Not Disturb edit share an owner and a token
+// sequence instead of racing two. All four are schema keys with defaults, so
+// widening the scope by three cannot turn a present value into
+// "unavailable". Members are declared transport-first for the same reason
+// AccessibilityServices is: each holds its dependency by reference.
+struct QuietingServices {
+  QindaQt::Services::SettingsClient::QtSettingsTransport transport;
+  QindaQt::Services::SettingsClient::SettingsClient client;
+  QindaQt::Services::SettingsClient::DoNotDisturbController controller;
+  QindaQt::Apps::SettingsNotifications::NotificationScheduleModel schedule;
+
+  explicit QuietingServices(const QDBusConnection &bus)
+      : transport(bus),
+        client(transport, {QStringLiteral("services.doNotDisturb"),
+                           QStringLiteral("services.doNotDisturbSchedule"),
+                           QStringLiteral("services.doNotDisturbStartMinutes"),
+                           QStringLiteral("services.doNotDisturbEndMinutes")}),
+        controller(client), schedule(client) {
+    startSettingsClient(client);
+  }
+};
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -271,17 +297,7 @@ int main(int argc, char **argv) {
       engine, iconThemeRoots(), {QStringLiteral("QindaQt")});
   Q_UNUSED(iconsInstalled)
 
-  // AGENT-GUARD: Each SettingsClient needs an independent transport. Client
-  // request tokens are scoped to one client and begin at the same value; two
-  // clients connected to one transport could accept each other's replies.
-  // Both transports and both domain models must outlive application.exec().
-  QindaQt::Services::SettingsClient::QtSettingsTransport quietingTransport(
-      QDBusConnection::sessionBus());
-  QindaQt::Services::SettingsClient::SettingsClient quietingClient(
-      quietingTransport, {QStringLiteral("services.doNotDisturb")});
-  QindaQt::Services::SettingsClient::DoNotDisturbController quieting(
-      quietingClient);
-  startSettingsClient(quietingClient);
+  QuietingServices quieting(QDBusConnection::sessionBus());
 
   QStringList directories =
       resolveThemeDirectories(parser.value(themeDirectoryOption));
@@ -367,7 +383,9 @@ int main(int argc, char **argv) {
       {QStringLiteral("navigation"),
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
-       QVariant::fromValue(static_cast<QObject *>(&quieting))},
+       QVariant::fromValue(static_cast<QObject *>(&quieting.controller))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(&quieting.schedule))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(&appearanceSettings))},
       {QStringLiteral("windowDecorationSettings"),
