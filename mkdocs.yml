@@ -53,6 +53,7 @@ nav:
       - Display color model: architecture/display-color-model.md
       - Night light: architecture/night-light.md
       - Audio service: architecture/audio-service.md
+      - OBS console bridge: architecture/obs-bridge.md
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
       - PowerDevil idle preferences: architecture/powerdevil-idle.md
@@ -339,3 +340,4 @@ nav:
       - "ADR-0205: touch edges and touch preferences belong to the compositor": adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md
       - "ADR-0206: a theme authors surfaces, radii and motion, not only colors": adr/0206-theme-schema-v2-surfaces-motion-and-decoration-themes.md
       - "ADR-0207: a decoration theme is its own document": adr/0207-decoration-themes-are-their-own-documents.md
+      - "ADR-0208: console buses are OBS sources": adr/0208-console-buses-are-obs-sources.md

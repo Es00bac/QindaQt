@@ -212,3 +212,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0205: touch edges and touch preferences belong to the compositor](0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)
 - [ADR-0206: a theme authors surfaces, radii and motion, not only colors](0206-theme-schema-v2-surfaces-motion-and-decoration-themes.md)
 - [ADR-0207: a decoration theme is its own document](0207-decoration-themes-are-their-own-documents.md)
+- [ADR-0208: console buses are OBS sources](0208-console-buses-are-obs-sources.md)
