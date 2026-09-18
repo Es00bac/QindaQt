@@ -54,6 +54,57 @@ std::optional<ChromePointerHit> HybridChromePointerRouter::hitAt(
     return hit && hit->isValid() ? std::move(hit) : std::nullopt;
 }
 
+std::optional<HybridChromePointerRouter::TouchHit> HybridChromePointerRouter::hitNear(
+    const QPointF &position, qreal radius, const std::optional<QRectF> &clip) const
+{
+    const auto owned = [this](const QPointF &probe) -> std::optional<TouchHit> {
+        auto hit = hitAt(probe);
+        if (hit && ownsOrdinaryInput(hit->target)) {
+            return TouchHit{*hit, probe};
+        }
+        return std::nullopt;
+    };
+    // A finger that lands on something KWin owns (a member title bar, client
+    // content) is KWin's: the ring never pulls it onto nearby chrome. Only a
+    // finger on nothing at all is looked for nearby.
+    if (const auto exact = hitAt(position)) {
+        return ownsOrdinaryInput(exact->target) ? std::optional(TouchHit{*exact, position})
+                                                : std::nullopt;
+    }
+    if (!std::isfinite(radius) || radius <= 0.0) {
+        return std::nullopt;
+    }
+    // Eight compass probes at half the radius, then at the full radius: the
+    // nearest ring wins, so a finger between two controls picks the closer.
+    static constexpr double kDiagonal = 0.70710678118654752;
+    const double offsets[8][2] = {{0.0, -1.0}, {0.0, 1.0}, {-1.0, 0.0}, {1.0, 0.0},
+                                  {-kDiagonal, -kDiagonal}, {kDiagonal, -kDiagonal},
+                                  {-kDiagonal, kDiagonal}, {kDiagonal, kDiagonal}};
+    for (const double ring : {radius / 2.0, radius}) {
+        for (const auto &offset : offsets) {
+            const QPointF probe(position.x() + offset[0] * ring, position.y() + offset[1] * ring);
+            if (clip && !clip->contains(probe)) {
+                continue;
+            }
+            if (auto hit = owned(probe)) {
+                return hit;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+bool HybridChromePointerRouter::rollTarget(const HybridChrome::ChromeHitTarget &target) noexcept
+{
+    return isRollTarget(target);
+}
+
+bool HybridChromePointerRouter::contextMenuTarget(
+    const HybridChrome::ChromeHitTarget &target) noexcept
+{
+    return ownsContextMenuInput(target);
+}
+
 void HybridChromePointerRouter::updateHover(
     const QPointF &position, ChromePointerDecision *decision)
 {

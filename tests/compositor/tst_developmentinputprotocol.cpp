@@ -361,7 +361,8 @@ void DevelopmentInputProtocolTest::reportsUnavailableSinkAndCapabilities()
     QCOMPARE(capabilities.value(QStringLiteral("eventTypes")).toArray(),
              QJsonArray({QStringLiteral("pointer-absolute"),
                          QStringLiteral("pointer-relative"), QStringLiteral("key"),
-                         QStringLiteral("button")}));
+                         QStringLiteral("button"), QStringLiteral("touch-down"),
+                         QStringLiteral("touch-motion"), QStringLiteral("touch-up")}));
 
     sink.succeeds = false;
     QCOMPARE(failureCode(controller.injectTestInput(valid)),

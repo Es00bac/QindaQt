@@ -16,7 +16,7 @@ T.CheckBox {
     rightPadding: Tokens.space["2"]
     topPadding: Tokens.space["2"]
     bottomPadding: Tokens.space["2"]
-    implicitHeight: Math.max(32, implicitContentHeight + topPadding + bottomPadding)
+    implicitHeight: Math.max(32, (Tokens.touch.minimumTarget ?? 0), implicitContentHeight + topPadding + bottomPadding)
 
     Accessible.role: Accessible.CheckBox
     Accessible.name: text

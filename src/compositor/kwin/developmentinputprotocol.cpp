@@ -61,6 +61,15 @@ bool isBoundedRelativeDelta(const QJsonValue &value)
         && std::abs(delta) <= DevelopmentInputCodec::MaxRelativeDeltaMagnitude;
 }
 
+bool isTouchId(const QJsonValue &value)
+{
+    if (!value.isDouble()) {
+        return false;
+    }
+    const double id = value.toDouble();
+    return id >= 0.0 && id <= DevelopmentInputCodec::MaxTouchId && id == std::floor(id);
+}
+
 std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
 {
     if (!value.isObject()) {
@@ -97,6 +106,35 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
         event.type = DevelopmentInputEventType::PointerRelative;
         event.position = QPointF(object.value(QStringLiteral("dx")).toDouble(),
                                  object.value(QStringLiteral("dy")).toDouble());
+        return event;
+    }
+
+    if (type.toString() == QStringLiteral("touch-down")
+        || type.toString() == QStringLiteral("touch-motion")) {
+        if (!hasExactlyFields(object, {QStringLiteral("type"), QStringLiteral("id"),
+                                       QStringLiteral("x"), QStringLiteral("y")})
+            || !isTouchId(object.value(QStringLiteral("id")))
+            || !isBoundedCoordinate(object.value(QStringLiteral("x")))
+            || !isBoundedCoordinate(object.value(QStringLiteral("y")))) {
+            return std::nullopt;
+        }
+        DevelopmentInputEvent event;
+        event.type = type.toString() == QStringLiteral("touch-down")
+            ? DevelopmentInputEventType::TouchDown : DevelopmentInputEventType::TouchMotion;
+        event.touchId = object.value(QStringLiteral("id")).toInt();
+        event.position = QPointF(object.value(QStringLiteral("x")).toDouble(),
+                                 object.value(QStringLiteral("y")).toDouble());
+        return event;
+    }
+
+    if (type.toString() == QStringLiteral("touch-up")) {
+        if (!hasExactlyFields(object, {QStringLiteral("type"), QStringLiteral("id")})
+            || !isTouchId(object.value(QStringLiteral("id")))) {
+            return std::nullopt;
+        }
+        DevelopmentInputEvent event;
+        event.type = DevelopmentInputEventType::TouchUp;
+        event.touchId = object.value(QStringLiteral("id")).toInt();
         return event;
     }
 
@@ -306,7 +344,9 @@ QJsonObject DevelopmentInputController::capabilities() const
             {QStringLiteral("eventTypes"),
              QJsonArray{QStringLiteral("pointer-absolute"),
                         QStringLiteral("pointer-relative"), QStringLiteral("key"),
-                        QStringLiteral("button")}}};
+                        QStringLiteral("button"),
+                        QStringLiteral("touch-down"), QStringLiteral("touch-motion"),
+                        QStringLiteral("touch-up")}}};
 }
 
 QString developmentInputDeviceId()

@@ -3,6 +3,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "EntryDrag.js" as EntryDrag
+import QindaQt.Tokens 1.0
+import QindaQt.Controls 1.0 as C
 
 Control {
     id: root
@@ -17,7 +19,8 @@ Control {
 
     property int iconSize: 64
     readonly property int rowIconSize: Math.max(20, Math.round(iconSize * 0.4375))
-    readonly property int rowHeight: rowIconSize + 16
+    // Rows grow to the touch row height while the last input was a finger (ADR-0193).
+    readonly property int rowHeight: Math.max(rowIconSize + 16, Tokens.touch.rowHeight ?? 0)
     signal zoomRequested(int steps)
 
     ViewportNavigation {
@@ -154,6 +157,16 @@ Control {
                 anchors.fill: parent
                 acceptedButtons: Qt.RightButton
                 onClicked: {
+                    listView.forceActiveFocus()
+                    contextMenu.selectionCount = 0
+                    contextMenu.popup()
+                }
+            }
+
+            C.TouchContextArea {
+                objectName: "entryListTouchContext"
+                anchors.fill: parent
+                onContextRequested: {
                     listView.forceActiveFocus()
                     contextMenu.selectionCount = 0
                     contextMenu.popup()

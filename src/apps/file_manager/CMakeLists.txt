@@ -185,6 +185,8 @@ qt_add_qml_module(
         ui/PropertiesDialog.qml
         ui/FileContextMenu.qml
         ui/EntryDrag.js
+    DEPENDENCIES
+        QindaQt.Controls/1.0
 )
 
 # ADR-0116: File Manager renders with stock Qt Quick Controls; it links only

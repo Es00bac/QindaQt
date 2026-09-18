@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Controls 1.0 as C
 
 // One desktop icon. Extracted from DesktopIconsView so the view keeps its
 // placement and selection logic readable and so the source-shape gate does not
@@ -138,6 +139,16 @@ Rectangle {
         onDoubleClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton && !tile.dragged)
                 tile.view.openEntry(tile.entryId)
+        }
+    }
+
+    C.TouchContextArea {
+        objectName: "desktopIconTouchContext"
+        anchors.fill: parent
+        onContextRequested: (position) => {
+            if (!tile.view.isSelected(tile.entryId))
+                tile.view.selection.selectOnly(tile.entryId)
+            tile.view.openIconMenu(tile, position.x, position.y)
         }
     }
 
