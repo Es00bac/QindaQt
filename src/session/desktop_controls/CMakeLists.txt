@@ -18,6 +18,9 @@ target_sources(
         src/powerdevil_idle_preferences_binding.cpp
         src/screenshot_launcher.cpp
         src/settings1_idle_preferences.cpp
+        src/tablet_arrival_notifier.cpp
+        src/tablet_mapping_policy.cpp
+        src/tablet_route_launcher.cpp
         src/volume_key_controller.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -36,6 +39,9 @@ target_sources(
             include/qindaqt/session/desktop_controls/screenshot_launcher.h
             include/qindaqt/session/desktop_controls/settings1_idle_preferences.h
             include/qindaqt/session/desktop_controls/shortcut_registration.h
+            include/qindaqt/session/desktop_controls/tablet_arrival_notifier.h
+            include/qindaqt/session/desktop_controls/tablet_mapping_policy.h
+            include/qindaqt/session/desktop_controls/tablet_route_launcher.h
             include/qindaqt/session/desktop_controls/volume_key_controller.h
 )
 target_link_libraries(
@@ -46,6 +52,7 @@ target_link_libraries(
         QindaQt::PowerService
         QindaQt::PowerDevilIdle
         QindaQt::SettingsClient
+        QindaQt::TabletDevices
         Qt6::Core
         Qt6::Gui
         Qt6::DBus
@@ -101,6 +108,7 @@ if(TARGET KF6::GlobalAccel AND TARGET QindaQt::PowerDevilIdle)
             QindaQt::AudioClient
             QindaQt::PowerService
             QindaQt::SettingsClient
+            QindaQt::TabletDevices
             Qt6::Core
             Qt6::Gui
             Qt6::DBus

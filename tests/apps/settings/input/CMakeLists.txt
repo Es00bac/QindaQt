@@ -149,3 +149,55 @@ set_tests_properties(
     LABELS "offscreen;settings;input"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
+
+# Tablet models over fake ports: grouping, selection stability, capability
+# gating, the write ordering that keeps the pen on one screen.
+qindaqt_input_test(
+    qindaqt_settings_input_tablet_model_test
+    SOURCES
+        tst_tablet_devices_model.cpp
+        support/fake_tablet_ports.h
+)
+add_test(NAME qindaqt.settings-input-tablet-model
+         COMMAND qindaqt_settings_input_tablet_model_test)
+set_tests_properties(
+    qindaqt.settings-input-tablet-model PROPERTIES
+    LABELS "settings;input;model"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
+# The Pen & tablet destination as the route ships it: real QML, real models,
+# fake authority.
+qt_add_executable(
+    qindaqt_settings_input_tablet_page_test
+    tst_tablet_page.cpp
+    support/fake_ports.h
+    support/fake_tablet_ports.h
+)
+target_include_directories(qindaqt_settings_input_tablet_page_test
+    PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(
+    qindaqt_settings_input_tablet_page_test PRIVATE
+    qindaqt_settings_input qindaqt_settings_appearance qindaqt_themes
+    qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_settings_input_tablet_page_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+)
+add_dependencies(
+    qindaqt_settings_input_tablet_page_test
+    qindaqt_settings_input_qml qindaqt_settings_input_qmlplugin
+    qindaqt_controls_qml qindaqt_controls_qmlplugin
+    qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_input_tablet_page_test)
+add_test(NAME qindaqt.settings-input-tablet-page
+         COMMAND qindaqt_settings_input_tablet_page_test)
+set_tests_properties(
+    qindaqt.settings-input-tablet-page PROPERTIES
+    LABELS "offscreen;settings;input"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)

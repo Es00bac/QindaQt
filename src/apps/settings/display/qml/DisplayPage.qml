@@ -15,6 +15,10 @@ T.Page {
 
     required property var displaySettings
     signal closeRequested()
+    // Raised when the selected output is a pen display and the user asks for
+    // its tablet settings. The Settings window owns route navigation, so the
+    // page only reports the request.
+    signal penSettingsRequested()
 
     readonly property bool editorBusy: displaySettings.busy
                                      || displaySettings.loading
@@ -208,6 +212,7 @@ T.Page {
                         id: outputSection
                         displaySettings: root.displaySettings
                         editorBusy: root.editorBusy
+                        onPenSettingsRequested: root.penSettingsRequested()
                     }
 
                     DisplayArrangementSection {

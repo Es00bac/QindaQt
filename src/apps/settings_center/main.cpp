@@ -203,6 +203,55 @@ struct AccessibilityServices {
   }
 };
 
+
+// What the command line asked for. Kept as one value so main() stays a
+// composition root rather than an argument parser.
+struct LaunchArguments {
+  QString page;
+  QString destination;
+  QString selection;
+  QString themeDirectory;
+};
+
+// AGENT-CONTRACT: `--destination` names a tab within the page and `--select`
+// an item to select there, for example
+//   qindaqt-settings --page input --destination tablet --select <group>
+// Both are opaque here: the route page decides whether it knows them, so a
+// stale selection opens the route rather than failing to open anything. They
+// are bounded so a hostile argument cannot become an unbounded property.
+LaunchArguments parseLaunchArguments(const QCoreApplication &application) {
+  QCommandLineParser parser;
+  parser.setApplicationDescription(QStringLiteral("QindaQt Settings"));
+  parser.addHelpOption();
+  const QCommandLineOption pageOption(
+      QStringLiteral("page"), QStringLiteral("Open a settings page"),
+      QStringLiteral("route"), QStringLiteral("notifications"));
+  parser.addOption(pageOption);
+  const QCommandLineOption themeDirectoryOption(
+      QStringLiteral("theme-directory"),
+      QStringLiteral("Additional local theme directory"),
+      QStringLiteral("path"));
+  parser.addOption(themeDirectoryOption);
+  const QCommandLineOption destinationOption(
+      QStringLiteral("destination"),
+      QStringLiteral("Open a destination within the page"),
+      QStringLiteral("destination"));
+  parser.addOption(destinationOption);
+  const QCommandLineOption selectOption(
+      QStringLiteral("select"),
+      QStringLiteral("Select this device or item within the destination"),
+      QStringLiteral("id"));
+  parser.addOption(selectOption);
+  parser.process(application);
+
+  return LaunchArguments{
+      parser.value(pageOption),
+      parser.value(destinationOption).left(64),
+      parser.value(selectOption).left(256),
+      parser.value(themeDirectoryOption),
+  };
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -227,21 +276,8 @@ int main(int argc, char **argv) {
   // window. Set before any window exists, matching the text editor.
   application.setDesktopFileName(QStringLiteral("org.qindaqt.Settings"));
 
-  QCommandLineParser parser;
-  parser.setApplicationDescription(QStringLiteral("QindaQt Settings"));
-  parser.addHelpOption();
-  const QCommandLineOption pageOption(
-      QStringLiteral("page"), QStringLiteral("Open a settings page"),
-      QStringLiteral("route"), QStringLiteral("notifications"));
-  parser.addOption(pageOption);
-  const QCommandLineOption themeDirectoryOption(
-      QStringLiteral("theme-directory"),
-      QStringLiteral("Additional local theme directory"),
-      QStringLiteral("path"));
-  parser.addOption(themeDirectoryOption);
-  parser.process(application);
-
-  const QString page = parser.value(pageOption);
+  const LaunchArguments arguments = parseLaunchArguments(application);
+  const QString &page = arguments.page;
   const auto registry =
       QindaQt::Apps::SettingsCenter::SettingsRouteRegistry::createDefault();
   if (!registry.hasRoute(page)) {
@@ -284,7 +320,7 @@ int main(int argc, char **argv) {
   startSettingsClient(quietingClient);
 
   QStringList directories =
-      resolveThemeDirectories(parser.value(themeDirectoryOption));
+      resolveThemeDirectories(arguments.themeDirectory);
 
   QString catalogError;
   const auto themes =
@@ -361,7 +397,7 @@ int main(int argc, char **argv) {
   // AGENT-CONTRACT: Initialize the Settings navigation controller with the
   // requested route.
   QindaQt::Apps::SettingsCenter::SettingsNavigationController navigation(
-      registry, page);
+      registry, page, arguments.destination, arguments.selection);
 
   engine.setInitialProperties({
       {QStringLiteral("navigation"),

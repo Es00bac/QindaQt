@@ -20,6 +20,7 @@ target_sources(
 target_link_libraries(
     qindaqt_settings_display
     PUBLIC QindaQt::DisplayClient QindaQt::DisplayTopology QindaQt::DisplayProtocol
+           QindaQt::TabletDevices
            Qt6::Core Qt6::Gui Qt6::Qml
 )
 target_compile_features(qindaqt_settings_display PUBLIC cxx_std_20)
