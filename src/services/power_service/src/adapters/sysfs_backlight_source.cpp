@@ -100,6 +100,18 @@ void SysfsBacklightSource::stop()
     m_devices.clear();
 }
 
+bool SysfsBacklightSource::readBoundedAttribute(QIODevice &device, QByteArray &bytes)
+{
+    // AGENT-GUARD: this reads one byte past the limit on purpose. Every sysfs
+    // attribute stats as a full page no matter how short its value is, so
+    // `device.atEnd()` is false after a four-byte read of `type` and was the
+    // reason enumeration dropped every real panel while fixture trees -- whose
+    // sizes are honest -- passed. Judge the value by what came back, never by
+    // the reported size.
+    bytes = device.read(maximumAttributeBytes + 1);
+    return bytes.size() <= maximumAttributeBytes;
+}
+
 bool SysfsBacklightSource::readBoundedInteger(const QString &directory,
                                               const QString &fileName,
                                               const quint64 bound,
@@ -109,8 +121,8 @@ bool SysfsBacklightSource::readBoundedInteger(const QString &directory,
     if (!file.open(QIODevice::ReadOnly)) {
         return false;
     }
-    const QByteArray bytes = file.read(65);
-    const bool bounded = file.atEnd();
+    QByteArray bytes;
+    const bool bounded = readBoundedAttribute(file, bytes);
     file.close();
     if (!bounded) {
         return false;
@@ -151,8 +163,8 @@ void SysfsBacklightSource::rescan()
         if (!typeFile.open(QIODevice::ReadOnly)) {
             continue;
         }
-        const QByteArray typeBytes = typeFile.read(65);
-        const bool typeBounded = typeFile.atEnd();
+        QByteArray typeBytes;
+        const bool typeBounded = readBoundedAttribute(typeFile, typeBytes);
         typeFile.close();
         if (!typeBounded) {
             continue;
