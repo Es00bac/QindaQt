@@ -171,6 +171,23 @@ bool expectNoContainerAdoption(CompositorProbeClient &client, int milliseconds,
     return true;
 }
 
+// AGENT-CONTRACT: keyboard walks through ReopenDialog (workspace_dialogs.cpp)
+// count its focus chain. Each slot row is: the choice combo, "Launch
+// application" (disabled, hence skipped, for the phantom slot whose desktop
+// entry is not installed), and since ADR-0165 the always-enabled "Picker
+// instead" toggle. After the last row come "Refresh available windows" and
+// "Restore workspace". A count one short lands Space on "Picker instead",
+// which opens a File Manager picker and never restores.
+int tabsToNextSlot(bool previousIsPhantom)
+{
+    return previousIsPhantom ? 2 : 3;
+}
+
+int tabsToRestore(bool lastIsPhantom)
+{
+    return lastIsPhantom ? 3 : 4;
+}
+
 bool assignSlotChoices(WorkspaceReopenInput &input, const QJsonArray &eligible,
                        const ReopenFixture &fixture, int firstSlot,
                        int slotCount, QString *error)
@@ -183,7 +200,7 @@ bool assignSlotChoices(WorkspaceReopenInput &input, const QJsonArray &eligible,
         }
         if (slot > 0) {
             const auto previousTitle = fixture.slotTitles.value(fixture.slotOrder.at(slot - 1));
-            const int tabs = previousTitle == EditorTitle ? 1 : 2;
+            const int tabs = tabsToNextSlot(previousTitle == EditorTitle);
             for (int step = 0; step < tabs; ++step) {
                 if (!input.pressKey(QStringLiteral("tab"), error)) return false;
             }
@@ -407,7 +424,8 @@ std::optional<QJsonObject> exerciseWorkspaceReopenPhase(
     if (!assignSlotChoices(input, *eligible, *fixture, 2, 1, error)) {
         return std::nullopt;
     }
-    const int restoreTabs = fixture->slotTitles.value(fixture->slotOrder.last()) == EditorTitle ? 2 : 3;
+    const int restoreTabs =
+        tabsToRestore(fixture->slotTitles.value(fixture->slotOrder.last()) == EditorTitle);
     for (int step = 0; step < restoreTabs; ++step) {
         if (!input.pressKey(QStringLiteral("tab"), error)) return std::nullopt;
     }
