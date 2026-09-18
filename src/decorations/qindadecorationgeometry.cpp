@@ -21,13 +21,18 @@ void QindaDecoration::updateGeometry()
     setBorders(maximized ? QMarginsF(0.0, titleHeight, 0.0, 0.0)
                          : QMarginsF(1.0, titleHeight, 1.0, 1.0));
     setResizeOnlyBorders(decorationResizeOnlyBorders(maximized, member));
+    const auto chrome = chromeState();
     setBorderRadius(KDecoration3::BorderRadius(
         maximized ? 0.0
                   : member ? DecorationMemberCornerRadius
-                           : DecorationCornerRadius));
+                           : decorationFrameRadius(chrome, false)));
+    // A translucent title material asks the compositor to blur what shows
+    // through it (ADR-0207); opaque documents keep an empty region.
+    setBlurRegion(!member && chrome.titleBlur && chrome.titleOpacity < 1.0
+                      ? QRegion(QRect(0, 0, qRound(size().width()), qRound(titleHeight)))
+                      : QRegion());
 
     if (member) {
-        const auto chrome = chromeState();
         const bool right = effectiveButtonSide(chrome)
             == DecorationButtonSide::Right;
         const DecorationMemberHandleLayout layout = layoutMemberHandle(chrome, size());
@@ -76,7 +81,7 @@ void QindaDecoration::updateGeometry()
 
     // Button geometry comes from the shared painter's layout so the preview
     // and the live decoration place every cluster identically (ADR-0129).
-    const auto layout = layoutDecorationButtons(chromeState(), size());
+    const auto layout = layoutDecorationButtons(chrome, size());
     auto *group = m_leftButtons != nullptr ? m_leftButtons : m_rightButtons;
     if (group != nullptr && !layout.isEmpty()) {
         const QSizeF extent = layout.constFirst().geometry.size();

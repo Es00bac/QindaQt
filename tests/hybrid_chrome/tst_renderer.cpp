@@ -121,6 +121,7 @@ private Q_SLOTS:
     void widgetEmitsTypedActionTarget();
     void widgetEmitsThresholdedDragLifecycle();
     void widgetCancelsDragOnPointerUngrab();
+    void materialOpacityHighlightAndBorderRepaintTheSurface();
 };
 
 void ChromeRendererTests::trafficLightGlyphsAppearOnControlHover()
@@ -343,6 +344,56 @@ void ChromeRendererTests::clearsPixelsThatBecomeMemberFramesAfterReflow()
     QVERIFY(image.pixelColor(newlyCovered.toPoint()).alpha() > 0);
     ChromeRenderer::paint(painter, second);
     QCOMPARE(image.pixelColor(newlyCovered.toPoint()), QColor(Qt::transparent));
+}
+
+void ChromeRendererTests::materialOpacityHighlightAndBorderRepaintTheSurface()
+{
+    // Theming v2 materials (ADR-0207): the default material paints exactly
+    // the shipped chrome; opacity scales the surface alpha, the highlight
+    // adds a catch light under the title's top edge, and the border
+    // strength dims the identity frame without moving any geometry.
+    auto request = qindaMacRequest();
+    const auto opaquePlan = ChromeLayoutEngine::build(request);
+    QVERIFY(opaquePlan);
+    QCOMPARE(opaquePlan->style.material, ChromeMaterial{});
+    const auto opaque = render(*opaquePlan);
+    // The tab strip covers the whole title row, so the free drag region is
+    // plain surface fill (as renamedContainerPaintsTitleInIdentityTextColor
+    // proves); it sits away from the divider and the identity frame.
+    QVERIFY(opaquePlan->outerTitleDragRect.width() > 0.0);
+    const auto surfaceSample = physicalPoint(opaquePlan->outerTitleDragRect.center(),
+                                             opaquePlan->devicePixelRatio);
+    QCOMPARE(opaque.pixelColor(surfaceSample), opaquePlan->style.palette.surface);
+
+    request.style.material.opacity = 0.5;
+    request.style.material.highlight = true;
+    request.style.material.border = 0.5;
+    const auto materialPlan = ChromeLayoutEngine::build(request);
+    QVERIFY(materialPlan);
+    QCOMPARE(materialPlan->outerTitleBar, opaquePlan->outerTitleBar);
+    QCOMPARE(materialPlan->buttons.size(), opaquePlan->buttons.size());
+    const auto material = render(*materialPlan);
+    const auto translucent = material.pixelColor(surfaceSample);
+    QVERIFY(translucent.alpha() > 100 && translucent.alpha() < 156);
+    // Premultiplied storage rounds each channel by at most one step.
+    QVERIFY(closeColor(QColor(translucent.red(), translucent.green(), translucent.blue()),
+                       QColor(opaquePlan->style.palette.surface.rgb()), 2));
+    // The catch light is the single pixel row under the three-row identity
+    // stripe; 3.4 rounds onto it (3.5 would round past it). Sample in the
+    // tab-free drag column: tab pills sit over the strip elsewhere.
+    const auto highlightSample = physicalPoint(
+        QPointF(opaquePlan->outerTitleDragRect.center().x(),
+                opaquePlan->outerTitleBar.top() + 3.4),
+        opaquePlan->devicePixelRatio);
+    QVERIFY(material.pixelColor(highlightSample) != opaque.pixelColor(highlightSample));
+    // The bottom identity stroke a quarter of the way along: clear of the
+    // vertical divider that bridges the members at the center.
+    const auto frameSample = physicalPoint(
+        QPointF(opaquePlan->outerFrame.left() + opaquePlan->outerFrame.width() * 0.25,
+                opaquePlan->outerFrame.bottom() - 1.0),
+        opaquePlan->devicePixelRatio);
+    QVERIFY(material.pixelColor(frameSample).alpha() < opaque.pixelColor(frameSample).alpha());
+    saveEvidence(material, QStringLiteral("chrome-material-glass.png"));
 }
 
 void ChromeRendererTests::widgetEmitsTypedActionTarget()

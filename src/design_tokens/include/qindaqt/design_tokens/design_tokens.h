@@ -106,6 +106,45 @@ struct ElevationTokens final {
     [[nodiscard]] bool operator==(const ElevationTokens &) const = default;
 };
 
+// Theming v2 (ADR-0206): one material per named surface. The deriver has
+// already applied the accessibility inputs and the contrast guardrail, so
+// consumers paint these values as published.
+struct SurfaceMaterialTokens final {
+    double opacity = 1.0;
+    bool blur = false;
+    QColor tint;
+    double border = 1.0;
+    bool highlight = false;
+    double radius = 0.0;
+    double shadow = 1.0;
+    [[nodiscard]] bool operator==(const SurfaceMaterialTokens &) const = default;
+};
+
+struct MaterialTokens final {
+    SurfaceMaterialTokens panel;
+    SurfaceMaterialTokens popup;
+    SurfaceMaterialTokens menu;
+    SurfaceMaterialTokens containerChrome;
+    SurfaceMaterialTokens decoration;
+    SurfaceMaterialTokens desktopIcons;
+    [[nodiscard]] bool operator==(const MaterialTokens &) const = default;
+};
+
+struct MotionEntryTokens final {
+    int duration = 0;
+    QString easing;
+    [[nodiscard]] bool operator==(const MotionEntryTokens &) const = default;
+};
+
+// Per-surface motion (ADR-0206), published beside the duration scale.
+struct SurfaceMotionTokens final {
+    MotionEntryTokens popup;
+    MotionEntryTokens menu;
+    MotionEntryTokens rollup;
+    MotionEntryTokens hover;
+    [[nodiscard]] bool operator==(const SurfaceMotionTokens &) const = default;
+};
+
 // AGENT-CONTRACT: This is an immutable-by-interface, thread-neutral value.
 // Replacing a complete copy is allowed; individual roles have no mutators.
 // QST revision 1 may only gain compatible implementation fixes, never renamed
@@ -136,6 +175,8 @@ public:
     [[nodiscard]] const TypeScaleTokens &typeScale() const;
     [[nodiscard]] const MotionTokens &motion() const;
     [[nodiscard]] const ElevationTokens &elevation() const;
+    [[nodiscard]] const MaterialTokens &material() const;
+    [[nodiscard]] const SurfaceMotionTokens &surfaceMotion() const;
 
     [[nodiscard]] QVariantMap toVariantMap() const;
     [[nodiscard]] bool operator==(const DesignTokens &) const = default;
@@ -158,7 +199,9 @@ private:
                  SpacingTokens spacing,
                  TypeScaleTokens typeScale,
                  MotionTokens motion,
-                 ElevationTokens elevation);
+                 ElevationTokens elevation,
+                 MaterialTokens material,
+                 SurfaceMotionTokens surfaceMotion);
 
     QString m_sourceThemeId;
     AccessibilityInputs m_inputs;
@@ -176,6 +219,8 @@ private:
     TypeScaleTokens m_typeScale;
     MotionTokens m_motion;
     ElevationTokens m_elevation;
+    MaterialTokens m_material;
+    SurfaceMotionTokens m_surfaceMotion;
 };
 
 } // namespace QindaQt::DesignTokens

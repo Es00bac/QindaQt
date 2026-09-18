@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-glass-dark",
+  "name": "Qinda Glass Dark",
+  "variant": "dark",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 14,
+  "motionDuration": 170,
+  "blurEnabled": true,
+  "colors": {
+    "canvas": "#101418",
+    "surface": "#1B2129",
+    "surfaceRaised": "#262E38",
+    "border": "#4A5563",
+    "text": "#ECF1F6",
+    "textMuted": "#B4BFCB",
+    "accent": "#7FB2FF",
+    "accentText": "#0B1A33",
+    "danger": "#FF7B8A"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "traffic-lights",
+    "hoverGlyphs": true,
+    "titleBarColor": "#262E38",
+    "titleBarInactiveColor": "#1B2129",
+    "closeColor": "#FF6A6A",
+    "minimizeColor": "#F7C04A",
+    "maximizeColor": "#4FCB6B"
+  },
+  "decorationTheme": "glass",
+  "surfaces": {
+    "panel": {
+      "opacity": 0.78,
+      "blur": true,
+      "tint": "#1B2129",
+      "border": 0.6,
+      "highlight": true,
+      "shadow": 1.1
+    },
+    "popup": {
+      "opacity": 0.84,
+      "blur": true,
+      "tint": "#1B2129",
+      "highlight": true
+    },
+    "menu": {
+      "opacity": 0.9,
+      "blur": true,
+      "highlight": true
+    },
+    "containerChrome": {
+      "opacity": 0.9,
+      "blur": true,
+      "highlight": true,
+      "shadow": 1.2
+    },
+    "decoration": {
+      "opacity": 0.86,
+      "blur": true,
+      "highlight": true,
+      "shadow": 1.2
+    },
+    "desktopIcons": {
+      "opacity": 0.0,
+      "blur": false,
+      "border": 0.0
+    }
+  },
+  "radii": {
+    "panel": 16,
+    "popup": 14,
+    "menu": 10,
+    "containerChrome": 14,
+    "decoration": 14
+  },
+  "motion": {
+    "popup": {
+      "duration": 170,
+      "easing": "emphasized"
+    },
+    "menu": {
+      "duration": 120,
+      "easing": "decelerate"
+    },
+    "rollup": {
+      "duration": 200,
+      "easing": "emphasized"
+    },
+    "hover": {
+      "duration": 90,
+      "easing": "standard"
+    }
+  },
+  "accent": {
+    "mode": "fixed"
+  }
+}

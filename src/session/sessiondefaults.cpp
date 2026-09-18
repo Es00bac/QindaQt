@@ -157,6 +157,18 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     seedMissing(kwin, QStringLiteral("LayoutName"), QStringLiteral("qindaqt"));
     kwin.endGroup();
 
+    // Theming v2 (ADR-0206): translucent panel, popup, chrome and title
+    // materials rely on the blur and background-contrast effects. Seeded
+    // only when absent, so a user who switched an effect off keeps that.
+    kwin.beginGroup(QStringLiteral("Plugins"));
+    seedMissing(kwin, QStringLiteral("blurEnabled"), true);
+    seedMissing(kwin, QStringLiteral("contrastEnabled"), true);
+    kwin.endGroup();
+    kwin.beginGroup(QStringLiteral("Effect-blur"));
+    seedMissing(kwin, QStringLiteral("BlurStrength"), 8);
+    seedMissing(kwin, QStringLiteral("NoiseStrength"), 2);
+    kwin.endGroup();
+
     kwin.sync();
     if (kwin.status() != QSettings::NoError) {
         if (error) {

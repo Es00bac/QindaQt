@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "aurora",
+  "name": "Aurora",
+  "description": "Deep translucent bars with a teal tint, traffic lights on the left, the widest corners, and a long soft shadow.",
+  "buttonPlacement": "left",
+  "tabDirection": "left-to-right",
+  "buttonStyle": "traffic-lights",
+  "hoverGlyphs": true,
+  "material": {
+    "opacity": 0.78,
+    "blur": true,
+    "tint": "#1F3E4A",
+    "border": 0.5,
+    "highlight": true,
+    "shadow": 1.4
+  },
+  "cornerRadius": 16,
+  "shadow": {
+    "extent": 24,
+    "opacity": 0.3
+  },
+  "memberHandle": "grip",
+  "containerBadge": "pill"
+}

@@ -102,6 +102,10 @@ private slots:
     void flattensTheCompleteSchemaAlphaRange();
     void coversSchemaMetricBoundaries();
     void rejectsValuesOutsideThePublicThemeContract();
+    void schemaV1ThemesPublishOpaqueMaterials();
+    void schemaV2SurfacesDeriveMaterialAndMotionTokens();
+    void translucentSurfacesKeepTextContrastOverAnyBackdrop();
+    void reducedTransparencyAndHighContrastFlattenMaterials();
 };
 
 void DerivationTests::mapsEveryQstRoleFromSchemaV1()
@@ -296,7 +300,8 @@ void DerivationTests::coversSchemaMetricBoundaries()
 void DerivationTests::rejectsValuesOutsideThePublicThemeContract()
 {
     ThemeSpec theme = builtIn();
-    theme.schemaVersion = 2;
+    // Schema 2 is the theming-v2 document (ADR-0206); 3 does not exist.
+    theme.schemaVersion = 3;
     QCOMPARE(DesignTokenDeriver::derive(theme).error, DerivationError::InvalidSchemaVersion);
 
     theme = builtIn();
@@ -310,6 +315,157 @@ void DerivationTests::rejectsValuesOutsideThePublicThemeContract()
     theme = builtIn();
     theme.motionDuration = 1001;
     QCOMPARE(DesignTokenDeriver::derive(theme).error, DerivationError::InvalidMetric);
+}
+
+void DerivationTests::schemaV1ThemesPublishOpaqueMaterials()
+{
+    // ADR-0206: a schema v1 theme derives opaque, untinted materials whose
+    // radius is the theme's corner radius; blur follows the v1 blurEnabled
+    // flag for panel, popup and menu only, matching the v1 elevation rule.
+    const ThemeSpec theme = builtIn();
+    const auto derived = DesignTokenDeriver::derive(theme);
+    const DesignTokens &tokens = requireTokens(derived);
+    const auto &material = tokens.material();
+    for (const auto *surface : {&material.panel, &material.popup, &material.menu,
+                                &material.containerChrome, &material.decoration,
+                                &material.desktopIcons}) {
+        QCOMPARE(surface->opacity, 1.0);
+        QVERIFY(!surface->tint.isValid());
+        QCOMPARE(surface->border, 1.0);
+        QVERIFY(!surface->highlight);
+        QCOMPARE(surface->radius, static_cast<double>(theme.cornerRadius));
+        QCOMPARE(surface->shadow, 1.0);
+    }
+    QCOMPARE(material.panel.blur, theme.blurEnabled);
+    QCOMPARE(material.menu.blur, theme.blurEnabled);
+    QVERIFY(!material.decoration.blur);
+    QVERIFY(!material.containerChrome.blur);
+    const auto &motion = tokens.surfaceMotion();
+    for (const auto *entry : {&motion.popup, &motion.menu, &motion.rollup, &motion.hover}) {
+        QCOMPARE(entry->duration, theme.motionDuration);
+        QCOMPARE(entry->easing, QStringLiteral("standard"));
+    }
+    const QVariantMap map = tokens.toVariantMap();
+    QCOMPARE(map.value(QStringLiteral("material")).toMap().size(), 6);
+    const QVariantMap motionMap = map.value(QStringLiteral("motion")).toMap();
+    QCOMPARE(motionMap.value(QStringLiteral("base")).toInt(), theme.motionDuration);
+    QCOMPARE(motionMap.value(QStringLiteral("popup")).toMap()
+                 .value(QStringLiteral("duration")).toInt(),
+             theme.motionDuration);
+}
+
+void DerivationTests::schemaV2SurfacesDeriveMaterialAndMotionTokens()
+{
+    const ThemeSpec theme = builtIn(QStringLiteral("qinda-glass-dark.json"));
+    QCOMPARE(theme.schemaVersion, 2);
+    const auto derived = DesignTokenDeriver::derive(theme);
+    const DesignTokens &tokens = requireTokens(derived);
+    const auto &material = tokens.material();
+    const auto authored = theme.surface(QStringLiteral("panel"));
+    QVERIFY(authored.authored);
+    QVERIFY(material.panel.opacity < 1.0);
+    QVERIFY(material.panel.opacity >= authored.opacity);
+    QCOMPARE(material.panel.blur, authored.blur);
+    QCOMPARE(material.panel.highlight, authored.highlight);
+    QCOMPARE(material.panel.border, authored.border);
+    QCOMPARE(material.panel.radius,
+             static_cast<double>(theme.surfaceRadius(QStringLiteral("panel"))));
+    QCOMPARE(material.decoration.radius,
+             static_cast<double>(theme.surfaceRadius(QStringLiteral("decoration"))));
+    const auto popup = theme.motion(QStringLiteral("popup"));
+    QCOMPARE(tokens.surfaceMotion().popup.duration, popup.duration);
+    QCOMPARE(tokens.surfaceMotion().popup.easing, popup.easing);
+    // Reduced motion clamps every surface entry like the duration scale.
+    const auto calmResult = DesignTokenDeriver::derive(theme, {.reducedMotion = true});
+    const DesignTokens &calm = requireTokens(calmResult);
+    QVERIFY(calm.surfaceMotion().popup.duration <= 80);
+    QVERIFY(calm.surfaceMotion().rollup.duration <= 80);
+}
+
+void DerivationTests::translucentSurfacesKeepTextContrastOverAnyBackdrop()
+{
+    // AGENT-GUARD: a nearly transparent panel would let text sit on the
+    // wallpaper; the guardrail raises the published opacity until both text
+    // roles keep 4.5:1 over black and over white, never above 1.0.
+    static constexpr auto json = R"JSON({
+        "schemaVersion": 2,
+        "id": "sheer-contract",
+        "name": "Sheer contract fixture",
+        "variant": "custom",
+        "cornerRadius": 9,
+        "motionDuration": 140,
+        "blurEnabled": true,
+        "colors": {
+            "canvas": "#101418",
+            "surface": "#1a2028",
+            "surfaceRaised": "#242c36",
+            "border": "#3a4450",
+            "text": "#f2f5f8",
+            "textMuted": "#b8c2cc",
+            "accent": "#7cc4ff",
+            "accentText": "#08131c",
+            "danger": "#ff6b6b"
+        },
+        "surfaces": {
+            "panel": {"opacity": 0.05, "blur": true},
+            "menu": {"opacity": 0.95, "blur": true}
+        }
+    })JSON";
+    const auto loaded = ThemeLoader::fromJson(QByteArray(json), QStringLiteral("sheer fixture"));
+    QVERIFY2(loaded.ok, qPrintable(loaded.error));
+    const auto derived = DesignTokenDeriver::derive(loaded.theme);
+    const DesignTokens &tokens = requireTokens(derived);
+    const auto &panel = tokens.material().panel;
+    QVERIFY(panel.opacity > 0.05);
+    QVERIFY(panel.opacity <= 1.0);
+    for (const QColor &backdrop : {QColor(Qt::black), QColor(Qt::white)}) {
+        const QColor composite = DesignTokenDeriver::compositeOver(
+            tokens.background().raised, panel.opacity, backdrop);
+        QVERIFY(DesignTokenDeriver::contrastRatio(tokens.foreground().defaultColor, composite)
+                >= 4.5);
+        QVERIFY(DesignTokenDeriver::contrastRatio(tokens.foreground().muted, composite)
+                >= 4.5);
+    }
+    // One step below the published opacity fails, so the guardrail stopped
+    // at the first passing value rather than jumping to opaque.
+    bool failsBelow = false;
+    for (const QColor &backdrop : {QColor(Qt::black), QColor(Qt::white)}) {
+        const QColor composite = DesignTokenDeriver::compositeOver(
+            tokens.background().raised, panel.opacity - 0.02, backdrop);
+        failsBelow = failsBelow
+            || DesignTokenDeriver::contrastRatio(tokens.foreground().defaultColor, composite)
+                < 4.5
+            || DesignTokenDeriver::contrastRatio(tokens.foreground().muted, composite) < 4.5;
+    }
+    QVERIFY(failsBelow);
+    // A surface that already passes keeps its authored opacity exactly.
+    QCOMPARE(tokens.material().menu.opacity, 0.95);
+    QCOMPARE(DesignTokenDeriver::compositeOver(QColor(Qt::white), 1.0, QColor(Qt::black)),
+             QColor(Qt::white));
+    QCOMPARE(DesignTokenDeriver::compositeOver(QColor(Qt::white), 0.0, QColor(Qt::black)),
+             QColor(Qt::black));
+}
+
+void DerivationTests::reducedTransparencyAndHighContrastFlattenMaterials()
+{
+    const ThemeSpec theme = builtIn(QStringLiteral("qinda-glass-light.json"));
+    for (const AccessibilityInputs inputs :
+         {AccessibilityInputs{.reducedTransparency = true},
+          AccessibilityInputs{.highContrast = true}}) {
+        const auto derived = DesignTokenDeriver::derive(theme, inputs);
+        const DesignTokens &tokens = requireTokens(derived);
+        const auto &material = tokens.material();
+        for (const auto *surface : {&material.panel, &material.popup, &material.menu,
+                                    &material.containerChrome, &material.decoration,
+                                    &material.desktopIcons}) {
+            QCOMPARE(surface->opacity, 1.0);
+            QVERIFY(!surface->blur);
+            QVERIFY(!surface->tint.isValid());
+        }
+        // Radii and border strength are geometry, not transparency: kept.
+        QCOMPARE(material.panel.radius,
+                 static_cast<double>(theme.surfaceRadius(QStringLiteral("panel"))));
+    }
 }
 
 QTEST_GUILESS_MAIN(DerivationTests)

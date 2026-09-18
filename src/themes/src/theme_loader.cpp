@@ -51,6 +51,166 @@ bool readOptionalColor(const QJsonObject &object,
     return true;
 }
 
+bool isValidDocumentId(const QString &name);
+
+bool readBoundedNumber(const QJsonObject &object, const QString &name, double minimum,
+                       double maximum, double *destination, QString *error)
+{
+    if (!object.contains(name)) {
+        return true;
+    }
+    const QJsonValue value = object.value(name);
+    if (!value.isDouble() || value.toDouble() < minimum || value.toDouble() > maximum) {
+        *error = QStringLiteral("%1 must be a number between %2 and %3")
+                     .arg(name).arg(minimum).arg(maximum);
+        return false;
+    }
+    *destination = value.toDouble();
+    return true;
+}
+
+bool readOptionalBool(const QJsonObject &object, const QString &name, bool *destination,
+                      QString *error)
+{
+    if (!object.contains(name)) {
+        return true;
+    }
+    if (!object.value(name).isBool()) {
+        *error = QStringLiteral("%1 must be a boolean").arg(name);
+        return false;
+    }
+    *destination = object.value(name).toBool();
+    return true;
+}
+
+// Schema v2 sections (ADR-0206). A v1 document must not carry them: the
+// round-trip proof for v1 files would otherwise silently accept keys the
+// v1 consumers ignore.
+bool readSchemaV2(const QJsonObject &root, ThemeSpec *theme, QString *error)
+{
+    const QStringList v2Keys{QStringLiteral("surfaces"), QStringLiteral("radii"),
+                             QStringLiteral("motion"), QStringLiteral("accent"),
+                             QStringLiteral("decorationTheme")};
+    if (theme->schemaVersion == 1) {
+        for (const auto &key : v2Keys) {
+            if (root.contains(key)) {
+                *error = QStringLiteral("schema version 1 does not accept '%1'").arg(key);
+                return false;
+            }
+        }
+        return true;
+    }
+    const auto surfaceNames = SurfaceNames::all();
+    const QJsonValue surfaces = root.value(QStringLiteral("surfaces"));
+    if (!surfaces.isUndefined()) {
+        if (!surfaces.isObject()) {
+            *error = QStringLiteral("surfaces must be an object");
+            return false;
+        }
+        const auto object = surfaces.toObject();
+        for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
+            if (!surfaceNames.contains(it.key()) || !it.value().isObject()) {
+                *error = QStringLiteral("unknown or malformed surface: %1").arg(it.key());
+                return false;
+            }
+            const auto entry = it.value().toObject();
+            SurfaceMaterialSpec material;
+            material.authored = true;
+            if (!readBoundedNumber(entry, QStringLiteral("opacity"), 0.0, 1.0,
+                                   &material.opacity, error)
+                || !readOptionalBool(entry, QStringLiteral("blur"), &material.blur, error)
+                || !readBoundedNumber(entry, QStringLiteral("border"), 0.0, 1.0,
+                                      &material.border, error)
+                || !readOptionalBool(entry, QStringLiteral("highlight"), &material.highlight,
+                                     error)
+                || !readBoundedNumber(entry, QStringLiteral("shadow"), 0.0, 2.0,
+                                      &material.shadow, error)
+                || !readOptionalColor(entry, QStringLiteral("tint"), &material.tint, error)) {
+                *error = QStringLiteral("surface %1: %2").arg(it.key(), *error);
+                return false;
+            }
+            theme->surfaces.insert(it.key(), material);
+        }
+    }
+    const QJsonValue radii = root.value(QStringLiteral("radii"));
+    if (!radii.isUndefined()) {
+        if (!radii.isObject()) {
+            *error = QStringLiteral("radii must be an object");
+            return false;
+        }
+        const auto object = radii.toObject();
+        for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
+            const int radius = it.value().toInt(-1);
+            if (!surfaceNames.contains(it.key()) || !it.value().isDouble() || radius < 0
+                || radius > 32) {
+                *error = QStringLiteral("radii.%1 must name a surface with a radius of 0 to 32")
+                             .arg(it.key());
+                return false;
+            }
+            theme->radii.insert(it.key(), radius);
+        }
+    }
+    const QJsonValue motion = root.value(QStringLiteral("motion"));
+    if (!motion.isUndefined()) {
+        if (!motion.isObject()) {
+            *error = QStringLiteral("motion must be an object");
+            return false;
+        }
+        const auto object = motion.toObject();
+        const auto motionNames = MotionNames::all();
+        const auto easings = MotionNames::easings();
+        for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
+            if (!motionNames.contains(it.key()) || !it.value().isObject()) {
+                *error = QStringLiteral("unknown or malformed motion: %1").arg(it.key());
+                return false;
+            }
+            const auto entry = it.value().toObject();
+            MotionSpec spec;
+            spec.authored = true;
+            spec.duration = theme->motionDuration;
+            if (entry.contains(QStringLiteral("duration"))) {
+                const int duration = entry.value(QStringLiteral("duration")).toInt(-1);
+                if (!entry.value(QStringLiteral("duration")).isDouble() || duration < 0
+                    || duration > 1000) {
+                    *error = QStringLiteral("motion.%1.duration must be 0 to 1000 ms")
+                                 .arg(it.key());
+                    return false;
+                }
+                spec.duration = duration;
+            }
+            if (entry.contains(QStringLiteral("easing"))) {
+                const auto easing = entry.value(QStringLiteral("easing")).toString();
+                if (!easings.contains(easing)) {
+                    *error = QStringLiteral("motion.%1.easing is not a known easing")
+                                 .arg(it.key());
+                    return false;
+                }
+                spec.easing = easing;
+            }
+            theme->motions.insert(it.key(), spec);
+        }
+    }
+    const QJsonValue accent = root.value(QStringLiteral("accent"));
+    if (!accent.isUndefined()) {
+        const auto mode = accent.toObject().value(QStringLiteral("mode")).toString();
+        if (!accent.isObject() || (mode != QLatin1String("fixed")
+                                   && mode != QLatin1String("wallpaper"))) {
+            *error = QStringLiteral("accent.mode must be fixed or wallpaper");
+            return false;
+        }
+        theme->accentMode = mode;
+    }
+    const QJsonValue decorationTheme = root.value(QStringLiteral("decorationTheme"));
+    if (!decorationTheme.isUndefined()) {
+        if (!decorationTheme.isString() || !isValidDocumentId(decorationTheme.toString())) {
+            *error = QStringLiteral("decorationTheme must be a decoration document id");
+            return false;
+        }
+        theme->decorationTheme = decorationTheme.toString();
+    }
+    return true;
+}
+
 bool isValidIconThemeName(const QString &name)
 {
     if (name.isEmpty() || name.size() > 128 || name.contains(QStringLiteral(".."))) {
@@ -67,6 +227,12 @@ bool isValidIconThemeName(const QString &name)
         }
     }
     return true;
+}
+
+bool isValidDocumentId(const QString &name)
+{
+    // Same bounded grammar as icon theme names: the id becomes a file name.
+    return isValidIconThemeName(name);
 }
 
 } // namespace
@@ -118,8 +284,13 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
     theme.decoration.hoverGlyphs =
         decoration.value(QStringLiteral("hoverGlyphs")).toBool(theme.decoration.hoverGlyphs);
 
-    if (theme.schemaVersion != 1 || theme.id.isEmpty() || theme.name.isEmpty() || theme.variant.isEmpty()) {
-        return failure(origin, QStringLiteral("theme requires schemaVersion 1 plus id, name, and variant"));
+    if ((theme.schemaVersion != 1 && theme.schemaVersion != 2) || theme.id.isEmpty()
+        || theme.name.isEmpty() || theme.variant.isEmpty()) {
+        return failure(origin, QStringLiteral("theme requires schemaVersion 1 or 2 plus id, name, and variant"));
+    }
+    QString schemaError;
+    if (!readSchemaV2(root, &theme, &schemaError)) {
+        return failure(origin, schemaError);
     }
     if (theme.cornerRadius < 0 || theme.cornerRadius > 32 || theme.motionDuration < 0
         || theme.motionDuration > 1000) {

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "paper",
+  "name": "Paper",
+  "description": "Opaque paper bars with flat symbols, small corners, and a light shadow; nothing shows through.",
+  "buttonPlacement": "right",
+  "tabDirection": "left-to-right",
+  "buttonStyle": "symbols",
+  "hoverGlyphs": false,
+  "material": {
+    "opacity": 1.0,
+    "blur": false,
+    "border": 1.0,
+    "highlight": false,
+    "shadow": 0.7
+  },
+  "cornerRadius": 6,
+  "shadow": {
+    "extent": 10,
+    "opacity": 0.22
+  },
+  "memberHandle": "plain",
+  "containerBadge": "pill"
+}

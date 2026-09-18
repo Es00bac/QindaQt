@@ -318,6 +318,26 @@ void AppearanceWindowPreview::setCanvas(const QColor &canvas)
     update();
 }
 
+void AppearanceWindowPreview::setWallpaper(const QUrl &wallpaper)
+{
+    if (m_wallpaper == wallpaper) {
+        return;
+    }
+    m_wallpaper = wallpaper;
+    m_wallpaperImage = QImage();
+    if (wallpaper.isLocalFile()) {
+        QImage image(wallpaper.toLocalFile());
+        // A preview never needs more than its own pixels; bound the cached
+        // image so a large wallpaper does not cost a full-size copy per item.
+        if (!image.isNull() && (image.width() > 1024 || image.height() > 1024)) {
+            image = image.scaled(1024, 1024, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        }
+        m_wallpaperImage = image;
+    }
+    Q_EMIT wallpaperChanged();
+    update();
+}
+
 void AppearanceWindowPreview::setCaption(const QString &caption)
 {
     if (m_caption == caption) {
@@ -393,10 +413,23 @@ void AppearanceWindowPreview::paint(QPainter *painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     const QRectF bounds(0.0, 0.0, width(), height());
+    QPainterPath canvas;
+    canvas.addRoundedRect(bounds, 8.0, 8.0);
     if (m_canvas.isValid()) {
-        QPainterPath canvas;
-        canvas.addRoundedRect(bounds, 8.0, 8.0);
         painter->fillPath(canvas, m_canvas);
+    }
+    if (!m_wallpaperImage.isNull()) {
+        // Cover-scale and center, like the desktop's scaled wallpaper mode.
+        const QSizeF scaled = QSizeF(m_wallpaperImage.size())
+                                  .scaled(bounds.size(), Qt::KeepAspectRatioByExpanding);
+        const QRectF target(bounds.center().x() - scaled.width() / 2.0,
+                            bounds.center().y() - scaled.height() / 2.0,
+                            scaled.width(), scaled.height());
+        painter->save();
+        painter->setClipPath(canvas);
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawImage(target, m_wallpaperImage);
+        painter->restore();
     }
     const qreal margin = 12.0;
     if (m_showInactiveWindow) {

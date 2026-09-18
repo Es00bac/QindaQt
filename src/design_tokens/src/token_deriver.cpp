@@ -143,6 +143,96 @@ ElevationTokens elevationTokens(bool themeBlurEnabled,
     };
 }
 
+MotionEntryTokens motionEntry(const QindaQt::Themes::MotionSpec &spec, bool reducedMotion)
+{
+    return {.duration = reducedMotion ? std::min(spec.duration, 80) : spec.duration,
+            .easing = spec.easing};
+}
+
+SurfaceMotionTokens surfaceMotionTokens(const QindaQt::Themes::ThemeSpec &theme,
+                                        bool reducedMotion)
+{
+    namespace Names = QindaQt::Themes::MotionNames;
+    return {.popup = motionEntry(theme.motion(QString(Names::Popup)), reducedMotion),
+            .menu = motionEntry(theme.motion(QString(Names::Menu)), reducedMotion),
+            .rollup = motionEntry(theme.motion(QString(Names::Rollup)), reducedMotion),
+            .hover = motionEntry(theme.motion(QString(Names::Hover)), reducedMotion)};
+}
+
+// AGENT-GUARD: text on a translucent surface composites over unknown
+// desktop pixels. The published opacity is the authored one raised until
+// fg.default and fg.muted keep 4.5:1 against the surface over both a black
+// and a white backdrop; an opaque surface is untouched.
+double guardedOpacity(double requested, const QColor &surface, const ForegroundTokens &foreground)
+{
+    const auto passes = [&](double opacity) {
+        for (const QColor &backdrop : {QColor(Qt::black), QColor(Qt::white)}) {
+            const QColor composite = DesignTokenDeriver::compositeOver(surface, opacity, backdrop);
+            if (DesignTokenDeriver::contrastRatio(foreground.defaultColor, composite) < 4.5
+                || DesignTokenDeriver::contrastRatio(foreground.muted, composite) < 4.5) {
+                return false;
+            }
+        }
+        return true;
+    };
+    double opacity = std::clamp(requested, 0.0, 1.0);
+    while (opacity < 1.0) {
+        if (passes(opacity)) {
+            return opacity;
+        }
+        opacity = std::min(1.0, opacity + 0.02);
+    }
+    return 1.0;
+}
+
+SurfaceMaterialTokens materialFor(const QindaQt::Themes::ThemeSpec &theme,
+                                  const QString &name,
+                                  const QColor &surfaceColor,
+                                  const ForegroundTokens &foreground,
+                                  const AccessibilityInputs &normalized)
+{
+    const auto spec = theme.surface(name);
+    SurfaceMaterialTokens tokens;
+    tokens.radius = static_cast<double>(theme.surfaceRadius(name));
+    tokens.border = spec.border;
+    tokens.highlight = spec.highlight;
+    tokens.shadow = spec.shadow;
+    // Reduce transparency and high contrast flatten every surface: opaque,
+    // unblurred, untinted, exactly like a schema v1 theme.
+    if (normalized.reducedTransparency || normalized.highContrast) {
+        return tokens;
+    }
+    tokens.blur = spec.blur;
+    tokens.tint = spec.tint;
+    tokens.opacity = guardedOpacity(spec.opacity, surfaceColor, foreground);
+    return tokens;
+}
+
+MaterialTokens materialTokens(const QindaQt::Themes::ThemeSpec &theme,
+                              const BackgroundTokens &background,
+                              const ForegroundTokens &foreground,
+                              const AccessibilityInputs &normalized)
+{
+    namespace Names = QindaQt::Themes::SurfaceNames;
+    // The color each surface paints its material with: panels, popups,
+    // menus and container chrome paint bg.raised; window title bars paint
+    // bg.highest; desktop icon plates paint bg.base.
+    return {
+        .panel = materialFor(theme, QString(Names::Panel), background.raised, foreground,
+                             normalized),
+        .popup = materialFor(theme, QString(Names::Popup), background.raised, foreground,
+                             normalized),
+        .menu = materialFor(theme, QString(Names::Menu), background.raised, foreground,
+                            normalized),
+        .containerChrome = materialFor(theme, QString(Names::ContainerChrome), background.raised,
+                                       foreground, normalized),
+        .decoration = materialFor(theme, QString(Names::Decoration), background.highest,
+                                  foreground, normalized),
+        .desktopIcons = materialFor(theme, QString(Names::DesktopIcons), background.base,
+                                    foreground, normalized),
+    };
+}
+
 double linearized(double component)
 {
     return component <= 0.04045 ? component / 12.92
@@ -154,9 +244,9 @@ double linearized(double component)
 DerivationResult DesignTokenDeriver::derive(const QindaQt::Themes::ThemeSpec &theme,
                                             const AccessibilityInputs &inputs)
 {
-    if (theme.schemaVersion != 1) {
+    if (theme.schemaVersion != 1 && theme.schemaVersion != 2) {
         return failure(DerivationError::InvalidSchemaVersion,
-                       QStringLiteral("QST-1 requires theme schemaVersion 1"));
+                       QStringLiteral("QST-1 requires theme schemaVersion 1 or 2"));
     }
     if (theme.id.isEmpty() || theme.name.isEmpty() || theme.variant.isEmpty()) {
         return failure(DerivationError::MissingIdentity,
@@ -246,6 +336,8 @@ DerivationResult DesignTokenDeriver::derive(const QindaQt::Themes::ThemeSpec &th
     const MotionTokens motion = motionTokens(theme.motionDuration, normalized.reducedMotion);
     const ElevationTokens elevation = elevationTokens(
         theme.blurEnabled, darkBackground, normalized.reducedTransparency);
+    const MaterialTokens material = materialTokens(theme, background, foreground, normalized);
+    const SurfaceMotionTokens surfaceMotion = surfaceMotionTokens(theme, normalized.reducedMotion);
 
     // AGENT-GUARD: Construct a complete value only after validating every
     // ThemeSpec field used above. Publishing a partial map would force QML
@@ -265,7 +357,9 @@ DerivationResult DesignTokenDeriver::derive(const QindaQt::Themes::ThemeSpec &th
                                  spacing,
                                  typeScale,
                                  motion,
-                                 elevation);
+                                 elevation,
+                                 material,
+                                 surfaceMotion);
     return {.tokens = std::shared_ptr<const DesignTokens>(raw),
             .error = DerivationError::None,
             .diagnostic = {}};
@@ -276,6 +370,20 @@ double DesignTokenDeriver::relativeLuminance(const QColor &color)
     return 0.2126 * linearized(static_cast<double>(color.redF()))
         + 0.7152 * linearized(static_cast<double>(color.greenF()))
         + 0.0722 * linearized(static_cast<double>(color.blueF()));
+}
+
+QColor DesignTokenDeriver::compositeOver(const QColor &surface, double opacity,
+                                         const QColor &backdrop)
+{
+    const double alpha = std::clamp(opacity, 0.0, 1.0) * static_cast<double>(surface.alphaF());
+    const auto channel = [alpha](float over, float under) {
+        return static_cast<float>(std::clamp(static_cast<double>(over) * alpha
+                                                 + static_cast<double>(under) * (1.0 - alpha),
+                                             0.0, 1.0));
+    };
+    return QColor::fromRgbF(channel(surface.redF(), backdrop.redF()),
+                            channel(surface.greenF(), backdrop.greenF()),
+                            channel(surface.blueF(), backdrop.blueF()));
 }
 
 double DesignTokenDeriver::contrastRatio(const QColor &foreground, const QColor &background)

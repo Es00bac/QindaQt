@@ -8,6 +8,7 @@
 #include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/themes/theme_spec.h"
 
+#include <QFileInfo>
 #include <QPalette>
 
 namespace QindaQt::Apps::SettingsAppearance {
@@ -19,14 +20,76 @@ QVariantList AppearanceSettingsModel::installedThemes() const
     const auto &maps = m_preview.previewMaps();
     entries.reserve(themes.size());
     for (int index = 0; index < themes.size(); ++index) {
+        const auto &theme = themes.at(index);
+        // Each card paints the theme's own pairing (ADR-0207) under the
+        // shipped arrangement, so the grid shows themes as they install.
+        const auto paired = Decoration::selectDecorationTheme(theme, m_decorations,
+                                                              QStringLiteral("theme"));
         entries.append(QVariantMap{
-            {QStringLiteral("id"), themes.at(index).id},
-            {QStringLiteral("name"), themes.at(index).name},
-            {QStringLiteral("variant"), themes.at(index).variant},
+            {QStringLiteral("id"), theme.id},
+            {QStringLiteral("name"), theme.name},
+            {QStringLiteral("variant"), theme.variant},
             {QStringLiteral("previewTokens"), maps.at(static_cast<size_t>(index))},
+            {QStringLiteral("previewChrome"),
+             Decoration::resolveWindowChrome(theme, paired, Decoration::ChromePreferences{})
+                 .toVariantMap()},
+            {QStringLiteral("previewContainerStyle"),
+             Decoration::containerStyleToVariantMap(Decoration::resolveContainerStyle(
+                 theme, paired, Decoration::ChromePreferences{}))},
         });
     }
     return entries;
+}
+
+QVariantList AppearanceSettingsModel::decorationDocuments() const
+{
+    if (m_resolution.themeIndex < 0
+        || m_resolution.themeIndex >= m_preview.themes().size()) {
+        return {};
+    }
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
+    const auto entry = [&theme, this](const QString &id, const QString &name,
+                                      const QString &description,
+                                      const std::optional<Themes::DecorationThemeSpec> &document) {
+        return QVariantMap{
+            {QStringLiteral("id"), id},
+            {QStringLiteral("name"), name},
+            {QStringLiteral("description"), description},
+            {QStringLiteral("previewChrome"),
+             Decoration::resolveWindowChrome(theme, document, m_draft.chrome).toVariantMap()},
+            {QStringLiteral("previewContainerStyle"),
+             Decoration::containerStyleToVariantMap(
+                 Decoration::resolveContainerStyle(theme, document, m_draft.chrome))},
+        };
+    };
+    QVariantList entries;
+    const auto paired = Decoration::selectDecorationTheme(theme, m_decorations,
+                                                          QStringLiteral("theme"));
+    entries.append(entry(QStringLiteral("theme"), tr("Theme"),
+                         paired ? tr("Paired with %1").arg(paired->name)
+                                : tr("The theme's own chrome"),
+                         paired));
+    for (const auto &document : m_decorations) {
+        entries.append(entry(document.id, document.name, document.description, document));
+    }
+    return entries;
+}
+
+QUrl AppearanceSettingsModel::previewWallpaper() const
+{
+    const QString value = m_draft.wallpaper;
+    if (value.isEmpty()) {
+        return {};
+    }
+    for (const auto &entry : m_bundledWallpapers) {
+        const auto map = entry.toMap();
+        if (map.value(QStringLiteral("value")).toString() == value) {
+            return map.value(QStringLiteral("previewUrl")).toUrl();
+        }
+    }
+    const QFileInfo file(value);
+    return file.isAbsolute() && file.isFile() ? QUrl::fromLocalFile(file.absoluteFilePath())
+                                              : QUrl();
 }
 
 QVariantList AppearanceSettingsModel::bundledWallpapers() const
@@ -103,10 +166,15 @@ QVariantMap AppearanceSettingsModel::previewChrome() const
         || m_resolution.themeIndex >= m_preview.themes().size()) {
         return {};
     }
-    // The same resolution the compositor publishes to every decoration,
-    // including the draft's window arrangement (ADR-0129).
+    // The same resolution the compositor publishes to every decoration:
+    // the draft's decoration document (ADR-0207) and window arrangement
+    // (ADR-0129) over the resolved theme.
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
     return Decoration::resolveWindowChrome(
-               m_preview.themes().at(m_resolution.themeIndex), m_draft.chrome)
+               theme,
+               Decoration::selectDecorationTheme(theme, m_decorations,
+                                                 m_draft.chrome.windowDecoration),
+               m_draft.chrome)
         .toVariantMap();
 }
 
@@ -116,8 +184,12 @@ QVariantMap AppearanceSettingsModel::previewContainerStyle() const
         || m_resolution.themeIndex >= m_preview.themes().size()) {
         return {};
     }
+    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
     return Decoration::containerStyleToVariantMap(Decoration::resolveContainerStyle(
-        m_preview.themes().at(m_resolution.themeIndex), m_draft.chrome));
+        theme,
+        Decoration::selectDecorationTheme(theme, m_decorations,
+                                          m_draft.chrome.containerDecoration),
+        m_draft.chrome));
 }
 
 QVariantMap AppearanceSettingsModel::previewToolkitPalette() const

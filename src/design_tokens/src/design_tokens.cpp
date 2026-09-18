@@ -12,6 +12,23 @@ QVariantMap statusPairMap(const StatusPair &pair)
             {QStringLiteral("foreground"), pair.foreground}};
 }
 
+QVariantMap surfaceMaterialMap(const SurfaceMaterialTokens &material)
+{
+    return {{QStringLiteral("opacity"), material.opacity},
+            {QStringLiteral("blur"), material.blur},
+            {QStringLiteral("tint"), material.tint},
+            {QStringLiteral("border"), material.border},
+            {QStringLiteral("highlight"), material.highlight},
+            {QStringLiteral("radius"), material.radius},
+            {QStringLiteral("shadow"), material.shadow}};
+}
+
+QVariantMap motionEntryMap(const MotionEntryTokens &entry)
+{
+    return {{QStringLiteral("duration"), entry.duration},
+            {QStringLiteral("easing"), entry.easing}};
+}
+
 QVariantMap elevationLevelMap(const ElevationLevel &level)
 {
     return {{QStringLiteral("backgroundBlur"), level.backgroundBlur},
@@ -37,7 +54,9 @@ DesignTokens::DesignTokens(QString sourceThemeId,
                            SpacingTokens spacing,
                            TypeScaleTokens typeScale,
                            MotionTokens motion,
-                           ElevationTokens elevation)
+                           ElevationTokens elevation,
+                           MaterialTokens material,
+                           SurfaceMotionTokens surfaceMotion)
     : m_sourceThemeId(std::move(sourceThemeId))
     , m_inputs(inputs)
     , m_background(std::move(background))
@@ -54,6 +73,8 @@ DesignTokens::DesignTokens(QString sourceThemeId,
     , m_typeScale(std::move(typeScale))
     , m_motion(motion)
     , m_elevation(elevation)
+    , m_material(std::move(material))
+    , m_surfaceMotion(std::move(surfaceMotion))
 {
 }
 
@@ -73,6 +94,8 @@ const SpacingTokens &DesignTokens::spacing() const { return m_spacing; }
 const TypeScaleTokens &DesignTokens::typeScale() const { return m_typeScale; }
 const MotionTokens &DesignTokens::motion() const { return m_motion; }
 const ElevationTokens &DesignTokens::elevation() const { return m_elevation; }
+const MaterialTokens &DesignTokens::material() const { return m_material; }
+const SurfaceMotionTokens &DesignTokens::surfaceMotion() const { return m_surfaceMotion; }
 
 QVariantMap DesignTokens::toVariantMap() const
 {
@@ -111,10 +134,23 @@ QVariantMap DesignTokens::toVariantMap() const
                                     {QStringLiteral("subtitle"), m_typeScale.subtitle},
                                     {QStringLiteral("title"), m_typeScale.title},
                                     {QStringLiteral("display"), m_typeScale.display}};
+    // ADR-0206: the per-surface entries ride beside the duration scale so
+    // QML reads `Tokens.motion.popup.duration`; QST revision 1 keys stay.
     const QVariantMap motionValues = {{QStringLiteral("instant"), m_motion.instant},
                                       {QStringLiteral("short"), m_motion.shortDuration},
                                       {QStringLiteral("base"), m_motion.base},
-                                      {QStringLiteral("long"), m_motion.longDuration}};
+                                      {QStringLiteral("long"), m_motion.longDuration},
+                                      {QStringLiteral("popup"), motionEntryMap(m_surfaceMotion.popup)},
+                                      {QStringLiteral("menu"), motionEntryMap(m_surfaceMotion.menu)},
+                                      {QStringLiteral("rollup"), motionEntryMap(m_surfaceMotion.rollup)},
+                                      {QStringLiteral("hover"), motionEntryMap(m_surfaceMotion.hover)}};
+    const QVariantMap materialValues = {
+        {QStringLiteral("panel"), surfaceMaterialMap(m_material.panel)},
+        {QStringLiteral("popup"), surfaceMaterialMap(m_material.popup)},
+        {QStringLiteral("menu"), surfaceMaterialMap(m_material.menu)},
+        {QStringLiteral("containerChrome"), surfaceMaterialMap(m_material.containerChrome)},
+        {QStringLiteral("decoration"), surfaceMaterialMap(m_material.decoration)},
+        {QStringLiteral("desktopIcons"), surfaceMaterialMap(m_material.desktopIcons)}};
     const QVariantMap elevationValues = {
         {QStringLiteral("1"), elevationLevelMap(m_elevation.one)},
         {QStringLiteral("2"), elevationLevelMap(m_elevation.two)},
@@ -134,7 +170,8 @@ QVariantMap DesignTokens::toVariantMap() const
             {QStringLiteral("space"), spacingValues},
             {QStringLiteral("type"), typeValues},
             {QStringLiteral("motion"), motionValues},
-            {QStringLiteral("elevation"), elevationValues}};
+            {QStringLiteral("elevation"), elevationValues},
+            {QStringLiteral("material"), materialValues}};
 }
 
 } // namespace QindaQt::DesignTokens

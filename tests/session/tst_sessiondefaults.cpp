@@ -26,6 +26,7 @@ private Q_SLOTS:
     void seedsOnScreenKeyboardFromTheNamedDesktopFile();
     void seedsNoInputMethodWithoutADesktopFile();
     void keepsAnExplicitInputMethod();
+    void seedsTranslucencyEffectsWithoutOverridingChoices();
 };
 
 void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
@@ -271,6 +272,32 @@ void SessionDefaultsTest::keepsAnExplicitInputMethod()
     settings.beginGroup(QStringLiteral("Wayland"));
     QCOMPARE(settings.value(QStringLiteral("InputMethod")).toString(),
              QStringLiteral("/usr/share/applications/com.github.maliit.keyboard.desktop"));
+void SessionDefaultsTest::seedsTranslucencyEffectsWithoutOverridingChoices()
+{
+    // Theming v2 (ADR-0206): the blur and background-contrast effects are
+    // seeded on first run; a user who switched blur off keeps that choice.
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    {
+        QSettings existing(path, QSettings::IniFormat);
+        existing.beginGroup(QStringLiteral("Plugins"));
+        existing.setValue(QStringLiteral("blurEnabled"), false);
+        existing.endGroup();
+        existing.sync();
+    }
+    QString error;
+    QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
+
+    QSettings settings(path, QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("Plugins"));
+    QCOMPARE(settings.value(QStringLiteral("blurEnabled")).toBool(), false);
+    QCOMPARE(settings.value(QStringLiteral("contrastEnabled")).toBool(), true);
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("Effect-blur"));
+    QCOMPARE(settings.value(QStringLiteral("BlurStrength")).toInt(), 8);
+    QCOMPARE(settings.value(QStringLiteral("NoiseStrength")).toInt(), 2);
+    settings.endGroup();
 }
 
 QTEST_GUILESS_MAIN(SessionDefaultsTest)

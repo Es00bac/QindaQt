@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-aurora",
+  "name": "Qinda Aurora",
+  "variant": "dark",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 16,
+  "motionDuration": 190,
+  "blurEnabled": true,
+  "colors": {
+    "canvas": "#0F1A1F",
+    "surface": "#16262D",
+    "surfaceRaised": "#1F3239",
+    "border": "#4C6B72",
+    "text": "#EAF6F8",
+    "textMuted": "#AFC6CC",
+    "accent": "#9AE6C8",
+    "accentText": "#062A21",
+    "danger": "#FF8FA3"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "traffic-lights",
+    "hoverGlyphs": true,
+    "titleBarColor": "#1F3239",
+    "titleBarInactiveColor": "#16262D",
+    "closeColor": "#FF7E8F",
+    "minimizeColor": "#F2CB6B",
+    "maximizeColor": "#6FD8AE"
+  },
+  "decorationTheme": "aurora",
+  "surfaces": {
+    "panel": {
+      "opacity": 0.7,
+      "blur": true,
+      "tint": "#1F3E4A",
+      "border": 0.5,
+      "highlight": true,
+      "shadow": 1.3
+    },
+    "popup": {
+      "opacity": 0.8,
+      "blur": true,
+      "tint": "#1F3E4A",
+      "highlight": true,
+      "shadow": 1.3
+    },
+    "menu": {
+      "opacity": 0.88,
+      "blur": true,
+      "highlight": true
+    },
+    "containerChrome": {
+      "opacity": 0.86,
+      "blur": true,
+      "tint": "#1F3E4A",
+      "highlight": true,
+      "shadow": 1.4
+    },
+    "decoration": {
+      "opacity": 0.8,
+      "blur": true,
+      "tint": "#1F3E4A",
+      "highlight": true,
+      "shadow": 1.4
+    },
+    "desktopIcons": {
+      "opacity": 0.0,
+      "blur": false,
+      "border": 0.0
+    }
+  },
+  "radii": {
+    "panel": 18,
+    "popup": 16,
+    "menu": 12,
+    "containerChrome": 16,
+    "decoration": 16
+  },
+  "motion": {
+    "popup": {
+      "duration": 190,
+      "easing": "emphasized"
+    },
+    "menu": {
+      "duration": 140,
+      "easing": "decelerate"
+    },
+    "rollup": {
+      "duration": 240,
+      "easing": "emphasized"
+    },
+    "hover": {
+      "duration": 100,
+      "easing": "standard"
+    }
+  },
+  "accent": {
+    "mode": "fixed"
+  }
+}

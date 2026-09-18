@@ -5,7 +5,9 @@
 
 #include <QColor>
 #include <QFont>
+#include <QImage>
 #include <QQuickPaintedItem>
+#include <QUrl>
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
@@ -30,6 +32,9 @@ class AppearanceContainerPreview : public QQuickPaintedItem {
     Q_PROPERTY(QFont toolkitFont READ toolkitFont WRITE setToolkitFont
                    NOTIFY toolkitFontChanged)
     Q_PROPERTY(QColor canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
+    // A local wallpaper file painted behind the windows (cover-scaled) so a
+    // translucent material previews against the desktop it will sit on.
+    Q_PROPERTY(QUrl wallpaper READ wallpaper WRITE setWallpaper NOTIFY wallpaperChanged)
 
 public:
     explicit AppearanceContainerPreview(QQuickItem *parent = nullptr);
@@ -44,6 +49,10 @@ public:
     void setToolkitFont(const QFont &font);
     [[nodiscard]] QColor canvas() const { return m_canvas; }
     void setCanvas(const QColor &canvas);
+    [[nodiscard]] QUrl wallpaper() const { return m_wallpaper; }
+    void setWallpaper(const QUrl &wallpaper);
+    // True when a wallpaper image is loaded and painted.
+    [[nodiscard]] bool wallpaperLoaded() const { return !m_wallpaperImage.isNull(); }
 
     // The container request this item paints at its current size.
     [[nodiscard]] HybridChrome::ChromeLayoutRequest layoutRequest() const;
@@ -58,6 +67,7 @@ Q_SIGNALS:
     void toolkitPaletteChanged();
     void toolkitFontChanged();
     void canvasChanged();
+    void wallpaperChanged();
 
 private:
     QVariantMap m_containerStyle;
@@ -65,6 +75,8 @@ private:
     QVariantMap m_toolkitPalette;
     QFont m_toolkitFont;
     QColor m_canvas;
+    QUrl m_wallpaper;
+    QImage m_wallpaperImage;
 };
 
 } // namespace QindaQt::Apps::SettingsAppearance

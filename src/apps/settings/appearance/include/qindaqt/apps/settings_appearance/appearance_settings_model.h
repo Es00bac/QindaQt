@@ -5,12 +5,14 @@
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 
 #include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/themes/decoration_theme_spec.h"
 
 #include <QColor>
 #include <QFont>
 #include <QObject>
 #include <QPointer>
 #include <QSet>
+#include <QUrl>
 #include <QVariantMap>
 #include <QVector>
 
@@ -77,6 +79,15 @@ class AppearanceSettingsModel final : public QObject {
     // the map shape AppearanceContainerPreview paints.
     Q_PROPERTY(QVariantMap previewContainerStyle READ previewContainerStyle
                    NOTIFY previewChanged)
+    // Decoration documents installed beside the themes (ADR-0207): the
+    // theme's own pairing first, then every document, each carrying the
+    // window chrome and container style it gives the resolved theme under
+    // the draft arrangement, so the choosers paint real previews.
+    Q_PROPERTY(QVariantList decorationDocuments READ decorationDocuments
+                   NOTIFY previewChanged)
+    // The draft wallpaper as a file URL the previews paint behind their
+    // windows; empty when no wallpaper is chosen or the file is unknown.
+    Q_PROPERTY(QUrl previewWallpaper READ previewWallpaper NOTIFY previewChanged)
 
 public:
     // AGENT-CONTRACT: Construct, call, and destroy this model on the GUI
@@ -121,6 +132,12 @@ public:
     [[nodiscard]] QFont previewToolkitFont() const;
     [[nodiscard]] QColor previewCanvasColor() const;
     [[nodiscard]] QVariantMap previewContainerStyle() const;
+    [[nodiscard]] QVariantList decorationDocuments() const;
+    [[nodiscard]] QUrl previewWallpaper() const;
+
+    // Replaces the decoration document catalog. Construction loads the
+    // standard directories; tests and focused compositions inject their own.
+    void setDecorationDocuments(QVector<Themes::DecorationThemeSpec> documents);
 
     // Coerces and stores one draft field. Returns false without changing the
     // draft when the key is unknown or the value does not fit the field type.
@@ -185,6 +202,7 @@ private:
 
     QindaQt::Services::SettingsClient::SettingsClient &m_client;
     AppearancePreview m_preview;
+    QVector<Themes::DecorationThemeSpec> m_decorations;
     Qt::ColorScheme m_platformScheme;
     QVariantList m_bundledWallpapers;
     QPointer<DesignTokens::TokenFacade> m_previewFacade;

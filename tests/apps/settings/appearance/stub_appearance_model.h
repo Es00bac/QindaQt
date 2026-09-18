@@ -8,6 +8,7 @@
 #include <QFont>
 #include <QObject>
 #include <QStringList>
+#include <QUrl>
 #include <QVariant>
 
 class StubWindowDecorationSettings final : public QObject {
@@ -110,6 +111,9 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(QColor previewCanvasColor MEMBER previewCanvasColor NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap previewContainerStyle MEMBER previewContainerStyle
                    NOTIFY draftChanged)
+    Q_PROPERTY(QVariantList decorationDocuments MEMBER decorationDocuments
+                   NOTIFY draftChanged)
+    Q_PROPERTY(QUrl previewWallpaper MEMBER previewWallpaper NOTIFY draftChanged)
     Q_PROPERTY(QObject *windowDecorationSettings READ windowDecorationSettings CONSTANT)
 
 public:
@@ -169,6 +173,8 @@ public:
     QFont previewToolkitFont;
     QColor previewCanvasColor;
     QVariantMap previewContainerStyle;
+    QVariantList decorationDocuments;
+    QUrl previewWallpaper;
     QVariantMap draft;
     QVariantMap fieldErrors;
     QVariantList installedThemes;
