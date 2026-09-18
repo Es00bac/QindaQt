@@ -38,6 +38,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::DateTime:
   case SettingsRouteComponent::Windows:
   case SettingsRouteComponent::DefaultApplications:
+  case SettingsRouteComponent::AboutComputer:
     return true;
   }
   return false;
@@ -77,6 +78,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("windows");
   case SettingsRouteComponent::DefaultApplications:
     return QStringLiteral("default-apps");
+  case SettingsRouteComponent::AboutComputer:
+    return QStringLiteral("about-computer");
   }
   return {};
 }

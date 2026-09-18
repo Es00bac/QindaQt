@@ -23,6 +23,7 @@ enum class SettingsRouteComponent {
   DateTime,
   Windows,
   DefaultApplications,
+  AboutComputer,
 };
 
 [[nodiscard]] QString

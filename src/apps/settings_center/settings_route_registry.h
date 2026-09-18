@@ -48,6 +48,7 @@ private:
   void registerWindowsRoute();
   void registerDefaultApplicationsRoute();
   void registerDefaultApplicationsRoute();
+  void registerAboutComputerRoute();
   void registerBuiltInRoutesFirstHalf();
   void registerBuiltInRoutesSecondHalf();
   void registerBuiltIn(const SettingsRoute &route);

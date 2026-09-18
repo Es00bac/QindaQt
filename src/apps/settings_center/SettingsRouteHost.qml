@@ -34,6 +34,7 @@ Item {
     property Component dateTimeComponent: null
     property Component windowsComponent: null
     property Component defaultApplicationsComponent: null
+    property Component aboutComputerComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -77,6 +78,7 @@ Item {
               ? dateTimeLoader
             : navigation.activeRouteComponent === "windows" ? windowsLoader
             : navigation.activeRouteComponent === "default-apps" ? defaultApplicationsLoader
+            : navigation.activeRouteComponent === "about-computer" ? aboutComputerLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -324,6 +326,18 @@ Item {
                 && host.navigation.activeRouteComponent === "default-apps"
                 && host.defaultApplicationsComponent !== null
         sourceComponent: host.defaultApplicationsComponent
+    }
+
+    Loader {
+        id: aboutComputerLoader
+        objectName: host.objectNamePrefix + "AboutComputerLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "about-computer"
+                && host.aboutComputerComponent !== null
+        sourceComponent: host.aboutComputerComponent
     }
 
     Loader {
