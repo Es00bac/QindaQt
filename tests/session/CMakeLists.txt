@@ -613,6 +613,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         include("${CMAKE_CURRENT_SOURCE_DIR}/iconify_visibility/IconifyVisibilityTests.cmake")
         include("${CMAKE_CURRENT_SOURCE_DIR}/touch_osk/TouchOskTests.cmake")
         include("${CMAKE_CURRENT_SOURCE_DIR}/touch_edges/TouchEdgesTests.cmake")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/window_management/DockingChordNestedTests.cmake")
     endif()
 endif()
 

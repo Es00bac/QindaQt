@@ -41,8 +41,12 @@
 
 #include <compositor.h>
 #include <input.h>
+#include <options.h>
 #include <window.h>
 #include <workspace.h>
+
+#include <KConfigGroup>
+#include <KSharedConfig>
 
 #include <QApplication>
 #include <QMargins>
@@ -236,6 +240,11 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             return {HybridInput::HitKind::MemberTitle, m_registry.owner(id), id, {}};
         });
     initializeIconifyInput();
+    applyWindowManagementConfig();
+    if (KWin::options) {
+        connect(KWin::options, &KWin::Options::configChanged, this,
+                &KWinHybridSession::applyWindowManagementConfig);
+    }
     initializeTaskIdentityAndShortcuts();
     initializeSavedWorkspaces();
     initializeGroupContextMenu();

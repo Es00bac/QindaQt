@@ -78,6 +78,12 @@ configuration instead ([ADR-0134](../../adr/0134-input-and-shortcut-settings.md)
 | `windowManagement.sessionRestore` | boolean | `true` | None beyond type |
 | `windowManagement.closeContainerPolicy` | string | `"ask"` | `{"allowedValues":["ask","close-all","ungroup"]}` |
 
+These five keys are live: `qindaqt-session` writes each confirmed change into
+`kwinrc` and asks KWin to reconfigure, and the compositor plugin rebinds the
+docking chord and close policy on that reload
+([ADR-0209](../../adr/0209-bridge-window-management-settings-into-kwinrc.md)).
+`sessionRestore` is written through but has no consumer yet.
+
 ## accessibility
 
 | Key | Type | Default | Schema constraints |

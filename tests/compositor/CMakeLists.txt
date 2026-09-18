@@ -633,4 +633,6 @@ if(TARGET qindaqt_kwin_input_adapter)
     include("${CMAKE_CURRENT_LIST_DIR}/WorkspaceTests.cmake")
 endif()
 
+include("${CMAKE_CURRENT_LIST_DIR}/WindowManagementConfigTests.cmake")
+
 include("${CMAKE_CURRENT_LIST_DIR}/TestWarnings.cmake")

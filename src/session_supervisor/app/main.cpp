@@ -2,10 +2,17 @@
 #include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 #include "qindaqt/session_supervisor/session_service.h"
+#include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/session/window_management/kwin_reconfigure_requester.h"
+#include "qindaqt/session/window_management/kwin_window_management_writer.h"
+#include "qindaqt/session/window_management/window_management_bridge.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QCoreApplication>
+#include <QDir>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QtDBus/QDBusConnection>
 
@@ -119,6 +126,28 @@ int main(int argc, char *argv[])
         QTextStream(stderr) << QCoreApplication::applicationName() << ": "
                             << error << '\n';
         return 2;
+    }
+    // The windowManagement.* live bridge (ADR-0209): confirmed Settings1
+    // values become kwinrc entries plus one KWin reconfigure. It rides the
+    // supervisor's lifetime and never blocks it; without Settings1 the last
+    // written kwinrc simply stands.
+    QindaQt::Services::SettingsClient::QtSettingsTransport windowManagementTransport(
+        QDBusConnection::sessionBus());
+    QindaQt::Services::SettingsClient::SettingsClient windowManagementSettings(
+        windowManagementTransport,
+        QindaQt::Session::WindowManagement::WindowManagementPreferences::scopedKeys());
+    const QindaQt::Session::WindowManagement::KWinWindowManagementWriter kwinWriter(
+        QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
+            .filePath(QStringLiteral("kwinrc")));
+    QindaQt::Session::WindowManagement::DBusKWinReconfigureRequester kwinReconfigure(
+        QDBusConnection::sessionBus());
+    QindaQt::Session::WindowManagement::WindowManagementBridge windowManagementBridge(
+        windowManagementSettings, kwinWriter, kwinReconfigure);
+    QString windowManagementError;
+    if (!windowManagementSettings.start(&windowManagementError)) {
+        QTextStream(stderr) << QCoreApplication::applicationName()
+                            << ": windowManagement bridge has no Settings1 scope yet: "
+                            << windowManagementError << '\n';
     }
     QObject::connect(&supervisor, &SessionProcessSupervisor::finished,
                      &application, [&application](int exitCode,

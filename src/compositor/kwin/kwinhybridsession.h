@@ -10,6 +10,7 @@
 #include "hybridcontainerappearance.h"
 #include "hybridshadecontroller.h"
 #include "hybridtaskidentitypolicy.h"
+#include "windowmanagementconfig.h"
 
 #include <QObject>
 #include <QPalette>
@@ -223,6 +224,10 @@ private:
                                            const QString &windowId,
                                            QString *error = nullptr);
     void initializeTaskIdentityAndShortcuts();
+    // ADR-0209: re-reads kwinrc's [QindaQt] group (written live by
+    // qindaqt-session) and applies the docking chord and close policy. Runs
+    // once at construction and again on every KWin reconfigure.
+    void applyWindowManagementConfig();
     void initializeSavedWorkspaces();
     void initializeChromeSceneLifecycle();
     void shutdownSavedWorkspaces() noexcept;
@@ -371,6 +376,7 @@ private:
     std::unique_ptr<KWinWorkspaceUiPort> m_workspacePort;
     std::unique_ptr<KWinWorkspaceController> m_workspaceController;
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;
+    WindowManagementConfig m_windowManagement;
     HybridChrome::ChromeStyle m_chromeStyle = HybridChrome::ChromeStyle::qindaMacOS({});
     HybridContainerAppearanceStore m_appearance;
     std::unique_ptr<HybridShadeMemberPlatform> m_shadeMemberPlatform;

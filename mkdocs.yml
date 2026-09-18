@@ -336,3 +336,4 @@ nav:
       - "ADR-0203: an ordinary window rolls up to its icon": adr/0203-an-ordinary-window-rolls-up-to-its-icon.md
       - "ADR-0204: the on-screen keyboard is the compositor's input method": adr/0204-the-on-screen-keyboard-is-the-compositors-input-method.md
       - "ADR-0205: touch edges and touch preferences belong to the compositor": adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md
+      - "ADR-0209: windowManagement.* is bridged into kwinrc by the session, live": adr/0209-bridge-window-management-settings-into-kwinrc.md
