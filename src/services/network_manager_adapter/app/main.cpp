@@ -42,6 +42,17 @@ int main(int argc, char **argv) {
       },
       Qt::QueuedConnection);
   const NetworkServiceStartStatus status = service.start();
+  // AGENT-GUARD: NameAlreadyOwned means a live sibling already provides
+  // Network1 -- not a failure of this process. Exiting nonzero here would
+  // have systemd's Restart=on-failure retry a start that can only ever fail
+  // the same way again while the sibling lives, looping until
+  // StartLimitBurst; exit 0 lets the unit settle once, with the reason on
+  // the record.
+  if (status == NetworkServiceStartStatus::NameAlreadyOwned) {
+    qInfo("Network1 startup stopped: org.qindaqt.Network1 is already owned "
+          "by a live sibling process");
+    return 0;
+  }
   if (status != NetworkServiceStartStatus::Started) {
     qCritical("Network1 startup failed with status %u",
               static_cast<unsigned int>(status));

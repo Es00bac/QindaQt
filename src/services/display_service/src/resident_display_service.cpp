@@ -104,11 +104,16 @@ ServiceStartStatus ResidentDisplayService::start()
     }
     m_objectRegistered = true;
     if (!m_connection.registerService(m_serviceName)) {
-        const bool alreadyOwned = m_connection.lastError().name()
-            == QStringLiteral("org.freedesktop.DBus.Error.NameExists");
+        // AGENT-GUARD: Qt reports a foreign-owned name as a bare failure
+        // without a NameExists D-Bus error (RequestName replies EXISTS as a
+        // result code, not a protocol error). Ask the bus who owns the name
+        // so an honest NameAlreadyOwned never degrades into a generic
+        // failure; matches ResidentPowerService's fix for the identical gap.
+        const QString currentOwner =
+            m_connection.interface()->serviceOwner(m_serviceName).value();
         stop();
-        return alreadyOwned ? ServiceStartStatus::NameAlreadyOwned
-                            : ServiceStartStatus::NameRegistrationFailed;
+        return !currentOwner.isEmpty() ? ServiceStartStatus::NameAlreadyOwned
+                                       : ServiceStartStatus::NameRegistrationFailed;
     }
     m_nameRegistered = true;
     m_inventorySource->setObserver(this);
