@@ -65,6 +65,85 @@ Q_SIGNALS:
   void changed();
 };
 
+// Mirrors NotificationScheduleModel's QML surface (ADR-0201) without touching
+// Settings1: the page under test only reads these properties and calls these
+// three methods.
+class StubQuietingScheduleModel final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool available MEMBER available NOTIFY viewChanged)
+  Q_PROPERTY(bool scheduleEnabled MEMBER scheduleEnabled NOTIFY viewChanged)
+  Q_PROPERTY(int startMinutes MEMBER startMinutes NOTIFY viewChanged)
+  Q_PROPERTY(int endMinutes MEMBER endMinutes NOTIFY viewChanged)
+  Q_PROPERTY(QString startText MEMBER startText NOTIFY viewChanged)
+  Q_PROPERTY(QString endText MEMBER endText NOTIFY viewChanged)
+  Q_PROPERTY(QString summaryText MEMBER summaryText NOTIFY viewChanged)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
+
+public:
+  bool available = true;
+  bool scheduleEnabled = false;
+  int startMinutes = 22 * 60;
+  int endMinutes = 7 * 60;
+  QString startText = QStringLiteral("22:00");
+  QString endText = QStringLiteral("07:00");
+  QString summaryText;
+  QString errorText;
+  int enabledCount = 0;
+  int startCount = 0;
+  int endCount = 0;
+  int lastStartHour = -1;
+  int lastStartMinute = -1;
+  int lastEndHour = -1;
+  int lastEndMinute = -1;
+
+  explicit StubQuietingScheduleModel(QObject *parent = nullptr)
+      : QObject(parent) {}
+
+  static QString formatted(int hour, int minute) {
+    return QStringLiteral("%1:%2")
+        .arg(hour, 2, 10, QLatin1Char('0'))
+        .arg(minute, 2, 10, QLatin1Char('0'));
+  }
+
+  Q_INVOKABLE void setScheduleEnabled(bool val) {
+    ++enabledCount;
+    scheduleEnabled = val;
+    Q_EMIT viewChanged();
+  }
+  // Mirrors the real model exactly on the point the page depends on: a time
+  // outside 00:00..23:59 is refused in silence, so nothing tells the page to
+  // redraw and only the page's own binding can put the field back.
+  Q_INVOKABLE void setStart(int hour, int minute) {
+    ++startCount;
+    lastStartHour = hour;
+    lastStartMinute = minute;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return;
+    }
+    startMinutes = hour * 60 + minute;
+    startText = formatted(hour, minute);
+    Q_EMIT viewChanged();
+  }
+  Q_INVOKABLE void setEnd(int hour, int minute) {
+    ++endCount;
+    lastEndHour = hour;
+    lastEndMinute = minute;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return;
+    }
+    endMinutes = hour * 60 + minute;
+    endText = formatted(hour, minute);
+    Q_EMIT viewChanged();
+  }
+  Q_INVOKABLE void clearError() {
+    errorText.clear();
+    Q_EMIT viewChanged();
+  }
+
+Q_SIGNALS:
+  void viewChanged();
+};
+
 class StubAppearanceModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading MEMBER loading NOTIFY stateChanged)

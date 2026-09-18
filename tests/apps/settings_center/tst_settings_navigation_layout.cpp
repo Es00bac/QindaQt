@@ -45,6 +45,7 @@ private Q_SLOTS:
 private:
   std::unique_ptr<QQmlApplicationEngine> m_engine;
   std::unique_ptr<StubQuietingModel> m_quieting;
+  std::unique_ptr<StubQuietingScheduleModel> m_quietingSchedule;
   std::unique_ptr<StubAppearanceModel> m_appearance;
   std::unique_ptr<StubNetworkSettingsModel> m_network;
   std::unique_ptr<StubAudioSettingsModel> m_audio;
@@ -69,6 +70,7 @@ void SettingsNavigationLayoutTest::initTestCase() {
   QString pubError;
   QVERIFY2(facade->publish(loaded.theme, {}, &pubError), qPrintable(pubError));
   m_quieting = std::make_unique<StubQuietingModel>();
+  m_quietingSchedule = std::make_unique<StubQuietingScheduleModel>();
   m_appearance = std::make_unique<StubAppearanceModel>();
   m_network = std::make_unique<StubNetworkSettingsModel>();
   m_audio = std::make_unique<StubAudioSettingsModel>();
@@ -95,6 +97,8 @@ void SettingsNavigationLayoutTest::testWideTwoColumnLayoutAndRouteSwitching() {
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(m_quietingSchedule.get()))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(m_customize.get())},
@@ -212,6 +216,8 @@ void SettingsNavigationLayoutTest::testCompactLayoutAdaptation() {
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(m_quietingSchedule.get()))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(m_customize.get())},

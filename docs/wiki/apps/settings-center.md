@@ -70,7 +70,11 @@ bus. This separation is required: client request tokens are local sequences
 that begin at the same value, so sharing one transport could route a matching
 owner/token reply to both clients. The two domain models live for the process
 and retain their truthful state when the user changes pages. QML receives only
-their QObject projections and never imports transport or Settings1 authority.
+their QObject projections and never imports transport or Settings1 authority. The Notifications route projects two models over that one
+scoped client: the Do Not Disturb controller and the quiet-hours schedule.
+Both are purpose-scoped to the same four `services.doNotDisturb*` keys, so a
+schedule edit and a Do Not Disturb edit share one owner and one token
+sequence rather than racing two (ADR-0201).
 
 Network owns one public Qt Network transport, `NetworkClient`, and
 `NetworkSettingsModel` for the process lifetime. It does not share the

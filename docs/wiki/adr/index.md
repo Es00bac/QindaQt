@@ -198,3 +198,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0194: a saved network location is a name and a canonical address](0194-saved-network-locations-are-canonical-addresses.md)
 - [ADR-0195: one owner per transfer, and a queue for the ones that cross the network boundary](0195-one-owner-per-transfer-and-a-queue-for-the-network.md)
 - [ADR-0196: network sign-in belongs to the platform, not to QindaQt](0196-network-sign-in-belongs-to-the-platform.md)
+- [ADR-0201: quiet hours are a window the settings service owns](0201-quiet-hours-are-a-window-the-service-owns.md)
