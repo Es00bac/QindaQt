@@ -24,6 +24,7 @@ enum class SettingsRouteComponent {
   Windows,
   DefaultApplications,
   AboutComputer,
+  Startup,
 };
 
 [[nodiscard]] QString

@@ -23,6 +23,7 @@ import QindaQt.SettingsApp.StreamingBackend
 import QindaQt.SettingsApp.Windows
 import QindaQt.SettingsApp.DefaultApplications
 import QindaQt.SettingsApp.AboutComputer
+import QindaQt.SettingsApp.Startup
 
 T.ApplicationWindow {
     id: root
@@ -201,6 +202,8 @@ T.ApplicationWindow {
             windowsComponent: windowsRouteComponent
             defaultApplicationsComponent: addedRouteComponents.defaultApplications
             aboutComputerComponent: addedRouteComponents.aboutComputer
+            startupComponent: addedRouteComponents.startup
+            startupComponent: addedRouteComponents.startup
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -257,6 +260,8 @@ T.ApplicationWindow {
             windowsComponent: windowsRouteComponent
             defaultApplicationsComponent: addedRouteComponents.defaultApplications
             aboutComputerComponent: addedRouteComponents.aboutComputer
+            startupComponent: addedRouteComponents.startup
+            startupComponent: addedRouteComponents.startup
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }

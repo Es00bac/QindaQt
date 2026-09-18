@@ -3,7 +3,7 @@ import QtQuick
 import QindaQt.SettingsApp.DateTime
 import QindaQt.SettingsApp.DefaultApplications
 import QindaQt.SettingsApp.AboutComputer
-import QindaQt.SettingsApp.AboutComputer
+import QindaQt.SettingsApp.Startup
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -47,10 +47,11 @@ QtObject {
         }
     }
 
-    readonly property Component aboutComputer: Component {
-        AboutComputerPage {
-            objectName: "aboutComputerPage"
-            aboutComputerSettings: AboutComputerRouteComposition.model
+    // The Startup applications route.
+    readonly property Component startup: Component {
+        StartupPage {
+            objectName: "startupPage"
+            startupSettings: StartupRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

@@ -113,6 +113,7 @@ nav:
       - Theme schema v1: reference/theme-schema-v1.md
       - "Laptop readiness: qinda-top": reference/laptop-readiness-qinda-top.md
       - Theme schema v2: reference/theme-schema-v2.md
+      - "Settings completeness audit": reference/settings-completeness.md
   - Development:
       - Implementation roadmap: development/implementation-roadmap.md
       - Coding practices: development/coding-practices.md
@@ -146,6 +147,7 @@ nav:
       - Settings Windows & workspaces route: apps/windows-settings.md
       - Settings Default applications route: apps/default-applications.md
       - Settings About this computer route: apps/about-this-computer.md
+      - Settings Startup applications route: apps/startup-settings.md
       - Terminal: apps/terminal.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:
@@ -347,3 +349,4 @@ nav:
       - "ADR-0211: the clock and region page acts on the platform's own services": adr/0211-the-clock-and-region-page-acts-on-the-platforms-own-services.md
       - "ADR-0212: quiet hours are a window the settings service owns": adr/0212-quiet-hours-are-a-window-the-service-owns.md
       - "ADR-0213: host the customization editor live in the shell": adr/0213-host-the-customization-editor-live-in-the-shell.md
+      - "ADR-0193: startup applications route shadows, never edits, system entries": adr/0193-startup-applications-route.md
