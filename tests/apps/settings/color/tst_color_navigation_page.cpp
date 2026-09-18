@@ -93,6 +93,8 @@ ColorNavigationPageTest::createWindow(
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(static_cast<QObject *>(&m_unusedRouteModel))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(&m_unusedRouteModel))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(&m_unusedRouteModel))},
       {QStringLiteral("customizeSettings"),

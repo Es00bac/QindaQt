@@ -88,6 +88,12 @@ target_link_libraries(
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_backend_qml
     qindaqt_settings_color_backend_qmlplugin
+    # AGENT-NOTE: every route module Main.qml imports; see the longer
+    # note in tests/apps/settings/bluetooth/CMakeLists.txt.
+    qindaqt_settings_streaming_backend_qml
+    qindaqt_settings_streaming_backend_qmlplugin
+    qindaqt_settings_windows_qml qindaqt_settings_windows_qmlplugin
+    qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin
     qindaqt_settings_input_backend_qml
     qindaqt_settings_input_backend_qmlplugin
     qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
@@ -100,6 +106,9 @@ add_dependencies(
     qindaqt_settings_audio_qmlplugin qindaqt_settings_bluetooth_qmlplugin
     qindaqt_settings_power_qmlplugin qindaqt_settings_clipboard_qmlplugin
     qindaqt_settings_color_qmlplugin
+    qindaqt_settings_streaming_qml qindaqt_settings_streaming_qmlplugin
+    qindaqt_settings_windows_qml qindaqt_settings_windows_qmlplugin
+    qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin
     qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_color_navigation_page_tests)
