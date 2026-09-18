@@ -14,6 +14,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace KWin {
 class InputRedirection;
@@ -31,6 +32,22 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 class HybridChromePointerRouter;
 struct ChromePointerDecision;
+class HybridIconChipRouter;
+struct IconChipPointerDecision;
+
+// Iconified-window input (ADR-0203). Every member is optional; a missing
+// router or resolver simply leaves that path to KWin. The router and the
+// callables are borrowed and must outlive the filter.
+struct IconifyInputHooks final
+{
+    HybridIconChipRouter *chipRouter = nullptr;
+    std::function<void(const IconChipPointerDecision &)> chipSink;
+    // Resolves the independent, server-decorated window whose title bar lies
+    // under the pointer, or nothing when another input owner covers it.
+    std::function<std::optional<QString>(const QPointF &)> titleWheelTarget;
+    // Receives the window a modifier-free wheel away from the user rolls up.
+    std::function<void(const QString &windowId)> iconify;
+};
 
 class KWinInteractionFilter final
 {
@@ -57,6 +74,9 @@ public:
     KWinInteractionFilter &operator=(const KWinInteractionFilter &) = delete;
 
     [[nodiscard]] bool installed() const;
+    // Installs the iconified-window hooks after construction; the session
+    // builds its chip router before the filter and resolves chips itself.
+    void setIconifyHooks(IconifyInputHooks hooks);
     [[nodiscard]] bool beginKeyboardDock(const HybridInput::HitTarget &source);
     [[nodiscard]] bool beginKeyboardMove(const HybridInput::HitTarget &source);
     [[nodiscard]] bool beginKeyboardDividerResize(
@@ -90,6 +110,7 @@ private:
     void finishTouchGesture();
     [[nodiscard]] bool dispatch(HybridInput::InteractionDecision decision);
     [[nodiscard]] bool dispatchChrome(ChromePointerDecision decision);
+    [[nodiscard]] bool dispatchChip(IconChipPointerDecision decision);
 
     // Early (pre-InteractiveMoveResize) observation. Watches for our exact
     // takeover chord newly becoming satisfied while KWin is mid a *native*
@@ -111,6 +132,7 @@ private:
     IntentSink m_sink;
     HybridChromePointerRouter *m_chromeRouter = nullptr;
     ChromeDecisionSink m_chromeSink;
+    IconifyInputHooks m_iconify;
     TakeoverSourceResolver m_takeoverSource;
     std::unique_ptr<Filter> m_filter;
     std::unique_ptr<EarlyTakeoverFilter> m_earlyFilter;

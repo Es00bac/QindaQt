@@ -7,6 +7,8 @@
 #include "hybridchromeaccessibilityregistry.h"
 #include "hybridchromepointerrouter.h"
 #include "hybridchromesyncscheduler.h"
+#include "hybridiconchiprouter.h"
+#include "hybridiconifycontroller.h"
 #include "hybridchromeplanbuilder.h"
 #include "hybridcontainerplacement.h"
 #include "hybridgroupedgeometryreconciler.h"
@@ -24,6 +26,7 @@
 #include "kwinhybridscene.h"
 #include "kwinhybridshutdown.h"
 #include "kwinhybridgroupstacking.h"
+#include "kwiniconchippresenter.h"
 #include "kwininteractionfilter.h"
 #include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
@@ -172,32 +175,7 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
     connect(&registry, &ManagedWindowRegistry::outputsChanged,
             m_chromeSyncScheduler.get(),
             &HybridChromeSyncScheduler::outputsChanged);
-    m_targetResolver = std::make_unique<KWinInteractionTargetResolver>(
-        registry, m_chromeManager.get(),
-        [this](const QString &containerId,
-               const QPointF &position,
-               const QSet<QString> &excludedWindowIds) {
-            return m_groupStacking
-                && m_groupStacking->chromeExposedAt(
-                    containerId, position, excludedWindowIds);
-        },
-        [this](const QString &containerId) -> std::optional<QRectF> {
-            const auto layout = m_sceneFactory->committedLayout(containerId);
-            if (!layout) {
-                return std::nullopt;
-            }
-            return QRectF(layout->activePage.contentFrame);
-        },
-        [this](const QString &containerId, const QString &pageId) -> QStringList {
-            const auto *container = m_runtime->topology().container(containerId);
-            const auto *page = container ? container->page(pageId) : nullptr;
-            if (!page) {
-                return {};
-            }
-            QStringList members;
-            collectPageWindowIds(page->root(), &members);
-            return members;
-        });
+    initializeTargetResolver();
     m_dragTranslator = std::make_unique<HybridChromeDragTranslator>(*m_targetResolver);
     m_placement = std::make_unique<HybridContainerPlacementController>(
         [this]() -> const Hybrid::WindowTopology & { return m_runtime->topology(); },
@@ -227,9 +205,16 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
                     hit->containerId, position)) {
                 return std::optional<ChromePointerHit>{};
             }
+            // ADR-0203: an iconified window's chip stacked above this
+            // container's anchor owns the point; chrome yields to it.
+            if (iconChipCoversAbove(m_groupStacking->anchorMemberId(hit->containerId),
+                                    position)) {
+                return std::optional<ChromePointerHit>{};
+            }
             return hit;
         },
         QApplication::startDragDistance());
+    ensureIconify();
     m_dockPreview = std::make_unique<KWinDockPreview>(
         [this](const HybridInput::DockTarget &target) {
             return dockTargetFrame(target);
@@ -250,6 +235,7 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             }
             return {HybridInput::HitKind::MemberTitle, m_registry.owner(id), id, {}};
         });
+    initializeIconifyInput();
     initializeTaskIdentityAndShortcuts();
     initializeSavedWorkspaces();
     initializeGroupContextMenu();
@@ -289,6 +275,8 @@ void KWinHybridSession::initializeChromeSceneLifecycle()
             // publication is intentionally empty, then clear its stale roots.
             QScopedValueRollback<bool> synchronizing(m_synchronizingChrome, true);
             invalidateChromePublication();
+            // Chip images are children of member WindowItems too (ADR-0203).
+            releaseIconChipSceneItems();
         },
         [this] { synchronizeChrome(); },
         compositor && compositor->isActive());
@@ -356,6 +344,7 @@ void KWinHybridSession::shutdown() noexcept
         m_memberPolicy->restorePresentationForShutdown();
     }
     restoreShadeForShutdown();
+    restoreIconifiedForShutdown();
     restoreMemberChromeVisibilityForShutdown();
 
     if (m_runtime && m_sceneFactory) {
@@ -386,6 +375,11 @@ void KWinHybridSession::shutdown() noexcept
     m_appearance.clear();
     m_dockPreview.reset();
     m_closePrompt.reset();
+    m_iconChipMenu.reset();
+    m_iconChips.reset();
+    m_iconChipRouter.reset();
+    m_iconify.reset();
+    m_iconifyPlatform.reset();
     m_chromePointerRouter.reset();
     m_interactionController.reset();
     m_dragTranslator.reset();
@@ -599,6 +593,7 @@ void KWinHybridSession::synchronizeChrome()
         m_memberPolicy->enforceChromeVisibility();
     }
     synchronizeAccessibility();
+    synchronizeIconChips();
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

@@ -151,6 +151,9 @@ QJsonObject KWinHybridSession::diagnostics() const
              publishedGroupStackingCount},
             {QStringLiteral("shadedContainerCount"), shadedContainerCount},
             {QStringLiteral("shadedStripFrames"), shadedStripFrames},
+            {QStringLiteral("iconifiedWindowCount"), int(iconifiedWindowCount())},
+            {QStringLiteral("visibleIconChipCount"), int(visibleIconChipCount())},
+            {QStringLiteral("iconifiedWindows"), iconifiedWindowsJson()},
             {QStringLiteral("lastGroupStackingFailure"),
              m_lastGroupStackingFailure}};
 }

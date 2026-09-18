@@ -17,6 +17,7 @@ private Q_SLOTS:
     void memberDragPreviewsAndCommitsDock();
     void groupedMemberDragOutsideCommitsDetach();
     void independentDragOutsideCancels();
+    void iconChipDragOutsideCommitsWithoutATarget();
     void pointerGeometryKindsUseCumulativeDeltas();
     void externalCancelKeepsCumulativeDelta();
     void exactChordWithoutTargetOwnsTheWholeGestureSilently();
@@ -157,6 +158,33 @@ void InteractionControllerTest::independentDragOutsideCancels()
     const auto released = controller.pointerRelease(releaseAt({30, 0}));
     QCOMPARE(released.intents.constFirst().phase, IntentPhase::Cancel);
     QCOMPARE(released.intents.constFirst().delta, QPointF(30, 0));
+}
+
+void InteractionControllerTest::iconChipDragOutsideCommitsWithoutATarget()
+{
+    // ADR-0203: a chip released over nothing commits (the session moves the
+    // chip to the drop point); an independent title in the same situation
+    // still cancels, and Escape still cancels a chip drag.
+    RecordingResolver resolver;
+    resolver.hit = {HitKind::IconChip, {}, QStringLiteral("window-a"), {}};
+    InteractionController controller(resolver, {.dragThreshold = 0.0});
+    QVERIFY(controller.pointerPress(
+        pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    const auto moved = controller.pointerMove({.position = {20, 0}});
+    QCOMPARE(moved.intents.constFirst().kind, InteractionKind::MemberDock);
+    QCOMPARE(moved.intents.constFirst().source.kind, HitKind::IconChip);
+    const auto released = controller.pointerRelease(releaseAt({30, 0}));
+    QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);
+    QVERIFY(!released.intents.constFirst().target.isValid());
+    QCOMPARE(released.intents.constFirst().delta, QPointF(30, 0));
+    QVERIFY(!controller.active());
+
+    QVERIFY(controller.pointerPress(
+        pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.pointerMove({.position = {20, 0}}).consumed);
+    const auto escaped = controller.keyEvent({.key = Qt::Key_Escape, .pressed = true});
+    QCOMPARE(escaped.intents.constFirst().phase, IntentPhase::Cancel);
+    QVERIFY(!controller.active());
 }
 
 void InteractionControllerTest::pointerGeometryKindsUseCumulativeDeltas()

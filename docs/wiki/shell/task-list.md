@@ -22,7 +22,14 @@ copied from one coherent compositor/hybrid generation:
 - the task-list role: `Standalone`, `ContainerPrimary`, or `ContainerMember`;
 - compositor window type (`Normal` or `NonNormal`) and client ownership
   (`Application` or the authenticated `BoundShell` panel owner);
-- presentation state: `active`, `minimized`, and `urgent`.
+- presentation state: `active`, `minimized`, `iconified`, and `urgent`.
+
+`iconified` ([ADR-0203](../adr/0203-an-ordinary-window-rolls-up-to-its-icon.md))
+means the window is rolled up to its icon chip: unlike a minimized window it is
+still on screen, so it stays a task and is rendered as a rolled hint (a dimmed
+row and the accessible-name suffix ", rolled up"). It is a schema-1 wire
+boolean beside `minimized` (exact keys in both codecs), copied to the entry by
+grouping, and never true for a container member.
 
 For a `ContainerPrimary` fact, `title` is the container's user-chosen rename
 override (`ContainerAppearance::name`, see

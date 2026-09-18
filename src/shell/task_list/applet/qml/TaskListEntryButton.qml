@@ -266,7 +266,7 @@ T.ToolButton {
             border.color: Tokens.outline.divider
             border.width: button.dockMode && !button.down && !button.hovered && !button.entry.active
                           ? 0 : Tokens.space["1"] / 2
-            opacity: button.entry.minimized ? 0.7 : 1.0
+            opacity: (button.entry.minimized || button.entry.iconified === true) ? 0.7 : 1.0
 
             C.FocusRing {
                 objectName: "taskListEntryFocusRing"
@@ -282,7 +282,7 @@ T.ToolButton {
             radius: 3
             border.color: button.entry.active ? "#7aa7ee" : "#163a8c"
             border.width: 1
-            opacity: button.entry.minimized ? 0.7 : 1.0
+            opacity: (button.entry.minimized || button.entry.iconified === true) ? 0.7 : 1.0
             gradient: Gradient {
                 GradientStop { position: 0.0
                     color: button.down ? "#1b47a4"
