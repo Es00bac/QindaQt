@@ -1,5 +1,125 @@
 # Integration handoff
 
+## September 17 wave — Checkpoint A
+
+Integrated on `main` so far, each with an independent exact-SHA review by
+GLM 5.3 flash (Codex is out of credits until 2026-09-19 02:30):
+
+- **The rolled-up container badge finally shows its title.**
+  `localizeChromeRenderPlan()` translates a chrome plan from global logical
+  coordinates into the scene item's image-local space, and it never translated
+  `badgeLabelRect` or `indexBadgeRect`. The badge label was therefore drawn at
+  screen coordinates inside a frame-local image and clipped away entirely — a
+  rolled-up container painted its controls and pills and nothing else. This is
+  the defect behind "the name shows on the container window, disappears when
+  rolled up"; [ADR-0163](wiki/adr/0163-generated-container-names-for-the-rolled-up-badge.md)
+  and [ADR-0168](wiki/adr/0168-a-generated-name-never-displaces-a-real-title.md)
+  both rewrote the label *text* rule and neither could have changed what the
+  user saw. The label is also now measured rather than fitted into a fixed
+  48–140 px rect, and the strip grows and shrinks with the foremost page title
+  while the container stays rolled up
+  ([ADR-0189](wiki/adr/0189-size-the-rolled-up-badge-to-its-label.md)).
+  A nested capture shows 603 ink pixels in the label band where there were 0.
+- **Internal-panel brightness writes through logind.** On `qinda-top` the only
+  backlight device's `brightness` attribute is `0644 root:root`, so
+  [ADR-0148](wiki/adr/0148-admit-internal-panel-brightness-through-power1.md)'s
+  direct sysfs write could never succeed and the panel was published
+  `Unavailable`/`backlight-read-only` — the Settings slider and the brightness
+  keys were both dead. Power1 now delegates the write to
+  `org.freedesktop.login1.Session.SetBrightness` on the user's own seat session
+  through an abstract `BacklightWriter` seam; sysfs stays the observation
+  source and nothing escalates privileges
+  ([ADR-0186](wiki/adr/0186-write-internal-brightness-through-logind.md)).
+- **The global menu takes the width it needs.** A horizontal, non-dock panel
+  allocates its zones in reading order — start, then end, then center — with
+  each yielding zone keeping the sum of its applets' declared
+  `sizing.mainAxis.minimum`. The start zone's ceiling on the stock top panel
+  rises from `extent / 3` to `extent − 332 − 48`: 978 px at 1366, 1532 px at
+  1920, 2172 px at 2560. The applet's entry cap is now the protocol's own
+  per-item child limit rather than 8, so width pressure alone folds entries
+  ([ADR-0188](wiki/adr/0188-serve-the-panel-start-zone-first.md)).
+- **Two displays can mirror, and a rotated display says so on its card.**
+  The Display1 wire has always carried `replicationSourceStableId` and nothing
+  in Settings ever wrote it, so mirroring was unreachable from the UI. A new
+  mirror row offers Extend plus every eligible source, and the output card now
+  states a non-default orientation and a mirror in its label and its accessible
+  description
+  ([ADR-0190](wiki/adr/0190-mirroring-is-one-field-on-the-mirrored-output.md)).
+  The reported "there is no rotation control" on the laptop was
+  **discoverability, not a dead gate**: Display1 is Ready, `eDP-1` is enabled
+  with `transform=0`, and the Orientation section was simply the fifth section
+  on a long page. Deferred with reasons: mirrored-tile collapsing in the
+  arrangement diagram, a separate refresh-rate picker (every advertised rate is
+  already selectable in the mode combo), `Meta+P`, and VRR.
+- **The Wiz smart-lights applet** authored on the laptop is integrated rather
+  than parked, so the laptop's next upgrade keeps it
+  ([ADR-0187](wiki/adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md)).
+- **`qindaqt.controls-font-pinning` is deterministic again.** It probed font
+  substitution by requesting the real family "Inter", which the user has since
+  installed, so the row was permanently red and would have masked every real
+  regression in this wave.
+
+`ops/team/features.json` is unchanged. Every row it carries is a milestone at
+`QUALIFIED` or `EXECUTABLE` already; these are defect fixes and increments
+inside those milestones, not new milestone completions, and the ledger's rule
+is that weighted steps advance only from evidence that closes a stopping point.
+
+### What still needs a human, and when
+
+Checkpoint A is `gui-wm/qindaqt-desktop-0.1.0_pre20260917-r2`, pinned to
+`b23b2ca3`, installed on both machines.
+
+- **Both machines need one logout/login.** The KWin plugin and the
+  KDecoration plugin adopt only at the next login, and the badge-label fix
+  (`localizeChromeRenderPlan`) lives in the compositor plugin, so **the rolled-up
+  badge cannot be judged before that logout** — the running compositor still
+  paints the label at global coordinates into a frame-local image and clips it
+  away. Same for the decoration.
+- **Shell, Settings and the resident services adopt on a restart of those
+  processes**, with no login needed. That covers the global-menu width, the
+  display mirror row and the rotation summary on the card, and the brightness
+  slider.
+- **The laptop brightness check can only be done on the laptop**, after its
+  login: read the panel value, `SetInternalBrightness` the same value, then one
+  step down and restore, through `busctl --user call org.qindaqt.Power1 …`,
+  then confirm the Settings slider and the Fn brightness keys by hand.
+
+### A package-revision hazard worth knowing about
+
+`pre20260917-r1` was cut twice from two different commits. One lane cut it from
+`ab853c68` and installed it on the laptop at 13:28; a later cut rewrote the same
+ebuild to `b23b2ca3` and installed that here. For about twenty minutes the two
+machines ran different software under one version string, and `qlist` on the
+laptop said it was up to date. It was caught by reading the laptop's ebuild
+instead of trusting the version. `cut-package.sh` now refuses a revision whose
+ebuild already pins a different commit, and Checkpoint A was re-cut as `r2` for
+both machines.
+
+### Verification standard this wave changed
+
+Every gate short of pixels was green for the entire time the badge label was
+invisible, including a compositor diagnostic that reported the label text and
+its measured rect. Two assertions written during the fix were themselves
+vacuous — an ink probe that accepted any non-zero alpha, which the strip's own
+opaque surface satisfies, and a nested verdict pinning one member's title when
+which member leads a split page differs by window backend. Anything the
+compositor *paints* now needs a pixel oracle; a plan-level assertion is not
+evidence that the user can see it.
+
+### Decisions needed
+
+- **Who owns container-identity persistence?** A user-set container name still
+  does not survive a compositor restart, and this wave deliberately did not
+  invent a place to put it. `HybridContainerAppearanceStore` is documented
+  process-local; nothing saves or restores live container topology at
+  compositor start; and the explicit saved-workspace path adopts with a fresh
+  container ID, so a per-container name has nothing stable to attach to.
+  Making names durable means giving container identity a persistence owner —
+  either extending the workspaces store to cover live topology, or a new
+  session-scoped store — which is a scope decision rather than a defect fix.
+  Recorded as a gap in
+  [the request checklist](wiki/reference/qindaqt-request-checklist.md) §5.
+
 ## September 14 manager-routing and Settings module-integrity repairs
 
 Exact feature source `a3312f53` is installed as

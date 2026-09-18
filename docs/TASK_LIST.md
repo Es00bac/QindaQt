@@ -5,6 +5,40 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 17, r2)
+
+Exact source `b23b2ca3` is installed through Portage on both machines as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260917-r2`. This is Checkpoint A of the
+September 17 wave and it carries four defect repairs, each independently
+reviewed at an exact SHA:
+
+- The rolled-up container badge paints its label at all. `localizeChromeRenderPlan`
+  never translated `badgeLabelRect` or `indexBadgeRect` out of global
+  coordinates, so the label was drawn outside the frame-local image and clipped
+  away; the badge also now measures its label instead of fitting it into a fixed
+  rect (ADR-0189).
+- Internal-panel brightness is written through
+  `org.freedesktop.login1.Session.SetBrightness` where the sysfs attribute is
+  root-only, which is every laptop panel this project has met (ADR-0186).
+- A horizontal panel serves its start zone first, so the global menu takes the
+  width it needs instead of one third of the panel (ADR-0188).
+- Two displays can mirror from Settings, and a rotated or mirrored output says
+  so on its card (ADR-0190).
+
+Also installed: the Wiz smart-lights applet (ADR-0187).
+
+**Both machines need one logout/login before the badge can be judged**: the
+KWin plugin and the decoration adopt only at the next login. Shell, Settings
+and the resident services adopt on a process restart, which covers the panel
+width, the display mirror row and the brightness slider.
+
+Installed verification: the package built and installed from the pinned commit
+on both machines, and the laptop's installed ebuild was read back to confirm it
+pins `b23b2ca3` rather than trusting the version string — an earlier revision
+name in this wave was reused by two lanes for two different commits, which left
+the machines disagreeing under one version. The merged tree passes the
+`display` label 69/69 and the four chrome/badge rows.
+
 ## Installed delivery checkpoint (September 16, r7)
 
 Exact source `a11aef14` is installed through Portage as
