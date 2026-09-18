@@ -13,6 +13,7 @@
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
+#include <QPointer>
 #include <QQuickWindow>
 #include <QtTest>
 
@@ -59,6 +60,115 @@ int countPendingRows(const AudioAppletController &controller)
     return pending;
 }
 
+[[nodiscard]] DeviceRow firstDeviceRow(const AudioAppletController &controller)
+{
+    const QVariantList rows = controller.deviceRows();
+    return rows.isEmpty() ? DeviceRow{} : rows.constFirst().value<DeviceRow>();
+}
+
+// The compiled applet needs an import path, resolved icons, and a published
+// theme before it can be instantiated, and every row in this file needs
+// exactly that.
+struct AppletHarness {
+    QQmlEngine engine;
+    std::unique_ptr<QObject> tokenRegistration;
+    std::unique_ptr<QObject> applet;
+
+    [[nodiscard]] QQuickItem *root() const
+    {
+        return qobject_cast<QQuickItem *>(applet.get());
+    }
+};
+
+[[nodiscard]] bool loadApplet(AppletHarness &harness,
+                              AudioAppletController *controller,
+                              const QStringList &iconNames, QString *error)
+{
+    harness.engine.addImportPath(
+        QStringLiteral(QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH));
+    if (!Tests::installResolvedIconFixture(
+            harness.engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+            iconNames, error)) {
+        return false;
+    }
+
+    // AGENT-NOTE: QindaQt.Controls resolves QST-1 roles from the read-only
+    // Tokens singleton; without a published theme the state cards render
+    // undefined tokens. Publication is the same seam production composition
+    // uses, exercised here through the generated plugin path.
+    QQmlComponent registration(&harness.engine);
+    registration.setData(R"qml(
+        import QtQuick
+        import QindaQt.Tokens 1.0
+        QtObject { property int revision: Tokens.qstRevision }
+    )qml",
+                         QUrl(QStringLiteral("inline:token-registration.qml")));
+    if (!QTest::qWaitFor([&registration] {
+            return registration.status() != QQmlComponent::Loading;
+        })) {
+        *error = QStringLiteral("timed out loading the QindaQt.Tokens module");
+        return false;
+    }
+    if (!registration.isReady()) {
+        *error = registration.errorString();
+        return false;
+    }
+    harness.tokenRegistration.reset(registration.create());
+    if (harness.tokenRegistration == nullptr) {
+        *error = QStringLiteral("the QindaQt.Tokens registration failed");
+        return false;
+    }
+
+    auto *facade = harness.engine.singletonInstance<DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    if (facade == nullptr) {
+        *error = QStringLiteral("the Tokens singleton did not resolve");
+        return false;
+    }
+    const auto loaded = Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+    if (!loaded.ok) {
+        *error = loaded.error;
+        return false;
+    }
+    if (!facade->publish(loaded.theme, {}, error)) {
+        return false;
+    }
+
+    QQmlComponent component(&harness.engine);
+    component.loadFromModule(QStringLiteral("QindaQt.Shell.AudioApplet"),
+                             QStringLiteral("AudioApplet"));
+    if (!component.isReady()) {
+        *error = component.errorString();
+        return false;
+    }
+    harness.applet.reset(component.createWithInitialProperties(
+        {{QStringLiteral("controller"), QVariant::fromValue(controller)}}));
+    if (harness.applet == nullptr) {
+        *error = component.errorString();
+        return false;
+    }
+    return true;
+}
+
+// Returns the opened details popup's content item; all device and stream
+// controls live inside it.
+[[nodiscard]] QQuickItem *openPopupContent(QQuickItem *root,
+                                           QQuickWindow *window)
+{
+    auto *popup = root->findChild<QObject *>(
+        QStringLiteral("audioAppletPopup"));
+    if (popup == nullptr)
+        return nullptr;
+    QTest::keyClick(window, Qt::Key_Return);
+    if (!QTest::qWaitFor([popup] {
+            return popup->property("opened").toBool();
+        })) {
+        return nullptr;
+    }
+    return popup->property("contentItem").value<QQuickItem *>();
+}
+
 } // namespace
 
 class AudioAppletQmlTests final : public QObject
@@ -67,6 +177,8 @@ class AudioAppletQmlTests final : public QObject
 
 private Q_SLOTS:
     void compiledAppletSupportsKeyboardAndAccessibility();
+    void aDragKeepsTheHandleAndSendsTheLatestValue();
+    void aPointerDragRidesTheSliderAndSendsWhereItStopped();
     void summaryIconTracksDefaultOutput_data();
     void summaryIconTracksDefaultOutput();
 };
@@ -81,48 +193,12 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     transport.reply(transport.fetches.constLast(), clientSnapshot());
     QCOMPARE(client.state(), Audio::ClientState::Ready);
 
-    QQmlEngine engine;
-    engine.addImportPath(QStringLiteral(QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH));
-    QString iconError;
-    QVERIFY2(Tests::installResolvedIconFixture(
-                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
-                 {QStringLiteral("audio-volume-medium")}, &iconError),
-             qPrintable(iconError));
-
-    // AGENT-NOTE: QindaQt.Controls resolves QST-1 roles from the read-only
-    // Tokens singleton; without a published theme the state cards render
-    // undefined tokens. Publication is the same seam production composition
-    // uses, exercised here through the generated plugin path.
-    QQmlComponent registration(&engine);
-    registration.setData(R"qml(
-        import QtQuick
-        import QindaQt.Tokens 1.0
-        QtObject { property int revision: Tokens.qstRevision }
-    )qml",
-                         QUrl(QStringLiteral("inline:token-registration.qml")));
-    QTRY_VERIFY2(registration.status() != QQmlComponent::Loading,
-                 "timed out loading the QindaQt.Tokens module");
-    QVERIFY2(registration.isReady(), qPrintable(registration.errorString()));
-    std::unique_ptr<QObject> registrationObject(registration.create());
-    QVERIFY(registrationObject != nullptr);
-    auto *facade = engine.singletonInstance<DesignTokens::TokenFacade *>(
-        "QindaQt.Tokens", "Tokens");
-    QVERIFY(facade != nullptr);
-    const auto loaded = Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-    QVERIFY2(loaded.ok, qPrintable(loaded.error));
-    QString themeError;
-    QVERIFY2(facade->publish(loaded.theme, {}, &themeError),
-             qPrintable(themeError));
-
-    QQmlComponent component(&engine);
-    component.loadFromModule(QStringLiteral("QindaQt.Shell.AudioApplet"),
-                             QStringLiteral("AudioApplet"));
-    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
-    std::unique_ptr<QObject> owned(component.createWithInitialProperties(
-        {{QStringLiteral("controller"), QVariant::fromValue(&controller)}}));
-    QVERIFY2(owned != nullptr, qPrintable(component.errorString()));
-    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    AppletHarness harness;
+    QString error;
+    QVERIFY2(loadApplet(harness, &controller,
+                        {QStringLiteral("audio-volume-medium")}, &error),
+             qPrintable(error));
+    QQuickItem *root = harness.root();
     QVERIFY(root != nullptr);
 
     QQuickWindow window;
@@ -153,11 +229,7 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
         summaryIcon, QStringLiteral("audio-volume-medium")));
 
     summary->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Return);
-    auto *popup = root->findChild<QObject *>(QStringLiteral("audioAppletPopup"));
-    QVERIFY(popup != nullptr);
-    QTRY_VERIFY(popup->property("opened").toBool());
-    auto *popupContent = popup->property("contentItem").value<QQuickItem *>();
+    QQuickItem *popupContent = openPopupContent(root, &window);
     QVERIFY(popupContent != nullptr);
 
     // One slider per device with known volume (two outputs — physical and a
@@ -189,7 +261,10 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QCOMPARE(transport.operations.constFirst().request.kind,
              Audio::OperationKind::SetVolume);
     QCOMPARE(transport.operations.constFirst().request.primary.serial, 10ULL);
-    QCOMPARE(transport.operations.constFirst().request.volume, 0.55);
+    // ADR-0191: the keyboard step is 1 %, not 5 %. A 5 % arrow step on a
+    // 0-to-1 slider is a coarse control, and the same stepSize governed the
+    // pointer drag that could only ever take one step.
+    QCOMPARE(transport.operations.constFirst().request.volume, 0.51);
     QCOMPARE(countPendingRows(controller), 1);
 
     transport.finish(transport.operations.constFirst(),
@@ -204,6 +279,202 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
         QAccessible::queryAccessibleInterface(muteSwitches.constFirst());
     QVERIFY(muteInterface != nullptr);
     QVERIFY(!muteInterface->text(QAccessible::Description).isEmpty());
+}
+
+// ADR-0191: a drag is many moves with one request in flight. The control stays
+// adjustable, keeps the value the user chose for the whole round trip, and the
+// latest value reaches the service when the in-flight request lands.
+void AudioAppletQmlTests::aDragKeepsTheHandleAndSendsTheLatestValue()
+{
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    client.start();
+    transport.announceOwner(kOwner);
+    transport.reply(transport.fetches.constLast(), clientSnapshot());
+    QCOMPARE(client.state(), Audio::ClientState::Ready);
+
+    AppletHarness harness;
+    QString error;
+    QVERIFY2(loadApplet(harness, &controller,
+                        {QStringLiteral("audio-volume-medium")}, &error),
+             qPrintable(error));
+    QQuickItem *root = harness.root();
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 520);
+    root->setParentItem(window.contentItem());
+    root->setPosition(QPointF(20, 20));
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    auto *summary = root->findChild<QQuickItem *>(
+        QStringLiteral("audioAppletSummary"));
+    QVERIFY(summary != nullptr);
+    summary->forceActiveFocus();
+    QQuickItem *popupContent = openPopupContent(root, &window);
+    QVERIFY(popupContent != nullptr);
+
+    const auto sliders = visualItemsNamed(popupContent,
+                                          QStringLiteral("audioDeviceVolume"));
+    QVERIFY(!sliders.isEmpty());
+    QQuickItem *slider = sliders.constFirst();
+    QCOMPARE(slider->property("value").toDouble(), 0.5);
+    slider->forceActiveFocus();
+    QVERIFY(slider->hasActiveFocus());
+    const QPointer<QQuickItem> tracked(slider);
+
+    // One step dispatches, and the handle keeps the user's value for the whole
+    // round trip. Rebinding to the snapshot the moment the key came up would
+    // put the handle back at 0.50 until the service echoed the change, and the
+    // next step would then ask for 0.51 again instead of advancing.
+    QTest::keyClick(&window, Qt::Key_Right);
+    QTRY_COMPARE(transport.operations.size(), 1);
+    QCOMPARE(transport.operations.constFirst().request.volume, 0.51);
+    QCOMPARE(countPendingRows(controller), 1);
+
+    // The reprojection the dispatch itself triggers must not destroy the
+    // control: a recreated delegate loses the pointer grab and the keyboard
+    // focus, which is what limited every drag to a single step.
+    QVERIFY2(!tracked.isNull(),
+             "the reprojection destroyed the control being used");
+    QVERIFY(slider->hasActiveFocus());
+    QCOMPARE(slider->property("value").toDouble(), 0.51);
+
+    // The row is pending and still adjustable: a control that disabled itself
+    // while its own request was in flight could not be moved past one step.
+    QVERIFY(slider->isEnabled());
+
+    // Two more steps with the first request still in flight. Neither is
+    // dispatched, neither is refused, and the handle follows both.
+    QTest::keyClick(&window, Qt::Key_Right);
+    QTest::keyClick(&window, Qt::Key_Right);
+    QCOMPARE(transport.operations.size(), 1);
+    QCOMPARE(slider->property("value").toDouble(), 0.53);
+
+    // The completion drains the queue, sending the latest value and no
+    // backlog of intermediate ones.
+    transport.finish(transport.operations.constFirst(),
+                     successfulResult(transport.operations.constFirst(), 3));
+    QTRY_COMPARE(transport.operations.size(), 2);
+    QCOMPARE(transport.operations.constLast().request.kind,
+             Audio::OperationKind::SetVolume);
+    QCOMPARE(transport.operations.constLast().request.volume, 0.53);
+
+    // That last request succeeds and nothing is outstanding, but the service
+    // has not published the new level yet. Handing the handle back to the
+    // snapshot at this moment would drop it to 0.50 until the echo arrives.
+    transport.finish(transport.operations.constLast(),
+                     successfulResult(transport.operations.constLast(), 3));
+    QTRY_COMPARE(countPendingRows(controller), 0);
+    QVERIFY(firstDeviceRow(controller).volumeIsRequested());
+    QCOMPARE(slider->property("value").toDouble(), 0.53);
+
+    // The echo lands and the service owns the value again.
+    Audio::Snapshot echoed = clientSnapshot(11, 4);
+    echoed.outputs[0].volume = 0.53;
+    transport.invalidate(kOwner, 11, 4);
+    QVERIFY(!transport.fetches.isEmpty());
+    transport.reply(transport.fetches.constLast(), echoed);
+    QTRY_VERIFY(!firstDeviceRow(controller).volumeIsRequested());
+    QCOMPARE(slider->property("value").toDouble(), 0.53);
+}
+
+// The reported symptom: dragging a volume slider moved it one step and then
+// stopped. Every move during a press must keep the grab, and the service must
+// end up with the value the finger stopped on.
+void AudioAppletQmlTests::aPointerDragRidesTheSliderAndSendsWhereItStopped()
+{
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    client.start();
+    transport.announceOwner(kOwner);
+    transport.reply(transport.fetches.constLast(), clientSnapshot());
+    QCOMPARE(client.state(), Audio::ClientState::Ready);
+
+    AppletHarness harness;
+    QString error;
+    QVERIFY2(loadApplet(harness, &controller,
+                        {QStringLiteral("audio-volume-medium")}, &error),
+             qPrintable(error));
+    QQuickItem *root = harness.root();
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 640);
+    root->setParentItem(window.contentItem());
+    root->setPosition(QPointF(20, 20));
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    auto *summary = root->findChild<QQuickItem *>(
+        QStringLiteral("audioAppletSummary"));
+    QVERIFY(summary != nullptr);
+    summary->forceActiveFocus();
+    QQuickItem *popupContent = openPopupContent(root, &window);
+    QVERIFY(popupContent != nullptr);
+
+    const auto sliders = visualItemsNamed(popupContent,
+                                          QStringLiteral("audioDeviceVolume"));
+    QVERIFY(!sliders.isEmpty());
+    QQuickItem *slider = sliders.constFirst();
+    QVERIFY(slider->width() > 40.0);
+    const QPointF centre = slider->mapToScene(
+        QPointF(slider->width() / 2.0, slider->height() / 2.0));
+    const QPointF right = slider->mapToScene(
+        QPointF(slider->width() - 2.0, slider->height() / 2.0));
+    const QPointF middleRight = slider->mapToScene(
+        QPointF(slider->width() * 0.75, slider->height() / 2.0));
+
+    // The details popup gets its own QQuickPopupWindow, so pointer events go
+    // to the window the control actually lives in.
+    QQuickWindow *sliderWindow = slider->window();
+    QVERIFY(sliderWindow != nullptr);
+
+    const QPointer<QQuickItem> tracked(slider);
+    QTest::mousePress(sliderWindow, Qt::LeftButton, {}, centre.toPoint());
+    QVERIFY(slider->property("pressed").toBool());
+
+    // Three moves inside one press. The first dispatches; the rest coalesce
+    // behind it. None of them may destroy the item under the pointer or take
+    // the grab away from it.
+    //
+    // AGENT-NOTE: QTest::mouseMove synthesizes a move with no buttons held, so
+    // `pressed` reads false for the duration here even though the grab and the
+    // value tracking are intact. The grabber and the value are the product
+    // behaviour; `pressed` mid-drag would only measure the harness.
+    QTest::mouseMove(sliderWindow, middleRight.toPoint());
+    QTRY_COMPARE(transport.operations.size(), 1);
+    QVERIFY2(!tracked.isNull(), "the dispatch destroyed the dragged control");
+    QCOMPARE(sliderWindow->mouseGrabberItem(), slider);
+    const double afterFirstMove = slider->property("value").toDouble();
+    QVERIFY(afterFirstMove > 0.5);
+
+    QTest::mouseMove(sliderWindow, right.toPoint());
+    QCOMPARE(slider->property("value").toDouble(), 1.0);
+    QTest::mouseMove(sliderWindow, middleRight.toPoint());
+    QVERIFY2(!tracked.isNull(), "a reprojection destroyed the dragged control");
+    QCOMPARE(sliderWindow->mouseGrabberItem(), slider);
+    QCOMPARE(slider->property("value").toDouble(), afterFirstMove);
+    QCOMPARE(transport.operations.size(), 1);
+
+    QTest::mouseRelease(sliderWindow, Qt::LeftButton, {}, middleRight.toPoint());
+    const double released = slider->property("value").toDouble();
+    QVERIFY(released > 0.5);
+
+    // The handle keeps the value the finger left it on instead of snapping
+    // back to the level the service still reports.
+    QCOMPARE(countPendingRows(controller), 1);
+    QCOMPARE(slider->property("value").toDouble(), released);
+
+    // Completing the in-flight request sends exactly where the drag stopped.
+    transport.finish(transport.operations.constFirst(),
+                     successfulResult(transport.operations.constFirst(), 3));
+    QTRY_COMPARE(transport.operations.size(), 2);
+    QCOMPARE(transport.operations.constLast().request.volume, released);
+    QCOMPARE(slider->property("value").toDouble(), released);
 }
 
 void AudioAppletQmlTests::summaryIconTracksDefaultOutput_data()
@@ -238,46 +509,19 @@ void AudioAppletQmlTests::summaryIconTracksDefaultOutput()
     snapshot.outputs[0].muted = muted;
     transport.reply(transport.fetches.constLast(), snapshot);
 
-    QQmlEngine engine;
-    engine.addImportPath(QStringLiteral(QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH));
-    QString iconError;
-    QVERIFY2(Tests::installResolvedIconFixture(
-                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
-                 {QStringLiteral("audio-volume-muted"),
-                  QStringLiteral("audio-volume-low"),
-                  QStringLiteral("audio-volume-medium"),
-                  QStringLiteral("audio-volume-high")},
-                 &iconError),
-             qPrintable(iconError));
-    QQmlComponent registration(&engine);
-    registration.setData(R"qml(
-        import QtQuick
-        import QindaQt.Tokens 1.0
-        QtObject { property int revision: Tokens.qstRevision }
-    )qml", QUrl(QStringLiteral("inline:audio-icon-token-registration.qml")));
-    QTRY_VERIFY2(registration.status() != QQmlComponent::Loading,
-                 "timed out loading the QindaQt.Tokens module");
-    QVERIFY2(registration.isReady(), qPrintable(registration.errorString()));
-    std::unique_ptr<QObject> registrationObject(registration.create());
-    QVERIFY(registrationObject != nullptr);
-    auto *facade = engine.singletonInstance<DesignTokens::TokenFacade *>(
-        "QindaQt.Tokens", "Tokens");
-    QVERIFY(facade != nullptr);
-    const auto loaded = Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-    QVERIFY2(loaded.ok, qPrintable(loaded.error));
+    AppletHarness harness;
     QString error;
-    QVERIFY2(facade->publish(loaded.theme, {}, &error), qPrintable(error));
-
-    QQmlComponent component(&engine);
-    component.loadFromModule(QStringLiteral("QindaQt.Shell.AudioApplet"),
-                             QStringLiteral("AudioApplet"));
-    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
-    std::unique_ptr<QObject> owned(component.createWithInitialProperties(
-        {{QStringLiteral("controller"), QVariant::fromValue(&controller)}}));
-    QVERIFY2(owned != nullptr, qPrintable(component.errorString()));
-    QCOMPARE(owned->property("summaryIconName").toString(), expectedName);
-    auto *icon = owned->findChild<QQuickItem *>(QStringLiteral("audioAppletIcon"));
+    QVERIFY2(loadApplet(harness, &controller,
+                        {QStringLiteral("audio-volume-muted"),
+                         QStringLiteral("audio-volume-low"),
+                         QStringLiteral("audio-volume-medium"),
+                         QStringLiteral("audio-volume-high")},
+                        &error),
+             qPrintable(error));
+    QCOMPARE(harness.applet->property("summaryIconName").toString(),
+             expectedName);
+    auto *icon = harness.applet->findChild<QQuickItem *>(
+        QStringLiteral("audioAppletIcon"));
     QVERIFY(icon != nullptr);
     QVERIFY(Tests::hasResolvedProviderSource(icon, expectedName));
 }
