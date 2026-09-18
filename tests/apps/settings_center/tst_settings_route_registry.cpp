@@ -215,9 +215,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  // Twelve original routes plus Streaming (O10), Date & time (O13) and
-  QCOMPARE(registry.count(), 16);
-  QCOMPARE(registry.count(), 15);
+  QCOMPARE(registry.count(), 17);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -237,6 +235,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("datetime")));
   QVERIFY(registry.hasRoute(QStringLiteral("windows")));
   QVERIFY(registry.hasRoute(QStringLiteral("default-apps")));
+  QVERIFY(registry.hasRoute(QStringLiteral("about-computer")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -258,6 +257,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
   QCOMPARE(registry.indexOf(QStringLiteral("windows")), 14);
   QCOMPARE(registry.indexOf(QStringLiteral("default-apps")), 15);
+  QVERIFY(registry.hasRoute(QStringLiteral("about-computer")));
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -369,6 +369,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!windows->description.isEmpty());
   QVERIFY(windows->available);
   QCOMPARE(registry.indexOf(QStringLiteral("default-apps")), 15);
+  QCOMPARE(registry.indexOf(QStringLiteral("about-computer")), 16);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

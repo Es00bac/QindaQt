@@ -276,6 +276,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerDateTimeRoute();
   registerWindowsRoute();
   registerDefaultApplicationsRoute();
+  registerAboutComputerRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -337,6 +338,26 @@ void SettingsRouteRegistry::registerDefaultApplicationsRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(defaultApplicationsRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerAboutComputerRoute() {
+  // Appended after Default applications, same rule (ADR-0128).
+  const SettingsRoute aboutComputerRoute{
+      .id = QStringLiteral("about-computer"),
+      .component = SettingsRouteComponent::AboutComputer,
+      .title =
+          QCoreApplication::translate("SettingsCenter", "About this computer"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter",
+          "Hostname, hardware, disk, memory, and battery health"),
+      .iconName = QStringLiteral("help-about"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(aboutComputerRoute);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }

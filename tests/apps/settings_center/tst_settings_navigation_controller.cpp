@@ -180,6 +180,10 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
+  // selectNext from 14 ("default-apps") -> 15 ("about-computer")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
+
   // selectPrevious from 12 -> 11 ("input")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("input"));
@@ -276,12 +280,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(14));
   QVERIFY(!controller.selectIndex(16));
 
+  QVERIFY(controller.selectIndex(15));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(15));
+  QVERIFY(!controller.selectIndex(16));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -339,7 +346,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 15);
+  QCOMPARE(list.size(), 16);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -405,7 +412,15 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(defaultAppsMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("default-apps"));
 
+  const QVariantMap aboutComputerMap = list.at(16).toMap();
+  QCOMPARE(aboutComputerMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("about-computer"));
+
   QCOMPARE(list.size(), 16);
+
+  // selectNext from 15 ("default-apps") -> 16 ("about-computer")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
 
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
@@ -496,7 +511,17 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt15.value(QStringLiteral("component")).toString(),
            QStringLiteral("default-apps"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(16);
+
+
+  QVERIFY(controller.selectIndex(16));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
+  const QVariantMap itemAt16 = controller.routeAt(16);
+  QCOMPARE(itemAt16.value(QStringLiteral("id")).toString(),
+           QStringLiteral("about-computer"));
+  QCOMPARE(itemAt16.value(QStringLiteral("component")).toString(),
+           QStringLiteral("about-computer"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(17);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

@@ -13,7 +13,7 @@
             Accessibility Input Streaming DateTime Windows
             # Name:target-suffix -- this module's CMake target does not
             # match its URI, so the suffix is spelled out rather than derived.
-            DefaultApplications:default_apps)
+            DefaultApplications:default_apps AboutComputer:about_computer)
         string(REPLACE ":" ";" _qindaqt_desktop_route_parts "${_qindaqt_desktop_route}")
         list(GET _qindaqt_desktop_route_parts 0 _qindaqt_desktop_route_name)
         list(LENGTH _qindaqt_desktop_route_parts _qindaqt_desktop_route_partcount)

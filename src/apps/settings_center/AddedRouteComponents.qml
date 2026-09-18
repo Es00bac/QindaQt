@@ -2,6 +2,8 @@
 import QtQuick
 import QindaQt.SettingsApp.DateTime
 import QindaQt.SettingsApp.DefaultApplications
+import QindaQt.SettingsApp.AboutComputer
+import QindaQt.SettingsApp.AboutComputer
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -31,6 +33,24 @@ QtObject {
         DefaultApplicationsPage {
             objectName: "defaultApplicationsPage"
             defaultApplicationsSettings: DefaultApplicationsRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    // The About this computer route. Same shape as the others: the page takes
+    // its model from the module's own composition singleton.
+    readonly property Component aboutComputer: Component {
+        AboutComputerPage {
+            objectName: "aboutComputerPage"
+            aboutComputerSettings: AboutComputerRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    readonly property Component aboutComputer: Component {
+        AboutComputerPage {
+            objectName: "aboutComputerPage"
+            aboutComputerSettings: AboutComputerRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

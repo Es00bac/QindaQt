@@ -145,6 +145,7 @@ nav:
       - "Settings Streaming route": apps/streaming-settings.md
       - Settings Windows & workspaces route: apps/windows-settings.md
       - Settings Default applications route: apps/default-applications.md
+      - Settings About this computer route: apps/about-this-computer.md
       - Terminal: apps/terminal.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:
