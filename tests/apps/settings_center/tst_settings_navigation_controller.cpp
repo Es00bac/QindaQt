@@ -147,25 +147,23 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
-  // selectNext from 12 ("streaming") wraps to 0 ("notifications")
+  // ADR-0200: selectNext from 12 ("streaming") -> 13 ("datetime"). Both
+  // Streaming and Date & time are appended last, in merge order, so nothing
+  // before them moved.
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
+  // selectNext from 13 ("datetime") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 12 ("streaming")
+  // selectPrevious from 0 wraps to 13 ("datetime")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
+  // selectPrevious from 13 -> 12 ("streaming")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
-  // ADR-0200: selectNext from 11 ("input") -> 12 ("datetime"), the route
-  // added last so nothing before it moved.
-  QVERIFY(controller.selectNext());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
-
-  // selectNext from 12 ("datetime") wraps to 0 ("notifications")
-  QVERIFY(controller.selectNext());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
-
-  // selectPrevious from 0 wraps to 12 ("datetime")
-  QVERIFY(controller.selectPrevious());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
   // selectPrevious from 12 -> 11 ("input")
   QVERIFY(controller.selectPrevious());
@@ -257,12 +255,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(12));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
+  QVERIFY(controller.selectIndex(13));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(13));
+  QVERIFY(!controller.selectIndex(14));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -320,7 +321,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 13);
+  QCOMPARE(list.size(), 14);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -433,12 +434,21 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
            QStringLiteral("input"));
 
 
+  // Streaming (O10) then Date & time (O13), each appended last by its own
+  // lane in merge order.
   const QVariantMap itemAt12 = controller.routeAt(12);
   QCOMPARE(itemAt12.value(QStringLiteral("id")).toString(),
-           QStringLiteral("datetime"));
+           QStringLiteral("streaming"));
   QCOMPARE(itemAt12.value(QStringLiteral("component")).toString(),
+           QStringLiteral("streaming"));
+
+  const QVariantMap itemAt13 = controller.routeAt(13);
+  QCOMPARE(itemAt13.value(QStringLiteral("id")).toString(),
            QStringLiteral("datetime"));
-  const QVariantMap itemOutOfBounds = controller.routeAt(13);
+  QCOMPARE(itemAt13.value(QStringLiteral("component")).toString(),
+           QStringLiteral("datetime"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(14);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

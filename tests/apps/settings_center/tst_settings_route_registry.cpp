@@ -215,7 +215,9 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 13);
+  // Twelve original routes plus Streaming (O10) and Date & time (O13), each
+  // appended last by its own lane.
+  QCOMPARE(registry.count(), 14);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -247,10 +249,11 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("color")), 9);
   QCOMPARE(registry.indexOf(QStringLiteral("accessibility")), 10);
   QCOMPARE(registry.indexOf(QStringLiteral("input")), 11);
-  // Streaming is appended last, so no existing index, shortcut or traversal
-  // position moves (ADR-0128).
+  // Streaming and Date & time are each appended last by their own lane, in
+  // merge order, so no existing index, shortcut or traversal position moves
+  // (ADR-0128).
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
-  QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 12);
+  QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
