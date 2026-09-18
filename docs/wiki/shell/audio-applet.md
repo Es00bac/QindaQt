@@ -79,7 +79,29 @@ Rows: at most 8 device rows (outputs before inputs, protocol
 ascending-serial order) and 8 stream rows. Anything beyond the window is
 summarized as an `overflowDeviceCount`/`overflowStreamCount` label. Each row
 carries label, default/direction flags, volume with `volumeKnown`, mute with
-`muteKnown`, capability booleans, and the `pending` flag. A
+`muteKnown`, capability booleans, the `pending` flag, and
+`volumeIsRequested`/`mutedIsRequested`. `pending` is presentation only: it
+mutes labels and changes accessible descriptions, and it never disables a
+control ([ADR-0191](../adr/0191-a-control-survives-reprojection.md)) — a
+control that disabled itself while its own request was in flight could not be
+dragged past one step.
+
+Controls survive reprojection. Each `Repeater` is given the row *count* and
+each delegate binds its row by index, so a reprojection updates values in place
+instead of rebuilding the list. Handing a `Repeater` the `QVariantList`
+directly regenerated every delegate on every reprojection — including the one a
+dispatch triggers — which destroyed the control under the pointer and ended the
+drag after one move.
+
+A control owns what it shows. A pressed slider keeps its own value, and the
+value the user asked for is carried in the row projection until the service
+answers for it: `volumeIsRequested`/`mutedIsRequested` say when a row is
+reporting outstanding intent rather than service truth. The intent is released
+once the object has nothing in flight or queued *and* either a snapshot newer
+than the request's own has arrived or the request resolved as anything other
+than success, so a clamped, refused or unconfirmed value returns to truth
+rather than parking the handle. The percent readout follows the control rather than the snapshot. Steps
+are 1 %, and wheel scrolling over a slider is enabled. A
 `volumeKnown`/`muteKnown` false value is shown as unknown and disables the
 corresponding control; a missing description falls back to the short name,
 then to "Unknown device"/"Unknown stream".
@@ -110,8 +132,15 @@ applet never sets defaults or moves streams.
 - A request for an unknown serial, an uncapable row, or a row whose
   capability evidence (`canSetVolume`/`canSetMute`) is absent is refused
   locally with feedback and no dispatch.
-- One request per serial at a time; a second request for the same serial is
-  refused with feedback. There is no automatic retry anywhere.
+- One request per serial in flight, and at most one queued value per serial
+  *and kind*, latest wins
+  ([ADR-0191](../adr/0191-a-control-survives-reprojection.md)). A further
+  request for a busy serial is accepted and replaces the queued value rather
+  than being refused; when the in-flight request completes the queue drains, so
+  a drag sends the value the finger is on at that moment and never a backlog.
+  A queued mute dispatches before a queued volume. Queued intent is dropped
+  with its serial. One-request-in-flight is the rate limit, so no fixed
+  inter-request delay is imposed. There is no automatic retry anywhere.
 - Every dispatched request returns before completion; the controller tracks
   pending state by the protocol's snapshot-unique serial and clears it when
   the client reports exactly-once completion.
@@ -176,7 +205,7 @@ ctest --test-dir build/dev -R '^qindaqt\.audio-applet-' --output-on-failure
 | --- | --- |
 | `qindaqt.audio-applet-model` | Clamping, missing/invalid-wire fail-closed behavior, ordering, label fallbacks, unknown levels, bounds and overflow, default labels beyond the window, pending marking, and degraded retention. |
 | `qindaqt.audio-applet-controller` | Public-client projection, read/control grant separation, clamp-before-dispatch, local refusals, pending serialization, rejected/uncertain/success feedback, stale-prune with ignored late replies, degraded/unavailable phases, and exact-owner replacement clearing truth and pending work without replay, including a stale old-owner reply dropped after replacement. |
-| `qindaqt.audio-applet-offscreen` | Compiled module loading, Return-opened summary, the exact muted/low/medium/high icon names from four fake-transport snapshots, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. |
+| `qindaqt.audio-applet-offscreen` | Compiled module loading, Return-opened summary, the exact muted/low/medium/high icon names from four fake-transport snapshots, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. Two drag rows carry the ADR-0191 contract end to end: a keyboard drag (the item survives its own dispatch, keeps focus, advances 1 % per step, coalesces, and holds the requested value until the service echoes it) and a pointer drag (the item stays the window's mouse grabber across three moves inside one press, and the value the finger stopped on is what reaches the service). |
 | `qindaqt.audio-applet-boundary` | Static policy gate rejecting transport, QML, platform, and service-implementation tokens outside the declared include roots in the pure projection and its focused test; four independent poison mutations (D-Bus transport include, service-internal include, QML include, QObject derivation) must each be rejected. |
 | `qindaqt.audio-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, WirePlumber/PipeWire/GLib surfaces, process/file access, and D-Bus in the controller/QML; the shell composition root may construct the public Qt transport. Includes a poison negative control. |
 | `qindaqt.audio-applet-installed-package` | Relocated shell/data, exact staged KF6 and Controls/Tokens loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison. |

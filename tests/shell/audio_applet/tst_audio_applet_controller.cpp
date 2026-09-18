@@ -1,210 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "audio_applet_controller.h"
-
-#include <qindaqt/services/audio_client/audio_client.h>
-#include <qindaqt/services/audio_protocol/audio_limits.h>
-
-#include <QSignalSpy>
-#include <QtTest>
-
-#include <limits>
+#include "support/audio_applet_controller_fixture.h"
 
 using namespace QindaQt::Shell::AudioApplet;
+using namespace QindaQt::Shell::AudioApplet::Tests;
 
-namespace {
 
-using QindaQt::Audio::AudioClient;
-using QindaQt::Audio::AudioTransport;
-using QindaQt::Audio::Availability;
-using QindaQt::Audio::Capability;
-using QindaQt::Audio::Capabilities;
-using QindaQt::Audio::Device;
-using QindaQt::Audio::DeviceKind;
-using QindaQt::Audio::Handle;
-using QindaQt::Audio::OperationKind;
-using QindaQt::Audio::OperationRequest;
-using QindaQt::Audio::OperationResult;
-using QindaQt::Audio::OperationStatus;
-using QindaQt::Audio::Snapshot;
-using QindaQt::Audio::Stream;
-using QindaQt::Audio::StreamDirection;
-
-constexpr quint64 kEpoch = 11;
-constexpr quint64 kRevision = 4;
-const QString kOwner = QStringLiteral(":1.42");
-
-Handle handleFor(quint64 serial)
-{
-    return Handle{.epoch = kEpoch, .serial = serial};
-}
-
-Device makeDevice(quint64 serial, DeviceKind kind, const QString &description,
-                  bool defaultDevice)
-{
-    Device device;
-    device.handle = handleFor(serial);
-    device.kind = kind;
-    device.name = QStringLiteral("dev%1").arg(serial);
-    device.description = description;
-    device.volume = 0.5;
-    device.volumeKnown = true;
-    device.muted = false;
-    device.muteKnown = true;
-    device.isDefault = defaultDevice;
-    device.canSetVolume = true;
-    device.canSetMute = true;
-    return device;
-}
-
-// One default output (serial 1), one limited input (serial 2: unknown volume,
-// no volume control), one full default input (serial 3), and one playback
-// stream (serial 4) targeting the default output. Serials strictly ascend
-// across all lists, as Audio1 validation requires.
-Snapshot makeReadySnapshot()
-{
-    Snapshot snapshot;
-    snapshot.schemaVersion = QindaQt::Audio::kSchemaVersion;
-    snapshot.epoch = kEpoch;
-    snapshot.revision = kRevision;
-    snapshot.availability = Availability::Ready;
-    snapshot.capabilities = Capabilities(Capability::SetVolume)
-        | Capability::SetMute;
-
-    Device output = makeDevice(1, DeviceKind::Output,
-                               QStringLiteral("Built-in Speakers"), true);
-    snapshot.defaultOutput = output.handle;
-    snapshot.outputs.append(output);
-
-    Device limitedInput = makeDevice(2, DeviceKind::Input,
-                                     QStringLiteral("Limited Microphone"),
-                                     false);
-    limitedInput.volume = 0.0;
-    limitedInput.volumeKnown = false;
-    limitedInput.canSetVolume = false;
-    snapshot.inputs.append(limitedInput);
-
-    Device input = makeDevice(3, DeviceKind::Input,
-                              QStringLiteral("Webcam Microphone"), true);
-    snapshot.defaultInput = input.handle;
-    snapshot.inputs.append(input);
-
-    Stream stream;
-    stream.handle = handleFor(4);
-    stream.direction = StreamDirection::Playback;
-    stream.applicationName = QStringLiteral("Music Player");
-    stream.mediaName = QStringLiteral("Song");
-    stream.target = handleFor(1);
-    stream.targetKnown = true;
-    stream.volume = 0.4;
-    stream.volumeKnown = true;
-    stream.muted = false;
-    stream.muteKnown = true;
-    stream.canSetVolume = true;
-    stream.canSetMute = true;
-    stream.canMove = false;
-    snapshot.streams.append(stream);
-
-    return snapshot;
-}
-
-// Re-stamp every handle in the snapshot to the given epoch so a new lineage
-// stays internally consistent under Audio1 validation.
-Snapshot withEpoch(Snapshot snapshot, quint64 epoch)
-{
-    snapshot.epoch = epoch;
-    snapshot.revision = 1;
-    for (Device &device : snapshot.outputs)
-        device.handle.epoch = epoch;
-    for (Device &device : snapshot.inputs)
-        device.handle.epoch = epoch;
-    for (Stream &stream : snapshot.streams) {
-        stream.handle.epoch = epoch;
-        if (stream.targetKnown)
-            stream.target.epoch = epoch;
-    }
-    snapshot.defaultOutput.epoch = epoch;
-    snapshot.defaultInput.epoch = epoch;
-    return snapshot;
-}
-
-OperationResult makeResult(OperationKind kind, OperationStatus status,
-                           const QString &reasonCode)
-{
-    return {.kind = kind,
-            .status = status,
-            .initiatingEpoch = kEpoch,
-            .initiatingRevision = kRevision,
-            .observedEpoch = kEpoch,
-            .observedRevision = kRevision,
-            .reasonCode = reasonCode,
-            .diagnostic = {},
-            .wireValid = true};
-}
-
-class FakeTransport final : public AudioTransport {
-public:
-    explicit FakeTransport(QObject *parent = nullptr) : AudioTransport(parent) {}
-
-    struct Fetch {
-        QString owner;
-        quint64 requestId = 0;
-    };
-    struct Submission {
-        QString owner;
-        quint64 requestId = 0;
-        OperationRequest request;
-    };
-
-    void start() override { m_started = true; }
-    void stop() override { m_stopped = true; }
-    void fetchSnapshot(const QString &owner, quint64 requestId) override
-    {
-        fetches.append(Fetch{owner, requestId});
-    }
-    void submitOperation(const QString &owner, quint64 requestId,
-                         const OperationRequest &request) override
-    {
-        submissions.append(Submission{owner, requestId, request});
-    }
-
-    void changeOwner(const QString &owner) { Q_EMIT ownerChanged(owner); }
-    void invalidate(quint64 epoch, quint64 revision)
-    {
-        Q_EMIT invalidated(kOwner, epoch, revision);
-    }
-    void deliverSnapshot(quint64 requestId, bool success,
-                         const Snapshot &snapshot, const QString &reason = {})
-    {
-        Q_EMIT snapshotReply(kOwner, requestId, success, snapshot, reason);
-    }
-    void deliverSnapshotAs(const QString &owner, quint64 requestId, bool success,
-                           const Snapshot &snapshot,
-                           const QString &reason = {})
-    {
-        Q_EMIT snapshotReply(owner, requestId, success, snapshot, reason);
-    }
-    void deliverOperation(quint64 requestId, bool success,
-                          const OperationResult &result,
-                          const QString &reason = {})
-    {
-        Q_EMIT operationReply(kOwner, requestId, success, result, reason);
-    }
-
-    bool m_started = false;
-    bool m_stopped = false;
-    QList<Fetch> fetches;
-    QList<Submission> submissions;
-};
-
-} // namespace
-
-class AudioAppletControllerTests final : public QObject {
+class AudioAppletControllerTests final : public ControllerFixture {
     Q_OBJECT
 
 private slots:
-    void init();
-    void cleanup();
+    void init() { createController(); }
+    void cleanup() { destroyController(); }
 
     void stoppedClientProjectsLoadingWithoutRows();
     void readySnapshotProjectsRowsDefaultsAndLabels();
@@ -212,7 +19,6 @@ private slots:
     void volumeRequestClampsBeforeDispatch();
     void nonFiniteVolumeIsRefusedWhileOutOfRangeClamps();
     void uncapableRowIsRefusedWithoutDispatch();
-    void secondRequestWhilePendingIsRefused();
     void rejectedResultPublishesUnsupportedFeedback();
     void uncertainResultPublishesConfirmationFeedback();
     void successClearsPendingWithoutFeedback();
@@ -222,75 +28,12 @@ private slots:
     void grantsGateReadAndControlIndependently();
     void ownerReplacementClearsTruthAndPendingWithoutReplay();
 
-private:
-    void publishReadySnapshot();
-    void deliverSnapshotAfterRefetch(const Snapshot &snapshot);
-    [[nodiscard]] int countPendingDeviceRows() const;
-    [[nodiscard]] int countPendingStreamRows() const;
-
-    FakeTransport *m_transport = nullptr;
-    AudioClient *m_client = nullptr;
-    AudioAppletController *m_controller = nullptr;
 };
 
-void AudioAppletControllerTests::init()
-{
-    m_transport = new FakeTransport(this);
-    m_client = new AudioClient(m_transport, this);
-    m_controller = new AudioAppletController(m_client, true, true, this);
-}
 
-void AudioAppletControllerTests::cleanup()
-{
-    delete m_controller;
-    m_controller = nullptr;
-    delete m_client;
-    m_client = nullptr;
-    delete m_transport;
-    m_transport = nullptr;
-}
 
-void AudioAppletControllerTests::publishReadySnapshot()
-{
-    m_client->start();
-    m_transport->changeOwner(kOwner);
-    QVERIFY(!m_transport->fetches.isEmpty());
-    m_transport->deliverSnapshot(m_transport->fetches.constLast().requestId,
-                                 true, makeReadySnapshot());
-    QCOMPARE(m_controller->phaseText(), QStringLiteral("ready"));
-}
 
-void AudioAppletControllerTests::deliverSnapshotAfterRefetch(
-    const Snapshot &snapshot)
-{
-    // A revision or epoch change reaches the client as an invalidation, which
-    // starts a new fetch that must be answered for the snapshot to publish.
-    QVERIFY(!m_transport->fetches.isEmpty());
-    m_transport->deliverSnapshot(m_transport->fetches.constLast().requestId,
-                                 true, snapshot);
-}
 
-int AudioAppletControllerTests::countPendingDeviceRows() const
-{
-    int pending = 0;
-    const QVariantList rows = m_controller->deviceRows();
-    for (const QVariant &value : rows) {
-        if (value.value<DeviceRow>().pending())
-            ++pending;
-    }
-    return pending;
-}
-
-int AudioAppletControllerTests::countPendingStreamRows() const
-{
-    int pending = 0;
-    const QVariantList rows = m_controller->streamRows();
-    for (const QVariant &value : rows) {
-        if (value.value<StreamRow>().pending())
-            ++pending;
-    }
-    return pending;
-}
 
 void AudioAppletControllerTests::stoppedClientProjectsLoadingWithoutRows()
 {
@@ -424,27 +167,11 @@ void AudioAppletControllerTests::uncapableRowIsRefusedWithoutDispatch()
     QTRY_COMPARE(countPendingDeviceRows(), 0);
 }
 
-void AudioAppletControllerTests::secondRequestWhilePendingIsRefused()
-{
-    publishReadySnapshot();
-
-    QVERIFY(m_controller->requestMute(1, false, true));
-    QCOMPARE(m_transport->submissions.size(), 1);
-    QVERIFY(!m_controller->requestVolume(1, false, 0.2));
-    QCOMPARE(m_controller->feedback(),
-             AudioAppletController::tr(
-                 "A change for this item is already in progress."));
-    QCOMPARE(m_transport->submissions.size(), 1);
-    QCOMPARE(countPendingDeviceRows(), 1);
-
-    m_transport->deliverOperation(
-        m_transport->submissions.constFirst().requestId, true,
-        makeResult(OperationKind::SetMute, OperationStatus::Succeeded, {}));
-    QTRY_COMPARE(countPendingDeviceRows(), 0);
-    // The refusal feedback stays visible until the user dismisses it.
-    QVERIFY(m_controller->feedbackPresent());
-}
-
+// ADR-0191. This replaces `secondRequestWhilePendingIsRefused`, whose
+// contract was the defect: a pointer drag dispatched its first move, the row
+// went pending, the slider disabled itself on that pending flag, and the
+// second move was refused with "A change for this item is already in
+// progress." The drag therefore produced exactly one step and died.
 void AudioAppletControllerTests::rejectedResultPublishesUnsupportedFeedback()
 {
     publishReadySnapshot();

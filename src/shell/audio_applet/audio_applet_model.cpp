@@ -51,7 +51,8 @@ const Audio::Device *findDevice(const Audio::Snapshot &snapshot,
     return nullptr;
 }
 
-DeviceRow projectDevice(const Audio::Device &device, bool pending)
+DeviceRow projectDevice(const Audio::Device &device, bool pending,
+                        const RequestedValue &requested)
 {
     DeviceRow row;
     row.m_serial = device.handle.serial;
@@ -65,10 +66,21 @@ DeviceRow projectDevice(const Audio::Device &device, bool pending)
     row.m_canSetVolume = device.canSetVolume;
     row.m_canSetMute = device.canSetMute;
     row.m_pending = pending;
+    // An outstanding intent outranks the snapshot for the value it names, and
+    // only for a value the device actually reports (ADR-0191).
+    if (requested.hasVolume && device.volumeKnown) {
+        row.m_volume = requested.volume;
+        row.m_volumeIsRequested = true;
+    }
+    if (requested.hasMute && device.muteKnown) {
+        row.m_muted = requested.muted;
+        row.m_mutedIsRequested = true;
+    }
     return row;
 }
 
-StreamRow projectStream(const Audio::Stream &stream, bool pending)
+StreamRow projectStream(const Audio::Stream &stream, bool pending,
+                        const RequestedValue &requested)
 {
     StreamRow row;
     row.m_serial = stream.handle.serial;
@@ -81,6 +93,14 @@ StreamRow projectStream(const Audio::Stream &stream, bool pending)
     row.m_canSetVolume = stream.canSetVolume;
     row.m_canSetMute = stream.canSetMute;
     row.m_pending = pending;
+    if (requested.hasVolume && stream.volumeKnown) {
+        row.m_volume = requested.volume;
+        row.m_volumeIsRequested = true;
+    }
+    if (requested.hasMute && stream.muteKnown) {
+        row.m_muted = requested.muted;
+        row.m_mutedIsRequested = true;
+    }
     return row;
 }
 
@@ -97,7 +117,9 @@ AudioAppletModel::clampVolumeLevel(double volume) noexcept
 AudioAppletModel AudioAppletModel::project(Phase phase,
                                            const QString &phaseReasonCode,
                                            const Audio::Snapshot *snapshot,
-                                           const QSet<quint64> &pendingSerials)
+                                           const QSet<quint64> &pendingSerials,
+                                           const QHash<quint64, RequestedValue>
+                                               &requestedBySerial)
 {
     AudioAppletModel model;
     model.m_phase = phase;
@@ -143,13 +165,15 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
         if (model.m_deviceRows.size() >= deviceBudget)
             break;
         model.m_deviceRows.append(
-            projectDevice(device, pendingSerials.contains(device.handle.serial)));
+            projectDevice(device, pendingSerials.contains(device.handle.serial),
+                          requestedBySerial.value(device.handle.serial)));
     }
     for (const Audio::Device &device : snapshot->inputs) {
         if (model.m_deviceRows.size() >= deviceBudget)
             break;
         model.m_deviceRows.append(
-            projectDevice(device, pendingSerials.contains(device.handle.serial)));
+            projectDevice(device, pendingSerials.contains(device.handle.serial),
+                          requestedBySerial.value(device.handle.serial)));
     }
     const int totalDevices = static_cast<int>(snapshot->outputs.size())
         + static_cast<int>(snapshot->inputs.size());
@@ -161,7 +185,8 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
         if (model.m_streamRows.size() >= streamBudget)
             break;
         model.m_streamRows.append(
-            projectStream(stream, pendingSerials.contains(stream.handle.serial)));
+            projectStream(stream, pendingSerials.contains(stream.handle.serial),
+                          requestedBySerial.value(stream.handle.serial)));
     }
     model.m_overflowStreamCount = qMax(
         0, static_cast<int>(snapshot->streams.size())

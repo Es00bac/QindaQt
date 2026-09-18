@@ -134,6 +134,32 @@ private:
         RequestKind kind = RequestKind::Volume;
     };
 
+    // AGENT-CONTRACT: one request in flight per object and at most one queued
+    // per object *and kind*, latest value wins (ADR-0191). A drag therefore
+    // sends the value the finger is on when the previous request completes,
+    // never a queue of stale intermediate values, and never a refusal. The
+    // kind is part of the key so a mute is not starved behind a stream of
+    // volume updates; when both are queued the mute goes first, because a user
+    // who reaches for mute wants silence now.
+    struct QueuedRequest {
+        RequestKind kind = RequestKind::Volume;
+        double volume = 0.0;
+        bool muted = false;
+        bool isStream = false;
+    };
+
+    // AGENT-CONTRACT: the value a control asked for, kept in the projection
+    // until the service answers for it (ADR-0191). It is released once the
+    // object has no outstanding work *and* a snapshot newer than the one the
+    // request was made against has arrived, so a service that clamps or
+    // refuses a value still takes the handle back rather than leaving it
+    // parked on an intent that will never happen.
+    struct RequestedState {
+        RequestedValue value;
+        quint64 initiatingEpoch = 0;
+        quint64 initiatingRevision = 0;
+    };
+
     void reproject();
     void prunePendingAgainstSnapshot();
     void publishFeedback(const QString &message);
@@ -142,6 +168,14 @@ private:
     [[nodiscard]] bool
     beginRequest(quint64 serial, bool isStream, RequestKind kind, double volume,
                  bool muted);
+    // The capability lookup and the client call. Re-checked on every dispatch,
+    // including a dispatch out of the queue, because the snapshot may have
+    // replaced the object since the value was queued.
+    [[nodiscard]] bool dispatchRequest(quint64 serial, bool isStream,
+                                       RequestKind kind, double volume,
+                                       bool muted);
+    void dispatchQueuedFor(quint64 serial);
+    [[nodiscard]] bool hasOutstandingWork(quint64 serial) const;
     [[nodiscard]] QString
     requestFailureText(const Audio::OperationResult &result,
                        RequestKind kind) const;
@@ -150,6 +184,11 @@ private:
     AudioAppletModel m_model;
     QHash<quint64, PendingRequest> m_pendingBySerial;
     QHash<quint64, quint64> m_serialByRequestId;
+    // Keyed by serial; each entry holds at most one queued volume and one
+    // queued mute for that object.
+    QHash<quint64, QueuedRequest> m_queuedVolumeBySerial;
+    QHash<quint64, QueuedRequest> m_queuedMuteBySerial;
+    QHash<quint64, RequestedState> m_requestedBySerial;
     QString m_feedback;
     bool m_readGranted = false;
     bool m_controlGranted = false;

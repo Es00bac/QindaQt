@@ -312,3 +312,4 @@ nav:
       - "ADR-0186: write internal brightness through logind": adr/0186-write-internal-brightness-through-logind.md
       - "ADR-0187: Smart lights speak to luminaires from the shell process": adr/0187-smart-lights-speak-to-luminaires-from-the-shell-process.md
       - "ADR-0188: serve the panel start zone first": adr/0188-serve-the-panel-start-zone-first.md
+      - "ADR-0191: a control survives reprojection and owns its value": adr/0191-a-control-survives-reprojection.md
