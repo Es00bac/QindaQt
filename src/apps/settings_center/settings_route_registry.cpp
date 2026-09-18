@@ -275,6 +275,9 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerBuiltIn(streamingRoute);
   registerDateTimeRoute();
   registerWindowsRoute();
+  registerDefaultApplicationsRoute();
+  registerAboutComputerRoute();
+  registerStartupRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -315,6 +318,66 @@ void SettingsRouteRegistry::registerWindowsRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(windowsRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerDefaultApplicationsRoute() {
+  // AGENT-GUARD: appended after Windows & workspaces, so every route index,
+  // shortcut and traversal position before it is unchanged (ADR-0128).
+  const SettingsRoute defaultApplicationsRoute{
+      .id = QStringLiteral("default-apps"),
+      .component = SettingsRouteComponent::DefaultApplications,
+      .title =
+          QCoreApplication::translate("SettingsCenter", "Default applications"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter",
+          "Browser, mail, file manager, editor, and media players"),
+      .iconName = QStringLiteral("preferences-desktop-default-applications"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(defaultApplicationsRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerAboutComputerRoute() {
+  // Appended after Default applications, same rule (ADR-0128).
+  const SettingsRoute aboutComputerRoute{
+      .id = QStringLiteral("about-computer"),
+      .component = SettingsRouteComponent::AboutComputer,
+      .title =
+          QCoreApplication::translate("SettingsCenter", "About this computer"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter",
+          "Hostname, hardware, disk, memory, and battery health"),
+      .iconName = QStringLiteral("help-about"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(aboutComputerRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerStartupRoute() {
+  // Appended after About this computer, same rule (ADR-0128).
+  const SettingsRoute startupRoute{
+      .id = QStringLiteral("startup"),
+      .component = SettingsRouteComponent::Startup,
+      .title = QCoreApplication::translate("SettingsCenter",
+                                           "Startup applications"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Choose what launches when you log in"),
+      .iconName = QStringLiteral("system-run"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(startupRoute);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }

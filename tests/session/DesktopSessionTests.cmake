@@ -67,6 +67,12 @@ set(
     qindaqt_settings_windows_qmlplugin
     qindaqt_settings_datetime_qml
     qindaqt_settings_datetime_qmlplugin
+    qindaqt_settings_default_apps_qml
+    qindaqt_settings_default_apps_qmlplugin
+    qindaqt_settings_about_computer_qml
+    qindaqt_settings_about_computer_qmlplugin
+    qindaqt_settings_startup_qml
+    qindaqt_settings_startup_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )
