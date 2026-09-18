@@ -4,7 +4,8 @@ The customization editor domain is the presentation-independent half of the
 Customize editor. It turns pointer and keyboard gestures into commands for the
 existing `shell_customization` transaction engine and persists applied layouts
 as user profiles. It contains no QML, no window, and no shell-surface code;
-the Settings window owns the repository, the process, and the presentation.
+its hosts -- the Settings window and, since ADR-0213, the shell runtime --
+own the repository, the process, and the presentation.
 
 - Module: `src/shell_customization_editor` (public headers under
   `include/qindaqt/shell_customization_editor`)
@@ -25,7 +26,9 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 
 - **Intent values** (`editor_intent.h`): drag payload (palette plugin or
   applet instance), resolved drop target identity `(panelId, zone, beforeAppletId)`,
-  the seven customization intents, and structural validation. Validation only
+  the nine customization intents (applet insert/move/remove/duplicate,
+  panel configure/move, applet settings, and the whole-panel `AddPanel` /
+  `RemovePanel` pair the live menus need), and structural validation. Validation only
   checks shape (blank identities, zone vocabulary `start`/`center`/`end`,
   self-anchoring moves, configuration bounds); existence, manifest
   compatibility, and layout acceptance stay with the engine.
@@ -71,6 +74,9 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 - **Keyboard navigation** (`keyboard_navigation.h`): pure slot/zone/panel/edge
   stepping over the outline so the keyboard path can produce the same targets
   as the pointer path.
+- **Live host** (`live_editor_host.h`): the shell runtime's owner of one
+  repository, engine adapter and session, composed exactly as the Settings
+  route's host composes them; see [Live host in the shell](#live-host-in-the-shell).
 - **Accessibility identity** (`accessibility_identity.h`): deterministic
   panel/applet/zone naming, position-in-set values, and the announcement
   wording ("Move clock to Top panel, end zone, position 3 of 4 — accepted /
@@ -118,9 +124,26 @@ profile selection; committing `panels.layoutProfile` through the public
 Settings1 client stays with the Settings window. Applying a profile takes
 effect at the next shell start until the live-binding slice lands.
 
+## Live host in the shell
+
+`LiveEditorHost` (ADR-0213) composes `LayoutEditingRepository(profile,
+outputs, manifests)` → `CoordinatorEditingEngine(repository, manifests)` →
+`EditorSession(engine, UserProfileStore(directory))` with the same arguments,
+in the same order, as the Settings route's `RepositoryCustomizeEditorHost`.
+That composition is the parity contract: the intent sequence a menu entry or
+an edit-mode drop sends produces the same command sequence, the same undo
+step, and the same persisted bytes as the route would for the same intent.
+The host adds `rebuild(profile, outputs)` for the shell's adoption and
+output-hotplug paths (undo history does not survive a rebuild by design) and
+otherwise exposes the session's gesture, point-operation, undo/redo and Apply
+calls unchanged. The shell's `LiveCustomizationController` (see
+[Production panel surfaces](panel-surfaces.md#in-place-customization-meta-right-click))
+maps each menu entry to one `applyGesture` and one `applyToUserProfile`, and
+the shell adopts the written profile through its existing store path.
+
 ## Testing
 
-`tests/shell_customization_editor` registers six deterministic QtTest
+`tests/shell_customization_editor` registers eight deterministic QtTest
 suites: intent translation (`qindaqt.customize-editor-intent`), the gesture
 machine invariants (`qindaqt.customize-editor-gesture-machine`), session
 rollback and gating with a scripted engine (`qindaqt.customize-editor-session`),
@@ -128,7 +151,12 @@ canonical applied-baseline and dirty history through the production composition
 (`qindaqt.customize-editor-dirty-state`),
 atomic persistence round-tripped through `ProfileLoader`
 (`qindaqt.customize-editor-persistence`), and keyboard stepping plus
-accessibility identity (`qindaqt.customize-editor-accessibility`). All suites
+accessibility identity (`qindaqt.customize-editor-accessibility`), the live
+host over the real engine including the panel intents and a byte comparison
+against an independently composed trio (`qindaqt.customize-editor-live-host`),
+and the same comparison against the Settings route's own
+`RepositoryCustomizeEditorHost` for a full menu script
+(`qindaqt.customize-editor-live-host-parity`, full tree only). All suites
 use in-memory or temporary-directory fixtures: no GUI, compositor, session
 bus, or user configuration is touched.
 

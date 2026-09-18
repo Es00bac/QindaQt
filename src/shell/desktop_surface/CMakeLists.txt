@@ -61,6 +61,7 @@ qt_add_qml_module(
     QML_FILES
         qml/DesktopApplicationsMenu.qml
         qml/DesktopContextMenu.qml
+        qml/DesktopCustomizeMenu.qml
         qml/DesktopIconContextMenu.qml
         qml/DesktopRenamePopup.qml
         qml/DesktopIconPlacement.qml

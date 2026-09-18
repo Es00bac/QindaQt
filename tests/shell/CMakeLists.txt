@@ -566,3 +566,65 @@ set_tests_properties(
     qindaqt.shell-runtime-layout-adoption PROPERTIES
     LABELS "shell;runtime;customize"
 )
+
+# Live customization (O9): the shell controller over the real manifest
+# catalog, a temporary user store, and the editor trio; no GUI or bus.
+qt_add_executable(
+    qindaqt_live_customization_controller_tests
+    tst_livecustomizationcontroller.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller_drag.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller_panels.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationmodel.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationmodel.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/settingsroutelauncher.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/settingsroutelauncher.h"
+)
+target_include_directories(
+    qindaqt_live_customization_controller_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_live_customization_controller_tests
+    PRIVATE
+        qindaqt_applets
+        qindaqt_profiles
+        QindaQt::SettingsClient
+        QindaQt::ShellCustomizationEditor
+        QindaQt::ShellLayout
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_live_customization_controller_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_live_customization_controller_tests)
+add_test(
+    NAME qindaqt.shell-live-customization-controller
+    COMMAND qindaqt_live_customization_controller_tests
+)
+set_tests_properties(
+    qindaqt.shell-live-customization-controller PROPERTIES
+    LABELS "shell;runtime;customize"
+)
+
+add_test(
+    NAME qindaqt.live-customization-offscreen
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_livecustomization.qml"
+)
+add_test(
+    NAME qindaqt.live-customization-edit-mode-offscreen
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_livecustomizationeditmode.qml"
+)
+set_tests_properties(
+    qindaqt.live-customization-offscreen
+    qindaqt.live-customization-edit-mode-offscreen
+    PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+        LABELS "shell;customize"
+)

@@ -134,6 +134,14 @@ void DesktopSurfaceController::adoptProfile(
     }
 }
 
+void DesktopSurfaceController::setCustomizationAccess(QObject *access)
+{
+    m_customizationAccess = access;
+    for (QQuickWindow *window : std::as_const(m_windows)) {
+        window->setProperty("customizationAccess", QVariant::fromValue(access));
+    }
+}
+
 void DesktopSurfaceController::start()
 {
     m_started = true;
@@ -200,6 +208,9 @@ void DesktopSurfaceController::createWindow(QScreen *screen)
         return;
     }
     raw->setScreen(screen);
+    // Not an initial property: a null facade must stay a plain null, and the
+    // window keeps the same setProperty path as later replacements.
+    raw->setProperty("customizationAccess", QVariant::fromValue(m_customizationAccess));
     raw->setFlags(Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
     auto *layer = LayerShellQt::Window::get(raw);
     if (!layer) {

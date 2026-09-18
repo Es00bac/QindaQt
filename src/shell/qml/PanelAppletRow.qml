@@ -12,6 +12,9 @@ Flickable {
     required property var theme
     required property string zone
     property bool liveApplets: false
+    // Live customization facade and the hosting PanelContent (drop targets).
+    property var liveCustomization: null
+    property var editorHost: null
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
@@ -173,6 +176,23 @@ Flickable {
         return settings.zone ?? "start";
     }
 
+    // Edit-mode drop anchor: the first chip of this zone whose centre lies
+    // past `mainAxisPos` (this item's coordinates) is the applet the drop
+    // lands before; past the last chip the drop appends.
+    function beforeAppletAt(mainAxisPos) {
+        for (let index = 0; index < repeater.count; ++index) {
+            const chip = repeater.itemAt(index)
+            if (chip === null || chip.emptyLiveContent) {
+                continue
+            }
+            const point = chip.mapToItem(root, chip.width / 2, chip.height / 2)
+            if ((vertical ? point.y : point.x) > mainAxisPos) {
+                return String(zoneApplets[index].id ?? "")
+            }
+        }
+        return ""
+    }
+
     function dockUnitsFor(applet) {
         const plugin = String(applet.plugin ?? "")
         if (["dock-task-list", "grouped-task-list", "centered-task-list",
@@ -316,6 +336,14 @@ Flickable {
                 dockZoomEnabled: root.dockZoomEnabled
                 dockHasLauncherGroup: root.dockMode
                     && root.dockHasVisibleLauncherBefore(modelData)
+
+                AppletEditHandle {
+                    anchors.fill: parent
+                    panel: root.panel
+                    applet: parent.modelData
+                    controller: root.liveCustomization
+                    editorHost: root.editorHost
+                }
             }
         }
     }

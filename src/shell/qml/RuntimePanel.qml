@@ -8,6 +8,8 @@ Window {
     required property var theme
     required property string surfaceId
     property var panelQuickConfig: null
+    // LiveCustomizationController facade (Meta+right-click menus, edit mode).
+    property var liveCustomization: null
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
@@ -31,6 +33,8 @@ Window {
         panel: root.panel
         theme: root.theme
         panelQuickConfig: root.panelQuickConfig
+        liveCustomization: root.liveCustomization
+        outputId: root.surfaceId.indexOf("@") >= 0 ? root.surfaceId.split("@")[1] : ""
         liveApplets: true
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
