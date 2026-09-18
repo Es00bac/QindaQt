@@ -23,6 +23,8 @@ constexpr std::array<ShortcutSpec,
         {"qindaqt_brightness_up", "Raise brightness", Qt::Key_MonBrightnessUp},
         {"qindaqt_brightness_down", "Lower brightness", Qt::Key_MonBrightnessDown},
         {"qindaqt_take_screenshot", "Take screenshot", Qt::Key_Print},
+        {"qindaqt_mic_mute", "Toggle microphone mute", Qt::Key_MicMute},
+        {"qindaqt_airplane_mode", "Toggle airplane mode", Qt::Key_WLAN},
     }};
 
 std::function<void()> triggerFor(const DesktopShortcutTriggers &triggers,
@@ -41,6 +43,10 @@ std::function<void()> triggerFor(const DesktopShortcutTriggers &triggers,
         return triggers.brightnessDown;
     case DesktopShortcutAction::TakeScreenshot:
         return triggers.takeScreenshot;
+    case DesktopShortcutAction::ToggleMicMute:
+        return triggers.toggleMicMute;
+    case DesktopShortcutAction::ToggleAirplaneMode:
+        return triggers.toggleAirplaneMode;
     case DesktopShortcutAction::Count:
         break;
     }

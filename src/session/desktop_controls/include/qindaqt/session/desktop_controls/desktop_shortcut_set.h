@@ -19,6 +19,8 @@ enum class DesktopShortcutAction {
     BrightnessUp,
     BrightnessDown,
     TakeScreenshot,
+    ToggleMicMute,
+    ToggleAirplaneMode,
     Count,
 };
 
@@ -29,6 +31,8 @@ struct DesktopShortcutTriggers final {
     std::function<void()> brightnessUp;
     std::function<void()> brightnessDown;
     std::function<void()> takeScreenshot;
+    std::function<void()> toggleMicMute;
+    std::function<void()> toggleAirplaneMode;
 };
 
 struct DesktopShortcutRegistrationOptions final {
