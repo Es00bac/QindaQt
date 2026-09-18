@@ -71,6 +71,7 @@ qt_add_qml_module(
         qml/DesktopSurface.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons
+        QindaQt.Controls/1.0
 )
 # The generated QML type-registration unit includes the QML_ELEMENT header by
 # its file name (icons precedent); expose its directory privately.

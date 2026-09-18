@@ -97,6 +97,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
 
     add_library(qindaqt_hybrid_chrome_pointer_router STATIC
         kwin/hybridchromepointerrouter.cpp
+        kwin/hybridchrometouchpolicy.cpp
+        kwin/hybridchrometouchpolicy.h
         kwin/hybridchromepointerrouter.h
     )
     target_compile_features(qindaqt_hybrid_chrome_pointer_router PUBLIC cxx_std_20)
@@ -180,6 +182,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/inputcapabilities.cpp
             kwin/inputcapabilities.h
             kwin/kwininteractionfilter.cpp
+            kwin/kwininteractionfilter_touch.cpp
             kwin/kwininteractionfilter.h
             kwin/kwininputadapter.cpp
             kwin/kwininputadapter.h

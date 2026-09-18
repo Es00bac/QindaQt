@@ -45,9 +45,16 @@ class TokenFacade final : public QObject {
     Q_PROPERTY(QVariantMap motion READ motion NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap elevation READ elevation NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap accessibility READ accessibility NOTIFY tokensChanged FINAL)
+    // Touch mode (ADR-0193): `available` when a touchscreen is present,
+    // `active` while the last input was a finger, and the sizes controls
+    // adopt then (`minimumTarget`, `rowHeight`, `gap`; zero otherwise).
+    Q_PROPERTY(QVariantMap touch READ touch NOTIFY touchChanged FINAL)
 
 public:
     explicit TokenFacade(QObject *parent = nullptr);
+    ~TokenFacade() override;
+
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
     [[nodiscard]] bool ready() const;
     [[nodiscard]] int qstRevision() const;
@@ -67,6 +74,12 @@ public:
     [[nodiscard]] QVariantMap motion() const;
     [[nodiscard]] QVariantMap elevation() const;
     [[nodiscard]] QVariantMap accessibility() const;
+    [[nodiscard]] QVariantMap touch() const;
+    // Sets the touch state directly (compositions and tests); the facade
+    // otherwise observes the application's input devices and events itself.
+    void setTouchState(bool available, bool active);
+    [[nodiscard]] bool touchAvailable() const noexcept { return m_touchAvailable; }
+    [[nodiscard]] bool touchActive() const noexcept { return m_touchActive; }
 
     // AGENT-CONTRACT: These are C++ composition APIs, intentionally not
     // Q_INVOKABLE. QML consumers can observe token generations but cannot
@@ -79,6 +92,9 @@ public:
 
 signals:
     void tokensChanged();
+    // Touch mode alone (ADR-0193): a finger/pointer alternation must not
+    // re-evaluate every colour, spacing and motion binding in the shell.
+    void touchChanged();
 
 private:
     [[nodiscard]] bool onOwningThread(QString *error) const;
@@ -86,7 +102,11 @@ private:
 
     std::shared_ptr<const DesignTokens> m_tokens;
     qulonglong m_generation = 0;
+    [[nodiscard]] QVariantMap touchMap() const;
+
     QVariantMap m_all;
+    bool m_touchAvailable = false;
+    bool m_touchActive = false;
 };
 
 } // namespace QindaQt::DesignTokens

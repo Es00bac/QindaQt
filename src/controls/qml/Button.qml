@@ -24,7 +24,7 @@ T.Button {
     // overriding inherited enabled replaces this QML binding and is unsupported.
     enabled: available && !busy
     implicitWidth: Math.max(96, implicitContentWidth + leftPadding + rightPadding)
-    implicitHeight: Math.max(40, implicitContentHeight + topPadding + bottomPadding)
+    implicitHeight: Math.max(40, (Tokens.touch.minimumTarget ?? 0), implicitContentHeight + topPadding + bottomPadding)
     leftPadding: Tokens.space["4"]
     rightPadding: Tokens.space["4"]
     topPadding: Tokens.space["3"]

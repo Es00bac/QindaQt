@@ -31,6 +31,7 @@ qt_add_qml_module(
         qml/Switch.qml
         qml/TextField.qml
         qml/ThemeCard.qml
+        qml/TouchContextArea.qml
         qml/TokenSwatch.qml
         qml/TabBar.qml
         qml/TabButton.qml

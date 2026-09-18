@@ -14,7 +14,7 @@ T.ComboBox {
 
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
-    implicitHeight: Math.max(40, implicitContentHeight + topPadding + bottomPadding)
+    implicitHeight: Math.max(40, (Tokens.touch.minimumTarget ?? 0), implicitContentHeight + topPadding + bottomPadding)
     leftPadding: Tokens.space["3"]
     rightPadding: indicator.width + Tokens.space["3"]
     topPadding: Tokens.space["2"]

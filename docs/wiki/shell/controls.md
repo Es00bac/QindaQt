@@ -202,3 +202,24 @@ adds local translucent highlights over its opaque background. High contrast
 and reduced transparency remove those highlights. It does not request backdrop
 capture or compositor blur. See [Icon theme](icon-theme.md) and
 [ADR-0109](../adr/0109-use-pearl-and-smoked-plum-app-materials.md).
+
+## Touch conventions
+
+`TouchContextArea` is the one long-press handler
+([ADR-0193](../adr/0193-a-finger-is-the-left-button-and-a-held-finger-the-right.md)):
+an `Item` holding a `TapHandler` for touchscreens and styli that takes no
+grab until the hold completes (half a second, `longPressSeconds`) and then
+emits `contextRequested(position)` in its own coordinates. Place it over the
+same area as the right-click handler and call the same menu, nothing else;
+a mouse never triggers it. The desktop surface and its icon tiles, the file
+manager grid, list and entries, and the task list entry use it; panel
+files owned by the customization lane adopt it there.
+
+`Tokens.touch` carries touch mode: `available` (a touchscreen is among the
+seat's devices), `active` (the last input was a finger, observed from the
+application's events), `minimumTarget` (44 while active, else 0),
+`rowHeight` (48 / 0) and `gap` (8 / 0). Button, CheckBox, Switch, ComboBox,
+TabButton and TextField fold `Tokens.touch.minimumTarget` into their
+`implicitHeight` with `Math.max`, so pointer sizes are untouched when the
+value is zero. Compositions and tests set the state through
+`TokenFacade::setTouchState(available, active)`.

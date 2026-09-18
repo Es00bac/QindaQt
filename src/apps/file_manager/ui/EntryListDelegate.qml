@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "EntryDrag.js" as EntryDrag
+import QindaQt.Controls 1.0 as C
 
 // One Details-mode row. Extracted from EntryList.qml so both files stay under
 // the source-shape budget; the owning view injects everything the row needs.
@@ -134,6 +135,19 @@ Rectangle {
             delegateRoot.selection.selectOnly(delegateRoot.index);
             delegateRoot.selection.focusIndex(delegateRoot.index);
             delegateRoot.activated();
+        }
+    }
+
+    C.TouchContextArea {
+        objectName: "entryTouchContext"
+        anchors.fill: parent
+        onContextRequested: {
+            if (delegateRoot.ListView.view)
+                delegateRoot.ListView.view.forceActiveFocus();
+            if (!delegateRoot.selection.isSelected(delegateRoot.index))
+                delegateRoot.selection.selectOnly(delegateRoot.index);
+            delegateRoot.selection.focusIndex(delegateRoot.index);
+            delegateRoot.contextMenuRequested();
         }
     }
 

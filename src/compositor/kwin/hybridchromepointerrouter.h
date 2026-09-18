@@ -6,6 +6,7 @@
 
 #include <QElapsedTimer>
 #include <QPointF>
+#include <QRectF>
 #include <QString>
 #include <QVector>
 
@@ -100,6 +101,30 @@ public:
     [[nodiscard]] ChromePointerDecision pointerWheel(const QPointF &position,
                                                      Qt::KeyboardModifiers modifiers,
                                                      qreal angleDelta);
+    // Touch hit test (ADR-0193): the exact position first; when it hits
+    // nothing at all, a ring of probes out to `radius`, so a finger that
+    // lands beside a control still finds it. Only targets the router owns
+    // count, and a finger on something KWin owns (a member title, client
+    // content) is never pulled onto chrome. The hit comes back with the probe
+    // point that found it, which the caller uses as the press position so the
+    // router's own hit test agrees.
+    struct TouchHit final
+    {
+        ChromePointerHit hit;
+        QPointF position;
+    };
+    // `clip`, when given, bounds the probes (the finger's own output): a probe
+    // never crosses to a neighbouring display's chrome.
+    [[nodiscard]] std::optional<TouchHit> hitNear(const QPointF &position, qreal radius,
+                                                  const std::optional<QRectF> &clip = std::nullopt) const;
+    // Whether a wheel (or a two-finger swipe) over this target rolls the
+    // container; exposed for the touch path.
+    [[nodiscard]] static bool rollTarget(const HybridChrome::ChromeHitTarget &target) noexcept;
+    // Whether a right click (or a long press) over this target opens the
+    // container menu; exposed for the touch path.
+    [[nodiscard]] static bool contextMenuTarget(
+        const HybridChrome::ChromeHitTarget &target) noexcept;
+
     [[nodiscard]] ChromePointerDecision cancel();
     // Cancels a grab and forgets hover identity when a published topology or
     // overlay set is replaced. Unlike cancel(), this forces a paint clear.

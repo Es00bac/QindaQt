@@ -195,6 +195,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0190: mirroring is one field on the mirrored output](0190-mirroring-is-one-field-on-the-mirrored-output.md)
 - [ADR-0191: a control survives reprojection and owns its value](0191-a-control-survives-reprojection.md)
 - [ADR-0192: the KDE portal drop-in must not try to clear `BusName=`](0192-portal-dropin-busname-cannot-be-cleared.md)
+- [ADR-0193: a finger is the left button, and a held finger the right](0193-a-finger-is-the-left-button-and-a-held-finger-the-right.md)
 - [ADR-0194: a saved network location is a name and a canonical address](0194-saved-network-locations-are-canonical-addresses.md)
 - [ADR-0195: one owner per transfer, and a queue for the ones that cross the network boundary](0195-one-owner-per-transfer-and-a-queue-for-the-network.md)
 - [ADR-0196: network sign-in belongs to the platform, not to QindaQt](0196-network-sign-in-belongs-to-the-platform.md)

@@ -53,6 +53,21 @@ set_tests_properties(
             "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
 )
 
+# Touch conventions (ADR-0193): TouchContextArea and the touch-mode sizes.
+qt_add_executable(qindaqt_controls_touch_tests tst_controls_touch.cpp)
+target_link_libraries(
+    qindaqt_controls_touch_tests
+    PRIVATE qindaqt_controls_test_support Qt6::QuickControls2 Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_controls_touch_tests)
+add_test(NAME qindaqt.controls-touch COMMAND qindaqt_controls_touch_tests)
+set_tests_properties(
+    qindaqt.controls-touch
+    PROPERTIES
+        LABELS "controls;offscreen;touch"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
 qt_add_executable(qindaqt_controls_visual_tests tst_controls_visual.cpp)
 target_link_libraries(
     qindaqt_controls_visual_tests
