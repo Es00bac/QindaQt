@@ -10,7 +10,7 @@
 
 namespace QindaQt::Apps::FileManager {
 
-// Production ServiceDiscovery (ADR-0197) on the platform's Avahi daemon,
+// Production ServiceDiscovery (ADR-0200) on the platform's Avahi daemon,
 // which is already installed and running on both machines. It speaks
 // `org.freedesktop.Avahi.Server` on the injected bus: one ServiceBrowser per
 // advertised type, then one ResolveService per announcement to turn it into a

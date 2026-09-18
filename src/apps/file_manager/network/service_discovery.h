@@ -34,7 +34,7 @@ struct DiscoveredService final {
 };
 
 // AGENT-CONTRACT: browses the local network for servers the file manager can
-// open (ADR-0197). An implementation must:
+// open (ADR-0200). An implementation must:
 //  - publish only canonical, userinfo-free sftp/smb identities;
 //  - emit serviceFound() at most once per distinct key until the matching
 //    serviceLost(), so the model never has to deduplicate a second time;

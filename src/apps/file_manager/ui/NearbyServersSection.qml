@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// The Network hub's "Nearby" list (ADR-0197). Presentation only: opening a
+// The Network hub's "Nearby" list (ADR-0200). Presentation only: opening a
 // row hands its address to NavigationController exactly as a saved location
 // does, so an unreachable server lands on the ordinary navigation state pane.
 //

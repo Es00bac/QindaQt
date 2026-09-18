@@ -1,4 +1,4 @@
-# ADR-0197: Nearby servers are advisory, opt-in, and only what can be opened
+# ADR-0200: Nearby servers are advisory, opt-in, and only what can be opened
 
 - **Status:** Proposed
 - **Date:** 2026-09-17

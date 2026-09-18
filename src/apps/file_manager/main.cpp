@@ -221,7 +221,7 @@ void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &sear
       QStringLiteral("connectPathField"), QStringLiteral("connectNameField"),
       QStringLiteral("transferQueueBanner"),
       QStringLiteral("transferRefusalBanner"),
-      // ADR-0197/0198: the nearby section and the preferences window are part
+      // ADR-0200/0198: the nearby section and the preferences window are part
       // of the installed package's contract too.
       QStringLiteral("nearbyServersSection"), QStringLiteral("preferencesWindow"),
       QStringLiteral("preferencesTabBar"), QStringLiteral("preferencesGeneralPage"),
@@ -261,7 +261,7 @@ struct NetworkComposition final {
       std::make_unique<QindaQt::Apps::FileManager::PreferencesController>(
           std::make_unique<QindaQt::Apps::FileManager::PreferencesStore>(
               stateDirectory));
-  // ADR-0197: Avahi lives on the system bus. Browsing starts only when the
+  // ADR-0200: Avahi lives on the system bus. Browsing starts only when the
   // preference says so, so the controller is created stopped.
   composed.discovery =
       std::make_unique<QindaQt::Apps::FileManager::DiscoveryController>(

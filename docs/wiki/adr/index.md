@@ -199,7 +199,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0194: a saved network location is a name and a canonical address](0194-saved-network-locations-are-canonical-addresses.md)
 - [ADR-0195: one owner per transfer, and a queue for the ones that cross the network boundary](0195-one-owner-per-transfer-and-a-queue-for-the-network.md)
 - [ADR-0196: network sign-in belongs to the platform, not to QindaQt](0196-network-sign-in-belongs-to-the-platform.md)
-- [ADR-0197: nearby servers are advisory, opt-in, and only what can be opened](0197-nearby-servers-are-advisory-and-opt-in.md)
 - [ADR-0197: pen displays map themselves and ask once](0197-pen-displays-map-themselves-and-ask-once.md)
 - [ADR-0198: File Manager preferences are app-local, exact, and every one of them does something](0198-file-manager-preferences-are-app-local.md)
 - [ADR-0199: mount at login is a systemd user unit the file manager writes and nothing more](0199-mount-at-login-is-a-systemd-user-unit-the-app-writes.md)
+- [ADR-0200: nearby servers are advisory, opt-in, and only what can be opened](0200-nearby-servers-are-advisory-and-opt-in.md)

@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 // Discovery, the Connect dialog's default, and what mounting at login costs
-// (ADR-0197/0199). The mount list is read from the manager rather than from
+// (ADR-0200/0199). The mount list is read from the manager rather than from
 // the locations, so it shows what is actually on disk.
 ColumnLayout {
     id: root

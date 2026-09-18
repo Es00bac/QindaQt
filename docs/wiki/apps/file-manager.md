@@ -29,7 +29,7 @@ with a Network hub page and a Connect-to-server dialog (ADR-0194), and a
 transfer queue that copies and moves between the local machine and a network
 location in either direction (ADR-0195), with sign-in left to the platform
 (ADR-0196). S7 completes that area: nearby servers over the platform's Avahi
-(ADR-0197), a preferences window whose settings survive a restart (ADR-0198),
+(ADR-0200), a preferences window whose settings survive a restart (ADR-0198),
 and a per-location "mount at login" knob that writes one systemd user unit
 (ADR-0199). Per-volume Trash and portal locations remain later slices (see the
 roadmap below).
@@ -1039,7 +1039,7 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   boundary.
 - **S7 (this slice, landed)** — the rest of first-class network locations:
   opt-in Avahi discovery of servers the file manager can actually open
-  (ADR-0197), the `preferences-v1` store and the Preferences window, which
+  (ADR-0200), the `preferences-v1` store and the Preferences window, which
   closes the ADR-0090 session-local deferral (ADR-0198), and the per-location
   mount-at-login knob that writes one systemd user `.mount` unit, with the
   inventory bumped to `network-locations-v2` and a v1 migration (ADR-0199).
