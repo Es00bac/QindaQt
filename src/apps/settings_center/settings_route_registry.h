@@ -47,7 +47,6 @@ private:
   // ADR-0211: appended after every earlier route so indices stay stable.
   void registerWindowsRoute();
   void registerDefaultApplicationsRoute();
-  void registerDefaultApplicationsRoute();
   void registerAboutComputerRoute();
   void registerStartupRoute();
   // AGENT-NOTE: split purely to stay under the function-lines shape limit as

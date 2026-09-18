@@ -203,7 +203,6 @@ T.ApplicationWindow {
             defaultApplicationsComponent: addedRouteComponents.defaultApplications
             aboutComputerComponent: addedRouteComponents.aboutComputer
             startupComponent: addedRouteComponents.startup
-            startupComponent: addedRouteComponents.startup
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -260,7 +259,6 @@ T.ApplicationWindow {
             windowsComponent: windowsRouteComponent
             defaultApplicationsComponent: addedRouteComponents.defaultApplications
             aboutComputerComponent: addedRouteComponents.aboutComputer
-            startupComponent: addedRouteComponents.startup
             startupComponent: addedRouteComponents.startup
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false

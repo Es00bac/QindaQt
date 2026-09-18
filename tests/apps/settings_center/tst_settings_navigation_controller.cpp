@@ -148,46 +148,46 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
-  // ADR-0211: selectNext from 12 ("streaming") -> 13 ("datetime"). Streaming,
-  // Date & time and Windows & workspaces are each appended last, in merge
-
-  // selectNext from 14 ("windows") -> 15 ("default-apps")
-  QVERIFY(controller.selectNext());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("default-apps"));
-  // order, so nothing before them moved.
+  // ADR-0211: appended routes take the next index in merge order, so nothing
+  // before them moves. streaming 12, datetime 13, windows 14, default-apps 15,
+  // about-computer 16, startup 17.
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
-  // selectNext from 13 ("datetime") -> 14 ("windows")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
 
-  // selectNext from 14 ("windows") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
-
-  // selectPrevious from 0 wraps to 14 ("windows")
-  QVERIFY(controller.selectPrevious());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
-
-  QVERIFY(controller.selectIndex(15));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("default-apps"));
 
-  // selectPrevious from 14 -> 13 ("datetime")
-  QVERIFY(controller.selectPrevious());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
-
-  // selectPrevious from 13 -> 12 ("streaming")
-  QVERIFY(controller.selectPrevious());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
-
-  // selectNext from 14 ("default-apps") -> 15 ("about-computer")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
 
-  // selectNext from 15 ("about-computer") -> 16 ("startup")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
+
+  // selectNext from 17 ("startup") wraps to 0 ("notifications")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
+
+  // selectPrevious from 0 wraps to 17 ("startup")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
+
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
+
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("default-apps"));
+
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
+
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
   // selectPrevious from 12 -> 11 ("input")
   QVERIFY(controller.selectPrevious());
@@ -283,12 +283,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
   QVERIFY(controller.selectIndex(14));
-  QVERIFY(!controller.selectIndex(16));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
 
   QVERIFY(controller.selectIndex(15));
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("default-apps"));
 
   QVERIFY(controller.selectIndex(16));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
+
+  QVERIFY(controller.selectIndex(17));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
 
   QVERIFY(controller.selectIndex(0));
@@ -296,7 +299,7 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(17));
+  QVERIFY(!controller.selectIndex(18));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -354,7 +357,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 17);
+  QCOMPARE(list.size(), 18);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -427,16 +430,6 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap startupMap = list.at(17).toMap();
   QCOMPARE(startupMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("startup"));
-
-  QCOMPARE(list.size(), 16);
-
-  // selectNext from 15 ("default-apps") -> 16 ("about-computer")
-  QVERIFY(controller.selectNext());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
-
-  // selectNext from 16 ("about-computer") -> 17 ("startup")
-  QVERIFY(controller.selectNext());
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
 }
 
 void SettingsNavigationControllerTest::testRouteAtPositions() {
@@ -532,20 +525,12 @@ void SettingsNavigationControllerTest::testRouteAtPositions() {
   QCOMPARE(itemAt15.value(QStringLiteral("component")).toString(),
            QStringLiteral("default-apps"));
 
-
-
-  QVERIFY(controller.selectIndex(16));
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("about-computer"));
   const QVariantMap itemAt16 = controller.routeAt(16);
   QCOMPARE(itemAt16.value(QStringLiteral("id")).toString(),
            QStringLiteral("about-computer"));
   QCOMPARE(itemAt16.value(QStringLiteral("component")).toString(),
            QStringLiteral("about-computer"));
 
-
-
-  QVERIFY(controller.selectIndex(17));
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
   const QVariantMap itemAt17 = controller.routeAt(17);
   QCOMPARE(itemAt17.value(QStringLiteral("id")).toString(),
            QStringLiteral("startup"));
