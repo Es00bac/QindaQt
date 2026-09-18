@@ -202,6 +202,8 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" LABELS unit
 )
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/HarnessUnitTests.cmake")
+
 add_test(
     NAME session.python-syntax
     COMMAND
