@@ -61,7 +61,9 @@ target_link_libraries(qindaqt_settings_navigation_layout_test PRIVATE
     qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_windows_qml
     qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml
+    qindaqt_settings_windows_qmlplugin
     qindaqt_settings_color_backend_qmlplugin qindaqt_settings_input_backend_qml
     qindaqt_settings_input_backend_qmlplugin
     qindaqt_settings_streaming_backend_qml
@@ -85,7 +87,9 @@ add_dependencies(qindaqt_settings_navigation_layout_test
     qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin qindaqt_settings_bluetooth_qml
     qindaqt_settings_bluetooth_qmlplugin qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_windows_qml
     qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_windows_qmlplugin
     qindaqt_settings_input_qml qindaqt_settings_input_qmlplugin
     qindaqt_settings_streaming_qml qindaqt_settings_streaming_qmlplugin
     qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin
@@ -117,7 +121,9 @@ target_link_libraries(qindaqt_settings_navigation_interaction_test PRIVATE
     qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_windows_qml
     qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml
+    qindaqt_settings_windows_qmlplugin
     qindaqt_settings_color_backend_qmlplugin qindaqt_settings_input_backend_qml
     qindaqt_settings_input_backend_qmlplugin
     qindaqt_settings_streaming_backend_qml
@@ -141,7 +147,9 @@ add_dependencies(qindaqt_settings_navigation_interaction_test
     qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin qindaqt_settings_bluetooth_qml
     qindaqt_settings_bluetooth_qmlplugin qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_windows_qml
     qindaqt_settings_clipboard_qmlplugin qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_windows_qmlplugin
     qindaqt_settings_input_qml qindaqt_settings_input_qmlplugin
     qindaqt_settings_streaming_qml qindaqt_settings_streaming_qmlplugin
     qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin

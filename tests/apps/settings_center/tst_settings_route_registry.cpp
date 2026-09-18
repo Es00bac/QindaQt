@@ -215,9 +215,9 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  // Twelve original routes plus Streaming (O10) and Date & time (O13), each
-  // appended last by its own lane.
-  QCOMPARE(registry.count(), 14);
+  // Twelve original routes plus Streaming (O10), Date & time (O13) and
+  // Windows & workspaces, each appended last by its own lane.
+  QCOMPARE(registry.count(), 15);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -235,6 +235,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   // ADR-0200: the Date & time route, registered last so every existing
   // route's index -- which shortcuts and traversal depend on -- is unmoved.
   QVERIFY(registry.hasRoute(QStringLiteral("datetime")));
+  QVERIFY(registry.hasRoute(QStringLiteral("windows")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -254,6 +255,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   // (ADR-0128).
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
   QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
+  QCOMPARE(registry.indexOf(QStringLiteral("windows")), 14);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -354,6 +356,16 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(input->iconName, QStringLiteral("preferences-desktop-peripherals"));
   QVERIFY(!input->description.isEmpty());
   QVERIFY(input->available);
+
+  const auto windows = registry.route(QStringLiteral("windows"));
+  QVERIFY(windows.has_value());
+  QCOMPARE(windows->id, QStringLiteral("windows"));
+  QCOMPARE(windows->component, SettingsRouteComponent::Windows);
+  QCOMPARE(windows->title, QStringLiteral("Windows & workspaces"));
+  QCOMPARE(windows->category, QStringLiteral("Personalization"));
+  QCOMPARE(windows->iconName, QStringLiteral("preferences-system-windows"));
+  QVERIFY(!windows->description.isEmpty());
+  QVERIFY(windows->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

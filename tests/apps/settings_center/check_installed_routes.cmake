@@ -157,6 +157,16 @@ if(NOT input_in_stage OR NOT IS_DIRECTORY "${input_module}")
         "${input_module}")
 endif()
 
+set(windows_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Windows")
+cmake_path(NORMAL_PATH windows_module OUTPUT_VARIABLE windows_module)
+cmake_path(IS_PREFIX install_prefix "${windows_module}" NORMALIZE windows_in_stage)
+if(NOT windows_in_stage OR NOT IS_DIRECTORY "${windows_module}")
+    message(FATAL_ERROR
+        "installed Settings Windows module is missing or outside stage: "
+        "${windows_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -192,6 +202,11 @@ set(build_input_module "${build_directory}/qml/QindaQt/SettingsApp/Input")
 if(NOT IS_DIRECTORY "${build_input_module}")
     message(FATAL_ERROR
         "package relocation requires the developer Input QML tree to remain present")
+endif()
+set(build_windows_module "${build_directory}/qml/QindaQt/SettingsApp/Windows")
+if(NOT IS_DIRECTORY "${build_windows_module}")
+    message(FATAL_ERROR
+        "package relocation requires the developer Windows QML tree to remain present")
 endif()
 
 set(withheld_module "${appearance_module}.withheld")

@@ -211,3 +211,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0204: the on-screen keyboard is the compositor's input method](0204-the-on-screen-keyboard-is-the-compositors-input-method.md)
 - [ADR-0205: touch edges and touch preferences belong to the compositor](0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)
 - [ADR-0209: `windowManagement.*` is bridged into kwinrc by the session, live](0209-bridge-window-management-settings-into-kwinrc.md)
+- [ADR-0210: add the Windows & workspaces Settings route over the live keys only](0210-windows-and-workspaces-settings-route.md)
