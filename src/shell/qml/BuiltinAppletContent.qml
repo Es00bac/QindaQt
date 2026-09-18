@@ -8,6 +8,7 @@ import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
+import QindaQt.Shell.ObsApplet 1.0 as ObsAppletModule
 import QindaQt.Shell.TaskList 1.0 as TaskListModule
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierModule
 import QindaQt.Shell.StartMenu 1.0 as StartMenuModule
@@ -25,6 +26,7 @@ Item {
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var smartLightsAppletAccess: null
+    property var obsAppletAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
@@ -56,6 +58,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.power"
     readonly property bool smartLightsReady:
         ready && entryPoint === "qindaqt.applets.smart-lights"
+    readonly property bool obsReady:
+        ready && entryPoint === "qindaqt.applets.obs"
     readonly property bool clipboardPreview:
         !liveApplets && String(applet.plugin ?? "") === "clipboard"
     readonly property bool clipboardReady:
@@ -115,6 +119,7 @@ Item {
             : root.bluetoothReady ? bluetoothComponent
             : root.powerReady ? powerComponent
             : root.smartLightsReady ? smartLightsComponent
+            : root.obsReady ? obsComponent
             : root.clipboardReady ? clipboardComponent
             : root.launcherReady ? launcherComponent
             : root.globalMenuReady ? globalMenuComponent
@@ -179,6 +184,17 @@ Item {
             anchors.fill: parent
             visible: root.smartLightsReady
             access: root.smartLightsAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: obsComponent
+        ObsAppletModule.ObsApplet {
+            anchors.fill: parent
+            visible: root.obsReady
+            access: root.obsAppletAccess
             theme: root.theme
             vertical: root.vertical
         }

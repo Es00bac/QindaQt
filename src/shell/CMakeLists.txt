@@ -79,6 +79,7 @@ target_link_libraries(
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
         QindaQt::ShellSmartLightsAppletRuntime
+        QindaQt::ShellObsAppletRuntime
         QindaQt::ShellTaskListApplet
         QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
         QindaQt::ShellDesktopControlsRuntime
@@ -209,6 +210,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellpreferencevalues.h
         runtime/smartlightsappletcomposition.cpp
         runtime/smartlightsappletcomposition.h
+        runtime/obsappletcomposition.cpp
+        runtime/obsappletcomposition.h
         runtime/shellstartuppreferences.cpp
         runtime/shellstartuppreferences.h
         runtime/shortcutnotecontroller.cpp
@@ -292,6 +295,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
             QindaQt::ShellSmartLightsAppletRuntime
+            QindaQt::ShellObsAppletRuntime
             QindaQt::WizUdpTransport
             QindaQt::ShellTaskListApplet
             QindaQt::ShellTaskListProducer
