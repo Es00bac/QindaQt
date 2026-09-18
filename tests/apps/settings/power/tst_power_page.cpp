@@ -44,6 +44,7 @@ private Q_SLOTS:
   void resumeLockAndGraceRowsBindAndApply();
   void powerPolicyRowsRespectLidPresenceAndApply();
   void focusChainReachesTheLidPolicySection();
+  void automaticProfileRowsBuildOptionsAndApplyPerSource();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -496,6 +497,57 @@ void PowerPageTest::focusChainReachesTheLidPolicySection() {
 
   powerButtonSelector->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), powerButtonSelector);
+}
+
+void PowerPageTest::automaticProfileRowsBuildOptionsAndApplyPerSource() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+
+  auto *acSelector = findItem(page,
+      QStringLiteral("powerAutoProfileSelector_ac"));
+  auto *batterySelector = findItem(page,
+      QStringLiteral("powerAutoProfileSelector_battery"));
+  auto *lowBatterySelector = findItem(page,
+      QStringLiteral("powerAutoProfileSelector_lowBattery"));
+  QVERIFY(acSelector != nullptr);
+  QVERIFY(batterySelector != nullptr);
+  QVERIFY(lowBatterySelector != nullptr);
+  QVERIFY(acSelector->isEnabled());
+
+  // No source has an automatic switch configured yet: every selector shows
+  // the "don't switch" placeholder, not the sole reported profile.
+  QCOMPARE(acSelector->property("currentText").toString(),
+           QStringLiteral("Don't switch automatically"));
+
+  // Admitting an AC preference selects it in that row only.
+  m_model->profilePolicyState.acProfileId = QStringLiteral("balanced");
+  Q_EMIT m_model->profilePolicyState.policyChanged();
+  QCoreApplication::processEvents();
+  QTRY_COMPARE(acSelector->property("currentText").toString(),
+               QStringLiteral("Balanced"));
+  QCOMPARE(batterySelector->property("currentText").toString(),
+           QStringLiteral("Don't switch automatically"));
+
+  // Selecting the one reported profile on the battery row writes only that
+  // source; AC and low-battery are forwarded unchanged.
+  batterySelector->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), batterySelector);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_model->profilePolicyState.applyCalls, 1);
+  const QStringList lastApply = m_model->profilePolicyState.lastArguments;
+  QCOMPARE(lastApply.at(0), QStringLiteral("balanced"));
+  QCOMPARE(lastApply.at(1), QStringLiteral("balanced"));
+  QCOMPARE(lastApply.at(2), QString());
+
+  // Busy or unavailable disables all three rows, mirroring the lid section.
+  m_model->profilePolicyState.available = false;
+  Q_EMIT m_model->profilePolicyState.availabilityChanged();
+  QCoreApplication::processEvents();
+  QTRY_VERIFY(!acSelector->isEnabled());
+  QTRY_VERIFY(!batterySelector->isEnabled());
+  QTRY_VERIFY(!lowBatterySelector->isEnabled());
 }
 
 QTEST_MAIN(PowerPageTest)

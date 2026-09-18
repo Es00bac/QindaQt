@@ -163,6 +163,7 @@ T.Page {
                     PowerProfileSection {
                         id: profileSection
                         powerSettings: root.powerSettings
+                        profilePolicy: root.powerSettings.profilePolicy
                     }
                     PowerBrightnessSection {
                         id: brightnessSection
