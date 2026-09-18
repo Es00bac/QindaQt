@@ -12,6 +12,10 @@
 #include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
+#include "windowmanagementconfig.h"
+
+#include <KConfigGroup>
+#include <KSharedConfig>
 
 #include <window.h>
 #include <workspace.h>
@@ -415,9 +419,39 @@ bool KWinHybridSession::executeShellWindowAction(
     return false;
 }
 
+void KWinHybridSession::applyWindowManagementConfig()
+{
+    // AGENT-CONTRACT (ADR-0209): KWin's Options::configChanged fires after
+    // KWin has re-read kwinrc for its own keys; the shared KSharedConfig
+    // already holds the new bytes, but a reparse costs nothing and keeps the
+    // plugin correct when the signal source is a different config object.
+    const KSharedConfig::Ptr kwinrc = KSharedConfig::openConfig(QStringLiteral("kwinrc"));
+    kwinrc->reparseConfiguration();
+    const KConfigGroup group = kwinrc->group(QStringLiteral("QindaQt"));
+    const WindowManagementConfig config = WindowManagementConfig::fromEntries(
+        group.readEntry("DockingModifier", QStringLiteral("super")),
+        group.readEntry("CloseContainerPolicy", QStringLiteral("ask")),
+        group.readEntry("SessionRestore", QStringLiteral("true")));
+    if (config == m_windowManagement && m_inputFilter) {
+        return;
+    }
+    m_windowManagement = config;
+    if (m_inputFilter) {
+        m_inputFilter->setDockingModifiers(config.dockingModifiers);
+    } else if (m_interactionController) {
+        m_interactionController->setPointerModifiers(config.dockingModifiers);
+    }
+}
+
 bool KWinHybridSession::requestCloseContainer(const QString &containerId,
                                               QString *error)
 {
+    if (m_windowManagement.closeDecision.has_value()) {
+        // The user chose a standing policy (windowManagement.closeContainerPolicy):
+        // no prompt, the decision applies directly.
+        handleCloseDecision(containerId, *m_windowManagement.closeDecision);
+        return true;
+    }
     const auto memberCount = m_runtime->topology().windowIds(containerId).size();
     // Scene chrome has no QWidget/QWindow by design. The prompt is itself a
     // KWin-internal window and must not depend on a fake chrome input surface.

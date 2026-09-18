@@ -14,7 +14,7 @@ bool LateShiftTakeoverDetector::observe(const void *activeDrag, Qt::KeyboardModi
         m_trackedDrag = activeDrag;
         m_lastModifiers = Qt::KeyboardModifiers();
     }
-    if (!activeDrag) {
+    if (!activeDrag || !m_requiredModifiers.has_value()) {
         return false;
     }
 
@@ -23,10 +23,23 @@ bool LateShiftTakeoverDetector::observe(const void *activeDrag, Qt::KeyboardModi
     // Meta-drag with Ctrl+Shift added on top of the required chord) wrongly
     // arm the takeover even though the completed chord does not exactly
     // match what a fresh press would need to claim it.
-    const bool wasSatisfied = m_lastModifiers == m_requiredModifiers;
-    const bool nowSatisfied = modifiers == m_requiredModifiers;
+    const bool wasSatisfied = m_lastModifiers == *m_requiredModifiers;
+    const bool nowSatisfied = modifiers == *m_requiredModifiers;
     m_lastModifiers = modifiers;
     return !wasSatisfied && nowSatisfied;
+}
+
+void LateShiftTakeoverDetector::setRequiredModifiers(
+    std::optional<Qt::KeyboardModifiers> modifiers)
+{
+    m_requiredModifiers = modifiers;
+    m_trackedDrag = nullptr;
+    m_lastModifiers = Qt::KeyboardModifiers();
+}
+
+std::optional<Qt::KeyboardModifiers> LateShiftTakeoverDetector::requiredModifiers() const
+{
+    return m_requiredModifiers;
 }
 
 } // namespace QindaQt::HybridInput

@@ -50,7 +50,12 @@ qindaqt_enable_warnings(qindaqt_session_supervisor_support)
 
 qt_add_executable(qindaqt-session app/main.cpp)
 target_link_libraries(
-    qindaqt-session PRIVATE QindaQt::SessionSupervisorSupport Qt6::Core
+    qindaqt-session
+    PRIVATE
+        QindaQt::SessionSupervisorSupport
+        QindaQt::WindowManagementBridge
+        Qt6::Core
+        Qt6::DBus
 )
 target_compile_definitions(qindaqt-session PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}")
 set_target_properties(qindaqt-session PROPERTIES CXX_EXTENSIONS OFF)
