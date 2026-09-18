@@ -76,7 +76,7 @@ void KioTransferWorker::start(const quint64 id, const QUrl &source,
     return;
   }
   job->setParent(this);
-  // AGENT-CONTRACT (ADR-0151/0192): CopyJob is a KIO::Job, so it already
+  // AGENT-CONTRACT (ADR-0151/0195): CopyJob is a KIO::Job, so it already
   // carries KIO's standard UI delegate; authentication and overwrite prompts
   // work, and failures still arrive here as a typed result.
   m_pending.insert(id, job);

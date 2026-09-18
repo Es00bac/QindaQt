@@ -19,6 +19,11 @@ struct NetworkLocationRecord final {
   QUrl url;
   // Shown as its own Places sidebar row when true.
   bool showInPlaces = true;
+  // ADR-0199: a systemd user `.mount` unit mounts this location under
+  // ~/Network at login. Only sftp locations can carry it, and turning it on
+  // is what makes `net-fs/sshfs` a runtime dependency -- for this user, on
+  // this machine, and nowhere else.
+  bool mountAtLogin = false;
 
   [[nodiscard]] bool operator==(const NetworkLocationRecord &) const = default;
 };
@@ -37,6 +42,9 @@ struct NetworkLocationsLoadResult final {
   QVector<NetworkLocationRecord> locations;
   NetworkLocationsError error = NetworkLocationsError::None;
   QString diagnostic;
+  // True when these records came from a `network-locations-v1` file. The
+  // owner persists them once, which writes the v2 document.
+  bool migratedFromV1 = false;
 
   [[nodiscard]] bool ok() const { return error == NetworkLocationsError::None; }
 };
@@ -61,12 +69,17 @@ struct NetworkLocationsWriteResult final {
 // a half-loaded inventory would quietly lose a user's saved location.
 //
 // AGENT-CONTRACT: the reader demands an exact key set, so an inventory
-// written by a newer schema is refused rather than partly understood. Adding
-// a field (per-location user name, mount-at-login, in-place vs copy-on-open)
-// means `network-locations-v2` plus a migration, not a tolerant reader.
+// written by a newer schema is refused rather than partly understood. This is
+// `network-locations-v2`; a `network-locations-v1` inventory (no
+// `mountAtLogin`) is read once and reported through
+// NetworkLocationsLoadResult::migratedFromV1 so composition can rewrite it as
+// v2. The v1 file is left where it is rather than deleted, so downgrading to
+// an older build loses nothing. Adding a further field (a per-location user
+// name, in-place vs copy-on-open) means v3 and the same treatment.
 class NetworkLocationsStore final {
 public:
   static constexpr qint64 maximumBytes = 64 * 1024;
+  static constexpr int schemaVersion = 2;
   static constexpr int maximumLocations = 64;
   static constexpr int maximumNameLength = 256;
   static constexpr int maximumUrlLength = 4096;
@@ -85,6 +98,9 @@ public:
   [[nodiscard]] static QString identityFor(const QUrl &canonicalUrl);
 
 private:
+  // Reads one inventory document of the given schema version. `version` also
+  // selects the accepted per-entry key set.
+  [[nodiscard]] NetworkLocationsLoadResult loadVersion(int version) const;
   [[nodiscard]] static bool validate(const QVector<NetworkLocationRecord> &locations,
                                      QString *diagnostic);
 

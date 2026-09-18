@@ -16,7 +16,12 @@
 namespace QindaQt::Apps::FileManager {
 namespace {
 
-constexpr auto locationsFileName = "network-locations-v1.json";
+// One file per schema version: v2 is what is written now, v1 is read once
+// and migrated. Keeping both names means a downgrade still finds its own file.
+[[nodiscard]] QByteArray locationsFileName(const int version) {
+  return QByteArray("network-locations-v") + QByteArray::number(version) +
+         QByteArray(".json");
+}
 
 NetworkLocationsLoadResult loadFailure(const NetworkLocationsError error,
                                        const QString &diagnostic) {
@@ -31,9 +36,19 @@ NetworkLocationsWriteResult writeFailure(const NetworkLocationsError error,
   return {.error = error, .diagnostic = diagnostic.left(256)};
 }
 
-[[nodiscard]] StateFile stateFileFor(const QString &directory) {
-  return StateFile(directory, QByteArray(locationsFileName),
+[[nodiscard]] StateFile stateFileFor(const QString &directory, const int version) {
+  return StateFile(directory, locationsFileName(version),
                    NetworkLocationsStore::maximumBytes);
+}
+
+// v1 had no mountAtLogin; v2 requires it.
+[[nodiscard]] QSet<QString> entryKeysFor(const int version) {
+  QSet<QString> keys{QStringLiteral("name"), QStringLiteral("url"),
+                     QStringLiteral("showInPlaces")};
+  if (version >= 2) {
+    keys.insert(QStringLiteral("mountAtLogin"));
+  }
+  return keys;
 }
 
 [[nodiscard]] NetworkLocationsLoadResult
@@ -87,7 +102,7 @@ NetworkLocationsStore::NetworkLocationsStore(QString stateDirectory)
     : m_stateDirectory(QDir::cleanPath(std::move(stateDirectory))) {}
 
 QString NetworkLocationsStore::filePath() const {
-  return stateFileFor(m_stateDirectory).filePath();
+  return stateFileFor(m_stateDirectory, schemaVersion).filePath();
 }
 
 QString NetworkLocationsStore::identityFor(const QUrl &canonicalUrl) {
@@ -125,13 +140,35 @@ bool NetworkLocationsStore::validate(
           QStringLiteral("Network location inventory contains an invalid name");
       return false;
     }
+    // AGENT-GUARD: only sftp can be mounted (sshfs). Storing the knob on an
+    // smb location would promise a mount nothing can perform.
+    if (location.mountAtLogin && location.url.scheme() != QLatin1String("sftp")) {
+      *diagnostic =
+          QStringLiteral("Only SFTP locations can be mounted at login");
+      return false;
+    }
     uniqueIdentities.insert(location.id);
   }
   return true;
 }
 
 NetworkLocationsLoadResult NetworkLocationsStore::load() const {
-  const StateFile::ReadResult read = stateFileFor(m_stateDirectory).read();
+  NetworkLocationsLoadResult current = loadVersion(schemaVersion);
+  if (current.error != NetworkLocationsError::Absent) {
+    return current;
+  }
+  // AGENT-NOTE: no v2 document yet. A v1 one is migrated in memory and
+  // reported; a first run stays Absent, with no diagnostic.
+  NetworkLocationsLoadResult legacy = loadVersion(1);
+  if (!legacy.ok()) {
+    return current;
+  }
+  legacy.migratedFromV1 = true;
+  return legacy;
+}
+
+NetworkLocationsLoadResult NetworkLocationsStore::loadVersion(const int version) const {
+  const StateFile::ReadResult read = stateFileFor(m_stateDirectory, version).read();
   if (!read.ok()) {
     return loadFailureFor(read);
   }
@@ -147,7 +184,8 @@ NetworkLocationsLoadResult NetworkLocationsStore::load() const {
                                    QStringLiteral("locations")};
   const QStringList objectKeys = object.keys();
   if (QSet<QString>(objectKeys.begin(), objectKeys.end()) != expectedKeys ||
-      object.value(QStringLiteral("version")).toDouble() != 1.0 ||
+      object.value(QStringLiteral("version")).toDouble() !=
+          static_cast<double>(version) ||
       !object.value(QStringLiteral("locations")).isArray()) {
     return loadFailure(NetworkLocationsError::Malformed,
                        QStringLiteral("Network location state has an invalid schema"));
@@ -158,9 +196,7 @@ NetworkLocationsLoadResult NetworkLocationsStore::load() const {
         NetworkLocationsError::Malformed,
         QStringLiteral("Network location state contains too many entries"));
   }
-  const QSet<QString> expectedEntryKeys{QStringLiteral("name"),
-                                        QStringLiteral("url"),
-                                        QStringLiteral("showInPlaces")};
+  const QSet<QString> expectedEntryKeys = entryKeysFor(version);
   QVector<NetworkLocationRecord> locations;
   for (const QJsonValue &value : entries) {
     if (!value.isObject()) {
@@ -172,7 +208,8 @@ NetworkLocationsLoadResult NetworkLocationsStore::load() const {
     if (QSet<QString>(entryKeys.begin(), entryKeys.end()) != expectedEntryKeys ||
         !entry.value(QStringLiteral("name")).isString() ||
         !entry.value(QStringLiteral("url")).isString() ||
-        !entry.value(QStringLiteral("showInPlaces")).isBool()) {
+        !entry.value(QStringLiteral("showInPlaces")).isBool() ||
+        (version >= 2 && !entry.value(QStringLiteral("mountAtLogin")).isBool())) {
       return loadFailure(NetworkLocationsError::Malformed,
                          QStringLiteral("Network location entry has an invalid shape"));
     }
@@ -180,6 +217,8 @@ NetworkLocationsLoadResult NetworkLocationsStore::load() const {
     record.name = entry.value(QStringLiteral("name")).toString();
     record.url = QUrl(entry.value(QStringLiteral("url")).toString(), QUrl::StrictMode);
     record.showInPlaces = entry.value(QStringLiteral("showInPlaces")).toBool();
+    record.mountAtLogin =
+        version >= 2 && entry.value(QStringLiteral("mountAtLogin")).toBool();
     record.id = identityFor(record.url);
     locations.append(std::move(record));
   }
@@ -204,14 +243,16 @@ NetworkLocationsWriteResult NetworkLocationsStore::store(
         {QStringLiteral("name"), location.name},
         {QStringLiteral("url"), location.url.toString()},
         {QStringLiteral("showInPlaces"), location.showInPlaces},
+        {QStringLiteral("mountAtLogin"), location.mountAtLogin},
     });
   }
   const QJsonDocument document(QJsonObject{
-      {QStringLiteral("version"), 1},
+      {QStringLiteral("version"), schemaVersion},
       {QStringLiteral("locations"), entries},
   });
   const StateFile::WriteResult written =
-      stateFileFor(m_stateDirectory).write(document.toJson(QJsonDocument::Compact));
+      stateFileFor(m_stateDirectory, schemaVersion)
+          .write(document.toJson(QJsonDocument::Compact));
   if (!written.ok()) {
     return writeFailureFor(written);
   }

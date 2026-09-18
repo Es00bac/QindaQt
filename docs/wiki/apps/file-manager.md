@@ -28,8 +28,11 @@ returned local write-back path through the same `KIO::OpenUrlJob` boundary
 with a Network hub page and a Connect-to-server dialog (ADR-0194), and a
 transfer queue that copies and moves between the local machine and a network
 location in either direction (ADR-0195), with sign-in left to the platform
-(ADR-0196). Per-volume Trash, mounts, server discovery, and a preferences
-window remain later slices (see the roadmap below).
+(ADR-0196). S7 completes that area: nearby servers over the platform's Avahi
+(ADR-0197), a preferences window whose settings survive a restart (ADR-0198),
+and a per-location "mount at login" knob that writes one systemd user unit
+(ADR-0199). Per-volume Trash and portal locations remain later slices (see the
+roadmap below).
 
 The durable local-launch choice is recorded in
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md); the S1 mutation
@@ -539,6 +542,111 @@ Overwrite and conflict resolution stay with KIO's standard UI delegate
 boundary is deliberately **not** included: the drop pipeline is the
 identity-checked local mutation one and has no network authority.
 
+### Nearby servers
+
+Discovery is **opt-in**: it runs only while the "Look for servers on this
+network" preference is on, and it is off by default. Opening the Network hub
+does not start it, because browsing is a network activity the user chooses.
+
+`AvahiServiceDiscovery` speaks `org.freedesktop.Avahi.Server` on the system
+bus, where the already-installed `avahi-daemon` lives. It browses
+`_sftp-ssh._tcp` and `_ssh._tcp` (both become `sftp` — KIO's sftp worker
+speaks SSH) and `_smb._tcp`. **NFS is deliberately not browsed**: the ADR-0137
+allowlist cannot open an NFS location, and a row that cannot be opened is
+worse than no row.
+
+One machine is one row. Announcements are reference-counted against the
+canonical `scheme://host[:port]` identity that `NetworkLocation::canonicalize()`
+accepts, so the ten announcements one laptop makes across `wlan0`,
+`tailscale0` and `lo` collapse into a single entry that disappears only when
+the last interface withdraws it. A default port is never carried.
+
+Discovery is advisory. Opening a nearby server hands its address to
+`NavigationController::navigateTo()` exactly as a saved location does — same
+allowlist, same state pane on failure, same platform credential prompt. "Save"
+opens the Connect-to-server dialog pre-filled instead. A bus that cannot be
+reached or a browser that fails is reported, because silence is
+indistinguishable from "there is nothing here"; a platform with no discovery
+provider hides the section rather than showing an empty one.
+
+### Preferences
+
+`Ctrl+,` (or File ▸ Preferences) opens a separate non-modal window with four
+pages. Its nine settings live in `preferences-v1.json`, in the same app-local
+state directory as the bookmarks and the saved locations, over the same
+`StateFile` primitive.
+
+| Page | Settings |
+| --- | --- |
+| General | default view mode, show hidden files |
+| Views | sort column, sort order, icon size, folders before files |
+| Network | look for nearby servers, default Connect-to-server scheme, what mounting at login costs |
+| Trash | ask before moving items to Trash |
+
+This closes the [ADR-0090](../adr/0090-keep-file-manager-bookmarks-app-local.md)
+deferral that left sort, hidden visibility, view mode and zoom session-local
+pending a Settings1 schema decision: they are one application's view
+preferences, nobody else reads them, and Settings1 rejects a whole snapshot on
+one unknown key.
+
+Three rules make the file safe to trust.
+
+- **Every preference does something**, and every default is what the
+  application already did before preferences existed — so a first run behaves
+  exactly as it used to.
+- **Exact, not tolerant**: an unknown key, a wrong type, or a value outside its
+  documented set refuses the whole document and leaves the defaults standing.
+  An icon size is refused rather than snapped, because a view at a size off
+  the zoom ladder is one the zoom controls can never leave.
+- **A refused write changes nothing visible**, so the window always shows what
+  the next launch will read.
+
+`PreferencesController` applies nothing itself; `PresentationDefaults.qml`
+binds it to `NavigationController`, so a change reaches the window already on
+screen without either class depending on the other. That apply step is
+idempotent on purpose: `setSortColumn()` *flips* the direction when called
+with the column that is already active, and a needless re-sort moves the view
+under the user's selection.
+
+Only the recoverable home Trash may skip its confirmation. Empty Trash is
+permanent and always asks.
+
+### Mount at login
+
+An SFTP location can carry a "Mount under ~/Network at login" knob
+(ADR-0199). Turning it on writes **one systemd user `.mount` unit** and asks
+the user's own service manager to notice it. There is no mount daemon, no
+retry loop and no credential: `sshfs` authenticates exactly as `ssh <host>`
+does, because a saved location is userinfo-free by construction.
+
+```ini
+[Mount]
+What=qinda:/mnt/storage
+Where=/home/cabewse/Network/Storage
+Type=fuse.sshfs
+Options=_netdev,reconnect,ServerAliveInterval=15,ServerAliveCountMax=3,idmap=user
+```
+
+- The unit file name is systemd's path escaping of `Where=`, computed rather
+  than guessed — systemd resolves a `.mount` unit's mount point from its own
+  name, so the two must agree exactly.
+- **Ownership is a prefix**: the manager only ever touches units whose name
+  begins with the escaping of `<home>/Network/`. A unit the user wrote by hand
+  in the same directory is never read, rewritten, or removed.
+- The knob is **sftp only** — sshfs is the one FUSE filesystem it knows and
+  the one that needs no root — and the store refuses to record it on anything
+  else.
+- Synchronising is idempotent: an unchanged unit is not rewritten and systemd
+  is not asked to reload.
+
+Turning the knob on is what makes `net-fs/sshfs` a runtime dependency, for
+that user on that machine. QindaQt does not install it; a missing sshfs shows
+up as a failed mount in the user's journal, and the Preferences copy says so.
+
+The saved-location inventory is `network-locations-v2` to carry the knob. A v1
+inventory is read once, reported as migrated, and rewritten as v2 with the
+knob off; the v1 file is left in place so a downgrade loses nothing.
+
 ### Focused rows
 
 `qindaqt.file-manager-network-locations-store`,
@@ -547,9 +655,29 @@ identity-checked local mutation one and has no network authority.
 `qindaqt.file-manager-transfer-router`, `qindaqt.file-manager-transfer-queue`
 (against a recording worker double — no KIO, no network, no filesystem), and
 `qindaqt.file-manager-kio-transfer-worker` (the realm boundary and the
-retained KIO UI delegate through a job-creation seam). The installed-package
-probe `--check-ui-contract` additionally requires the hub, its list and
-Connect button, the dialog and its fields, and both transfer banners.
+retained KIO UI delegate through a job-creation seam);
+`qindaqt.file-manager-avahi-discovery` and
+`qindaqt.file-manager-discovery-controller` (the browse/resolve/collapse/retire
+state machine with canned D-Bus replies — no bus, no daemon, no network, and
+the visible model over a fake backend);
+`qindaqt.file-manager-preferences-store` and
+`qindaqt.file-manager-preferences-controller`; and
+`qindaqt.file-manager-mount-unit` and `qindaqt.file-manager-mount-manager`
+(unit text and name, write/enable/retire/idempotence, and the ownership
+prefix — **no row runs `systemctl`**, because one that did would touch the
+developer's own user manager).
+
+`qindaqt.file-manager-network-hub-ui` drives the production
+coordinator → `Main.qml` route: the hub renders (a real parent chain to the
+window and a positive painted size, not merely `visible`), Connect to Server
+saves and opens, a refused address explains itself and saves nothing, a
+committed transfer refreshes only the folder on screen, and Preferences opens,
+renders every page, and a real click on a real control reaches both the folder
+on screen and the file on disk.
+
+The installed-package probe `--check-ui-contract` additionally requires the
+hub, its list and Connect button, the dialog and its fields, both transfer
+banners, the Nearby section, and the preferences window with all four pages.
 
 ## Ownership, lifetime, and failures
 
@@ -903,6 +1031,15 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   per-location remote user name (a `network-locations-v2` field), a
   QindaQt-owned conflict dialog, and drag-and-drop across the local/network
   boundary.
+- **S7 (this slice, landed)** — the rest of first-class network locations:
+  opt-in Avahi discovery of servers the file manager can actually open
+  (ADR-0197), the `preferences-v1` store and the Preferences window, which
+  closes the ADR-0090 session-local deferral (ADR-0198), and the per-location
+  mount-at-login knob that writes one systemd user `.mount` unit, with the
+  inventory bumped to `network-locations-v2` and a v1 migration (ADR-0199).
+  Still open in this area: a per-location remote user name, in-place versus
+  copy-on-open, a QindaQt-owned conflict dialog, drag-and-drop across the
+  boundary, remote thumbnails, and a connection-timeout/retry policy.
 
 ## Bounded deferrals
 
@@ -924,6 +1061,13 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
 - Overwrite and conflict resolution during a queued transfer are KIO's
   standard dialog, not a QindaQt one, and the queue carries no per-item
   conflict state yet.
+- Mount at login writes and registers a unit; **an actual mount has not been
+  observed**. No focused row runs `systemctl`, and `net-fs/sshfs` is not
+  installed on the laptop, so proving a mount needs an install and a login and
+  belongs to whoever cuts the package.
+- Discovery shows what a machine advertises. It does not probe, does not
+  verify that a server will accept a connection, and has no periodic refresh:
+  a browser left running relies on Avahi's own announcements.
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Single-item copy has no undo; users can trash its
   destination in a separate confirmed action.
