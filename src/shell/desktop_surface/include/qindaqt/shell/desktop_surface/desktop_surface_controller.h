@@ -73,6 +73,11 @@ public:
   // adopt and measure profiles without mapping any surface.
   void start();
 
+  // Borrowed live customization facade (Meta+right-click desktop menu and
+  // edit mode). May be null; the QML disables its entries. Set before or
+  // after start(): live windows receive it in place.
+  void setCustomizationAccess(QObject *access);
+
   [[nodiscard]] const QVariantList &inventory() const noexcept
   {
     return m_inventory;
@@ -100,6 +105,7 @@ private:
   QGuiApplication &m_app;
   QQmlEngine &m_engine;
   BorrowedFacades m_facades;
+  QObject *m_customizationAccess = nullptr;
   QVariantList m_inventory;
   QHash<QScreen *, QQuickWindow *> m_windows;
   std::unique_ptr<DesktopIconLayoutStore> m_layoutStore;

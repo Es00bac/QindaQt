@@ -67,6 +67,8 @@ static_assert(std::is_same_v<std::variant_alternative_t<3, CustomizationIntent>,
 static_assert(std::is_same_v<std::variant_alternative_t<4, CustomizationIntent>, ConfigurePanelIntent>);
 static_assert(std::is_same_v<std::variant_alternative_t<5, CustomizationIntent>, MovePanelIntent>);
 static_assert(std::is_same_v<std::variant_alternative_t<6, CustomizationIntent>, ConfigureAppletSettingsIntent>);
+static_assert(std::is_same_v<std::variant_alternative_t<7, CustomizationIntent>, AddPanelIntent>);
+static_assert(std::is_same_v<std::variant_alternative_t<8, CustomizationIntent>, RemovePanelIntent>);
 
 IntentKind intentKind(const CustomizationIntent &intent) noexcept
 {
@@ -115,6 +117,17 @@ CustomizationIntent configureAppletSettingsIntent(const QString &panelId,
                                                   const QVariantMap &settings)
 {
     return ConfigureAppletSettingsIntent{panelId, appletId, settings};
+}
+
+CustomizationIntent addPanelIntent(const Profiles::PanelSpec &panel,
+                                   const std::optional<QString> &beforePanelId)
+{
+    return AddPanelIntent{panel, beforePanelId};
+}
+
+CustomizationIntent removePanelIntent(const QString &panelId)
+{
+    return RemovePanelIntent{panelId};
 }
 
 QVector<EditingCommand> translateIntent(const CustomizationIntent &intent,
@@ -217,6 +230,23 @@ QVector<EditingCommand> translateIntent(const CustomizationIntent &intent,
         command.panelId = configure.panelId;
         command.appletId = configure.appletId;
         command.settings = configure.settings;
+        commands.append(command);
+        break;
+    }
+    case IntentKind::AddPanel: {
+        const auto &add = std::get<AddPanelIntent>(intent);
+        AddPanelCommand command;
+        command.expectedRevision = context.expectedRevision;
+        command.panel = add.panel;
+        command.beforePanelId = add.beforePanelId;
+        commands.append(command);
+        break;
+    }
+    case IntentKind::RemovePanel: {
+        const auto &remove = std::get<RemovePanelIntent>(intent);
+        RemovePanelCommand command;
+        command.expectedRevision = context.expectedRevision;
+        command.panelId = remove.panelId;
         commands.append(command);
         break;
     }

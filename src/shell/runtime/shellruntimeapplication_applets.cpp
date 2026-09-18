@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellruntimeapplication.h"
 
+#include "livecustomizationcontroller.h"
+
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
 #include "smartlightsappletcomposition.h"
@@ -76,6 +78,13 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
                         QStringLiteral("services.doNotDisturbSchedule"),
                         QStringLiteral("services.doNotDisturbStartMinutes"),
                         QStringLiteral("services.doNotDisturbEndMinutes")});
+    m_customizationSettingsTransport =
+        std::make_unique<Services::SettingsClient::QtSettingsTransport>(
+            QDBusConnection::sessionBus());
+    m_customizationSettingsClient =
+        std::make_unique<Services::SettingsClient::SettingsClient>(
+            *m_customizationSettingsTransport,
+            QStringList{LiveCustomizationController::chordSettingsKey()});
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
         m_applets, m_appletPolicy, std::move(launcherRoots),
         *m_settingsClient, QDBusConnection::sessionBus());
@@ -189,6 +198,13 @@ void ShellRuntimeApplication::startSettingsClients()
             << "QindaQt shell could not start Settings1; launcher persistence"
                " and clipboard settings remain unavailable:"
             << settingsError;
+    }
+    QString customizationError;
+    if (!m_customizationSettingsClient->start(&customizationError)) {
+        qWarning().noquote()
+            << "QindaQt shell could not start the Settings1 customization"
+               " chord scope; the default chord holds:"
+            << customizationError;
     }
     QString quietingError;
     if (!m_quietingSettingsClient->start(&quietingError)) {

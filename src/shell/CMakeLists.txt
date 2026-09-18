@@ -49,6 +49,12 @@ qt_add_qml_module(
         qml/PanelAppletColumn.qml
         qml/PanelAppletRow.qml
         qml/PanelContent.qml
+        qml/PanelCustomizeMenu.qml
+        qml/PanelLiveCustomization.qml
+        qml/PanelQuickConfigMenu.qml
+        qml/AppletCustomizeMenu.qml
+        qml/AppletEditHandle.qml
+        qml/PanelEditBar.qml
         qml/PanelZoneBudget.js
         qml/PanelSurface.qml
         qml/PreviewControls.qml
@@ -226,6 +232,15 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/tasklistappletcomposition.cpp
         runtime/taskorderpersistence.cpp
         runtime/panelquickconfig.cpp
+        runtime/livecustomizationcontroller.cpp
+        runtime/livecustomizationcontroller_drag.cpp
+        runtime/livecustomizationcontroller_panels.cpp
+        runtime/livecustomizationcontroller.h
+        runtime/livecustomizationmodel.cpp
+        runtime/livecustomizationmodel.h
+        runtime/livecustomizationshortcut.cpp
+        runtime/livecustomizationshortcut.h
+        runtime/shellruntimeapplication_customization.cpp
         runtime/tasklistappletcomposition.h
         runtime/statusnotifierappletcomposition.cpp
         runtime/statusnotifierappletcomposition.h
@@ -252,6 +267,12 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/PanelAppletColumn.qml
             qml/PanelAppletRow.qml
             qml/PanelContent.qml
+            qml/PanelCustomizeMenu.qml
+            qml/PanelLiveCustomization.qml
+            qml/PanelQuickConfigMenu.qml
+            qml/AppletCustomizeMenu.qml
+            qml/AppletEditHandle.qml
+            qml/PanelEditBar.qml
             qml/PanelZoneBudget.js
             qml/ShortcutNoteCard.qml
             qml/RuntimePanel.qml
@@ -282,6 +303,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::NotificationPresentationPolicy
             QindaQt::SessionLockState
             QindaQt::SettingsClient
+            QindaQt::ShellCustomizationEditor
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface

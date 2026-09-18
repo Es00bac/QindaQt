@@ -66,3 +66,26 @@ qindaqt_add_shell_customization_editor_test(
     tst_accessibility_navigation.cpp
     qindaqt.customize-editor-accessibility
 )
+qindaqt_add_shell_customization_editor_test(
+    qindaqt_customize_editor_live_host_tests
+    tst_live_editor_host.cpp
+    qindaqt.customize-editor-live-host
+)
+
+# The live host's parity invariant against the Settings Customize route's own
+# host composition; only in the full tree, where that application library exists.
+if(TARGET qindaqt_settings_customize)
+    qt_add_executable(
+        qindaqt_customize_editor_live_host_parity_tests
+        tst_live_host_settings_parity.cpp
+    )
+    target_link_libraries(
+        qindaqt_customize_editor_live_host_parity_tests
+        PRIVATE QindaQt::ShellCustomizationEditor qindaqt_settings_customize Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_customize_editor_live_host_parity_tests)
+    add_test(
+        NAME qindaqt.customize-editor-live-host-parity
+        COMMAND qindaqt_customize_editor_live_host_parity_tests
+    )
+endif()

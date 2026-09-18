@@ -46,6 +46,16 @@ accessible names.
 
 ## Direct editing contract
 
+The route is no longer the only host of the editor domain: the shell hosts the
+same repository/engine/session trio for in-place customization
+(Meta + right-click menus and an edit mode, see
+[Production panel surfaces](../shell/panel-surfaces.md#in-place-customization-meta-right-click)).
+Both write the same user store, the shell adopts either surface's Apply live,
+and `qindaqt.customize-editor-live-host-parity` plus the nested
+`shell.live-customization.*` rows hold the two to byte-identical profiles for
+the same intents. The route keeps everything only it offers: previews, the
+property panes, profile selection and the keyboard outline.
+
 A palette drag or existing-chip drag is one `EditorSession` gesture. Arming
 the payload and entering drag mode opens a provisional preview; each target
 update converges the repository to that target. Release commits the preview as

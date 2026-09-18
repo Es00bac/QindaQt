@@ -31,6 +31,9 @@ Window {
     // output geometry that turns a global placement into this output's local
     // one. All three are injected by DesktopSurfaceController; see ADR-0167.
     required property var layoutStore
+    // Borrowed LiveCustomizationController facade (Meta+right-click
+    // customization menu); may be null, which keeps the chord inert.
+    property var customizationAccess: null
     property var outputRects: []
     property string primaryOutputName: screenName
 
@@ -83,6 +86,24 @@ Window {
         positionPopupAnchor(contextMenuAnchor, pointerX, pointerY,
                             contextMenu.width, contextMenu.height)
         contextMenu.popup()
+    }
+
+    // The live customization chord (Meta+right by default; one Settings1
+    // key) is held when every configured modifier bit is down.
+    function customizationChordHeld(modifiers) {
+        if (customizationAccess === null || customizationAccess.available !== true) {
+            return false
+        }
+        const chord = Number(customizationAccess.chordModifiers)
+        return chord !== 0 && (modifiers & chord) === chord
+    }
+
+    // Opened a few pixels off the pointer so the popup never starts under it
+    // (that would pre-hover its first entry and shift keyboard positions).
+    function openCustomizeMenuAtPointer(pointerX, pointerY) {
+        positionPopupAnchor(customizeMenuAnchor, pointerX + 6, pointerY + 6,
+                            customizeMenu.width, customizeMenu.height)
+        customizeMenu.popup()
     }
 
     // Opens the Applications popup at its fixed bottom-left default. The
@@ -147,6 +168,12 @@ Window {
                 }
                 return
             }
+            // The customization chord outranks the Applications modifier so
+            // a "shift" applications modifier never shadows Meta+Shift chords.
+            if (root.customizationChordHeld(mouse.modifiers)) {
+                root.openCustomizeMenuAtPointer(mouse.x, mouse.y)
+                return
+            }
             if (root.applicationsModifier !== Qt.NoModifier
                     && (mouse.modifiers & root.applicationsModifier)) {
                 root.openApplicationsMenuAtDefault()
@@ -194,6 +221,18 @@ Window {
             newFolder: newFolderController
             iconsView: iconsView
             onApplicationsRequested: root.openApplicationsMenuAtDefault()
+        }
+    }
+
+    Item {
+        id: customizeMenuAnchor
+        objectName: "desktopCustomizeMenuAnchor"
+        width: 1
+        height: 1
+
+        DesktopCustomizeMenu {
+            id: customizeMenu
+            controller: root.customizationAccess
         }
     }
 

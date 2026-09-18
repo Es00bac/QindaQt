@@ -49,6 +49,11 @@ void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
     settings.beginGroup(QStringLiteral("TabBox"));
     QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
              QStringLiteral("qindaqt"));
+    settings.endGroup();
+    // The live customization chord: Meta+right must reach layer-shell panels.
+    settings.beginGroup(QStringLiteral("MouseBindings"));
+    QCOMPARE(settings.value(QStringLiteral("CommandAll3")).toString(),
+             QStringLiteral("Nothing"));
 }
 
 void SessionDefaultsTest::preservesExplicitDesktopChoices()
@@ -67,6 +72,9 @@ void SessionDefaultsTest::preservesExplicitDesktopChoices()
         settings.endGroup();
         settings.beginGroup(QStringLiteral("TabBox"));
         settings.setValue(QStringLiteral("LayoutName"), QStringLiteral("compact"));
+        settings.endGroup();
+        settings.beginGroup(QStringLiteral("MouseBindings"));
+        settings.setValue(QStringLiteral("CommandAll3"), QStringLiteral("Resize"));
     }
 
     QString error;
@@ -83,6 +91,10 @@ void SessionDefaultsTest::preservesExplicitDesktopChoices()
     settings.beginGroup(QStringLiteral("TabBox"));
     QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
              QStringLiteral("compact"));
+    settings.endGroup();
+    settings.beginGroup(QStringLiteral("MouseBindings"));
+    QCOMPARE(settings.value(QStringLiteral("CommandAll3")).toString(),
+             QStringLiteral("Resize"));
 }
 
 void SessionDefaultsTest::seedsEachMissingChoiceIndependently()
