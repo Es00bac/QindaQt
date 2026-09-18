@@ -50,6 +50,7 @@ qt_add_qml_module(
         qml/TaskListUrgentPulse.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons
+        QindaQt.Controls/1.0
 )
 
 # AGENT-CONTRACT: the applet consumes the public task-list boundaries (T0

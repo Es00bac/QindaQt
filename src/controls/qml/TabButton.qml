@@ -21,7 +21,7 @@ T.TabButton {
     // Button; overriding inherited enabled replaces this binding.
     enabled: available
     implicitWidth: Math.max(88, implicitContentWidth + leftPadding + rightPadding)
-    implicitHeight: Math.max(40, implicitContentHeight + topPadding + bottomPadding)
+    implicitHeight: Math.max(40, (Tokens.touch.minimumTarget ?? 0), implicitContentHeight + topPadding + bottomPadding)
     leftPadding: Tokens.space["4"]
     rightPadding: Tokens.space["4"]
     topPadding: Tokens.space["2"]

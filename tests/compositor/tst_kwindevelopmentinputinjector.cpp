@@ -24,6 +24,7 @@ struct RegistrarState final
     QPointer<KWin::InputDevice> device;
     QStringList eventOrder;
     QList<QPointF> positions;
+    QList<qint32> touchIds;
     QList<QPointF> relativeDeltas;
     QList<QPointF> unacceleratedDeltas;
     QList<quint32> keys;
@@ -67,6 +68,33 @@ public:
                 state->unacceleratedDeltas.append(unacceleratedDelta);
                 state->timestamps.append(timestamp);
             });
+        QObject::connect(device, &KWin::InputDevice::touchDown, device,
+                         [state](qint32 id, const QPointF &position,
+                                 std::chrono::microseconds timestamp, KWin::InputDevice *) {
+                             state->eventOrder.append(QStringLiteral("touch-down"));
+                             state->touchIds.append(id);
+                             state->positions.append(position);
+                             state->timestamps.append(timestamp);
+                         });
+        QObject::connect(device, &KWin::InputDevice::touchMotion, device,
+                         [state](qint32 id, const QPointF &position,
+                                 std::chrono::microseconds timestamp, KWin::InputDevice *) {
+                             state->eventOrder.append(QStringLiteral("touch-motion"));
+                             state->touchIds.append(id);
+                             state->positions.append(position);
+                             state->timestamps.append(timestamp);
+                         });
+        QObject::connect(device, &KWin::InputDevice::touchUp, device,
+                         [state](qint32 id, std::chrono::microseconds timestamp,
+                                 KWin::InputDevice *) {
+                             state->eventOrder.append(QStringLiteral("touch-up"));
+                             state->touchIds.append(id);
+                             state->timestamps.append(timestamp);
+                         });
+        QObject::connect(device, &KWin::InputDevice::touchFrame, device,
+                         [state](KWin::InputDevice *) {
+                             state->eventOrder.append(QStringLiteral("frame"));
+                         });
         QObject::connect(device, &KWin::InputDevice::keyChanged, device,
                          [state](quint32 key, KWin::KeyboardKeyState keyState,
                                  std::chrono::microseconds timestamp,
@@ -112,6 +140,7 @@ class KWinDevelopmentInputInjectorTest final : public QObject
 private Q_SLOTS:
     void emitsThroughTheRegisteredCombinationDevice();
     void emitsRelativePointerThroughTheRegisteredDevice();
+    void emitsTouchContactsWithFramesThroughTheRegisteredDevice();
     void translatesFullscreenAndShellProbeKeys();
     void removesDeviceBeforeOwnedLifetimeEnds();
     void remainsUnavailableWithoutARegistrarBackend();
@@ -425,6 +454,51 @@ void KWinDevelopmentInputInjectorTest::remainsUnavailableWithoutARegistrarBacken
     QVERIFY(!injector.inject(batch));
     QCOMPARE(state->removeCalls, 0);
 }
+
+void KWinDevelopmentInputInjectorTest::emitsTouchContactsWithFramesThroughTheRegisteredDevice()
+{
+    // Touch (ADR-0193): every contact event is framed on its own, so KWin
+    // dispatches a finger's down, motion and up as three complete frames.
+    // The seat claims touch only when the row asks for it; a pointer-mode
+    // nested session keeps its pointer-only seat.
+    {
+        const auto pointerOnly = std::make_shared<RegistrarState>();
+        qunsetenv("QINDAQT_DEVELOPMENT_INPUT_TOUCH");
+        KWinDevelopmentInputInjector pointerInjector(
+            std::make_unique<RecordingRegistrar>(pointerOnly));
+        QVERIFY(pointerOnly->device != nullptr);
+        QVERIFY(!pointerOnly->device->isTouch());
+    }
+    qputenv("QINDAQT_DEVELOPMENT_INPUT_TOUCH", "1");
+    const auto state = std::make_shared<RegistrarState>();
+    KWinDevelopmentInputInjector injector(
+        std::make_unique<RecordingRegistrar>(state));
+    qunsetenv("QINDAQT_DEVELOPMENT_INPUT_TOUCH");
+    QVERIFY(state->device != nullptr);
+    QVERIFY(state->device->isTouch());
+    DevelopmentInputBatch batch;
+    batch.events = {
+        {.type = DevelopmentInputEventType::TouchDown, .position = QPointF(120.0, 40.0),
+         .key = DevelopmentInputKey::LeftMeta, .pressed = false,
+         .button = DevelopmentInputButton::Left, .touchId = 3},
+        {.type = DevelopmentInputEventType::TouchMotion, .position = QPointF(160.0, 44.0),
+         .key = DevelopmentInputKey::LeftMeta, .pressed = false,
+         .button = DevelopmentInputButton::Left, .touchId = 3},
+        {.type = DevelopmentInputEventType::TouchUp, .position = QPointF(),
+         .key = DevelopmentInputKey::LeftMeta, .pressed = false,
+         .button = DevelopmentInputButton::Left, .touchId = 3},
+    };
+
+    QVERIFY(injector.inject(batch));
+    QCOMPARE(state->eventOrder,
+             QStringList({QStringLiteral("touch-down"), QStringLiteral("frame"),
+                          QStringLiteral("touch-motion"), QStringLiteral("frame"),
+                          QStringLiteral("touch-up"), QStringLiteral("frame")}));
+    QCOMPARE(state->touchIds, QList<qint32>({3, 3, 3}));
+    QCOMPARE(state->positions, QList<QPointF>({QPointF(120.0, 40.0), QPointF(160.0, 44.0)}));
+    QCOMPARE(state->timestamps.size(), 3);
+}
+
 
 } // namespace QindaQt::Compositor::KWinIntegration
 

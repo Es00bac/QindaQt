@@ -206,6 +206,8 @@ if(TARGET qindaqt_kwin_input_adapter)
         COMMAND qindaqt_hybrid_chrome_pointer_router_tests
     )
 
+    include("${CMAKE_CURRENT_LIST_DIR}/HybridChromeTouchPolicyTests.cmake")
+
     qt_add_executable(
         qindaqt_development_input_protocol_tests
         tst_developmentinputprotocol.cpp

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Templates as T
+import QindaQt.Controls 1.0 as C
 
 // Root of the per-output desktop surface window (ADR-0125): place icons over
 // the wallpaper, a styled right-click context menu, and a modifier-gated
@@ -153,6 +154,14 @@ Window {
             }
             root.openContextMenuAtPointer(mouse.x, mouse.y)
         }
+    }
+
+    // A finger held on the empty desktop opens the same menu (ADR-0193). It sits
+    // under the icon view, so a held tile keeps its own menu.
+    C.TouchContextArea {
+        objectName: "desktopSurfaceTouchContext"
+        anchors.fill: parent
+        onContextRequested: (position) => root.openContextMenuAtPointer(position.x, position.y)
     }
 
     // The view fills the surface and anchors its flow against the edge the

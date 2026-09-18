@@ -193,3 +193,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0188: serve the panel start zone first](0188-serve-the-panel-start-zone-first.md)
 - [ADR-0189: paint the rolled-up badge label, and size the badge to it](0189-size-the-rolled-up-badge-to-its-label.md)
 - [ADR-0190: mirroring is one field on the mirrored output](0190-mirroring-is-one-field-on-the-mirrored-output.md)
+- [ADR-0193: a finger is the left button, and a held finger the right](0193-a-finger-is-the-left-button-and-a-held-finger-the-right.md)

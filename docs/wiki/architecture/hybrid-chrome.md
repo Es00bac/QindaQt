@@ -395,6 +395,51 @@ container up (wheel away from the user) or down. Over an ordinary window's
 title bar the decoration rolls that window. See
 [ADR-0131](../adr/0131-contained-window-handlebar-and-wheel-roll-up.md).
 
+## Touch on shared chrome
+
+A finger over compositor-painted chrome is the router's left button
+([ADR-0193](../adr/0193-a-finger-is-the-left-button-and-a-held-finger-the-right.md)).
+`KWinInteractionFilter` receives KWin's `touchDown/touchMotion/touchUp/
+touchCancel` at Decoration order. The first finger is hit-tested through
+`HybridChromePointerRouter::hitNear`: the exact point and, only when that
+hits nothing at all, eight probes at half the radius and at the full 40 px
+radius, accepting only targets the router owns (tabs, window buttons,
+container controls, dividers, the outer title drag and outer resize
+regions). The ring runs only where KWin reports nothing (or the desktop)
+under the finger and its probes stay on the finger's output, so a finger on
+a member title bar, on client content, on an un-contained window or on a
+panel is not consumed and is never pulled onto nearby chrome: decorations,
+applications and the shell keep KWin's own touch handling. The probe point that hit becomes the synthetic press
+position and its offset from the finger follows every later motion, so the
+router's own hit test agrees with what the finger selected.
+
+`HybridChromeTouchPolicy` decides what the sequence means, without KWin:
+
+| Gesture | Meaning |
+| --- | --- |
+| Tap (down, up within 8 px) | left press and release: activates a tab, button or control, raises the container |
+| Drag (beyond 8 px) | the router's drag: title row moves, divider and outer edge resize, tab reorders |
+| Hold (500 ms within 8 px) | the router's press is cancelled and the container context menu opens at the finger, where a right click would; other targets just cancel |
+| Second finger on a roll target, 40 px vertical travel | swipe up rolls the container up, swipe down rolls it down (the wheel request) |
+
+After a hold, a swipe, or any two-finger sequence (whichever finger lifts
+first) the rest of the sequence is consumed silently, so a lift never
+activates and a swipe never drags, and the gesture stays owned until every
+one of its fingers is up so no finger reaches a window without its down.
+Only one gesture runs at a time; a second finger joins it only on the same
+container's chrome, and a finger anywhere else is KWin's and is not
+consumed. A gesture that receives nothing for 5 s is abandoned by the next
+finger; a touch cancel resets the gesture and is passed on to the rest of
+the filter chain. The 40 px radius is a hit-test courtesy; nothing paints
+larger.
+
+The development input device injects `touch-down`, `touch-motion` and
+`touch-up` contacts (each framed) and reports `isTouch` when the row sets
+`QINDAQT_DEVELOPMENT_INPUT_TOUCH=1` (the touch rows do; pointer rows keep a
+pointer-only seat), so the private harness drives real fingers. The
+`Containers` control method's hybrid entries publish each container's `outerFrame`, `outerTitleBar` and `tabs[]` (with rects and
+`active`) from the chrome plan, which is how the touch rows aim.
+
 ## Compositor scene restart
 
 Scene image ownership ends before KWin dismantles its `WindowItem` tree.
