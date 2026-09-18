@@ -160,6 +160,18 @@ the explicit QindaQt docking gesture. The seed neither changes configured
 `ElectricBorders` actions nor overwrites an explicit choice for either native
 edge behavior.
 
+Beyond those one-time seeds, `qindaqt-session` hosts the live
+`windowManagement.*` bridge ([ADR-0209](../adr/0209-bridge-window-management-settings-into-kwinrc.md)).
+A purpose-scoped Settings1 client over the five keys decodes every confirmed
+snapshot as a whole, writes the result into the user's `kwinrc` with KConfig
+(`[Windows] FocusPolicy`, `BorderSnapZone` and `WindowSnapZone` for KWin's own
+knobs; a `[QindaQt]` group carrying `DockingModifier`, `CloseContainerPolicy`
+and `SessionRestore`), and asks `org.kde.KWin.reconfigure` once per burst of
+changes, only when the file actually changed. The compositor plugin re-reads
+the `[QindaQt]` group on KWin's `configChanged` and rebinds the docking chord
+and the close policy without a restart. `SessionRestore` is carried but not
+yet consumed.
+
 ## Compositor-MVP runtime layers
 
 The KWin plugin provides:

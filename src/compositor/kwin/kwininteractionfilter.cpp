@@ -194,6 +194,12 @@ void KWinInteractionFilter::cancelChrome()
     }
 }
 
+void KWinInteractionFilter::setDockingModifiers(std::optional<Qt::KeyboardModifiers> modifiers)
+{
+    m_controller.setPointerModifiers(modifiers);
+    m_lateShiftDetector.setRequiredModifiers(modifiers);
+}
+
 void KWinInteractionFilter::invalidateChromeTargets()
 {
     if (m_chromeRouter) {

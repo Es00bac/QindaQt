@@ -23,6 +23,8 @@ private Q_SLOTS:
     void noActiveDragNeverTriggers();
     void resizeCallerNeverPassesAnIdentitySoItNeverTriggers();
     void extraUnrelatedModifierNeverArmsTakeover();
+    void rebindingTheChordRestartsTrackingAndWatchesTheNewChord();
+    void aDisabledDetectorNeverTriggersUntilReEnabled();
 };
 
 void LateShiftTakeoverDetectorTest::triggersOnlyWhenShiftIsAddedMidDrag()
@@ -136,6 +138,32 @@ void LateShiftTakeoverDetectorTest::extraUnrelatedModifierNeverArmsTakeover()
     // Dropping the unrelated Control modifier down to the exact chord is
     // still a real, reachable late-Shift-style transition and must fire
     // normally - the exact-match fix must not break the ordinary case.
+    QVERIFY(detector.observe(&windowA, Qt::MetaModifier | Qt::ShiftModifier));
+}
+
+void LateShiftTakeoverDetectorTest::rebindingTheChordRestartsTrackingAndWatchesTheNewChord()
+{
+    LateShiftTakeoverDetector detector(Qt::MetaModifier | Qt::ShiftModifier);
+    QVERIFY(!detector.observe(&windowA, Qt::AltModifier | Qt::ShiftModifier));
+    // The rebind forgets the drag it was tracking: the already-held Alt+Shift
+    // is not reported as "newly" satisfied on the next observation ...
+    detector.setRequiredModifiers(Qt::AltModifier | Qt::ShiftModifier);
+    QVERIFY(detector.requiredModifiers() == std::optional(Qt::AltModifier | Qt::ShiftModifier));
+    QVERIFY(detector.observe(&windowA, Qt::AltModifier | Qt::ShiftModifier));
+    // ... and the old chord no longer arms anything.
+    QVERIFY(!detector.observe(&windowB, Qt::MetaModifier | Qt::ShiftModifier));
+}
+
+void LateShiftTakeoverDetectorTest::aDisabledDetectorNeverTriggersUntilReEnabled()
+{
+    LateShiftTakeoverDetector detector(Qt::MetaModifier | Qt::ShiftModifier);
+    detector.setRequiredModifiers(std::nullopt);
+    QVERIFY(!detector.requiredModifiers().has_value());
+    QVERIFY(!detector.observe(&windowA, Qt::NoModifier));
+    QVERIFY(!detector.observe(&windowA, Qt::MetaModifier | Qt::ShiftModifier));
+    QVERIFY(!detector.observe(&windowA, Qt::NoModifier));
+    detector.setRequiredModifiers(Qt::MetaModifier | Qt::ShiftModifier);
+    QVERIFY(!detector.observe(&windowA, Qt::NoModifier));
     QVERIFY(detector.observe(&windowA, Qt::MetaModifier | Qt::ShiftModifier));
 }
 

@@ -93,6 +93,10 @@ public:
     void cancelChrome();
     void invalidateChromeTargets();
     void cancel();
+    // Rebinds the pointer docking chord in both places that judge it: the
+    // controller (fresh presses) and the late-takeover detector (a native
+    // move whose chord completes mid-drag). `std::nullopt` disables both.
+    void setDockingModifiers(std::optional<Qt::KeyboardModifiers> modifiers);
 
 private:
     class Filter;
