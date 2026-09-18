@@ -69,23 +69,41 @@ ColumnLayout {
         description: root.sectionDescription
     }
 
+    // AGENT-GUARD (mirrors ADR-0191, shell audio applet): the model is the
+    // row *count*, not the row list. A Repeater handed a QVariantList
+    // regenerates every delegate whenever that list is reassigned, and the
+    // model reassigns it on every reprojection -- including the one a row's
+    // own dispatch triggers. That destroyed the control the user was
+    // holding, breaking a drag on its own no matter what the pending rule
+    // says. Binding the row by index keeps the delegate alive and updates
+    // its values in place. Known limitation (same as the applet): if a
+    // device disappears from the middle of the list, indices below it shift,
+    // and a held slider can dispatch to the device that took its index for
+    // the rest of that one gesture -- the real fix is a QAbstractListModel,
+    // out of scope for this slice.
     Repeater {
         id: deviceRepeater
-        model: root.deviceRows
+        model: root.deviceRows.length
 
         delegate: FormSurface {
             id: deviceRow
-            required property var modelData
             required property int index
+            readonly property var modelData: root.deviceRows[index] ?? null
+            // AGENT-GUARD: a transiently null row (the array shrank between
+            // this delegate's index binding and the Repeater's own count
+            // update) renders nothing rather than dereferencing modelData
+            // fields; QtQuick Layouts excludes an invisible item from
+            // sizing, so this never leaves a gap.
+            visible: modelData !== null
             Layout.fillWidth: true
             padding: Tokens.space["3"]
             // Per-row disclosure state for the channel strip; deliberately
             // not projected truth (the projection always carries channels).
             property bool channelsExpanded: false
             Accessible.name: qsTr("%1 %2, %3")
-                .arg(deviceRow.modelData.kindText)
-                .arg(deviceRow.modelData.displayName)
-                .arg(deviceRow.modelData.stateText)
+                .arg(deviceRow.modelData?.kindText ?? "")
+                .arg(deviceRow.modelData?.displayName ?? "")
+                .arg(deviceRow.modelData?.stateText ?? "")
 
             // Traversal order inside a row is set-default, volume, mute, the
             // channel disclosure, then the expanded per-channel faders; the
@@ -117,7 +135,15 @@ ColumnLayout {
             Component.onCompleted:
                 root.updateActionRegistration(deviceRow.index, deviceRow)
             Component.onDestruction:
-                root.removeActionRegistration(deviceRow.index)
+                root.removeActionRegistration(deviceRow.index);
+            // AGENT-NOTE: the semicolon above is load-bearing for
+            // tools/check-source-shape, not QML syntax: its brace-depth
+            // scanner resets on `;`/`{`/`}`. Without one here it reads
+            // straight through into `contentItem`'s open brace and
+            // misattributes this whole delegate body to
+            // updateActionRegistration (a real 3-line function above),
+            // reporting a false function-lines violation. Keep this
+            // semicolon if this block is ever reordered.
 
             contentItem: ColumnLayout {
                 spacing: Tokens.space["2"]
@@ -132,19 +158,19 @@ ColumnLayout {
 
                         Label {
                             Layout.fillWidth: true
-                            text: deviceRow.modelData.displayName
+                            text: deviceRow.modelData?.displayName ?? ""
                             font.weight: Font.DemiBold
                         }
 
                         Label {
                             Layout.fillWidth: true
-                            text: deviceRow.modelData.stateText
+                            text: deviceRow.modelData?.stateText ?? ""
                             muted: true
                         }
                     }
 
                     Label {
-                        visible: deviceRow.modelData.isDefault
+                        visible: deviceRow.modelData?.isDefault ?? false
                         text: qsTr("Default")
                         muted: true
                         Accessible.role: Accessible.StaticText
@@ -154,17 +180,18 @@ ColumnLayout {
                     Button {
                         id: setDefaultButton
                         objectName: root.kindPrefix + "Default_"
-                                    + deviceRow.modelData.serial
-                        visible: !deviceRow.modelData.isDefault
-                        available: deviceRow.modelData.setDefaultAvailable
+                                    + (deviceRow.modelData?.serial ?? 0)
+                        visible: !(deviceRow.modelData?.isDefault ?? true)
+                        available: deviceRow.modelData?.setDefaultAvailable ?? false
                         busy: root.audioSettings.busy
                         emphasized: false
                         text: qsTr("Set default")
                         accessibleDescription: qsTr("Make %1 the default %2")
-                            .arg(deviceRow.modelData.displayName)
-                            .arg(deviceRow.modelData.kindText)
-                        onClicked: root.audioSettings.setDefaultDevice(
-                                       deviceRow.modelData.serial)
+                            .arg(deviceRow.modelData?.displayName ?? "")
+                            .arg(deviceRow.modelData?.kindText ?? "")
+                        onClicked: deviceRow.modelData !== null
+                            && root.audioSettings.setDefaultDevice(
+                                   deviceRow.modelData.serial)
                     }
                 }
 
@@ -177,22 +204,24 @@ ColumnLayout {
                         Layout.fillWidth: true
                         targetRow: deviceRow.modelData
                         kindPrefix: root.kindPrefix
-                        targetName: deviceRow.modelData.displayName
-                        commit: level => root.audioSettings.setDeviceVolume(
-                                     deviceRow.modelData.serial, level)
+                        targetName: deviceRow.modelData?.displayName ?? ""
+                        commit: level => deviceRow.modelData !== null
+                            && root.audioSettings.setDeviceVolume(
+                                   deviceRow.modelData.serial, level)
                     }
 
                     Switch {
                         id: muteSwitch
                         objectName: root.kindPrefix + "Mute_"
-                                    + deviceRow.modelData.serial
+                                    + (deviceRow.modelData?.serial ?? 0)
                         text: qsTr("Mute")
-                        checked: deviceRow.modelData.muted
-                        enabled: deviceRow.modelData.muteAvailable
+                        checked: deviceRow.modelData?.muted ?? false
+                        enabled: deviceRow.modelData?.muteAvailable ?? false
                         accessibleDescription: qsTr("Mute %1")
-                            .arg(deviceRow.modelData.displayName)
-                        onToggled: root.audioSettings.setDeviceMuted(
-                                       deviceRow.modelData.serial, checked)
+                            .arg(deviceRow.modelData?.displayName ?? "")
+                        onToggled: deviceRow.modelData !== null
+                            && root.audioSettings.setDeviceMuted(
+                                   deviceRow.modelData.serial, checked)
                     }
                 }
 
@@ -203,11 +232,11 @@ ColumnLayout {
                     id: channelsToggle
 
                     objectName: "audioChannelsToggle_"
-                                + deviceRow.modelData.serial
-                    visible: deviceRow.modelData.channelVolumeAvailable
+                                + (deviceRow.modelData?.serial ?? 0)
+                    visible: (deviceRow.modelData?.channelVolumeAvailable ?? false)
                              && root.audioSettings.canSetChannelVolumes
-                             && deviceRow.modelData.channelVolumes.length > 1
-                    available: deviceRow.modelData.channelVolumeAvailable
+                             && (deviceRow.modelData?.channelVolumes.length ?? 0) > 1
+                    available: (deviceRow.modelData?.channelVolumeAvailable ?? false)
                                && root.audioSettings.canSetChannelVolumes
                     busy: root.audioSettings.busy
                     emphasized: false
@@ -216,7 +245,7 @@ ColumnLayout {
                           ? qsTr("Hide channels")
                           : qsTr("Channels")
                     accessibleDescription: qsTr("Adjust %1 channels individually")
-                        .arg(deviceRow.modelData.displayName)
+                        .arg(deviceRow.modelData?.displayName ?? "")
                     onClicked: deviceRow.channelsExpanded
                                 = !deviceRow.channelsExpanded
                 }
@@ -232,15 +261,16 @@ ColumnLayout {
                     visible: active
                     sourceComponent: Component {
                         AudioChannelStrip {
-                            targetName: deviceRow.modelData.displayName
-                            channelRows: deviceRow.modelData.channelVolumes
-                            available: deviceRow.modelData.channelVolumeAvailable
+                            targetName: deviceRow.modelData?.displayName ?? ""
+                            channelRows: deviceRow.modelData?.channelVolumes ?? []
+                            available: (deviceRow.modelData?.channelVolumeAvailable ?? false)
                                        && root.audioSettings.canSetChannelVolumes
-                            serial: deviceRow.modelData.serial
+                            serial: deviceRow.modelData?.serial ?? 0
                             commit: (channelIndex, level) =>
-                                root.audioSettings.setDeviceChannelVolume(
-                                    deviceRow.modelData.serial, channelIndex,
-                                    level)
+                                deviceRow.modelData !== null
+                                && root.audioSettings.setDeviceChannelVolume(
+                                       deviceRow.modelData.serial, channelIndex,
+                                       level)
                         }
                     }
                 }
