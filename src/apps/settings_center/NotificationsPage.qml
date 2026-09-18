@@ -8,7 +8,21 @@ import QindaQt.Tokens 1.0
 T.Page {
     id: root
     required property var quietingSettings
+    // ADR-0201: the Do Not Disturb schedule, over the same purpose-scoped
+    // Settings1 client the switch uses.
+    required property var quietingSchedule
     readonly property Item firstFocusTarget: doNotDisturbSwitch
+    // The ring's two ends. Only one action is ever projected at a time, but
+    // forward and back keep their original preference so the order cannot
+    // change under a state that shows both.
+    readonly property Item forwardAction: conflictAction.visible
+                                          ? conflictAction
+                                          : retryAction.visible
+                                          ? retryAction : doNotDisturbSwitch
+    readonly property Item backwardAction: retryAction.visible
+                                           ? retryAction
+                                           : conflictAction.visible
+                                           ? conflictAction : quietHours.lastControl
     title: qsTr("Notifications")
 
     background: Rectangle { color: Tokens.bg.base }
@@ -38,12 +52,12 @@ T.Page {
             checked: root.quietingSettings.enabled
             enabled: root.quietingSettings.canToggle
             focusPolicy: Qt.StrongFocus
-            KeyNavigation.tab: conflictAction.visible
-                               ? conflictAction
-                               : retryAction.visible ? retryAction : doNotDisturbSwitch
-            KeyNavigation.backtab: retryAction.visible
-                                   ? retryAction
-                                   : conflictAction.visible ? conflictAction : doNotDisturbSwitch
+            // AGENT-GUARD: this page's focus ring is written out by hand so
+            // every control stays reachable. Do Not Disturb hands forward to
+            // the schedule, the schedule's last field hands forward to
+            // whichever action is visible, and that action closes the ring.
+            KeyNavigation.tab: quietHours.firstControl
+            KeyNavigation.backtab: root.backwardAction
             Accessible.role: Accessible.CheckBox
             Accessible.name: qsTr("Do Not Disturb")
             Accessible.description: qsTr(
@@ -51,6 +65,14 @@ T.Page {
             Accessible.checked: checked
             onClicked: root.quietingSettings.requestSet(
                            !root.quietingSettings.enabled)
+        }
+
+        QuietHoursSection {
+            id: quietHours
+            Layout.fillWidth: true
+            schedule: root.quietingSchedule
+            focusBefore: doNotDisturbSwitch
+            focusAfter: root.forwardAction
         }
 
         Label {
@@ -89,8 +111,8 @@ T.Page {
                 visible: root.quietingSettings.conflict
                 text: qsTr("Apply my choice")
                 focusPolicy: Qt.StrongFocus
-            KeyNavigation.backtab: doNotDisturbSwitch
-            KeyNavigation.tab: doNotDisturbSwitch
+                KeyNavigation.backtab: quietHours.lastControl
+                KeyNavigation.tab: doNotDisturbSwitch
                 onClicked: root.quietingSettings.applyMyChoice()
             }
 
@@ -100,8 +122,8 @@ T.Page {
                 visible: root.quietingSettings.unavailable
                 text: qsTr("Retry")
                 focusPolicy: Qt.StrongFocus
-            KeyNavigation.backtab: doNotDisturbSwitch
-            KeyNavigation.tab: doNotDisturbSwitch
+                KeyNavigation.backtab: quietHours.lastControl
+                KeyNavigation.tab: doNotDisturbSwitch
                 onClicked: root.quietingSettings.retry()
             }
 

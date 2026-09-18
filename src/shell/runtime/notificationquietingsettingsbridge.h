@@ -19,6 +19,8 @@ public:
     { return m_controller; }
 
 private:
+    void applySchedule(Services::SettingsClient::SettingsClient &client);
+
     Services::NotificationPresentationPolicy::NotificationInterruptionPolicy &m_policy;
     Services::SettingsClient::DoNotDisturbController m_controller;
 };

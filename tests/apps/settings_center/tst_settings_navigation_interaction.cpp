@@ -40,11 +40,13 @@ private Q_SLOTS:
   void initTestCase();
   void testKeyboardNavigationAndShortcuts();
   void testNotificationsUseTokenBoundControlsAndActions();
+  void testQuietHoursControlsOnlyFollowTheSchedule();
   void testUnavailableRouteFailClosed();
 
 private:
   std::unique_ptr<QQmlApplicationEngine> m_engine;
   std::unique_ptr<StubQuietingModel> m_quieting;
+  std::unique_ptr<StubQuietingScheduleModel> m_quietingSchedule;
   std::unique_ptr<StubAppearanceModel> m_appearance;
   std::unique_ptr<StubNetworkSettingsModel> m_network;
   std::unique_ptr<StubAudioSettingsModel> m_audio;
@@ -69,6 +71,7 @@ void SettingsNavigationInteractionTest::initTestCase() {
   QString pubError;
   QVERIFY2(facade->publish(loaded.theme, {}, &pubError), qPrintable(pubError));
   m_quieting = std::make_unique<StubQuietingModel>();
+  m_quietingSchedule = std::make_unique<StubQuietingScheduleModel>();
   m_appearance = std::make_unique<StubAppearanceModel>();
   m_network = std::make_unique<StubNetworkSettingsModel>();
   m_audio = std::make_unique<StubAudioSettingsModel>();
@@ -95,6 +98,8 @@ void SettingsNavigationInteractionTest::testKeyboardNavigationAndShortcuts() {
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(m_quietingSchedule.get()))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(m_customize.get())},
@@ -263,6 +268,8 @@ void SettingsNavigationInteractionTest::testNotificationsUseTokenBoundControlsAn
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(m_quietingSchedule.get()))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(m_customize.get())},
@@ -307,8 +314,12 @@ void SettingsNavigationInteractionTest::testNotificationsUseTokenBoundControlsAn
   m_quieting->conflict = true;
   Q_EMIT m_quieting->changed();
   QTRY_VERIFY(conflict->isVisible());
+  // The ring runs Do Not Disturb -> schedule switch -> start -> end ->
+  // the visible action, so the action is four Tabs away, not one.
   toggle->forceActiveFocus(Qt::TabFocusReason);
-  QTest::keyClick(window, Qt::Key_Tab);
+  for (int step = 0; step < 4; ++step) {
+    QTest::keyClick(window, Qt::Key_Tab);
+  }
   QTRY_COMPARE(window->activeFocusItem(), conflict);
   QVERIFY(QMetaObject::invokeMethod(conflict, "click"));
   QCOMPARE(m_quieting->applyCount, 1);
@@ -318,10 +329,155 @@ void SettingsNavigationInteractionTest::testNotificationsUseTokenBoundControlsAn
   Q_EMIT m_quieting->changed();
   QTRY_VERIFY(retry->isVisible());
   toggle->forceActiveFocus(Qt::TabFocusReason);
-  QTest::keyClick(window, Qt::Key_Tab);
+  for (int step = 0; step < 4; ++step) {
+    QTest::keyClick(window, Qt::Key_Tab);
+  }
   QTRY_COMPARE(window->activeFocusItem(), retry);
   QVERIFY(QMetaObject::invokeMethod(retry, "click"));
   QCOMPARE(m_quieting->retryCount, 1);
+}
+
+void SettingsNavigationInteractionTest::testQuietHoursControlsOnlyFollowTheSchedule() {
+  SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
+  SettingsNavigationController navigation(registry,
+                                          QStringLiteral("notifications"));
+
+  m_quieting->conflict = false;
+  m_quieting->unavailable = false;
+  m_quietingSchedule->available = true;
+  m_quietingSchedule->scheduleEnabled = false;
+  m_quietingSchedule->startText = QStringLiteral("22:00");
+  m_quietingSchedule->endText = QStringLiteral("07:00");
+  m_quietingSchedule->summaryText = QStringLiteral("Quiet hours are off");
+  m_quietingSchedule->errorText.clear();
+  m_quietingSchedule->enabledCount = 0;
+  m_quietingSchedule->startCount = 0;
+  m_quietingSchedule->endCount = 0;
+
+  QQmlComponent component(m_engine.get());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(SettingsQmlDir) +
+                                        QStringLiteral("/Main.qml")));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  QObject *rootObj = component.createWithInitialProperties({
+      {QStringLiteral("navigation"),
+       QVariant::fromValue(static_cast<QObject *>(&navigation))},
+      {QStringLiteral("quietingSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(m_quietingSchedule.get()))},
+      {QStringLiteral("appearanceSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
+      {QStringLiteral("customizeSettings"), QVariant::fromValue(m_customize.get())},
+      {QStringLiteral("networkSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
+      {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("screenLockSettings"), QVariant::fromValue(m_screenLock.get())},
+      {QStringLiteral("idleDisplaySettings"), QVariant::fromValue(m_idleDisplay.get())},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
+  });
+  QVERIFY(rootObj != nullptr);
+  std::unique_ptr<QObject> rootGuard(rootObj);
+  auto *window = qobject_cast<QQuickWindow *>(rootObj);
+  QVERIFY(window != nullptr);
+  window->resize(900, 640);
+  window->show();
+  QVERIFY(QTest::qWaitForWindowExposed(window));
+
+  auto *scheduleSwitch =
+      sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursSwitch"));
+  auto *start =
+      sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursStart"));
+  auto *end =
+      sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursEnd"));
+  auto *summary =
+      sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursSummary"));
+  auto *error =
+      sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursError"));
+  QVERIFY(scheduleSwitch != nullptr && start != nullptr && end != nullptr);
+  QVERIFY(summary != nullptr && error != nullptr);
+
+  // QTest has no keyClicks() for a QWindow, so type the masked field a key at
+  // a time the way the input method would.
+  const auto typeDigits = [window](const QString &digits) {
+    for (const QChar digit : digits) {
+      QTest::keyClick(window, digit.toLatin1());
+    }
+  };
+
+  QCOMPARE(summary->property("text").toString(),
+           QStringLiteral("Quiet hours are off"));
+  QVERIFY(!error->isVisible());
+  QCOMPARE(start->property("text").toString(), QStringLiteral("22:00"));
+  QCOMPARE(end->property("text").toString(), QStringLiteral("07:00"));
+  QVERIFY(!scheduleSwitch->property("checked").toBool());
+
+  // The switch asks the model and shows whatever the model then reports.
+  QVERIFY(QMetaObject::invokeMethod(scheduleSwitch, "click"));
+  QTRY_COMPARE(m_quietingSchedule->enabledCount, 1);
+  QVERIFY(m_quietingSchedule->scheduleEnabled);
+  QTRY_VERIFY(scheduleSwitch->property("checked").toBool());
+
+  // The input mask admits 99:99, which is not a time. The model refuses it in
+  // silence, so the field must put itself back to the time that is really set
+  // -- the page may never claim a quiet window the machine does not have.
+  start->forceActiveFocus(Qt::MouseFocusReason);
+  QTRY_COMPARE(window->activeFocusItem(), start);
+  QVERIFY(QMetaObject::invokeMethod(start, "selectAll"));
+  typeDigits(QStringLiteral("9999"));
+  QCOMPARE(start->property("text").toString(), QStringLiteral("99:99"));
+  QTest::keyClick(window, Qt::Key_Return);
+  QTRY_COMPARE(m_quietingSchedule->startCount, 1);
+  QCOMPARE(m_quietingSchedule->lastStartHour, 99);
+  QCOMPARE(m_quietingSchedule->lastStartMinute, 99);
+  QCOMPARE(m_quietingSchedule->startMinutes, 22 * 60);
+  QTRY_COMPARE(start->property("text").toString(), QStringLiteral("22:00"));
+
+  // An accepted edit is shown because the model reports it, not because the
+  // user typed it.
+  end->forceActiveFocus(Qt::MouseFocusReason);
+  QTRY_COMPARE(window->activeFocusItem(), end);
+  QVERIFY(QMetaObject::invokeMethod(end, "selectAll"));
+  typeDigits(QStringLiteral("0630"));
+  QTest::keyClick(window, Qt::Key_Return);
+  QTRY_COMPARE(m_quietingSchedule->endCount, 1);
+  QCOMPARE(m_quietingSchedule->lastEndHour, 6);
+  QCOMPARE(m_quietingSchedule->lastEndMinute, 30);
+  QCOMPARE(m_quietingSchedule->endMinutes, 6 * 60 + 30);
+  QTRY_COMPARE(end->property("text").toString(), QStringLiteral("06:30"));
+
+  // An error from the model is shown, not swallowed.
+  m_quietingSchedule->errorText = QStringLiteral("Settings refused the change");
+  Q_EMIT m_quietingSchedule->viewChanged();
+  QTRY_VERIFY(error->isVisible());
+  QCOMPARE(error->property("text").toString(),
+           QStringLiteral("Settings refused the change"));
+
+  // Every schedule control is on the keyboard ring between Do Not Disturb and
+  // the actions below it.
+  auto *toggle = sceneItem(window->contentItem(),
+                           QStringLiteral("settingsDoNotDisturbSwitch"));
+  QVERIFY(toggle != nullptr);
+  toggle->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), scheduleSwitch);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), start);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), end);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), toggle);
+
+  // A schedule the service cannot serve leaves the controls inert.
+  m_quietingSchedule->available = false;
+  Q_EMIT m_quietingSchedule->viewChanged();
+  QTRY_VERIFY(!scheduleSwitch->isEnabled());
+  QVERIFY(!start->isEnabled());
+  QVERIFY(!end->isEnabled());
 }
 
 void SettingsNavigationInteractionTest::testUnavailableRouteFailClosed() {
@@ -350,6 +506,8 @@ void SettingsNavigationInteractionTest::testUnavailableRouteFailClosed() {
        QVariant::fromValue(static_cast<QObject *>(&navigation))},
       {QStringLiteral("quietingSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_quieting.get()))},
+      {QStringLiteral("quietingSchedule"),
+       QVariant::fromValue(static_cast<QObject *>(m_quietingSchedule.get()))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("customizeSettings"), QVariant::fromValue(m_customize.get())},
