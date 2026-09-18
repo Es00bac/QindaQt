@@ -50,7 +50,7 @@ keeps its chip and reports honestly that OBS cannot be driven.
 
 The password reaches the client and nothing else: it is never held by the
 controller, never published into QML, and never logged
-([ADR-0198](../adr/0198-one-obs-websocket-client-for-the-desktop.md)).
+([ADR-0201](../adr/0201-one-obs-websocket-client-for-the-desktop.md)).
 
 ## Tests
 

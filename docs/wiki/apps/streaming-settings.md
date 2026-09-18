@@ -3,9 +3,9 @@
 The Streaming route (`qindaqt-settings --page streaming`) is where OBS is set
 up and where the desktop's recording, streaming and virtual-camera controls
 live in full. OBS stays the authority for everything it owns;
-[ADR-0198](../adr/0198-one-obs-websocket-client-for-the-desktop.md) records
+[ADR-0201](../adr/0201-one-obs-websocket-client-for-the-desktop.md) records
 the control client and
-[ADR-0199](../adr/0199-qindaqt-provisions-obs-and-owns-one-secret.md) records
+[ADR-0202](../adr/0202-qindaqt-provisions-obs-and-owns-one-secret.md) records
 what QindaQt writes into OBS's configuration.
 
 ## What the route does
@@ -44,7 +44,7 @@ credential OBS is already using.
 QindaQt connects to `ws://127.0.0.1:<port>` and nothing else. obs-websocket
 has no transport security, so the route offers a port and states the address
 rather than offering a host field; the transport itself refuses a
-non-loopback address (ADR-0198).
+non-loopback address (ADR-0201).
 
 ## Honest status
 

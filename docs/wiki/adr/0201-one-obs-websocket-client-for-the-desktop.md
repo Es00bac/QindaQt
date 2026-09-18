@@ -1,4 +1,4 @@
-# ADR-0198: One obs-websocket client for the desktop
+# ADR-0201: One obs-websocket client for the desktop
 
 - **Status:** Accepted
 - **Date:** 2026-09-17

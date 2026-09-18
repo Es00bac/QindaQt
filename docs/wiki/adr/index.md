@@ -7,6 +7,20 @@ create or supersede one; start from the [ADR template](template.md).
 
 | ADR | Status | Decision |
 | --- | --- | --- |
+
+Numbers are never reused, including for rejected or superseded records. A gap
+may be reserved by another coordinated outcome and is not available for reuse;
+integration retains every accepted decision in numeric order.
+
+
+
+
+
+
+
+
+
+
 | [ADR-0001](0001-use-kwin-as-compositor-base.md) | Accepted | Use a small downstream KWin integration as the compositor base |
 | [ADR-0002](0002-native-qindaqt-applet-api.md) | Accepted | Define a native, capability-declared QindaQt applet API |
 | [ADR-0003](0003-docs-as-code.md) | Accepted | Maintain the project wiki and ADRs as repository source |
@@ -35,19 +49,19 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md) | Accepted | Extract a narrow first-party application shell without domain or platform authority |
 | [ADR-0028](0028-compose-appearance-settings-through-settings1.md) | Accepted | Compose the Appearance settings route through Settings1 and QST-1 |
 | [ADR-0029](0029-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
+| [ADR-0030](0030-confine-qtermwidget-behind-terminal-adapter.md) | Superseded by ADR-0030 | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
+| [ADR-0031](0031-volatile-bounded-clipboard-history.md) | Accepted | Keep the clipboard history volatile, bounded, and fail-closed |
+| [ADR-0032](0032-status-notifier-exact-owner-foundation.md) | Accepted | Key the status-notifier tray on exact unique-name owners |
+| [ADR-0033](0033-canonical-menu-model-and-authenticated-menu-ownership.md) | Proposed | Own a canonical menu model with authenticated active-window menu ownership |
+| [ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) | Accepted | Keep Bluetooth pairing and trust authority in BlueZ; defer Agent1 pairing |
+| [ADR-0040](0040-own-terminal-child-pty-and-bridge-through-teletype.md) | Accepted | Own the Terminal child PTY and bridge it through the qtermwidget teletype |
 | [ADR-0041](0041-adopt-flow-team-delivery-loop.md) | Accepted | Use workgroup queues, exact review loops, prompt integration, and capacity refill |
 | [ADR-0042](0042-launcher-model-without-execution.md) | Accepted | Keep the launcher a pure model whose launch intents never execute |
-| [ADR-0044](0044-inject-task-list-facts-into-the-shell.md) | Accepted | Inject immutable task-list facts rather than importing compositor internals |
-| [ADR-0031](0031-volatile-bounded-clipboard-history.md) | Accepted | Keep the clipboard history volatile, bounded, and fail-closed |
 | [ADR-0043](0043-isolate-the-customization-editor-domain.md) | Accepted | Isolate the customization editor domain as its own module |
-| [ADR-0033](0033-canonical-menu-model-and-authenticated-menu-ownership.md) | Proposed | Own a canonical menu model with authenticated active-window menu ownership |
-| [ADR-0032](0032-status-notifier-exact-owner-foundation.md) | Accepted | Key the status-notifier tray on exact unique-name owners |
-| [ADR-0047](0047-pure-font-catalog-and-preference-boundary.md) | Accepted | Pure Font F0 catalog, preference, and bootstrap boundary |
-| [ADR-0030](0030-confine-qtermwidget-behind-terminal-adapter.md) | Superseded by ADR-0030 | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
-| [ADR-0040](0040-own-terminal-child-pty-and-bridge-through-teletype.md) | Accepted | Own the Terminal child PTY and bridge it through the qtermwidget teletype |
-| [ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) | Accepted | Keep Bluetooth pairing and trust authority in BlueZ; defer Agent1 pairing |
+| [ADR-0044](0044-inject-task-list-facts-into-the-shell.md) | Accepted | Inject immutable task-list facts rather than importing compositor internals |
 | [ADR-0045](0045-fence-network1-pure-boundary.md) | Accepted | Fence Network1 owner, lineage, lease, secret, and pure-module contracts |
 | [ADR-0046](0046-display-color-c0-model-boundary.md) | Proposed | Keep display color as a pure bounded model first |
+| [ADR-0047](0047-pure-font-catalog-and-preference-boundary.md) | Accepted | Pure Font F0 catalog, preference, and bootstrap boundary |
 | [ADR-0048](0048-settings-center-navigation-and-route-ownership.md) | Accepted | Keep Settings navigation typed and route authority local |
 | [ADR-0049](0049-capture-private-parent-framebuffer.md) | Accepted | Capture one private Weston parent framebuffer after private-seat interaction |
 | [ADR-0050](0050-direct-kde-output-management-writer.md) | Accepted | Use a direct bounded KDE public output-management writer |
@@ -80,19 +94,11 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0077](0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md) | Accepted | Acknowledge global menu hosting before hiding local menus |
 | [ADR-0078](0078-own-wallpaper-surfaces-in-the-shell.md) | Accepted | Own wallpaper surfaces in the shell |
 | [ADR-0079](0079-own-welcome-presentation-preference-locally.md) | Accepted | Own Welcome preference locally and supervision in session |
-
-Numbers are never reused, including for rejected or superseded records. A gap
-may be reserved by another coordinated outcome and is not available for reuse;
-integration retains every accepted decision in numeric order.
-
 - [ADR-0080: Resolve first-party appearance from confirmed Settings1 preferences](0080-resolve-first-party-appearance-from-settings.md)
 - [ADR-0081: Project confirmed appearance into native and grouped chrome](0081-project-confirmed-appearance-into-window-chrome.md)
-
 - [ADR-0082: Publish the current session activation environment](0082-publish-session-activation-environment.md)
 - [ADR-0083: Apply saved color profiles through public output management](0083-apply-saved-color-profiles-through-public-output-management.md)
-
 - [ADR-0084: Own the desktop shortcut note on wallpaper surfaces](0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md)
-
 - [ADR-0085: Pre-empt KWin's native custom-tile from an early, narrow input filter](0085-early-late-shift-takeover-filter.md)
 - [ADR-0086: Route GlobalShortcuts only to a verified backend](0086-route-globalshortcuts-only-to-a-verified-backend.md)
 - [ADR-0087: Deliver agent and Gabbee input through the RemoteDesktop portal](0087-agent-input-via-remotedesktop-portal.md)
@@ -101,13 +107,9 @@ integration retains every accepted decision in numeric order.
 - [ADR-0090: Keep File Manager bookmarks in an app-local bounded state file](0090-keep-file-manager-bookmarks-app-local.md)
 - [ADR-0091: Configure KScreenLocker preferences through a narrow Settings adapter](0091-configure-kscreenlocker-preferences-through-settings.md)
 - [ADR-0092: Project the confirmed palette into QindaQt compositor UI](0092-project-confirmed-palette-into-compositor-ui.md)
-
 - [ADR-0093: Acknowledge agent input only after portal acceptance](0093-acknowledge-agent-input-portal-acceptance.md)
-
 - [ADR-0094: Refresh resident Wayland-connected services at session entry](0094-refresh-resident-wayland-session-services.md)
-
 - [ADR-0095: Use KSyntaxHighlighting for editor presentation](0095-use-ksyntaxhighlighting-for-editor-presentation.md)
-
 - [ADR-0096: Package bundled applications with Portage](0096-package-bundled-apps-with-portage.md)
 - [ADR-0097: Separate workspace slots from live windows](0097-separate-workspace-slots-from-live-windows.md)
 - [ADR-0098: Gate releases on the exact native compositor stack](0098-gate-releases-on-the-exact-native-compositor-stack.md)
@@ -120,12 +122,10 @@ integration retains every accepted decision in numeric order.
 - [ADR-0105: Delegate idle display-off to PowerDevil](0105-delegate-idle-display-off-to-powerdevil.md)
 - [ADR-0106: Accept an equivalent Gentoo Power Profiles provider](0106-accept-equivalent-power-profiles-provider.md)
 - [ADR-0107: Delegate Print to Spectacle](0107-delegate-print-to-spectacle.md)
-
 - [ADR-0109: Pearl and Smoked Plum materials](0109-use-pearl-and-smoked-plum-app-materials.md)
 - [ADR-0110: Ordinary editor windows](0110-own-editor-documents-in-ordinary-windows.md)
 - [ADR-0111: bound file previews and consume public icons](0111-bound-file-previews-and-consume-public-icons.md)
 - [ADR-0112: terminal protocol palette](0112-terminal-protocol-palette.md)
-
 - [ADR-0114: actionable status notifier menus](0114-status-notifier-actionable-menus.md)
 - [ADR-0115: share appearance through Qt platform theme](0115-share-appearance-through-qt-platform-theme.md)
 - [ADR-0116: build bundled applications on stock Qt 6](0116-build-bundled-applications-on-stock-qt6.md)
@@ -203,5 +203,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0198: File Manager preferences are app-local, exact, and every one of them does something](0198-file-manager-preferences-are-app-local.md)
 - [ADR-0199: mount at login is a systemd user unit the file manager writes and nothing more](0199-mount-at-login-is-a-systemd-user-unit-the-app-writes.md)
 - [ADR-0200: nearby servers are advisory, opt-in, and only what can be opened](0200-nearby-servers-are-advisory-and-opt-in.md)
-- [ADR-0198: one obs-websocket client for the desktop](0198-one-obs-websocket-client-for-the-desktop.md)
-- [ADR-0199: QindaQt provisions OBS and owns one secret](0199-qindaqt-provisions-obs-and-owns-one-secret.md)
+- [ADR-0201: one obs-websocket client for the desktop](0201-one-obs-websocket-client-for-the-desktop.md)
+- [ADR-0202: QindaQt provisions OBS and owns one secret](0202-qindaqt-provisions-obs-and-owns-one-secret.md)

@@ -1,4 +1,4 @@
-# ADR-0199: QindaQt provisions OBS and owns one secret
+# ADR-0202: QindaQt provisions OBS and owns one secret
 
 - **Status:** Accepted
 - **Date:** 2026-09-17

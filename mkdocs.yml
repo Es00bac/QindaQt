@@ -176,19 +176,19 @@ nav:
       - "ADR-0027: Narrow first-party AppShell": adr/0027-extract-a-narrow-first-party-application-shell.md
       - "ADR-0028: Appearance through Settings1": adr/0028-compose-appearance-settings-through-settings1.md
       - "ADR-0029: File Manager bounded local launch": adr/0029-file-manager-bounded-local-launch.md
+      - "ADR-0030: Qtermwidget terminal adapter": adr/0030-confine-qtermwidget-behind-terminal-adapter.md
       - "ADR-0031: Volatile bounded clipboard history": adr/0031-volatile-bounded-clipboard-history.md
-      - "ADR-0046: Display color pure model first": adr/0046-display-color-c0-model-boundary.md
+      - "ADR-0032: Status-notifier exact-owner foundation": adr/0032-status-notifier-exact-owner-foundation.md
+      - "ADR-0033: Canonical menu model": adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md
+      - "ADR-0037: Bluetooth authority in BlueZ": adr/0037-keep-pairing-and-trust-authority-in-bluez.md
+      - "ADR-0040: Terminal child PTY bridge": adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md
       - "ADR-0041: Flow team delivery loop": adr/0041-adopt-flow-team-delivery-loop.md
       - "ADR-0042: Launcher model without execution": adr/0042-launcher-model-without-execution.md
-      - "ADR-0044: Injected task-list facts": adr/0044-inject-task-list-facts-into-the-shell.md
       - "ADR-0043: Customization editor domain": adr/0043-isolate-the-customization-editor-domain.md
-      - "ADR-0033: Canonical menu model": adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md
-      - "ADR-0032: Status-notifier exact-owner foundation": adr/0032-status-notifier-exact-owner-foundation.md
-      - "ADR-0047: Pure Font F0 boundary": adr/0047-pure-font-catalog-and-preference-boundary.md
-      - "ADR-0030: Qtermwidget terminal adapter": adr/0030-confine-qtermwidget-behind-terminal-adapter.md
-      - "ADR-0040: Terminal child PTY bridge": adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md
-      - "ADR-0037: Bluetooth authority in BlueZ": adr/0037-keep-pairing-and-trust-authority-in-bluez.md
+      - "ADR-0044: Injected task-list facts": adr/0044-inject-task-list-facts-into-the-shell.md
       - "ADR-0045: Network1 pure boundary": adr/0045-fence-network1-pure-boundary.md
+      - "ADR-0046: Display color pure model first": adr/0046-display-color-c0-model-boundary.md
+      - "ADR-0047: Pure Font F0 boundary": adr/0047-pure-font-catalog-and-preference-boundary.md
       - "ADR-0048: Typed Settings navigation": adr/0048-settings-center-navigation-and-route-ownership.md
       - "ADR-0049: Private parent framebuffer capture": adr/0049-capture-private-parent-framebuffer.md
       - "ADR-0050: Direct KDE display writer": adr/0050-direct-kde-output-management-writer.md
@@ -317,8 +317,6 @@ nav:
       - "ADR-0188: serve the panel start zone first": adr/0188-serve-the-panel-start-zone-first.md
       - "ADR-0189: paint the rolled-up badge label, and size the badge to it": adr/0189-size-the-rolled-up-badge-to-its-label.md
       - "ADR-0190: mirroring is one field on the mirrored output": adr/0190-mirroring-is-one-field-on-the-mirrored-output.md
-      - "ADR-0198: one obs-websocket client for the desktop": adr/0198-one-obs-websocket-client-for-the-desktop.md
-      - "ADR-0199: QindaQt provisions OBS and owns one secret": adr/0199-qindaqt-provisions-obs-and-owns-one-secret.md
       - "ADR-0191: a control survives reprojection and owns its value": adr/0191-a-control-survives-reprojection.md
       - "ADR-0192: the KDE portal drop-in must not try to clear BusName=": adr/0192-portal-dropin-busname-cannot-be-cleared.md
       - "ADR-0193: a finger is the left button, and a held finger the right": adr/0193-a-finger-is-the-left-button-and-a-held-finger-the-right.md
@@ -329,3 +327,5 @@ nav:
       - "ADR-0198: File Manager preferences are app-local, exact, and every one of them does something": adr/0198-file-manager-preferences-are-app-local.md
       - "ADR-0199: mount at login is a systemd user unit the file manager writes and nothing more": adr/0199-mount-at-login-is-a-systemd-user-unit-the-app-writes.md
       - "ADR-0200: nearby servers are advisory, opt-in, and only what can be opened": adr/0200-nearby-servers-are-advisory-and-opt-in.md
+      - "ADR-0201: one obs-websocket client for the desktop": adr/0201-one-obs-websocket-client-for-the-desktop.md
+      - "ADR-0202: QindaQt provisions OBS and owns one secret": adr/0202-qindaqt-provisions-obs-and-owns-one-secret.md
