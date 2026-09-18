@@ -4,7 +4,7 @@ import QtQuick
 // The window's non-visual owners and its two secondary windows: the
 // Connect-to-server dialog (ADR-0194), the Preferences window (ADR-0198), the
 // binding that applies the presentation preferences to this window, and the
-// one that starts and stops discovery (ADR-0197).
+// one that starts and stops discovery (ADR-0200).
 //
 // Extracted from Main.qml so the window stays within the source-shape budget.
 // Main drives it through openConnectDialog()/openPreferences() rather than

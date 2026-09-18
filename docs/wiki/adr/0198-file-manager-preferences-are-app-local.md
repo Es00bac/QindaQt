@@ -16,7 +16,7 @@ plain: they are one application's view preferences, nobody else reads them,
 and Settings1 rejects a whole snapshot on one unknown key — a fragility a
 per-app view setting should not have to share. Meanwhile the file manager
 gained things that genuinely need a durable answer before a window opens:
-whether to browse the network at all (ADR-0197), and which scheme the Connect
+whether to browse the network at all (ADR-0200), and which scheme the Connect
 dialog starts on.
 
 ## Decision

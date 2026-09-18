@@ -13,7 +13,7 @@
 namespace QindaQt::Apps::FileManager {
 
 // AGENT-CONTRACT: the GUI-thread owner of the "Nearby" list for one window
-// (ADR-0197). It owns the injected ServiceDiscovery's lifetime, the visible
+// (ADR-0200). It owns the injected ServiceDiscovery's lifetime, the visible
 // order, and the typed unavailable-reason; it never connects to a server,
 // never authenticates, and never navigates. QML opens a nearby server by
 // handing its published address to NavigationController, exactly as it does

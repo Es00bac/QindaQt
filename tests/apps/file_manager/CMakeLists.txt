@@ -113,7 +113,7 @@ qindaqt_add_file_manager_test(
     tst_network_locations_controller.cpp
     qindaqt.file-manager-network-locations-controller
 )
-# ADR-0197: Avahi browsing and the Nearby model. The production browser's
+# ADR-0200: Avahi browsing and the Nearby model. The production browser's
 # D-Bus edges are answered with canned replies and its browser signals are
 # delivered directly, so no bus, daemon, or network is involved.
 qindaqt_add_file_manager_test(
