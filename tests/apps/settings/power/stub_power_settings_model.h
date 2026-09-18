@@ -150,6 +150,48 @@ Q_SIGNALS:
   void applyFinished(bool success, const QString &error);
 };
 
+// Checkpoint L row 5: injected AutomaticPowerProfilePolicyPort stand-in,
+// mirroring StubLidPowerButtonPolicy's shape.
+class StubAutomaticPowerProfilePolicy final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool available MEMBER available NOTIFY availabilityChanged)
+  Q_PROPERTY(bool busy MEMBER busy NOTIFY busyChanged)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY errorChanged)
+  Q_PROPERTY(QString acProfileId MEMBER acProfileId NOTIFY policyChanged)
+  Q_PROPERTY(QString batteryProfileId MEMBER batteryProfileId NOTIFY policyChanged)
+  Q_PROPERTY(QString lowBatteryProfileId MEMBER lowBatteryProfileId NOTIFY
+                 policyChanged)
+
+public:
+  using QObject::QObject;
+  bool available = true;
+  bool busy = false;
+  QString errorText;
+  QString acProfileId;
+  QString batteryProfileId;
+  QString lowBatteryProfileId;
+  int applyCalls = 0;
+  QStringList lastArguments;
+  Q_INVOKABLE void applyProfiles(const QString &requestedAcProfileId,
+                                 const QString &requestedBatteryProfileId,
+                                 const QString &requestedLowBatteryProfileId) {
+    ++applyCalls;
+    lastArguments = {requestedAcProfileId, requestedBatteryProfileId,
+                     requestedLowBatteryProfileId};
+    acProfileId = requestedAcProfileId;
+    batteryProfileId = requestedBatteryProfileId;
+    lowBatteryProfileId = requestedLowBatteryProfileId;
+    Q_EMIT policyChanged();
+  }
+
+Q_SIGNALS:
+  void availabilityChanged();
+  void busyChanged();
+  void errorChanged();
+  void policyChanged();
+  void applyFinished(bool success, const QString &error);
+};
+
 // External-display rows as the injected ADR-0150 route model presents them.
 class StubExternalBrightness final : public QObject {
   Q_OBJECT
@@ -211,6 +253,7 @@ class StubPowerSettingsModel final : public QObject {
   Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
   Q_PROPERTY(bool lidPresent MEMBER lidPresent NOTIFY viewChanged)
   Q_PROPERTY(QObject *lidPolicy READ lidPolicy CONSTANT)
+  Q_PROPERTY(QObject *profilePolicy READ profilePolicy CONSTANT)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText MEMBER operationStatusText NOTIFY viewChanged)
@@ -251,6 +294,7 @@ public:
   int lastNormalized = -1;
   StubSessionActions sessionActionState;
   StubLidPowerButtonPolicy lidPolicyState;
+  StubAutomaticPowerProfilePolicy profilePolicyState;
 
   explicit StubPowerSettingsModel(QObject *parent = nullptr) : QObject(parent) {
     supplyRows = {QVariantMap{{QStringLiteral("id"), QStringLiteral("ac-adapter")},
@@ -290,6 +334,7 @@ public:
 
   [[nodiscard]] QObject *sessionActions() noexcept { return &sessionActionState; }
   [[nodiscard]] QObject *lidPolicy() noexcept { return &lidPolicyState; }
+  [[nodiscard]] QObject *profilePolicy() noexcept { return &profilePolicyState; }
   StubExternalBrightness externalBrightnessState;
   [[nodiscard]] QObject *externalBrightness() noexcept {
     return &externalBrightnessState;

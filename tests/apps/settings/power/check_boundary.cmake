@@ -27,6 +27,10 @@ set(allowed_public_include_prefixes
     # The composition's lid/power-button port forwards to the session's
     # PowerDevil adapter behind an injected abstract port (ADR-0132).
     "qindaqt/session/powerdevil_lid/"
+    # The composition's automatic power-profile port forwards to the
+    # session's PowerDevil profile adapter behind an injected abstract port
+    # (Checkpoint L row 5), same boundary discipline as the lid port above.
+    "qindaqt/session/powerdevil_profile/"
     # External-display brightness consumes the public Display client and its
     # protocol values (ADR-0150); never the Display service or writer.
     "qindaqt/services/display_client/"
@@ -48,6 +52,10 @@ foreach(source IN LISTS route_files)
     if(contents MATCHES "session/powerdevil_lid/" AND
        NOT source MATCHES "/(power_route_composition|qt_powerdevil_lid_port)\.(cpp|h)$")
         message(FATAL_ERROR "Power Settings imported the PowerDevil lid adapter outside its composition root in ${source}")
+    endif()
+    if(contents MATCHES "session/powerdevil_profile/" AND
+       NOT source MATCHES "/(power_route_composition|qt_powerdevil_profile_port)\.(cpp|h)$")
+        message(FATAL_ERROR "Power Settings imported the PowerDevil profile adapter outside its composition root in ${source}")
     endif()
     if((contents MATCHES "QtDBus|QDBus") AND
        NOT source MATCHES "/(power_route_composition|qt_screen_lock_configurator)\.cpp$")

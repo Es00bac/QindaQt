@@ -14,8 +14,10 @@
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/session/desktop_controls/settings1_idle_preferences.h>
 #include <qindaqt/session/powerdevil_lid/powerdevil_lid_adapter.h>
+#include <qindaqt/session/powerdevil_profile/powerdevil_profile_adapter.h>
 
 #include "qt_powerdevil_lid_port.h"
+#include "qt_powerdevil_profile_port.h"
 
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
@@ -42,11 +44,15 @@ public:
         idleDisplaySettings(idlePreferences, idleClient),
         lidPowerButton(QDBusConnection::sessionBus()),
         lidPowerButtonPort(lidPowerButton),
-        model(client, &sessionActions, &lidPowerButtonPort, &externalBrightness) {
+        profilePowerAdapter(QDBusConnection::sessionBus()),
+        profilePowerPort(profilePowerAdapter),
+        model(client, &sessionActions, &lidPowerButtonPort, &externalBrightness,
+              &profilePowerPort) {
     client.start();
     displayClient.start();
     sessionActions.start();
     lidPowerButton.start();
+    profilePowerAdapter.start();
     // AGENT-GUARD: offscreen harnesses run with QT_FATAL_WARNINGS and no
     // session bus; a missing bus is the expected degraded route, not a
     // warning-worthy failure. Only a connected bus with a failed start logs.
@@ -65,6 +71,7 @@ public:
     displayClient.stop();
     idleClient.stop();
     lidPowerButton.stop();
+    profilePowerAdapter.stop();
   }
 
   Power::QtPowerTransport transport;
@@ -84,6 +91,8 @@ public:
   IdleDisplaySettingsModel idleDisplaySettings;
   Session::PowerDevilLid::PowerDevilLidAdapter lidPowerButton;
   QtPowerDevilLidPolicyPort lidPowerButtonPort;
+  Session::PowerDevilProfile::PowerDevilProfileAdapter profilePowerAdapter;
+  QtPowerDevilProfilePolicyPort profilePowerPort;
   PowerSettingsModel model;
 };
 

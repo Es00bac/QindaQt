@@ -102,6 +102,31 @@ outside the six supported `PowerDevil::PowerButtonAction` numbers cited in the
 ADR, and triggers the identical `refreshStatus` reload with the same owner
 fencing and error truth.
 
+## Automatic power-profile sibling
+
+The `QindaQt::Session::PowerDevilProfile::PowerDevilProfileAdapter`
+(Checkpoint L row 5) mirrors this adapter for PowerDevil's per-power-source
+automatic profile switch. It writes exactly the `Performance` group's
+`PowerProfile` entry of the same three `AC`/`Battery`/`LowBattery` profiles:
+
+| Group | Key | Value |
+| --- | --- | --- |
+| `AC/Performance` | `PowerProfile` | requested AC profile id, or the key is deleted |
+| `Battery/Performance` | `PowerProfile` | requested battery profile id, or the key is deleted |
+| `LowBattery/Performance` | `PowerProfile` | requested low-battery profile id, or the key is deleted |
+
+A profile id is whatever the active profile daemon reports through Power1's
+`ProfileState` (typically `power-saver`/`balanced`/`performance`); the
+adapter does not validate it against that list, since PowerDevil accepts and
+stores any string. An empty id deletes the entry instead of writing an empty
+value, matching PowerDevil's own "no automatic switch configured for this
+source" state. Like the idle adapter, it reparses before writing, rejects a
+non-writable or failed config sync without dispatching a reload, and
+triggers the same `refreshStatus` reload with the same owner fencing and
+error truth described above. Unlike the lid adapter's fixed six-value enum,
+a profile id has no adapter-level allow-list; the caller decides which ids
+are offered.
+
 ## Verification boundary
 
 The focused private-bus test uses a temporary `XDG_CONFIG_HOME` and a fake
@@ -117,6 +142,15 @@ The separate `qindaqt.session-powerdevil-lifetime` process test starts a private
 helper as the daemon, terminates it once, verifies replacement without session
 exit, and checks that session stop reaps the replacement. It does not start
 PowerDevil or change host power settings.
+
+The profile adapter's own `qindaqt.session-powerdevil-profile` test uses the
+same temporary-config-plus-fake-owner harness and covers distinct per-source
+writes, unrelated-key preservation, empty-id key deletion, absent-owner
+rejection and recovery, embedded-newline rejection, refresh failure, and
+apply-while-busy rejection. Verification against the real daemon reads
+`~/.config/powerdevilrc` on `qinda-top` over ssh after a Settings write; an
+end-to-end AC/battery transition additionally requires unplugging the
+laptop's charger, which stays a **(user)**-gated qualification step.
 
 Production selects `/usr/libexec/org_kde_powerdevil` unless `--powerdevil`
 provides another executable. Private session runners pass `--no-powerdevil`
