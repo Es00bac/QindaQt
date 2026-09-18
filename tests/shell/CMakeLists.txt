@@ -566,3 +566,21 @@ set_tests_properties(
     qindaqt.shell-runtime-layout-adoption PROPERTIES
     LABELS "shell;runtime;customize"
 )
+
+# AGENT-CONTRACT: every applet-access object the panel factory passes must be
+# declared on the panel root and forwarded the whole way to
+# BuiltinAppletContent. A missing declaration makes Qt refuse the entire
+# initial-property map ("RuntimePanel does not have a property called ...") and
+# a missing forward is silent — the applet is just created with null access.
+# Both shipped for the OBS applet; this row is why they cannot ship again.
+add_test(
+    NAME qindaqt.shell-panel-access-threading
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_panel_access_threading.cmake"
+)
+set_tests_properties(
+    qindaqt.shell-panel-access-threading
+    PROPERTIES LABELS "shell;contract;applets"
+)
