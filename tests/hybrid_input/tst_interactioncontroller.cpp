@@ -26,6 +26,7 @@ private Q_SLOTS:
     void adoptDragWithNoTargetSwallowsSilently();
     void adoptDragRefusesWhenAlreadyActive();
     void pointerModifiersExposesConfiguredChord();
+    void liveChordRebindGovernsTheNextPressAndDisabledMatchesNothing();
 };
 
 void InteractionControllerTest::unrelatedInputPassesThrough()
@@ -391,6 +392,38 @@ void InteractionControllerTest::pointerModifiersExposesConfiguredChord()
         resolver, {.pointerModifiers = Qt::ControlModifier | Qt::AltModifier});
     QCOMPARE(customController.pointerModifiers(),
              Qt::ControlModifier | Qt::AltModifier);
+}
+
+void InteractionControllerTest::liveChordRebindGovernsTheNextPressAndDisabledMatchesNothing()
+{
+    TestSupport::RecordingResolver resolver;
+    resolver.hit = {HitKind::MemberTitle, QStringLiteral("group"), QStringLiteral("member"), {}};
+    InteractionController controller(resolver, {.dragThreshold = 0.0});
+    QVERIFY(controller.pointerChordEnabled());
+
+    controller.setPointerModifiers(Qt::AltModifier | Qt::ShiftModifier);
+    QCOMPARE(controller.pointerModifiers(), Qt::AltModifier | Qt::ShiftModifier);
+    QVERIFY(!controller.pointerPress(
+        TestSupport::pressAt({10, 10}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(!controller.active());
+    QVERIFY(controller.pointerPress(
+        TestSupport::pressAt({10, 10}, Qt::AltModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.active());
+    (void)controller.cancel();
+
+    controller.setPointerModifiers(std::nullopt);
+    QVERIFY(!controller.pointerChordEnabled());
+    // The last chord is remembered but nothing matches while disabled.
+    QCOMPARE(controller.pointerModifiers(), Qt::AltModifier | Qt::ShiftModifier);
+    QVERIFY(!controller.pointerPress(
+        TestSupport::pressAt({10, 10}, Qt::AltModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(!controller.pointerPress(TestSupport::pressAt({10, 10}, Qt::NoModifier)).consumed);
+    QVERIFY(!controller.active());
+
+    controller.setPointerModifiers(Qt::MetaModifier | Qt::ShiftModifier);
+    QVERIFY(controller.pointerPress(
+        TestSupport::pressAt({10, 10}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.active());
 }
 
 QTEST_GUILESS_MAIN(InteractionControllerTest)

@@ -3,6 +3,8 @@
 
 #include "interactiontargetresolver.h"
 
+#include <optional>
+
 namespace QindaQt::HybridInput {
 
 class InteractionController final
@@ -45,6 +47,13 @@ public:
     // so a caller watching for a competing native gesture to intercept knows
     // which chord to watch for without duplicating the bindings.
     [[nodiscard]] Qt::KeyboardModifiers pointerModifiers() const;
+    // Live rebind of the pointer chord (the windowManagement.dockingModifier
+    // bridge, ADR-0209). `std::nullopt` disables pointer docking entirely:
+    // no press matches, so every drag stays KWin's. Keyboard modes and an
+    // interaction already in progress are untouched; the new chord governs
+    // the next press.
+    void setPointerModifiers(std::optional<Qt::KeyboardModifiers> modifiers);
+    [[nodiscard]] bool pointerChordEnabled() const;
 
     // A KGlobalAccel QAction calls this with the currently focused member. The
     // controller remains toolkit-neutral and never discovers focus itself.
@@ -88,6 +97,7 @@ private:
 
     const InteractionTargetResolver &m_resolver;
     InteractionBindings m_bindings;
+    bool m_pointerChordEnabled = true;
     State m_state = State::Idle;
     InteractionKind m_kind = InteractionKind::None;
     HitTarget m_source;

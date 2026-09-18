@@ -219,6 +219,19 @@ Qt::KeyboardModifiers InteractionController::pointerModifiers() const
     return m_bindings.pointerModifiers;
 }
 
+void InteractionController::setPointerModifiers(std::optional<Qt::KeyboardModifiers> modifiers)
+{
+    m_pointerChordEnabled = modifiers.has_value();
+    if (modifiers.has_value()) {
+        m_bindings.pointerModifiers = *modifiers;
+    }
+}
+
+bool InteractionController::pointerChordEnabled() const
+{
+    return m_pointerChordEnabled;
+}
+
 InteractionDecision InteractionController::keyEvent(const KeyEvent &event)
 {
     if (!event.pressed || m_state == State::Idle) {
@@ -389,7 +402,7 @@ bool InteractionController::pointerBindingMatches(const PointerEvent &event) con
 {
     // Exact matching avoids hijacking accessibility or user-defined chords
     // that merely contain the QindaQt gesture modifiers.
-    return event.modifiers == m_bindings.pointerModifiers
+    return m_pointerChordEnabled && event.modifiers == m_bindings.pointerModifiers
         && event.buttons.testFlag(m_bindings.pointerButton);
 }
 

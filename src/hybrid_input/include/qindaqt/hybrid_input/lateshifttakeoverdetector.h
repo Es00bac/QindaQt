@@ -3,6 +3,8 @@
 
 #include <Qt>
 
+#include <optional>
+
 namespace QindaQt::HybridInput {
 
 // Toolkit-neutral detection of "the exact takeover chord became newly
@@ -33,8 +35,15 @@ public:
     // modifier held alongside the required chord never arms a takeover.
     [[nodiscard]] bool observe(const void *activeDrag, Qt::KeyboardModifiers modifiers);
 
+    // Live rebind (ADR-0209). Tracking restarts so a chord that already
+    // matched the new modifiers a moment ago is not reported as newly
+    // satisfied. `std::nullopt` disables the detector: observe() always
+    // returns false until a chord is set again.
+    void setRequiredModifiers(std::optional<Qt::KeyboardModifiers> modifiers);
+    [[nodiscard]] std::optional<Qt::KeyboardModifiers> requiredModifiers() const;
+
 private:
-    Qt::KeyboardModifiers m_requiredModifiers;
+    std::optional<Qt::KeyboardModifiers> m_requiredModifiers;
     const void *m_trackedDrag = nullptr;
     Qt::KeyboardModifiers m_lastModifiers = Qt::KeyboardModifiers();
 };

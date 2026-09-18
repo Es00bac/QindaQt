@@ -137,7 +137,11 @@ Pointer input reaches Hybrid policy through three deliberately separate paths:
   edge-maximize choices off. Thus an ordinary independent-window drag remains
   a move even at an output edge or corner, while an explicit user choice can
   restore KWin behavior without being overwritten on later logins.
-- Exact `Meta+Shift+Left` acquires the compositor input grab after an
+- Exact `Meta+Shift+Left` (by default; `windowManagement.dockingModifier`
+  swaps Meta for Alt or Ctrl, keeps Shift in every chord, or disables pointer
+  docking entirely, live through the kwinrc bridge of
+  [ADR-0209](../adr/0209-bridge-window-management-settings-into-kwinrc.md))
+  acquires the compositor input grab after an
   eight-logical-pixel threshold. It can start anywhere on an independent or
   grouped window's own input surface — title or client area alike, not only a
   narrow title strip — as well as shared chrome, and supplies the explicit

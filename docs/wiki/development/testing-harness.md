@@ -3868,3 +3868,31 @@ are not ctest rows; their logs live under
 - a kglobalaccel key sequence must carry four ints, and a one-int sequence
   aborts the compositor;
 - a command component's `_launch` action runs its `Exec` line.
+
+## Current windowManagement bridge proof
+
+The live `windowManagement.*` bridge ([ADR-0209](../adr/0209-bridge-window-management-settings-into-kwinrc.md))
+is proven in three layers. `qindaqt.window-management-preferences` and
+`qindaqt.kwin-window-management-writer` cover the total decode and the KConfig
+mapping (foreign kwinrc groups survive; an unchanged file reports no change).
+`qindaqt.window-management-bridge` runs the real resident Settings1 service on
+a private `dbus-daemon`, a real writer, and a fake `org.kde.KWin` object that
+counts `reconfigure` calls: the first snapshot writes and reconfigures once, a
+burst of four confirmed edits lands in kwinrc with a debounced reload, and an
+invalid value is rejected as a whole without touching the file.
+`compositor.window-management-config` covers the plugin's `[QindaQt]` parser;
+the rebind cases in `hybrid.interaction-controller` and
+`hybrid.late-shift-takeover-detector` cover the two chord judges.
+
+The nested row `compositor.window-management-bridge.docking-chord.single-1080p`
+(`tests/session/window_management/run_docking_chord.py`, driver
+`docking_chord_driver.py`) reuses the shade-visibility harness: a private
+virtual session, CSD GTK members, planned dock gestures through the
+development input device. It rewrites the private session's own `kwinrc` and
+calls the real `org.kde.KWin.reconfigure`, then judges nine verdicts: the
+shipped Meta+Shift chord docks; after `DockingModifier=alt` Meta+Shift is
+inert and Alt+Shift docks; after `disabled` neither docks; click-to-focus
+ignores a hover; after `FocusPolicy=FocusFollowsMouse` a hover activates in
+both directions; and the restored chord docks again. Focus-follows-mouse is
+judged on pointer-focus changes, so the driver always leaves for the backdrop
+before entering the window under test.
