@@ -149,6 +149,10 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
 
   // ADR-0211: selectNext from 12 ("streaming") -> 13 ("datetime"). Streaming,
   // Date & time and Windows & workspaces are each appended last, in merge
+
+  // selectNext from 14 ("windows") -> 15 ("default-apps")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("default-apps"));
   // order, so nothing before them moved.
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
@@ -164,6 +168,9 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   // selectPrevious from 0 wraps to 14 ("windows")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
+
+  QVERIFY(controller.selectIndex(15));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("default-apps"));
 
   // selectPrevious from 14 -> 13 ("datetime")
   QVERIFY(controller.selectPrevious());
@@ -267,7 +274,7 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
   QVERIFY(controller.selectIndex(14));
-  QCOMPARE(controller.activeRouteId(), QStringLiteral("windows"));
+  QVERIFY(!controller.selectIndex(16));
 
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
@@ -394,6 +401,12 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(windowsMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("windows"));
 
+  const QVariantMap defaultAppsMap = list.at(15).toMap();
+  QCOMPARE(defaultAppsMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("default-apps"));
+
+  QCOMPARE(list.size(), 16);
+
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
            QStringLiteral("notifications"));
@@ -477,7 +490,13 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt14.value(QStringLiteral("component")).toString(),
            QStringLiteral("windows"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(15);
+  const QVariantMap itemAt15 = controller.routeAt(15);
+  QCOMPARE(itemAt15.value(QStringLiteral("id")).toString(),
+           QStringLiteral("default-apps"));
+  QCOMPARE(itemAt15.value(QStringLiteral("component")).toString(),
+           QStringLiteral("default-apps"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(16);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

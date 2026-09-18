@@ -10,11 +10,21 @@
 
     foreach(_qindaqt_desktop_route IN ITEMS
             Appearance Display Network Audio Bluetooth Power Clipboard Color
-            Accessibility Input Streaming DateTime Windows)
-        string(TOLOWER "${_qindaqt_desktop_route}" _qindaqt_desktop_route_id)
+            Accessibility Input Streaming DateTime Windows
+            # Name:target-suffix -- this module's CMake target does not
+            # match its URI, so the suffix is spelled out rather than derived.
+            DefaultApplications:default_apps)
+        string(REPLACE ":" ";" _qindaqt_desktop_route_parts "${_qindaqt_desktop_route}")
+        list(GET _qindaqt_desktop_route_parts 0 _qindaqt_desktop_route_name)
+        list(LENGTH _qindaqt_desktop_route_parts _qindaqt_desktop_route_partcount)
+        if(_qindaqt_desktop_route_partcount GREATER 1)
+            list(GET _qindaqt_desktop_route_parts 1 _qindaqt_desktop_route_id)
+        else()
+            string(TOLOWER "${_qindaqt_desktop_route_name}" _qindaqt_desktop_route_id)
+        endif()
         set(_qindaqt_desktop_route_target "qindaqt_settings_${_qindaqt_desktop_route_id}_qml")
         set(_qindaqt_desktop_route_destination
-            "${QT6_INSTALL_QML}/QindaQt/SettingsApp/${_qindaqt_desktop_route}")
+            "${QT6_INSTALL_QML}/QindaQt/SettingsApp/${_qindaqt_desktop_route_name}")
         qt_query_qml_module(
             ${_qindaqt_desktop_route_target}
             QMLDIR _qindaqt_desktop_route_qmldir
