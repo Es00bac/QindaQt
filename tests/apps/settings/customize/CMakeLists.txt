@@ -217,15 +217,26 @@ target_link_libraries(
         qindaqt_settings_customize_qml
         qindaqt_settings_customize_qmlplugin
         # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
-        # Color, Input and Streaming backend modules are static, so any
-        # in-process Main.qml host must link them. Adding a route to Main.qml
-        # without adding it here fails at load with "plugin not found", which
-        # reads as a defect in whatever test happened to run next.
+        # Color, Input and Streaming backend modules are static, as is the
+        # Windows route module itself, so any in-process Main.qml host must
+        # link them. Adding a route to Main.qml without adding it here fails at
+        # load with "plugin not found", which reads as a defect in whatever test
+        # happened to run next. A SHARED route module is found on the import
+        # path instead and only needs add_dependencies below. Date & time is
+        # imported by AddedRouteComponents.qml rather than by Main.qml
+        # directly, and the failure surfaces one level up as
+        # "Type AddedRouteComponents unavailable".
         qindaqt_settings_power
         qindaqt_settings_power_backend_qml
         qindaqt_settings_power_backend_qmlplugin
         qindaqt_settings_streaming_backend_qml
         qindaqt_settings_streaming_backend_qmlplugin
+        qindaqt_settings_windows
+        qindaqt_settings_windows_qml
+        qindaqt_settings_windows_qmlplugin
+        qindaqt_settings_datetime
+        qindaqt_settings_datetime_qml
+        qindaqt_settings_datetime_qmlplugin
         qindaqt_settings_clipboard_qml
         qindaqt_settings_clipboard_qmlplugin
         qindaqt_settings_color_backend_qml
