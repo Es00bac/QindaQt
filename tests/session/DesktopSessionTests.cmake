@@ -58,6 +58,15 @@ set(
     qindaqt_settings_accessibility_qmlplugin
     qindaqt_settings_input_qml
     qindaqt_settings_input_qmlplugin
+    # AGENT-NOTE: the Settings routes added after Input. A route missing from
+    # this staging list does not fail loudly — the nested desktop rows time out
+    # instead (PLAN section 9), which reads as a compositor problem.
+    qindaqt_settings_streaming_qml
+    qindaqt_settings_streaming_qmlplugin
+    qindaqt_settings_windows_qml
+    qindaqt_settings_windows_qmlplugin
+    qindaqt_settings_datetime_qml
+    qindaqt_settings_datetime_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )

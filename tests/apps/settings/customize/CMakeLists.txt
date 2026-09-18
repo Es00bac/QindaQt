@@ -226,6 +226,10 @@ target_link_libraries(
         qindaqt_settings_power_backend_qmlplugin
         qindaqt_settings_streaming_backend_qml
         qindaqt_settings_streaming_backend_qmlplugin
+        qindaqt_settings_windows_qml
+        qindaqt_settings_windows_qmlplugin
+        qindaqt_settings_datetime_qml
+        qindaqt_settings_datetime_qmlplugin
         qindaqt_settings_clipboard_qml
         qindaqt_settings_clipboard_qmlplugin
         qindaqt_settings_color_backend_qml
