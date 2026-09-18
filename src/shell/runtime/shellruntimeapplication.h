@@ -79,6 +79,7 @@ class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
 class LauncherAppletComposition;
+class EdgeGestureSubscriber;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
@@ -106,6 +107,8 @@ public:
     int run();
 
 private:
+    // ADR-0205: subscribes to the compositor's touch edge announcements.
+    void installEdgeGestures();
     [[nodiscard]] bool loadCatalogs(const RuntimeOptions &options, QString *error);
     [[nodiscard]] bool loadPresentationToken(const RuntimeOptions &options,
                                              QString *error);
@@ -212,6 +215,7 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
+    std::unique_ptr<EdgeGestureSubscriber> m_edgeGestures;
     std::unique_ptr<ShellAppearanceBridge> m_appearanceBridge;
     // AGENT-GUARD: teardown safety comes from ~ShellRuntimeApplication()
     // unconditionally calling resetRuntime(), which tears the window factory

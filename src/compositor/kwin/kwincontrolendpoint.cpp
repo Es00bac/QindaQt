@@ -136,6 +136,11 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
     }
 }
 
+void KWinControlEndpoint::announceEdgeGesture(const QString &edge, const QString &action)
+{
+    Q_EMIT EdgeGestureTriggered(edge, action);
+}
+
 void KWinControlEndpoint::setHybridDiagnosticsProvider(
     HybridDiagnosticsProvider provider)
 {

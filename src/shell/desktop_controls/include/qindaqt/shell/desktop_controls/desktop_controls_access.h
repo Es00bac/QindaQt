@@ -53,6 +53,9 @@ public:
 
   explicit DesktopControlsAccess(Facades facades, QObject *parent = nullptr);
 
+  // ADR-0205: a touch edge swipe asks the overview applet to open its popup.
+  Q_INVOKABLE void requestOverview();
+
   [[nodiscard]] QObject *workspaces() const noexcept { return m_facades.workspaces; }
   [[nodiscard]] QObject *workspaceSwitcher() const noexcept
   {
@@ -89,6 +92,9 @@ public:
   [[nodiscard]] QObject *commandHud() const noexcept { return m_facades.commandHud; }
   [[nodiscard]] QObject *overview() const noexcept { return m_facades.overview; }
   [[nodiscard]] QObject *launcher() const noexcept { return m_facades.launcher; }
+
+Q_SIGNALS:
+  void overviewRequested();
 
 private:
   Facades m_facades;

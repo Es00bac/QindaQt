@@ -130,6 +130,7 @@ add_subdirectory(apps/file_manager)
 add_subdirectory(apps/calendar)
 add_subdirectory(apps/terminal)
 add_subdirectory(apps/welcome)
+add_subdirectory(apps/osk)
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
     add_subdirectory(session_supervisor)

@@ -440,6 +440,104 @@
         "minimum": -1,
         "maximum": 240
       }
+    },
+    {
+      "key": "input.touch.enabled",
+      "domain": "input",
+      "type": "boolean",
+      "default": true,
+      "constraints": {}
+    },
+    {
+      "key": "input.touch.longPressMs",
+      "domain": "input",
+      "type": "integer",
+      "default": 500,
+      "constraints": {
+        "minimum": 200,
+        "maximum": 1500
+      }
+    },
+    {
+      "key": "input.touch.mode",
+      "domain": "input",
+      "type": "string",
+      "default": "auto",
+      "constraints": {
+        "allowedValues": [
+          "auto",
+          "on",
+          "off"
+        ]
+      }
+    },
+    {
+      "key": "input.touch.onScreenKeyboard",
+      "domain": "input",
+      "type": "string",
+      "default": "auto",
+      "constraints": {
+        "allowedValues": [
+          "auto",
+          "off"
+        ]
+      }
+    },
+    {
+      "key": "input.touch.edgeLeft",
+      "domain": "input",
+      "type": "string",
+      "default": "overview",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "overview",
+          "notifications",
+          "task-switcher"
+        ]
+      }
+    },
+    {
+      "key": "input.touch.edgeTop",
+      "domain": "input",
+      "type": "string",
+      "default": "notifications",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "overview",
+          "notifications",
+          "task-switcher"
+        ]
+      }
+    },
+    {
+      "key": "input.touch.edgeRight",
+      "domain": "input",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "overview",
+          "notifications",
+          "task-switcher"
+        ]
+      }
+    },
+    {
+      "key": "input.touch.edgeBottom",
+      "domain": "input",
+      "type": "string",
+      "default": "task-switcher",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "overview",
+          "notifications",
+          "task-switcher"
+        ]
+      }
     }
   ]
 }

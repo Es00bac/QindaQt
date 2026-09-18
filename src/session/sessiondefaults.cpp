@@ -4,7 +4,9 @@
 #include <QDir>
 #include <QFile>
 #include <QSaveFile>
+#include <QFileInfo>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QVariant>
 
@@ -20,6 +22,19 @@ void seedMissing(QSettings &settings, const QString &key,
     if (!settings.contains(key)) {
         settings.setValue(key, value);
     }
+}
+
+// The desktop entry KWin launches as its input method (ADR-0204). A private
+// session names its own copy through QINDAQT_OSK_DESKTOP_FILE; otherwise the
+// installed entry is used, and no seed is written when neither exists.
+QString onScreenKeyboardDesktopFile()
+{
+    if (qEnvironmentVariableIsSet("QINDAQT_OSK_DESKTOP_FILE")) {
+        const QString explicitPath = qEnvironmentVariable("QINDAQT_OSK_DESKTOP_FILE");
+        return QFileInfo(explicitPath).isFile() ? explicitPath : QString();
+    }
+    return QStandardPaths::locate(QStandardPaths::ApplicationsLocation,
+                                  QStringLiteral("org.qindaqt.OnScreenKeyboard.desktop"));
 }
 
 bool parseSection(const QString &line, QString *section)
@@ -124,6 +139,15 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     // defaults otherwise add a second, conflicting pointer interpretation.
     seedMissing(kwin, QStringLiteral("ElectricBorderTiling"), false);
     seedMissing(kwin, QStringLiteral("ElectricBorderMaximize"), false);
+    kwin.endGroup();
+
+    kwin.beginGroup(QStringLiteral("Wayland"));
+    // AGENT-CONTRACT: a seed, never an override — a user who chose another
+    // virtual keyboard keeps it. KWin reads the entry's Exec line and starts
+    // the keyboard on its own input-method connection.
+    if (const QString keyboard = onScreenKeyboardDesktopFile(); !keyboard.isEmpty()) {
+        seedMissing(kwin, QStringLiteral("InputMethod"), keyboard);
+    }
     kwin.endGroup();
 
     kwin.beginGroup(QStringLiteral("TabBox"));

@@ -185,6 +185,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/notificationoutputselector.h
         runtime/powerappletcomposition.cpp
         runtime/powerappletcomposition.h
+        runtime/edgegesturesubscriber.cpp
+        runtime/edgegesturesubscriber.h
         runtime/qtcompositoroutputauthority.cpp
         runtime/qtcompositoroutputauthority.h
         runtime/runtimeoptions.cpp
@@ -199,6 +201,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellruntimeapplication_applets.cpp
         runtime/shellruntimeapplication_development.cpp
         runtime/shellruntimeapplication_surfaces.cpp
+        runtime/shellruntimeapplication_touch.cpp
         runtime/shellruntimeapplication_tokens.cpp
         runtime/shellruntimeapplication_wallpaper.cpp
         runtime/shellruntimeapplication.h

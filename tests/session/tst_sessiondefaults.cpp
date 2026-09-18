@@ -2,6 +2,7 @@
 #include "sessiondefaults.h"
 
 #include <QDir>
+#include <QFile>
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QTest>
@@ -22,6 +23,9 @@ private Q_SLOTS:
     void preservesExistingDirectoryHandler();
     void addsDirectoryHandlerToExistingDefaults();
     void ignoresDirectoryHandlerInOtherSections();
+    void seedsOnScreenKeyboardFromTheNamedDesktopFile();
+    void seedsNoInputMethodWithoutADesktopFile();
+    void keepsAnExplicitInputMethod();
 };
 
 void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
@@ -207,6 +211,66 @@ void SessionDefaultsTest::ignoresDirectoryHandlerInOtherSections()
     QVERIFY(contents.contains(QLatin1String("[Default Applications]")));
     QVERIFY(contents.contains(
         QLatin1String("inode/directory=org.qindaqt.FileManager.desktop")));
+}
+
+void SessionDefaultsTest::seedsOnScreenKeyboardFromTheNamedDesktopFile()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const QString desktopFile = QDir(temporary.path()).filePath(QStringLiteral("osk.desktop"));
+    QFile entry(desktopFile);
+    QVERIFY(entry.open(QIODevice::WriteOnly | QIODevice::Text));
+    entry.write("[Desktop Entry]\nType=Application\nExec=/opt/qindaqt-osk\n");
+    entry.close();
+    qputenv("QINDAQT_OSK_DESKTOP_FILE", desktopFile.toUtf8());
+    QString error;
+    const bool ensured = SessionDefaults::ensure(temporary.path(), &error);
+    qunsetenv("QINDAQT_OSK_DESKTOP_FILE");
+    QVERIFY2(ensured, qPrintable(error));
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("Wayland"));
+    QCOMPARE(settings.value(QStringLiteral("InputMethod")).toString(), desktopFile);
+}
+
+void SessionDefaultsTest::seedsNoInputMethodWithoutADesktopFile()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    // An explicitly named but missing entry means "no keyboard", never a
+    // fallback to whatever happens to be installed on the build host.
+    qputenv("QINDAQT_OSK_DESKTOP_FILE", QDir(temporary.path()).filePath(QStringLiteral("missing.desktop")).toUtf8());
+    QString error;
+    const bool ensured = SessionDefaults::ensure(temporary.path(), &error);
+    qunsetenv("QINDAQT_OSK_DESKTOP_FILE");
+    QVERIFY2(ensured, qPrintable(error));
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("Wayland"));
+    QVERIFY(!settings.contains(QStringLiteral("InputMethod")));
+}
+
+void SessionDefaultsTest::keepsAnExplicitInputMethod()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const QString desktopFile = QDir(temporary.path()).filePath(QStringLiteral("osk.desktop"));
+    QFile entry(desktopFile);
+    QVERIFY(entry.open(QIODevice::WriteOnly | QIODevice::Text));
+    entry.write("[Desktop Entry]\nType=Application\nExec=/opt/qindaqt-osk\n");
+    entry.close();
+    {
+        QSettings existing(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+        existing.beginGroup(QStringLiteral("Wayland"));
+        existing.setValue(QStringLiteral("InputMethod"), QStringLiteral("/usr/share/applications/com.github.maliit.keyboard.desktop"));
+    }
+    qputenv("QINDAQT_OSK_DESKTOP_FILE", desktopFile.toUtf8());
+    QString error;
+    const bool ensured = SessionDefaults::ensure(temporary.path(), &error);
+    qunsetenv("QINDAQT_OSK_DESKTOP_FILE");
+    QVERIFY2(ensured, qPrintable(error));
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("Wayland"));
+    QCOMPARE(settings.value(QStringLiteral("InputMethod")).toString(),
+             QStringLiteral("/usr/share/applications/com.github.maliit.keyboard.desktop"));
 }
 
 QTEST_GUILESS_MAIN(SessionDefaultsTest)

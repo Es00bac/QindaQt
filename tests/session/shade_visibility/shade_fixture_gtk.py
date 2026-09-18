@@ -6,7 +6,9 @@ Usage: shade_fixture_gtk.py TITLE #RRGGBB EVENT_LOG MODE WIDTH HEIGHT
 
 MODE is `csd` (client-side decorations via a custom header bar, with GTK's own
 client-side shadow and opaque region), `ssd` (GTK negotiates server-side
-decorations), `borderless`, or `maximized` (borderless, used as the backdrop).
+decorations), `borderless`, `maximized` (borderless, used as the backdrop), or
+`entry` (borderless with two text entries above the solid area, for the
+on-screen keyboard rows: their allocations and every text change are logged).
 Every press, activation change, and control request is appended to EVENT_LOG
 as one JSON object per line, so the driver observes which client actually
 received pointer input.
@@ -49,6 +51,37 @@ def solid_area(rgb: tuple[float, float, float]) -> Gtk.DrawingArea:
     return area
 
 
+def entry_column(area: Gtk.DrawingArea, record) -> Gtk.Box:
+    """Two text entries over the solid area; the driver taps them by the
+    allocations they log and reads back what the keyboard typed."""
+    column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+    column.set_margin_top(8)
+    column.set_margin_start(8)
+    column.set_margin_end(8)
+    for name in ("entry-a", "entry-b"):
+        entry = Gtk.Entry()
+        entry.set_name(name)
+        entry.set_placeholder_text(name)
+        entry.set_size_request(-1, 40)
+        entry.connect("changed", lambda e, n=name: record("text", entry=n, value=e.get_text()))
+        entry.connect("notify::has-focus", lambda e, _p, n=name: record(
+            "entry-focus", entry=n, value=e.has_focus()))
+
+        def log_allocation(e: Gtk.Entry, n: str = name) -> bool:
+            ok, bounds = e.compute_bounds(e.get_root())
+            if ok:
+                record("entry-allocation", entry=n, x=bounds.origin.x, y=bounds.origin.y,
+                       width=bounds.size.width, height=bounds.size.height)
+            return GLib.SOURCE_REMOVE
+
+        entry.connect("map", lambda e, n=name: GLib.timeout_add(
+            300, lambda: log_allocation(e, n)))
+        column.append(entry)
+    area.set_vexpand(True)
+    column.append(area)
+    return column
+
+
 def main() -> int:
     title, colour, log_path, mode, width, height = sys.argv[1:7]
     rgb = tuple(int(colour[index : index + 2], 16) / 255 for index in (1, 3, 5))
@@ -74,7 +107,11 @@ def main() -> int:
     gesture.connect("pressed", lambda g, _n, x, y: record(
         "press", x=x, y=y, button=g.get_current_button()))
     area.add_controller(gesture)
-    window.set_child(area)
+    if mode == "entry":
+        window.set_decorated(False)
+        window.set_child(entry_column(area, record))
+    else:
+        window.set_child(area)
     window.connect("notify::is-active", lambda w, _p: record("active", value=w.is_active()))
     if mode == "maximized":
         window.maximize()

@@ -611,6 +611,8 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         include("${CMAKE_CURRENT_SOURCE_DIR}/shade_visibility/ShadeVisibilityTests.cmake")
         include("${CMAKE_CURRENT_SOURCE_DIR}/touch_chrome/TouchChromeTests.cmake")
         include("${CMAKE_CURRENT_SOURCE_DIR}/iconify_visibility/IconifyVisibilityTests.cmake")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/touch_osk/TouchOskTests.cmake")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/touch_edges/TouchEdgesTests.cmake")
     endif()
 endif()
 
