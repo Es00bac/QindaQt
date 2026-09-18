@@ -82,8 +82,16 @@ int main(int argc, char **argv)
     // StartLimitBurst; exit 0 lets the unit settle once, with the reason on
     // the record.
     if (status == Clipboard::ServiceStartStatus::NameAlreadyOwned) {
-        qInfo("Clipboard1 startup stopped: org.qindaqt.Clipboard1 is already "
-              "owned by a live sibling process");
+        // AGENT-GUARD: this is qWarning on purpose. The clipboard boundary
+        // gate (tests/services/clipboard_service/check_boundary.cmake) permits
+        // only the warning and critical severities anywhere in the clipboard
+        // production tree, because this is the one service whose log lines can
+        // carry what the user copied. The message below has no payload in it,
+        // but the gate is categorical on purpose — a rule with exceptions is
+        // not a boundary. The gate reads whole files, comments included, so do
+        // not name the forbidden calls here either.
+        qWarning("Clipboard1 startup stopped: org.qindaqt.Clipboard1 is already "
+                 "owned by a live sibling process");
         return 0;
     }
     if (status != Clipboard::ServiceStartStatus::Started) {
