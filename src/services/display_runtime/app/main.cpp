@@ -114,6 +114,22 @@ int main(int argc, char **argv)
         sessionConnection, {}, {}, std::move(startupJournal));
     QObject::connect(&runtime, &DisplayRuntime::ResidentDisplayRuntime::fatalError,
                      &application, [&application](const QString &reasonCode) {
+                         // AGENT-GUARD: "resident-name-already-owned" means a
+                         // live sibling already provides Display1 -- not a
+                         // failure of this process. Exiting nonzero here
+                         // would have systemd's Restart=on-failure retry a
+                         // start that can only ever fail the same way again
+                         // while the sibling lives, looping until
+                         // StartLimitBurst; exit 0 lets the unit settle
+                         // once, with the reason on the record.
+                         if (reasonCode
+                             == QStringLiteral("resident-name-already-owned")) {
+                             qInfo("Display1 startup stopped: "
+                                   "org.qindaqt.Display1 is already owned by "
+                                   "a live sibling process");
+                             application.exit(0);
+                             return;
+                         }
                          qCritical("Display1 runtime authority failed: %s",
                                    qPrintable(reasonCode));
                          application.exit(1);

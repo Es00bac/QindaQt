@@ -141,7 +141,14 @@ void ResidentDisplayRuntime::sessionSafetyReady()
     if (!m_ready) {
         const DisplayService::ServiceStartStatus status = m_resident->start();
         if (status != DisplayService::ServiceStartStatus::Started) {
-            fail(QStringLiteral("resident-start-failed"));
+            // AGENT-GUARD: NameAlreadyOwned means a live sibling already
+            // provides Display1, not a failure of this process. main()
+            // distinguishes this reason code to exit 0 instead of 1, so
+            // systemd's Restart=on-failure does not loop retrying a start
+            // that can only ever fail the same way while the sibling lives.
+            fail(status == DisplayService::ServiceStartStatus::NameAlreadyOwned
+                     ? QStringLiteral("resident-name-already-owned")
+                     : QStringLiteral("resident-start-failed"));
             return;
         }
         m_starting = false;

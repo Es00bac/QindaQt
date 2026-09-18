@@ -48,6 +48,17 @@ int main(int argc, char **argv)
     }
     ResidentBluetoothService service(std::move(backend), sessionConnection);
     const ServiceStartStatus status = service.start();
+    // AGENT-GUARD: NameAlreadyOwned means a live sibling already provides
+    // Bluetooth1 -- not a failure of this process. Exiting nonzero here
+    // would have systemd's Restart=on-failure retry a start that can only
+    // ever fail the same way again while the sibling lives, looping until
+    // StartLimitBurst; exit 0 lets the unit settle once, with the reason on
+    // the record.
+    if (status == ServiceStartStatus::NameAlreadyOwned) {
+        qInfo("Bluetooth1 startup stopped: org.qindaqt.Bluetooth1 is already "
+              "owned by a live sibling process");
+        return 0;
+    }
     if (status != ServiceStartStatus::Started) {
         qCritical("Bluetooth1 startup failed with status %u",
                   static_cast<unsigned int>(status));
