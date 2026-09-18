@@ -51,6 +51,8 @@ constexpr std::array capabilities{
     EnumToken{Capability::BluetoothControl, "bluetooth.control"},
     EnumToken{Capability::SmartLightRead, "smart-lights.read"},
     EnumToken{Capability::SmartLightControl, "smart-lights.control"},
+    EnumToken{Capability::StreamingRead, "streaming.read"},
+    EnumToken{Capability::StreamingControl, "streaming.control"},
     EnumToken{Capability::DisplayRead, "display.read"},
     EnumToken{Capability::DisplayControl, "display.control"},
     EnumToken{Capability::SettingsRead, "settings.read"},

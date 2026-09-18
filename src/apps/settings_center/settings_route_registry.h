@@ -38,6 +38,8 @@ public:
 
 private:
   void registerBuiltInRoutes();
+  // Routes appended after the original ten (ADR-0128).
+  void registerAppendedRoutes();
 
   QList<SettingsRoute> m_routes;
 };

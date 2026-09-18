@@ -1,10 +1,11 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. It contains twelve real routes: **Notifications**,
+modular settings routes. It contains thirteen real routes: **Notifications**,
 **Appearance**, **Display**, **Network**, **Customize**, **Audio**, and
 **Bluetooth**, followed by **Power**, **Clipboard**, **Color**,
-**Accessibility**, and **Input**. The shell owns route identity, selection, responsive
+**Accessibility**, **Input**, and **Streaming**. The shell owns route identity,
+selection, responsive
 presentation, and navigation accessibility. Each route continues to own its
 domain model, service scope, page state, and mutations.
 
@@ -134,7 +135,7 @@ defines its truth, no-replay, and reserved-key boundary (ADR-0128).
 
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
 hosts coexist so the window can cross the responsive threshold, but the
-inactive host's eleven route Loaders are all inactive. The Accessibility
+inactive host's twelve route Loaders are all inactive. The Accessibility
 Loader additionally requires its route model; a host composed without one
 shows the explicit unavailable notice instead of binding a page to null. Switching layouts or routes
 cannot duplicate a page, its focus side effects, or its settings bindings.
@@ -178,8 +179,9 @@ The interaction contract is:
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
   position; Ctrl+8 selects Power in its appended eighth position, and Ctrl+9
   selects Clipboard in its appended ninth position; Ctrl+0 selects Color in
-  its appended tenth position; Accessibility, appended eleventh, has no digit
-  shortcut and is reached from the sidebar or compact tab list;
+  its appended tenth position; Accessibility, Input and Streaming, appended
+  eleventh, twelfth and thirteenth, have no digit shortcut and are reached
+  from the sidebar or compact tab list;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window unless
   Bluetooth must first release a discovery lease or Customize owns a dirty
@@ -221,13 +223,13 @@ ctest --test-dir build/dev --output-on-failure \
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
-- construction starts all eleven route intents against an absent private bus
+- construction starts all twelve route intents against an absent private bus
   and requires each complete root to remain resident;
 - the installed row stages only `SettingsAppearanceRuntime`, removes host
   display/Wayland/QML/library overrides, withholds its required Appearance QML
   module while the developer tree remains present and requires exit 3, then
   repeats that poison for the Network, Audio, and Accessibility modules, then
-  reinstalls and proves all eleven routes, including the Customize catalogs and
+  reinstalls and proves all twelve routes, including the Customize catalogs and
   the Bluetooth, Power, Clipboard, Color, and Accessibility modules, from only
   the complete relocated prefix; and
 - the same no-borrowing contract is enforced at startup, not only by the
@@ -242,6 +244,6 @@ ctest --test-dir build/dev --output-on-failure \
 
 This is an offscreen software-renderer and sanitized package boundary. It does
 not claim live AT-SPI, compositor focus, screen-reader traversal, platform-
-service pages beyond the eleven compiled routes, search, arbitrary deep links,
+service pages beyond the compiled routes, search, arbitrary deep links,
 per-route process isolation, a nested-session screenshot matrix, or physical
 DPI/input behavior.

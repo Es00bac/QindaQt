@@ -338,6 +338,28 @@
       "default": false
     },
     {
+      "key": "services.obsWebSocketPort",
+      "domain": "services",
+      "type": "integer",
+      "default": 4455,
+      "constraints": {
+        "minimum": 1,
+        "maximum": 65535
+      }
+    },
+    {
+      "key": "services.obsAutoConnect",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "services.obsStartAtLogin",
+      "domain": "services",
+      "type": "boolean",
+      "default": false
+    },
+    {
       "key": "services.bluetooth",
       "domain": "services",
       "type": "boolean",

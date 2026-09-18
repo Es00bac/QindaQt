@@ -97,6 +97,34 @@
       "reason": "The audited Smart Lights applet may dispatch capability-validated power, brightness, white-temperature, colour, scene, and preset intents; admission and datagram construction stay with the Wiz client."
     },
     {
+      "trust": "audited-builtin",
+      "packageId": "obs",
+      "capability": "streaming.read",
+      "decision": "grant",
+      "reason": "The audited OBS applet may observe what OBS is recording, streaming and sending to the virtual camera, through the loopback control port its injected client holds."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "obs",
+      "capability": "streaming.control",
+      "decision": "grant",
+      "reason": "The audited OBS applet may start and stop recording, streaming and the virtual camera and switch scenes; request construction and the control-port credential stay with the injected obs-websocket client."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "streaming.read",
+      "decision": "deny",
+      "reason": "What a user is recording or streaming, and the scene names they chose, are private; third-party applets have no streaming read authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "streaming.control",
+      "decision": "deny",
+      "reason": "Starting a recording or a stream on the user's behalf stays with the audited applet; a third-party package may not capture the screen or the microphone this way."
+    },
+    {
       "trust": "third-party",
       "packageId": "*",
       "capability": "smart-lights.read",
