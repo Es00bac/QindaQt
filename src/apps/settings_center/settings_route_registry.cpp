@@ -278,7 +278,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
-  // ADR-0200: the clock and region page. Every control on it acts on a real
+  // ADR-0211: the clock and region page. Every control on it acts on a real
   // service -- timedate1 for the zone and automatic time, the Calendar's own
   // Settings1 key for the first day of the week -- so the route is registered
   // unconditionally and reports unavailability from the page itself when the

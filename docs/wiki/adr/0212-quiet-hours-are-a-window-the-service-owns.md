@@ -1,4 +1,4 @@
-# ADR-0201: Quiet hours are a window the settings service owns
+# ADR-0212: Quiet hours are a window the settings service owns
 
 - **Status:** Proposed
 - **Date:** 2026-09-18

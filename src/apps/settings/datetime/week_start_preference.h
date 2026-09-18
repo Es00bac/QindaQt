@@ -14,7 +14,7 @@ class QtSettingsTransport;
 
 namespace QindaQt::Apps::SettingsDateTime {
 
-// Production WeekStartPreference (ADR-0200) over Settings1's
+// Production WeekStartPreference (ADR-0211) over Settings1's
 // `services.calendarWeekStart` -- the key the Calendar's month grid already
 // reads, which until now had no editor anywhere.
 //

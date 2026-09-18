@@ -23,7 +23,7 @@ change its version, as ADR-0028 established for the appearance keys:
 `services.doNotDisturbSchedule` (Boolean, default `false`) and
 `services.doNotDisturbStartMinutes` / `services.doNotDisturbEndMinutes`
 (integers bounded `0..1439`, defaulting to 22:00 and 07:00). They are read by
-the notification popup policy and are never written by it (ADR-0201). A valid v1 profile/user document is completely
+the notification popup policy and are never written by it (ADR-0212). A valid v1 profile/user document is completely
 validated against v1, copied to a v2 candidate, and validated against v2. After
 the service wins its D-Bus name, a migrated user document is atomically
 replaced with v2; the immutable installed profile is composed from the

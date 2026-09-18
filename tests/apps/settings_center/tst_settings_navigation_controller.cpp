@@ -147,7 +147,7 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("streaming"));
 
-  // ADR-0200: selectNext from 12 ("streaming") -> 13 ("datetime"). Streaming,
+  // ADR-0211: selectNext from 12 ("streaming") -> 13 ("datetime"). Streaming,
   // Date & time and Windows & workspaces are each appended last, in merge
   // order, so nothing before them moved.
   QVERIFY(controller.selectNext());

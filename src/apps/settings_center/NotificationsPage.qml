@@ -8,7 +8,7 @@ import QindaQt.Tokens 1.0
 T.Page {
     id: root
     required property var quietingSettings
-    // ADR-0201: the Do Not Disturb schedule, over the same purpose-scoped
+    // ADR-0212: the Do Not Disturb schedule, over the same purpose-scoped
     // Settings1 client the switch uses.
     required property var quietingSchedule
     readonly property Item firstFocusTarget: doNotDisturbSwitch

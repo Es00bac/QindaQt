@@ -14,7 +14,7 @@ import QindaQt.SettingsApp.DateTime
 QtObject {
     id: root
 
-    // The Date & time route (ADR-0200). Its model comes from the module's own
+    // The Date & time route (ADR-0211). Its model comes from the module's own
     // composition singleton, so the window passes nothing in.
     readonly property Component dateTime: Component {
         DateTimePage {

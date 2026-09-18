@@ -65,7 +65,7 @@ Q_SIGNALS:
   void changed();
 };
 
-// Mirrors NotificationScheduleModel's QML surface (ADR-0201) without touching
+// Mirrors NotificationScheduleModel's QML surface (ADR-0212) without touching
 // Settings1: the page under test only reads these properties and calls these
 // three methods.
 class StubQuietingScheduleModel final : public QObject {

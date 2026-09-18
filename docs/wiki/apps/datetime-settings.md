@@ -4,7 +4,7 @@ The `datetime` route is QindaQt Settings' clock and region page. It is the
 thirteenth built-in route and is registered **last**, so no existing route's
 index moves — shortcut and traversal order depend on that.
 
-Its decision is [ADR-0200](../adr/0200-the-clock-and-region-page-acts-on-the-platforms-own-services.md).
+Its decision is [ADR-0211](../adr/0211-the-clock-and-region-page-acts-on-the-platforms-own-services.md).
 
 ## What it changes, and what it only shows
 

@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// The Date & time route (ADR-0200). Every control here acts on a real
+// The Date & time route (ADR-0211). Every control here acts on a real
 // service: the time zone and automatic time on org.freedesktop.timedate1, the
 // first day of the week on the Settings1 key the Calendar's month grid reads.
 // Nothing on this page is a knob with nothing behind it.

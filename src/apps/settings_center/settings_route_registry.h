@@ -40,11 +40,11 @@ private:
   void registerBuiltInRoutes();
   // Routes appended after the original ten (ADR-0128).
   void registerAppendedRoutes();
-  // ADR-0200: registered from its own function rather than appended to
+  // ADR-0211: registered from its own function rather than appended to
   // registerBuiltInRoutes(), which is at its function-length limit. A route
   // added from here on gets its own function for the same reason.
   void registerDateTimeRoute();
-  // ADR-0200: appended after every earlier route so indices stay stable.
+  // ADR-0211: appended after every earlier route so indices stay stable.
   void registerWindowsRoute();
 
   QList<SettingsRoute> m_routes;
