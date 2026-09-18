@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 31);
+  QCOMPARE(actions.size(), 32);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -48,6 +48,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("bookmark.add"), QStringLiteral("go.back"),
       QStringLiteral("go.forward"), QStringLiteral("go.up"), QStringLiteral("go.applications"),
       QStringLiteral("go.network"), QStringLiteral("network.connect"),
+      QStringLiteral("app.preferences"),
       QStringLiteral("view.refresh")};
   QCOMPARE(identities, expected);
 
@@ -158,6 +159,17 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QCOMPARE(connect->shortcut, QKeySequence(QStringLiteral("Ctrl+Shift+S")));
   QVERIFY(!connect->checkable);
   QVERIFY(!connect->destructive);
+
+  // ADR-0198: Preferences uses the platform-standard Ctrl+, and sits after
+  // the item-specific File entries.
+  const auto preferences = find("app.preferences");
+  QVERIFY(preferences != actions.cend());
+  QCOMPARE(preferences->menuId, QStringLiteral("file"));
+  QCOMPARE(preferences->menuOrder, 0);
+  QCOMPARE(preferences->order, 8);
+  QCOMPARE(preferences->shortcut, QKeySequence(QStringLiteral("Ctrl+,")));
+  QVERIFY(!preferences->checkable);
+  QVERIFY(!preferences->destructive);
 
   const auto bookmarkAdd = find("bookmark.add");
   QVERIFY(bookmarkAdd != actions.cend());

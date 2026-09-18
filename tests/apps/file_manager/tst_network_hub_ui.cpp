@@ -10,9 +10,8 @@
 #include "model/search_controller.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
-#include "network/network_locations_controller.h"
-#include "network/network_locations_store.h"
-#include "network/transfer_queue_controller.h"
+#include "model/preferences_store.h"
+#include "window_fixtures.h"
 #include "preview/local_preview.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
@@ -24,6 +23,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
+#include <QCoreApplication>
 #include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QTest>
@@ -105,11 +105,9 @@ struct NetworkHubFixture final {
     applications = std::make_unique<ApplicationsController>(QStringList{});
     places = std::make_unique<PlacesController>(
         std::make_unique<BookmarksStore>(stateDirectory));
-    networkLocations = std::make_unique<NetworkLocationsController>(
-        std::make_unique<NetworkLocationsStore>(stateDirectory));
     // These rows drive the hub and the dialog; nothing is ever transferred,
-    // so the queue gets no worker.
-    transfers = std::make_unique<TransferQueueController>(nullptr);
+    // discovered, or mounted.
+    support = std::make_unique<Test::WindowSupportControllers>(temporaryPath);
 
     const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
     if (!catalogResult.ok()) {
@@ -125,7 +123,7 @@ struct NetworkHubFixture final {
     engine->addImageProvider(QStringLiteral("previews"),
                              new PreviewProvider(std::make_unique<LocalPreviewDecoder>()));
     engine->addImageProvider(QStringLiteral("theme-icons"), new ThemeIconProvider());
-    engine->setInitialProperties({
+    QVariantMap initialProperties{
         {"navigationController", QVariant::fromValue(static_cast<QObject *>(navigation.get()))},
         {"mutationController", QVariant::fromValue(static_cast<QObject *>(mutation.get()))},
         {"clipboardController", QVariant::fromValue(static_cast<QObject *>(clipboard.get()))},
@@ -133,11 +131,9 @@ struct NetworkHubFixture final {
         {"searchController", QVariant::fromValue(static_cast<QObject *>(search.get()))},
         {"placesController", QVariant::fromValue(static_cast<QObject *>(places.get()))},
         {"applicationsController", QVariant::fromValue(static_cast<QObject *>(applications.get()))},
-        {"networkLocationsController",
-         QVariant::fromValue(static_cast<QObject *>(networkLocations.get()))},
-        {"transferQueueController",
-         QVariant::fromValue(static_cast<QObject *>(transfers.get()))},
-        {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
+        {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}};
+    support->insertInto(initialProperties);
+    engine->setInitialProperties(initialProperties);
     engine->load(QUrl::fromLocalFile(sourceRoot +
                                      QStringLiteral("/src/apps/file_manager/ui/Main.qml")));
     if (engine->rootObjects().isEmpty()) {
@@ -169,8 +165,11 @@ struct NetworkHubFixture final {
   std::unique_ptr<SearchController> search;
   std::unique_ptr<ApplicationsController> applications;
   std::unique_ptr<PlacesController> places;
-  std::unique_ptr<NetworkLocationsController> networkLocations;
-  std::unique_ptr<TransferQueueController> transfers;
+  std::unique_ptr<Test::WindowSupportControllers> support;
+
+  [[nodiscard]] PreferencesController &preferences() const {
+    return support->preferences;
+  }
   std::unique_ptr<QQmlApplicationEngine> engine;
   QQuickWindow *window = nullptr;
   FakeNetworkDirectoryBackend *rawBackend = nullptr;
@@ -191,6 +190,7 @@ private slots:
   void connectToServerSavesOpensAndListsInThePlacesSidebar();
   void aRefusedAddressExplainsItselfAndSavesNothing();
   void aCommittedTransferRefreshesOnlyTheFolderOnScreen();
+  void preferencesOpenRenderAndReachTheFolderOnScreen();
 };
 
 void TestNetworkHubUi::theNetworkPlaceOpensAHubThatRenders() {
@@ -249,8 +249,8 @@ void TestNetworkHubUi::connectToServerSavesOpensAndListsInThePlacesSidebar() {
   QCoreApplication::processEvents();
 
   // Saved in memory...
-  QCOMPARE(fixture.networkLocations->locationValues().size(), 1);
-  QCOMPARE(fixture.networkLocations->locationValues().constFirst().url.toString(),
+  QCOMPARE(fixture.support->locations.locationValues().size(), 1);
+  QCOMPARE(fixture.support->locations.locationValues().constFirst().url.toString(),
            QStringLiteral("sftp://qinda/mnt/storage"));
   // ...and on disk, where the next launch and an ssh probe will find it.
   const NetworkLocationsStore store(fixture.stateDirectory);
@@ -265,7 +265,7 @@ void TestNetworkHubUi::connectToServerSavesOpensAndListsInThePlacesSidebar() {
            QStringLiteral("sftp://qinda/mnt/storage"));
 
   // And it is a rendered row in the Places sidebar.
-  QCOMPARE(fixture.networkLocations->placesLocations().size(), 1);
+  QCOMPARE(fixture.support->locations.placesLocations().size(), 1);
   auto *sidebar = fixture.window->findChild<QQuickItem *>(QStringLiteral("placesSidebar"));
   QVERIFY(sidebar);
   QQuickItem *place = nullptr;
@@ -297,8 +297,8 @@ void TestNetworkHubUi::aRefusedAddressExplainsItselfAndSavesNothing() {
   QVERIFY(QMetaObject::invokeMethod(dialog, "accept", Qt::DirectConnection));
   QCoreApplication::processEvents();
 
-  QVERIFY(fixture.networkLocations->locationValues().isEmpty());
-  QVERIFY(!fixture.networkLocations->requestError().isEmpty());
+  QVERIFY(fixture.support->locations.locationValues().isEmpty());
+  QVERIFY(!fixture.support->locations.requestError().isEmpty());
   QVERIFY(fixture.rawBackend->requests().isEmpty());
   QTRY_VERIFY(dialog->property("visible").toBool());
   auto *banner = fixture.window->findChild<QQuickItem *>(
@@ -330,16 +330,70 @@ void TestNetworkHubUi::aCommittedTransferRefreshesOnlyTheFolderOnScreen() {
 
   // A transfer that landed somewhere else changes nothing on screen.
   QVERIFY(QMetaObject::invokeMethod(
-      fixture.transfers.get(), "transferCommitted", Qt::DirectConnection,
+      &fixture.support->transfers, "transferCommitted", Qt::DirectConnection,
       Q_ARG(QUrl, QUrl(QStringLiteral("sftp://qinda/mnt/other")))));
   QCoreApplication::processEvents();
   QCOMPARE(fixture.rawBackend->requests().size(), 1);
 
   // A transfer that landed here re-reads the authoritative listing.
-  QVERIFY(QMetaObject::invokeMethod(fixture.transfers.get(), "transferCommitted",
+  QVERIFY(QMetaObject::invokeMethod(&fixture.support->transfers, "transferCommitted",
                                     Qt::DirectConnection, Q_ARG(QUrl, folder)));
   QTRY_COMPARE(fixture.rawBackend->requests().size(), 2);
   QCOMPARE(fixture.rawBackend->requests().constLast().url, folder);
+}
+
+// ADR-0198: the whole chain, through production QML -- the action opens the
+// window, the window renders, a control writes through PreferencesController,
+// the store keeps it, and PresentationDefaults applies it to the folder that
+// is already on screen.
+void TestNetworkHubUi::preferencesOpenRenderAndReachTheFolderOnScreen() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  NetworkHubFixture fixture;
+  QString error;
+  QVERIFY2(fixture.init(temporary.path(), &error), qPrintable(error));
+  QCOMPARE(fixture.navigation->showHidden(), false);
+
+  QVERIFY(fixture.coordinator.activateAction(QStringLiteral("app.preferences")));
+  auto *preferences =
+      qobject_cast<QQuickWindow *>(
+          fixture.window->findChild<QObject *>(QStringLiteral("preferencesWindow")));
+  QVERIFY(preferences);
+  QTRY_VERIFY(preferences->isVisible());
+  QTRY_VERIFY(preferences->isExposed());
+
+  auto *general = findVisualChild(preferences->contentItem(),
+                                  QStringLiteral("preferencesGeneralPage"));
+  QVERIFY(general);
+  QVERIFY(rendersInsideWindow(general, preferences));
+  // Every page exists, so a tab cannot lead nowhere.
+  for (const QString &page :
+       {QStringLiteral("preferencesViewsPage"), QStringLiteral("preferencesNetworkPage"),
+        QStringLiteral("preferencesTrashPage")}) {
+    QVERIFY2(findVisualChild(preferences->contentItem(), page) != nullptr,
+             qPrintable(page));
+  }
+
+  auto *hiddenBox = findVisualChild(preferences->contentItem(),
+                                    QStringLiteral("preferenceShowHiddenBox"));
+  QVERIFY(hiddenBox);
+  QVERIFY(rendersInsideWindow(hiddenBox, preferences));
+  QCOMPARE(hiddenBox->property("checked").toBool(), false);
+  // A real click, not a scripted property write: the row is here to prove the
+  // control's own handler reaches the controller.
+  const QPointF centre =
+      hiddenBox->mapToScene(QPointF(hiddenBox->width() / 2, hiddenBox->height() / 2));
+  QTest::mouseClick(preferences, Qt::LeftButton, Qt::NoModifier, centre.toPoint());
+  QTRY_COMPARE(hiddenBox->property("checked").toBool(), true);
+
+  QCOMPARE(fixture.preferences().showHidden(), true);
+  // The window already on screen follows, without a restart.
+  QTRY_COMPARE(fixture.navigation->showHidden(), true);
+  // And the next launch reads it back.
+  const PreferencesStore store(fixture.stateDirectory);
+  const auto reloaded = store.load();
+  QVERIFY2(reloaded.ok(), qPrintable(reloaded.diagnostic));
+  QCOMPARE(reloaded.preferences.showHidden, true);
 }
 
 QTEST_MAIN(TestNetworkHubUi)

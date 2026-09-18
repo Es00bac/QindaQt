@@ -15,6 +15,7 @@ Dialog {
     objectName: "connectToServerDialog"
 
     required property var networkLocationsController
+    required property var preferencesController
 
     // Emitted with the saved location's canonical address after a successful
     // save, so the window can navigate straight into it.
@@ -26,14 +27,31 @@ Dialog {
     title: qsTr("Connect to server")
     standardButtons: Dialog.Ok | Dialog.Cancel
 
-    function prepare() {
+    // Opens empty, or pre-filled from a canonical address (a nearby server
+    // the user chose to keep). The address is parsed in QML only to fill the
+    // fields; buildNetworkLocation() still decides what is savable.
+    function prepare(address) {
         root.networkLocationsController.clearRequestError()
-        schemeBox.currentIndex = 0
+        const schemes = root.networkLocationsController.schemes
+        const preferred = root.preferencesController.defaultConnectScheme
+        schemeBox.currentIndex = Math.max(0, schemes.indexOf(preferred))
         hostField.text = ""
         portField.text = ""
         remotePathField.text = ""
         displayNameField.text = ""
         showInPlacesBox.checked = true
+        mountAtLoginBox.checked = false
+        if (!address)
+            return
+        const parsed = /^([a-z]+):\/\/([^/:]+)(?::(\d+))?(\/.*)?$/.exec(address)
+        if (!parsed)
+            return
+        const schemeIndex = schemes.indexOf(parsed[1])
+        if (schemeIndex >= 0)
+            schemeBox.currentIndex = schemeIndex
+        hostField.text = parsed[2]
+        portField.text = parsed[3] ? parsed[3] : ""
+        remotePathField.text = parsed[4] ? parsed[4] : ""
     }
 
     onAccepted: {
@@ -43,7 +61,8 @@ Dialog {
             "port": portField.text,
             "remotePath": remotePathField.text,
             "displayName": displayNameField.text,
-            "showInPlaces": showInPlacesBox.checked
+            "showInPlaces": showInPlacesBox.checked,
+            "mountAtLogin": mountAtLoginBox.checked
         })
         if (url.length > 0) {
             root.saved(url)
@@ -117,6 +136,18 @@ Dialog {
             text: qsTr("Show in the sidebar")
             checked: true
             Accessible.name: text
+        }
+
+        CheckBox {
+            id: mountAtLoginBox
+            objectName: "connectMountAtLoginBox"
+            // ADR-0199: sshfs is the only mount this knob knows, so it is
+            // unavailable for Windows sharing rather than silently ignored.
+            enabled: schemeBox.currentText === "sftp"
+            text: qsTr("Mount under ~/Network at login")
+            Accessible.name: text
+            Accessible.description: qsTr("Makes this location reachable by "
+                + "applications that do not speak SFTP. Requires sshfs.")
         }
 
         Label {

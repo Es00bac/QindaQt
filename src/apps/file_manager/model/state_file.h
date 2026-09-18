@@ -70,6 +70,10 @@ public:
   // Creates the directory chain (0700) when absent, then commits bytes
   // atomically in the same directory.
   [[nodiscard]] WriteResult write(const QByteArray &bytes) const;
+  // Unlinks the file. Absent is success -- removal is idempotent. A final
+  // entry that is not a regular file is NotRegular and is left alone, so a
+  // planted symlink is never followed and never deleted.
+  [[nodiscard]] WriteResult remove() const;
 
 private:
   QString m_directory;

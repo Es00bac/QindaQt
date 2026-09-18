@@ -12,10 +12,14 @@ Control {
     objectName: "networkHub"
 
     required property var networkLocationsController
+    required property var discoveryController
 
     // The chosen location's canonical address, for the window to navigate to.
     signal openRequested(string url)
     signal connectRequested()
+    // A nearby server the user asked to keep, as a canonical address the
+    // Connect-to-server dialog opens pre-filled.
+    signal saveRequested(string url)
 
     padding: 16
     Accessible.role: Accessible.Pane
@@ -23,6 +27,7 @@ Control {
 
     contentItem: ColumnLayout {
         spacing: 12
+
 
         RowLayout {
             Layout.fillWidth: true
@@ -72,6 +77,21 @@ Control {
             wrapMode: Text.WordWrap
             Accessible.role: Accessible.StaticText
             Accessible.name: text
+        }
+
+        NearbyServersSection {
+            Layout.fillWidth: true
+            discoveryController: root.discoveryController
+            onOpenRequested: (url) => root.openRequested(url)
+            onSaveRequested: (url) => root.saveRequested(url)
+        }
+
+        Label {
+            Layout.topMargin: 6
+            visible: root.networkLocationsController.locations.length > 0
+            text: qsTr("Saved")
+            font.bold: true
+            Accessible.ignored: true
         }
 
         ListView {
