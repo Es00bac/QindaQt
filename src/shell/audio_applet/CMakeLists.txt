@@ -54,8 +54,13 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_AUDIO_APPLET_QML_OUTPUT_DIRECTORY}"
     QML_FILES
         qml/AudioApplet.qml
+        qml/AudioAppletBand.qml
+        qml/AudioAppletFooter.qml
+        qml/AudioAppletPad.qml
+        qml/AudioAppletPanel.qml
         qml/AudioConsoleRow.qml
         qml/AudioDeviceRow.qml
+        qml/AudioLedMeter.qml
         qml/AudioStreamRow.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons

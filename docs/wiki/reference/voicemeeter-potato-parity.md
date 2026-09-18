@@ -92,7 +92,7 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | Macro buttons | Named lists of console operations in a user-owned document, run through `RunMacro` and shown as buttons in the Settings console ([ADR-0183](../adr/0183-a-macro-button-is-a-list-of-console-operations.md)); no in-app editor or global shortcuts yet | partial |
 | MIDI in/out mapping to console controls | MIDI binding layer over the operation kinds | gap |
 | Remote control API | `org.qindaqt.Audio1` **is** the remote API, and it is a better one than a DLL | partial |
-| System tray presence | the QindaQt audio applet | partial |
+| System tray presence | the QindaQt audio applet: a 420 px panel with collapsible Output, Input, Apps and Console bands, a device picker per band, and the console strips' faders, mutes and LED meters ([ADR-0181](../adr/0181-the-tray-rides-the-console.md)). The band picker chooses which device the band rides, not the system default; output buses and per-device meters are not projected to the tray yet | partial |
 | Presets / saved configurations | Named copies of the console document, saved, loaded and deleted through Audio1 and published in the snapshot ([ADR-0182](../adr/0182-a-preset-is-the-console-under-a-name.md)); no rename yet | **done** |
 | Startup configuration | applied at service start | planned |
 
