@@ -114,10 +114,20 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
             mode == CompositorWorkflowMode::DevelopmentMutations
             || mode == CompositorWorkflowMode::HybridPointer;
         const auto &developmentInput = result->developmentInputCapabilities;
+        // AGENT-GUARD: This set mirrors the eventTypes array that
+        // developmentInputCapabilities() in
+        // src/compositor/kwin/developmentinputprotocol.cpp publishes. The two
+        // move together: an event type added to the protocol without this set
+        // turns every probe-driven nested row red with
+        // "invalid development input contract".
         const QSet<QString> expectedEventTypes{QStringLiteral("pointer-absolute"),
                                                QStringLiteral("pointer-relative"),
                                                QStringLiteral("key"),
-                                               QStringLiteral("button")};
+                                               QStringLiteral("button"),
+                                               QStringLiteral("touch-down"),
+                                               QStringLiteral("touch-motion"),
+                                               QStringLiteral("touch-up"),
+                                               QStringLiteral("pointer-axis")};
         const bool commonSchemaValid =
             developmentInput.value(QStringLiteral("schemaVersion")).toInt(-1) == 1
             && developmentInput.value(QStringLiteral("maxEvents")).toInt(-1) == 64
