@@ -143,11 +143,20 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("input"));
 
-  // selectNext from 11 ("input") wraps to 0 ("notifications")
+  // ADR-0200: selectNext from 11 ("input") -> 12 ("datetime"), the route
+  // added last so nothing before it moved.
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
+  // selectNext from 12 ("datetime") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 11 ("input")
+  // selectPrevious from 0 wraps to 12 ("datetime")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
+
+  // selectPrevious from 12 -> 11 ("input")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("input"));
 
@@ -239,7 +248,7 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(12));
+  QVERIFY(!controller.selectIndex(13));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -297,7 +306,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 12);
+  QCOMPARE(list.size(), 13);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -409,7 +418,13 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt11.value(QStringLiteral("component")).toString(),
            QStringLiteral("input"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(12);
+  const QVariantMap itemAt12 = controller.routeAt(12);
+  QCOMPARE(itemAt12.value(QStringLiteral("id")).toString(),
+           QStringLiteral("datetime"));
+  QCOMPARE(itemAt12.value(QStringLiteral("component")).toString(),
+           QStringLiteral("datetime"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(13);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

@@ -215,7 +215,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 12);
+  QCOMPARE(registry.count(), 13);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -229,6 +229,9 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("color")));
   QVERIFY(registry.hasRoute(QStringLiteral("accessibility")));
   QVERIFY(registry.hasRoute(QStringLiteral("input")));
+  // ADR-0200: the Date & time route, registered last so every existing
+  // route's index -- which shortcuts and traversal depend on -- is unmoved.
+  QVERIFY(registry.hasRoute(QStringLiteral("datetime")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -243,6 +246,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("color")), 9);
   QCOMPARE(registry.indexOf(QStringLiteral("accessibility")), 10);
   QCOMPARE(registry.indexOf(QStringLiteral("input")), 11);
+  QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 12);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());

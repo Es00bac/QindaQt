@@ -242,6 +242,29 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .unavailableReason = QString(),
   };
   registerBuiltIn(inputRoute);
+  registerDateTimeRoute();
+}
+
+void SettingsRouteRegistry::registerDateTimeRoute() {
+  // ADR-0200: the clock and region page. Every control on it acts on a real
+  // service -- timedate1 for the zone and automatic time, the Calendar's own
+  // Settings1 key for the first day of the week -- so the route is registered
+  // unconditionally and reports unavailability from the page itself when the
+  // platform service cannot be reached.
+  const SettingsRoute dateTimeRoute{
+      .id = QStringLiteral("datetime"),
+      .component = SettingsRouteComponent::DateTime,
+      .title = QCoreApplication::translate("SettingsCenter", "Date & time"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Time zone, automatic time, and the first day of the week"),
+      .iconName = QStringLiteral("preferences-system-time"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(dateTimeRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

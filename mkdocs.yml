@@ -133,6 +133,7 @@ nav:
       - Settings Audio route: apps/audio-settings.md
       - Settings Bluetooth route: apps/bluetooth-settings.md
       - Settings Power route: apps/power-settings.md
+      - Settings Date & time route: apps/datetime-settings.md
       - Settings Clipboard route: apps/clipboard-settings.md
       - Settings Color route: apps/color-settings.md
       - Settings Accessibility route: apps/accessibility-settings.md
@@ -315,3 +316,4 @@ nav:
       - "ADR-0189: paint the rolled-up badge label, and size the badge to it": adr/0189-size-the-rolled-up-badge-to-its-label.md
       - "ADR-0190: mirroring is one field on the mirrored output": adr/0190-mirroring-is-one-field-on-the-mirrored-output.md
       - "ADR-0191: a control survives reprojection and owns its value": adr/0191-a-control-survives-reprojection.md
+      - "ADR-0200: the clock and region page acts on the platform's own services": adr/0200-the-clock-and-region-page-acts-on-the-platforms-own-services.md
