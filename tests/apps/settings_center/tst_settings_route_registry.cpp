@@ -215,7 +215,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 12);
+  QCOMPARE(registry.count(), 13);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -229,6 +229,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("color")));
   QVERIFY(registry.hasRoute(QStringLiteral("accessibility")));
   QVERIFY(registry.hasRoute(QStringLiteral("input")));
+  QVERIFY(registry.hasRoute(QStringLiteral("streaming")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -243,6 +244,9 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("color")), 9);
   QCOMPARE(registry.indexOf(QStringLiteral("accessibility")), 10);
   QCOMPARE(registry.indexOf(QStringLiteral("input")), 11);
+  // Streaming is appended last, so no existing index, shortcut or traversal
+  // position moves (ADR-0128).
+  QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());

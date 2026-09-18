@@ -212,6 +212,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   };
   registerBuiltIn(colorRoute);
 
+  registerAppendedRoutes();
+}
+
+void SettingsRouteRegistry::registerAppendedRoutes() {
+  // AGENT-CONTRACT: Routes added after the original ten live here. Each is
+  // appended last so every existing route index, shortcut and traversal
+  // position stays stable (ADR-0128), and keeping them in their own function
+  // is what stops the builder growing past its decomposition limit as the
+  // desktop gains routes.
+  const auto registerBuiltIn = [this](const SettingsRoute &route) {
+    const bool registered = registerRoute(route);
+    Q_ASSERT(registered);
+    Q_UNUSED(registered);
+  };
+
   // AGENT-GUARD: Appended last so every existing route index, shortcut, and
   // traversal order stays stable (ADR-0128).
   const SettingsRoute accessibilityRoute{
@@ -242,6 +257,22 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .unavailableReason = QString(),
   };
   registerBuiltIn(inputRoute);
+
+  // AGENT-GUARD: Appended last so every existing route index, shortcut, and
+  // traversal order stays stable (ADR-0128); the Streaming route continues
+  // that rule.
+  const SettingsRoute streamingRoute{
+      .id = QStringLiteral("streaming"),
+      .component = SettingsRouteComponent::Streaming,
+      .title = QCoreApplication::translate("SettingsCenter", "Streaming"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Recording, streaming, and the virtual camera"),
+      .iconName = QStringLiteral("camera-video"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  registerBuiltIn(streamingRoute);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "obs",
+  "name": "OBS",
+  "description": "Recording, streaming and the virtual camera, from the top bar.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.obs"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end", "panel-fill"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 32, "preferred": 40, "maximum": 72, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": [
+    "streaming.read",
+    "streaming.control"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

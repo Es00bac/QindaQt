@@ -18,6 +18,8 @@ import QindaQt.SettingsApp.ColorBackend
 import QindaQt.SettingsApp.Accessibility
 import QindaQt.SettingsApp.Input
 import QindaQt.SettingsApp.InputBackend
+import QindaQt.SettingsApp.Streaming
+import QindaQt.SettingsApp.StreamingBackend
 
 T.ApplicationWindow {
     id: root
@@ -71,16 +73,7 @@ T.ApplicationWindow {
             close.accepted = false
     }
 
-    Shortcut { sequence: "Ctrl+1"; onActivated: root.navigation.selectRoute("notifications") }
-    Shortcut { sequence: "Ctrl+2"; onActivated: root.navigation.selectRoute("appearance") }
-    Shortcut { sequence: "Ctrl+3"; onActivated: root.navigation.selectRoute("display") }
-    Shortcut { sequence: "Ctrl+4"; onActivated: root.navigation.selectRoute("network") }
-    Shortcut { sequence: "Ctrl+5"; onActivated: root.navigation.selectRoute("customize") }
-    Shortcut { sequence: "Ctrl+6"; onActivated: root.navigation.selectRoute("audio") }
-    Shortcut { sequence: "Ctrl+7"; onActivated: root.navigation.selectRoute("bluetooth") }
-    Shortcut { sequence: "Ctrl+8"; onActivated: root.navigation.selectRoute("power") }
-    Shortcut { sequence: "Ctrl+9"; onActivated: root.navigation.selectRoute("clipboard") }
-    Shortcut { sequence: "Ctrl+0"; onActivated: root.navigation.selectRoute("color") }
+    SettingsRouteShortcuts { navigation: root.navigation }
 
     Component.onCompleted: {
         if (root.bluetoothSettings !== null)
@@ -198,6 +191,7 @@ T.ApplicationWindow {
             colorComponent: colorRouteComponent
             accessibilityComponent: accessibilityRouteComponent
             inputComponent: inputRouteComponent
+            streamingComponent: streamingRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -249,6 +243,7 @@ T.ApplicationWindow {
             colorComponent: colorRouteComponent
             accessibilityComponent: accessibilityRouteComponent
             inputComponent: inputRouteComponent
+            streamingComponent: streamingRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -356,6 +351,15 @@ T.ApplicationWindow {
             inputSettings: InputRouteComposition
             initialDestination: root.navigation.requestedDestination
             initialSelection: root.navigation.requestedSelection
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: streamingRouteComponent
+        StreamingPage {
+            objectName: "streamingPage"
+            streamingSettings: StreamingRouteComposition.streaming
             onCloseRequested: root.close()
         }
     }

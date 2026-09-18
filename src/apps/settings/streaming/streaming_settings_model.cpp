@@ -1,0 +1,356 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include <qindaqt/apps/settings_streaming/streaming_settings_model.h>
+
+#include <QVariantMap>
+
+namespace QindaQt::Apps::SettingsStreaming {
+
+using namespace QindaQt::Obs;
+
+namespace {
+
+// obs-websocket has no transport security, so the address is not a
+// preference (see StreamingPreferences).
+constexpr auto LoopbackHost = "127.0.0.1";
+// A stream that has dropped this much is worth warning about; below it the
+// number is noise the user cannot act on.
+constexpr double DroppedFrameWarningFraction = 0.01;
+
+QString sourceKindLabel(const QString &sourceKind) {
+    if (sourceKind == QLatin1String("qindaqt_console_bus")) {
+        return QObject::tr("Bus");
+    }
+    if (sourceKind == QLatin1String("qindaqt_console_strip")) {
+        return QObject::tr("Strip");
+    }
+    return QObject::tr("Unknown");
+}
+
+QVariantMap mappingRow(const ConsoleSourceMapping &mapping) {
+    return QVariantMap{
+        {QStringLiteral("consoleId"), mapping.consoleId},
+        {QStringLiteral("code"), mapping.code},
+        {QStringLiteral("label"), mapping.label},
+        {QStringLiteral("sourceName"), mapping.sourceName},
+        {QStringLiteral("kind"), sourceKindLabel(mapping.sourceKind)},
+        {QStringLiteral("captureDevice"), mapping.captureDevice},
+        {QStringLiteral("muted"), mapping.muted},
+        {QStringLiteral("gainDb"), mapping.gainDb},
+    };
+}
+
+} // namespace
+
+StreamingSettingsModel::StreamingSettingsModel(ObsClient &client,
+                                               ObsSecretStore &secrets,
+                                               StreamingPreferences &preferences,
+                                               QString obsConfigRoot,
+                                               QObject *parent)
+    : QObject(parent), m_client(client), m_secrets(secrets),
+      m_preferences(preferences), m_obsConfigRoot(std::move(obsConfigRoot)) {
+    connect(&m_client, &ObsClient::snapshotChanged, this,
+            &StreamingSettingsModel::changed);
+    connect(&m_client, &ObsClient::stateChanged, this,
+            [this](ConnectionState, const QString &) { Q_EMIT changed(); });
+    connect(&m_client, &ObsClient::operationFinished, this,
+            [this](const ObsClient::OperationResult &result) {
+                if (result.ok) {
+                    setStatusText(QString());
+                    return;
+                }
+                setStatusText(result.comment.isEmpty()
+                                  ? tr("OBS refused %1 (%2).")
+                                        .arg(result.requestType, result.reasonCode)
+                                  : tr("OBS refused %1: %2")
+                                        .arg(result.requestType, result.comment));
+            });
+    connect(&m_preferences, &StreamingPreferences::preferencesChanged, this,
+            &StreamingSettingsModel::preferencesChanged);
+}
+
+QString StreamingSettingsModel::connectionState() const {
+    return connectionStateName(m_client.state());
+}
+
+bool StreamingSettingsModel::connected() const {
+    return m_client.state() == ConnectionState::Ready;
+}
+
+QString StreamingSettingsModel::obsVersion() const {
+    return m_client.snapshot().obsVersion;
+}
+
+int StreamingSettingsModel::webSocketPort() const {
+    return m_preferences.webSocketPort();
+}
+
+bool StreamingSettingsModel::autoConnect() const {
+    return m_preferences.autoConnect();
+}
+
+bool StreamingSettingsModel::startObsAtLogin() const {
+    return m_preferences.startObsAtLogin();
+}
+
+QString StreamingSettingsModel::address() const {
+    return QStringLiteral("ws://%1:%2")
+        .arg(QLatin1String(LoopbackHost))
+        .arg(m_preferences.webSocketPort());
+}
+
+bool StreamingSettingsModel::recording() const {
+    return m_client.snapshot().record.active;
+}
+
+bool StreamingSettingsModel::streaming() const {
+    return m_client.snapshot().stream.active;
+}
+
+bool StreamingSettingsModel::virtualCamera() const {
+    return m_client.snapshot().virtualCam.active;
+}
+
+QString StreamingSettingsModel::formatElapsed(qint64 milliseconds) {
+    // AGENT-CONTRACT: a dash, not 00:00:00, when OBS reported no duration.
+    // A zero clock reads as "it just started", which is a different claim.
+    if (milliseconds < 0) {
+        return QStringLiteral("—");
+    }
+    const qint64 totalSeconds = milliseconds / 1000;
+    return QStringLiteral("%1:%2:%3")
+        .arg(totalSeconds / 3600, 2, 10, QLatin1Char('0'))
+        .arg((totalSeconds / 60) % 60, 2, 10, QLatin1Char('0'))
+        .arg(totalSeconds % 60, 2, 10, QLatin1Char('0'));
+}
+
+QString StreamingSettingsModel::recordingElapsed() const {
+    return recording() ? formatElapsed(m_client.snapshot().record.durationMs)
+                       : QStringLiteral("—");
+}
+
+QString StreamingSettingsModel::streamingElapsed() const {
+    return streaming() ? formatElapsed(m_client.snapshot().stream.durationMs)
+                       : QStringLiteral("—");
+}
+
+QString StreamingSettingsModel::droppedFramesWarning() const {
+    const OutputStatus &stream = m_client.snapshot().stream;
+    // AGENT-GUARD: never present a warning the numbers do not support. OBS
+    // reports no frame counts for a stream it is not running.
+    if (!stream.active || !stream.hasFrameCounts()) {
+        return {};
+    }
+    const double fraction = stream.droppedFraction();
+    if (fraction < DroppedFrameWarningFraction) {
+        return {};
+    }
+    return tr("%1% of frames dropped (%2 of %3). The connection is not "
+              "keeping up.")
+        .arg(fraction * 100.0, 0, 'f', 1)
+        .arg(stream.skippedFrames)
+        .arg(stream.totalFrames);
+}
+
+QStringList StreamingSettingsModel::sceneNames() const {
+    return m_client.snapshot().scenes.names;
+}
+
+QString StreamingSettingsModel::currentScene() const {
+    return m_client.snapshot().scenes.currentProgramScene;
+}
+
+bool StreamingSettingsModel::bridgePresent() const {
+    return m_client.snapshot().consoleMapping.present();
+}
+
+QVariantList StreamingSettingsModel::busMapping() const {
+    QVariantList rows;
+    const ConsoleMapping &mapping = m_client.snapshot().consoleMapping;
+    for (const ConsoleSourceMapping &bus : mapping.buses) {
+        rows.append(mappingRow(bus));
+    }
+    for (const ConsoleSourceMapping &strip : mapping.strips) {
+        rows.append(mappingRow(strip));
+    }
+    return rows;
+}
+
+QString StreamingSettingsModel::bridgeProblem() const {
+    if (!connected()) {
+        return tr("Connect to OBS to see which console buses it can record.");
+    }
+    const ConsoleMapping &mapping = m_client.snapshot().consoleMapping;
+    if (!mapping.present()) {
+        // AGENT-CONTRACT: "no plugin" and "no buses" are different sentences,
+        // because the user's next action is different.
+        return tr("The QindaQt bridge plugin is not loaded in OBS, so the "
+                  "console buses are not available as sources.");
+    }
+    if (mapping.size() == 0) {
+        return tr("The bridge is loaded and the console has no buses or "
+                  "strips yet.");
+    }
+    if (mapping.audioState != QLatin1String("ready")) {
+        return tr("The bridge cannot reach the audio console (%1).")
+            .arg(mapping.audioState.isEmpty() ? mapping.reasonCode
+                                              : mapping.audioState);
+    }
+    return {};
+}
+
+void StreamingSettingsModel::setStatusText(const QString &text) {
+    if (m_statusText == text) {
+        return;
+    }
+    m_statusText = text;
+    Q_EMIT changed();
+}
+
+WebSocketSettings StreamingSettingsModel::currentSettings() const {
+    WebSocketSettings settings;
+    settings.serverPort = m_preferences.webSocketPort();
+    return settings;
+}
+
+void StreamingSettingsModel::readKeyring() {
+    QString error;
+    const auto password = m_secrets.password(&error);
+    m_passwordStored = password.has_value();
+    m_keyringProblem = error;
+}
+
+void StreamingSettingsModel::readProvisioning() {
+    m_defaults = inspectProvisioning(m_obsConfigRoot, currentSettings());
+}
+
+void StreamingSettingsModel::refresh() {
+    readKeyring();
+    readProvisioning();
+    Q_EMIT changed();
+    if (m_preferences.autoConnect()) {
+        connectToObs();
+    }
+}
+
+void StreamingSettingsModel::connectToObs() {
+    QString error;
+    const auto password = m_secrets.password(&error);
+    if (!error.isEmpty()) {
+        // AGENT-GUARD: a keyring that could not be read is not the same as
+        // "there is no password". Connecting with an empty one would make
+        // OBS's refusal look like a wrong password the user chose.
+        setStatusText(tr("The password could not be read from the keyring: %1")
+                          .arg(error));
+        return;
+    }
+    if (!password.has_value()) {
+        setStatusText(tr("No obs-websocket password is stored yet. Use "
+                         "\"Set up OBS\" to create one."));
+        return;
+    }
+    setStatusText(QString());
+    m_client.start(address(), *password);
+}
+
+void StreamingSettingsModel::disconnectFromObs() {
+    m_client.stop();
+    setStatusText(QString());
+}
+
+void StreamingSettingsModel::setRecording(bool active) {
+    if (m_client.setOutputActive(OutputKind::Record, active) == 0) {
+        setStatusText(tr("Not connected to OBS."));
+    }
+}
+
+void StreamingSettingsModel::setStreaming(bool active) {
+    if (m_client.setOutputActive(OutputKind::Stream, active) == 0) {
+        setStatusText(tr("Not connected to OBS."));
+    }
+}
+
+void StreamingSettingsModel::setVirtualCamera(bool active) {
+    if (m_client.setOutputActive(OutputKind::VirtualCam, active) == 0) {
+        setStatusText(tr("Not connected to OBS."));
+    }
+}
+
+void StreamingSettingsModel::selectScene(const QString &sceneName) {
+    if (m_client.setCurrentProgramScene(sceneName) == 0) {
+        setStatusText(tr("Not connected to OBS."));
+    }
+}
+
+void StreamingSettingsModel::setWebSocketPort(int port) {
+    if (port <= 0 || port > 65535 || port == m_preferences.webSocketPort()) {
+        return;
+    }
+    if (!m_preferences.setWebSocketPort(port)) {
+        setStatusText(tr("The port could not be saved."));
+        return;
+    }
+    readProvisioning();
+    Q_EMIT changed();
+}
+
+void StreamingSettingsModel::setAutoConnect(bool enabled) {
+    if (enabled == m_preferences.autoConnect()) {
+        return;
+    }
+    if (!m_preferences.setAutoConnect(enabled)) {
+        setStatusText(tr("That preference could not be saved."));
+    }
+}
+
+void StreamingSettingsModel::setStartObsAtLogin(bool enabled) {
+    if (enabled == m_preferences.startObsAtLogin()) {
+        return;
+    }
+    if (!m_preferences.setStartObsAtLogin(enabled)) {
+        setStatusText(tr("That preference could not be saved."));
+    }
+}
+
+void StreamingSettingsModel::installDefaults() {
+    QString keyringError;
+    auto password = m_secrets.password(&keyringError);
+    if (!keyringError.isEmpty()) {
+        setStatusText(tr("The keyring is not available, so no password could "
+                         "be stored: %1")
+                          .arg(keyringError));
+        return;
+    }
+    if (!password.has_value()) {
+        const QString generated = generateWebSocketPassword();
+        QString storeError;
+        if (!m_secrets.setPassword(generated, &storeError)) {
+            setStatusText(tr("The password could not be stored: %1")
+                              .arg(storeError));
+            return;
+        }
+        password = generated;
+    }
+    WebSocketSettings settings = currentSettings();
+    settings.password = *password;
+    QString error;
+    if (!installProvisioning(m_obsConfigRoot, settings, &error)) {
+        setStatusText(tr("OBS's configuration could not be written: %1")
+                          .arg(error));
+        return;
+    }
+    readKeyring();
+    readProvisioning();
+    // AGENT-CONTRACT: OBS reads its configuration once, at start. Saying so
+    // is the difference between a working button and a user wondering why
+    // nothing happened.
+    setStatusText(tr("OBS is set up. Restart OBS if it is already running."));
+    Q_EMIT changed();
+}
+
+void StreamingSettingsModel::refreshBusMapping() {
+    if (m_client.refreshConsoleMapping() == 0) {
+        setStatusText(tr("Not connected to OBS."));
+    }
+}
+
+} // namespace QindaQt::Apps::SettingsStreaming

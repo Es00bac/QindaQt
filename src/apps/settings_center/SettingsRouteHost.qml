@@ -30,6 +30,7 @@ Item {
     property Component colorComponent: null
     property Component accessibilityComponent: null
     property Component inputComponent: null
+    property Component streamingComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -67,6 +68,8 @@ Item {
               ? accessibilityLoader
             : navigation.activeRouteComponent === "input"
               ? inputLoader
+            : navigation.activeRouteComponent === "streaming"
+              ? streamingLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -269,6 +272,22 @@ Item {
                 && host.navigation.activeRouteComponent === "input"
                 && host.inputComponent !== null
         sourceComponent: host.inputComponent
+    }
+
+    Loader {
+        id: streamingLoader
+        objectName: host.objectNamePrefix + "StreamingLoader"
+        anchors.fill: parent
+        // AGENT-NOTE: The Streaming page takes its model from the
+        // StreamingRouteComposition backend singleton, which constructs
+        // without touching OBS, the keyring or Settings1 and presents its own
+        // degraded truth when any of them is absent.
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "streaming"
+                && host.streamingComponent !== null
+        sourceComponent: host.streamingComponent
     }
 
     Loader {

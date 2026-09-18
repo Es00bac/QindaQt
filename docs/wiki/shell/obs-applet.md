@@ -1,0 +1,60 @@
+# OBS applet
+
+The OBS applet is a top-bar chip that says what OBS is doing and a popup with
+the controls a user reaches for mid-session. Everything else about OBS stays
+in OBS, and everything about setting OBS up stays in
+[Settings → Streaming](../apps/streaming-settings.md).
+
+## The chip
+
+The glyph states the most consequential thing OBS is doing: **streaming**
+outranks **recording**, which outranks the **virtual camera**. A user who is
+live needs to see that first, whatever else OBS is also doing. The chip takes
+the accent colour exactly while OBS is recording or streaming.
+
+When OBS is not reachable the chip stays, and its accessible description says
+why — "OBS is not running", "OBS did not accept QindaQt's password", or that
+OBS speaks a control protocol QindaQt does not.
+
+## The popup
+
+| Control | What it does |
+| --- | --- |
+| Recording | Start or stop recording, with elapsed time while it runs |
+| Streaming | Start or stop streaming, with elapsed time while it runs |
+| Virtual camera | Start or stop the virtual camera |
+| Scene list | Make one of OBS's scenes live |
+| Open OBS | Open the OBS window, for everything this popup deliberately does not do |
+
+A control here is enabled exactly when it is dispatchable. Pressing one while
+OBS is unreachable reports why rather than doing nothing silently. A refused
+request is shown in OBS's own words.
+
+A dropped-frame warning appears only while a stream is running and only when
+OBS reported frame counts showing at least 1% dropped.
+
+## Capabilities and composition
+
+The applet is an audited built-in declaring `streaming.read` and
+`streaming.control`. Both are granted to the built-in package and denied to
+every third-party package in `data/applet-policy/default.json`: what a user is
+recording, and the scene names they chose, are private, and starting a
+capture on their behalf is not something an unaudited applet may do.
+
+`ObsAppletComposition` owns the obs-websocket client. **It starts the client
+only when the read capability is granted and a password is already in the
+keyring** — connecting without one would make OBS's refusal look like a wrong
+password the user chose, and would retry against it forever. Without the
+control grant the controller is still built, so the panel the user configured
+keeps its chip and reports honestly that OBS cannot be driven.
+
+The password reaches the client and nothing else: it is never held by the
+controller, never published into QML, and never logged
+([ADR-0198](../adr/0198-one-obs-websocket-client-for-the-desktop.md)).
+
+## Tests
+
+| Row | Covers |
+| --- | --- |
+| `qindaqt.shell-obs-applet-presentation` | The glyph precedence, the four unavailable sentences, elapsed text, the dropped-frame threshold, and the accessible description naming every running output |
+| `qindaqt.shell-obs-applet-controller` | Every control reporting why it did nothing without a client, toggles dispatching the opposite of what OBS reports, a refused request in OBS's words, and scene selection skipping the live scene |
