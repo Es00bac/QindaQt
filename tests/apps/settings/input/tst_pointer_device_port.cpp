@@ -61,8 +61,7 @@ private:
             {QStringLiteral("id"), id},
             {QStringLiteral("name"), QStringLiteral("Fake Touchpad")},
             {QStringLiteral("touchpad"), true},
-            {QStringLiteral("supportsTapToClick"), true},
-            {QStringLiteral("supportsTapAndDrag"), true},
+            {QStringLiteral("tapFingerCount"), 2},
             {QStringLiteral("supportsDisableWhileTyping"), true},
             {QStringLiteral("supportsScrollTwoFinger"), true},
             {QStringLiteral("supportsScrollEdge"), true},
@@ -126,9 +125,9 @@ void PointerDevicePortTest::listsPointersAndTouchpads()
     const PointerDeviceSnapshot touchpad =
         byId(devices, QStringLiteral("event9"));
     QVERIFY(touchpad.touchpad);
-    QCOMPARE(touchpad.properties.value(QStringLiteral("supportsTapToClick"))
-                 .toBool(),
-             true);
+    QCOMPARE(touchpad.properties.value(QStringLiteral("tapFingerCount"))
+                 .toInt(),
+             2);
     // A keyboard-only device never becomes a pointer row.
     QVERIFY(byId(devices, QStringLiteral("event1")).deviceId.isEmpty());
 }

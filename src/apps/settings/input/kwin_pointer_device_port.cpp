@@ -179,6 +179,7 @@ KWinPointerDevicePort::devices(QString *error) const {
                  QStringLiteral("tapToClick"),
                  QStringLiteral("tapAndDrag"),
                  QStringLiteral("tapDragLock"),
+                 QStringLiteral("tapFingerCount"),
                  QStringLiteral("disableWhileTyping"),
                  QStringLiteral("middleEmulation"),
                  QStringLiteral("lmrTapButtonMap"),
@@ -190,26 +191,32 @@ KWinPointerDevicePort::devices(QString *error) const {
                  QStringLiteral("supportsPointerAcceleration"),
                  QStringLiteral("supportsPointerAccelerationProfileFlat"),
                  QStringLiteral("supportsPointerAccelerationProfileAdaptive"),
-                 QStringLiteral("supportsTapToClick" ),
-                 QStringLiteral("supportsTapAndDrag"),
                  QStringLiteral("supportsDisableWhileTyping"),
                  QStringLiteral("supportsMiddleEmulation"),
                  QStringLiteral("supportsLmrTapButtonMap"),
                  QStringLiteral("supportsScrollTwoFinger"),
                  QStringLiteral("supportsScrollEdge"),
                  QStringLiteral("supportsScrollOnButtonDown"),
-                 QStringLiteral("defaultLeftHanded"),
-                 QStringLiteral("defaultNaturalScroll"),
+                 // AGENT-NOTE: KWin's real org.kde.KWin.InputDevice interface
+                 // has no supportsTapToClick/supportsTapAndDrag/default<Prop>
+                 // properties; it names the "on by default" family
+                 // "<prop>EnabledByDefault" and signals tap capability
+                 // through the integer tapFingerCount (0 = no tap support),
+                 // confirmed against the live qinda-top touchpad
+                 // (event4, SYNA2BA6). Reading the names this file used to
+                 // use left tapToClickAvailable/tapAndDragAvailable always
+                 // false, hiding the whole Touchpad section.
+                 QStringLiteral("leftHandedEnabledByDefault"),
+                 QStringLiteral("naturalScrollEnabledByDefault"),
                  QStringLiteral("defaultPointerAcceleration"),
                  QStringLiteral("defaultPointerAccelerationProfileFlat"),
                  QStringLiteral("defaultPointerAccelerationProfileAdaptive"),
-                 QStringLiteral("defaultScrollFactor"),
-                 QStringLiteral("defaultTapToClick"),
-                 QStringLiteral("defaultTapAndDrag"),
-                 QStringLiteral("defaultDisableWhileTyping"),
-                 QStringLiteral("defaultMiddleEmulation"),
-                 QStringLiteral("defaultScrollTwoFinger"),
-                 QStringLiteral("defaultScrollEdge"),
+                 QStringLiteral("tapToClickEnabledByDefault"),
+                 QStringLiteral("tapAndDragEnabledByDefault"),
+                 QStringLiteral("disableWhileTypingEnabledByDefault"),
+                 QStringLiteral("middleEmulationEnabledByDefault"),
+                 QStringLiteral("scrollTwoFingerEnabledByDefault"),
+                 QStringLiteral("scrollEdgeEnabledByDefault"),
              }) {
             if (raw.contains(property)) {
                 snapshot.properties.insert(property, raw.value(property));

@@ -2,6 +2,7 @@
 
 #include <qindaqt/session/desktop_controls/freedesktop_feedback_notifier.h>
 
+#include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusVirtualObject>
@@ -24,6 +25,7 @@ public:
         QString iconName;
         QString summary;
         QString body;
+        QVariantMap hints;
         int expireTimeout = -1;
     };
 
@@ -60,6 +62,7 @@ public:
         call.iconName = arguments.at(2).toString();
         call.summary = arguments.at(3).toString();
         call.body = arguments.at(4).toString();
+        call.hints = qdbus_cast<QVariantMap>(arguments.at(6));
         call.expireTimeout = arguments.at(7).toInt();
         calls.append(call);
 
@@ -86,6 +89,7 @@ private Q_SLOTS:
     void brightnessFeedbackUsesItsOwnPopup();
     void mutedVolumeShowsMutedBodyAndIcon();
     void absentServiceReportsFailureAndKeepsWorking();
+    void batteryFeedbackPersistsAndCarriesUrgency();
 
 private:
     QDBusConnection m_connection{QDBusConnection::sessionBus()};
@@ -170,6 +174,34 @@ void FreedesktopFeedbackNotifierTest::absentServiceReportsFailureAndKeepsWorking
         QTRY_COMPARE(service.calls.size(), 1);
         QCOMPARE(service.calls.constFirst().replacesId, 0U);
     }
+}
+
+void FreedesktopFeedbackNotifierTest::batteryFeedbackPersistsAndCarriesUrgency() {
+    FakeNotificationService service(m_connection);
+    QVERIFY(service.registerService());
+    FreedesktopFeedbackNotifier notifier(m_connection);
+
+    notifier.showBattery(QStringLiteral("Battery low"), QStringLiteral("20%"),
+                         QStringLiteral("battery-low"), false);
+    QTRY_COMPARE(service.calls.size(), 1);
+    QTest::qWait(50);
+    const auto &low = service.calls.constFirst();
+    QCOMPARE(low.summary, QStringLiteral("Battery low"));
+    // 0 = never auto-expire (freedesktop spec), unlike the 1.2 s OSD flash.
+    QCOMPARE(low.expireTimeout, 0);
+    QCOMPARE(low.hints.value(QStringLiteral("urgency")).toUInt(), 1U);
+    const quint32 lowId = service.m_lastId;
+
+    notifier.showBattery(QStringLiteral("Battery critical"),
+                         QStringLiteral("5%"),
+                         QStringLiteral("battery-caution"), true);
+    QTRY_COMPARE(service.calls.size(), 2);
+    // Battery is its own category: replaces the previous battery popup, not
+    // volume/brightness/notice, and critical carries urgency 2.
+    QCOMPARE(service.calls.at(1).replacesId, lowId);
+    QCOMPARE(service.calls.at(1).hints.value(QStringLiteral("urgency")).toUInt(),
+             2U);
+    QCOMPARE(service.calls.at(1).expireTimeout, 0);
 }
 
 QTEST_MAIN(FreedesktopFeedbackNotifierTest)
