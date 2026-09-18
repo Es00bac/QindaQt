@@ -51,12 +51,28 @@ One process-lifetime route model projects one public `AudioClient`:
 Displayed action availability and dispatch admission are one predicate,
 derived from the same public snapshot facts the client's dispatch preflight
 consumes: retained snapshot presence, the snapshot's own availability, the
-capability bit, the per-target can-set flags, and the client's serialized
-single-operation fence. An enabled control can therefore never be locally
-refused, and a disabled one is never dispatched. Serials presented to QML are
-re-resolved against the current snapshot before every dispatch, so a vanished
-or epoch-replaced target is refused locally instead of being sent as a stale
-handle.
+capability bit, and the per-target can-set flags. An enabled control can
+therefore never be locally refused, and a disabled one is never dispatched.
+Serials presented to QML are re-resolved against the current snapshot before
+every dispatch, so a vanished or epoch-replaced target is refused locally
+instead of being sent as a stale handle.
+
+Pending state is per target, not a single page-wide flag (mirrors
+[ADR-0191](../adr/0191-a-control-survives-reprojection.md) in the shell audio
+applet, which named the same bug in the applet's own layer first): while one
+row's request is in flight, availability keeps reading true for every row,
+including that row's own, and a `pending` field on the row is presentation
+only, never a gate. A second dispatch for the *same* target while it is still
+pending is refused locally ("Another audio change is still in progress.");
+a dispatch for a *different* target is accepted, even though the client's own
+transport still serializes at the wire (a genuinely overlapping request there
+resolves as `OperationStatus::Busy`/"the audio service is busy", surfaced the
+same way a real refusal is, never silently dropped and never blocking the
+row that dispatched it). An earlier version of this route kept one shared
+pending intent and folded the client's own single-operation fence into the
+availability predicate above, which disabled every row on the page for the
+duration of any one row's request — the exact defect the applet's ADR-0191
+diagnosed, here at the model layer instead of the QML Repeater layer.
 
 Retry performs one bounded stop/start rediscovery of the public client; the
 public client exposes no on-demand refetch because discovery and invalidation
@@ -64,6 +80,20 @@ are automatic. A successful operation reply triggers the client's own
 authoritative refetch; the route never optimistically edits inventory.
 Timeout, owner or authority replacement, or another uncertain result stays
 visible and is never automatically replayed.
+
+`AudioDeviceSection.qml` and `AudioStreamSection.qml` bind their `Repeater`s
+by row *count*, not the row list itself (same fix as the applet's
+ADR-0191): each delegate reads `root.deviceRows[index] ?? null` (or
+`streamRows`) rather than taking the list as `Repeater.model` directly. A
+`Repeater` given a `QVariantList` recreates every delegate whenever that list
+is reassigned, and the model reassigns it on every reprojection — including
+the one a row's own dispatch triggers — which destroys the very `Slider` a
+drag is holding. Every field the delegate reads from a possibly-null
+`modelData` uses optional chaining (`?.`/`??`); a device disappearing from
+the middle of the list shifts indices below it, so a held slider can
+momentarily dispatch to the device that took its index — a known limitation
+shared with the applet, not fixed here (the real fix is a
+`QAbstractListModel`).
 
 ## Composition and authority boundary
 
@@ -98,8 +128,13 @@ Device and stream rows expose accessible names, descriptions, and current
 state. Sliders announce the target and the known percent level; switches
 announce the target they mute; the set-default action names the device and
 kind it would make default. Stale, degraded, unavailable, pending, and error
-notices use truthful visible text rather than color alone, and the slider
-dispatches on release or keyboard step while a pointer drag stays quiet.
+notices use truthful visible text rather than color alone. A volume slider
+dispatches on every move, pointer drag included — not release-only — and a
+pressed slider owns its displayed value (a `Binding { when: !pressed }`, not
+a plain reactive property), so a reprojection mid-drag, including the one the
+row's own dispatch triggers, cannot pull the handle out from under the
+pointer; keyboard steps (`pressed` is already `false`) resume the
+authoritative binding immediately after each one, same as before.
 
 ## Verification and stopping point
 

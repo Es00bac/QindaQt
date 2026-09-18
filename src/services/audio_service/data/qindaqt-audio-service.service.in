@@ -9,6 +9,13 @@ BusName=org.qindaqt.Audio1
 ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-audio-service
 Restart=on-failure
 RestartSec=1s
+# AGENT-NOTE: systemd's Type=dbus default TimeoutStartSec is 90s. On a
+# private session bus (ADR-0170) the user manager never observes this unit
+# acquiring BusName=, so it always waits out the full timeout before D-Bus
+# activation replaces it with an unmanaged process. 20s bounds that noisy
+# wait; it does not remove it -- the underlying Type=dbus/private-bus
+# mismatch is ADR-0170's, not this unit's alone.
+TimeoutStartSec=20
 NoNewPrivileges=true
 PrivateDevices=true
 # AGENT-NOTE: no PrivateTmp here. The QindaQt session runs its own session

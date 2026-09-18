@@ -28,30 +28,50 @@ RowLayout {
 
     Slider {
         id: volumeSlider
-        objectName: root.kindPrefix + "Volume_" + root.targetRow.serial
+        objectName: root.kindPrefix + "Volume_" + (root.targetRow?.serial ?? 0)
+
+        readonly property double truth: (root.targetRow?.volumeKnown ?? false)
+               ? root.targetRow.volumePercent / 100.0 : 0.0
+
         Layout.fillWidth: true
         from: 0.0
         to: 1.0
         stepSize: 0.01
-        // The value follows projected truth through the binding; the owning
-        // delegate row is recreated whenever the projection changes, so a
-        // broken-by-drag binding cannot outlive one refresh.
-        value: root.targetRow.volumeKnown
-               ? root.targetRow.volumePercent / 100.0 : 0.0
-        enabled: root.targetRow.volumeAvailable
+        wheelEnabled: true
+        enabled: root.targetRow?.volumeAvailable ?? false
         accessibleName: qsTr("%1 volume").arg(root.targetName)
-        accessibleDescription: root.targetRow.volumeKnown
-            ? qsTr("%1 percent").arg(root.targetRow.volumePercent)
-            : qsTr("Volume unknown")
-        // Dispatch on release or on each keyboard step. Keyboard steps
-        // arrive with pressed already false, so the keyboard path requests
-        // immediately while a pointer drag stays quiet until it ends.
-        onMoved: if (!pressed && enabled) root.commit(value)
+        accessibleDescription: (root.targetRow?.pending ?? false)
+            ? qsTr("Volume change in progress")
+            : (root.targetRow?.volumeKnown ?? false)
+                ? qsTr("%1 percent").arg(root.targetRow.volumePercent)
+                : qsTr("Volume unknown")
+
+        // AGENT-CONTRACT (mirrors ADR-0191, shell audio applet): a pressed
+        // control owns its value. Truth only rebinds while the handle is not
+        // held, so a reprojection mid-drag (which happens on every dispatch,
+        // including this row's own) cannot yank the slider out from under
+        // the pointer. On release the binding resumes and the next snapshot
+        // is authoritative again.
+        Binding {
+            target: volumeSlider
+            property: "value"
+            value: volumeSlider.truth
+            when: !volumeSlider.pressed
+            restoreMode: Binding.RestoreNone
+        }
+
+        // Every move dispatches; the model coalesces per target (rejects a
+        // second request for the same row while one is in flight rather than
+        // disabling the row), so a drag sends the value the pointer is on
+        // once the previous request completes. `pressed` must not gate
+        // dispatch: Qt reports pressed=true for the whole pointer gesture, so
+        // gating on `!pressed` would only ever dispatch a keyboard step.
+        onMoved: if (enabled) root.commit(value)
     }
 
     Label {
-        objectName: root.kindPrefix + "VolumeText_" + root.targetRow.serial
-        text: root.targetRow.volumeKnown
+        objectName: root.kindPrefix + "VolumeText_" + (root.targetRow?.serial ?? 0)
+        text: (root.targetRow?.volumeKnown ?? false)
               ? qsTr("%1%").arg(root.targetRow.volumePercent)
               : qsTr("Unknown")
         muted: true

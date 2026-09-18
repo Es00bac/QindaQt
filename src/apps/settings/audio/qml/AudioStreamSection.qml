@@ -60,22 +60,25 @@ ColumnLayout {
         description: qsTr("Playback and recording levels for open applications")
     }
 
+    // AGENT-GUARD (mirrors ADR-0191, shell audio applet): index-stable rows,
+    // same reasoning as AudioDeviceSection's Repeater above.
     Repeater {
         id: streamRepeater
-        model: root.streamRows
+        model: root.streamRows.length
 
         delegate: FormSurface {
             id: streamRow
-            required property var modelData
             required property int index
+            readonly property var modelData: root.streamRows[index] ?? null
+            visible: modelData !== null
             Layout.fillWidth: true
             padding: Tokens.space["3"]
             Accessible.name: qsTr("%1 stream %2, %3, %4, %5")
-                .arg(streamRow.modelData.directionText)
-                .arg(streamRow.modelData.applicationName)
-                .arg(streamRow.modelData.mediaName)
-                .arg(streamRow.modelData.targetName)
-                .arg(streamRow.modelData.volumeKnown
+                .arg(streamRow.modelData?.directionText ?? "")
+                .arg(streamRow.modelData?.applicationName ?? "")
+                .arg(streamRow.modelData?.mediaName ?? "")
+                .arg(streamRow.modelData?.targetName ?? "")
+                .arg((streamRow.modelData?.volumeKnown ?? false)
                      ? qsTr("%1 percent")
                        .arg(streamRow.modelData.volumePercent)
                      : qsTr("volume unknown"))
@@ -114,25 +117,25 @@ ColumnLayout {
 
                         Label {
                             Layout.fillWidth: true
-                            text: streamRow.modelData.mediaName.length > 0
+                            text: (streamRow.modelData?.mediaName.length ?? 0) > 0
                                   ? qsTr("%1 — %2")
-                                    .arg(streamRow.modelData.applicationName)
-                                    .arg(streamRow.modelData.mediaName)
-                                  : streamRow.modelData.applicationName
+                                    .arg(streamRow.modelData?.applicationName ?? "")
+                                    .arg(streamRow.modelData?.mediaName ?? "")
+                                  : streamRow.modelData?.applicationName ?? ""
                             font.weight: Font.DemiBold
                         }
 
                         Label {
                             Layout.fillWidth: true
                             text: qsTr("%1 · %2")
-                                .arg(streamRow.modelData.directionText)
-                                .arg(streamRow.modelData.targetName)
+                                .arg(streamRow.modelData?.directionText ?? "")
+                                .arg(streamRow.modelData?.targetName ?? "")
                             muted: true
                         }
                     }
 
                     Label {
-                        visible: streamRow.modelData.muted
+                        visible: streamRow.modelData?.muted ?? false
                         text: qsTr("Muted")
                         muted: true
                         Accessible.role: Accessible.StaticText
@@ -142,14 +145,15 @@ ColumnLayout {
                     Switch {
                         id: muteSwitch
                         objectName: "audioStreamMute_"
-                                    + streamRow.modelData.serial
+                                    + (streamRow.modelData?.serial ?? 0)
                         text: qsTr("Mute")
-                        checked: streamRow.modelData.muted
-                        enabled: streamRow.modelData.muteAvailable
+                        checked: streamRow.modelData?.muted ?? false
+                        enabled: streamRow.modelData?.muteAvailable ?? false
                         accessibleDescription: qsTr("Mute %1")
-                            .arg(streamRow.modelData.applicationName)
-                        onToggled: root.audioSettings.setStreamMuted(
-                                       streamRow.modelData.serial, checked)
+                            .arg(streamRow.modelData?.applicationName ?? "")
+                        onToggled: streamRow.modelData !== null
+                            && root.audioSettings.setStreamMuted(
+                                   streamRow.modelData.serial, checked)
                     }
                 }
 
@@ -158,9 +162,10 @@ ColumnLayout {
                     Layout.fillWidth: true
                     targetRow: streamRow.modelData
                     kindPrefix: "audioStream"
-                    targetName: streamRow.modelData.applicationName
-                    commit: level => root.audioSettings.setStreamVolume(
-                                 streamRow.modelData.serial, level)
+                    targetName: streamRow.modelData?.applicationName ?? ""
+                    commit: level => streamRow.modelData !== null
+                        && root.audioSettings.setStreamVolume(
+                               streamRow.modelData.serial, level)
                 }
             }
         }
