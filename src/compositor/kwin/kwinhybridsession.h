@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "hybridchrometouchpolicy.h"
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactiontypes.h"
 #include "qindaqt/compositor/containerappearance.h"
@@ -91,6 +92,8 @@ class KWinHybridSession final : public QObject
     Q_OBJECT
 
 public:
+    // ADR-0205: the touch policy thresholds the Settings1 touch preferences choose.
+    void setTouchPolicyConfig(const TouchPolicyConfig &config);
     explicit KWinHybridSession(ManagedWindowRegistry &registry,
                                QObject *parent = nullptr);
     ~KWinHybridSession() override;

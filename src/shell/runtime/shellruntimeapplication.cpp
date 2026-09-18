@@ -16,6 +16,7 @@
 #include "kglobalaccelshortcutregistrar.h"
 #include "launcherappletcomposition.h"
 #include "launcher_persistence.h"
+#include "edgegesturesubscriber.h"
 #include "notificationcenterappletaccess.h"
 #include "notificationcentershortcut.h"
 #include "runtime_layout_adoption.h"
@@ -157,6 +158,7 @@ int ShellRuntimeApplication::run()
         qCritical().noquote() << error;
         return 4;
     }
+    installEdgeGestures(); // ADR-0205; body in shellruntimeapplication_touch.cpp
     return m_application.exec();
 }
 

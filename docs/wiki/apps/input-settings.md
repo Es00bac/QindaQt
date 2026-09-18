@@ -15,6 +15,7 @@ a pen display finds its own screen.
 | Pen & tablet | Which screen the pen draws on, the mapped area, rotation and left-handed, pen mode, calibration, the pressure curve and tip threshold, enabling the tablet, and what the pad has | KWin device properties over D-Bus |
 | Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `kcminputrc [Keyboard]` and `kxkbrc [Layout]` |
 | Shortcuts | Every global shortcut, searchable; change by pressing keys, conflicts named, reset, clear; custom command shortcuts | kglobalaccel |
+| Touch | Touchscreen on or off (a real stop of every touch device at the compositor seat), how long a finger is held for the menu, the on-screen keyboard, and what a swipe from each screen edge opens | Settings1 `input.touch.*` ([ADR-0205](../adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)) |
 
 Rows a device does not support are hidden rather than disabled. When KWin or
 kglobalaccel is unreachable, the tab shows an unavailable notice instead of
@@ -82,6 +83,23 @@ opaque to the Settings process: an unknown destination keeps the route's
 default and an unconnected device id opens the destination anyway, so a stale
 link from an old notification never costs the user the route. The pen-display
 notification and the Display card's "Pen & tablet settings…" both use this.
+## Touch
+
+`InputTouchSection.qml` binds `TouchSettingsModel`, which rides its own
+purpose-scoped Settings1 client over `input.touch.enabled`, `longPressMs`
+(200–1500 ms), `onScreenKeyboard` (`auto`, `off`) and
+`edgeLeft/Top/Right/Bottom` (`none`, `overview`, `notifications`,
+`task-switcher`); `input.touch.mode` stays unscoped and unshown until a
+consumer exists. Every edit is one user-value write; the rows follow the
+confirmed snapshot, a second edit while one is in flight is refused rather
+than queued, and an uncertain commit says "may not have been applied". Until
+the first snapshot the section shows the unavailable notice; with the
+touchscreen switched off only the switch remains. The compositor plugin
+consumes the same keys live (the touchscreen switch stops every touch
+device at the seat, thresholds, edge reservations, the keyboard mode);
+`mode` is stored ahead of its application consumers (ADR-0205,
+decision 4). The destination's entry in this page's destination list
+arrives with the pen-and-tablet lane, which owns that list.
 
 ## Applying changes
 

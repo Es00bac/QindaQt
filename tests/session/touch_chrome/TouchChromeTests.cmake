@@ -36,3 +36,31 @@ endfunction()
 
 qindaqt_add_touch_chrome_test(chrome gtk-csd single-1080p)
 qindaqt_add_touch_chrome_test(chrome gtk-csd single-1440p-125)
+
+# The Touchscreen switch (ADR-0205 §3): the preference travels a real
+# Settings1 on the private bus and stops the seat's touch device.
+if(TARGET qindaqt-settings-service)
+    add_test(
+        NAME "compositor.touch-chrome.enabled.gtk-csd.single-1080p"
+        COMMAND
+            "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_LIST_DIR}/run_touch_chrome.py"
+            --launcher "$<TARGET_FILE:qindaqt-wm>"
+            --plugin-root "${_qindaqt_test_plugin_root}"
+            --kwin "${QINDAQT_KWIN_WAYLAND}"
+            --scenario "${PROJECT_SOURCE_DIR}/tests/scenarios/single-1080p.json"
+            --flow enabled
+            --kind gtk-csd
+            --settings-service "$<TARGET_FILE:qindaqt-settings-service>"
+            --settings-schema-dir "${PROJECT_SOURCE_DIR}/data/settings"
+            --output-root "${CMAKE_BINARY_DIR}/sv"
+    )
+    set_tests_properties(
+        "compositor.touch-chrome.enabled.gtk-csd.single-1080p"
+        PROPERTIES
+            TIMEOUT 480
+            SKIP_RETURN_CODE 77
+            RUN_SERIAL TRUE
+            LABELS "integration;compositor;hybrid;touch;settings"
+    )
+endif()

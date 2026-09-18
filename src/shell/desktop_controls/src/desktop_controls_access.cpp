@@ -8,4 +8,9 @@ DesktopControlsAccess::DesktopControlsAccess(Facades facades, QObject *parent)
 {
 }
 
+void DesktopControlsAccess::requestOverview()
+{
+    Q_EMIT overviewRequested();
+}
+
 } // namespace QindaQt::Shell::DesktopControls

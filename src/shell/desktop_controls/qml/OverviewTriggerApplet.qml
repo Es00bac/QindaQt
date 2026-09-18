@@ -37,6 +37,14 @@ Item {
         onTriggered: if (available) overview.open()
     }
 
+    // A touch edge swipe (ADR-0205) opens the same popup the button does.
+    Connections {
+        target: root.access
+        ignoreUnknownSignals: true
+        function onOverviewRequested() {
+            if (button.available && !overview.opened) overview.open()
+        }
+    }
     CommandSearchPopup {
         id: overview
         objectName: "overviewPopup"

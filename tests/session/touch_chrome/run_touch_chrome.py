@@ -14,6 +14,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -21,7 +22,7 @@ sys.path.insert(0, str(HERE.parent / "shade_visibility"))
 
 import run_shade_visibility as shade  # noqa: E402
 
-MINIMUM_VERDICTS = {"chrome": 7}
+MINIMUM_VERDICTS = {"chrome": 7, "enabled": 7}
 
 
 def main() -> int:
@@ -61,7 +62,13 @@ def main() -> int:
         "--scale", f"{spec.scale:.12g}", "--output-count", str(spec.output_count),
         "--test-scenario", str(arguments.scenario), "--no-lockscreen", "--no-global-shortcuts",
         "--session", str(driver)]
+    if arguments.flow == "enabled" and not arguments.settings_service:
+        print("the enabled flow needs --settings-service", file=sys.stderr)
+        return 1
     with shade.running_private_session_bus(root, Path(dbus_daemon), environment):
+        service = None
+        if arguments.settings_service:
+            service = _start_settings_service(arguments, environment, output)
         try:
             completed = subprocess.run(command, env=environment, text=True, capture_output=True,
                                        timeout=420, check=False)
@@ -70,6 +77,13 @@ def main() -> int:
             (output / "session-stderr.log").write_bytes(expired.stderr or b"")
             print(f"private session timed out after 420 s; see {output}", file=sys.stderr)
             return 1
+        finally:
+            if service is not None:
+                service.terminate()
+                try:
+                    service.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    service.kill()
     (output / "session-stdout.log").write_text(completed.stdout, encoding="utf-8")
     (output / "session-stderr.log").write_text(completed.stderr, encoding="utf-8")
     evidence_path = output / "evidence.json"
@@ -96,6 +110,10 @@ def _parse_arguments():
     parser.add_argument("--scenario", type=Path, required=True)
     parser.add_argument("--kind", choices=sorted(shade.KINDS), required=True)
     parser.add_argument("--flow", choices=sorted(MINIMUM_VERDICTS), required=True)
+    # The "enabled" flow drives the preference through a real Settings1 on the
+    # private bus; the service binary comes from the build tree.
+    parser.add_argument("--settings-service", type=Path)
+    parser.add_argument("--settings-schema-dir", type=Path)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--name")
     return parser.parse_args()
@@ -115,6 +133,35 @@ def _evaluate(evidence, flow: str, plugin_root: Path) -> list[str]:
     if compositor not in evidence.get("mappedQindaqtLibraries", []):
         failures.append(f"private compositor did not map {compositor}")
     return failures
+
+
+def _start_settings_service(arguments, environment: dict[str, str], output: Path) -> subprocess.Popen:
+    """Run the real resident Settings1 on the private bus, isolated by XDG roots.
+
+    The service keeps its user overrides under the private XDG_CONFIG_HOME and
+    reads the schema from --settings-schema-dir (the source tree's
+    data/settings), so nothing touches the live desktop's settings.
+    """
+    service_environment = dict(environment)
+    if arguments.settings_schema_dir:
+        service_environment["QINDAQT_SETTINGS_SCHEMA_DIR"] = str(arguments.settings_schema_dir)
+    log = (output / "settings-service.log").open("w", encoding="utf-8")
+    process = subprocess.Popen([str(arguments.settings_service)], env=service_environment,
+                               stdout=log, stderr=subprocess.STDOUT)
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError(f"settings service exited early ({process.returncode}); see {output}")
+        probe = subprocess.run(
+            ["dbus-send", "--session", "--dest=org.freedesktop.DBus", "--print-reply",
+             "/org/freedesktop/DBus", "org.freedesktop.DBus.NameHasOwner",
+             "string:org.qindaqt.Settings1"], env=environment, capture_output=True, text=True,
+            check=False)
+        if "boolean true" in probe.stdout:
+            return process
+        time.sleep(0.1)
+    process.terminate()
+    raise RuntimeError("settings service did not own org.qindaqt.Settings1 within 10 s")
 
 
 if __name__ == "__main__":
