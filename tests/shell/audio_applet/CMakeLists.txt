@@ -97,6 +97,41 @@ add_dependencies(
 )
 qindaqt_enable_warnings(qindaqt_audio_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_audio_applet_qml_tests)
+
+# The capture probe (O6). Not an add_test: it produces review artifacts, not a
+# pass/fail row, and the redesign is judged by a human looking at two pictures.
+qt_add_executable(qindaqt_audio_applet_visual_probe visual_probe.cpp)
+target_include_directories(
+    qindaqt_audio_applet_visual_probe
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../services/audio_client"
+)
+target_link_libraries(
+    qindaqt_audio_applet_visual_probe
+    PRIVATE
+        QindaQt::ShellAudioAppletRuntime
+        QindaQt::TokensQml
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
+        qindaqt_shell_audio_applet_runtimeplugin
+        qindaqt_themes
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_audio_applet_visual_probe
+    PRIVATE
+        QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+add_dependencies(
+    qindaqt_audio_applet_visual_probe
+    qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_audio_applet_visual_probe)
+qt_import_qml_plugins(qindaqt_audio_applet_visual_probe)
 add_test(
     NAME qindaqt.audio-applet-offscreen
     COMMAND qindaqt_audio_applet_qml_tests

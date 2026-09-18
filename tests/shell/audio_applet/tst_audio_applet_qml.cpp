@@ -232,12 +232,18 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QQuickItem *popupContent = openPopupContent(root, &window);
     QVERIFY(popupContent != nullptr);
 
-    // One slider per device with known volume (two outputs — physical and a
-    // managed virtual device — plus one input) and one stream slider; every
-    // control carries a complete accessible identity.
+    // One fader per default-device band — output first, then input — and one
+    // stream slider; every control carries a complete accessible identity.
+    //
+    // AGENT-CONTRACT (O6): the panel no longer draws a row per device. Each
+    // band rides ONE device chosen in its picker, defaulting to the service's
+    // default, so two device faders is the whole surface however many devices
+    // the snapshot carries. The other devices are reachable through the
+    // picker, and the overflow count in the footer says what is only in
+    // Settings.
     const auto deviceSliders = visualItemsNamed(
         popupContent, QStringLiteral("audioDeviceVolume"));
-    QCOMPARE(deviceSliders.size(), 3);
+    QCOMPARE(deviceSliders.size(), 2);
     const auto streamSliders = visualItemsNamed(
         popupContent, QStringLiteral("audioStreamVolume"));
     QCOMPARE(streamSliders.size(), 1);
@@ -274,7 +280,7 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     // The mute switch exposes an accessible role and description as well.
     const auto muteSwitches = visualItemsNamed(
         popupContent, QStringLiteral("audioDeviceMute"));
-    QCOMPARE(muteSwitches.size(), 3);
+    QCOMPARE(muteSwitches.size(), 2);
     QAccessibleInterface *muteInterface =
         QAccessible::queryAccessibleInterface(muteSwitches.constFirst());
     QVERIFY(muteInterface != nullptr);

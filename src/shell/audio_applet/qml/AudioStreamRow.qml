@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
+import QindaQt.Tokens 1.0
 
-// One projected application-stream row. Stream moves are outside this slice,
-// so the row offers only volume and mute requests.
+// One projected application-stream row, compact: name over direction, fader,
+// monospace readout, mute. Stream moves are outside this slice, so the row
+// offers only volume and mute requests.
 RowLayout {
     id: root
 
@@ -14,13 +18,13 @@ RowLayout {
     readonly property string streamName: row?.label ?? ""
     readonly property bool pending: row?.pending ?? false
 
-    spacing: 12
+    spacing: Tokens.space["2"]
 
     Accessible.ignored: true
 
     ColumnLayout {
-        Layout.fillWidth: true
-        spacing: 2
+        Layout.preferredWidth: 112
+        spacing: 0
 
         C.Label {
             objectName: "audioStreamName"
@@ -33,15 +37,18 @@ RowLayout {
         C.Label {
             objectName: "audioStreamDirection"
             Layout.fillWidth: true
-            text: (row?.isPlayback ?? true) ? qsTr("Playing audio")
-                                            : qsTr("Recording audio")
+            text: (root.row?.isPlayback ?? true) ? qsTr("Playing audio")
+                                                 : qsTr("Recording audio")
+            font: Qt.font({ family: Tokens.type.fontFamily,
+                            pointSize: Tokens.type.caption })
+            elide: Text.ElideRight
             muted: true
         }
     }
 
     C.Label {
         objectName: "audioStreamVolumeUnknown"
-        visible: !(row?.volumeKnown ?? false)
+        visible: !(root.row?.volumeKnown ?? false)
         text: qsTr("Volume unknown")
         muted: true
     }
@@ -50,16 +57,16 @@ RowLayout {
         id: volumeSlider
         objectName: "audioStreamVolume"
 
-        readonly property double level: row?.volume ?? 0.0
+        readonly property double level: root.row?.volume ?? 0.0
         // AGENT-GUARD (ADR-0191): `pending` is not a gate here. See
         // AudioDeviceRow: a control that disabled itself while its own request
         // was in flight could not be dragged past one step.
         readonly property bool adjustable:
-            (row?.canSetVolume ?? false) && (row?.volumeKnown ?? false)
-                 && (controller?.controlGranted ?? false)
+            (root.row?.canSetVolume ?? false) && (root.row?.volumeKnown ?? false)
+                 && (root.controller?.controlGranted ?? false)
 
-        visible: row?.volumeKnown ?? false
-        Layout.preferredWidth: 140
+        visible: root.row?.volumeKnown ?? false
+        Layout.fillWidth: true
         from: 0.0
         to: 1.0
         stepSize: 0.01
@@ -68,9 +75,9 @@ RowLayout {
         accessibleName: qsTr("Volume for %1").arg(root.streamName)
         accessibleDescription: root.pending
             ? qsTr("Volume change in progress")
-            : !(controller?.controlGranted ?? false)
+            : !(root.controller?.controlGranted ?? false)
                   ? qsTr("Volume changes are not allowed for %1").arg(root.streamName)
-                  : (row?.canSetVolume ?? false)
+                  : (root.row?.canSetVolume ?? false)
                         ? qsTr("Sets the volume from 0 to 100 percent")
                         : qsTr("This application stream does not allow volume changes")
 
@@ -89,14 +96,19 @@ RowLayout {
         // object. Qt reports pressed=true during keyboard steps, so `pressed`
         // cannot gate dispatch.
         onMoved: if (adjustable)
-                     controller.requestVolume(row.serial, true, value)
+                     root.controller.requestVolume(root.row.serial, true, value)
     }
 
     C.Label {
         objectName: "audioStreamVolumePercent"
         visible: volumeSlider.visible
-        // Follows the handle while it is held (ADR-0191).
+        // Follows the handle while it is held (ADR-0191); monospace so the
+        // number never shuffles the fader as it changes width.
         text: Math.round(volumeSlider.value * 100) + "%"
+        font: Qt.font({ family: Tokens.type.monoFontFamily,
+                        pointSize: Tokens.type.caption })
+        horizontalAlignment: Text.AlignRight
+        Layout.preferredWidth: 40
         muted: true
     }
 
@@ -105,17 +117,17 @@ RowLayout {
         objectName: "audioStreamMute"
 
         readonly property bool adjustable:
-            (row?.canSetMute ?? false) && (row?.muteKnown ?? false)
-                 && (controller?.controlGranted ?? false)
+            (root.row?.canSetMute ?? false) && (root.row?.muteKnown ?? false)
+                 && (root.controller?.controlGranted ?? false)
 
-        visible: row?.muteKnown ?? false
+        visible: root.row?.muteKnown ?? false
         text: qsTr("Mute")
-        checked: row?.muted ?? false
+        checked: root.row?.muted ?? false
         enabled: adjustable
         accessibleDescription: root.pending
             ? qsTr("Mute change in progress")
             : qsTr("Mute state for %1").arg(root.streamName)
         onToggled: if (adjustable)
-            controller.requestMute(row.serial, true, checked)
+            root.controller.requestMute(root.row.serial, true, checked)
     }
 }

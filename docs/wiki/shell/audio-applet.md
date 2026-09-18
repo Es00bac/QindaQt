@@ -111,6 +111,48 @@ snapshot's default handles by serial and stay correct even when that device
 falls outside the retained window; an unknown `(0,0)` handle yields no
 label.
 
+## Panel layout
+
+The details popup is 420 px wide and reads as a piece of desk equipment rather
+than a menu. Four collapsible bands, each headed by the same caption-weight
+title, chevron and hairline:
+
+| Band | What it holds |
+| --- | --- |
+| Output | A picker naming the device this band rides, a full-width fader, a monospace percent readout, and mute. |
+| Input | The same, for capture devices. |
+| Apps | One compact row per application stream: name over direction, fader, readout, mute. |
+| Console | One row per console strip (ADR-0181): label, fader, a segmented LED meter, and a mute lamp. |
+
+Below them, one status line carries every condition that used to own a card of
+its own — loading, unavailable, degraded, and a refused change — and is shown
+only when it has something to say. The overflow counts sit beside it.
+
+**The band picker chooses which device the band controls. It does not change
+the system default**, and it must not appear to: this applet's intent surface
+is closed to `requestVolume`, `requestMute`, `requestStripFader`,
+`requestStripMute` and `clearFeedback`, exactly as the Request rules below
+state. Setting the default is the Settings Audio route's job.
+
+Which bands are collapsed, and which device each band rides, live on the applet
+item rather than on the popup, because the popup destroys its contents when it
+closes. That state is **per session**: the desktop has no QML-side settings
+store, and persisting it across a restart needs a settings key that this slice
+does not add.
+
+Three things the mock in the wave plan asks for are deliberately absent,
+because each needs a projection or intent this applet does not have:
+
+- **Per-device meters.** `DeviceRow` and `StreamRow` carry no level at all;
+  only `ConsoleRow` has a reading, through `consoleLevels`. A meter that is not
+  measuring anything is worse than no meter.
+- **Bus strips in the console band.** The projection walks
+  `snapshot.console.strips` only, and there is no bus fader or bus mute intent.
+- **A way into Settings.** `BuiltinAppletContent.qml` hands this applet only
+  its controller and orientation. `AudioApplet.qml` declares an optional
+  `desktopControls` property and renders the footer action only when something
+  supplies it, so no dead affordance is ever shown.
+
 The panel surface is one 32-by-28 icon button. Its symbolic name follows the
 default output's mute and normalized-volume state (`muted`, `low`, `medium`,
 or `high`), and an unresolved asset becomes the typed Audio placeholder.

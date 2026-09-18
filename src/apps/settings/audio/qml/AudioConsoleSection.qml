@@ -71,11 +71,14 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Tokens.space["2"]
 
-        Label {
-            text: qsTr("Mixing console")
-            Accessible.name: text
+        // The same header the device, virtual-device and stream sections use.
+        // A bare Label here made the console — the surface a user operates
+        // continuously — read as less important than the lists below it.
+        SectionHeader {
+            Layout.fillWidth: true
+            title: qsTr("Mixing console")
+            description: qsTr("Input strips, output buses, and their routing")
         }
-        Item { Layout.fillWidth: true }
         Label {
             objectName: "audioConsoleSoloNotice"
             // Solo silences every other strip, which is a state a user can
