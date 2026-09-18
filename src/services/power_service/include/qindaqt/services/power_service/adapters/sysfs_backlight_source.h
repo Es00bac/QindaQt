@@ -5,7 +5,9 @@
 #include <qindaqt/services/power_protocol/power_types.h>
 #include <qindaqt/services/power_service/adapters/backlight_writer.h>
 
+#include <QtCore/QByteArray>
 #include <QtCore/QFileSystemWatcher>
+#include <QtCore/QIODevice>
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
@@ -61,6 +63,17 @@ public:
     // escalation.
     [[nodiscard]] BacklightWriteOutcome writeBrightness(const QString &opaqueId,
                                                         quint32 value);
+
+    // AGENT-CONTRACT: a sysfs attribute stats as one page (4096) whatever it
+    // holds, so QIODevice::size() -- and therefore atEnd() after a short read
+    // -- says nothing about whether the value ended. Boundedness is decided by
+    // the bytes actually read: at most 64 are a value, 65 or more are not.
+    // Exposed so a regression row can drive it with a device whose size lies
+    // the way sysfs does; a fixture file on an ordinary filesystem cannot.
+    [[nodiscard]] static bool readBoundedAttribute(QIODevice &device,
+                                                   QByteArray &bytes);
+
+    static constexpr int maximumAttributeBytes = 64;
 
 Q_SIGNALS:
     void devicesChanged(const QList<QindaQt::Power::InternalBacklight> &devices);

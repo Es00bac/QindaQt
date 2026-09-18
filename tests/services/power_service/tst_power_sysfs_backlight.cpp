@@ -13,6 +13,7 @@
 
 #include <QtTest/QSignalSpy>
 
+#include <cstring>
 #include <memory>
 
 using namespace QindaQt::Power;
@@ -61,6 +62,10 @@ private Q_SLOTS:
     void readOnlyRootPublishesUnavailableTruth();
     void missingRootPublishesEmptyTruth();
     void longButLegalDeviceNameIsPreserved();
+    void attributeWhoseSizeLiesIsStillBounded();
+    void attributeLongerThanTheLimitIsRejected();
+    void realSysfsAttributesReportASizeTheyDoNotHold();
+    void hostBacklightRootEnumeratesWhenPresent();
 };
 
 void PowerSysfsBacklightTests::enumeratesFirmwareDeviceWithExactRawValues()
@@ -346,6 +351,104 @@ void PowerSysfsBacklightTests::longButLegalDeviceNameIsPreserved()
     std::unique_ptr<Upstream::SysfsBacklightSource> source(startedSource(root.path()));
     QCOMPARE(source->devices().size(), 1);
     QCOMPARE(source->devices().constFirst().deviceName, longName);
+}
+
+// A sysfs attribute stats as one page whatever it holds, so a short read
+// leaves atEnd() false. This device reproduces that exactly: four bytes of
+// content behind a size() that claims a full page. Before the enumeration
+// fix, readBoundedAttribute's predecessor asked atEnd() and called this
+// unbounded, which is why no real panel ever enumerated.
+class LyingSizeDevice final : public QIODevice
+{
+public:
+    explicit LyingSizeDevice(QByteArray content) : m_content(std::move(content))
+    {
+        open(QIODevice::ReadOnly);
+    }
+
+    [[nodiscard]] qint64 size() const override { return 4096; }
+    [[nodiscard]] bool isSequential() const override { return false; }
+
+protected:
+    qint64 readData(char *data, qint64 maximumSize) override
+    {
+        const qint64 remaining = m_content.size() - m_offset;
+        const qint64 count = qMin(remaining, maximumSize);
+        if (count <= 0) {
+            return 0;
+        }
+        std::memcpy(data, m_content.constData() + m_offset, static_cast<size_t>(count));
+        m_offset += count;
+        return count;
+    }
+
+    qint64 writeData(const char *, qint64) override { return -1; }
+
+private:
+    QByteArray m_content;
+    qint64 m_offset = 0;
+};
+
+void PowerSysfsBacklightTests::attributeWhoseSizeLiesIsStillBounded()
+{
+    LyingSizeDevice type(QByteArrayLiteral("raw\n"));
+    QVERIFY(!type.atEnd());  // the sysfs semantics this row exists for
+    QByteArray bytes;
+    QVERIFY(Upstream::SysfsBacklightSource::readBoundedAttribute(type, bytes));
+    QCOMPARE(bytes, QByteArrayLiteral("raw\n"));
+
+    LyingSizeDevice maximum(QByteArrayLiteral("255\n"));
+    QByteArray maximumBytes;
+    QVERIFY(Upstream::SysfsBacklightSource::readBoundedAttribute(maximum, maximumBytes));
+    QCOMPARE(maximumBytes.trimmed(), QByteArrayLiteral("255"));
+}
+
+void PowerSysfsBacklightTests::attributeLongerThanTheLimitIsRejected()
+{
+    // 65 bytes: one past the limit, so the value did not end and is refused
+    // whole. Hostile input must not become a brightness.
+    LyingSizeDevice overlong(QByteArray(65, '9'));
+    QByteArray bytes;
+    QVERIFY(!Upstream::SysfsBacklightSource::readBoundedAttribute(overlong, bytes));
+
+    LyingSizeDevice exact(QByteArray(64, '9'));
+    QByteArray exactBytes;
+    QVERIFY(Upstream::SysfsBacklightSource::readBoundedAttribute(exact, exactBytes));
+    QCOMPARE(exactBytes.size(), 64);
+}
+
+void PowerSysfsBacklightTests::realSysfsAttributesReportASizeTheyDoNotHold()
+{
+    // The environmental fact the fix rests on, asserted against the running
+    // kernel rather than assumed. Present on every Linux host.
+    QFile possible(QStringLiteral("/sys/devices/system/cpu/possible"));
+    if (!possible.exists() || !possible.open(QIODevice::ReadOnly)) {
+        QSKIP("no sysfs on this host");
+    }
+    const QByteArray bytes = possible.read(65);
+    QVERIFY(!bytes.isEmpty());
+    QVERIFY(bytes.size() <= 64);
+    QVERIFY2(possible.size() > bytes.size(),
+             "sysfs no longer over-reports attribute size; revisit the guard");
+    QVERIFY2(!possible.atEnd(),
+             "atEnd() is now truthful for sysfs; the enumeration guard can be simplified");
+    possible.close();
+}
+
+void PowerSysfsBacklightTests::hostBacklightRootEnumeratesWhenPresent()
+{
+    // The acceptance check from the bug report, run wherever a real panel
+    // exists. Skips on desktops; on a laptop it is the whole defect.
+    const QString root = QStringLiteral("/sys/class/backlight");
+    if (QDir(root).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty()) {
+        QSKIP("no /sys/class/backlight device on this host");
+    }
+    QSignalSpy *spy = nullptr;
+    std::unique_ptr<Upstream::SysfsBacklightSource> source(startedSource(root, &spy));
+    QVERIFY(spy != nullptr);
+    const auto devices = source->devices();
+    QVERIFY2(!devices.isEmpty(), "a host backlight exists but none enumerated");
+    QVERIFY(devices.first().maximum > 0);
 }
 
 QTEST_GUILESS_MAIN(PowerSysfsBacklightTests)
