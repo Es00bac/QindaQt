@@ -8,6 +8,9 @@ Item {
     required property var navigationController
     required property var mutationController
     required property var transferQueueController
+    // ADR-0198: only the recoverable home Trash may skip its confirmation.
+    // Empty Trash is permanent and always asks, whatever this says.
+    property bool confirmTrash: true
     property var selectedEntry: null
     property var selectedItems: []
     property string destinationKind: "copy"
@@ -45,7 +48,11 @@ Item {
             if (selection.length < 1) return
             selectedItems = selection
             selectedEntry = selection[0]
-            trashConfirmationDialog.open()
+            if (root.confirmTrash) {
+                trashConfirmationDialog.open()
+                return
+            }
+            trashSelection()
         } else if (actionId === "file.restore-last") {
             mutationController.restoreLast()
         } else if (actionId === "file.empty-trash") {
@@ -66,6 +73,15 @@ Item {
             else
                 root.mutationController.cancel()
         }
+    }
+
+    // The one place a Trash request is dispatched, so the confirmed and the
+    // unconfirmed routes can never drift apart.
+    function trashSelection() {
+        if (root.selectedItems.length > 1)
+            root.mutationController.trashItems(root.selectedItems)
+        else if (root.selectedEntry)
+            root.mutationController.trashItem(root.selectedEntry.path, root.selectedEntry)
     }
 
     Dialog {
@@ -200,14 +216,7 @@ Item {
             ? qsTr("Move %1 selected items to Trash?").arg(root.selectedItems.length)
             : qsTr("Move selected item to Trash?")
         standardButtons: Dialog.Yes | Dialog.Cancel
-        onAccepted: {
-            if (root.selectedItems.length > 1) {
-                root.mutationController.trashItems(root.selectedItems)
-            } else if (root.selectedEntry) {
-                root.mutationController.trashItem(root.selectedEntry.path,
-                                                   root.selectedEntry)
-            }
-        }
+        onAccepted: root.trashSelection()
 
         Label {
             text: root.selectedItems.length > 1

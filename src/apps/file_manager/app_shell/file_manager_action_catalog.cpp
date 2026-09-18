@@ -62,6 +62,12 @@ QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
              QStringLiteral("File"), QStringLiteral("Empty Trash"),
              QStringLiteral("Permanently remove every item from the home Trash"),
              QKeySequence(QStringLiteral("Ctrl+Shift+Delete")), 0, 6, true),
+      // ADR-0198: Preferences is a File-menu item with the platform-standard
+      // Ctrl+, shortcut, after the item-specific entries.
+      action(QStringLiteral("app.preferences"), QStringLiteral("file"),
+             QStringLiteral("File"), QStringLiteral("Preferences"),
+             QStringLiteral("Change what a window starts with, and network options"),
+             QKeySequence(QStringLiteral("Ctrl+,")), 0, 8),
       action(QStringLiteral("file.properties"), QStringLiteral("file"),
              QStringLiteral("File"), QStringLiteral("Properties"),
              QStringLiteral("Show size, kind, and permissions for the selection"),

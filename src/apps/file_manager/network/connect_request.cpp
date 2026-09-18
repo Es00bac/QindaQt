@@ -116,11 +116,17 @@ ConnectRequestResult buildNetworkLocation(const ConnectRequest &request) {
                    QStringLiteral("Give the location a shorter name."));
   }
 
+  if (request.mountAtLogin && scheme != QLatin1String("sftp")) {
+    return refusal(ConnectRequestError::MountUnsupported,
+                   QStringLiteral("Only SFTP locations can be mounted at login."));
+  }
+
   NetworkLocationRecord record;
   record.id = NetworkLocationsStore::identityFor(*canonical);
   record.name = name;
   record.url = *canonical;
   record.showInPlaces = request.showInPlaces;
+  record.mountAtLogin = request.mountAtLogin;
   return {.record = record, .error = ConnectRequestError::None, .message = {}};
 }
 

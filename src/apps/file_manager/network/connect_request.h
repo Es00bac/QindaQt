@@ -22,6 +22,9 @@ struct ConnectRequest final {
   // Empty means "derive a readable name from the address".
   QString displayName;
   bool showInPlaces = true;
+  // ADR-0199. Refused for anything but sftp, since sshfs is the only mount
+  // this knob knows.
+  bool mountAtLogin = false;
 };
 
 enum class ConnectRequestError {
@@ -32,6 +35,7 @@ enum class ConnectRequestError {
   InvalidPort,
   InvalidPath,
   InvalidName,
+  MountUnsupported,
 };
 
 struct ConnectRequestResult final {

@@ -9,9 +9,7 @@
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
 #include "model/search_controller.h"
-#include "network/network_locations_controller.h"
-#include "network/network_locations_store.h"
-#include "network/transfer_queue_controller.h"
+#include "window_fixtures.h"
 #include "mutation/mutation_controller.h"
 #include "preview/local_preview.h"
 #include "preview/preview_provider.h"
@@ -113,11 +111,9 @@ struct RemoteMutationRouteFixture final {
     applications = std::make_unique<ApplicationsController>(QStringList{});
     places = std::make_unique<PlacesController>(
         std::make_unique<BookmarksStore>(temporaryPath + QStringLiteral("/state")));
-    networkLocations = std::make_unique<NetworkLocationsController>(
-        std::make_unique<NetworkLocationsStore>(temporaryPath + QStringLiteral("/state")));
-    // This fixture proves the ADR-0155/0156 one-child remote path; it never
-    // dispatches a queued transfer, so the queue gets no worker.
-    transfers = std::make_unique<TransferQueueController>(nullptr);
+    // This fixture proves the ADR-0155/0156 one-child remote path and the
+    // ADR-0195 queue routing; nothing else the window needs does anything.
+    support = std::make_unique<Test::WindowSupportControllers>(temporaryPath);
 
     const auto catalogResult = coordinator.replaceActions(fileManagerActionCatalog());
     if (!catalogResult.ok()) {
@@ -139,7 +135,7 @@ struct RemoteMutationRouteFixture final {
     engine->addImageProvider(QStringLiteral("previews"), previews);
     engine->addImageProvider(QStringLiteral("theme-icons"), new ThemeIconProvider());
     previews->setGeneration(navigation->listingGeneration());
-    engine->setInitialProperties({
+    QVariantMap initialProperties{
         {"navigationController", QVariant::fromValue(static_cast<QObject *>(navigation.get()))},
         {"mutationController", QVariant::fromValue(static_cast<QObject *>(mutation.get()))},
         {"clipboardController", QVariant::fromValue(static_cast<QObject *>(clipboard.get()))},
@@ -147,11 +143,9 @@ struct RemoteMutationRouteFixture final {
         {"searchController", QVariant::fromValue(static_cast<QObject *>(search.get()))},
         {"placesController", QVariant::fromValue(static_cast<QObject *>(places.get()))},
         {"applicationsController", QVariant::fromValue(static_cast<QObject *>(applications.get()))},
-        {"networkLocationsController",
-         QVariant::fromValue(static_cast<QObject *>(networkLocations.get()))},
-        {"transferQueueController",
-         QVariant::fromValue(static_cast<QObject *>(transfers.get()))},
-        {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}});
+        {"coordinator", QVariant::fromValue(static_cast<QObject *>(&coordinator))}};
+    support->insertInto(initialProperties);
+    engine->setInitialProperties(initialProperties);
     engine->load(QUrl::fromLocalFile(sourceRoot + QStringLiteral("/src/apps/file_manager/ui/Main.qml")));
     if (engine->rootObjects().isEmpty()) {
       return fail(error, QStringLiteral("Main.qml must load"));
@@ -195,8 +189,7 @@ struct RemoteMutationRouteFixture final {
   std::unique_ptr<SearchController> search;
   std::unique_ptr<ApplicationsController> applications;
   std::unique_ptr<PlacesController> places;
-  std::unique_ptr<NetworkLocationsController> networkLocations;
-  std::unique_ptr<TransferQueueController> transfers;
+  std::unique_ptr<Test::WindowSupportControllers> support;
   // Owned by the QML engine (see init()); not deleted here.
   PreviewProvider *previews = nullptr;
   std::unique_ptr<QQmlApplicationEngine> engine;
@@ -270,14 +263,14 @@ void TestRemoteCopyGuard::remoteMultiSelectionCopyRoutesToTheQueueNotTheLocalBac
   QCoreApplication::processEvents();
   // ADR-0195: two sources become two queue items. The one-child copier is
   // untouched, and the local mutation backend still saw nothing.
-  QCOMPARE(fixture.transfers->itemValues().size(), 2);
-  QCOMPARE(fixture.transfers->itemValues().constFirst().destinationFolder.toString(),
+  QCOMPARE(fixture.support->transfers.itemValues().size(), 2);
+  QCOMPARE(fixture.support->transfers.itemValues().constFirst().destinationFolder.toString(),
            QStringLiteral("smb://server/backup"));
-  QCOMPARE(fixture.transfers->itemValues().constFirst().operation,
+  QCOMPARE(fixture.support->transfers.itemValues().constFirst().operation,
            TransferOperation::Copy);
   QCOMPARE(fixture.rawCopier->requests().size(), 0);
   QCOMPARE(fixture.rawRecording->executeCount(), 0);
-  QVERIFY(fixture.transfers->refusal().isEmpty());
+  QVERIFY(fixture.support->transfers.refusal().isEmpty());
 
   // Exactly one entry: the dialog opens and the accepted destination routes
   // to the injected copier, still never to the local backend.
@@ -374,12 +367,12 @@ void TestRemoteCopyGuard::remoteMultiSelectionMoveRoutesToTheQueueNotTheLocalBac
   QCoreApplication::processEvents();
   // ADR-0195: two sources become two queued moves. The destructive one-child
   // mover is untouched, and the local mutation backend still saw nothing.
-  QCOMPARE(fixture.transfers->itemValues().size(), 2);
-  QCOMPARE(fixture.transfers->itemValues().constFirst().operation,
+  QCOMPARE(fixture.support->transfers.itemValues().size(), 2);
+  QCOMPARE(fixture.support->transfers.itemValues().constFirst().operation,
            TransferOperation::Move);
   QCOMPARE(fixture.rawMover->requests().size(), 0);
   QCOMPARE(fixture.rawRecording->executeCount(), 0);
-  QVERIFY(fixture.transfers->refusal().isEmpty());
+  QVERIFY(fixture.support->transfers.refusal().isEmpty());
 
   // Exactly one entry: the dialog opens and the accepted destination routes
   // to the injected mover, still never to the local backend.

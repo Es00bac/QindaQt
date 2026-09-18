@@ -13,6 +13,7 @@ namespace {
           {QStringLiteral("name"), record.name},
           {QStringLiteral("url"), record.url.toString()},
           {QStringLiteral("showInPlaces"), record.showInPlaces},
+          {QStringLiteral("mountAtLogin"), record.mountAtLogin},
           {QStringLiteral("index"), index}};
 }
 
@@ -25,6 +26,8 @@ namespace {
   request.displayName = values.value(QStringLiteral("displayName")).toString();
   request.showInPlaces =
       values.value(QStringLiteral("showInPlaces"), true).toBool();
+  request.mountAtLogin =
+      values.value(QStringLiteral("mountAtLogin"), false).toBool();
   return request;
 }
 
@@ -38,6 +41,17 @@ NetworkLocationsController::NetworkLocationsController(
   // Absent is a clean first run: no inventory yet, and nothing to report.
   if (!loaded.ok() && loaded.error != NetworkLocationsError::Absent) {
     m_storeError = loaded.diagnostic;
+    return;
+  }
+  if (!loaded.migratedFromV1) {
+    return;
+  }
+  // ADR-0199: a v1 inventory is rewritten as v2 once, here, so the next
+  // launch reads the current schema. A refused rewrite is reported but is not
+  // fatal: the records are already loaded and every surface works.
+  const NetworkLocationsWriteResult written = m_store->store(m_locations);
+  if (!written.ok()) {
+    m_storeError = written.diagnostic;
   }
 }
 

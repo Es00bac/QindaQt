@@ -113,6 +113,45 @@ qindaqt_add_file_manager_test(
     tst_network_locations_controller.cpp
     qindaqt.file-manager-network-locations-controller
 )
+# ADR-0197: Avahi browsing and the Nearby model. The production browser's
+# D-Bus edges are answered with canned replies and its browser signals are
+# delivered directly, so no bus, daemon, or network is involved.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_avahi_discovery_tests
+    tst_avahi_service_discovery.cpp
+    qindaqt.file-manager-avahi-discovery
+)
+target_link_libraries(
+    qindaqt_file_manager_avahi_discovery_tests PRIVATE Qt6::DBus
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_discovery_controller_tests
+    tst_discovery_controller.cpp
+    qindaqt.file-manager-discovery-controller
+)
+# ADR-0198: the durable preference schema and the controller that owns it.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_preferences_store_tests
+    tst_preferences_store.cpp
+    qindaqt.file-manager-preferences-store
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_preferences_controller_tests
+    tst_preferences_controller.cpp
+    qindaqt.file-manager-preferences-controller
+)
+# ADR-0199: the mount unit text and name, and the manager that keeps the unit
+# directory in step with the saved locations. No systemctl is ever run.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_mount_unit_tests
+    tst_mount_unit.cpp
+    qindaqt.file-manager-mount-unit
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_mount_manager_tests
+    tst_network_mount_manager.cpp
+    qindaqt.file-manager-mount-manager
+)
 # ADR-0195: the routing policy and the queue's sequencing, fencing, pause,
 # and cancellation against a recording worker double -- no KIO, no network.
 qindaqt_add_file_manager_test(
