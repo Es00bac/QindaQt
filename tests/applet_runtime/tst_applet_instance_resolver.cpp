@@ -95,6 +95,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
+        // Streaming control surface (ADR-0198/ADR-0199); sorted position.
+        QStringLiteral("qindaqt.applets.obs"),
         QStringLiteral("qindaqt.applets.overview-trigger"),
         QStringLiteral("qindaqt.applets.places-menu"),
         QStringLiteral("qindaqt.applets.power"),
