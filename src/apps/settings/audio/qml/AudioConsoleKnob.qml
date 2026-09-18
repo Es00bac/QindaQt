@@ -108,6 +108,25 @@ Item {
                 }
             }
 
+            // The value halo: a ring that brightens as the dial moves away
+            // from its block default, so a rack that has been touched reads as
+            // touched at a glance without having to compare numbers. Drawn as
+            // a plain bordered Rectangle, never a Canvas — Canvas content does
+            // not paint under offscreen capture, which is how this surface is
+            // reviewed.
+            Rectangle {
+                anchors.centerIn: parent
+                width: dial.diameter - 4
+                height: width
+                radius: width / 2
+                color: "transparent"
+                border.width: 2
+                border.color: Tokens.accent.default
+                visible: knob.range > 0
+                opacity: 0.55 * Math.min(1.0,
+                    Math.abs(knob.liveValue - knob.defaultValue) / (knob.range / 2))
+            }
+
             Rectangle {
                 anchors.centerIn: parent
                 width: dial.diameter - 10

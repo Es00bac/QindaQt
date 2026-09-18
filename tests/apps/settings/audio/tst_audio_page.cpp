@@ -62,6 +62,7 @@ private Q_SLOTS:
   void disabledDefaultFallsThroughToFirstAdmittedAction();
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
+  void consoleCardsShareOneGrid();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -475,6 +476,60 @@ void AudioPageTest::stubMatchesRealModelSurface() {
   QCOMPARE(invokableSurface(
                QindaQt::Apps::SettingsAudio::AudioSettingsModel::staticMetaObject),
            invokableSurface(StubAudioSettingsModel::staticMetaObject));
+}
+
+// The console is read across a row like a real desk, so every card must put
+// its meter, fader and pads at the same height as its neighbour's. This row
+// exists because they did not: a virtual strip hid the device picker a
+// hardware strip carries, which lifted its whole desk band, and buses put
+// their picker at the bottom while strips put it at the top. The band heights
+// in AudioConsoleStrip.qml and AudioConsoleBus.qml are shared verbatim; this
+// fails if they ever drift apart again.
+void AudioPageTest::consoleCardsShareOneGrid() {
+  auto [guard, page] = createPage(QSize(1100, 900));
+  QVERIFY(page != nullptr);
+
+  struct CardUnderTest {
+    const char *card;
+    const char *fader;
+    const char *meter;
+  };
+  // A hardware strip and a virtual strip (the pair that misaligned), then a
+  // physical bus and a virtual bus.
+  const CardUnderTest cards[] = {
+      {"consoleStrip_strip.hw.1", "consoleStripFader_strip.hw.1",
+       "consoleStripMeter_strip.hw.1"},
+      {"consoleStrip_strip.virtual.1", "consoleStripFader_strip.virtual.1",
+       "consoleStripMeter_strip.virtual.1"},
+      {"consoleBus_bus.a1", "consoleBusFader_bus.a1", "consoleBusMeter_bus.a1"},
+      {"consoleBus_bus.b1", "consoleBusFader_bus.b1", "consoleBusMeter_bus.b1"},
+  };
+
+  qreal sharedFaderOffset = -1.0;
+  qreal sharedCardHeight = -1.0;
+  for (const CardUnderTest &entry : cards) {
+    QQuickItem *card = findItem(page, QString::fromLatin1(entry.card));
+    QQuickItem *fader = findItem(page, QString::fromLatin1(entry.fader));
+    QQuickItem *meter = findItem(page, QString::fromLatin1(entry.meter));
+    QVERIFY2(card != nullptr, entry.card);
+    QVERIFY2(fader != nullptr, entry.fader);
+    QVERIFY2(meter != nullptr, entry.meter);
+
+    const qreal faderOffset = fader->mapToItem(card, QPointF(0.0, 0.0)).y();
+    const qreal meterOffset = meter->mapToItem(card, QPointF(0.0, 0.0)).y();
+    QCOMPARE(meterOffset, faderOffset);
+    // The desk band height is the one number both files state.
+    QCOMPARE(fader->height(), 150.0);
+
+    if (sharedFaderOffset < 0.0) {
+      sharedFaderOffset = faderOffset;
+      sharedCardHeight = card->height();
+      continue;
+    }
+    QCOMPARE(faderOffset, sharedFaderOffset);
+    QCOMPARE(card->height(), sharedCardHeight);
+  }
+  QVERIFY(sharedFaderOffset > 0.0);
 }
 
 QTEST_MAIN(AudioPageTest)

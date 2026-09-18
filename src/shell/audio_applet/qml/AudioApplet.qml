@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls as T
-import QtQuick.Layouts
-import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 // Bounded audio panel applet surface. The controller is the composed shell
 // facade injected above QML; this file never imports the Audio1 client or
 // any service module and owns no business policy of its own.
+//
+// AGENT-CONTRACT: the summary-icon rule below is pinned by
+// tests/shell/audio_applet/verify_audio_summary_icon_contract.cmake, which
+// greps THIS FILE for the exact expressions and icon names. It must stay
+// here, spelled this way, even as the panel body moves elsewhere.
+//
+// The popup body lives in AudioAppletPanel.qml. Two reasons, both load
+// bearing: this file would otherwise pass its decomposition limit as the
+// panel gains bands, and the capture probe can render the panel directly in
+// a plain window instead of chasing a popup's own QQuickPopupWindow.
 Item {
     id: root
 
@@ -19,9 +27,32 @@ Item {
     property var controller: null
     property bool vertical: false
 
+    // AGENT-NOTE: optional, and null in every composition today. The audio
+    // applet has no way to open Settings — src/shell/qml/BuiltinAppletContent.qml
+    // hands it only `controller` and `vertical`, while the
+    // `desktopControlsAccess` object that carries openSettings() is passed to
+    // other applets from the same file. That file is outside this lane, so the
+    // seam is declared here and the footer action renders only once something
+    // supplies it; nothing shows a button that cannot work.
+    property var desktopControls: null
+
     readonly property bool showLists:
         controller?.phaseText === "ready"
             || controller?.phaseText === "degraded"
+
+    // Band state lives on the applet, not on the Popup: the Popup's contents
+    // are destroyed when it closes, and a section the user collapsed must
+    // still be collapsed the next time they open the panel. It is deliberately
+    // per-session — the desktop has no QML-side settings store, and adding a
+    // Settings1 key is a behaviour change outside this lane.
+    property bool outputExpanded: true
+    property bool inputExpanded: true
+    property bool appsExpanded: true
+    property bool consoleExpanded: true
+    // 0 means "ride whatever the service calls the default"; a non-zero serial
+    // pins the band to one device for as long as it exists.
+    property int outputSelectedSerial: 0
+    property int inputSelectedSerial: 0
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Audio")
@@ -109,8 +140,11 @@ Item {
         modal: false
         focus: true
         padding: Tokens.space["3"]
-        width: 360
-        height: Math.min(560, Math.max(160, content.implicitHeight + padding * 2))
+        // A piece of desk equipment, not a menu: 420 px is what a device name,
+        // a full-width fader, a readout and a mute need side by side without
+        // the name wrapping onto three lines.
+        width: 420
+        height: Math.min(620, Math.max(160, panel.implicitHeight + padding * 2))
         closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
                      | T.Popup.CloseOnPressOutsideParent
 
@@ -121,154 +155,21 @@ Item {
         }
 
         contentItem: T.ScrollView {
+            id: scroller
             clip: true
+            // AGENT-GUARD: both dimensions are stated. A ScrollView left to
+            // infer its content size from a Layout child reported a height
+            // roughly one row short, so the popup sized itself just under its
+            // content and clipped the last console strip with no scrollbar to
+            // reach it. The popup height below reads the same number.
+            contentWidth: availableWidth
+            contentHeight: panel.implicitHeight
 
-            ColumnLayout {
-                id: content
-                width: details.availableWidth
-                spacing: Tokens.space["3"]
-
-        C.SectionHeader {
-            objectName: "audioSectionHeader"
-            Layout.fillWidth: true
-            title: qsTr("Audio")
-            description: showLists && controller.hasDefaultOutput
-                ? qsTr("Default output: %1").arg(controller.defaultOutputLabel)
-                : ""
-        }
-
-        C.Label {
-            objectName: "audioDefaultInputLabel"
-            Layout.fillWidth: true
-            visible: showLists
-            text: controller && controller.hasDefaultInput
-                ? qsTr("Default input: %1").arg(controller.defaultInputLabel)
-                : qsTr("No default input")
-            muted: !(controller && controller.hasDefaultInput)
-        }
-
-        C.StateCard {
-            objectName: "audioLoadingState"
-            Layout.fillWidth: true
-            visible: controller?.phaseText === "loading"
-            status: C.StateCard.Busy
-            title: qsTr("Audio")
-            message: qsTr("Audio device information is loading…")
-        }
-
-        C.DegradedNotice {
-            objectName: "audioUnavailableNotice"
-            Layout.fillWidth: true
-            visible: controller?.phaseText === "unavailable"
-            title: qsTr("Audio is unavailable")
-            reason: controller?.phaseReasonText ?? ""
-        }
-
-        C.DegradedNotice {
-            objectName: "audioDegradedNotice"
-            Layout.fillWidth: true
-            visible: controller?.phaseText === "degraded"
-            title: qsTr("Audio information is limited")
-            reason: controller?.phaseReasonText ?? ""
-        }
-
-        C.StateCard {
-            objectName: "audioFeedbackState"
-            Layout.fillWidth: true
-            visible: controller?.feedbackPresent ?? false
-            status: C.StateCard.Error
-            title: qsTr("Change not applied")
-            message: controller?.feedback ?? ""
-            actionText: qsTr("Dismiss")
-            onActionTriggered: controller.clearFeedback()
-        }
-
-        C.Label {
-            objectName: "audioEmptyDevices"
-            Layout.fillWidth: true
-            visible: showLists && controller.deviceRows.length === 0
-            text: qsTr("No audio devices are reported right now.")
-            muted: true
-        }
-
-        // AGENT-GUARD (ADR-0191): the model is the row *count*, not the row
-        // list. A Repeater handed a QVariantList regenerates every delegate
-        // whenever that list is reassigned, and the controller reassigns it on
-        // every reprojection -- including the one its own dispatch triggers.
-        // That destroyed the control the user was holding, so a pointer drag
-        // lost its grab and a keyboard step lost its focus after exactly one
-        // move. Binding the row by index keeps the item alive and updates its
-        // values in place.
-        Repeater {
-            objectName: "audioDeviceRows"
-            model: showLists ? controller.deviceRows.length : 0
-
-            delegate: AudioDeviceRow {
-                required property int index
-
-                Layout.fillWidth: true
-                row: root.controller.deviceRows[index] ?? null
+            AudioAppletPanel {
+                id: panel
+                width: scroller.availableWidth
                 controller: root.controller
-            }
-        }
-
-        C.Label {
-            objectName: "audioDeviceOverflow"
-            Layout.fillWidth: true
-            visible: showLists && controller.overflowDeviceCount > 0
-            text: controller ? qsTr("%1 more devices are managed in Audio settings.").arg(
-                                   controller.overflowDeviceCount) : ""
-            muted: true
-        }
-
-        C.SectionHeader {
-            objectName: "audioStreamsHeader"
-            Layout.fillWidth: true
-            visible: showLists && controller.streamRows.length > 0
-            title: qsTr("Application streams")
-        }
-
-        Repeater {
-            objectName: "audioStreamRows"
-            model: showLists ? controller.streamRows.length : 0
-
-            delegate: AudioStreamRow {
-                required property int index
-
-                Layout.fillWidth: true
-                row: root.controller.streamRows[index] ?? null
-                controller: root.controller
-            }
-        }
-
-        // The console (ADR-0181): the strips' faders, mutes and meters, so a
-        // level can be ridden from the tray without opening Settings.
-        C.Label {
-            objectName: "audioConsoleHeading"
-            visible: root.showLists && (root.controller?.consoleRows?.length ?? 0) > 0
-            text: qsTr("Console")
-            font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
-            opacity: 0.7
-        }
-        Repeater {
-            objectName: "audioConsoleRows"
-            model: root.showLists ? (root.controller?.consoleRows?.length ?? 0) : 0
-            delegate: AudioConsoleRow {
-                required property int index
-                Layout.fillWidth: true
-                controller: root.controller
-                strip: root.controller.consoleRows[index] ?? null
-            }
-        }
-
-        C.Label {
-            objectName: "audioStreamOverflow"
-            Layout.fillWidth: true
-            visible: showLists && controller.overflowStreamCount > 0
-            text: controller ? qsTr("%1 more streams are managed in Audio settings.").arg(
-                                   controller.overflowStreamCount) : ""
-            muted: true
-        }
+                store: root
             }
         }
     }
