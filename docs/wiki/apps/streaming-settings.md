@@ -39,6 +39,21 @@ A keyring that cannot be read is reported and stops the operation. It is
 never treated as "there is no password yet", because that would overwrite a
 credential OBS is already using.
 
+## The first run, and the Screen source
+
+Setting OBS up does not require restarting the shell. The applet re-checks for
+OBS's control configuration on a slow watch and connects as soon as it is set
+up, because the ordinary order of events is that the desktop is already running
+when the user presses **Set up OBS** here. Until OBS's own config says the
+control server is enabled, nothing asks the keyring for the password at all, so
+a desktop without OBS never touches the Secret Service on this path.
+
+The provisioned scene collection includes a **Screen** source. On Wayland,
+opening it for the first time raises the portal's "Share screen with" picker,
+and OBS shows nothing until a screen is chosen there. That is the portal doing
+its job — screen capture is a permission the compositor grants, not something
+an application can take — and it is expected on first run, once per source.
+
 ## The control port
 
 QindaQt connects to `ws://127.0.0.1:<port>` and nothing else. obs-websocket
