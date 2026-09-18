@@ -116,6 +116,53 @@ set_tests_properties(
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
+# Touch rows model over a fake Settings1 transport (ADR-0205).
+qindaqt_input_test(
+    qindaqt_settings_input_touch_model_test
+    SOURCES tst_touch_settings_model.cpp support/fake_settings_transport.h
+)
+add_test(NAME qindaqt.settings-input-touch-model
+         COMMAND qindaqt_settings_input_touch_model_test)
+set_tests_properties(
+    qindaqt.settings-input-touch-model PROPERTIES
+    LABELS "settings;input;touch"
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
+
+# Offscreen Touch section rows over the real model and a fake Settings1
+# transport (ADR-0205): degraded until a snapshot, rows follow it, one write
+# per edit, a disabled touchscreen hides the rest.
+qt_add_executable(
+    qindaqt_settings_input_touch_section_test
+    tst_input_touch_section.cpp
+    support/fake_settings_transport.h
+)
+target_include_directories(qindaqt_settings_input_touch_section_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(
+    qindaqt_settings_input_touch_section_test PRIVATE
+    qindaqt_settings_input qindaqt_settings_appearance qindaqt_themes
+    qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_settings_input_touch_section_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+)
+add_dependencies(
+    qindaqt_settings_input_touch_section_test
+    qindaqt_settings_input_qml qindaqt_settings_input_qmlplugin
+    qindaqt_controls_qml qindaqt_controls_qmlplugin qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_input_touch_section_test)
+add_test(NAME qindaqt.settings-input-touch-section
+         COMMAND qindaqt_settings_input_touch_section_test)
+set_tests_properties(
+    qindaqt.settings-input-touch-section PROPERTIES
+    LABELS "offscreen;settings;input;touch"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
+
 # Offscreen Input page rows: capability hiding, conflict capture, the
 # capture flow, and keyboard navigation over real models on fake ports.
 qt_add_executable(

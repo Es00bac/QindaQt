@@ -3,7 +3,13 @@
 
 #include <plugin.h>
 
+namespace KWin {
+class InputDevice;
+}
+
 #include <QDBusConnection>
+#include <QList>
+#include <QPointer>
 
 #include <memory>
 
@@ -17,6 +23,10 @@ class ShellTaskFactsController;
 namespace QindaQt::Compositor::KWinIntegration {
 
 class KWinControlEndpoint;
+class KWinTouchEdgeReserver;
+class KWinTouchPreferences;
+class KWinOnScreenKeyboardPolicy;
+class TouchEdgeGestures;
 class KWinDevelopmentInputInjector;
 class KWinDevelopmentOutputSeam;
 class KWinInputAdapter;
@@ -47,6 +57,9 @@ private Q_SLOTS:
 
 private:
     void releasePublishedContainers();
+    void applyTouchPreferences();
+    void applyTouchscreenEnabled(bool enabled);
+    void gateTouchDevice(KWin::InputDevice *device, bool enabled);
 
     const bool m_mutationsEnabled;
     const bool m_developmentVirtualOutputsEnabled;
@@ -72,6 +85,13 @@ private:
     std::unique_ptr<KWinSceneAdapter> m_sceneAdapter;
     std::unique_ptr<ContainerControlBridge> m_bridge;
     std::unique_ptr<KWinControlEndpoint> m_endpoint;
+    std::unique_ptr<KWinTouchEdgeReserver> m_touchEdgeReserver;
+    std::unique_ptr<TouchEdgeGestures> m_touchEdges;
+    std::unique_ptr<KWinTouchPreferences> m_touchPreferences;
+    std::unique_ptr<KWinOnScreenKeyboardPolicy> m_onScreenKeyboard;
+    // ADR-0205: touch devices this plugin switched off for input.touch.enabled;
+    // only these are switched back on, never a device the user disabled in KWin.
+    QList<QPointer<KWin::InputDevice>> m_touchDevicesDisabledByPreference;
     bool m_registeredService = false;
     bool m_registeredObject = false;
     bool m_registeredShellActionObject = false;

@@ -440,6 +440,38 @@ pointer-only seat), so the private harness drives real fingers. The
 `Containers` control method's hybrid entries publish each container's `outerFrame`, `outerTitleBar` and `tabs[]` (with rects and
 `active`) from the chrome plan, which is how the touch rows aim.
 
+### Touch edges and touch preferences
+
+The plugin also owns the screen's touch edges
+([ADR-0205](../adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)).
+`TouchEdgeGestures` keeps one `QAction` per edge and reserves it on KWin's
+`ScreenEdges` (`reserveTouch`) while the edge has an action; KWin recognises
+the swipe (a finger down within its 8 px edge target, 44 logical px of
+travel) and triggers the action on release. The plugin never opens anything:
+it announces `org.qindaqt.Compositor1.EdgeGestureTriggered(edge, action)`
+and the shell runtime's `EdgeGestureSubscriber` dispatches — `overview` to
+the overview applet's popup (`DesktopControlsAccess.overviewRequested`),
+`notifications` to the notification center toggle, `task-switcher` to
+KGlobalAccel's `Walk Through Windows`. Defaults: left → overview, top →
+notifications, bottom → task switcher, right → nothing. KWin's own
+`[TouchEdges]` and `[TabBox] TouchBorderActivate` stay unset so no edge has
+two owners.
+
+`KWinTouchPreferences` is the compositor's purpose-scoped Settings1 client
+for `input.touch.*`: the long-press threshold reaches
+`HybridChromeTouchPolicy` through `KWinHybridSession::setTouchPolicyConfig`
+(a gesture in flight keeps the thresholds it started with), the edge actions
+reach `TouchEdgeGestures::apply`, and `input.touch.onScreenKeyboard` reaches
+`KWinOnScreenKeyboardPolicy`, which stops KWin's input method for `off`
+and restores it for `auto`; whether a started keyboard shows stays KWin's
+own rule, a finger or pen focused the field
+([ADR-0204](../adr/0204-the-on-screen-keyboard-is-the-compositors-input-method.md)).
+Without a Settings1 service the defaults apply and the log says so.
+
+`KWinInteractionFilter::keyboardKey` hides a visible on-screen keyboard
+when a hardware keyboard key is pressed; keys the keyboard itself forwards
+never pass through the filters, so they cannot hide it.
+
 ## Compositor scene restart
 
 Scene image ownership ends before KWin dismantles its `WindowItem` tree.

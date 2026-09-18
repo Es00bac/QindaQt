@@ -18,9 +18,10 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "shade_visibility"))
 
 import touch_flow_chrome  # noqa: E402
+import touch_flow_enabled  # noqa: E402
 from shade_session import SessionConfig, ShadeSession  # noqa: E402
 
-FLOWS = {"chrome": touch_flow_chrome.run}
+FLOWS = {"chrome": touch_flow_chrome.run, "enabled": touch_flow_enabled.run}
 
 
 def main() -> int:

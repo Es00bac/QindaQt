@@ -601,4 +601,11 @@ void KWinHybridSession::synchronizeChrome()
     synchronizeAccessibility();
 }
 
+void KWinHybridSession::setTouchPolicyConfig(const TouchPolicyConfig &config)
+{
+    if (m_inputFilter) {
+        m_inputFilter->setTouchPolicyConfig(config);
+    }
+}
+
 } // namespace QindaQt::Compositor::KWinIntegration

@@ -45,6 +45,8 @@ public:
     using HybridContainersProvider = std::function<QJsonArray()>;
     using HybridSnapshotProvider =
         std::function<std::optional<QJsonObject>(const QString &)>;
+
+    void announceEdgeGesture(const QString &edge, const QString &action);
     using DevelopmentCompositorReinitializer = std::function<bool()>;
     // ADR-0165: resolves a workspace picker's application choice. The handler
     // (the Hybrid session) validates that the ACTIVE window is a registered
@@ -120,6 +122,9 @@ Q_SIGNALS:
     Q_SCRIPTABLE void OutputsChanged();
     Q_SCRIPTABLE void InputCapabilitiesChanged();
     Q_SCRIPTABLE void ShellVisibilityChanged();
+    // ADR-0205: a completed touch swipe from a screen edge, as (edge, action);
+    // the shell decides what the action opens.
+    Q_SCRIPTABLE void EdgeGestureTriggered(const QString &edge, const QString &action);
 
 private:
     ContainerControlBridge &m_bridge;

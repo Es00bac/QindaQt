@@ -1,0 +1,16 @@
+{
+  "name": "es",
+  "label": "ES",
+  "letters": [
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l", "ñ"],
+    ["{shift}", "z", "x", "c", "v", "b", "n", "m", "{backspace}"],
+    ["{symbols}", "{layout}", ",", "{space}", ".", "{enter}", "{hide}"]
+  ],
+  "symbols": [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["@", "#", "€", "%", "&", "-", "+", "(", ")", "/"],
+    ["{shift}", {"text": "*", "shift": "~"}, {"text": "\"", "shift": "`"}, {"text": "'", "shift": "|"}, {"text": ":", "shift": "\\"}, {"text": ";", "shift": "{"}, {"text": "¡", "shift": "}"}, {"text": "¿", "shift": "["}, {"text": "_", "shift": "]"}, {"text": "=", "shift": "^"}, "{backspace}"],
+    ["{letters}", "{layout}", "<", "{space}", ">", "{enter}", "{hide}"]
+  ]
+}
