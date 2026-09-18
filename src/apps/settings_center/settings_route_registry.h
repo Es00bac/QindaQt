@@ -46,6 +46,11 @@ private:
   void registerDateTimeRoute();
   // ADR-0211: appended after every earlier route so indices stay stable.
   void registerWindowsRoute();
+  void registerDefaultApplicationsRoute();
+  void registerDefaultApplicationsRoute();
+  void registerBuiltInRoutesFirstHalf();
+  void registerBuiltInRoutesSecondHalf();
+  void registerBuiltIn(const SettingsRoute &route);
 
   QList<SettingsRoute> m_routes;
 };
