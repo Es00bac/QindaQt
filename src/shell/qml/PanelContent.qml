@@ -17,6 +17,7 @@ Item {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var smartLightsAppletAccess: null
+    property var obsAppletAccess: null
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
@@ -285,6 +286,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
+        obsAppletAccess: root.obsAppletAccess
         clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
@@ -316,6 +318,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
+        obsAppletAccess: root.obsAppletAccess
         clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
@@ -347,6 +350,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
+        obsAppletAccess: root.obsAppletAccess
         clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
