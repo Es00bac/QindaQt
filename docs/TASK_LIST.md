@@ -5,6 +5,57 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## Installed delivery checkpoint (September 18, r11)
+
+Exact source `70d28f52` is installed through Portage on both machines as
+`gui-wm/qindaqt-desktop-0.1.0_pre20260917-r11`, verified by reading
+`QINDAQT_COMMIT` back out of each installed ebuild. The laptop reports
+`1501 out of 1501 files are good`. This supersedes the r2 and r6 checkpoints
+below.
+
+Main is `7b172233`; the two merges past r11 are test-only and were deliberately
+not given a revision number, because a revision name is a promise about exactly
+one tree.
+
+**The laptop needs one logout/login** — its session predates the install.
+
+### Done in this wave and installed
+
+- Live desktop customization: Meta+right-click, the editor hosted in the shell,
+  the chord seeded so the compositor does not consume it.
+- Settings routes now run to index 17: Streaming, Date & time, Windows &
+  workspaces, Default applications, About this computer, Startup applications.
+- `windowManagement.*` is bridged into `kwinrc` live, so the Windows route's
+  controls act on a running session rather than at next login.
+- OBS: console buses and strips as named OBS sources, the applet on the panel,
+  and first-run connection when OBS appears rather than only at shell startup.
+- Theming v2: surfaces, radii and motion in a theme; decoration themes as their
+  own documents.
+- A window rolls up to its icon chip; the audio applet and Settings console are
+  laid out as desk equipment.
+
+### Not done, and explicitly not claimed
+
+- **Nobody has used the live editor by hand on a real desktop.** Its unit and
+  nested rows pass; moving a panel with Meta+right-click and logging back in to
+  see it persist has not been done by a person.
+- **`org.qindaqt.Settings1` activation fails on the desktop every five seconds
+  and has since `Sep 16 13:00:22`** — `xdg-desktop-portal-qindaqt` requests it,
+  the activated process exits 3 at `settings_service/src/main.cpp:44`, repeat.
+  A healthy service owns the name on another scope at the same time. The
+  two-session-bus reading is unproven and needs the live session to confirm.
+  Not caused by anything in this wave.
+- `tools/validate-docs` still does not detect duplicate ADR numbers. Three
+  collisions landed in one day and all three passed it.
+- Route QML modules added this wave are `STATIC` while the eleven older ones are
+  `SHARED`, which is why each new route must be hand-linked into three
+  in-process `Main.qml` hosts and two session lists. Making them `SHARED`
+  retires that whole class of breakage.
+- Three nested drivers still start a stock `dbus-run-session` and can activate
+  the host's installed services: `test_installed_plugin_discovery.py`,
+  `test_desktop_session_probe_cli.py`, `test_parent_wayland_session.py`. Their
+  rows are green; the fix is one line each.
+
 ## Installed delivery checkpoint (September 17, r2)
 
 Exact source `b23b2ca3` is installed through Portage on both machines as
