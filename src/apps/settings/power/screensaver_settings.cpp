@@ -17,6 +17,12 @@ QString displayName(const QString &saver) {
     return ScreensaverSettingsModel::tr("Qinda Patrol");
   if (saver == QLatin1String("circuit-reef"))
     return ScreensaverSettingsModel::tr("Circuit Reef");
+  if (saver == QLatin1String("prism-circuit"))
+    return ScreensaverSettingsModel::tr("Prism Circuit");
+  if (saver == QLatin1String("prism-brawl"))
+    return ScreensaverSettingsModel::tr("Prism Brawl");
+  if (saver == QLatin1String("starward"))
+    return ScreensaverSettingsModel::tr("Starward");
   return ScreensaverSettingsModel::tr("None");
 }
 
@@ -137,9 +143,16 @@ bool ScreensaverSettingsModel::submit(const QString &key, const QVariant &value)
 }
 
 void ScreensaverSettingsModel::mirrorToLockScreen(const QString &saver) {
-  if (m_lockScreenSaver.currentSaver() == saver) return;
+  // AGENT-GUARD: only a saver the greeter can actually draw may take the lock
+  // wallpaper over (ADR-0216). Pointing the greeter at a saver with no QML
+  // module would replace the user's own lock wallpaper with a blank ground,
+  // so those choices release it instead.
+  const QString mirrored = ScreensaverPreferences::showsOnLockScreen(saver)
+      ? saver
+      : ScreensaverPreferences::noneToken();
+  if (m_lockScreenSaver.currentSaver() == mirrored) return;
   QString error;
-  if (!m_lockScreenSaver.save(saver, &error)) {
+  if (!m_lockScreenSaver.save(mirrored, &error)) {
     m_errorText = tr("The screensaver was saved, but the lock screen could not "
                      "be told about it: %1")
                       .arg(error.isEmpty() ? tr("unknown reason") : error);
@@ -148,11 +161,21 @@ void ScreensaverSettingsModel::mirrorToLockScreen(const QString &saver) {
 
 void ScreensaverSettingsModel::publishStatus() {
   const auto preferences = m_preferences.currentPreferences();
-  m_statusText = preferences.enabled()
-      ? tr("%1 starts after %n minute(s) of inactivity.", nullptr,
-           preferences.minutes)
-            .arg(displayName(preferences.saver))
-      : tr("No screensaver starts when the session is idle.");
+  if (!preferences.enabled()) {
+    m_statusText = tr("No screensaver starts when the session is idle.");
+  } else if (preferences.showsOnLockScreen()) {
+    m_statusText = tr("%1 starts after %n minute(s) of inactivity, and keeps "
+                      "showing while the screen is locked.",
+                      nullptr, preferences.minutes)
+                       .arg(displayName(preferences.saver));
+  } else {
+    // Honest about the split: this saver has no scene the locker can draw, so
+    // a locked screen keeps whatever wallpaper it already had.
+    m_statusText = tr("%1 starts after %n minute(s) of inactivity. The lock "
+                      "screen keeps its own wallpaper.",
+                      nullptr, preferences.minutes)
+                       .arg(displayName(preferences.saver));
+  }
   Q_EMIT changed();
 }
 

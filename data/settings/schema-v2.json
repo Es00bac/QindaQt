@@ -497,7 +497,10 @@
         "allowedValues": [
           "none",
           "qinda-patrol",
-          "circuit-reef"
+          "circuit-reef",
+          "prism-circuit",
+          "prism-brawl",
+          "starward"
         ]
       }
     },

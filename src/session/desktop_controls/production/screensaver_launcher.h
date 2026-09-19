@@ -12,9 +12,9 @@
 namespace QindaQt::Session::DesktopControls {
 
 // Idle screensaver: after the configured idle time, start the chosen saver
-// program on every output (qinda-patrol --screensaver, circuit-reef
-// --all-screens); stop it on user activity or when KScreenLocker locks the
-// session. The locker (KWin's embedded KScreenLocker) stays the only lock
+// program on every output (each saver takes --screensaver and covers every
+// connected output under it); stop it on user activity or when KScreenLocker
+// locks the session. The locker (KWin's embedded KScreenLocker) stays the only lock
 // authority; the saver is decoration only and is never started while locked,
 // so no screensaver process ever sits between the user and the password
 // prompt.

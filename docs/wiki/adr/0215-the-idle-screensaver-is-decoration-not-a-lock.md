@@ -10,10 +10,10 @@
 
 ## Context
 
-QindaQt ships two screensaver programs of its own, `x11-misc/qinda-patrol`
-and `x11-misc/circuit-reef`. Both are ordinary Wayland clients that place one
-surface per output and exit on their own input; neither authenticates
-anything. The session already has a lock authority — KWin's embedded
+QindaQt ships screensaver programs of its own — `x11-misc/qinda-patrol` and
+`x11-misc/circuit-reef` when this was written, five of them since
+2026-09-19. All are ordinary Wayland clients that place one surface per output
+and exit on their own input; none authenticates anything. The session already has a lock authority — KWin's embedded
 KScreenLocker, configured through the Screen lock section
 ([ADR-0091](0091-configure-kscreenlocker-preferences-through-settings.md),
 [ADR-0132](0132-finish-session-locking.md)) — and a display-off policy that
@@ -45,7 +45,7 @@ it is separate from both the lock and the display-off policies:
    session locks. It never starts one while locked, so a saver is never the
    surface a returning user has to dismiss to reach authentication.
 3. **A closed set of saver tokens.** `power.screensaver` holds a token, not a
-   command line: `none`, `qinda-patrol`, or `circuit-reef`. An unrecognized
+   command line: `none` or one of the installed savers. An unrecognized
    persisted token — a stale value, a hand-edited file, a downgrade — reads
    back as `none`. Nothing from persistence ever reaches `QProcess` as a
    program name, and each known token carries its own fixed arguments
@@ -69,10 +69,14 @@ it is separate from both the lock and the display-off policies:
   offers both names and the launcher reports the failed start once; the
   session is otherwise unaffected. Settings does not probe for installed
   saver binaries, so an unavailable choice is discovered by choosing it.
-- Adding a third saver means a new token in the schema's `allowedValues`, in
-  `ScreensaverPreferences::knownSavers()`, and in the route's option list.
-  That is deliberately three explicit edits rather than a discovery
-  mechanism: the argument contract above is per-saver.
+- Adding a saver means a new token in the schema's `allowedValues`, in
+  `ScreensaverPreferences::knownSavers()`, in its `arguments()`, and in the
+  route's option list — and, if it is to appear on a locked screen, a QML
+  module and a scene file in the wallpaper plugin
+  ([ADR-0216](0216-the-locker-draws-the-screensaver.md)). That is deliberately
+  a handful of explicit edits rather than a discovery mechanism: the argument
+  contract above is per-saver, and so is whether the greeter can draw it. The
+  2026-09-19 set of five was added exactly this way.
 - The launcher's own process lifetime (idle arming through KIdleTime, the
   quick-exit guard, the kill timer) has no focused test; its policy inputs
   and its preference seam do. Proving the idle path needs a session with a
