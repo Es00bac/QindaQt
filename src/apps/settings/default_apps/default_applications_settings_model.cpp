@@ -86,19 +86,17 @@ bool DefaultApplicationsSettingsModel::setDefaultApplication(
     Q_EMIT changed();
     return false;
   }
-  DefaultApplicationPreferences next = m_preferences;
-  next.setCategory(matched, desktopId);
   QString error;
-  if (!m_store->save(next, &error)) {
+  if (!m_store->saveCategory(matched, desktopId, &error)) {
     m_errorText = error;
     Q_EMIT changed();
     return false;
   }
-  m_preferences = next;
-  m_loadFailed = false;
-  m_errorText.clear();
+  // Clearing an override can reveal a packaged or administrator default.
+  // Reload instead of presenting the requested ID as authoritative state.
+  reload();
   Q_EMIT changed();
-  return true;
+  return !m_loadFailed;
 }
 
 bool DefaultApplicationsSettingsModel::retry() {

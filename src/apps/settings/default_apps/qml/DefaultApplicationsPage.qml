@@ -121,7 +121,7 @@ T.Page {
                                 objectName: "defaultApplicationSelector_" + categoryRow.modelData.id
                                 Layout.fillWidth: true
                                 readonly property var options: {
-                                    const opts = [{ "value": "", "label": qsTr("None") }]
+                                    const opts = [{ "value": "", "label": qsTr("Use inherited default") }]
                                     for (const option of categoryRow.modelData.options)
                                         opts.push({ "value": option.id, "label": option.name })
                                     if (categoryRow.modelData.currentId.length > 0

@@ -95,3 +95,13 @@ add_test(NAME qindaqt.settings-default-apps-installed-route
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed_route.cmake")
 set_tests_properties(qindaqt.settings-default-apps-installed-route PROPERTIES
     LABELS "offscreen;settings;default-apps;package" RUN_SERIAL TRUE TIMEOUT 45)
+
+find_program(QINDAQT_DEFAULT_APPS_XDG_MIME xdg-mime REQUIRED)
+add_test(NAME qindaqt.settings-default-apps-packaged-defaults
+    COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_packaged_defaults.py"
+        --build-directory "${CMAKE_BINARY_DIR}"
+        --install-datadir "${CMAKE_INSTALL_DATADIR}"
+        --xdg-mime "${QINDAQT_DEFAULT_APPS_XDG_MIME}")
+set_tests_properties(qindaqt.settings-default-apps-packaged-defaults PROPERTIES
+    LABELS "settings;default-apps;package" TIMEOUT 60)

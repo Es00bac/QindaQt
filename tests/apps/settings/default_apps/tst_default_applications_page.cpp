@@ -15,6 +15,7 @@
 
 using QindaQt::ApplicationCatalog::DirectoryScan;
 using QindaQt::ApplicationCatalog::ScannedApplication;
+using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationCategory;
 using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationPreferences;
 using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationsSettingsModel;
 using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationsStore;
@@ -37,10 +38,11 @@ public:
     *out = preferences;
     return true;
   }
-  bool save(const DefaultApplicationPreferences &value, QString *error) override {
+  bool saveCategory(DefaultApplicationCategory category, const QString &desktopId,
+                    QString *error) override {
     Q_UNUSED(error);
-    saves.append(value);
-    preferences = value;
+    preferences.setCategory(category, desktopId);
+    saves.append(preferences);
     return true;
   }
 };
@@ -48,7 +50,7 @@ public:
 DirectoryScan makeScan() {
   DirectoryScan scan;
   ScannedApplication browser;
-  browser.entry.id = QStringLiteral("userapp-QindaFox.desktop");
+  browser.entry.id = QStringLiteral("userapp-QindaFox");
   browser.entry.name = QStringLiteral("QindaFox");
   browser.documentText = QStringLiteral("[Desktop Entry]\nMimeType=text/html;\n");
   scan.applications = {browser};
@@ -126,10 +128,12 @@ void DefaultApplicationsPageTest::rendersOneRowPerCategoryWithCurrentSelection()
       findItem(page, QStringLiteral("defaultApplicationSelector_file-manager"));
   QVERIFY(browserSelector != nullptr);
   QVERIFY(fileManagerSelector != nullptr);
+  QVERIFY(findItem(page, QStringLiteral("defaultApplicationSelector_pdf-viewer")) != nullptr);
+  QCOMPARE(m_model->rows().size(), 8);
   QCOMPARE(browserSelector->property("currentText").toString(),
            QStringLiteral("QindaFox"));
   QCOMPARE(fileManagerSelector->property("currentText").toString(),
-           QStringLiteral("None"));
+           QStringLiteral("Use inherited default"));
 }
 
 void DefaultApplicationsPageTest::selectingAnOptionCallsSetDefaultApplication() {
@@ -139,7 +143,7 @@ void DefaultApplicationsPageTest::selectingAnOptionCallsSetDefaultApplication() 
       findItem(page, QStringLiteral("defaultApplicationSelector_browser"));
   QVERIFY(browserSelector != nullptr);
 
-  // Current selection is index 1 ("QindaFox"); Up moves to index 0 ("None"),
+  // Current selection is index 1 ("QindaFox"); Up moves to index 0 ("Use inherited default"),
   // which must save an empty (unset) browser default.
   browserSelector->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), browserSelector);
