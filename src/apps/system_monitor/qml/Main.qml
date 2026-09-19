@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Controls as QQC
 import QindaTK as Tk
 import QindaTK.QindaQt
 import QindaQt.SystemMonitor
 import "panels" as Panels
+import "parts" as Parts
 
 Tk.AppWindow {
     id: window
@@ -12,6 +12,20 @@ Tk.AppWindow {
     // "dashboard", or one panel id when started with --panel.
     property string panel: typeof initialPanel === "string" ? initialPanel : "dashboard"
     readonly property bool single: window.panel !== "dashboard"
+    property string message: ""
+
+    // AGENT-CONTRACT: written by the AppShell menu export in main.cpp. True
+    // until the desktop's global menu takes the menu over, false once it
+    // hosts it. Nothing else may assign it.
+    property bool inWindowMenuVisible: true
+
+    readonly property var actionList: {
+        let actions = []
+        for (const menu of coordinator.menus) {
+            actions = actions.concat(menu.actions)
+        }
+        return actions
+    }
 
     width: window.single ? 560 : 1280
     height: window.single ? 600 : 860
@@ -24,63 +38,82 @@ Tk.AppWindow {
     // follows whatever theme the session is wearing.
     QindaQtTheme {}
 
-    menuBar: Tk.MenuBar {
-        Tk.Menu {
-            title: qsTr("&View")
-            Tk.MenuItem {
-                text: qsTr("Pause updates")
-                shortcut: "Ctrl+Alt+P"
-                checkable: true
-                checked: Monitor.paused
-                onTriggered: {
-                    Monitor.paused = checked
-                    Facade.paused = checked
-                }
-            }
-            Tk.MenuItem {
-                text: qsTr("Refresh now")
-                shortcut: "F5"
-                onTriggered: { Monitor.requestSample(); Facade.refreshHardware() }
-            }
-            Tk.MenuSeparator {}
-            Tk.MenuItem {
-                text: qsTr("Fast (500 ms)")
-                radio: true
-                checked: Monitor.interval === 500
-                onTriggered: Monitor.interval = 500
-            }
-            Tk.MenuItem {
-                text: qsTr("Normal (1 s)")
-                radio: true
-                checked: Monitor.interval === 1000
-                onTriggered: Monitor.interval = 1000
-            }
-            Tk.MenuItem {
-                text: qsTr("Relaxed (3 s)")
-                radio: true
-                checked: Monitor.interval === 3000
-                onTriggered: Monitor.interval = 3000
-            }
+    function dispatch(actionId) {
+        if (actionId === "view.pause") {
+            window.setPaused(!Monitor.paused)
+            return
         }
-        Tk.Menu {
-            title: qsTr("&Layout")
-            enabled: !window.single
-            Tk.MenuItem {
-                text: qsTr("Reset arrangement")
-                onTriggered: if (dashboardLoader.item !== null) dashboardLoader.item.resetLayout()
-            }
-            Tk.MenuItem {
-                text: qsTr("Show every panel")
-                onTriggered: if (dashboardLoader.item !== null) dashboardLoader.item.showEveryPanel()
-            }
+        if (actionId === "view.refresh") {
+            Monitor.requestSample()
+            Facade.refreshHardware()
+            return
         }
-        Tk.Menu {
-            title: qsTr("&Help")
-            Tk.MenuItem {
-                text: qsTr("About System Monitor")
-                onTriggered: about.open()
-            }
+        const interval = Facade.intervalForAction(actionId)
+        if (interval > 0) {
+            Monitor.interval = interval
+            return
         }
+        if (actionId === "layout.reset" && dashboardLoader.item !== null) {
+            dashboardLoader.item.resetLayout()
+            return
+        }
+        if (actionId === "layout.show-all" && dashboardLoader.item !== null) {
+            dashboardLoader.item.showEveryPanel()
+            return
+        }
+        if (actionId === "help.about") {
+            about.open()
+        }
+    }
+
+    function setPaused(paused) {
+        Monitor.paused = paused
+        Facade.paused = paused
+    }
+
+    function report(text) {
+        window.message = text
+        messageTimer.restart()
+    }
+
+    function detach(id) {
+        // ADR-0108: a detached view is this executable again with one panel,
+        // which keeps every window independent -- closing one leaves the rest
+        // sampling.
+        if (!Facade.openPanel(id)) {
+            window.report(qsTr("Could not open a separate %1 window").arg(id))
+        }
+    }
+
+    Connections {
+        target: coordinator
+        function onActionRequested(actionId) { window.dispatch(actionId) }
+    }
+
+    // What the menus show as checked is published from C++ (see main.cpp);
+    // both copies of the menu read that one snapshot.
+    Connections {
+        target: Monitor
+        function onErrorOccurred(message) { window.report(message) }
+    }
+
+    // Shortcuts come from the catalog too, so they work whichever place the
+    // menu is being drawn -- including when it is drawn nowhere in this window.
+    Instantiator {
+        model: window.actionList
+        delegate: Shortcut {
+            required property var modelData
+            sequence: modelData.shortcut
+            enabled: modelData.enabled
+            onActivated: coordinator.activateAction(modelData.id)
+        }
+    }
+
+    menuBar: Parts.MonitorMenuBar {
+        objectName: "monitorMenuBar"
+        visible: window.inWindowMenuVisible
+        menusModel: coordinator.menus
+        onActivated: actionId => coordinator.activateAction(actionId)
     }
 
     Loader {
@@ -142,28 +175,12 @@ Tk.AppWindow {
         }
     }
 
-    property string message: ""
-
-    function report(text) {
-        window.message = text
-        messageTimer.restart()
-    }
-
-    // A failed signal is the user's answer to something they just tried, so
-    // it belongs in the status bar for long enough to read and no longer.
+    // A failed signal is the answer to something the reader just tried, so it
+    // belongs in the status bar for long enough to read and no longer.
     Timer {
         id: messageTimer
         interval: 6000
         onTriggered: window.message = ""
-    }
-
-    function detach(id) {
-        // ADR-0108: a detached view is this executable again with one panel,
-        // which keeps every window independent -- closing one leaves the rest
-        // sampling.
-        if (!Facade.openPanel(id)) {
-            window.report(qsTr("Could not open a separate %1 window").arg(id))
-        }
     }
 
     Tk.MessageDialog {
@@ -171,10 +188,5 @@ Tk.AppWindow {
         title: qsTr("System Monitor")
         text: qsTr("QindaQt System Monitor\n\nProcessor, memory, storage, network and "
                    + "hardware activity, and the processes behind them.")
-    }
-
-    Connections {
-        target: Monitor
-        function onErrorOccurred(message) { window.report(message) }
     }
 }

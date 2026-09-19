@@ -48,6 +48,12 @@ public:
   /// views). Returns false when the process could not be started.
   Q_INVOKABLE bool openPanel(const QString &panelId);
 
+  /// The sampling interval an interval menu action selects, or 0 when the
+  /// action is not one. QML asks rather than carrying its own copy of the
+  /// rates, so a rate cannot appear in the menu the application does not
+  /// understand.
+  Q_INVOKABLE [[nodiscard]] static int intervalForAction(const QString &actionId);
+
   /// "2.4 GiB". Binary units, because every counter behind them is binary.
   Q_INVOKABLE [[nodiscard]] static QString bytes(const QVariant &value,
                                                  int precision = 1);

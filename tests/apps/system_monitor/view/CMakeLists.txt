@@ -17,3 +17,13 @@ set_target_properties(qindaqt_system_monitor_facade_tests PROPERTIES CXX_EXTENSI
 qindaqt_enable_warnings(qindaqt_system_monitor_facade_tests)
 add_test(NAME qindaqt.system-monitor-facade COMMAND qindaqt_system_monitor_facade_tests)
 set_tests_properties(qindaqt.system-monitor-facade PROPERTIES LABELS "system-monitor")
+
+qt_add_executable(qindaqt_system_monitor_actions_tests tst_system_monitor_actions.cpp)
+target_link_libraries(qindaqt_system_monitor_actions_tests
+    PRIVATE QindaQt::SystemMonitorView Qt6::Test)
+target_compile_features(qindaqt_system_monitor_actions_tests PRIVATE cxx_std_20)
+set_target_properties(qindaqt_system_monitor_actions_tests
+    PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
+qindaqt_enable_warnings(qindaqt_system_monitor_actions_tests)
+add_test(NAME qindaqt.system-monitor-actions COMMAND qindaqt_system_monitor_actions_tests)
+set_tests_properties(qindaqt.system-monitor-actions PROPERTIES LABELS "system-monitor")
