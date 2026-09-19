@@ -12,8 +12,10 @@ readable connection diagnosis. The shared client
 also needs to keep paused recordings and reconnecting streams active, as
 recorded in the [OBS applet diagnosis](../shell/obs-applet.md).
 
-No candidate compilation or runtime check has been run; those gates are held
-for the coordinated desktop build.
+The coordinated production build and existing
+`qindaqt.settings-streaming-model` row subsequently passed. Live authenticated
+connection and output-state behavior remain focused session observations;
+the model row alone does not qualify every corrected state transition.
 
 The Streaming route (`qindaqt-settings --page streaming`) is where OBS is set
 up and where the desktop's recording, streaming and virtual-camera controls

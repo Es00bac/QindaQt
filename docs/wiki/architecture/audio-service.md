@@ -17,6 +17,10 @@ an entry only when its stored pointer is the module being destroyed, so a late
 destruction cannot remove a replacement with the same name. Raw lingering-sink
 proxy recovery remains outside this module-lifetime correction.
 
+The coordinated production build compiled this correction successfully.
+The focused Settings Audio model/page checks passed; they do not exercise
+PipeWire destroying a virtual-bus module or qualify physical audio hardware.
+
 Audio1 is QindaQt's typed, restart-aware control and observation boundary for
 the running PipeWire graph. The D-Bus-activated `qindaqt-audio-service` owns
 `org.qindaqt.Audio1`; upstream WirePlumber remains the policy manager. Audio1

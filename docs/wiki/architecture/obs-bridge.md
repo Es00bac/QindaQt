@@ -22,6 +22,14 @@ to restored collections that finish loading without current Audio1 authority.
 The published mapping and dock clear while authority is absent; source names,
 console identities and other settings remain intact.
 
+The coordinated production build succeeded and the existing
+`qindaqt.obs-bridge-libobs` row passed with the actual graphical display
+available. Its first run failed before bridge assertions because libobs could
+not open an X display; the fixture's unconditional cleanup then crashed.
+Providing display access resolved that environment prerequisite without a
+source change. The row covers source creation, synchronization and adoption,
+but does not prove the new owner-loss preservation path or actual captures.
+
 `obs-qindaqt` is an OBS Studio module that shows the QindaQt audio console
 to OBS ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)). It is
 built from `src/obs` against the installed `libobs`, `obs-frontend-api` and
