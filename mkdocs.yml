@@ -354,3 +354,4 @@ nav:
       - "ADR-0215: the idle screensaver is decoration, and never a lock": adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md
       - "ADR-0216: the locker draws the screensaver": adr/0216-the-locker-draws-the-screensaver.md
       - "ADR-0218: use QindaTK and Poppler for the image/PDF viewer": adr/0218-use-qindatk-and-poppler-for-the-viewer.md
+      - "ADR-0219: share completed work through qinda": adr/0219-share-completed-work-through-qinda.md
