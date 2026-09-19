@@ -127,6 +127,12 @@ install(
     COMPONENT TextEditor
 )
 
+install(
+    TARGETS qindaqt_controls_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    COMPONENT Viewer
+)
+
 # Public app icon lookup is separate from shell discovery and ships a fallback
 # catalog in the existing Controls runtime, so staged installs remain complete.
 file(GLOB_RECURSE qindaqt_control_icon_assets CONFIGURE_DEPENDS
