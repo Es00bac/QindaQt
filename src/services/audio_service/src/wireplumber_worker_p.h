@@ -68,7 +68,7 @@ public:
     // stream that could not connect). Drops the entry only if it still holds
     // THAT module - the key may already belong to its replacement. Public
     // only because the event lands in a free C callback.
-    enum class ModuleKind { Send, Chain, BusChain };
+    enum class ModuleKind { Send, Chain, BusChain, Endpoint };
     void forgetModule(ModuleKind kind, const std::string &key, void *module);
     // Attaches the destroy listener; every loaded module goes through it.
     void watchModule(ModuleKind kind, const std::string &key, void *module);

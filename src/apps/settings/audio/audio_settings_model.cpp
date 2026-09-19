@@ -468,12 +468,15 @@ void AudioSettingsModel::handleOperationCompleted(
   // requestId -> serial, then serial removes its own pending entry only, so
   // one target completing never touches another target's in-flight state.
   const auto serialIt = m_serialByRequestId.constFind(requestId);
-  if (serialIt == m_serialByRequestId.constEnd()) {
+  const bool consoleRequest = m_consoleRequestIds.remove(requestId);
+  if (serialIt == m_serialByRequestId.constEnd() && !consoleRequest) {
     return;
   }
-  const quint64 serial = *serialIt;
-  m_pendingBySerial.remove(serial);
-  m_serialByRequestId.remove(requestId);
+  if (serialIt != m_serialByRequestId.constEnd()) {
+    const quint64 serial = *serialIt;
+    m_pendingBySerial.remove(serial);
+    m_serialByRequestId.remove(requestId);
+  }
 
   if (result.status == OperationStatus::Succeeded) {
     m_localError.clear();

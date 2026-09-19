@@ -29,6 +29,10 @@ public:
     // minutes later.
     virtual void sendText(const QString &text) = 0;
     [[nodiscard]] virtual bool isOpen() const = 0;
+    // Peer close code for the most recent disconnected signal, or 0 when
+    // unavailable. The client interprets OBS's authentication/protocol codes;
+    // the transport must preserve the number instead of guessing from text.
+    [[nodiscard]] virtual int closeCode() const { return 0; }
 
 Q_SIGNALS:
     void connected();

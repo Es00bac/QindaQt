@@ -13,7 +13,7 @@
     "orientations": ["horizontal", "vertical"]
   },
   "sizing": {
-    "mainAxis": {"minimum": 32, "preferred": 40, "maximum": 72, "stretch": false},
+    "mainAxis": {"minimum": 32, "preferred": 72, "maximum": 208, "stretch": false},
     "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
   },
   "capabilities": [

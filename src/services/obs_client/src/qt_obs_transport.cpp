@@ -12,11 +12,9 @@ QtObsTransport::QtObsTransport(QObject *parent) : ObsTransport(parent) {
         Q_EMIT connected();
     });
     connect(&m_socket, &QWebSocket::disconnected, this, [this] {
-        const bool wasOpen = m_open;
         m_open = false;
         // A close that follows a failed connect is reported once, by the
         // socket; a close with no prior open is still a close to the client.
-        Q_UNUSED(wasOpen)
         Q_EMIT disconnected(m_socket.closeReason());
     });
     connect(&m_socket, &QWebSocket::textMessageReceived, this,
@@ -61,6 +59,9 @@ void QtObsTransport::open(const QString &url) {
 }
 
 void QtObsTransport::close() {
+    // Stop accepting frames immediately, including while the close handshake
+    // is still completing. A frame queued before stop is no longer live state.
+    m_open = false;
     if (m_socket.state() == QAbstractSocket::UnconnectedState) {
         return;
     }
@@ -75,5 +76,7 @@ void QtObsTransport::sendText(const QString &text) {
 }
 
 bool QtObsTransport::isOpen() const { return m_open; }
+
+int QtObsTransport::closeCode() const { return int(m_socket.closeCode()); }
 
 } // namespace QindaQt::Obs

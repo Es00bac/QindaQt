@@ -1,5 +1,20 @@
 # Settings Streaming route
 
+## 2026-09-19 source diagnosis
+
+The route shares the applet's discarded OBS authentication close-code path
+and also presents output commands as locally toggled switches. It admits
+repeat output/scene commands without tracking an outstanding request and
+shows a connection-state token without the client's reason. This inspection
+precedes the route correction: named compact switches that restore OBS's
+authoritative checked state, one outstanding output/scene command, and a
+readable connection diagnosis. The shared client
+also needs to keep paused recordings and reconnecting streams active, as
+recorded in the [OBS applet diagnosis](../shell/obs-applet.md).
+
+No candidate compilation or runtime check has been run; those gates are held
+for the coordinated desktop build.
+
 The Streaming route (`qindaqt-settings --page streaming`) is where OBS is set
 up and where the desktop's recording, streaming and virtual-camera controls
 live in full. OBS stays the authority for everything it owns;

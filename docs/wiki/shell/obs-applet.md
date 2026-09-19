@@ -16,8 +16,9 @@ until the coordinated desktop code is ready.
   OBS answers. A refused operation need not change the authoritative active
   value, so the switch can keep showing the requested state. The controller
   also discards a zero request id and admits repeated presses while a request
-  is outstanding. Explicit Start/Stop actions, tracked request completion,
-  and a visible pending message are the bounded correction.
+  is outstanding. Restoring each compact switch's authoritative checked
+  binding, tracked request completion, and a visible pending message are
+  the bounded correction.
 - The chip computes a summary such as Streaming but never renders it; its
   two most consequential states share the same icon and colour. The popup
   has no direct route to the Streaming settings it tells users to open.
@@ -27,6 +28,14 @@ until the coordinated desktop code is ready.
 The profile placement and first-setup watch were already fixed by `2c6137e6`.
 The PulseAudio monitor names used by the bridge match upstream OBS's capture
 implementation; they are not a newly discovered device-name defect.
+
+A second protocol finding concerns paused recordings and reconnecting streams.
+OBS's [output event implementation](https://github.com/obsproject/obs-websocket/blob/master/src/eventhandler/EventHandler_Outputs.cpp)
+sets `outputActive` false for those states and carries the distinction in
+`outputState`. Reading that flag alone makes the chip look idle and stops its
+status refresh timer while an output still exists. The client must preserve
+the active output across those events and clear old elapsed/frame counts when
+a new run starts.
 
 The OBS applet is a top-bar chip that says what OBS is doing and a popup with
 the controls a user reaches for mid-session. Everything else about OBS stays
@@ -39,6 +48,10 @@ The glyph states the most consequential thing OBS is doing: **streaming**
 outranks **recording**, which outranks the **virtual camera**. A user who is
 live needs to see that first, whatever else OBS is also doing. The chip takes
 the accent colour exactly while OBS is recording or streaming.
+
+Horizontal panels show the short state beside the icon; vertical panels keep
+the icon and tooltip. A paused recording stays active and reads "Recording
+paused"; a reconnecting stream stays active and reads "Reconnecting stream".
 
 When OBS is not reachable the chip stays, and its accessible description says
 why — "OBS is not running", "OBS did not accept QindaQt's password", or that
@@ -53,10 +66,20 @@ OBS speaks a control protocol QindaQt does not.
 | Virtual camera | Start or stop the virtual camera |
 | Scene list | Make one of OBS's scenes live |
 | Open OBS | Open the OBS window, for everything this popup deliberately does not do |
+| Streaming settings | Open the setup and connection-repair route directly |
 
 A control here is enabled exactly when it is dispatchable. Pressing one while
 OBS is unreachable reports why rather than doing nothing silently. A refused
 request is shown in OBS's own words.
+
+The compact switches have explicit accessible names and restore their checked
+binding immediately after dispatch. Until OBS confirms a new state they keep
+showing its last reported state. Only the outstanding action is disabled;
+"Waiting for OBS…" reports pending work, a zero request id reports busy, and
+an unconfirmed change is described as unconfirmed rather than refused. A
+state event may confirm the action before its request reply. The popup's
+implicit height is capped to the screen and its contents scroll, so a large
+scene list cannot resize the native popup past the available viewport.
 
 A dropped-frame warning appears only while a stream is running and only when
 OBS reported frame counts showing at least 1% dropped.
@@ -91,7 +114,8 @@ only when the read capability is granted and a password is already in the
 keyring** — connecting without one would make OBS's refusal look like a wrong
 password the user chose, and would retry against it forever. Without the
 control grant the controller is still built, so the panel the user configured
-keeps its chip and reports honestly that OBS cannot be driven.
+keeps its chip, retains granted read access to live state, and reports that
+OBS cannot be driven.
 
 The password reaches the client and nothing else: it is never held by the
 controller, never published into QML, and never logged

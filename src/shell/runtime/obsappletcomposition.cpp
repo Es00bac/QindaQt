@@ -84,11 +84,9 @@ ObsAppletComposition::ObsAppletComposition(
                          });
         m_provisioningWatch.start();
     }
-    // The controller is built either way: without a grant it presents the
-    // same honest "OBS is not running" state rather than vanishing from the
-    // panel the user configured.
+    // Read access keeps the live indicator even when control is denied.
     m_access = std::make_unique<ObsApplet::ObsAppletController>(
-        grants.control ? m_client.get() : nullptr);
+        grants.read ? m_client.get() : nullptr, nullptr, grants.control);
 }
 
 bool ObsAppletComposition::tryStart() {

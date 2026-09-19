@@ -19,6 +19,17 @@ position binding, and track console completions through the existing feedback
 path. This diagnosis was recorded before edits; no compilation or runtime
 check has been run for the candidate.
 
+The candidate applies that correction to both console card Repeaters and
+tracks all console operations, including racks, pins, presets, recording and
+VBAN, through the existing error/uncertainty feedback. The console fader keeps
+the latest gesture position on a 40 ms dispatch cadence, waits while the
+public client has a request outstanding, and discards the pending gesture
+when its control becomes unavailable. Its binding resumes when the pointer
+and request are free. Tab and accessible increase/decrease actions reach the
+same fader. As with the existing count-based device rows, this is a bounded
+delegate-lifetime repair; arbitrary same-count replacement of console ids
+is not a stable-id item-model guarantee.
+
 `qindaqt-settings --page audio` is the first-party audio settings surface. It
 is a modular Settings Center route composed exclusively through the public
 Audio1 client boundary. The route observes bounded device and stream truth and

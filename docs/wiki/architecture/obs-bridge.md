@@ -12,6 +12,11 @@ when AudioClient has no snapshot, while retaining a labelled stale snapshot
 when the client itself still holds one. This is source evidence, recorded
 before changes; no OBS process or live audio graph was changed.
 
+The candidate follows AudioClient's snapshot ownership on state changes,
+clears the mapping and dock when authority is lost, and removes bridge-owned
+sources when the frontend is ready. A collection that finishes loading without
+current Audio1 authority also has its restored bridge sources removed.
+
 `obs-qindaqt` is an OBS Studio module that shows the QindaQt audio console
 to OBS ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)). It is
 built from `src/obs` against the installed `libobs`, `obs-frontend-api` and
@@ -46,6 +51,17 @@ while some holder still references it.
 Source settings (also the vendor request's fields): `qindaqt_console_id`,
 `qindaqt_code`, `qindaqt_label`, `qindaqt_capture_kind` (`input`, `monitor`,
 `none`), `qindaqt_capture_device`.
+
+### Existing mixing-policy limitation
+
+Every mapped source is attached to a mixer channel by the existing ADR-0208
+policy. A signal routed from a strip to a bus can therefore enter OBS through
+both captures at once, and a raw hardware/virtual-strip capture precedes that
+strip's rack and send gains. Console mute/gain values in the vendor mapping
+describe Audio1; this bridge does not apply them as an additional OBS mixer
+mute/gain. Users must select the intended captures in OBS's mixer to avoid
+duplicate or raw-strip audio. The authority/lifetime correction does not
+change source activation defaults or claim a consolidated recording mix.
 
 ## Lifecycle inside OBS
 
