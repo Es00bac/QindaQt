@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
 #include <qindaqt/apps/settings_power/screensaver_settings.h>
 
 #include <qindaqt/services/settings_client/settings_client.h>
@@ -161,6 +162,34 @@ private:
     QList<CommitRequest> m_commits;
 };
 
+// The greeter mirror, recorded rather than written: a route test must never
+// depend on a real kscreenlockerrc, and the mirror's own file format has its
+// own row (qindaqt.settings-lock-screen-saver-store).
+class FakeLockScreenSaverStore final : public LockScreenSaverStore {
+public:
+    [[nodiscard]] bool save(const QString &saverToken, QString *error) override
+    {
+        ++m_saves;
+        if (m_failure.isEmpty()) {
+            m_current = saverToken;
+            if (error != nullptr) error->clear();
+            return true;
+        }
+        if (error != nullptr) *error = m_failure;
+        return false;
+    }
+
+    [[nodiscard]] QString currentSaver() const override { return m_current; }
+
+    void failWith(const QString &message) { m_failure = message; }
+    [[nodiscard]] int saves() const noexcept { return m_saves; }
+
+private:
+    QString m_current = QStringLiteral("none");
+    QString m_failure;
+    int m_saves = 0;
+};
+
 } // namespace
 
 class ScreensaverSettingsModelTest final : public QObject {
@@ -176,11 +205,15 @@ private Q_SLOTS:
     void rejectedCommitReportsTheFailure();
     void busyModelRejectsFurtherWrites();
     void retryClearsErrorAndNeverWrites();
+    void confirmedSaverReachesTheLockScreen();
+    void refusedCommitNeverReachesTheLockScreen();
+    void lockScreenFailureIsItsOwnError();
 
 private:
     std::unique_ptr<FakeSettingsTransport> m_transport;
     std::unique_ptr<SettingsClient> m_client;
     std::unique_ptr<Settings1ScreensaverPreferences> m_preferences;
+    std::unique_ptr<FakeLockScreenSaverStore> m_lockScreen;
     std::unique_ptr<ScreensaverSettingsModel> m_model;
 };
 
@@ -191,7 +224,9 @@ void ScreensaverSettingsModelTest::init() {
     m_client = std::make_unique<SettingsClient>(
         *m_transport, Settings1ScreensaverPreferences::scopedKeys());
     m_preferences = std::make_unique<Settings1ScreensaverPreferences>(*m_client);
-    m_model = std::make_unique<ScreensaverSettingsModel>(*m_preferences, *m_client);
+    m_lockScreen = std::make_unique<FakeLockScreenSaverStore>();
+    m_model = std::make_unique<ScreensaverSettingsModel>(*m_preferences, *m_client,
+                                                        *m_lockScreen);
     QString error;
     QVERIFY(m_client->start(&error));
 }
@@ -301,6 +336,47 @@ void ScreensaverSettingsModelTest::retryClearsErrorAndNeverWrites() {
     QVERIFY(m_model->errorText().isEmpty());
     // Retry only re-reads: it must never replay the write that failed.
     QCOMPARE(static_cast<int>(m_transport->committedOperations().size()), writes);
+}
+
+void ScreensaverSettingsModelTest::confirmedSaverReachesTheLockScreen() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+    QCOMPARE(m_lockScreen->currentSaver(), ScreensaverPreferences::noneToken());
+
+    QVERIFY(m_model->setSaver(QStringLiteral("circuit-reef")));
+    // Still nothing: a write in flight is not truth.
+    QCOMPARE(m_lockScreen->currentSaver(), ScreensaverPreferences::noneToken());
+
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_lockScreen->currentSaver(), QStringLiteral("circuit-reef"));
+    QVERIFY2(m_model->errorText().isEmpty(), qPrintable(m_model->errorText()));
+}
+
+void ScreensaverSettingsModelTest::refusedCommitNeverReachesTheLockScreen() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::PersistenceFailed);
+    QTRY_VERIFY(!m_model->errorText().isEmpty());
+    // AGENT-GUARD: a locked screen must show what is actually persisted. A
+    // refused commit that still reached the greeter would leave the lock
+    // screen showing a saver the unlocked session does not have.
+    QCOMPARE(m_lockScreen->currentSaver(), ScreensaverPreferences::noneToken());
+    QCOMPARE(m_lockScreen->saves(), 0);
+}
+
+void ScreensaverSettingsModelTest::lockScreenFailureIsItsOwnError() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+    m_lockScreen->failWith(QStringLiteral("read-only configuration"));
+
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_model->saver(), QStringLiteral("qinda-patrol"));
+    // The preference is persisted; only the mirror failed, and the message
+    // must say so rather than claim the choice was lost.
+    QVERIFY(m_model->errorText().contains(QStringLiteral("lock screen")));
+    QVERIFY(m_model->statusText().contains(QStringLiteral("Qinda Patrol")));
 }
 
 QTEST_MAIN(ScreensaverSettingsModelTest)

@@ -53,6 +53,21 @@ set_tests_properties(qindaqt.settings-idle-display-model PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "settings;power;idle-display")
 
+# The greeter mirror's file format is KConfig's, so its row reads the file back
+# with the same library the store writes it with.
+find_package(KF6Config 6.0 REQUIRED CONFIG)
+
+qt_add_executable(qindaqt_lock_screen_saver_store_tests
+    tst_lock_screen_saver_store.cpp)
+target_link_libraries(qindaqt_lock_screen_saver_store_tests
+    PRIVATE qindaqt_settings_power KF6::ConfigCore Qt6::Test)
+qindaqt_enable_warnings(qindaqt_lock_screen_saver_store_tests)
+add_test(NAME qindaqt.settings-lock-screen-saver-store
+    COMMAND qindaqt_lock_screen_saver_store_tests)
+set_tests_properties(qindaqt.settings-lock-screen-saver-store PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "settings;power;screensaver;screen-lock")
+
 qt_add_executable(qindaqt_screensaver_settings_tests
     tst_screensaver_settings.cpp)
 target_link_libraries(qindaqt_screensaver_settings_tests
