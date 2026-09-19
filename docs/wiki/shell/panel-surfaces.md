@@ -352,11 +352,7 @@ drop lands before, or another panel by the solved surface geometry with its
 zone chosen by thirds along its main axis. A release over a rejected target
 cancels. A Done/Undo bar (`PanelEditBar`) sits at every panel's trailing end
 while edit mode is on; it overlays the end zone on purpose because layer-shell
-panels take no keyboard focus — with one bounded exception, the launcher's
-focus loan in
-[ADR-0217](../adr/0217-a-panel-may-borrow-keyboard-focus-for-a-popup.md), which
-raises interactivity to `OnDemand` only while that popup is open — so a
-separate focusable window (and Esc) is
+panels take no keyboard focus, so a separate focusable window (and Esc) is
 not available -- Done, Meta+Shift+E or the menu entry leave edit mode, and
 Esc closes the menus.
 

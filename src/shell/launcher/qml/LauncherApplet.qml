@@ -112,14 +112,6 @@ Item {
     T.Popup {
         id: browser
 
-        // AGENT-CONTRACT: the shell lends this panel keyboard focus so a popup
-        // opened from the Meta key has an input serial to grab with. Telling
-        // the controller the popup closed is what gives that focus back.
-        onClosed: {
-            if (root.available)
-                root.access.notifyBrowserClosed()
-        }
-
         // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
         // their surface. A separate popup window supplies both capabilities.
         popupType: T.Popup.Window
