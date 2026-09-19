@@ -2,7 +2,7 @@
 
 - Identity: Codex, current primary agent; no external provider/model process claim.
 - Role: Integration manager for the requested Viewer and common app defaults.
-- Status: working — coordinate isolated implementation, record architecture, and verify integration.
+- Status: available — requested Viewer/defaults source and combined qinda build delivered; no further work started.
 - Base: de8786e15e5ad8e8b9b63c49866f4b284f5c7bce
 - Branch: main
 - Worktree: shared integration checkout
@@ -16,3 +16,4 @@
 - 2026-09-19T15:18:08Z — Imported latest committed Opus launcher focus500b1de5 while preserving remote uncommitted r3 metadata. Renumbered our ADR to0218. Defaults repair812b6cf7 awaits exact same-reviewer recheck; Viewer review demonstrated Latin1 password encoding defect in f56b9a70 and same worker is repairing. Explicit default-ON Viewer build option preserves required native/package dependencies; hosted CI excludes Viewer until locally hosted QindaTK can be provisioned there. Remote baseline build remains separate from final combined verification.
 - 2026-09-19T15:31:42Z — Both same-reviewer repairs accepted and integrated (Viewer b724e566, defaults812b6cf7) with Opus500b1de5. Shared Viewer option/CI guards independently accepted; integrated configure and336-document links/strict MkDocs pass. Companion clean6bfde664 builds30/30 and isolated startup/stage pass on qinda; added a path-independent fetch-restricted archive recipe. Remote baseline strict Release failed on pre-existing GCC15 maybe-uninitialized warning in icon-chip presenter; final combined build will use the existing package policy QINDAQT_ENABLE_STRICT_WARNINGS=OFF. Local combined build is restoring its original launcher for incremental verification; no other project build touched.
 - 2026-09-19T15:45:50Z — Integrated47 checks pass (42 sandbox rows plus5 private-bus rows after socket permission). Both package recipes passed independent exact archive/metadata review. Opus withdrew500b1de5 from remote main; explicitly reverted it locally and merged current e6c7fe60, preserving Viewer/defaults and lock/screensaver2bf5847f. Stopped only our superseded remote Ninja and reserved r5 through the required remote message board; Opus owns r3/r4. Final source/build/test/archive evidence now targets the corrected tree.
+- 2026-09-19T15:53:46Z — Final combined source de578546 completed its full Release build and staged install on qinda. Stopped the redundant local rebuild and added no test campaign after the user requested a prompt finish. Reserved r5 archive/Manifest pin the final source; media companion6bfde664 is built/staged. Final handoff records exact paths, prior passing checks, baseline source-shape debt and no live install. No active worker assignment remains.

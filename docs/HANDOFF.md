@@ -1,5 +1,48 @@
 # Integration handoff
 
+## September 19 — Viewer and common defaults delivered
+
+The combined runtime source is `de5785468d15cfce9e13b0c6b33461179909de33`.
+It includes the GPL-3.0-or-later C++/QindaTK image/PDF Viewer, private Poppler
+rendering, eight default-app categories, and QindaMPV media associations.
+User MIME preferences retain precedence. It includes Opus's screensaver/lock
+commit `2bf5847f` and current desktop source through `e6c7fe60`; the withdrawn
+panel-focus experiment `500b1de5` was explicitly reverted.
+
+The complete Release build and DESTDIR install finished successfully on qinda
+using its configured `-j24 -l24` and existing package warning policy. The source
+is on branch `integration/viewer-defaults-20260919` in the isolated checkout
+`~/work_SPaC3/container-wm/.cache/viewer-defaults-combined`; build output is
+`build/combined`, the complete stage is `.cache/full-stage`, and build/install
+logs are `.cache/evidence/build-final.log` and `install-final.log` there.
+The staged viewer is `.cache/full-stage/usr/bin/qindaqt-viewer`.
+
+Desktop recipe `0.1.0_pre20260919-r5` pins that source and adds QindaTK,
+Poppler Qt6, image-format plugins, and a QindaMPV post-dependency. The companion
+`qqmpv-0.1.0_pre20260919` recipe pins clean source `6bfde664`; it builds against
+the desktop's installed AppShell libraries. Both exact archives are in the
+main qinda checkout's `.cache/` and have recorded Manifest hashes. QindaMPV
+also built30/30 and passed isolated startup from its separate stage at
+`.cache/qqmpv-defaults-companion/stage-6bfde664/bin/qqmpv`.
+
+Evidence: independent Viewer4/4 and defaults21/21 gates; the integrated batch
+passed47/47 (42 sandbox rows and5 private-bus rows with socket permission).
+One row belonged to the subsequently withdrawn launcher experiment. The final
+source then passed the complete native build/install; no further test campaign
+was added after the user's request to finish. Package dependencies and exact
+archive generation received independent Portage metadata review before the
+mechanical r5/version-pin update. Documentation links and strict MkDocs pass.
+The broad source-shape gate still reports16 pre-existing errors; this work
+introduced no new error identities. Strict Release's pre-existing GCC15
+icon-chip warning is avoided by the existing package setting
+`QINDAQT_ENABLE_STRICT_WARNINGS=OFF`, not by unrelated source changes.
+
+Nothing was installed into the live system, no desktop settings were changed,
+and Opus's active checkout/package metadata remains separate and untouched.
+The [Viewer contract](wiki/apps/viewer.md) and
+[default-app contract](wiki/apps/default-applications.md) describe the delivered
+behavior. The broader first-party roadmap remains incomplete.
+
 ## September 17-18 wave — final state: `pre20260917-r11`
 
 `gui-wm/qindaqt-desktop-0.1.0_pre20260917-r11` pins `70d28f52` and is installed
