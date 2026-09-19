@@ -55,6 +55,26 @@ one tree.
   the host's installed services: `test_installed_plugin_discovery.py`,
   `test_desktop_session_probe_cli.py`, `test_parent_wayland_session.py`. Their
   rows are green; the fix is one line each.
+- `src/apps/settings_center/Main.qml` is 371 lines against the 350 ceiling. It
+  was already 360 before the last route stack, so no single lane put it there.
+  The fix is moving the pre-existing inline `Component`s into
+  `AddedRouteComponents.qml`, which that file's own note deferred until the
+  concurrent route lanes landed. They have all landed, so it is unblocked.
+
+### The two follow-ups worth doing first
+
+Both are named here because they retire whole classes of failure rather than
+single defects, and both were identified by the people who kept hitting them:
+
+1. **Make the route QML modules `SHARED`.** Four routes hit the in-process-host
+   trap in one day — Streaming, Windows, Date & time, and the last O13 stack —
+   and every catch was a person reading a `CMakeLists.txt`, never a gate.
+   `SHARED` removes the coupling instead of documenting it, and it also retires
+   the `Name:target-suffix` special case the staging loop needed for
+   `default_apps` and `about_computer`.
+2. **Teach `tools/validate-docs` to reject duplicate ADR numbers.** Three
+   collisions landed in one day (0200, 0201, 0193) and every one passed the
+   checker with both files present. It is a loop over the filename prefixes.
 
 ## Installed delivery checkpoint (September 17, r2)
 
