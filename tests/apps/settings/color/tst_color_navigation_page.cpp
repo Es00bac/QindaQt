@@ -23,6 +23,7 @@ using namespace QindaQt::Apps::SettingsCenter;
 using QindaQt::Apps::SettingsColor::TestSupport::StubColorSettingsModel;
 using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 using QindaQt::Apps::SettingsPower::TestSupport::StubIdleDisplaySettings;
+using QindaQt::Apps::SettingsPower::TestSupport::StubScreensaverSettings;
 
 namespace {
 
@@ -58,6 +59,7 @@ private:
   StubColorSettingsModel m_color;
   StubScreenLockSettings m_screenLock;
   StubIdleDisplaySettings m_idleDisplay;
+  StubScreensaverSettings m_screensaver;
   std::unique_ptr<QObject> createWindow(
       SettingsNavigationController &navigation, const QSize &size);
 };
@@ -105,6 +107,8 @@ ColorNavigationPageTest::createWindow(
        QVariant::fromValue(static_cast<QObject *>(&m_screenLock))},
       {QStringLiteral("idleDisplaySettings"),
        QVariant::fromValue(static_cast<QObject *>(&m_idleDisplay))},
+      {QStringLiteral("screensaverSettings"),
+       QVariant::fromValue(static_cast<QObject *>(&m_screensaver))},
   }));
   if (root == nullptr) {
     qWarning().noquote() << component.errorString();

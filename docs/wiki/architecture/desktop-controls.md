@@ -37,6 +37,8 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
+| Idle screensaver program | the saver package itself (`qinda-patrol`, `circuit-reef`) | `ScreensaverLauncher`, started only while idle and unlocked |
+| Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + Settings Power section |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
 | Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
 | Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
@@ -45,7 +47,8 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 
 Nothing here modifies the compositor, the Power1 v1 wire protocol, or the
 screen-lock preference. Display-off is display power only; locking remains the
-separate screen-lock surface.
+separate screen-lock surface, and the screensaver is decoration in front of
+neither ([ADR-0215](../adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md)).
 
 ## Process and module boundary
 
@@ -131,6 +134,23 @@ client; the resident process reads it through the same seam. A transiently
 absent Settings1 owner keeps the documented default rather than silently
 disabling the policy. The screen-lock preference (`kscreenlockerrc` Daemon
 group) is untouched and independent.
+
+`power.screensaver` (a token: `none`, `qinda-patrol`, `circuit-reef`) and
+`power.screensaverMinutes` (1..240, default 5) are a second, separate scope in
+the same `power` domain, read by `Settings1ScreensaverPreferences` and written
+only by the Settings Power route. A token the current build does not know
+reads back as `none`, so persistence can never supply a program name to
+`QProcess`; each known token carries its own fixed arguments. An absent
+Settings1 owner leaves the saver off rather than assuming a default, because
+starting an unchosen program is worse than starting nothing.
+
+`ScreensaverLauncher` (in `production/`, alongside the KGlobalAccel registrar,
+because it needs KIdleTime) arms one idle timeout from that preference, starts
+the saver when it fires, and stops it on resume, on a preference change, and
+on `org.freedesktop.ScreenSaver.ActiveChanged`. It relaunches a saver that
+exits while the session is still idle — an output topology change ends one —
+but stops after three exits inside five seconds, and never retries a program
+that failed to start at all.
 
 ## Battery notifications
 
@@ -235,7 +255,9 @@ uncertain operation handling); PowerDevil brightness feedback filtering,
 range normalization, and
 owner absence; sysfs fixture brightness stepping remains migration coverage;
 idle-preference mapping and PowerDevil binding coalescing/recovery/failure
-boundaries; the retained screenshot launcher helper against a fixture;
+boundaries; screensaver preference mapping (an unconfirmed owner starting
+nothing, an unknown token never becoming a program name, clamped minutes, the
+per-saver argument contract, and one signal per real change); the retained screenshot launcher helper against a fixture;
 notifier wire shape and replaces-id reuse against a private
 `dbus-run-session` fake; supervisor optional-child startup, one-restart budget,
 and skip-on-absence; the Settings Power model and page behavior for the
