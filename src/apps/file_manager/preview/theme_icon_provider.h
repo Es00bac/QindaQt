@@ -17,9 +17,15 @@ public:
   ThemeIconProvider();
 
   // id is a freedesktop icon name (for example "folder" or
-  // "list-add-symbolic"). An unresolved name returns a valid transparent
-  // pixmap rather than a null one: a null result makes QML Image emit a
-  // qWarning, which the offscreen QT_FATAL_WARNINGS=1 rows treat as fatal.
+  // "list-add-symbolic"), optionally followed by a "?color=#rrggbb" query.
+  // A resolved "-symbolic" name is monochrome by convention and is tinted:
+  // with the query color when it is valid (callers pass a palette color so a
+  // live theme change re-resolves the URL), otherwise with the application
+  // palette's WindowText. Without the tint the symbolic glyphs keep their
+  // authored dark stroke and vanish on dark themes. An unresolved name
+  // returns a valid transparent pixmap rather than a null one: a null result
+  // makes QML Image emit a qWarning, which the offscreen QT_FATAL_WARNINGS=1
+  // rows treat as fatal.
   QPixmap requestPixmap(const QString &id, QSize *size,
                         const QSize &requestedSize) override;
 };
