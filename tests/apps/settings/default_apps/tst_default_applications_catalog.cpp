@@ -19,6 +19,7 @@ private Q_SLOTS:
   void parsesSemicolonSeparatedMimeTypesFromTheDesktopEntryGroupOnly();
   void ignoresAMimeTypeLikeKeyOutsideDesktopEntry();
   void filtersCandidatesByAnyCategoryMimeType();
+  void pdfAndImageCategoriesAreIndependent();
 };
 
 void DefaultApplicationsCatalogTest::
@@ -52,17 +53,17 @@ void DefaultApplicationsCatalogTest::
 void DefaultApplicationsCatalogTest::filtersCandidatesByAnyCategoryMimeType() {
   DirectoryScan scan;
   ScannedApplication browser;
-  browser.entry.id = QStringLiteral("browser.desktop");
+  browser.entry.id = QStringLiteral("browser");
   browser.entry.name = QStringLiteral("Test Browser");
   browser.documentText = QStringLiteral(
       "[Desktop Entry]\nMimeType=text/html;\n");
   ScannedApplication fileManager;
-  fileManager.entry.id = QStringLiteral("filemanager.desktop");
+  fileManager.entry.id = QStringLiteral("filemanager");
   fileManager.entry.name = QStringLiteral("Test Files");
   fileManager.documentText = QStringLiteral(
       "[Desktop Entry]\nMimeType=inode/directory;\n");
   ScannedApplication both;
-  both.entry.id = QStringLiteral("both.desktop");
+  both.entry.id = QStringLiteral("both");
   both.entry.name = QStringLiteral("Test Universal");
   both.documentText = QStringLiteral(
       "[Desktop Entry]\nMimeType=text/html;inode/directory;\n");
@@ -82,6 +83,23 @@ void DefaultApplicationsCatalogTest::filtersCandidatesByAnyCategoryMimeType() {
       fileManagerCandidates = candidateApplicationsForCategory(
           scan, DefaultApplicationCategory::FileManager);
   QCOMPARE(fileManagerCandidates.size(), 2);
+}
+
+void DefaultApplicationsCatalogTest::pdfAndImageCategoriesAreIndependent() {
+  DirectoryScan scan;
+  ScannedApplication images;
+  images.entry.id = QStringLiteral("images");
+  images.documentText = QStringLiteral("[Desktop Entry]\nMimeType=image/jpeg;image/png;\n");
+  ScannedApplication pdf;
+  pdf.entry.id = QStringLiteral("pdf");
+  pdf.documentText = QStringLiteral("[Desktop Entry]\nMimeType=application/pdf;\n");
+  scan.applications = {images, pdf};
+  const auto pdfs = candidateApplicationsForCategory(scan, DefaultApplicationCategory::PdfViewer);
+  const auto viewers = candidateApplicationsForCategory(scan, DefaultApplicationCategory::ImageViewer);
+  QCOMPARE(pdfs.size(), 1);
+  QCOMPARE(pdfs.first().id, QStringLiteral("pdf.desktop"));
+  QCOMPARE(viewers.size(), 1);
+  QCOMPARE(viewers.first().id, QStringLiteral("images.desktop"));
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsCatalogTest)

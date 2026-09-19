@@ -14,6 +14,7 @@ struct DirectoryScan;
 namespace QindaQt::Apps::SettingsDefaultApps {
 
 struct CandidateApplication final {
+  // Freedesktop desktop-file ID, including the .desktop suffix.
   QString id;
   QString name;
   QString iconName;
@@ -34,8 +35,8 @@ struct CandidateApplication final {
 
 // The set of MimeType= values a single desktop-entry document declares, as
 // literal strings (a semicolon-separated list per the Desktop Entry Spec,
-// trailing empty fields dropped). Exposed for tests; the composition uses it
-// only indirectly through candidateApplicationsForCategory().
+// trailing empty fields dropped). Shared by candidate projection and the
+// store’s effective-association check; neither caller reparses private state.
 [[nodiscard]] QVector<QString> desktopEntryMimeTypes(const QString &documentText);
 
 } // namespace QindaQt::Apps::SettingsDefaultApps
