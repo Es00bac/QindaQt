@@ -61,6 +61,10 @@ AppletModel projectApplet(const ObsSnapshot &snapshot) {
             model.unavailableText =
                 tr("OBS sent something QindaQt could not read. The connection "
                    "was closed.");
+        } else if (snapshot.state == ConnectionState::Authenticating
+                   || (snapshot.state == ConnectionState::Connecting
+                       && snapshot.reasonCode.isEmpty())) {
+            model.unavailableText = tr("Connecting to OBS…");
         } else {
             model.unavailableText = tr("OBS is not running.");
         }
@@ -75,10 +79,10 @@ AppletModel projectApplet(const ObsSnapshot &snapshot) {
     // who is live needs to see that first.
     if (model.streaming) {
         model.iconName = QStringLiteral("media-record-symbolic");
-        model.summaryLabel = tr("Streaming");
+        model.summaryLabel = snapshot.stream.reconnecting ? tr("Reconnecting stream") : tr("Streaming");
     } else if (model.recording) {
         model.iconName = QStringLiteral("media-record-symbolic");
-        model.summaryLabel = tr("Recording");
+        model.summaryLabel = snapshot.record.paused ? tr("Recording paused") : tr("Recording");
     } else if (model.virtualCamera) {
         model.iconName = QStringLiteral("camera-web-symbolic");
         model.summaryLabel = tr("Virtual camera");
@@ -99,10 +103,10 @@ AppletModel projectApplet(const ObsSnapshot &snapshot) {
 
     QStringList active;
     if (model.streaming) {
-        active.append(tr("streaming"));
+        active.append(snapshot.stream.reconnecting ? tr("reconnecting the stream") : tr("streaming"));
     }
     if (model.recording) {
-        active.append(tr("recording"));
+        active.append(snapshot.record.paused ? tr("recording paused") : tr("recording"));
     }
     if (model.virtualCamera) {
         active.append(tr("virtual camera"));

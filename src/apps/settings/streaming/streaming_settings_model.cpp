@@ -54,8 +54,18 @@ StreamingSettingsModel::StreamingSettingsModel(ObsClient &client,
             [this](ConnectionState, const QString &) { Q_EMIT changed(); });
     connect(&m_client, &ObsClient::operationFinished, this,
             [this](const ObsClient::OperationResult &result) {
+                if (m_outputRequestId == result.requestId) {
+                    m_outputRequestId = 0;
+                    Q_EMIT changed();
+                }
                 if (result.ok) {
                     setStatusText(QString());
+                    return;
+                }
+                if (result.reasonCode == QLatin1String("obs-timeout")
+                    || result.reasonCode == QLatin1String("obs-connection-lost")
+                    || result.reasonCode == QLatin1String("obs-connection-replaced")) {
+                    setStatusText(tr("OBS did not confirm the change. Check OBS before trying again."));
                     return;
                 }
                 setStatusText(result.comment.isEmpty()
@@ -70,6 +80,51 @@ StreamingSettingsModel::StreamingSettingsModel(ObsClient &client,
 
 QString StreamingSettingsModel::connectionState() const {
     return connectionStateName(m_client.state());
+}
+
+QString StreamingSettingsModel::connectionDescription() const {
+    const QString reason = m_client.reasonCode();
+    if (reason == QLatin1String(ReasonCodes::AuthRejected)
+        || reason == QLatin1String(ReasonCodes::AuthRequired)) {
+        return tr("OBS did not accept QindaQt's password. Repair OBS setup and restart OBS.");
+    }
+    if (reason == QLatin1String(ReasonCodes::RpcVersion)) {
+        return tr("OBS uses a control protocol this version of QindaQt does not support.");
+    }
+    if (reason == QLatin1String(ReasonCodes::Malformed)) {
+        return tr("OBS sent an unreadable control message. The connection was closed.");
+    }
+    if (connected()) {
+        return tr("Connected to OBS %1 at %2.").arg(obsVersion(), address());
+    }
+    if (m_client.state() == ConnectionState::Authenticating
+        || (m_client.state() == ConnectionState::Connecting && reason.isEmpty())) {
+        return tr("Connecting to OBS at %1…").arg(address());
+    }
+    return tr("OBS is not running or its control server is unavailable at %1.").arg(address());
+}
+
+bool StreamingSettingsModel::outputControlsAvailable() const {
+    return connected() && m_outputRequestId == 0;
+}
+
+bool StreamingSettingsModel::admitOutputAction() {
+    if (!outputControlsAvailable()) {
+        setStatusText(connected() ? tr("Waiting for OBS to finish that change.")
+                                  : tr("Not connected to OBS."));
+        return false;
+    }
+    return true;
+}
+
+void StreamingSettingsModel::trackOutputRequest(const quint64 requestId) {
+    if (requestId == 0) {
+        setStatusText(tr("OBS is busy. Try again in a moment."));
+        return;
+    }
+    m_outputRequestId = requestId;
+    setStatusText(tr("Waiting for OBS…"));
+    Q_EMIT changed();
 }
 
 bool StreamingSettingsModel::connected() const {
@@ -186,7 +241,8 @@ QString StreamingSettingsModel::bridgeProblem() const {
         return tr("The QindaQt bridge plugin is not loaded in OBS, so the "
                   "console buses are not available as sources.");
     }
-    if (mapping.size() == 0) {
+    if (mapping.size() == 0 && (mapping.audioState.isEmpty()
+                               || mapping.audioState == QLatin1String("ready"))) {
         return tr("The bridge is loaded and the console has no buses or "
                   "strips yet.");
     }
@@ -258,27 +314,25 @@ void StreamingSettingsModel::disconnectFromObs() {
 }
 
 void StreamingSettingsModel::setRecording(bool active) {
-    if (m_client.setOutputActive(OutputKind::Record, active) == 0) {
-        setStatusText(tr("Not connected to OBS."));
-    }
+    if (admitOutputAction())
+        trackOutputRequest(m_client.setOutputActive(OutputKind::Record, active));
 }
 
 void StreamingSettingsModel::setStreaming(bool active) {
-    if (m_client.setOutputActive(OutputKind::Stream, active) == 0) {
-        setStatusText(tr("Not connected to OBS."));
-    }
+    if (admitOutputAction())
+        trackOutputRequest(m_client.setOutputActive(OutputKind::Stream, active));
 }
 
 void StreamingSettingsModel::setVirtualCamera(bool active) {
-    if (m_client.setOutputActive(OutputKind::VirtualCam, active) == 0) {
-        setStatusText(tr("Not connected to OBS."));
-    }
+    if (admitOutputAction())
+        trackOutputRequest(m_client.setOutputActive(OutputKind::VirtualCam, active));
 }
 
 void StreamingSettingsModel::selectScene(const QString &sceneName) {
-    if (m_client.setCurrentProgramScene(sceneName) == 0) {
-        setStatusText(tr("Not connected to OBS."));
-    }
+    if (sceneName == currentScene() || sceneName.isEmpty())
+        return;
+    if (admitOutputAction())
+        trackOutputRequest(m_client.setCurrentProgramScene(sceneName));
 }
 
 void StreamingSettingsModel::setWebSocketPort(int port) {

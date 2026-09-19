@@ -303,11 +303,7 @@ bool AudioSettingsModel::setStripProcessing(QString stripId, QVariantMap process
         rejectAction(QStringLiteral("processing-out-of-range"));
         return false;
     }
-    if (m_client.setStripProcessing(stripId, rack) == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(m_client.setStripProcessing(stripId, rack));
 }
 
 QStringList AudioSettingsModel::consolePresets() const
@@ -351,11 +347,7 @@ bool AudioSettingsModel::setVbanEnabled(QString name, const bool enabled)
         rejectAction(QStringLiteral("unsupported"));
         return false;
     }
-    if (m_client.setVbanEnabled(name.trimmed(), enabled) == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(m_client.setVbanEnabled(name.trimmed(), enabled));
 }
 
 bool AudioSettingsModel::startRecording(QString busId, QString format)
@@ -370,11 +362,7 @@ bool AudioSettingsModel::startRecording(QString busId, QString format)
         rejectAction(QStringLiteral("unknown-format"));
         return false;
     }
-    if (m_client.startRecording(busId, format) == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(m_client.startRecording(busId, format));
 }
 
 bool AudioSettingsModel::stopRecording()
@@ -383,11 +371,7 @@ bool AudioSettingsModel::stopRecording()
         rejectAction(QStringLiteral("unsupported"));
         return false;
     }
-    if (m_client.stopRecording() == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(m_client.stopRecording());
 }
 
 bool AudioSettingsModel::runMacro(QString name)
@@ -439,11 +423,7 @@ bool AudioSettingsModel::dispatchPreset(const OperationKind kind, QString name)
     default:
         break;
     }
-    if (requestId == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(requestId);
 }
 
 bool AudioSettingsModel::setBusProcessing(QString busId, QVariantMap processing)
@@ -486,11 +466,7 @@ bool AudioSettingsModel::setBusProcessing(QString busId, QVariantMap processing)
         rejectAction(QStringLiteral("processing-out-of-range"));
         return false;
     }
-    if (m_client.setBusProcessing(busId, rack) == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(m_client.setBusProcessing(busId, rack));
 }
 
 bool AudioSettingsModel::setStripSource(QString stripId, const quint64 serial)
@@ -523,11 +499,7 @@ bool AudioSettingsModel::dispatchPin(const bool strip, QString consoleId,
     const Handle device = serial == 0 ? Handle{} : Handle{snapshot.epoch, serial};
     const quint64 requestId = strip ? m_client.setStripSource(consoleId, device)
                                     : m_client.setBusTarget(consoleId, device);
-    if (requestId == 0) {
-        rejectAction(QString());
-        return false;
-    }
-    return true;
+    return trackConsoleRequest(requestId);
 }
 
 bool AudioSettingsModel::setStripMuted(QString stripId, const bool muted)
@@ -633,10 +605,22 @@ bool AudioSettingsModel::dispatchConsoleIntent(const ConsoleIntent intent,
         requestId = m_client.setBusMono(consoleId, flag);
         break;
     }
+    return trackConsoleRequest(requestId);
+}
+
+bool AudioSettingsModel::trackConsoleRequest(const quint64 requestId)
+{
     if (requestId == 0) {
         rejectAction(QString());
         return false;
     }
+    // AudioClient returns an id even for a queued local refusal (including
+    // Busy). Console ids have no graph serial, but their replies need exactly
+    // the same failure/uncertainty feedback as device and stream operations.
+    m_consoleRequestIds.insert(requestId);
+    m_localError.clear();
+    m_operationStatusText = tr("Applying the console change…");
+    Q_EMIT viewChanged();
     return true;
 }
 

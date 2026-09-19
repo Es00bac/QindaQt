@@ -19,16 +19,15 @@ ColumnLayout {
 
     required property var audioSettings
 
-    // Every console control follows one predicate, so an enabled control can
-    // never be locally refused by the model's own admission check.
+    // Service availability governs the console's controls. A transport request
+    // must not disable a held fader; its gesture coalesces until the wire is free.
     // AGENT-GUARD: every model read carries a default. The Settings navigation
     // harness hosts this page against a duck-typed stub model and runs with
     // QT_FATAL_WARNINGS, so a property the stub does not implement aborts the
     // whole page rather than merely reading as undefined.
     readonly property bool available: audioSettings.consoleAvailable ?? false
     readonly property bool controlsEnabled:
-        available && !(audioSettings.busy ?? false)
-        && !(audioSettings.unavailable ?? false)
+        available && !(audioSettings.unavailable ?? false)
 
     // At most one rack is open at a time: racks are full-width bands under
     // the cards, and two open bands would push every card row apart. The id
@@ -102,9 +101,18 @@ ColumnLayout {
         spacing: Tokens.space["2"]
 
         Repeater {
-            model: root.audioSettings.consoleStrips ?? []
+            // ADR-0191 applies to console cards too: a snapshot updates a
+            // held card's data, not the lifetime of its mouse grabber.
+            model: (root.audioSettings.consoleStrips ?? []).length
             AudioConsoleStrip {
-                required property var modelData
+                required property int index
+                readonly property var modelData:
+                    root.audioSettings.consoleStrips?.[index] ?? ({
+                        id: "", label: "", virtual: false, bound: false,
+                        faderPosition: 0.0, sends: [], mono: false,
+                        muted: false, soloed: false
+                    })
+                visible: modelData.id.length > 0
                 model: root.audioSettings
                 strip: modelData
                 buses: root.audioSettings.consoleBuses ?? []
@@ -153,9 +161,15 @@ ColumnLayout {
         spacing: Tokens.space["2"]
 
         Repeater {
-            model: root.audioSettings.consoleBuses ?? []
+            model: (root.audioSettings.consoleBuses ?? []).length
             AudioConsoleBus {
-                required property var modelData
+                required property int index
+                readonly property var modelData:
+                    root.audioSettings.consoleBuses?.[index] ?? ({
+                        id: "", label: "", virtual: false, bound: false,
+                        faderPosition: 0.0, mono: false, muted: false
+                    })
+                visible: modelData.id.length > 0
                 model: root.audioSettings
                 bus: modelData
                 enabledControls: root.controlsEnabled

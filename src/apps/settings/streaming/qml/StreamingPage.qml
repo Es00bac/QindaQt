@@ -81,13 +81,7 @@ T.Page {
                     objectName: "streamingConnectionState"
                     Layout.fillWidth: true
                     muted: true
-                    text: root.streamingSettings.connected
-                          ? qsTr("Connected to OBS %1 at %2.")
-                              .arg(root.streamingSettings.obsVersion)
-                              .arg(root.streamingSettings.address)
-                          : qsTr("Not connected (%1). QindaQt connects to %2.")
-                              .arg(root.streamingSettings.connectionState)
-                              .arg(root.streamingSettings.address)
+                    text: root.streamingSettings.connectionDescription
                 }
 
                 RowLayout {

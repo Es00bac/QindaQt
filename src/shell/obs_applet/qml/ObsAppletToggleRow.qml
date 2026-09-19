@@ -7,7 +7,8 @@ import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
 // One of the popup's three toggles: what it is, how long it has been doing
-// it, and a switch.
+// it, and a compact switch. Restore the authoritative binding after a press:
+// the switch may not keep a locally toggled state when OBS refuses it.
 RowLayout {
     id: root
 
@@ -41,6 +42,10 @@ RowLayout {
         enabled: root.available
         checked: root.active
         accessibleDescription: root.accessibleDescription
-        onToggled: root.toggled()
+        Accessible.name: root.label
+        onToggled: {
+            root.toggled()
+            checked = Qt.binding(function() { return root.active })
+        }
     }
 }

@@ -31,10 +31,14 @@ ColumnLayout {
                      : qsTr("Save what is on screen to a file")
         editor: Switch {
             objectName: "streamingRecordSwitch"
-            enabled: root.streamingSettings.connected
+            enabled: root.streamingSettings.outputControlsAvailable
             checked: root.streamingSettings.recording
+            Accessible.name: qsTr("Recording")
             accessibleDescription: qsTr("Whether OBS is recording")
-            onToggled: root.streamingSettings.setRecording(checked)
+            onToggled: {
+                root.streamingSettings.setRecording(checked)
+                checked = Qt.binding(function() { return root.streamingSettings.recording })
+            }
         }
     }
 
@@ -47,10 +51,14 @@ ColumnLayout {
                      : qsTr("Send what is on screen to the service configured in OBS")
         editor: Switch {
             objectName: "streamingStreamSwitch"
-            enabled: root.streamingSettings.connected
+            enabled: root.streamingSettings.outputControlsAvailable
             checked: root.streamingSettings.streaming
+            Accessible.name: qsTr("Streaming")
             accessibleDescription: qsTr("Whether OBS is streaming")
-            onToggled: root.streamingSettings.setStreaming(checked)
+            onToggled: {
+                root.streamingSettings.setStreaming(checked)
+                checked = Qt.binding(function() { return root.streamingSettings.streaming })
+            }
         }
     }
 
@@ -70,10 +78,14 @@ ColumnLayout {
         description: qsTr("Offer OBS's output as a camera to other applications")
         editor: Switch {
             objectName: "streamingVirtualCameraSwitch"
-            enabled: root.streamingSettings.connected
+            enabled: root.streamingSettings.outputControlsAvailable
             checked: root.streamingSettings.virtualCamera
+            Accessible.name: qsTr("Virtual camera")
             accessibleDescription: qsTr("Whether the virtual camera is running")
-            onToggled: root.streamingSettings.setVirtualCamera(checked)
+            onToggled: {
+                root.streamingSettings.setVirtualCamera(checked)
+                checked = Qt.binding(function() { return root.streamingSettings.virtualCamera })
+            }
         }
     }
 
@@ -87,7 +99,7 @@ ColumnLayout {
             id: sceneCombo
             objectName: "streamingSceneCombo"
             width: 320
-            enabled: root.streamingSettings.connected
+            enabled: root.streamingSettings.outputControlsAvailable
             model: root.streamingSettings.sceneNames
             currentIndex: root.streamingSettings.sceneNames.indexOf(
                               root.streamingSettings.currentScene)
