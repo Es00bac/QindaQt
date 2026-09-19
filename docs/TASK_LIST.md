@@ -10,11 +10,13 @@ completion. Architectural detail and long-range milestone state remain in the
 The requested GPL-3.0-or-later C++ Viewer uses QindaTK and Poppler. Exact
 Viewer candidate `b724e566` and defaults candidate `812b6cf7` passed independent
 review and are integrated with Opus's committed screensaver/lock and launcher
-source through `500b1de5`. Images/PDFs use Viewer; audio/video use QindaMPV;
+source through `e6c7fe60`. Images/PDFs use Viewer; audio/video use QindaMPV;
 existing user associations retain precedence. QindaMPV's clean `6bfde664`
 companion builds and starts in an isolated stage on qinda.
 
-Combined-tree tests and the native desktop build/stage are in progress. No
+The initial combined46 retained checks pass (plus the subsequently withdrawn
+launcher-focus experiment's row). A final rerun and native desktop build/stage
+are in progress after aligning with Opus's current tree. No
 live installation is claimed. The wider first-party roadmap remains incomplete.
 
 ## Installed delivery checkpoint (September 18, r11)
