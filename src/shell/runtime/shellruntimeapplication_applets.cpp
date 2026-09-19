@@ -9,6 +9,9 @@
 #include "obsappletcomposition.h"
 #include "globalmenuappletcomposition.h"
 #include "launcherappletcomposition.h"
+#include "launcher_applet_controller.h"
+#include "launchershortcut.h"
+#include "kglobalaccelshortcutregistrar.h"
 #include "../common/shelliconconfiguration.h"
 #include "launcher_persistence.h"
 #include "powerappletcomposition.h"
@@ -88,7 +91,31 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
         m_applets, m_appletPolicy, std::move(launcherRoots),
         *m_settingsClient, QDBusConnection::sessionBus());
-    return m_launcherApplet->start(error);
+    if (!m_launcherApplet->start(error)) {
+        return false;
+    }
+    initializeLauncherShortcut();
+    return true;
+}
+
+void ShellRuntimeApplication::initializeLauncherShortcut()
+{
+    auto *access = m_launcherApplet->access();
+    if (access == nullptr) {
+        // A preview or a policy-denied launcher has no controller; the panel
+        // shows its disabled fallback and the key has nothing to open.
+        return;
+    }
+    m_launcherShortcutRegistrar = std::make_unique<KGlobalAccelShortcutRegistrar>();
+    m_launcherShortcut =
+        std::make_unique<LauncherShortcutProducer>(*m_launcherShortcutRegistrar);
+    connect(m_launcherShortcut.get(), &LauncherShortcutProducer::openRequested,
+            access, &Launcher::LauncherAppletController::requestOpen);
+    if (!m_launcherShortcut->registrationRequestAccepted()) {
+        qWarning().noquote()
+            << "QindaQt shell could not submit the launcher shortcut;"
+               " the panel button and the dock entry remain available";
+    }
 }
 
 void ShellRuntimeApplication::initializeServiceAppletCompositions(

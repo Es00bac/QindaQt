@@ -78,6 +78,7 @@ class DesktopSurfaceController;
 class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
+class LauncherShortcutProducer;
 class LauncherAppletComposition;
 class EdgeGestureSubscriber;
 class LiveCustomizationController;
@@ -120,6 +121,10 @@ private:
     [[nodiscard]] bool initializeTokens(QString *error);
     [[nodiscard]] bool initializeIcons(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
+    // Registers the Meta-key action and points it at the launcher applet.
+    // Called only once the composition has started, because it borrows
+    // m_launcherApplet->access().
+    void initializeLauncherShortcut();
     void initializeServiceAppletCompositions(const Profiles::LayoutProfile &profile);
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void initializeAppearanceBridge(bool explicitThemeSelection);
@@ -246,6 +251,10 @@ private:
     std::unique_ptr<ClipboardAppletComposition> m_clipboardApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
+    // AGENT-GUARD: the producer borrows both the registrar and the launcher
+    // access object. resetRuntime() destroys it before either.
+    std::unique_ptr<KGlobalAccelShortcutRegistrar> m_launcherShortcutRegistrar;
+    std::unique_ptr<LauncherShortcutProducer> m_launcherShortcut;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
     std::unique_ptr<TaskOrderPersistence> m_taskOrderPersistence;

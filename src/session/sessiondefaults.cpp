@@ -150,6 +150,23 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     }
     kwin.endGroup();
 
+    kwin.beginGroup(QStringLiteral("ModifierOnlyShortcuts"));
+    // AGENT-CONTRACT: a bare modifier is not a key sequence, so KWin -- not
+    // KGlobalAccel -- owns "Meta alone". The entry is KWin's D-Bus call shape:
+    // service, path, interface, method, then arguments. This one invokes the
+    // shell's own `qindaqt_open_launcher` action
+    // (LauncherShortcutProducer::stableActionId), so the Meta key opens the
+    // application launcher without the shell owning a bus name of its own.
+    // Renaming that action id breaks the key on every machine already seeded.
+    // Seed-missing only: a user who bound Meta to something else keeps it.
+    seedMissing(kwin, QStringLiteral("Meta"),
+                QStringList{QStringLiteral("org.kde.kglobalaccel"),
+                            QStringLiteral("/component/qindaqt_shell"),
+                            QStringLiteral("org.kde.kglobalaccel.Component"),
+                            QStringLiteral("invokeShortcut"),
+                            QStringLiteral("qindaqt_open_launcher")});
+    kwin.endGroup();
+
     kwin.beginGroup(QStringLiteral("MouseBindings"));
     // AGENT-CONTRACT (live customization, O9): KWin's default CommandAll3 is
     // "Resize", and its window-action filter runs that command for every

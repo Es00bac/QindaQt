@@ -15,6 +15,7 @@
 #include "globalmenuappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
 #include "launcherappletcomposition.h"
+#include "launchershortcut.h"
 #include "launcher_persistence.h"
 #include "edgegesturesubscriber.h"
 #include "notificationcenterappletaccess.h"
@@ -685,6 +686,8 @@ void ShellRuntimeApplication::resetRuntime()
     }
     m_windowActionsClient.reset();
     m_windowActionsTransport.reset();
+    m_launcherShortcut.reset();
+    m_launcherShortcutRegistrar.reset();
     m_launcherApplet.reset();
     m_clipboardApplet.reset();
     m_audioApplet.reset();

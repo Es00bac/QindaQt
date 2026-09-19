@@ -69,10 +69,16 @@ public:
   Q_INVOKABLE bool clearRecent();
   Q_INVOKABLE void clearFeedback();
 
+  // AGENT-CONTRACT: the shell's global shortcut calls this; QML connects to
+  // openRequested() and opens its own popup. The controller owns no window, so
+  // "open the launcher" can only ever be a request the presentation honours.
+  void requestOpen();
+
 Q_SIGNALS:
   void stateChanged();
   void queryChanged();
   void feedbackChanged();
+  void openRequested();
 
 private:
   void rebuild();
