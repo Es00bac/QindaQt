@@ -49,6 +49,7 @@ class StreamingSettingsModel final : public QObject {
     Q_OBJECT
     // Connection
     Q_PROPERTY(QString connectionState READ connectionState NOTIFY changed)
+    Q_PROPERTY(QString connectionDescription READ connectionDescription NOTIFY changed)
     Q_PROPERTY(QString statusText READ statusText NOTIFY changed)
     Q_PROPERTY(bool connected READ connected NOTIFY changed)
     Q_PROPERTY(QString obsVersion READ obsVersion NOTIFY changed)
@@ -63,6 +64,7 @@ class StreamingSettingsModel final : public QObject {
 
     // Outputs
     Q_PROPERTY(bool recording READ recording NOTIFY changed)
+    Q_PROPERTY(bool outputControlsAvailable READ outputControlsAvailable NOTIFY changed)
     Q_PROPERTY(bool streaming READ streaming NOTIFY changed)
     Q_PROPERTY(bool virtualCamera READ virtualCamera NOTIFY changed)
     Q_PROPERTY(QString recordingElapsed READ recordingElapsed NOTIFY changed)
@@ -88,6 +90,8 @@ public:
                            QString obsConfigRoot, QObject *parent = nullptr);
 
     [[nodiscard]] QString connectionState() const;
+    [[nodiscard]] QString connectionDescription() const;
+    [[nodiscard]] bool outputControlsAvailable() const;
     [[nodiscard]] QString statusText() const { return m_statusText; }
     [[nodiscard]] bool connected() const;
     [[nodiscard]] QString obsVersion() const;
@@ -144,6 +148,8 @@ private:
     void setStatusText(const QString &text);
     void readKeyring();
     void readProvisioning();
+    [[nodiscard]] bool admitOutputAction();
+    void trackOutputRequest(quint64 requestId);
     [[nodiscard]] Obs::WebSocketSettings currentSettings() const;
 
     Obs::ObsClient &m_client;
@@ -154,6 +160,7 @@ private:
     QString m_keyringProblem;
     Obs::ProvisioningState m_defaults;
     bool m_passwordStored = false;
+    quint64 m_outputRequestId = 0;
 };
 
 } // namespace QindaQt::Apps::SettingsStreaming

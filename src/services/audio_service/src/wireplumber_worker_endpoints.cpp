@@ -95,6 +95,10 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
                 context, "libpipewire-module-loopback", arguments.constData(),
                 nullptr);
             if (module != nullptr) {
+                // AGENT-GUARD: PipeWire may destroy this module itself. The
+                // live record must disappear with it, or rebuild skips the
+                // missing bus and shutdown destroys a stale pointer.
+                watchModule(ModuleKind::Endpoint, key, module);
                 m_endpointModules.emplace(key, module);
             }
             continue;
@@ -125,10 +129,12 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
 
 void WirePlumberWorker::unloadAllEndpoints()
 {
-    for (auto &[name, module] : m_endpointModules) {
+    // A destroy callback removes its own entry; take the map before walking.
+    std::unordered_map<std::string, void *> loaded;
+    loaded.swap(m_endpointModules);
+    for (auto &[name, module] : loaded) {
         pw_impl_module_destroy(static_cast<struct pw_impl_module *>(module));
     }
-    m_endpointModules.clear();
     // The sinks themselves linger by design; only the proxies go with the core.
     for (auto &[name, proxy] : m_endpointProxies) {
         pw_proxy_destroy(static_cast<struct pw_proxy *>(proxy));

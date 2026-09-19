@@ -25,6 +25,7 @@ public:
     void close() override;
     void sendText(const QString &text) override;
     [[nodiscard]] bool isOpen() const override;
+    [[nodiscard]] int closeCode() const override;
 
     // True when `url` is a `ws://` URL on the loopback interface with a
     // usable port. Exported so the Streaming route can refuse the address

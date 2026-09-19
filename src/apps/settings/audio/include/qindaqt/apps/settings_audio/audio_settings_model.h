@@ -6,6 +6,7 @@
 
 #include <QtCore/QHash>
 #include <QtCore/QObject>
+#include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QVariantList>
 #include <QtCore/QVariantMap>
@@ -22,7 +23,8 @@ namespace QindaQt::Apps::SettingsAudio {
 // AGENT-CONTRACT: Displayed action availability and dispatch admission are one
 // predicate derived from the same public snapshot facts the AudioClient's
 // dispatch preflight consumes (exact retained snapshot, its availability,
-// capability bits, per-target can-set flags, and the single-operation fence).
+// capability bits and per-target can-set flags). Transport serialization is
+// separate from availability; console gestures coalesce until it is free.
 // An enabled control can therefore never be locally refused, and a disabled
 // one is never dispatched. Do not widen one side without the other.
 class AudioSettingsModel final : public QObject {
@@ -183,8 +185,8 @@ private:
                        RemoveVirtual };
 
   // Console intents (ADR-0173). Kept separate from Intent because they carry a
-  // console id rather than a graph serial, and nothing about them can go stale
-  // the way a device handle can.
+  // console id rather than a graph serial. AudioClient still fences authority
+  // changes and every returned id is tracked for failure/uncertainty feedback.
   enum class ConsoleIntent { StripGain, StripMute, StripSolo, StripMono,
                               StripPan, StripSend, BusGain, BusMute, BusMono };
 
@@ -196,6 +198,7 @@ private:
   void handleOperationCompleted(quint64 requestId,
                                 const Audio::OperationResult &result);
   void beginIntentMessage(const Intent intent);
+  [[nodiscard]] bool trackConsoleRequest(quint64 requestId);
   void rejectAction(const QString &reason);
   [[nodiscard]] QString actionFailureText(const QString &reason) const;
   // AGENT-GUARD (mirrors ADR-0191 in the shell audio applet): pending state
@@ -240,6 +243,7 @@ private:
   QString m_operationStatusText;
   QHash<quint64, PendingIntent> m_pendingBySerial;
   QHash<quint64, quint64> m_serialByRequestId;
+  QSet<quint64> m_consoleRequestIds;
 };
 
 } // namespace QindaQt::Apps::SettingsAudio

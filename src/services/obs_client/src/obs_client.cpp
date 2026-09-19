@@ -67,17 +67,24 @@ ObsClient::ObsClient(ObsTransport &transport, ClientTiming timing,
 ObsClient::~ObsClient() = default;
 
 void ObsClient::start(const QString &url, const QString &password) {
+    const bool replacingConnection = m_started || m_transport.isOpen();
+    m_started = false;
+    m_identified = false;
+    m_reconnectTimer.stop();
+    m_statisticsTimer.stop();
+    cancelPending(QStringLiteral("obs-connection-replaced"));
+    // Close an in-progress connect too: isOpen() covers only an established
+    // socket. Neither pending replies nor live outputs belong to the new one.
+    if (replacingConnection) {
+        m_transport.close();
+    }
+    m_snapshot = ObsSnapshot{};
     m_url = url;
     m_password = password;
     m_started = true;
     m_reconnectIndex = 0;
     m_reconnectTimer.stop();
     m_timeoutTimer.start();
-    if (m_transport.isOpen()) {
-        // New credentials or a new address: the old connection cannot be
-        // re-identified into a different server.
-        m_transport.close();
-    }
     publish(ConnectionState::Connecting, QString::fromLatin1(ReasonCodes::None));
     m_transport.open(m_url);
 }
@@ -171,14 +178,19 @@ void ObsClient::handleDisconnected(const QString &reason) {
     m_snapshot = ObsSnapshot{};
     // A refusal that closed the socket keeps its own reason; an ordinary
     // close means OBS is not there.
-    const bool refused = previous == ConnectionState::Degraded &&
-                         previousReason != QString::fromLatin1(ReasonCodes::Closed);
+    // obs-websocket defines 4009/4010; the close text is not a stable API.
+    const int closeCode = m_transport.closeCode();
+    const QString refusal = closeCode == 4009
+        ? QString::fromLatin1(ReasonCodes::AuthRejected)
+        : closeCode == 4010 ? QString::fromLatin1(ReasonCodes::RpcVersion)
+                           : previous == ConnectionState::Degraded
+                                 ? previousReason : QString{};
+    const bool refused = m_started && !refusal.isEmpty()
+        && refusal != QString::fromLatin1(ReasonCodes::Closed);
     publish(m_started ? (refused ? ConnectionState::Degraded
                                  : ConnectionState::Connecting)
                       : ConnectionState::Disconnected,
-            refused ? previousReason
-                    : QString::fromLatin1(m_started ? ReasonCodes::NotRunning
-                                                    : ReasonCodes::NotRunning));
+            refused ? refusal : QString::fromLatin1(ReasonCodes::NotRunning));
     scheduleReconnect();
 }
 
@@ -189,6 +201,9 @@ void ObsClient::handleTransportError(const QString &reason) {
 }
 
 void ObsClient::handleText(const QString &text) {
+    if (!m_transport.isOpen()) {
+        return;
+    }
     const auto frame = decodeFrame(text);
     if (!frame.has_value()) {
         publish(ConnectionState::Degraded,
@@ -223,6 +238,12 @@ void ObsClient::handleText(const QString &text) {
         return;
     }
     case OpCode::Identified: {
+        if (m_identified) {
+            publish(ConnectionState::Degraded,
+                    QString::fromLatin1(ReasonCodes::Malformed));
+            m_transport.close();
+            return;
+        }
         if (frame->negotiatedRpcVersion != RpcVersion) {
             publish(ConnectionState::Degraded,
                     QString::fromLatin1(ReasonCodes::RpcVersion));
@@ -399,11 +420,25 @@ void ObsClient::applyEvent(const Event &event) {
     bool moved = true;
     if (type == QLatin1String(Events::RecordStateChanged)) {
         const OutputStatus next = recordStatusFrom(event.data);
-        m_snapshot.record.active = next.active;
-        m_snapshot.record.paused = next.paused;
+        const QString state = event.data.value(QStringLiteral("outputState")).toString();
+        const bool paused = state == QLatin1String("OBS_WEBSOCKET_OUTPUT_PAUSED");
+        const bool active = next.active || paused
+            || state == QLatin1String("OBS_WEBSOCKET_OUTPUT_STOPPING");
+        if (active != m_snapshot.record.active) {
+            m_snapshot.record = {};
+        }
+        m_snapshot.record.active = active;
+        m_snapshot.record.paused = paused;
     } else if (type == QLatin1String(Events::StreamStateChanged)) {
-        m_snapshot.stream.active =
-            event.data.value(QStringLiteral("outputActive")).toBool();
+        const QString state = event.data.value(QStringLiteral("outputState")).toString();
+        const bool reconnecting = state == QLatin1String("OBS_WEBSOCKET_OUTPUT_RECONNECTING");
+        const bool active = event.data.value(QStringLiteral("outputActive")).toBool()
+            || reconnecting || state == QLatin1String("OBS_WEBSOCKET_OUTPUT_STOPPING");
+        if (active != m_snapshot.stream.active) {
+            m_snapshot.stream = {};
+        }
+        m_snapshot.stream.active = active;
+        m_snapshot.stream.reconnecting = reconnecting;
     } else if (type == QLatin1String(Events::VirtualcamStateChanged)) {
         m_snapshot.virtualCam.active =
             event.data.value(QStringLiteral("outputActive")).toBool();
@@ -447,6 +482,7 @@ void ObsClient::applyEvent(const Event &event) {
     } else if (type == QLatin1String(Events::ExitStarted)) {
         // OBS said it is going away; say so now instead of after the socket
         // timeout, so the top bar glyph does not lie for a second.
+        m_snapshot = ObsSnapshot{};
         publish(ConnectionState::Connecting,
                 QString::fromLatin1(ReasonCodes::NotRunning));
         return;

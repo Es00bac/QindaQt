@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
@@ -27,7 +28,7 @@ Item {
                                  && (root.access.recording || root.access.streaming)
 
     objectName: "obsApplet"
-    implicitWidth: 32
+    implicitWidth: vertical ? 32 : Math.max(32, summaryContent.implicitWidth + 8)
     implicitHeight: 28
 
     ToolButton {
@@ -35,6 +36,7 @@ Item {
         objectName: "obsAppletSummary"
         anchors.fill: parent
         focusPolicy: Qt.TabFocus
+        hoverEnabled: true
         text: ""
         Accessible.role: Accessible.Button
         Accessible.name: root.available ? root.access.accessibleName : qsTr("OBS")
@@ -48,9 +50,12 @@ Item {
 
         onClicked: openDetails()
         Accessible.onPressAction: openDetails()
+        ToolTip.visible: hovered
+        ToolTip.text: Accessible.description
 
         contentItem: RowLayout {
-            spacing: 3
+            id: summaryContent
+            spacing: 4
 
             ShellIcons.Icon {
                 objectName: "obsAppletIcon"
@@ -59,6 +64,17 @@ Item {
                 color: root.live ? Tokens.accent.default : Tokens.fg.default
                 symbolic: true
                 fallbackText: qsTr("OBS")
+                Accessible.ignored: true
+            }
+
+            C.Label {
+                visible: !root.vertical
+                Layout.maximumWidth: 160
+                text: root.available ? root.access.summaryLabel : qsTr("OBS")
+                font.pointSize: Tokens.type.caption
+                color: root.live ? Tokens.accent.default : Tokens.fg.default
+                wrapMode: Text.NoWrap
+                elide: Text.ElideRight
                 Accessible.ignored: true
             }
         }
@@ -71,20 +87,26 @@ Item {
         // their surface. A separate popup window supplies both capabilities.
         popupType: Popup.Window
         objectName: "obsAppletPopup"
-        width: 360
+        width: Math.min(360, Math.max(1, Screen.width - 24))
+        // Popup.Window sizes its native surface from implicitHeight, including
+        // later scene-list changes. Cap that value and scroll the viewport.
+        implicitHeight: Math.min(520, popupContent.implicitHeight + topPadding + bottomPadding,
+                                 Math.max(1, Screen.height - 48))
         padding: 12
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            radius: root.theme.cornerRadius ?? 10
-            color: root.colors.surfaceRaised ?? "#2c312e"
-            border.color: root.colors.border ?? "#3c433f"
+            radius: Tokens.radius.m
+            color: Tokens.bg.raised
+            border.color: Tokens.outline.strong
         }
 
         contentItem: ScrollView {
-            implicitHeight: Math.min(popupContent.implicitHeight, 520)
+            contentWidth: availableWidth
+            contentHeight: popupContent.implicitHeight
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             clip: true
 
             // AGENT-GUARD: shortcut ownership follows the focusable popup

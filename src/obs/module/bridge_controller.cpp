@@ -196,9 +196,10 @@ void BridgeController::frontendEvent(enum obs_frontend_event event, void *data)
     case OBS_FRONTEND_EVENT_FINISHED_LOADING:
     case OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED:
         self->m_frontendReady = true;
-        if (self->m_haveSnapshot) {
-            self->applySnapshot(self->m_lastSnapshot);
-        }
+        // A restored collection can contain bridge sources from a retired
+        // Audio1 owner. Without current authority they must not resume capture.
+        self->applySnapshot(self->m_haveSnapshot ? self->m_lastSnapshot
+                                                : Audio::Snapshot{});
         break;
     case OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGING:
     case OBS_FRONTEND_EVENT_SCRIPTING_SHUTDOWN:
@@ -223,8 +224,27 @@ void BridgeController::onSnapshot(const Audio::Snapshot &snapshot)
 
 void BridgeController::onState(Audio::ClientState state, const QString &reasonCode)
 {
+    if (m_client && !m_client->hasSnapshot()) {
+        // AGENT-CONTRACT: AudioClient discards its snapshot on owner loss.
+        // Forget the same authority here, including the copy used after a
+        // scene-collection switch. A failed refresh with retained truth does
+        // not take this path. See architecture/obs-bridge.md.
+        m_haveSnapshot = false;
+        m_lastSnapshot = {};
+        if (m_frontendReady) {
+            applySnapshot({});
+        }
+        if (m_dock != nullptr) {
+            m_dock->setSources({});
+        }
+    }
     {
         QMutexLocker lock(&m_mutex);
+        if (!m_haveSnapshot) {
+            m_mapping.sources.clear();
+            m_mapping.epoch = 0;
+            m_mapping.revision = 0;
+        }
         m_mapping.audioState = stateToken(state);
         m_mapping.reasonCode = reasonCode;
     }

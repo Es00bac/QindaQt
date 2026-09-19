@@ -11,6 +11,12 @@ bookkeeping as send and rack modules; their teardown must take the map before
 callbacks can erase entries. This source diagnosis precedes the correction
 and does not claim a reproduced live-service crash.
 
+The candidate registers virtual-bus loopbacks with the existing destroy
+listener and takes the endpoint module map before teardown. A callback removes
+an entry only when its stored pointer is the module being destroyed, so a late
+destruction cannot remove a replacement with the same name. Raw lingering-sink
+proxy recovery remains outside this module-lifetime correction.
+
 Audio1 is QindaQt's typed, restart-aware control and observation boundary for
 the running PipeWire graph. The D-Bus-activated `qindaqt-audio-service` owns
 `org.qindaqt.Audio1`; upstream WirePlumber remains the policy manager. Audio1
