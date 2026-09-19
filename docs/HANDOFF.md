@@ -1,5 +1,96 @@
 # Integration handoff
 
+## September 19 — overflow, Audio/OBS and matching login themes installed
+
+Both qinda and qinda-top have desktop
+`0.1.0_pre20260919-r8`, exact product source
+`c99d39c4f8397f23e484b03cd7af290e01f03a4f`, and QindaTK `0.1.0-r2`, source
+`d59b080c5b47fbfe35d3984f13be40bf81a0144a`, installed through Portage.
+The installed VDB pins match on both hosts. Package integrity is clean on
+each: desktop 1522/1522 files and toolkit 114/114. qinda-top received qinda's
+signed binary packages with signature verification retained. Configured build
+limits were preserved: qinda `-j24 -l24`; qinda-top `-j16 -l16`. No limit was
+reduced or overridden.
+
+The [source diagnostics](diagnostics/2026-09-19-ui-overflow.md) were written
+before implementation. Long global menus now keep their native popup within
+the output and accept wheel scrolling; folded top-level menus are reachable
+through the overflow button. Settings and File Manager scroll their complete
+left navigation columns. The same audit repaired tray and toolkit menus,
+toolkit dialog bodies, compact Settings navigation, Welcome navigation,
+Customize's nested scroller, File Manager preferences, and its
+Network-to-Applications route switch. These are bounded presentation repairs.
+
+The separately assigned Astra Max worker's reviewed audio/OBS candidate
+`3d44d74e` is included. Console faders retain their gesture across snapshots,
+console operation failures reach feedback, virtual-bus modules use the
+existing exact-pointer lifetime bookkeeping, and OBS controls retain the
+server's state while commands are pending. Authentication rejection,
+paused recording and reconnecting streams are distinguished. The OBS chip
+shows its state and opens Streaming settings; its long popup scrolls.
+Transient Audio1 loss silences managed capture children while preserving
+OBS source identities, scenes and filters.
+
+All product changes were completed before the first build. The post-build
+warning-fatal menu check exposed a `MenuItem.menu` name collision during
+submenu construction. That finding was documented, the root id was renamed
+unambiguously, reviewed, and the final correction built as r8. Acceptance
+keeps `QT_FATAL_WARNINGS=1`; warnings were not suppressed to obtain a pass.
+
+Final bounded verification:
+
+- Installed-QML global-menu popup placement/wheel: 15/15; overflow: 14/14.
+- Settings navigation layout/interaction and File Manager browsing: 3/3
+  existing CTest rows.
+- Installed toolkit Menu/Dialog checks: 4/4 including fixture setup/cleanup.
+- Audio/OBS: all eight assigned existing rows passed. Seven passed together;
+  libobs required access to the actual graphical Xwayland display and then
+  passed its single-row retry. No source change was required for that display
+  prerequisite. See the worker's final results record under
+  `ops/team/messages/20260919T182712Z-astra-audio-obs-final-results.md`.
+- Documentation link/navigation validation: 337 Markdown documents; strict
+  MkDocs build passed. An out-of-site diagnostic link was corrected before
+  the successful strict build.
+
+The shell and Audio1 service were restarted on both hosts, and Settings and
+File Manager reopened against the new installed executables. Each existing
+saved top bar now has OBS beside Audio; its previous profile is backed up as
+`qindaqt.json.before-obs-20260919`. OBS was opened on both hosts and loads the
+desktop-owned `obs-qindaqt.so`. Authenticated, read-only live requests report
+bridge version 1, Audio1 `ready`, eight buses and eight strips on each machine.
+The running shell on each maintains its loopback OBS connection. Neither
+recording nor streaming was active; neither was started by this work.
+
+The laptop's existing webcam source incorrectly selected the virtual-camera
+output at `/dev/video0`. Its scene collection was backed up and only the
+source's device selection changed through OBS's API and persisted in the saved
+collection to the integrated camera's stable udev capture path. OBS now
+initializes that source at 1280×720, MJPG,
+30 fps. One initial frame timeout was logged; upstream's capture loop continues
+after it, and no repeated timeout was observed. Image quality and physical
+audio hardware are not certified by these checks.
+
+Both hosts now group the existing ecosystem checkouts through `~/QindaQt`
+links, including `SDDM-Themes`. Physical repository locations, active
+worktrees and build caches remain valid. qinda's newer Office source and the
+laptop's uncommitted player edits were preserved. Clean committed desktop,
+toolkit and overlay sources are exchanged through the existing qinda Git hub.
+
+All nine installed SDDM theme directories from qinda are present on qinda-top;
+129 files match exactly. Both hosts select `qinda-reclaimed` in
+`zz-qindaqt-theme.conf`. The laptop's previous assets/configuration are backed
+up under `~/.cache/qinda-sync/sddm-before-IfXydG3p`. The selection applies to
+the login greeter; no full display-manager restart was needed to reload the
+desktop components.
+
+Evidence lives under `.cache/ui-diagnostics-20260919/` in the main checkout;
+fresh application logs are under `~/.cache/qinda-ui-reload-20260919/` on each
+host. The existing ADR-0208 policy exposes buses and raw strips together in
+OBS: selecting both paths for the same signal can duplicate audio, and raw
+strip capture precedes its rack. This repair preserves that documented policy
+and does not claim every hardware, broadcast or fault-injection scenario has
+been exercised. The broader ecosystem roadmap remains open.
+
 ## September 19 — Viewer, defaults, screensavers and shared delivery installed
 
 Both qinda and qinda-top now have `gui-wm/qindaqt-desktop-0.1.0_pre20260919-r6`
