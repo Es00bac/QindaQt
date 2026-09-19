@@ -100,6 +100,17 @@ set_tests_properties(qindaqt.session-desktop-controls-settings1-idle-preferences
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "session;session-desktop-controls;model")
 
+qt_add_executable(qindaqt_settings1_screensaver_preferences_tests
+    tst_settings1_screensaver_preferences.cpp)
+target_link_libraries(qindaqt_settings1_screensaver_preferences_tests
+    PRIVATE qindaqt_desktop_controls Qt6::Test)
+qindaqt_enable_warnings(qindaqt_settings1_screensaver_preferences_tests)
+add_test(NAME qindaqt.session-desktop-controls-settings1-screensaver-preferences
+    COMMAND qindaqt_settings1_screensaver_preferences_tests)
+set_tests_properties(qindaqt.session-desktop-controls-settings1-screensaver-preferences PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "session;session-desktop-controls;model")
+
 qt_add_executable(qindaqt_powerdevil_idle_preferences_binding_tests
     tst_powerdevil_idle_preferences_binding.cpp)
 target_link_libraries(qindaqt_powerdevil_idle_preferences_binding_tests

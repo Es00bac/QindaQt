@@ -74,6 +74,33 @@ inverse of the adapter's inhibit flag, and the two lid rows render only when
 the shared admission predicate admits lid-present truth. Hardware lid events
 stay with PowerDevil and the platform; the section configures policy only.
 
+## Screensaver boundary
+
+The Screensaver section chooses what an idle screen shows, and nothing else.
+It reads and writes exactly one purpose-scoped Settings1 pair,
+`power.screensaver` and `power.screensaverMinutes`, through the route's own
+scoped client. `power.screensaver` holds a token from a closed set — `none`,
+`qinda-patrol`, `circuit-reef` — never a command line; an unrecognized
+persisted token reads back as `none` rather than being offered or launched.
+`power.screensaverMinutes` is clamped to 1-240 minutes and defaults to five.
+The resident [`qindaqt-desktop-controls`](../architecture/desktop-controls.md)
+process starts and stops the chosen saver; the route starts no process itself.
+
+A screensaver is decoration and never a lock
+([ADR-0215](../adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md)):
+any activity dismisses it, it stops when the session locks, and automatic
+locking stays entirely under Screen lock above. The section says so in its own
+text, and the page row asserts that sentence is present. Writes are optimistic
+with busy suppression while a commit is in flight, an invalid choice is
+refused before any commit, a non-applied or uncertain outcome surfaces as
+visible error text with one explicit retry, and the delay row stays disabled
+while the saver is `none`. Retry re-reads the confirmed snapshot; it never
+replays the write that failed.
+
+Choosing a saver that is not installed is discovered by choosing it: Settings
+does not probe for the saver binaries, and the launcher reports a failed start
+rather than retrying it.
+
 ## Display-power preference boundary
 
 The Display power section is display energy only. It reads and writes exactly
@@ -234,6 +261,15 @@ env -u DBUS_SESSION_BUS_ADDRESS \
   ctest --test-dir build/dev --output-on-failure --no-tests=error \
   -R '^qindaqt\.settings-power-'
 ```
+
+The screensaver row (`qindaqt.settings-screensaver-model`) covers persisted
+truth for the pair, an unrecognized token reading back as no saver, an invalid
+saver or out-of-range delay refused before any commit, applied and rejected
+commit outcomes, busy write suppression, and retry clearing the error without
+replaying the write. The page row adds the section's own behavior: a confirmed
+snapshot rebinds both rows without writing, only an interactive activation
+writes, choosing no saver retires the delay row, and the "does not lock"
+sentence stays in the section.
 
 The model row covers bounded inventory, labels, raw values, holds, shared
 profile admission, exact lineage, retained-stale presentation/admission

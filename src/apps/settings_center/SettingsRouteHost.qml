@@ -16,6 +16,7 @@ Item {
     property var powerSettings: null
     property var screenLockSettings: null
     property var idleDisplaySettings: null
+    property var screensaverSettings: null
     property var clipboardSettings: null
     property var colorSettings: null
     property var accessibilitySettings: null
