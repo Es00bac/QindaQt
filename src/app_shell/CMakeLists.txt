@@ -115,4 +115,11 @@ install(
     COMPONENT TextEditor
 )
 
+# Viewer uses the public C++ AppShell boundary without importing its QML.
+install(
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT Viewer
+)
+
 add_subdirectory(menu_export)
