@@ -268,6 +268,40 @@ wins. Triggering it calls `LauncherAppletController::requestOpen()`, whose
 and focusing the search field: the controller owns no window, so opening the
 launcher can only ever be a request the presentation honours.
 
+**Known limitation (2026-09-19).** The key reaches the applet, and the applet
+asks its popup to open, but Qt then refuses it:
+
+```
+qt.qpa.wayland: Failed to create grabbing popup. Ensure popup … has a
+transientParent set and that parent window has received input.
+```
+
+A Wayland popup that grabs input needs a serial from a real input event. A
+pointer click on the panel button supplies one; a global shortcut does not, and
+panels are published with layer-shell keyboard interactivity `None`
+(`layer_shell_surface_backend.cpp`) so they never receive keyboard input to
+supply one either.
+
+Lending the panel focus at press time does not work, and this was measured
+rather than assumed. A probe against this KWin 6.6.6 / LayerShellQt 6.6.6
+created a layer surface, then raised its interactivity after mapping:
+
+| interactivity | window active? |
+| --- | --- |
+| `None` at creation | no |
+| raised to `OnDemand` after mapping, then `requestActivate()` | no |
+| raised to `Exclusive` after mapping, then `requestActivate()` | no |
+| `Exclusive` **at creation** | yes, from the first map |
+
+Only a surface created with keyboard interactivity gets focus; changing it on a
+mapped surface is a no-op, and `requestActivate()` is not a focus request KWin
+honours for layer surfaces. Making the Meta key open the browser therefore
+needs the browser to be its own layer-shell window created with keyboard
+interactivity — the shape
+[`layer_shell_notification_surface.cpp`](../architecture/notifications-service.md)
+already uses for the notification centre — rather than a popup parented to the
+panel. Until that lands, `Alt+F1` and the panel button are the working paths.
+
 Two consequences worth keeping in mind when changing this:
 
 - `qindaqt_open_launcher` is a **stable id**. Renaming it breaks the Meta key
