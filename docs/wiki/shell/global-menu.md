@@ -636,7 +636,8 @@ within 24 pixels of the top or bottom edge scrolls toward that edge until the
 list ends.
 The implicit cap is essential on Qt 6.11: a native popup window reapplies
 `implicitHeight` when its list changes, which can undo an actual-height-only
-cap. See the [September 19 diagnosis](../../diagnostics/2026-09-19-ui-overflow.md).
+cap. The repository's `docs/diagnostics/2026-09-19-ui-overflow.md` records the
+September 19 diagnosis and the final delivery evidence.
 
 The `qindaqt.global-menu-popup-placement-qml-offscreen` row hosts the compiled
 applet in frameless panel windows at exact output positions. It proves

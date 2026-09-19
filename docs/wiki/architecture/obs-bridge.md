@@ -33,7 +33,9 @@ but does not prove the new owner-loss preservation path or actual captures.
 `obs-qindaqt` is an OBS Studio module that shows the QindaQt audio console
 to OBS ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)). It is
 built from `src/obs` against the installed `libobs`, `obs-frontend-api` and
-the `obs-websocket` API header, and packaged as `media-plugins/obs-qindaqt`.
+the `obs-websocket` API header. The current desktop r8 package includes and
+owns the installed module; a standalone `media-plugins/obs-qindaqt` recipe
+also exists for separate delivery.
 It is a client of Audio1 and a vendor of obs-websocket; it runs no daemon and
 issues no console operation.
 
@@ -117,11 +119,16 @@ meter (from Audio1's level readings, not OBS's mixer) and the Audio1 state.
 ## Building and packaging
 
 `src/obs/CMakeLists.txt` configures alone (`cmake -S src/obs`), which is how
-the ebuild builds it (`CMAKE_USE_DIR=src/obs`); a repository build adds it and
+the standalone ebuild builds it (`CMAKE_USE_DIR=src/obs`); a repository build adds it and
 skips it quietly when the OBS development files are absent. The module
 installs to `<libdir>/obs-plugins/obs-qindaqt.so`. The ebuild's
 `QINDAQT_COMMIT` and Manifest are set at the package cut like the desktop
 package's.
+
+The September 19 r8 delivery was installed on qinda and qinda-top and loaded
+into OBS on both. Authenticated read-only vendor requests report Audio1
+`ready`, eight buses and eight strips on each host. This confirms live module,
+control-protocol and console connectivity, not every hardware or mixing path.
 
 ## Verification
 

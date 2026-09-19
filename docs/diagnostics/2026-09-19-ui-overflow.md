@@ -95,3 +95,26 @@ by `MenuItem.menu`, which is null before Qt inserts the item. Its `access`,
 attaches it. Give the root an unambiguous id and keep the bindings explicit.
 The diagnostic run without warning-fatal mode passed all 15 placement/wheel
 assertions; it is diagnostic evidence, not a clean acceptance pass.
+
+## Live OBS configuration finding
+
+After the compiled bridge loaded successfully on both hosts, the laptop's
+existing `Video Capture Device (V4L2)` source failed to initialize. Its saved
+device is `/dev/video0`, now the QindaQt virtual-camera output. The integrated
+camera's capture interface is `/dev/video1`; `/dev/video2` is its metadata
+interface. udev identifies the stable capture path as
+`/dev/v4l/by-id/usb-_Integrated_Camera_0001-video-index0`.
+Back up the scene collection and update only this source's device through
+OBS's public API to the stable physical-camera path. This is a saved-device
+selection correction, requiring no product source or rebuild.
+
+## Final acceptance
+
+Desktop r8 and toolkit r2 built and installed on both hosts. The final installed
+menu checks pass with warnings fatal: 15 placement/wheel and 14 overflow
+assertions, including fixture setup/cleanup. Settings navigation and File
+Manager browsing pass their three existing rows; the installed toolkit's
+Menu/Dialog cases pass. Audio/OBS's eight focused rows also pass. Both live
+bridges authenticate and report Audio1 ready after the component reloads.
+The [delivery handoff](../HANDOFF.md) records exact versions, evidence,
+configuration changes and the limits of the checks.

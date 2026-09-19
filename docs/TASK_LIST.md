@@ -5,6 +5,26 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 19 — UI overflow and Audio/OBS repair installed
+
+Desktop r8 (`c99d39c4`) and QindaTK r2 (`d59b080c`) are installed on both
+hosts. Tall global menus accept wheel scrolling, Settings and File Manager
+scroll their complete navigation columns, and the documented related menu,
+dialog, navigation and route-switch defects are repaired. The independently
+reviewed audio/OBS fixes are included, with OBS controls added beside Audio
+in each saved top bar. Affected components have been reloaded on both hosts.
+
+The production builds, focused final checks and installed package integrity
+checks passed. Both live OBS bridges authenticate and report Audio1 ready
+with eight buses and eight strips. qinda-top's incorrect saved webcam device
+selection is corrected. Both hosts group the ecosystem under `~/QindaQt`;
+qinda-top has the same SDDM themes and selects `qinda-reclaimed`.
+
+See [diagnosis](diagnostics/2026-09-19-ui-overflow.md) and
+[handoff](HANDOFF.md) for exact pins, checks, the post-build submenu correction,
+backups, and the existing OBS mixing-policy/hardware limits. This completes
+the requested repair slice without advancing unrelated roadmap milestones.
+
 ## September 19 — image/PDF Viewer, defaults and shared delivery installed
 
 Installed on qinda and qinda-top through Portage: desktop r6, exact source
