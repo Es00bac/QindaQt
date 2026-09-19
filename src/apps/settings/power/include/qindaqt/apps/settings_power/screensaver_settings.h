@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/session/desktop_controls/screensaver_preferences.h>
 #include <qindaqt/session/desktop_controls/settings1_screensaver_preferences.h>
@@ -17,7 +18,10 @@ namespace QindaQt::Apps::SettingsPower {
 // the same purpose-scoped client, so an uncertain commit never fabricates
 // success and the next confirmed snapshot reconciles the route.
 //
-// The screensaver is decoration: this route never changes the screen-lock or
+// Confirmed truth is also mirrored into the screen locker's greeter through
+// the injected LockScreenSaverStore, so a locked session keeps showing the
+// saver the user chose (ADR-0216). That mirror is the only thing this route
+// writes outside Settings1, and it never touches the automatic-lock or
 // display-off preferences, which keep their own sections.
 class ScreensaverSettingsModel final : public QObject {
   Q_OBJECT
@@ -29,9 +33,10 @@ class ScreensaverSettingsModel final : public QObject {
   Q_PROPERTY(QString errorText READ errorText NOTIFY changed)
 
 public:
-  explicit ScreensaverSettingsModel(
+  ScreensaverSettingsModel(
       Session::DesktopControls::Settings1ScreensaverPreferences &preferences,
-      Services::SettingsClient::SettingsClient &client, QObject *parent = nullptr);
+      Services::SettingsClient::SettingsClient &client,
+      LockScreenSaverStore &lockScreenSaver, QObject *parent = nullptr);
   ~ScreensaverSettingsModel() override;
 
   ScreensaverSettingsModel(const ScreensaverSettingsModel &) = delete;
@@ -53,10 +58,14 @@ Q_SIGNALS:
 
 private:
   void publishStatus();
+  // Mirrors confirmed truth into the greeter. A failure here is reported as
+  // its own error: the preference itself is persisted either way.
+  void mirrorToLockScreen(const QString &saver);
   [[nodiscard]] bool submit(const QString &key, const QVariant &value);
 
   Session::DesktopControls::Settings1ScreensaverPreferences &m_preferences;
   Services::SettingsClient::SettingsClient &m_client;
+  LockScreenSaverStore &m_lockScreenSaver;
   QString m_statusText;
   QString m_errorText;
   bool m_busy = false;

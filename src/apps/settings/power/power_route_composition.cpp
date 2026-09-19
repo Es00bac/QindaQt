@@ -4,6 +4,7 @@
 
 #include <qindaqt/apps/settings_power/external_display_brightness_model.h>
 #include <qindaqt/apps/settings_power/idle_display_settings.h>
+#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
 #include <qindaqt/apps/settings_power/power_settings_model.h>
 #include <qindaqt/apps/settings_power/screen_lock_settings.h>
 #include <qindaqt/apps/settings_power/screensaver_settings.h>
@@ -48,7 +49,11 @@ public:
         screensaverClient(screensaverTransport,
                           Session::DesktopControls::Settings1ScreensaverPreferences::scopedKeys()),
         screensaverPreferences(screensaverClient),
-        screensaverSettings(screensaverPreferences, screensaverClient),
+        lockScreenSaver(
+            QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
+                .filePath(QStringLiteral("kscreenlockerrc"))),
+        screensaverSettings(screensaverPreferences, screensaverClient,
+                            lockScreenSaver),
         lidPowerButton(QDBusConnection::sessionBus()),
         lidPowerButtonPort(lidPowerButton),
         profilePowerAdapter(QDBusConnection::sessionBus()),
@@ -108,6 +113,9 @@ public:
   Services::SettingsClient::QtSettingsTransport screensaverTransport;
   Services::SettingsClient::SettingsClient screensaverClient;
   Session::DesktopControls::Settings1ScreensaverPreferences screensaverPreferences;
+  // The greeter mirror writes only the `[Greeter]` wallpaper keys of the same
+  // kscreenlockerrc the screen-lock section's own store writes `[Daemon]` in.
+  KConfigLockScreenSaverStore lockScreenSaver;
   ScreensaverSettingsModel screensaverSettings;
   Session::PowerDevilLid::PowerDevilLidAdapter lidPowerButton;
   QtPowerDevilLidPolicyPort lidPowerButtonPort;

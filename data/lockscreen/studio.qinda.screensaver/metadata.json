@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "support@sloom.studio",
+                "Name": "QindaQt contributors"
+            }
+        ],
+        "Category": "",
+        "Description": "Draws the chosen QindaQt screensaver, so a locked session keeps showing it",
+        "Icon": "preferences-desktop-screensaver",
+        "Id": "studio.qinda.screensaver",
+        "License": "GPL-3.0-or-later",
+        "Name": "QindaQt Screensaver",
+        "Website": "https://github.com/Es00bac/QindaQt"
+    },
+    "Keywords": "",
+    "X-KDE-ParentApp": "org.kde.plasmashell"
+}

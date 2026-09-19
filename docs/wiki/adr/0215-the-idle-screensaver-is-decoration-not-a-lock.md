@@ -4,7 +4,9 @@
 - **Date:** 2026-09-18
 - **Owners:** Desktop controls, Settings Power route
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0216](0216-the-locker-draws-the-screensaver.md),
+  for the lock-screen behaviour only: the locker now draws the saver itself.
+  Everything else here stands.
 
 ## Context
 

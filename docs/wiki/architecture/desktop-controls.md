@@ -147,7 +147,10 @@ starting an unchosen program is worse than starting nothing.
 `ScreensaverLauncher` (in `production/`, alongside the KGlobalAccel registrar,
 because it needs KIdleTime) arms one idle timeout from that preference, starts
 the saver when it fires, and stops it on resume, on a preference change, and
-on `org.freedesktop.ScreenSaver.ActiveChanged`. It relaunches a saver that
+on `org.freedesktop.ScreenSaver.ActiveChanged`. Stopping on lock is not the end
+of the picture: the locker's greeter draws the same saver itself as its
+wallpaper plugin (ADR-0216), so exactly one thing renders it at a time and no
+screensaver process is ever shown above the lock screen. It relaunches a saver that
 exits while the session is still idle — an output topology change ends one —
 but stops after three exits inside five seconds, and never retries a program
 that failed to start at all.

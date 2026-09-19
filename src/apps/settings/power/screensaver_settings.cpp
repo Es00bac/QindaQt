@@ -24,13 +24,18 @@ QString displayName(const QString &saver) {
 
 ScreensaverSettingsModel::ScreensaverSettingsModel(
     Settings1ScreensaverPreferences &preferences,
-    Services::SettingsClient::SettingsClient &client, QObject *parent)
-    : QObject(parent), m_preferences(preferences), m_client(client) {
+    Services::SettingsClient::SettingsClient &client,
+    LockScreenSaverStore &lockScreenSaver, QObject *parent)
+    : QObject(parent), m_preferences(preferences), m_client(client),
+      m_lockScreenSaver(lockScreenSaver) {
   connect(&m_preferences,
           &Settings1ScreensaverPreferences::preferencesChanged, this,
-          [this](ScreensaverPreferences) {
+          [this](ScreensaverPreferences next) {
             m_busy = false;
             m_errorText.clear();
+            // Only a confirmed snapshot reaches the greeter, so a refused or
+            // uncertain commit never changes what a locked session shows.
+            mirrorToLockScreen(next.saver);
             publishStatus();
           });
   connect(&m_client, &Services::SettingsClient::SettingsClient::commitFinished,
@@ -129,6 +134,16 @@ bool ScreensaverSettingsModel::submit(const QString &key, const QVariant &value)
   m_errorText.clear();
   publishStatus();
   return true;
+}
+
+void ScreensaverSettingsModel::mirrorToLockScreen(const QString &saver) {
+  if (m_lockScreenSaver.currentSaver() == saver) return;
+  QString error;
+  if (!m_lockScreenSaver.save(saver, &error)) {
+    m_errorText = tr("The screensaver was saved, but the lock screen could not "
+                     "be told about it: %1")
+                      .arg(error.isEmpty() ? tr("unknown reason") : error);
+  }
 }
 
 void ScreensaverSettingsModel::publishStatus() {

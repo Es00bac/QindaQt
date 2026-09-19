@@ -16,7 +16,13 @@ namespace QindaQt::Session::DesktopControls {
 // --all-screens); stop it on user activity or when KScreenLocker locks the
 // session. The locker (KWin's embedded KScreenLocker) stays the only lock
 // authority; the saver is decoration only and is never started while locked,
-// so it never sits between the user and the password prompt.
+// so no screensaver process ever sits between the user and the password
+// prompt.
+//
+// AGENT-CONTRACT: stopping on lock does not mean the screen goes blank. The
+// greeter draws the same saver itself, through the studio.qinda.screensaver
+// wallpaper plugin Settings points it at (ADR-0216). Exactly one of the two
+// renders at a time, and this process is the one that yields.
 //
 // Configuration is the purpose-scoped Settings1 pair `power.screensaver` and
 // `power.screensaverMinutes`, edited in Settings -> Power. Changing either one

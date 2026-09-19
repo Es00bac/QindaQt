@@ -58,6 +58,18 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATADIR}/wayland-sessions"
 )
 
+# The locker draws the screensaver itself (ADR-0216): this KPackage wallpaper
+# plugin is what KScreenLocker's greeter loads for a locked session, and the
+# Settings Power route points `kscreenlockerrc` at it when a saver is chosen.
+# It lives outside data/wallpapers/ on purpose -- that directory is the
+# desktop wallpaper picker's catalogue, and a KPackage directory is not a
+# wallpaper image.
+install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/data/lockscreen/studio.qinda.screensaver/"
+    DESTINATION "${KDE_INSTALL_DATADIR}/plasma/wallpapers/studio.qinda.screensaver"
+    COMPONENT QindaQt
+)
+
 # KWin owns switching and focus; this package supplies QindaQt presentation
 # over its public TabBox model. SessionDefaults selects it only for users who
 # have not already chosen a switcher layout.
