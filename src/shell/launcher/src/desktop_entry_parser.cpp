@@ -483,6 +483,7 @@ DesktopEntryParseResult DesktopEntryParser::parse(const QString &text)
                          QStringLiteral("boolean values must be true or false"));
         }
         hidden = hidden || *flag;
+        if (key == QLatin1String("Hidden")) entry.deleted = *flag;
       }
     } else if (key == QLatin1String("Name")) {
       rawActions[currentActionId].name = value;

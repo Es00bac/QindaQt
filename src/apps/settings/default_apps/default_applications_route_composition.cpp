@@ -32,7 +32,8 @@ public:
   Private() : Private(resolveApplicationDataRoots()) {}
 
   explicit Private(const QStringList &dataRoots)
-      : scan(QindaQt::ApplicationCatalog::scanApplicationDirectories(dataRoots)),
+      : scan(QindaQt::ApplicationCatalog::scanApplicationDirectories(
+            dataRoots, QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay)),
         model(makeStore(dataRoots), scan) {}
 
   std::unique_ptr<DefaultApplicationsStore> makeStore(const QStringList &dataRoots) {
