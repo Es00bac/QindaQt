@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+qt_add_executable(qindaqt_system_monitor_view_tests tst_process_table_model.cpp)
+target_link_libraries(qindaqt_system_monitor_view_tests
+    PRIVATE QindaQt::SystemMonitorView Qt6::Test)
+target_compile_features(qindaqt_system_monitor_view_tests PRIVATE cxx_std_20)
+set_target_properties(qindaqt_system_monitor_view_tests PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
+qindaqt_enable_warnings(qindaqt_system_monitor_view_tests)
+add_test(NAME qindaqt.system-monitor-view COMMAND qindaqt_system_monitor_view_tests)
+set_tests_properties(qindaqt.system-monitor-view PROPERTIES LABELS "system-monitor")
+
+qt_add_executable(qindaqt_system_monitor_facade_tests tst_monitor_facade.cpp)
+target_link_libraries(qindaqt_system_monitor_facade_tests
+    PRIVATE QindaQt::SystemMonitorView Qt6::Test)
+target_compile_features(qindaqt_system_monitor_facade_tests PRIVATE cxx_std_20)
+set_target_properties(qindaqt_system_monitor_facade_tests PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
+qindaqt_enable_warnings(qindaqt_system_monitor_facade_tests)
+add_test(NAME qindaqt.system-monitor-facade COMMAND qindaqt_system_monitor_facade_tests)
+set_tests_properties(qindaqt.system-monitor-facade PROPERTIES LABELS "system-monitor")

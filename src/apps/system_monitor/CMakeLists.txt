@@ -4,14 +4,26 @@ find_package(Qt6 REQUIRED COMPONENTS Concurrent Gui Qml Quick)
 add_subdirectory(core)
 add_subdirectory(hardware)
 
-qt_add_executable(qindaqt-system-monitor
-    main.cpp
+# The view model is a library, not part of the executable, so tests can link
+# it without dragging in a QML engine or a window.
+qt_add_library(qindaqt_system_monitor_view STATIC
     ui/monitor_facade.cpp
     ui/monitor_facade.h
     ui/process_table_model.cpp
     ui/process_table_model.h
 )
-target_include_directories(qindaqt-system-monitor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+add_library(QindaQt::SystemMonitorView ALIAS qindaqt_system_monitor_view)
+target_include_directories(qindaqt_system_monitor_view PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+target_link_libraries(qindaqt_system_monitor_view
+    PUBLIC Qt6::Core Qt6::Gui
+    PRIVATE QindaQt::SystemMonitorHardware Qt6::Concurrent
+)
+target_compile_features(qindaqt_system_monitor_view PUBLIC cxx_std_20)
+set_target_properties(qindaqt_system_monitor_view
+    PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON AUTOUIC OFF)
+qindaqt_enable_warnings(qindaqt_system_monitor_view)
+
+qt_add_executable(qindaqt-system-monitor main.cpp)
 
 # AGENT-CONTRACT: the interface is QML built on QindaTK (dev-libs/qindatk),
 # which supplies the telemetry primitives -- Tk.Graph, Tk.Meter, Tk.Sparkline,
@@ -41,6 +53,7 @@ target_link_libraries(qindaqt-system-monitor
     PRIVATE
         QindaQt::SystemMonitorCore
         QindaQt::SystemMonitorHardware
+        QindaQt::SystemMonitorView
         Qt6::Concurrent
         Qt6::Gui
         Qt6::Quick
