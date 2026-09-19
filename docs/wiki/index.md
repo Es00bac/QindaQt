@@ -166,6 +166,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt File Manager](apps/file-manager.md) documents the first-party local
   directory navigation, breadcrumb/history, bounded file-launch, QST-1/Controls
   presentation, and accessibility boundaries.
+- [QindaQt Viewer](apps/viewer.md) documents the QindaTK image/PDF application,
+  local document boundary and Poppler rendering. [Default applications](apps/default-applications.md)
+  explains the packaged defaults and user association choices.
 - [Settings Appearance route](apps/appearance-settings.md) documents the
   first-party appearance settings surface: validated drafts, QST previews,
   per-key Settings1 commits, and recovery truth.

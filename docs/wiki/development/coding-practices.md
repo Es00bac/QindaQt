@@ -23,7 +23,10 @@ apply it during implementation.
   palette hex literals, per-app token derivations, or a second framework theme
   authority. Bundled applications (Calendar, File Manager, Terminal, Text
   Editor) instead use stock Qt 6 controls themed through the Qt platform theme
-  per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md).
+  per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md). The
+  image/PDF Viewer uses QindaTK under the explicit exception in
+  [ADR-0218](../adr/0218-use-qindatk-and-poppler-for-the-viewer.md); Poppler
+  remains private to its C++ document backend.
 
 The permitted dependency direction is documented in
 [Module boundaries](../architecture/module-boundaries.md).

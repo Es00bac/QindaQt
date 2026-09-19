@@ -42,6 +42,7 @@ install(
 )
 
 option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
+option(QINDAQT_BUILD_VIEWER "Build the QindaTK image/PDF viewer" ON)
 option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
 option(QINDAQT_BUILD_PRODUCTION_SHELL
        "Build the LayerShellQt-backed production Wayland shell"

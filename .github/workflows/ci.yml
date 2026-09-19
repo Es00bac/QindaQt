@@ -113,8 +113,11 @@ jobs:
           wayland-protocols wireplumber
 
       - name: Configure
+        # QindaTK currently has only a local source repository. These hosted
+        # lanes cannot provision it; the native desktop build qualifies Viewer.
         run: >-
           cmake -S . -B build/ci -G Ninja -DBUILD_TESTING=ON
+          -DQINDAQT_BUILD_VIEWER=OFF
           -DQINDAQT_BUILD_KWIN_PLUGIN=OFF
           -DQINDAQT_BUILD_PRODUCTION_SHELL=OFF
           -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
@@ -219,6 +222,7 @@ jobs:
       - name: Configure production shell without the binary KWin plugin
         run: >-
           cmake -S . -B build/ci-production -G Ninja
+          -DQINDAQT_BUILD_VIEWER=OFF
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_TESTING=ON
           -DQINDAQT_BUILD_KWIN_PLUGIN=OFF
@@ -367,9 +371,10 @@ jobs:
             media-video/wireplumber net-misc/networkmanager sys-apps/systemd
           /usr/bin/kwin_wayland --version
 
-      - name: Configure the complete release build
+      - name: Configure the native release build without the local-only Viewer dependency
         run: >-
           cmake -S . -B build/ci-native-release -G Ninja
+          -DQINDAQT_BUILD_VIEWER=OFF
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_TESTING=ON
           -DQINDAQT_BUILD_KWIN_PLUGIN=ON
@@ -378,12 +383,12 @@ jobs:
           -DQINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS=OFF
           -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
 
-      - name: Build the complete production tree and nested probe
+      - name: Build the configured production tree and nested probe
         run: >-
           cmake --build build/ci-native-release --parallel "$(nproc)"
           --target src/all qindaqt-session-probe
 
-      - name: Stage the full desktop install
+      - name: Stage the configured desktop install
         run: >-
           cmake --install build/ci-native-release
           --prefix "${GITHUB_WORKSPACE}/build/ci-native-release-stage"

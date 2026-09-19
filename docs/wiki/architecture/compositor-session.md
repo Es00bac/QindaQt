@@ -127,6 +127,14 @@ and rejects configurations the common-argument backend cannot represent.
 
 ## Plugin discovery and installation
 
+Default file associations are packaged independently of compositor startup in
+`share/applications/qindaqt-mimeapps.list`. `XDG_CURRENT_DESKTOP=QindaQt`
+selects this fallback through the standard MIME applications lookup; startup
+does not copy file handlers into the user's `mimeapps.list`. Existing user and
+administrator choices keep precedence. See [Default
+applications](../apps/default-applications.md) and
+[ADR-0218](../adr/0218-use-qindatk-and-poppler-for-the-viewer.md).
+
 The canonical build artifact is
 `<build>/plugins/kwin/plugins/qindaqt_compositor.so`. Build-tree tests pass
 `<build>/plugins` explicitly. Installed discovery uses the same

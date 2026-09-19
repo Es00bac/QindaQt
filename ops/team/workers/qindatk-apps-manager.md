@@ -1,0 +1,17 @@
+# QindaTK applications manager
+
+- Identity: Codex, current primary agent; no external provider/model process claim.
+- Role: Integration manager for the requested Viewer and common app defaults.
+- Status: working — coordinate isolated implementation, record architecture, and verify integration.
+- Base: de8786e15e5ad8e8b9b63c49866f4b284f5c7bce
+- Branch: main
+- Worktree: shared integration checkout
+- Ownership: shared documentation, navigation, packaging and integration gates.
+
+## Updates
+
+- 2026-09-19T14:40:51Z — Clean base inspected. Created isolated Viewer and defaults worktrees and dispatched two live collaboration workers. QindaTK 0.1.0 and Poppler Qt6 26.05.0 are installed; QindaMPV's desktop ID is org.qindaqt.QQMpv.desktop. No user settings or host session changed. Exact candidate review and combined-tree verification remain.
+- 2026-09-19T14:51:16Z — User requested a combined build on qinda with Opus's screensaver/lock work. SSH located the repository at ~/work_SPaC3/container-wm, observed committed 2bf5847f and 072ca5ae plus uncommitted package metadata. Fetched and fast-forwarded only those committed changes locally; preserved the remote tree. Resolved additive navigation overlap and renumbered Viewer ADR to0217 because0216 belongs to the locker. An existing remote package compile remains separate from this task's future build.
+- 2026-09-19T15:06:11Z — Imported qinda's clean package descendant b8f4d03e after its prior build finished. Local shell/Settings/session target build and five screensaver/lock/session tests pass. Independent defaults review reproduced NoDisplay lookup regression in6967d76c and routed it to the same implementer. Viewer rendering/UI/install gates pass in its worker, final candidate pending. Remote isolated baseline build runs under tool session5063 in .cache/viewer-defaults-combined, branch integration/viewer-defaults-20260919; it is not yet the combined Viewer build. The pre-existing full source-shape gate has16 errors; no unrelated cleanup undertaken.
+- 2026-09-19T15:18:08Z — Imported latest committed Opus launcher focus500b1de5 while preserving remote uncommitted r3 metadata. Renumbered our ADR to0218. Defaults repair812b6cf7 awaits exact same-reviewer recheck; Viewer review demonstrated Latin1 password encoding defect in f56b9a70 and same worker is repairing. Explicit default-ON Viewer build option preserves required native/package dependencies; hosted CI excludes Viewer until locally hosted QindaTK can be provisioned there. Remote baseline build remains separate from final combined verification.
+- 2026-09-19T15:31:42Z — Both same-reviewer repairs accepted and integrated (Viewer b724e566, defaults812b6cf7) with Opus500b1de5. Shared Viewer option/CI guards independently accepted; integrated configure and336-document links/strict MkDocs pass. Companion clean6bfde664 builds30/30 and isolated startup/stage pass on qinda; added a path-independent fetch-restricted archive recipe. Remote baseline strict Release failed on pre-existing GCC15 maybe-uninitialized warning in icon-chip presenter; final combined build will use the existing package policy QINDAQT_ENABLE_STRICT_WARNINGS=OFF. Local combined build is restoring its original launcher for incremental verification; no other project build touched.

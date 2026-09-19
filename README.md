@@ -14,6 +14,11 @@ and color. Desktop profiles change the panel and window-control layout;
 QindaPunk-inspired themes bring the wallpaper's ink-blue and amber colors into
 the interface.
 
+QindaQt Viewer opens images and PDFs with a QindaTK interface and Poppler's
+C++ PDF renderer. Packaged file defaults select the bundled File Manager,
+Text Editor and Viewer, and QindaMPV for media; existing user choices take
+precedence. See [Default applications](docs/wiki/apps/default-applications.md).
+
 Start with the [handbook](docs/wiki/handbook/index.md) for everyday use. The
 [project wiki](docs/wiki/index.md) also covers architecture, configuration,
 building, and testing.
@@ -46,6 +51,9 @@ purpose:
 | KF6 CoreAddons and GlobalAccel | 6.0 or newer | `kcoreaddons 6.27.0-1`, `kglobalaccel 6.27.0-1` |
 | XDG desktop portal runtime | 1.20 or newer; QindaQt supplies only Settings | `xdg-desktop-portal` plus at least one of `xdg-desktop-portal-kde`, `xdg-desktop-portal-gtk`, or `xdg-desktop-portal-lxqt` for explicitly routed fallback families |
 | fontconfig | 2.x development headers, used only by the font discovery provider ([ADR-0067](docs/wiki/adr/0067-confine-fontconfig-behind-font-discovery.md)) | `fontconfig 2.17.1-1` |
+| QindaTK | Installed CMake package and QML runtime for Viewer | `dev-libs/qindatk` on Gentoo; tested with 0.1.0 |
+| Poppler Qt 6 | `poppler-qt6` pkg-config library, private to Viewer | `poppler-qt6` on Arch; `app-text/poppler[qt6]` on Gentoo; tested with 26.05.0 |
+| Qt image formats | WebP/TIFF plugins for Viewer, alongside Qt SVG | `qt6-imageformats` on Arch; `dev-qt/qtimageformats` on Gentoo |
 
 You'll also need CMake 3.25 or newer, Ninja, Python 3 for the tests, and a
 C++20 compiler. KWin and Plasma Activities are pinned to exact versions
@@ -57,11 +65,22 @@ On an Arch-derived system:
 ```sh
 sudo pacman -S --needed \
   base-devel cmake ninja python extra-cmake-modules \
-  qt6-base qt6-declarative qt6-svg qt6-wayland wayland-protocols \
+  qt6-base qt6-declarative qt6-svg qt6-imageformats qt6-wayland poppler-qt6 wayland-protocols \
   kcoreaddons kglobalaccel kdecoration kwin plasma-activities \
   layer-shell-qt dbus xdg-desktop-portal xdg-desktop-portal-kde \
   fontconfig xorg-xdpyinfo xorg-xwayland
 ```
+
+Install QindaTK before configuring. QindaMPV is a separate runtime package
+(`media-video/qqmpv` on Gentoo); it builds after the desktop's AppShell
+libraries are installed. Browser and mail defaults use installed Firefox and
+Thunderbird candidates; these applications are optional.
+
+`QINDAQT_BUILD_VIEWER` defaults to `ON` and requires QindaTK and Poppler.
+An explicit `-DQINDAQT_BUILD_VIEWER=OFF` supports reduced developer builds
+without those dependencies. Hosted CI currently uses that setting because
+QindaTK's source is still locally hosted; Viewer is verified on the native
+development machines. Full desktop packages keep Viewer enabled.
 
 Rolling repositories may already have moved past KWin 6.6.6. If so, the
 default presets need a coherent 6.6.6 package snapshot or cache — don't
