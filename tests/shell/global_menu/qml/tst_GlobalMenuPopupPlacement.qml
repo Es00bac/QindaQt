@@ -196,14 +196,16 @@ Item {
             })
         }
 
-        function test_oversizedPopupKeepsItsStartEdgeOnOutput() {
+        function test_oversizedPopupCapsToOutputAndScrolls() {
             fakeAccess.items = menuItems(60)
             const host = openPanel("left", 120)
             const bar = host.applet.menuBar
             const item = bar.itemAt(0)
             const menu = bar.menuAt(0)
             openMenu(menu, item)
-            verify(menu.height > root.Screen.height, "fixture must exceed the output")
+            verify(menu.implicitHeight > root.Screen.height, "fixture must exceed the output")
+            tryCompare(menu, "height", root.Screen.height)
+            tryCompare(menu.contentItem, "interactive", true)
             comparePopupOffset(menu, item, function() {
                 return Qt.point(item.width, -item.mapToGlobal(0, 0).y)
             })
