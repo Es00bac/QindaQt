@@ -43,6 +43,11 @@ install(
 
 option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
 option(QINDAQT_BUILD_VIEWER "Build the QindaTK image/PDF viewer" ON)
+# AGENT-GUARD: gui-apps/qindaqt-system-monitor installs this executable from
+# its own --component SystemMonitor. A desktop package built from this tree
+# installs every component, so the two collide on /usr/bin unless one of them
+# turns this off. Leave it ON for the standalone package.
+option(QINDAQT_BUILD_SYSTEM_MONITOR "Build the System Monitor application" ON)
 option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
 option(QINDAQT_BUILD_PRODUCTION_SHELL
        "Build the LayerShellQt-backed production Wayland shell"
