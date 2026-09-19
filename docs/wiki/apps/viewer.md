@@ -62,6 +62,8 @@ thread boundary; Poppler objects never enter QML or the scene graph. Each
 request has a revision, and close/open/navigation/zoom invalidate old results.
 Obsolete queued work is skipped, and Poppler's cancellation callback stops an
 obsolete PDF render. Closing a document clears cached pixels and passwords.
+Password strings cross the Poppler Qt6 boundary using its documented Latin-1
+byte encoding, including non-ASCII legacy-PDF passwords.
 
 Raster output is limited to **16 Mi pixels**, with an **8192-pixel maximum
 edge**. Unsupported full-image scaling rejects source images above 64 Mi

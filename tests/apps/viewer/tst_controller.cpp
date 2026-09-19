@@ -13,6 +13,7 @@ private slots:
     void navigationRotationAndClose();
     void latestOpenWins();
     void failedOpenAndUnlock();
+    void latin1Password();
 };
 
 void ControllerTest::localPathsAndUrls()
@@ -95,6 +96,27 @@ void ControllerTest::failedOpenAndUnlock()
     QTRY_VERIFY(controller.ready());
     QVERIFY(!controller.locked());
     QVERIFY(controller.error().isEmpty());
+}
+void ControllerTest::latin1Password()
+{
+    const QString path = QStringLiteral(VIEWER_FIXTURES_DIR "/latin1-password.pdf");
+    const QString password = QStringLiteral("café");
+    auto latest = std::make_shared<std::atomic<quint64>>(1);
+    DocumentRenderer renderer(latest);
+    RenderRequest request{1, path};
+    request.password = password.toLatin1();
+    const auto result = renderer.render(request);
+    QVERIFY2(result.error.isEmpty() && !result.locked && !result.image.isNull(),
+             "The independent fixture must render with Poppler's documented password bytes");
+
+    ViewerController controller;
+    controller.open(QUrl::fromLocalFile(path));
+    QTRY_VERIFY(!controller.busy());
+    QVERIFY(controller.locked());
+    controller.unlock(password);
+    QTRY_VERIFY(!controller.busy());
+    QVERIFY2(controller.ready(), qPrintable(controller.error()));
+    QCOMPARE(controller.frame().pixelColor(10, 10), QColor(Qt::red));
 }
 QTEST_MAIN(ControllerTest)
 #include "tst_controller.moc"

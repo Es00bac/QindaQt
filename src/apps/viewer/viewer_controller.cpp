@@ -78,7 +78,9 @@ void ViewerController::unlock(const QString &password)
 {
     if (!m_locked)
         return;
-    m_request.password = password.toUtf8();
+    // AGENT-CONTRACT: Poppler Qt6's Document::load password arrays are Latin-1,
+    // not UTF-8; the latter prevents valid non-ASCII legacy PDFs from opening.
+    m_request.password = password.toLatin1();
     m_opening = true;
     requestRender();
 }
