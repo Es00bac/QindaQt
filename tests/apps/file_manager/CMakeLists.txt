@@ -439,6 +439,19 @@ set_tests_properties(qindaqt.file-manager-preview-provider PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
 
+# Symbolic glyphs must follow the palette foreground so they stay readable on
+# dark themes; full-color artwork must never be recolored.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_theme_icon_provider_tests
+    tst_theme_icon_provider.cpp
+    qindaqt.file-manager-theme-icon-provider
+)
+target_compile_definitions(qindaqt_file_manager_theme_icon_provider_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+set_tests_properties(qindaqt.file-manager-theme-icon-provider PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QPA_PLATFORMTHEME=generic"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
 qt_add_executable(qindaqt_file_manager_visual_probe visual_probe.cpp)
 target_link_libraries(qindaqt_file_manager_visual_probe PRIVATE
     qindaqt_file_manager_support Qt6::Quick)

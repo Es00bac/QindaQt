@@ -489,6 +489,29 @@
       }
     },
     {
+      "key": "power.screensaver",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "qinda-patrol",
+          "circuit-reef"
+        ]
+      }
+    },
+    {
+      "key": "power.screensaverMinutes",
+      "domain": "power",
+      "type": "integer",
+      "default": 5,
+      "constraints": {
+        "minimum": 1,
+        "maximum": 240
+      }
+    },
+    {
       "key": "input.touch.enabled",
       "domain": "input",
       "type": "boolean",

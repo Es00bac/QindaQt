@@ -621,10 +621,21 @@ user-authored left or right panel resolves the same compiled entry point and
 hosts the vertical layout with this placement; stock profiles still place the
 applet only on top panels.
 
+A menu with more entries than the output can show scrolls instead of running
+off the screen. Qt's Wayland positioner slides a popup but never resizes it, so
+each `GlobalMenuNativeMenu` caps its own height at the output height, minus the
+bar's thickness on top and bottom panels; submenus receive the parent menu's
+room because their parent item lives in the parent popup window. The capped
+list is the Basic style's interactive `ListView`, so the wheel scrolls it and
+keyboard traversal keeps the current item visible, and holding the pointer
+within 24 pixels of the top or bottom edge scrolls toward that edge until the
+list ends.
+
 The `qindaqt.global-menu-popup-placement-qml-offscreen` row hosts the compiled
 applet in frameless panel windows at exact output positions. It proves
 adjacency to the exact triggering item on all four edges, panel-axis sliding on
-every edge, an oversized popup, re-opening after the anchor moves, the explicit
+every edge, an oversized popup capped to the output and left scrollable,
+re-opening after the anchor moves, the explicit
 edge override and the model-less fallback, and that switching, keyboard
 submenu traversal, Escape, outside-press dismissal, and single activation stay
 Qt-owned in a placed popup. Its contract case reuses the desktop-controls

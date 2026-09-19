@@ -108,6 +108,42 @@ Q_SIGNALS:
   void changed();
 };
 
+// The Power route's idle screensaver. `enabled` is derived from the saver
+// token exactly as the real model derives it, so the section's delay row
+// disables itself for "none" without the test setting two fields in step.
+class StubScreensaverSettings final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QString saver MEMBER saver NOTIFY changed)
+  Q_PROPERTY(bool enabled READ enabled NOTIFY changed)
+  Q_PROPERTY(int minutes MEMBER minutes NOTIFY changed)
+  Q_PROPERTY(bool busy MEMBER busy NOTIFY changed)
+  Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
+  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
+public:
+  using QObject::QObject;
+  QString saver = QStringLiteral("qinda-patrol");
+  int minutes = 5;
+  bool busy = false;
+  QString statusText =
+      QStringLiteral("Qinda Patrol starts after 5 minutes of inactivity.");
+  QString errorText;
+  QStringList saverRequests;
+  QList<int> minutesRequests;
+  int retryCalls = 0;
+  [[nodiscard]] bool enabled() const {
+    return !saver.isEmpty() && saver != QLatin1String("none");
+  }
+  Q_INVOKABLE bool setSaver(const QString &value) {
+    saverRequests.append(value); saver = value; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool setMinutes(int value) {
+    minutesRequests.append(value); minutes = value; Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool retry() { ++retryCalls; return true; }
+Q_SIGNALS:
+  void changed();
+};
+
 class StubLidPowerButtonPolicy final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool available MEMBER available NOTIFY availabilityChanged)

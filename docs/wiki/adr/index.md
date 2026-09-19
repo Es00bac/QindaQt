@@ -217,3 +217,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0212: quiet hours are a window the settings service owns](0212-quiet-hours-are-a-window-the-service-owns.md)
 - [ADR-0213: host the customization editor live in the shell](0213-host-the-customization-editor-live-in-the-shell.md)
 - [ADR-0214: the startup applications route shadows, never edits, system entries](0214-startup-applications-route.md)
+- [ADR-0215: the idle screensaver is decoration, and never a lock](0215-the-idle-screensaver-is-decoration-not-a-lock.md)
