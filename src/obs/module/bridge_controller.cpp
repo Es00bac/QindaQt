@@ -68,6 +68,22 @@ bool collectSource(void *param, obs_source_t *source)
     return true;
 }
 
+void silenceManagedCaptures()
+{
+    Enumeration enumeration;
+    obs_enum_sources(collectSource, &enumeration);
+    // Keep the owning OBS source, including its scene/filter/mixer state.
+    // Only its private capture child loses the retired Audio1 authority.
+    obs_data_t *update = obs_data_create();
+    obs_data_set_string(update, SettingsKeys::CaptureDevice, "");
+    obs_data_set_string(update, SettingsKeys::CaptureKind, "none");
+    for (obs_source_t *source : std::as_const(enumeration.refs)) {
+        obs_source_update(source, update);
+        obs_source_release(source);
+    }
+    obs_data_release(update);
+}
+
 bool attachedChannel(obs_source_t *source, uint32_t *channel)
 {
     for (uint32_t index = 1; index < MAX_CHANNELS; ++index) {
@@ -198,8 +214,11 @@ void BridgeController::frontendEvent(enum obs_frontend_event event, void *data)
         self->m_frontendReady = true;
         // A restored collection can contain bridge sources from a retired
         // Audio1 owner. Without current authority they must not resume capture.
-        self->applySnapshot(self->m_haveSnapshot ? self->m_lastSnapshot
-                                                : Audio::Snapshot{});
+        if (self->m_haveSnapshot) {
+            self->applySnapshot(self->m_lastSnapshot);
+        } else {
+            silenceManagedCaptures();
+        }
         break;
     case OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGING:
     case OBS_FRONTEND_EVENT_SCRIPTING_SHUTDOWN:
@@ -232,7 +251,7 @@ void BridgeController::onState(Audio::ClientState state, const QString &reasonCo
         m_haveSnapshot = false;
         m_lastSnapshot = {};
         if (m_frontendReady) {
-            applySnapshot({});
+            silenceManagedCaptures();
         }
         if (m_dock != nullptr) {
             m_dock->setSources({});
