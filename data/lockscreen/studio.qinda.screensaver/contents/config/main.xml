@@ -6,9 +6,11 @@
   <kcfgfile name=""/>
 
   <group name="General">
-    <!-- The same token as the Settings1 key power.screensaver: none,
-         qinda-patrol, or circuit-reef. Settings -> Power writes both, so the
-         idle screen and the locked screen never disagree about what shows. -->
+    <!-- The same token as the Settings1 key power.screensaver. Only the
+         savers that ship a QML module can be drawn here -- qinda-patrol and
+         circuit-reef today -- and Settings only points the greeter at this
+         plugin for those, so the value is one of none, qinda-patrol or
+         circuit-reef even though the idle screensaver offers five. -->
     <entry name="Saver" type="String">
       <label>Screensaver the locked session shows</label>
       <default>none</default>

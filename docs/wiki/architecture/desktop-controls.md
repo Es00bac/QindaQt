@@ -37,7 +37,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
-| Idle screensaver program | the saver package itself (`qinda-patrol`, `circuit-reef`) | `ScreensaverLauncher`, started only while idle and unlocked |
+| Idle screensaver program | the saver package itself (five `x11-misc` packages) | `ScreensaverLauncher`, started only while idle and unlocked |
 | Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + Settings Power section |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
 | Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
@@ -135,7 +135,8 @@ absent Settings1 owner keeps the documented default rather than silently
 disabling the policy. The screen-lock preference (`kscreenlockerrc` Daemon
 group) is untouched and independent.
 
-`power.screensaver` (a token: `none`, `qinda-patrol`, `circuit-reef`) and
+`power.screensaver` (a token: `none`, `qinda-patrol`, `circuit-reef`,
+`prism-circuit`, `prism-brawl`, or `starward`) and
 `power.screensaverMinutes` (1..240, default 5) are a second, separate scope in
 the same `power` domain, read by `Settings1ScreensaverPreferences` and written
 only by the Settings Power route. A token the current build does not know

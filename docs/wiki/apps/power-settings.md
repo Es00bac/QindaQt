@@ -80,8 +80,13 @@ The Screensaver section chooses what an idle screen shows, and nothing else.
 It reads and writes exactly one purpose-scoped Settings1 pair,
 `power.screensaver` and `power.screensaverMinutes`, through the route's own
 scoped client. `power.screensaver` holds a token from a closed set — `none`,
-`qinda-patrol`, `circuit-reef` — never a command line; an unrecognized
-persisted token reads back as `none` rather than being offered or launched.
+`qinda-patrol`, `circuit-reef`, `prism-circuit`, `prism-brawl`, `starward` —
+never a command line; an unrecognized persisted token reads back as `none`
+rather than being offered or launched. Each token carries its own fixed
+arguments: every saver is started with `--screensaver`, which each one
+documents as covering every connected output, plus the flag that turns off
+what an unattended screen should not be doing (`--no-metrics`, `--private`, or
+`--mute` for the two savers that synthesize sound).
 `power.screensaverMinutes` is clamped to 1-240 minutes and defaults to five.
 The resident [`qindaqt-desktop-controls`](../architecture/desktop-controls.md)
 process starts and stops the chosen saver; the route starts no process itself.
@@ -91,10 +96,14 @@ A screensaver is decoration and never a lock
 any activity dismisses it and automatic locking stays entirely under Screen
 lock above. It does, however, follow the session into the lock screen
 ([ADR-0216](../adr/0216-the-locker-draws-the-screensaver.md)): choosing a saver
-also points `kscreenlockerrc`'s `[Greeter] WallpaperPlugin` at QindaQt's
-`studio.qinda.screensaver` package, so the locker draws the same saver as its
-wallpaper and its own password prompt stays hidden until someone touches the
-keyboard or mouse. Only a confirmed snapshot is mirrored there, the previous
+the greeter can draw also points `kscreenlockerrc`'s `[Greeter]
+WallpaperPlugin` at QindaQt's `studio.qinda.screensaver` package, so the locker
+draws the same saver as its wallpaper and its own password prompt stays hidden
+until someone touches the keyboard or mouse. Only `qinda-patrol` and
+`circuit-reef` ship the QML module that makes that possible; choosing one of
+the three SDL/OpenGL savers releases the greeter's wallpaper back to whatever
+it was, and the section's status line says so rather than implying a lock
+screen that changed. Only a confirmed snapshot is mirrored there, the previous
 wallpaper plugin is handed back when the saver is turned off, and the write set
 is that key plus the plugin's own group — never `[Daemon]`. The section says so in its own
 text, and the page row asserts that sentence is present. Writes are optimistic

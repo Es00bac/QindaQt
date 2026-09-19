@@ -12,10 +12,17 @@ ColumnLayout {
     required property var screensaverSettings
     readonly property Item firstActionTarget: saverSelector.enabled ? saverSelector : null
 
+    // AGENT-GUARD: this list, ScreensaverPreferences::knownSavers(), and the
+    // schema's allowedValues for power.screensaver are one set in three
+    // places. A token offered here that the others do not know is refused
+    // before it is ever written.
     readonly property var saverOptions: [
         { "value": "none", "label": qsTr("None") },
         { "value": "qinda-patrol", "label": qsTr("Qinda Patrol") },
-        { "value": "circuit-reef", "label": qsTr("Circuit Reef") }
+        { "value": "circuit-reef", "label": qsTr("Circuit Reef") },
+        { "value": "prism-circuit", "label": qsTr("Prism Circuit") },
+        { "value": "prism-brawl", "label": qsTr("Prism Brawl") },
+        { "value": "starward", "label": qsTr("Starward") }
     ]
     readonly property var delayOptions: {
         const minutes = [1, 2, 5, 10, 15, 30, 60]
