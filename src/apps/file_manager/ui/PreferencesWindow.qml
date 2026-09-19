@@ -59,20 +59,44 @@ ApplicationWindow {
             Layout.fillHeight: true
             currentIndex: tabs.currentIndex
 
-            PreferencesGeneralPage {
-                preferencesController: root.preferencesController
+            ScrollView {
+                id: generalScroller
+                contentWidth: availableWidth
+                clip: true
+                PreferencesGeneralPage {
+                    width: generalScroller.availableWidth
+                    preferencesController: root.preferencesController
+                }
             }
-            PreferencesViewsPage {
-                preferencesController: root.preferencesController
+            ScrollView {
+                id: viewsScroller
+                contentWidth: availableWidth
+                clip: true
+                PreferencesViewsPage {
+                    width: viewsScroller.availableWidth
+                    preferencesController: root.preferencesController
+                }
             }
-            PreferencesNetworkPage {
-                preferencesController: root.preferencesController
-                discoveryController: root.discoveryController
-                networkLocationsController: root.networkLocationsController
-                mountManager: root.mountManager
+            ScrollView {
+                id: networkScroller
+                contentWidth: availableWidth
+                clip: true
+                PreferencesNetworkPage {
+                    width: networkScroller.availableWidth
+                    preferencesController: root.preferencesController
+                    discoveryController: root.discoveryController
+                    networkLocationsController: root.networkLocationsController
+                    mountManager: root.mountManager
+                }
             }
-            PreferencesTrashPage {
-                preferencesController: root.preferencesController
+            ScrollView {
+                id: trashScroller
+                contentWidth: availableWidth
+                clip: true
+                PreferencesTrashPage {
+                    width: trashScroller.availableWidth
+                    preferencesController: root.preferencesController
+                }
             }
         }
 

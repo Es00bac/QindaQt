@@ -542,6 +542,10 @@ not hidden on a panel with room to spare
 ([ADR-0188](../adr/0188-serve-the-panel-start-zone-first.md)). A host may still
 pass a smaller value deliberately, and the "+N" indicator then appears at that
 count.
+The `+N` affordance opens a keyboard-accessible native menu containing every
+folded entry. It uses the same generation-bound projection and activation
+path as the visible bar; its synthetic wrapper does not consume a provider's
+submenu-depth allowance.
 Provider-owned top-level names intentionally remain visible because they are
 the menu affordances. Width pressure moves complete entries behind the `+N`
 indicator; an admitted entry never independently elides its provider-owned
@@ -623,13 +627,16 @@ applet only on top panels.
 
 A menu with more entries than the output can show scrolls instead of running
 off the screen. Qt's Wayland positioner slides a popup but never resizes it, so
-each `GlobalMenuNativeMenu` caps its own height at the output height, minus the
+each `GlobalMenuNativeMenu` caps its implicit and actual height at the output height, minus the
 bar's thickness on top and bottom panels; submenus receive the parent menu's
 room because their parent item lives in the parent popup window. The capped
-list is the Basic style's interactive `ListView`, so the wheel scrolls it and
+list compares its content with its actual viewport, so the wheel scrolls it and
 keyboard traversal keeps the current item visible, and holding the pointer
 within 24 pixels of the top or bottom edge scrolls toward that edge until the
 list ends.
+The implicit cap is essential on Qt 6.11: a native popup window reapplies
+`implicitHeight` when its list changes, which can undo an actual-height-only
+cap. See the [September 19 diagnosis](../../diagnostics/2026-09-19-ui-overflow.md).
 
 The `qindaqt.global-menu-popup-placement-qml-offscreen` row hosts the compiled
 applet in frameless panel windows at exact output positions. It proves

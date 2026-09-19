@@ -141,12 +141,15 @@ ApplicationWindow {
         function onActionRequested(actionId) {
             const navigation = root.navigationController
             if (actionId === "go.applications") {
+                root.networkMode = false
                 root.applicationsMode = true
                 return
             } else if (actionId === "go.network") {
+                root.applicationsMode = false
                 root.networkMode = true
                 return
             } else if (actionId === "network.connect") {
+                root.applicationsMode = false
                 root.networkMode = true
                 windowServices.openConnectDialog("")
                 return

@@ -86,10 +86,6 @@ Rectangle {
             Accessible.name: text
         }
 
-        Item {
-            Layout.fillWidth: true
-        }
-
         Flickable {
             id: compactRouteScroller
             objectName: "settingsCompactRouteScroller"
@@ -99,7 +95,26 @@ Rectangle {
             contentWidth: compactTabs.width
             contentHeight: compactTabs.height
             boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.HorizontalFlick
             onWidthChanged: Qt.callLater(header.revealActiveButton)
+
+            T.ScrollBar.horizontal: T.ScrollBar {
+                policy: T.ScrollBar.AsNeeded
+                Accessible.name: qsTr("Scroll settings categories")
+            }
+            WheelHandler {
+                target: null
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                onWheel: event => {
+                    const pixels = event.pixelDelta.x || event.pixelDelta.y
+                    const angle = event.angleDelta.x || event.angleDelta.y
+                    const delta = pixels || angle / 120 * compactRouteScroller.height
+                    const oldX = compactRouteScroller.contentX
+                    const maxX = Math.max(0, compactRouteScroller.contentWidth - compactRouteScroller.width)
+                    compactRouteScroller.contentX = Math.max(0, Math.min(maxX, oldX - delta))
+                    event.accepted = compactRouteScroller.contentX !== oldX
+                }
+            }
 
             Row {
                 id: compactTabs

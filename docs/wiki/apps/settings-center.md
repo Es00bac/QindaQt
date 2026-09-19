@@ -166,7 +166,10 @@ At widths of 540 logical pixels or greater, a two-column view presents a
 unchanged route registry into General, Personalization, and Hardware headings;
 this is a presentation sort only and does not alter route IDs, history, or
 shortcuts. Its muted Settings label identifies the navigation region while the
-active route keeps the one prominent page title. Below 540 pixels, a compact single-column, horizontally scrollable
+active route keeps the one prominent page title. The full grouped route list
+scrolls vertically in a bounded viewport with a scrollbar when needed. Route
+selection, keyboard focus and resizing reveal the relevant button; wheel
+scrolling otherwise retains the user's position. Below 540 pixels, a compact single-column, horizontally scrollable
 PageTabList appears above the active route. Both variants use
 only QST-1 semantic roles and QindaQt.Controls presentation. The selected
 route tab uses the default foreground on its raised-surface background; the
@@ -177,6 +180,8 @@ when it is created, selected, or resized, and reveals each tab reached by
 Left/Right keyboard focus. Reveal adjustments occur only for those navigation
 and viewport events so touch and pointer users can otherwise scroll the list
 freely.
+The compact horizontal list accepts ordinary vertical wheel input as well as
+horizontal touchpad scrolling and has an attached horizontal scrollbar.
 
 The ordinary starting window is 960×680 logical pixels. Its 420×320 minimum
 remains supported for compact/offscreen interaction coverage.

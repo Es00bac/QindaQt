@@ -18,6 +18,13 @@ Basic.Menu {
     property bool rebuilding: false
     property string publishedShape: ""
     property bool restoring: false
+    // AGENT-GUARD: Cap the implicit size too: Qt's separate popup window
+    // re-applies it on list changes. Submenus inherit the triggering output.
+    property real verticalRoom: parent ? parent.Screen.height - 2 * padding : -1
+    readonly property real naturalHeight: Math.max(
+        implicitBackgroundHeight + topInset + bottomInset,
+        implicitContentHeight + topPadding + bottomPadding)
+    implicitHeight: verticalRoom > 0 ? Math.min(naturalHeight, verticalRoom) : naturalHeight
     readonly property bool interactive: access !== null && access.activateGranted === true
                                         && status === "ready"
     title: String(menuData.label ?? "")
@@ -41,6 +48,7 @@ Basic.Menu {
                 const submenu = component.createObject(menu, {
                     access: access, targetItem: targetItem, menuData: entry,
                     revision: revision, depth: depth + 1,
+                    verticalRoom: Qt.binding(function() { return menu.verticalRoom }),
                     status: Qt.binding(function() { return menu ? menu.status : "none" })
                 })
                 if (submenu)

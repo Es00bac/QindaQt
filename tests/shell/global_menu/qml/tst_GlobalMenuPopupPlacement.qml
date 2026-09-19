@@ -203,12 +203,17 @@ Item {
             const item = bar.itemAt(0)
             const menu = bar.menuAt(0)
             openMenu(menu, item)
-            verify(menu.implicitHeight > root.Screen.height, "fixture must exceed the output")
+            verify(menu.contentItem.contentHeight > root.Screen.height, "fixture must exceed the output")
+            tryCompare(menu, "implicitHeight", root.Screen.height)
             tryCompare(menu, "height", root.Screen.height)
             tryCompare(menu.contentItem, "interactive", true)
             comparePopupOffset(menu, item, function() {
                 return Qt.point(item.width, -item.mapToGlobal(0, 0).y)
             })
+            const before = menu.contentItem.contentY
+            mouseWheel(menu.contentItem, menu.contentItem.width / 2,
+                       menu.contentItem.height / 2, 0, -120)
+            tryVerify(() => menu.contentItem.contentY > before)
         }
 
         function test_reopenFollowsChangedAnchorGeometry() {

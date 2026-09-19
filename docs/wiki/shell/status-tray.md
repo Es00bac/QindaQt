@@ -165,6 +165,8 @@ synchronously inside a dispatch cannot double it. The production menu is a
 bounded hierarchical DBusMenu snapshot loaded through the shared desktop menu
 client. The older descriptor menu projection remains
 available for compatibility tests; the live popup does not use that preview.
+The root and nested native menus cap their implicit height to the triggering
+output, retaining the Basic menu's wheel and keyboard scrolling for long lists.
 
 An observed empty tray has zero panel extent: `AppletChip` suppresses both its
 surface fill and unavailable marker when the hosted applet's implicit extent

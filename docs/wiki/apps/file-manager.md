@@ -100,6 +100,11 @@ Tooltips and accessible labels explain every icon action.
 The places sidebar offers fixed places (Home, File System, Trash) and the
 user's bookmarks. `Ctrl+D` bookmarks the current folder; each bookmark row
 has an icon button to remove it. Places retain both recognizable icons and labels;
+Places, saved Network locations and Bookmarks share one scrollable viewport,
+so a long network inventory cannot push bookmarks outside a short window.
+Keyboard focus reveals the focused row, including each remove button.
+Preferences pages likewise scroll within their window; the common Close and
+Restore Defaults footer stays reachable when help or errors make a page tall.
 the sidebar narrows from 196 to 148 pixels below 680 pixels window width. Bookmarks persist across restarts through
 `BookmarksStore` (ADR-0090); a bookmark whose folder vanished simply lands on
 the ordinary "missing" state card.
@@ -121,7 +126,7 @@ filtered out of the published listing by default; `Ctrl+H` or the toolbar
 toggle shows them at their sorted positions, and the status notice reports
 the filtered count ("3 hidden"). List mode shows preformatted size, kind, and
 modified columns; grid mode shows the same entries as catalog/MIME icons with local image previews. Both modes
-share one selection contract. Both views and the bookmarks list have draggable
+share one selection contract. Both views and the complete places sidebar have draggable
 vertical scrollbars that remain visible while content overflows. Their reserved
 gutters prevent icons or filenames from sitting beneath the thumb. Original folder artwork adds a decorative empty
 state at roomy sizes, while compact windows retain the accessible state card.
