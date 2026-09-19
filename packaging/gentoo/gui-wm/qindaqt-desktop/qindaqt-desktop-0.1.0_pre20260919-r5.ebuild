@@ -7,7 +7,7 @@ inherit cmake xdg
 
 DESCRIPTION="QindaQt Wayland desktop, services and bundled applications"
 HOMEPAGE="https://github.com/Es00bac/QindaQt"
-QINDAQT_COMMIT="de5785468d15cfce9e13b0c6b33461179909de33"
+QINDAQT_COMMIT="dcdec4e1a2460693a2e890fbdab00f7feb54cfc4"
 SRC_URI="https://github.com/Es00bac/QindaQt/archive/${QINDAQT_COMMIT}.tar.gz -> ${PF}.tar.gz"
 S="${WORKDIR}/QindaQt-${QINDAQT_COMMIT}"
 
@@ -29,9 +29,6 @@ RDEPEND="
 	>=dev-qt/qtbase-6.11:6=[dbus,gui,network,wayland,widgets]
 	>=dev-qt/qtdeclarative-6.11:6=[widgets]
 	>=dev-qt/qtsvg-6.11:6=
-	>=dev-qt/qtimageformats-6.11:6=
-	>=dev-libs/qindatk-0.1.0
-	>=app-text/poppler-26.05:=[qt6]
 	>=kde-frameworks/kcalendarcore-6.0:6=
 	=kde-plasma/kwin-6.6.6*:6=[lock,shortcuts]
 	=kde-plasma/kdecoration-6.6.6*:6=
@@ -71,10 +68,6 @@ RDEPEND="
 	x11-misc/xdg-utils
 	x11-misc/xkeyboard-config
 "
-# QindaMPV builds against the installed AppShell libraries from this package.
-# Keep this post-dependency separate from DEPEND to avoid a build cycle.
-PDEPEND=">=media-video/qqmpv-0.1.0_pre20260919"
-
 DEPEND="${RDEPEND}
 	dev-libs/wayland
 	dev-libs/wayland-protocols
@@ -96,7 +89,6 @@ src_configure() {
 		-DQINDAQT_BUILD_KWIN_PLUGIN=ON
 		-DQINDAQT_BUILD_SHELL=ON
 		-DQINDAQT_BUILD_PRODUCTION_SHELL=ON
-		-DQINDAQT_BUILD_VIEWER=ON
 		-DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
 		-DQINDAQT_ENABLE_STRICT_WARNINGS=OFF
 	)

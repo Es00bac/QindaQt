@@ -73,10 +73,14 @@ and an unconfirmed preference starts nothing.
 - A locked, idle machine shows the screensaver, and the password field appears
   when someone arrives. That is one feature built out of two existing
   behaviours; no QindaQt code runs on the lock screen.
-- Each saver package now installs a QML module as well as its executable
-  (`Qinda.Patrol`, `QindaQt.CircuitReef`). A saver that ships no `QQuickItem`
-  cannot be offered for the locked session, which is a real constraint on
-  adding a third one.
+- A saver package must install a QML module as well as its executable
+  (`Qinda.Patrol`, `QindaQt.CircuitReef`) to appear on a locked screen. This
+  is a real constraint, and the 2026-09-19 suite hit it immediately: the three
+  SDL/OpenGL savers ship no `QQuickItem`, so `ScreensaverPreferences::
+  showsOnLockScreen()` names the ones that do, choosing any other releases the
+  greeter's wallpaper back to the user's own, and the Power section's status
+  line says which of the two behaviours is in effect. A blank lock screen
+  would have been the alternative, and is worse than an unchanged one.
 - The greeter is a separate process that now loads QindaQt QML. A fault in a
   saver's scene is contained by the `Loader` above, but a crash inside the
   plugin's C++ would take the greeter down; KScreenLocker keeps the session
