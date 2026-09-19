@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-find_package(Qt6 REQUIRED COMPONENTS Concurrent Gui Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Concurrent DBus Gui Qml Quick)
 
 add_subdirectory(core)
 add_subdirectory(hardware)
@@ -11,11 +11,14 @@ qt_add_library(qindaqt_system_monitor_view STATIC
     ui/monitor_facade.h
     ui/process_table_model.cpp
     ui/process_table_model.h
+    app_shell/system_monitor_actions.cpp
+    app_shell/system_monitor_actions.h
 )
 add_library(QindaQt::SystemMonitorView ALIAS qindaqt_system_monitor_view)
-target_include_directories(qindaqt_system_monitor_view PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+target_include_directories(qindaqt_system_monitor_view PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/ui" "${CMAKE_CURRENT_SOURCE_DIR}/app_shell")
 target_link_libraries(qindaqt_system_monitor_view
-    PUBLIC Qt6::Core Qt6::Gui
+    PUBLIC Qt6::Core Qt6::Gui QindaQt::AppShell
     PRIVATE QindaQt::SystemMonitorHardware Qt6::Concurrent
 )
 target_compile_features(qindaqt_system_monitor_view PUBLIC cxx_std_20)
@@ -48,6 +51,7 @@ qt_add_qml_module(qindaqt-system-monitor
         qml/parts/TraceGraph.qml
         qml/parts/ProcessDetails.qml
         qml/parts/ProcessActions.qml
+        qml/parts/MonitorMenuBar.qml
         qml/parts/CoreGrid.qml
         qml/parts/CpuSummary.qml
         qml/parts/GpuCard.qml
@@ -59,7 +63,10 @@ target_link_libraries(qindaqt-system-monitor
         QindaQt::SystemMonitorCore
         QindaQt::SystemMonitorHardware
         QindaQt::SystemMonitorView
+        QindaQt::AppShell
+        QindaQt::AppShellMenuExport
         Qt6::Concurrent
+        Qt6::DBus
         Qt6::Gui
         Qt6::Quick
 )

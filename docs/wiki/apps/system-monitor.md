@@ -37,8 +37,9 @@ at 98% look urgent without your having to read the number first.
 
 Panels are dock panels. Drag a panel's header to move it to another edge, to
 stack it with another panel, or to tear it off as a floating panel; drag the
-seam between panels to resize them. **Layout → Reset arrangement** puts
-everything back, and **Layout → Show every panel** restores anything closed.
+seam between panels to resize them. **Layout → Reset arrangement**
+(`Ctrl+Shift+R`) puts everything back, and **Layout → Show every panel**
+(`Ctrl+Shift+A`) restores anything closed.
 Your arrangement is remembered between sessions.
 
 The process table is the centre and cannot be closed — it is the panel this
@@ -73,12 +74,20 @@ Use the filter to match on name, command line, user or PID. The tree button
 folds processes under their parents; the user button narrows the table to
 your own processes.
 
+## Where the menu is
+
+The menu goes to the desktop's global menu in the top panel when the shell
+offers one, and the window draws no menu bar of its own. Without a global
+menu — another desktop, or the panel not running — the same menu appears in
+the window instead. Both are built from one catalog of commands, so they can
+never offer different things, and the keyboard shortcuts work either way.
+
 ## Controlling the sampling
 
 **View → Pause updates** (`Ctrl+Alt+P`) freezes sampling while keeping what
 is already on screen. **View → Refresh now** (`F5`) takes one sample. The
-interval — Fast (500 ms), Normal (1 s) or Relaxed (3 s) — trades freshness
-for sampling work. Hardware readings are collected on their own, slower
+interval — Fast (`Ctrl+1`), Normal (`Ctrl+2`) or Relaxed (`Ctrl+3`), at
+500 ms, 1 s and 3 s — trades freshness for sampling work. Hardware readings are collected on their own, slower
 cadence: GPU and sensor files are slower to read than procfs, and some of
 them wake a device.
 

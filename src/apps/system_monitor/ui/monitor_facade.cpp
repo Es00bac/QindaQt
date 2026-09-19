@@ -2,6 +2,7 @@
 #include "monitor_facade.h"
 
 #include "hardware_sampler.h"
+#include "system_monitor_actions.h"
 
 #include <QCoreApplication>
 #include <QProcess>
@@ -104,6 +105,10 @@ bool MonitorFacade::openPanel(const QString &panelId) {
   // or a wedged sysfs read in one cannot take the others down with it.
   return QProcess::startDetached(QCoreApplication::applicationFilePath(),
                                  {QStringLiteral("--panel"), panelId});
+}
+
+int MonitorFacade::intervalForAction(const QString &actionId) {
+  return intervalForActionId(actionId);
 }
 
 bool MonitorFacade::known(const QVariant &value) {

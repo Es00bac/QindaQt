@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "monitor_engine.h"
+#include "system_monitor_actions.h"
 #include "monitor_facade.h"
 #include "process_table_model.h"
 
@@ -9,9 +10,16 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+
+#include <qindaqt/app_shell/application_coordinator.h>
+#include <qindaqt/app_shell/menu_export/first_party_composition.h>
+#include <QDBusConnection>
+#include <QPointer>
 #include <QQuickWindow>
 #include <QSurfaceFormat>
 #include <QTimer>
+
+#include <memory>
 
 using namespace QindaQt::SystemMonitor;
 
@@ -98,6 +106,41 @@ int main(int argc, char **argv) {
   ProcessTableModel processes;
   processes.setSource(engine.processes());
 
+  // AGENT-CONTRACT: one action catalog drives both the desktop's global menu
+  // and the in-window bar. The desktop hosts it when a registrar is there;
+  // `inWindowMenuVisible` on the root window is how the export tells QML to
+  // stop drawing its own, so the menu is never in two places at once.
+  QindaQt::AppShell::ApplicationCoordinator coordinator;
+  coordinator.setApplicationName(
+      QGuiApplication::translate("main", "QindaQt System Monitor"));
+  const QList<QindaQt::AppShell::ActionSpec> actions =
+      systemMonitorActions(panel != QLatin1String("dashboard"));
+  if (const auto error = coordinator.replaceActions(actions); !error.ok()) {
+    qCritical("Could not publish the menu: %s", qUtf8Printable(error.message));
+    return 1;
+  }
+
+  // AGENT-NOTE: checked state is published from here, not from QML:
+  // setActionChecked is not Q_INVOKABLE, and this is the right side of the
+  // boundary anyway -- the application's state decides what the menus show,
+  // and both copies of the menu then read the same snapshot.
+  const auto publishCheckedState = [&coordinator, &engine, &actions] {
+    static_cast<void>(
+        coordinator.setActionChecked(QStringLiteral("view.pause"), engine.paused()));
+    for (const QindaQt::AppShell::ActionSpec &spec : actions) {
+      const int interval = intervalForActionId(spec.id);
+      if (interval > 0) {
+        static_cast<void>(
+            coordinator.setActionChecked(spec.id, interval == engine.interval()));
+      }
+    }
+  };
+  QObject::connect(&engine, &MonitorEngine::pausedChanged, &coordinator,
+                   publishCheckedState);
+  QObject::connect(&engine, &MonitorEngine::intervalChanged, &coordinator,
+                   publishCheckedState);
+  publishCheckedState();
+
   qmlRegisterSingletonInstance("QindaQt.SystemMonitor", 1, 0, "Monitor", &engine);
   qmlRegisterSingletonInstance("QindaQt.SystemMonitor", 1, 0, "Facade", &facade);
   qmlRegisterSingletonInstance("QindaQt.SystemMonitor", 1, 0, "Processes",
@@ -105,12 +148,24 @@ int main(int argc, char **argv) {
 
   QQmlApplicationEngine qml;
   qml.rootContext()->setContextProperty(QStringLiteral("initialPanel"), panel);
+  qml.rootContext()->setContextProperty(QStringLiteral("coordinator"), &coordinator);
   qml.loadFromModule("QindaQt.SystemMonitor", "Main");
   if (qml.rootObjects().isEmpty()) {
     return 1;
   }
 
   auto *window = qobject_cast<QQuickWindow *>(qml.rootObjects().constFirst());
+  const QPointer<QQuickWindow> windowGuard(window);
+  std::unique_ptr<QObject> menuExport;
+  if (window != nullptr) {
+    menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
+        coordinator, *window, QDBusConnection::sessionBus(),
+        [windowGuard](bool visible) {
+          if (windowGuard) {
+            windowGuard->setProperty("inWindowMenuVisible", visible);
+          }
+        });
+  }
   if (window != nullptr && parser.isSet(sizeOption)) {
     const QStringList parts = parser.value(sizeOption).split(QLatin1Char('x'));
     if (parts.size() == 2) {
@@ -139,5 +194,9 @@ int main(int argc, char **argv) {
       QCoreApplication::quit();
     });
   }
-  return QGuiApplication::exec();
+  const int status = QGuiApplication::exec();
+  // The export holds a D-Bus endpoint bound to the window; drop it before the
+  // engine tears the window down.
+  menuExport.reset();
+  return status;
 }
