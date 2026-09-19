@@ -23,6 +23,23 @@ Basic.Menu {
     property string panelEdge: ""
     property bool vertical: false
     readonly property var colors: theme.colors ?? ({})
+    // AGENT-NOTE: Qt's Wayland positioner slides a popup but never resizes it,
+    // so a menu with more entries than the output can show must cap its own
+    // height. Top and bottom panels reserve the bar's thickness because the
+    // popup opens flush against it. Submenus receive the parent menu's value in
+    // populate(): their parent item sits in the parent popup window, not the
+    // panel. The cap makes entryList interactive, which gives wheel scrolling;
+    // edgeScroll adds scrolling by hovering near the top or bottom edge.
+    property real verticalRoom: {
+        const anchor = parent
+        if (depth > 0 || anchor === null)
+            return -1
+        const edge = panelEdgeFor(anchor)
+        const hostWindow = anchor.Window.window
+        const reserved = hostWindow !== null && (edge === "top" || edge === "bottom")
+            ? hostWindow.height : 0
+        return anchor.Screen.height - reserved
+    }
 
     objectName: "globalMenuNativeMenu"
     title: String(menuData.text ?? "")
@@ -33,6 +50,7 @@ Basic.Menu {
     focus: true
     padding: 4
     width: 240
+    height: verticalRoom > 0 ? Math.min(implicitHeight, verticalRoom) : implicitHeight
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
                  | Popup.CloseOnReleaseOutsideParent
 
@@ -121,6 +139,7 @@ Basic.Menu {
                     "theme": Qt.binding(function() { return menu.theme }),
                     "depth": depth + 1,
                     "maximumDepth": maximumDepth,
+                    "verticalRoom": Qt.binding(function() { return menu.verticalRoom }),
                     "interactive": Qt.binding(function() {
                         return menu.interactive
                     })
@@ -181,6 +200,56 @@ Basic.Menu {
         access: menu.access
         colors: menu.colors
         interactive: menu.interactive
+    }
+
+    // The Basic style's list, which is interactive (wheel-scrollable) only
+    // while the entries exceed the capped height, plus edge hover scrolling.
+    contentItem: ListView {
+        id: entryList
+
+        // Hovering within edgeZone pixels of the top or bottom edge scrolls
+        // edgeStep pixels per edgeScroll tick toward that edge.
+        readonly property int edgeZone: 24
+        readonly property int edgeStep: 4
+        readonly property int edgeDirection: {
+            if (!interactive || !edgeHover.hovered)
+                return 0
+            const y = edgeHover.point.position.y
+            if (y < edgeZone)
+                return -1
+            return y > height - edgeZone ? 1 : 0
+        }
+
+        implicitHeight: contentHeight
+        model: menu.contentModel
+        interactive: Window.window
+            ? contentHeight + menu.topPadding + menu.bottomPadding > menu.height
+            : false
+        clip: true
+        currentIndex: menu.currentIndex
+        boundsBehavior: Flickable.StopAtBounds
+
+        ScrollIndicator.vertical: Basic.ScrollIndicator {
+            palette.mid: menu.colors.textMuted ?? "#a9afa9"
+        }
+
+        HoverHandler {
+            id: edgeHover
+        }
+
+        Timer {
+            id: edgeScroll
+            interval: 16
+            repeat: true
+            running: (entryList.edgeDirection < 0 && !entryList.atYBeginning)
+                || (entryList.edgeDirection > 0 && !entryList.atYEnd)
+            onTriggered: {
+                const minY = entryList.originY
+                const maxY = minY + Math.max(0, entryList.contentHeight - entryList.height)
+                entryList.contentY = Math.max(minY, Math.min(maxY,
+                    entryList.contentY + entryList.edgeDirection * entryList.edgeStep))
+            }
+        }
     }
 
     background: Rectangle {
