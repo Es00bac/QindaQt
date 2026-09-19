@@ -25,6 +25,7 @@ Item {
 
     implicitWidth: 40
     implicitHeight: 150
+    activeFocusOnTab: enabledControl
 
     readonly property real topY: 2
     readonly property real travel: Math.max(1, height - topY * 2)
@@ -32,7 +33,15 @@ Item {
 
     // The drag edits this, not `faderPosition`: the projected binding must
     // stay intact so a model republish mid-drag cannot fight the pointer.
-    property real livePosition: fader.faderPosition
+    property real livePosition: 0.0
+    property bool commitPending: false
+    Binding {
+        target: fader
+        property: "livePosition"
+        value: fader.faderPosition
+        when: !faderMouse.pressed && !fader.commitPending && !(fader.model.busy ?? false)
+        restoreMode: Binding.RestoreNone
+    }
     readonly property real fraction: Math.max(0.0, Math.min(1.0, livePosition))
     readonly property real gainDb: fader.model.gainForFaderPosition(fraction)
     readonly property string readout: Math.round(gainDb * 10) / 10
@@ -42,6 +51,40 @@ Item {
     Accessible.name: fader.accessibleName.length > 0
         ? fader.accessibleName : fader.readout + qsTr(" decibels")
     Accessible.description: fader.readout + qsTr(" decibels")
+    Accessible.onIncreaseAction: if (fader.enabledControl) fader.nudge(1)
+    Accessible.onDecreaseAction: if (fader.enabledControl) fader.nudge(-1)
+
+    // Keep only the latest point from this gesture while AudioClient has a
+    // request in flight. Nothing is replayed after service loss or disable.
+    function requestPosition(position) {
+        if (!fader.enabledControl)
+            return
+        fader.commitPending = true
+        fader.livePosition = clamp01(position)
+        if (!commitTimer.running)
+            commitTimer.start()
+    }
+    onEnabledControlChanged: {
+        if (!enabledControl) {
+            commitTimer.stop()
+            commitPending = false
+        }
+    }
+    Timer {
+        id: commitTimer
+        interval: 40
+        onTriggered: {
+            if (!fader.commitPending || !fader.enabledControl)
+                return
+            if (fader.model.busy ?? false) {
+                restart()
+                return
+            }
+            const position = fader.livePosition
+            fader.moved(position)
+            fader.commitPending = false
+        }
+    }
 
     function clamp01(v) { return Math.max(0.0, Math.min(1.0, v)) }
     function positionFromY(y, fine, fineStart) {
@@ -51,8 +94,7 @@ Item {
         return clamp01(1.0 - (y - fader.topY) / fader.travel)
     }
     function nudge(steps) {
-        fader.livePosition = clamp01(fader.livePosition + steps * 0.02)
-        fader.moved(fader.livePosition)
+        requestPosition(fader.livePosition + steps * 0.02)
     }
 
     property real _startY: 0
@@ -121,23 +163,20 @@ Item {
             fader.forceActiveFocus(Qt.MouseFocusReason)
             fader._startY = mouse.y
             fader._startPosition = fader.livePosition
-            fader.livePosition = fader.positionFromY(
+            fader.requestPosition(fader.positionFromY(
                         mouse.y, mouse.modifiers & Qt.ShiftModifier,
-                        fader._startPosition)
-            fader.moved(fader.livePosition)
+                        fader._startPosition))
         }
         onPositionChanged: mouse => {
             if (!pressed) {
                 return
             }
-            fader.livePosition = fader.positionFromY(
+            fader.requestPosition(fader.positionFromY(
                         mouse.y, mouse.modifiers & Qt.ShiftModifier,
-                        fader._startPosition)
-            fader.moved(fader.livePosition)
+                        fader._startPosition))
         }
         onDoubleClicked: {
-            fader.livePosition = fader.model.unityFaderPosition()
-            fader.moved(fader.livePosition)
+            fader.requestPosition(fader.model.unityFaderPosition())
         }
         onWheel: wheel => {
             wheel.accepted = true
@@ -146,6 +185,8 @@ Item {
     }
 
     Keys.onPressed: event => {
+        if (!fader.enabledControl)
+            return
         if (event.key === Qt.Key_Up || event.key === Qt.Key_Right) {
             fader.nudge(1)
             event.accepted = true
@@ -153,12 +194,10 @@ Item {
             fader.nudge(-1)
             event.accepted = true
         } else if (event.key === Qt.Key_Home) {
-            fader.livePosition = fader.model.unityFaderPosition()
-            fader.moved(fader.livePosition)
+            fader.requestPosition(fader.model.unityFaderPosition())
             event.accepted = true
         } else if (event.key === Qt.Key_End) {
-            fader.livePosition = 0.0
-            fader.moved(fader.livePosition)
+            fader.requestPosition(0.0)
             event.accepted = true
         }
     }

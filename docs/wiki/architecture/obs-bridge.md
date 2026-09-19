@@ -1,5 +1,27 @@
 # OBS console bridge
 
+## 2026-09-19 authority diagnosis
+
+At base `01e919f6`, the bridge retains `m_lastSnapshot` and active capture
+sources when AudioClient loses its owner and clears its snapshot.
+`onState` only updates a status label. A subsequent scene-collection change
+can therefore reapply the retired owner's wiring, and previously bound
+hardware captures keep running without authoritative console state. The
+correction must forget retained wiring and silence managed capture children
+when AudioClient has no snapshot, while retaining a labelled stale snapshot
+when the client itself still holds one. This is source evidence, recorded
+before changes; no OBS process or live audio graph was changed.
+
+Integration review before compilation found that applying an empty snapshot
+would remove the OBS source objects, losing their scene, filter and mixer
+associations during a transient Audio1 restart. The narrow correction keeps
+those objects and clears only their capture device and capture kind settings;
+the existing source update releases each private capture child. The next
+authoritative snapshot retargets the same console-id objects. This also applies
+to restored collections that finish loading without current Audio1 authority.
+The published mapping and dock clear while authority is absent; source names,
+console identities and other settings remain intact.
+
 `obs-qindaqt` is an OBS Studio module that shows the QindaQt audio console
 to OBS ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)). It is
 built from `src/obs` against the installed `libobs`, `obs-frontend-api` and
@@ -34,6 +56,17 @@ while some holder still references it.
 Source settings (also the vendor request's fields): `qindaqt_console_id`,
 `qindaqt_code`, `qindaqt_label`, `qindaqt_capture_kind` (`input`, `monitor`,
 `none`), `qindaqt_capture_device`.
+
+### Existing mixing-policy limitation
+
+Every mapped source is attached to a mixer channel by the existing ADR-0208
+policy. A signal routed from a strip to a bus can therefore enter OBS through
+both captures at once, and a raw hardware/virtual-strip capture precedes that
+strip's rack and send gains. Console mute/gain values in the vendor mapping
+describe Audio1; this bridge does not apply them as an additional OBS mixer
+mute/gain. Users must select the intended captures in OBS's mixer to avoid
+duplicate or raw-strip audio. The authority/lifetime correction does not
+change source activation defaults or claim a consolidated recording mix.
 
 ## Lifecycle inside OBS
 
