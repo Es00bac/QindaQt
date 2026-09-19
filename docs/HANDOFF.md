@@ -1,5 +1,104 @@
 # Integration handoff
 
+## September 17-18 wave — final state: `pre20260917-r11`
+
+`gui-wm/qindaqt-desktop-0.1.0_pre20260917-r11` pins `70d28f52` and is installed
+on **both machines**, verified by reading `QINDAQT_COMMIT` back out of each
+installed ebuild rather than from a version string. The laptop reports
+`1501 out of 1501 files are good`.
+
+Main has since moved to `7b172233` with two test-only merges. They ship no
+different software, so they deliberately did not get a revision number of their
+own — a revision name is a promise about exactly one tree, and six identical
+numbers were cut by mistake earlier in the day precisely because that promise
+was treated loosely.
+
+### What you need to do by hand
+
+**On the laptop, log out and back in.** Its session predates the install, and
+nothing in a package can restart a session you are sitting in.
+
+After any future install that adds settings keys, on each machine:
+
+1. Kill the resident `qindaqt-settings-service`. Settings1 is D-Bus-activated,
+   not a systemd unit, so an install never restarts it, and a service that
+   predates a schema addition rejects the whole snapshot — a route then reads
+   "unavailable" for no visible reason.
+2. `SIGTERM` the `qindaqt-shell` PID to pick up new panel QML. By PID; never by
+   name.
+3. Check the shell log for `Setting initial properties failed`. An unknown
+   initial property is a warning, not an error — the panel still renders and
+   nothing on screen says an applet lost its access object. That is exactly how
+   a dead OBS applet shipped in r9.
+4. For the virtual camera, `modprobe v4l2loopback` — it is not loaded at boot.
+
+### What is new since Checkpoint L (r6, `65babc42`)
+
+Forty-six commits, thirty-three merges. The user-visible part:
+
+- **Customize the desktop in place** with Meta+right-click — the live editor
+  hosted in the shell, the chord seeded so KWin does not eat it (O9).
+- **Three more Settings routes**: Default applications, About this computer and
+  Startup applications, plus Windows & workspaces over the four live
+  `windowManagement.*` keys, which the session now bridges into `kwinrc` while
+  it runs rather than at login.
+- **OBS**: the console's buses and strips appear in OBS as named audio sources,
+  the applet sits on the panel, and it now connects when OBS first appears
+  instead of only at shell startup.
+- **Theming v2**: a theme authors surfaces, radii and motion, not only colours,
+  and a decoration theme is its own document.
+- **An ordinary window rolls up to its icon chip.**
+- **The audio panel is laid out as desk equipment**, and the Settings console's
+  cards line up across a row.
+
+### What is not done
+
+- **O9's live editor has not been exercised on a real desktop by hand.** Its
+  rows pass and the nested boot row passes; a person has not yet used
+  Meta+right-click to move a panel and log back in to see it stay.
+- `shell.notification-live.*` beyond the 1080p row, `workspace-reopen` beyond
+  `two-session`, and the `compositor.kwin-*` families the safe suite excludes
+  were not run in this wave's final passes.
+- **`org.qindaqt.Settings1` activation fails on the desktop roughly every five
+  seconds, and has since `Sep 16 13:00:22`.** `xdg-desktop-portal-qindaqt`
+  requests it, the activated process exits 3 at the first guard in
+  `src/services/settings_service/src/main.cpp:44` — the disconnect-observer
+  check, *not* the settings-override poison path at line 68 — and the cycle
+  repeats. A healthy service owns the name on `session-28.scope` at the same
+  time, so the likeliest reading is two session buses; that is **unproven** and
+  needs someone with the live session to confirm. It is not caused by anything
+  in this wave.
+- `tools/validate-docs` does not detect duplicate ADR numbers. Three collisions
+  landed in one day (0200, 0201, 0193) and all three passed the checker with
+  both files present. Renumbered to 0211, 0212 and 0214; the checker is
+  unchanged.
+- The route modules added this wave are `STATIC` while the eleven older ones are
+  `SHARED`. That difference is why every new route has to be linked by hand into
+  three in-process `Main.qml` hosts and added to two session lists, and why the
+  same class of breakage caught four routes in a single day. Making them
+  `SHARED` would retire the class.
+
+### How this wave was verified, and one correction worth keeping
+
+Reviews were dropped partway through by direction; from that point the gate was
+merge + build + the rows each handoff named + the nested boot row for
+compositor, decoration, hybrid-chrome and session paths + a strict docs build.
+
+Two candidates were wrongly blamed on evidence that looked conclusive:
+
+- **O9 was parked for most of an afternoon** on a baseline experiment that
+  controlled for the commit and not for the build. The nested boot row was
+  failing because the staged `qindaqt-shell` in that root was stale, not because
+  of O9. The experiment was rerun with a shell rebuilt one minute before the
+  row, and it passed in 2.33 s.
+- The same trap reappeared eight hours later on
+  `shell.notification-live.1080p` and was caught in twenty minutes, because by
+  then the staged binary's mtime was pasted beside every nested row.
+
+**A nested red whose stage predates the tree is not evidence.** Paste the staged
+binary's mtime next to the row, every time.
+
+
 ## September 17-18 wave — Checkpoint L, "usable on the laptop"
 
 `gui-wm/qindaqt-desktop-0.1.0_pre20260917-r6` pins `65babc42` and is installed
