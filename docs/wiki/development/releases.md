@@ -103,6 +103,28 @@ exact QindaMPV commit named in the recipe, with the matching
 `QindaMPV-COMMIT/` prefix and `gzip -n`; its Manifest verifies those bytes.
 This avoids depending on a developer-specific checkout path. The desktop
 and player archives must both be available before a package transaction.
+
+### Sharing a delivery between qinda and qinda-top
+
+[ADR-0219](../adr/0219-share-completed-work-through-qinda.md) keeps qinda's
+existing bare Git repositories, QindaGentoo overlay and binary server as the
+shared source. Run the installed `qinda-sync` command as the normal user:
+
+```sh
+qinda-sync code /path/to/clean/project
+qinda-sync publish /path/to/exact-package.tar.gz
+qinda-sync packages --prepare-only
+qinda-sync
+```
+
+Publish the source commit and the matching overlay recipe/Manifest before its
+archive. QindaGentoo's committed `metadata/qinda-delivery` names the exact
+versions to install on either machine. The last command fetches missing inputs
+and uses Portage, including the existing binary server and host build settings;
+already installed versions are skipped. `qinda-sync code` exchanges only the
+current clean branch and stops on divergence. Other active worktrees and local
+changes stay with their owners. Updates are invoked explicitly; no timer,
+world update or desktop restart is part of this workflow.
 Before the two serialized native boot checks, CI creates its container-private
 `/tmp/.X11-unix` directory with mode `1777`. Minimal container images may omit
 this standard X11 socket path; both checks still require working XWayland.
