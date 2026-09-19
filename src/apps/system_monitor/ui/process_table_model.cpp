@@ -160,7 +160,7 @@ void ProcessTableModel::setSortKey(const QString &key) {
   if (m_sortKey != key) {
     m_sortKey = key;
     Q_EMIT orderChanged();
-    rebuild();
+    refresh(false);
   }
 }
 
@@ -168,7 +168,7 @@ void ProcessTableModel::setSortOrder(Qt::SortOrder order) {
   if (m_sortOrder != order) {
     m_sortOrder = order;
     Q_EMIT orderChanged();
-    rebuild();
+    refresh(false);
   }
 }
 
@@ -176,7 +176,7 @@ void ProcessTableModel::setFilterText(const QString &text) {
   if (m_filterText != text) {
     m_filterText = text;
     Q_EMIT filterChanged();
-    rebuild();
+    refresh(false);
   }
 }
 
@@ -184,7 +184,7 @@ void ProcessTableModel::setTreeMode(bool tree) {
   if (m_treeMode != tree) {
     m_treeMode = tree;
     Q_EMIT orderChanged();
-    rebuild();
+    refresh(false);
   }
 }
 
@@ -192,7 +192,7 @@ void ProcessTableModel::setOwnProcessesOnly(bool own) {
   if (m_ownOnly != own) {
     m_ownOnly = own;
     Q_EMIT filterChanged();
-    rebuild();
+    refresh(false);
   }
 }
 
@@ -211,7 +211,7 @@ void ProcessTableModel::toggleCollapsed(int row) {
   const Entry &entry = m_rows.at(row);
   const Identity identity{entry.pid, entry.startTicks};
   m_collapsed.insert(identity, !m_collapsed.value(identity, false));
-  rebuild();
+  refresh(false);
 }
 
 void ProcessTableModel::expandAll() {
@@ -219,7 +219,7 @@ void ProcessTableModel::expandAll() {
     return;
   }
   m_collapsed.clear();
-  rebuild();
+  refresh(false);
 }
 
 QVector<ProcessTableModel::Entry> ProcessTableModel::collect() const {
@@ -421,9 +421,13 @@ ProcessTableModel::asTree(const QVector<Entry> &entries) const {
   return out;
 }
 
-void ProcessTableModel::rebuild() {
+void ProcessTableModel::rebuild() { refresh(true); }
+
+void ProcessTableModel::refresh(bool advanceHistory) {
   const QVector<Entry> all = collect();
-  recordHistory(all);
+  if (advanceHistory) {
+    recordHistory(all);
+  }
 
   QVector<Entry> kept;
   kept.reserve(all.size());

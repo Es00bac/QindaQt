@@ -136,7 +136,13 @@ private:
   /// process' history onto another's row.
   using Identity = QPair<qint64, quint64>;
 
+  // AGENT-GUARD: history advances only when the SOURCE published a new
+  // generation. Re-ordering or filtering re-runs the rest of this, and
+  // recording a sample there would invent readings that never happened --
+  // a row's sparkline would grow a spike because someone clicked a
+  // column header.
   void rebuild();
+  void refresh(bool advanceHistory);
   [[nodiscard]] QVector<Entry> collect() const;
   [[nodiscard]] bool matches(const Entry &entry) const;
   void recordHistory(const QVector<Entry> &entries);
