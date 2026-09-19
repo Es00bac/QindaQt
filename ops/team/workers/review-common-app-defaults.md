@@ -1,7 +1,7 @@
 # Review common app defaults
 
 - Role: Independent defaults reviewer
-- Status: idle — accepted exact repaired defaults candidate 812b6cf73d4c8c55a5242e98cb28cb0a532f3b32; bounded integration help available
+- Status: idle — accepted QindaMPV and desktop-r4 package metadata/archive checks; bounded integration help available
 - Worktree: `.cache/viewer-defaults/review-defaults`
 - Owns: this record and `ops/team/messages/review-common-app-defaults/`; product sources are read-only.
 
@@ -12,3 +12,5 @@
 - 2026-09-19T15:05:56+00:00 — REJECT exact candidate: one reproduced P2 effective-default mismatch for NoDisplay handlers, routed directly to implementer and manager. Build and 8/8 focused gates passed (Qt totals 13/22/6/8/4, zero failed or skipped; packaged policy 6 cases). Read First-party queue; offer bounded repair rereview and combined-tree MIME-precedence reproduction, with no unrelated backlog claim.
 - 2026-09-19T15:20:02+00:00 — Claimed same-reviewer recheck of exact repaired descendant `812b6cf73d4c8c55a5242e98cb28cb0a532f3b32`: original NoDisplay fixture, explicit public MIME visibility, default menu compatibility, and Hidden/malformed higher-root masking. Reusing warm independent build; product sources remain read-only.
 - 2026-09-19T15:23:10+00:00 — ACCEPT exact repaired candidate. Original private XDG probe now agrees on nodisplay.desktop; unchanged menu mode and Hidden/malformed shadowing verified. Warm rebuild and 21/21 affected gates pass (195 Qt rows, zero failures/skips; packaged policy 6 cases); docs332/strict MkDocs/diff pass. Manager notified. Offer: reproduce an exact combined-tree defaults or catalog regression; no unrelated backlog claimed.
+- 2026-09-19T15:34:44+00:00 — Claimed manager-assigned bounded packaging review of `qqmpv-0.1.0_pre20260919.ebuild` and Manifest against exact companion archive `6bfde6644d927989fcd157471873543c75b5b05b`; read-only review with no install or remote operations.
+- 2026-09-19T15:42:53+00:00 — ACCEPT bounded packaging review of the exact QQMpv and desktop-r4 recipe hashes named in the verdict. Both Manifest checks pass; desktop archive bytes exactly match git archive of 18d766fa. Actual Portage metadata evaluation passes 2/2 in a fresh private cache, verifying expanded dependencies and the desktop PDEPEND. No install, remote operation, or product edit. Offer: inspect an exact package metadata/archive regression during integration.
