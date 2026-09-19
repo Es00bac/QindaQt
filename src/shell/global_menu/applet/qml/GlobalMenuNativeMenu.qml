@@ -7,7 +7,7 @@ import QtQuick.Controls.Basic as Basic
 // ambient desktop style can add hover/focus policy and opening transitions
 // that break our keyboard contract even after the visual delegates are replaced.
 Basic.Menu {
-    id: menu
+    id: nativeMenu
 
     required property var menuData
     required property var access
@@ -113,7 +113,7 @@ Basic.Menu {
     // cascade placement.
     function placeAtMenuBarItem() {
         const anchor = parent
-        if (depth !== 0 || anchor === null || anchor.menu !== menu)
+        if (depth !== 0 || anchor === null || anchor.menu !== nativeMenu)
             return
         const placed = placementFor(anchor.mapToItem(null, 0, 0), anchor.width, anchor.height,
                                     width, height, panelEdgeFor(anchor),
@@ -139,36 +139,36 @@ Basic.Menu {
                                  component.errorString())
                     continue
                 }
-                const submenu = component.createObject(menu, {
+                const submenu = component.createObject(nativeMenu, {
                     "menuData": entry,
                     "access": access,
-                    "theme": Qt.binding(function() { return menu.theme }),
+                    "theme": Qt.binding(function() { return nativeMenu.theme }),
                     "depth": depth + 1,
                     "maximumDepth": maximumDepth,
-                    "verticalRoom": Qt.binding(function() { return menu.verticalRoom }),
+                    "verticalRoom": Qt.binding(function() { return nativeMenu.verticalRoom }),
                     "interactive": Qt.binding(function() {
-                        return menu.interactive
+                        return nativeMenu.interactive
                     })
                 })
                 if (submenu !== null)
-                    menu.insertMenu(menu.count, submenu)
+                    nativeMenu.insertMenu(nativeMenu.count, submenu)
                 continue
             }
             if (kind === "separator") {
-                const separator = separatorComponent.createObject(menu.contentItem)
+                const separator = separatorComponent.createObject(nativeMenu.contentItem)
                 if (separator !== null)
-                    menu.insertItem(menu.count, separator)
+                    nativeMenu.insertItem(nativeMenu.count, separator)
                 continue
             }
-            const item = actionComponent.createObject(menu.contentItem, {
+            const item = actionComponent.createObject(nativeMenu.contentItem, {
                 "entryData": entry,
                 "access": access,
-                "colors": Qt.binding(function() { return menu.colors }),
+                "colors": Qt.binding(function() { return nativeMenu.colors }),
                 "interactive": kind !== "submenu"
-                    ? Qt.binding(function() { return menu.interactive }) : false
+                    ? Qt.binding(function() { return nativeMenu.interactive }) : false
             })
             if (item !== null)
-                menu.insertItem(menu.count, item)
+                nativeMenu.insertItem(nativeMenu.count, item)
         }
     }
 
@@ -201,11 +201,13 @@ Basic.Menu {
         populate()
     }
 
+    // AGENT-GUARD: MenuItem.menu is null until Qt inserts the delegate. Use
+    // the unambiguous root id during construction, not the inherited property.
     delegate: GlobalMenuNativeMenuItem {
         entryData: subMenu !== null ? subMenu.menuData : ({})
-        access: menu.access
-        colors: menu.colors
-        interactive: menu.interactive
+        access: nativeMenu.access
+        colors: nativeMenu.colors
+        interactive: nativeMenu.interactive
     }
 
     // The Basic style's list, which is interactive (wheel-scrollable) only
@@ -227,14 +229,14 @@ Basic.Menu {
         }
 
         implicitHeight: contentHeight
-        model: menu.contentModel
+        model: nativeMenu.contentModel
         interactive: contentHeight > height
         clip: true
-        currentIndex: menu.currentIndex
+        currentIndex: nativeMenu.currentIndex
         boundsBehavior: Flickable.StopAtBounds
 
         ScrollIndicator.vertical: Basic.ScrollIndicator {
-            palette.mid: menu.colors.textMuted ?? "#a9afa9"
+            palette.mid: nativeMenu.colors.textMuted ?? "#a9afa9"
         }
 
         HoverHandler {
@@ -257,9 +259,9 @@ Basic.Menu {
     }
 
     background: Rectangle {
-        radius: menu.theme.cornerRadius ?? 6
-        color: menu.colors.surfaceRaised ?? "#2c312e"
-        border.color: menu.colors.border ?? "#3c433f"
+        radius: nativeMenu.theme.cornerRadius ?? 6
+        color: nativeMenu.colors.surfaceRaised ?? "#2c312e"
+        border.color: nativeMenu.colors.border ?? "#3c433f"
         border.width: 1
     }
 
@@ -275,7 +277,7 @@ Basic.Menu {
             implicitHeight: 9
             contentItem: Rectangle {
                 implicitHeight: 1
-                color: menu.colors.border ?? "#3c433f"
+                color: nativeMenu.colors.border ?? "#3c433f"
             }
         }
     }
