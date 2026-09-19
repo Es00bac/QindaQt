@@ -26,6 +26,7 @@
 #include <qindaqt/services/settings_client/settings_client.h>
 
 #include "kglobal_accel_registrar.h"
+#include "screensaver_launcher.h"
 
 #include <qindaqt/session/powerdevil_idle/powerdevil_idle_adapter.h>
 
@@ -301,6 +302,11 @@ int main(int argc, char *argv[])
     if (!parser.isSet(QStringLiteral("no-idle-policy"))) {
         idleBinding.start();
     }
+
+    // Idle screensaver (qinda-patrol / circuit-reef), stopped on activity
+    // or lock; see production/screensaver_launcher.h for the config file.
+    QindaQt::Session::DesktopControls::ScreensaverLauncher screensaver(sessionBus, &application);
+    screensaver.start();
 
     return application.exec();
 }
