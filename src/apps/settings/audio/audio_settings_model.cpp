@@ -56,19 +56,13 @@ const Stream *findStream(const Snapshot &snapshot, const quint64 serial) {
 
 } // namespace
 
-// AGENT-GUARD: mirrors the public AudioClient's dispatch preflight (retained
-// snapshot presence, snapshot availability, capability bit); per-target
-// can-set flags are combined by the callers. Widening it enables controls
-// the client refuses; narrowing it hides controls the client admits,
-// breaking the availability/admission equality contract. Deliberately does
-// NOT check client.operationPending(): that is a transport-serialization
-// detail (the client has one request truly in flight, its own m_operation),
-// not per-row availability -- gating every row on it disabled the whole
-// page for one control's request (the shell audio applet's ADR-0191 bug,
-// here at the model layer). A dispatch racing the client's own fence is
-// accepted and resolves locally as Busy/"operation-busy" (see
-// AudioClient::beginOperation), already handled in actionFailureText()
-// below -- never silently dropped.
+// AGENT-GUARD: this is snapshot authority/capability availability, not a
+// promise that a new request will be admitted immediately. Callers combine
+// per-target can-set flags; graph setters also reject serialPending(target).
+// Keep operationPending() out of presentation availability so one request
+// cannot disable every row. Console faders wait for busy() to clear; any
+// remaining dispatch race reaches AudioClient::beginOperation and gets a
+// queued Busy/"operation-busy" completion, handled by actionFailureText().
 bool AudioSettingsModel::snapshotAdmitsOperation(
     const AudioClient &client, const Capability capability) {
   if (!client.hasSnapshot() || client.owner().isEmpty()) {

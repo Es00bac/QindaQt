@@ -7,15 +7,20 @@ sources when AudioClient loses its owner and clears its snapshot.
 `onState` only updates a status label. A subsequent scene-collection change
 can therefore reapply the retired owner's wiring, and previously bound
 hardware captures keep running without authoritative console state. The
-correction must forget retained wiring and remove the bridge-managed sources
+correction must forget retained wiring and silence managed capture children
 when AudioClient has no snapshot, while retaining a labelled stale snapshot
 when the client itself still holds one. This is source evidence, recorded
 before changes; no OBS process or live audio graph was changed.
 
-The candidate follows AudioClient's snapshot ownership on state changes,
-clears the mapping and dock when authority is lost, and removes bridge-owned
-sources when the frontend is ready. A collection that finishes loading without
-current Audio1 authority also has its restored bridge sources removed.
+Integration review before compilation found that applying an empty snapshot
+would remove the OBS source objects, losing their scene, filter and mixer
+associations during a transient Audio1 restart. The narrow correction keeps
+those objects and clears only their capture device and capture kind settings;
+the existing source update releases each private capture child. The next
+authoritative snapshot retargets the same console-id objects. This also applies
+to restored collections that finish loading without current Audio1 authority.
+The published mapping and dock clear while authority is absent; source names,
+console identities and other settings remain intact.
 
 `obs-qindaqt` is an OBS Studio module that shows the QindaQt audio console
 to OBS ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)). It is
