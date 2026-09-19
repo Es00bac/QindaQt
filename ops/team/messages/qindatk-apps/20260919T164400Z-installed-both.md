@@ -1,0 +1,9 @@
+# Installed delivery on both machines
+
+- Exact installed runtime candidate: `41c9a2fdfb1741c1482dc5679513162b1eda06ce`, packaged as desktop `0.1.0_pre20260919-r6`. Viewer/defaults plus Opus's `dcdec4e1` screensaver update are included; Opus's r5 metadata remains preserved.
+- QindaMPV: `6bfde6644d927989fcd157471873543c75b5b05b`, package `0.1.0_p20260919`. Five saver packages match: Patrol 0.2.0, Reef 1.1.0, Prism Circuit 1.1.0, Prism Brawl 1.1.0, Starward Reimagined 2.1.0.
+- Changes: Viewer/default-app modules and prior reviewed tests; additive desktop/player recipes; shared delivery documentation/ADR-0219; QindaGentoo 536baf1 owns `tools/qinda-sync`, delivery atoms and laptop helper.
+- Acceptance: final Portage installations exit 0 on both hosts; each host qcheck 1652/1652; installed help/version exit 0; PNG/PDF/MP4/Ogg defaults correct. Both actual qinda-sync update runs exit 0, with 0 packages pending. 336-document link checker and strict MkDocs exit 0.
+- qinda-top source compilation succeeded but local unsigned package verification failed. The exact signed qinda binaries subsequently installed successfully; signature policy remains intact. Portage owns the formerly unowned Power screensaver section.
+- User selected explicit invocation: `qinda-sync` updates packages, `qinda-sync code CHECKOUT` exchanges clean committed work, `qinda-sync publish ARCHIVE` supplies verified archives. Future deliveries must publish source, recipes/Manifests, archives, and exact `metadata/qinda-delivery` atoms through the existing qinda hub. Preserve active worktrees and use new package revisions.
+- Remaining boundary: active sessions were not restarted; new shell/lock behavior loads on the next session. No further feature work or test campaign requested. Requested next action is normal use; no worker assignment remains.

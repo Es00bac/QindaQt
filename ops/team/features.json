@@ -1521,6 +1521,11 @@
             "kind": "commit",
             "reference": "de5785468d15cfce9e13b0c6b33461179909de33",
             "summary": "Requested QindaTK/Poppler image-PDF Viewer and common app defaults are integrated, independently reviewed and built/staged with committed Opus lock/screensaver work on qinda. QindaMPV is the media fallback; user choices retain precedence. Full milestone weights/state and live-install claims are unchanged; exact evidence is in docs/HANDOFF.md."
+          },
+          {
+            "kind": "install",
+            "reference": "gui-wm/qindaqt-desktop-0.1.0_pre20260919-r6",
+            "summary": "Both hosts now have exact source 41c9a2fd plus QindaMPV 6bfde664 and all five current saver packages installed through Portage. Each host passes 1652/1652 file integrity checks and the requested MIME associations. The user-selected explicit qinda-sync workflow passes actual no-op updates on both machines; wider milestone weights/state remain unchanged."
           }
         ]
       },
