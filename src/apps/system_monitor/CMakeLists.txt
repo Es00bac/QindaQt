@@ -74,6 +74,21 @@ target_compile_features(qindaqt-system-monitor PRIVATE cxx_std_20)
 set_target_properties(qindaqt-system-monitor PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
 qindaqt_enable_warnings(qindaqt-system-monitor)
 
+# AGENT-GUARD: AppShell's backing library is installed into Qt's QML tree,
+# not the system library path, so a bare install gives an executable that
+# cannot start at all: "libqindaqt_app_shell.so: cannot open shared object
+# file". This is the same relative lookup the viewer and the other first-party
+# applications use, and it survives relocation into a staged prefix.
+set(system_monitor_bindir "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+set(system_monitor_qmldir "${QT6_INSTALL_QML}")
+cmake_path(ABSOLUTE_PATH system_monitor_qmldir
+    BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}" NORMALIZE)
+cmake_path(RELATIVE_PATH system_monitor_qmldir
+    BASE_DIRECTORY "${system_monitor_bindir}"
+    OUTPUT_VARIABLE system_monitor_qml_relative)
+set_target_properties(qindaqt-system-monitor PROPERTIES
+    INSTALL_RPATH "$ORIGIN/${system_monitor_qml_relative}/QindaQt/AppShell")
+
 install(TARGETS qindaqt-system-monitor
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT SystemMonitor)
 install(FILES org.qindaqt.SystemMonitor.desktop
