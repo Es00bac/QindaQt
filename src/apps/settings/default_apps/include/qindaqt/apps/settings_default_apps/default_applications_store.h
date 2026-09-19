@@ -91,7 +91,8 @@ public:
 class MimeAppsDefaultApplicationsStore final : public DefaultApplicationsStore {
 public:
   // Owns its copied inputs. lookupPaths are in highest-first XDG order;
-  // applications is the composition root's already-completed public scan.
+  // applications is the composition root's already-completed public scan,
+  // using IncludeNoDisplay because MIME handlers need not appear in menus.
   // userDesktopPaths names only higher-priority user files in lookupPaths:
   // an existing category override there is edited instead of being masked.
   MimeAppsDefaultApplicationsStore(

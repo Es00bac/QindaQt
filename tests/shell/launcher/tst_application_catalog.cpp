@@ -24,6 +24,7 @@ class ApplicationCatalogTest final : public QObject {
 private Q_SLOTS:
   void buildsDeterministicDisplayOrder();
   void visibleEntriesExcludeHiddenDocuments();
+  void mimeVisibilityIncludesNoDisplayButPreservesDeletionAndValidation();
   void firstDocumentWinsForDuplicateIds();
   void firstDocumentClaimsIdBeforeVisibilityOrParsing();
   void invalidDocumentsDegradeWithoutKillingTheCatalog();
@@ -68,6 +69,35 @@ void ApplicationCatalogTest::visibleEntriesExcludeHiddenDocuments()
   QVERIFY(catalog.diagnostics().isEmpty());
   QCOMPARE(catalog.entries().size(), 1);
   QCOMPARE(catalog.entries().first().id, QStringLiteral("app.visible"));
+}
+
+void ApplicationCatalogTest::mimeVisibilityIncludesNoDisplayButPreservesDeletionAndValidation()
+{
+  EntryTemplate nonMenu;
+  nonMenu.noDisplayLine = QStringLiteral("NoDisplay=true");
+  nonMenu.name = QStringLiteral("MIME Handler");
+  EntryTemplate deleted;
+  deleted.hiddenLine = QStringLiteral("Hidden=true");
+  EntryTemplate invalid;
+  invalid.name.clear();
+  const QVector<SourceDocument> documents{
+      document(QStringLiteral("app.non-menu"), nonMenu),
+      document(QStringLiteral("app.deleted"), deleted),
+      document(QStringLiteral("app.deleted"), EntryTemplate{}),
+      document(QStringLiteral("app.invalid"), invalid),
+      document(QStringLiteral("app.invalid"), nonMenu),
+      document(QStringLiteral("app.visible"), EntryTemplate{})};
+
+  const auto menus = ApplicationCatalog::build(documents);
+  QCOMPARE(menus.entries().size(), 1);
+  QVERIFY(menus.entry(QStringLiteral("app.visible")));
+  const auto handlers = ApplicationCatalog::build(documents, ApplicationVisibility::IncludeNoDisplay);
+  QCOMPARE(handlers.entries().size(), 2);
+  QVERIFY(handlers.entry(QStringLiteral("app.non-menu")));
+  QVERIFY(handlers.entry(QStringLiteral("app.visible")));
+  QVERIFY(!handlers.entry(QStringLiteral("app.deleted")));
+  QVERIFY(!handlers.entry(QStringLiteral("app.invalid")));
+  QCOMPARE(handlers.diagnostics().size(), 3);
 }
 
 void ApplicationCatalogTest::firstDocumentWinsForDuplicateIds()

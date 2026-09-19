@@ -10,6 +10,7 @@
 namespace QindaQt::ApplicationCatalog {
 
 using QindaQt::ShellLauncher::ApplicationEntry;
+using QindaQt::ShellLauncher::ApplicationVisibility;
 using QindaQt::ShellLauncher::CatalogDiagnostic;
 
 // One installed, catalog-validated application plus the raw document the
@@ -28,7 +29,9 @@ struct ScannedApplication final
 
 struct DirectoryScan final
 {
-    // Visible entries only, id-unique, in root-precedence order.
+    // Validated, id-unique entries in catalog display order. The default
+    // scan includes menu entries only; the explicit visibility overload can
+    // also retain NoDisplay MIME handlers. First root wins each identity.
     QVector<ScannedApplication> applications;
     // Scanner-level degradation (unreadable roots/files, ceilings), separate
     // from the catalog's own document diagnostics.
@@ -51,5 +54,14 @@ struct DirectoryScan final
 // degrades the result with a diagnostic instead of failing.
 [[nodiscard]] DirectoryScan scanApplicationDirectories(
     const QStringList &dataRoots, QString *error = nullptr);
+
+// Same injected-root, synchronous scan and bounded validation as above.
+// IncludeNoDisplay is for MIME-handler discovery, never a change to menu
+// consumers. Hidden/deleted and malformed higher-root entries still mask
+// lower-root copies. The original overload keeps its source/link signature;
+// these static-library APIs require recompilation after public value changes.
+[[nodiscard]] DirectoryScan scanApplicationDirectories(
+    const QStringList &dataRoots, ApplicationVisibility visibility,
+    QString *error = nullptr);
 
 } // namespace QindaQt::ApplicationCatalog

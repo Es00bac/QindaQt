@@ -58,6 +58,7 @@ private Q_SLOTS:
   void rejectsUnknownApplicationWithoutWriting();
   void removedApplicationCannotBecomeAnIneffectiveDefault();
   void hiddenDesktopEntryDoesNotMaskInstalledFallback();
+  void noDisplayHandlerRemainsTheConfiguredDefault();
 };
 
 void DefaultApplicationsStoreTest::missingFilesReturnEmptyPreferences() {
@@ -292,6 +293,32 @@ void DefaultApplicationsStoreTest::hiddenDesktopEntryDoesNotMaskInstalledFallbac
   // The same real scanner identity must round-trip on an explicit choice.
   QVERIFY(store.saveCategory(DefaultApplicationCategory::PdfViewer,
                              QStringLiteral("viewer.desktop"), &error));
+}
+
+void DefaultApplicationsStoreTest::noDisplayHandlerRemainsTheConfiguredDefault() {
+  QTemporaryDir directory;
+  const QString user = directory.filePath(QStringLiteral("mimeapps.list"));
+  const QString packaged = directory.filePath(QStringLiteral("qindaqt-mimeapps.list"));
+  QVERIFY(QDir().mkpath(directory.filePath(QStringLiteral("applications"))));
+  QVERIFY(writeFile(directory.filePath(QStringLiteral("applications/nodisplay.desktop")),
+      "[Desktop Entry]\nType=Application\nName=NoDisplay browser\nExec=/bin/true %U\n"
+      "MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;\nNoDisplay=true\n"));
+  QVERIFY(writeFile(directory.filePath(QStringLiteral("applications/visible.desktop")),
+      "[Desktop Entry]\nType=Application\nName=Visible browser\nExec=/bin/true %U\n"
+      "MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;\n"));
+  QVERIFY(writeFile(user, "[Default Applications]\ntext/html=nodisplay.desktop;\n"));
+  QVERIFY(writeFile(packaged, "[Default Applications]\ntext/html=visible.desktop;\n"));
+  const auto scan = QindaQt::ApplicationCatalog::scanApplicationDirectories(
+      {directory.path()}, QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
+  MimeAppsDefaultApplicationsStore store(user, {user, packaged}, scan);
+  DefaultApplicationPreferences preferences;
+  QString error;
+  QVERIFY2(store.load(&preferences, &error), qPrintable(error));
+  QCOMPARE(preferences.browser, QStringLiteral("nodisplay.desktop"));
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::Browser,
+                             QStringLiteral("nodisplay.desktop"), &error), qPrintable(error));
+  QVERIFY(store.load(&preferences, &error));
+  QCOMPARE(preferences.browser, QStringLiteral("nodisplay.desktop"));
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsStoreTest)

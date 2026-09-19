@@ -264,6 +264,13 @@ const ScannedApplication *DirectoryScan::application(
 DirectoryScan scanApplicationDirectories(const QStringList &dataRoots,
                                          QString *error)
 {
+    return scanApplicationDirectories(dataRoots, ApplicationVisibility::MenuEntries, error);
+}
+
+DirectoryScan scanApplicationDirectories(const QStringList &dataRoots,
+                                         ApplicationVisibility visibility,
+                                         QString *error)
+{
     if (dataRoots.isEmpty()) {
         if (error) {
             *error = QStringLiteral("application scan requires at least one data root");
@@ -289,7 +296,7 @@ DirectoryScan scanApplicationDirectories(const QStringList &dataRoots,
         scanRoot(context, root, &remainingFiles, &ceilingHit);
     }
 
-    const auto catalog = ApplicationCatalog::build(documents);
+    const auto catalog = ApplicationCatalog::build(documents, visibility);
     scan.applications.reserve(catalog.entries().size());
     for (const auto &entry : catalog.entries()) {
         const auto document = documentsBySourceId.constFind(entry.id);

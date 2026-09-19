@@ -51,8 +51,9 @@ applications. Each category displays its first representative MIME type; a
 partially customized image category is not flattened merely by opening Settings.
 
 Default values are [semicolon-separated desktop ID lists](https://specifications.freedesktop.org/mime-apps/latest/default.html).
-The first installed, associated handler wins. Hidden or malformed entries absent
-from the public catalog cannot become displayed defaults. Generic-file Added
+The first installed, associated handler wins. `NoDisplay=true` handlers remain valid MIME defaults even though they do not
+appear in menus. `Hidden=true` deletion markers and malformed higher-priority
+entries still suppress lower-root copies and cannot become displayed defaults. Generic-file Added
 and Removed Associations are respected at their applicable precedence; a lower
 system association cannot remove a higher-priority user desktop entry. The
 page reports configured defaults; it does not invent an application ranking
@@ -79,7 +80,8 @@ Candidates come from
 `QindaQt::ApplicationCatalog::scanApplicationDirectories()`, the same public
 installed-desktop-entry scanner used by File Manager's Open With picker
 ([ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
-The composition root scans once. The catalog’s suffix-free launcher IDs are
+The composition root scans once with `ApplicationVisibility::IncludeNoDisplay`;
+other catalog consumers keep their menu-only default. The catalog’s suffix-free launcher IDs are
 converted to `.desktop` MIME IDs at this route boundary. A candidate declares at least one MIME type
 in the category in its retained `[Desktop Entry]` `MimeType=` field. The store
 checks that the representative MIME association is effective before persisting
@@ -101,7 +103,8 @@ ctest --test-dir <build> -R '^(qindaqt\.settings-default-apps-|session\.sessiond
 Focused C++ coverage includes category-only writes and round trips, concurrent
 external changes to other categories, independent PDF/image choices,
 semicolon-list fallback, user/admin/package lookup order, removed and added
-associations, higher-priority desktop entries, hidden-handler fallback, and
+associations, higher-priority desktop entries, NoDisplay defaults, Hidden/malformed root
+masking, hidden-handler fallback, and
 restoring inherited defaults. The offscreen page gate verifies eight categories,
 current selections, and keyboard choice dispatch. Session tests prove login
 preserves existing user MIME files and creates no new user MIME policy.
