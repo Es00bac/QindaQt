@@ -5,17 +5,22 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
-## September 19 — image/PDF Viewer and common application defaults
+## September 19 — image/PDF Viewer, defaults and shared delivery installed
 
-Delivered in source `de578546`: C++/QindaTK Viewer with Poppler PDF rendering,
-common image/PDF/text/folder/browser/mail defaults, and QindaMPV media defaults.
-Existing user associations keep precedence. The complete combined Release
-build and staged install passed on qinda with Opus's committed screensaver/lock
-work through `e6c7fe60`; desktop r5 and the pinned QindaMPV companion recipes and
-archives are prepared. Independent focused gates and the initial combined47-row
-suite passed. See [handoff](HANDOFF.md) for exact source, build paths and limits.
-No live installation is claimed; this completes the requested slice, not the
-wider first-party milestone.
+Installed on qinda and qinda-top through Portage: desktop r6, exact source
+`41c9a2fd`, and QindaMPV 0.1.0_p20260919, source `6bfde664`. The C++/QindaTK
+Viewer uses Poppler for PDFs; common app defaults include Viewer and QindaMPV.
+Both hosts' PNG/PDF/MP4/Ogg associations resolve correctly, and package
+integrity checks pass for all seven desktop/player/screensaver packages.
+The desktop includes Opus's five-saver and lock-screen update `dcdec4e1`;
+qinda-top also received all five current saver packages from qinda.
+
+The user-selected `qinda-sync` command is installed on both machines for
+explicit package updates, clean committed-code exchange, and verified archive
+publication through the existing qinda Git/Portage hub. Actual no-op updates
+pass on both hosts. See [handoff](HANDOFF.md) for source pins, checks, the
+resolved laptop signing failure, and new-session adoption. This completes the
+requested slice; broader first-party milestone weights/state remain unchanged.
 
 ## Installed delivery checkpoint (September 18, r11)
 

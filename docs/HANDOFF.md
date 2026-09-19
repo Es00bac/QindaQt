@@ -1,47 +1,60 @@
 # Integration handoff
 
-## September 19 — Viewer and common defaults delivered
+## September 19 — Viewer, defaults, screensavers and shared delivery installed
 
-The combined runtime source is `de5785468d15cfce9e13b0c6b33461179909de33`.
-It includes the GPL-3.0-or-later C++/QindaTK image/PDF Viewer, private Poppler
-rendering, eight default-app categories, and QindaMPV media associations.
-User MIME preferences retain precedence. It includes Opus's screensaver/lock
-commit `2bf5847f` and current desktop source through `e6c7fe60`; the withdrawn
-panel-focus experiment `500b1de5` was explicitly reverted.
+Both qinda and qinda-top now have `gui-wm/qindaqt-desktop-0.1.0_pre20260919-r6`
+and `media-video/qqmpv-0.1.0_p20260919` installed through Portage. The exact
+installed desktop pin, read back from both VDB ebuilds, is
+`41c9a2fdfb1741c1482dc5679513162b1eda06ce`; the player pin is
+`6bfde6644d927989fcd157471873543c75b5b05b`.
 
-The complete Release build and DESTDIR install finished successfully on qinda
-using its configured `-j24 -l24` and existing package warning policy. The source
-is on branch `integration/viewer-defaults-20260919` in the isolated checkout
-`~/work_SPaC3/container-wm/.cache/viewer-defaults-combined`; build output is
-`build/combined`, the complete stage is `.cache/full-stage`, and build/install
-logs are `.cache/evidence/build-final.log` and `install-final.log` there.
-The staged viewer is `.cache/full-stage/usr/bin/qindaqt-viewer`.
+This delivers the GPL-3.0-or-later C++/QindaTK image/PDF Viewer using Poppler,
+eight common default-app categories, and QindaMPV media defaults. It combines
+Opus's original screensaver/locker work and five-saver update `dcdec4e1` with
+the reviewed Viewer/defaults. Opus's r5 recipe/history is preserved; our earlier,
+uninstalled r5 artifact was superseded by r6. The withdrawn focus experiment
+`500b1de5` remains reverted.
 
-Desktop recipe `0.1.0_pre20260919-r5` pins that source and adds QindaTK,
-Poppler Qt6, image-format plugins, and a QindaMPV post-dependency. The companion
-`qqmpv-0.1.0_pre20260919` recipe pins clean source `6bfde664`; it builds against
-the desktop's installed AppShell libraries. Both exact archives are in the
-main qinda checkout's `.cache/` and have recorded Manifest hashes. QindaMPV
-also built30/30 and passed isolated startup from its separate stage at
-`.cache/qqmpv-defaults-companion/stage-6bfde664/bin/qqmpv`.
+The five saver packages also match on both hosts: Qinda Patrol 0.2.0, Circuit
+Reef 1.1.0, Prism Circuit 1.1.0, Prism Brawl 1.1.0 and Starward Reimagined 2.1.0.
+qinda-top obtained these and the final desktop/player packages from qinda's
+existing signed binary server. Its native desktop compilation completed, but
+`--buildpkg=y` produced an unsigned package that its signature policy correctly
+rejected. The subsequent `--getbinpkgonly` installation passed; no signature
+checking, compiler settings, or global build policy was weakened. Portage also
+adopted the previously unowned `PowerScreensaverSection.qml`; an ownership query
+now reports the desktop package as its sole owner.
 
-Evidence: independent Viewer4/4 and defaults21/21 gates; the integrated batch
-passed47/47 (42 sandbox rows and5 private-bus rows with socket permission).
-One row belonged to the subsequently withdrawn launcher experiment. The final
-source then passed the complete native build/install; no further test campaign
-was added after the user's request to finish. Package dependencies and exact
-archive generation received independent Portage metadata review before the
-mechanical r5/version-pin update. Documentation links and strict MkDocs pass.
-The broad source-shape gate still reports16 pre-existing errors; this work
-introduced no new error identities. Strict Release's pre-existing GCC15
-icon-chip warning is avoided by the existing package setting
-`QINDAQT_ENABLE_STRICT_WARNINGS=OFF`, not by unrelated source changes.
+Verification on **each** machine: `qcheck` reports desktop 1522/1522, player 14/14,
+Patrol 24/24, Reef 31/31, Circuit 22/22, Brawl 22/22 and Starward 17/17 good files.
+Installed Viewer help and QindaMPV version run successfully. Desktop-scoped
+`xdg-mime` queries resolve PNG/PDF to `org.qindaqt.Viewer.desktop` and MP4/Ogg to
+`org.qindaqt.QQMpv.desktop`, with no user MIME preference rewrite. Both final
+Portage transactions returned 0. The prior independent Viewer 4/4/defaults 21/21
+and initial combined 47-row evidence remains recorded in the earlier delivery;
+no new test campaign was added. Documentation links (336 pages) and strict
+MkDocs pass. The existing 16 source-shape errors remain unrelated baseline debt.
 
-Nothing was installed into the live system, no desktop settings were changed,
-and Opus's active checkout/package metadata remains separate and untouched.
+The user chose an explicit command to keep the machines synchronized.
+`/usr/local/bin/qinda-sync` is installed on both hosts; its implementation is
+QindaGentoo commit `536baf1`. With no arguments it installs the overlay's exact
+`metadata/qinda-delivery`, fetching missing archives and pinned shared Git
+sources through qinda. `qinda-sync code CHECKOUT` exchanges clean committed
+branches; `qinda-sync publish ARCHIVE` verifies and publishes an archive.
+Actual no-op updates on both hosts returned 0, archive publication passed, and
+source synchronization correctly refused a concurrent divergent branch before
+we integrated Opus's change explicitly. There is no background timer or world
+update. See [shared delivery](wiki/development/releases.md#sharing-a-delivery-between-qinda-and-qinda-top)
+and [ADR-0219](wiki/adr/0219-share-completed-work-through-qinda.md).
+
+Local installation evidence is in `.cache/viewer-defaults/install/`; qinda's
+Portage and sync logs are in the isolated combined checkout's `.cache/evidence/`.
+The original complete Release stage remains in `.cache/full-stage/` there.
+No desktop/session restart was requested; the new shell/lock behavior is picked
+up by a new session. Existing active worktrees and unrelated work are preserved.
 The [Viewer contract](wiki/apps/viewer.md) and
-[default-app contract](wiki/apps/default-applications.md) describe the delivered
-behavior. The broader first-party roadmap remains incomplete.
+[default-app contract](wiki/apps/default-applications.md) remain the behavior
+boundaries; the broader first-party roadmap is still incomplete.
 
 ## September 17-18 wave — final state: `pre20260917-r11`
 
