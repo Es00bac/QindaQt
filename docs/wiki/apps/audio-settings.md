@@ -1,5 +1,24 @@
 # QindaQt Settings — Audio route
 
+## 2026-09-19 source diagnosis
+
+Inspection of base `01e919f6` found the earlier drag repair covers ordinary
+device and stream rows but not the mixing console. `AudioConsoleSection`
+still gives QVariantLists directly to both card Repeaters, so a console
+snapshot replaces the held card. `AudioConsoleFader` also imperatively
+assigns `livePosition` after binding it to the published position and never
+restores that binding. The console still disables all its controls using
+the client's global busy flag.
+
+Every Settings console dispatch returns an AudioClient request id, but none
+records it. `handleOperationCompleted` only recognizes device/stream ids,
+so failed console changes, including an overlapping request answered Busy,
+are silently dropped. The correction must retain the console cards, coalesce
+the fader's latest gesture while a request is in flight, resume authoritative
+position binding, and track console completions through the existing feedback
+path. This diagnosis was recorded before edits; no compilation or runtime
+check has been run for the candidate.
+
 `qindaqt-settings --page audio` is the first-party audio settings surface. It
 is a modular Settings Center route composed exclusively through the public
 Audio1 client boundary. The route observes bounded device and stream truth and

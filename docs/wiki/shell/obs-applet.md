@@ -1,5 +1,33 @@
 # OBS applet
 
+## 2026-09-19 source diagnosis
+
+Inspection of base `01e919f6` found three remaining control defects. This
+record precedes the corrections; compilation and runtime checks are deferred
+until the coordinated desktop code is ready.
+
+- `QtObsTransport` forwards the socket's close text but discards its numeric
+  close code; `ObsClient::handleDisconnected` then ignores that text. The
+  declared `obs-auth-rejected` reason is never produced, so OBS rejecting a
+  password looks like OBS being absent. The
+  [obs-websocket protocol](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#websocketclosecodeauthenticationfailed)
+  specifies authentication failure as close code 4009.
+- The popup's unlabeled switches change their checked state locally before
+  OBS answers. A refused operation need not change the authoritative active
+  value, so the switch can keep showing the requested state. The controller
+  also discards a zero request id and admits repeated presses while a request
+  is outstanding. Explicit Start/Stop actions, tracked request completion,
+  and a visible pending message are the bounded correction.
+- The chip computes a summary such as Streaming but never renders it; its
+  two most consequential states share the same icon and colour. The popup
+  has no direct route to the Streaming settings it tells users to open.
+  The action status must be readable beside the icon and setup must be one
+  action away.
+
+The profile placement and first-setup watch were already fixed by `2c6137e6`.
+The PulseAudio monitor names used by the bridge match upstream OBS's capture
+implementation; they are not a newly discovered device-name defect.
+
 The OBS applet is a top-bar chip that says what OBS is doing and a popup with
 the controls a user reaches for mid-session. Everything else about OBS stays
 in OBS, and everything about setting OBS up stays in
