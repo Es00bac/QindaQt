@@ -114,16 +114,25 @@ for playback and QindaTK for its interface. Install the separate `qqmpv`
 package alongside the desktop. Standard MIME association lookup skips a
 missing player; it does not install software when you open a file.
 
+## System Monitor
+
+**System Monitor** shows processor, memory, storage, network and hardware
+activity together on one dashboard, alongside the processes responsible for
+it, rather than one view at a time. Drag a panel's header to rearrange it or
+tear it off; select a process to terminate, pause or reprioritise it. Install
+the separate `qindaqt-system-monitor` package alongside the desktop.
+
 ## Not included (yet)
 
-An archive manager, system monitor, and software center appear
-in the project's long-term plans. They are not shipped applications today —
-use ordinary Linux applications for those needs. The honest per-feature
+An archive manager and a software center appear in the project's long-term
+plans. They are not shipped applications today — use ordinary Linux
+applications for those needs. The honest per-feature
 ledger is the [feature catalog](catalog/features.md).
 
 Each application's full contract — limits, shortcuts, recovery behavior — is
 documented on its own page: [Welcome](../apps/welcome.md), [Settings
 Center](../apps/settings-center.md) and each route page, [Text
 Editor](../apps/text-editor.md), [File Manager](../apps/file-manager.md),
-[Viewer](../apps/viewer.md), and [Terminal](../apps/terminal.md). Return to the
+[Viewer](../apps/viewer.md), [Terminal](../apps/terminal.md), and
+[System Monitor](../apps/system-monitor.md). Return to the
 [handbook index](index.md).

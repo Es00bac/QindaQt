@@ -47,6 +47,11 @@ qt_add_qml_module(qindaqt-system-monitor
         qml/parts/MeterRow.qml
         qml/parts/TraceGraph.qml
         qml/parts/ProcessDetails.qml
+        qml/parts/ProcessActions.qml
+        qml/parts/CoreGrid.qml
+        qml/parts/CpuSummary.qml
+        qml/parts/GpuCard.qml
+        qml/parts/SensorList.qml
 )
 
 target_link_libraries(qindaqt-system-monitor

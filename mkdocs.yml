@@ -150,6 +150,7 @@ nav:
       - Settings About this computer route: apps/about-this-computer.md
       - Settings Startup applications route: apps/startup-settings.md
       - Terminal: apps/terminal.md
+      - System Monitor: apps/system-monitor.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -259,6 +260,7 @@ nav:
       - ADR-0105 PowerDevil idle display-off: adr/0105-delegate-idle-display-off-to-powerdevil.md
       - "0106: Accept an equivalent Gentoo Power Profiles provider": adr/0106-accept-equivalent-power-profiles-provider.md
       - ADR-0107 Delegate Print to Spectacle: adr/0107-delegate-print-to-spectacle.md
+      - "ADR-0108: Compose the System Monitor from detachable views": adr/0108-compose-system-monitor-from-detachable-views.md
       - "ADR-0109: Pearl and Smoked Plum materials": adr/0109-use-pearl-and-smoked-plum-app-materials.md
       - "ADR-0110: Ordinary editor windows": adr/0110-own-editor-documents-in-ordinary-windows.md
       - "ADR-0111 bound file previews and consume public icons": adr/0111-bound-file-previews-and-consume-public-icons.md
@@ -355,3 +357,4 @@ nav:
       - "ADR-0216: the locker draws the screensaver": adr/0216-the-locker-draws-the-screensaver.md
       - "ADR-0218: use QindaTK and Poppler for the image/PDF viewer": adr/0218-use-qindatk-and-poppler-for-the-viewer.md
       - "ADR-0219: share completed work through qinda": adr/0219-share-completed-work-through-qinda.md
+      - "ADR-0220: rebuild the System Monitor on QindaTK": adr/0220-rebuild-the-system-monitor-on-qindatk.md
