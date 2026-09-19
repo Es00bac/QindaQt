@@ -1,5 +1,17 @@
 # OBS console bridge
 
+## 2026-09-19 authority diagnosis
+
+At base `01e919f6`, the bridge retains `m_lastSnapshot` and active capture
+sources when AudioClient loses its owner and clears its snapshot.
+`onState` only updates a status label. A subsequent scene-collection change
+can therefore reapply the retired owner's wiring, and previously bound
+hardware captures keep running without authoritative console state. The
+correction must forget retained wiring and remove the bridge-managed sources
+when AudioClient has no snapshot, while retaining a labelled stale snapshot
+when the client itself still holds one. This is source evidence, recorded
+before changes; no OBS process or live audio graph was changed.
+
 `obs-qindaqt` is an OBS Studio module that shows the QindaQt audio console
 to OBS ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)). It is
 built from `src/obs` against the installed `libobs`, `obs-frontend-api` and

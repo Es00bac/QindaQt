@@ -1,5 +1,16 @@
 # Audio service
 
+## 2026-09-19 endpoint lifetime diagnosis
+
+At base `01e919f6`, send and rack modules register a PipeWire destroy listener
+through `watchModule`, but virtual-bus endpoint modules do not. If PipeWire
+destroys a bus loopback, `m_endpointModules` retains its dead pointer: later
+rebuilds treat the bus as already requested, and shutdown attempts to destroy
+the stale pointer again. Endpoint modules need the same exact-pointer destroy
+bookkeeping as send and rack modules; their teardown must take the map before
+callbacks can erase entries. This source diagnosis precedes the correction
+and does not claim a reproduced live-service crash.
+
 Audio1 is QindaQt's typed, restart-aware control and observation boundary for
 the running PipeWire graph. The D-Bus-activated `qindaqt-audio-service` owns
 `org.qindaqt.Audio1`; upstream WirePlumber remains the policy manager. Audio1
