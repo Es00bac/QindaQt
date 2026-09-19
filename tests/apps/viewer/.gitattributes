@@ -1,0 +1,2 @@
+# The synthetic encrypted fixture is binary PDF data, including fixed-width xref records.
+fixtures/*.pdf binary

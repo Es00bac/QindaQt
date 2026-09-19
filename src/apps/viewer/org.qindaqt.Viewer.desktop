@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Viewer
+GenericName=Image and PDF Viewer
+Comment=View local images and PDF documents
+Exec=qindaqt-viewer %f
+Icon=qindaqt-viewer
+Terminal=false
+Categories=Qt;Graphics;Viewer;
+MimeType=application/pdf;image/jpeg;image/png;image/gif;image/webp;image/bmp;image/tiff;image/svg+xml;
+StartupNotify=true
+Keywords=Image;Photo;Picture;PDF;Document;
