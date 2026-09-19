@@ -51,6 +51,30 @@ own Wayland platform. Use a short, private `TMPDIR` on a filesystem with free
 space: Unix display and bus socket paths must fit within 108 bytes. Do not
 clear another session's temporary files to make room for tests.
 
+## Image/PDF viewer and common defaults
+
+With the default `QINDAQT_BUILD_VIEWER=ON`, `apps.viewer.renderer` exercises
+real Poppler pages, password failures and image readers; `apps.viewer.controller`
+covers asynchronous revision fencing and navigation; `apps.viewer.ui` loads
+the QindaTK window at 640×480 and 960×680; and `apps.viewer.cli-install`
+checks local CLI inputs and a relocated `Viewer` component installation.
+These rows use private XDG state, offscreen software rendering and unavailable
+host buses. They do not claim native compositor or physical-input coverage.
+
+`qindaqt.settings-default-apps-*` checks inherited XDG precedence, narrow
+category writes, the public installed catalog, accessible UI, module boundaries,
+the installed Settings route and packaged associations through `xdg-mime`.
+The catalog/scanner rows distinguish valid `NoDisplay` MIME handlers from
+`Hidden` deletion markers while preserving ordinary launcher visibility.
+`session.sessiondefaults` verifies that login never seeds user MIME preferences.
+See [Viewer](../apps/viewer.md) and
+[Default applications](../apps/default-applications.md) for exact commands.
+
+Hosted build jobs explicitly set `QINDAQT_BUILD_VIEWER=OFF` while QindaTK is
+available only from its local source repository. Their results exclude Viewer;
+native development/package builds keep it enabled with the installed toolkit
+and Poppler dependencies. An enabled configure fails if either is missing.
+
 ## File Manager browsing comfort
 
 The focused File Manager suite includes an injected production-window input

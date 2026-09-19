@@ -1,0 +1,17 @@
+# QindaTK Viewer Reviewer
+
+- Role: Independent product reviewer for the QindaTK viewer candidate.
+- Status: available — viewer repair accepted and bounded manager build/CI guard review passed; no active review or build remains.
+- Ownership: `ops/team/workers/review-qindatk-viewer.md`, `ops/team/messages/review-qindatk-viewer/`; product source remains immutable.
+- Worktree: `.cache/viewer-defaults/review-viewer`.
+
+## Updates
+
+- 2026-09-19T15:09:08Z Claimed independent review of exact candidate f56b9a7014849da8403a1f7d8937de91451e0d88 over de8786e15e5ad8e8b9b63c49866f4b284f5c7bce; checking renderer/thread lifetime, QindaTK UI behavior, file handling, and install contract.
+- 2026-09-19T15:15:15Z Fresh private Debug configure/build and all four focused CTests passed: renderer 13, controller 6, UI 3 QtTest rows plus relocated CLI/install. Both generated layouts visually inspected. A separate review-only wrong-password/cancel/reopen/unlock test passed 3/3; checking Poppler password encoding before final verdict.
+- 2026-09-19T15:17:55Z REJECT f56b9a7014849da8403a1f7d8937de91451e0d88 with one demonstrated P2: a valid Latin-1 café password renders directly through Poppler but fails through the controller's UTF-8 encoding. Sent exact fixture, failing QtTest (2 passed/1 failed; exit 1), and repair request to the implementer and manager. Same reviewer remains assigned to the repaired descendant; bounded help offered for manager build/CI option diff.
+- 2026-09-19T15:20:00Z Implementer confirmed same-worktree repair and regression fixture. Read the active first-party queue and peer reply; offered bounded build/CI review and inspected the manager's default-ON option with all three hosted jobs explicitly OFF. Source/test guards await candidate integration. Transitioning available pending the exact repaired commit; no active build remains in this lane.
+- 2026-09-19T15:22:14Z Claimed same-reviewer verification of exact repaired descendant b724e5667d481b79227fd7fa22ae48104c014ecb. The bounded diff changes the Poppler boundary to Latin-1 and adds the independent café fixture plus a permanent controller regression; rerunning the original private reproduction and four focused gates.
+- 2026-09-19T15:24:04Z ACCEPT b724e5667d481b79227fd7fa22ae48104c014ecb, P0/P1/P2/P3 0/0/0/0. Target rebuild and four CTests passed (13/7/3 QtTest totals, 4.35 seconds); the original failing private café reproduction now passes 3/3, and extended password retry/cancel/reopen UI passes 3/3. Product tree clean; fixture SHA-256 matches the independently generated original. Manager may integrate and rerun combined gates; available for the promised bounded build-option/CI guard diff.
+- 2026-09-19T15:27:35Z Claimed bounded shared integration review at manager HEAD fce298f10f06845a4740dfd6cbd64ef4a1fd20a6 plus the unstaged four-file guard/CI diff. Reading changed build/docs contracts and copying that exact diff only into the isolated review worktree for an OFF configure with QindaTK discovery disabled; root product files remain read-only.
+- 2026-09-19T15:29:33Z Bounded build/CI review PASS, no findings. Four manager files byte-matched the copied diff; private OFF configure passed with QindaTK discovery disabled, zero viewer targets/tests, and no QindaTK/Poppler discovery cache. Default ON and all three hosted-CI exclusions match README/ADR/release/testing docs. Restored the isolated review source to clean exact b724e5667d481b79227fd7fa22ae48104c014ecb. Integration ON build remains the manager's separately observed gate.

@@ -37,6 +37,7 @@ cmake -S . -B build/release-checkpoint -G Ninja \
   -DQINDAQT_BUILD_KWIN_PLUGIN=ON \
   -DQINDAQT_BUILD_SHELL=ON \
   -DQINDAQT_BUILD_PRODUCTION_SHELL=ON \
+  -DQINDAQT_BUILD_VIEWER=ON \
   -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
 qq_makeopts="$(portageq envvar MAKEOPTS)"
 cmake --build build/release-checkpoint \
@@ -84,12 +85,24 @@ documentation gates.
 
 The native CI lane uses Gentoo's generic `desktop/systemd` profile and the
 official KWin 6.6.6 binary with `shortcuts` enabled and `lock` disabled. That
-lane qualifies the binary plugin ABI, complete source build, staged install,
+lane qualifies the binary plugin ABI, configured source build, staged install,
 and two private nested boots. Keeping lock-screen runtime integration out of
 this build lane avoids pulling Plasma Workspace and Plasma login sessions into
 a desktop that installs its own session entry. It does not reduce the package
 contract: the full-desktop ebuild still requires release-matched KScreenLocker,
 KWin `lock,shortcuts`, portals, hardware providers, and session utilities.
+Hosted CI also explicitly disables Viewer while QindaTK remains locally
+hosted. Full desktop releases require `QINDAQT_BUILD_VIEWER=ON`, installed
+QindaTK/Poppler Qt 6/image-format plugins, and the four `apps.viewer.*` gates.
+QindaMPV is a separate post-dependency because it builds against the desktop's
+installed AppShell libraries. The packaged defaults reference its existing
+`org.qindaqt.QQMpv.desktop` entry.
+The companion `media-video/qqmpv` checkpoint recipe lives in this repository's
+Gentoo packaging tree. Its fetch-restricted archive is generated from the
+exact QindaMPV commit named in the recipe, with the matching
+`QindaMPV-COMMIT/` prefix and `gzip -n`; its Manifest verifies those bytes.
+This avoids depending on a developer-specific checkout path. The desktop
+and player archives must both be available before a package transaction.
 Before the two serialized native boot checks, CI creates its container-private
 `/tmp/.X11-unix` directory with mode `1777`. Minimal container images may omit
 this standard X11 socket path; both checks still require working XWayland.

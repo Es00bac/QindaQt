@@ -103,6 +103,14 @@ installed interaction remain later work.
 
 ## Milestones
 
+The September 19 first-party slice adds the [QindaTK image/PDF
+Viewer](../apps/viewer.md) and [common application
+defaults](../apps/default-applications.md), including QindaMPV for media.
+This is a source delivery with focused rendering, presentation and association
+gates; installation and physical desktop qualification are separate evidence
+recorded in the integration handoff. It does not complete the wider
+First-party experience milestone.
+
 | Milestone | Outcome | State |
 | --- | --- | --- |
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |

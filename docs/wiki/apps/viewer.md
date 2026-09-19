@@ -8,7 +8,7 @@ viewport use **QindaTK**. PDF parsing and rasterization use the existing
 uses [Qt's image readers](https://doc.qt.io/qt-6/qimagereader.html).
 
 The toolkit and dependency choice is recorded in
-[ADR-0217](../adr/0217-use-qindatk-and-poppler-for-the-viewer.md). Public
+[ADR-0218](../adr/0218-use-qindatk-and-poppler-for-the-viewer.md). Public
 [AppShell](application-shell.md) supplies action/menu projection and standard
 desktop menu export. QindaTK supplies presentation; the viewer never reaches
 into shell or toolkit private implementation.

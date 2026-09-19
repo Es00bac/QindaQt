@@ -1,5 +1,16 @@
 # First-party delivery queue
 
+## September 19 request — Viewer and application defaults
+
+| Outcome | State | Owner | Base / isolated worktree | Reviewer | Next gate | Collision/resource | Help | Observed |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| QindaTK image/PDF Viewer | Accepted source integrated; combined gates pending | qindatk-apps-manager | `b724e5667d481b79227fd7fa22ae48104c014ecb` / `.cache/viewer-defaults/viewer` | review-qindatk-viewer ACCEPT0/0/0/0 | Integrated47-row suite and remote native stage | Local build/dev; isolated remote .cache/viewer-defaults-combined; preserve ongoing Opus source | No active worker reservation | 2026-09-19T15:31:42Z |
+| Common app defaults and PDF choice | Accepted source integrated; combined gates pending | qindatk-apps-manager | `812b6cf73d4c8c55a5242e98cb28cb0a532f3b32` / `.cache/viewer-defaults/defaults` | review-common-app-defaults ACCEPT | Integrated Settings installed route and catalog/launcher gates | Original public overloads retain menu visibility; NoDisplay MIME mode explicit | No active worker reservation | 2026-09-19T15:31:42Z |
+
+The current request's integration manager is `qindatk-apps-manager`. Historical
+queues below describe their stated checkpoints; they do not establish current
+worker liveness or reserve this request's paths.
+
 - Workgroup manager: Codex Program Manager (OpenAI Codex `gpt-5.6-sol`, reasoning high)
 - Last observation: 2026-09-06T15:13:00-06:00
 

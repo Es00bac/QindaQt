@@ -6,6 +6,13 @@ a suite doing everything. They are ordinary desktop applications: they follow
 your theme and fonts, share the same controls, and behave the same whether or
 not their menus appear in the top panel.
 
+The image/PDF [Viewer](../apps/viewer.md) and the separately packaged
+QindaMPV cover viewing documents, pictures, music and video. **Settings →
+Default applications** lets you change which installed application opens each
+kind of file. QindaQt supplies defaults for File Manager, Text Editor, Viewer
+and QindaMPV; your existing choices take precedence. Images and PDFs have
+separate choices, so you can use different applications for them.
+
 ## Welcome guide
 
 The first time the session starts, the Welcome guide opens by itself: seven
@@ -92,9 +99,24 @@ panel while they are focused, so the window spends its space on your work.
 Applications without that integration simply keep their own menu. See
 [Using the desktop](desktop.md#the-application-menu).
 
+## Image and PDF Viewer
+
+Open a picture or PDF from File Manager, or launch **QindaQt Viewer** and
+choose a file. The QindaTK toolbar provides page navigation, zoom, fit and
+rotation. PDF rendering comes from Poppler; image decoding uses Qt's format
+plugins. The application views local files without changing them. See the
+[Viewer page](../apps/viewer.md) for supported formats and keyboard controls.
+
+## Media player
+
+**QindaMPV** is the default for supported audio and video types. It uses mpv
+for playback and QindaTK for its interface. Install the separate `qqmpv`
+package alongside the desktop. Standard MIME association lookup skips a
+missing player; it does not install software when you open a file.
+
 ## Not included (yet)
 
-An image viewer, archive manager, system monitor, and software center appear
+An archive manager, system monitor, and software center appear
 in the project's long-term plans. They are not shipped applications today —
 use ordinary Linux applications for those needs. The honest per-feature
 ledger is the [feature catalog](catalog/features.md).
@@ -103,4 +125,5 @@ Each application's full contract — limits, shortcuts, recovery behavior — is
 documented on its own page: [Welcome](../apps/welcome.md), [Settings
 Center](../apps/settings-center.md) and each route page, [Text
 Editor](../apps/text-editor.md), [File Manager](../apps/file-manager.md),
-and [Terminal](../apps/terminal.md). Return to the [handbook index](index.md).
+[Viewer](../apps/viewer.md), and [Terminal](../apps/terminal.md). Return to the
+[handbook index](index.md).

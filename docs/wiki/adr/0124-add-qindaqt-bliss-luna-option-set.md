@@ -4,7 +4,8 @@
 - **Date:** 2026-09-10
 - **Owners:** Themes, Compositor decorations, Shell presentation
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0218](0218-use-qindatk-and-poppler-for-the-viewer.md)
+  for decision8 only: packaged MIME defaults replace login-time user seeding.
 
 ## Context
 
