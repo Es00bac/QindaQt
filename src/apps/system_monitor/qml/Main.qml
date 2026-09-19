@@ -63,6 +63,18 @@ Tk.AppWindow {
             }
         }
         Tk.Menu {
+            title: qsTr("&Layout")
+            enabled: !window.single
+            Tk.MenuItem {
+                text: qsTr("Reset arrangement")
+                onTriggered: if (dashboardLoader.item !== null) dashboardLoader.item.resetLayout()
+            }
+            Tk.MenuItem {
+                text: qsTr("Show every panel")
+                onTriggered: if (dashboardLoader.item !== null) dashboardLoader.item.showEveryPanel()
+            }
+        }
+        Tk.Menu {
             title: qsTr("&Help")
             Tk.MenuItem {
                 text: qsTr("About System Monitor")
@@ -72,6 +84,7 @@ Tk.AppWindow {
     }
 
     Loader {
+        id: dashboardLoader
         anchors.fill: parent
         sourceComponent: window.single ? singlePanel : dashboardView
     }

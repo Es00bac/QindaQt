@@ -21,7 +21,9 @@ Tk.Flex {
 
     align: Tk.Flex.Center
     gap: Tk.Theme.space.sm
-    implicitHeight: Tk.Theme.size.row
+    // Dense by default: a core list is read as a block, and the row
+    // height is what decides whether the whole processor fits.
+    implicitHeight: Tk.Theme.size.controlSm
 
     Tk.Mono {
         text: row.label

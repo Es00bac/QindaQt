@@ -4,62 +4,119 @@ import QindaTK as Tk
 import "panels" as Panels
 
 // The dense arrangement: everything at once, which is the whole reason to
-// prefer this over a tabbed monitor. Processor spans the top because its
-// trace is the one people scan first; processes take the tallest column
-// because that is where the reading turns into a decision.
+// prefer this over a tabbed monitor, on Tk.DockHost so the reader can move
+// it. Processes take the centre because that is where a reading turns into
+// a decision; the processor spans the top because its trace is what people
+// scan first.
 //
-// The grid reflows rather than scrolling: below 1100px the three columns
-// become two, and below 760 one, so a narrow window loses arrangement but
-// never loses a panel.
+// Drag a panel header to re-dock or tear it off, drag a seam to resize,
+// and the arrangement persists under `storageKey` -- so the layout someone
+// settles on is the one they get back tomorrow.
 Item {
     id: dashboard
 
-    property int columns: dashboard.width >= 1100 ? 3 : dashboard.width >= 760 ? 2 : 1
-
     signal detachRequested(string panelId)
+    signal actionFailed(string message)
 
-    Tk.Flex {
+    function resetLayout() { dock.resetLayout() }
+    function showEveryPanel() {
+        for (const id of dock.hiddenPanels) {
+            dock.showPanel(id)
+        }
+    }
+    readonly property var hiddenPanels: dock.hiddenPanels
+
+    Tk.DockHost {
+        id: dock
+        objectName: "monitorDock"
         anchors.fill: parent
-        anchors.margins: Tk.Theme.space.sm
-        direction: Tk.Flex.Column
-        gap: Tk.Theme.space.sm
+        workspace: "monitor"
 
-        Panels.CpuPanel {
-            Tk.Flex.grow: 2
-            Tk.Flex.basis: 0
-            Tk.Flex.minHeight: 150
+        model: Tk.DockModel { storageKey: "qindaqt/system-monitor/layout" }
+
+        // AGENT-NOTE: the canvas is the process table, not an empty surface.
+        // A dock host's canvas is the one region that cannot be torn off or
+        // hidden, and the process list is the panel this application would be
+        // pointless without.
+        canvas: Panels.ProcessPanel {
+            framed: false
             onDetachRequested: function(id) { dashboard.detachRequested(id) }
+            onActionFailed: function(message) { dashboard.actionFailed(message) }
         }
 
-        Tk.Grid {
-            Tk.Flex.grow: 5
-            Tk.Flex.basis: 0
-            columns: dashboard.columns === 3 ? "1fr 1fr 1.4fr"
-                   : dashboard.columns === 2 ? "1fr 1fr" : "1fr"
-            columnGap: Tk.Theme.space.sm
-            rowGap: Tk.Theme.space.sm
-
+        Tk.DockPanel {
+            panelId: "cpu"
+            title: qsTr("Processor")
+            iconName: "cpu"
+            zone: "top"
+            extent: 300
+            minHeight: 140
+            chrome: "compact"
+            padding: 0
+            Panels.CpuPanel {
+                framed: false
+                onDetachRequested: function(id) { dashboard.detachRequested(id) }
+            }
+        }
+        Tk.DockPanel {
+            panelId: "memory"
+            title: qsTr("Memory")
+            iconName: "memory-stick"
+            zone: "left"
+            order: 0
+            extent: 300
+            minWidth: 220
+            chrome: "compact"
+            padding: 0
             Panels.MemoryPanel {
+                framed: false
                 onDetachRequested: function(id) { dashboard.detachRequested(id) }
             }
+        }
+        Tk.DockPanel {
+            panelId: "disks"
+            title: qsTr("Storage")
+            iconName: "hard-drive"
+            zone: "left"
+            order: 1
+            extent: 300
+            minWidth: 220
+            chrome: "compact"
+            padding: 0
             Panels.DisksPanel {
+                framed: false
                 onDetachRequested: function(id) { dashboard.detachRequested(id) }
             }
-            Panels.ProcessPanel {
-                // The process table earns two rows whenever the layout has
-                // them: a ten-row table is a list, a thirty-row one is a tool.
-                Tk.Grid.rowSpan: dashboard.columns === 1 ? 1 : 2
-                onDetachRequested: function(id) { dashboard.detachRequested(id) }
-                onActionFailed: function(message) { dashboard.actionFailed(message) }
-            }
+        }
+        Tk.DockPanel {
+            panelId: "network"
+            title: qsTr("Network")
+            iconName: "network"
+            zone: "bottom"
+            order: 0
+            extent: 190
+            minHeight: 120
+            chrome: "compact"
+            padding: 0
             Panels.NetworkPanel {
+                framed: false
                 onDetachRequested: function(id) { dashboard.detachRequested(id) }
             }
+        }
+        Tk.DockPanel {
+            panelId: "hardware"
+            title: qsTr("Hardware")
+            iconName: "thermometer"
+            zone: "right"
+            order: 0
+            extent: 290
+            minWidth: 220
+            chrome: "compact"
+            padding: 0
             Panels.HardwarePanel {
+                framed: false
                 onDetachRequested: function(id) { dashboard.detachRequested(id) }
             }
         }
     }
-
-    signal actionFailed(string message)
 }

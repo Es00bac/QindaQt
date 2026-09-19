@@ -51,7 +51,7 @@ Parts.MonitorPanel {
             // legible past about ninety pixels, while the core list keeps
             // earning every row it is given.
             Tk.Flex.shrink: 0
-            implicitHeight: 92
+            implicitHeight: 78
             maxValue: 100
             cornerText: panel.snapshot.cpuModel !== undefined ? "" : ""
 
@@ -69,10 +69,13 @@ Parts.MonitorPanel {
 
             Tk.Grid {
                 width: parent.width
-                // Two columns of cores on a wide panel, one when narrow --
-                // twenty-four rows in a single column is a scrollbar, not a
-                // glance.
-                columns: panel.width > 440 ? "1fr 1fr" : "1fr"
+                // As many columns as the width affords. The point of a core
+                // list is to see the whole processor at once: a machine with
+                // twenty-four threads in two columns is twelve rows, which is
+                // a scrollbar, not a glance.
+                columns: panel.width > 1180 ? "1fr 1fr 1fr 1fr"
+                       : panel.width > 880 ? "1fr 1fr 1fr"
+                       : panel.width > 460 ? "1fr 1fr" : "1fr"
                 columnGap: Tk.Theme.space.lg
                 rowGap: 0
 
