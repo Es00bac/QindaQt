@@ -1,7 +1,7 @@
 # QindaTK Viewer implementer
 
 - Identity: QindaTK Viewer implementer
-- Status: available — password repair verified and awaiting exact recheck; remote companion task is next
+- Status: available — viewer repair independently accepted and remote committed QindaMPV companion staged and verified
 - Base: `de8786e15e5ad8e8b9b63c49866f4b284f5c7bce`
 - Branch: `feat/qindatk-viewer`
 - Worktree: `.cache/viewer-defaults/viewer`
@@ -15,3 +15,5 @@
 - 2026-09-19T15:08:05Z — Handed off exact product commit `f56b9a7014849da8403a1f7d8937de91451e0d88`. Read the current First-party queue and defaults peer's exact handoff/NoDisplay repair thread. Offered bounded same-worktree review repair and integrated Viewer stage verification; did not claim the peer's parser repair or unrelated backlog.
 - 2026-09-19T15:18:21Z — Claimed reviewer's reproduced P2: Poppler Qt6 specifies Latin-1 password bytes; UTF-8 from the controller fails the valid `café` password fixture. Repair and regression take priority over the manager's next bounded remote QindaMPV companion build. The existing product candidate stays immutable; a descendant will be independently rechecked.
 - 2026-09-19T15:19:55Z — Password repair build exit 0; four viewer CTests 4/4 exit 0 in 4.21 seconds, with renderer 13/13, controller 7/7 including the independent non-ASCII fixture, UI 3/3 and CLI/staged smoke. Both scoped shape gates and diff check pass. Awaiting same-reviewer exact descendant recheck before the remote companion outcome.
+- 2026-09-19T15:22:49Z — Manager authorized starting the remote companion while exact viewer recheck runs. Remote QindaMPV source is directly verified clean at `6bfde6644d927989fcd157471873543c75b5b05b`. The installed package database has no `media-video/qqmpv` match. Claimed only a separate source snapshot/build/stage under remote `.cache/qqmpv-defaults-companion`; no edits to QindaMPV source, host install, live session, or the manager's separate desktop build.
+- 2026-09-19T15:28:38Z — Same reviewer ACCEPTed exact viewer repair `b724e5667d481b79227fd7fa22ae48104c014ecb`, zero findings. Remote QindaMPV configure/build (30/30, two jobs)/stage all exit 0. Staged help/version, desktop metadata, ldd, libmpv capability and isolated offscreen startup all exit 0; 960×640 capture inspected. Source remains clean at the exact commit. Package inspection found no visible qqmpv recipe; the existing bare origin contains the commit and manager owns a corrected companion recipe. Available for a bounded integrated stage/package reproduction; no further source work claimed.
