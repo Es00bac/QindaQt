@@ -379,18 +379,29 @@ void DesktopEntryParserTest::hiddenFlagsAreReportedNotRejected()
   const auto noDisplayResult = parseText(noDisplay.toText());
   QVERIFY2(noDisplayResult.ok(), qPrintable(noDisplayResult.error.message));
   QVERIFY(noDisplayResult.entry->hidden);
+  QVERIFY(!noDisplayResult.entry->deleted);
 
   EntryTemplate hidden;
   hidden.hiddenLine = QStringLiteral("Hidden=true");
   const auto hiddenResult = parseText(hidden.toText());
   QVERIFY2(hiddenResult.ok(), qPrintable(hiddenResult.error.message));
   QVERIFY(hiddenResult.entry->hidden);
+  QVERIFY(hiddenResult.entry->deleted);
 
   EntryTemplate visible;
   visible.noDisplayLine = QStringLiteral("NoDisplay=false");
   const auto visibleResult = parseText(visible.toText());
   QVERIFY2(visibleResult.ok(), qPrintable(visibleResult.error.message));
   QVERIFY(!visibleResult.entry->hidden);
+  QVERIFY(!visibleResult.entry->deleted);
+
+  EntryTemplate nonMenu;
+  nonMenu.noDisplayLine = QStringLiteral("NoDisplay=true");
+  nonMenu.hiddenLine = QStringLiteral("Hidden=false");
+  const auto nonMenuResult = parseText(nonMenu.toText());
+  QVERIFY(nonMenuResult.ok());
+  QVERIFY(nonMenuResult.entry->hidden);
+  QVERIFY(!nonMenuResult.entry->deleted);
 }
 
 void DesktopEntryParserTest::unknownKeysAndGroupsAreNotDecoded()

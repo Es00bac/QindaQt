@@ -50,6 +50,7 @@ private Q_SLOTS:
     void scansEntriesWithRootPrecedenceAndIds();
     void skipsHiddenEntriesButRetainsValidatedDocuments();
     void rejectsEmptyRootLists();
+    void mimeVisibilityPreservesWinningDocumentAndDeletion();
 };
 
 void ApplicationDirectoryScanTests::scansEntriesWithRootPrecedenceAndIds()
@@ -101,6 +102,42 @@ void ApplicationDirectoryScanTests::skipsHiddenEntriesButRetainsValidatedDocumen
              QStringLiteral("visible"));
     // Hidden documents are a normal producer hint, not a diagnostic.
     QVERIFY(scan.diagnostics.isEmpty());
+}
+
+void ApplicationDirectoryScanTests::mimeVisibilityPreservesWinningDocumentAndDeletion()
+{
+    ScanFixture fixture;
+    QVERIFY(writeFile(fixture.firstRoot.filePath("applications/handler.desktop"),
+        QString::fromUtf8(desktopTemplate).arg("User MIME Handler", "handler",
+            QStringLiteral("NoDisplay=true\nMimeType=application/pdf;\n"))));
+    QVERIFY(writeFile(fixture.firstRoot.filePath("applications/deleted.desktop"),
+        QString::fromUtf8(desktopTemplate).arg("Deleted", "deleted",
+            QStringLiteral("Hidden=true\n"))));
+    QVERIFY(writeFile(fixture.firstRoot.filePath("applications/malformed.desktop"),
+        QStringLiteral("[Desktop Entry]\nType=Application\nNoDisplay=true\n")));
+    for (const QString &id : {QStringLiteral("handler"), QStringLiteral("deleted"),
+                              QStringLiteral("malformed")}) {
+        QVERIFY(writeFile(fixture.secondRoot.filePath("applications/" + id + ".desktop"),
+            QString::fromUtf8(desktopTemplate).arg("System fallback", id, QString{})));
+    }
+    QVERIFY(writeFile(fixture.secondRoot.filePath("applications/visible.desktop"),
+        QString::fromUtf8(desktopTemplate).arg("Visible", "visible", QString{})));
+
+    const auto menus = scanApplicationDirectories(fixture.roots());
+    QCOMPARE(menus.applications.size(), 1);
+    QVERIFY(menus.application(QStringLiteral("visible")));
+    const auto handlers = scanApplicationDirectories(
+        fixture.roots(), ApplicationVisibility::IncludeNoDisplay);
+    QCOMPARE(handlers.applications.size(), 2);
+    const auto *handler = handlers.application(QStringLiteral("handler"));
+    QVERIFY(handler);
+    QCOMPARE(handler->entry.name, QStringLiteral("User MIME Handler"));
+    QCOMPARE(handler->desktopFilePath,
+             fixture.firstRoot.filePath("applications/handler.desktop"));
+    QVERIFY(handler->documentText.contains(QStringLiteral("NoDisplay=true")));
+    QVERIFY(!handlers.application(QStringLiteral("deleted")));
+    QVERIFY(!handlers.application(QStringLiteral("malformed")));
+    QCOMPARE(handlers.diagnostics.size(), 4);
 }
 
 void ApplicationDirectoryScanTests::rejectsEmptyRootLists()

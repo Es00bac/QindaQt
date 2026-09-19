@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Desktop-scoped fallbacks; XDG user and administrator preferences win.
+# Firefox and Thunderbird are optional: unavailable desktop IDs are skipped.
+[Default Applications]
+text/html=firefox.desktop;org.mozilla.firefox.desktop;firefox-esr.desktop;
+x-scheme-handler/http=firefox.desktop;org.mozilla.firefox.desktop;firefox-esr.desktop;
+x-scheme-handler/https=firefox.desktop;org.mozilla.firefox.desktop;firefox-esr.desktop;
+x-scheme-handler/mailto=thunderbird.desktop;org.mozilla.Thunderbird.desktop;
+inode/directory=org.qindaqt.FileManager.desktop;
+text/plain=org.qindaqt.TextEditor.desktop;
+application/pdf=org.qindaqt.Viewer.desktop;
+image/jpeg=org.qindaqt.Viewer.desktop;
+image/png=org.qindaqt.Viewer.desktop;
+image/gif=org.qindaqt.Viewer.desktop;
+image/webp=org.qindaqt.Viewer.desktop;
+image/bmp=org.qindaqt.Viewer.desktop;
+image/tiff=org.qindaqt.Viewer.desktop;
+image/svg+xml=org.qindaqt.Viewer.desktop;
+video/mp4=org.qindaqt.QQMpv.desktop;
+video/x-matroska=org.qindaqt.QQMpv.desktop;
+video/webm=org.qindaqt.QQMpv.desktop;
+video/mpeg=org.qindaqt.QQMpv.desktop;
+video/x-msvideo=org.qindaqt.QQMpv.desktop;
+audio/mpeg=org.qindaqt.QQMpv.desktop;
+audio/flac=org.qindaqt.QQMpv.desktop;
+audio/ogg=org.qindaqt.QQMpv.desktop;

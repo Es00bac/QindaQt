@@ -8,6 +8,7 @@
 
 using QindaQt::ApplicationCatalog::DirectoryScan;
 using QindaQt::ApplicationCatalog::ScannedApplication;
+using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationCategory;
 using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationPreferences;
 using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationsSettingsModel;
 using QindaQt::Apps::SettingsDefaultApps::DefaultApplicationsStore;
@@ -20,7 +21,8 @@ public:
   bool loadFails = false;
   bool saveFails = false;
   int saveCalls = 0;
-  DefaultApplicationPreferences lastSaved;
+  DefaultApplicationCategory lastCategory{};
+  QString lastDesktopId;
 
   bool load(DefaultApplicationPreferences *out, QString *error) override {
     if (loadFails) {
@@ -30,14 +32,16 @@ public:
     *out = preferences;
     return true;
   }
-  bool save(const DefaultApplicationPreferences &value, QString *error) override {
+  bool saveCategory(DefaultApplicationCategory category, const QString &desktopId,
+                    QString *error) override {
     ++saveCalls;
-    lastSaved = value;
+    lastCategory = category;
+    lastDesktopId = desktopId;
     if (saveFails) {
       if (error) *error = QStringLiteral("stub-save-failed");
       return false;
     }
-    preferences = value;
+    preferences.setCategory(category, desktopId);
     return true;
   }
 };
@@ -45,7 +49,7 @@ public:
 DirectoryScan makeScan() {
   DirectoryScan scan;
   ScannedApplication browser;
-  browser.entry.id = QStringLiteral("browser.desktop");
+  browser.entry.id = QStringLiteral("browser");
   browser.entry.name = QStringLiteral("Test Browser");
   browser.documentText = QStringLiteral("[Desktop Entry]\nMimeType=text/html;\n");
   scan.applications = {browser};
@@ -62,6 +66,8 @@ private Q_SLOTS:
   void setDefaultApplicationPersistsAndUpdatesRows();
   void setDefaultApplicationOnUnknownCategoryFailsWithoutSaving();
   void loadFailureIsReportedAndRetryClearsIt();
+  void pdfChoiceDoesNotRewriteStaleImagePreference();
+  void failedSaveKeepsConfirmedSelection();
 };
 
 void DefaultApplicationsSettingsModelTest::rowsReflectStoredPreferencesAndCandidates() {
@@ -92,8 +98,8 @@ void DefaultApplicationsSettingsModelTest::
   QVERIFY(model.setDefaultApplication(QStringLiteral("browser"),
                                       QStringLiteral("browser.desktop")));
   QCOMPARE(store->saveCalls, 1);
-  QCOMPARE(store->lastSaved.browser, QStringLiteral("browser.desktop"));
-  QVERIFY(store->lastSaved.fileManager.isEmpty());
+  QCOMPARE(store->lastCategory, DefaultApplicationCategory::Browser);
+  QCOMPARE(store->lastDesktopId, QStringLiteral("browser.desktop"));
   QCOMPARE(changedSpy.size(), 1);
 
   const QVariantList rows = model.rows();
@@ -126,6 +132,39 @@ void DefaultApplicationsSettingsModelTest::
   QVERIFY(model.retry());
   QVERIFY(!model.loadFailed());
   QVERIFY(model.errorText().isEmpty());
+}
+
+void DefaultApplicationsSettingsModelTest::pdfChoiceDoesNotRewriteStaleImagePreference() {
+  auto storeOwned = std::make_unique<StubStore>();
+  StubStore *store = storeOwned.get();
+  store->preferences.imageViewer = QStringLiteral("first-image.desktop");
+  DefaultApplicationsSettingsModel model(std::move(storeOwned), makeScan());
+  // Another preferences tool edits images after Settings has loaded.
+  store->preferences.imageViewer = QStringLiteral("new-image.desktop");
+  QVERIFY(model.setDefaultApplication(QStringLiteral("pdf-viewer"),
+                                     QStringLiteral("pdf.desktop")));
+  QCOMPARE(store->lastCategory, DefaultApplicationCategory::PdfViewer);
+  QCOMPARE(store->preferences.pdfViewer, QStringLiteral("pdf.desktop"));
+  QCOMPARE(store->preferences.imageViewer, QStringLiteral("new-image.desktop"));
+  const auto rows = model.rows();
+  QCOMPARE(rows.size(), 8);
+  for (const auto &row : rows) {
+    if (row.toMap().value(QStringLiteral("id")) == QStringLiteral("image-viewer"))
+      QCOMPARE(row.toMap().value(QStringLiteral("currentId")).toString(),
+               QStringLiteral("new-image.desktop"));
+  }
+}
+
+void DefaultApplicationsSettingsModelTest::failedSaveKeepsConfirmedSelection() {
+  auto storeOwned = std::make_unique<StubStore>();
+  StubStore *store = storeOwned.get();
+  store->preferences.browser = QStringLiteral("browser.desktop");
+  store->saveFails = true;
+  DefaultApplicationsSettingsModel model(std::move(storeOwned), makeScan());
+  QVERIFY(!model.setDefaultApplication(QStringLiteral("browser"), {}));
+  QCOMPARE(model.rows().first().toMap().value(QStringLiteral("currentId")).toString(),
+           QStringLiteral("browser.desktop"));
+  QCOMPARE(model.errorText(), QStringLiteral("stub-save-failed"));
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsSettingsModelTest)

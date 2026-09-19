@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <qindaqt/application_catalog/application_directory_scan.h>
+
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
@@ -19,6 +21,7 @@ enum class DefaultApplicationCategory {
   FileManager,
   TextEditor,
   ImageViewer,
+  PdfViewer,
   VideoPlayer,
   MusicPlayer,
 };
@@ -29,11 +32,12 @@ inline constexpr std::array kDefaultApplicationCategories{
     DefaultApplicationCategory::FileManager,
     DefaultApplicationCategory::TextEditor,
     DefaultApplicationCategory::ImageViewer,
+    DefaultApplicationCategory::PdfViewer,
     DefaultApplicationCategory::VideoPlayer,
     DefaultApplicationCategory::MusicPlayer,
 };
 
-// The exact mimetype set xdg-mime/xdg-settings associate with each category.
+// The MIME type sets managed by this Settings route.
 // AGENT-CONTRACT: this is the complete, closed write set for its category;
 // growing it needs a docs update, since every listed mimetype is written
 // together on one choice (matching xdg-settings' own default-web-browser,
@@ -55,6 +59,7 @@ struct DefaultApplicationPreferences final {
   QString fileManager;
   QString textEditor;
   QString imageViewer;
+  QString pdfViewer;
   QString videoPlayer;
   QString musicPlayer;
 
@@ -62,31 +67,49 @@ struct DefaultApplicationPreferences final {
   void setCategory(DefaultApplicationCategory category, const QString &desktopId);
 };
 
-// Local-file boundary for the freedesktop "Default Applications" mechanism
-// (the same [Default Applications] group of mimeapps.list that xdg-mime and
-// xdg-settings themselves read and write; verified against real xdg-mime
-// query default / xdg-settings get output on qinda-top). Implementations
-// preserve every unrelated group and key, including [Added Associations]
-// and every mimetype this route does not manage.
+// Build the freedesktop lookup order from caller-owned roots (home first),
+// then each system root. Desktop names are the XDG_CURRENT_DESKTOP components.
+// No environment lookup or filesystem access occurs in this helper.
+[[nodiscard]] QStringList defaultApplicationsLookupPaths(
+    const QStringList &configRoots, const QStringList &dataRoots,
+    const QStringList &desktopNames);
+
+// Synchronous, caller-thread local-file boundary. load returns effective
+// installed defaults; saveCategory writes only the user's chosen category.
+// An empty desktop ID removes that category's override, exposing inherited
+// defaults. Errors are returned without publishing a successful model change.
 class DefaultApplicationsStore {
 public:
   virtual ~DefaultApplicationsStore() = default;
   [[nodiscard]] virtual bool load(DefaultApplicationPreferences *preferences,
                                   QString *error) = 0;
-  [[nodiscard]] virtual bool save(const DefaultApplicationPreferences &preferences,
-                                  QString *error) = 0;
+  [[nodiscard]] virtual bool saveCategory(DefaultApplicationCategory category,
+                                         const QString &desktopId,
+                                         QString *error) = 0;
 };
 
 class MimeAppsDefaultApplicationsStore final : public DefaultApplicationsStore {
 public:
-  explicit MimeAppsDefaultApplicationsStore(QString filePath);
+  // Owns its copied inputs. lookupPaths are in highest-first XDG order;
+  // applications is the composition root's already-completed public scan,
+  // using IncludeNoDisplay because MIME handlers need not appear in menus.
+  // userDesktopPaths names only higher-priority user files in lookupPaths:
+  // an existing category override there is edited instead of being masked.
+  MimeAppsDefaultApplicationsStore(
+      QString filePath, QStringList lookupPaths,
+      QindaQt::ApplicationCatalog::DirectoryScan applications,
+      QStringList userDesktopPaths = {});
   [[nodiscard]] bool load(DefaultApplicationPreferences *preferences,
                           QString *error) override;
-  [[nodiscard]] bool save(const DefaultApplicationPreferences &preferences,
-                          QString *error) override;
+  [[nodiscard]] bool saveCategory(DefaultApplicationCategory category,
+                                  const QString &desktopId,
+                                  QString *error) override;
 
 private:
   QString m_filePath;
+  QStringList m_lookupPaths;
+  QindaQt::ApplicationCatalog::DirectoryScan m_applications;
+  QStringList m_userDesktopPaths;
 };
 
 } // namespace QindaQt::Apps::SettingsDefaultApps

@@ -41,7 +41,7 @@ declared in `launcher_bounds.h` (QString document code units, field lengths,
 keyword, and action counts). Violations produce typed errors — never
 exceptions, partial entries, or unbounded growth.
 
-`ApplicationCatalog::build` is a total function over source documents:
+`ApplicationCatalog::build(documents)` is a total function over source documents:
 
 | Input | Result |
 | --- | --- |
@@ -50,6 +50,18 @@ exceptions, partial entries, or unbounded growth.
 | Parse failure | `InvalidDocument` diagnostic |
 | Repeated source id | `DuplicateEntryId` diagnostic; first document claims the id even when hidden or invalid |
 | Entry or source ceiling | `EntryLimitReached`/`SourceLimitReached` diagnostic; build stops |
+
+The original parser `hidden` value remains the aggregate menu-visibility flag;
+its appended `deleted` value records only `Hidden=true`. An explicit
+`ApplicationCatalog::build(documents, ApplicationVisibility::IncludeNoDisplay)`
+overload lets MIME consumers retain valid `NoDisplay=true` handlers. Deletion,
+validation, limits, and first-document identity masking apply in both modes.
+The launcher continues to call the original menu-only overload. The shared
+apps-side `scanApplicationDirectories` has the corresponding opt-in overload;
+[Default Applications Settings](../apps/default-applications.md) uses it, while
+existing menu and Applications-browser consumers keep their original behavior.
+Original function signatures remain available; static-library consumers must
+rebuild after public value-layout changes.
 
 Entries are ordered case-insensitively by display name, then id. The order is
 stable for identical input. Diagnostics are bounded; overflow sets a

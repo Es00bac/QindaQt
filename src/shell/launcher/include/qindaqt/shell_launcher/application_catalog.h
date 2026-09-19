@@ -10,7 +10,12 @@
 
 namespace QindaQt::ShellLauncher {
 
-// An immutable, deterministically ordered set of validated visible entries
+enum class ApplicationVisibility {
+  MenuEntries,
+  IncludeNoDisplay,
+};
+
+// An immutable, deterministically ordered set of validated entries
 // plus bounded diagnostics. Build is a total function of its input documents:
 // hostile input degrades the result instead of failing the call.
 class ApplicationCatalog {
@@ -21,6 +26,13 @@ public:
   // NoDisplay/Hidden are normal producer hints, while parse failures,
   // duplicates, and bound hits are real degradation signals.
   static ApplicationCatalog build(const QVector<SourceDocument> &documents);
+
+  // Opt-in MIME-handler discovery includes NoDisplay=true while preserving
+  // Hidden=true deletion, validation, limits, and first-document precedence.
+  // The original overload and menu behavior remain source/link compatible;
+  // static-library consumers rebuild when public value types grow.
+  static ApplicationCatalog build(const QVector<SourceDocument> &documents,
+                                  ApplicationVisibility visibility);
 
   // Case-insensitive display-name order, then case-insensitive id, then
   // exact id; consumers may rely on this order being stable for identical

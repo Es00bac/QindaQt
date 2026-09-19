@@ -51,6 +51,9 @@ struct ParsedDesktopEntry {
   // presentation matches it to name windows whose id differs from the
   // desktop-entry id; it never authorizes or launches anything.
   QString startupWmClass;
+  // Exact Hidden=true deletion marker, distinct from aggregate menu hiding.
+  // MIME consumers may include NoDisplay entries but must exclude deleted ones.
+  bool deleted = false;
 
   friend bool operator==(const ParsedDesktopEntry &,
                          const ParsedDesktopEntry &) = default;

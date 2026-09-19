@@ -38,6 +38,12 @@ void ApplicationCatalog::addDiagnostic(const CatalogDiagnostic &diagnostic)
 ApplicationCatalog ApplicationCatalog::build(
     const QVector<SourceDocument> &documents)
 {
+  return build(documents, ApplicationVisibility::MenuEntries);
+}
+
+ApplicationCatalog ApplicationCatalog::build(
+    const QVector<SourceDocument> &documents, ApplicationVisibility visibility)
+{
   ApplicationCatalog catalog;
   catalog.m_entries.reserve(
       std::min(documents.size(), qsizetype(Bounds::maxVisibleEntries)));
@@ -84,8 +90,10 @@ ApplicationCatalog ApplicationCatalog::build(
           { DiagnosticKind::InvalidDocument, document.sourceId, parsed.error.message });
       continue;
     }
-    if (parsed.entry->hidden) {
-      // Normal producer hint, not degradation: keep the catalog quiet.
+    if (parsed.entry->deleted
+        || (parsed.entry->hidden && visibility != ApplicationVisibility::IncludeNoDisplay)) {
+      // AGENT-GUARD: NoDisplay may be a valid MIME handler; Hidden always
+      // deletes this identity, including when a lower root has a live copy.
       continue;
     }
 

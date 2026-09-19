@@ -78,3 +78,11 @@ install(
     DESTINATION "${KDE_INSTALL_DATADIR}/kwin/tabbox/qindaqt"
     COMPONENT QindaQt
 )
+
+# XDG_CURRENT_DESKTOP=QindaQt selects this distribution-level fallback. User
+# and administrator MIME choices keep their standard higher precedence.
+install(
+    FILES "${PROJECT_SOURCE_DIR}/data/session/qindaqt-mimeapps.list"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+    COMPONENT QindaQt
+)

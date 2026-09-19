@@ -50,7 +50,9 @@ QVector<CandidateApplication> candidateApplicationsForCategory(
     }
     if (!matches) continue;
     candidates.append(CandidateApplication{
-        .id = scanned.entry.id,
+        // AGENT-CONTRACT: ApplicationCatalog ids omit the .desktop suffix;
+        // freedesktop mimeapps.list values and this route's choice IDs keep it.
+        .id = scanned.entry.id + QStringLiteral(".desktop"),
         .name = scanned.entry.name,
         .iconName = scanned.entry.iconName,
     });
