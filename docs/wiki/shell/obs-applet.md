@@ -3,8 +3,11 @@
 ## 2026-09-19 source diagnosis
 
 Inspection of base `01e919f6` found three remaining control defects. This
-record precedes the corrections; compilation and runtime checks are deferred
-until the coordinated desktop code is ready.
+diagnosis was recorded before the corrections. The coordinated production
+build subsequently succeeded, and the existing OBS client, transport, applet
+presentation and applet controller tests passed. Live wrong-password,
+paused/reconnecting output and long-popup behavior still require the final
+session observation; the existing rows do not cover every corrected path.
 
 - `QtObsTransport` forwards the socket's close text but discards its numeric
   close code; `ObsClient::handleDisconnected` then ignores that text. The

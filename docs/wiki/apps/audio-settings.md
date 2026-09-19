@@ -16,8 +16,12 @@ so failed console changes, including an overlapping request answered Busy,
 are silently dropped. The correction must retain the console cards, coalesce
 the fader's latest gesture while a request is in flight, resume authoritative
 position binding, and track console completions through the existing feedback
-path. This diagnosis was recorded before edits; no compilation or runtime
-check has been run for the candidate.
+path. This diagnosis was recorded before edits. The coordinated production
+build and existing `qindaqt.settings-audio-model` and
+`qindaqt.settings-audio-page` rows subsequently passed. A held console fader
+through live authoritative snapshots and refused console-operation feedback
+remain focused session checks; those behaviors are not fully covered by the
+existing rows.
 
 The candidate applies that correction to both console card Repeaters and
 tracks all console operations, including racks, pins, presets, recording and
