@@ -16,7 +16,12 @@ ToolButton {
     flat: true
     display: AbstractButton.IconOnly
     contentItem: Image {
+        // The palette color rides in the URL so a live theme switch
+        // re-resolves the request and the glyph picks up the new foreground;
+        // the provider only accepts the opaque #rrggbb form (palette colors
+        // are opaque) and otherwise falls back to the app palette itself.
         source: "image://theme-icons/" + control.iconName + "-symbolic"
+                + "?color=" + encodeURIComponent(control.palette.buttonText.toString())
         sourceSize: Qt.size(20, 20)
         opacity: control.enabled ? 1.0 : 0.45
         Accessible.ignored: true
