@@ -80,48 +80,12 @@ Tk.Box {
             }
         }
 
-        Tk.Flex {
+        ProcessActions {
             width: parent.width
             visible: details.valid
-            gap: Tk.Theme.space.sm
-            align: Tk.Flex.Center
-
-            Tk.Button {
-                text: qsTr("Terminate")
-                small: true
-                iconName: "circle-x"
-                tooltip: qsTr("Ask the process to exit (SIGTERM)")
-                onClicked: details.actionRequested("terminate", 0)
-            }
-            Tk.Button {
-                text: qsTr("Kill")
-                small: true
-                variant: "danger"
-                iconName: "skull"
-                tooltip: qsTr("Stop the process immediately (SIGKILL). Unsaved work is lost.")
-                onClicked: details.actionRequested("kill", 0)
-            }
-            Tk.Button {
-                text: details.record.state === "T" ? qsTr("Continue") : qsTr("Pause")
-                small: true
-                iconName: details.record.state === "T" ? "play" : "pause"
-                tooltip: qsTr("Suspend or resume the process")
-                onClicked: details.actionRequested(
-                               details.record.state === "T" ? "continue" : "stop", 0)
-            }
-            Tk.Spacer {}
-            Tk.Caption { text: qsTr("Nice") }
-            Tk.NumberField {
-                objectName: "niceField"
-                small: true
-                implicitWidth: 64
-                from: -20
-                to: 19
-                stepSize: 1
-                value: details.valid ? details.record.nice : 0
-                tooltip: qsTr("Scheduling priority: lower runs sooner. Below zero needs privileges.")
-                onValueModified: details.actionRequested("nice", value)
-            }
+            nice: details.valid ? details.record.nice : 0
+            state: details.record.state !== undefined ? details.record.state : ""
+            onRequested: function(action, value) { details.actionRequested(action, value) }
         }
     }
 }
