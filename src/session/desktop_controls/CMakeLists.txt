@@ -77,8 +77,9 @@ install(
 # the session-owned PowerDevil idle preference adapter. Missing frameworks
 # degrade to no resident process while the library and focused tests build.
 find_package(KF6GlobalAccel 6.0 CONFIG)
+find_package(KF6IdleTime 6.0 CONFIG)
 
-if(TARGET KF6::GlobalAccel AND TARGET QindaQt::PowerDevilIdle)
+if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET QindaQt::PowerDevilIdle)
     qt_add_library(qindaqt_desktop_controls_production STATIC)
     add_library(QindaQt::DesktopControlsProduction ALIAS
         qindaqt_desktop_controls_production)
@@ -88,6 +89,8 @@ if(TARGET KF6::GlobalAccel AND TARGET QindaQt::PowerDevilIdle)
         PRIVATE
             production/kglobal_accel_registrar.cpp
             production/kglobal_accel_registrar.h
+            production/screensaver_launcher.cpp
+            production/screensaver_launcher.h
     )
     target_include_directories(
         qindaqt_desktop_controls_production PUBLIC production)
@@ -96,9 +99,11 @@ if(TARGET KF6::GlobalAccel AND TARGET QindaQt::PowerDevilIdle)
         PUBLIC
             QindaQt::DesktopControls
             KF6::GlobalAccel
+            KF6::IdleTime
             QindaQt::PowerDevilIdle
             Qt6::Core
             Qt6::Gui
+            Qt6::DBus
     )
     set_target_properties(qindaqt_desktop_controls_production
         PROPERTIES CXX_EXTENSIONS OFF)
