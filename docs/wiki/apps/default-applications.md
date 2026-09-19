@@ -1,107 +1,115 @@
 # QindaQt Settings — Default applications route
 
-`qindaqt-settings --page default-apps` lets the user choose the application
-that opens for the web, mail, files, plain text, and image/video/music media,
-per the freedesktop "Default Applications" mechanism. It composes only the
-public installed-application catalog scanner and a direct local-file store;
-it has no daemon, D-Bus authority, or subprocess.
+`qindaqt-settings --page default-apps` chooses the applications that open web
+links, mail, folders, text, images, PDFs, videos, and music. It uses the public
+installed-application catalog and local KConfig files. The route has no daemon,
+D-Bus authority, or subprocess.
 
-## Mechanism: the same file xdg-mime and xdg-settings themselves use
+## Packaged desktop defaults
 
-`xdg-mime` and `xdg-settings` read and write exactly the `[Default
-Applications]` group of the user's `$XDG_CONFIG_HOME/mimeapps.list`
-(verified against real output on `qinda-top`: `xdg-mime query default
-text/html` and `xdg-settings get default-web-browser` both echo that group's
-entries exactly). This route reads and writes that same group directly
-through KConfig — reparsed before every write, unrelated keys and groups
-(including `[Added Associations]` and any mimetype this route does not
-manage) left untouched — rather than shelling out to either tool. This
-matches every other local-preference adapter in the codebase (PowerDevil
-idle/lid, screen lock, autostart), which write their target file directly
-for the same testability reason, and produces byte-identical externally
-observable behavior to what the two tools would write.
+The session package installs `share/applications/qindaqt-mimeapps.list`.
+`XDG_CURRENT_DESKTOP=QindaQt` selects these distribution-level fallbacks through
+the [freedesktop MIME Applications lookup order](https://specifications.freedesktop.org/mime-apps/latest/file.html).
+User and administrator choices keep their higher precedence. Session startup
+never creates or edits a user `mimeapps.list`; older user choices, including a
+previously seeded file-manager preference, remain user policy.
 
-An allow-list include scan rejects `QProcess` and any D-Bus include in this
-route's files, enforcing that boundary structurally, not just by convention.
+| Category | Packaged default | MIME types written on an explicit choice |
+| --- | --- | --- |
+| Web browser | Firefox, when installed | `text/html`, `x-scheme-handler/http`, `x-scheme-handler/https` |
+| Mail client | Thunderbird, when installed | `x-scheme-handler/mailto` |
+| File manager | QindaQt File Manager | `inode/directory` |
+| Text editor | QindaQt Text Editor | `text/plain` |
+| Image viewer | QindaQt Viewer | `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `image/bmp`, `image/tiff`, `image/svg+xml` |
+| PDF viewer | QindaQt Viewer | `application/pdf` |
+| Video player | QindaMPV | `video/mp4`, `video/x-matroska`, `video/webm`, `video/mpeg`, `video/x-msvideo` |
+| Music player | QindaMPV | `audio/mpeg`, `audio/flac`, `audio/ogg` |
 
-## Categories
+The viewer desktop ID is `org.qindaqt.Viewer.desktop`; QindaMPV's existing
+package uses `org.qindaqt.QQMpv.desktop` and executable `qqmpv`. Its associations
+cover the eight MIME types currently advertised by that package. Broader media
+associations require corresponding QindaMPV desktop metadata support.
 
-Seven categories, each a fixed, documented mimetype set written together as
-one unit (matching how `xdg-settings set default-web-browser` itself writes
-`text/html` plus both HTTP(S) scheme handlers together):
+Firefox candidates are `firefox.desktop`, `org.mozilla.firefox.desktop`, and
+`firefox-esr.desktop`, in that order. Thunderbird candidates are
+`thunderbird.desktop` and `org.mozilla.Thunderbird.desktop`. These are optional
+installed-handler fallbacks, not package installations or user overrides.
+Unavailable desktop entries are skipped before trying the next candidate or
+lower-priority preference file.
 
-| Category | Mimetypes written |
-| --- | --- |
-| Web browser | `text/html`, `x-scheme-handler/http`, `x-scheme-handler/https` |
-| Mail client | `x-scheme-handler/mailto` |
-| File manager | `inode/directory` |
-| Text editor | `text/plain` |
-| Image viewer | `image/jpeg`, `image/png`, `image/gif`, `image/webp` |
-| Video player | `video/mp4`, `video/x-matroska`, `video/webm` |
-| Music player | `audio/mpeg`, `audio/flac`, `audio/ogg` |
+There is no standard freedesktop default-terminal association; Terminal remains
+outside this list. A separate PDF category lets the user keep a different PDF
+reader without changing their image viewer.
 
-**Terminal is not listed.** Neither `xdg-mime` nor `xdg-settings` defines a
-default-terminal association; there is no freedesktop-standard mimetype or
-`xdg-settings` property for it. The page says so explicitly rather than
-inventing a QindaQt-only mechanism for one category while every other
-category follows the real standard. A QindaQt-specific terminal preference,
-if wanted, is a separate follow-up with its own design, not a silent
-addition here.
+## Effective defaults and writes
 
-A category's displayed current default is read from its first
-(representative) mimetype only, not merged across the set — a group another
-tool has only partially written (one mimetype pointed at a different app
-than the rest) is shown by that representative value alone rather than
-averaged or guessed at.
+The composition root resolves XDG config/data roots and current-desktop names.
+The store receives those explicit ordered paths and one completed public
+application scan. It reads desktop-specific then generic files at each level:
+user config, administrator config, user data applications, and system data
+applications. Each category displays its first representative MIME type; a
+partially customized image category is not flattened merely by opening Settings.
 
-## Candidate applications
+Default values are [semicolon-separated desktop ID lists](https://specifications.freedesktop.org/mime-apps/latest/default.html).
+The first installed, associated handler wins. Hidden or malformed entries absent
+from the public catalog cannot become displayed defaults. Generic-file Added
+and Removed Associations are respected at their applicable precedence; a lower
+system association cannot remove a higher-priority user desktop entry. The
+page reports configured defaults; it does not invent an application ranking
+when every preference file lacks a usable default.
 
-Candidates come from `QindaQt::ApplicationCatalog::scanApplicationDirectories()`
-(the same installed-`.desktop`-file scanner the file manager's "Open with"
-picker uses, ADR-0164), resolved from `QStandardPaths::GenericDataLocation`
-exactly as the file manager's `ApplicationsController` composition root
-does. A desktop entry is offered for a category when its retained raw
-`MimeType=` line (parsed from the `[Desktop Entry]` group only, matching the
-Desktop Entry Specification's one-key-per-group rule) lists any one of that
-category's mimetypes. The scan runs once at composition-root construction;
-the route does not re-scan the filesystem on every page open.
+A selection normally writes only that category's MIME keys under `[Default
+Applications]` in `$XDG_CONFIG_HOME/mimeapps.list`. If a higher-priority
+user desktop-specific file already defines any key for that category, the
+selection updates that category there so it takes effect. It never modifies
+administrator or distribution files. The target is reparsed before writing;
+other categories, partially split MIME choices, unmanaged keys, and Added/Removed
+Associations are preserved. An installed application whose representative MIME
+association has been removed is rejected without modifying those associations.
 
-## Composition and accessibility
+“Use inherited default” removes the selected category's override in its owning
+user file. The store reloads effective preferences after every successful write,
+so a revealed lower-priority default is displayed immediately. Inherited values
+are never copied into user policy as a side effect of choosing another category.
+Errors leave the last confirmed projection available and are exposed to the page.
 
-The QML module owns a route-local `QML_SINGLETON` composition root
-(`DefaultApplicationsRouteComposition`) owning one store and one already-
-completed scan, mirroring `ClipboardRouteComposition`. Only the model QObject
-is exposed to the page. Each category renders as one labeled `ComboBox` row
-with a "None" option for an unset default; selecting an option writes
-immediately (no separate apply step, since there is no daemon round-trip to
-wait on). The `SettingsAppearanceRuntime` install component carries this
-route's QML module alongside every other route's.
+## Candidate applications and presentation
 
-`Main.qml`'s per-route page `Component` definitions (this one included) live
-in `SettingsRouteComponents.qml` rather than inline in `Main.qml`, which was
-already at its file-lines review threshold before this route was added;
-extracting them keeps `Main.qml` well under both the review threshold and
-the hard file-lines ceiling instead of adding to a growing violation.
+Candidates come from
+`QindaQt::ApplicationCatalog::scanApplicationDirectories()`, the same public
+installed-desktop-entry scanner used by File Manager's Open With picker
+([ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
+The composition root scans once. The catalog’s suffix-free launcher IDs are
+converted to `.desktop` MIME IDs at this route boundary. A candidate declares at least one MIME type
+in the category in its retained `[Desktop Entry]` `MimeType=` field. The store
+checks that the representative MIME association is effective before persisting
+an explicit selection.
 
-## Verification and stopping point
+The QML module owns a route-local `QML_SINGLETON` composition root. QML receives
+only the model's copied rows, with one labeled ComboBox per category, keyboard
+selection, and accessible current-choice descriptions. Choices save immediately;
+there is no daemon transaction or separate Apply step. The
+`SettingsAppearanceRuntime` install component carries this route's QML module.
+The boundary scan rejects process and D-Bus imports.
+
+## Verification
 
 ```sh
-ctest --test-dir <build> -R '^qindaqt\.settings-default-apps-' --output-on-failure
+ctest --test-dir <build> -R '^(qindaqt\.settings-default-apps-|session\.sessiondefaults)' --output-on-failure
 ```
 
-Store round-trip (missing-file-is-empty, every category mimetype written
-together, empty-id deletes rather than writes an empty value, unrelated
-groups/keys preserved, representative-mimetype-only read), catalog parsing
-(`[Desktop Entry]`-scoped `MimeType=` extraction, category filtering),
-model (rows projection, persisted writes, unknown-category rejection, load-
-failure/retry), an offscreen accessible page test (rendered rows, keyboard
-selection dispatch), and the standard positive/hostile boundary scan. The
-installed-route relocation row exists in the test matrix but was not run in
-this candidate — it needs every other route's QML plugin built, which is the
-integration gate's full-tree build, not a focused lane's.
+Focused C++ coverage includes category-only writes and round trips, concurrent
+external changes to other categories, independent PDF/image choices,
+semicolon-list fallback, user/admin/package lookup order, removed and added
+associations, higher-priority desktop entries, hidden-handler fallback, and
+restoring inherited defaults. The offscreen page gate verifies eight categories,
+current selections, and keyboard choice dispatch. Session tests prove login
+preserves existing user MIME files and creates no new user MIME policy.
 
-Product and test runs never touch a host D-Bus session or system bus. This
-slice does not claim a terminal default, a "browser also handles FTP/gemini"
-scheme-handler sweep beyond the listed set, or live verification that a
-real desktop launches the chosen application when a file is opened — that
-end-to-end proof needs the built package deployed to a real session.
+The packaged-defaults test stages the actual session install component, then
+queries every supported core MIME type with `xdg-mime` inside temporary XDG
+roots. It also covers optional browser/mail candidates, missing handlers,
+user/admin overrides, desktop-specific precedence, and QindaQt-only scoping.
+Its controlled desktop-entry fixtures are never launched. These gates do not
+claim a live file-open launch through a deployed desktop session. The separate
+installed-route test requires a complete Settings build with every route plugin.

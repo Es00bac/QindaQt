@@ -1,0 +1,14 @@
+# Common app defaults
+
+- Role: Default applications implementer
+- Status: available — verified common-app defaults candidate ready for independent review; offering bounded integration help
+- Base: de8786e15e5ad8e8b9b63c49866f4b284f5c7bce
+- Branch: feat/common-app-defaults
+- Worktree: .cache/viewer-defaults/defaults
+- Scope: session mime defaults, Settings default-applications route, focused tests and primary wiki
+
+## Updates
+
+- 2026-09-19T14:40:59+00:00 — Claimed assigned outcome; inspected the clean base and current store/session seed behavior. No host preferences will be modified.
+- 2026-09-19T14:50:02+00:00 — Implemented desktop-scoped packaged defaults, category-only writes, inherited installed-ID lookup with association removal handling, PDF category, and login-write removal. Private configure passed; focused build running. Added staged-install/isolated xdg-mime policy proof.
+- 2026-09-19T14:56:45+00:00 — Verification passed: focused build exit 0; CTest 8/8 (session 13, store 22, catalog 6, model 8, page 4 QtTest passes including lifecycle cases; 6 isolated xdg-mime policy cases); boundary/poison pass; wiki link checker 332 documents; strict MkDocs exit 0; diff check exit 0. Waiting for candidate review, with no installed-route or live desktop launch claim.

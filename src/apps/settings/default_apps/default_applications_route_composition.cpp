@@ -22,19 +22,35 @@ QStringList resolveApplicationDataRoots() {
 }
 
 QString resolveMimeAppsListPath() {
-  return QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
+  return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
       .filePath(QStringLiteral("mimeapps.list"));
 }
 } // namespace
 
 class DefaultApplicationsRouteComposition::Private final {
 public:
-  Private()
-      : model(std::make_unique<MimeAppsDefaultApplicationsStore>(
-                  resolveMimeAppsListPath()),
-              QindaQt::ApplicationCatalog::scanApplicationDirectories(
-                  resolveApplicationDataRoots())) {}
+  Private() : Private(resolveApplicationDataRoots()) {}
 
+  explicit Private(const QStringList &dataRoots)
+      : scan(QindaQt::ApplicationCatalog::scanApplicationDirectories(dataRoots)),
+        model(makeStore(dataRoots), scan) {}
+
+  std::unique_ptr<DefaultApplicationsStore> makeStore(const QStringList &dataRoots) {
+    const QStringList configRoots =
+        QStandardPaths::standardLocations(QStandardPaths::GenericConfigLocation);
+    const QStringList desktops = qEnvironmentVariable("XDG_CURRENT_DESKTOP")
+                                     .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+    QStringList userDesktopPaths = defaultApplicationsLookupPaths(
+        {QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)},
+        {}, desktops);
+    userDesktopPaths.removeLast(); // The generic user file is the normal write target.
+    return std::make_unique<MimeAppsDefaultApplicationsStore>(
+        resolveMimeAppsListPath(),
+        defaultApplicationsLookupPaths(configRoots, dataRoots, desktops),
+        scan, userDesktopPaths);
+  }
+
+  QindaQt::ApplicationCatalog::DirectoryScan scan;
   DefaultApplicationsSettingsModel model;
 };
 
