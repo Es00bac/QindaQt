@@ -16,6 +16,7 @@
 #include "kglobalaccelshortcutregistrar.h"
 #include "launcherappletcomposition.h"
 #include "launchershortcut.h"
+#include "panelkeyboardfocus.h"
 #include "launcher_persistence.h"
 #include "edgegesturesubscriber.h"
 #include "notificationcenterappletaccess.h"
@@ -686,6 +687,8 @@ void ShellRuntimeApplication::resetRuntime()
     }
     m_windowActionsClient.reset();
     m_windowActionsTransport.reset();
+    m_launcherFocusRelay.reset();
+    m_launcherFocusTarget.reset();
     m_launcherShortcut.reset();
     m_launcherShortcutRegistrar.reset();
     m_launcherApplet.reset();

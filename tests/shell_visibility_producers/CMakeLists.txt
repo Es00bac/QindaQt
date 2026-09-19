@@ -88,3 +88,20 @@ set_tests_properties(
     qindaqt.shell-visibility-settings-private-bus
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+qt_add_executable(
+    qindaqt_launcher_keyboard_focus_tests
+    tst_launcherkeyboardfocus.cpp
+)
+target_link_libraries(
+    qindaqt_launcher_keyboard_focus_tests
+    PRIVATE
+        qindaqt_shell_panel_visibility_producers
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_launcher_keyboard_focus_tests)
+add_test(NAME qindaqt.shell-launcher-keyboard-focus
+    COMMAND qindaqt_launcher_keyboard_focus_tests)
+set_tests_properties(qindaqt.shell-launcher-keyboard-focus PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "shell;launcher;focus")

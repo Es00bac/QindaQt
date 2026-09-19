@@ -172,6 +172,20 @@ void RuntimePanelWindowFactory::adoptProfile(
     }
 }
 
+QQuickWindow *RuntimePanelWindowFactory::windowHostingApplet(
+    const QString &appletObjectName) const
+{
+    for (const QPointer<QQuickWindow> &window : m_liveWindows) {
+        if (window.isNull()) {
+            continue;
+        }
+        if (window->findChild<QObject *>(appletObjectName) != nullptr) {
+            return window.data();
+        }
+    }
+    return nullptr;
+}
+
 QJsonArray RuntimePanelWindowFactory::appletEvidence() const
 {
     QJsonArray evidence;
