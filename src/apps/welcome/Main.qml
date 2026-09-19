@@ -130,27 +130,35 @@ T.ApplicationWindow {
             border.width: 1
             border.color: Tokens.outline.divider
 
-            ColumnLayout {
+            T.ScrollView {
+                id: chapterScroller
+                objectName: "welcomeChapterScroller"
                 anchors.fill: parent
                 anchors.margins: Tokens.space["5"]
-                spacing: Tokens.space["3"]
-                Text { text: qsTr("QindaQt"); color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.headline; font.weight: Font.DemiBold }
-                Text { text: qsTr("Getting started"); color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.body }
-                Item { Layout.preferredHeight: Tokens.space["2"] }
-                Repeater {
-                    model: root.chapters
-                    QQ.Button {
-                        required property var modelData
-                        required property int index
-                        Layout.fillWidth: true
-                        text: qsTr("%1.  %2").arg(index + 1).arg(modelData.nav)
-                        emphasized: root.chapter === index
-                        accessibleDescription: qsTr("Chapter %1 of %2").arg(index + 1).arg(root.chapters.length)
-                        onClicked: root.chapter = index
+                contentWidth: availableWidth
+                clip: true
+                T.ScrollBar.horizontal.policy: T.ScrollBar.AlwaysOff
+
+                ColumnLayout {
+                    width: chapterScroller.availableWidth
+                    spacing: Tokens.space["3"]
+                    Text { text: qsTr("QindaQt"); color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.headline; font.weight: Font.DemiBold }
+                    Text { text: qsTr("Getting started"); color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.body }
+                    Item { Layout.preferredHeight: Tokens.space["2"] }
+                    Repeater {
+                        model: root.chapters
+                        QQ.Button {
+                            required property var modelData
+                            required property int index
+                            Layout.fillWidth: true
+                            text: qsTr("%1.  %2").arg(index + 1).arg(modelData.nav)
+                            emphasized: root.chapter === index
+                            accessibleDescription: qsTr("Chapter %1 of %2").arg(index + 1).arg(root.chapters.length)
+                            onClicked: root.chapter = index
+                        }
                     }
+                    Text { text: qsTr("%1 of %2").arg(root.chapter + 1).arg(root.chapters.length); color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.caption }
                 }
-                Item { Layout.fillHeight: true }
-                Text { text: qsTr("%1 of %2").arg(root.chapter + 1).arg(root.chapters.length); color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.caption }
             }
         }
 

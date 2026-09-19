@@ -3,6 +3,8 @@
 `qindaqt-welcome` is the responsive first-run guide and an ordinary launcher
 application. Its 900x640 initial window shrinks to 640x480: wide windows use a
 seven-chapter left rail and compact windows replace it with a chapter header.
+The chapter rail scrolls when its buttons and headings exceed the window's
+height, keeping every chapter reachable at the minimum window size.
 Each chapter combines short task cards, a small QML diagram, and relevant
 shortcut pills instead of presenting one long page of prose.
 

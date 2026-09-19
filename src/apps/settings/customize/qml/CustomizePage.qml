@@ -273,12 +273,10 @@ T.Page {
                     customizeSettings: root.customizeSettings
                 }
 
-                T.ScrollView {
-                    clip: true
-                    CustomizeProperties {
-                        width: parent.width
-                        customizeSettings: root.customizeSettings
-                    }
+                CustomizeProperties {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    customizeSettings: root.customizeSettings
                 }
 
             }

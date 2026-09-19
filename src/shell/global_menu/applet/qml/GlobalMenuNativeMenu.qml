@@ -25,7 +25,9 @@ Basic.Menu {
     readonly property var colors: theme.colors ?? ({})
     // AGENT-NOTE: Qt's Wayland positioner slides a popup but never resizes it,
     // so a menu with more entries than the output can show must cap its own
-    // height. Top and bottom panels reserve the bar's thickness because the
+    // implicit height. QQuickPopupWindow also sizes from implicitHeight when
+    // the list changes; capping only height is undone by that native resize.
+    // Top and bottom panels reserve the bar's thickness because the
     // popup opens flush against it. Submenus receive the parent menu's value in
     // populate(): their parent item sits in the parent popup window, not the
     // panel. The cap makes entryList interactive, which gives wheel scrolling;
@@ -50,7 +52,11 @@ Basic.Menu {
     focus: true
     padding: 4
     width: 240
-    height: verticalRoom > 0 ? Math.min(implicitHeight, verticalRoom) : implicitHeight
+    readonly property real naturalHeight: Math.max(
+        implicitBackgroundHeight + topInset + bottomInset,
+        implicitContentHeight + topPadding + bottomPadding)
+    implicitHeight: verticalRoom > 0 ? Math.min(naturalHeight, verticalRoom) : naturalHeight
+    height: implicitHeight
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
                  | Popup.CloseOnReleaseOutsideParent
 
@@ -222,9 +228,7 @@ Basic.Menu {
 
         implicitHeight: contentHeight
         model: menu.contentModel
-        interactive: Window.window
-            ? contentHeight + menu.topPadding + menu.bottomPadding > menu.height
-            : false
+        interactive: contentHeight > height
         clip: true
         currentIndex: menu.currentIndex
         boundsBehavior: Flickable.StopAtBounds

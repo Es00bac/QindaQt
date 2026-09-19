@@ -12,6 +12,8 @@ follows the active QindaQt theme. An icon-tile palette and a contextual
 inspector flank the monitor in wide layouts; where the Settings Center
 sidebar leaves a medium-width work area, Arrange, Outline, and Details tabs
 keep the preview visible instead of squeezing three columns together.
+The Details inspector owns a single scroll viewport in both layouts; the
+compact host gives it the available height directly.
 
 The route is a presentation and composition boundary. It depends only on the
 public `shell_customization_editor`, `shell_customization`, `profiles`, applet

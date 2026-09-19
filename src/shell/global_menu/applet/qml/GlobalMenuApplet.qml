@@ -187,6 +187,8 @@ Item {
     }
 
     function dismissMenus() {
+        if (overflowMenu)
+            overflowMenu.dismiss()
         for (let i = 0; i < nativeMenuBar.count; ++i) {
             const menu = nativeMenuBar.menuAt(i)
             if (menu !== null)
@@ -362,19 +364,59 @@ Item {
         }
     }
 
-    Text {
+    Basic.ToolButton {
         id: overflowIndicator
         objectName: "globalMenuOverflowIndicator"
+        // Expose the anchor's menu so the shared panel-edge placement applies.
+        readonly property alias menu: overflowMenu
         visible: root.hasContent && root.overflowCount > 0 && root.indicatorFits
+        enabled: root.available
         text: qsTr("+%1").arg(root.overflowCount)
-        textFormat: Text.PlainText
-        color: root.colors.textMuted ?? "#a9afa9"
         font: entryMetrics.font
-        Accessible.role: Accessible.StaticText
+        padding: 0
+        width: root.measuredIndicatorWidth()
+        height: root.vertical ? root.measuredIndicatorHeight() : root.horizontalEntryHeight()
+        focusPolicy: Qt.TabFocus
+        Accessible.role: Accessible.MenuItem
         Accessible.name: qsTr("%1 more menu entries").arg(root.overflowCount)
         x: root.vertical ? Math.round((root.width - width) / 2)
                          : root.entriesExtent + root.spacing
         y: root.vertical ? root.entriesExtent + 4
                          : Math.round((root.height - height) / 2)
+        onVisibleChanged: if (!visible && overflowMenu) overflowMenu.dismiss()
+        // Like the menu bar, open on press: a sibling popup can own release.
+        onPressed: {
+            const wasOpen = overflowMenu.visible
+            root.dismissMenus()
+            if (!wasOpen) {
+                overflowMenu.popup(overflowIndicator)
+                root.focusFirstMenuItem(overflowMenu)
+            }
+        }
+        contentItem: Text {
+            text: overflowIndicator.text
+            font: overflowIndicator.font
+            textFormat: Text.PlainText
+            color: root.colors.textMuted ?? "#a9afa9"
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: 4
+            color: overflowIndicator.hovered || overflowIndicator.activeFocus || overflowMenu.visible
+                ? (root.colors.surfaceRaised ?? "#2c312e") : "transparent"
+        }
+        GlobalMenuNativeMenu {
+            id: overflowMenu
+            menuData: ({text: qsTr("More menus"), enabled: true,
+                        children: root.topLevelItems.slice(root.visibleEntries.length)})
+            access: root.access
+            theme: root.theme
+            interactive: root.available
+            panelEdge: root.panelEdge
+            vertical: root.vertical
+            // The synthetic overflow level must not consume a provider level.
+            maximumDepth: 7
+        }
     }
 }

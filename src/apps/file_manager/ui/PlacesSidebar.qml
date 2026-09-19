@@ -37,164 +37,107 @@ Control {
         }
     }
 
-    contentItem: ColumnLayout {
-        spacing: 4
+    function revealFocusedItem(item) {
+        if (!item || sidebarScroll.height <= 0)
+            return
+        let ancestor = item
+        while (ancestor && ancestor !== sidebarColumn)
+            ancestor = ancestor.parent
+        if (!ancestor)
+            return
+        const top = item.mapToItem(sidebarColumn, 0, 0).y
+        const bottom = top + item.height
+        const maximumY = Math.max(0, sidebarScroll.contentHeight - sidebarScroll.height)
+        if (top < sidebarScroll.contentY)
+            sidebarScroll.contentY = Math.max(0, Math.min(top, maximumY))
+        else if (bottom > sidebarScroll.contentY + sidebarScroll.height)
+            sidebarScroll.contentY = Math.max(0, Math.min(bottom - sidebarScroll.height, maximumY))
+    }
 
-        Label {
-            text: qsTr("Places")
-            color: root.palette.placeholderText
-            Accessible.ignored: true
-        }
+    Connections {
+        target: root.Window.window
+        function onActiveFocusItemChanged() { root.revealFocusedItem(target.activeFocusItem) }
+    }
 
-        Repeater {
-            model: root.placesController.places
+    contentItem: Item {
+        id: sidebarViewport
 
-            PlaceButton {
-                required property var modelData
-                iconName: modelData.id === "home" ? "user-home"
-                    : modelData.id === "trash" ? "user-trash"
-                    : modelData.id === "applications" ? "folder-applications"
-                    : modelData.id === "network" ? "network-workgroup" : "drive-harddisk"
+        Flickable {
+            id: sidebarScroll
+            objectName: "placesSidebarScroller"
+            anchors.fill: parent
+            anchors.rightMargin: 16
+            contentWidth: width
+            contentHeight: sidebarColumn.implicitHeight
+            flickableDirection: Flickable.VerticalFlick
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
 
-                // Places with no navigable path behind them. Both open a route
-                // rather than a directory, so neither may be emphasized by
-                // path comparison, navigated to, or used as a drop target.
-                readonly property bool routePlace: modelData.id === "network"
-                    || modelData.id === "applications"
-
-                objectName: "placeButton_" + modelData.id
-                Layout.fillWidth: true
-                text: modelData.name
-                emphasized: !routePlace
-                    && root.navigationController.currentPath === modelData.path
-                // ADR-0194: the Network place opens the hub -- the saved
-                // locations and the way to add one -- rather than pretending a
-                // connection exists or dropping the user in the location bar.
-                // Applications opens the installed-application browser through
-                // the same action the Go menu uses, so there is one route.
-                Accessible.description: modelData.id === "network"
-                    ? qsTr("Show saved network locations")
-                    : modelData.id === "applications"
-                    ? qsTr("Browse installed applications")
-                    : qsTr("Open %1").arg(modelData.path)
-                onClicked: modelData.id === "network"
-                    ? root.appCoordinator.activateAction("go.network")
-                    : modelData.id === "applications"
-                    ? root.appCoordinator.activateAction("go.applications")
-                    : root.navigationController.navigateTo(modelData.path)
-
-                DropArea {
-                    anchors.fill: parent
-                    enabled: modelData.id !== "trash" && !routePlace
-                    onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
-                    onDropped: (drop) => {
-                        const action = EntryDrag.dispatch(
-                            drop, modelData.path,
-                            root.mutationController, root.clipboardController)
-                        if (action !== Qt.IgnoreAction)
-                            drop.accept(action)
-                        else
-                            drop.accepted = false
-                    }
-                }
+            ScrollBar.vertical: ViewportScrollBar {
+                objectName: "placesSidebarScrollBar"
+                parent: sidebarViewport
+                x: sidebarScroll.width + 4
+                height: sidebarScroll.height
+                Accessible.name: qsTr("Scroll places, network locations and bookmarks")
             }
-        }
 
-        // Saved network locations the user asked to see here (ADR-0194).
-        // Activation only routes the canonical address into navigateTo, so an
-        // unreachable server lands on the ordinary navigation state pane.
-        // They are not drop targets: the drop pipeline is the identity-checked
-        // local mutation one, which has no network authority.
-        Label {
-            Layout.topMargin: 8
-            visible: root.networkLocationsController.placesLocations.length > 0
-            text: qsTr("Network")
-            color: root.palette.placeholderText
-            Accessible.ignored: true
-        }
+            // AGENT-GUARD: All sections belong to one scrollable column. A
+            // bookmark-only viewport can be squeezed out by Places/Network.
+            ColumnLayout {
+                id: sidebarColumn
+                width: sidebarScroll.width
+                spacing: 4
 
-        Repeater {
-            model: root.networkLocationsController.placesLocations
-
-            PlaceButton {
-                required property var modelData
-                iconName: "folder-network"
-                objectName: "networkPlaceButton_" + modelData.index
-                Layout.fillWidth: true
-                text: modelData.name
-                emphasized: root.navigationController.currentPath === modelData.url
-                Accessible.description: qsTr("Open %1").arg(modelData.url)
-                onClicked: root.navigationController.navigateTo(modelData.url)
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.topMargin: 8
-
-            Label {
-                Layout.fillWidth: true
-                text: qsTr("Bookmarks")
-                color: root.palette.placeholderText
-                Accessible.ignored: true
-            }
-            IconButton {
-                iconName: "bookmark-new"
-                objectName: "addBookmarkButton"
-                text: qsTr("Bookmark this folder")
-                Accessible.description: qsTr("Bookmark the current folder")
-                onClicked: root.appCoordinator.activateAction("bookmark.add")
-            }
-        }
-
-        Item {
-            id: bookmarkViewport
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            ListView {
-                id: bookmarkList
-                objectName: "bookmarkList"
-                anchors.fill: parent
-                anchors.rightMargin: 16
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
-                model: root.placesController.bookmarks
-
-                ScrollBar.vertical: ViewportScrollBar {
-                    objectName: "bookmarkScrollBar"
-                    parent: bookmarkViewport
-                    x: bookmarkList.width + 4
-                    height: bookmarkList.height
-                    Accessible.name: qsTr("Scroll bookmarks")
+                Label {
+                    text: qsTr("Places")
+                    color: root.palette.placeholderText
+                    Accessible.ignored: true
                 }
 
-                Accessible.role: Accessible.List
-                Accessible.name: qsTr("Bookmarks")
-
-                delegate: RowLayout {
-                    id: bookmarkRow
-
-                    required property var modelData
-
-                    width: bookmarkList.width
-                    spacing: 4
+                Repeater {
+                    model: root.placesController.places
 
                     PlaceButton {
-                        iconName: "folder"
-                        objectName: "bookmarkButton_" + bookmarkRow.modelData.index
+                        required property var modelData
+                        iconName: modelData.id === "home" ? "user-home"
+                            : modelData.id === "trash" ? "user-trash"
+                            : modelData.id === "applications" ? "folder-applications"
+                            : modelData.id === "network" ? "network-workgroup" : "drive-harddisk"
+
+                        // Places with no navigable path behind them. Both open a route
+                        // rather than a directory, so neither may be emphasized by
+                        // path comparison, navigated to, or used as a drop target.
+                        readonly property bool routePlace: modelData.id === "network"
+                            || modelData.id === "applications"
+
+                        objectName: "placeButton_" + modelData.id
                         Layout.fillWidth: true
-                        text: bookmarkRow.modelData.name
-                        emphasized: root.navigationController.currentPath === bookmarkRow.modelData.path
-                        Accessible.description: qsTr("Open %1").arg(bookmarkRow.modelData.path)
-                        onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
+                        text: modelData.name
+                        emphasized: !routePlace
+                            && root.navigationController.currentPath === modelData.path
+                        // ADR-0194: the Network place opens the hub -- the saved
+                        // locations and the way to add one -- rather than pretending a
+                        // connection exists or dropping the user in the location bar.
+                        // Applications opens the installed-application browser through
+                        // the same action the Go menu uses, so there is one route.
+                        Accessible.description: modelData.id === "network"
+                            ? qsTr("Show saved network locations")
+                            : modelData.id === "applications"
+                            ? qsTr("Browse installed applications")
+                            : qsTr("Open %1").arg(modelData.path)
+                        onClicked: modelData.id === "network"
+                            ? root.appCoordinator.activateAction("go.network")
+                            : modelData.id === "applications"
+                            ? root.appCoordinator.activateAction("go.applications")
+                            : root.navigationController.navigateTo(modelData.path)
 
                         DropArea {
                             anchors.fill: parent
+                            enabled: modelData.id !== "trash" && !routePlace
                             onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
                             onDropped: (drop) => {
                                 const action = EntryDrag.dispatch(
-                                    drop, bookmarkRow.modelData.path,
+                                    drop, modelData.path,
                                     root.mutationController, root.clipboardController)
                                 if (action !== Qt.IgnoreAction)
                                     drop.accept(action)
@@ -203,17 +146,107 @@ Control {
                             }
                         }
                     }
+                }
+
+                // Saved network locations the user asked to see here (ADR-0194).
+                // Activation only routes the canonical address into navigateTo, so an
+                // unreachable server lands on the ordinary navigation state pane.
+                // They are not drop targets: the drop pipeline is the identity-checked
+                // local mutation one, which has no network authority.
+                Label {
+                    Layout.topMargin: 8
+                    visible: root.networkLocationsController.placesLocations.length > 0
+                    text: qsTr("Network")
+                    color: root.palette.placeholderText
+                    Accessible.ignored: true
+                }
+
+                Repeater {
+                    model: root.networkLocationsController.placesLocations
+
+                    PlaceButton {
+                        required property var modelData
+                        iconName: "folder-network"
+                        objectName: "networkPlaceButton_" + modelData.index
+                        Layout.fillWidth: true
+                        text: modelData.name
+                        emphasized: root.navigationController.currentPath === modelData.url
+                        Accessible.description: qsTr("Open %1").arg(modelData.url)
+                        onClicked: root.navigationController.navigateTo(modelData.url)
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Bookmarks")
+                        color: root.palette.placeholderText
+                        Accessible.ignored: true
+                    }
                     IconButton {
-                        iconName: "edit-delete"
-                        implicitWidth: 28
-                        objectName: "removeBookmark_" + bookmarkRow.modelData.index
-                        text: qsTr("Remove bookmark")
-                        Accessible.description: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
-                        onClicked: root.placesController.removeBookmark(bookmarkRow.modelData.index)
+                        iconName: "bookmark-new"
+                        objectName: "addBookmarkButton"
+                        text: qsTr("Bookmark this folder")
+                        Accessible.description: qsTr("Bookmark the current folder")
+                        onClicked: root.appCoordinator.activateAction("bookmark.add")
+                    }
+                }
+
+                ColumnLayout {
+                    objectName: "bookmarkList"
+                    Layout.fillWidth: true
+                    spacing: 0
+                    Accessible.role: Accessible.List
+                    Accessible.name: qsTr("Bookmarks")
+
+                    Repeater {
+                        model: root.placesController.bookmarks
+                        RowLayout {
+                            id: bookmarkRow
+
+                            required property var modelData
+
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            PlaceButton {
+                                iconName: "folder"
+                                objectName: "bookmarkButton_" + bookmarkRow.modelData.index
+                                Layout.fillWidth: true
+                                text: bookmarkRow.modelData.name
+                                emphasized: root.navigationController.currentPath === bookmarkRow.modelData.path
+                                Accessible.description: qsTr("Open %1").arg(bookmarkRow.modelData.path)
+                                onClicked: root.navigationController.navigateTo(bookmarkRow.modelData.path)
+
+                                DropArea {
+                                    anchors.fill: parent
+                                    onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
+                                    onDropped: (drop) => {
+                                        const action = EntryDrag.dispatch(
+                                            drop, bookmarkRow.modelData.path,
+                                            root.mutationController, root.clipboardController)
+                                        if (action !== Qt.IgnoreAction)
+                                            drop.accept(action)
+                                        else
+                                            drop.accepted = false
+                                    }
+                                }
+                            }
+                            IconButton {
+                                iconName: "edit-delete"
+                                implicitWidth: 28
+                                objectName: "removeBookmark_" + bookmarkRow.modelData.index
+                                text: qsTr("Remove bookmark")
+                                Accessible.description: qsTr("Remove bookmark %1").arg(bookmarkRow.modelData.name)
+                                onClicked: root.placesController.removeBookmark(bookmarkRow.modelData.index)
+                            }
+                        }
                     }
                 }
             }
         }
-
     }
 }
