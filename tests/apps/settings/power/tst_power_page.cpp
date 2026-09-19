@@ -11,12 +11,14 @@
 #include <QtQuick/QQuickView>
 #include <QtTest>
 
+#include <algorithm>
 #include <memory>
 
 using QindaQt::Apps::SettingsPower::TestSupport::StubExternalBrightness;
 using QindaQt::Apps::SettingsPower::TestSupport::StubPowerSettingsModel;
 using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 using QindaQt::Apps::SettingsPower::TestSupport::StubIdleDisplaySettings;
+using QindaQt::Apps::SettingsPower::TestSupport::StubScreensaverSettings;
 
 namespace {
 QQuickItem *findItem(QQuickItem *root, const QString &name) {
@@ -41,6 +43,7 @@ private Q_SLOTS:
   void compactAndUnavailableFocusRemainAdmitted();
   void screenLockControlsRespectAutomaticLock();
   void idleDisplayControlsRespectThePolicy();
+  void screensaverControlsWriteOnlyOnActivation();
   void resumeLockAndGraceRowsBindAndApply();
   void powerPolicyRowsRespectLidPresenceAndApply();
   void focusChainReachesTheLidPolicySection();
@@ -51,7 +54,9 @@ private:
   std::unique_ptr<StubPowerSettingsModel> m_model;
   StubScreenLockSettings *m_screenLock = nullptr;
   StubIdleDisplaySettings *m_idleDisplay = nullptr;
+  StubScreensaverSettings *m_screensaver = nullptr;
   std::pair<std::unique_ptr<QObject>, QQuickItem *> createPage(QSize size);
+  void scrollIntoView(QQuickItem *page, QQuickItem *item);
 };
 
 void PowerPageTest::initTestCase() {
@@ -81,6 +86,8 @@ PowerPageTest::createPage(const QSize size) {
   m_screenLock = screenLock;
   auto *idleDisplay = new StubIdleDisplaySettings(m_model.get());
   m_idleDisplay = idleDisplay;
+  auto *screensaver = new StubScreensaverSettings(m_model.get());
+  m_screensaver = screensaver;
   QObject *object = component.createWithInitialProperties({
       {QStringLiteral("powerSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
@@ -88,6 +95,8 @@ PowerPageTest::createPage(const QSize size) {
        QVariant::fromValue(static_cast<QObject *>(screenLock))},
       {QStringLiteral("idleDisplaySettings"),
        QVariant::fromValue(static_cast<QObject *>(idleDisplay))},
+      {QStringLiteral("screensaverSettings"),
+       QVariant::fromValue(static_cast<QObject *>(screensaver))},
   });
   if (object == nullptr) {
     qWarning().noquote() << component.errorString();
@@ -102,6 +111,25 @@ PowerPageTest::createPage(const QSize size) {
   m_view->show();
   QCoreApplication::processEvents();
   return {std::move(guard), page};
+}
+
+// The Power form scrolls, and sections below the fold move whenever one is
+// added above them. A synthetic click only reaches a row that is inside the
+// viewport, so every mouse-driven assertion scrolls its target into view
+// first rather than depending on the current section order.
+void PowerPageTest::scrollIntoView(QQuickItem *page, QQuickItem *item) {
+  QVERIFY(page != nullptr);
+  QVERIFY(item != nullptr);
+  auto *viewport = findItem(page, QStringLiteral("powerFormViewport"));
+  QVERIFY(viewport != nullptr);
+  const qreal contentHeight = viewport->property("contentHeight").toReal();
+  const qreal maximum = std::max(qreal(0), contentHeight - viewport->height());
+  const qreal contentY = viewport->property("contentY").toReal();
+  const qreal offset = item->mapToItem(viewport, QPointF(0, 0)).y();
+  const qreal centred =
+      contentY + offset - (viewport->height() - item->height()) / 2;
+  viewport->setProperty("contentY", std::clamp(centred, qreal(0), maximum));
+  QCoreApplication::processEvents();
 }
 
 void PowerPageTest::rendersWideTruthAndAccessibleControls() {
@@ -373,6 +401,7 @@ void PowerPageTest::idleDisplayControlsRespectThePolicy() {
   QVERIFY(selector->isEnabled());
   QCOMPARE(m_idleDisplay->enabledCalls, 0);
 
+  scrollIntoView(page, toggle);
   const QPoint toggleCenter = toggle->mapToScene(
       QPointF(toggle->width() / 2.0, toggle->height() / 2.0)).toPoint();
   QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, toggleCenter);
@@ -387,6 +416,47 @@ void PowerPageTest::idleDisplayControlsRespectThePolicy() {
   QTRY_COMPARE(selector->property("currentText").toString(),
                QStringLiteral("15 minutes"));
   QCOMPARE(m_idleDisplay->minutesCalls, 0);
+}
+
+void PowerPageTest::screensaverControlsWriteOnlyOnActivation() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *saver = findItem(page, QStringLiteral("powerScreensaverSelector"));
+  auto *delay = findItem(page, QStringLiteral("powerScreensaverDelaySelector"));
+  auto *note = findItem(page, QStringLiteral("powerScreensaverNote"));
+  QVERIFY(saver != nullptr);
+  QVERIFY(delay != nullptr);
+  QVERIFY(note != nullptr);
+  QCOMPARE(saver->property("currentText").toString(),
+           QStringLiteral("Qinda Patrol"));
+  QCOMPARE(delay->property("currentText").toString(),
+           QStringLiteral("5 minutes"));
+  // AGENT-GUARD: the section must keep saying the saver is decoration. Only
+  // Screen lock locks the session, and a reader who loses that sentence will
+  // reasonably expect an idle screensaver to protect an unattended screen.
+  QVERIFY(note->property("text").toString().contains(
+      QStringLiteral("does not lock")));
+
+  // A confirmed snapshot rebinds both rows and never replays a write.
+  m_screensaver->saver = QStringLiteral("circuit-reef");
+  m_screensaver->minutes = 30;
+  Q_EMIT m_screensaver->changed();
+  QTRY_COMPARE(saver->property("currentText").toString(),
+               QStringLiteral("Circuit Reef"));
+  QTRY_COMPARE(delay->property("currentText").toString(),
+               QStringLiteral("30 minutes"));
+  QVERIFY(m_screensaver->saverRequests.isEmpty());
+  QVERIFY(m_screensaver->minutesRequests.isEmpty());
+
+  // Only an interactive activation writes.
+  QVERIFY(QMetaObject::invokeMethod(delay, "activated", Q_ARG(int, 0)));
+  QTRY_COMPARE(m_screensaver->minutesRequests, QList<int>{1});
+
+  // Choosing no saver retires the delay row with it.
+  QVERIFY(QMetaObject::invokeMethod(saver, "activated", Q_ARG(int, 0)));
+  QTRY_COMPARE(m_screensaver->saverRequests,
+               QStringList{QStringLiteral("none")});
+  QTRY_VERIFY(!delay->isEnabled());
 }
 
 void PowerPageTest::resumeLockAndGraceRowsBindAndApply() {

@@ -41,6 +41,7 @@ T.ApplicationWindow {
     property var powerSettings: PowerRouteComposition.model
     property var screenLockSettings: PowerRouteComposition.screenLockSettings
     property var idleDisplaySettings: PowerRouteComposition.idleDisplaySettings
+    property var screensaverSettings: PowerRouteComposition.screensaverSettings
     property var clipboardSettings: ClipboardRouteComposition.model
     property var colorSettings: ColorRouteComposition.model
     property var accessibilitySettings: null
@@ -183,6 +184,7 @@ T.ApplicationWindow {
             powerSettings: root.powerSettings
             screenLockSettings: root.screenLockSettings
             idleDisplaySettings: root.idleDisplaySettings
+            screensaverSettings: root.screensaverSettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
             accessibilitySettings: root.accessibilitySettings
@@ -240,6 +242,7 @@ T.ApplicationWindow {
             powerSettings: root.powerSettings
             screenLockSettings: root.screenLockSettings
             idleDisplaySettings: root.idleDisplaySettings
+            screensaverSettings: root.screensaverSettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
             accessibilitySettings: root.accessibilitySettings
@@ -335,6 +338,7 @@ T.ApplicationWindow {
             powerSettings: root.powerSettings
             screenLockSettings: root.screenLockSettings
             idleDisplaySettings: root.idleDisplaySettings
+            screensaverSettings: root.screensaverSettings
             onCloseRequested: root.close()
         }
     }

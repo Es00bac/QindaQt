@@ -53,6 +53,17 @@ set_tests_properties(qindaqt.settings-idle-display-model PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "settings;power;idle-display")
 
+qt_add_executable(qindaqt_screensaver_settings_tests
+    tst_screensaver_settings.cpp)
+target_link_libraries(qindaqt_screensaver_settings_tests
+    PRIVATE qindaqt_settings_power Qt6::Test)
+qindaqt_enable_warnings(qindaqt_screensaver_settings_tests)
+add_test(NAME qindaqt.settings-screensaver-model
+    COMMAND qindaqt_screensaver_settings_tests)
+set_tests_properties(qindaqt.settings-screensaver-model PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "settings;power;screensaver")
+
 qt_add_executable(qindaqt_power_settings_slider_tests
     tst_power_settings_slider.cpp power_settings_test_support.h)
 target_link_libraries(qindaqt_power_settings_slider_tests

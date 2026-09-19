@@ -6,6 +6,7 @@
 #include "qindaqt/session/desktop_controls/mic_mute_key_controller.h"
 #include "qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h"
 #include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
+#include "qindaqt/session/desktop_controls/settings1_screensaver_preferences.h"
 #include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
 #include "qindaqt/session/desktop_controls/tablet_arrival_notifier.h"
 #include "qindaqt/session/desktop_controls/tablet_mapping_policy.h"
@@ -26,6 +27,7 @@
 #include <qindaqt/services/settings_client/settings_client.h>
 
 #include "kglobal_accel_registrar.h"
+#include "screensaver_launcher.h"
 
 #include <qindaqt/session/powerdevil_idle/powerdevil_idle_adapter.h>
 
@@ -301,6 +303,31 @@ int main(int argc, char *argv[])
     if (!parser.isSet(QStringLiteral("no-idle-policy"))) {
         idleBinding.start();
     }
+
+    // AGENT-CONTRACT: the idle screensaver gets its own Settings1 client
+    // scoped to the `power.screensaver` pair, for the same reason the tablet
+    // ledger does: Settings1 rejects a whole snapshot on one unknown key
+    // (ADR-0126), so widening the idle client would put display-off behind
+    // this feature's schema risk.
+    QindaQt::Services::SettingsClient::QtSettingsTransport screensaverSettingsTransport(
+        sessionBus);
+    QindaQt::Services::SettingsClient::SettingsClient screensaverSettingsClient(
+        screensaverSettingsTransport,
+        QindaQt::Session::DesktopControls::Settings1ScreensaverPreferences::scopedKeys());
+    QString screensaverSettingsError;
+    if (!screensaverSettingsClient.start(&screensaverSettingsError)) {
+        QTextStream(stderr) << "qindaqt-desktop-controls: screensaver settings client failed: "
+                            << screensaverSettingsError << '\n';
+    }
+    QindaQt::Session::DesktopControls::Settings1ScreensaverPreferences screensaverPreferences(
+        screensaverSettingsClient);
+
+    // Idle screensaver (qinda-patrol / circuit-reef), stopped on activity or
+    // lock. Configured in Settings -> Power; the locker stays the only lock
+    // authority. Declared after its client so it is destroyed first.
+    QindaQt::Session::DesktopControls::ScreensaverLauncher screensaver(
+        sessionBus, screensaverPreferences, &application);
+    screensaver.start();
 
     return application.exec();
 }

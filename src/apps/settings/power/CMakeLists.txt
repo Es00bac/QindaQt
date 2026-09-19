@@ -5,6 +5,7 @@ target_sources(
     qindaqt_settings_power
     PRIVATE power_settings_model.cpp power_settings_projection.cpp
             screen_lock_settings.cpp qt_screen_lock_configurator.cpp
+            screensaver_settings.cpp
             idle_display_settings.cpp lid_power_button_settings.cpp
             external_display_brightness_model.cpp
     PUBLIC
@@ -14,6 +15,7 @@ target_sources(
             include/qindaqt/apps/settings_power/power_settings_model.h
             include/qindaqt/apps/settings_power/external_display_brightness_model.h
             include/qindaqt/apps/settings_power/screen_lock_settings.h
+            include/qindaqt/apps/settings_power/screensaver_settings.h
             include/qindaqt/apps/settings_power/idle_display_settings.h
             include/qindaqt/apps/settings_power/lid_power_button_settings.h
             include/qindaqt/apps/settings_power/automatic_power_profile_policy_port.h
@@ -73,6 +75,7 @@ qt_add_qml_module(
         qml/PowerProfileSection.qml
         qml/PowerSessionSection.qml
         qml/PowerScreenLockSection.qml
+        qml/PowerScreensaverSection.qml
         qml/PowerIdleDisplaySection.qml
         qml/PowerLidPowerButtonSection.qml
         qml/PowerSupplySection.qml
@@ -113,6 +116,7 @@ install(
         qml/PowerProfileSection.qml
         qml/PowerSessionSection.qml
         qml/PowerScreenLockSection.qml
+        qml/PowerScreensaverSection.qml
         qml/PowerIdleDisplaySection.qml
         qml/PowerLidPowerButtonSection.qml
         qml/PowerSupplySection.qml
