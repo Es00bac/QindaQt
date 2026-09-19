@@ -11,6 +11,8 @@
 #include "launcherappletcomposition.h"
 #include "launcher_applet_controller.h"
 #include "launchershortcut.h"
+#include "panelkeyboardfocus.h"
+#include "runtimepanelwindowfactory.h"
 #include "kglobalaccelshortcutregistrar.h"
 #include "../common/shelliconconfiguration.h"
 #include "launcher_persistence.h"
@@ -109,8 +111,25 @@ void ShellRuntimeApplication::initializeLauncherShortcut()
     m_launcherShortcutRegistrar = std::make_unique<KGlobalAccelShortcutRegistrar>();
     m_launcherShortcut =
         std::make_unique<LauncherShortcutProducer>(*m_launcherShortcutRegistrar);
+    // AGENT-CONTRACT: a shortcut carries no input serial, and a Wayland popup
+    // that grabs input needs one. The relay lends the hosting panel keyboard
+    // focus first (ADR-0217) and opens the browser once the panel has it.
+    m_launcherFocusTarget = std::make_unique<LayerShellPanelFocusTarget>(
+        [this]() -> QQuickWindow * {
+            return m_windowFactory
+                ? m_windowFactory->windowHostingApplet(
+                      QStringLiteral("launcherApplet"))
+                : nullptr;
+        });
+    m_launcherFocusRelay =
+        std::make_unique<LauncherKeyboardFocusRelay>(*m_launcherFocusTarget);
     connect(m_launcherShortcut.get(), &LauncherShortcutProducer::openRequested,
+            m_launcherFocusRelay.get(), &LauncherKeyboardFocusRelay::requestOpen);
+    connect(m_launcherFocusRelay.get(), &LauncherKeyboardFocusRelay::openNow,
             access, &Launcher::LauncherAppletController::requestOpen);
+    connect(access, &Launcher::LauncherAppletController::browserClosed,
+            m_launcherFocusRelay.get(),
+            &LauncherKeyboardFocusRelay::browserClosed);
     if (!m_launcherShortcut->registrationRequestAccepted()) {
         qWarning().noquote()
             << "QindaQt shell could not submit the launcher shortcut;"

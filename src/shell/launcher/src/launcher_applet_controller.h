@@ -73,12 +73,16 @@ public:
   // openRequested() and opens its own popup. The controller owns no window, so
   // "open the launcher" can only ever be a request the presentation honours.
   void requestOpen();
+  // The applet reports its popup closing so the shell can hand keyboard focus
+  // back to the session; a panel left focusable would swallow typing.
+  Q_INVOKABLE void notifyBrowserClosed();
 
 Q_SIGNALS:
   void stateChanged();
   void queryChanged();
   void feedbackChanged();
   void openRequested();
+  void browserClosed();
 
 private:
   void rebuild();

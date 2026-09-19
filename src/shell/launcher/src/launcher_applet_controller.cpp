@@ -263,6 +263,8 @@ bool LauncherAppletController::clearRecent()
 
 void LauncherAppletController::requestOpen() { Q_EMIT openRequested(); }
 
+void LauncherAppletController::notifyBrowserClosed() { Q_EMIT browserClosed(); }
+
 void LauncherAppletController::clearFeedback()
 {
   publishFeedback({});

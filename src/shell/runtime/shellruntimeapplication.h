@@ -79,6 +79,8 @@ class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
 class LauncherShortcutProducer;
+class LayerShellPanelFocusTarget;
+class LauncherKeyboardFocusRelay;
 class LauncherAppletComposition;
 class EdgeGestureSubscriber;
 class LiveCustomizationController;
@@ -255,6 +257,11 @@ private:
     // access object. resetRuntime() destroys it before either.
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_launcherShortcutRegistrar;
     std::unique_ptr<LauncherShortcutProducer> m_launcherShortcut;
+    // The Meta key's focus loan: the relay lends the hosting panel keyboard
+    // focus long enough for the browser's grabbing popup to be created, and
+    // takes it back when the popup closes.
+    std::unique_ptr<LayerShellPanelFocusTarget> m_launcherFocusTarget;
+    std::unique_ptr<LauncherKeyboardFocusRelay> m_launcherFocusRelay;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
     std::unique_ptr<TaskOrderPersistence> m_taskOrderPersistence;
