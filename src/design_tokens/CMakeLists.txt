@@ -99,3 +99,9 @@ install(
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT TextEditor
 )
+
+install(
+    TARGETS qindaqt_tokens_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+    COMPONENT Viewer
+)
