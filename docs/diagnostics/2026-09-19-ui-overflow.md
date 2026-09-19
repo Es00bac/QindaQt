@@ -82,3 +82,16 @@ focused final checks of affected behavior; no new test campaign or baseline
 test run. Record the final build, installed versions and remaining limitations
 in the delivery handoff rather than treating this source diagnosis as proof
 of live behavior.
+
+## Final-check finding before the menu follow-up
+
+The first production build completed, and Settings navigation, File Manager
+browsing, and toolkit menu/dialog checks passed. The warning-fatal installed
+global-menu check then exposed a submenu-construction name collision on side
+panels and the newly reachable overflow renderer: the root id `menu` is shadowed
+by `MenuItem.menu`, which is null before Qt inserts the item. Its `access`,
+`colors`, and `interactive` bindings therefore dereference null. Qt 6.11.1
+`QQuickMenuPrivate::createItem()` completes the delegate before `insertMenu()`
+attaches it. Give the root an unambiguous id and keep the bindings explicit.
+The diagnostic run without warning-fatal mode passed all 15 placement/wheel
+assertions; it is diagnostic evidence, not a clean acceptance pass.

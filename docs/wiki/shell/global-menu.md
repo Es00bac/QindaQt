@@ -799,3 +799,7 @@ manager inspected the capture and matched the three packaged production
 files to the independently reviewed source. This is staged-package evidence;
 host installation remains outstanding. Owner-loss fallback has focused
 lifecycle test coverage, but was not exercised in that native run.
+
+Submenu delegates bind to the explicit `nativeMenu` root id. `MenuItem.menu`
+is not assigned until Qt inserts a new delegate, so naming the root `menu`
+would shadow that id and dereference null during construction.
