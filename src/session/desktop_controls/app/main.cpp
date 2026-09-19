@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
     QindaQt::Session::DesktopControls::Settings1ScreensaverPreferences screensaverPreferences(
         screensaverSettingsClient);
 
-    // Idle screensaver (qinda-patrol / circuit-reef), stopped on activity or
+    // Idle screensaver (one of the five x11-misc savers), stopped on activity or
     // lock. Configured in Settings -> Power; the locker stays the only lock
     // authority. Declared after its client so it is destroyed first.
     QindaQt::Session::DesktopControls::ScreensaverLauncher screensaver(

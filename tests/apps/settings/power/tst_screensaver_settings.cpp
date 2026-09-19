@@ -208,6 +208,7 @@ private Q_SLOTS:
     void confirmedSaverReachesTheLockScreen();
     void refusedCommitNeverReachesTheLockScreen();
     void lockScreenFailureIsItsOwnError();
+    void aSaverWithNoSceneLeavesTheLockWallpaperAlone();
 
 private:
     std::unique_ptr<FakeSettingsTransport> m_transport;
@@ -377,6 +378,27 @@ void ScreensaverSettingsModelTest::lockScreenFailureIsItsOwnError() {
     // must say so rather than claim the choice was lost.
     QVERIFY(m_model->errorText().contains(QStringLiteral("lock screen")));
     QVERIFY(m_model->statusText().contains(QStringLiteral("Qinda Patrol")));
+}
+
+void ScreensaverSettingsModelTest::aSaverWithNoSceneLeavesTheLockWallpaperAlone() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+
+    // A saver the greeter can draw takes the lock wallpaper over.
+    QVERIFY(m_model->setSaver(QStringLiteral("circuit-reef")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_lockScreen->currentSaver(), QStringLiteral("circuit-reef"));
+    QVERIFY(m_model->statusText().contains(QStringLiteral("locked")));
+
+    // AGENT-GUARD: one that ships no QML module must hand it back instead of
+    // pointing the greeter at a wallpaper plugin with nothing to draw.
+    QVERIFY(m_model->setSaver(QStringLiteral("prism-brawl")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_model->saver(), QStringLiteral("prism-brawl"));
+    QCOMPARE(m_lockScreen->currentSaver(), ScreensaverPreferences::noneToken());
+    // And the section says so rather than implying the lock screen changed.
+    QVERIFY(m_model->statusText().contains(QStringLiteral("Prism Brawl")));
+    QVERIFY(m_model->statusText().contains(QStringLiteral("its own wallpaper")));
 }
 
 QTEST_MAIN(ScreensaverSettingsModelTest)

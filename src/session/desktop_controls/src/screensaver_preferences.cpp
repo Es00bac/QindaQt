@@ -13,10 +13,27 @@ const QString &ScreensaverPreferences::noneToken()
 
 const QStringList &ScreensaverPreferences::knownSavers()
 {
+    // The token is the installed program name in every case. `starward` is
+    // built from the starward-reimagined package, which is why the two names
+    // differ there and nowhere else.
     static const QStringList savers{QStringLiteral("none"),
                                     QStringLiteral("qinda-patrol"),
-                                    QStringLiteral("circuit-reef")};
+                                    QStringLiteral("circuit-reef"),
+                                    QStringLiteral("prism-circuit"),
+                                    QStringLiteral("prism-brawl"),
+                                    QStringLiteral("starward")};
     return savers;
+}
+
+bool ScreensaverPreferences::showsOnLockScreen(const QString &saver)
+{
+    return saver == QLatin1String("qinda-patrol")
+        || saver == QLatin1String("circuit-reef");
+}
+
+bool ScreensaverPreferences::showsOnLockScreen() const
+{
+    return showsOnLockScreen(saver);
 }
 
 bool ScreensaverPreferences::enabled() const noexcept
@@ -31,13 +48,23 @@ QString ScreensaverPreferences::program() const
 
 QStringList ScreensaverPreferences::arguments() const
 {
-    // Both savers place their own window on every output. Telemetry is off so
-    // an unattended screen never renders live CPU, memory or network counters.
+    // AGENT-CONTRACT: every saver takes --screensaver -- natively in patrol,
+    // as the documented alias in the other four -- and each covers every
+    // connected output under it. The extra flag on each line turns off
+    // something an unattended screen should not be doing: live system
+    // counters, or sound that starts in an empty room.
     if (saver == QLatin1String("qinda-patrol")) {
         return {QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")};
     }
     if (saver == QLatin1String("circuit-reef")) {
-        return {QStringLiteral("--all-screens"), QStringLiteral("--private")};
+        return {QStringLiteral("--screensaver"), QStringLiteral("--private")};
+    }
+    if (saver == QLatin1String("prism-circuit")
+        || saver == QLatin1String("prism-brawl")) {
+        return {QStringLiteral("--screensaver"), QStringLiteral("--mute")};
+    }
+    if (saver == QLatin1String("starward")) {
+        return {QStringLiteral("--screensaver")};
     }
     return {};
 }

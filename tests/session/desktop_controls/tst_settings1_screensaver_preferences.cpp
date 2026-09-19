@@ -102,6 +102,7 @@ private Q_SLOTS:
     void unknownTokenNeverBecomesAProgramName();
     void persistedMinutesAreClamped();
     void knownSaversCarryTheirFixedCommandLine();
+    void onlyQmlSaversReachTheLockScreen();
     void valueChangeIsSignalledOnce();
     void refreshNeverWrites();
 
@@ -187,25 +188,54 @@ void Settings1ScreensaverPreferencesTest::persistedMinutesAreClamped() {
 }
 
 void Settings1ScreensaverPreferencesTest::knownSaversCarryTheirFixedCommandLine() {
-    // AGENT-CONTRACT: both savers are started on every output with telemetry
-    // off; an unattended screen must not render live counters. The arguments
-    // are the launcher's only command line, so they live with the preference.
-    const auto patrol =
-        ScreensaverPreferences::fromPersisted(QStringLiteral("qinda-patrol"), 5);
-    QCOMPARE(patrol.program(), QStringLiteral("qinda-patrol"));
-    QCOMPARE(patrol.arguments(),
-             (QStringList{QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")}));
+    // AGENT-CONTRACT: every saver is started with --screensaver, which each
+    // one documents as covering every connected output, and with whatever
+    // extra flag stops it doing something an unattended screen should not do.
+    // These are the launcher's only command lines, so they live here with the
+    // preference and are asserted as a set.
+    const QList<QPair<QString, QStringList>> expected{
+        {QStringLiteral("qinda-patrol"),
+         {QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")}},
+        {QStringLiteral("circuit-reef"),
+         {QStringLiteral("--screensaver"), QStringLiteral("--private")}},
+        {QStringLiteral("prism-circuit"),
+         {QStringLiteral("--screensaver"), QStringLiteral("--mute")}},
+        {QStringLiteral("prism-brawl"),
+         {QStringLiteral("--screensaver"), QStringLiteral("--mute")}},
+        {QStringLiteral("starward"), {QStringLiteral("--screensaver")}},
+    };
+    for (const auto &[token, arguments] : expected) {
+        const auto preferences = ScreensaverPreferences::fromPersisted(token, 5);
+        QCOMPARE(preferences.program(), token);
+        QCOMPARE(preferences.arguments(), arguments);
+    }
 
-    const auto reef =
-        ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), 5);
-    QCOMPARE(reef.program(), QStringLiteral("circuit-reef"));
-    QCOMPARE(reef.arguments(),
-             (QStringList{QStringLiteral("--all-screens"), QStringLiteral("--private")}));
+    // The offered set is exactly the reserved token plus those five: a saver
+    // the schema does not allow could never be persisted, and one missing here
+    // could never be started.
+    QStringList offered{ScreensaverPreferences::noneToken()};
+    for (const auto &[token, arguments] : expected) {
+        offered.append(token);
+    }
+    QCOMPARE(ScreensaverPreferences::knownSavers(), offered);
 
     const auto none =
         ScreensaverPreferences::fromPersisted(ScreensaverPreferences::noneToken(), 5);
     QVERIFY(none.program().isEmpty());
     QVERIFY(none.arguments().isEmpty());
+}
+
+void Settings1ScreensaverPreferencesTest::onlyQmlSaversReachTheLockScreen() {
+    // AGENT-GUARD: the greeter draws a saver by importing its QML module
+    // (ADR-0216). The three SDL/OpenGL savers ship none, and saying otherwise
+    // would hand the locker a wallpaper plugin with nothing to draw.
+    QVERIFY(ScreensaverPreferences::showsOnLockScreen(QStringLiteral("qinda-patrol")));
+    QVERIFY(ScreensaverPreferences::showsOnLockScreen(QStringLiteral("circuit-reef")));
+    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(QStringLiteral("prism-circuit")));
+    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(QStringLiteral("prism-brawl")));
+    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(QStringLiteral("starward")));
+    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(
+        ScreensaverPreferences::noneToken()));
 }
 
 void Settings1ScreensaverPreferencesTest::valueChangeIsSignalledOnce() {

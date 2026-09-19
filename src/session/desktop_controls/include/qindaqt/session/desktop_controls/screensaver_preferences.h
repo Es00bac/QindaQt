@@ -26,6 +26,14 @@ struct ScreensaverPreferences final {
     [[nodiscard]] static const QString &noneToken();
     [[nodiscard]] static const QStringList &knownSavers();
 
+    // AGENT-CONTRACT: the locker draws a saver by importing its QML module
+    // into the greeter's wallpaper plugin (ADR-0216), so only a saver that
+    // ships one can appear on a locked screen. The SDL/OpenGL savers ship no
+    // QQuickItem; choosing one leaves the user's own lock wallpaper alone
+    // rather than replacing it with a blank ground.
+    [[nodiscard]] static bool showsOnLockScreen(const QString &saver);
+    [[nodiscard]] bool showsOnLockScreen() const;
+
     [[nodiscard]] bool enabled() const noexcept;
     // The program to launch, or an empty string when disabled.
     [[nodiscard]] QString program() const;
