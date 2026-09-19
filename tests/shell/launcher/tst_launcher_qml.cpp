@@ -191,7 +191,47 @@ private Q_SLOTS:
     void deniedRowsExposeAccessibleDisabledState();
     void supportsCompleteKeyboardTraversalAndActivation();
     void nullAccessShowsDisabledFallback();
+    void anOpenRequestFromTheShellOpensTheBrowser();
 };
+
+void LauncherQmlTests::anOpenRequestFromTheShellOpensTheBrowser()
+{
+    Stack stack;
+    QVERIFY(stack.client.start());
+    stack.transport.announceOwner();
+    QTRY_VERIFY(!stack.transport.snapshots.isEmpty());
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("qml-epoch"), 0, {}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+
+    QQmlEngine engine;
+    QString iconError;
+    QVERIFY2(QindaQt::Tests::installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("start-here-kde")}, &iconError),
+             qPrintable(iconError));
+    QVERIFY(publishTokens(engine));
+    auto owned = createApplet(engine, &stack.controller);
+    QVERIFY(owned != nullptr);
+    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 30);
+    root->setParentItem(window.contentItem());
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    auto *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
+    QVERIFY(popup != nullptr);
+    QVERIFY(!popup->property("visible").toBool());
+
+    // AGENT-CONTRACT: this is the Meta key's last hop. KWin invokes the
+    // shell's qindaqt_open_launcher action, the shell calls requestOpen(), and
+    // the applet is the only thing that may open its own popup.
+    stack.controller.requestOpen();
+    QTRY_VERIFY(popup->property("visible").toBool());
+}
 
 void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
 {

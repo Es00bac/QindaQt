@@ -27,6 +27,8 @@ private Q_SLOTS:
     void seedsNoInputMethodWithoutADesktopFile();
     void keepsAnExplicitInputMethod();
     void seedsTranslucencyEffectsWithoutOverridingChoices();
+    void seedsTheMetaKeyOntoTheLauncherAction();
+    void keepsAnExplicitModifierOnlyShortcut();
 };
 
 void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
@@ -54,6 +56,70 @@ void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
     settings.beginGroup(QStringLiteral("MouseBindings"));
     QCOMPARE(settings.value(QStringLiteral("CommandAll3")).toString(),
              QStringLiteral("Nothing"));
+}
+
+void SessionDefaultsTest::seedsTheMetaKeyOntoTheLauncherAction()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    QString error;
+    QVERIFY2(QindaQt::Session::SessionDefaults::ensure(temporary.path(), &error),
+             qPrintable(error));
+
+    // AGENT-GUARD: KWin reads this entry as a list -- service, path,
+    // interface, method, then arguments. A value written as one quoted string
+    // would leave KWin with a single malformed element and a dead Meta key,
+    // so the row asserts the parsed shape rather than the raw text.
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")),
+                       QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("ModifierOnlyShortcuts"));
+    const QStringList call = settings.value(QStringLiteral("Meta")).toStringList();
+    QCOMPARE(call.size(), 5);
+    QCOMPARE(call.at(0), QStringLiteral("org.kde.kglobalaccel"));
+    QCOMPARE(call.at(1), QStringLiteral("/component/qindaqt_shell"));
+    QCOMPARE(call.at(2), QStringLiteral("org.kde.kglobalaccel.Component"));
+    QCOMPARE(call.at(3), QStringLiteral("invokeShortcut"));
+    QCOMPARE(call.at(4), QStringLiteral("qindaqt_open_launcher"));
+    settings.endGroup();
+
+    // KWin reads kwinrc with KConfig, not QSettings, and KConfig splits this
+    // entry on bare commas. A quoted value or a comma-space separator would
+    // parse into one malformed element there while still reading back
+    // correctly above, so the row also pins the written text.
+    QFile file(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")));
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString contents = QString::fromUtf8(file.readAll());
+    QVERIFY2(contents.contains(QStringLiteral(
+                 "Meta=org.kde.kglobalaccel, /component/qindaqt_shell, "
+                 "org.kde.kglobalaccel.Component, invokeShortcut, "
+                 "qindaqt_open_launcher"))
+                 || contents.contains(QStringLiteral(
+                     "Meta=org.kde.kglobalaccel,/component/qindaqt_shell,"
+                     "org.kde.kglobalaccel.Component,invokeShortcut,"
+                     "qindaqt_open_launcher")),
+             qPrintable(contents));
+}
+
+void SessionDefaultsTest::keepsAnExplicitModifierOnlyShortcut()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    {
+        QSettings settings(path, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("ModifierOnlyShortcuts"));
+        settings.setValue(QStringLiteral("Meta"), QStringLiteral("org.example,/x,org.example.X,y"));
+        settings.endGroup();
+    }
+
+    QString error;
+    QVERIFY2(QindaQt::Session::SessionDefaults::ensure(temporary.path(), &error),
+             qPrintable(error));
+
+    QSettings settings(path, QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("ModifierOnlyShortcuts"));
+    QVERIFY(settings.value(QStringLiteral("Meta")).toString().startsWith(
+        QStringLiteral("org.example")));
 }
 
 void SessionDefaultsTest::preservesExplicitDesktopChoices()

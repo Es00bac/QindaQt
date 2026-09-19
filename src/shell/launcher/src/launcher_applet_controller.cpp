@@ -261,6 +261,8 @@ bool LauncherAppletController::clearRecent()
   return m_persistence->clearRecent() == PersistenceMutation::Applied;
 }
 
+void LauncherAppletController::requestOpen() { Q_EMIT openRequested(); }
+
 void LauncherAppletController::clearFeedback()
 {
   publishFeedback({});

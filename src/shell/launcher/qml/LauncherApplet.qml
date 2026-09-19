@@ -66,6 +66,16 @@ Item {
         focusSearch()
     }
 
+    // The Meta key reaches the launcher through the shell's global shortcut,
+    // which asks the controller rather than touching this popup: presentation
+    // stays here, policy stays there.
+    Connections {
+        target: root.available ? root.access : null
+        function onOpenRequested() {
+            root.openBrowser()
+        }
+    }
+
     T.ToolButton {
         id: summary
 

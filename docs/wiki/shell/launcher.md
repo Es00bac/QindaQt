@@ -246,6 +246,37 @@ deterministic fallback. The production dispatcher receives only the
 shell-owned controller and renders the same compiled module for a resolved
 launcher instance.
 
+## The Meta key
+
+A bare modifier is not a key sequence, so KGlobalAccel cannot hold it. KWin
+owns it instead, through `kwinrc`'s `[ModifierOnlyShortcuts] Meta` entry, which
+names a D-Bus call as service, path, interface, method, then arguments.
+`SessionDefaults` seeds it — seed-missing only, so a user who bound Meta to
+something else keeps that — with a call to KGlobalAccel's own
+`invokeShortcut` for the shell's `qindaqt_open_launcher` action:
+
+```ini
+[ModifierOnlyShortcuts]
+Meta=org.kde.kglobalaccel,/component/qindaqt_shell,org.kde.kglobalaccel.Component,invokeShortcut,qindaqt_open_launcher
+```
+
+That action is `LauncherShortcutProducer` (`src/shell/runtime`), registered the
+same way the panel reveal action is and additionally bound to `Alt+F1` so the
+launcher stays reachable where a user's own `ModifierOnlyShortcuts` entry
+wins. Triggering it calls `LauncherAppletController::requestOpen()`, whose
+`openRequested()` signal the compiled applet answers by opening its own popup
+and focusing the search field: the controller owns no window, so opening the
+launcher can only ever be a request the presentation honours.
+
+Two consequences worth keeping in mind when changing this:
+
+- `qindaqt_open_launcher` is a **stable id**. Renaming it breaks the Meta key
+  on every machine whose `kwinrc` already carries the seeded entry, because
+  KWin will keep invoking the old name.
+- The shell owns no D-Bus service name of its own; the Meta key reaches it
+  through KGlobalAccel's component object. Nothing about this path needs the
+  shell to accept method calls from anywhere else.
+
 ## Production shell composition
 
 `LauncherAppletComposition` is the shell-private production boundary. The
