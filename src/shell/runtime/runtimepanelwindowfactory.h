@@ -86,11 +86,6 @@ public:
         const ShellSurface::PanelSurfaceConfiguration &configuration,
         QString *error = nullptr) override;
     [[nodiscard]] QJsonArray appletEvidence() const;
-    // The live panel window whose QML really contains `appletObjectName`, or
-    // nullptr. Resolved from the scene rather than from the configured panel
-    // maps, so a policy-denied or failed applet never reports a host.
-    [[nodiscard]] QQuickWindow *windowHostingApplet(
-        const QString &appletObjectName) const;
 
     // Replaces the theme map for future windows and pushes it onto every live
     // panel window's theme property. QML panel maps are plain (non-readonly)

@@ -133,8 +133,6 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/runtime_layout_adoption.h
         runtime/launchershortcut.cpp
         runtime/launchershortcut.h
-        runtime/panelkeyboardfocus.cpp
-        runtime/panelkeyboardfocus.h
         runtime/panelvisibilityshortcut.cpp
         runtime/panelvisibilityshortcut.h
         runtime/panelvisibilitytimer.cpp
@@ -153,9 +151,6 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             Qt6::Core
             Qt6::Gui
             Qt6::Quick
-            # panelkeyboardfocus.cpp lends a published panel keyboard focus
-            # through the same layer-shell window the surface backend created.
-            LayerShellQt::Interface
     )
     set_target_properties(
         qindaqt_shell_panel_visibility_producers

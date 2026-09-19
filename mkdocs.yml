@@ -353,5 +353,4 @@ nav:
       - "ADR-0214: startup applications route shadows, never edits, system entries": adr/0214-startup-applications-route.md
       - "ADR-0215: the idle screensaver is decoration, and never a lock": adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md
       - "ADR-0216: the locker draws the screensaver": adr/0216-the-locker-draws-the-screensaver.md
-      - "ADR-0217: a panel may borrow keyboard focus for a popup": adr/0217-a-panel-may-borrow-keyboard-focus-for-a-popup.md
       - "ADR-0218: use QindaTK and Poppler for the image/PDF viewer": adr/0218-use-qindatk-and-poppler-for-the-viewer.md

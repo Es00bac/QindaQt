@@ -280,21 +280,6 @@ wins. Triggering it calls `LauncherAppletController::requestOpen()`, whose
 and focusing the search field: the controller owns no window, so opening the
 launcher can only ever be a request the presentation honours.
 
-Between the two sits a focus loan. A Wayland popup that grabs input needs a
-serial from a real input event; a pointer click on the panel button supplies
-one, a global shortcut does not, and Qt refuses the popup with `Failed to
-create grabbing popup`. `LauncherKeyboardFocusRelay` therefore lends the
-hosting panel keyboard interactivity `OnDemand`, waits for the panel to become
-active, and only then emits `openNow()`; the applet's `onClosed` calls
-`notifyBrowserClosed()`, which returns the panel to `None`
-([ADR-0217](../adr/0217-a-panel-may-borrow-keyboard-focus-for-a-popup.md)).
-The wait is bounded at 400 ms — a launcher that appears without a grab beats a
-Meta key that does nothing — and the hosting window is resolved per press from
-the live scene, because panels are republished whenever outputs or the layout
-change. The `qindaqt.shell-launcher-keyboard-focus` row covers the policy:
-no open before focus arrives, one grant per press, focus handed back on close,
-the bounded fallback, and balanced grants/revokes across repeated cycles.
-
 Two consequences worth keeping in mind when changing this:
 
 - `qindaqt_open_launcher` is a **stable id**. Renaming it breaks the Meta key
