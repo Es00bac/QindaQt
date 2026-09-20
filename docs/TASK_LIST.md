@@ -5,6 +5,16 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 19 — keyboard and file-browsing audit verified
+
+Integrated `cbed67b0` repairs launcher activation/focus, disabled command-search
+traversal, File Manager location/filter lifecycle, additive selection and
+path identity, special-route action state, remote folder creation, and empty
+bookmark layout. Independent source review, affected builds, twelve focused
+CTest rows across the repair runs, and strict documentation checks pass.
+This is build-tree verification; see [handoff](HANDOFF.md) for coverage and the
+separate backend findings. It does not advance an unrelated roadmap milestone.
+
 ## September 19 — UI overflow and Audio/OBS repair installed
 
 Desktop r8 (`c99d39c4`) and QindaTK r2 (`d59b080c`) are installed on both

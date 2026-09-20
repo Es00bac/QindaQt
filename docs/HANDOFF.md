@@ -1,5 +1,31 @@
 # Integration handoff
 
+## September 19 — keyboard and file-browsing audit verified in the build tree
+
+Source candidate `cbed67b0` is integrated and independently source-reviewed.
+Launcher search Enter activates immediately, accepted launches dismiss the
+popup, and keyboard focus stays in view. Command search skips disabled rows.
+File Manager restores location focus after network listings, cancels stale
+recursive filtering, preserves additive selection and distinct hard-link
+paths, leaves special routes on folder navigation, and disables folder actions
+while those routes hide their selection. Remote New Folder follows controller
+availability; removing the final bookmark collapses the sidebar's empty list.
+
+The shell, File Manager and affected existing test targets compile with the
+actual configured `MAKEOPTS` (`-j24 -l24`). All product edits preceded the first
+compilation; focused verification then required a filter construction-order
+guard and the one-line empty-bookmark repair. Twelve distinct focused CTest
+rows are green across the initial run and affected reruns: launcher offscreen
+and panel dispatcher, command-menu offscreen, and nine File Manager rows.
+Browsing UI covers compact/light, desktop/dark and 1080p/dark sizes. The wiki
+link checker and strict MkDocs build pass. The source-shape gate retains 17
+pre-existing failing path/rule pairs, verified against exact base `c85ec2b7`.
+
+This evidence covers the build tree and isolated fixtures. Package installation
+and live-session adoption are separate. The requested Desktop bug ledger also
+records pre-existing local/network history routing, rejected remote-location
+admission reporting, and synchronous filesystem/search cancellation findings.
+
 ## September 19 — overflow, Audio/OBS and matching login themes installed
 
 Both qinda and qinda-top have desktop
