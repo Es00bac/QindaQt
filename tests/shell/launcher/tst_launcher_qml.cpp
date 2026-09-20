@@ -576,8 +576,6 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Up);
     QTRY_VERIFY(field->hasActiveFocus());
 
-    // A short popup must reveal the focused result instead of accepting
-    // keyboard activation on a row clipped below the viewport.
     const qreal originalHeight = popup->property("height").toReal();
     popup->setProperty("height", 220);
     auto *results = root->findChild<QQuickItem *>(QStringLiteral("launcherAppletResults"));
