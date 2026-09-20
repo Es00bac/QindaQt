@@ -1,5 +1,54 @@
 # Integration handoff
 
+## September 19 — shell owner-loss heap corruption repaired without ending the session
+
+Main repair `999d5d65cf6776ef43568a4180b5260c5f78208a` is integrated. Exact
+installed source `db088c55f02042f5a007bccde48a9c8beb579375` cherry-picks the
+same patch onto r8 base `c99d39c4`; independent review verified patch and
+whole-menu-tree equivalence. qinda now has
+`gui-wm/qindaqt-desktop-0.1.0_pre20260919-r9` through Portage. qinda-top was
+not modified. This bounded deployment preserves the installed runtime ABI;
+newer unrelated main-branch application changes are outside the r9 archive.
+
+Saved shell SIGABRT cores and the allocator's unaligned-tcache error led to
+`AppMenuRegistrarObject::WindowUnregistered`. `retireOwner` passed a hash-owned
+registration by reference into `eraseRegistration`, which removed that entry
+before reading its owner for cleanup and signals. The regression reproduced
+a heap-use-after-free write to the QString reference count under AddressSanitizer
+(exit 134). The erase boundary now owns a value through cleanup and synchronous
+signal delivery; generation fencing, ownership and D-Bus signatures are unchanged.
+
+Verified gates:
+
+- Thirteen focused menu CTest rows pass with AddressSanitizer, including
+  registrar, owner loss, full capacity, dbusmenu and transport churn. Two
+  registrar rows also pass after rebuilding against the integrated tree.
+- The signed 36,853,760-byte package image signature verifies. Portage inherited
+  configured `MAKEOPTS=-j24 -l24`; buildpkgonly and binary-only merge exit 0.
+  Its source pin was read back from the installed VDB; package integrity
+  verifies 1,522 of 1,522 installed files.
+- The exact packaged shell passes isolated production-surface tests at
+  1920x1080, 1920x1200 and 2560x1440 before installation.
+- Shell PID 2942135 alone received SIGTERM. Supervisor PID 1930636 replaced it
+  with verified r9 shell PID 3007976; KWin PID 1930560 and all 20 tracked
+  application/session process identities survived. No logout or application
+  restart was used.
+- After registrar readiness, 64 disposable private D-Bus peers registered and
+  retired 256 unmapped menu records against the live shell. Every record was
+  removed and the registrar/shell identity stayed constant. No shell coredump
+  appeared during the live qualification window.
+
+The executable SHA256 is
+`77e99535ba1a6ed002303b1f3a5b35cc2fefa21ae2c81877fca8542f8209836c`;
+package SHA256 is
+`9fb13cd44b66322407ce92f2d228f665bbbcabc2d83e6b0face35fe6c4410dc8`.
+Detailed local evidence is in the ignored `.cache/shell-crash-20260920/`;
+cores and session output are not published. Source-shape still reports the
+17 previously recorded errors, with no finding in the changed registrar paths.
+Package QA reports systemd dependency restrictions on non-systemd/musl profiles;
+the actual host's one-package dependency plan succeeds. These do not qualify
+other crash causes or future compositor changes.
+
 ## September 19 — keyboard and file-browsing audit verified in the build tree
 
 Source candidate `cbed67b0` is integrated and independently source-reviewed.

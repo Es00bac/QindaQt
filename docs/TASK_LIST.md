@@ -5,6 +5,18 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 19 — recurrent shell crash repaired on qinda
+
+Integrated `999d5d65` fixes the global-menu registrar reading a removed hash
+entry when an application connection disappears. AddressSanitizer reproduced
+the freed-owner write before the fix; all 13 focused menu rows pass afterward.
+The independently reviewed backport `db088c55` is installed as desktop r9 over
+r8 on qinda. Three packaged-shell resolution checks, live retirement of 256
+menu registrations, and continuity of 20 application/session processes pass.
+Only the shell was restarted. See [handoff](HANDOFF.md) for exact pins and
+qualification; qinda-top remains on its prior package. No unrelated milestone
+weight changes.
+
 ## September 19 — keyboard and file-browsing audit verified
 
 Integrated `cbed67b0` repairs launcher activation/focus, disabled command-search

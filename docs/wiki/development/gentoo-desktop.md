@@ -5,17 +5,35 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current dated package checkpoint is `0.1.0_pre20260915-r6`. Regenerate the
-package Manifest whenever this immutable pin changes. Each checkpoint is a
-local reviewed snapshot and has not been pushed to the public remote. The
-ebuild uses `RESTRICT=fetch`. Generate the exact source archive locally from
-the pinned commit, then place it in Portage's DISTDIR:
+The current repair checkpoint is `0.1.0_pre20260919-r9`, pinned to
+`db088c55f02042f5a007bccde48a9c8beb579375`. Regenerate the package Manifest
+whenever the immutable source pin changes. The ebuild uses `RESTRICT=fetch`;
+generate the exact source archive locally from the pinned commit, then place
+it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=33504d61f0bcb573c3f7ded20beab5858a254d0c
+qq_source_commit=db088c55f02042f5a007bccde48a9c8beb579375
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260913-r3.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260919-r9.tar.gz
 ```
+
+The September 19 r9 repair backports the owned-registration lifetime fix to
+installed r8 (`c99d39c4`). A disappearing application-menu connection used to
+leave the registrar reading a removed hash entry, corrupting the shell heap.
+See [the registrar lifetime contract](../shell/global-menu.md#appmenu-registrar-transport)
+and [its sanitizer regression](testing-harness.md#current-global-menu-production-shell-proof).
+The patch preserves the existing runtime ABI and session contract. For this
+specific r8-to-r9 update, the existing supervisor can adopt the installed
+repair by replacing only its shell child; KWin, the supervisor, notification
+host, and applications remain running.
+
+On qinda, the signed r9 package passed isolated production-shell checks at
+1080p, WUXGA, and 1440p before the binary-only Portage merge. The replacement
+shell then retired 256 menu registrations across 64 private-peer disconnects
+without restarting. All 20 tracked application/session process identities
+survived. The separate keyboard/file-browsing source audit remains a later
+main-branch change; r9 deliberately carries only this repair over r8. qinda-top
+has not been changed by this deployment.
 
 The September 13 r3 checkpoint packages the reviewed delivery through
 `33504d61`: current Desktop/Customize behavior, Dock magnification and
