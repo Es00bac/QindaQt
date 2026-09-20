@@ -83,7 +83,7 @@ Q_SIGNALS:
 
 private:
     [[nodiscard]] std::optional<quint64> nextGeneration();
-    void eraseRegistration(const AppMenuRegistration &registration);
+    void eraseRegistration(AppMenuRegistration registration);
 
     QHash<quint32, AppMenuRegistration> m_byWindow;
     QHash<QString, QSet<quint32>> m_windowsByOwner;

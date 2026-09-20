@@ -1164,6 +1164,12 @@ source-boundary checker that must reject four planted runtime/platform
 poisons. The registrar row covers exact standard lookup/list calls,
 cross-caller replacement/unregister refusal, capacity, stale owner-generation
 rejection, name collision rollback, and automatic unique-owner retirement.
+`qindaqt.global-menu-registrar-retirement` separately exercises last-window,
+multi-window, and full-capacity owner loss, checking the removed signal values
+and surviving owners without retaining shared registration storage in the
+fixture. Build and run this row with AddressSanitizer when changing registry
+lifetime handling: it detects the freed-owner reference-count write that caused
+the September 19 shell aborts, even when a normal allocator masks the defect.
 The dbusmenu rows cover recursive wire marshalling, all standard calls,
 properties, invalidation signals, depth/item/text/icon/shortcut bounds, unknown
 property tolerance, changed-equal (replayed) revision rejection, owner loss, and
