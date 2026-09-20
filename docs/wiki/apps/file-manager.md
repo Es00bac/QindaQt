@@ -115,6 +115,8 @@ has an icon button to remove it. Places retain both recognizable icons and label
 Places, saved Network locations and Bookmarks share one scrollable viewport,
 so a long network inventory cannot push bookmarks outside a short window.
 Keyboard focus reveals the focused row, including each remove button.
+Removing the last bookmark collapses the empty bookmark list so its old height
+does not leave blank scrollable space in the sidebar.
 Preferences pages likewise scroll within their window; the common Close and
 Restore Defaults footer stays reachable when help or errors make a page tall.
 the sidebar narrows from 196 to 148 pixels below 680 pixels window width. Bookmarks persist across restarts through

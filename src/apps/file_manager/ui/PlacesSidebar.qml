@@ -198,6 +198,7 @@ Control {
                 ColumnLayout {
                     objectName: "bookmarkList"
                     Layout.fillWidth: true
+                    visible: root.placesController.bookmarks.length > 0
                     spacing: 0
                     Accessible.role: Accessible.List
                     Accessible.name: qsTr("Bookmarks")
