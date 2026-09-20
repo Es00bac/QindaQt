@@ -153,6 +153,9 @@ and partial startup rolls back.
   owner-loss callback must carry the current owner generation or it cannot
   retire anything. When a unique connection disappears, all and only its
   registrations are removed and standard unregistration signals are emitted.
+  Removal retains an owned registration value through index cleanup and signal
+  delivery; it must never read the erased hash entry. This prevents application
+  menu disconnection from corrupting the shell heap.
 - The registry is not an authentication authority. Numeric window ids become
   meaningful only through the injected `RegistrarWindowIdSource`, which maps a
   compositor-authenticated opaque identity or returns no match.
