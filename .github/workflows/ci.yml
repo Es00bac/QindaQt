@@ -113,8 +113,8 @@ jobs:
           wayland-protocols wireplumber
 
       - name: Configure
-        # QindaTK currently has only a local source repository. These hosted
-        # lanes cannot provision it; the native desktop build qualifies Viewer.
+        # Hosted lanes keep the reduced matrix without provisioning QindaTK.
+        # Its source is public; the native desktop build still qualifies Viewer.
         run: >-
           cmake -S . -B build/ci -G Ninja -DBUILD_TESTING=ON
           -DQINDAQT_BUILD_VIEWER=OFF
