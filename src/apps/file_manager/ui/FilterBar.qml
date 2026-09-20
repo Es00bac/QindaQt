@@ -18,13 +18,13 @@ Control {
 
     function stopSearch() {
         if (searchDebounce) searchDebounce.stop()
-        root.searchController.cancel()
+        if (root.searchController) root.searchController.cancel()
     }
 
     // AGENT-GUARD: A hidden filter or a new folder must not inherit a queued
     // recursive search. Its timer otherwise uses the new folder at delivery.
     onVisibleChanged: if (!visible) stopSearch()
-    readonly property string searchPath: navigationController.currentPath
+    readonly property string searchPath: navigationController ? navigationController.currentPath : ""
     onSearchPathChanged: stopSearch()
 
     background: Rectangle {
