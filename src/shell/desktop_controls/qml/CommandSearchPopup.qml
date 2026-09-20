@@ -28,7 +28,7 @@ ControlPopupFrame {
     initialFocusItem: searchField
 
     function activateIndex(index) {
-        if (!ready || index < 0 || index >= resultRows.length)
+        if (!ready || index < 0 || index >= resultRows.length || !resultRows[index].enabled)
             return
         const generation = resultRows[index].generation === undefined
                            ? ""
@@ -37,8 +37,19 @@ ControlPopupFrame {
             popup.close()
     }
 
-    function focusRow(index) {
+    function firstEnabledIndex() {
+        for (let index = 0; index < resultRows.length; ++index) {
+            if (resultRows[index].enabled)
+                return index
+        }
+        return -1
+    }
+
+    function focusRow(index, direction = 1) {
+        while (index >= 0 && index < resultRows.length && !resultRows[index].enabled)
+            index += direction
         if (index < 0) {
+            popup.currentIndex = -1
             searchField.forceActiveFocus(Qt.TabFocusReason)
             return
         }
@@ -66,8 +77,8 @@ ControlPopupFrame {
         accessibleDescription: qsTr("Type to search; press Down to move to the results")
         onTextEdited: if (popup.ready) popup.access.query = text
         Keys.onDownPressed: popup.focusRow(0)
-        Keys.onReturnPressed: popup.activateIndex(0)
-        Keys.onEnterPressed: popup.activateIndex(0)
+        Keys.onReturnPressed: popup.activateIndex(popup.firstEnabledIndex())
+        Keys.onEnterPressed: popup.activateIndex(popup.firstEnabledIndex())
     }
 
     C.Label {
@@ -132,7 +143,7 @@ ControlPopupFrame {
                     current: index === popup.currentIndex
                     Accessible.name: String(modelData.accessibleName)
                     onActivated: popup.activateIndex(index)
-                    Keys.onUpPressed: popup.focusRow(index - 1)
+                    Keys.onUpPressed: popup.focusRow(index - 1, -1)
                     Keys.onDownPressed: popup.focusRow(index + 1)
                     onActiveFocusChanged: {
                         if (activeFocus) {

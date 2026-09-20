@@ -11,13 +11,29 @@ Rectangle {
     id: root
 
     required property var navigationController
+    property bool awaitingNavigation: false
 
     signal closed()
 
     function activate() {
+        awaitingNavigation = false
         field.text = root.navigationController.currentPath
         field.forceActiveFocus()
         field.selectAll()
+    }
+
+    function finishNavigation() {
+        if (!awaitingNavigation || navigationController.statusKey === "loading")
+            return
+        awaitingNavigation = false
+        if (navigationController.statusKey === "ready" || navigationController.statusKey === "empty")
+            root.closed()
+    }
+
+    onVisibleChanged: if (!visible) awaitingNavigation = false
+    Connections {
+        target: root.navigationController
+        function onEntriesChanged() { root.finishNavigation() }
     }
 
     implicitHeight: 40
@@ -35,11 +51,11 @@ Rectangle {
             Accessible.name: qsTr("Location")
 
             onAccepted: {
+                root.awaitingNavigation = true
                 root.navigationController.navigateTo(text)
-                if (root.navigationController.statusKey === "ready"
-                        || root.navigationController.statusKey === "empty")
-                    root.closed()
+                root.finishNavigation()
             }
+            onTextEdited: root.awaitingNavigation = false
             Keys.onEscapePressed: root.closed()
         }
 

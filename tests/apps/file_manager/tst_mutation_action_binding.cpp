@@ -128,6 +128,16 @@ void TestMutationActionBinding::remoteBrowsingDisablesFolderMutationsButNotEmpty
   QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.new-folder")), std::optional<bool>(true));
   QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.empty-trash")), std::optional<bool>(true));
 
+  navigation.setFolderViewActive(false);
+  for (const char *id : {"file.new-folder", "file.rename", "file.copy", "file.move",
+                         "file.trash", "edit.select-all", "view.filter"}) {
+    QCOMPARE(actionEnabled(coordinator, QLatin1String(id)), std::optional<bool>(false));
+    QVERIFY(!coordinator.activateAction(QLatin1String(id)));
+  }
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.empty-trash")), std::optional<bool>(true));
+  navigation.setFolderViewActive(true);
+  QCOMPARE(actionEnabled(coordinator, QStringLiteral("file.new-folder")), std::optional<bool>(true));
+
   navigation.navigateTo(QStringLiteral("smb://server/share"));
   QCOMPARE(navigation.remoteActive(), true);
 

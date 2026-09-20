@@ -95,6 +95,18 @@ surfaces with thin dividers; no gradient is painted behind navigation controls. 
 holds direct location entry, hidden files, refresh, sorting and Trash recovery.
 `Ctrl+L` replaces the breadcrumbs with an editable location field; Enter uses the
 same normalized navigation boundary, and Escape restores the breadcrumbs.
+Successful asynchronous network navigation also restores the breadcrumbs once
+the listing arrives; failed navigation keeps the location field available for
+correction. Closing location entry returns keyboard focus to the folder view.
+Folder-specific menu actions and shortcuts are disabled while Applications
+or the Network hub is visible, including actions on a retained file selection.
+The window supplies the nonpersistent `folderViewActive` presentation flag to
+the existing browsing, mutation, and clipboard action bindings. Home and
+location entry return to the folder view even when its path is unchanged.
+Folder navigation leaves the Applications or Network hub through the
+controller's `navigationChanged` notification. New Folder is available in the
+toolbar for remote locations that support creation, and disables while their
+creation operation is pending.
 Tooltips and accessible labels explain every icon action.
 
 The places sidebar offers fixed places (Home, File System, Trash) and the
@@ -115,6 +127,10 @@ every crossed entry on release, with the usual modifier policy (a plain band
 replaces the selection, Shift unions, Control toggles); a band-free click on
 empty space clears it. Selection also composes from click, Ctrl+click, and
 Shift+click range gestures, `Ctrl+A`, and keyboard navigation. Details mode
+supports additive Ctrl+Shift ranges just like the icon grid, with the same
+behavior from the keyboard. Selection identity includes each entry's path so
+same-name hard links in different recursive-search folders stay distinct.
+Details mode
 alternates row backgrounds (odd rows carry the palette's `alternateBase`, even
 rows stay transparent, hover is a translucent highlight tint on either parity,
 and the selection highlight always wins) so adjacent rows are easy to tell
@@ -182,7 +198,9 @@ count or the reached limit); the window's current folder does not change, and
 any navigation, refresh, or filter close discards it. A committed file
 operation restarts the in-flight search so the result set reflects the new
 tree state. Case-insensitivity, hidden-file opt-in, and input bounds match the
-plain filter.
+plain filter. Clearing the query also discards the recursive result set.
+Closing the filter or navigating elsewhere cancels its pending debounce and
+worker so a delayed search cannot replace the new view.
 
 Selection is shared between list and grid views. Ctrl-click toggles individual
 files; Shift-click and Shift+arrows select a range; Ctrl+A selects all visible
@@ -191,7 +209,7 @@ focus outline. Grid Up/Down move by a row. Right-clicking an already selected
 file keeps the batch selected for the context menu.
 
 Sorting and refreshing keep the same selected files, identified by name,
-device and inode. Filtering drops entries that are no longer visible; revealing
+path, device and inode. Filtering drops entries that are no longer visible; revealing
 them again does not silently reselect them. Opening another folder clears the
 selection. The focus outline may start at the first item, but that alone does
 not select it for a file operation. Switching list/grid preserves both focus

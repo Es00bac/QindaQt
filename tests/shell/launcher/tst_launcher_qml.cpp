@@ -576,13 +576,34 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Up);
     QTRY_VERIFY(field->hasActiveFocus());
 
+    // A short popup must reveal the focused result instead of accepting
+    // keyboard activation on a row clipped below the viewport.
+    const qreal originalHeight = popup->property("height").toReal();
+    popup->setProperty("height", 220);
+    auto *results = root->findChild<QQuickItem *>(QStringLiteral("launcherAppletResults"));
+    QVERIFY(results != nullptr);
+    auto *viewport = results->property("contentItem").value<QQuickItem *>();
+    QVERIFY(viewport != nullptr);
+    QTRY_VERIFY(viewport->height() < originalHeight - 100);
+    QVERIFY(QMetaObject::invokeMethod(root, "focusRow", Q_ARG(QVariant,
+        root->property("totalRows").toInt() - 1)));
+    QTRY_VERIFY(activeResultRow(popupContent(root)) != nullptr);
+    auto *lastRow = activeResultRow(popupContent(root));
+    QTRY_VERIFY(lastRow->mapToItem(viewport, QPointF(0, 0)).y() >= -1);
+    QTRY_VERIFY(lastRow->mapToItem(viewport, QPointF(0, lastRow->height())).y()
+                <= viewport->height() + 1);
+    popup->setProperty("height", originalHeight);
+    field->forceActiveFocus();
+
     // Space and Return are pointer-equivalent activation paths.
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QTRY_COMPARE(stack.spawner.requests.size(), 1);
     QCOMPARE(stack.spawner.requests.constFirst().program,
              QStringLiteral("qindaqt-editor"));
-    field->forceActiveFocus();
+    QTRY_VERIFY(!popup->property("opened").toBool());
+    QVERIFY(QMetaObject::invokeMethod(root, "openBrowser"));
+    QTRY_VERIFY(popup->property("opened").toBool());
     QTRY_VERIFY(field->hasActiveFocus());
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
@@ -591,7 +612,6 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
     QCOMPARE(stack.spawner.requests.constLast().program,
              QStringLiteral("qindaqt-editor"));
 
-    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
 
     // The offscreen platform does not reactivate the transient parent.
@@ -611,6 +631,10 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
     QVERIFY(visualItemNamed(popupContent(root),
                             QStringLiteral("launcherSectionHeader-searchResults"))
             != nullptr);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Return);
+    QTRY_COMPARE(stack.spawner.requests.size(), 3);
+    QTRY_VERIFY(!popup->property("opened").toBool());
+    QCOMPARE(stack.controller.query(), QString{});
 }
 
 void LauncherQmlTests::nullAccessShowsDisabledFallback()

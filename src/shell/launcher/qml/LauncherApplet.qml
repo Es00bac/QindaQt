@@ -59,6 +59,22 @@ Item {
             browserContent.item.focusSearch()
     }
 
+    function activateEntry(entryId) {
+        if (available && access.activate(entryId, ""))
+            browser.close()
+    }
+
+    function activateFirstResult() {
+        if (!available || !access.launchGranted)
+            return
+        for (const section of access.sections) {
+            if (section.items && section.items.length > 0) {
+                activateEntry(section.items[0].entryId)
+                return
+            }
+        }
+    }
+
     function openBrowser() {
         if (!root.available)
             return
@@ -124,6 +140,7 @@ Item {
         modal: false
         focus: true
         closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
+        onClosed: if (root.available) root.access.query = ""
 
         background: Rectangle {
             radius: Tokens.ready ? Tokens.radius.l : 0
@@ -170,12 +187,12 @@ Item {
                         placeholderText: qsTr("Search applications")
                         accessibleName: qsTr("Search applications")
                         accessibleDescription:
-                            qsTr("Type to filter applications; press Down to move to the results")
+                            qsTr("Type to filter applications; Enter launches the first result, Down moves to the results")
                         onTextEdited: if (root.available)
                             root.access.query = text
                         Keys.onDownPressed: root.focusRow(0)
-                        Keys.onReturnPressed: root.focusRow(0)
-                        Keys.onEnterPressed: root.focusRow(0)
+                        Keys.onReturnPressed: root.activateFirstResult()
+                        Keys.onEnterPressed: root.activateFirstResult()
                     }
 
                     Label {
@@ -231,6 +248,19 @@ Item {
                         clip: true
                         focusPolicy: Qt.NoFocus
 
+                        function reveal(item) {
+                            const flick = contentItem
+                            if (!item || !flick || flick.height <= 0)
+                                return
+                            const top = item.mapToItem(sectionColumn, 0, 0).y
+                            const bottom = top + item.height
+                            const maximumY = Math.max(0, flick.contentHeight - flick.height)
+                            if (top < flick.contentY)
+                                flick.contentY = Math.max(0, Math.min(top, maximumY))
+                            else if (bottom > flick.contentY + flick.height)
+                                flick.contentY = Math.max(0, Math.min(bottom - flick.height, maximumY))
+                        }
+
                         ColumnLayout {
                             id: sectionColumn
 
@@ -264,6 +294,8 @@ Item {
                                     flatBase: computedBase
                                     onFlatFocusRequested: flatIndex =>
                                         root.focusRow(flatIndex)
+                                    onActivationRequested: entryId => root.activateEntry(entryId)
+                                    onRevealRequested: item => resultsView.reveal(item)
                                 }
                             }
                         }

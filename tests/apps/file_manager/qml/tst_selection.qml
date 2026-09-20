@@ -76,4 +76,20 @@ TestCase {
         selection.selectOnly(1); selection.toggle(1)
         compare(names(), ""); compare(selection.currentIndex, 1)
     }
+    function test_controlShiftAddsRange() {
+        selection.selectOnly(0)
+        selection.toggle(3)
+        selection.moveTo(2, Qt.ControlModifier | Qt.ShiftModifier)
+        compare(names(), "a,c,d")
+    }
+    function test_recursiveHardLinksRemainSeparateEntries() {
+        const first = Object.assign(entry("same.txt", 7), {path: "/one/a/same.txt"})
+        const second = Object.assign(entry("same.txt", 7), {path: "/one/b/same.txt"})
+        navigation.entries = [first, second]
+        selection.selectOnly(0)
+        compare(selection.count(), 1)
+        compare(selection.selectedEntries().length, 1)
+        compare(selection.selectedEntries()[0].path, first.path)
+        verify(!selection.isSelected(1))
+    }
 }

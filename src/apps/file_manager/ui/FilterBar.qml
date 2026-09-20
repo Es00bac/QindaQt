@@ -16,6 +16,17 @@ Control {
 
     function activate() { field.forceActiveFocus(); field.selectAll() }
 
+    function stopSearch() {
+        if (searchDebounce) searchDebounce.stop()
+        root.searchController.cancel()
+    }
+
+    // AGENT-GUARD: A hidden filter or a new folder must not inherit a queued
+    // recursive search. Its timer otherwise uses the new folder at delivery.
+    onVisibleChanged: if (!visible) stopSearch()
+    readonly property string searchPath: navigationController.currentPath
+    onSearchPathChanged: stopSearch()
+
     background: Rectangle {
         color: root.palette.window
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.palette.mid }
@@ -37,8 +48,11 @@ Control {
             maximumLength: root.navigationController.maximumNameFilterLength
             text: root.navigationController.nameFilter
             onTextEdited: {
+                root.stopSearch()
                 root.navigationController.setNameFilter(text)
-                if (subfoldersToggle.checked)
+                if (text.trim().length === 0 && root.navigationController.guestListingActive)
+                    root.navigationController.clearGuestListing()
+                else if (subfoldersToggle.checked)
                     searchDebounce.restart()
             }
             onAccepted: root.browseRequested()

@@ -116,6 +116,10 @@ pinned/recent ids that are no longer visible entries silently disappear from
 the projection.
 
 The launcher keeps primary click, Space, and Enter as activation actions. A
+search-field Enter launches the first result directly. Accepted launches close
+the popup and clear its query; refused launches leave their feedback visible.
+Up/Down and Tab navigation reveal the focused row, including its Pin button,
+within the scroll viewport. A
 row fills the available results viewport, keeps its application name on one
 elided line, and exposes a compact keyboard-focusable Pin or Unpin button. It calls the existing
 controller mutation and has no independent QML pin state. This makes the
