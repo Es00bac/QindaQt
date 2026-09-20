@@ -11,7 +11,7 @@ ToolBar {
     required property var appCoordinator
     property alias primaryFocusItem: newFolderButton
     property alias locationBar: locationBar
-    signal browseRequested()
+    signal browseRequested();
     padding: 4
 
     RowLayout {

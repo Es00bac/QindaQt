@@ -224,14 +224,15 @@ TestCase {
         browser = sidebarComponent.createObject(testCase)
         verify(browser !== null)
         waitForRendering(browser)
-        const list = findChild(browser, "bookmarkList")
-        const bar = findChild(browser, "bookmarkScrollBar")
+        const list = findChild(browser, "placesSidebarScroller")
+        const bar = findChild(browser, "placesSidebarScrollBar")
         verify(bar.visible)
         verify(bar.x >= list.width)
         mouseDrag(bar, bar.width / 2, bar.height * bar.visualSize / 2,
                   0, bar.height * 0.6)
         tryVerify(() => list.contentY > 0)
         places.bookmarks = []
+        browser.height = 800
         tryCompare(bar, "visible", false)
     }
     function test_shortFolderHidesBar_data() { return [{tag:"Grid"}, {tag:"List"}] }
