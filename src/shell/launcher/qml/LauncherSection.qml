@@ -55,6 +55,8 @@ ColumnLayout {
     }
 
     signal flatFocusRequested(int flatIndex)
+    signal activationRequested(string entryId)
+    signal revealRequested(Item item)
 
     spacing: Tokens.space["1"]
 
@@ -96,11 +98,11 @@ ColumnLayout {
             Accessible.description: modelData.accessibleDescription
 
             function launch() {
-                if (root.controller !== null)
-                    root.controller.activate(modelData.entryId, "")
+                root.activationRequested(modelData.entryId)
             }
 
             onClicked: launch()
+            onActiveFocusChanged: if (activeFocus) root.revealRequested(row)
             Keys.onReturnPressed: launch()
             Keys.onEnterPressed: launch()
             Keys.onSpacePressed: launch()
@@ -158,6 +160,7 @@ ColumnLayout {
                     accessibleDescription: row.modelData.pinned
                         ? qsTr("Remove this application from Quick Launch")
                         : qsTr("Add this application to Quick Launch")
+                    onActiveFocusChanged: if (activeFocus) root.revealRequested(row)
                     onClicked: {
                         if (row.modelData.pinned)
                             root.controller.unpin(row.modelData.entryId)

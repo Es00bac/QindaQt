@@ -18,11 +18,34 @@ TestCase {
         property string statusMessage: ""
         property string sortColumn: "name"
         property string sortDirection: "ascending"
+        property string statusKey: "ready"
+        property string nameFilter: ""
+        property int maximumNameFilterLength: 256
+        property bool guestListingActive: false
+        property bool showHidden: false
         signal navigationChanged()
         function goUp() {}
         function activate(index) {}
         function setSortColumn(key) {}
+        function setNameFilter(text) { nameFilter = text }
+        function clearGuestListing() { guestListingActive = false }
+        function navigateTo(path) { currentPath = path; statusKey = "loading"; navigationChanged() }
     }
+    QtObject {
+        id: search
+        property int requests: 0
+        function cancel() {}
+        function startSearch(path, query, hidden) { requests++ }
+    }
+    Component {
+        id: filterComponent
+        Files.FilterBar { width: 640; navigationController: navigation; searchController: search }
+    }
+    Component {
+        id: locationComponent
+        Files.LocationBar { width: 640; navigationController: navigation }
+    }
+    SignalSpy { id: locationClosed; signalName: "closed" }
     QtObject { id: coordinator; function activateAction(action) {} }
     Files.EntrySelection { id: fixtureSelection; navigationController: navigation }
     Component {
@@ -70,6 +93,11 @@ TestCase {
     property var browser
     property var view
     function init() {
+        navigation.currentPath = "/fixture"
+        navigation.statusKey = "ready"
+        navigation.nameFilter = ""
+        navigation.guestListingActive = false
+        search.requests = 0
         let entries = []
         for (let i = 0; i < 120; ++i)
             entries.push({name: "File " + String(i).padStart(3, "0"), device: "1",
@@ -93,6 +121,42 @@ TestCase {
         waitForRendering(browser)
     }
     function test_scrollAndZoom_data() { return [{tag:"Grid"}, {tag:"List"}] }
+    function test_locationWaitsForListing() {
+        const bar = createTemporaryObject(locationComponent, testCase)
+        verify(bar)
+        locationClosed.target = bar
+        locationClosed.clear()
+        bar.activate()
+        const field = findChild(bar, "locationField")
+        field.text = "sftp://fixture/folder"
+        keyClick(Qt.Key_Return)
+        compare(locationClosed.count, 0)
+        navigation.statusKey = "ready"
+        navigation.entriesChanged()
+        compare(locationClosed.count, 1)
+        locationClosed.target = null
+    }
+    function test_recursiveFilterClearsAndCancelsDebounce() {
+        const bar = createTemporaryObject(filterComponent, testCase)
+        verify(bar)
+        const toggle = findChild(bar, "filterSubfoldersToggle")
+        toggle.checked = true
+        const field = findChild(bar, "folderFilterField")
+        bar.activate()
+        for (const key of [Qt.Key_M, Qt.Key_A, Qt.Key_T, Qt.Key_C, Qt.Key_H]) keyClick(key)
+        bar.visible = false
+        wait(350)
+        compare(search.requests, 0)
+        bar.visible = true
+        bar.activate()
+        navigation.guestListingActive = true
+        keyClick(Qt.Key_Backspace)
+        verify(!navigation.guestListingActive)
+        for (const key of [Qt.Key_N, Qt.Key_E, Qt.Key_W]) keyClick(key)
+        navigation.currentPath = "/another-folder"
+        wait(350)
+        compare(search.requests, 0)
+    }
     function test_scrollAndZoom(data) {
         open(data.tag)
         const bar = findChild(browser, "entry" + data.tag + "ScrollBar")

@@ -34,6 +34,11 @@ ApplicationWindow {
     // ADR-0194: the Network place's hub replaces the folder views while true.
     // Browsing to any folder leaves it, exactly as the Applications browser does.
     property bool networkMode: false
+    Binding {
+        target: root.navigationController
+        property: "folderViewActive"
+        value: !root.applicationsMode && !root.networkMode
+    }
     // ADR-0165: --choose-application turns the Applications browser into a
     // workspace picker; a successful choice quits the picker window after
     // the compositor closes it (see chooserSucceeded handling below).
@@ -106,7 +111,7 @@ ApplicationWindow {
         target: root.navigationController
         // Browsing to any folder exits the Applications browser; the folder
         // views are the default surface and a Places click must land there.
-        function onCurrentPathChanged() {
+        function onNavigationChanged() {
             root.applicationsMode = false
             root.networkMode = false
         }
@@ -141,14 +146,17 @@ ApplicationWindow {
         function onActionRequested(actionId) {
             const navigation = root.navigationController
             if (actionId === "go.applications") {
+                if (filterBar.visible) filterBar.closed()
                 root.networkMode = false
                 root.applicationsMode = true
                 return
             } else if (actionId === "go.network") {
+                if (filterBar.visible) filterBar.closed()
                 root.applicationsMode = false
                 root.networkMode = true
                 return
             } else if (actionId === "network.connect") {
+                if (filterBar.visible) filterBar.closed()
                 root.applicationsMode = false
                 root.networkMode = true
                 windowServices.openConnectDialog("")
@@ -180,6 +188,8 @@ ApplicationWindow {
                 filterBar.visible = true
                 filterBar.activate()
             } else if (actionId === "view.focus-location") {
+                root.applicationsMode = false
+                root.networkMode = false
                 toolbar.locationBar.visible = true
                 toolbar.locationBar.activate()
             } else if (actionId === "edit.select-all") {
@@ -195,6 +205,8 @@ ApplicationWindow {
                 if (root.propertiesController.active)
                     propertiesDialog.open()
             } else if (actionId === "go.home") {
+                root.applicationsMode = false
+                root.networkMode = false
                 const places = root.placesController.places
                 if (places.length > 0)
                     navigation.navigateTo(places[0].path)
@@ -264,10 +276,11 @@ ApplicationWindow {
         Toolbar {
             id: toolbar
             Layout.fillWidth: true
-            visible: !root.applicationsMode
+            visible: !root.applicationsMode && !root.networkMode
             navigationController: root.navigationController
             mutationController: root.mutationController
             appCoordinator: root.coordinator
+            onBrowseRequested: root.activeView().focusView()
         }
 
         FilterBar {
@@ -368,6 +381,7 @@ ApplicationWindow {
 
         FolderStatusBar {
             Layout.fillWidth: true
+            visible: !root.applicationsMode && !root.networkMode
             navigationController: root.navigationController
             selection: entrySelection
             appCoordinator: root.coordinator

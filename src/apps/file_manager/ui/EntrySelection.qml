@@ -18,7 +18,8 @@ QtObject {
     Component.onCompleted: reconcile()
 
     function key(entry) {
-        return entry ? JSON.stringify([entry.name, entry.device, entry.inode]) : ""
+        // Recursive results can contain same-name hard links in different folders.
+        return entry ? JSON.stringify([entry.path, entry.name, entry.device, entry.inode]) : ""
     }
     function indexOfKey(value) {
         const entries = navigationController.entries
@@ -52,7 +53,7 @@ QtObject {
         focusIndex(index)
         anchorKey = currentKey
     }
-    function rangeTo(index) {
+    function rangeTo(index, additive = false) {
         const entries = navigationController.entries
         if (index < 0 || index >= entries.length) return
         let anchor = indexOfKey(anchorKey)
@@ -60,7 +61,7 @@ QtObject {
             anchor = currentIndex >= 0 ? currentIndex : index
             anchorKey = key(entries[anchor])
         }
-        const next = ({})
+        const next = additive ? Object.assign({}, selected) : ({})
         for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); ++i)
             next[key(entries[i])] = entries[i]
         selected = next
@@ -102,7 +103,7 @@ QtObject {
         selected = next
     }
     function moveTo(index, modifiers) {
-        if (modifiers & Qt.ShiftModifier) rangeTo(index)
+        if (modifiers & Qt.ShiftModifier) rangeTo(index, Boolean(modifiers & Qt.ControlModifier))
         else if (modifiers & Qt.ControlModifier) focusIndex(index)
         else selectOnly(index)
     }

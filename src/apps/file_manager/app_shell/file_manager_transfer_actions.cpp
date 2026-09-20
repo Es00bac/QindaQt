@@ -20,8 +20,8 @@ void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinato
     };
     // A remote entry carries no local mutation identity; disable every
     // current-selection mutation action while browsing smb/sftp (S5).
-    const bool idle = !mutation.busy() && !navigation.remoteActive();
-    const bool hasSelection = clipboard.selectionCount() > 0;
+    const bool idle = navigation.folderViewActive() && !mutation.busy() && !navigation.remoteActive();
+    const bool hasSelection = navigation.folderViewActive() && clipboard.selectionCount() > 0;
     enabled("edit.cut", idle && hasSelection);
     enabled("edit.copy", idle && hasSelection);
     enabled("edit.paste", idle && clipboard.canPaste());
@@ -32,6 +32,8 @@ void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinato
   QObject::connect(&mutation, &MutationController::stateChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::navigationChanged,
+                   &coordinator, sync);
+  QObject::connect(&navigation, &NavigationController::presentationChanged,
                    &coordinator, sync);
   sync();
 }

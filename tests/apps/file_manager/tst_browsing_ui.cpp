@@ -165,6 +165,21 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   QTRY_COMPARE(navigation.entries().size(), 160);
   QTRY_VERIFY(grid->hasActiveFocus());
 
+  // Location dismissal restores browsing focus. The real notifier must also
+  // leave special routes when a folder is opened.
+  QTest::keyClick(window, Qt::Key_L, Qt::ControlModifier);
+  auto *locationField = window->findChild<QQuickItem *>("locationField");
+  QVERIFY(locationField);
+  QTRY_VERIFY(locationField->hasActiveFocus());
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_VERIFY(grid->hasActiveFocus());
+  window->setProperty("applicationsMode", true);
+  navigation.navigateTo(temporary.path());
+  QTRY_VERIFY(!window->property("applicationsMode").toBool());
+  window->setProperty("networkMode", true);
+  navigation.navigateTo(folder);
+  QTRY_VERIFY(!window->property("networkMode").toBool());
+
   auto *forward = window->findChild<QQuickItem *>("navigateForwardButton");
   QVERIFY(forward && forward->isVisible());
   const auto toolbar = window->findChild<QQuickItem *>("fileManagerToolbar");

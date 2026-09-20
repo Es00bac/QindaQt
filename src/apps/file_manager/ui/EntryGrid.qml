@@ -259,11 +259,11 @@ Control {
                             gridView.forceActiveFocus()
                             if (mouse.button === Qt.RightButton && selection.isSelected(delegateRoot.index)) {
                                 selection.focusIndex(delegateRoot.index)
+                            } else if (mouse.modifiers & Qt.ShiftModifier) {
+                                selection.rangeTo(delegateRoot.index, Boolean(mouse.modifiers & Qt.ControlModifier))
+                                selection.focusIndex(delegateRoot.index)
                             } else if (mouse.modifiers & Qt.ControlModifier) {
                                 selection.toggle(delegateRoot.index)
-                                selection.focusIndex(delegateRoot.index)
-                            } else if (mouse.modifiers & Qt.ShiftModifier) {
-                                selection.rangeTo(delegateRoot.index)
                                 selection.focusIndex(delegateRoot.index)
                             } else {
                                 selection.selectOnly(delegateRoot.index)

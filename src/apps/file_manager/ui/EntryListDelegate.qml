@@ -118,10 +118,10 @@ Rectangle {
             if (delegateRoot.ListView.view)
                 delegateRoot.ListView.view.forceActiveFocus();
             if (mouse.button === Qt.RightButton && delegateRoot.selection.isSelected(delegateRoot.index)) {
+            } else if (mouse.modifiers & Qt.ShiftModifier) {
+                delegateRoot.selection.rangeTo(delegateRoot.index, Boolean(mouse.modifiers & Qt.ControlModifier));
             } else if (mouse.modifiers & Qt.ControlModifier) {
                 delegateRoot.selection.toggle(delegateRoot.index);
-            } else if (mouse.modifiers & Qt.ShiftModifier) {
-                delegateRoot.selection.rangeTo(delegateRoot.index);
             } else {
                 delegateRoot.selection.selectOnly(delegateRoot.index);
             }

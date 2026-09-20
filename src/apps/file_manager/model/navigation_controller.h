@@ -51,6 +51,8 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool directoriesFirst READ directoriesFirst NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool showHidden READ showHidden NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString viewMode READ viewMode NOTIFY presentationChanged FINAL)
+  Q_PROPERTY(bool folderViewActive READ folderViewActive WRITE setFolderViewActive
+                 NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString nameFilter READ nameFilter NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool guestListingActive READ guestListingActive NOTIFY entriesChanged FINAL)
   Q_PROPERTY(int maximumNameFilterLength READ nameFilterLengthLimit CONSTANT FINAL)
@@ -87,6 +89,15 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool remoteMoveBusy READ remoteMoveBusy NOTIFY remoteMoveChanged FINAL)
 
 public:
+  // Window-local presentation only; never persisted. All folder action
+  // bindings use this so hidden folder selections cannot receive shortcuts.
+  [[nodiscard]] bool folderViewActive() const { return m_folderViewActive; }
+  void setFolderViewActive(bool active) {
+    if (m_folderViewActive == active) return;
+    m_folderViewActive = active;
+    emit presentationChanged();
+  }
+
   // networkBackend may be null: navigateTo() then refuses every smb/sftp
   // location with a typed Unavailable status instead of routing anywhere,
   // and every existing local-only caller/test is unaffected. remoteOpener
@@ -318,6 +329,7 @@ private:
   QString m_viewMode = QStringLiteral("grid");
   QString m_nameFilter;
   bool m_guestActive = false;
+  bool m_folderViewActive = true;
   QString m_guestStatusText;
   int m_iconSizeIndex = 4;
 };

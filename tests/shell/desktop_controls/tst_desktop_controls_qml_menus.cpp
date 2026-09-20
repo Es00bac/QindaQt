@@ -347,6 +347,10 @@ void DesktopControlsQmlMenuTests::commandPaletteSearchesByKeyboardAndActivates()
     QVERIFY(rows.size() >= 2);
     QTRY_VERIFY(rows.at(0)->hasActiveFocus());
     QVERIFY(!rows.at(1)->isEnabled()); // current workspace is not switchable
+    keyClickFocused(host, Qt::Key_Down);
+    QTRY_VERIFY(rows.at(2)->hasActiveFocus());
+    keyClickFocused(host, Qt::Key_Up);
+    QTRY_VERIFY(rows.at(0)->hasActiveFocus());
     keyClickFocused(host, Qt::Key_Space);
     QCOMPARE(workspaces.transport.switchRequests.size(), 1);
     QCOMPARE(workspaces.transport.switchRequests.constLast().desktopId, QStringLiteral("ws-1"));

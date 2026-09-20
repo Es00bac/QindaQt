@@ -11,6 +11,7 @@ ToolBar {
     required property var appCoordinator
     property alias primaryFocusItem: newFolderButton
     property alias locationBar: locationBar
+    signal browseRequested()
     padding: 4
 
     RowLayout {
@@ -53,14 +54,19 @@ ToolBar {
             Layout.minimumWidth: 60
             visible: false
             navigationController: root.navigationController
-            onClosed: visible = false
+            onClosed: {
+                visible = false
+                root.browseRequested()
+            }
         }
         IconButton {
             id: newFolderButton
             objectName: "newFolderButton"
             iconName: "folder-new"
             text: qsTr("New Folder")
-            available: !root.mutationController.busy && !root.navigationController.remoteActive
+            available: (!root.mutationController.busy && !root.navigationController.remoteActive)
+                       || (root.navigationController.remoteCreateAvailable
+                           && !root.navigationController.remoteCreateBusy)
             Accessible.description: qsTr("Create a folder in the current location")
             onClicked: root.appCoordinator.activateAction("file.new-folder")
         }

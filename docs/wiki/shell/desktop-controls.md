@@ -28,6 +28,11 @@ facades. Popups use `Popup.Window` so their keyboard focus and content are not
 clipped by the LayerShell panel band. All actions retain keyboard and
 accessible activation paths.
 
+Command palette, HUD, and overview search skip disabled results during Up/Down
+navigation. Enter in the search field activates the first enabled result;
+an all-disabled result list dispatches nothing. Moving above the first enabled
+row returns focus to the search field.
+
 On the Luna taskbar ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md),
 "Luna taskbar rendering") show desktop and quick launch take the `luna`
 dressing: show desktop paints a white glyph beneath its fully transparent

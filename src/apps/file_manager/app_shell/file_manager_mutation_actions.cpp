@@ -12,8 +12,12 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
                                     NavigationController &navigation,
                                     MutationController &mutation) {
   const auto sync = [&coordinator, &navigation, &mutation] {
-    const auto enabled = [&coordinator](const char *id, bool value) {
-      const auto result = coordinator.setActionEnabled(QLatin1String(id), value);
+    const auto enabled = [&coordinator, &navigation](const char *id, bool value) {
+      const QLatin1String actionId(id);
+      const bool folderAction = actionId == QLatin1String("file.trash") || actionId == QLatin1String("file.copy")
+          || actionId == QLatin1String("file.move") || actionId == QLatin1String("file.rename") || actionId == QLatin1String("file.new-folder");
+      const auto result = coordinator.setActionEnabled(
+          actionId, value && (!folderAction || navigation.folderViewActive()));
       Q_UNUSED(result);
     };
     const bool idle = !mutation.busy() && !navigation.remoteActive();
@@ -61,6 +65,8 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
   QObject::connect(&mutation, &MutationController::stateChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::navigationChanged,
+                   &coordinator, sync);
+  QObject::connect(&navigation, &NavigationController::presentationChanged,
                    &coordinator, sync);
   QObject::connect(&navigation, &NavigationController::remoteRenameChanged,
                    &coordinator, sync);
