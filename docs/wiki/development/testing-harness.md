@@ -70,10 +70,11 @@ The catalog/scanner rows distinguish valid `NoDisplay` MIME handlers from
 See [Viewer](../apps/viewer.md) and
 [Default applications](../apps/default-applications.md) for exact commands.
 
-Hosted build jobs explicitly set `QINDAQT_BUILD_VIEWER=OFF` while QindaTK is
-available only from its local source repository. Their results exclude Viewer;
-native development/package builds keep it enabled with the installed toolkit
-and Poppler dependencies. An enabled configure fails if either is missing.
+Hosted build jobs explicitly set `QINDAQT_BUILD_VIEWER=OFF` in their current
+reduced configuration. [QindaTK source](https://github.com/Es00bac/QindaTK) is
+publicly available, but those jobs still exclude Viewer. Native development/
+package builds keep it enabled with the installed toolkit and Poppler
+dependencies. An enabled configure fails if either is missing.
 
 ## File Manager browsing comfort
 

@@ -34,6 +34,36 @@ The [task list](docs/TASK_LIST.md) records the current desktop-completion work.
 The [integration handoff](docs/HANDOFF.md) distinguishes reviewed source,
 verified runtime behavior, and changes installed in the live session.
 
+## Related projects
+
+The desktop and its supporting projects are published under
+[Es00bac on GitHub](https://github.com/Es00bac). Each repository keeps its own
+build instructions, license and development status.
+
+| Project | Source |
+| --- | --- |
+| Shared Qt Quick toolkit | [QindaTK](https://github.com/Es00bac/QindaTK) |
+| Writer, spreadsheet, presentations and notes | [QindaOffice](https://github.com/Es00bac/QindaOffice) |
+| Native creative studio | [QindaStudio](https://github.com/Es00bac/QindaStudio) |
+| Video and audio player | [QindaMPV](https://github.com/Es00bac/QindaMPV) |
+| Terminal and application sources | [QindaQt_Apps](https://github.com/Es00bac/QindaQt_Apps) |
+| QindaFox browser work in progress | [QindaFox source checkpoint](https://github.com/Es00bac/QindaQt_Apps/tree/snapshot/qinda-20260919/QindaFox) |
+| Desktop control deck | [QindaDeck](https://github.com/Es00bac/QindaDeck) |
+| Venus Pro mouse utility | [QindaVenusPro](https://github.com/Es00bac/UtechSmart-Venus-Pro-Linux-MMO-Mouse-Utility) |
+| Gentoo overlay and shared delivery tools | [QindaGentoo](https://github.com/Es00bac/QindaGentoo) |
+| Five screensavers and shared native rendering | [QindaScreensavers](https://github.com/Es00bac/QindaScreensavers) |
+| Standalone Patrol and Reef histories | [qinda-patrol](https://github.com/Es00bac/qinda-patrol), [circuit-reef](https://github.com/Es00bac/circuit-reef) |
+| SDDM login themes and artwork | [QindaThemes](https://github.com/Es00bac/QindaThemes) |
+| Mega Brawl and Prism Kart | [QindaArcade](https://github.com/Es00bac/QindaArcade) |
+| Sloom Studio | [sloom-studio](https://github.com/Es00bac/sloom-studio) |
+
+The September 19 source publication includes both development machines.
+Uncommitted source is preserved on `snapshot/qinda-20260919` and
+`snapshot/qinda-top-20260919` branches where applicable. These checkpoints
+preserve work in progress; they are not release or runtime-verification claims.
+`SOURCE_SNAPSHOT.md` on each checkpoint records its provenance. Publishing
+source does not install packages or restart either desktop.
+
 ## Build
 
 The `dev` and `release` presets build both the binary KWin integration and
@@ -78,9 +108,10 @@ Thunderbird candidates; these applications are optional.
 
 `QINDAQT_BUILD_VIEWER` defaults to `ON` and requires QindaTK and Poppler.
 An explicit `-DQINDAQT_BUILD_VIEWER=OFF` supports reduced developer builds
-without those dependencies. Hosted CI currently uses that setting because
-QindaTK's source is still locally hosted; Viewer is verified on the native
-development machines. Full desktop packages keep Viewer enabled.
+without those dependencies. Hosted CI currently uses that reduced configuration;
+Viewer is verified on the native development machines. QindaTK source is
+[available on GitHub](https://github.com/Es00bac/QindaTK). Full desktop packages
+keep Viewer enabled.
 
 Rolling repositories may already have moved past KWin 6.6.6. If so, the
 default presets need a coherent 6.6.6 package snapshot or cache — don't

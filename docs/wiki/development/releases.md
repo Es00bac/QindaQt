@@ -91,8 +91,10 @@ this build lane avoids pulling Plasma Workspace and Plasma login sessions into
 a desktop that installs its own session entry. It does not reduce the package
 contract: the full-desktop ebuild still requires release-matched KScreenLocker,
 KWin `lock,shortcuts`, portals, hardware providers, and session utilities.
-Hosted CI also explicitly disables Viewer while QindaTK remains locally
-hosted. Full desktop releases require `QINDAQT_BUILD_VIEWER=ON`, installed
+Hosted CI explicitly disables Viewer in its current reduced build matrix.
+[QindaTK source](https://github.com/Es00bac/QindaTK) is publicly available;
+publishing it does not expand that CI coverage. Full desktop releases require
+`QINDAQT_BUILD_VIEWER=ON`, installed
 QindaTK/Poppler Qt 6/image-format plugins, and the four `apps.viewer.*` gates.
 QindaMPV is a separate post-dependency because it builds against the desktop's
 installed AppShell libraries. The packaged defaults reference its existing
@@ -103,6 +105,21 @@ exact QindaMPV commit named in the recipe, with the matching
 `QindaMPV-COMMIT/` prefix and `gzip -n`; its Manifest verifies those bytes.
 This avoids depending on a developer-specific checkout path. The desktop
 and player archives must both be available before a package transaction.
+
+### Public source repositories
+
+The [ecosystem catalog](https://github.com/Es00bac/QindaQt#related-projects)
+links the desktop, toolkit, applications, Gentoo overlay, screensavers, themes
+and games. The September 19 publication compared the committed tips from both
+development machines and fast-forwarded the existing GitHub default branches.
+Uncommitted source is preserved separately on dated `snapshot/qinda-20260919`
+and `snapshot/qinda-top-20260919` branches, with `SOURCE_SNAPSHOT.md` identifying
+the source and qualification limits. Such a checkpoint is not an accepted
+candidate, completed milestone, tested release or package installation.
+
+Public GitHub publication and the existing package-delivery hub have separate
+roles. Publishing these sources does not change the `qinda-sync` contract,
+override package pins, update either working tree or restart a live session.
 
 ### Sharing a delivery between qinda and qinda-top
 
