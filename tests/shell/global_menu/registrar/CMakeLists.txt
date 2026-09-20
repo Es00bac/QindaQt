@@ -13,3 +13,13 @@ add_test(
     COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_global_menu_registrar_tests>
 )
 set_tests_properties(qindaqt.global-menu-registrar-private-bus PROPERTIES TIMEOUT 20)
+
+qt_add_executable(qindaqt_global_menu_retirement_tests tst_registrar_retirement.cpp)
+target_link_libraries(
+    qindaqt_global_menu_retirement_tests
+    PRIVATE QindaQt::GlobalMenuRegistrar Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_global_menu_retirement_tests)
+add_test(NAME qindaqt.global-menu-registrar-retirement
+         COMMAND qindaqt_global_menu_retirement_tests)
+set_tests_properties(qindaqt.global-menu-registrar-retirement PROPERTIES TIMEOUT 20)
