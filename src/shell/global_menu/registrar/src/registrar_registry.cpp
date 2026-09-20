@@ -140,8 +140,11 @@ RegistrationResult RegistrarRegistry::registerWindow(
             .registration = registration};
 }
 
-void RegistrarRegistry::eraseRegistration(const AppMenuRegistration &registration)
+void RegistrarRegistry::eraseRegistration(AppMenuRegistration registration)
 {
+    // AGENT-GUARD: retireOwner passes an entry owned by m_byWindow. Take a
+    // value before erasing it: hash removal invalidates that entry, and both
+    // index cleanup and synchronous signals still need its window and owner.
     m_byWindow.remove(registration.windowId);
     auto ownerIt = m_windowsByOwner.find(registration.ownerUniqueName);
     if (ownerIt != m_windowsByOwner.end()) {
