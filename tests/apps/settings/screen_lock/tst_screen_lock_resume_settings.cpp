@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <qindaqt/apps/settings_power/screen_lock_settings.h>
+#include <qindaqt/apps/settings_screen_lock/screen_lock_settings.h>
 
 #include <QtCore/QFile>
 #include <QtCore/QSettings>
@@ -9,7 +9,7 @@
 
 #include <memory>
 
-using namespace QindaQt::Apps::SettingsPower;
+using namespace QindaQt::Apps::SettingsScreenLock;
 
 namespace {
 class FakeConfigureClient final : public ScreenLockConfigureClient {

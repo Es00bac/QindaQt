@@ -4,8 +4,6 @@ qt_add_library(qindaqt_settings_power STATIC)
 target_sources(
     qindaqt_settings_power
     PRIVATE power_settings_model.cpp power_settings_projection.cpp
-            screen_lock_settings.cpp qt_screen_lock_configurator.cpp
-            screensaver_settings.cpp lock_screen_saver_store.cpp
             idle_display_settings.cpp lid_power_button_settings.cpp
             external_display_brightness_model.cpp
     PUBLIC
@@ -14,24 +12,15 @@ target_sources(
         FILES
             include/qindaqt/apps/settings_power/power_settings_model.h
             include/qindaqt/apps/settings_power/external_display_brightness_model.h
-            include/qindaqt/apps/settings_power/screen_lock_settings.h
-            include/qindaqt/apps/settings_power/screensaver_settings.h
-            include/qindaqt/apps/settings_power/lock_screen_saver_store.h
             include/qindaqt/apps/settings_power/idle_display_settings.h
             include/qindaqt/apps/settings_power/lid_power_button_settings.h
             include/qindaqt/apps/settings_power/automatic_power_profile_policy_port.h
 )
-# The greeter mirror writes KScreenLocker's own KConfig file, so it uses
-# KConfig rather than QSettings: the wallpaper plugin's configuration lives in
-# a nested `[Greeter][Wallpaper][...][General]` group that QSettings would
-# escape into a different section name.
-find_package(KF6Config 6.0 REQUIRED CONFIG)
-
 target_link_libraries(
     qindaqt_settings_power
     PUBLIC QindaQt::PowerClient QindaQt::DisplayClient QindaQt::BrightnessModel
            QindaQt::DesktopControls QindaQt::SettingsClient Qt6::Core Qt6::DBus
-    PRIVATE KF6::ConfigCore
+           qindaqt_settings_screen_lock
 )
 target_compile_features(qindaqt_settings_power PUBLIC cxx_std_20)
 set_target_properties(
@@ -83,7 +72,6 @@ qt_add_qml_module(
         qml/PowerProfileSection.qml
         qml/PowerSessionSection.qml
         qml/PowerScreenLockSection.qml
-        qml/PowerScreensaverSection.qml
         qml/PowerIdleDisplaySection.qml
         qml/PowerLidPowerButtonSection.qml
         qml/PowerSupplySection.qml
@@ -124,7 +112,6 @@ install(
         qml/PowerProfileSection.qml
         qml/PowerSessionSection.qml
         qml/PowerScreenLockSection.qml
-        qml/PowerScreensaverSection.qml
         qml/PowerIdleDisplaySection.qml
         qml/PowerLidPowerButtonSection.qml
         qml/PowerSupplySection.qml

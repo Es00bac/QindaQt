@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <qindaqt/apps/settings_power/screen_lock_settings.h>
+#include <qindaqt/apps/settings_screen_lock/screen_lock_settings.h>
 
 #include <QtCore/QSettings>
 #include <QtCore/QVariant>
@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-namespace QindaQt::Apps::SettingsPower {
+namespace QindaQt::Apps::SettingsScreenLock {
 namespace {
 constexpr auto DaemonGroup = "Daemon";
 constexpr auto AutolockKey = "Autolock";
@@ -305,4 +305,4 @@ bool ScreenLockSettingsModel::retryLiveApply() {
   return true;
 }
 
-} // namespace QindaQt::Apps::SettingsPower
+} // namespace QindaQt::Apps::SettingsScreenLock

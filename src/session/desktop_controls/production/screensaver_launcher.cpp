@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "screensaver_launcher.h"
 
+#include <qindaqt/session/desktop_controls/screensaver_catalog.h>
+
 #include <KIdleTime>
 
 #include <QDBusInterface>
@@ -21,8 +23,10 @@ constexpr int maximumQuickExits = 3;
 
 ScreensaverLauncher::ScreensaverLauncher(QDBusConnection sessionBus,
                                          ScreensaverPreferencesProvider &preferences,
+                                         const ScreensaverCatalog &catalog,
                                          QObject *parent)
-    : QObject(parent), m_bus(std::move(sessionBus)), m_preferences(preferences)
+    : QObject(parent), m_bus(std::move(sessionBus)), m_preferences(preferences),
+      m_catalog(catalog)
 {
     m_process.setProcessChannelMode(QProcess::ForwardedChannels);
     m_killTimer.setSingleShot(true);
@@ -57,7 +61,7 @@ ScreensaverLauncher::ScreensaverLauncher(QDBusConnection sessionBus,
             QTextStream(stderr)
                 << "qindaqt-desktop-controls: screensaver exited immediately "
                 << m_quickExits << " times; not restarting until the next resume: "
-                << m_current.program() << '\n';
+                << m_current.saver << '\n';
             return;
         }
         m_relaunchTimer.start();
@@ -65,7 +69,7 @@ ScreensaverLauncher::ScreensaverLauncher(QDBusConnection sessionBus,
     connect(&m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
             QTextStream(stderr) << "qindaqt-desktop-controls: screensaver failed to start: "
-                                << m_current.program() << '\n';
+                                << m_current.saver << '\n';
             // No relaunch storm for a program that is simply not installed.
             m_idle = false;
             m_runtime.invalidate();
@@ -121,7 +125,8 @@ void ScreensaverLauncher::applyPreferences(const ScreensaverPreferences &prefere
     }
     // A saver already on screen must not outlive the choice that started it.
     // The finished handler relaunches the new one while the session is idle.
-    if (previous.program() != m_current.program()) {
+    // The token is the program identity: the catalog resolves it at launch.
+    if (previous.saver != m_current.saver) {
         m_quickExits = 0;
         stop();
     }
@@ -162,9 +167,16 @@ void ScreensaverLauncher::launch()
     if (m_process.state() != QProcess::NotRunning || !m_current.enabled()) {
         return;
     }
+    // AGENT-GUARD: the program and its arguments come from the discovered
+    // catalog entry, never from the persisted token itself. A saver whose
+    // package was removed between snapshot and idle simply does not start.
+    const auto entry = m_catalog.entry(m_current.saver);
+    if (!entry.has_value()) {
+        return;
+    }
     m_killTimer.stop();
     m_runtime.start();
-    m_process.start(m_current.program(), m_current.arguments());
+    m_process.start(entry->token, entry->arguments);
 }
 
 void ScreensaverLauncher::stop()

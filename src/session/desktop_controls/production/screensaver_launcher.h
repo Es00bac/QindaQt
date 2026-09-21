@@ -11,6 +11,8 @@
 
 namespace QindaQt::Session::DesktopControls {
 
+class ScreensaverCatalog;
+
 // Idle screensaver: after the configured idle time, start the chosen saver
 // program on every output (each saver takes --screensaver and covers every
 // connected output under it); stop it on user activity or when KScreenLocker
@@ -24,15 +26,20 @@ namespace QindaQt::Session::DesktopControls {
 // wallpaper plugin Settings points it at (ADR-0216). Exactly one of the two
 // renders at a time, and this process is the one that yields.
 //
-// Configuration is the purpose-scoped Settings1 pair `power.screensaver` and
-// `power.screensaverMinutes`, edited in Settings -> Power. Changing either one
-// re-arms immediately; switching saver while one is running replaces it.
+// Which program a token means comes from the ScreensaverCatalog (ADR-0226):
+// the persisted preference never reaches QProcess directly, and the reserved
+// "blank" token arms nothing -- it is a lock-screen appearance, not a
+// process. Configuration is the purpose-scoped Settings1 pair
+// `power.screensaver` and `power.screensaverMinutes`, edited in Settings ->
+// Screen saver. Changing either one re-arms immediately; switching saver
+// while one is running replaces it.
 class ScreensaverLauncher final : public QObject {
     Q_OBJECT
 
 public:
     ScreensaverLauncher(QDBusConnection sessionBus,
                         ScreensaverPreferencesProvider &preferences,
+                        const ScreensaverCatalog &catalog,
                         QObject *parent = nullptr);
     ~ScreensaverLauncher() override;
 
@@ -54,6 +61,7 @@ private:
 
     QDBusConnection m_bus;
     ScreensaverPreferencesProvider &m_preferences;
+    const ScreensaverCatalog &m_catalog;
     ScreensaverPreferences m_current;
     QProcess m_process;
     QTimer m_killTimer;

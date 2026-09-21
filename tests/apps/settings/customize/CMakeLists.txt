@@ -243,6 +243,8 @@ target_link_libraries(
         qindaqt_settings_about_computer_qmlplugin
         qindaqt_settings_startup_qml
         qindaqt_settings_startup_qmlplugin
+        qindaqt_settings_screensaver_qml
+        qindaqt_settings_screensaver_qmlplugin
         qindaqt_settings_clipboard_qml
         qindaqt_settings_clipboard_qmlplugin
         qindaqt_settings_color_backend_qml
@@ -267,6 +269,7 @@ add_dependencies(
     qindaqt_settings_default_apps_qmlplugin
     qindaqt_settings_about_computer_qmlplugin
     qindaqt_settings_startup_qmlplugin
+    qindaqt_settings_screensaver_qmlplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_window_lifecycle_tests)

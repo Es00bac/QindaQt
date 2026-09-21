@@ -22,26 +22,6 @@ set_tests_properties(qindaqt.settings-power-lid-presence PROPERTIES
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;power;model;lid")
 
-qt_add_executable(qindaqt_screen_lock_settings_tests
-    tst_screen_lock_settings.cpp)
-target_link_libraries(qindaqt_screen_lock_settings_tests
-    PRIVATE qindaqt_settings_power Qt6::Test)
-qindaqt_enable_warnings(qindaqt_screen_lock_settings_tests)
-add_test(NAME qindaqt.settings-screen-lock-model
-    COMMAND qindaqt_screen_lock_settings_tests)
-set_tests_properties(qindaqt.settings-screen-lock-model PROPERTIES
-    LABELS "settings;power;screen-lock")
-
-qt_add_executable(qindaqt_screen_lock_resume_settings_tests
-    tst_screen_lock_resume_settings.cpp)
-target_link_libraries(qindaqt_screen_lock_resume_settings_tests
-    PRIVATE qindaqt_settings_power Qt6::Test)
-qindaqt_enable_warnings(qindaqt_screen_lock_resume_settings_tests)
-add_test(NAME qindaqt.settings-screen-lock-resume
-    COMMAND qindaqt_screen_lock_resume_settings_tests)
-set_tests_properties(qindaqt.settings-screen-lock-resume PROPERTIES
-    LABELS "settings;power;screen-lock")
-
 qt_add_executable(qindaqt_idle_display_settings_tests
     tst_idle_display_settings.cpp)
 target_link_libraries(qindaqt_idle_display_settings_tests
@@ -52,32 +32,6 @@ add_test(NAME qindaqt.settings-idle-display-model
 set_tests_properties(qindaqt.settings-idle-display-model PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "settings;power;idle-display")
-
-# The greeter mirror's file format is KConfig's, so its row reads the file back
-# with the same library the store writes it with.
-find_package(KF6Config 6.0 REQUIRED CONFIG)
-
-qt_add_executable(qindaqt_lock_screen_saver_store_tests
-    tst_lock_screen_saver_store.cpp)
-target_link_libraries(qindaqt_lock_screen_saver_store_tests
-    PRIVATE qindaqt_settings_power KF6::ConfigCore Qt6::Test)
-qindaqt_enable_warnings(qindaqt_lock_screen_saver_store_tests)
-add_test(NAME qindaqt.settings-lock-screen-saver-store
-    COMMAND qindaqt_lock_screen_saver_store_tests)
-set_tests_properties(qindaqt.settings-lock-screen-saver-store PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
-    LABELS "settings;power;screensaver;screen-lock")
-
-qt_add_executable(qindaqt_screensaver_settings_tests
-    tst_screensaver_settings.cpp)
-target_link_libraries(qindaqt_screensaver_settings_tests
-    PRIVATE qindaqt_settings_power Qt6::Test)
-qindaqt_enable_warnings(qindaqt_screensaver_settings_tests)
-add_test(NAME qindaqt.settings-screensaver-model
-    COMMAND qindaqt_screensaver_settings_tests)
-set_tests_properties(qindaqt.settings-screensaver-model PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
-    LABELS "settings;power;screensaver")
 
 qt_add_executable(qindaqt_power_settings_slider_tests
     tst_power_settings_slider.cpp power_settings_test_support.h)

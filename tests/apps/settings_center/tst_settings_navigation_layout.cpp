@@ -28,7 +28,6 @@ using namespace QindaQt::Apps::SettingsCenter;
 using namespace QindaQt::Apps::SettingsCenter::TestSupport;
 using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 using QindaQt::Apps::SettingsPower::TestSupport::StubIdleDisplaySettings;
-using QindaQt::Apps::SettingsPower::TestSupport::StubScreensaverSettings;
 
 namespace {
 const char *const SettingsQmlDir = QINDAQT_SETTINGS_SOURCE_DIR;
@@ -54,7 +53,6 @@ private:
   std::unique_ptr<StubPowerSettingsModel> m_power;
   std::unique_ptr<StubScreenLockSettings> m_screenLock;
   std::unique_ptr<StubIdleDisplaySettings> m_idleDisplay;
-  std::unique_ptr<StubScreensaverSettings> m_screensaver;
   std::unique_ptr<StubClipboardSettingsModel> m_clipboard;
   std::unique_ptr<StubCustomizeSettingsModel> m_customize;
 };
@@ -80,7 +78,6 @@ void SettingsNavigationLayoutTest::initTestCase() {
   m_power = std::make_unique<StubPowerSettingsModel>();
   m_screenLock = std::make_unique<StubScreenLockSettings>();
   m_idleDisplay = std::make_unique<StubIdleDisplaySettings>();
-  m_screensaver = std::make_unique<StubScreensaverSettings>();
   m_clipboard = std::make_unique<StubClipboardSettingsModel>();
   m_customize = std::make_unique<StubCustomizeSettingsModel>();
 }
@@ -114,8 +111,6 @@ void SettingsNavigationLayoutTest::testWideTwoColumnLayoutAndRouteSwitching() {
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
       {QStringLiteral("screenLockSettings"), QVariant::fromValue(m_screenLock.get())},
       {QStringLiteral("idleDisplaySettings"), QVariant::fromValue(m_idleDisplay.get())},
-      {QStringLiteral("screensaverSettings"),
-       QVariant::fromValue(m_screensaver.get())},
       {QStringLiteral("clipboardSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
@@ -235,8 +230,6 @@ void SettingsNavigationLayoutTest::testCompactLayoutAdaptation() {
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
       {QStringLiteral("screenLockSettings"), QVariant::fromValue(m_screenLock.get())},
       {QStringLiteral("idleDisplaySettings"), QVariant::fromValue(m_idleDisplay.get())},
-      {QStringLiteral("screensaverSettings"),
-       QVariant::fromValue(m_screensaver.get())},
       {QStringLiteral("clipboardSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });

@@ -151,6 +151,7 @@ nav:
       - Settings Default applications route: apps/default-applications.md
       - Settings About this computer route: apps/about-this-computer.md
       - Settings Startup applications route: apps/startup-settings.md
+      - Settings Screen saver route: apps/screensaver-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
@@ -360,6 +361,7 @@ nav:
       - "ADR-0214: startup applications route shadows, never edits, system entries": adr/0214-startup-applications-route.md
       - "ADR-0215: the idle screensaver is decoration, and never a lock": adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md
       - "ADR-0216: the locker draws the screensaver": adr/0216-the-locker-draws-the-screensaver.md
+      - "ADR-0226: configure the screen saver": adr/0226-configure-the-screen-saver.md
       - "ADR-0218: use QindaTK and Poppler for the image/PDF viewer": adr/0218-use-qindatk-and-poppler-for-the-viewer.md
       - "ADR-0219: share completed work through qinda": adr/0219-share-completed-work-through-qinda.md
       - "ADR-0220: rebuild the System Monitor on QindaTK": adr/0220-rebuild-the-system-monitor-on-qindatk.md
