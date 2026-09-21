@@ -8,7 +8,7 @@
 #include <array>
 #include <memory>
 
-namespace QindaQt::Apps::SettingsPower {
+namespace QindaQt::Apps::SettingsScreenLock {
 
 struct ScreenLockPreferences final {
   bool automaticLock = true;
@@ -136,4 +136,4 @@ private:
   QString m_errorText;
 };
 
-} // namespace QindaQt::Apps::SettingsPower
+} // namespace QindaQt::Apps::SettingsScreenLock

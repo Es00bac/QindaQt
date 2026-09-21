@@ -2,6 +2,8 @@
 
 #include <qindaqt/session/desktop_controls/settings1_screensaver_preferences.h>
 
+#include <qindaqt/session/desktop_controls/screensaver_catalog.h>
+
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/settings_client/settings_transport.h>
 #include <qindaqt/services/settings_protocol/settings_wire_contract.h>
@@ -91,6 +93,31 @@ private:
                           QVariant::fromValue<qint64>(5)}};
 };
 
+// The provider resolves tokens through the discovery seam; the test list
+// stands in for the installed desktop entries.
+class ListScreensaverCatalog final : public ScreensaverCatalog {
+public:
+    explicit ListScreensaverCatalog(QList<ScreensaverCatalogEntry> entries)
+        : m_entries(std::move(entries)) {}
+
+    [[nodiscard]] QList<ScreensaverCatalogEntry> entries() const override
+    {
+        return m_entries;
+    }
+
+private:
+    QList<ScreensaverCatalogEntry> m_entries;
+};
+
+[[nodiscard]] ScreensaverCatalogEntry testSaver(const QString &token)
+{
+    ScreensaverCatalogEntry entry;
+    entry.token = token;
+    entry.name = token;
+    entry.arguments = {QStringLiteral("--screensaver")};
+    return entry;
+}
+
 } // namespace
 
 class Settings1ScreensaverPreferencesTest final : public QObject {
@@ -101,8 +128,8 @@ private Q_SLOTS:
     void persistedPairMapsToBoundedPreferences();
     void unknownTokenNeverBecomesAProgramName();
     void persistedMinutesAreClamped();
-    void knownSaversCarryTheirFixedCommandLine();
-    void onlyQmlSaversReachTheLockScreen();
+    void reservedBlankSurvivesButRunsNothing();
+    void discoveredTokenResolvesThroughTheCatalog();
     void valueChangeIsSignalledOnce();
     void refreshNeverWrites();
 
@@ -127,12 +154,14 @@ void Settings1ScreensaverPreferencesTest::noOwnerYetStartsDisabled() {
     QString error;
     QVERIFY(m_client->start(&error));
 
-    Settings1ScreensaverPreferences preferences(*m_client);
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("qinda-patrol")),
+         testSaver(QStringLiteral("circuit-reef"))});
+    Settings1ScreensaverPreferences preferences(*m_client, catalog);
     // AGENT-GUARD: unlike display-off, an unconfirmed preference starts no
     // program at all. Guessing here would run a saver the user never chose.
     QCOMPARE(preferences.currentPreferences(), ScreensaverPreferences{});
     QVERIFY(!preferences.currentPreferences().enabled());
-    QVERIFY(preferences.currentPreferences().program().isEmpty());
     QCOMPARE(Settings1ScreensaverPreferences::scopedKeys(),
              (QStringList{QString::fromLatin1(kSaverKey),
                           QString::fromLatin1(kMinutesKey)}));
@@ -145,7 +174,10 @@ void Settings1ScreensaverPreferencesTest::persistedPairMapsToBoundedPreferences(
     m_transport->setValue(kSaverKey, QStringLiteral("qinda-patrol"));
     m_transport->setValue(kMinutesKey, QVariant::fromValue<qint64>(25));
 
-    Settings1ScreensaverPreferences preferences(*m_client);
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("qinda-patrol")),
+         testSaver(QStringLiteral("circuit-reef"))});
+    Settings1ScreensaverPreferences preferences(*m_client, catalog);
     m_transport->announceOwner();
     QTRY_VERIFY(preferences.currentPreferences().enabled());
     QCOMPARE(preferences.currentPreferences().saver, QStringLiteral("qinda-patrol"));
@@ -159,12 +191,15 @@ void Settings1ScreensaverPreferencesTest::unknownTokenNeverBecomesAProgramName()
     m_transport->setValue(kSaverKey, QStringLiteral("/usr/bin/anything"));
     m_transport->setValue(kMinutesKey, QVariant::fromValue<qint64>(9));
 
-    Settings1ScreensaverPreferences preferences(*m_client);
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("qinda-patrol")),
+         testSaver(QStringLiteral("circuit-reef"))});
+    Settings1ScreensaverPreferences preferences(*m_client, catalog);
     m_transport->announceOwner();
     QTRY_COMPARE(preferences.currentPreferences().minutes, 9);
     QCOMPARE(preferences.currentPreferences().saver,
              ScreensaverPreferences::noneToken());
-    QVERIFY(preferences.currentPreferences().program().isEmpty());
+    QVERIFY(!preferences.currentPreferences().enabled());
 }
 
 void Settings1ScreensaverPreferencesTest::persistedMinutesAreClamped() {
@@ -174,68 +209,59 @@ void Settings1ScreensaverPreferencesTest::persistedMinutesAreClamped() {
     m_transport->setValue(kSaverKey, QStringLiteral("circuit-reef"));
     m_transport->setValue(kMinutesKey, QVariant::fromValue<qint64>(100000));
 
-    Settings1ScreensaverPreferences preferences(*m_client);
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("qinda-patrol")),
+         testSaver(QStringLiteral("circuit-reef"))});
+    Settings1ScreensaverPreferences preferences(*m_client, catalog);
     m_transport->announceOwner();
     QTRY_COMPARE(preferences.currentPreferences().minutes,
                  ScreensaverPreferences::maximumTimeoutMinutes());
 
-    QCOMPARE(ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), 0)
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("circuit-reef"))});
+    QCOMPARE(ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), 0,
+                                                   catalog)
                  .minutes,
              1);
-    QCOMPARE(ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), -5)
+    QCOMPARE(ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), -5,
+                                                   catalog)
                  .minutes,
              1);
 }
 
-void Settings1ScreensaverPreferencesTest::knownSaversCarryTheirFixedCommandLine() {
-    // AGENT-CONTRACT: every saver is started with --screensaver, which each
-    // one documents as covering every connected output, and with whatever
-    // extra flag stops it doing something an unattended screen should not do.
-    // These are the launcher's only command lines, so they live here with the
-    // preference and are asserted as a set.
-    const QList<QPair<QString, QStringList>> expected{
-        {QStringLiteral("qinda-patrol"),
-         {QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")}},
-        {QStringLiteral("circuit-reef"),
-         {QStringLiteral("--screensaver"), QStringLiteral("--private")}},
-        {QStringLiteral("prism-circuit"),
-         {QStringLiteral("--screensaver"), QStringLiteral("--mute")}},
-        {QStringLiteral("prism-brawl"),
-         {QStringLiteral("--screensaver"), QStringLiteral("--mute")}},
-        {QStringLiteral("starward"), {QStringLiteral("--screensaver")}},
-    };
-    for (const auto &[token, arguments] : expected) {
-        const auto preferences = ScreensaverPreferences::fromPersisted(token, 5);
-        QCOMPARE(preferences.program(), token);
-        QCOMPARE(preferences.arguments(), arguments);
-    }
+void Settings1ScreensaverPreferencesTest::reservedBlankSurvivesButRunsNothing() {
+    // "blank" is the built-in no-program choice (ADR-0226): it resolves like
+    // a real token, but enabled() is false so the launcher never arms an idle
+    // timeout for it. It is a lock-screen appearance, not a process.
+    const ListScreensaverCatalog catalog({});
+    const auto blank = ScreensaverPreferences::fromPersisted(
+        ScreensaverPreferences::blankToken(), 10, catalog);
+    QCOMPARE(blank.saver, ScreensaverPreferences::blankToken());
+    QVERIFY(!blank.enabled());
+    QCOMPARE(blank.minutes, 10);
 
-    // The offered set is exactly the reserved token plus those five: a saver
-    // the schema does not allow could never be persisted, and one missing here
-    // could never be started.
-    QStringList offered{ScreensaverPreferences::noneToken()};
-    for (const auto &[token, arguments] : expected) {
-        offered.append(token);
-    }
-    QCOMPARE(ScreensaverPreferences::knownSavers(), offered);
-
-    const auto none =
-        ScreensaverPreferences::fromPersisted(ScreensaverPreferences::noneToken(), 5);
-    QVERIFY(none.program().isEmpty());
-    QVERIFY(none.arguments().isEmpty());
+    const auto none = ScreensaverPreferences::fromPersisted(
+        ScreensaverPreferences::noneToken(), 5, catalog);
+    QCOMPARE(none.saver, ScreensaverPreferences::noneToken());
+    QVERIFY(!none.enabled());
 }
 
-void Settings1ScreensaverPreferencesTest::onlyQmlSaversReachTheLockScreen() {
-    // AGENT-GUARD: the greeter draws a saver by importing its QML module
-    // (ADR-0216). The three SDL/OpenGL savers ship none, and saying otherwise
-    // would hand the locker a wallpaper plugin with nothing to draw.
-    QVERIFY(ScreensaverPreferences::showsOnLockScreen(QStringLiteral("qinda-patrol")));
-    QVERIFY(ScreensaverPreferences::showsOnLockScreen(QStringLiteral("circuit-reef")));
-    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(QStringLiteral("prism-circuit")));
-    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(QStringLiteral("prism-brawl")));
-    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(QStringLiteral("starward")));
-    QVERIFY(!ScreensaverPreferences::showsOnLockScreen(
-        ScreensaverPreferences::noneToken()));
+void Settings1ScreensaverPreferencesTest::discoveredTokenResolvesThroughTheCatalog() {
+    // The launcher consumes the catalog entry, so a persisted token resolves
+    // to a program only when discovery knows it -- and a token whose package
+    // disappeared reads back as none on the next snapshot.
+    const ListScreensaverCatalog present(
+        {testSaver(QStringLiteral("starward"))});
+    const auto resolved = ScreensaverPreferences::fromPersisted(
+        QStringLiteral("starward"), 5, present);
+    QVERIFY(resolved.enabled());
+    QCOMPARE(resolved.saver, QStringLiteral("starward"));
+
+    const ListScreensaverCatalog absent({});
+    const auto dropped = ScreensaverPreferences::fromPersisted(
+        QStringLiteral("starward"), 5, absent);
+    QCOMPARE(dropped.saver, ScreensaverPreferences::noneToken());
+    QVERIFY(!dropped.enabled());
 }
 
 void Settings1ScreensaverPreferencesTest::valueChangeIsSignalledOnce() {
@@ -244,7 +270,10 @@ void Settings1ScreensaverPreferencesTest::valueChangeIsSignalledOnce() {
     QVERIFY(m_client->start(&error));
     m_transport->setValue(kSaverKey, QStringLiteral("qinda-patrol"));
 
-    Settings1ScreensaverPreferences preferences(*m_client);
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("qinda-patrol")),
+         testSaver(QStringLiteral("circuit-reef"))});
+    Settings1ScreensaverPreferences preferences(*m_client, catalog);
     QSignalSpy spy(&preferences, &ScreensaverPreferencesProvider::preferencesChanged);
     m_transport->announceOwner();
     QTRY_COMPARE(spy.count(), 1);
@@ -263,7 +292,10 @@ void Settings1ScreensaverPreferencesTest::refreshNeverWrites() {
     QString error;
     QVERIFY(m_client->start(&error));
 
-    Settings1ScreensaverPreferences preferences(*m_client);
+    const ListScreensaverCatalog catalog(
+        {testSaver(QStringLiteral("qinda-patrol")),
+         testSaver(QStringLiteral("circuit-reef"))});
+    Settings1ScreensaverPreferences preferences(*m_client, catalog);
     preferences.refresh();
     // The provider is read-only: refresh only re-reads, it never commits.
     QCOMPARE(m_transport->commits(), 0);

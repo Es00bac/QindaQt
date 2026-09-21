@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
+#include <qindaqt/apps/settings_screensaver/lock_screen_saver_store.h>
 
 #include <KConfig>
 #include <KConfigGroup>
 
-namespace QindaQt::Apps::SettingsPower {
+namespace QindaQt::Apps::SettingsScreensaver {
 
 namespace {
 
@@ -19,6 +19,9 @@ constexpr auto kSaverKey = "Saver";
 // instead of leaving them on a plain ground.
 constexpr auto kPreviousPluginKey = "PreviousPlugin";
 constexpr auto kNoneToken = "none";
+// ADR-0226: "blank" is an enabling token here -- the plugin paints its dark
+// ground for it -- so only "none" (or an empty token) hands the greeter back
+// its previous wallpaper.
 
 [[nodiscard]] KConfigGroup pluginGroup(KConfig &config) {
   return config.group(QString::fromLatin1(kGreeterGroup))
@@ -101,4 +104,4 @@ bool KConfigLockScreenSaverStore::save(const QString &saverToken, QString *error
   return true;
 }
 
-} // namespace QindaQt::Apps::SettingsPower
+} // namespace QindaQt::Apps::SettingsScreensaver
