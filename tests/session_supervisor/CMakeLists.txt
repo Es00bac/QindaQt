@@ -156,7 +156,12 @@ set_tests_properties(qindaqt.session-xembed-tray-proxy-lifetime PROPERTIES
 # unit to make the same mistake rather than only this one.
 add_test(
     NAME qindaqt.session-child-startup
-    COMMAND "${CMAKE_COMMAND}" -DSOURCE_ROOT="${CMAKE_SOURCE_DIR}"
+    # AGENT-GUARD: quote the WHOLE argument, not the value. Written as
+    # -DSOURCE_ROOT="${CMAKE_SOURCE_DIR}" the quote characters end up inside
+    # the value, so the script receives a path that begins with a literal `"`,
+    # every file(GLOB) under it matches nothing, and the check reports the
+    # tree as empty rather than reporting itself as misconfigured.
+    COMMAND "${CMAKE_COMMAND}" "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_session_child_startup.cmake"
 )
 set_tests_properties(qindaqt.session-child-startup PROPERTIES

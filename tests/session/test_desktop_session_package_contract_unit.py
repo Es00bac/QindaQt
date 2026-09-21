@@ -53,9 +53,17 @@ class PackageContractTests(unittest.TestCase):
                     f"[Desktop Entry]\nType=Application\nName=Fixture\nIcon={icon}\n",
                     encoding="utf-8",
                 )
+            # Four, not five: making QQ_Term the desktop terminal moved the
+            # terminal's entry out of this package and into qqterm's own
+            # (org.qindaqt.QQTerm.desktop), so the authenticated first-party
+            # set shrank with it. Assert against the map rather than a
+            # literal, so removing or adding an entry cannot leave the two
+            # disagreeing again.
             self.assertEqual(
-                len(authenticate_first_party_desktop_entries(stage)), 5
+                len(authenticate_first_party_desktop_entries(stage)),
+                len(FIRST_PARTY_DESKTOP_ICONS),
             )
+            self.assertEqual(len(FIRST_PARTY_DESKTOP_ICONS), 4)
             (applications / "org.qindaqt.Settings.desktop").unlink()
             with self.assertRaisesRegex(PackagePayloadError, "Settings.desktop"):
                 authenticate_first_party_desktop_entries(stage)

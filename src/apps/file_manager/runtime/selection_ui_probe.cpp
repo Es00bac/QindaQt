@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJSValue>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -32,11 +33,21 @@ bool verifySelectionUi(QObject *root, NavigationController *navigation,
         return QMetaObject::invokeMethod(selection, method, Q_ARG(QVariant, QVariant(index)));
     };
     // Read the authoritative selected-identity map directly and parse the
-    // identity keys (["name","device","inode"] JSON). Invoking the QML
-    // selectedEntries() function — or converting the map's nested entry
-    // objects — proved unreliable through the QJSValue-to-QVariant seam on
-    // this Qt build (keys arrive intact, nested value objects do not); the
-    // key parse checks the same identity-retention contract.
+    // identity keys, which EntrySelection.qml writes as a JSON array.
+    // Invoking the QML selectedEntries() function - or converting the map's
+    // nested entry objects - proved unreliable through the QJSValue-to-
+    // QVariant seam on this Qt build (keys arrive intact, nested value
+    // objects do not); the key parse checks the same identity-retention
+    // contract.
+    //
+    // AGENT-GUARD: take the FILE NAME of the first field rather than the
+    // field itself. The key was ["name","device","inode"] when this probe was
+    // written and is ["path","name","device","inode"] now, so reading field 0
+    // as a name silently started reporting absolute paths and every
+    // comparison below failed with output that looked correct
+    // ("...fixture/b,...fixture/d" against {"b","d"}). A leading path and a
+    // bare name both reduce to the same file name, which is what these
+    // assertions are actually about.
     const auto names = [selection]() {
         QVariant selected = selection->property("selected");
         if (selected.canConvert<QJSValue>()) selected = selected.value<QJSValue>().toVariant();
@@ -45,7 +56,7 @@ bool verifySelectionUi(QObject *root, NavigationController *navigation,
         for (auto it = entries.constBegin(); it != entries.constEnd(); ++it) {
             const QJsonArray identity = QJsonDocument::fromJson(it.key().toUtf8()).array();
             if (!identity.isEmpty()) {
-                value.append(identity.first().toString());
+                value.append(QFileInfo(identity.first().toString()).fileName());
             }
         }
         value.sort();
