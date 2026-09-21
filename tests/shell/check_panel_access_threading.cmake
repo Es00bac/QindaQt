@@ -40,6 +40,29 @@ if(access_count LESS 10)
         "list of QStringLiteral keys and this check has gone blind")
 endif()
 
+# AGENT-GUARD: not every access object rides the initial-property map. Ones
+# whose owner is built after the factory (desktopControlsAccess, and the gather
+# overview's) are delivered with QObject::setProperty instead, which is
+# deliberately forgiving - it is a silent no-op when the property is missing,
+# which is what lets the C++ and QML halves land in either order. That
+# forgiveness is exactly why they need this check more than the map keys do: a
+# missing declaration produces NO warning at all for these, so the applet is
+# simply dead with nothing in the log. Read them out of the factory too.
+string(REGEX MATCHALL "setProperty\\\(\"[A-Za-z]+Access\"" set_matches
+       "${factory_source}")
+foreach(match IN LISTS set_matches)
+    string(REGEX REPLACE "setProperty\\\(\"([A-Za-z]+)\"" "\\1" key "${match}")
+    list(APPEND access_keys "${key}")
+endforeach()
+list(REMOVE_DUPLICATES access_keys)
+list(LENGTH access_keys access_count)
+if(access_count LESS 12)
+    message(FATAL_ERROR
+        "expected at least 12 applet-access keys in the panel factory, found "
+        "${access_count} - the initial-property map or the setProperty calls "
+        "are no longer literal and this check has gone blind")
+endif()
+
 # The chain the factory's map travels: declared at each step, forwarded to the
 # next, and finally consumed by BuiltinAppletContent.
 set(forwarding_files

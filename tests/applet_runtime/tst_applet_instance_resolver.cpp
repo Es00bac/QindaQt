@@ -92,6 +92,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.dashboard"),
         // Worn Luna desktop experience (ADR-0124/ADR-0125); sorted position.
         QStringLiteral("qindaqt.applets.desktop-icons"),
+        // The gather overview (ADR-0232); sorted position.
+        QStringLiteral("qindaqt.applets.gather-overview"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),

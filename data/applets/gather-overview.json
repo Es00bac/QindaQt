@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "gather-overview",
+  "name": "Gather",
+  "description": "Arranges the session in one temporary overview: iconified windows as chips in a lane, rolled-up containers as cards beside them, and every remaining window in a scrollable grid. Nothing moves; a click raises one window and the overview closes.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.gather-overview"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 28,
+      "preferred": 36,
+      "maximum": 96,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "windows.read",
+    "windows.activate"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

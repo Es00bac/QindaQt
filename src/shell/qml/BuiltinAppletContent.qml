@@ -9,6 +9,7 @@ import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
 import QindaQt.Shell.ObsApplet 1.0 as ObsAppletModule
+import QindaQt.Shell.GatherOverview 1.0 as GatherOverviewModule
 import QindaQt.Shell.TaskList 1.0 as TaskListModule
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierModule
 import QindaQt.Shell.StartMenu 1.0 as StartMenuModule
@@ -27,6 +28,7 @@ Item {
     property var powerAppletAccess: null
     property var smartLightsAppletAccess: null
     property var obsAppletAccess: null
+    property var gatherOverviewAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
@@ -60,6 +62,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.smart-lights"
     readonly property bool obsReady:
         ready && entryPoint === "qindaqt.applets.obs"
+    readonly property bool gatherOverviewReady:
+        ready && entryPoint === "qindaqt.applets.gather-overview"
     readonly property bool clipboardPreview:
         !liveApplets && String(applet.plugin ?? "") === "clipboard"
     readonly property bool clipboardReady:
@@ -120,6 +124,7 @@ Item {
             : root.powerReady ? powerComponent
             : root.smartLightsReady ? smartLightsComponent
             : root.obsReady ? obsComponent
+            : root.gatherOverviewReady ? gatherOverviewComponent
             : root.clipboardReady ? clipboardComponent
             : root.launcherReady ? launcherComponent
             : root.globalMenuReady ? globalMenuComponent
@@ -185,6 +190,16 @@ Item {
             visible: root.smartLightsReady
             access: root.smartLightsAppletAccess
             theme: root.theme
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: gatherOverviewComponent
+        GatherOverviewModule.GatherOverviewApplet {
+            anchors.fill: parent
+            visible: root.gatherOverviewReady
+            access: root.gatherOverviewAccess
             vertical: root.vertical
         }
     }

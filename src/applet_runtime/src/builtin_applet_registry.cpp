@@ -29,6 +29,9 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.status-notifier"),
         QStringLiteral("qindaqt.applets.smart-lights"),
         QStringLiteral("qindaqt.applets.obs"),
+        // The gather overview (ADR-0232): the button half of
+        // the gesture Meta+G and the upper-left screen corner also reach.
+        QStringLiteral("qindaqt.applets.gather-overview"),
         // Desktop controls (docs/wiki/shell/desktop-controls.md): each entry
         // is rendered by the compiled QindaQt.Shell.DesktopControls module
         // over an existing shell facade or the authenticated workspace adapter.
