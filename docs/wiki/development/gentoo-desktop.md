@@ -6,13 +6,13 @@ session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
 The current checkpoint is `0.1.0_pre20260920`, pinned to
-`72372645beb1211cf58485cd44ca6e87a8bbaef8`. Regenerate the package Manifest
+`4fd1372e897ae34d33f11155d4a30a1d7ef3526f`. Regenerate the package Manifest
 whenever the immutable source pin changes. The ebuild uses `RESTRICT=fetch`;
 generate the exact source archive locally from the pinned commit, then place
 it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=72372645beb1211cf58485cd44ca6e87a8bbaef8
+qq_source_commit=4fd1372e897ae34d33f11155d4a30a1d7ef3526f
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
     gzip -n > qindaqt-desktop-0.1.0_pre20260920.tar.gz
 ```
