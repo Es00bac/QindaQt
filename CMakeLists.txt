@@ -57,6 +57,9 @@ option(QINDAQT_BUILD_SYSTEM_MONITOR "Build the System Monitor application" ON)
 # the standalone package and for repository builds; the desktop package turns
 # it OFF so the optional plugin stays optional and has one owner.
 option(QINDAQT_BUILD_OBS_BRIDGE "Build the OBS console bridge module" ON)
+# AGENT-GUARD: gui-apps/qindalutris installs this executable from its own
+# --component QindaLutris, the same separation the System Monitor package uses.
+option(QINDAQT_BUILD_QINDALUTRIS "Build the QindaLutris game library application" ON)
 option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
 option(QINDAQT_BUILD_PRODUCTION_SHELL
        "Build the LayerShellQt-backed production Wayland shell"

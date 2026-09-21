@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=QindaLutris
+Comment=Every game on the machine, in one native QindaQt window
+Exec=qindalutris
+Icon=org.qindaqt.QindaLutris
+Terminal=false
+Categories=Qt;Utility;
+Keywords=game;games;library;launcher;steam;lutris;wine;
+StartupWMClass=qindalutris
