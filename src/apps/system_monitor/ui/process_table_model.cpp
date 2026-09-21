@@ -395,7 +395,7 @@ ProcessTableModel::asTree(const QVector<Entry> &entries) const {
     int depth;
   };
   QVector<Frame> stack;
-  for (int i = roots.size() - 1; i >= 0; --i) {
+  for (qsizetype i = roots.size() - 1; i >= 0; --i) {
     stack.append({roots.at(i), 0});
   }
   QSet<int> seen;
@@ -413,7 +413,7 @@ ProcessTableModel::asTree(const QVector<Entry> &entries) const {
     if (entry.hasChildren
         && !m_collapsed.value({entry.pid, entry.startTicks}, false)) {
       orderIndices(children);
-      for (int i = children.size() - 1; i >= 0; --i) {
+      for (qsizetype i = children.size() - 1; i >= 0; --i) {
         stack.append({children.at(i), frame.depth + 1});
       }
     }
