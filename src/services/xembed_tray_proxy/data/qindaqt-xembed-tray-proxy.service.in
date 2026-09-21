@@ -1,0 +1,40 @@
+[Unit]
+Description=QindaQt XEmbed to StatusNotifier tray proxy
+Documentation=https://qindaqt.org/
+# The proxy serves Wine/Proton tray icons; it is part of the graphical
+# session and needs the session's XWayland display.
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-xembed-tray-proxy
+Restart=on-failure
+RestartSec=2s
+NoNewPrivileges=true
+PrivateDevices=true
+# AGENT-NOTE: no PrivateTmp here. The QindaQt session runs its own session
+# bus with the socket under /tmp, and PrivateTmp gives the unit a private
+# tmpfs where that socket does not exist, so the service can never reach
+# its constructing bus and fails to start entirely.
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+TasksMax=16
+UMask=0077
+
+[Install]
+WantedBy=graphical-session.target
