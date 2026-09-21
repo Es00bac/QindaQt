@@ -184,6 +184,7 @@ private Q_SLOTS:
     void logOffConfirmsThroughSessionFacade();
     void buttonWidthContainsItsLabel();
     void panelOpensAgainstTheStartButtonOnEveryPanelEdge();
+    void panelOpensLazilyOverACatalogueSizedProgramList();
 };
 
 void StartMenuQmlTests::disabledFallbackWithoutAccess()
@@ -514,6 +515,95 @@ void StartMenuQmlTests::panelOpensAgainstTheStartButtonOnEveryPanelEdge()
     QCOMPARE(cell->x() + cell->width(), std::floor(origin.x()));
     QVERIFY(QMetaObject::invokeMethod(popup, "close"));
     QTRY_VERIFY(!popup->property("opened").toBool());
+}
+
+// AGENT-GUARD (performance): the program list must instantiate only the rows
+// it can show. A nested Repeater built every row of the installed catalogue --
+// 300+ delegates, each resolving an icon through the theme -- synchronously
+// inside popup.open(), which is what made the start menu feel sluggish. The
+// budget below is deliberately far above a viewport's worth of rows and far
+// below the model size, so it fails for eager instantiation and tolerates
+// view-specific caching.
+void StartMenuQmlTests::panelOpensLazilyOverACatalogueSizedProgramList()
+{
+    // A realistic installed catalogue: 14 sections over 336 programs.
+    static const QStringList identities{
+        QStringLiteral("pinned"),     QStringLiteral("recent"),
+        QStringLiteral("utilities"),  QStringLiteral("development"),
+        QStringLiteral("education"),  QStringLiteral("games"),
+        QStringLiteral("graphics"),   QStringLiteral("audioVideo"),
+        QStringLiteral("network"),    QStringLiteral("office"),
+        QStringLiteral("science"),    QStringLiteral("settings"),
+        QStringLiteral("system"),     QStringLiteral("other")};
+    QVariantList sections;
+    int total = 0;
+    for (const QString &identity : identities) {
+        QVariantList items;
+        for (int i = 0; i < 24; ++i) {
+            const QString id = QStringLiteral("%1-%2").arg(identity).arg(i);
+            items.append(programRow(id, QStringLiteral("Program %1").arg(id),
+                                    QStringLiteral("applications-other")));
+            ++total;
+        }
+        sections.append(QVariantMap{{QStringLiteral("identity"), identity},
+                                    {QStringLiteral("items"), items}});
+    }
+    QCOMPARE(total, 336);
+
+    StubPrograms programs(sections);
+    StubPlaces places({});
+    StubSystemMenu systemMenu(nullptr);
+    StubControls controls(&places, &systemMenu);
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("StartMenuApplet"), &programs, &controls,
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *popup = host.child<QObject>(QStringLiteral("startMenuPopup"));
+    QVERIFY(popup != nullptr);
+    QElapsedTimer timer;
+    timer.start();
+    QVERIFY(QMetaObject::invokeMethod(popup, "open"));
+    QTRY_VERIFY(popup->property("opened").toBool());
+    const qint64 openMilliseconds = timer.elapsed();
+
+    // Count after a settled layout: a lazy view creates its viewport during
+    // the polish pass, so counting on the opening turn would understate it.
+    auto *list = host.child<QQuickItem>(QStringLiteral("startMenuResults"));
+    QVERIFY(list != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(list, "forceLayout"));
+    QTest::qWait(50);
+
+    int instantiated = 0;
+    for (const QVariant &sectionValue : sections) {
+        const QVariantList items = sectionValue.toMap()
+                                       .value(QStringLiteral("items"))
+                                       .toList();
+        for (const QVariant &itemValue : items) {
+            const QString entryId = itemValue.toMap()
+                                        .value(QStringLiteral("entryId"))
+                                        .toString();
+            instantiated += static_cast<int>(
+                host.visualItemsNamed(
+                        QStringLiteral("startMenuProgramRow-%1").arg(entryId))
+                    .size());
+        }
+    }
+    qInfo("start panel opened in %lldms with %d of %d program rows"
+          " instantiated over a %gx%g viewport",
+          openMilliseconds, instantiated, total, list->width(), list->height());
+    QVERIFY2(instantiated <= 120,
+             qPrintable(QStringLiteral("%1 of %2 program rows instantiated on"
+                                       " open; the list must stay lazy")
+                            .arg(instantiated).arg(total)));
+    // A viewport's worth of rows must actually exist: an empty list would
+    // satisfy the budget above while showing the user nothing.
+    QVERIFY2(instantiated >= 8,
+             qPrintable(QStringLiteral("only %1 program rows instantiated over"
+                                       " a %2 px viewport")
+                            .arg(instantiated).arg(list->height())));
 }
 
 QTEST_MAIN(StartMenuQmlTests)
