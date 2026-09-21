@@ -10,7 +10,7 @@ KWin's own window grid on the top-left screen corner.
 `src/shell/runtime/gatheroverviewcomposition.cpp` owns it in a session: one
 layer-shell overlay window per output, fed from the task-list applet's
 controller, with activations going back out as that controller's task intents.
-Three doors reach it — `Meta+G`, the `gather-overview` panel applet, and the
+Three doors reach it — `Meta+Shift+G`, the `gather-overview` panel applet, and the
 upper-left corner (and touch swipe) through the compositor's `overview` edge
 gesture. The reasoning is in
 [ADR-0232](../adr/0232-the-gather-overview-replaces-the-upper-left-corner.md).
@@ -166,7 +166,7 @@ Items 1 to 4 of the original list landed on 2026-09-21 (ADR-0232):
    so the overview inherits that controller's grants and its stale-revision
    arbitration and holds none of its own. A session whose `windows.read` grant
    was denied gets an overview that never opens.
-3. **The keyboard trigger** is `Meta+G`
+3. **The keyboard trigger** is `Meta+Shift+G`
    (`qindaqt_toggle_gather_overview`) — a shell global action rather than a
    `HybridShortcutAction`, because the thing it toggles is a shell surface and
    the shell is where the other surface shortcuts already live.

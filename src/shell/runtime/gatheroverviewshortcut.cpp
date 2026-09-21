@@ -52,7 +52,7 @@ QString GatherOverviewShortcutProducer::stableActionId()
 
 QKeySequence GatherOverviewShortcutProducer::defaultShortcut()
 {
-    return QKeySequence(Qt::META | Qt::Key_G);
+    return QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_G);
 }
 
 bool GatherOverviewShortcutProducer::registrationRequestAccepted() const noexcept

@@ -52,10 +52,18 @@ the applet's grants and its arbitration. A session whose `windows.read` grant
 was denied gets a composition that never opens — there is nothing truthful to
 show and nothing it would be permitted to do.
 
-Three doors, one controller: `Meta+G`
+Three doors, one controller: `Meta+Shift+G`
 (`qindaqt_toggle_gather_overview`), the `gather-overview` panel applet, and
 the compositor's `overview` edge gesture (ADR-0205), which the corner and a
-touch swipe both announce. Because all three call `toggle()` on the same
+touch swipe both announce.
+
+Shift, because KWin's Grid View effect already owns plain `Meta+G` — and
+this decision is that the effect keeps its keys, only the corner is
+un-reserved. KGlobalAccel does not refuse a conflicting default: it accepts
+the registration and leaves the **active** binding empty, so the first cut of
+this shipped a key that looked registered and did nothing. The shell now warns
+when an action is accepted without an active binding, because that outcome is
+otherwise silent. Because all three call `toggle()` on the same
 object, they cannot disagree about whether the overview is up.
 
 ## Consequences
@@ -68,7 +76,7 @@ Creating it once costs a first-frame wait once rather than on every flick.
 
 `closeOnDismissed` is deliberately **false**. It would make LayerShellQt close
 the window directly, leaving the controller still believing the overview is
-up — and since the controller is what all three doors read, the next `Meta+G`
+up — and since the controller is what all three doors read, the next `Meta+Shift+G`
 would close an overview nobody can see. Dismissal reaches the controller
 through the surface's own `dismissRequested` instead.
 
