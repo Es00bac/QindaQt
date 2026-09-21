@@ -44,7 +44,7 @@ Item {
              "centered-task-list"].includes(plugin))
             return "preferences-system-windows"
         if (["workspace-switcher", "workspace-pager", "workspace-tiles",
-             "overview-trigger", "overview"].includes(plugin))
+             "overview-trigger", "overview", "gather-overview"].includes(plugin))
             return "view-grid"
         if (plugin === "show-desktop") return "user-desktop"
         if (plugin === "dashboard") return "dashboard-show"
@@ -76,6 +76,7 @@ Item {
             "workspace-pager": qsTr("Workspaces"),
             "workspace-tiles": qsTr("Workspace tiles"),
             "overview-trigger": qsTr("Overview"),
+            "gather-overview": qsTr("Gather"),
             "dashboard": qsTr("Dashboard"),
             "show-desktop": qsTr("Show desktop"),
             "command-palette": qsTr("Command palette"),

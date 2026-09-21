@@ -20,6 +20,7 @@ Flickable {
     property var bluetoothAppletAccess: null
     property var smartLightsAppletAccess: null
     property var obsAppletAccess: null
+    property var gatherOverviewAccess: null
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
@@ -324,6 +325,7 @@ Flickable {
                 bluetoothAppletAccess: root.bluetoothAppletAccess
                 smartLightsAppletAccess: root.smartLightsAppletAccess
                 obsAppletAccess: root.obsAppletAccess
+                gatherOverviewAccess: root.gatherOverviewAccess
                 powerAppletAccess: root.powerAppletAccess
                 launcherAppletAccess: root.launcherAppletAccess
                 globalMenuAppletAccess: root.globalMenuAppletAccess

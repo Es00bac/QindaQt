@@ -30,7 +30,8 @@
         {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "start"}},
         {"id": "hosted-task-list", "plugin": "task-list", "settings": {"zone": "center"}},
         {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "end"}},
-        {"id": "show-desktop", "plugin": "show-desktop", "settings": {"zone": "end"}}
+        {"id": "show-desktop", "plugin": "show-desktop", "settings": {"zone": "end"}},
+        {"id": "gather", "plugin": "gather-overview", "settings": {"zone": "end"}}
       ]
     },
     {
