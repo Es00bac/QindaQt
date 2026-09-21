@@ -121,11 +121,21 @@ QString resolveWallpaperSource(const QString &preference,
         if (name.isEmpty() || name.contains(QLatin1Char('/'))) {
             return {};
         }
+        // AGENT-CONTRACT: Bundled image formats, in priority order, mirroring
+        // the Appearance route's discoverBundledWallpapers()
+        // (src/apps/settings/appearance/wallpaper_catalog.cpp). One
+        // qindaqt:<name> identity must name the same file for the chooser
+        // and for the desktop it paints.
         for (const QString &root : dataRoots) {
-            const QFileInfo file(root + QStringLiteral("/qindaqt/wallpapers/")
-                                 + name + QStringLiteral(".png"));
-            if (file.isFile() && file.isReadable()) {
-                return file.absoluteFilePath();
+            for (const QLatin1StringView extension :
+                 {QLatin1StringView("png"), QLatin1StringView("jpg"),
+                  QLatin1StringView("jpeg"), QLatin1StringView("webp"),
+                  QLatin1StringView("bmp")}) {
+                const QFileInfo file(root + QStringLiteral("/qindaqt/wallpapers/")
+                                     + name + QLatin1Char('.') + extension);
+                if (file.isFile() && file.isReadable()) {
+                    return file.absoluteFilePath();
+                }
             }
         }
         return {};

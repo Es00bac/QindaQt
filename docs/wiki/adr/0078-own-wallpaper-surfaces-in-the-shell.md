@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-05
+- Superseded by: [ADR-0228](0228-bundled-wallpapers-resolve-beyond-png.md) for the bundled-identity formats only; the ownership and surface decisions remain accepted
 
 ## Context
 
