@@ -2,6 +2,7 @@
 #include "qindaqtkwinplugin.h"
 
 #include "kwincontrolendpoint.h"
+#include "kwinpointercornerreserver.h"
 #include "kwintouchedgereserver.h"
 #include "kwinonscreenkeyboardpolicy.h"
 #include "kwintouchpreferences.h"
@@ -198,6 +199,29 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
         QTimer::singleShot(0, m_touchEdges.get(), &TouchEdgeGestures::rearm);
     } else {
         qWarning("QindaQt compositor: no screen edges at plugin load; touch edge gestures are off");
+    }
+
+    // ADR-0232: the upper-left corner, for a pointer. SessionDefaults seeds an
+    // empty Effect-overview/BorderActivate so KWin's window grid no longer
+    // answers it; this is the half that makes something of ours answer
+    // instead. It announces the same (edge, action) pair a touch swipe does,
+    // so the shell's existing `overview` dispatch reaches the gather overview
+    // with no new plumbing.
+    if (KWinPointerCornerReserver::available()) {
+        m_pointerCornerReserver = std::make_unique<KWinPointerCornerReserver>();
+        m_pointerCorner =
+            std::make_unique<PointerCornerGesture>(*m_pointerCornerReserver);
+        connect(m_pointerCorner.get(), &PointerCornerGesture::triggered,
+                m_endpoint.get(), &KWinControlEndpoint::announceEdgeGesture);
+        // Same re-arm contract as the touch edges: KWin rebuilds its edge
+        // objects with the outputs and keeps only what the old edges held.
+        connect(KWin::workspace(), &KWin::Workspace::outputsChanged,
+                m_pointerCorner.get(), &PointerCornerGesture::rearm);
+        QTimer::singleShot(0, m_pointerCorner.get(),
+                           &PointerCornerGesture::rearm);
+    } else {
+        qWarning("QindaQt compositor: no screen edges at plugin load; the "
+                 "upper-left corner is off");
     }
     m_onScreenKeyboard = std::make_unique<KWinOnScreenKeyboardPolicy>();
     m_touchPreferences = std::make_unique<KWinTouchPreferences>(m_bus);

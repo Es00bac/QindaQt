@@ -23,9 +23,11 @@ class ShellTaskFactsController;
 namespace QindaQt::Compositor::KWinIntegration {
 
 class KWinControlEndpoint;
+class KWinPointerCornerReserver;
 class KWinTouchEdgeReserver;
 class KWinTouchPreferences;
 class KWinOnScreenKeyboardPolicy;
+class PointerCornerGesture;
 class TouchEdgeGestures;
 class KWinDevelopmentInputInjector;
 class KWinDevelopmentOutputSeam;
@@ -87,6 +89,11 @@ private:
     std::unique_ptr<KWinControlEndpoint> m_endpoint;
     std::unique_ptr<KWinTouchEdgeReserver> m_touchEdgeReserver;
     std::unique_ptr<TouchEdgeGestures> m_touchEdges;
+    // ADR-0232: the upper-left corner for a pointer. Separate from the touch
+    // edges because KWin's reserveTouch is touch-only and a corner is not one
+    // of its four edges.
+    std::unique_ptr<KWinPointerCornerReserver> m_pointerCornerReserver;
+    std::unique_ptr<PointerCornerGesture> m_pointerCorner;
     std::unique_ptr<KWinTouchPreferences> m_touchPreferences;
     std::unique_ptr<KWinOnScreenKeyboardPolicy> m_onScreenKeyboard;
     // ADR-0205: touch devices this plugin switched off for input.touch.enabled;

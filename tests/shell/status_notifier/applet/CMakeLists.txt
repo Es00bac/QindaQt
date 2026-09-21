@@ -147,16 +147,28 @@ set_tests_properties(
 # whose build pulls these prerequisites, so a focused build of the declared
 # test targets can never leave QML plugins unbuilt (a bare qmltestrunner row
 # has no executable prerequisite at all).
-add_custom_target(
-    qindaqt_status_notifier_applet_qml_test_prerequisites
-    DEPENDS
-        qindaqt_shell_status_notifier_applet_runtimeplugin
-        qindaqt_shell_desktop_controls_runtimeplugin
-        QindaQt::ShellIcons
-        qindaqt_shell_iconsplugin
-        qindaqt_controls_qmlplugin
-        qindaqt_tokens_qmlplugin
-)
+#
+# AGENT-GUARD: guarded on the desktop-controls runtime plugin, because two of
+# these DEPENDS only exist when QINDAQT_BUILD_SHELL is on. Unguarded, a
+# -DQINDAQT_BUILD_SHELL=OFF -DBUILD_TESTING=ON configure succeeded and then
+# ninja refused to build ANYTHING with
+#   'tests/shell/status_notifier/applet/qindaqt_shell_desktop_controls_runtimeplugin',
+#   needed by ... qml_test_prerequisites, missing and no known rule to make it
+# - a whole-tree build failure from a target nothing had asked for. The rows
+# that use these prerequisites are already behind `if(TARGET qindaqt-shell)`
+# further down; this target was the one thing outside it.
+if(TARGET qindaqt_shell_desktop_controls_runtimeplugin)
+    add_custom_target(
+        qindaqt_status_notifier_applet_qml_test_prerequisites
+        DEPENDS
+            qindaqt_shell_status_notifier_applet_runtimeplugin
+            qindaqt_shell_desktop_controls_runtimeplugin
+            QindaQt::ShellIcons
+            qindaqt_shell_iconsplugin
+            qindaqt_controls_qmlplugin
+            qindaqt_tokens_qmlplugin
+    )
+endif()
 
 # 4. QML rows through the theme-published compiled harness. The applet's QML
 # consumes QST-1 tokens that exist only after a theme is published; the
@@ -180,10 +192,14 @@ target_compile_features(qindaqt_status_notifier_applet_qml_tests PRIVATE cxx_std
 set_target_properties(qindaqt_status_notifier_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_status_notifier_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_status_notifier_applet_qml_tests)
-add_dependencies(
-    qindaqt_status_notifier_applet_qml_tests
-    qindaqt_status_notifier_applet_qml_test_prerequisites
-)
+# The prerequisites target exists only where the shell's runtime plugins do;
+# see the guard on its declaration above.
+if(TARGET qindaqt_status_notifier_applet_qml_test_prerequisites)
+    add_dependencies(
+        qindaqt_status_notifier_applet_qml_tests
+        qindaqt_status_notifier_applet_qml_test_prerequisites
+    )
+endif()
 
 function(qindaqt_add_status_notifier_applet_qml_test test_name test_input)
     add_test(
