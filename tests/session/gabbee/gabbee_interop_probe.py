@@ -407,7 +407,7 @@ def main() -> int:
     parser.add_argument("--result-path", required=True)
     parser.add_argument("--run-id", default="nested")
     parser.add_argument("--editor-desktop-id", default="org.qindaqt.TextEditor")
-    parser.add_argument("--terminal-desktop-id", default="org.qindaqt.Terminal")
+    parser.add_argument("--terminal-desktop-id", default="org.qindaqt.QQTerm")
     arguments = parser.parse_args()
     # KWinQtScriptBridge.try_create() returns None when QCoreApplication.instance()
     # is None — it uses QDBusConnection.sessionBus() and a nested QEventLoop to

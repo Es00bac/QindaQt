@@ -119,22 +119,18 @@ def _outer() -> int:
     run_id = uuid.uuid4().hex
     run_dir = result_root / run_id
     run_dir.mkdir()
-    terminal_stage = run_dir / "terminal-stage"
-    install = subprocess.run(
-        [
-            "cmake",
-            "--install",
-            str(arguments.build_root),
-            "--component",
-            "Terminal",
-            "--prefix",
-            str(terminal_stage),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if install.returncode != 0:
-        raise SystemExit(f"Terminal component install failed: {install.stderr[-2000:]}")
+    # AGENT-CONTRACT: the first-party terminal is QQ_Term (gui-apps/qqterm), a
+    # separate package that this build tree does not produce, so there is no
+    # Terminal install component to stage. The lane mounts the installed
+    # executable's own prefix instead; the sandbox already mounts /usr for the
+    # portal stack, so this resolves to the same read-only prefix.
+    terminal_executable = shutil.which("qqterm")
+    if terminal_executable is None:
+        raise SystemExit(
+            "QQ_Term is not installed: emerge gui-apps/qqterm before running"
+            " this private lane"
+        )
+    terminal_stage = Path(terminal_executable).resolve(strict=True).parent.parent
 
     with PrivateLaneLock():
         paths = create_run_root(arguments.build_root, run_id)
@@ -176,7 +172,7 @@ def _outer_spec(
     mounts.extend(
         [
             ReadOnlyMount(gabbee_root, posix("/opt/gabbee")),
-            ReadOnlyMount(terminal_stage.resolve(strict=True), posix("/opt/qindaqt-terminal")),
+            ReadOnlyMount(terminal_stage.resolve(strict=True), posix("/opt/qqterm")),
         ]
     )
     python = sandbox_path_for(tools[0], tuple(mounts))
@@ -193,7 +189,7 @@ def _outer_spec(
         qt_plugin_path=qt_plugin_path,
         qml_import_path=qml_import_path,
     )
-    terminal_bin = "/opt/qindaqt-terminal/" + arguments.bin_directory
+    terminal_bin = "/opt/qqterm/bin"
     environment["PATH"] = ":".join(
         [terminal_bin, environment["PATH"]]
     )
@@ -376,7 +372,7 @@ def _start_nested_desktop(
         app_environment["SHELL"] = "/usr/bin/bash"
     for role, executable in (
         ("editor-app", stage.executables["editor-app"]),
-        ("terminal-app", Path("/opt/qindaqt-terminal") / arguments.bin_directory / "qindaqt-terminal"),
+        ("terminal-app", Path("/opt/qqterm/bin/qqterm")),
     ):
         child = spawn_logged_process(role, [str(executable)], app_environment)
         state.track(child, [executable])

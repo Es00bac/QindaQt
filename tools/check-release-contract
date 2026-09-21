@@ -163,7 +163,6 @@ def verify_install(install_root: Path) -> None:
         "qindaqt-shell",
         "qindaqt-file-manager",
         "qindaqt-editor",
-        "qindaqt-terminal",
     )
     for name in required_commands:
         command = install_root / "bin" / name

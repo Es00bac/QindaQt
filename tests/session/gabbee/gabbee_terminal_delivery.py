@@ -38,7 +38,7 @@ from gabbee_terminal_sentinel import (
 )
 
 CHOOSER_SUBSTRING = "terminal"
-CHOOSER_APP = "org.qindaqt.Terminal"
+CHOOSER_APP = "org.qindaqt.QQTerm"
 KEYSYM_RETURN = 0xFF0D
 KEYSYM_CONTROL_L = 0xFFE3
 KEYSYM_LOWER_D = 0x64

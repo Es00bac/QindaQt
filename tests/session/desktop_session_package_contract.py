@@ -31,7 +31,6 @@ NETWORK_QML_FILES = (
 FIRST_PARTY_DESKTOP_ICONS = {
     "org.qindaqt.Settings.desktop": "preferences-system",
     "org.qindaqt.TextEditor.desktop": "org.qindaqt.TextEditor",
-    "org.qindaqt.Terminal.desktop": "org.qindaqt.Terminal",
     "org.qindaqt.FileManager.desktop": "org.qindaqt.FileManager",
     "org.qindaqt.Welcome.desktop": "help-about",
 }

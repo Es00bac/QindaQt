@@ -81,7 +81,7 @@ is the presentation name: the entry name for the app id, else for the
 compositor-reported resource class, else `prettifiedApplicationId`, which
 drops a `.exe` suffix and keeps the rest whole (`Battle.net.exe` becomes
 `Battle.net`), otherwise turns a reverse-DNS id into its last segment
-(`org.qindaqt.Terminal` becomes `Terminal`) and keeps any other name. A
+(`org.qindaqt.QQTerm` becomes `QQTerm`) and keeps any other name. A
 Windows executable is a filename, not a reverse-DNS id, so the tail rule must
 never be applied to one. This is the seam the task list uses to show window
 icons and names from the compositor's app id.

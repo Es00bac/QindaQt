@@ -372,13 +372,13 @@ void DesktopSurfaceQmlTests::modifierRightClickOpensApplicationsPopup()
     const auto rows = host.visualItemsNamed(QStringLiteral("desktopApplicationsRow"));
     QCOMPARE(rows.size(), 1);
     QCOMPARE(QAccessible::queryAccessibleInterface(rows.constFirst())->text(QAccessible::Name),
-             QStringLiteral("Terminal"));
+             QStringLiteral("QQ_Term"));
     const QPointF rowCenter(rows.constFirst()->width() / 2, rows.constFirst()->height() / 2);
     const QPointF rowScene = rows.constFirst()->mapToScene(rowCenter);
     QTest::mouseClick(rows.constFirst()->window(), Qt::LeftButton, Qt::NoModifier,
                       rowScene.toPoint());
     QTRY_COMPARE(launcher.activated.size(), 1);
-    QCOMPARE(launcher.activated.constFirst(), QStringLiteral("org.qindaqt.Terminal"));
+    QCOMPARE(launcher.activated.constFirst(), QStringLiteral("org.qindaqt.QQTerm"));
     QTRY_VERIFY(!applicationsMenu->property("opened").toBool());
 }
 

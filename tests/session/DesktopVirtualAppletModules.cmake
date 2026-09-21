@@ -90,7 +90,6 @@ install(
     FILES
         "${CMAKE_SOURCE_DIR}/src/apps/settings_center/org.qindaqt.Settings.desktop"
         "${CMAKE_SOURCE_DIR}/src/apps/text_editor/org.qindaqt.TextEditor.desktop"
-        "${CMAKE_SOURCE_DIR}/src/apps/terminal/org.qindaqt.Terminal.desktop"
         "${CMAKE_SOURCE_DIR}/src/apps/file_manager/org.qindaqt.FileManager.desktop"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
     COMPONENT DesktopVirtual

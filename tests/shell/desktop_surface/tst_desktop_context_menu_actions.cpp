@@ -50,7 +50,7 @@ void DesktopContextMenuActionTests::settingsEntriesDispatchRouteActions()
          "appearance"},
         {"traditional", "desktopContextSettings", "org.qindaqt.Settings",
          "appearance"},
-        {"traditional", "desktopContextTerminal", "org.qindaqt.Terminal", ""},
+        {"traditional", "desktopContextTerminal", "org.qindaqt.QQTerm", ""},
     };
 
     for (const auto &testCase : cases) {

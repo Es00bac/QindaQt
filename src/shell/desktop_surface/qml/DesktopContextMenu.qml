@@ -173,7 +173,7 @@ T.Menu {
                 {separator: true},
                 {objectName: "desktopContextTerminal",
                  text: qsTr("Open Terminal Here"),
-                 kind: "launch", targetId: "org.qindaqt.Terminal",
+                 kind: "launch", targetId: "org.qindaqt.QQTerm",
                  needsLauncher: true},
                 {objectName: "desktopContextCreateFolder",
                  text: qsTr("Create Folder…"), kind: "newFolder",

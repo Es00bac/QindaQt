@@ -85,15 +85,15 @@ void LaunchSupportTests::failsClosedOnBrokenDocuments()
 void LaunchSupportTests::buildsTerminalCommandLines()
 {
     const auto command = terminalCommandLine(
-        {QStringLiteral("qindaqt-terminal"), QStringLiteral("-e")},
+        {QStringLiteral("qqterm"), QStringLiteral("-e")},
         QStringLiteral("fixture"), {QStringLiteral("--start")});
-    const QStringList expected{QStringLiteral("qindaqt-terminal"),
+    const QStringList expected{QStringLiteral("qqterm"),
                                QStringLiteral("-e"),
                                QStringLiteral("fixture"),
                                QStringLiteral("--start")};
     QCOMPARE(command, expected);
     QVERIFY(terminalCommandLine({}, QStringLiteral("fixture"), {}).isEmpty());
-    QVERIFY(terminalCommandLine({QStringLiteral("qindaqt-terminal")}, {}, {}).isEmpty());
+    QVERIFY(terminalCommandLine({QStringLiteral("qqterm")}, {}, {}).isEmpty());
 }
 
 QTEST_GUILESS_MAIN(LaunchSupportTests)

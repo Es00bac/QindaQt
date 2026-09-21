@@ -139,11 +139,11 @@ void LaunchExecutorTests::terminalEntriesNeedAWiredPolicy()
     QCOMPARE(spawner.requests.size(), 0);
 
     LaunchExecutor armed(scanner, spawner, activator,
-                         { QStringLiteral("qindaqt-terminal"), QStringLiteral("--execute") });
+                         { QStringLiteral("qqterm"), QStringLiteral("--execute") });
     const LaunchOutcome routed = armed.launch(QStringLiteral("top"));
     QCOMPARE(routed.status, LaunchStatus::Spawned);
     QCOMPARE(spawner.requests.size(), 1);
-    QCOMPARE(spawner.requests.constFirst().program, QStringLiteral("qindaqt-terminal"));
+    QCOMPARE(spawner.requests.constFirst().program, QStringLiteral("qqterm"));
     QCOMPARE(spawner.requests.constFirst().arguments,
              QStringList({ QStringLiteral("--execute"), QStringLiteral("top"),
                            QStringLiteral("-b") }));
