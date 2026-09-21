@@ -216,7 +216,12 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 19);
+  // AGENT-GUARD: two lanes each bumped this from 18 to 19 in the same
+  // integration, so git saw them agree and produced no conflict - the count
+  // was silently one short of the twenty routes that actually register.
+  // Whenever a route is appended, this number and the index assertions in
+  // tst_settings_navigation_controller.cpp move together.
+  QCOMPARE(registry.count(), 20);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -242,6 +247,8 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   // every earlier index -- which shortcuts and traversal depend on -- is
   // unmoved.
   QVERIFY(registry.hasRoute(QStringLiteral("screensaver")));
+  // ADR-0225: the Login screen route, appended last for the same reason.
+  QVERIFY(registry.hasRoute(QStringLiteral("login-screen")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -262,7 +269,7 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   // Each lane appends its route last, in merge order, so no existing index,
   // shortcut or traversal position moves (ADR-0128).
-  QCOMPARE(registry.count(), 19);
+  QCOMPARE(registry.count(), 20);
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
   QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
   QCOMPARE(registry.indexOf(QStringLiteral("windows")), 14);
@@ -270,6 +277,7 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   QCOMPARE(registry.indexOf(QStringLiteral("about-computer")), 16);
   QCOMPARE(registry.indexOf(QStringLiteral("startup")), 17);
   QCOMPARE(registry.indexOf(QStringLiteral("screensaver")), 18);
+  QCOMPARE(registry.indexOf(QStringLiteral("login-screen")), 18);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -392,6 +400,14 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
            QStringLiteral("preferences-desktop-screensaver"));
   QVERIFY(!screensaver->description.isEmpty());
   QVERIFY(screensaver->available);
+  const auto loginScreen = registry.route(QStringLiteral("login-screen"));
+  QVERIFY(loginScreen.has_value());
+  QCOMPARE(loginScreen->id, QStringLiteral("login-screen"));
+  QCOMPARE(loginScreen->component, SettingsRouteComponent::LoginScreen);
+  QCOMPARE(loginScreen->title, QStringLiteral("Login screen"));
+  QCOMPARE(loginScreen->category, QStringLiteral("General"));
+  QVERIFY(!loginScreen->description.isEmpty());
+  QVERIFY(loginScreen->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

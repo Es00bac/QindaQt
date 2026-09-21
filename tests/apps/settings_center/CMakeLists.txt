@@ -75,6 +75,8 @@ target_link_libraries(qindaqt_settings_navigation_layout_test PRIVATE
     qindaqt_settings_input_backend_qmlplugin qindaqt_settings_startup_qml
     qindaqt_settings_startup_qmlplugin qindaqt_settings_screensaver_qml
     qindaqt_settings_screensaver_qmlplugin qindaqt_design_tokens qindaqt_tokens_qml
+    qindaqt_settings_startup_qmlplugin qindaqt_design_tokens qindaqt_tokens_qml
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
     qindaqt_controls_qml qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
 )
 target_compile_definitions(qindaqt_settings_navigation_layout_test PRIVATE
@@ -102,6 +104,7 @@ add_dependencies(qindaqt_settings_navigation_layout_test
     qindaqt_settings_about_computer_qml qindaqt_settings_about_computer_qmlplugin
     qindaqt_settings_startup_qml qindaqt_settings_startup_qmlplugin
     qindaqt_settings_screensaver_qml qindaqt_settings_screensaver_qmlplugin
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_navigation_layout_test)
@@ -144,6 +147,8 @@ target_link_libraries(qindaqt_settings_navigation_interaction_test PRIVATE
     qindaqt_settings_input_backend_qmlplugin qindaqt_settings_startup_qml
     qindaqt_settings_startup_qmlplugin qindaqt_settings_screensaver_qml
     qindaqt_settings_screensaver_qmlplugin qindaqt_design_tokens qindaqt_tokens_qml
+    qindaqt_settings_startup_qmlplugin qindaqt_design_tokens qindaqt_tokens_qml
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
     qindaqt_controls_qml qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
 )
 target_compile_definitions(qindaqt_settings_navigation_interaction_test PRIVATE
@@ -171,6 +176,7 @@ add_dependencies(qindaqt_settings_navigation_interaction_test
     qindaqt_settings_about_computer_qml qindaqt_settings_about_computer_qmlplugin
     qindaqt_settings_startup_qml qindaqt_settings_startup_qmlplugin
     qindaqt_settings_screensaver_qml qindaqt_settings_screensaver_qmlplugin
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_navigation_interaction_test)
