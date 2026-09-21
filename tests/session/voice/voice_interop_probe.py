@@ -54,7 +54,7 @@ def build_publisher_source() -> str:
     """
 
     return '''
-import json, sys, threading
+import json, sys
 from PyQt6.QtCore import QCoreApplication, QTimer
 from gabbee.models import ControllerSnapshot, ControllerState
 from gabbee.qindaqt_voice import QindaQtVoiceService
@@ -154,14 +154,16 @@ def main():
     if not service.open():
         print(json.dumps({"published": False}), flush=True)
         return 1
-    # Tell the driver the bus is ready, then run until it is finished with us.
+    # Tell the driver the bus is ready, then hold the name until it kills us.
     print(json.dumps({"published": True}), flush=True)
 
-    def watch_stdin():
-        sys.stdin.readline()
-        QTimer.singleShot(0, app.quit)
-
-    threading.Thread(target=watch_stdin, daemon=True).start()
+    # AGENT-GUARD: do not end this process on stdin EOF. Under ctest stdin is
+    # already closed, so an EOF watcher quits the instant it is installed, the
+    # bus name is released before the client has connected, and the run fails
+    # as "service-unavailable" against a provider that did publish correctly.
+    # The driver kills this process when the probe is done; this timer exists
+    # only so an orphaned publisher cannot outlive the run that started it.
+    QTimer.singleShot(110000, app.quit)
     return app.exec()
 
 
@@ -222,7 +224,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         completed = subprocess.run(
             ["dbus-run-session", "--", "sh", "-c", driver],
-            env=environment, timeout=120, text=True, capture_output=True)
+            env=environment, timeout=120, text=True, capture_output=True,
+            stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
         print("FAIL: the interop run did not finish within 120 seconds")
         return 1

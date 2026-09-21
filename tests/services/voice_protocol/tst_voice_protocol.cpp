@@ -106,6 +106,9 @@ private Q_SLOTS:
     void rejectsACurrentProviderMissingFromTheList();
     void rejectsAnAvailabilityBitPastTheList();
     void rejectsTooManyProviders();
+    void decodesAProviderListSentAsVariants();
+    void refusesAProviderListElementThatIsNotAString();
+    void refusesAnOversizedProviderArray();
     void rejectsARegressedResultRevision();
     void rejectsACommandModeTheProviderCannotDo();
     void clampsTheLevel();
@@ -283,6 +286,62 @@ void VoiceProtocolTest::rejectsTooManyProviders()
                                .available = true});
     }
     QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("too-many-providers"));
+}
+
+void VoiceProtocolTest::decodesAProviderListSentAsVariants()
+{
+    // PyQt6 marshals a Python list of str as `av`, not `as`, so the provider
+    // inventory reaches us as variants. Gabbee really does send this shape;
+    // it was found by the live interop probe, not by inspection.
+    QVariantMap payload = capturedGabbeeSnapshot();
+    payload.insert(QStringLiteral("providerIds"),
+                   QVariantList{QStringLiteral("elevenlabs"), QStringLiteral("gemini"),
+                                QStringLiteral("whisper_local")});
+    payload.insert(QStringLiteral("providerLabels"),
+                   QVariantList{QStringLiteral("ElevenLabs Scribe"),
+                                QStringLiteral("Google Gemini"),
+                                QStringLiteral("Whisper (on this computer)")});
+    const Snapshot snapshot = decodeSnapshot(payload);
+    QVERIFY(snapshot.wireValid);
+    QCOMPARE(snapshot.providers.size(), 3);
+    QCOMPARE(snapshot.providers.at(2).id, QStringLiteral("whisper_local"));
+    QCOMPARE(snapshot.providers.at(0).label, QStringLiteral("ElevenLabs Scribe"));
+}
+
+void VoiceProtocolTest::refusesAProviderListElementThatIsNotAString()
+{
+    QVariantMap payload = capturedGabbeeSnapshot();
+    payload.insert(QStringLiteral("providerIds"),
+                   QVariantList{QStringLiteral("elevenlabs"), quint32(7),
+                                QStringLiteral("whisper_local")});
+    QVERIFY(!decodeSnapshot(payload).wireValid);
+}
+
+void VoiceProtocolTest::refusesAnOversizedProviderArray()
+{
+    // AGENT-NOTE: defence in depth. The bound lives in the decoder so an
+    // oversized array is refused before anything is built from it, rather
+    // than relying on the caller to notice afterwards. What actually caused
+    // the 26GB allocation this fix came from -- a mistyped array off a real
+    // bus spinning a hand-written demarshalling loop -- cannot be built in a
+    // unit test; session.voice-interop is what covers that.
+    QStringList ids;
+    QStringList labels;
+    for (int index = 0; index <= kMaxProviders; ++index) {
+        ids.append(QStringLiteral("p%1").arg(index));
+        labels.append(QStringLiteral("P"));
+    }
+    QVariantMap payload = capturedGabbeeSnapshot();
+    payload.insert(QStringLiteral("providerIds"), ids);
+    payload.insert(QStringLiteral("providerLabels"), labels);
+    QVERIFY(!decodeSnapshot(payload).wireValid);
+
+    QVariantList variantIds;
+    for (const QString &id : ids) {
+        variantIds.append(id);
+    }
+    payload.insert(QStringLiteral("providerIds"), variantIds);
+    QVERIFY(!decodeSnapshot(payload).wireValid);
 }
 
 void VoiceProtocolTest::rejectsARegressedResultRevision()

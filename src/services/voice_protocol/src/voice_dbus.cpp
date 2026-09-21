@@ -3,6 +3,7 @@
 #include <qindaqt/services/voice_protocol/voice_dbus.h>
 
 #include <QtCore/QStringList>
+#include <QtCore/QVariantList>
 #include <QtDBus/QDBusArgument>
 
 #include <array>
@@ -121,29 +122,70 @@ bool readString(const QVariant &value, QString *out)
     return true;
 }
 
+// A list of strings that arrived as a list of variants. Shared by the
+// in-process QVariantList shape and the `av` shape off the wire so both are
+// bounded and type-checked by exactly the same rule.
+bool readStringsFromVariants(const QVariantList &raw, QStringList *out)
+{
+    if (raw.size() > kMaxProviders) {
+        return false;
+    }
+    QStringList decoded;
+    decoded.reserve(raw.size());
+    for (const QVariant &entry : raw) {
+        // Strictness is recovered here: a variant that does not hold a string
+        // is a provider defect, not something to coerce.
+        if (entry.typeId() != QMetaType::QString) {
+            return false;
+        }
+        decoded.append(entry.toString());
+    }
+    *out = decoded;
+    return true;
+}
+
 bool readStringList(const QVariant &value, QStringList *out)
 {
     if (value.typeId() == QMetaType::QStringList) {
-        *out = value.toStringList();
-        return true;
-    }
-    // Some bindings hand a{sv} string arrays over as an undemarshalled
-    // argument rather than a QStringList; both shapes are accepted.
-    if (value.canConvert<QDBusArgument>()) {
-        const QDBusArgument argument = value.value<QDBusArgument>();
-        if (argument.currentType() != QDBusArgument::ArrayType) {
+        const QStringList direct = value.toStringList();
+        if (direct.size() > kMaxProviders) {
             return false;
         }
-        QStringList decoded;
-        argument.beginArray();
-        while (!argument.atEnd()) {
-            QString entry;
-            argument >> entry;
-            decoded.append(entry);
+        *out = direct;
+        return true;
+    }
+    // A binding that hands over a list of variants -- PyQt6 turns a Python
+    // list into one -- is describing the same value as `as`; read it alike.
+    if (value.typeId() == QMetaType::QVariantList) {
+        return readStringsFromVariants(value.toList(), out);
+    }
+    if (!value.canConvert<QDBusArgument>()) {
+        return false;
+    }
+    const QDBusArgument argument = value.value<QDBusArgument>();
+    if (argument.currentType() != QDBusArgument::ArrayType) {
+        return false;
+    }
+    // AGENT-GUARD: dispatch on the element signature and let Qt walk the
+    // array. A hand-written `while (!argument.atEnd())` looks equivalent and
+    // is not: QDBusArgument does not advance when an element is not the type
+    // being extracted, so the loop never ends and appends until the kernel
+    // kills the process. The provider is replaceable and outside our control,
+    // so a mistyped array must cost a refusal, never the shell it runs in.
+    const QString signature = argument.currentSignature();
+    // Bindings disagree on how a list of strings nests inside a{sv}: Qt sends
+    // `as`, while PyQt6 turns a Python list into a QVariantList and sends
+    // `av`. Both are honest encodings of the same value, so both are read.
+    if (signature == QLatin1String("as")) {
+        const QStringList decoded = qdbus_cast<QStringList>(argument);
+        if (decoded.size() > kMaxProviders) {
+            return false;
         }
-        argument.endArray();
         *out = decoded;
         return true;
+    }
+    if (signature == QLatin1String("av")) {
+        return readStringsFromVariants(qdbus_cast<QVariantList>(argument), out);
     }
     return false;
 }
