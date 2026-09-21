@@ -463,6 +463,32 @@ TaskListAppletComposition::~TaskListAppletComposition()
     stop();
 }
 
+std::function<QString(const QString &applicationId)>
+TaskListAppletComposition::iconNameResolver() const
+{
+    return [this](const QString &applicationId) {
+        if (m_iconResolver) {
+            const QString entryIcon =
+                m_iconResolver->iconNameForAppId(applicationId);
+            if (!entryIcon.isEmpty()) {
+                return entryIcon;
+            }
+        }
+        // ADR-0230: no desktop entry claims the id, so a Wine/Proton window
+        // may still have a PE-extracted icon in the shared cache root the
+        // compositor writes.
+        if (m_iconThemeLocator) {
+            const QString cacheName =
+                Icons::IconRuntime::wineCacheIconNameForAppId(applicationId);
+            if (!cacheName.isEmpty()
+                && m_iconThemeLocator->hasIcon(cacheName, 18, 1.0, false)) {
+                return cacheName;
+            }
+        }
+        return QString{};
+    };
+}
+
 void TaskListAppletComposition::compose(
     const Applets::ManifestCatalog &catalog,
     const AppletHost::CapabilityPolicy &policy,
@@ -475,29 +501,7 @@ void TaskListAppletComposition::compose(
         source, authority, containerOperations, windowActions);
     m_access = std::make_unique<ShellTaskListApplet::TaskListAppletController>(
         source, authority, *m_router, taskListGrants(catalog, policy),
-        [this](const QString &applicationId) {
-            if (m_iconResolver) {
-                const QString entryIcon =
-                    m_iconResolver->iconNameForAppId(applicationId);
-                if (!entryIcon.isEmpty()) {
-                    return entryIcon;
-                }
-            }
-            // ADR-0230: no desktop entry claims the id, so a Wine/Proton
-            // window may still have a PE-extracted icon in the shared cache
-            // root the compositor writes. The name rides the same confined
-            // locator the entry icons use; anything absent or hostile falls
-            // through to the typed placeholder exactly as before.
-            if (m_iconThemeLocator) {
-                const QString cacheName =
-                    Icons::IconRuntime::wineCacheIconNameForAppId(applicationId);
-                if (!cacheName.isEmpty()
-                    && m_iconThemeLocator->hasIcon(cacheName, 18, 1.0, false)) {
-                    return cacheName;
-                }
-            }
-            return QString{};
-        },
+        iconNameResolver(),
         [this](const QString &iconName) {
             return m_iconThemeLocator
                 && m_iconThemeLocator->hasIcon(iconName, 18, 1.0, false);

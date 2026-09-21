@@ -144,6 +144,7 @@ private Q_SLOTS:
     void anEmptyProjectionShowsAnEmptyState();
     void hiddenTilesAndUpstreamOverflowAreStated();
     void anUnavailableProjectionDrawsNothing();
+    void grabsOneRepresentativeFrameForReview();
 
 private:
     [[nodiscard]] QQuickItem *createSurface(const QVariantMap &projection);
@@ -429,6 +430,67 @@ void GatherOverviewSurfaceQmlTests::anUnavailableProjectionDrawsNothing()
                       QPoint(960, 540));
     QTest::qWait(50);
     QCOMPARE(activated.count(), 0);
+}
+
+// A rendered frame, written where a human can look at it. Every other row
+// here asserts a fact; this one exists because the arrangement is a visual
+// design and a passing assertion does not tell anyone whether it looks right.
+// It asserts only that a frame was produced and is not blank - the layout
+// itself is reviewed by eye from the PNG.
+void GatherOverviewSurfaceQmlTests::grabsOneRepresentativeFrameForReview()
+{
+    // A full lane set: three iconified chips, two container cards, six window
+    // tiles in a 3x2 grid, with the planner's 90 px buffer honoured.
+    QVariantList items;
+    for (int i = 0; i < 3; ++i) {
+        items.append(tile(QStringLiteral("chip%1").arg(i + 1),
+                          QStringLiteral("icon"),
+                          QRectF(90, 90 + i * 64, 48, 48)));
+    }
+    for (int i = 0; i < 2; ++i) {
+        items.append(tile(QStringLiteral("group%1").arg(i + 1),
+                          QStringLiteral("card"),
+                          QRectF(154, 90 + i * 80, 240, 64),
+                          QStringLiteral("Container %1").arg(i + 1)));
+    }
+    for (int i = 0; i < 6; ++i) {
+        items.append(tile(QStringLiteral("win%1").arg(i + 1),
+                          QStringLiteral("window"),
+                          QRectF(426 + (i % 3) * 276, 90 + (i / 3) * 192,
+                                 260, 176),
+                          QStringLiteral("Window %1").arg(i + 1)));
+    }
+    QVariantMap projection = stubProjection({});
+    projection.insert(QStringLiteral("items"), items);
+    projection.insert(QStringLiteral("gridColumns"), 3);
+    projection.insert(QStringLiteral("gridRows"), 2);
+    projection.insert(QStringLiteral("gridContentHeight"), 384);
+
+    QQuickItem *surface = createSurface(projection);
+    QVERIFY(surface != nullptr);
+    // Long enough for the icon fallbacks and the scrim material to settle.
+    QTest::qWait(400);
+
+    const QImage frame = m_window->grabWindow();
+    QVERIFY(!frame.isNull());
+    QCOMPARE(frame.size().isEmpty(), false);
+    const QString path =
+        QStringLiteral(QINDAQT_GATHER_OVERVIEW_ARTIFACT_DIR "/gather-overview.png");
+    QVERIFY2(frame.save(path), qPrintable(path));
+    qInfo().noquote() << "gather overview frame written to" << path;
+
+    // Not blank: a surface that constructed but painted nothing would still
+    // save a valid PNG, and that is exactly the failure worth catching.
+    QSet<QRgb> distinct;
+    for (int y = 0; y < frame.height(); y += 8) {
+        for (int x = 0; x < frame.width(); x += 8) {
+            distinct.insert(frame.pixel(x, y));
+            if (distinct.size() > 4) {
+                break;
+            }
+        }
+    }
+    QVERIFY2(distinct.size() > 4, "the grabbed frame has almost no detail");
 }
 
 QTEST_MAIN(GatherOverviewSurfaceQmlTests)

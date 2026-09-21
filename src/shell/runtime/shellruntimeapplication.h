@@ -77,6 +77,8 @@ class DesktopSurfaceController;
 }
 class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
+class GatherOverviewComposition;
+class GatherOverviewShortcutProducer;
 class KGlobalAccelShortcutRegistrar;
 class LauncherShortcutProducer;
 class LauncherAppletComposition;
@@ -125,6 +127,9 @@ private:
     // Called only once the composition has started, because it borrows
     // m_launcherApplet->access().
     void initializeLauncherShortcut();
+    // The gather overview and its three doors. Called after the task-list
+    // composition has started, because it borrows m_taskListApplet->access().
+    void initializeGatherOverview();
     void initializeServiceAppletCompositions(const Profiles::LayoutProfile &profile);
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void initializeAppearanceBridge(bool explicitThemeSelection);
@@ -257,6 +262,13 @@ private:
     std::unique_ptr<LauncherShortcutProducer> m_launcherShortcut;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
+    // AGENT-GUARD: the overview borrows m_taskListApplet->access() and the
+    // registrar below it. Members are destroyed in reverse declaration order,
+    // so these must stay after m_taskListApplet - moving them above it makes
+    // the overview outlive the controller it reads.
+    std::unique_ptr<GatherOverviewComposition> m_gatherOverview;
+    std::unique_ptr<KGlobalAccelShortcutRegistrar> m_gatherOverviewRegistrar;
+    std::unique_ptr<GatherOverviewShortcutProducer> m_gatherOverviewShortcut;
     std::unique_ptr<TaskOrderPersistence> m_taskOrderPersistence;
     std::unique_ptr<PanelQuickConfig> m_panelQuickConfig;
     std::unique_ptr<LiveCustomizationController> m_liveCustomization;

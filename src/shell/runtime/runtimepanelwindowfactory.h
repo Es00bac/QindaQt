@@ -105,6 +105,12 @@ public:
     // no-op while RuntimePanel.qml has not yet declared the property, so the
     // C++ and QML halves of this wiring may land in either order.
     void setDesktopControlsAccess(QObject *access) noexcept;
+    // The gather overview composition (the panel button half of the
+    // Meta+G gesture). Set after construction for the same reason as
+    // the desktop controls facade above; ShellRuntimeApplication
+    // creates it during the applet pass, which runs before this
+    // factory exists, so no live-window push is needed.
+    void setGatherOverviewAccess(QObject *access) noexcept;
     void setPanelQuickConfig(QObject *access) noexcept;
     // Live customization controller (Meta+right-click menus, edit mode).
     void setLiveCustomization(QObject *access) noexcept;
@@ -130,6 +136,7 @@ private:
     SmartLightsApplet::SmartLightsAppletController *m_smartLightsAppletAccess = nullptr;
     ObsApplet::ObsAppletController *m_obsAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
+    QObject *m_gatherOverviewAccess = nullptr;
     QObject *m_panelQuickConfig = nullptr;
     QObject *m_liveCustomization = nullptr;
     std::unique_ptr<QQmlComponent> m_component;

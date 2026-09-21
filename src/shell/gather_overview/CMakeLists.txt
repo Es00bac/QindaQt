@@ -65,6 +65,8 @@ qt_add_qml_module(
     TYPEINFO qindaqt_shell_gather_overview_ui.qmltypes
     QML_FILES
         qml/GatherOverviewSurface.qml
+        qml/GatherOverviewWindow.qml
+        qml/GatherOverviewApplet.qml
         qml/GatherIconChip.qml
         qml/GatherContainerCard.qml
         qml/GatherWindowTile.qml

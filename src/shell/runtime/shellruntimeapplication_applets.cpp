@@ -7,6 +7,8 @@
 #include "bluetoothappletcomposition.h"
 #include "smartlightsappletcomposition.h"
 #include "obsappletcomposition.h"
+#include "gatheroverviewcomposition.h"
+#include "gatheroverviewshortcut.h"
 #include "globalmenuappletcomposition.h"
 #include "launcherappletcomposition.h"
 #include "launcher_applet_controller.h"
@@ -127,6 +129,36 @@ void ShellRuntimeApplication::initializeLauncherShortcut()
     }
 }
 
+// The gather overview (the arrangement the upper-left corner used to raise in
+// KWin). Mirrors initializeLauncherShortcut: the composition borrows the
+// task-list access object, so this runs only after that composition started.
+void ShellRuntimeApplication::initializeGatherOverview()
+{
+    auto *taskList = m_taskListApplet ? m_taskListApplet->access() : nullptr;
+    if (taskList == nullptr) {
+        // Fail-closed by construction: with no task-list controller there are
+        // no windows to gather and no authority to act on them. The panel
+        // button shows its disabled fallback and the key opens nothing.
+        return;
+    }
+    m_gatherOverview = std::make_unique<GatherOverviewComposition>(
+        m_application, m_engine, m_taskListApplet->iconNameResolver());
+    m_gatherOverview->setTaskListAccess(taskList);
+    m_gatherOverview->start();
+
+    m_gatherOverviewRegistrar = std::make_unique<KGlobalAccelShortcutRegistrar>();
+    m_gatherOverviewShortcut = std::make_unique<GatherOverviewShortcutProducer>(
+        *m_gatherOverviewRegistrar);
+    connect(m_gatherOverviewShortcut.get(),
+            &GatherOverviewShortcutProducer::toggleRequested,
+            m_gatherOverview.get(), &GatherOverviewComposition::toggle);
+    if (!m_gatherOverviewShortcut->registrationRequestAccepted()) {
+        qWarning().noquote()
+            << "QindaQt shell could not submit the gather overview shortcut;"
+               " the panel button remains available";
+    }
+}
+
 void ShellRuntimeApplication::initializeServiceAppletCompositions(
     const Profiles::LayoutProfile &profile)
 {
@@ -185,6 +217,7 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
                                                    *m_taskListApplet->access());
         m_taskOrderPersistence->start();
     }
+    initializeGatherOverview();
 
     // The tray's icon-theme lookup roots are the freedesktop icon locations
     // beneath every generic data root; the renderer canonicalizes and

@@ -5,6 +5,7 @@
 #include <QDBusConnection>
 #include <QStringList>
 
+#include <functional>
 #include <memory>
 
 namespace QindaQt::AppletHost {
@@ -76,6 +77,18 @@ public:
     [[nodiscard]] bool start(QString *error = nullptr);
     void stop();
     [[nodiscard]] ShellTaskListApplet::TaskListAppletController *access() const noexcept;
+    // The icon-name policy this composition already owns (ADR-0230: desktop
+    // entry first, then the compositor's PE-extracted cache, then nothing).
+    // Borrowed by the gather overview so the same window shows the same icon
+    // in the strip and in the overview; a second copy of this policy would
+    // eventually disagree with this one. The returned callable holds `this`,
+    // so it must not outlive the composition.
+    // Spelled out rather than named as
+    // TaskListAppletController::IconNameResolver: that class is only
+    // forward-declared here on purpose, and naming a nested alias needs the
+    // complete type. Keep the two in step if the controller's alias changes.
+    [[nodiscard]] std::function<QString(const QString &applicationId)>
+    iconNameResolver() const;
 
 private:
     void compose(const Applets::ManifestCatalog &catalog,

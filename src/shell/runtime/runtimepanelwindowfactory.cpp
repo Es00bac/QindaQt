@@ -212,6 +212,11 @@ void RuntimePanelWindowFactory::setDesktopControlsAccess(QObject *access) noexce
     m_desktopControlsAccess = access;
 }
 
+void RuntimePanelWindowFactory::setGatherOverviewAccess(QObject *access) noexcept
+{
+    m_gatherOverviewAccess = access;
+}
+
 void RuntimePanelWindowFactory::setPanelQuickConfig(QObject *access) noexcept
 {
     m_panelQuickConfig = access;
@@ -311,6 +316,10 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         // it yet, and createWithInitialProperties fails hard on unknown names.
         window->setProperty("desktopControlsAccess",
                             QVariant::fromValue(m_desktopControlsAccess));
+    }
+    if (m_gatherOverviewAccess != nullptr) {
+        window->setProperty("gatherOverviewAccess",
+                            QVariant::fromValue(m_gatherOverviewAccess));
     }
     if (m_panelQuickConfig != nullptr) {
         window->setProperty("panelQuickConfig",

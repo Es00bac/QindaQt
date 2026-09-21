@@ -125,7 +125,7 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     kwin.endGroup();
 
     kwin.beginGroup(QStringLiteral("Effect-overview"));
-    // AGENT-CONTRACT: KWin's overview effect reserves the top-left screen
+    // AGENT-CONTRACT (ADR-0232): KWin's overview effect reserves the top-left screen
     // corner by default (its BorderActivate default is ElectricTopLeft = 7,
     // an IntList), so brushing that corner raises KWin's own window grid.
     // QindaQt owns that gesture: the desktop's own gather action arranges
