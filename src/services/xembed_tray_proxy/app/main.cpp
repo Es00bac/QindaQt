@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     // AGENT-GUARD: This process belongs to exactly the bus that constructed
     // it. Bus replacement must terminate the process; reconnecting would
     // publish stale items under a new authority lineage.
-    const QDBusConnection lifetimeConnection =
+    QDBusConnection lifetimeConnection =
         connectionFactory(QStringLiteral("qindaqt-xembed-tray-lifetime"));
     if (!lifetimeConnection.connect(
             QString{}, QStringLiteral("/org/freedesktop/DBus/Local"),
