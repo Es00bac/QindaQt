@@ -143,12 +143,29 @@ void ShellPreferenceValuesTests::resolvesBundledAndCustomWallpapers()
     QTemporaryDir root;
     QVERIFY(root.isValid());
     QVERIFY(QDir().mkpath(root.filePath(QStringLiteral("qindaqt/wallpapers"))));
-    const QString bundled = root.filePath(QStringLiteral("qindaqt/wallpapers/jade-fold.png"));
-    QFile file(bundled);
-    QVERIFY(file.open(QIODevice::WriteOnly));
-    file.write("png");
-    file.close();
+    const auto plant = [&](const QString &name) {
+        const QString path = root.filePath(QStringLiteral("qindaqt/wallpapers/") + name);
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly)) {
+            return QString{};
+        }
+        file.write("image");
+        file.close();
+        return path;
+    };
+    const QString bundled = plant(QStringLiteral("jade-fold.png"));
+    // Chooser formats beyond PNG resolve for the shell too; the catalog and
+    // the shell must agree or a bundled pick would preview but never paint.
+    const QString jpgOnly = plant(QStringLiteral("photo-dune.jpg"));
+    const QString webpOnly = plant(QStringLiteral("paper-moon.webp"));
+    const QString duoPng = plant(QStringLiteral("duo.png"));
+    plant(QStringLiteral("duo.jpg"));
     QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:jade-fold"), {root.path()}), bundled);
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:photo-dune"), {root.path()}), jpgOnly);
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:paper-moon"), {root.path()}), webpOnly);
+    // One identity, two formats on disk: the priority format wins so both
+    // ends of the contract name the same file.
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:duo"), {root.path()}), duoPng);
     QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:../escape"), {root.path()}), QString{});
     QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:missing"), {root.path()}), QString{});
     QCOMPARE(resolveWallpaperSource(QString{}, {root.path()}), QString{});

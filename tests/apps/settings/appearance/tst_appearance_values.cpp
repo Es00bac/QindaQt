@@ -233,13 +233,18 @@ void AppearanceValuesTests::bundledWallpaperCatalogIsOrderedAndDeduplicated()
         QCOMPARE(file.write("png"), 3);
     };
     touch(first.filePath(QStringLiteral("jade-fold.png")));
+    // A same-basename alternative format loses to the priority format, so
+    // one qindaqt: identity never resolves to two different files.
+    touch(first.filePath(QStringLiteral("jade-fold.jpg")));
     touch(first.filePath(QStringLiteral("not-an-image.jpg")));
+    touch(first.filePath(QStringLiteral("paper-moon.webp")));
+    touch(first.filePath(QStringLiteral("notes.txt")));
     touch(second.filePath(QStringLiteral("jade-fold.png")));
     touch(second.filePath(QStringLiteral("ink-tide.png")));
 
     const QVariantList entries = discoverBundledWallpapers(
         {first.path(), second.path(), QStringLiteral("/missing")});
-    QCOMPARE(entries.size(), 2);
+    QCOMPARE(entries.size(), 4);
     QCOMPARE(entries.at(0).toMap().value(QStringLiteral("name")).toString(),
              QStringLiteral("Jade fold"));
     QCOMPARE(entries.at(0).toMap().value(QStringLiteral("path")).toString(),
@@ -248,7 +253,24 @@ void AppearanceValuesTests::bundledWallpaperCatalogIsOrderedAndDeduplicated()
              QUrl::fromLocalFile(first.filePath(QStringLiteral("jade-fold.png"))));
     QCOMPARE(entries.at(0).toMap().value(QStringLiteral("value")).toString(),
              QStringLiteral("qindaqt:jade-fold"));
+    // Chooser formats beyond PNG are bundled identities too (jpg/jpeg/webp/
+    // bmp); non-images stay excluded.
     QCOMPARE(entries.at(1).toMap().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Not an image"));
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("value")).toString(),
+             QStringLiteral("qindaqt:not-an-image"));
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("previewUrl")).toUrl(),
+             QUrl::fromLocalFile(first.filePath(QStringLiteral("not-an-image.jpg"))));
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("value")).toString(),
+             QStringLiteral("qindaqt:paper-moon"));
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("previewUrl")).toUrl(),
+             QUrl::fromLocalFile(first.filePath(QStringLiteral("paper-moon.webp"))));
+    QSet<QString> identities;
+    for (const auto &entry : entries) {
+        identities.insert(entry.toMap().value(QStringLiteral("value")).toString());
+    }
+    QCOMPARE(identities.size(), entries.size());
+    QCOMPARE(entries.at(3).toMap().value(QStringLiteral("name")).toString(),
              QStringLiteral("Ink tide"));
 }
 
