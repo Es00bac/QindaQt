@@ -10,12 +10,19 @@ target_sources(
     qindaqt_shell_gather_overview
     PRIVATE
         src/gather_overview_projection.cpp
+        src/gather_overview_controller.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/shell/gather_overview/gather_overview_projection.h
+            include/qindaqt/shell/gather_overview/gather_overview_controller.h
 )
+
+# The controller is a QObject, so it needs moc. It still links Qt6::Core only:
+# Q_PROPERTY, Q_INVOKABLE and QVariantMap are all Core, which keeps the whole
+# model half qualifiable without a display.
+set_target_properties(qindaqt_shell_gather_overview PROPERTIES AUTOMOC ON)
 
 target_link_libraries(
     qindaqt_shell_gather_overview

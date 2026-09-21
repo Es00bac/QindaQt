@@ -4,13 +4,13 @@ Gather brings everything the session holds forward at once, in one
 deterministic arrangement, and dismisses without moving anything. It replaces
 KWin's own window grid on the top-left screen corner.
 
-**Status: the geometry, the presentation model and the drawing surface are
-implemented and qualified; nothing invokes them yet.** What exists today is
-`src/hybrid_gather` (the pure planner), `src/shell/gather_overview` (the
-presentation model plus the `QindaQt.Shell.GatherOverview` QML surface), and
-the release of the hot corner. What is missing is the session plumbing: a
-window to host the surface, a controller to feed it, a shortcut, and an
-applet button. See [Remaining work](#remaining-work).
+**Status: the planner, the presentation model, the controller and the drawing
+surface are implemented and qualified; nothing invokes them yet.** What exists
+today is `src/hybrid_gather` (the pure planner) and `src/shell/gather_overview`
+(the model, the controller, and the `QindaQt.Shell.GatherOverview` QML
+surface), plus the release of the hot corner. What is missing is session
+plumbing only: a window to host the surface, a shortcut, and an applet button.
+See [Remaining work](#remaining-work).
 
 ## The arrangement
 
@@ -151,21 +151,55 @@ changes.
 
 Remaining, in order:
 
-1. A controller that turns the live task-list projection into a
-   `GatherOverviewProjection` for one output, holds the scroll offset (adding
-   each `scrollRequested` delta and re-projecting, so the planner stays the
-   only thing that clamps it), resolves `iconName` from `applicationId` through
-   an injected resolver the way the task-list applet's controller does, and
-   dispatches an Activate intent on `activated`.
-2. A session window to host the surface — full-bleed over one output, above
-   everything, taking keyboard focus so Escape reaches it.
-3. A `HybridShortcutAction` for it, beside the existing container shortcuts, so
-   it has a keyboard trigger.
+1. A session window to host the surface — full-bleed over one output, above
+   everything, taking keyboard focus so Escape reaches it — feeding it
+   `controller.projection` and wiring the three signals back to
+   `scrollBy`, `activate` and `close`.
+2. Something to turn `activationRequested` into a task intent with the
+   authority to do it. The controller deliberately stops one step short.
+3. A `HybridShortcutAction` calling `toggle()`, beside the existing container
+   shortcuts, so it has a keyboard trigger.
 4. A panel applet that triggers the same action, for the layouts that want a
    button.
 5. The `WindowPreview` endpoint and renderer from ADR-0119, which upgrades the
    grid tiles from icon-and-title to live thumbnails and also lights up the
    dock's hover previews. No longer a blocker for anything above.
+
+## The controller
+
+`GatherOverviewController` holds the overview's only mutable state — whether it
+is open, and how far the grid is scrolled — and makes its one authority
+decision. It is Qt Core plus moc: no Qml, no Quick, no display.
+
+Four policies live there because they belong neither in a pure function nor in
+QML:
+
+- **A closed overview projects nothing.** Facts arriving while it is closed are
+  stored and cost no arrangement, and opening projects the latest of them. A
+  session's window churn is free.
+- **Opening starts at the top.** A scroll offset remembered from the last time
+  the overview was open is never what the user wants from a fresh one.
+- **The planner is the only thing that clamps a scroll position.** `scrollBy`
+  adds the delta to the offset *the planner last applied* and re-projects.
+  Adding to the last *requested* offset instead would let a run of notches at
+  the bottom build up an offset far past the end, and the user would have to
+  scroll all of it back before the view moved at all.
+- **An activation is refused unless the item is in the current projection and
+  that projection is interactive.** The surface already draws fenced tiles
+  inert, but authority is not a presentation concern: a stale item object held
+  across a re-projection, or a QML mistake, must not be able to act. The
+  generation reported is always the projection's own, never one the caller
+  supplied, since echoing the caller's would defeat the stale-revision
+  arbitration it exists for.
+
+The controller resolves `iconName` from `applicationId` through an injected
+resolver — the same seam the task-list applet's controller takes — and gives a
+container the shell's symbolic container glyph instead, because a container is
+not an application. A null resolver leaves the name empty and the surface falls
+back to its one-letter badge.
+
+It never acts on a window. `activationRequested` carries the identity and the
+generation, and its owner turns that into a task intent with its own authority.
 
 ## The surface
 
