@@ -102,8 +102,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   [container chrome](architecture/hybrid-chrome.md) define the implemented
   process-local interaction architecture, evidence, and later boundaries.
 - [Layout profiles](shell/layout-profiles.md) explains how QindaQt can present
-  QindaQt, GNOME-, Unity-, MATE-, XFCE-, NeXTSTEP-, macOS-, Windows-inspired,
-  and user-created workflows without separate shells.
+  the QindaQt signature layout, Bliss, and GNOME-, Unity-, XFCE-, NeXTSTEP-
+  and macOS-inspired workflows, plus user-created ones, without separate
+  shells.
 - [Customization editor domain](shell/customization-editor.md) defines the
   presentation-independent gesture, revision, rollback, persistence-adapter,
   keyboard, and accessibility contract for direct layout editing.

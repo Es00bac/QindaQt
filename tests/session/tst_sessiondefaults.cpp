@@ -29,6 +29,7 @@ private Q_SLOTS:
     void seedsTranslucencyEffectsWithoutOverridingChoices();
     void seedsTheMetaKeyOntoTheLauncherAction();
     void keepsAnExplicitModifierOnlyShortcut();
+    void releasesTheOverviewHotCornerWithoutOverridingAChoice();
 };
 
 void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
@@ -321,6 +322,44 @@ void SessionDefaultsTest::seedsTranslucencyEffectsWithoutOverridingChoices()
     settings.beginGroup(QStringLiteral("Effect-blur"));
     QCOMPARE(settings.value(QStringLiteral("BlurStrength")).toInt(), 8);
     QCOMPARE(settings.value(QStringLiteral("NoiseStrength")).toInt(), 2);
+    settings.endGroup();
+}
+
+// AGENT-GUARD (regression): KWin's overview effect reserves the top-left
+// screen corner by default (BorderActivate defaults to ElectricTopLeft = 7),
+// so brushing that corner raised KWin's own window grid instead of QindaQt's
+// gather arrangement. An empty list reserves no corner; a user who bound the
+// corner themselves keeps it.
+void SessionDefaultsTest::releasesTheOverviewHotCornerWithoutOverridingAChoice()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    QString error;
+    QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
+    {
+        QSettings settings(path, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("Effect-overview"));
+        QVERIFY(settings.contains(QStringLiteral("BorderActivate")));
+        QVERIFY(settings.value(QStringLiteral("BorderActivate")).toStringList().isEmpty());
+        settings.endGroup();
+    }
+
+    QTemporaryDir chosen;
+    QVERIFY(chosen.isValid());
+    const auto chosenPath = QDir(chosen.path()).filePath(QStringLiteral("kwinrc"));
+    {
+        QSettings existing(chosenPath, QSettings::IniFormat);
+        existing.beginGroup(QStringLiteral("Effect-overview"));
+        existing.setValue(QStringLiteral("BorderActivate"), QStringList{QStringLiteral("7")});
+        existing.endGroup();
+        existing.sync();
+    }
+    QVERIFY2(SessionDefaults::ensure(chosen.path(), &error), qPrintable(error));
+    QSettings settings(chosenPath, QSettings::IniFormat);
+    settings.beginGroup(QStringLiteral("Effect-overview"));
+    QCOMPARE(settings.value(QStringLiteral("BorderActivate")).toStringList(),
+             QStringList{QStringLiteral("7")});
     settings.endGroup();
 }
 

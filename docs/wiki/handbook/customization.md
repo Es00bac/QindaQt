@@ -70,11 +70,11 @@ setting.
 Open **System Settings → Customize**. The page opens with a gallery of layout
 previews — small monitor thumbnails that show where each preset puts its
 panels. Pick the one that looks right: the default QindaQt layout, a minimal
-one, or layouts inspired by GNOME, Unity, MATE, XFCE, NeXTSTEP, macOS,
-classic or modern Windows, and an XP-inspired worn Luna taskbar. These are
-starting-points in the spirit of those
-desktops, not recreations of them, and the preview below updates the moment
-you pick one.
+one, or layouts inspired by GNOME, Unity, XFCE, NeXTSTEP, macOS, and an
+XP-inspired worn Luna taskbar. There is one preset per distinct feel rather
+than several variations on a bar, so the thumbnails differ at a glance. These
+are starting-points in the spirit of those desktops, not recreations of them,
+and the preview below updates the moment you pick one.
 
 From there the monitor lets you rework the layout directly — it mirrors what
 your desktop will look like, in your current theme:

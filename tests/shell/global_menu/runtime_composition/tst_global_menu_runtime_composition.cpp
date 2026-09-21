@@ -217,10 +217,9 @@ layoutHostingFollowsResolvedGlobalMenuInstances()
                                 QStringLiteral("qindaqt"),
                                 QStringLiteral("unity-inspired")};
     const QSet<QString> windowAttached{
-        QStringLiteral("gnome-inspired"), QStringLiteral("mate-inspired"),
-        QStringLiteral("minimal"), QStringLiteral("nextstep-inspired"),
-        QStringLiteral("qinda-bliss"), QStringLiteral("windows-classic"),
-        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired")};
+        QStringLiteral("gnome-inspired"), QStringLiteral("minimal"),
+        QStringLiteral("nextstep-inspired"), QStringLiteral("qinda-bliss"),
+        QStringLiteral("xfce-inspired")};
     QSet<QString> seen;
     const Profiles::LayoutProfile *defaultProfile = nullptr;
     for (const auto &profile : profiles.profiles()) {
@@ -281,8 +280,10 @@ void GlobalMenuRuntimeCompositionTest::registrarResidencyFollowsLayoutAdoption()
     QVERIFY2(fixture.load(&error), qPrintable(error));
     QTemporaryDir builtin;
     QVERIFY(builtin.isValid());
+    // xfce-inspired is the window-attached counterpart: switching to it must
+    // retire the registrar, and back to qindaqt must bring it up again.
     for (const QString &file : {QStringLiteral("qindaqt.json"),
-                                QStringLiteral("windows-modern.json")}) {
+                                QStringLiteral("xfce-inspired.json")}) {
         QVERIFY(QFile::copy(
             QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/") + file,
             builtin.filePath(file)));
@@ -325,7 +326,7 @@ void GlobalMenuRuntimeCompositionTest::registrarResidencyFollowsLayoutAdoption()
     QCOMPARE(owner(), shellBus.baseService());
 
     QCOMPARE(reloadAndSelect(profiles, directories,
-                             QStringLiteral("windows-modern"), false, &diagnostic),
+                             QStringLiteral("xfce-inspired"), false, &diagnostic),
              Outcome::AdoptedSelection);
     followSelection();
     QVERIFY(!composition.registrarResident());

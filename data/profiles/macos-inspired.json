@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "macos-inspired",
   "name": "Menu and Dock",
-  "description": "A global top menu with a centered intelligent dock.",
+  "description": "A 24-pixel global menu bar across the top and a centred dock whose painted shelf hugs only the tiles it holds, hiding itself when a window needs the room. Desktop icons sit on the right.",
   "defaultTheme": "qinda-macos",
   "workflow": {
     "overview": "expose",
@@ -15,25 +15,38 @@
   "panels": [
     {
       "id": "global-bar", "edge": "top", "layer": "above", "hideMode": "never",
-      "alignment": "fill", "rows": 1, "thickness": 29, "length": 1.0,
+      "alignment": "fill", "rows": 1, "thickness": 24, "length": 1.0,
       "applets": [
-        {"id": "system-menu", "plugin": "system-menu", "settings": {"zone": "start", "bare": true}},
-        {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start", "bare": true}},
-        {"id": "status", "plugin": "system-status", "settings": {"zone": "end", "bare": true}},
-        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end", "bare": true}},
-        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end", "bare": true}},
-        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end", "bare": true}},
-        {"id": "clock", "plugin": "clock", "settings": {"zone": "end", "bare": true}}
+        {"id": "system-menu", "plugin": "system-menu", "settings": {"zone": "start"}},
+        {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
+        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]
     },
     {
       "id": "dock", "edge": "bottom", "layer": "overlay", "hideMode": "intelligent",
       "alignment": "center", "rows": 1, "thickness": 72, "length": 1.0,
       "applets": [
-        {"id": "applications", "plugin": "launcher", "settings": {"zone": "center", "bare": true, "dockMode": true}},
-        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "bare": true, "dockMode": true}},
-        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "bare": true, "dockMode": true}}
+        {"id": "applications", "plugin": "launcher", "settings": {"zone": "center", "dockMode": true}},
+        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "dockMode": true}}
       ]
     }
-  ]
+  ],
+  "desktop": {
+    "applets": [
+      {
+        "id": "desktop-icons",
+        "plugin": "desktop-icons",
+        "settings": {
+          "placement": "right",
+          "contextMenuStyle": "mac",
+          "applicationsMenuModifier": "ctrl"
+        }
+      }
+    ]
+  }
 }

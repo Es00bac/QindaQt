@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "single-1080p-150",
   "description": "1920x1080 desktop at 150% fractional scale.",
-  "profile": "mate-inspired",
+  "profile": "nextstep-inspired",
   "theme": "qinda-dark",
   "outputs": [
     {

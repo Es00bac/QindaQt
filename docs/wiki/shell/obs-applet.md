@@ -91,7 +91,7 @@ OBS reported frame counts showing at least 1% dropped.
 
 The chip ships on the panel of the **QindaQt** profile only, in the end zone
 beside the other hardware chips — audio, bluetooth, power, smart lights. The
-desktop-imitation profiles (GNOME, macOS, Unity, XFCE, MATE, minimal) carry none
+desktop-imitation profiles (GNOME, macOS, Unity, XFCE, NeXTSTEP, Bliss, minimal) carry none
 of those by design, and a chip reading "OBS is not running" on a GNOME-imitation
 top bar for someone who never installed OBS is clutter rather than discovery.
 

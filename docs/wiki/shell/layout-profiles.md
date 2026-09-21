@@ -200,21 +200,32 @@ the Settings Customize route share this precedence contract.
 
 ## Built-in workflow families
 
-QindaQt ships original layouts inspired by useful interaction patterns:
+QindaQt ships **one stock profile per distinct feel** — eight of them. Each one
+is a different idea about where the shell lives, not a reshuffle of the same
+bar, and each pairs with its own default theme
+([ADR-0223](../adr/0223-one-stock-profile-per-distinct-feel.md)):
 
-- QindaQt global-menu top bar, smart bottom shelf, and the desktop-icons
-  surface with conservative (left-placement, Windows-style menu) defaults;
-- GNOME-style top bar, overview, dash, search, and dynamic workspace option;
-- Unity-style left launcher, top menu/status bar, workspace spread, and HUD;
-- MATE- and XFCE-style classic menus, panels, window lists, trays, and switchers;
-- NeXTSTEP-style vertical dock and compact utility areas;
-- macOS-style global menu and centered smart dock, paired by default with the
-  Qinda macOS mist-and-sage theme;
-- an XP-inspired worn Luna bottom taskbar — start menu, quick launch, task
-  buttons, tray, clock, and show desktop — paired by default with the
-  QindaQt Bliss theme and the desktop-icons surface; and
-- Windows classic, left-start, and centered taskbar arrangements;
-- minimal, keyboard-driven, multi-row, and monitoring-focused layouts.
+| Profile | Feel | Panels | Default theme |
+| --- | --- | --- | --- |
+| `qindaqt` | The signature layout: three edges, three jobs | top 26 px ledger (focused window + its menu + clock), left 52 px shelf (windows and containers), bottom-right 34 px instrument strip on `overlay`/`dodge-active` | `qinda-dark` |
+| `qinda-bliss` | Worn XP Luna | one bottom 40 px taskbar: start menu, quick launch, task buttons, tray, clock, show desktop, plus desktop icons | `qinda-bliss` |
+| `macos-inspired` | Menu bar and dock | 24 px global menu bar — the thinnest stock panel — plus a centred 72 px dock that hides intelligently; desktop icons on the **right** with the mac context menu | `qinda-macos` |
+| `gnome-inspired` | Overview | one 38 px top bar, clock **centred**, no task bar at all: windows live in the overview | `qinda-slate` |
+| `unity-inspired` | Command rail | 28 px top bar with the focused window's name, its menu and the HUD, plus a 64 px left rail that hides behind any window | `qinda-dusk` |
+| `xfce-inspired` | Compact and flexible | 34 px top panel with Applications and Places menus and **ungrouped** window buttons, plus a small bottom launcher dock that ducks the active window | `qinda-light` |
+| `nextstep-inspired` | Workspace dock | one 72 px column of square tiles down the **right** edge, 62 % of it, and no horizontal bar anywhere | `qinda-paper` |
+| `minimal` | Nothing until you ask | one always-hidden 32 px strip, a third of the width, holding the command palette and four glyphs: no clock, no task buttons, no workspace switcher | `qinda-glass-dark` |
+
+Panel thickness, edge, alignment, length, layer, and hide mode all differ
+between them, and every applet instance carries an explicit `zone`. A profile
+declares only settings the runtime actually honours — `zone`, `dockMode`,
+`presentation`, `grouping`, and the desktop-icons keys — so a stock layout
+never ships a value that reads as configuration and does nothing.
+
+Panel thickness also respects each applet's declared minimum cross extent. The
+`launcher` applet asks for 32 logical pixels, so every panel hosting one is at
+least that thick; `macos-inspired` reaches 24 px precisely because its menu bar
+hosts no launcher.
 
 Only layouts that resolve a global-menu applet own the AppMenu registrar;
 every other layout keeps application menus inside their windows, and a live
@@ -300,10 +311,20 @@ is exercised by the resolution matrix in the
 
 ## Audited preset equivalences
 
-The MATE, XFCE and classic Windows presets use the compiled application launcher
-at their original menu positions and the compiled status notifier at their tray
-positions. Redundant supplemental launcher/tray entries are removed. The
-workspace-dock clock uses the compiled clock implementation. These substitutions
-provide the shared supported behavior; they do not claim separate classic-menu
-renderers or a tile-specific clock. Other unresolved semantic controls remain
-explicit capability gaps until their real implementations are integrated.
+Every preset resolves its menu slot to the compiled application launcher — or,
+in the Bliss profile, to the compiled start-menu applet — at that layout's own
+menu position, and its tray slot to the compiled status notifier. The
+workspace-dock clock uses the compiled clock implementation. These
+substitutions provide the shared supported behavior; they do not claim separate
+classic-menu renderers or a tile-specific clock.
+
+Profiles never reference a plugin that has no manifest. `unity-inspired` used
+to name `application-launcher` and `grouped-task-list`, and the centered
+Windows preset named `centered-task-list`; none of the three exists, so those
+instances silently resolved to nothing and the layouts showed a duplicated or
+missing control. All eight stock profiles now name only manifest ids, and
+`qindaqt.applet-runtime-resolution` resolves every stock instance in its own
+placement.
+
+Other unresolved semantic controls remain explicit capability gaps until their
+real implementations are integrated.
