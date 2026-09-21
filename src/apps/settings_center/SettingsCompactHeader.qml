@@ -9,6 +9,16 @@ Rectangle {
     id: header
 
     required property var navigation
+    // AGENT-GUARD: `required property var navigation` means the host must SET
+    // this, not that it is non-null - a `var` is legitimately null while the
+    // controller is still being constructed. Reading `navigation.activeRouteId`
+    // directly threw "TypeError: Cannot read property 'activeRouteId' of null"
+    // 144 times in one live session log. A thrown binding is not a visible
+    // crash: it silently evaluates to undefined, so the row highlight and the
+    // accessible selected state were simply wrong until something reprojected
+    // them. Read through this instead.
+    readonly property string activeRouteId:
+        navigation ? String(navigation.activeRouteId ?? "") : ""
     signal contentFocusRequested()
 
     implicitHeight: 48
@@ -123,7 +133,7 @@ Rectangle {
 
                 Repeater {
                     id: compactRepeater
-                    model: header.navigation.routes
+                    model: header.navigation ? header.navigation.routes : []
 
                     delegate: Controls.Button {
                     id: routeTab
@@ -131,12 +141,12 @@ Rectangle {
 
                     objectName: "settingsCompactTab_" + modelData.id
                     text: modelData.title
-                    emphasized: header.navigation.activeRouteId === modelData.id
+                    emphasized: header.activeRouteId === modelData.id
                     accessibleDescription: routeAvailable ? modelData.description
                         : qsTr("Unavailable. %1").arg(modelData.unavailableReason)
                     implicitHeight: 32
                     Accessible.role: Accessible.PageTab
-                    Accessible.selected: header.navigation.activeRouteId === modelData.id
+                    Accessible.selected: header.activeRouteId === modelData.id
 
                     onActiveFocusChanged: {
                         if (activeFocus) header.revealButton(routeTab)

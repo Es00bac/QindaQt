@@ -14,7 +14,7 @@ Loader {
     anchors.fill: parent
     active: host.presentationActive
             && !host.customizeDeparturePending
-            && host.navigation.activeRouteAvailable
+            && Boolean(host.navigation?.activeRouteAvailable)
             && host.navigation.activeRouteComponent === "windows"
             && host.windowsComponent !== null
     sourceComponent: host.windowsComponent

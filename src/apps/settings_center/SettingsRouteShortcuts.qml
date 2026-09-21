@@ -15,7 +15,8 @@ Item {
 
     required property var navigation
 
-    readonly property int digitRouteCount: Math.min(10, root.navigation.routeCount)
+    readonly property int digitRouteCount:
+        root.navigation ? Math.min(10, root.navigation.routeCount) : 0
 
     Repeater {
         model: root.digitRouteCount

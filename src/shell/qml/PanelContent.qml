@@ -54,9 +54,20 @@ Item {
     onPanelQuickConfigChanged: {
         if (panelQuickConfig !== null
             && panelQuickConfig.panelSettingsChanged !== undefined) {
+            // AGENT-GUARD: `root.` is required here, not stylistic. This arrow
+            // function is invoked later as a C++ signal callback, outside any
+            // binding or handler scope, so an unqualified `panelConfigVersion`
+            // is not resolvable and throws
+            // "ReferenceError: panelConfigVersion is not defined" - 44 times in
+            // one live session log. The throw happens inside the callback, so
+            // the connect() succeeded and nothing looked wrong: the resolved
+            // settings cache simply never invalidated, and a quick-settings
+            // change did not reach the panel until something else reprojected
+            // it. The bump on the next line worked precisely because it is in
+            // the handler body.
             panelQuickConfig.panelSettingsChanged.connect(
-                () => panelConfigVersion++)
-            panelConfigVersion++
+                () => { root.panelConfigVersion++ })
+            root.panelConfigVersion++
         }
     }
     readonly property var panelConfig: {
