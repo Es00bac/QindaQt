@@ -8,6 +8,16 @@ Rectangle {
     id: sidebar
 
     required property var navigation
+    // AGENT-GUARD: `required property var navigation` means the host must SET
+    // this, not that it is non-null - a `var` is legitimately null while the
+    // controller is still being constructed. Reading `navigation.activeRouteId`
+    // directly threw "TypeError: Cannot read property 'activeRouteId' of null"
+    // 72 times in one live session log. A thrown binding is not a visible
+    // crash: it silently evaluates to undefined, so the row highlight and the
+    // accessible selected state were simply wrong until something reprojected
+    // them. Read through this instead.
+    readonly property string activeRouteId:
+        navigation ? String(navigation.activeRouteId ?? "") : ""
     signal contentFocusRequested()
 
     implicitWidth: 224
@@ -21,6 +31,10 @@ Rectangle {
     // The controller retains insertion order for shortcuts and history. This
     // local ordering only gives the desktop sidebar readable categories.
     readonly property var orderedRoutes: {
+        // An empty list, not a bare `return`: consumers iterate this, and
+        // undefined would trade a binding error for a worse one.
+        if (!sidebar.navigation)
+            return []
         const routes = sidebar.navigation.routes.slice()
         const rank = category => category === "General" ? 0
             : category === "Personalization" ? 1 : 2
@@ -35,7 +49,7 @@ Rectangle {
     function focusActiveButton() {
         for (let index = 0; index < navRepeater.count; ++index) {
             const button = navRepeater.itemAt(index)
-            if (button !== null && button.routeId === sidebar.navigation.activeRouteId) {
+            if (button !== null && button.routeId === sidebar.activeRouteId) {
                 button.routeButton.forceActiveFocus(Qt.TabFocusReason)
                 revealButton(button.routeButton)
                 return
@@ -58,7 +72,7 @@ Rectangle {
     function revealActiveButton() {
         for (let index = 0; index < navRepeater.count; ++index) {
             const row = navRepeater.itemAt(index)
-            if (row && row.routeId === sidebar.navigation.activeRouteId) {
+            if (row && row.routeId === sidebar.activeRouteId) {
                 revealButton(row.routeButton)
                 return
             }
@@ -158,7 +172,7 @@ Rectangle {
                             category: ""
                             routeDescription: modelData.description
                             unavailableReason: modelData.unavailableReason
-                            active: sidebar.navigation.activeRouteId === modelData.id
+                            active: sidebar.activeRouteId === modelData.id
                             routeAvailable: modelData.available
                             onActiveFocusChanged: if (activeFocus) sidebar.revealButton(navBtn)
 
