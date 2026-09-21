@@ -66,6 +66,10 @@ QtObject {
             objectName: "screensaverPage"
             screensaverSettings: ScreensaverRouteComposition.model
             screenLockSettings: ScreensaverRouteComposition.screenLockSettings
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
     // The Login screen route (ADR-0225). Same shape again: the page takes
     // its model from the module's own composition singleton.
     readonly property Component loginScreen: Component {
