@@ -58,10 +58,13 @@ Tk.Panel {
             Tk.Flex.basis: 0
             Tk.Flex.minHeight: 0
             // Panels declare one root; it fills the body.
+            // AGENT-GUARD: iterate, never index. qmlcachegen types a `let`
+            // loop counter as double, so `children[i]` compiles to a
+            // double/qsizetype conversion that fails the repository's
+            // -Werror=conversion build.
             onChildrenChanged: {
-                for (let i = 0; i < bodyHost.children.length; ++i) {
-                    bodyHost.children[i].anchors.fill = bodyHost
-                }
+                for (const hosted of bodyHost.children)
+                    hosted.anchors.fill = bodyHost
             }
         }
     }
