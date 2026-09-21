@@ -155,6 +155,7 @@ nav:
       - Settings Login screen route: apps/login-screen-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
+      - QindaLutris: apps/qindalutris.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -375,3 +376,4 @@ nav:
       - "ADR-0228: bundled wallpapers resolve beyond PNG": adr/0228-bundled-wallpapers-resolve-beyond-png.md
       - "ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items": adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md
       - "ADR-0230: name and picture the game behind a launcher class": adr/0230-name-and-picture-the-game-behind-a-launcher-class.md
+      - "ADR-0231: QindaLutris is the desktop's game library": adr/0231-qindalutris-the-game-library.md
