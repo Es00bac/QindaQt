@@ -14,7 +14,7 @@ import QindaTK as Tk
 // AGENT-CONTRACT: the six band heights below are shared VERBATIM with
 // AudioConsoleStrip.qml, in the same order, and a band that does not apply to
 // a card keeps its slot rather than collapsing. See the longer note in that
-// file; qindaqt.settings-audio-page's consoleCardsShareOneGrid fails if they
+// file; qindaqt.settings-audio-console-page's consoleCardsShareOneGrid fails if they
 // drift apart.
 Rectangle {
     id: root
@@ -43,7 +43,12 @@ Rectangle {
     ]
     readonly property string currentMode: bus.processing?.mode ?? "normal"
 
-    width: 140
+    // AGENT-GUARD: the card's width must arrive through implicitWidth.
+    // QindaTK's Flex reads only implicit sizes and attached
+    // constraints and IGNORES a child's own width (docs/layout.md),
+    // so `width: 140` here crushed the card to zero and let every
+    // band overflow. consoleCardsShareOneGrid asserts the width.
+    implicitWidth: 140
     implicitHeight: busColumn.implicitHeight + Tk.Theme.space.sm * 2
     radius: Tk.Theme.radius.sm
     color: Tk.Theme.color.panelAlt
@@ -139,16 +144,17 @@ Rectangle {
                 Repeater {
                     model: 2
                     delegate: Tk.Flex {
+                        id: modeRow
                         required property int index
                         readonly property var rowEntries:
-                            root.modeEntries.slice(index * 2, index * 2 + 2)
+                            root.modeEntries.slice(modeRow.index * 2, modeRow.index * 2 + 2)
                         gap: 2
                         Repeater {
-                            model: rowEntries
+                            model: modeRow.rowEntries
                             AudioConsolePad {
                                 id: modePad
                                 required property var modelData
-                                readonly property var entry: modelData
+                                readonly property var entry: modePad.modelData
                                 Tk.Flex.grow: 1
                                 implicitHeight: 18
                                 objectName: "consoleBusMode_" + root.bus.id + "_" + entry.token
@@ -157,7 +163,7 @@ Rectangle {
                                 // The mode lamps read as one lit key, like the
                                 // reference console's radio row: the
                                 // projection owns the lit state (ADR-0191).
-                                Binding on checked { value: root.currentMode === entry.token; when: !modePad.down }
+                                Binding on checked { value: root.currentMode === modePad.entry.token; when: !modePad.down }
                                 available: root.enabledControls
                                 enabled: !root.bus.virtual
                                 Accessible.ignored: root.bus.virtual
