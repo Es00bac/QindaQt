@@ -35,12 +35,29 @@ the work items that move rows there.
 |---|---|
 | Portal screen capture and virtual camera work out of the box ([ADR-0170](../adr/0170-survive-a-private-session-bus-for-dbus-units.md)) | done, installed |
 | OBS with obs-websocket, PipeWire and v4l2 support installed | done (host packages) |
-| Streaming stack packaged in the QindaQt overlay | gap |
-| obs-websocket v5 client in the desktop | gap |
-| OBS control applet | gap |
-| Settings route for OBS | gap |
-| QindaQt OBS plugins | gap |
-| Audio-service bridge (console buses as OBS sources by default) | gap |
+| Streaming stack packaged in the QindaQt overlay | packaged and committed (`media-plugins/obs-qindaqt-0.1.0_pre20260917-r8`), **merged on neither machine** — see the ownership note below |
+| obs-websocket v5 client in the desktop ([ADR-0201](../adr/0201-one-obs-websocket-client-for-the-desktop.md), [ADR-0202](../adr/0202-qindaqt-provisions-obs-and-owns-one-secret.md)) | **done** (installed: `libqindaqt_obs_client.a`; 5 ctest rows) |
+| OBS control applet | **done** (installed: `/usr/share/qindaqt/applets/obs.json`; placed in the `qindaqt` stock profile) |
+| Settings route for OBS | **done** — it is the **streaming** route (`src/apps/settings/streaming`), wired through `SettingsRouteHost.qml` and `Main.qml`; the row read `gap` only because it was looked for under the name "obs" |
+| QindaQt OBS plugins ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)) | built, committed, 3 ctest rows; installed on this host today, but by the wrong package — see below |
+| Audio-service bridge (console buses as OBS sources by default) ([ADR-0208](../adr/0208-console-buses-are-obs-sources.md)) | built and committed; ships inside the plugin above, so it reaches a machine when that package does |
+
+**Ownership note (2026-09-21).** Five of those rows said `gap` while the work
+was built, committed and in several cases installed; the rows were stale, not
+the code. Auditing them turned up a real packaging defect underneath:
+`src/obs` was gated only on whether `libobs` happened to be findable, so
+`gui-wm/qindaqt-desktop` built and installed
+`/usr/lib64/obs-plugins/obs-qindaqt.so` when built on a host with OBS and
+omitted it otherwise — the same ebuild producing different file lists per build
+host, and a guaranteed file collision the first time anyone merged
+`media-plugins/obs-qindaqt`. That is why the plugin package is installed
+nowhere: it could not be.
+
+`QINDAQT_BUILD_OBS_BRIDGE` now makes the ownership explicit. It defaults ON, so
+repository builds and the standalone package are unchanged; the desktop ebuild
+passes OFF. The two therefore have to ship together — the next desktop revision
+drops the module and `media-plugins/obs-qindaqt` supplies it — and streaming
+stays available from the package that actually declares the OBS dependency.
 
 ## 3. File manager
 

@@ -108,6 +108,13 @@ src_configure() {
 		# at merge time. The shell's own dock dashboard applet is separate and
 		# unaffected.
 		-DQINDAQT_BUILD_SYSTEM_MONITOR=OFF
+		# media-plugins/obs-qindaqt owns the libobs module. Without this the
+		# bridge was gated only on libobs being findable, so this package
+		# installed obs-plugins/obs-qindaqt.so when built on a host with OBS
+		# and omitted it otherwise - a non-deterministic file list, and a
+		# collision with the media-plugins package. Streaming stays available;
+		# it just comes from the package that declares the OBS dependency.
+		-DQINDAQT_BUILD_OBS_BRIDGE=OFF
 		-DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
 		-DQINDAQT_ENABLE_STRICT_WARNINGS=OFF
 	)

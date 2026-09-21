@@ -82,9 +82,13 @@ add_subdirectory(services/network_manager_adapter)
 add_subdirectory(services/network_secret_agent)
 add_subdirectory(services/audio_protocol)
 add_subdirectory(services/audio_client)
-# The OBS console bridge (ADR-0208) links the audio client; skipped when
-# libobs is not installed.
-add_subdirectory(obs)
+# The OBS console bridge (ADR-0208) links the audio client. Two gates, and
+# both matter: this option says whether this build is allowed to own the
+# module at all (media-plugins/obs-qindaqt is its package), and src/obs then
+# still skips itself quietly when the OBS development files are absent.
+if(QINDAQT_BUILD_OBS_BRIDGE)
+    add_subdirectory(obs)
+endif()
 add_subdirectory(shell/audio_applet)
 add_subdirectory(services/audio_service)
 add_subdirectory(services/bluetooth_protocol)
