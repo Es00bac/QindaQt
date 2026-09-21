@@ -29,9 +29,14 @@ target_compile_features(qindaqt_audio_client PUBLIC cxx_std_20)
 set_target_properties(qindaqt_audio_client PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_audio_client)
 
-install(
-    TARGETS qindaqt_audio_client
-    EXPORT QindaQtTargets
-    FILE_SET HEADERS
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-)
+# A standalone media-plugins/obs-qindaqt build consumes this library but must
+# not install it: gui-wm/qindaqt-desktop owns these files, and installing them
+# twice makes Portage refuse the merge on a file collision.
+if(NOT QINDAQT_OBS_BRIDGE_STANDALONE)
+    install(
+        TARGETS qindaqt_audio_client
+        EXPORT QindaQtTargets
+        FILE_SET HEADERS
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+endif()

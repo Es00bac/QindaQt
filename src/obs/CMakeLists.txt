@@ -17,11 +17,19 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(QINDAQT_ENABLE_STRICT_WARNINGS "Treat QindaQt warnings as errors" ON)
     find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Widgets)
     qt_standard_project_setup(REQUIRES 6.11)
+    # AGENT-GUARD: set BEFORE the add_subdirectory calls, not after. The audio
+    # protocol and client install their targets and headers unconditionally,
+    # and media-plugins/obs-qindaqt owns only the libobs module - so a
+    # standalone build that installed them collided with gui-wm/qindaqt-desktop
+    # on ten files (/usr/lib64/libqindaqt_audio_{client,protocol}.a and eight
+    # headers) and Portage refused the merge. The subdirectories read this
+    # variable to suppress their own install rules; it is only visible to them
+    # if it is set first.
+    set(QINDAQT_OBS_BRIDGE_STANDALONE ON)
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../services/audio_protocol"
                      "${CMAKE_CURRENT_BINARY_DIR}/audio_protocol")
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../services/audio_client"
                      "${CMAKE_CURRENT_BINARY_DIR}/audio_client")
-    set(QINDAQT_OBS_BRIDGE_STANDALONE ON)
 endif()
 
 find_package(libobs QUIET)
