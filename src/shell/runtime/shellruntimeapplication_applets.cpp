@@ -156,6 +156,18 @@ void ShellRuntimeApplication::initializeGatherOverview()
         qWarning().noquote()
             << "QindaQt shell could not submit the gather overview shortcut;"
                " the panel button remains available";
+    } else if (!m_gatherOverviewShortcut->activeBindingPresent()) {
+        // AGENT-GUARD: accepted and unbound are different outcomes, and only
+        // the second one is quiet. KGlobalAccel accepts a registration whose
+        // default key another component already owns and simply leaves the
+        // active binding empty, so the key does nothing while everything
+        // looks fine. Say so - this is how Meta+G shipped dead once.
+        qWarning().noquote()
+            << "QindaQt shell registered the gather overview action but it has"
+               " no active key binding ("
+            << GatherOverviewShortcutProducer::defaultShortcut().toString()
+            << "is likely taken); the panel button and the upper-left corner"
+               " still work";
     }
 }
 
