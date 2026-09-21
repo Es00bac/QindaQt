@@ -52,6 +52,11 @@ public:
   void setCoverCacheDir(const QString &path);
   void setProcessLauncher(GameProcessLauncher *launcher); // borrowed
   void setSteamRootsForProton(const QStringList &roots);
+  // Directories searched for the Wine loader, highest preference first.
+  // Defaults to PATH. An injection point rather than a way to set the binary
+  // directly, so a test exercises the real discovery against its own fixture
+  // instead of depending on whatever wine the host happens to have.
+  void setWineLoaderSearchPath(const QStringList &directories);
 
   QAbstractItemModel *gameModel();
   [[nodiscard]] bool refreshing() const { return m_refreshing; }
@@ -109,6 +114,7 @@ private:
   GameLibrary m_library;
   DesktopDiscovery m_desktop;
   LaunchToolSet m_tools;
+  QStringList m_wineSearchPath;
   QVector<DisplayTarget> m_displays;
   std::unique_ptr<QProcessGameLauncher> m_ownedLauncher;
   GameProcessLauncher *m_launcher = nullptr;

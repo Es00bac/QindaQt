@@ -50,6 +50,16 @@ class tst_library_controller : public QObject {
     controller->setConfigRoot(root + QStringLiteral("/config"));
     controller->setCoverCacheDir(root + QStringLiteral("/cache"));
     controller->setProcessLauncher(launcher);
+    // A fixture Wine loader, so the suite does not depend on the host having
+    // one. This test used to fail on any machine without a plain `wine` on
+    // PATH - which includes every Gentoo box running wine-proton, since that
+    // package installs only versioned loaders.
+    const QString bin = root + QStringLiteral("/bin");
+    writeFile(bin + QStringLiteral("/wine"), "#!/bin/sh\nexit 0\n");
+    QFile::setPermissions(bin + QStringLiteral("/wine"),
+                          QFile::ReadOwner | QFile::WriteOwner
+                              | QFile::ExeOwner);
+    controller->setWineLoaderSearchPath({bin});
     controller->refresh();
     return controller;
   }

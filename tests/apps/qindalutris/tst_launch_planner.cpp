@@ -199,5 +199,57 @@ private Q_SLOTS:
   }
 };
 
+  void wineLoaderDiscoveryPrefersAPlainLoaderThenTheNewestVersioned() {
+    // Searching only for "wine" reported "Wine is not installed" on a machine
+    // with a complete wine-proton stack, because Gentoo installs only
+    // versioned loaders. These rows pin the order that fixes it.
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const auto put = [&dir](const QString &name) {
+      const QString path = dir.filePath(name);
+      QFile file(path);
+      QVERIFY(file.open(QIODevice::WriteOnly));
+      file.write("#!/bin/sh\nexit 0\n");
+      file.close();
+      QVERIFY(QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner
+                                              | QFile::ExeOwner));
+    };
+
+    // Nothing installed: the refusal downstream then means what it says.
+    QVERIFY(discoverWineLoader({dir.path()}).isEmpty());
+
+    // Versioned loaders only - the newest wins, compared numerically so that
+    // 11.0.2 beats 9.0 rather than losing a string sort.
+    put(QStringLiteral("wine64-proton-9.0"));
+    put(QStringLiteral("wine64-proton-11.0.2"));
+    put(QStringLiteral("wine64-vanilla-10.0"));
+    QCOMPARE(QFileInfo(discoverWineLoader({dir.path()})).fileName(),
+             QStringLiteral("wine64-proton-11.0.2"));
+
+    // A plain loader is the user's own selection, so it outranks every
+    // versioned one.
+    put(QStringLiteral("wine"));
+    QCOMPARE(QFileInfo(discoverWineLoader({dir.path()})).fileName(),
+             QStringLiteral("wine"));
+
+    // A non-executable file never qualifies.
+    QTemporaryDir other;
+    QVERIFY(other.isValid());
+    QFile plain(other.filePath(QStringLiteral("wine")));
+    QVERIFY(plain.open(QIODevice::WriteOnly));
+    plain.write("not executable");
+    plain.close();
+    QVERIFY(discoverWineLoader({other.path()}).isEmpty());
+
+    // Earlier directories win, the way PATH behaves.
+    QCOMPARE(QFileInfo(discoverWineLoader({other.path(), dir.path()})).fileName(),
+             QStringLiteral("wine"));
+    QCOMPARE(discoverWineLoader({other.path(), dir.path()}),
+             QFileInfo(dir.filePath(QStringLiteral("wine"))).absoluteFilePath());
+  }
+
 QTEST_GUILESS_MAIN(tst_launch_planner)
 #include "tst_launch_planner.moc"
+#include <QTemporaryDir>
+#include <QFile>
+#include <QFileInfo>
