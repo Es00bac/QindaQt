@@ -137,6 +137,12 @@ listSddmSessions(const QStringList &waylandSessionDirectories,
                    [](const SddmSessionEntry &a, const SddmSessionEntry &b) {
                      return a.name.compare(b.name, Qt::CaseInsensitive) < 0;
                    });
+  // Wayland sessions group ahead of X11 ones, alphabetical inside each group;
+  // same two-stable-sort shape as the qindaqt-first theme ordering above.
+  std::stable_sort(entries.begin(), entries.end(),
+                   [](const SddmSessionEntry &a, const SddmSessionEntry &b) {
+                     return a.wayland && !b.wayland;
+                   });
   return entries;
 }
 
