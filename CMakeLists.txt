@@ -48,6 +48,9 @@ option(QINDAQT_BUILD_VIEWER "Build the QindaTK image/PDF viewer" ON)
 # installs every component, so the two collide on /usr/bin unless one of them
 # turns this off. Leave it ON for the standalone package.
 option(QINDAQT_BUILD_SYSTEM_MONITOR "Build the System Monitor application" ON)
+# AGENT-GUARD: gui-apps/qindalutris installs this executable from its own
+# --component QindaLutris, the same separation the System Monitor package uses.
+option(QINDAQT_BUILD_QINDALUTRIS "Build the QindaLutris game library application" ON)
 option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
 option(QINDAQT_BUILD_PRODUCTION_SHELL
        "Build the LayerShellQt-backed production Wayland shell"

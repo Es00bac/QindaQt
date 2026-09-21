@@ -221,3 +221,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0216: the locker draws the screensaver, so a locked session keeps showing it](0216-the-locker-draws-the-screensaver.md)
 - [ADR-0218: use QindaTK and Poppler for the image/PDF viewer](0218-use-qindatk-and-poppler-for-the-viewer.md)
 - [ADR-0219: share completed work through qinda](0219-share-completed-work-through-qinda.md)
+- [ADR-0231: QindaLutris is the desktop's game library](0231-qindalutris-the-game-library.md)

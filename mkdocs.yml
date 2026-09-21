@@ -153,6 +153,7 @@ nav:
       - Settings Startup applications route: apps/startup-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
+      - QindaLutris: apps/qindalutris.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -364,3 +365,4 @@ nav:
       - "ADR-0222: QQ_Term is the desktop terminal": adr/0222-qq-term-is-the-desktop-terminal.md
       - "ADR-0223: one stock profile per distinct feel": adr/0223-one-stock-profile-per-distinct-feel.md
       - "ADR-0224: name the presentations a layout asks for": adr/0224-name-the-presentations-a-layout-asks-for.md
+      - "ADR-0231: QindaLutris is the desktop's game library": adr/0231-qindalutris-the-game-library.md
