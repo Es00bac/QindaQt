@@ -49,6 +49,7 @@ private:
   void registerDefaultApplicationsRoute();
   void registerAboutComputerRoute();
   void registerStartupRoute();
+  void registerLoginScreenRoute();
   // AGENT-NOTE: split purely to stay under the function-lines shape limit as
   // the built-in route list grows; the two halves have no meaning of their
   // own beyond "first seven" / "rest", and both must run, in order, only

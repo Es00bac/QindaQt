@@ -150,7 +150,7 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
 
   // ADR-0211: appended routes take the next index in merge order, so nothing
   // before them moves. streaming 12, datetime 13, windows 14, default-apps 15,
-  // about-computer 16, startup 17.
+  // about-computer 16, startup 17, login-screen 18 (ADR-0225).
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
@@ -166,11 +166,18 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
 
-  // selectNext from 17 ("startup") wraps to 0 ("notifications")
+  // selectNext from 17 ("startup") -> 18 ("login-screen")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("login-screen"));
+
+  // selectNext from 18 ("login-screen") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 17 ("startup")
+  // selectPrevious from 0 wraps to 18 ("login-screen")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("login-screen"));
+
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
 
@@ -293,6 +300,9 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
 
   QVERIFY(controller.selectIndex(17));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
+
+  QVERIFY(controller.selectIndex(18));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("login-screen"));
 
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
@@ -430,6 +440,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap startupMap = list.at(17).toMap();
   QCOMPARE(startupMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("startup"));
+
+  const QVariantMap loginScreenMap = list.at(18).toMap();
+  QCOMPARE(loginScreenMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("login-screen"));
 }
 
 void SettingsNavigationControllerTest::testRouteAtPositions() {
@@ -537,7 +551,13 @@ void SettingsNavigationControllerTest::testRouteAtPositions() {
   QCOMPARE(itemAt17.value(QStringLiteral("component")).toString(),
            QStringLiteral("startup"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(18);
+  const QVariantMap itemAt18 = controller.routeAt(18);
+  QCOMPARE(itemAt18.value(QStringLiteral("id")).toString(),
+           QStringLiteral("login-screen"));
+  QCOMPARE(itemAt18.value(QStringLiteral("component")).toString(),
+           QStringLiteral("login-screen"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(19);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

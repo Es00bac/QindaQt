@@ -278,6 +278,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerDefaultApplicationsRoute();
   registerAboutComputerRoute();
   registerStartupRoute();
+  registerLoginScreenRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -378,6 +379,31 @@ void SettingsRouteRegistry::registerStartupRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(startupRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerLoginScreenRoute() {
+  // ADR-0225: appended after Startup applications, so every existing route
+  // index, shortcut and traversal position stays unchanged (ADR-0128). The
+  // route is registered unconditionally: the page itself reports, in plain
+  // text, when the polkit helper is missing or the user may not authorize,
+  // the same way the Date & time route owns its own degraded truth
+  // (ADR-0211).
+  const SettingsRoute loginScreenRoute{
+      .id = QStringLiteral("login-screen"),
+      .component = SettingsRouteComponent::LoginScreen,
+      .title =
+          QCoreApplication::translate("SettingsCenter", "Login screen"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter",
+          "Theme, default session, and automatic login for SDDM"),
+      .iconName = QStringLiteral("system-lock-screen"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(loginScreenRoute);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }
