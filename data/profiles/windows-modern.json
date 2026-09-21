@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "windows-modern",
+  "name": "Centered Taskbar",
+  "description": "A 48-pixel bottom taskbar whose start button and task tiles stay centred, with the modern Windows start panel: a search field, a pinned application grid, and the complete list behind All apps. Widgets sit at the left, the status area at the right.",
+  "defaultTheme": "qinda-glass-light",
+  "workflow": {
+    "overview": "task-view",
+    "workspacePolicy": "static",
+    "launcher": "centered-menu",
+    "menu": "start-menu",
+    "taskList": "grouped-icons",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "centered-taskbar", "edge": "bottom", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 48, "length": 1.0,
+      "applets": [
+        {"id": "widgets", "plugin": "dashboard", "settings": {"zone": "start"}},
+        {"id": "start", "plugin": "start-menu", "settings": {"zone": "center", "variant": "modern"}},
+        {"id": "tasks", "plugin": "centered-task-list", "settings": {"zone": "center", "presentation": "centered", "grouping": "always"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
+      ]
+    }
+  ],
+  "desktop": {
+    "applets": [
+      {
+        "id": "desktop-icons",
+        "plugin": "desktop-icons",
+        "settings": {"contextMenuStyle": "windows", "applicationsMenuModifier": "shift"}
+      }
+    ]
+  }
+}

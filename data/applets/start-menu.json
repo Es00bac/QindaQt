@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "start-menu",
   "name": "Start Menu",
-  "description": "Opens the worn Luna start panel with applications, places, and system actions.",
+  "description": "Opens a Windows-style start panel with applications, places, and system actions. `variant` selects which Windows start menu it reproduces.",
   "apiVersion": "1.0",
   "entryPoint": {
     "kind": "builtin",
@@ -20,6 +20,12 @@
   "settingsSchema": {
     "type": "object",
     "additionalProperties": false,
-    "properties": {}
+    "properties": {
+      "variant": {
+        "type": "string",
+        "enum": ["luna", "modern"],
+        "default": "luna"
+      }
+    }
   }
 }

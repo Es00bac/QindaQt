@@ -342,9 +342,10 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
     QVERIFY2(profiles.loadDirectory(
                  QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
              qPrintable(error));
-    // One stock profile per distinct feel: Bliss, Minimal, macOS, XFCE, Unity,
-    // GNOME overview, NeXT dock, and the QindaQt signature layout.
-    QCOMPARE(profiles.profiles().size(), 8);
+    // One stock profile per distinct feel: Bliss, Centered Taskbar, Minimal,
+    // macOS, XFCE, Unity, GNOME overview, NeXT dock, and the QindaQt
+    // signature layout.
+    QCOMPARE(profiles.profiles().size(), 9);
 
     for (const auto &profile : profiles.profiles()) {
         // AGENT-NOTE: the menu slot is the launcher by default, but the Bliss
@@ -353,8 +354,12 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
         int menuAppletCount = 0;
         for (const auto &panel : profile.panels) {
             for (const auto &applet : panel.applets) {
+                // ADR-0224: application-launcher is the launcher under its
+                // own manifest name, so a rail profile can ask for the large
+                // square tile. It is still the one menu slot.
                 const bool isMenuApplet =
                     applet.plugin == QLatin1String("launcher")
+                    || applet.plugin == QLatin1String("application-launcher")
                     || applet.plugin == QLatin1String("start-menu");
                 if (!isMenuApplet) {
                     continue;
@@ -369,9 +374,9 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
                                     + resolved.diagnostic));
                 QCOMPARE(resolved.entryPoint,
                          QStringLiteral("qindaqt.applets.")
-                             + (applet.plugin == QLatin1String("launcher")
-                                    ? QStringLiteral("launcher")
-                                    : QStringLiteral("start-menu")));
+                             + (applet.plugin == QLatin1String("start-menu")
+                                    ? QStringLiteral("start-menu")
+                                    : QStringLiteral("launcher")));
                 QCOMPARE(resolved.grantedCapabilities,
                          QStringList{QStringLiteral("applications.launch")});
             }
@@ -447,7 +452,13 @@ void AppletInstanceResolverTests::stockProfilesPlaceHostedTaskListWhereWorkflowE
         int taskListCount = 0;
         for (const auto &panel : profile.panels) {
             for (const auto &applet : panel.applets) {
-                if (applet.plugin != QLatin1String("task-list")) {
+                // ADR-0224: grouped-task-list and centered-task-list are the
+                // task list under their own manifest names, so a rail or a
+                // centred taskbar can ask for its own tile shape. Each still
+                // counts as the one hosted task list.
+                if (applet.plugin != QLatin1String("task-list")
+                    && applet.plugin != QLatin1String("grouped-task-list")
+                    && applet.plugin != QLatin1String("centered-task-list")) {
                     continue;
                 }
                 ++taskListCount;

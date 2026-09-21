@@ -156,6 +156,10 @@ surface hosts the desktop-icons entry (see its bullet below):
   system actions right. Its `applications.launch` grant rides the same
   audited launcher seams, and the stock-profile invariant resolves exactly
   one menu slot per profile that is either a launcher or this applet.
+  `settings.variant` selects which Windows start menu the instance
+  reproduces — `luna` (the default, and Bliss) or `modern`, the Windows 11
+  centred card; see [Layout profiles](layout-profiles.md#tile-shapes-and-start-menu-variants)
+  and [ADR-0224](../adr/0224-name-the-presentations-a-layout-asks-for.md).
   The program list is **lazy**: the projection's sections are flattened into
   one array whose index is the flat program index, and a `ListView` with
   native sections draws it, so opening the panel builds a viewport of rows

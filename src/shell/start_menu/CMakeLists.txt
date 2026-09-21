@@ -25,6 +25,7 @@ qt_add_qml_module(
     QML_FILES
         qml/StartMenuApplet.qml
         qml/StartMenuPopup.qml
+        qml/StartMenuModernPopup.qml
         qml/StartMenuLeftColumn.qml
         qml/StartMenuRightColumn.qml
     DEPENDENCIES

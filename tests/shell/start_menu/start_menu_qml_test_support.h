@@ -67,6 +67,15 @@ struct AppletHost {
     bool create(const QString &typeName, QObject *launcherAccess,
                 QObject *controlsAccess, QString *error)
     {
+        return create(typeName, launcherAccess, controlsAccess, {}, error);
+    }
+
+    // `appletSettings` becomes the instance's `applet.settings` map, which is
+    // how a profile selects the start-menu variant (ADR-0224).
+    bool create(const QString &typeName, QObject *launcherAccess,
+                QObject *controlsAccess, const QVariantMap &appletSettings,
+                QString *error)
+    {
         engine = std::make_unique<QQmlEngine>();
         engine->addImportPath(QStringLiteral(QINDAQT_START_MENU_QML_IMPORT_PATH));
         if (!publishTokens(*engine)) {
@@ -86,6 +95,11 @@ struct AppletHost {
             {QStringLiteral("desktopControlsAccess"),
              QVariant::fromValue(controlsAccess)},
         };
+        if (!appletSettings.isEmpty()) {
+            initialProperties.insert(
+                QStringLiteral("applet"),
+                QVariantMap{{QStringLiteral("settings"), appletSettings}});
+        }
         root.reset(component.createWithInitialProperties(initialProperties));
         if (!root) {
             *error = component.errorString();

@@ -41,7 +41,8 @@ void ShellCaptureTest::capturesRequiredResolution_data()
     const QStringList otherProfiles{
         QStringLiteral("gnome-inspired"), QStringLiteral("minimal"),
         QStringLiteral("nextstep-inspired"), QStringLiteral("unity-inspired"),
-        QStringLiteral("xfce-inspired"), QStringLiteral("qinda-bliss")};
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
+        QStringLiteral("qinda-bliss")};
     for (const auto &preset : otherProfiles) {
         QTest::newRow(qPrintable(preset)) << QSize(1920, 1080) << preset
                                         << QStringLiteral("qinda-dark");
@@ -53,7 +54,8 @@ void ShellCaptureTest::capturesRequiredResolution_data()
         QStringLiteral("qindaqt"), QStringLiteral("macos-inspired"),
         QStringLiteral("gnome-inspired"), QStringLiteral("minimal"),
         QStringLiteral("nextstep-inspired"), QStringLiteral("unity-inspired"),
-        QStringLiteral("xfce-inspired"), QStringLiteral("qinda-bliss")};
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
+        QStringLiteral("qinda-bliss")};
     for (const auto *theme : {"qinda-glass-dark", "qinda-paper"}) {
         for (const auto &preset : everyProfile) {
             const QByteArray tag = QByteArray(theme) + '-' + preset.toLatin1();
