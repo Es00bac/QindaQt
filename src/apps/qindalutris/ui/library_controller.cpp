@@ -62,6 +62,8 @@ LibraryController::LibraryController(QObject *parent) : QObject(parent) {
       home + QStringLiteral("/.local/share/Steam"),
       home + QStringLiteral("/.var/app/com.valvesoftware.Steam/.local/share/Steam"),
   };
+  m_wineSearchPath = QString::fromLocal8Bit(qgetenv("PATH"))
+                         .split(QLatin1Char(':'), Qt::SkipEmptyParts);
   m_lutrisDbPath = xdgOr(QStandardPaths::GenericDataLocation,
                          home + QStringLiteral("/.local/share"))
                        + QStringLiteral("/lutris/pga.db");
@@ -120,6 +122,10 @@ void LibraryController::setLutrisDatabasePath(const QString &path) {
 
 void LibraryController::setDesktopDataRoots(const QStringList &roots) {
   m_desktopRoots = roots;
+}
+
+void LibraryController::setWineLoaderSearchPath(const QStringList &directories) {
+  m_wineSearchPath = directories;
 }
 
 void LibraryController::setConfigRoot(const QString &path) {
@@ -194,7 +200,10 @@ void LibraryController::rebuildDisplays() {
 void LibraryController::rebuildToolSet() {
   m_tools.steamBinary = QStandardPaths::findExecutable(QStringLiteral("steam"));
   m_tools.lutrisBinary = QStandardPaths::findExecutable(QStringLiteral("lutris"));
-  m_tools.wineBinary = QStandardPaths::findExecutable(QStringLiteral("wine"));
+  // Not findExecutable("wine"): Gentoo's wine-proton ships only versioned
+  // loaders, so that call returned empty on a machine with a complete Wine
+  // stack and every Wine game refused to launch with "Wine is not installed".
+  m_tools.wineBinary = discoverWineLoader(m_wineSearchPath);
   m_tools.gamemodeRunBinary =
       QStandardPaths::findExecutable(QStringLiteral("gamemoderun"));
   m_tools.mangohudBinary =

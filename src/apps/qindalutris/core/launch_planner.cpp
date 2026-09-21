@@ -2,6 +2,9 @@
 #include "launch_planner.h"
 
 #include "library_store.h"
+#include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
 
 namespace QindaQt::QindaLutris {
 namespace {
@@ -84,6 +87,60 @@ LaunchPlan failed(const QString &reason) {
 }
 
 } // namespace
+
+QString discoverWineLoader(const QStringList &searchDirectories) {
+  // A plain loader is the user's own selection when it exists.
+  for (const QString &name : {QStringLiteral("wine"), QStringLiteral("wine64")}) {
+    for (const QString &dir : searchDirectories) {
+      const QFileInfo candidate(QDir(dir).filePath(name));
+      if (candidate.isFile() && candidate.isExecutable()) {
+        return candidate.absoluteFilePath();
+      }
+    }
+  }
+
+  // Otherwise take the highest-versioned versioned loader. Gentoo names these
+  // wine64-proton-11.0.2, wine64-vanilla-10.0, and so on; compare by the
+  // numeric fields so 11.0.2 beats 9.0 rather than losing a string sort.
+  const QRegularExpression versioned(
+      QStringLiteral("^wine(?:64)?-[a-z]+-([0-9]+(?:\\.[0-9]+)*)$"));
+  QString best;
+  QList<int> bestFields;
+  for (const QString &dir : searchDirectories) {
+    const QFileInfoList found = QDir(dir).entryInfoList(
+        {QStringLiteral("wine-*"), QStringLiteral("wine64-*")},
+        QDir::Files | QDir::NoDotAndDotDot);
+    for (const QFileInfo &info : found) {
+      if (!info.isExecutable()) {
+        continue;
+      }
+      const QRegularExpressionMatch match = versioned.match(info.fileName());
+      if (!match.hasMatch()) {
+        continue;
+      }
+      QList<int> fields;
+      const QStringList parts = match.captured(1).split(QLatin1Char('.'));
+      for (const QString &part : parts) {
+        fields.append(part.toInt());
+      }
+      // Longer version vectors compare field by field; a missing field is 0.
+      bool better = best.isEmpty();
+      for (int i = 0; !better && i < qMax(fields.size(), bestFields.size()); ++i) {
+        const int mine = i < fields.size() ? fields.at(i) : 0;
+        const int theirs = i < bestFields.size() ? bestFields.at(i) : 0;
+        if (mine != theirs) {
+          better = mine > theirs;
+          break;
+        }
+      }
+      if (better) {
+        best = info.absoluteFilePath();
+        bestFields = fields;
+      }
+    }
+  }
+  return best;
+}
 
 LaunchPlan planGameLaunch(const Game &game, const LaunchOptions &options,
                           const LaunchToolSet &tools,

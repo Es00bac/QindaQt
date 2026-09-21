@@ -24,6 +24,22 @@ namespace QindaQt::QindaLutris {
 // The host tools a launch may need, resolved once per refresh by composition
 // (findExecutable); empty means "not installed". Injected, so tests never
 // depend on the real machine.
+// AGENT-CONTRACT: the Wine loader is NOT always called "wine". Gentoo's
+// app-emulation/wine-proton installs versioned loaders -
+// /usr/bin/wine64-proton-11.0.2 and friends - and ships no plain `wine` unless
+// app-eselect/eselect-wine happens to be installed. Searching only for "wine"
+// therefore reported "Wine is not installed" on a machine with a complete
+// wine-proton stack, which is how both of this project's own machines are set
+// up. Pure: the caller passes the directories to look in, so a test never
+// depends on the host.
+//
+// Preference order: a plain `wine` (an eselect symlink or vanilla install)
+// first, because that is the user's own choice when it exists; then `wine64`;
+// then the highest-versioned `wine64-<flavour>-<version>` found. Returns empty
+// when nothing qualifies, and the planner's "Wine is not installed" refusal
+// then means what it says.
+[[nodiscard]] QString discoverWineLoader(const QStringList &searchDirectories);
+
 struct LaunchToolSet final {
   QString steamBinary;
   QString lutrisBinary;
