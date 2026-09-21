@@ -25,7 +25,8 @@ the [Audio route](audio-settings.md); Bluetooth behavior is documented on the
 [Input route](input-settings.md); Windows & workspaces behavior is documented on
 the [Windows & workspaces route](windows-settings.md); notification quieting and its live
 settings transaction remain documented under
-[notification presentation](../shell/notification-presentation.md).
+[notification presentation](../shell/notification-presentation.md). Login screen behavior
+is documented on the [Login screen route](login-screen-settings.md).
 
 ## Route boundary
 
