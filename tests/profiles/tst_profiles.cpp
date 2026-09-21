@@ -235,10 +235,10 @@ void ProfileTests::blissProfileCarriesDesktopSection()
              QStringLiteral("desktop-icons"));
 
     // Profiles without the section serialize without the key at all.
-    const auto classic = ProfileLoader::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/windows-classic.json"));
-    QVERIFY2(classic.ok, qPrintable(classic.error.diagnostic()));
-    QVERIFY(!classic.profile.toJson().toVariantMap()
+    const auto sectionless = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/xfce-inspired.json"));
+    QVERIFY2(sectionless.ok, qPrintable(sectionless.error.diagnostic()));
+    QVERIFY(!sectionless.profile.toJson().toVariantMap()
                  .contains(QStringLiteral("desktop")));
 }
 
@@ -291,7 +291,9 @@ void ProfileTests::stockProfileResolvesNonemptyDesktopInventory()
 
     // The QindaQt signature layout uses three edges (ADR-0223): a thin top
     // command bar for the focused window and its menu, a left smart shelf for
-    // windows and containers, and a bottom-right instrument strip.
+    // windows and containers, and a bottom-right instrument strip. The
+    // workflow hint keeps naming the shelf, which is still the shelf — it
+    // moved from the bottom edge to the left one.
     QCOMPARE(result.profile.defaultTheme, QStringLiteral("qinda-dark"));
     QCOMPARE(result.profile.panels.size(), 3);
     QCOMPARE(result.profile.workflow.launcher, QStringLiteral("smart-shelf"));

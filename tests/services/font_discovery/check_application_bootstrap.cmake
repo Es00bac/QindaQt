@@ -57,8 +57,11 @@ endforeach()
 
 # ADR-0116: the stock-Qt6 widget applications must not carry the bootstrap at
 # all; their fonts arrive through the Qt platform theme.
+# AGENT-NOTE: the terminal left this list with ADR-0222 — QQ_Term is built in
+# the QindaQt_Apps repository, so this gate cannot see its source. It reads
+# the same desktop font settings through the public Settings1 client, which is
+# its own repository's contract.
 set(stock_qt6_application_sources
-    "src/apps/terminal/main.cpp"
     "src/apps/text_editor/main.cpp"
 )
 foreach(relative_path IN LISTS stock_qt6_application_sources)

@@ -5,6 +5,51 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 20 — panel popups, start panel, terminal and layouts
+
+Integrated `9d199663`, `8cc89b85`, `2f266c1a`, `3c79dd56`, `f75dddd7` and
+`72372645`; packaged as desktop `0.1.0_pre20260920`.
+
+- **Every panel popup opens against its own control.** On Wayland, QtWayland
+  anchors a `Popup.Window` at its parent item's top-right corner, and only the
+  desktop controls had the edge-aware placement that works around it. The Bliss
+  start panel, the launcher browser and the audio, power, Bluetooth, clipboard,
+  OBS, smart-lights and tray popups opened with no placement at all, which is
+  why the start menu appeared in the upper-right corner of the start button.
+  `QindaQt.Controls.PanelPopup` is now the one owner (ADR-0221).
+- **The start panel builds only the rows it can show.** A nested `Repeater`
+  instantiated the whole catalogue inside `popup.open()`: measured at 336 of
+  336 rows before, 16 of 336 over a 364 px viewport after. The row fails above
+  120 rows and below 8, so neither eager instantiation nor an empty list passes.
+- **QQ_Term replaces `qindaqt-terminal`.** `src/apps/terminal` (8100 lines) and
+  its tests are removed with the `Terminal` install component, desktop entry,
+  icon alias and release-contract entry; `gui-apps/qqterm` is a post-dependency
+  of the desktop package. `Terminal=true` desktop entries launch for the first
+  time — the launcher's terminal prefix was empty in production, so every such
+  entry refused — through the `-e PROGRAM ARG...` form added to QQ_Term in the
+  same change (ADR-0222).
+- **Nine stock layout profiles, one per distinct feel** (ADR-0223), each with
+  its own default theme, plus the three applets those profiles asked for and
+  never had and a `variant` setting choosing which Windows start menu the
+  start-menu applet reproduces (ADR-0224). Three profiles had named plugins
+  with no manifest, so those controls silently vanished; two carried a setting
+  nothing reads; two asked a 32-pixel launcher to live in a 26-pixel strip.
+  `windows-classic` and `mate-inspired` are retired.
+- KWin's overview effect no longer reserves the top-left screen corner, so the
+  desktop's own gather arrangement can own that gesture.
+
+Verification: full build clean under the strict warning set (two pre-existing
+System Monitor `-Werror` breaks fixed to get there); 193 focused rows across
+profiles, applets, task list, start menu, panel QML, global menu, launcher,
+controls and session defaults pass, plus the broad safe suite. The pre-existing
+`desktop.virtual.stage-closure` failure (`StreamingBackend` has no `qmldir`)
+reproduces on the clean tree and is unrelated.
+
+Still open: the gather overview itself — the trigger path and the hot-corner
+release landed, but live window previews need the compositor texture readback
+that [ADR-0119](wiki/adr/0119-authenticated-window-preview-channel.md) records
+as not yet implemented, the same blocker as dock hover thumbnails.
+
 ## September 19 — recurrent shell crash repaired on qinda
 
 Integrated `999d5d65` fixes the global-menu registrar reading a removed hash

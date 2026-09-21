@@ -5,17 +5,44 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
-The current repair checkpoint is `0.1.0_pre20260919-r9`, pinned to
-`db088c55f02042f5a007bccde48a9c8beb579375`. Regenerate the package Manifest
+The current checkpoint is `0.1.0_pre20260920`, pinned to
+`72372645beb1211cf58485cd44ca6e87a8bbaef8`. Regenerate the package Manifest
 whenever the immutable source pin changes. The ebuild uses `RESTRICT=fetch`;
 generate the exact source archive locally from the pinned commit, then place
 it in Portage's DISTDIR:
 
 ```sh
-qq_source_commit=db088c55f02042f5a007bccde48a9c8beb579375
+qq_source_commit=72372645beb1211cf58485cd44ca6e87a8bbaef8
 git archive --format=tar --prefix="QindaQt-${qq_source_commit}/" "${qq_source_commit}" |
-    gzip -n > qindaqt-desktop-0.1.0_pre20260919-r9.tar.gz
+    gzip -n > qindaqt-desktop-0.1.0_pre20260920.tar.gz
 ```
+
+The September 20 checkpoint carries five changes and **drops one binary**:
+
+- Panel popups are placed by one owner (ADR-0221). The start panel, the
+  launcher browser and the per-service popups opened at their control's
+  top-right corner on Wayland because only the desktop controls had the
+  edge-aware placement; `QindaQt.Controls.PanelPopup` now owns it for all of
+  them.
+- The start panel builds only the rows it can show: 16 of 336 on a normal
+  install instead of all 336, each of which was resolving an icon through the
+  theme inside `popup.open()`.
+- `qindaqt-terminal` is **gone** (ADR-0222). QQ_Term (`gui-apps/qqterm`) is
+  the desktop's terminal and is a post-dependency of this package, so a
+  desktop install always has one; `Terminal=true` desktop entries now launch
+  through `qqterm -e`, which never worked before.
+- Nine stock layout profiles, one per distinct feel, each with its own default
+  theme (ADR-0223); `windows-classic` and `mate-inspired` are retired. A
+  `panels.layoutProfile` setting naming a retired profile falls back exactly
+  as it does for any unknown id.
+- The three applets stock profiles asked for but never had now exist, and the
+  start-menu applet takes a `variant` choosing which Windows start menu it
+  reproduces (ADR-0224).
+
+Because a binary was removed, this update is **not** a shell-child-only
+adoption like r8-to-r9: reinstalling replaces the `Terminal` component's
+files, and `gui-apps/qqterm` must be present for the desktop to have a
+terminal at all.
 
 The September 19 r9 repair backports the owned-registration lifetime fix to
 installed r8 (`c99d39c4`). A disappearing application-menu connection used to
