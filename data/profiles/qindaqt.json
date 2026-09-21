@@ -7,7 +7,7 @@
   "workflow": {
     "overview": "compact",
     "workspacePolicy": "static",
-    "launcher": "window-shelf",
+    "launcher": "smart-shelf",
     "menu": "global",
     "taskList": "shelf",
     "globalMenu": true
