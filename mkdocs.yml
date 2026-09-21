@@ -151,6 +151,7 @@ nav:
       - Settings Default applications route: apps/default-applications.md
       - Settings About this computer route: apps/about-this-computer.md
       - Settings Startup applications route: apps/startup-settings.md
+      - Settings Login screen route: apps/login-screen-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
@@ -364,3 +365,4 @@ nav:
       - "ADR-0222: QQ_Term is the desktop terminal": adr/0222-qq-term-is-the-desktop-terminal.md
       - "ADR-0223: one stock profile per distinct feel": adr/0223-one-stock-profile-per-distinct-feel.md
       - "ADR-0224: name the presentations a layout asks for": adr/0224-name-the-presentations-a-layout-asks-for.md
+      - "ADR-0225: configure the login screen from Settings through a polkit-gated helper": adr/0225-configure-the-login-screen.md
