@@ -54,7 +54,7 @@ the work items that move rows there.
 | Item | Status |
 |---|---|
 | StatusNotifier host registration so conformant items appear ([ADR-0166](../adr/0166-announce-a-status-notifier-host.md)) | committed |
-| XEmbed to StatusNotifier proxy for Wine / Proton tray icons | gap |
+| XEmbed to StatusNotifier proxy for Wine / Proton tray icons ([ADR-0229](../adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md)) | committed |
 
 ## 5. Rolled-up container names
 
