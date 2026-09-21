@@ -172,37 +172,54 @@ authoritative binding immediately after each one, same as before.
 
 ## The console grid
 
-Every console card — input strip and output bus alike — is 120 px wide and is
-built from the same four bands, in the same order, at the same heights:
+The console is built on QindaTK (`import QindaTK as Tk`, with the
+`QindaTK.QindaQt` bridge feeding the desktop's QST-1 tokens into the toolkit
+theme), per [ADR-0227](../adr/0227-the-audio-console-on-qindatk.md) and in the
+shape of the reference console documented in
+[the Voicemeeter Potato parity target](../reference/voicemeeter-potato-parity.md).
+
+Every console card — input strip and output bus alike — is 140 px wide and is
+built from the same six bands, in the same order, at the same heights:
 
 | Band | Height | Strip | Bus |
 | --- | --- | --- | --- |
 | Name | 18 px | label, and whether the strip is hardware or virtual | label, and whether the bus is physical or virtual |
 | Assignment | 24 px | the capture device the strip follows | the output device the bus drives |
-| Desk | 150 px | meter, fader, and the routing/mono/solo/mute pads | meter, fader, and the mono/mute pads |
+| Control | 62 px | pan dial beside the mono/solo/mute lamps | channel-mode lamps plus mono/mute |
+| Routing | 40 px | one send lamp per bus, physical above virtual | (slot kept) |
+| Desk | 150 px | meter and fader with its printed dB scale | meter and fader with its printed dB scale |
 | Actions | 18 px | `Rack` | `Record`, `Rack` |
 
 **A band that does not apply to a card keeps its slot rather than collapsing.**
-A virtual strip has nothing to assign and a virtual bus has no rack, so those
-controls are emptied in place. This is the rule the whole grid rests on: before
-it, a virtual strip hid the device picker a hardware strip carried and lifted
-its entire desk band above its neighbours, and buses put their picker at the
-bottom while strips put it at the top, so no two cards in a row showed their
-faders over the same pixels. A console is read across, and a ragged grid is a
-misread level. `qindaqt.settings-audio-page` fails if the two files drift
-apart.
+A virtual strip has nothing to assign and a virtual bus has no rack or channel
+mode, so those controls are emptied in place. This is the rule the whole grid
+rests on: before it, a virtual strip hid the device picker a hardware strip
+carried and lifted its entire desk band above its neighbours, and buses put
+their picker at the bottom while strips put it at the top, so no two cards in
+a row showed their faders over the same pixels. A console is read across, and
+a ragged grid is a misread level. `qindaqt.settings-audio-console-page`'s
+`consoleCardsShareOneGrid` fails if the two files drift apart.
+
+The desk band's fader is driven by position and converted through the model's
+gain law — the printed scale ticks, the numbered labels and the readout all
+call the model's own `faderPositionForGain` / `gainForFaderPosition`, so the
+number, the scale and the slot cannot disagree, and no second dB mapping lives
+in QML (ADR-0171). The meter reads the projection's `consoleLevels` channel,
+published per strip and bus as `{peakDb, rmsDb, known}` many times a second;
+an unknown reading renders as an empty, dimmed meter, never a fabricated one.
+The fader, the rotary knob and the desk lamp pad are local controls marked
+`AGENT-NOTE: belongs in QindaTK` — the toolkit's slider is horizontal-only,
+it has no rotary control, and nothing in it has lamp semantics yet.
 
 Cards flow left to right and wrap onto as many rows as the window is wide;
 there is deliberately no horizontal scroller anywhere in this surface.
 
-One presentation note that is a bug fix rather than taste: the shared
-`QindaQt.Controls` `ComboBox` draws its closed face with a read-only
-`TextField`, and a `TextField` whose text is wider than its box scrolls to keep
-the end visible — so a long device name lost its **first** characters and read
-as "k Microphone" instead of "Desk Microphone". Every non-editable picker in
-this route overrides that content item with an eliding `Text`, which drops
-characters from the end where the eye expects it. The shared control has the
-same defect for every non-editable consumer.
+The strip's routing bank prints one lamp per bus with the physical buses in
+the row above the virtual ones — the A-row-over-B-row the reference console
+prints — and toggling a lamp keeps the send's dialled gain rather than
+resetting it. The strip face also carries the pan dial (ADR-0177 balance,
+reading L/C/R), which the projection published before the rebuild but no
+surface exposed.
 
 ## Verification and stopping point
 

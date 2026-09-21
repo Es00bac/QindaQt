@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "stub_audio_settings_model.h"
+// The Settings Audio route's surface tests: inventory presentation, intent
+// dispatch, stale/owner-loss fail-closed behaviour, compact focus, and the
+// stub's parity with the real model. The console grid's tests live in
+// tst_audio_console_page.cpp; both suites share audio_page_test_support.h.
 
-#include <qindaqt/apps/settings_appearance/appearance_qml_composition.h>
+#include "audio_page_test_support.h"
+
 #include <qindaqt/apps/settings_audio/audio_settings_model.h>
-#include <qindaqt/shell/icons/icon_runtime.h>
-#include <qindaqt/themes/theme_loader.h>
 
 #include <QtGui/QAccessible>
 #include <QtGui/QAccessibleInterface>
 #include <QtCore/QMetaObject>
-#include <QtQml/QQmlComponent>
 #include <QtQml/QQmlExtensionPlugin>
-#include <QtQuick/QQuickItem>
-#include <QtQuick/QQuickView>
 #include <QtTest>
 
 #include <memory>
@@ -21,33 +20,9 @@
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using QindaQt::Apps::SettingsAudio::TestSupport::StubAudioSettingsModel;
-
-namespace {
-
-QQuickItem *findItem(QQuickItem *root, const QString &objectName) {
-  if (root == nullptr) {
-    return nullptr;
-  }
-  if (root->objectName() == objectName) {
-    return root;
-  }
-  for (QQuickItem *child : root->childItems()) {
-    if (QQuickItem *match = findItem(child, objectName); match != nullptr) {
-      return match;
-    }
-  }
-  return nullptr;
-}
-
-void attach(QQuickView &view, QQuickItem &page, const QSize size) {
-  view.resize(size);
-  page.setParentItem(view.contentItem());
-  page.setSize(size);
-  view.show();
-  QCoreApplication::processEvents();
-}
-
-} // namespace
+using QindaQt::Apps::SettingsAudio::TestSupport::createAudioPage;
+using QindaQt::Apps::SettingsAudio::TestSupport::findItem;
+using QindaQt::Apps::SettingsAudio::TestSupport::prepareAudioPageEngine;
 
 class AudioPageTest final : public QObject {
   Q_OBJECT
@@ -62,7 +37,6 @@ private Q_SLOTS:
   void disabledDefaultFallsThroughToFirstAdmittedAction();
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
-  void consoleCardsShareOneGrid();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -73,51 +47,14 @@ private:
 
 void AudioPageTest::initTestCase() {
   m_view = std::make_unique<QQuickView>();
-  m_view->engine()->addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
-  QString facadeError;
-  auto *facade = QindaQt::Apps::SettingsAppearance::ensureTokenFacade(
-      *m_view->engine(), &facadeError);
-  QVERIFY2(facade != nullptr, qPrintable(facadeError));
-  const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  QVERIFY2(loaded.ok, qPrintable(loaded.error));
-  QString publishError;
-  QVERIFY2(facade->publish(loaded.theme, {}, &publishError),
-           qPrintable(publishError));
-  // The virtual-device section renders real iconography; the harness
-  // resolves the shipped icon theme so the buttons prove resolved glyphs.
-  QVERIFY2(QindaQt::Shell::Icons::IconRuntime::install(
-               *m_view->engine(),
-               {QStringLiteral(QINDAQT_SOURCE_DIR "/data/icons")},
-               {QStringLiteral("QindaQt")}),
-           "icon runtime install");
+  QString error;
+  QVERIFY2(prepareAudioPageEngine(*m_view, &error), qPrintable(error));
 }
 
 std::pair<std::unique_ptr<QObject>, QQuickItem *>
 AudioPageTest::createPage(const QSize size) {
   m_model = std::make_unique<StubAudioSettingsModel>();
-  QQmlComponent component(m_view->engine());
-  component.loadUrl(QUrl::fromLocalFile(
-      QStringLiteral(QINDAQT_AUDIO_PAGE_QML_PATH)));
-  if (!component.isReady()) {
-    qWarning().noquote() << component.errorString();
-    return {};
-  }
-  QObject *object = component.createWithInitialProperties({
-      {QStringLiteral("audioSettings"),
-       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
-  });
-  if (object == nullptr) {
-    qWarning().noquote() << component.errorString();
-    return {};
-  }
-  auto guard = std::unique_ptr<QObject>(object);
-  auto *page = qobject_cast<QQuickItem *>(object);
-  if (page == nullptr) {
-    return {};
-  }
-  attach(*m_view, *page, size);
-  return {std::move(guard), page};
+  return createAudioPage(*m_view, *m_model, size);
 }
 
 void AudioPageTest::rendersInventoryAccessibly() {
@@ -478,59 +415,6 @@ void AudioPageTest::stubMatchesRealModelSurface() {
            invokableSurface(StubAudioSettingsModel::staticMetaObject));
 }
 
-// The console is read across a row like a real desk, so every card must put
-// its meter, fader and pads at the same height as its neighbour's. This row
-// exists because they did not: a virtual strip hid the device picker a
-// hardware strip carries, which lifted its whole desk band, and buses put
-// their picker at the bottom while strips put it at the top. The band heights
-// in AudioConsoleStrip.qml and AudioConsoleBus.qml are shared verbatim; this
-// fails if they ever drift apart again.
-void AudioPageTest::consoleCardsShareOneGrid() {
-  auto [guard, page] = createPage(QSize(1100, 900));
-  QVERIFY(page != nullptr);
-
-  struct CardUnderTest {
-    const char *card;
-    const char *fader;
-    const char *meter;
-  };
-  // A hardware strip and a virtual strip (the pair that misaligned), then a
-  // physical bus and a virtual bus.
-  const CardUnderTest cards[] = {
-      {"consoleStrip_strip.hw.1", "consoleStripFader_strip.hw.1",
-       "consoleStripMeter_strip.hw.1"},
-      {"consoleStrip_strip.virtual.1", "consoleStripFader_strip.virtual.1",
-       "consoleStripMeter_strip.virtual.1"},
-      {"consoleBus_bus.a1", "consoleBusFader_bus.a1", "consoleBusMeter_bus.a1"},
-      {"consoleBus_bus.b1", "consoleBusFader_bus.b1", "consoleBusMeter_bus.b1"},
-  };
-
-  qreal sharedFaderOffset = -1.0;
-  qreal sharedCardHeight = -1.0;
-  for (const CardUnderTest &entry : cards) {
-    QQuickItem *card = findItem(page, QString::fromLatin1(entry.card));
-    QQuickItem *fader = findItem(page, QString::fromLatin1(entry.fader));
-    QQuickItem *meter = findItem(page, QString::fromLatin1(entry.meter));
-    QVERIFY2(card != nullptr, entry.card);
-    QVERIFY2(fader != nullptr, entry.fader);
-    QVERIFY2(meter != nullptr, entry.meter);
-
-    const qreal faderOffset = fader->mapToItem(card, QPointF(0.0, 0.0)).y();
-    const qreal meterOffset = meter->mapToItem(card, QPointF(0.0, 0.0)).y();
-    QCOMPARE(meterOffset, faderOffset);
-    // The desk band height is the one number both files state.
-    QCOMPARE(fader->height(), 150.0);
-
-    if (sharedFaderOffset < 0.0) {
-      sharedFaderOffset = faderOffset;
-      sharedCardHeight = card->height();
-      continue;
-    }
-    QCOMPARE(faderOffset, sharedFaderOffset);
-    QCOMPARE(card->height(), sharedCardHeight);
-  }
-  QVERIFY(sharedFaderOffset > 0.0);
-}
 
 QTEST_MAIN(AudioPageTest)
 #include "tst_audio_page.moc"

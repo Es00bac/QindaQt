@@ -227,6 +227,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0222: QQ_Term is the desktop terminal](0222-qq-term-is-the-desktop-terminal.md)
 - [ADR-0223: One stock profile per distinct feel](0223-one-stock-profile-per-distinct-feel.md)
 - [ADR-0224: Name the presentations a layout asks for](0224-name-the-presentations-a-layout-asks-for.md)
+- [ADR-0227: The audio console on QindaTK](0227-the-audio-console-on-qindatk.md)
 - [ADR-0228: bundled wallpapers resolve beyond PNG](0228-bundled-wallpapers-resolve-beyond-png.md)
 - [ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items](0229-proxy-the-xembed-tray-into-status-notifier-items.md)
 - [ADR-0230: name and picture the game behind a launcher class](0230-name-and-picture-the-game-behind-a-launcher-class.md)
