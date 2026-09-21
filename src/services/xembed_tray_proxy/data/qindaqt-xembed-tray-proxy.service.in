@@ -36,5 +36,15 @@ SystemCallErrorNumber=EPERM
 TasksMax=16
 UMask=0077
 
-[Install]
-WantedBy=graphical-session.target
+# AGENT-CONTRACT: deliberately NO [Install] section. QindaQt never activates
+# graphical-session.target, so `WantedBy=graphical-session.target` meant
+# systemd never started this unit at all - the proxy shipped and nothing ran
+# it, and `_NET_SYSTEM_TRAY_S0` stayed unowned. The session supervisor owns
+# startup instead (`xembedTrayProxyExecutable`), for the same reason it owns
+# PowerDevil and KGlobalAccel.
+#
+# Do not add one back. ADR-0229's failure policy exists because two trays
+# fighting over one selection is worse than one missing icon, and one
+# automatic owner is how that stays true. The unit is kept so the proxy can
+# still be started by hand for debugging:
+#   systemctl --user start qindaqt-xembed-tray-proxy

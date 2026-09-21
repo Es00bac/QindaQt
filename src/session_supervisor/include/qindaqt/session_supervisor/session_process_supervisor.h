@@ -38,6 +38,15 @@ struct SessionProcessOptions final {
     // cannot use the distribution's systemd user unit, so production owns the
     // daemon as an optional session child.
     QString globalShortcutDaemonExecutable;
+    // The XEmbed-to-StatusNotifier tray proxy (ADR-0229), which is what gives
+    // Wine, Proton and Steam tray icons somewhere to dock. It ships a systemd
+    // user unit, but that unit is `WantedBy=graphical-session.target` and
+    // QindaQt never activates that target, so systemd would never start it -
+    // the same reason PowerDevil and KGlobalAccel live here. Empty disables
+    // it; the proxy itself waits for XWayland and exits cleanly when there is
+    // no X display at all.
+    QString xembedTrayProxyExecutable =
+        QStringLiteral("qindaqt-xembed-tray-proxy");
     QString profileId;
     QString themeId;
     qint64 compositorProcessId = 0;
@@ -83,6 +92,7 @@ public:
     [[nodiscard]] int desktopControlsRestartCount() const noexcept;
     [[nodiscard]] qint64 powerDevilProcessId() const noexcept;
     [[nodiscard]] qint64 globalShortcutDaemonProcessId() const noexcept;
+    [[nodiscard]] qint64 xembedTrayProxyProcessId() const noexcept;
     [[nodiscard]] qint64 polkitAgentProcessId() const noexcept;
     [[nodiscard]] int polkitAgentRestartCount() const noexcept;
     [[nodiscard]] qint64 welcomeProcessId() const noexcept;
@@ -130,6 +140,7 @@ private:
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;
     std::unique_ptr<OptionalSessionChild> m_globalShortcutDaemon;
+    std::unique_ptr<OptionalSessionChild> m_xembedTrayProxy;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_token;
     qint64 m_hostProcessId = 0;

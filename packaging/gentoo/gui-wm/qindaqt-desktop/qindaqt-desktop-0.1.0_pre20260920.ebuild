@@ -53,6 +53,13 @@ RDEPEND="
 	>=kde-frameworks/syntax-highlighting-6.0:6=
 	kde-misc/kio-fuse
 	=x11-libs/qtermwidget-2.4*:0=
+	# The XEmbed tray proxy (ADR-0229) is what gives Wine, Proton and Steam
+	# tray icons a selection owner to dock with. It resolves xcb,
+	# xcb-composite, xcb-damage, xcb-shape, xcb-xtest and xcb-xfixes through
+	# pkg-config with REQUIRED, and all six ship in libxcb. Undeclared this
+	# built here only because KWin had already pulled the development files
+	# in; a clean machine would have failed at configure.
+	x11-libs/libxcb
 	>=media-video/wireplumber-0.5
 	>=net-misc/networkmanager-1.44
 	app-crypt/gcr:4
