@@ -143,8 +143,11 @@ void SteamAppIdentityTests::libraryFoldersRespectTheNestingCap()
 
 void SteamAppIdentityTests::libraryFoldersRejectOversizedDocuments()
 {
+    // Grow until the document really is over the cap. A fixed iteration
+    // bound of 9000 produced about 117 KB against a 1 MiB cap, so the row
+    // asserted a size it never reached and never exercised the guard.
     QByteArray vdf = "\"libraryfolders\"\n{\n";
-    for (int i = 0; i < 9000 && vdf.size() <= kMaxVdfBytes; ++i) {
+    for (int i = 0; vdf.size() <= kMaxVdfBytes; ++i) {
         vdf += "\t\"" + QByteArray::number(i) + "\"\t\"/x\"\n";
     }
     vdf += "}";
