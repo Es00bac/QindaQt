@@ -16,6 +16,7 @@
 #include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 #include "qindaqt/shell/task_list/task_list_source.h"
 #include "qindaqt/shell/icons/desktop_entry_icon_resolver.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 #include "qindaqt/shell/icons/icon_theme_locator.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
@@ -475,8 +476,27 @@ void TaskListAppletComposition::compose(
     m_access = std::make_unique<ShellTaskListApplet::TaskListAppletController>(
         source, authority, *m_router, taskListGrants(catalog, policy),
         [this](const QString &applicationId) {
-            return m_iconResolver
-                ? m_iconResolver->iconNameForAppId(applicationId) : QString{};
+            if (m_iconResolver) {
+                const QString entryIcon =
+                    m_iconResolver->iconNameForAppId(applicationId);
+                if (!entryIcon.isEmpty()) {
+                    return entryIcon;
+                }
+            }
+            // ADR-0230: no desktop entry claims the id, so a Wine/Proton
+            // window may still have a PE-extracted icon in the shared cache
+            // root the compositor writes. The name rides the same confined
+            // locator the entry icons use; anything absent or hostile falls
+            // through to the typed placeholder exactly as before.
+            if (m_iconThemeLocator) {
+                const QString cacheName =
+                    Icons::IconRuntime::wineCacheIconNameForAppId(applicationId);
+                if (!cacheName.isEmpty()
+                    && m_iconThemeLocator->hasIcon(cacheName, 18, 1.0, false)) {
+                    return cacheName;
+                }
+            }
+            return QString{};
         },
         [this](const QString &iconName) {
             return m_iconThemeLocator

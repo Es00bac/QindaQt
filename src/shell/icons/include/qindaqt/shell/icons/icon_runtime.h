@@ -36,4 +36,21 @@ namespace QindaQt::Shell::Icons::IconRuntime
 [[nodiscard]] QStringList freedesktopApplicationRoots(const QString &dataHome,
                                                       const QStringList &dataDirs);
 
+// ADR-0230: the shared cache root the compositor writes PE-extracted Wine
+// icons into (`<generic cache location>/qindaqt/wine-icons`). Composition
+// appends it LAST to the icon roots so every real themed icon wins; the
+// locator's unthemed direct-root rule then resolves the files it holds.
+// App-independent on purpose: the compositor (KWin) and the shell have
+// different application names.
+[[nodiscard]] QString wineCacheIconRoot();
+
+// The icon name a Wine/Proton window's cached PE icon is stored under for an
+// application id (`Battle.net.exe` -> `qindaqt-wine-battle.net`), or empty
+// when the id cannot yield a confined name. AGENT-CONTRACT with
+// QindaQt::Compositor::WineIdentityCache::cacheIconNameForApplicationId: the
+// two implementations MUST stay byte-identical, pinned by the same test
+// vectors, because the compositor writes the file and the shell looks it up
+// by name (ADR-0230). Pure: no filesystem reach.
+[[nodiscard]] QString wineCacheIconNameForAppId(const QString &applicationId);
+
 } // namespace QindaQt::Shell::Icons::IconRuntime

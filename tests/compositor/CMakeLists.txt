@@ -40,6 +40,38 @@ target_link_libraries(
 )
 add_test(NAME compositor.transaction-bridge COMMAND qindaqt_compositor_bridge_tests)
 
+# ADR-0230: Wine/Proton window identity. Both are pure parsers over file
+# inputs (a synthetic PE built byte by byte in the fixture, and synthetic
+# Steam ACF/VDF), so they need no display and no Steam or Wine installed.
+qt_add_executable(qindaqt_peicon_tests tst_peicon.cpp peicon_test_fixture.h)
+target_link_libraries(
+    qindaqt_peicon_tests
+    PRIVATE
+        QindaQt::CompositorShellActions
+        Qt6::Gui
+        Qt6::Test
+)
+add_test(NAME compositor.pe-icon COMMAND qindaqt_peicon_tests)
+set_tests_properties(
+    compositor.pe-icon
+    PROPERTIES
+        LABELS "unit;pure;compositor;hostile"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+qt_add_executable(qindaqt_steam_app_identity_tests tst_steamappidentity.cpp)
+target_link_libraries(
+    qindaqt_steam_app_identity_tests
+    PRIVATE
+        QindaQt::CompositorShellActions
+        Qt6::Test
+)
+add_test(NAME compositor.steam-app-identity COMMAND qindaqt_steam_app_identity_tests)
+set_tests_properties(
+    compositor.steam-app-identity
+    PROPERTIES LABELS "unit;pure;compositor"
+)
+
 if(TARGET QindaQt::HybridChrome)
     qt_add_executable(qindaqt_chrome_appearance_palette_tests
         tst_chromeappearancepalette.cpp

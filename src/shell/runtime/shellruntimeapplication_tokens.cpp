@@ -45,8 +45,11 @@ bool ShellRuntimeApplication::initializeIcons(QString *error)
     if (!ShellIconConfiguration::selectedThemeName(m_themes, &themeName, error)) {
         return false;
     }
+    // ADR-0230: the compositor-written Wine PE-icon cache root rides last,
+    // so the image provider resolves those names too.
     const QStringList iconRoots = Icons::IconRuntime::freedesktopIconRoots(
-        m_dataRoots.dataHome, m_dataRoots.dataDirectories);
+        m_dataRoots.dataHome, m_dataRoots.dataDirectories)
+        + QStringList{Icons::IconRuntime::wineCacheIconRoot()};
     if (!Icons::IconRuntime::install(m_engine, iconRoots, {themeName})) {
         if (error != nullptr) {
             *error = QStringLiteral("QindaQt shell icon runtime was already installed");
