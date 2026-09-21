@@ -1,5 +1,12 @@
 # First-party delivery queue
 
+## September 20 File Manager backend follow-ups
+
+| Outcome | State | Owner | Base / isolated worktree | Reviewer | Next gate | Collision/resource | Help | Observed |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Correct local/network history dispatch, explicit malformed-remote rejection, and nonblocking local listings | IMPLEMENTING | UI/UX Navigation Kimi (Kimi K3, max reasoning) | `6e0c122868c598c322927504242e5b3a47be9b3c` / `.cache/ui-ux-navigation-kimi-20260920` / `worker/ui-ux-navigation-kimi-20260920` | Unassigned until one immutable candidate exists | Failure-before focused tests, async stale-result fencing, File Manager documentation/ADR as required, exact candidate commit | Owns `NavigationController`, any new local-listing collaborator, focused navigation tests, required build registration, and primary File Manager documentation; must not edit `SearchController` or its tests | Route exact public-boundary questions to the Program Manager; implementation work only | 2026-09-20T05:00:00Z |
+| Make recursive-search cancellation nonblocking while preserving safe worker lifetime and stale-result fencing | IMPLEMENTING | UI/UX Search GLM (Z.AI GLM 5.3, max reasoning) | `6e0c122868c598c322927504242e5b3a47be9b3c` / `.cache/ui-ux-search-glm-20260920` / `worker/ui-ux-search-glm-20260920` | Unassigned until one immutable candidate exists | Deterministic failure-before cancellation-latency/lifetime coverage, focused tests, exact candidate commit | Owns `SearchController` and `tst_search_controller.cpp`; must not edit navigation sources/tests, shared File Manager wiki, or shared build registries without manager coordination | Record any needed documentation/build-registry delta in the handoff for manager reconciliation; implementation work only | 2026-09-20T05:00:00Z |
+
 ## September 19 request — Viewer and application defaults
 
 | Outcome | State | Owner | Base / isolated worktree | Reviewer | Next gate | Collision/resource | Help | Observed |
