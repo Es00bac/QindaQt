@@ -72,8 +72,11 @@ void SddmOwnedConfigTest::deserializeRejectsMalformedAndEmpty() {
 
 void SddmOwnedConfigTest::deserializeRejectsUnsafeValue() {
   QString error;
-  const auto parsed = deserializeOwnedChangeSet(
-      QStringLiteral("[Theme]\nCurrent=qinda\x2000reclaimed\n"), &error);
+  // The guard in isSafeValue() names NUL and line breaks; embed a real NUL.
+  // (A QStringLiteral escape would need octal -- "\0" -- and reads as noise.)
+  const QString payload = QStringLiteral("[Theme]\nCurrent=qinda") +
+                          QChar(QChar::Null) + QStringLiteral("reclaimed\n");
+  const auto parsed = deserializeOwnedChangeSet(payload, &error);
   QVERIFY(!parsed.has_value());
 }
 
@@ -113,14 +116,14 @@ void SddmOwnedConfigTest::
 
   const QString merged = mergeOwnedChangeSetIntoConfigText(existing, changes);
   // CursorTheme lands inside the existing [Theme] block, before [Users].
-  const int themeSection = merged.indexOf(QStringLiteral("[Theme]"));
-  const int cursorLine = merged.indexOf(QStringLiteral("CursorTheme=whiteglass"));
-  const int usersSection = merged.indexOf(QStringLiteral("[Users]"));
+  const qsizetype themeSection = merged.indexOf(QStringLiteral("[Theme]"));
+  const qsizetype cursorLine = merged.indexOf(QStringLiteral("CursorTheme=whiteglass"));
+  const qsizetype usersSection = merged.indexOf(QStringLiteral("[Users]"));
   QVERIFY(themeSection >= 0 && cursorLine > themeSection &&
           cursorLine < usersSection);
   // A brand-new section is appended after everything existing.
-  const int autologinSection = merged.indexOf(QStringLiteral("[Autologin]"));
-  const int userLine = merged.indexOf(QStringLiteral("User=ada"));
+  const qsizetype autologinSection = merged.indexOf(QStringLiteral("[Autologin]"));
+  const qsizetype userLine = merged.indexOf(QStringLiteral("User=ada"));
   QVERIFY(autologinSection > usersSection);
   QVERIFY(userLine > autologinSection);
 }
@@ -138,13 +141,13 @@ void SddmOwnedConfigTest::mergePatchesTheLastDuplicate() {
   changes.theme = QStringLiteral("qinda-night-patrol");
 
   const QString merged = mergeOwnedChangeSetIntoConfigText(existing, changes);
-  const int firstOld = merged.indexOf(QStringLiteral("Current=first"));
-  const int patched =
+  const qsizetype firstOld = merged.indexOf(QStringLiteral("Current=first"));
+  const qsizetype patched =
       merged.indexOf(QStringLiteral("Current=qinda-night-patrol"));
-  const int secondOld = merged.indexOf(QStringLiteral("Current=second"));
+  const qsizetype secondOld = merged.indexOf(QStringLiteral("Current=second"));
   QVERIFY(firstOld >= 0);          // untouched earlier duplicate preserved
   QVERIFY(patched > firstOld);     // the later line is the patched one
-  QCOMPARE(secondOld, -1);
+  QCOMPARE(secondOld, qsizetype(-1));
 }
 
 void SddmOwnedConfigTest::mergeKeepsTrailingNewlineState() {
@@ -201,7 +204,14 @@ void SddmOwnedConfigTest::writeCreatesMergesAndKeepsPermissions() {
   QVERIFY2(writeOwnedChangeSetToFile(target, first, &error),
            qPrintable(error));
   QVERIFY(QFile::exists(target));
-  QCOMPARE(QFile::permissions(target).toInt() & 0xFFFF, 0644);
+  // QFileDevice::Permissions is its own bitfield, not the unix mode, and Qt
+  // reports the owner bits twice (Owner and User): unix 0644 reads back as
+  // ReadOwner|WriteOwner|ReadUser|WriteUser|ReadGroup|ReadOther.
+  QCOMPARE(QFile::permissions(target).toInt(),
+           (QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+            QFileDevice::ReadUser | QFileDevice::WriteUser |
+            QFileDevice::ReadGroup | QFileDevice::ReadOther)
+               .toInt());
 
   SddmOwnedChangeSet second;
   second.numlock = QStringLiteral("on");

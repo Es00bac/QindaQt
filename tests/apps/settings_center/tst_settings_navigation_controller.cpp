@@ -309,7 +309,7 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(18));
+  QVERIFY(!controller.selectIndex(19));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -367,7 +367,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 18);
+  QCOMPARE(list.size(), 19);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
