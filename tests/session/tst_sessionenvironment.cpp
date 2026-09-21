@@ -2,6 +2,7 @@
 #include "sessionenvironment.h"
 
 #include <QDir>
+#include <QStandardPaths>
 #include <QtTest>
 
 using namespace QindaQt::Session;
@@ -44,6 +45,8 @@ private slots:
     void clearsInheritedDevelopmentControlForProductionSession();
     void prependsExplicitPluginRoot();
     void defaultsToSharedQtThemeWithoutOverwritingUserChoice();
+    void offersAnInputContextWhenAnInputMethodIsInstalled();
+    void neverOverridesAChosenInputMethod();
 };
 
 void SessionEnvironmentTest::enablesDevelopmentControlForExplicitScenario()
@@ -116,6 +119,53 @@ void SessionEnvironmentTest::defaultsToSharedQtThemeWithoutOverwritingUserChoice
     SessionEnvironment::apply(SessionOptions{});
     QCOMPARE(qgetenv("QT_QPA_PLATFORMTHEME"), QByteArray("custom"));
     QCOMPARE(qgetenv("QT_QUICK_CONTROLS_STYLE"), QByteArray("Basic"));
+}
+
+void SessionEnvironmentTest::offersAnInputContextWhenAnInputMethodIsInstalled()
+{
+    const EnvironmentRestore qtModule("QT_IM_MODULE");
+    const EnvironmentRestore gtkModule("GTK_IM_MODULE");
+    const EnvironmentRestore modifiers("XMODIFIERS");
+    qunsetenv("QT_IM_MODULE");
+    qunsetenv("GTK_IM_MODULE");
+    qunsetenv("XMODIFIERS");
+
+    SessionEnvironment::apply(SessionOptions{});
+
+    // The variables are only offered where an input method exists to answer
+    // them. On a host without IBus the session correctly sets nothing:
+    // pointing every Qt application at a missing module would be worse than
+    // leaving voice input on its recovery routes.
+    const bool installed =
+        !QStandardPaths::findExecutable(QStringLiteral("ibus-daemon")).isEmpty();
+    if (installed) {
+        QCOMPARE(qgetenv("QT_IM_MODULE"), QByteArray("ibus"));
+        QCOMPARE(qgetenv("GTK_IM_MODULE"), QByteArray("ibus"));
+        QCOMPARE(qgetenv("XMODIFIERS"), QByteArray("@im=ibus"));
+    } else {
+        QVERIFY(!qEnvironmentVariableIsSet("QT_IM_MODULE"));
+        QVERIFY(!qEnvironmentVariableIsSet("GTK_IM_MODULE"));
+        QVERIFY(!qEnvironmentVariableIsSet("XMODIFIERS"));
+    }
+}
+
+void SessionEnvironmentTest::neverOverridesAChosenInputMethod()
+{
+    const EnvironmentRestore qtModule("QT_IM_MODULE");
+    const EnvironmentRestore gtkModule("GTK_IM_MODULE");
+    const EnvironmentRestore modifiers("XMODIFIERS");
+    qputenv("QT_IM_MODULE", "fcitx");
+    qunsetenv("GTK_IM_MODULE");
+    qunsetenv("XMODIFIERS");
+
+    SessionEnvironment::apply(SessionOptions{});
+
+    // One chosen variable speaks for the whole decision: a user running fcitx
+    // has not half-configured it, and filling in the other two with ibus would
+    // produce a session that disagrees with itself.
+    QCOMPARE(qgetenv("QT_IM_MODULE"), QByteArray("fcitx"));
+    QVERIFY(!qEnvironmentVariableIsSet("GTK_IM_MODULE"));
+    QVERIFY(!qEnvironmentVariableIsSet("XMODIFIERS"));
 }
 
 QTEST_APPLESS_MAIN(SessionEnvironmentTest)

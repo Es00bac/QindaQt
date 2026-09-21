@@ -235,3 +235,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0230: name and picture the game behind a launcher class](0230-name-and-picture-the-game-behind-a-launcher-class.md)
 - [ADR-0231: QindaLutris is the desktop's game library](0231-qindalutris-the-game-library.md)
 - [ADR-0232: The gather overview replaces KWin's upper-left corner](0232-the-gather-overview-replaces-the-upper-left-corner.md)
+- [ADR-0233: own voice input as a contract, not an implementation](0233-own-voice-input-as-a-contract-not-an-implementation.md)

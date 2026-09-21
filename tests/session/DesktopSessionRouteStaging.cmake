@@ -13,7 +13,15 @@
             Accessibility Input Streaming DateTime Windows
             # Name:target-suffix -- this module's CMake target does not
             # match its URI, so the suffix is spelled out rather than derived.
-            DefaultApplications:default_apps AboutComputer:about_computer Startup:startup)
+            DefaultApplications:default_apps AboutComputer:about_computer Startup:startup
+            # AGENT-GUARD: every route appended after Startup belongs here too.
+            # ScreenSaver and LoginScreen were absent, which is the exact
+            # failure this file's note describes: the staged Settings Center
+            # cannot load them, the nested desktop rows time out, and
+            # desktop.virtual.stage-closure reports the module as having no
+            # qmldir. Adding a route without adding it here is silent until a
+            # nested row hangs.
+            ScreenSaver:screensaver LoginScreen:login_screen Voice)
         string(REPLACE ":" ";" _qindaqt_desktop_route_parts "${_qindaqt_desktop_route}")
         list(GET _qindaqt_desktop_route_parts 0 _qindaqt_desktop_route_name)
         list(LENGTH _qindaqt_desktop_route_parts _qindaqt_desktop_route_partcount)

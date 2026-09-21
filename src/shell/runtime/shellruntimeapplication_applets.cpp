@@ -6,6 +6,7 @@
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
 #include "smartlightsappletcomposition.h"
+#include "voiceappletcomposition.h"
 #include "obsappletcomposition.h"
 #include "gatheroverviewcomposition.h"
 #include "gatheroverviewshortcut.h"
@@ -24,6 +25,7 @@
 
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/services/voice_protocol/voice_settings_keys.h"
 #include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 #include "qindaqt/shell/icons/icon_runtime.h"
@@ -54,6 +56,8 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
                            QStringLiteral("panels.autoHideDelayMs"),
                            QStringLiteral("panels.configuration"),
                            QStringLiteral("services.clipboardHistory"),
+                           QString::fromLatin1(
+                               Services::Voice::kVoicePanelTranscriptSettingsKey),
                            Launcher::LauncherPersistenceController::pinnedKey(),
                            Launcher::LauncherPersistenceController::recentKey()};
     // The appearance bridge and token publisher consume the confirmed
@@ -185,6 +189,8 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
     m_powerApplet =
         std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
     const QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    m_voiceApplet = std::make_unique<VoiceAppletComposition>(
+        m_applets, m_appletPolicy, *m_settingsClient, sessionBus);
     m_clipboardApplet = std::make_unique<ClipboardAppletComposition>(
         m_applets, m_appletPolicy, *m_settingsClient, sessionBus);
     m_windowActionsTransport = std::make_unique<

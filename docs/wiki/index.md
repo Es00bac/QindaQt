@@ -77,6 +77,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Clipboard service](architecture/clipboard-service.md) records the volatile
   bounded history model, canonical media policy, privacy/generation fencing,
   metadata search, codec seam, and live Wayland clipboard host.
+- [Voice input](architecture/voice-input.md) records the org.qindaqt.Voice1
+  contract the desktop owns and does not implement, its bounds and revision
+  rule, the capability policy over dictation text, and the session's
+  input-method responsibility.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, deterministic transaction model, and
   the packaged authenticated D2/D4/D5 runtime composition; nested convergence

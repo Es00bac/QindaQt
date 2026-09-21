@@ -15,6 +15,7 @@ Rectangle {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var smartLightsAppletAccess: null
+    property var voiceAppletAccess: null
     property var obsAppletAccess: null
     property var gatherOverviewAccess: null
     property var powerAppletAccess: null
@@ -158,6 +159,7 @@ Rectangle {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
+        voiceAppletAccess: root.voiceAppletAccess
         obsAppletAccess: root.obsAppletAccess
         gatherOverviewAccess: root.gatherOverviewAccess
         powerAppletAccess: root.powerAppletAccess

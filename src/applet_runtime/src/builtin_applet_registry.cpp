@@ -28,6 +28,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.task-list"),
         QStringLiteral("qindaqt.applets.status-notifier"),
         QStringLiteral("qindaqt.applets.smart-lights"),
+        QStringLiteral("qindaqt.applets.voice"),
         QStringLiteral("qindaqt.applets.obs"),
         // The gather overview (ADR-0232): the button half of
         // the gesture Meta+G and the upper-left screen corner also reach.

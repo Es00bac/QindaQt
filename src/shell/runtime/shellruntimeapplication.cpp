@@ -33,6 +33,7 @@
 #include "shelldevelopmentevidence.h"
 #include "shellstartuppreferences.h"
 #include "settingsroutelauncher.h"
+#include "voiceappletcomposition.h"
 #include "tasklistappletcomposition.h"
 #include "taskorderpersistence.h"
 #include "panelquickconfig.h"
@@ -502,6 +503,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             std::make_unique<NotificationQuietingSettingsBridge>(
                 *m_quietingSettingsClient, *m_notificationInterruptionPolicy);
         m_settingsRouteLauncher = std::make_unique<SettingsRouteLauncher>();
+        m_voiceApplet->attachRoutes(m_settingsRouteLauncher.get());
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
                 *m_notificationClient, *m_notificationInterruptionPolicy,
@@ -555,6 +557,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
             m_taskListApplet->access(),
             m_statusNotifierApplet->access(), m_smartLightsApplet->access(),
+            m_voiceApplet->access(),
             m_obsApplet->access());
     m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
     m_windowFactory->setGatherOverviewAccess(m_gatherOverview.get());
@@ -696,6 +699,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_audioApplet.reset();
     m_bluetoothApplet.reset();
     m_smartLightsApplet.reset();
+    m_voiceApplet.reset();
     m_powerApplet.reset();
     m_notificationCenterAccess.reset();
     // The bridge borrows the token publisher and theme catalog; release it

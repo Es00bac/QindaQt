@@ -88,6 +88,14 @@ add_test(
         # omitting SettingsApp/Main.qml let this row pass while its staged
         # Audio, Bluetooth, and Power route imports were unloadable.
         --qml-source "${PROJECT_SOURCE_DIR}/src/apps/settings_center/Main.qml"
+        # AGENT-NOTE: the same argument one line up, applied to the routes
+        # appended after the original ten. Main.qml instantiates
+        # AddedRouteComponents but does not import the route modules; every
+        # one of them (Date & time, Default applications, About this computer,
+        # Startup applications, Screen saver, Login screen, Voice) is imported
+        # here and nowhere else, so omitting this file left seven staged route
+        # imports unchecked.
+        --qml-source "${PROJECT_SOURCE_DIR}/src/apps/settings_center/AddedRouteComponents.qml"
         --embedded-qml-module QindaQt.SettingsApp.Customize
         --embedded-qml-module QindaQt.SettingsApp.PowerBackend
         # AGENT-NOTE: ColorBackend and InputBackend are also static modules
@@ -96,6 +104,11 @@ add_test(
         # like PowerBackend.
         --embedded-qml-module QindaQt.SettingsApp.ColorBackend
         --embedded-qml-module QindaQt.SettingsApp.InputBackend
+        # AGENT-NOTE: StreamingBackend is the fourth of these — a STATIC module
+        # in src/apps/settings/streaming with no install rule — and was the one
+        # the exemption above forgot. The row failed on "has no qmldir" for it
+        # alone, which is the exemption's job to state, not a staging defect.
+        --embedded-qml-module QindaQt.SettingsApp.StreamingBackend
         ${_qindaqt_desktop_system_library_arguments}
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_controls_qml>"
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_global_menu_qml>"

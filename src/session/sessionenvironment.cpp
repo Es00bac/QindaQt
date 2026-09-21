@@ -2,6 +2,7 @@
 #include "sessionenvironment.h"
 
 #include <QDir>
+#include <QStandardPaths>
 
 namespace QindaQt::Session {
 namespace {
@@ -11,6 +12,33 @@ void setValue(const char *name, const QString &value)
     if (!value.isEmpty()) {
         qputenv(name, value.toUtf8());
     }
+}
+
+// AGENT-CONTRACT: the input-method variables have to be in the environment of
+// every application the session starts, which is here and nowhere later.
+// QindaQt's voice input (docs/wiki/architecture/voice-input.md) delivers text
+// through the focused application's input context first, and a Qt or GTK
+// application only has an IBus input context when these are set. Without them
+// dictation silently falls back to less reliable routes.
+//
+// AGENT-GUARD: never override a value the user chose, and never point at an
+// input method that is not installed — an unresolvable QT_IM_MODULE costs
+// every Qt application a warning and gains nothing.
+void applyInputMethodDefaults()
+{
+    constexpr const char *kQtModule = "QT_IM_MODULE";
+    constexpr const char *kGtkModule = "GTK_IM_MODULE";
+    constexpr const char *kXModifiers = "XMODIFIERS";
+    if (qEnvironmentVariableIsSet(kQtModule) || qEnvironmentVariableIsSet(kGtkModule)
+        || qEnvironmentVariableIsSet(kXModifiers)) {
+        return;
+    }
+    if (QStandardPaths::findExecutable(QStringLiteral("ibus-daemon")).isEmpty()) {
+        return;
+    }
+    qputenv(kQtModule, "ibus");
+    qputenv(kGtkModule, "ibus");
+    qputenv(kXModifiers, "@im=ibus");
 }
 
 } // namespace
@@ -26,6 +54,7 @@ void SessionEnvironment::apply(const SessionOptions &options)
         qputenv("QT_QPA_PLATFORMTHEME", "qindaqt");
     if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_STYLE"))
         qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
+    applyInputMethodDefaults();
     // AGENT-GUARD: External compositor mutation is a development-harness
     // capability, never an inherited production-session default. The KWin
     // endpoint additionally verifies both markers before enabling it. Output

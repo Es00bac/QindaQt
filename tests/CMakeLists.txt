@@ -140,6 +140,8 @@ add_subdirectory(apps/settings/color)
 add_subdirectory(services/clipboard_model)
 add_subdirectory(services/clipboard_protocol)
 add_subdirectory(services/clipboard_client)
+add_subdirectory(services/voice_protocol)
+add_subdirectory(services/voice_client)
 add_subdirectory(apps/settings/clipboard)
 add_subdirectory(apps/settings/accessibility)
 add_subdirectory(apps/settings/input)
@@ -177,6 +179,11 @@ endif()
 if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/bluetooth_applet)
     add_subdirectory(shell/smart_lights_applet)
+    # AGENT-GUARD: the applet target only exists inside QINDAQT_BUILD_SHELL
+    # (src/CMakeLists.txt). Registered outside this block, the row breaks a
+    # shell-less configure, which is exactly what
+    # compositor.kwin-plugin-dependency-contract configures.
+    add_subdirectory(shell/voice_applet)
     add_subdirectory(shell/power_applet)
     add_subdirectory(shell/workspaces)
     add_subdirectory(shell/desktop_controls)

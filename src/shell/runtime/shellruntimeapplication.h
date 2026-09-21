@@ -94,6 +94,7 @@ class PowerAppletComposition;
 class QtCompositorOutputAuthority;
 class ShellDevelopmentEvidence;
 class SmartLightsAppletComposition;
+class VoiceAppletComposition;
 class ObsAppletComposition;
 class SettingsRouteLauncher;
 class ShellTokenPublisher;
@@ -252,6 +253,7 @@ private:
     std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<SmartLightsAppletComposition> m_smartLightsApplet;
+    std::unique_ptr<VoiceAppletComposition> m_voiceApplet;
     std::unique_ptr<ObsAppletComposition> m_obsApplet;
     std::unique_ptr<ClipboardAppletComposition> m_clipboardApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;

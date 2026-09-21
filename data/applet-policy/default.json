@@ -98,6 +98,34 @@
     },
     {
       "trust": "audited-builtin",
+      "packageId": "voice",
+      "capability": "voice.read",
+      "decision": "grant",
+      "reason": "The audited Voice applet may observe the bounded org.qindaqt.Voice1 projection, including the live partial the user is dictating, through its injected client seam."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "voice",
+      "capability": "voice.control",
+      "decision": "grant",
+      "reason": "The audited Voice applet may dispatch revision-fenced push-to-talk, finish, cancel, retry, undo and copy intents; opening the microphone and delivering text stay with the voice provider."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "voice.read",
+      "decision": "deny",
+      "reason": "Dictation text is the most privileged thing on the desktop at the moment it is spoken. Observation stays with the audited Voice applet."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "voice.control",
+      "decision": "deny",
+      "reason": "Opening the microphone is never delegated to a third-party package."
+    },
+    {
+      "trust": "audited-builtin",
       "packageId": "obs",
       "capability": "streaming.read",
       "decision": "grant",

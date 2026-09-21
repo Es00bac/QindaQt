@@ -110,6 +110,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.system-menu"),
         QStringLiteral("qindaqt.applets.system-status"),
         QStringLiteral("qindaqt.applets.task-list"),
+        // The desktop's voice contract consumer (ADR-0233); sorted position.
+        QStringLiteral("qindaqt.applets.voice"),
         QStringLiteral("qindaqt.applets.workspace-switcher"),
         QStringLiteral("qindaqt.applets.workspace-tiles")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);

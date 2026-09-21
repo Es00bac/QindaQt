@@ -74,13 +74,15 @@ void ManifestTest::roundTripsEveryFirstPartyManifest()
     const QDir directory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/applets"));
     const QStringList fileNames =
         directory.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-    QCOMPARE(fileNames.size(), 32);
+    QCOMPARE(fileNames.size(), 33);
     QVERIFY(fileNames.contains(QStringLiteral("audio.json")));
     // ADR-0224: three manifests name a presentation of an existing
     // implementation, the same aliasing precedent as system-tray.json.
     QVERIFY(fileNames.contains(QStringLiteral("application-launcher.json")));
     QVERIFY(fileNames.contains(QStringLiteral("grouped-task-list.json")));
     QVERIFY(fileNames.contains(QStringLiteral("centered-task-list.json")));
+    // ADR-0233: the desktop's voice contract consumer.
+    QVERIFY(fileNames.contains(QStringLiteral("voice.json")));
     QVERIFY(fileNames.contains(QStringLiteral("bluetooth.json")));
     QVERIFY(fileNames.contains(QStringLiteral("clipboard.json")));
     QVERIFY(fileNames.contains(QStringLiteral("start-menu.json")));

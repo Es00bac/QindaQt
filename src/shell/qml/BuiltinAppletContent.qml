@@ -8,6 +8,7 @@ import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
+import QindaQt.Shell.VoiceApplet 1.0 as VoiceAppletModule
 import QindaQt.Shell.ObsApplet 1.0 as ObsAppletModule
 import QindaQt.Shell.GatherOverview 1.0 as GatherOverviewModule
 import QindaQt.Shell.TaskList 1.0 as TaskListModule
@@ -27,6 +28,7 @@ Item {
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var smartLightsAppletAccess: null
+    property var voiceAppletAccess: null
     property var obsAppletAccess: null
     property var gatherOverviewAccess: null
     property var launcherAppletAccess: null
@@ -60,6 +62,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.power"
     readonly property bool smartLightsReady:
         ready && entryPoint === "qindaqt.applets.smart-lights"
+    readonly property bool voiceReady:
+        ready && entryPoint === "qindaqt.applets.voice"
     readonly property bool obsReady:
         ready && entryPoint === "qindaqt.applets.obs"
     readonly property bool gatherOverviewReady:
@@ -89,8 +93,8 @@ Item {
     readonly property bool desktopControlReady: desktopControlComponent !== null
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || powerReady || smartLightsReady || clipboardReady || launcherReady
-        || globalMenuReady
+        || powerReady || smartLightsReady || voiceReady || clipboardReady
+        || launcherReady || globalMenuReady
         || taskListReady || statusNotifierReady || desktopControlReady
         || startMenuReady
     readonly property bool selected:
@@ -123,6 +127,7 @@ Item {
             : root.bluetoothReady ? bluetoothComponent
             : root.powerReady ? powerComponent
             : root.smartLightsReady ? smartLightsComponent
+            : root.voiceReady ? voiceComponent
             : root.obsReady ? obsComponent
             : root.gatherOverviewReady ? gatherOverviewComponent
             : root.clipboardReady ? clipboardComponent
@@ -200,6 +205,17 @@ Item {
             anchors.fill: parent
             visible: root.gatherOverviewReady
             access: root.gatherOverviewAccess
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: voiceComponent
+        VoiceAppletModule.VoiceApplet {
+            anchors.fill: parent
+            visible: root.voiceReady
+            access: root.voiceAppletAccess
+            theme: root.theme
             vertical: root.vertical
         }
     }

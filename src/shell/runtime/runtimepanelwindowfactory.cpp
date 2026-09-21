@@ -9,6 +9,7 @@
 #include "notificationcenterappletaccess.h"
 #include "power_applet_controller.h"
 #include "smart_lights_applet_controller.h"
+#include "qindaqt/shell/voice_applet/voice_applet_controller.h"
 #include "obs_applet_controller.h"
 #include "qindaqt/shell/global_menu/applet/globalmenuappletaccess.h"
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_controller.h"
@@ -130,6 +131,7 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      ShellTaskListApplet::TaskListAppletController *taskListAppletAccess,
                                                      StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess,
                                                      SmartLightsApplet::SmartLightsAppletController *smartLightsAppletAccess,
+                                                     VoiceApplet::VoiceAppletController *voiceAppletAccess,
                                                      ObsApplet::ObsAppletController *obsAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
@@ -144,6 +146,7 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
     , m_taskListAppletAccess(taskListAppletAccess)
     , m_statusNotifierAppletAccess(statusNotifierAppletAccess)
     , m_smartLightsAppletAccess(smartLightsAppletAccess)
+    , m_voiceAppletAccess(voiceAppletAccess)
     , m_obsAppletAccess(obsAppletAccess)
 {
 }
@@ -289,6 +292,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
          QVariant::fromValue(m_statusNotifierAppletAccess)},
         {QStringLiteral("smartLightsAppletAccess"),
          QVariant::fromValue(m_smartLightsAppletAccess)},
+        {QStringLiteral("voiceAppletAccess"),
+         QVariant::fromValue(m_voiceAppletAccess)},
         {QStringLiteral("obsAppletAccess"),
          QVariant::fromValue(m_obsAppletAccess)},
     };

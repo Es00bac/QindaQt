@@ -65,6 +65,7 @@ nav:
       - Secret Service provider: architecture/secret-service.md
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
+      - Voice input: architecture/voice-input.md
       - Font preferences: architecture/font-preferences.md
       - Window containers: architecture/window-containers.md
       - Saved workspaces: architecture/workspaces.md
@@ -87,6 +88,7 @@ nav:
       - Notification presentation: shell/notification-presentation.md
       - Power applet presentation: shell/power-applet.md
       - Smart Lights applet: shell/smart-lights-applet.md
+      - Voice applet: shell/voice-applet.md
       - "OBS applet": shell/obs-applet.md
       - Status notifier tray: shell/status-tray.md
       - Visual identity: shell/visual-identity.md
@@ -153,6 +155,8 @@ nav:
       - Settings Startup applications route: apps/startup-settings.md
       - Settings Screen saver route: apps/screensaver-settings.md
       - Settings Login screen route: apps/login-screen-settings.md
+      - Voice: apps/voice.md
+      - Settings Voice route: apps/voice-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - QindaLutris: apps/qindalutris.md
@@ -378,3 +382,4 @@ nav:
       - "ADR-0230: name and picture the game behind a launcher class": adr/0230-name-and-picture-the-game-behind-a-launcher-class.md
       - "ADR-0231: QindaLutris is the desktop's game library": adr/0231-qindalutris-the-game-library.md
       - "ADR-0232: The gather overview replaces KWin's upper-left corner": adr/0232-the-gather-overview-replaces-the-upper-left-corner.md
+      - "ADR-0233: own voice input as a contract, not an implementation": adr/0233-own-voice-input-as-a-contract-not-an-implementation.md
