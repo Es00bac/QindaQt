@@ -134,11 +134,23 @@ void WallpaperControllerTests::freshProfileDefaultsAndConfirmedChangesReachBackg
     QVERIFY2(writer.setUserValue(QStringLiteral("appearance.wallpaper"), custom,
                                  &error),
              qPrintable(error));
-    QTRY_VERIFY_WITH_TIMEOUT(!writer.writeInFlight(), 2'000);
+    // SettingsClient contract: writeInFlight() clears when the commit
+    // reply arrives, but the client then re-reads authority in the
+    // Authenticating state; the next setUserValue is only accepted
+    // once the refreshed snapshot marks it Ready again.
+    QTRY_VERIFY_WITH_TIMEOUT(!writer.writeInFlight()
+                                 && writer.state() == ClientState::Ready,
+                             2'000);
     QVERIFY2(writer.setUserValue(QStringLiteral("appearance.wallpaperMode"),
                                  QStringLiteral("tiled"), &error),
              qPrintable(error));
-    QTRY_VERIFY_WITH_TIMEOUT(!writer.writeInFlight(), 2'000);
+    // SettingsClient contract: writeInFlight() clears when the commit
+    // reply arrives, but the client then re-reads authority in the
+    // Authenticating state; the next setUserValue is only accepted
+    // once the refreshed snapshot marks it Ready again.
+    QTRY_VERIFY_WITH_TIMEOUT(!writer.writeInFlight()
+                                 && writer.state() == ClientState::Ready,
+                             2'000);
     QTRY_COMPARE_WITH_TIMEOUT(
         backgroundWindows().constFirst()->property("wallpaperSource").toUrl(),
         QUrl::fromLocalFile(custom), 4'000);
@@ -150,7 +162,13 @@ void WallpaperControllerTests::freshProfileDefaultsAndConfirmedChangesReachBackg
     QVERIFY2(writer.setUserValue(QStringLiteral("appearance.wallpaper"),
                                  QString(), &error),
              qPrintable(error));
-    QTRY_VERIFY_WITH_TIMEOUT(!writer.writeInFlight(), 2'000);
+    // SettingsClient contract: writeInFlight() clears when the commit
+    // reply arrives, but the client then re-reads authority in the
+    // Authenticating state; the next setUserValue is only accepted
+    // once the refreshed snapshot marks it Ready again.
+    QTRY_VERIFY_WITH_TIMEOUT(!writer.writeInFlight()
+                                 && writer.state() == ClientState::Ready,
+                             2'000);
     QTRY_COMPARE_WITH_TIMEOUT(
         backgroundWindows().constFirst()->property("wallpaperSource").toUrl(),
         QUrl{}, 4'000);

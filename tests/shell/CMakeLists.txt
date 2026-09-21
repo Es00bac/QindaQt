@@ -198,25 +198,6 @@ if(TARGET qindaqt-shell)
     qindaqt_enable_warnings(qindaqt_catalog_paths_tests)
     add_test(NAME qindaqt.shell-catalog-paths COMMAND qindaqt_catalog_paths_tests)
 
-    qt_add_executable(
-        qindaqt_shell_preference_values_tests
-        tst_shellpreferencevalues.cpp
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
-    )
-    target_include_directories(
-        qindaqt_shell_preference_values_tests
-        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
-    )
-    target_link_libraries(
-        qindaqt_shell_preference_values_tests
-        PRIVATE QindaQt::DesignTokens Qt6::Core Qt6::Test
-    )
-    qindaqt_enable_warnings(qindaqt_shell_preference_values_tests)
-    add_test(
-        NAME qindaqt.shell-preference-values
-        COMMAND qindaqt_shell_preference_values_tests
-    )
 
     qt_add_executable(
         qindaqt_shell_startup_preferences_tests
@@ -251,56 +232,6 @@ if(TARGET qindaqt-shell)
         COMMAND qindaqt_shell_startup_preferences_tests
     )
 
-    find_package(LayerShellQt 6.6.6 REQUIRED)
-
-    qt_add_executable(
-        qindaqt_wallpaper_controller_tests
-        tst_wallpapercontroller.cpp
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/wallpapercontroller.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/wallpapercontroller.h"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.h"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.h"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.h"
-    )
-    target_include_directories(
-        qindaqt_wallpaper_controller_tests
-        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
-    )
-    target_link_libraries(
-        qindaqt_wallpaper_controller_tests
-        PRIVATE
-            QindaQt::DesignTokens
-            QindaQt::SettingsClient
-            QindaQt::SettingsService
-            KF6::GlobalAccel
-            LayerShellQt::Interface
-            Qt6::DBus
-            Qt6::Gui
-            Qt6::Qml
-            Qt6::Quick
-            Qt6::Test
-    )
-    target_compile_definitions(
-        qindaqt_wallpaper_controller_tests
-        PRIVATE
-            QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-            QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
-    )
-    qindaqt_enable_warnings(qindaqt_wallpaper_controller_tests)
-    add_test(
-        NAME qindaqt.shell-wallpaper-controller
-        COMMAND qindaqt_wallpaper_controller_tests
-    )
-    set_tests_properties(
-        qindaqt.shell-wallpaper-controller
-        PROPERTIES
-            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
-    )
 
     qt_add_executable(
         qindaqt_edge_gesture_subscriber_tests
@@ -589,6 +520,85 @@ if(TARGET qindaqt-shell)
             PASS_REGULAR_EXPRESSION "notification-center - Notification Center"
     )
 endif()
+
+# AGENT-NOTE: these rows compile src/shell/runtime sources directly and
+# must register whenever tests/shell is configured. They lived inside
+# if(TARGET qindaqt-shell), which is false whenever
+# QINDAQT_BUILD_PRODUCTION_SHELL=OFF (the focused lane/CI configure), so
+# ctest silently never knew them. Keep them outside that guard.
+
+qt_add_executable(
+    qindaqt_shell_preference_values_tests
+    tst_shellpreferencevalues.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
+)
+target_include_directories(
+    qindaqt_shell_preference_values_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_shell_preference_values_tests
+    PRIVATE QindaQt::DesignTokens Qt6::Core Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_shell_preference_values_tests)
+add_test(
+    NAME qindaqt.shell-preference-values
+    COMMAND qindaqt_shell_preference_values_tests
+)
+
+find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
+find_package(LayerShellQt 6.6.6 REQUIRED)
+
+qt_add_executable(
+    qindaqt_wallpaper_controller_tests
+    tst_wallpapercontroller.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/wallpapercontroller.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/wallpapercontroller.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.h"
+)
+target_include_directories(
+    qindaqt_wallpaper_controller_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_wallpaper_controller_tests
+    PRIVATE
+        QindaQt::DesignTokens
+        QindaQt::SettingsClient
+        QindaQt::SettingsService
+        KF6::GlobalAccel
+        LayerShellQt::Interface
+        Qt6::DBus
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_wallpaper_controller_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(qindaqt_wallpaper_controller_tests)
+add_test(
+    NAME qindaqt.shell-wallpaper-controller
+    COMMAND qindaqt_wallpaper_controller_tests
+)
+set_tests_properties(
+    qindaqt.shell-wallpaper-controller
+    PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
 
 qt_add_executable(
     qindaqt_shell_runtime_layout_adoption_tests
