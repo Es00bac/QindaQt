@@ -122,10 +122,18 @@ QString resolveApplicationId(const QString &desktopFileName,
 
 QString resolveApplicationName(const QString &resourceClass,
                                const QString &clientExecutable,
-                               const QString &applicationId)
+                               const QString &applicationId,
+                               const QString &steamName)
 {
     if (!isOpaqueLauncherClass(resourceClass)) {
         return resourceClass;
+    }
+    // AGENT-NOTE: ADR-0230 layers the Steam manifest name between the
+    // executable and the bare key: it is the human title for a real
+    // `steam_app_<n>`, while `steam_app_0` (umu/non-Steam) has no manifest
+    // and falls through to the executable exactly as ADR-0169 established.
+    if (!steamName.isEmpty()) {
+        return steamName;
     }
     if (isAcceptableExecutable(clientExecutable)) {
         return clientExecutable;

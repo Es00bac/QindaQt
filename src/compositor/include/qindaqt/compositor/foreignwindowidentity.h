@@ -45,9 +45,13 @@ namespace QindaQt::Compositor {
                                            const QString &clientExecutable);
 
 // The application name to report: the reported class when it carries identity,
-// else the client executable, else the resolved id. Never invents text.
+// else the Steam manifest name when the class is a `steam_app_<n>` key and the
+// ADR-0230 resolver found one (empty otherwise), else the client executable,
+// else the resolved id. Never invents text: `steamName` is produced by the
+// caller from `appmanifest_<n>.acf`, never guessed here.
 [[nodiscard]] QString resolveApplicationName(const QString &resourceClass,
                                              const QString &clientExecutable,
-                                             const QString &applicationId);
+                                             const QString &applicationId,
+                                             const QString &steamName);
 
 } // namespace QindaQt::Compositor

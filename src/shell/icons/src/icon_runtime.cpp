@@ -7,6 +7,7 @@
 #include <qindaqt/shell/icons/icon_theme_locator.h>
 
 #include <QQmlEngine>
+#include <QStandardPaths>
 
 #include <memory>
 
@@ -59,6 +60,46 @@ QStringList freedesktopApplicationRoots(const QString &dataHome, const QStringLi
         appendApplications(dir);
     }
     return roots;
+}
+
+QString wineCacheIconRoot()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)
+        + QStringLiteral("/qindaqt/wine-icons");
+}
+
+QString wineCacheIconNameForAppId(const QString &applicationId)
+{
+    // AGENT-CONTRACT: byte-identical to
+    // QindaQt::Compositor::WineIdentityCache::cacheIconNameForApplicationId.
+    // The grammar is the freedesktop icon-name subset the locator confines to
+    // ([a-z0-9._-], no ".."); anything outside maps to '-', a `.exe` suffix
+    // is dropped, and the result carries the reserved prefix so it can never
+    // shadow a real themed icon.
+    QString base = applicationId.trimmed();
+    if (base.endsWith(QStringLiteral(".exe"), Qt::CaseInsensitive)) {
+        base.chop(4);
+    }
+    QString mapped;
+    mapped.reserve(base.size());
+    for (const QChar character : base.toLower()) {
+        const char16_t code = character.unicode();
+        const bool acceptable = (code >= 'a' && code <= 'z')
+            || (code >= '0' && code <= '9') || character == QLatin1Char('_')
+            || character == QLatin1Char('-') || character == QLatin1Char('.');
+        mapped.append(acceptable ? character : QLatin1Char('-'));
+    }
+    const QString prefix = QStringLiteral("qindaqt-wine-");
+    if (mapped.isEmpty() || mapped.contains(QStringLiteral(".."))) {
+        return {};
+    }
+    // The locator refuses names over 128 UTF-8 bytes; the mapping is pure
+    // ASCII, so character count equals byte count.
+    const qsizetype budget = 128 - prefix.size();
+    if (mapped.size() > budget) {
+        return {};
+    }
+    return prefix + mapped;
 }
 
 } // namespace QindaQt::Shell::Icons::IconRuntime
