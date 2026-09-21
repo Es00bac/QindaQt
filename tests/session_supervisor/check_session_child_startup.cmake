@@ -25,9 +25,12 @@ if(NOT DEFINED SOURCE_ROOT)
     message(FATAL_ERROR "SOURCE_ROOT is required")
 endif()
 
-file(GLOB_RECURSE unit_templates
-     "${SOURCE_ROOT}/src/*/data/*.service.in"
-     "${SOURCE_ROOT}/src/*/*/data/*.service.in")
+# AGENT-GUARD: one pattern, recursing from src, and no wildcard in the
+# directory part. file(GLOB_RECURSE) recurses under the LITERAL leading
+# directory of the expression; a wildcard there (src/*/data/*.service.in)
+# silently matches nothing, which is how this check ran blind and still
+# reported success until the count assertion below was reached with 0.
+file(GLOB_RECURSE unit_templates "${SOURCE_ROOT}/src/*.service.in")
 list(LENGTH unit_templates unit_count)
 if(unit_count LESS 5)
     message(FATAL_ERROR

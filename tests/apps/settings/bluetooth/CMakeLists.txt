@@ -112,6 +112,7 @@ target_link_libraries(
     qindaqt_settings_about_computer_qml qindaqt_settings_about_computer_qmlplugin
     qindaqt_settings_startup_qml qindaqt_settings_startup_qmlplugin
     qindaqt_settings_screensaver_qml qindaqt_settings_screensaver_qmlplugin
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
     qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
@@ -137,6 +138,7 @@ add_dependencies(
     qindaqt_settings_about_computer_qml qindaqt_settings_about_computer_qmlplugin
     qindaqt_settings_startup_qml qindaqt_settings_startup_qmlplugin
     qindaqt_settings_screensaver_qml qindaqt_settings_screensaver_qmlplugin
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
     qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_bluetooth_window_close_tests)

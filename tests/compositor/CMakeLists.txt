@@ -6,7 +6,14 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     cmake_minimum_required(VERSION 3.25)
     project(QindaQtCompositorBridgeTests LANGUAGES CXX)
     include(CTest)
-    find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test)
+    # Gui as well as Core and Test: the ADR-0230 PE icon reader decodes an
+    # embedded icon into a QImage, so qindaqt_peicon_tests links Qt6::Gui
+    # even though it needs no display. Without it this standalone
+    # configure fails at generate time with 'Target qindaqt_peicon_tests
+    # links to Qt6::Gui but the target was not found', and
+    # compositor.kwin-plugin-dependency-contract reports the whole
+    # standalone bridge as broken.
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Test)
     qt_standard_project_setup(REQUIRES 6.11)
     set(QINDAQT_BUILD_KWIN_PLUGIN OFF CACHE BOOL
         "Build only the compositor bridge in standalone tests" FORCE)
@@ -96,7 +103,17 @@ if(TARGET QindaQt::HybridChrome)
     # QindaQt::HybridChrome or qindaqt_hybrid_chrome_pointer_router fails there
     # with "the target was not found", and the contract row reports it as the
     # whole standalone bridge failing to configure.
-    include("${CMAKE_CURRENT_LIST_DIR}/ContainerChromeBadgeTests.cmake")
+    # AGENT-GUARD: this one needs a SECOND target as well, and the two live
+    # behind different switches. QindaQt::HybridChrome is unconditional in
+    # src/hybrid_chrome, while qindaqt_hybrid_chrome_pointer_router is declared
+    # inside src/compositor's QINDAQT_BUILD_KWIN_PLUGIN branch. Guarded on
+    # HybridChrome alone, a -DQINDAQT_BUILD_KWIN_PLUGIN=OFF configure succeeds
+    # and then fails at LINK time with "cannot find
+    # -lqindaqt_hybrid_chrome_pointer_router" - after ~4800 of 5500 targets,
+    # which is an expensive way to learn it. Ask for what it actually links.
+    if(TARGET qindaqt_hybrid_chrome_pointer_router)
+        include("${CMAKE_CURRENT_LIST_DIR}/ContainerChromeBadgeTests.cmake")
+    endif()
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")
@@ -167,7 +184,12 @@ add_test(
 )
 set_tests_properties(
     compositor.kwin-plugin-dependency-contract
-    PROPERTIES TIMEOUT 60 LABELS "configuration;compositor"
+    # AGENT-NOTE: 240, not 60. This row runs a full standalone CMake configure
+    # of this directory, which takes ~43 s on an idle 3900X - a 60 s budget is
+    # a 28% margin, and it duly timed out in a --parallel 10 suite run while
+    # passing in 42.6 s on its own. A configure's cost scales with machine
+    # load, so give it room rather than re-diagnosing a flake every wave.
+    PROPERTIES TIMEOUT 240 LABELS "configuration;compositor"
 )
 
 add_test(

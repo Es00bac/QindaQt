@@ -238,10 +238,16 @@ def main() -> int:
                                 (editor_captures/name).stat().st_size == 0 for name in expected):
                             raise RuntimeError(f'Editor capture set differs: {sorted(actual)}')
                         shutil.copytree(editor_captures,row/'editor')
-                        terminal_env = dict(environment)
-                        terminal_env['QINDAQT_TEST_WINDOW_CAPTURE'] = str(row/'terminal')
-                        run([str(build/'tests/apps/terminal/qindaqt_terminal_widget_adapter_tests'),
-                             'productionWindowPaintsInteractivePrompt'],terminal_env,row/'terminal.log')
+                        # AGENT-CONTRACT: no terminal capture here any more.
+                        # Making QQ_Term the desktop terminal removed
+                        # qindaqt-terminal and tests/apps/terminal from this
+                        # repository entirely; QQ_Term is its own project with
+                        # its own captures. This matrix covers the native apps
+                        # THIS tree builds, so re-adding a terminal row means
+                        # adding a target here first - not pointing at a path
+                        # that no longer exists, which is what this step did
+                        # until it was noticed (FileNotFoundError on
+                        # qindaqt_terminal_widget_adapter_tests).
                         evidence.append({'pixels':[pixel_width,pixel_height], 'scale':scale,
                                          'observedOutput':enabled[0],
                                          'artifacts':str(row.relative_to(build)), 'result':'passed'})
