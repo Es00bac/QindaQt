@@ -37,6 +37,14 @@ KWin reserves no corner. Seed-missing only: an operator who reassigned that
 corner keeps their choice. KWin's effect keeps its own keyboard shortcut, so
 nothing is taken away, only un-reserved.
 
+Un-reserving is only half of it: a released corner does nothing at all. The
+KWin plugin therefore reserves `ElectricTopLeft` for the **pointer** through
+`ScreenEdges::reserve` and announces `("top-left", "overview")`, the same
+`(edge, action)` pair a touch swipe makes, so the shell's existing dispatch
+carries it with no new protocol. It is deliberately separate from the
+touch-edge machinery beside it: `reserveTouch` is touch-only, and a corner is
+not one of its four edges.
+
 `GatherOverviewController` holds the overview's entire mutable state — open or
 not, and how far the grid is scrolled — as Qt Core plus moc, so the policy
 half qualifies without a display. Four decisions live there and nowhere else:

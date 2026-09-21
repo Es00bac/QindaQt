@@ -131,12 +131,32 @@ policy.
 
 ## The hot corner
 
-KWin's overview effect reserves the top-left screen corner by default: its
-`BorderActivate` default is `ElectricTopLeft` (7), an `IntList`. QindaQt's
-session defaults seed `[Effect-overview] BorderActivate=` empty, so no corner
-is reserved and the effect keeps its own shortcut. The seed is **missing-only**:
-a user who reassigned that corner keeps their choice
+Two halves, and both are needed.
+
+**Releasing KWin's.** Its overview effect reserves the top-left corner by
+default: `BorderActivate` defaults to `ElectricTopLeft` (7), an `IntList`.
+QindaQt's session defaults seed `[Effect-overview] BorderActivate=` empty, so
+no corner is reserved and the effect keeps its own shortcut. The seed is
+**missing-only**: a user who reassigned that corner keeps their choice
 (`qindaqt.session-sessiondefaults` pins both halves).
+
+**Claiming it.** Un-reserving alone just makes the corner do nothing, so the
+KWin plugin reserves `ElectricTopLeft` for the pointer through
+`ScreenEdges::reserve` and announces `("top-left", "overview")` — the same
+`(edge, action)` pair a touch swipe makes, so the shell's existing dispatch
+reaches the gather overview with no new plumbing.
+
+This is separate from the touch edges next door on purpose: KWin's
+`reserveTouch` is touch-only, and a corner is not one of its four edges. The
+reservation re-arms on `outputsChanged` for the same reason the touch edges
+do — KWin rebuilds its edge objects with the outputs and carries over only
+what the old edges held — and unreserves on destruction, because an
+unbalanced reserve/unreserve leaves the edge permanently active or permanently
+dead. `compositor.pointer-corner` pins all of that over a recording reserver,
+including that the announced action string still matches the shell's dispatch.
+
+A plugin change, so it takes effect at the next login rather than on a shell
+restart.
 
 ## Remaining work
 

@@ -116,6 +116,36 @@ if(TARGET QindaQt::HybridChrome)
     endif()
 endif()
 
+# ADR-0232: the upper-left pointer corner. The reservation discipline and the
+# announced (edge, action) strings, over a recording reserver, so this needs
+# no KWin and no display. It links the display-free library the pure half
+# lives in, not the plugin.
+#
+# AGENT-GUARD: that library, qindaqt_hybrid_chrome_pointer_router, is declared
+# inside src/compositor's QINDAQT_BUILD_KWIN_PLUGIN branch. Ask for it by name
+# rather than assuming it exists - registering this target unguarded is the
+# same mistake that made a -DQINDAQT_BUILD_KWIN_PLUGIN=OFF configure succeed
+# and then fail at link time after ~4800 of 5500 targets.
+if(TARGET qindaqt_hybrid_chrome_pointer_router)
+qt_add_executable(qindaqt_pointer_corner_tests tst_pointercorner.cpp)
+target_include_directories(
+    qindaqt_pointer_corner_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+)
+target_link_libraries(
+    qindaqt_pointer_corner_tests
+    PRIVATE qindaqt_hybrid_chrome_pointer_router Qt6::Test
+)
+set_target_properties(
+    qindaqt_pointer_corner_tests PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF
+)
+add_test(NAME compositor.pointer-corner COMMAND qindaqt_pointer_corner_tests)
+set_tests_properties(
+    compositor.pointer-corner
+    PROPERTIES TIMEOUT 20 LABELS "unit;pure;compositor"
+)
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")
 
 qt_add_executable(

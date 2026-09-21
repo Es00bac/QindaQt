@@ -117,6 +117,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         kwin/hybridiconchiprouter.h
         kwin/touchedgeactions.cpp
         kwin/touchedgeactions.h
+        kwin/pointercorner.cpp
+        kwin/pointercorner.h
     )
     target_compile_features(qindaqt_hybrid_chrome_pointer_router PUBLIC cxx_std_20)
     target_include_directories(
@@ -380,6 +382,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinchromeappearance.h
             kwin/kwintouchedgereserver.cpp
             kwin/kwintouchedgereserver.h
+            kwin/kwinpointercornerreserver.cpp
+            kwin/kwinpointercornerreserver.h
             kwin/kwintouchpreferences.cpp
             kwin/kwintouchpreferences.h
             kwin/kwinonscreenkeyboardpolicy.cpp
