@@ -4,12 +4,13 @@ Gather brings everything the session holds forward at once, in one
 deterministic arrangement, and dismisses without moving anything. It replaces
 KWin's own window grid on the top-left screen corner.
 
-**Status: the geometry and the presentation model are implemented and
-qualified; the drawing surface is not.** What exists today is
+**Status: the geometry, the presentation model and the drawing surface are
+implemented and qualified; nothing invokes them yet.** What exists today is
 `src/hybrid_gather` (the pure planner), `src/shell/gather_overview` (the
-presentation model that feeds it from live session facts), and the release of
-the hot corner. What remains is listed under
-[Remaining work](#remaining-work).
+presentation model plus the `QindaQt.Shell.GatherOverview` QML surface), and
+the release of the hot corner. What is missing is the session plumbing: a
+window to host the surface, a controller to feed it, a shortcut, and an
+applet button. See [Remaining work](#remaining-work).
 
 ## The arrangement
 
@@ -150,15 +151,43 @@ changes.
 
 Remaining, in order:
 
-1. A surface that draws this layout, activates whatever is clicked, and
-   dismisses on activation or Escape.
-2. A `HybridShortcutAction` for it, beside the existing container shortcuts, so
+1. A controller that turns the live task-list projection into a
+   `GatherOverviewProjection` for one output, holds the scroll offset (adding
+   each `scrollRequested` delta and re-projecting, so the planner stays the
+   only thing that clamps it), resolves `iconName` from `applicationId` through
+   an injected resolver the way the task-list applet's controller does, and
+   dispatches an Activate intent on `activated`.
+2. A session window to host the surface — full-bleed over one output, above
+   everything, taking keyboard focus so Escape reaches it.
+3. A `HybridShortcutAction` for it, beside the existing container shortcuts, so
    it has a keyboard trigger.
-3. A panel applet that triggers the same action, for the layouts that want a
+4. A panel applet that triggers the same action, for the layouts that want a
    button.
-4. The `WindowPreview` endpoint and renderer from ADR-0119, which upgrades the
+5. The `WindowPreview` endpoint and renderer from ADR-0119, which upgrades the
    grid tiles from icon-and-title to live thumbnails and also lights up the
    dock's hover previews. No longer a blocker for anything above.
+
+## The surface
+
+`QindaQt.Shell.GatherOverview` draws the projection and decides nothing. Every
+frame comes from the projection, which got it from the planner; the surface
+translates by its own `origin` so a projection's desktop-logical frames land
+correctly on an output that does not start at (0, 0).
+
+It owns no state. A wheel notch becomes `scrollRequested(delta)` — one grid row
+of the pitch the planner produced — and the owner adds it and re-projects,
+because the planner is the only thing allowed to clamp a scroll position.
+A click becomes `activated(item)` carrying the item's `taskId`, `windowId` and
+the `generationRevision` it was projected from, so the owner echoes the
+generation and stale-revision arbitration can refuse a dead action. Escape and
+a click that misses every tile both become `dismissRequested()`.
+
+Three visuals, one per lane: `GatherIconChip` (a round chip, identity only),
+`GatherContainerCard` (icon, title, member count, and the container's own
+colour on a leading stripe), and `GatherWindowTile` (icon and title, with the
+thumbnail area that ADR-0119 will fill). A fenced projection draws every tile
+in the disabled role with its handlers off and shows a notice, so a click
+cannot look like it worked.
 
 ## Related
 
