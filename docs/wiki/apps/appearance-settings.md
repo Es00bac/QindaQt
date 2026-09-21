@@ -22,12 +22,19 @@ One page covers the appearance preference set stored through Settings1:
 | --- | --- | --- |
 | Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get, over the draft wallpaper; twelve built-in theme cards, each a rendered thumbnail of that theme's chrome with its paired decoration document and its panel material (ADR-0206); the system/light/dark scheme choice; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
 | Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the decoration painter; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; a **Container decoration** chooser painted by the compositor's container renderer; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
-| Wallpaper | Bundled previews, native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
+| Wallpaper | Bundled previews (any of png/jpg/jpeg/webp/bmp beneath the wallpaper data directories, ADR-0228), native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
 Display scale belongs to the separate **Display** route, which owns the live
 output configuration. Appearance offers a direct route action rather than a
 second, stored-only scale control.
+
+The Wallpaper destination's preview and the path field read the route
+model's projections, never their own resolution: the preview paints the same
+`previewWallpaper` file URL the Themes and Windows destinations use, and the
+path field adopts draft changes that come from the bundled grid, the "No
+wallpaper" choice, the file dialog, Revert, or a baseline rebase while
+leaving the user's own in-progress typing untouched.
 
 The Themes preview and palette row are presentation-only. Its chrome is
 `DecorationChrome::fromTheme` (the derivation the QindaQt compositor publishes)
@@ -134,7 +141,7 @@ without discarding confirmed state:
    the appearance model and a separate client to notification quieting; each
    client owns an independent `QtSettingsTransport` so their local request
    tokens cannot collide on one signal source;
-3. discover bundled PNG wallpapers from `$XDG_DATA_DIRS/qindaqt/wallpapers` and the installed prefix, with earlier roots winning duplicate file names; choosing one writes its portable `qindaqt:<basename>` identity while a saved custom path or empty choice remains unchanged until the user edits and applies it;
+3. discover bundled wallpapers (png/jpg/jpeg/webp/bmp, ADR-0228) from `$XDG_DATA_DIRS/qindaqt/wallpapers` and the installed prefix, with earlier roots winning duplicate identities and the priority format winning a duplicate basename inside one root; choosing one writes its portable `qindaqt:<basename>` identity while a saved custom path or empty choice remains unchanged until the user edits and applies it;
 4. merge every theme directory from the same search contract as the text
    editor (`$XDG_DATA_DIRS/qindaqt/themes`, then beside the installed
    executable; `--theme-directory` prepends a developer path). Earlier
@@ -205,6 +212,11 @@ ctest --test-dir build/dev \
   preview and controls.
 
 Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md).
+`qindaqt.shell-wallpaper-controller` proves the whole chain over a private
+Settings1 service: a fresh profile's default-layer bundled identity reaches
+one background window per screen, live commits of a custom path and fit mode
+reconcile onto the same surfaces, and an explicit empty choice clears the
+source without window churn.
 
 The route also inherits the settings-app offscreen and unknown-route gates.
 `qindaqt.settings-app-desktop-identity` proves the built executable embeds the

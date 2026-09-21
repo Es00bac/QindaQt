@@ -5,6 +5,7 @@
 #include "qindaqt/themes/theme_spec.h"
 
 #include <QColor>
+#include <QFileInfo>
 #include <QFont>
 #include <QObject>
 #include <QStringList>
@@ -129,6 +130,7 @@ public:
         draftKeys.append(key);
         draftValues.append(value);
         draft.insert(key, value);
+        recomputePreviewWallpaper();
         Q_EMIT draftChanged();
         return true;
     }
@@ -145,8 +147,34 @@ public:
     }
     Q_INVOKABLE void retry() { ++retries; }
 
+    // Mirrors AppearanceSettingsModel::previewWallpaper(): the page binds
+    // the wallpaper preview to this projection, so the stub derives it from
+    // the draft rather than letting tests set an inconsistent pair.
+    void recomputePreviewWallpaper()
+    {
+        const QString value =
+            draft.value(QStringLiteral("appearance.wallpaper")).toString();
+        QUrl next;
+        if (!value.isEmpty()) {
+            for (const auto &entry : bundledWallpapers) {
+                const auto map = entry.toMap();
+                if (map.value(QStringLiteral("value")).toString() == value) {
+                    next = map.value(QStringLiteral("previewUrl")).toUrl();
+                    break;
+                }
+            }
+            if (next.isEmpty()) {
+                const QFileInfo file(value);
+                if (file.isAbsolute() && file.isFile())
+                    next = QUrl::fromLocalFile(file.absoluteFilePath());
+            }
+        }
+        previewWallpaper = next;
+    }
+
     void publish()
     {
+        recomputePreviewWallpaper();
         Q_EMIT stateChanged();
         Q_EMIT draftChanged();
     }
