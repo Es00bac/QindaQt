@@ -219,5 +219,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0214: the startup applications route shadows, never edits, system entries](0214-startup-applications-route.md)
 - [ADR-0215: the idle screensaver is decoration, and never a lock](0215-the-idle-screensaver-is-decoration-not-a-lock.md)
 - [ADR-0216: the locker draws the screensaver, so a locked session keeps showing it](0216-the-locker-draws-the-screensaver.md)
+- [ADR-0226: configure the screen saver](0226-configure-the-screen-saver.md)
 - [ADR-0218: use QindaTK and Poppler for the image/PDF viewer](0218-use-qindatk-and-poppler-for-the-viewer.md)
 - [ADR-0219: share completed work through qinda](0219-share-completed-work-through-qinda.md)

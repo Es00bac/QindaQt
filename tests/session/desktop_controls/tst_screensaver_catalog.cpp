@@ -3,6 +3,7 @@
 #include <qindaqt/session/desktop_controls/screensaver_catalog.h>
 
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -95,6 +96,21 @@ class ScreensaverCatalogTest final : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    // QtTest reuses one instance across slots, so the shared tempdir would
+    // otherwise accumulate every earlier slot's fixture files.
+    void init()
+    {
+        const QDir dir(m_root.path());
+        for (const QFileInfo &entry :
+             dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
+            if (entry.isDir()) {
+                QDir(entry.absoluteFilePath()).removeRecursively();
+            } else {
+                QFile::remove(entry.absoluteFilePath());
+            }
+        }
+    }
+
     void discoversEveryShippedSaverShape();
     void entryCarriesFixedArgumentsAndLockTruth();
     void rejectsNonSaverEntries();
@@ -112,14 +128,14 @@ private:
 void ScreensaverCatalogTest::discoversEveryShippedSaverShape()
 {
     QVERIFY(m_root.isValid());
-    const QDir directory(m_root->path());
+    const QDir directory(m_root.path());
     writeEntry(directory, QStringLiteral("org.qindaqt.Patrol.desktop"), kPatrol);
     writeEntry(directory, QStringLiteral("studio.qinda.CircuitReef.desktop"), kReef);
     writeEntry(directory, QStringLiteral("studio.qinda.PrismBrawl.desktop"), kBrawl);
     writeEntry(directory, QStringLiteral("studio.qinda.PrismCircuit.desktop"), kCircuit);
     writeEntry(directory, QStringLiteral("studio.qinda.Starward.desktop"), kStarward);
 
-    const DesktopEntryScreensaverCatalog catalog({m_root->path()});
+    const DesktopEntryScreensaverCatalog catalog({m_root.path()});
     QStringList tokens;
     for (const ScreensaverCatalogEntry &entry : catalog.entries()) {
         tokens.append(entry.token);
@@ -142,11 +158,11 @@ void ScreensaverCatalogTest::discoversEveryShippedSaverShape()
 void ScreensaverCatalogTest::entryCarriesFixedArgumentsAndLockTruth()
 {
     QVERIFY(m_root.isValid());
-    const QDir directory(m_root->path());
+    const QDir directory(m_root.path());
     writeEntry(directory, QStringLiteral("org.qindaqt.Patrol.desktop"), kPatrol);
     writeEntry(directory, QStringLiteral("studio.qinda.Starward.desktop"), kStarward);
 
-    const DesktopEntryScreensaverCatalog catalog({m_root->path()});
+    const DesktopEntryScreensaverCatalog catalog({m_root.path()});
     const auto patrol = catalog.entry(QStringLiteral("qinda-patrol"));
     QVERIFY(patrol.has_value());
     QCOMPARE(patrol->arguments,
@@ -163,7 +179,7 @@ void ScreensaverCatalogTest::entryCarriesFixedArgumentsAndLockTruth()
 void ScreensaverCatalogTest::rejectsNonSaverEntries()
 {
     QVERIFY(m_root.isValid());
-    const QDir directory(m_root->path());
+    const QDir directory(m_root.path());
     // Not an application at all.
     writeEntry(directory, QStringLiteral("a.desktop"),
                QStringLiteral("[Desktop Entry]\nType=Link\nName=Not an app\n"
@@ -186,14 +202,14 @@ void ScreensaverCatalogTest::rejectsNonSaverEntries()
                QStringLiteral("[Desktop Entry]\nType=Application\n"
                               "Name=Broken Saver\nComment=screensaver\n"));
 
-    const DesktopEntryScreensaverCatalog catalog({m_root->path()});
+    const DesktopEntryScreensaverCatalog catalog({m_root.path()});
     QVERIFY(catalog.entries().isEmpty());
 }
 
 void ScreensaverCatalogTest::requiresTheLaunchContract()
 {
     QVERIFY(m_root.isValid());
-    const QDir directory(m_root->path());
+    const QDir directory(m_root.path());
     // Claims to be a screensaver but offers no all-outputs action: the
     // launcher would start it with flags it never documented.
     writeEntry(directory, QStringLiteral("a.desktop"),
@@ -208,14 +224,14 @@ void ScreensaverCatalogTest::requiresTheLaunchContract()
                               "[Desktop Action Fullscreen]\nName=Go\n"
                               "Exec=some-other-program --all-screens\n"));
 
-    const DesktopEntryScreensaverCatalog catalog({m_root->path()});
+    const DesktopEntryScreensaverCatalog catalog({m_root.path()});
     QVERIFY(catalog.entries().isEmpty());
 }
 
 void ScreensaverCatalogTest::reservedTokensAreNeverDiscovered()
 {
     QVERIFY(m_root.isValid());
-    const QDir directory(m_root->path());
+    const QDir directory(m_root.path());
     // A program literally named "blank" would collide with the reserved
     // lock-screen token; discovery refuses it.
     writeEntry(directory, QStringLiteral("a.desktop"),
@@ -225,15 +241,15 @@ void ScreensaverCatalogTest::reservedTokensAreNeverDiscovered()
                               "[Desktop Action Fullscreen]\nName=Go\n"
                               "Exec=blank --all-screens\n"));
 
-    const DesktopEntryScreensaverCatalog catalog({m_root->path()});
+    const DesktopEntryScreensaverCatalog catalog({m_root.path()});
     QVERIFY(catalog.entries().isEmpty());
 }
 
 void ScreensaverCatalogTest::firstDirectoryWinsADuplicateToken()
 {
     QVERIFY(m_root.isValid());
-    const QDir first(m_root->path());
-    const QDir second(QDir(m_root->path()).absoluteFilePath(QStringLiteral("second")));
+    const QDir first(m_root.path());
+    const QDir second(QDir(m_root.path()).absoluteFilePath(QStringLiteral("second")));
     QVERIFY(QDir().mkpath(second.absolutePath()));
     writeEntry(first, QStringLiteral("org.qindaqt.Patrol.desktop"), kPatrol);
     writeEntry(second, QStringLiteral("studio.qinda.PrismBrawl.desktop"),
@@ -249,7 +265,7 @@ void ScreensaverCatalogTest::firstDirectoryWinsADuplicateToken()
 void ScreensaverCatalogTest::unknownDiscoveredSaverGetsThePlainContract()
 {
     QVERIFY(m_root.isValid());
-    const QDir directory(m_root->path());
+    const QDir directory(m_root.path());
     // A saver the house tables do not know still appears, with the plain
     // --screensaver contract and no lock-screen claim (ADR-0226).
     writeEntry(directory, QStringLiteral("a.desktop"),
@@ -259,7 +275,7 @@ void ScreensaverCatalogTest::unknownDiscoveredSaverGetsThePlainContract()
                               "[Desktop Action Fullscreen]\nName=Go\n"
                               "Exec=new-saver --all-screens\n"));
 
-    const DesktopEntryScreensaverCatalog catalog({m_root->path()});
+    const DesktopEntryScreensaverCatalog catalog({m_root.path()});
     const auto entry = catalog.entry(QStringLiteral("new-saver"));
     QVERIFY(entry.has_value());
     QCOMPARE(entry->name, QStringLiteral("New Saver"));

@@ -6,7 +6,9 @@
 - **Supersedes:** None
 - **Superseded by:** [ADR-0216](0216-the-locker-draws-the-screensaver.md),
   for the lock-screen behaviour only: the locker now draws the saver itself.
-  Everything else here stands.
+  [ADR-0226](0226-configure-the-screen-saver.md), for the closed token set and
+  the Settings placement: the saver set is discovered from the installed
+  packages and configured from its own route. Everything else here stands.
 
 ## Context
 

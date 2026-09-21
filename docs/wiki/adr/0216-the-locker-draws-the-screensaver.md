@@ -44,9 +44,10 @@ The locker draws the screensaver. QindaQt ships one wallpaper plugin,
    need raw Wayland protocol code to ask for it at all. The launcher keeps
    stopping its process when the session locks — the greeter takes the picture
    over from there, so exactly one thing draws the saver at any moment.
-2. **One choice drives both.** Settings → Power writes the Settings1 pair *and*
+2. **One choice drives both.** Settings writes the Settings1 pair *and*
    mirrors the token into the greeter's plugin configuration through
-   `LockScreenSaverStore`. Only a confirmed snapshot is mirrored, so a refused
+   `LockScreenSaverStore` (the Screen saver route since
+   [ADR-0226](0226-configure-the-screen-saver.md); the Power route before it). Only a confirmed snapshot is mirrored, so a refused
    or uncertain commit never leaves the lock screen showing a saver the
    unlocked session does not have.
 3. **The prompt is the greeter's, and it hides itself.** QindaQt adds no

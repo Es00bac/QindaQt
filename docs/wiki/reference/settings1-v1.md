@@ -153,7 +153,16 @@ or differently sourced truth keeps capture disabled and purges prior history.
 
 The schema data files (`data/settings/schema-v*.json`) remain the exhaustive
 key registry. One key is owned by the Display Color lane and has semantics
-beyond the generic value bounds:
+beyond the generic value bounds. A second key's *absence* of a constraint is
+load-bearing: `power.screensaver` (string, default `none`) deliberately
+carries no `allowedValues`, because the saver set is discovered from the
+installed packages at runtime
+([ADR-0226](../adr/0226-configure-the-screen-saver.md)); an enumerated schema
+would reject every newly packaged saver at commit time. Any string is
+therefore schema-valid, and the invalid-token fence is the screensaver
+catalog — an unknown value reads back as `none` and never becomes a program
+name. The reserved tokens are `none` and `blank`; `power.screensaverMinutes`
+stays an integer clamped to 1–240.
 
 - `displays.colorAssignments` (object, default `{}`) — per-output ICC profile
   assignment intents persisted by the Display Color C1 discovery/assignment

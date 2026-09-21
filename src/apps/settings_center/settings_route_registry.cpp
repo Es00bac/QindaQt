@@ -278,6 +278,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerDefaultApplicationsRoute();
   registerAboutComputerRoute();
   registerStartupRoute();
+  registerScreensaverRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -378,6 +379,31 @@ void SettingsRouteRegistry::registerStartupRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(startupRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerScreensaverRoute() {
+  // Appended after Startup applications, same rule (ADR-0128). The Screen
+  // saver route (ADR-0226) is where the operator chooses what an idle screen
+  // shows and, separately, whether and when it locks. It is registered
+  // unconditionally: the saver list is discovered from the installed
+  // packages, so an empty set still shows the two built-in choices, and both
+  // the preview and the lock section state their own unavailability with the
+  // reason on the page itself.
+  const SettingsRoute screensaverRoute{
+      .id = QStringLiteral("screensaver"),
+      .component = SettingsRouteComponent::Screensaver,
+      .title = QCoreApplication::translate("SettingsCenter", "Screen saver"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter",
+          "What an idle screen shows, and when it locks"),
+      .iconName = QStringLiteral("preferences-desktop-screensaver"),
+      .category = QCoreApplication::translate("SettingsCenter", "General"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(screensaverRoute);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }
