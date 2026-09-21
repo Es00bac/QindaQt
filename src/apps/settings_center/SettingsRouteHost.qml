@@ -373,6 +373,9 @@ Item {
                 && host.navigation.activeRouteComponent === "screensaver"
                 && host.screensaverComponent !== null
         sourceComponent: host.screensaverComponent
+    }
+
+    Loader {
         id: loginScreenLoader
         objectName: host.objectNamePrefix + "LoginScreenLoader"
         anchors.fill: parent
