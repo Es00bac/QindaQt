@@ -135,11 +135,11 @@ public:
             {QStringLiteral("items"),
              QVariantList{QVariantMap{
                  {QStringLiteral("entryId"),
-                  QStringLiteral("org.qindaqt.Terminal")},
-                 {QStringLiteral("displayText"), QStringLiteral("Terminal")},
+                  QStringLiteral("org.qindaqt.QQTerm")},
+                 {QStringLiteral("displayText"), QStringLiteral("QQ_Term")},
                  {QStringLiteral("iconName"), QString()},
                  {QStringLiteral("accessibleDescription"),
-                  QStringLiteral("Terminal")},
+                  QStringLiteral("QQ_Term")},
                  {QStringLiteral("pinned"), true}}}}}};
     }
 

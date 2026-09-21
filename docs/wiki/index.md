@@ -202,7 +202,7 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Accessibility route](apps/accessibility-settings.md) documents the
   four consumed accessibility keys, the reserved screen-reader key, per-key
   draft/apply truth, and the tooltip-carried, short-label page.
-- [QindaQt Terminal](apps/terminal.md) documents the first-party terminal
+- [Terminal (QQ_Term)](apps/terminal.md) documents the contract with the first-party terminal
   with one shell per window. Containers provide tabs and splits; Terminal owns
   shell launch, PTY lifetime, profiles, scrollback search, and text rendering.
 - [Settings Center](apps/settings-center.md) documents the typed bounded route

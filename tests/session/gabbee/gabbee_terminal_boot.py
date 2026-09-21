@@ -25,7 +25,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-TERMINAL_APP = "org.qindaqt.Terminal"
+TERMINAL_APP = "org.qindaqt.QQTerm"
 EDITOR_APP = "org.qindaqt.TextEditor"
 
 
@@ -203,7 +203,7 @@ def _run_inner_phases(
     app_environment["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
     if "SHELL" not in app_environment:
         app_environment["SHELL"] = "/usr/bin/bash"
-    terminal_executable = Path("/opt/qindaqt-terminal") / arguments.bin_directory / "qindaqt-terminal"
+    terminal_executable = Path("/opt/qqterm/bin/qqterm")
     terminal_process = spawn_logged_process("terminal-app", [str(terminal_executable)], app_environment)
     state.track(terminal_process, [terminal_executable])
     # The editor is the second real member for the grouped-member case; the

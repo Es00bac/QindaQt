@@ -214,7 +214,7 @@ Dispatch then follows the entry's declared surface:
 | Entry | Route |
 | --- | --- |
 | `DBusActivatable=true` | `org.freedesktop.Application.Activate` / `ActivateAction` on the session bus through the injected `LaunchActivator`; dispatch and completion are separate truths |
-| `Terminal=true` | The injected terminal command prefix (composition wires the QindaQt Terminal launch policy), or a truthful refusal when unwired — never a shell fallback |
+| `Terminal=true` | The injected terminal command prefix — the shell composition wires `{"qqterm", "-e"}`, so the entry's own program and arguments are appended verbatim and run inside [QQ_Term](../apps/terminal.md); a truthful refusal when unwired, and never a shell fallback |
 | otherwise | The injected `LaunchSpawner`; production uses `QProcess::startDetached` with the entry's `Path` and a sanitized environment |
 
 The child-environment allowlist forwards session identity (`HOME`, `PATH`,

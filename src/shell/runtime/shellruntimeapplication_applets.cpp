@@ -88,9 +88,18 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
         std::make_unique<Services::SettingsClient::SettingsClient>(
             *m_customizationSettingsTransport,
             QStringList{LiveCustomizationController::chordSettingsKey()});
+    // AGENT-CONTRACT: the terminal launch policy. A `Terminal=true` desktop
+    // entry runs inside QQ_Term (gui-apps/qqterm), whose `-e PROGRAM ARG...`
+    // form takes the command verbatim and never shell-interprets it, which is
+    // exactly the shape LaunchExecutor appends to this prefix. Leaving the
+    // prefix empty is what made every Terminal=true entry refuse to launch.
+    // QQ_Term is a runtime dependency of the desktop package, not a build
+    // dependency of this shell: if it is absent the spawn fails with a
+    // truthful diagnostic rather than falling back to some other terminal.
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
         m_applets, m_appletPolicy, std::move(launcherRoots),
-        *m_settingsClient, QDBusConnection::sessionBus());
+        *m_settingsClient, QDBusConnection::sessionBus(),
+        QStringList{QStringLiteral("qqterm"), QStringLiteral("-e")});
     if (!m_launcherApplet->start(error)) {
         return false;
     }

@@ -59,7 +59,7 @@ public:
 
     // Pure fallback: a reverse-DNS id (at least two dot-separated segments,
     // each starting with a letter and made of letters, digits, `_`, or `-`)
-    // becomes its last segment (`org.qindaqt.Terminal` -> `Terminal`); any
+    // becomes its last segment (`org.qindaqt.QQTerm` -> `QQTerm`); any
     // other value is kept whole. A `.desktop` suffix is dropped and a leading
     // lowercase letter is capitalized (`firefox` -> `Firefox`).
     [[nodiscard]] static QString prettifiedApplicationId(const QString &applicationId);

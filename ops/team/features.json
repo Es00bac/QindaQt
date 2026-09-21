@@ -1355,10 +1355,10 @@
         },
         {
           "id": "QQ-006.08",
-          "title": "QindaQt Terminal",
+          "title": "Terminal (QQ_Term)",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The September 8 checkpoint adds independent ANSI contrast, readable search and native profile dialogs, live themed icons and font/accessibility updates. Terminal now uses one shell per window; QindaQt containers supply tabs and splits. New Terminal launches a separate process with the selected saved profile and observed shell directory. Existing PTY/child teardown, profile settings, scrollback search, copy/paste, links, font/zoom and BEL-terminated interactive prompt support remain. The redesigned single-shell interface is installed through the September 8 desktop package. Audible BEL handling now preserves the configured beep and requests standard Qt window attention only for the owning visible top-level Terminal window.",
+          "summary": "The desktop's terminal is QQ_Term (gui-apps/qqterm), built in the QindaQt_Apps repository on qtermwidget: one session per window with profiles, 42 colour schemes, per-window theme rotation, per-profile transparency, global-menu export, and single-instance hand-off; the desktop's window containers supply tabs and splits. The 8100-line qindaqt-terminal built in this repository was removed in favour of it (ADR-0222), so the desktop ships one terminal, one desktop entry, one icon, and one launcher row. Terminal=true desktop entries now launch for the first time: the shell wires {\"qqterm\", \"-e\"} as the launcher's terminal command prefix, where the prefix had been empty and every such entry refused.",
           "evidence": [
             {
               "kind": "commit",
@@ -1414,6 +1414,11 @@
               "kind": "commit",
               "reference": "ac06ddd065bf9ca9ac12205248904392764f6057",
               "summary": "Exact Dock attention repair received same-reviewer Opus ACCEPT and is integrated with original 88ffc346 as 8ff215bc plus 34cbf438. Reduced motion retains a static text cue; the integrated task-list applet/boundary selector passes 14/14. No live-session adoption is claimed."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/adr/0222-qq-term-is-the-desktop-terminal.md",
+              "summary": "QQ_Term replaces qindaqt-terminal on both machines: src/apps/terminal and tests/apps/terminal are removed with the Terminal install component, release-contract entry, desktop entry and icon alias; gui-wm/qindaqt-desktop gains the gui-apps/qqterm runtime dependency; the desktop context menu, icon theme, Gabbee private lanes and the Terminal=true launch policy all resolve org.qindaqt.QQTerm. The owning page records the six integration values that are now a cross-repository contract."
             }
           ],
           "caveat": "GPU rendering, later terminal capabilities, whole-application assistive-technology and physical display/input qualification remain."

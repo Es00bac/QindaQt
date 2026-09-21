@@ -382,8 +382,8 @@ the compositor-provided application id to the desktop entry's `Icon=` name;
 container rows use `window-restore-symbolic`. Every row's `applicationName`
 and the application part of its `accessibleName` come from the same
 resolver's `applicationDisplayName`, so buttons, tooltips, command search, and
-the active application control show `Terminal` rather than a raw
-`org.qindaqt.Terminal` id. Both publish whether theme lookup
+the active application control show `QQTerm` rather than a raw
+`org.qindaqt.QQTerm` id. Both publish whether theme lookup
 succeeded. Changing the active tab or tile keeps the container icon and tint. Horizontal buttons show the icon plus an elided title
 inside an 84–168 by 28 logical-pixel bound; vertical buttons show only the
 icon. Missing and hostile mappings use the typed application placeholder.

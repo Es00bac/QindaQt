@@ -204,5 +204,9 @@ ALIASES = {
     "org.qindaqt.FileManager": ("system-file-manager", None),
     "org.qindaqt.TextEditor": ("accessories-text-editor", None),
     "org.qindaqt.Settings": ("preferences-system", None),
-    "org.qindaqt.Terminal": ("utilities-terminal", None),
+    # QQ_Term ships as gui-apps/qqterm and declares Icon=qqterm; the QindaQt
+    # theme aliases that name onto the shared terminal glyph so the first-party
+    # terminal still looks like the rest of the desktop.
+    "qqterm": ("utilities-terminal", None),
+    "org.qindaqt.QQTerm": ("utilities-terminal", None),
 }

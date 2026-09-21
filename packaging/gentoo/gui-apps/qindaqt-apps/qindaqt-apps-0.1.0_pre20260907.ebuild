@@ -50,13 +50,13 @@ src_configure() {
 }
 
 src_compile() {
-	cmake_build qindaqt-calendar qindaqt-file-manager qindaqt-editor qindaqt-terminal \
+	cmake_build qindaqt-calendar qindaqt-file-manager qindaqt-editor \
 		qindaqt_app_shellplugin qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin
 }
 
 src_install() {
 	local component
-	for component in Calendar FileManager TextEditor Terminal; do
+	for component in Calendar FileManager TextEditor; do
 		DESTDIR="${D}" cmake --install "${BUILD_DIR}" --component "${component}" \
 			|| die "Could not stage ${component}"
 	done

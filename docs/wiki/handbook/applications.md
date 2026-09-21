@@ -81,16 +81,20 @@ and `Ctrl+D` to bookmark a folder. List and grid views share your selection;
 Ctrl-click picks individual files and Shift-click selects a range. Click a
 column heading to sort. Copy, move, and Trash work on the selected files together.
 
-## Terminal
+## Terminal (QQ_Term)
 
-Each Terminal window runs one shell, with saved profiles and searchable
-scrollback. To work with several shells, open more Terminal windows and group
-them in a QindaQt container. The container handles tabs and splits.
+Each QQ_Term window runs one shell, with saved profiles and 42 colour schemes.
+To work with several shells, open more windows and group them in a QindaQt
+container. The container handles tabs and splits.
 
-**New Terminal** (`Ctrl+Shift+T`) opens a window in the active shell's current
-folder, using the same profile. Adjust its text size from View, or use
-`Ctrl+Shift++` / `Ctrl+Shift+-`; `Ctrl+Shift+0` restores the profile size.
-Theme changes preserve that zoom and the terminal font.
+By default every new window opens with the next scheme in the pool, so no two
+terminals look the same; restrict the pool to dark or light schemes under
+*Settings ▸ Preferences ▸ General*. Pick a scheme or profile for the focused
+window from the **Profiles** menu — it applies immediately and per window, so
+your terminals can look different from one another.
+
+*Open Terminal Here* on the desktop, and any application whose desktop entry
+asks to run in a terminal, both open QQ_Term.
 
 ## Menus in the top panel
 
