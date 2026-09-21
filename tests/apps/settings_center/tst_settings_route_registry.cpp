@@ -277,7 +277,7 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   QCOMPARE(registry.indexOf(QStringLiteral("about-computer")), 16);
   QCOMPARE(registry.indexOf(QStringLiteral("startup")), 17);
   QCOMPARE(registry.indexOf(QStringLiteral("screensaver")), 18);
-  QCOMPARE(registry.indexOf(QStringLiteral("login-screen")), 18);
+  QCOMPARE(registry.indexOf(QStringLiteral("login-screen")), 19);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -400,6 +400,7 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
            QStringLiteral("preferences-desktop-screensaver"));
   QVERIFY(!screensaver->description.isEmpty());
   QVERIFY(screensaver->available);
+
   const auto loginScreen = registry.route(QStringLiteral("login-screen"));
   QVERIFY(loginScreen.has_value());
   QCOMPARE(loginScreen->id, QStringLiteral("login-screen"));
