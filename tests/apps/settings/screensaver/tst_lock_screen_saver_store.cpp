@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
+#include <qindaqt/apps/settings_screensaver/lock_screen_saver_store.h>
 
 #include <KConfig>
 #include <KConfigGroup>
 
 #include <QtTest>
 
-using QindaQt::Apps::SettingsPower::KConfigLockScreenSaverStore;
+using QindaQt::Apps::SettingsScreensaver::KConfigLockScreenSaverStore;
 
 namespace {
 
@@ -37,6 +37,7 @@ class LockScreenSaverStoreTest final : public QObject {
 private Q_SLOTS:
     void init();
     void choosingASaverTakesOverTheGreeterWallpaper();
+    void blankKeepsThePluginAndPaintsTheDarkGround();
     void theDisplacedPluginIsRememberedAndGivenBack();
     void takingOverTwiceKeepsTheOriginalPredecessor();
     void noPredecessorLeavesTheKeyAbsent();
@@ -65,6 +66,21 @@ void LockScreenSaverStoreTest::choosingASaverTakesOverTheGreeterWallpaper() {
     QCOMPARE(pluginGeneral(config).readEntry(QStringLiteral("Saver"), QString{}),
              QStringLiteral("qinda-patrol"));
     QCOMPARE(store.currentSaver(), QStringLiteral("qinda-patrol"));
+}
+
+void LockScreenSaverStoreTest::blankKeepsThePluginAndPaintsTheDarkGround() {
+    KConfigLockScreenSaverStore store(path());
+    QString error;
+    // "blank" is an enabling token (ADR-0226): the wallpaper plugin stays
+    // installed as the greeter's plugin so its painted dark ground is what a
+    // locked session shows; only "none" hands the wallpaper back.
+    QVERIFY2(store.save(QStringLiteral("blank"), &error), qPrintable(error));
+    QCOMPARE(readWallpaperPlugin(path()),
+             KConfigLockScreenSaverStore::wallpaperPluginId());
+    KConfig config(path(), KConfig::SimpleConfig);
+    QCOMPARE(pluginGeneral(config).readEntry(QStringLiteral("Saver"), QString{}),
+             QStringLiteral("blank"));
+    QCOMPARE(store.currentSaver(), QStringLiteral("blank"));
 }
 
 void LockScreenSaverStoreTest::theDisplacedPluginIsRememberedAndGivenBack() {

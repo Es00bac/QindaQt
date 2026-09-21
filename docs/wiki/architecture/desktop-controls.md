@@ -37,8 +37,8 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
-| Idle screensaver program | the saver package itself (five `x11-misc` packages) | `ScreensaverLauncher`, started only while idle and unlocked |
-| Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + Settings Power section |
+| Idle screensaver program | the saver package itself (the installed `x11-misc` savers, discovered from their desktop entries) | `ScreensaverLauncher`, started only while idle and unlocked |
+| Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + [Screen saver route](../apps/screensaver-settings.md) |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
 | Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
 | Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
@@ -135,20 +135,32 @@ absent Settings1 owner keeps the documented default rather than silently
 disabling the policy. The screen-lock preference (`kscreenlockerrc` Daemon
 group) is untouched and independent.
 
-`power.screensaver` (a token: `none`, `qinda-patrol`, `circuit-reef`,
-`prism-circuit`, `prism-brawl`, or `starward`) and
-`power.screensaverMinutes` (1..240, default 5) are a second, separate scope in
-the same `power` domain, read by `Settings1ScreensaverPreferences` and written
-only by the Settings Power route. A token the current build does not know
+`power.screensaver` (a token: the reserved `none`/`blank`, or a
+discovered saver's program name) and `power.screensaverMinutes` (1..240,
+default 5) are a second, separate scope in the same `power` domain, read by
+`Settings1ScreensaverPreferences` and written only by the
+[Screen saver route](../apps/screensaver-settings.md)
+([ADR-0226](../adr/0226-configure-the-screen-saver.md)). Which tokens exist is
+discovered at runtime by `DesktopEntryScreensaverCatalog` from the installed
+savers' `.desktop` entries — an entry attests its purpose (a "screensaver"
+mention in Keywords, GenericName, Comment, or an action name) and proves the
+launch contract (an action running the entry's own program with
+`--screensaver` or `--all-screens`) — scanning only the system application
+directories, never the user-writable one. A token the catalog does not know
 reads back as `none`, so persistence can never supply a program name to
-`QProcess`; each known token carries its own fixed arguments. An absent
+`QProcess`; the catalog supplies the fixed per-saver arguments (every output,
+telemetry and sound off) that discovery itself cannot infer. An absent
 Settings1 owner leaves the saver off rather than assuming a default, because
 starting an unchosen program is worse than starting nothing.
 
 `ScreensaverLauncher` (in `production/`, alongside the KGlobalAccel registrar,
-because it needs KIdleTime) arms one idle timeout from that preference, starts
-the saver when it fires, and stops it on resume, on a preference change, and
-on `org.freedesktop.ScreenSaver.ActiveChanged`. Stopping on lock is not the end
+because it needs KIdleTime) arms one idle timeout from that preference,
+resolves the chosen token to its catalog entry — program and fixed arguments —
+only at launch (a saver whose package was removed between snapshot and idle
+simply does not start), and stops it on resume, on a preference change, and
+on `org.freedesktop.ScreenSaver.ActiveChanged`. The reserved `blank` token
+arms nothing here: it is a lock-screen appearance the greeter paints, not a
+process. Stopping on lock is not the end
 of the picture: the locker's greeter draws the same saver itself as its
 wallpaper plugin (ADR-0216), so exactly one thing renders it at a time and no
 screensaver process is ever shown above the lock screen. It relaunches a saver that
@@ -260,8 +272,9 @@ range normalization, and
 owner absence; sysfs fixture brightness stepping remains migration coverage;
 idle-preference mapping and PowerDevil binding coalescing/recovery/failure
 boundaries; screensaver preference mapping (an unconfirmed owner starting
-nothing, an unknown token never becoming a program name, clamped minutes, the
-per-saver argument contract, and one signal per real change); the retained screenshot launcher helper against a fixture;
+nothing, an unknown token never becoming a program name, clamped minutes, and
+one signal per real change) and catalog discovery rules (attestation, the
+launch contract, system directories only, reserved-token refusal); the retained screenshot launcher helper against a fixture;
 notifier wire shape and replaces-id reuse against a private
 `dbus-run-session` fake; supervisor optional-child startup, one-restart budget,
 and skip-on-absence; the Settings Power model and page behavior for the

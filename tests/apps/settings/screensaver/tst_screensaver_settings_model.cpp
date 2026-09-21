@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
-#include <qindaqt/apps/settings_power/screensaver_settings.h>
+#include <qindaqt/apps/settings_screensaver/lock_screen_saver_store.h>
+#include <qindaqt/apps/settings_screensaver/screensaver_preview.h>
+#include <qindaqt/apps/settings_screensaver/screensaver_settings_model.h>
 
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/settings_client/settings_transport.h>
 #include <qindaqt/services/settings_protocol/settings_wire_contract.h>
+#include <qindaqt/session/desktop_controls/screensaver_catalog.h>
 #include <qindaqt/session/desktop_controls/settings1_screensaver_preferences.h>
 
 #include <QtTest>
 
 #include <memory>
 
-using namespace QindaQt::Apps::SettingsPower;
+using namespace QindaQt::Apps::SettingsScreensaver;
 using namespace QindaQt::Session::DesktopControls;
 using namespace QindaQt::Services::SettingsClient;
 using QindaQt::Services::SettingsProtocol::SettingsWireStatus;
@@ -22,6 +24,70 @@ namespace {
 
 constexpr auto kSaverKey = "power.screensaver";
 constexpr auto kMinutesKey = "power.screensaverMinutes";
+
+// The installed saver set, fixed for the test: two savers the locker's
+// wallpaper plugin can draw and one it cannot, which is the split the
+// mirror and the status line must be honest about.
+class FakeScreensaverCatalog final : public ScreensaverCatalog {
+public:
+    [[nodiscard]] QList<ScreensaverCatalogEntry> entries() const override
+    {
+        return {
+            {QStringLiteral("qinda-patrol"), QStringLiteral("Qinda Patrol"),
+             QStringLiteral("A patrol on every output"), QStringLiteral("qinda-patrol"),
+             {QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")}, true},
+            {QStringLiteral("circuit-reef"), QStringLiteral("Circuit Reef"),
+             QStringLiteral("A reef circuit"), QStringLiteral("circuit-reef"),
+             {QStringLiteral("--screensaver"), QStringLiteral("--private")}, true},
+            {QStringLiteral("prism-brawl"), QStringLiteral("Prism Brawl"),
+             QStringLiteral("A brawl of prisms"), QStringLiteral("prism-brawl"),
+             {QStringLiteral("--screensaver"), QStringLiteral("--mute")}, false},
+        };
+    }
+};
+
+// The preview, recorded rather than launched: the process boundary has its own
+// row (qindaqt.settings-screensaver-preview).
+class FakeScreensaverPreview final : public ScreensaverPreview {
+public:
+    using ScreensaverPreview::ScreensaverPreview;
+
+    [[nodiscard]] Kind kindFor(const QString &token) const override
+    {
+        if (unavailable) return Kind::Unavailable;
+        if (token == ScreensaverPreferences::blankToken()) return Kind::TestingGreeter;
+        if (token == QStringLiteral("qinda-patrol")
+            || token == QStringLiteral("circuit-reef")) {
+            return Kind::TestingGreeter;
+        }
+        if (token == QStringLiteral("prism-brawl")) return Kind::SaverProgram;
+        return Kind::Unavailable;
+    }
+
+    [[nodiscard]] bool start(const QString &token, QString *error) override
+    {
+        // Same refusal as the process boundary: an unavailable kind has
+        // nothing to launch.
+        if (kindFor(token) == Kind::Unavailable) {
+            if (error != nullptr) *error = QStringLiteral("nothing to preview");
+            return false;
+        }
+        if (!startOk) {
+            if (error != nullptr) *error = QStringLiteral("preview refused");
+            return false;
+        }
+        ++starts;
+        lastToken = token;
+        return true;
+    }
+
+    [[nodiscard]] bool running() const override { return false; }
+
+    bool unavailable = false;
+    bool startOk = true;
+    int starts = 0;
+    QString lastToken;
+};
 
 // AGENT-NOTE: the screensaver route owns a two-key scope, so this fake keeps a
 // value map rather than the single value the idle display fake carries. An
@@ -164,7 +230,7 @@ private:
 
 // The greeter mirror, recorded rather than written: a route test must never
 // depend on a real kscreenlockerrc, and the mirror's own file format has its
-// own row (qindaqt.settings-lock-screen-saver-store).
+// own row (qindaqt.settings-screensaver-lock-screen-saver-store).
 class FakeLockScreenSaverStore final : public LockScreenSaverStore {
 public:
     [[nodiscard]] bool save(const QString &saverToken, QString *error) override
@@ -209,12 +275,17 @@ private Q_SLOTS:
     void refusedCommitNeverReachesTheLockScreen();
     void lockScreenFailureIsItsOwnError();
     void aSaverWithNoSceneLeavesTheLockWallpaperAlone();
+    void blankIsItsOwnChoice();
+    void saverOptionsListTheBuiltInsThenTheDiscovered();
+    void previewStartsWithPersistedTruth();
 
 private:
     std::unique_ptr<FakeSettingsTransport> m_transport;
     std::unique_ptr<SettingsClient> m_client;
+    FakeScreensaverCatalog m_catalog;
     std::unique_ptr<Settings1ScreensaverPreferences> m_preferences;
     std::unique_ptr<FakeLockScreenSaverStore> m_lockScreen;
+    std::unique_ptr<FakeScreensaverPreview> m_preview;
     std::unique_ptr<ScreensaverSettingsModel> m_model;
 };
 
@@ -224,21 +295,23 @@ void ScreensaverSettingsModelTest::init() {
     m_transport = std::make_unique<FakeSettingsTransport>();
     m_client = std::make_unique<SettingsClient>(
         *m_transport, Settings1ScreensaverPreferences::scopedKeys());
-    m_preferences = std::make_unique<Settings1ScreensaverPreferences>(*m_client);
+    m_preferences =
+        std::make_unique<Settings1ScreensaverPreferences>(*m_client, m_catalog);
     m_lockScreen = std::make_unique<FakeLockScreenSaverStore>();
-    m_model = std::make_unique<ScreensaverSettingsModel>(*m_preferences, *m_client,
-                                                        *m_lockScreen);
+    m_preview = std::make_unique<FakeScreensaverPreview>();
+    m_model = std::make_unique<ScreensaverSettingsModel>(
+        *m_preferences, *m_client, m_catalog, *m_lockScreen, *m_preview);
     QString error;
     QVERIFY(m_client->start(&error));
 }
 
 void ScreensaverSettingsModelTest::initialTruthReflectsThePersistedSnapshot() {
-    m_transport->setValue(kSaverKey, QStringLiteral("circuit-reef"));
+    m_transport->setValue(kSaverKey, "circuit-reef");
     m_transport->setValue(kMinutesKey, QVariant::fromValue<qint64>(20));
     m_transport->announceOwner();
     QTRY_COMPARE(m_model->saver(), QStringLiteral("circuit-reef"));
     QCOMPARE(m_model->minutes(), 20);
-    QVERIFY(m_model->enabled());
+    QVERIFY(m_model->delayEnabled());
     QVERIFY(m_model->statusText().contains(QStringLiteral("Circuit Reef")));
     QVERIFY(m_model->statusText().contains(QStringLiteral("20")));
     QVERIFY(m_model->errorText().isEmpty());
@@ -247,11 +320,11 @@ void ScreensaverSettingsModelTest::initialTruthReflectsThePersistedSnapshot() {
 void ScreensaverSettingsModelTest::unknownPersistedTokenReadsAsNoSaver() {
     // AGENT-GUARD: a stale or hand-edited token must never reach QProcess as a
     // program name, so an unrecognized saver reads as "none" on both sides.
-    m_transport->setValue(kSaverKey, QStringLiteral("xscreensaver"));
+    m_transport->setValue(kSaverKey, "xscreensaver");
     m_transport->announceOwner();
     QTRY_VERIFY(m_client->snapshot().has_value());
     QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
-    QVERIFY(!m_model->enabled());
+    QVERIFY(!m_model->delayEnabled());
     QVERIFY(!m_model->statusText().contains(QStringLiteral("xscreensaver")));
 }
 
@@ -287,7 +360,7 @@ void ScreensaverSettingsModelTest::minutesAreBoundsCheckedBeforeWriting() {
 void ScreensaverSettingsModelTest::appliedSaverCommitReconcilesStatus() {
     m_transport->announceOwner();
     QTRY_VERIFY(m_client->snapshot().has_value());
-    QVERIFY(!m_model->enabled());
+    QVERIFY(!m_model->delayEnabled());
 
     QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
     QVERIFY(m_model->busy());
@@ -296,7 +369,7 @@ void ScreensaverSettingsModelTest::appliedSaverCommitReconcilesStatus() {
                  .toString(),
              QString::fromLatin1(kSaverKey));
     m_transport->replyToLastCommit(SettingsWireStatus::Applied);
-    QTRY_VERIFY(m_model->enabled());
+    QTRY_VERIFY(m_model->delayEnabled());
     QVERIFY(!m_model->busy());
     QVERIFY2(m_model->errorText().isEmpty(), qPrintable(m_model->errorText()));
     QVERIFY(m_model->statusText().contains(QStringLiteral("Qinda Patrol")));
@@ -396,10 +469,67 @@ void ScreensaverSettingsModelTest::aSaverWithNoSceneLeavesTheLockWallpaperAlone(
     m_transport->replyToLastCommit(SettingsWireStatus::Applied);
     QTRY_COMPARE(m_model->saver(), QStringLiteral("prism-brawl"));
     QCOMPARE(m_lockScreen->currentSaver(), ScreensaverPreferences::noneToken());
-    // And the section says so rather than implying the lock screen changed.
+    // And the page says so rather than implying the lock screen changed.
     QVERIFY(m_model->statusText().contains(QStringLiteral("Prism Brawl")));
     QVERIFY(m_model->statusText().contains(QStringLiteral("its own wallpaper")));
 }
 
+void ScreensaverSettingsModelTest::blankIsItsOwnChoice() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+
+    QVERIFY(m_model->setSaver(ScreensaverPreferences::blankToken()));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_model->saver(), ScreensaverPreferences::blankToken());
+    // "blank" arms no program, so the delay row is disabled...
+    QVERIFY(!m_model->delayEnabled());
+    // ...but the lock screen still mirrors it: the plugin's painted ground IS
+    // the blank screen the user asked for.
+    QTRY_COMPARE(m_lockScreen->currentSaver(), ScreensaverPreferences::blankToken());
+    QVERIFY(m_model->statusText().contains(QStringLiteral("dark screen")));
+}
+
+void ScreensaverSettingsModelTest::saverOptionsListTheBuiltInsThenTheDiscovered() {
+    const QVariantList options = m_model->saverOptions();
+    QCOMPARE(options.size(), 5);
+    QCOMPARE(options.at(0).toMap().value(QStringLiteral("token")).toString(),
+             ScreensaverPreferences::noneToken());
+    QCOMPARE(options.at(1).toMap().value(QStringLiteral("token")).toString(),
+             ScreensaverPreferences::blankToken());
+    // Discovered savers sort by name, case-insensitively: Circuit Reef,
+    // Prism Brawl, Qinda Patrol.
+    QCOMPARE(options.at(2).toMap().value(QStringLiteral("token")).toString(),
+             QStringLiteral("circuit-reef"));
+    QCOMPARE(options.at(3).toMap().value(QStringLiteral("token")).toString(),
+             QStringLiteral("prism-brawl"));
+    QCOMPARE(options.at(4).toMap().value(QStringLiteral("token")).toString(),
+             QStringLiteral("qinda-patrol"));
+    QCOMPARE(options.at(3).toMap().value(QStringLiteral("showsOnLockScreen")).toBool(),
+             false);
+    QCOMPARE(options.at(4).toMap().value(QStringLiteral("showsOnLockScreen")).toBool(),
+             true);
+}
+
+void ScreensaverSettingsModelTest::previewStartsWithPersistedTruth() {
+    m_transport->setValue(kSaverKey, "circuit-reef");
+    m_transport->announceOwner();
+    QTRY_COMPARE(m_model->saver(), QStringLiteral("circuit-reef"));
+    QVERIFY(m_model->previewAvailable());
+
+    QVERIFY(m_model->preview());
+    QCOMPARE(m_preview->starts, 1);
+    // The preview always shows persisted truth, not a write in flight.
+    QCOMPARE(m_preview->lastToken, QStringLiteral("circuit-reef"));
+    QVERIFY(m_model->previewSummary().contains(QStringLiteral("never locked")));
+
+    // "none" previews nothing.
+    QVERIFY(m_model->setSaver(ScreensaverPreferences::noneToken()));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
+    QVERIFY(!m_model->previewAvailable());
+    QVERIFY(!m_model->preview());
+    QCOMPARE(m_preview->starts, 1);
+}
+
 QTEST_MAIN(ScreensaverSettingsModelTest)
-#include "tst_screensaver_settings.moc"
+#include "tst_screensaver_settings_model.moc"

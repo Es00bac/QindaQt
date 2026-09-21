@@ -18,6 +18,7 @@ target_sources(
         src/mic_mute_key_controller.cpp
         src/powerdevil_brightness_feedback_observer.cpp
         src/powerdevil_idle_preferences_binding.cpp
+        src/screensaver_catalog.cpp
         src/screensaver_preferences.cpp
         src/screenshot_launcher.cpp
         src/settings1_idle_preferences.cpp
@@ -42,6 +43,7 @@ target_sources(
             include/qindaqt/session/desktop_controls/mic_mute_key_controller.h
             include/qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h
             include/qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h
+            include/qindaqt/session/desktop_controls/screensaver_catalog.h
             include/qindaqt/session/desktop_controls/screensaver_preferences.h
             include/qindaqt/session/desktop_controls/screenshot_launcher.h
             include/qindaqt/session/desktop_controls/settings1_idle_preferences.h

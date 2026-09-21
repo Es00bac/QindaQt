@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/session/desktop_controls/settings1_screensaver_preferences.h"
 
+#include "qindaqt/session/desktop_controls/screensaver_catalog.h"
+
 #include <QVariant>
 
 namespace QindaQt::Session::DesktopControls {
@@ -13,8 +15,10 @@ const QStringList &Settings1ScreensaverPreferences::scopedKeys()
 }
 
 Settings1ScreensaverPreferences::Settings1ScreensaverPreferences(
-    Services::SettingsClient::SettingsClient &client, QObject *parent)
-    : ScreensaverPreferencesProvider(parent), m_client(client)
+    Services::SettingsClient::SettingsClient &client,
+    const ScreensaverCatalog &catalog, QObject *parent)
+    : ScreensaverPreferencesProvider(parent), m_client(client),
+      m_catalog(catalog)
 {
     connect(&m_client, &Services::SettingsClient::SettingsClient::snapshotChanged,
             this, &Settings1ScreensaverPreferences::onSnapshotChanged);
@@ -46,7 +50,8 @@ void Settings1ScreensaverPreferences::onSnapshotChanged()
         ? minutes.toLongLong()
         : qint64{ScreensaverPreferences::defaultTimeoutMinutes()};
     const ScreensaverPreferences next =
-        ScreensaverPreferences::fromPersisted(saver.toString(), persistedMinutes);
+        ScreensaverPreferences::fromPersisted(saver.toString(), persistedMinutes,
+                                              m_catalog);
     if (next == m_current) {
         return;
     }

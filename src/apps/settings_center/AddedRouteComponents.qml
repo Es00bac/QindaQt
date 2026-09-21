@@ -4,6 +4,7 @@ import QindaQt.SettingsApp.DateTime
 import QindaQt.SettingsApp.DefaultApplications
 import QindaQt.SettingsApp.AboutComputer
 import QindaQt.SettingsApp.Startup
+import QindaQt.SettingsApp.ScreenSaver
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -52,6 +53,18 @@ QtObject {
         StartupPage {
             objectName: "startupPage"
             startupSettings: StartupRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    // The Screen saver route (ADR-0226). Both models come from the module's
+    // own composition singleton: the saver choice/delay/preview model and the
+    // shared walk-away lock model.
+    readonly property Component screensaver: Component {
+        ScreensaverPage {
+            objectName: "screensaverPage"
+            screensaverSettings: ScreensaverRouteComposition.model
+            screenLockSettings: ScreensaverRouteComposition.screenLockSettings
             onCloseRequested: root.closeRequested()
         }
     }

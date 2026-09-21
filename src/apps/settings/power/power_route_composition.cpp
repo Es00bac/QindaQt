@@ -4,10 +4,8 @@
 
 #include <qindaqt/apps/settings_power/external_display_brightness_model.h>
 #include <qindaqt/apps/settings_power/idle_display_settings.h>
-#include <qindaqt/apps/settings_power/lock_screen_saver_store.h>
 #include <qindaqt/apps/settings_power/power_settings_model.h>
-#include <qindaqt/apps/settings_power/screen_lock_settings.h>
-#include <qindaqt/apps/settings_power/screensaver_settings.h>
+#include <qindaqt/apps/settings_screen_lock/screen_lock_settings.h>
 #include <qindaqt/services/display_client/client.h>
 #include <qindaqt/services/display_client/qt_display_transport.h>
 #include <qindaqt/services/power_client/power_client.h>
@@ -15,7 +13,6 @@
 #include <qindaqt/services/session_actions/session_actions_client.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/session/desktop_controls/settings1_idle_preferences.h>
-#include <qindaqt/session/desktop_controls/settings1_screensaver_preferences.h>
 #include <qindaqt/session/powerdevil_lid/powerdevil_lid_adapter.h>
 #include <qindaqt/session/powerdevil_profile/powerdevil_profile_adapter.h>
 
@@ -36,7 +33,7 @@ public:
         displayClient(&displayTransport), externalBrightness(displayClient),
         sessionActions(QDBusConnection::sessionBus(),
                        QDBusConnection::systemBus()),
-        screenLockStore(std::make_unique<IniScreenLockPreferencesStore>(
+        screenLockStore(std::make_unique<SettingsScreenLock::IniScreenLockPreferencesStore>(
             QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
                 .filePath(QStringLiteral("kscreenlockerrc")))),
         screenLockConfigure(),
@@ -45,15 +42,6 @@ public:
         idleClient(idleTransport, Session::DesktopControls::Settings1IdlePreferences::scopedKey()),
         idlePreferences(idleClient),
         idleDisplaySettings(idlePreferences, idleClient),
-        screensaverTransport(QDBusConnection::sessionBus()),
-        screensaverClient(screensaverTransport,
-                          Session::DesktopControls::Settings1ScreensaverPreferences::scopedKeys()),
-        screensaverPreferences(screensaverClient),
-        lockScreenSaver(
-            QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
-                .filePath(QStringLiteral("kscreenlockerrc"))),
-        screensaverSettings(screensaverPreferences, screensaverClient,
-                            lockScreenSaver),
         lidPowerButton(QDBusConnection::sessionBus()),
         lidPowerButtonPort(lidPowerButton),
         profilePowerAdapter(QDBusConnection::sessionBus()),
@@ -74,11 +62,6 @@ public:
         qWarning("power settings: idle display-off preference client failed: %s",
                  qUtf8Printable(idleError));
       }
-      QString screensaverError;
-      if (!screensaverClient.start(&screensaverError)) {
-        qWarning("power settings: screensaver preference client failed: %s",
-                 qUtf8Printable(screensaverError));
-      }
     }
   }
 
@@ -87,7 +70,6 @@ public:
     client.stop();
     displayClient.stop();
     idleClient.stop();
-    screensaverClient.stop();
     lidPowerButton.stop();
     profilePowerAdapter.stop();
   }
@@ -100,23 +82,13 @@ public:
   DisplayClient::Client displayClient;
   ExternalDisplayBrightnessModel externalBrightness;
   Services::SessionActions::SessionActionsClient sessionActions;
-  std::unique_ptr<IniScreenLockPreferencesStore> screenLockStore;
-  QtScreenLockConfigureClient screenLockConfigure;
-  ScreenLockSettingsModel screenLockSettings;
+  std::unique_ptr<SettingsScreenLock::IniScreenLockPreferencesStore> screenLockStore;
+  SettingsScreenLock::QtScreenLockConfigureClient screenLockConfigure;
+  SettingsScreenLock::ScreenLockSettingsModel screenLockSettings;
   Services::SettingsClient::QtSettingsTransport idleTransport;
   Services::SettingsClient::SettingsClient idleClient;
   Session::DesktopControls::Settings1IdlePreferences idlePreferences;
   IdleDisplaySettingsModel idleDisplaySettings;
-  // ADR-0126: Settings1 rejects a whole snapshot on one unknown key, so
-  // the screensaver pair gets its own client instead of widening the idle
-  // one. Declared after the idle members so it is destroyed before them.
-  Services::SettingsClient::QtSettingsTransport screensaverTransport;
-  Services::SettingsClient::SettingsClient screensaverClient;
-  Session::DesktopControls::Settings1ScreensaverPreferences screensaverPreferences;
-  // The greeter mirror writes only the `[Greeter]` wallpaper keys of the same
-  // kscreenlockerrc the screen-lock section's own store writes `[Daemon]` in.
-  KConfigLockScreenSaverStore lockScreenSaver;
-  ScreensaverSettingsModel screensaverSettings;
   Session::PowerDevilLid::PowerDevilLidAdapter lidPowerButton;
   QtPowerDevilLidPolicyPort lidPowerButtonPort;
   Session::PowerDevilProfile::PowerDevilProfileAdapter profilePowerAdapter;
@@ -137,10 +109,6 @@ QObject *PowerRouteComposition::screenLockSettings() const {
 
 QObject *PowerRouteComposition::idleDisplaySettings() const {
   return &d->idleDisplaySettings;
-}
-
-QObject *PowerRouteComposition::screensaverSettings() const {
-  return &d->screensaverSettings;
 }
 
 } // namespace QindaQt::Apps::SettingsPower

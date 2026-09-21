@@ -7,9 +7,15 @@
 
 namespace QindaQt::Session::DesktopControls {
 
-// Idle screensaver preference. `saver` is the chosen program token; the
-// reserved token "none" disables the feature. `minutes` is the idle delay
-// before the saver starts, clamped to 1..maximumTimeoutMinutes().
+class ScreensaverCatalog;
+
+// Idle screensaver preference. `saver` is the chosen token: the reserved
+// token "none" disables the feature, the reserved token "blank" shows a plain
+// dark screen once the session locks without running any program while
+// unlocked, and any other value names a discovered installed saver (the
+// program name from its desktop entry; see ScreensaverCatalog). `minutes` is
+// the idle delay before the saver starts, clamped to
+// 1..maximumTimeoutMinutes().
 //
 // This is display decoration only: it never locks the session and never
 // touches the separate screen-lock or display-off preferences.
@@ -20,29 +26,23 @@ struct ScreensaverPreferences final {
     [[nodiscard]] static constexpr int maximumTimeoutMinutes() noexcept { return 240; }
     [[nodiscard]] static constexpr int defaultTimeoutMinutes() noexcept { return 5; }
 
-    // The reserved off token, and every saver Settings may offer. An
-    // unrecognized persisted token degrades to "none" rather than being
-    // handed to QProcess as a program name.
+    // The two reserved tokens. Everything else comes from discovery, so no
+    // list of savers lives here any more (ADR-0226).
     [[nodiscard]] static const QString &noneToken();
-    [[nodiscard]] static const QStringList &knownSavers();
+    [[nodiscard]] static const QString &blankToken();
 
-    // AGENT-CONTRACT: the locker draws a saver by importing its QML module
-    // into the greeter's wallpaper plugin (ADR-0216), so only a saver that
-    // ships one can appear on a locked screen. The SDL/OpenGL savers ship no
-    // QQuickItem; choosing one leaves the user's own lock wallpaper alone
-    // rather than replacing it with a blank ground.
-    [[nodiscard]] static bool showsOnLockScreen(const QString &saver);
-    [[nodiscard]] bool showsOnLockScreen() const;
-
+    // True when a saver program should run while idle: any resolved token
+    // other than "none" or "blank". "blank" is deliberately not enabled --
+    // it is a lock-screen appearance, not a process to start.
     [[nodiscard]] bool enabled() const noexcept;
-    // The program to launch, or an empty string when disabled.
-    [[nodiscard]] QString program() const;
-    // The fixed command line for the chosen saver: every output, no telemetry.
-    [[nodiscard]] QStringList arguments() const;
 
-    // Maps the persisted Settings1 pair into a bounded preference.
-    [[nodiscard]] static ScreensaverPreferences fromPersisted(const QString &saver,
-                                                              qint64 persistedMinutes);
+    // Maps the persisted Settings1 pair into a bounded preference. A token
+    // that is neither reserved nor present in the catalog degrades to "none"
+    // rather than being handed to QProcess as a program name: persistence can
+    // never supply a program name of its own.
+    [[nodiscard]] static ScreensaverPreferences
+    fromPersisted(const QString &saver, qint64 persistedMinutes,
+                  const ScreensaverCatalog &catalog);
 
     friend bool operator==(const ScreensaverPreferences &,
                            const ScreensaverPreferences &) = default;

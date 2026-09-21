@@ -5,10 +5,11 @@
 #include <QObject>
 #include <QString>
 
-namespace QindaQt::Apps::SettingsPower {
+namespace QindaQt::Apps::SettingsScreensaver {
 
 // Boundary for the one fact a locked session needs: which screensaver its
-// greeter should draw (ADR-0216). KScreenLocker's greeter renders a KPackage
+// greeter should draw (ADR-0216). Lives with the Screen saver route
+// (ADR-0226), the one place the saver choice is made. KScreenLocker's greeter renders a KPackage
 // wallpaper plugin, so "the saver runs while locked" is a greeter
 // configuration, not a process QindaQt starts above the lock screen.
 //
@@ -41,4 +42,4 @@ private:
   QString m_filePath;
 };
 
-} // namespace QindaQt::Apps::SettingsPower
+} // namespace QindaQt::Apps::SettingsScreensaver
