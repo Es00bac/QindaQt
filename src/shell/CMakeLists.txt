@@ -133,6 +133,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/runtime_layout_adoption.h
         runtime/launchershortcut.cpp
         runtime/launchershortcut.h
+        runtime/gatheroverviewshortcut.cpp
+        runtime/gatheroverviewshortcut.h
         runtime/panelvisibilityshortcut.cpp
         runtime/panelvisibilityshortcut.h
         runtime/panelvisibilitytimer.cpp
@@ -231,6 +233,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shortcutnoteshortcut.h
         runtime/wallpapercontroller.cpp
         runtime/wallpapercontroller.h
+        runtime/gatheroverviewcomposition.cpp
+        runtime/gatheroverviewcomposition.h
         runtime/tasklistappletcomposition.cpp
         runtime/taskorderpersistence.cpp
         runtime/panelquickconfig.cpp
@@ -339,6 +343,14 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             # desktop-surface tests do) or the installed shell reports
             # `No module named "QindaQt.Shell.DesktopSurface" found`.
             qindaqt_desktop_surface_qmlplugin
+            QindaQt::ShellGatherOverview
+            QindaQt::ShellGatherOverviewUi
+            # AGENT-CONTRACT: same reason as the desktop surface above -
+            # GatherOverviewWindow is loaded with loadFromModule and never
+            # imported from QML, so its static plugin must be linked by hand
+            # or the shell reports `No module named
+            # "QindaQt.Shell.GatherOverview" found`.
+            qindaqt_shell_gather_overview_uiplugin
             QindaQt::ShellWorkspacesDBus
             QindaQt::StatusNotifierHost
             QindaQt::StatusNotifierWatcher

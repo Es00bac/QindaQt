@@ -9,6 +9,8 @@
 #include "smartlightsappletcomposition.h"
 #include "obsappletcomposition.h"
 #include "desktopcontrolscomposition.h"
+#include "gatheroverviewcomposition.h"
+#include "gatheroverviewshortcut.h"
 #include "power_applet_controller.h"
 #include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
 #include "qindaqt/shell/desktop_surface/desktop_surface_controller.h"
@@ -555,6 +557,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_statusNotifierApplet->access(), m_smartLightsApplet->access(),
             m_obsApplet->access());
     m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
+    m_windowFactory->setGatherOverviewAccess(m_gatherOverview.get());
     // The panel right-click configuration facade composes over the shared
     // Settings1 client and the Settings route launcher (both owned above).
     m_panelQuickConfig = std::make_unique<PanelQuickConfig>(*m_settingsClient,
