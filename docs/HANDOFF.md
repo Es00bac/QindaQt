@@ -1,5 +1,80 @@
 # Integration handoff
 
+## September 20 — panel popups, start panel, terminal, layouts and applets
+
+Integration boundary: main `4fd1372e897ae34d33f11155d4a30a1d7ef3526f`, packaged
+as `gui-wm/qindaqt-desktop-0.1.0_pre20260920` pinning that exact commit.
+
+Exact commits:
+
+| Commit | Outcome | ADR |
+| --- | --- | --- |
+| `9d199663` | One owner for panel popup placement | 0221 |
+| `8cc89b85` | The start panel builds only the rows it can show | — |
+| `2f266c1a` | QQ_Term is the desktop terminal; `qindaqt-terminal` removed | 0222 |
+| `3c79dd56` | Two pre-existing System Monitor `-Werror` breaks fixed | — |
+| `f75dddd7` | Nine stock layouts, one per distinct feel | 0223 |
+| `72372645` | The three missing applets and the start-menu variants | 0224 |
+| `4fd1372e` | Gate and record follow-through for the two removals | — |
+
+Cross-repository: `QindaQt_Apps` `b6df3d2` (the `qqterm -e PROGRAM ARG...`
+form) and `a543a31` (its packaging); `QindaGentoo` `64c84a8`
+(`gui-apps/qqterm-0.1.0_p20260920`) and `a390fe4` (this desktop revision).
+All three repositories are pushed to their bare hubs and to GitHub.
+
+### Cross-repository contract
+
+The terminal is no longer built here, so six values are now a contract with
+`QindaQt_Apps`: the executable `qqterm`, the desktop entry
+`org.qindaqt.QQTerm.desktop`, `StartupWMClass=qqterm`, the icon name `qqterm`,
+the single-instance bus name `org.qindaqt.QQTerm`, and the
+`qqterm -e PROGRAM [ARG...]` form the launch policy appends to. Changing any
+of them on either side is a breaking change. `gui-apps/qqterm` is a **PDEPEND**
+of the desktop package, not an RDEPEND: qqterm build-depends on this package's
+installed libraries, so an RDEPEND would be a cycle.
+
+### Verified gates
+
+- Full build clean under the strict warning set, on the complete tree.
+- 193 focused rows green: profiles, applets, task list, start menu, panel QML,
+  global menu, launcher, controls, desktop controls, session defaults.
+- Broad safe suite over 976 rows.
+- `mkdocs build --strict` and the repository link checker pass; 345 documents.
+- Portage resolves `=gui-wm/qindaqt-desktop-0.1.0_pre20260920` and
+  `=gui-apps/qqterm-0.1.0_p20260920` with no dependency cycle.
+
+### Measured, not asserted
+
+- Start panel program rows instantiated on open: **336 of 336 before, 16 of
+  336 after**, over a 364 px viewport. The regression row fails above 120 rows
+  and below 8, so neither eager instantiation nor an empty list can pass it.
+
+### Pre-existing failures, reproduced on the base commit
+
+- `qindaqt.file-manager-mutation-ui-actions-offscreen` ("sort changed selected
+  identities") fails identically at base `d2c78564` in a fresh worktree. No
+  file under `src/apps/file_manager`, `tests/apps/file_manager` or
+  `src/application_catalog` changed in this wave.
+- `desktop.virtual.stage-closure` — `QindaQt.SettingsApp.StreamingBackend` has
+  no `qmldir`; belongs to the audio/OBS lane.
+- `shell.notification-live.{scale-125,scale-150,race-10x}` exercise the
+  **installed** r9 package in a nested session and fail on a sandbox without
+  PipeWire/RTKit and without a cursor theme.
+
+### Bounded caveats
+
+- The gather overview requested during this wave is **not** delivered. KWin's
+  top-left hot corner is released for it and the session default is seeded
+  missing-only, but the surface needs live window previews and the compositor
+  texture readback for those is recorded as not yet implemented in
+  [ADR-0119](wiki/adr/0119-authenticated-window-preview-channel.md) — the same
+  blocker as dock hover thumbnails.
+- `docs/wiki/handbook/catalog/assets.md` still records eleven profiles and
+  older applet counts; it is an explicit snapshot at a named commit.
+- `tools/check-source-shape` was not re-verified on the final tree (it exceeded
+  a 300-second budget here). This wave removes about 15k lines and adds no file
+  near the decomposition threshold.
+
 ## September 19 — shell owner-loss heap corruption repaired without ending the session
 
 Main repair `999d5d65cf6776ef43568a4180b5260c5f78208a` is integrated. Exact
