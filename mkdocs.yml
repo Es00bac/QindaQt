@@ -43,6 +43,7 @@ nav:
       - Qt platform appearance: architecture/qt-platform-theme.md
       - Compositor and session: architecture/compositor-session.md
       - Hybrid topology: architecture/hybrid-topology.md
+      - Gather overview: compositor/gather-overview.md
       - Hybrid constraints: architecture/hybrid-constraints.md
       - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
