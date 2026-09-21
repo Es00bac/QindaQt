@@ -40,6 +40,7 @@
       "applets": [
         {"id": "dashboard", "plugin": "dashboard", "settings": {"zone": "start"}},
         {"id": "audio", "plugin": "audio", "settings": {"zone": "center"}},
+        {"id": "voice", "plugin": "voice", "settings": {"zone": "center"}},
         {"id": "bluetooth", "plugin": "bluetooth", "settings": {"zone": "center"}},
         {"id": "power", "plugin": "power", "settings": {"zone": "center"}},
         {"id": "smart-lights", "plugin": "smart-lights", "settings": {"zone": "center"}},

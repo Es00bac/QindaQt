@@ -6,6 +6,15 @@ interoperates with a QindaQt desktop: synthetic dictation into an ordinary
 app and a terminal, focus capture including a grouped window member, and
 GlobalShortcuts portal registration/routing.
 
+These rows predate QindaQt's own voice contract. They establish that Gabbee's
+delivery, focus capture and shortcut paths work on this desktop; the contract
+by which the desktop *consumes* a voice provider is
+[`org.qindaqt.Voice1`](../architecture/voice-input.md), and its own
+cross-implementation row is `session.voice-interop` in `tests/session/voice/`.
+The two are complementary: this page is about text reaching a window, that row
+is about the desktop and a provider agreeing on what they are saying to each
+other.
+
 The evidence assets live in `tests/session/gabbee/`.  Everything they do is
 host-safe: no microphone capture (a fixed silent WAV replaces Gabbee's
 recorder), no typing tool (PATH is stripped of `dotool`/`xdotool`), no uinput

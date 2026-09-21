@@ -247,6 +247,7 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellSmartLightsAppletRuntime
+            QindaQt::ShellVoiceAppletRuntime
             QindaQt::ShellClipboardAppletRuntime
             QindaQt::ShellLauncherQml
             QindaQt::ShellPowerAppletRuntime
@@ -256,6 +257,7 @@ if(TARGET qindaqt-shell)
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
             qindaqt_shell_smart_lights_applet_runtimeplugin
+            qindaqt_shell_voice_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_obs_applet_runtimeplugin
             qindaqt_shell_gather_overview_uiplugin

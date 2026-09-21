@@ -6,6 +6,7 @@ import QindaQt.SettingsApp.AboutComputer
 import QindaQt.SettingsApp.Startup
 import QindaQt.SettingsApp.ScreenSaver
 import QindaQt.SettingsApp.LoginScreen
+import QindaQt.SettingsApp.Voice
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -76,6 +77,17 @@ QtObject {
         LoginScreenPage {
             objectName: "loginScreenPage"
             loginScreenSettings: LoginScreenRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    // The Voice route. Same shape as the others: the page takes its model
+    // from the module's own composition singleton, which owns the Settings1
+    // and Voice1 clients for the route.
+    readonly property Component voice: Component {
+        VoicePage {
+            objectName: "voicePage"
+            voiceSettings: VoiceRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

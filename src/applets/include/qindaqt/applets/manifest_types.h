@@ -45,6 +45,8 @@ enum class Capability {
     BluetoothControl,
     SmartLightRead,
     SmartLightControl,
+    VoiceRead,
+    VoiceControl,
     StreamingRead,
     StreamingControl,
     DisplayRead,

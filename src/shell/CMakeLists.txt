@@ -67,6 +67,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
         TARGET qindaqt_shell_smart_lights_applet_runtime
+        TARGET qindaqt_shell_voice_applet_runtime
         TARGET qindaqt_shell_task_list_applet
         TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
         TARGET qindaqt_shell_desktop_controls_runtime
@@ -85,6 +86,7 @@ target_link_libraries(
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
         QindaQt::ShellSmartLightsAppletRuntime
+        QindaQt::ShellVoiceAppletRuntime
         QindaQt::ShellObsAppletRuntime
         QindaQt::ShellTaskListApplet
         QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
@@ -223,6 +225,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellpreferencevalues.h
         runtime/smartlightsappletcomposition.cpp
         runtime/smartlightsappletcomposition.h
+        runtime/voiceappletcomposition.cpp
+        runtime/voiceappletcomposition.h
         runtime/obsappletcomposition.cpp
         runtime/obsappletcomposition.h
         runtime/shellstartuppreferences.cpp
@@ -290,6 +294,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
             TARGET qindaqt_shell_smart_lights_applet_runtime
+            TARGET qindaqt_shell_voice_applet_runtime
             TARGET qindaqt_shell_task_list_applet
             TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
             TARGET qindaqt_shell_desktop_controls_runtime
@@ -326,6 +331,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
             QindaQt::ShellSmartLightsAppletRuntime
+            QindaQt::ShellVoiceAppletRuntime
             QindaQt::ShellObsAppletRuntime
             QindaQt::WizUdpTransport
             QindaQt::ShellTaskListApplet

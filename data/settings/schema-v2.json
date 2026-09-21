@@ -346,6 +346,18 @@
       "default": false
     },
     {
+      "key": "services.voiceInput",
+      "domain": "services",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "services.voicePanelTranscript",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    },
+    {
       "key": "services.notifications",
       "domain": "services",
       "type": "boolean",

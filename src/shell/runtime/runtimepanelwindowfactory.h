@@ -49,6 +49,9 @@ class BluetoothAppletController;
 namespace PowerApplet {
 class PowerAppletController;
 }
+namespace VoiceApplet {
+class VoiceAppletController;
+}
 namespace ObsApplet {
 class ObsAppletController;
 }
@@ -79,6 +82,7 @@ public:
                               ShellTaskListApplet::TaskListAppletController *taskListAppletAccess,
                               StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess,
                               SmartLightsApplet::SmartLightsAppletController *smartLightsAppletAccess,
+                              VoiceApplet::VoiceAppletController *voiceAppletAccess,
                               ObsApplet::ObsAppletController *obsAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
@@ -134,6 +138,7 @@ private:
     ShellTaskListApplet::TaskListAppletController *m_taskListAppletAccess = nullptr;
     StatusNotifierApplet::StatusNotifierAppletController *m_statusNotifierAppletAccess = nullptr;
     SmartLightsApplet::SmartLightsAppletController *m_smartLightsAppletAccess = nullptr;
+    VoiceApplet::VoiceAppletController *m_voiceAppletAccess = nullptr;
     ObsApplet::ObsAppletController *m_obsAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
     QObject *m_gatherOverviewAccess = nullptr;

@@ -5,6 +5,55 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 21 — voice input is a first-class desktop feature
+
+The desktop now owns a voice contract and consumes it from three surfaces. It
+implements none of it: `org.qindaqt.Voice1` is QindaQt's interface, and a
+separate provider process does the listening, transcribing and inserting.
+[ADR-0233](wiki/adr/0233-own-voice-input-as-a-contract-not-an-implementation.md)
+records why, and [Voice input](wiki/architecture/voice-input.md) is the
+normative page.
+
+What landed:
+
+- `QindaQt::VoiceProtocol` — the `a{sv}` wire contract, its bounds and its
+  validation. A provider is implementable in any language on purpose; the
+  strictness a D-Bus structure would have given is recovered on decode.
+- `QindaQt::VoiceClient` — exact-owner consumption, revision ordering, one
+  in-flight intent, and uncertainty that is reported rather than replayed.
+  `QtVoiceTransport` is the only translation unit with a bus.
+- The Voice panel applet: a microphone chip with capture state, a level meter,
+  the live partial, and the last-dictation actions, behind `voice.read` /
+  `voice.control`. Placed in the stock profile's top bar beside audio.
+- The Settings Voice route: the desktop's two preferences
+  (`services.voiceInput`, `services.voicePanelTranscript`), the provider's
+  live state and capabilities, provider choice, and a "try it" control.
+- `qindaqt-voice`, the QindaTK console: this session's dictation history,
+  provider detail, and every intent in one window. It is the second consumer,
+  which is what justifies the protocol/client/presentation split.
+
+Gabbee is the provider packaged with the desktop. Its side of the contract
+(`gabbee.qindaqt_voice`), a recorder peak-level observer, an `input_enabled`
+flag `start()` honours, and D-Bus activation landed in its own repository as
+`6a64da06`, together with the whole previously uncommitted realtime stack.
+
+Verification: strict Debug build of the whole tree and the 1000-row suite.
+Every row this adds or touches passes; the remaining failures are two
+`-j4` timeouts that pass in isolation and pre-existing File Manager,
+Secret Service and fractional-scaling baseline rows, all listed in
+[Handoff](HANDOFF.md). The documentation validator covers 342 pages and
+Gabbee's own suite is 221/221. The provider was
+published on a private session bus and driven by an independent client:
+introspection reports `a{sv}` on every member and a second `StartDictation`
+over a live recording is refused with `already-capturing`. Two defects that
+run found are fixed and covered: a `pyqtSignal(object)` on the exported class
+was being offered on the bus and rejected, and `VoiceClient` stayed in
+`Starting` forever when no provider was installed.
+
+Not claimed: no microphone, no speech provider and no text insertion into a
+real window was exercised. `session.voice-interop` is the row that drives the
+real provider end to end and needs a host with a Gabbee checkout.
+
 ## September 20 — panel popups, start panel, terminal and layouts
 
 Integrated `9d199663`, `8cc89b85`, `2f266c1a`, `3c79dd56`, `f75dddd7` and
@@ -71,7 +120,6 @@ bookmark layout. Independent source review, affected builds, twelve focused
 CTest rows across the repair runs, and strict documentation checks pass.
 This is build-tree verification; see [handoff](HANDOFF.md) for coverage and the
 separate backend findings. It does not advance an unrelated roadmap milestone.
-
 ## September 19 — UI overflow and Audio/OBS repair installed
 
 Desktop r8 (`c99d39c4`) and QindaTK r2 (`d59b080c`) are installed on both

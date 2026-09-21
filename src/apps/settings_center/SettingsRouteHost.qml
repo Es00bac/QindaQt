@@ -38,6 +38,7 @@ Item {
     property Component startupComponent: null
     property Component screensaverComponent: null
     property Component loginScreenComponent: null
+    property Component voiceComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -85,6 +86,7 @@ Item {
             : navigation.activeRouteComponent === "startup" ? startupLoader
             : navigation.activeRouteComponent === "screensaver" ? screensaverLoader
             : navigation.activeRouteComponent === "login-screen" ? loginScreenLoader
+            : navigation.activeRouteComponent === "voice" ? voiceLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -385,6 +387,18 @@ Item {
                 && host.navigation.activeRouteComponent === "login-screen"
                 && host.loginScreenComponent !== null
         sourceComponent: host.loginScreenComponent
+    }
+
+    Loader {
+        id: voiceLoader
+        objectName: host.objectNamePrefix + "VoiceLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "voice"
+                && host.voiceComponent !== null
+        sourceComponent: host.voiceComponent
     }
 
     Loader {

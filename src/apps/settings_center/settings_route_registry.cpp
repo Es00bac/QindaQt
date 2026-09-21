@@ -280,6 +280,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerStartupRoute();
   registerScreensaverRoute();
   registerLoginScreenRoute();
+  registerVoiceRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -430,6 +431,25 @@ void SettingsRouteRegistry::registerLoginScreenRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(loginScreenRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerVoiceRoute() {
+  // ADR-0233: appended after the Login screen route, same ADR-0128 rule, so
+  // no existing index, shortcut or traversal position moves.
+  const SettingsRoute voiceRoute{
+      .id = QStringLiteral("voice"),
+      .component = SettingsRouteComponent::Voice,
+      .title = QCoreApplication::translate("SettingsCenter", "Voice"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Dictation, speech provider, and shortcuts"),
+      .iconName = QStringLiteral("audio-input-microphone"),
+      .category = QCoreApplication::translate("SettingsCenter", "Personalization"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(voiceRoute);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }

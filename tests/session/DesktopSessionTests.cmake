@@ -73,6 +73,8 @@ set(
     qindaqt_settings_about_computer_qmlplugin
     qindaqt_settings_startup_qml
     qindaqt_settings_startup_qmlplugin
+    qindaqt_settings_voice_qml
+    qindaqt_settings_voice_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )

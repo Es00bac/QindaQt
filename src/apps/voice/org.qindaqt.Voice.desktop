@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Voice
+GenericName=Dictation Console
+Comment=Dictate into any window, and review what you said
+Exec=qindaqt-voice
+Icon=qindaqt-voice
+Terminal=false
+Categories=Qt;Utility;Accessibility;
+StartupNotify=true
+Keywords=Voice;Dictation;Speech;Microphone;Transcription;Talk;

@@ -1,5 +1,117 @@
 # Integration handoff
 
+## September 21 — voice input reviewed in source, not yet installed
+
+The voice slice is complete in source and unbuilt on either host. Nothing in
+this section is installed, and no desktop has been restarted.
+
+**Reviewed source.** `QindaQt::VoiceProtocol`, `QindaQt::VoiceClient`, the
+Voice panel applet and its shell composition, the Settings Voice route, and
+`qindaqt-voice`. `data/applets/voice.json`, the `voice.read`/`voice.control`
+policy grants, the stock profile placement, two `services.*` schema keys, and
+six microphone icons. [ADR-0233](wiki/adr/0233-own-voice-input-as-a-contract-not-an-implementation.md)
+and four wiki pages; the documentation validator covers 342 pages.
+
+**Verified runtime behaviour.** Strict Debug build of the whole tree on
+qinda-top. `qindaqt.voice-protocol`, `qindaqt.voice-client`,
+`qindaqt.voice-applet` and `session.sessionenvironment` pass. `qindaqt-voice` starts offscreen with no
+provider present, loads its QindaTK QML without error, and reports the absence
+rather than hanging.
+
+Cross-implementation evidence: Gabbee's real provider was published on a
+private session bus and queried by an independent client. Introspection
+reports `a{sv}` on every member of `org.qindaqt.Voice1`; `GetSnapshot`
+returned a payload that passes QindaQt's validation unchanged (that exact
+payload is now a fixture in `qindaqt.voice-protocol`); and `StartDictation`
+against a live recording was refused with `already-capturing`. That run found
+two real defects, both fixed and covered by rows: a `pyqtSignal(object)` on
+the exported provider class was being offered on the bus and rejected by Qt on
+every registration, and `VoiceClient` stayed in `Starting` indefinitely when
+no provider was installed, because an empty owner was collapsed as
+"unchanged". `QtVoiceTransport` now reports an empty owner when D-Bus
+activation is refused.
+
+**The one session-wide change, and why it needs a live check first.**
+`SessionEnvironment` now points `QT_IM_MODULE`, `GTK_IM_MODULE` and
+`XMODIFIERS` at IBus when an `ibus-daemon` is installed and the user has set
+none of the three. That is what gives a Qt or GTK application an input-method
+context, and without it voice input's primary delivery route cannot reach any
+window — it is the difference between "works anywhere a keyboard works" and
+"works where an accessibility node happens to exist". It is also the only
+change here that affects text input for the whole session rather than only
+voice, and two offscreen rows are the limit of what can be proven without a
+seat: that the variables are offered exactly when `ibus-daemon` exists, and
+that one user-set variable suppresses all three. Type into a terminal, a
+browser and a Qt application in a real session before this revision is
+installed anywhere.
+
+**Not verified.** No microphone, no speech provider, no transcription, and no
+text insertion into a real window. The panel applet has not been rendered in a
+live session, and the Settings Voice route has not been opened in one.
+`session.voice-interop` drives the real provider end to end and skips (77)
+without a Gabbee checkout; it has not been run on qinda.
+
+**Provider side.** Gabbee `5cbc0b4a07effa9689bbf032da5f1125bc8d4c26` on `main`,
+pushed to `qinda:~/git/gabbee.git` and to `github.com/Es00bac/gabbee`. The
+first of its three commits also lands the whole previously uncommitted
+realtime stack; the suite is 221/221.
+`app-accessibility/gabbee-0.1.0_p20260921` pins it.
+
+**Suite state.** 1000 rows, 514s wall at `-j4`. Every row this change adds or
+touches passes. The closing run's failures break down as follows.
+
+*Caused here, and fixed:* `compositor.kwin-plugin-dependency-contract`
+configures the tree with the shell switched off, and the new
+`tests/shell/voice_applet` row was registered outside `QINDAQT_BUILD_SHELL`,
+so that configure could not resolve `QindaQt::ShellVoiceAppletRuntime`. The row
+now sits inside the guard with the other applet rows.
+
+*Repaired because it blocked verifying this change.*
+`desktop.virtual.stage-closure` was already red on `QindaQt.SettingsApp.
+StreamingBackend has no qmldir`: StreamingBackend is the fourth static backend
+module with no install rule, and the exemption list that already names
+PowerBackend, ColorBackend and InputBackend had missed it.
+
+The row now also takes `AddedRouteComponents.qml` as an input. Main.qml
+instantiates that file but does not import the route modules, so every route
+appended after the original ten — Date & time, Default applications, About this
+computer, Startup applications, Screen saver, Login screen and Voice — was
+staged unchecked. With it checked, the row immediately found that **Screen
+saver, Login screen and Voice are absent from
+`tests/session/DesktopSessionRouteStaging.cmake`**, the list that stages route
+modules into the private `DesktopVirtual` component. That file's own note says
+what a missing entry costs: the staged Settings Center cannot load the module,
+the nested desktop rows time out, and this row reports the module as having no
+qmldir. Two of the three omissions predate this change and were latent on
+`main`; all three are now listed. `QindaQt.Shell.VoiceApplet` is likewise added
+to `tests/session/DesktopVirtualAppletModules.cmake`, the equivalent list for
+shell applet modules.
+
+The row is still red, and deliberately left there. Each repair uncovers the
+next module the closure had never reached: it now stops at
+`QindaQt.Shell.ClipboardApplet`, and `QindaQt.Shell.GatherOverview` is also
+absent from the applet staging list. Neither is voice's, both predate this
+change, and both belong to the lanes that own those applets. What this change
+owes the row — the StreamingBackend exemption, the three route modules and the
+Voice applet module — is done; chasing the rest would be editing another
+lane's pending work.
+
+*Load-dependent, not defects:* `qindaqt.settings-customize-installed-route` and
+`qindaqt.settings-app-route-construction` time out under `-j4` and pass in
+isolation at ~40s each.
+
+*Pre-existing and untouched:* `qindaqt.file-manager-viewport` and
+`qindaqt.file-manager-browsing-ui` fail in `test_bookmarkOverflow` with "Cannot
+read property 'visible' of null" — File Manager, another lane's ownership.
+`qindaqt.secret-service-provider` and `-wrong-password` need a real Secret
+Service on the session bus. The fourteen `controls-visual-125/150` rows compare
+against baselines at fractional scaling; nothing under `src/controls` or
+`tests/controls` was touched here.
+
+**Next boundary.** Build and install the desktop revision and the provider on
+qinda, then qualify the applet, the route and the console in a live session
+with a real microphone.
+
 ## September 20 — panel popups, start panel, terminal, layouts and applets
 
 Integration boundary: main `4fd1372e897ae34d33f11155d4a30a1d7ef3526f`, packaged
@@ -149,7 +261,6 @@ This evidence covers the build tree and isolated fixtures. Package installation
 and live-session adoption are separate. The requested Desktop bug ledger also
 records pre-existing local/network history routing, rejected remote-location
 admission reporting, and synchronous filesystem/search cancellation findings.
-
 ## September 19 — overflow, Audio/OBS and matching login themes installed
 
 Both qinda and qinda-top have desktop

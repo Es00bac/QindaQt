@@ -42,6 +42,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Startup:
   case SettingsRouteComponent::Screensaver:
   case SettingsRouteComponent::LoginScreen:
+  case SettingsRouteComponent::Voice:
     return true;
   }
   return false;
@@ -89,6 +90,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("screensaver");
   case SettingsRouteComponent::LoginScreen:
     return QStringLiteral("login-screen");
+  case SettingsRouteComponent::Voice:
+    return QStringLiteral("voice");
   }
   return {};
 }
