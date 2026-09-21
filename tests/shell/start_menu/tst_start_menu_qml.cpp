@@ -5,6 +5,8 @@
 #include <QQmlExtensionPlugin>
 #include <QtTest>
 
+#include <cmath>
+
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
@@ -181,6 +183,7 @@ private Q_SLOTS:
     void popupTraversesAndActivatesThroughStubs();
     void logOffConfirmsThroughSessionFacade();
     void buttonWidthContainsItsLabel();
+    void panelOpensAgainstTheStartButtonOnEveryPanelEdge();
 };
 
 void StartMenuQmlTests::disabledFallbackWithoutAccess()
@@ -447,6 +450,70 @@ void StartMenuQmlTests::buttonWidthContainsItsLabel()
     QVERIFY(host.item->setProperty("vertical", true));
     QTRY_VERIFY(!label->isVisible());
     QTRY_COMPARE(host.item->implicitWidth(), 56.0);
+}
+
+// AGENT-GUARD (regression): the start panel is placed by
+// QindaQt.Controls.PanelPopup. Before that was shared, StartMenuPopup opened
+// with no placement at all, so QtWayland anchored its xdg_positioner at the
+// top-right corner of the start button and the panel appeared in the upper
+// right of the button instead of above it on a bottom taskbar. These vectors
+// and the 1x1 positioner cell are the contract that prevents the regression.
+void StartMenuQmlTests::panelOpensAgainstTheStartButtonOnEveryPanelEdge()
+{
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("StartMenuApplet"), nullptr, nullptr,
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+
+    auto *popup = host.child<QObject>(QStringLiteral("startMenuPopup"));
+    QVERIFY(popup != nullptr);
+    // The panel is anchored to the applet cell the start button fills, never
+    // to the popup's own 1x1 positioner cell.
+    QCOMPARE(popup->property("anchorItem").value<QQuickItem *>(), host.item);
+
+    const auto place = [popup](QPointF anchor, qreal anchorWidth, qreal anchorHeight,
+                               qreal popupWidth, qreal popupHeight, const QString &edge,
+                               qreal boundsWidth, qreal boundsHeight) {
+        QVariant placed;
+        const bool invoked = QMetaObject::invokeMethod(
+            popup, "placementFor", Q_RETURN_ARG(QVariant, placed), Q_ARG(QVariant, anchor),
+            Q_ARG(QVariant, anchorWidth), Q_ARG(QVariant, anchorHeight),
+            Q_ARG(QVariant, popupWidth), Q_ARG(QVariant, popupHeight), Q_ARG(QVariant, edge),
+            Q_ARG(QVariant, boundsWidth), Q_ARG(QVariant, boundsHeight));
+        return invoked ? placed.toPointF() : QPointF(-9999, -9999);
+    };
+    // A bottom taskbar: the panel rises from the button's top-left corner, so
+    // its origin is a full panel height above the button and never to its right.
+    QCOMPARE(place({0, 4}, 56, 36, 380, 480, QStringLiteral("bottom"), 1920, 1080),
+             QPointF(0, -480));
+    // A top panel drops below the button instead.
+    QCOMPARE(place({0, 0}, 56, 36, 380, 480, QStringLiteral("top"), 1920, 1080),
+             QPointF(0, 36));
+    // A start button near the right end slides the panel back onto the output.
+    QCOMPARE(place({1860, 4}, 56, 36, 380, 480, QStringLiteral("bottom"), 1920, 1080),
+             QPointF(-320, -480));
+    // Side taskbars open beside the button and slide vertically.
+    QCOMPARE(place({0, 0}, 56, 36, 380, 480, QStringLiteral("left"), 1920, 1080),
+             QPointF(56, 0));
+    QCOMPARE(place({1864, 1000}, 56, 36, 380, 480, QStringLiteral("right"), 1920, 1080),
+             QPointF(-380, -400));
+
+    // The popup hangs off a 1x1 cell whose top-right corner is the placement
+    // origin: that cell, not the button, is what QtWayland's positioner reads.
+    popup->setProperty("panelEdge", QStringLiteral("bottom"));
+    QVERIFY(QMetaObject::invokeMethod(popup, "open"));
+    QTRY_VERIFY(popup->property("opened").toBool());
+    auto *cell = popup->property("parent").value<QQuickItem *>();
+    QVERIFY(cell != nullptr);
+    QCOMPARE(cell->objectName(), QStringLiteral("panelPopupPositionerAnchor"));
+    QCOMPARE(QSizeF(cell->width(), cell->height()), QSizeF(1, 1));
+    QCOMPARE(cell->parentItem(), host.item);
+    const QPointF origin = popup->property("placement").toPointF();
+    QCOMPARE(cell->x() + cell->width(), std::floor(origin.x()));
+    QVERIFY(QMetaObject::invokeMethod(popup, "close"));
+    QTRY_VERIFY(!popup->property("opened").toBool());
 }
 
 QTEST_MAIN(StartMenuQmlTests)

@@ -43,28 +43,17 @@ declares `luna`; other hosts never see it.
 
 ## Popup placement
 
-`ControlPopupFrame` owns placement for every control popup built on it. A
-popup opens flush with the left edge of the control that owns it and directly
-below it, directly above it when the hosting panel is on the bottom edge, and
-beside it for left and right panels. The edge comes from the hosting
-`RuntimePanel` model; hosts without one (the desktop surface, previews, tests)
-open away from the nearer horizontal output edge, and `panelEdge` overrides
-both. The popup then slides along the panel axis to stay on the output. The
-anchor position is window-local because a Wayland layer-shell client never
-learns where its window sits, so a clamp can be late for an offset panel but
-never wrong; the compositor's popup positioner remains the backstop.
+`ControlPopupFrame` does **not** own placement. It is the tokenized dressing of
+`QindaQt.Controls.PanelPopup`, the one owner of panel-popup placement for every
+panel surface (ADR-0221). A popup opens flush with the leading edge of the
+control that owns it and directly below it, directly above it when the hosting
+panel is on the bottom edge, and beside it for left and right panels, then
+slides along the panel axis to stay on the output.
 
-On Wayland, QtWayland ignores a `Popup.Window`'s `x` and `y` once the popup
-has a parent item and anchors it at that item's top-right corner instead. The
-frame therefore keeps the declared control as `anchorItem`, and as the area
-`CloseOnPressOutsideParent` measures, but parents the popup to a hidden 1×1
-positioner cell whose top-right corner is the placement origin. An
-xdg_positioner anchor may not leave its parent surface, so an origin outside
-the host window (above a bottom panel, left of a right panel) is clamped into
-it and the compositor's placement-area slide completes the placement. KWin's
-placement area excludes a panel's strut, so a top-bar popup opens at the
-control's left edge and at the lower of the control's bottom and the bar's
-bottom edge.
+The complete contract — edge resolution, the window-local clamp, and why the
+popup hangs off a hidden 1×1 positioner cell instead of its own control — is in
+[Panel popup placement](panel-popup-placement.md). The frame adds only its
+chrome, its `CloseOnPressOutsideParent` dismissal, and its width policy.
 
 The active application control shows the focused task row's application
 name. Task rows carry the desktop-entry name resolved from the compositor's

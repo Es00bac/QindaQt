@@ -73,13 +73,19 @@ Item {
         background: Item {}
     }
 
-    Popup {
+    C.PanelPopup {
         id: historyPopup
 
+        // AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the
+        // one owner of panel-popup placement (docs/wiki/shell/panel-popup-placement.md):
+        // it opens flush with the control's leading edge, above it on a bottom
+        // panel, beside it on a side panel, and slides to stay on the output.
+        // It also keeps the surface a real window, because a layer-shell panel
+        // rejects keyboard focus and cannot paint outside its own band.
+        anchorItem: summary
+        vertical: root.vertical
+
         objectName: "clipboardPanelPopup"
-        popupType: Popup.Window
-        modal: false
-        focus: true
         padding: 12
         width: 404
         height: Math.min(560, Math.max(160, popupContent.implicitHeight + 24))

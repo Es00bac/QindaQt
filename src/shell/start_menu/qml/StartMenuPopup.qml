@@ -13,10 +13,14 @@ import QindaQt.Tokens 1.0
 // the desktop-controls sub-facades. Pure presentation: activation, folder
 // opening, and session dispatch all re-enter the facades' own bounded seams.
 //
-// AGENT-GUARD: keep popupType Window. The layer-shell panel rejects keyboard
-// focus and cannot paint outside its surface, so like every outward-facing
-// shell surface (LauncherApplet, ControlPopupFrame) this panel must be its
-// own window and seed its initial focus itself.
+// AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the one
+// owner of panel-popup placement: the panel opens directly above the start
+// button on a bottom taskbar, below it on a top panel, beside it on a side
+// panel, and slides along the panel axis to stay on the output. Before that
+// was shared the panel inherited QtWayland's top-right positioner anchor and
+// opened in the upper-right corner of the start button. PanelPopup also keeps
+// the surface a real window: the layer-shell panel rejects keyboard focus and
+// cannot paint outside its surface, so this panel seeds its own initial focus.
 //
 // AGENT-NOTE: the footer log-off re-enters the session-actions facade that
 // SystemMenuController already projects (ADR-0070), gated by canLogout and
@@ -25,7 +29,7 @@ import QindaQt.Tokens 1.0
 // button renders disabled. The popup only emits logOffRequested — the
 // confirmation dialog lives beside this popup in StartMenuApplet, because a
 // dialog nested inside a popup closes together with its parent popup.
-T.Popup {
+C.PanelPopup {
     id: popup
 
     required property var launcher
@@ -49,13 +53,9 @@ T.Popup {
     signal logOffRequested()
 
     objectName: "startMenuPopup"
-    popupType: T.Popup.Window
     width: 380
     height: Math.min(480, panelColumn.implicitHeight + 2)
     padding: 0
-    modal: false
-    focus: true
-    closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
 
     onOpened: Qt.callLater(function() {
         if (popup.launcherReady)

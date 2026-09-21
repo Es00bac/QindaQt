@@ -12,8 +12,8 @@ list(LENGTH qml_files qml_count)
 # the matching one in run_installed_controls_consumer.cmake. TouchContextArea
 # was added with the list updated and both counts left behind, which is how two
 # rows went red on main.
-if(NOT qml_count EQUAL 20)
-    message(FATAL_ERROR "Expected 20 public Controls QML files, found ${qml_count}")
+if(NOT qml_count EQUAL 21)
+    message(FATAL_ERROR "Expected 21 public Controls QML files, found ${qml_count}")
 endif()
 
 set(allowed_imports

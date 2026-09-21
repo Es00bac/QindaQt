@@ -129,12 +129,19 @@ Item {
 
     // Operation feedback is a popup, so it remains actionable without ever
     // expanding the panel strip into a text card.
-    T.Popup {
+    C.PanelPopup {
         id: feedbackPopup
+
+        // AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the
+        // one owner of panel-popup placement (docs/wiki/shell/panel-popup-placement.md):
+        // it opens flush with the control's leading edge, above it on a bottom
+        // panel, beside it on a side panel, and slides to stay on the output.
+        // It also keeps the surface a real window, because a layer-shell panel
+        // rejects keyboard focus and cannot paint outside its own band.
+        anchorItem: root
+        vertical: root.vertical
         objectName: "statusNotifierFeedbackPopup"
         visible: root.hasAccess && access.feedbackPresent
-        popupType: T.Popup.Window
-        modal: false
         focus: visible
         closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
                      | T.Popup.CloseOnPressOutsideParent

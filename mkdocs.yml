@@ -77,6 +77,7 @@ nav:
       - Audio applet: shell/audio-applet.md
       - Bluetooth applet: shell/bluetooth-applet.md
       - Clipboard applet: shell/clipboard-applet.md
+      - Panel popup placement: shell/panel-popup-placement.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
@@ -358,3 +359,4 @@ nav:
       - "ADR-0218: use QindaTK and Poppler for the image/PDF viewer": adr/0218-use-qindatk-and-poppler-for-the-viewer.md
       - "ADR-0219: share completed work through qinda": adr/0219-share-completed-work-through-qinda.md
       - "ADR-0220: rebuild the System Monitor on QindaTK": adr/0220-rebuild-the-system-monitor-on-qindatk.md
+      - "ADR-0221: one owner for panel popup placement": adr/0221-one-owner-for-panel-popup-placement.md
