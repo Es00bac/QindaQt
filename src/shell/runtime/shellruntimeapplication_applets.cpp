@@ -150,12 +150,17 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
             *m_windowActionsTransport);
     m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(
         m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+    // ADR-0230: the Wine PE-icon cache root rides last in the task list's
+    // confined icon roots so every real themed icon still wins.
+    const QStringList taskListIconRoots =
+        Icons::IconRuntime::freedesktopIconRoots(
+            m_dataRoots.dataHome, m_dataRoots.dataDirectories)
+        + QStringList{Icons::IconRuntime::wineCacheIconRoot()};
     m_taskListApplet = std::make_unique<TaskListAppletComposition>(
         m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient,
         Icons::IconRuntime::freedesktopApplicationRoots(
             m_dataRoots.dataHome, m_dataRoots.dataDirectories),
-        Icons::IconRuntime::freedesktopIconRoots(
-            m_dataRoots.dataHome, m_dataRoots.dataDirectories),
+        taskListIconRoots,
         QStringList{[this] {
             QString themeName;
             QString ignoredError;

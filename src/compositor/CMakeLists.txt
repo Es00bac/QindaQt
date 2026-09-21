@@ -10,6 +10,10 @@ add_library(qindaqt_compositor_shell_actions STATIC
     src/shellwindowactions.cpp
     src/containerappearance.cpp
     src/foreignwindowidentity.cpp
+    src/steamappidentity.cpp
+    src/winelaunchpaths.cpp
+    src/peicon.cpp
+    src/wineidentitycache.cpp
 )
 add_library(QindaQt::CompositorShellActions ALIAS qindaqt_compositor_shell_actions)
 target_sources(
@@ -24,9 +28,15 @@ target_sources(
             include/qindaqt/compositor/shelltaskfacts.h
             include/qindaqt/compositor/containerappearance.h
             include/qindaqt/compositor/foreignwindowidentity.h
+            include/qindaqt/compositor/steamappidentity.h
+            include/qindaqt/compositor/winelaunchpaths.h
+            include/qindaqt/compositor/peicon.h
+            include/qindaqt/compositor/wineidentitycache.h
 )
 target_compile_features(qindaqt_compositor_shell_actions PUBLIC cxx_std_20)
-target_link_libraries(qindaqt_compositor_shell_actions PUBLIC Qt6::Core)
+# Qt6::Gui serves the ADR-0230 PE-icon extraction (QImage decode/encode);
+# every parser stays pure and file-free so the policy remains unit-testable.
+target_link_libraries(qindaqt_compositor_shell_actions PUBLIC Qt6::Core Qt6::Gui)
 set_target_properties(
     qindaqt_compositor_shell_actions
     PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON
