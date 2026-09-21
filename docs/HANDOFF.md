@@ -48,8 +48,40 @@ installed anywhere.
 **Not verified.** No microphone, no speech provider, no transcription, and no
 text insertion into a real window. The panel applet has not been rendered in a
 live session, and the Settings Voice route has not been opened in one.
-`session.voice-interop` drives the real provider end to end and skips (77)
-without a Gabbee checkout; it has not been run on qinda.
+
+**Run on qinda, and it found a real defect.** `session.voice-interop` now
+passes there against Gabbee `122e7b9` on a private bus: 31 checks, every one
+green, driven by the production `VoiceClient`. Getting there cost two fixes,
+both in QindaQt's own code:
+
+1. *The probe killed its own provider.* The publisher ended on stdin EOF, and
+   under CTest stdin is already closed, so it released the bus name before the
+   client connected. The run failed as `service-unavailable` against a
+   provider that had published correctly. The publisher now holds the name
+   until the driver kills it, with a timer only so an orphan cannot outlive
+   the run.
+2. *A mistyped array was a memory bomb.* PyQt6 marshals a Python list of `str`
+   as `av`, not `as`. `readStringList` hand-walked the array expecting string
+   elements; `QDBusArgument` does not advance when the element is not the type
+   being extracted, so the loop never ended. Against the real provider the
+   client allocated 26GB and was killed by the kernel before printing a single
+   check. The decoder now dispatches on the element signature, lets Qt walk
+   the array, accepts both `as` and `av` with per-element strictness, and
+   bounds the array before anything is built from it.
+
+The second one matters beyond the probe: the applet runs in the shell process,
+and the provider is replaceable by design, so any provider holding that bus
+name could have taken the shell down. Three rows in `qindaqt.voice-protocol`
+pin the decode and the bound; the spin itself can only be reproduced over a
+real bus, which is what `session.voice-interop` is for.
+
+The same unbounded `while (!argument.atEnd())` shape exists in other services
+that were not touched here — `audio_dbus.cpp`, `bluetooth_dbus.cpp`,
+`qt_shortcut_port.cpp`, `polkit_authority_probe.cpp` and
+`upstream_dbus_util.cpp` among them. Those talk to system services rather than
+to a replaceable third-party provider, so the exposure is different, but
+`bluez_transport.cpp` and `logind_backlight_writer.cpp` already bound their
+loops and are the idiom the rest should follow. Left for their owners.
 
 **Provider side.** Gabbee `5cbc0b4a07effa9689bbf032da5f1125bc8d4c26` on `main`,
 pushed to `qinda:~/git/gabbee.git` and to `github.com/Es00bac/gabbee`. The

@@ -103,8 +103,29 @@ reason rather than partially adopted.
 | `dictationShortcut`, `commandShortcut` | `s` | Display text, ≤64 UTF-8 bytes. |
 | `partialText`, `lastText` | `s` | ≤512 UTF-8 bytes; `\n` and `\t` admitted, every other control character refused. |
 | `reasonCode` | `s` | `[a-z0-9-]`, 1–64 bytes. `"ok"` when nothing is wrong. |
-| `providerIds`, `providerLabels` | `as` | Equal length, ≤12 entries. |
+| `providerIds`, `providerLabels` | `as` or `av` of `s` | Equal length, ≤12 entries. |
 | `providerAvailableMask` | `u` | Bit *i* is `providerIds[i]`'s availability. A bit past the list is rejected. |
+
+#### Why the provider arrays accept two signatures
+
+A list of strings nested inside `a{sv}` does not have one spelling across
+bindings. Qt sends `as`. PyQt6 turns a Python list into a `QVariantList` and
+sends `av` whose every element is a variant holding `s` — which is what
+Gabbee actually puts on the bus. Both are honest encodings of the same value,
+so the decoder reads both and recovers strictness per element: a variant that
+does not hold a string is refused, not coerced. Any other element signature is
+refused outright.
+
+The decoder never hand-walks these arrays. `QDBusArgument` does not advance
+when an element is not the type being extracted, so the obvious
+`while (!argument.atEnd())` loop never terminates and appends until the
+process is killed — a replaceable provider could otherwise take the shell
+down with it. The array bound is enforced in the decoder, before anything is
+built from the payload, rather than by the caller afterwards.
+
+This is the defect `session.voice-interop` was written to catch, and the one
+it did catch: against the real provider the client allocated 26GB and was
+killed by the kernel before it printed a single check.
 
 ### Result keys
 
