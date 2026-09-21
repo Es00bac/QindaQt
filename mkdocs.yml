@@ -377,3 +377,4 @@ nav:
       - "ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items": adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md
       - "ADR-0230: name and picture the game behind a launcher class": adr/0230-name-and-picture-the-game-behind-a-launcher-class.md
       - "ADR-0231: QindaLutris is the desktop's game library": adr/0231-qindalutris-the-game-library.md
+      - "ADR-0232: The gather overview replaces KWin's upper-left corner": adr/0232-the-gather-overview-replaces-the-upper-left-corner.md

@@ -4,13 +4,18 @@ Gather brings everything the session holds forward at once, in one
 deterministic arrangement, and dismisses without moving anything. It replaces
 KWin's own window grid on the top-left screen corner.
 
-**Status: the planner, the presentation model, the controller and the drawing
-surface are implemented and qualified; nothing invokes them yet.** What exists
-today is `src/hybrid_gather` (the pure planner) and `src/shell/gather_overview`
-(the model, the controller, and the `QindaQt.Shell.GatherOverview` QML
-surface), plus the release of the hot corner. What is missing is session
-plumbing only: a window to host the surface, a shortcut, and an applet button.
-See [Remaining work](#remaining-work).
+**Status: shipped and reachable.** `src/hybrid_gather` plans the rectangles,
+`src/shell/gather_overview` holds the model, the controller and the
+`QindaQt.Shell.GatherOverview` QML surface, and
+`src/shell/runtime/gatheroverviewcomposition.cpp` owns it in a session: one
+layer-shell overlay window per output, fed from the task-list applet's
+controller, with activations going back out as that controller's task intents.
+Three doors reach it — `Meta+G`, the `gather-overview` panel applet, and the
+upper-left corner (and touch swipe) through the compositor's `overview` edge
+gesture. The reasoning is in
+[ADR-0232](../adr/0232-the-gather-overview-replaces-the-upper-left-corner.md).
+Live thumbnails are the one piece still outstanding; see
+[Remaining work](#remaining-work).
 
 ## The arrangement
 
@@ -149,21 +154,33 @@ thumbnail — is the route being taken, exactly because it needs none of that.
 preview upgrade is additive: a tile's source size is the single field that
 changes.
 
-Remaining, in order:
+Items 1 to 4 of the original list landed on 2026-09-21 (ADR-0232):
 
-1. A session window to host the surface — full-bleed over one output, above
-   everything, taking keyboard focus so Escape reaches it — feeding it
-   `controller.projection` and wiring the three signals back to
-   `scrollBy`, `activate` and `close`.
-2. Something to turn `activationRequested` into a task intent with the
-   authority to do it. The controller deliberately stops one step short.
-3. A `HybridShortcutAction` calling `toggle()`, beside the existing container
-   shortcuts, so it has a keyboard trigger.
-4. A panel applet that triggers the same action, for the layouts that want a
-   button.
+1. **The host window** is `GatherOverviewWindow.qml`, created once per output
+   by `GatherOverviewComposition` on `LayerOverlay` with a zero exclusive
+   zone, and shown and hidden rather than rebuilt per invocation. It takes the
+   keyboard only while up, so Escape reaches it and nothing is swallowed while
+   it is down.
+2. **The authority** is the task-list applet's controller, borrowed.
+   `activationRequested` becomes `activateTask` or `activateTaskWindow` on it,
+   so the overview inherits that controller's grants and its stale-revision
+   arbitration and holds none of its own. A session whose `windows.read` grant
+   was denied gets an overview that never opens.
+3. **The keyboard trigger** is `Meta+G`
+   (`qindaqt_toggle_gather_overview`) — a shell global action rather than a
+   `HybridShortcutAction`, because the thing it toggles is a shell surface and
+   the shell is where the other surface shortcuts already live.
+4. **The panel applet** is `gather-overview`, placed in the `qindaqt`
+   profile's left shelf beside Show Desktop. Other stock profiles carry none
+   of QindaQt's own chips by convention; an existing layout adds it with
+   Meta+right-click → Add applet.
+
+Remaining:
+
 5. The `WindowPreview` endpoint and renderer from ADR-0119, which upgrades the
    grid tiles from icon-and-title to live thumbnails and also lights up the
-   dock's hover previews. No longer a blocker for anything above.
+   dock's hover previews. Additive: a tile's source size is the single field
+   that changes.
 
 ## The controller
 

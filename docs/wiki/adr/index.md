@@ -234,3 +234,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items](0229-proxy-the-xembed-tray-into-status-notifier-items.md)
 - [ADR-0230: name and picture the game behind a launcher class](0230-name-and-picture-the-game-behind-a-launcher-class.md)
 - [ADR-0231: QindaLutris is the desktop's game library](0231-qindalutris-the-game-library.md)
+- [ADR-0232: The gather overview replaces KWin's upper-left corner](0232-the-gather-overview-replaces-the-upper-left-corner.md)
