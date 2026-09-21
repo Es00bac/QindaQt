@@ -217,14 +217,14 @@ void Settings1ScreensaverPreferencesTest::persistedMinutesAreClamped() {
     QTRY_COMPARE(preferences.currentPreferences().minutes,
                  ScreensaverPreferences::maximumTimeoutMinutes());
 
-    const ListScreensaverCatalog catalog(
+    const ListScreensaverCatalog catalogOnlyReef(
         {testSaver(QStringLiteral("circuit-reef"))});
     QCOMPARE(ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), 0,
-                                                   catalog)
+                                                   catalogOnlyReef)
                  .minutes,
              1);
     QCOMPARE(ScreensaverPreferences::fromPersisted(QStringLiteral("circuit-reef"), -5,
-                                                   catalog)
+                                                   catalogOnlyReef)
                  .minutes,
              1);
 }

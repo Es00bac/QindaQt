@@ -493,16 +493,7 @@
       "domain": "power",
       "type": "string",
       "default": "none",
-      "constraints": {
-        "allowedValues": [
-          "none",
-          "qinda-patrol",
-          "circuit-reef",
-          "prism-circuit",
-          "prism-brawl",
-          "starward"
-        ]
-      }
+      "constraints": {}
     },
     {
       "key": "power.screensaverMinutes",

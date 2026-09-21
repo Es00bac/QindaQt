@@ -40,6 +40,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::DefaultApplications:
   case SettingsRouteComponent::AboutComputer:
   case SettingsRouteComponent::Startup:
+  case SettingsRouteComponent::Screensaver:
     return true;
   }
   return false;
@@ -83,6 +84,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("about-computer");
   case SettingsRouteComponent::Startup:
     return QStringLiteral("startup");
+  case SettingsRouteComponent::Screensaver:
+    return QStringLiteral("screensaver");
   }
   return {};
 }

@@ -1,0 +1,99 @@
+# QindaQt Settings — Screen saver route
+
+`qindaqt-settings --page screensaver` chooses what an idle screen shows and,
+separately, whether and when the session locks. The design and the discovery
+contract are [ADR-0226](../adr/0226-configure-the-screen-saver.md); the saver
+itself remains decoration, never a lock
+([ADR-0215](../adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md)),
+and the lock screen draws the chosen saver through the wallpaper plugin
+([ADR-0216](../adr/0216-the-locker-draws-the-screensaver.md)). The route was
+split out of the Power route, whose Screensaver section it replaces.
+
+## What the route shows
+
+- **Screen saver** — a selector listing the two built-in choices, **None**
+  and **Blank screen**, followed by every saver discovered from the installed
+  packages' `.desktop` entries. Discovery is a rule, not a list: an entry is
+  admitted when it attests its purpose ("screensaver" in Keywords,
+  GenericName, Comment, or an action name) and proves the launch contract (a
+  desktop action running the entry's own program with `--screensaver` or
+  `--all-screens`). Only system application directories are scanned, so the
+  persisted token can never resolve to a user-planted file. A **Start after**
+  delay (1–240 minutes) is enabled only when a real program was chosen.
+- **Preview** — opens the choice without locking the session: savers the
+  locker's wallpaper plugin can draw, and Blank screen, through
+  `kscreenlocker_greet --testing`; any other saver runs as itself, as it
+  appears while idle and unlocked. The button is disabled while a preference
+  write is in flight and refuses to stack a second preview.
+- **Locking** — the walk-away section: whether the session locks
+  automatically when idle, and after how long. This is the same shared
+  screen-lock model and store the Power route's Screen lock section uses;
+  the two pages can never disagree, because there is one `kscreenlockerrc`
+  `[Daemon]` truth. When that truth cannot be read or written, the section
+  says so with the reason.
+
+The status line says which lock-screen behaviour is in effect: a saver the
+greeter can draw keeps showing while locked, any other saver leaves the lock
+screen's own wallpaper alone, and Blank screen is the plugin's painted dark
+ground.
+
+## Authority and write boundary
+
+The saver pair (`power.screensaver`, `power.screensaverMinutes`) is read and
+written through one purpose-scoped Settings1 client
+([ADR-0126](../adr/0126-ignore-user-overrides-the-schema-cannot-normalize.md)
+is why the pair gets its own client). `power.screensaver` holds a token —
+`none`, `blank`, or a discovered program name — never a command line; an
+unrecognized persisted token reads back as `none` rather than being offered
+or launched. Since ADR-0226 the schema no longer enumerates savers in
+`allowedValues`; the catalog is the invalid-token fence. The resident
+settings service must be restarted once after that schema relaxation, or it
+keeps refusing the new tokens with its old in-memory schema.
+
+Only a confirmed snapshot is mirrored into the greeter's
+`kscreenlockerrc` `[Greeter]` wallpaper configuration (the
+`studio.qinda.screensaver` plugin id, its `Saver` key, and the recorded
+`PreviousPlugin`), so a refused or uncertain write never changes what a
+locked session shows; the `[Daemon]` group belongs to the walk-away section's
+own store. The resident
+[`qindaqt-desktop-controls`](../architecture/desktop-controls.md) process
+starts and stops the chosen saver; the route starts no saver process itself
+except the explicitly requested preview.
+
+## What this route does not claim
+
+- It does not lock the session, and the preview never does either. The lock
+  authority stays with KScreenLocker.
+- The lock-screen take-over follows the saver only for savers that ship a
+  QML scene in the wallpaper plugin; a saver without one leaves the lock
+  wallpaper unchanged, and the page says so.
+- A saver package that is removed after being chosen reads back as `none` at
+  the next snapshot; no stale icon or ghost entry is shown.
+- Lock-on-resume and the password-grace delay remain on the Power route's
+  Screen lock section; this page's Locking section covers idle locking only.
+
+## Verification
+
+    ctest --test-dir .build --output-on-failure \
+      -R '^qindaqt\.(settings-(screensaver|screen-lock)|session-desktop-controls-screensaver|settings-route-registry|settings-navigation)'
+
+- `qindaqt.settings-screensaver-model`: persisted truth for the pair, an
+  unrecognized token reading back as no saver, an invalid saver or
+  out-of-range delay refused before any commit, applied/rejected/uncertain
+  outcomes, busy write suppression, retry without replaying, the built-in
+  choices and discovered sort order, and the mirror rules (confirmed saver
+  reaches the lock screen, a refused commit never does, a saver with no
+  scene hands the wallpaper back, a mirror failure is its own error).
+- `qindaqt.settings-screensaver-lock-screen-saver-store`: taking the greeter
+  wallpaper over, remembering exactly one displaced plugin and giving it
+  back, `blank` keeping the plugin installed, and never moving a `[Daemon]`
+  key.
+- `qindaqt.settings-screensaver-preview`: kind resolution per token class,
+  nothing-to-preview and never-stack refusals, and the process boundary
+  itself.
+- `qindaqt.settings-screensaver-page`: the selector reflects truth and
+  writes tokens, the delay row disables for the built-ins, the preview
+  button follows availability, and the lock section writes the lock model
+  only.
+- The navigation rows pin the route appended after Startup applications
+  ([ADR-0128](../adr/0128-accessibility-settings-route.md)).

@@ -16,7 +16,6 @@ Item {
     property var powerSettings: null
     property var screenLockSettings: null
     property var idleDisplaySettings: null
-    property var screensaverSettings: null
     property var clipboardSettings: null
     property var colorSettings: null
     property var accessibilitySettings: null
@@ -37,6 +36,7 @@ Item {
     property Component defaultApplicationsComponent: null
     property Component aboutComputerComponent: null
     property Component startupComponent: null
+    property Component screensaverComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -82,6 +82,7 @@ Item {
             : navigation.activeRouteComponent === "default-apps" ? defaultApplicationsLoader
             : navigation.activeRouteComponent === "about-computer" ? aboutComputerLoader
             : navigation.activeRouteComponent === "startup" ? startupLoader
+            : navigation.activeRouteComponent === "screensaver" ? screensaverLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -353,6 +354,23 @@ Item {
                 && host.navigation.activeRouteComponent === "startup"
                 && host.startupComponent !== null
         sourceComponent: host.startupComponent
+    }
+
+    Loader {
+        id: screensaverLoader
+        objectName: host.objectNamePrefix + "ScreensaverLoader"
+        anchors.fill: parent
+        // AGENT-NOTE: The Screen saver page takes its models from the
+        // ScreensaverRouteComposition backend singleton, which constructs
+        // without touching Settings1 or the locker configuration and
+        // presents degraded truth itself when either is unreachable
+        // (ADR-0226).
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "screensaver"
+                && host.screensaverComponent !== null
+        sourceComponent: host.screensaverComponent
     }
 
     Loader {

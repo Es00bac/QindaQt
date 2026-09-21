@@ -16,6 +16,10 @@ file(GLOB_RECURSE repository_include_candidates LIST_DIRECTORIES false
      "${repository_root}/src/*")
 set(allowed_public_include_prefixes
     "qindaqt/apps/settings_power/"
+    # The Screen lock section's model and store moved to a module shared with
+    # the Screen saver route (ADR-0226); the Power route consumes exactly that
+    # public boundary and nothing else from it.
+    "qindaqt/apps/settings_screen_lock/"
     "qindaqt/services/power_client/"
     "qindaqt/services/power_protocol/"
     "qindaqt/services/brightness_model/"

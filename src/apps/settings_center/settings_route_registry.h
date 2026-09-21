@@ -49,6 +49,8 @@ private:
   void registerDefaultApplicationsRoute();
   void registerAboutComputerRoute();
   void registerStartupRoute();
+  // ADR-0226: appended after Startup applications, same ADR-0128 rule.
+  void registerScreensaverRoute();
   // AGENT-NOTE: split purely to stay under the function-lines shape limit as
   // the built-in route list grows; the two halves have no meaning of their
   // own beyond "first seven" / "rest", and both must run, in order, only
