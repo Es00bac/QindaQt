@@ -4,6 +4,7 @@
 
 #include <qindaqt/apps/settings_appearance/appearance_qml_composition.h>
 #include <qindaqt/apps/settings_audio/audio_settings_model.h>
+#include <qindaqt/services/audio_protocol/audio_gain.h>
 #include <qindaqt/shell/icons/icon_runtime.h>
 #include <qindaqt/themes/theme_loader.h>
 
@@ -63,6 +64,9 @@ private Q_SLOTS:
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
   void consoleCardsShareOneGrid();
+  void consoleFaderFollowsTheOneGainLaw();
+  void consoleStripControlsDispatch();
+  void consoleBusControlsDispatch();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -530,6 +534,140 @@ void AudioPageTest::consoleCardsShareOneGrid() {
     QCOMPARE(card->height(), sharedCardHeight);
   }
   QVERIFY(sharedFaderOffset > 0.0);
+}
+
+// The console is operated in decibels, and ADR-0171 admits exactly one
+// mapping between the fader's travel and dB: the model's. This row proves the
+// QML never re-derives that mapping — the printed scale, the ticks and the
+// readout all read the model's own conversion functions.
+void AudioPageTest::consoleFaderFollowsTheOneGainLaw() {
+  auto [guard, page] = createPage(QSize(1100, 900));
+  QVERIFY(page != nullptr);
+  auto *fader = findItem(page, QStringLiteral("consoleStripFader_strip.hw.1"));
+  QVERIFY(fader != nullptr);
+  QVERIFY(fader->isEnabled());
+
+  // The readout must be the model's conversion of the live position, never a
+  // number the QML computed on its own.
+  const qreal live = fader->property("livePosition").toReal();
+  const double gainDb =
+      QindaQt::Audio::gainDbFromFaderPosition(live);
+  const QString expectedReadout =
+      (gainDb > 0 ? QStringLiteral("+") : QStringLiteral())
+      + QString::number(gainDb, 'f', 1) + QStringLiteral(" dB");
+  QCOMPARE(fader->property("readout").toString(), expectedReadout);
+  auto *readout = findItem(page, QStringLiteral("consoleFaderReadout"));
+  QVERIFY(readout != nullptr);
+  QCOMPARE(readout->property("text").toString(), expectedReadout);
+
+  // Every printed scale label sits where the model's gain law puts its gain.
+  const qreal topY = fader->property("topY").toReal();
+  const qreal travel = fader->property("travel").toReal();
+  const struct {
+    double db;
+    const char *objectName;
+  } labels[] = {
+      {12.0, "consoleFaderScaleLabel_p12"}, {0.0, "consoleFaderScaleLabel_0"},
+      {-12.0, "consoleFaderScaleLabel_m12"}, {-24.0, "consoleFaderScaleLabel_m24"},
+      {-36.0, "consoleFaderScaleLabel_m36"}, {-48.0, "consoleFaderScaleLabel_m48"},
+      {-60.0, "consoleFaderScaleLabel_m60"},
+  };
+  for (const auto &label : labels) {
+    auto *item = findItem(page, QString::fromLatin1(label.objectName));
+    QVERIFY2(item != nullptr, label.objectName);
+    const qreal centre = item->property("y").toReal()
+                         + item->property("height").toReal() / 2.0;
+    const qreal expected = topY
+        + (1.0 - QindaQt::Audio::faderPositionFromGainDb(label.db)) * travel;
+    QVERIFY2(qAbs(centre - expected) < 0.51, label.objectName);
+  }
+
+  // Keyboard parity: the fader takes focus and steps, and Home returns to
+  // unity — every step dispatched through the model as a POSITION.
+  fader->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), fader);
+  auto *faderAccessible = QAccessible::queryAccessibleInterface(fader);
+  QVERIFY(faderAccessible != nullptr);
+  QCOMPARE(faderAccessible->role(), QAccessible::Slider);
+
+  QTest::keyClick(m_view.get(), Qt::Key_Up);
+  QTRY_VERIFY(m_model->lastFaderPosition > 0.0);
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("strip.hw.1"));
+  QVERIFY(qAbs(m_model->lastFaderPosition - (live + 0.02)) < 1e-9);
+
+  QTest::keyClick(m_view.get(), Qt::Key_Home);
+  QTRY_VERIFY(qAbs(m_model->lastFaderPosition
+                   - QindaQt::Audio::unityFaderPosition()) < 1e-9);
+}
+
+// Strip-face controls dispatch their console intents: the pan dial, the
+// mute lamp, and a routing-bank send lamp. These existed in the projection
+// but pan had no surface at all before the rebuild.
+void AudioPageTest::consoleStripControlsDispatch() {
+  auto [guard, page] = createPage(QSize(1100, 900));
+  QVERIFY(page != nullptr);
+
+  auto *pan = findItem(page, QStringLiteral("consoleStripPan_strip.hw.1"));
+  QVERIFY(pan != nullptr);
+  QVERIFY(pan->isEnabled());
+  pan->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), pan);
+  auto *panAccessible = QAccessible::queryAccessibleInterface(pan);
+  QVERIFY(panAccessible != nullptr);
+  QCOMPARE(panAccessible->role(), QAccessible::Slider);
+  QTest::keyClick(m_view.get(), Qt::Key_Up);
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("strip.hw.1"));
+  // Pan runs -1..+1 in 40 steps (ADR-0177 balance).
+  QVERIFY(qAbs(m_model->lastFaderPosition - 0.05) < 1e-9);
+
+  auto *mute = findItem(page, QStringLiteral("consoleStripMute_strip.hw.1"));
+  QVERIFY(mute != nullptr);
+  QVERIFY(mute->isEnabled());
+  mute->setProperty("checked", true);
+  QVERIFY(QMetaObject::invokeMethod(mute, "toggled"));
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("strip.hw.1"));
+  QCOMPARE(m_model->lastConsoleFlag, true);
+
+  // A routing-bank lamp toggles its send and keeps the send's dialled gain.
+  auto *send = findItem(page, QStringLiteral("consoleSend_strip.hw.1_0"));
+  QVERIFY(send != nullptr);
+  QVERIFY(send->isEnabled());
+  send->setProperty("checked", false);
+  QVERIFY(QMetaObject::invokeMethod(send, "toggled"));
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("strip.hw.1"));
+  QCOMPARE(m_model->lastBusIndex, 0);
+  QCOMPARE(m_model->lastConsoleFlag, false);
+}
+
+// Bus-face controls dispatch their console intents: a channel-mode lamp, the
+// mute lamp, and the bus fader's keyboard travel.
+void AudioPageTest::consoleBusControlsDispatch() {
+  auto [guard, page] = createPage(QSize(1100, 900));
+  QVERIFY(page != nullptr);
+
+  auto *swap = findItem(page, QStringLiteral("consoleBusMode_bus.a1_swap"));
+  QVERIFY(swap != nullptr);
+  QVERIFY(swap->isEnabled());
+  QVERIFY(QMetaObject::invokeMethod(swap, "clicked"));
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("bus.a1"));
+  QCOMPARE(m_model->lastProcessing.value(QStringLiteral("mode")).toString(),
+           QStringLiteral("swap"));
+
+  auto *mute = findItem(page, QStringLiteral("consoleBusMute_bus.a1"));
+  QVERIFY(mute != nullptr);
+  mute->setProperty("checked", true);
+  QVERIFY(QMetaObject::invokeMethod(mute, "toggled"));
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("bus.a1"));
+  QCOMPARE(m_model->lastConsoleFlag, true);
+
+  auto *fader = findItem(page, QStringLiteral("consoleBusFader_bus.b1"));
+  QVERIFY(fader != nullptr);
+  fader->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), fader);
+  QTest::keyClick(m_view.get(), Qt::Key_End);
+  QTRY_VERIFY(m_model->lastFaderPosition >= 0.0);
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("bus.b1"));
+  QCOMPARE(m_model->lastFaderPosition, 0.0);
 }
 
 QTEST_MAIN(AudioPageTest)

@@ -192,13 +192,14 @@ inline QVariantMap defaultRack() {
 
 inline QVariantMap consoleStripRow(const QString &id, const QString &label,
                                    const bool isVirtual, const bool bound,
-                                   const QList<int> &enabledBuses) {
+                                   const QList<int> &enabledBuses,
+                                   const double faderPosition) {
   return QVariantMap{
       {QStringLiteral("id"), id},
       {QStringLiteral("label"), label},
       {QStringLiteral("virtual"), isVirtual},
       {QStringLiteral("gainDb"), 0.0},
-      {QStringLiteral("faderPosition"), 0.75},
+      {QStringLiteral("faderPosition"), faderPosition},
       {QStringLiteral("muted"), false},
       {QStringLiteral("soloed"), false},
       {QStringLiteral("mono"), false},
@@ -226,14 +227,14 @@ inline QVariantMap defaultBusRack() {
 
 inline QVariantMap consoleBusRow(const QString &id, const int index,
                                  const QString &label, const bool isVirtual,
-                                 const bool bound) {
+                                 const bool bound, const double faderPosition) {
   return QVariantMap{
       {QStringLiteral("id"), id},
       {QStringLiteral("index"), index},
       {QStringLiteral("label"), label},
       {QStringLiteral("virtual"), isVirtual},
       {QStringLiteral("gainDb"), 0.0},
-      {QStringLiteral("faderPosition"), 0.75},
+      {QStringLiteral("faderPosition"), faderPosition},
       {QStringLiteral("muted"), false},
       {QStringLiteral("mono"), false},
       {QStringLiteral("bound"), bound},
@@ -245,23 +246,27 @@ inline QVariantMap consoleBusRow(const QString &id, const int index,
   };
 }
 
+// Fader positions span the travel (near-unity, mid, low and full) so the
+// console's scale and readouts are exercised — and reviewed in the headless
+// capture — at more than one point of the gain law (ADR-0171).
 inline QVariantList makeConsoleStrips() {
   return {
       consoleStripRow(QStringLiteral("strip.hw.1"),
-                      QStringLiteral("Desk Microphone"), false, true, {0}),
+                      QStringLiteral("Desk Microphone"), false, true, {0},
+                      0.93),
       consoleStripRow(QStringLiteral("strip.virtual.1"),
-                      QStringLiteral("Game"), true, false, {0, 1}),
+                      QStringLiteral("Game"), true, false, {0, 1}, 0.70),
   };
 }
 
 inline QVariantList makeConsoleBuses() {
   return {
       consoleBusRow(QStringLiteral("bus.a1"), 0, QStringLiteral("A1"), false,
-                    true),
+                    true, 0.85),
       consoleBusRow(QStringLiteral("bus.a2"), 1, QStringLiteral("A2"), false,
-                    false),
+                    false, 0.70),
       consoleBusRow(QStringLiteral("bus.b1"), 2, QStringLiteral("B1"), true,
-                    false),
+                    false, 1.0),
   };
 }
 

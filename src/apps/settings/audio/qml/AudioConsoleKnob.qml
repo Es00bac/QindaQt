@@ -2,19 +2,20 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as T
-import QindaQt.Controls 1.0
-import QindaQt.Tokens 1.0
+import QtQuick.Templates as T
+import QindaTK as Tk
 
 // A rotary rack knob: drag vertically to turn, double-click restores the
 // block default, and the value commits ONCE on release so a drag is one
 // operation rather than a stream of them (the rack is judged whole by the
 // service; see ADR-0179).
 //
-// The dial is drawn from plain items — an LED tick ring lit up to the value
-// plus a rotating needle — rather than Canvas: Canvas content does not paint
-// under offscreen capture (the page-test grab path), and the tick ring reads
-// better at 34px anyway.
+// AGENT-NOTE: belongs in QindaTK as a RotaryKnob; the toolkit has no rotary
+// control. Kept local because the QindaTK repository must not be changed from
+// this lane. The dial is drawn from plain items — an LED tick ring lit up to
+// the value plus a rotating needle — rather than Canvas: Canvas content does
+// not paint under offscreen capture (the page-test grab path), and the tick
+// ring reads better at desk size anyway.
 //
 // AGENT-CONTRACT: `value` is projected truth owned by the model. The knob
 // only *displays* `liveValue` while a drag is in flight and emits
@@ -30,16 +31,26 @@ Item {
     property int decimals: 0
     property bool enabledControl: true
     property real defaultValue: (knob.from + knob.to) / 2.0
+    // The rack shows the label row; a strip's pan slot prints its own caption
+    // and turns this off to stay at desk density.
+    property bool showLabel: true
+    // Custom text for the value row, e.g. pan's L/C/R. Signature: (value) => string.
+    property var formatValue: null
 
     signal committed(real value)
 
+    readonly property real labelHeight: showLabel ? 12 : 0
     implicitWidth: 52
-    implicitHeight: 62
+    implicitHeight: labelHeight + dial.diameter + 14
+    activeFocusOnTab: enabledControl
 
     readonly property real range: knob.to - knob.from
     readonly property real fraction: knob.range > 0
         ? Math.max(0.0, Math.min(1.0, (knob.liveValue - knob.from) / knob.range))
         : 0.0
+    readonly property string valueText: knob.formatValue !== null
+        ? knob.formatValue(knob.liveValue)
+        : Number(knob.liveValue).toFixed(knob.decimals) + knob.unit
 
     // The drag edits this, not `value`: the projected binding must stay
     // intact so a model republish during a drag cannot fight the pointer.
@@ -47,11 +58,12 @@ Item {
     property real _dragStartValue: 0.0
     property real _dragStartY: 0.0
 
-    opacity: knob.enabledControl ? 1.0 : 0.45
+    opacity: knob.enabledControl ? 1.0 : Tk.Theme.opacity.disabled
     Accessible.role: Accessible.Slider
     Accessible.name: knob.label
-    Accessible.description: qsTr("%1 %2")
-        .arg(Number(knob.liveValue).toFixed(knob.decimals)).arg(knob.unit)
+    Accessible.description: qsTr("%1 %2").arg(knob.valueText).arg(knob.unit)
+    Accessible.onIncreaseAction: if (knob.enabledControl) knob.stepBy(1)
+    Accessible.onDecreaseAction: if (knob.enabledControl) knob.stepBy(-1)
 
     function clamped(v) {
         return Math.max(knob.from, Math.min(knob.to, v))
@@ -68,10 +80,11 @@ Item {
 
         T.Label {
             width: parent.width
-            height: 12
+            height: knob.labelHeight
+            visible: knob.showLabel
             text: knob.label
-            color: Tokens.fg.muted
-            font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
+            color: Tk.Theme.color.textMuted
+            font.pixelSize: Tk.Theme.font.caption
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
@@ -82,10 +95,10 @@ Item {
         Item {
             id: dial
 
-            readonly property real diameter: Math.min(parent.width, knob.implicitHeight - 24)
+            readonly property real diameter: Math.min(knob.width, knob.implicitHeight - knob.labelHeight - 14)
 
             width: parent.width
-            height: knob.implicitHeight - 24
+            height: diameter
 
             Repeater {
                 model: 21
@@ -103,17 +116,14 @@ Item {
                         origin.y: dial.diameter / 2 + 1
                         angle: tickAngle
                     }
-                    color: lit ? Tokens.accent.default : Tokens.outline.divider
+                    color: lit ? Tk.Theme.color.accent : Tk.Theme.color.divider
                     opacity: lit ? 1.0 : 0.6
                 }
             }
 
             // The value halo: a ring that brightens as the dial moves away
             // from its block default, so a rack that has been touched reads as
-            // touched at a glance without having to compare numbers. Drawn as
-            // a plain bordered Rectangle, never a Canvas — Canvas content does
-            // not paint under offscreen capture, which is how this surface is
-            // reviewed.
+            // touched at a glance without having to compare numbers.
             Rectangle {
                 anchors.centerIn: parent
                 width: dial.diameter - 4
@@ -121,7 +131,7 @@ Item {
                 radius: width / 2
                 color: "transparent"
                 border.width: 2
-                border.color: Tokens.accent.default
+                border.color: Tk.Theme.color.accent
                 visible: knob.range > 0
                 opacity: 0.55 * Math.min(1.0,
                     Math.abs(knob.liveValue - knob.defaultValue) / (knob.range / 2))
@@ -132,9 +142,9 @@ Item {
                 width: dial.diameter - 10
                 height: width
                 radius: width / 2
-                color: Tokens.bg.base
-                border.width: Tokens.space["1"] / 2
-                border.color: knob.activeFocus ? Tokens.accent.default : Tokens.outline.strong
+                color: Tk.Theme.color.canvas
+                border.width: Tk.Theme.size.border
+                border.color: knob.activeFocus ? Tk.Theme.color.accent : Tk.Theme.color.borderStrong
             }
 
             // Needle: rotates about the dial centre; -135° points down-left,
@@ -153,7 +163,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     anchors.topMargin: 3
-                    color: Tokens.fg.default
+                    color: Tk.Theme.color.text
                 }
             }
 
@@ -162,16 +172,17 @@ Item {
                 width: 5
                 height: 5
                 radius: 2
-                color: Tokens.fg.default
+                color: Tk.Theme.color.text
             }
         }
 
         T.Label {
             width: parent.width
             height: 12
-            text: Number(knob.liveValue).toFixed(knob.decimals) + knob.unit
-            color: Tokens.fg.default
-            font: Qt.font({ family: Tokens.type.monoFontFamily, pointSize: Tokens.type.caption })
+            text: knob.valueText
+            color: Tk.Theme.color.text
+            font.pixelSize: Tk.Theme.font.caption
+            font.family: Tk.Theme.font.monoFamily
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
