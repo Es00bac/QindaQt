@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+<policyconfig>
+  <vendor>QindaQt</vendor>
+  <vendor_url>https://github.com/Es00bac/QindaQt</vendor_url>
+  <icon_name>preferences-system-login</icon_name>
+
+  <!--
+    ADR-0225: one action covers every write the Login screen route can
+    make. The route-owned change set is whitelisted inside the helper
+    itself, so a broader or narrower prompt cannot smuggle extra keys:
+    authorizing this action authorizes exactly the five keys the route
+    owns, written to exactly one drop-in file.
+  -->
+  <action id="org.qindaqt.settings.loginscreen.configure">
+    <description>Configure the login screen</description>
+    <message>Authentication is required to change the login screen theme, default session, automatic login, numeric lock and cursor theme for everyone who uses this machine.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <!--
+        auth_admin_keep, not auth_admin: configuring a login screen is
+        several small writes in a row (theme, then session, then
+        autologin), and a fresh password prompt per key teaches people to
+        click through prompts without reading them.
+      -->
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@QINDAQT_SDDM_HELPER_INSTALL_PATH@</annotate>
+  </action>
+</policyconfig>

@@ -37,6 +37,7 @@ Item {
     property Component defaultApplicationsComponent: null
     property Component aboutComputerComponent: null
     property Component startupComponent: null
+    property Component loginScreenComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -82,6 +83,7 @@ Item {
             : navigation.activeRouteComponent === "default-apps" ? defaultApplicationsLoader
             : navigation.activeRouteComponent === "about-computer" ? aboutComputerLoader
             : navigation.activeRouteComponent === "startup" ? startupLoader
+            : navigation.activeRouteComponent === "login-screen" ? loginScreenLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -353,6 +355,18 @@ Item {
                 && host.navigation.activeRouteComponent === "startup"
                 && host.startupComponent !== null
         sourceComponent: host.startupComponent
+    }
+
+    Loader {
+        id: loginScreenLoader
+        objectName: host.objectNamePrefix + "LoginScreenLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "login-screen"
+                && host.loginScreenComponent !== null
+        sourceComponent: host.loginScreenComponent
     }
 
     Loader {

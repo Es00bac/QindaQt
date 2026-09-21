@@ -216,7 +216,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 18);
+  QCOMPARE(registry.count(), 19);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -238,6 +238,8 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("default-apps")));
   QVERIFY(registry.hasRoute(QStringLiteral("about-computer")));
   QVERIFY(registry.hasRoute(QStringLiteral("startup")));
+  // ADR-0225: the Login screen route, appended last for the same reason.
+  QVERIFY(registry.hasRoute(QStringLiteral("login-screen")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -258,13 +260,14 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   // Each lane appends its route last, in merge order, so no existing index,
   // shortcut or traversal position moves (ADR-0128).
-  QCOMPARE(registry.count(), 18);
+  QCOMPARE(registry.count(), 19);
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
   QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
   QCOMPARE(registry.indexOf(QStringLiteral("windows")), 14);
   QCOMPARE(registry.indexOf(QStringLiteral("default-apps")), 15);
   QCOMPARE(registry.indexOf(QStringLiteral("about-computer")), 16);
   QCOMPARE(registry.indexOf(QStringLiteral("startup")), 17);
+  QCOMPARE(registry.indexOf(QStringLiteral("login-screen")), 18);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -376,6 +379,15 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   QVERIFY(!windows->description.isEmpty());
   QVERIFY(windows->available);
   QVERIFY(registry.hasRoute(QStringLiteral("startup")));
+
+  const auto loginScreen = registry.route(QStringLiteral("login-screen"));
+  QVERIFY(loginScreen.has_value());
+  QCOMPARE(loginScreen->id, QStringLiteral("login-screen"));
+  QCOMPARE(loginScreen->component, SettingsRouteComponent::LoginScreen);
+  QCOMPARE(loginScreen->title, QStringLiteral("Login screen"));
+  QCOMPARE(loginScreen->category, QStringLiteral("General"));
+  QVERIFY(!loginScreen->description.isEmpty());
+  QVERIFY(loginScreen->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {
