@@ -115,7 +115,15 @@ add_subdirectory(services/font_discovery)
 add_subdirectory(services/tablet_devices)
 add_subdirectory(services/obs_client)
 add_subdirectory(apps/settings/streaming)
-add_subdirectory(shell/obs_applet)
+# AGENT-GUARD: the OBS applet's libraries live under src/shell, so they exist
+# only when QINDAQT_BUILD_SHELL is on. Unguarded, a -DQINDAQT_BUILD_SHELL=OFF
+# -DBUILD_TESTING=ON configure succeeded and the BUILD then died on
+#   tst_obs_applet_presentation.cpp: fatal error:
+#   qindaqt/shell/obs_applet/obs_applet_presentation.h: No such file
+# which stops the whole tree and leaves unrelated rows reporting "Not Run".
+if(TARGET qindaqt_shell_obs_applet)
+    add_subdirectory(shell/obs_applet)
+endif()
 add_subdirectory(app_appearance)
 add_subdirectory(platform/qt_theme)
 add_subdirectory(apps/settings/appearance)
