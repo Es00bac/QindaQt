@@ -21,6 +21,17 @@ RESTRICT="fetch"
 
 # This package installs the complete tree, including the bundled apps. Keep
 # ownership unambiguous for users who previously selected the apps-only package.
+#
+# x11-libs/libxcb serves the XEmbed tray proxy (ADR-0229), which is what gives
+# Wine, Proton and Steam tray icons a selection owner to dock with. It resolves
+# xcb, xcb-composite, xcb-damage, xcb-shape, xcb-xtest and xcb-xfixes through
+# pkg-config with REQUIRED, and all six ship in libxcb. Undeclared, this built
+# here only because KWin had already pulled the development files in; a clean
+# machine would have failed at configure.
+#
+# AGENT-GUARD: never put a '#' comment inside RDEPEND/DEPEND. The whole string
+# is parsed as atoms, so `ebuild manifest` fails with "Invalid atom (#)" and
+# the package cut aborts before it builds anything.
 RDEPEND="
 	>=media-plugins/swh-plugins-0.4.17
 	>=media-libs/noise-suppression-for-voice-1.10
@@ -53,12 +64,6 @@ RDEPEND="
 	>=kde-frameworks/syntax-highlighting-6.0:6=
 	kde-misc/kio-fuse
 	=x11-libs/qtermwidget-2.4*:0=
-	# The XEmbed tray proxy (ADR-0229) is what gives Wine, Proton and Steam
-	# tray icons a selection owner to dock with. It resolves xcb,
-	# xcb-composite, xcb-damage, xcb-shape, xcb-xtest and xcb-xfixes through
-	# pkg-config with REQUIRED, and all six ship in libxcb. Undeclared this
-	# built here only because KWin had already pulled the development files
-	# in; a clean machine would have failed at configure.
 	x11-libs/libxcb
 	>=media-video/wireplumber-0.5
 	>=net-misc/networkmanager-1.44
