@@ -155,7 +155,15 @@ surface hosts the desktop-icons entry (see its bullet below):
   two-column start panel popup with launcher sections left and places plus
   system actions right. Its `applications.launch` grant rides the same
   audited launcher seams, and the stock-profile invariant resolves exactly
-  one menu slot per profile that is either a launcher or this applet. See
+  one menu slot per profile that is either a launcher or this applet.
+  The program list is **lazy**: the projection's sections are flattened into
+  one array whose index is the flat program index, and a `ListView` with
+  native sections draws it, so opening the panel builds a viewport of rows
+  rather than the whole catalogue. `qindaqt.start-menu-qml` pins the budget
+  (16 of 336 rows over a 364 px viewport; a nested `Repeater` built all 336,
+  each resolving an icon through the theme, which is what made the panel feel
+  sluggish). The panel is placed by
+  [`PanelPopup`](panel-popup-placement.md). See
   [ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md); and
 - `qindaqt.applets.desktop-icons` hosts on the dedicated per-output desktop
   surface from `QindaQt.Shell.DesktopSurface` instead of a panel: it presents

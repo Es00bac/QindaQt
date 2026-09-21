@@ -19,35 +19,89 @@ import QindaQt.Tokens 1.0
 // Activation re-enters controller.activate(entryId, "") exactly like the
 // launcher rows, so grants and feedback stay behind one seam. The panel
 // stays open after a launch, mirroring LauncherApplet's browser.
+//
+// AGENT-GUARD: this list must instantiate only the rows it can show. The
+// projection is flattened into one array whose index IS the flat program
+// index, and a ListView with native sections renders it, so opening the panel
+// builds a viewport of delegates instead of the whole catalogue. A nested
+// Repeater built every row — 336 of 336 on a normal install, each resolving
+// an icon through the theme — inside popup.open(), and that is what made the
+// start menu sluggish (qindaqt.start-menu-qml pins the budget).
 ColumnLayout {
     id: root
 
     required property var launcher
     readonly property bool ready: launcher !== null && Tokens.ready
 
-    // Flat row count across all sections; section order is the focus order.
-    readonly property int totalRows: {
+    // AGENT-GUARD: index i of this array is flat program index i, which is
+    // also the ListView's currentIndex and the focus order. Section headers
+    // are drawn by ListView.section, never as model rows, so nothing has to
+    // translate between two indexing schemes.
+    readonly property var programs: root.flatten(ready ? launcher.sections : [])
+    readonly property int totalRows: programs.length
+    // Distinct contiguous runs, for the height arithmetic below.
+    readonly property int sectionCount: {
         let count = 0
-        const list = ready ? launcher.sections : []
-        for (let i = 0; i < list.length; ++i)
-            count += list[i].items ? list[i].items.length : 0
+        let previous = ""
+        for (let i = 0; i < programs.length; ++i) {
+            const identity = programs[i].sectionIdentity
+            if (identity !== previous) {
+                ++count
+                previous = identity
+            }
+        }
         return count
+    }
+    // Exact extent from the model rather than from a laid-out content item: a
+    // lazy view knows its own height only for the rows it has created, and
+    // the panel's height binding must not depend on scrolling.
+    readonly property int listExtent: totalRows * rowExtent
+                                      + sectionCount * sectionExtent
+
+    readonly property int rowExtent: 32
+    readonly property int sectionExtent: 20
+
+    function flatten(sections) {
+        const rows = []
+        for (let i = 0; i < sections.length; ++i) {
+            const section = sections[i]
+            const items = section && section.items ? section.items : []
+            const identity = String(section && section.identity
+                                    ? section.identity : "")
+            for (let j = 0; j < items.length; ++j) {
+                const item = items[j]
+                rows.push({
+                    "sectionIdentity": identity,
+                    "entryId": String(item.entryId ?? ""),
+                    "displayText": String(item.displayText ?? ""),
+                    "iconName": String(item.iconName ?? ""),
+                    "accessibleDescription":
+                        String(item.accessibleDescription ?? "")
+                })
+            }
+        }
+        return rows
     }
 
     function focusSearch() {
         searchField.forceActiveFocus(Qt.PopupFocusReason)
     }
 
+    // AGENT-GUARD: a lazy view has no item for an off-screen index, so the row
+    // is brought into the viewport first and focused on the item the view then
+    // owns. Focusing a stale currentItem strands Down at the viewport edge.
     function focusRow(flatIndex) {
         if (flatIndex < 0) {
             focusSearch()
             return
         }
-        for (let i = 0; i < sectionRepeater.count; ++i) {
-            const sectionItem = sectionRepeater.itemAt(i)
-            if (sectionItem && sectionItem.focusRowAt(flatIndex))
-                return
-        }
+        if (flatIndex >= root.totalRows)
+            return
+        resultsView.currentIndex = flatIndex
+        resultsView.positionViewAtIndex(flatIndex, ListView.Contain)
+        resultsView.forceLayout()
+        if (resultsView.currentItem !== null)
+            resultsView.currentItem.forceActiveFocus(Qt.PopupFocusReason)
     }
 
     // Translated from the stable identity the controller publishes; keep in
@@ -111,156 +165,110 @@ ColumnLayout {
         muted: true
     }
 
-    T.ScrollView {
+    ListView {
         id: resultsView
 
         objectName: "startMenuResults"
         Layout.fillWidth: true
         Layout.fillHeight: true
-        contentWidth: availableWidth
+        Layout.preferredHeight: Math.min(380, root.listExtent)
+        visible: root.totalRows > 0
         clip: true
-        focusPolicy: Qt.NoFocus
+        spacing: 2
+        // A viewport plus a little travel, never the catalogue. Delegates are
+        // recycled so scrolling does not keep allocating rows either.
+        cacheBuffer: root.rowExtent * 6
+        reuseItems: true
+        // Focus lives on the delegate the panel moved to, so the view itself
+        // must not also consume Up/Down or steal focus from that row.
+        keyNavigationEnabled: false
+        focus: false
+        boundsBehavior: Flickable.StopAtBounds
+        model: root.programs
 
-        ColumnLayout {
-            id: listColumn
+        T.ScrollBar.vertical: T.ScrollBar {
+            objectName: "startMenuResultsScrollBar"
+            policy: resultsView.contentHeight > resultsView.height
+                    ? T.ScrollBar.AlwaysOn : T.ScrollBar.AlwaysOff
+        }
 
-            width: resultsView.availableWidth
-            spacing: 2
+        section.property: "sectionIdentity"
+        section.criteria: ViewSection.FullString
+        section.delegate: C.Label {
+            required property string section
 
-            Repeater {
-                id: sectionRepeater
+            objectName: "startMenuSectionHeader-" + section
+            width: resultsView.width
+            height: root.sectionExtent
+            text: root.sectionTitle(section)
+            muted: true
+            Accessible.role: Accessible.Heading
+        }
 
-                model: root.ready ? root.launcher.sections : []
+        delegate: T.ItemDelegate {
+            id: row
 
-                delegate: ColumnLayout {
-                    id: sectionColumn
+            required property var modelData
+            required property int index
 
-                    required property var modelData
-                    required property int index
+            objectName: "startMenuProgramRow-" + modelData.entryId
+            width: resultsView.width
+            height: root.rowExtent
+            enabled: root.ready && root.launcher.launchGranted !== false
+            hoverEnabled: true
+            focusPolicy: Qt.StrongFocus
+            leftPadding: 8
+            rightPadding: 8
+            Accessible.role: Accessible.ListItem
+            Accessible.name: modelData.displayText
+            Accessible.description: modelData.accessibleDescription
 
-                    readonly property int flatBase: {
-                        let base = 0
-                        const list = root.launcher.sections
-                        for (let i = 0; i < index; ++i) {
-                            const earlier = list[i]
-                            if (earlier && earlier.items)
-                                base += earlier.items.length
-                        }
-                        return base
-                    }
-                    readonly property int rowCount: modelData.items
-                                                    ? modelData.items.length : 0
+            function launch() {
+                if (root.ready)
+                    root.launcher.activate(row.modelData.entryId, "")
+            }
 
-                    function focusRowAt(flatIndex) {
-                        if (flatIndex < flatBase
-                                || flatIndex >= flatBase + rowCount)
-                            return false
-                        const row = rows.itemAt(flatIndex - flatBase)
-                        if (!row)
-                            return false
-                        row.forceActiveFocus(Qt.PopupFocusReason)
-                        return true
-                    }
+            onClicked: launch()
+            Keys.onReturnPressed: launch()
+            Keys.onEnterPressed: launch()
+            Keys.onSpacePressed: launch()
+            Keys.onUpPressed: root.focusRow(row.index - 1)
+            Keys.onDownPressed: root.focusRow(row.index + 1)
+            Accessible.onPressAction: launch()
 
-                    Layout.fillWidth: true
-                    spacing: 0
+            // AGENT-GUARD: own both sides of the hover contrast pair — the
+            // white text may only ever appear on the XP selection blue, never
+            // on the light surface.
+            background: Rectangle {
+                objectName: "startMenuProgramRowBackground"
+                radius: 2
+                color: row.hovered || row.down ? "#2f6fd4" : "transparent"
 
-                    C.Label {
-                        objectName: "startMenuSectionHeader-"
-                                    + (sectionColumn.modelData.identity ?? "")
-                        Layout.fillWidth: true
-                        visible: sectionColumn.rowCount > 0
-                        text: root.sectionTitle(
-                                  sectionColumn.modelData.identity ?? "")
-                        muted: true
-                        Accessible.role: Accessible.Heading
-                    }
+                C.FocusRing {
+                    anchors.fill: parent
+                    control: row
+                }
+            }
 
-                    Repeater {
-                        id: rows
+            contentItem: Row {
+                spacing: 8
 
-                        model: sectionColumn.modelData.items ?? []
+                ShellIcons.Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: row.modelData.iconName
+                    size: 20
+                    fallbackText: row.modelData.displayText
+                    Accessible.ignored: true
+                }
 
-                        delegate: T.ItemDelegate {
-                            id: row
-
-                            required property var modelData
-                            required property int index
-                            readonly property int flatIndex:
-                                sectionColumn.flatBase + index
-
-                            objectName: "startMenuProgramRow-"
-                                        + modelData.entryId
-                            Layout.fillWidth: true
-                            enabled: root.ready
-                                     && root.launcher.launchGranted !== false
-                            hoverEnabled: true
-                            focusPolicy: Qt.StrongFocus
-                            implicitHeight: 32
-                            leftPadding: 8
-                            rightPadding: 8
-                            Accessible.role: Accessible.ListItem
-                            Accessible.name: modelData.displayText
-                            Accessible.description:
-                                String(modelData.accessibleDescription ?? "")
-
-                            function launch() {
-                                if (root.ready)
-                                    root.launcher.activate(
-                                        modelData.entryId, "")
-                            }
-
-                            onClicked: launch()
-                            Keys.onReturnPressed: launch()
-                            Keys.onEnterPressed: launch()
-                            Keys.onSpacePressed: launch()
-                            Keys.onUpPressed: root.focusRow(flatIndex - 1)
-                            Keys.onDownPressed: root.focusRow(flatIndex + 1)
-                            Accessible.onPressAction: launch()
-
-                            // AGENT-GUARD: own both sides of the hover
-                            // contrast pair — the white text may only ever
-                            // appear on the XP selection blue, never on the
-                            // light surface.
-                            background: Rectangle {
-                                objectName: "startMenuProgramRowBackground"
-                                radius: 2
-                                color: row.hovered || row.down
-                                       ? "#2f6fd4" : "transparent"
-
-                                C.FocusRing {
-                                    anchors.fill: parent
-                                    control: row
-                                }
-                            }
-
-                            contentItem: Row {
-                                spacing: 8
-
-                                ShellIcons.Icon {
-                                    anchors.verticalCenter:
-                                        parent.verticalCenter
-                                    name: String(row.modelData.iconName ?? "")
-                                    size: 20
-                                    fallbackText: row.modelData.displayText
-                                    Accessible.ignored: true
-                                }
-
-                                C.Label {
-                                    anchors.verticalCenter:
-                                        parent.verticalCenter
-                                    width: parent.width - parent.spacing - 20
-                                    text: row.modelData.displayText
-                                    color: row.hovered || row.down
-                                           ? "#ffffff" : "#1f1d17"
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-                    }
+                C.Label {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - parent.spacing - 20
+                    text: row.modelData.displayText
+                    color: row.hovered || row.down ? "#ffffff" : "#1f1d17"
+                    elide: Text.ElideRight
                 }
             }
         }
-        implicitHeight: Math.min(380, listColumn.implicitHeight)
     }
 }
