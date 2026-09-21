@@ -16,7 +16,7 @@ import QindaTK as Tk
 // AudioConsoleBus.qml, in the same order, and a band that does not apply to
 // a card keeps its slot rather than collapsing. Cards are read across a row
 // like a real desk, so every meter, fader and lamp must sit at the same
-// height as its neighbour's. qindaqt.settings-audio-page's
+// height as its neighbour's. qindaqt.settings-audio-console-page's
 // consoleCardsShareOneGrid fails if they drift apart.
 Rectangle {
     id: root
@@ -39,7 +39,12 @@ Rectangle {
     readonly property int deskHeight: 150
     readonly property int actionHeight: 18
 
-    width: 140
+    // AGENT-GUARD: the card's width must arrive through implicitWidth.
+    // QindaTK's Flex reads only implicit sizes and attached
+    // constraints and IGNORES a child's own width (docs/layout.md),
+    // so `width: 140` here crushed the card to zero and let every
+    // band overflow. consoleCardsShareOneGrid asserts the width.
+    implicitWidth: 140
     implicitHeight: stripColumn.implicitHeight + Tk.Theme.space.sm * 2
     radius: Tk.Theme.radius.sm
     color: Tk.Theme.color.panelAlt
@@ -217,9 +222,10 @@ Rectangle {
                     // absent so every strip's desk band stays level.
                     model: 2
                     delegate: Tk.Flex {
+                        id: busRow
                         required property int index
                         readonly property var rowBuses: {
-                            const wantVirtual = index === 1
+                            const wantVirtual = busRow.index === 1
                             const rows = []
                             for (const bus of root.buses) {
                                 if ((bus.virtual ?? false) === wantVirtual)
@@ -230,21 +236,21 @@ Rectangle {
                         gap: 2
 
                         Repeater {
-                            model: rowBuses
+                            model: busRow.rowBuses
                             AudioConsolePad {
                                 id: sendPad
                                 required property var modelData
                                 Tk.Flex.grow: 1
                                 implicitHeight: 18
-                                objectName: "consoleSend_" + root.strip.id + "_" + modelData.index
-                                text: modelData.label
+                                objectName: "consoleSend_" + root.strip.id + "_" + sendPad.modelData.index
+                                text: sendPad.modelData.label
                                 checkable: true
                                 available: root.enabledControls
                                 Binding on checked {
                                     when: !sendPad.down
                                     value: {
                                         for (const send of root.strip.sends) {
-                                            if (send.busIndex === modelData.index)
+                                            if (send.busIndex === sendPad.modelData.index)
                                                 return send.enabled
                                         }
                                         return false
@@ -257,10 +263,10 @@ Rectangle {
                                     // dialled in for it.
                                     let gain = 0.0
                                     for (const send of root.strip.sends) {
-                                        if (send.busIndex === modelData.index)
+                                        if (send.busIndex === sendPad.modelData.index)
                                             gain = send.gainDb
                                     }
-                                    root.model.setStripSend(root.strip.id, modelData.index,
+                                    root.model.setStripSend(root.strip.id, sendPad.modelData.index,
                                                             checked, gain)
                                 }
                                 Accessible.name: qsTr("Send %1 to %2")

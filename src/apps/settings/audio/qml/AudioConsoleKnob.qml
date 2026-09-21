@@ -103,9 +103,10 @@ Item {
             Repeater {
                 model: 21
                 delegate: Rectangle {
+                    id: tick
                     required property int index
-                    readonly property real tickAngle: -135 + index * 270 / 20
-                    readonly property bool lit: index / 20 <= knob.fraction + 0.001
+                    readonly property real tickAngle: -135 + tick.index * 270 / 20
+                    readonly property bool lit: tick.index / 20 <= knob.fraction + 0.001
                     width: 2
                     height: tickAngle % 90 === 0 ? 5 : 3
                     radius: 1
@@ -114,7 +115,7 @@ Item {
                     transform: Rotation {
                         origin.x: 1
                         origin.y: dial.diameter / 2 + 1
-                        angle: tickAngle
+                        angle: tick.tickAngle
                     }
                     color: lit ? Tk.Theme.color.accent : Tk.Theme.color.divider
                     opacity: lit ? 1.0 : 0.6
