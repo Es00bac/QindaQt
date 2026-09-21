@@ -271,6 +271,9 @@ nav:
       - "ADR-0115 share appearance through Qt platform theme": adr/0115-share-appearance-through-qt-platform-theme.md
       - "ADR-0116 build bundled applications on stock Qt 6": adr/0116-build-bundled-applications-on-stock-qt6.md
       - "ADR-0117 veto native resize for container members": adr/0117-veto-native-resize-for-container-members.md
+      - "ADR-0118: User task-order overlay and panel quick-configuration keys": adr/0118-user-task-order-overlay-and-panel-quick-settings.md
+      - "ADR-0119: Authenticated window-preview channel for hover thumbnails": adr/0119-authenticated-window-preview-channel.md
+      - "ADR-0120: Panel translucency from elevation tokens with client-side blur": adr/0120-panel-translucency-and-blur.md
       - "ADR-0121: real iconography in the Settings Customize route": adr/0121-real-iconography-in-the-settings-customize-route.md
       - "ADR-0122: adopt saved layout preferences live": adr/0122-adopt-saved-layout-preferences-live.md
       - "ADR-0123: a Voicemeeter-class audio graph on PipeWire primitives": adr/0123-voicemeeter-class-audio-graph-on-pipewire.md
@@ -364,3 +367,5 @@ nav:
       - "ADR-0222: QQ_Term is the desktop terminal": adr/0222-qq-term-is-the-desktop-terminal.md
       - "ADR-0223: one stock profile per distinct feel": adr/0223-one-stock-profile-per-distinct-feel.md
       - "ADR-0224: name the presentations a layout asks for": adr/0224-name-the-presentations-a-layout-asks-for.md
+      - "ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items": adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md
+      - "ADR-0230: name and picture the game behind a launcher class": adr/0230-name-and-picture-the-game-behind-a-launcher-class.md
