@@ -4,6 +4,8 @@
 
 #include "stub_audio_fixture.h"
 
+#include <qindaqt/services/audio_protocol/audio_gain.h>
+
 #include <QtCore/QObject>
 #include <QtCore/QVariantList>
 #include <QtCore/QVariantMap>
@@ -284,13 +286,19 @@ public:
     lastConsoleFlag = mono;
     return true;
   }
+  // The stub applies the REAL gain law (ADR-0171) rather than a simplified
+  // stand-in: the page's scale and readout are reviewed against these
+  // conversions, and a fake curve would let the QML pass with a scale the
+  // service would never draw.
   Q_INVOKABLE double faderPositionForGain(double gainDb) {
-    return gainDb >= 0.0 ? 1.0 : 0.75;
+    return QindaQt::Audio::faderPositionFromGainDb(gainDb);
   }
   Q_INVOKABLE double gainForFaderPosition(double position) {
-    return position >= 1.0 ? 12.0 : 0.0;
+    return QindaQt::Audio::gainDbFromFaderPosition(position);
   }
-  Q_INVOKABLE double unityFaderPosition() { return 0.75; }
+  Q_INVOKABLE double unityFaderPosition() {
+    return QindaQt::Audio::unityFaderPosition();
+  }
 
 Q_SIGNALS:
   void viewChanged();

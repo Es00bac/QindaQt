@@ -2,19 +2,20 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
-import QindaQt.Controls 1.0
-import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
-// One output bus (ADR-0173), condensed to a narrow card beside the input
-// strips: name, the device this bus drives, the desk band, then the card's
-// actions. Physical buses drive real devices; virtual buses are sinks other
-// applications record from, which is how a streamer captures a submix.
+// One output bus (ADR-0173) as a desk card beside the input strips: name,
+// the device this bus drives, the channel-mode lamps (the reference console
+// puts bus mode on the bus face, not in a menu), the mono/mute lamps, then
+// meter, fader with its dB scale, and the card's actions. Physical buses
+// drive real devices; virtual buses are sinks other applications record
+// from, which is how a streamer captures a submix.
 //
-// AGENT-CONTRACT: the four band heights below are shared VERBATIM with
+// AGENT-CONTRACT: the six band heights below are shared VERBATIM with
 // AudioConsoleStrip.qml, in the same order, and a band that does not apply to
 // a card keeps its slot rather than collapsing. See the longer note in that
-// file; qindaqt.settings-audio-console-alignment fails if they drift apart.
+// file; qindaqt.settings-audio-console-page's consoleCardsShareOneGrid fails if they
+// drift apart.
 Rectangle {
     id: root
 
@@ -27,15 +28,32 @@ Rectangle {
 
     readonly property int headerHeight: 18
     readonly property int assignmentHeight: 24
+    readonly property int controlHeight: 62
+    readonly property int routingHeight: 40
     readonly property int deskHeight: 150
     readonly property int actionHeight: 18
 
-    width: 120
-    implicitHeight: busColumn.implicitHeight + Tokens.space["2"] * 2
-    radius: Tokens.radius.s
-    color: Tokens.bg.raised
-    border.width: Tokens.space["1"] / 2
-    border.color: Tokens.outline.divider
+    // The bus channel modes, in the order the reference console lists them.
+    // Kept beside the definition of the grid so the pads and the rack agree.
+    readonly property var modeEntries: [
+        { token: "normal", label: qsTr("Stereo"), name: qsTr("Stereo mode") },
+        { token: "swap", label: qsTr("Swap"), name: qsTr("Swap left and right") },
+        { token: "left", label: qsTr("Left"), name: qsTr("Left to both") },
+        { token: "right", label: qsTr("Right"), name: qsTr("Right to both") }
+    ]
+    readonly property string currentMode: bus.processing?.mode ?? "normal"
+
+    // AGENT-GUARD: the card's width must arrive through implicitWidth.
+    // QindaTK's Flex reads only implicit sizes and attached
+    // constraints and IGNORES a child's own width (docs/layout.md),
+    // so `width: 140` here crushed the card to zero and let every
+    // band overflow. consoleCardsShareOneGrid asserts the width.
+    implicitWidth: 140
+    implicitHeight: busColumn.implicitHeight + Tk.Theme.space.sm * 2
+    radius: Tk.Theme.radius.sm
+    color: Tk.Theme.color.panelAlt
+    border.width: Tk.Theme.size.border
+    border.color: Tk.Theme.color.border
     objectName: "consoleBus_" + bus.id
 
     Rectangle {
@@ -47,49 +65,53 @@ Rectangle {
         anchors.leftMargin: 4
         height: 2
         radius: 1
-        color: root.bus.virtual ? Tokens.status.warning.background : Tokens.accent.default
+        color: root.bus.virtual ? Tk.Theme.color.warning : Tk.Theme.color.accent
         opacity: 0.7
     }
 
-    ColumnLayout {
+    Tk.Flex {
         id: busColumn
 
         anchors.fill: parent
-        anchors.margins: Tokens.space["2"]
-        spacing: Tokens.space["1"]
+        anchors.margins: Tk.Theme.space.sm
+        direction: Tk.Flex.Column
+        gap: 2
 
         // Band 1 — name.
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.headerHeight
-            spacing: Tokens.space["1"]
+        Item {
+            implicitHeight: root.headerHeight
+            Tk.Flex.shrink: 0
 
-            Label {
-                Layout.fillWidth: true
-                text: root.bus.label
-                font.weight: Font.DemiBold
-                wrapMode: Text.NoWrap
-                elide: Text.ElideRight
-                opacity: root.bus.bound ? 1.0 : 0.55
-                Accessible.name: root.bus.bound
-                    ? qsTr("Bus %1").arg(text)
-                    : qsTr("Bus %1, no device connected").arg(text)
-            }
+            Tk.Flex {
+                anchors.fill: parent
+                align: Tk.Flex.Center
+                gap: Tk.Theme.space.xs
 
-            Label {
-                text: root.bus.virtual ? qsTr("virtual") : qsTr("physical")
-                font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
-                opacity: 0.7
-                Accessible.ignored: true
+                Tk.Label {
+                    Tk.Flex.grow: 1
+                    text: root.bus.label
+                    font.weight: Font.DemiBold
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                    opacity: root.bus.bound ? 1.0 : 0.55
+                    Accessible.name: root.bus.bound
+                        ? qsTr("Bus %1").arg(text)
+                        : qsTr("Bus %1, no device connected").arg(text)
+                }
+                Tk.Caption {
+                    text: root.bus.virtual ? qsTr("virtual") : qsTr("physical")
+                    Accessible.ignored: true
+                    Tk.Flex.shrink: 0
+                }
             }
         }
 
-        // Band 2 — assignment. Which output device this bus feeds (ADR-0178),
-        // pinned the same way the strip source is. A virtual bus drives no
-        // device, so the slot is emptied rather than removed.
+        // Band 2 — assignment. Which output device this bus feeds (ADR-0178).
+        // A virtual bus drives no device, so the slot is emptied rather than
+        // removed.
         Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.assignmentHeight
+            implicitHeight: root.assignmentHeight
+            Tk.Flex.shrink: 0
 
             AudioConsoleDevicePicker {
                 objectName: "consoleBusTarget_" + root.bus.id
@@ -105,105 +127,174 @@ Rectangle {
             }
         }
 
-        // Band 3 — the desk.
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.deskHeight
-            spacing: Tokens.space["1"]
+        // Band 3 — the channel mode, on the bus face where the reference
+        // console puts it (ADR-0180). A virtual bus has no rack and no mode,
+        // so the slot is emptied rather than removed.
+        Item {
+            implicitHeight: root.controlHeight
+            Tk.Flex.shrink: 0
 
-            AudioConsoleMeter {
-                objectName: "consoleBusMeter_" + root.bus.id
-                Layout.preferredWidth: 12
-                Layout.fillHeight: true
-                reading: root.model.consoleLevels[root.bus.id]
+            Tk.Flex {
+                anchors.centerIn: parent
+                width: parent.width
+                direction: Tk.Flex.Column
+                gap: 2
+                opacity: root.bus.virtual ? 0.0 : 1.0
+
+                Repeater {
+                    model: 2
+                    delegate: Tk.Flex {
+                        id: modeRow
+                        required property int index
+                        readonly property var rowEntries:
+                            root.modeEntries.slice(modeRow.index * 2, modeRow.index * 2 + 2)
+                        gap: 2
+                        Repeater {
+                            model: modeRow.rowEntries
+                            AudioConsolePad {
+                                id: modePad
+                                required property var modelData
+                                readonly property var entry: modePad.modelData
+                                Tk.Flex.grow: 1
+                                implicitHeight: 18
+                                objectName: "consoleBusMode_" + root.bus.id + "_" + entry.token
+                                text: entry.label
+                                checkable: true
+                                // The mode lamps read as one lit key, like the
+                                // reference console's radio row: the
+                                // projection owns the lit state (ADR-0191).
+                                Binding on checked { value: root.currentMode === modePad.entry.token; when: !modePad.down }
+                                available: root.enabledControls
+                                enabled: !root.bus.virtual
+                                Accessible.ignored: root.bus.virtual
+                                Accessible.name: qsTr("%1 for bus %2")
+                                    .arg(entry.name).arg(root.bus.label)
+                                onClicked: root.model.setBusProcessing(
+                                    root.bus.id, { mode: entry.token })
+                            }
+                        }
+                    }
+                }
             }
+        }
 
-            AudioConsoleFader {
-                objectName: "consoleBusFader_" + root.bus.id
-                Layout.preferredWidth: 40
-                Layout.fillHeight: true
-                model: root.model
-                faderPosition: root.bus.faderPosition
-                enabledControl: root.enabledControls
-                accessibleName: qsTr("Bus %1 level").arg(root.bus.label)
-                onMoved: position => root.model.setBusFader(root.bus.id, position)
-            }
+        // Band 4 — mono and mute lamps, one row each, level with the strips'
+        // routing rows.
+        Item {
+            implicitHeight: root.routingHeight
+            Tk.Flex.shrink: 0
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: 1
-
-                Item { Layout.fillWidth: true; Layout.fillHeight: true }
+            Tk.Flex {
+                anchors.fill: parent
+                direction: Tk.Flex.Column
+                gap: 2
 
                 AudioConsolePad {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 16
+                    id: busMonoPad
                     objectName: "consoleBusMono_" + root.bus.id
+                    implicitHeight: 18
                     text: qsTr("mono")
                     checkable: true
-                    checked: root.bus.mono
                     available: root.enabledControls
+                    Binding on checked { value: root.bus.mono; when: !busMonoPad.down }
                     onToggled: root.model.setBusMono(root.bus.id, checked)
                     Accessible.name: qsTr("Mono bus %1").arg(root.bus.label)
                 }
                 AudioConsolePad {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 16
+                    id: busMutePad
                     objectName: "consoleBusMute_" + root.bus.id
+                    implicitHeight: 18
                     text: qsTr("Mute")
                     checkable: true
-                    checked: root.bus.muted
                     destructive: true
-                    lampColor: Tokens.danger.default
+                    lampColor: Tk.Theme.color.danger
+                    lampTextColor: Tk.Theme.color.dangerContrast
                     available: root.enabledControls
+                    Binding on checked { value: root.bus.muted; when: !busMutePad.down }
                     onToggled: root.model.setBusMuted(root.bus.id, checked)
                     Accessible.name: qsTr("Mute bus %1").arg(root.bus.label)
                 }
             }
         }
 
-        // Band 4 — actions. The recorder (ADR-0184): one bus at a time, to a
+        // Band 5 — the desk: meter, fader with its dB scale.
+        Item {
+            implicitHeight: root.deskHeight
+            Tk.Flex.shrink: 0
+
+            Tk.Flex {
+                anchors.fill: parent
+                gap: Tk.Theme.space.xs
+
+                AudioConsoleMeter {
+                    objectName: "consoleBusMeter_" + root.bus.id
+                    implicitWidth: 14
+                    implicitHeight: root.deskHeight
+                    reading: root.model.consoleLevels[root.bus.id]
+                    Tk.Flex.shrink: 0
+                }
+
+                AudioConsoleFader {
+                    objectName: "consoleBusFader_" + root.bus.id
+                    implicitHeight: root.deskHeight
+                    Tk.Flex.grow: 1
+                    model: root.model
+                    faderPosition: root.bus.faderPosition
+                    enabledControl: root.enabledControls
+                    accessibleName: qsTr("Bus %1 level").arg(root.bus.label)
+                    onMoved: position => root.model.setBusFader(root.bus.id, position)
+                }
+            }
+        }
+
+        // Band 6 — actions. The recorder (ADR-0184): one bus at a time, to a
         // FLAC file. The pad is a toggle on the published state, so two
         // surfaces agree on which bus is recording.
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.actionHeight
-            spacing: Tokens.space["1"]
+        Item {
+            implicitHeight: root.actionHeight
+            Tk.Flex.shrink: 0
 
-            AudioConsolePad {
-                objectName: "consoleBusRecord_" + root.bus.id
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                readonly property var recording: root.model.consoleRecording ?? ({})
-                readonly property bool thisBus: recording.active === true && recording.busId === root.bus.id
-                text: thisBus ? qsTr("Stop") : qsTr("Record")
-                checkable: true
-                checked: thisBus
-                destructive: true
-                lampColor: Tokens.danger.default
-                available: root.enabledControls && (recording.active !== true || thisBus)
-                onClicked: checked ? root.model.startRecording(root.bus.id, "flac")
-                                   : root.model.stopRecording()
-                Accessible.name: thisBus ? qsTr("Stop recording bus %1").arg(root.bus.label)
-                                         : qsTr("Record bus %1").arg(root.bus.label)
-            }
+            Tk.Flex {
+                anchors.fill: parent
+                gap: Tk.Theme.space.xs
 
-            AudioConsolePad {
-                objectName: "consoleBusRackToggle_" + root.bus.id
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                text: qsTr("Rack")
-                checkable: true
-                checked: root.rackOpen
-                // A virtual bus has no rack; the slot stays so the action band
-                // keeps its height beside the physical buses.
-                opacity: root.bus.virtual ? 0.0 : 1.0
-                enabled: !root.bus.virtual
-                available: root.enabledControls
-                Accessible.ignored: root.bus.virtual
-                onClicked: root.rackToggled()
-                Accessible.name: qsTr("Rack for bus %1").arg(root.bus.label)
+                AudioConsolePad {
+                    id: recordPad
+                    objectName: "consoleBusRecord_" + root.bus.id
+                    implicitHeight: root.actionHeight
+                    Tk.Flex.grow: 1
+                    readonly property var recording: root.model.consoleRecording ?? ({})
+                    readonly property bool thisBus: recording.active === true && recording.busId === root.bus.id
+                    text: thisBus ? qsTr("Stop") : qsTr("Record")
+                    checkable: true
+                    Binding on checked { value: recordPad.thisBus; when: !recordPad.down }
+                    destructive: true
+                    lampColor: Tk.Theme.color.danger
+                    lampTextColor: Tk.Theme.color.dangerContrast
+                    available: root.enabledControls && (recording.active !== true || thisBus)
+                    onClicked: checked ? root.model.startRecording(root.bus.id, "flac")
+                                       : root.model.stopRecording()
+                    Accessible.name: thisBus ? qsTr("Stop recording bus %1").arg(root.bus.label)
+                                             : qsTr("Record bus %1").arg(root.bus.label)
+                }
+
+                AudioConsolePad {
+                    id: busRackPad
+                    objectName: "consoleBusRackToggle_" + root.bus.id
+                    implicitHeight: root.actionHeight
+                    Tk.Flex.grow: 1
+                    text: qsTr("Rack")
+                    checkable: true
+                    Binding on checked { value: root.rackOpen; when: !busRackPad.down }
+                    // A virtual bus has no rack; the slot stays so the action
+                    // band keeps its height beside the physical buses.
+                    opacity: root.bus.virtual ? 0.0 : 1.0
+                    enabled: !root.bus.virtual
+                    available: root.enabledControls
+                    Accessible.ignored: root.bus.virtual
+                    onClicked: root.rackToggled()
+                    Accessible.name: qsTr("Rack for bus %1").arg(root.bus.label)
+                }
             }
         }
     }

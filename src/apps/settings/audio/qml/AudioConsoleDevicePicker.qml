@@ -2,16 +2,13 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as T
-import QtQuick.Layouts
-import QindaQt.Controls 1.0
-import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // One device picker for a console strip or bus (ADR-0178): "Automatic" first,
 // then every device of the right kind. The current entry is the device the
 // element is bound to right now, and a pin is marked so the user can tell
 // "I chose this" from "the service chose this".
-ComboBox {
+Tk.ComboBox {
     id: picker
 
     // Rows shaped like the model's inputDevices / outputDevices.
@@ -34,9 +31,9 @@ ComboBox {
         return rows
     }
 
+    small: true
     model: entries
     textRole: "label"
-    valueRole: "serial"
     // AGENT-GUARD: the index is derived from the bound serial, never stored,
     // so a device appearing or disappearing cannot leave the picker pointing at
     // the wrong row. An unbound pinned strip shows "Automatic" is NOT selected
@@ -55,25 +52,5 @@ ComboBox {
     }
     onActivated: index => picker.picked(entries[index].serial)
     Accessible.name: accessibleName
-    font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
-    // The console cards are 120px wide; a form-height (40px) picker would eat
-    // a third of the card. The popup still opens at full size — only the
-    // closed face is compact.
-    implicitHeight: 24
-
-    // AGENT-GUARD: the shared ComboBox renders its closed face with an
-    // editable text item, and such an item scrolls a string wider than its box
-    // to keep the cursor end visible — so a long device name lost its
-    // FIRST characters here and read as "k Microphone" instead of
-    // "Desk Microphone". This picker is never editable, so it takes an eliding
-    // Text instead, which drops characters from the end where the eye expects
-    // it. The shared control has the same defect for every non-editable
-    // consumer; fixing it there is outside this lane.
-    contentItem: Text {
-        text: picker.displayText
-        color: picker.enabled ? Tokens.fg.default : Tokens.fg.disabled
-        font: picker.font
-        verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
-    }
+    tooltip: accessibleName
 }

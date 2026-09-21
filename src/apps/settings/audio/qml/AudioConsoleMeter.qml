@@ -2,12 +2,12 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
-import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // One console meter (ADR-0174): a segmented LED column with a falling peak
-// marker — the classic desk meter, drawn from design tokens rather than a
-// bitmap theme.
+// marker — the classic desk meter. The column is QindaTK's Tk.Meter turned
+// vertical, segmented, and coloured by the shared `load` ramp so a hot
+// channel reads the same here as everywhere else on the desktop.
 //
 // AGENT-CONTRACT: the reading comes from the model's `consoleLevels` channel,
 // NOT from the strip or bus row. Rows are republished only when the console's
@@ -17,7 +17,8 @@ Item {
     id: meter
 
     // {peakDb, rmsDb, known} for one console id, or undefined before the first
-    // reading. Both levels are dBFS - never the fader scale.
+    // reading. Both levels are dBFS - never the fader scale (ADR-0171 keeps
+    // the two apart deliberately).
     required property var reading
 
     // The bottom of the drawn scale. Matches the console's minimum fader gain
@@ -33,7 +34,6 @@ Item {
     }
 
     readonly property real peakFraction: known ? fractionFor(reading.peakDb) : 0.0
-    readonly property real rmsFraction: known ? fractionFor(reading.rmsDb) : 0.0
     // The marker rises instantly and falls slowly, which is what makes a short
     // transient readable at all: at twenty frames a second an instantaneous
     // peak would otherwise be gone before the eye caught it.
@@ -60,49 +60,24 @@ Item {
         }
     }
 
-    implicitWidth: 12
+    implicitWidth: 14
     implicitHeight: 150
     Accessible.ignored: true
 
-
-    // The well behind the segments; the segments themselves are the bar, so
-    // the bar keeps the name the probe scripts know it by.
-    Rectangle {
-        anchors.fill: parent
-        radius: Tokens.radius.s
-        color: Tokens.bg.base
-    }
-
-    ColumnLayout {
-        id: meterBar
+    Tk.Meter {
         objectName: "meterBar"
         anchors.fill: parent
-        anchors.margins: 1
-        spacing: 1
-
-        Repeater {
-            // Bottom segment = floorDb, top segment = 0 dBFS. The count is
-            // fixed rather than derived from height so a resized meter keeps
-            // the same segment feel; height stretches the segments instead.
-            model: 25
-            delegate: Rectangle {
-                required property int index
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 1
-                readonly property real segmentDb:
-                    meter.floorDb + (index + 1) * (0.0 - meter.floorDb) / 25
-                readonly property bool lit: meter.known && meter.reading.rmsDb >= segmentDb
-                // AGENT-NOTE: status.*.background IS the lamp colour;
-                // *.foreground is the contrast colour for text sitting on
-                // the lamp, which reads as black-on-dark here.
-                color: !lit
-                    ? Tokens.bg.raised
-                    : segmentDb > -3.0 ? Tokens.danger.default
-                      : segmentDb > -12.0 ? Tokens.status.warning.background
-                        : Tokens.status.success.background
-            }
-        }
+        vertical: true
+        from: meter.floorDb
+        to: 0.0
+        // An unknown reading is an EMPTY meter, never a fabricated one: the
+        // console only draws what the service actually published.
+        value: meter.known ? meter.reading.rmsDb : meter.floorDb
+        segments: 20
+        segmentGap: 1
+        radius: Tk.Theme.radius.xs
+        ramp: Tk.Theme.ramp.load
+        opacity: meter.known ? 1.0 : 0.4
     }
 
     Rectangle {
@@ -112,7 +87,7 @@ Item {
         x: 1
         visible: meter.known && meter.heldFraction > 0.0
         color: meter.reading !== undefined && meter.reading.peakDb > -3.0
-            ? Tokens.danger.default : Tokens.fg.default
+            ? Tk.Theme.color.danger : Tk.Theme.color.text
         // fraction 1 is 0 dBFS at the TOP of the column.
         y: 1 + (parent.height - 4) * (1.0 - meter.heldFraction)
     }
@@ -123,6 +98,6 @@ Item {
         width: parent.width
         height: 1
         anchors.top: parent.top
-        color: Tokens.outline.divider
+        color: Tk.Theme.color.divider
     }
 }

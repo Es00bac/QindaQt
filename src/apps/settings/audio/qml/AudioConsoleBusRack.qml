@@ -2,13 +2,13 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
-import QindaQt.Controls 1.0
-import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
-// A physical bus's rack (ADR-0180): a three-band equalizer and a channel
-// mode. Each control sends the whole rack with one value changed.
-RowLayout {
+// A physical bus's rack (ADR-0180): a three-band equalizer. The channel mode
+// lives on the bus card's face (AudioConsoleBus), where the reference console
+// puts it; this band is only the EQ. Each control sends the whole rack with
+// one value changed.
+Tk.Flex {
     id: rack
 
     required property var model
@@ -18,7 +18,8 @@ RowLayout {
     readonly property var processing: bus.processing ?? ({})
     readonly property var equalizer: processing.equalizer ?? ({})
     readonly property bool eqOn: equalizer.enabled === true
-    spacing: Tokens.space["3"]
+
+    gap: Tk.Theme.space.md
     objectName: "consoleBusRack_" + bus.id
 
     function sendEq(key, value) {
@@ -28,12 +29,13 @@ RowLayout {
     }
 
     AudioConsolePad {
-        Layout.preferredHeight: 16
+        id: eqPad
+        implicitHeight: 18
         objectName: "consoleBusRack_" + rack.bus.id + "_equalizer"
         text: qsTr("Equalizer")
         checkable: true
-        checked: rack.eqOn
         available: rack.enabledControls
+        Binding on checked { value: rack.eqOn; when: !eqPad.down }
         onToggled: rack.sendEq("enabled", checked)
         Accessible.name: qsTr("Equalizer for bus %1").arg(rack.bus.label)
     }
@@ -46,31 +48,4 @@ RowLayout {
     AudioConsoleKnob { label: qsTr("High"); unit: " dB"; from: -24; to: 24
         value: rack.equalizer.highGainDb ?? 0; enabledControl: rack.eqOn && rack.enabledControls
         onCommitted: v => rack.sendEq("highGainDb", v) }
-
-    // The channel mode: which channel of the mix reaches which side of the
-    // device. The index is derived from the published mode, never stored.
-    ComboBox {
-        objectName: "consoleBusMode_" + rack.bus.id
-        Layout.preferredWidth: 160
-        enabled: rack.enabledControls
-        textRole: "label"
-        valueRole: "token"
-        model: [
-            { token: "normal", label: qsTr("Stereo") },
-            { token: "swap", label: qsTr("Swap left and right") },
-            { token: "left", label: qsTr("Left to both") },
-            { token: "right", label: qsTr("Right to both") }
-        ]
-        currentIndex: {
-            const token = rack.processing.mode ?? "normal"
-            for (let index = 0; index < model.length; ++index) {
-                if (model[index].token === token) {
-                    return index
-                }
-            }
-            return 0
-        }
-        onActivated: index => rack.model.setBusProcessing(rack.bus.id, { mode: model[index].token })
-        Accessible.name: qsTr("Channel mode for bus %1").arg(rack.bus.label)
-    }
 }
