@@ -6,9 +6,15 @@ import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK.QindaQt
 
 T.Page {
     id: root
+
+    // The console below is QindaTK (ADR-0227); the bridge feeds the desktop's
+    // QST-1 tokens into the toolkit theme so the mixer wears the same theme
+    // as the rest of the route.
+    QindaQtTheme {}
 
     required property var audioSettings
     signal closeRequested()

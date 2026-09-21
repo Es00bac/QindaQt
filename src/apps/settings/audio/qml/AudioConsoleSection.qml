@@ -3,18 +3,17 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import QindaQt.Controls 1.0
-import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
-// The mixing console (ADR-0173), condensed to desk density: every strip and
-// bus is a narrow card (AudioConsoleStrip / AudioConsoleBus) and the cards
-// flow left-to-right, wrapping onto as many rows as the window is wide. A
-// wide window shows the whole desk at once; a narrow one stacks rows and the
-// page scrolls VERTICALLY — AGENT-CONTRACT: there is deliberately no
-// horizontal scroller anywhere in this surface; the layout must wrap instead.
-// See docs/wiki/reference/voicemeeter-potato-parity.md for the feature target
-// the cards implement.
-ColumnLayout {
+// The mixing console (ADR-0173) at desk density, rebuilt on QindaTK
+// (ADR-0227): every strip and bus is a narrow card (AudioConsoleStrip /
+// AudioConsoleBus) and the cards flow left-to-right, wrapping onto as many
+// rows as the window is wide. A wide window shows the whole desk at once; a
+// narrow one stacks rows and the page scrolls VERTICALLY — AGENT-CONTRACT:
+// there is deliberately no horizontal scroller anywhere in this surface; the
+// layout must wrap instead. See docs/wiki/reference/voicemeeter-potato-parity.md
+// for the feature target the cards implement.
+Tk.Flex {
     id: root
 
     required property var audioSettings
@@ -37,9 +36,12 @@ ColumnLayout {
     property string openBusRackId: ""
 
     objectName: "audioConsoleSection"
-    Layout.fillWidth: true
-    spacing: Tokens.space["2"]
+    direction: Tk.Flex.Column
+    gap: Tk.Theme.space.sm
     visible: available
+    // The page still stacks its sections with QtQuick.Layouts; only the
+    // console's internals are QindaTK. Fill the width the column offers.
+    Layout.fillWidth: true
 
     function toggleStripRack(stripId) {
         root.openStripRackId = root.openStripRackId === stripId ? "" : stripId
@@ -66,39 +68,33 @@ ColumnLayout {
         return null
     }
 
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: Tokens.space["2"]
+    Tk.SectionHeader {
+        title: qsTr("Mixing console")
+        count: qsTr("%1 strips · %2 buses")
+            .arg((root.audioSettings.consoleStrips ?? []).length)
+            .arg((root.audioSettings.consoleBuses ?? []).length)
+    }
 
-        // The same header the device, virtual-device and stream sections use.
-        // A bare Label here made the console — the surface a user operates
-        // continuously — read as less important than the lists below it.
-        SectionHeader {
-            Layout.fillWidth: true
-            title: qsTr("Mixing console")
-            description: qsTr("Input strips, output buses, and their routing")
-        }
-        Label {
-            objectName: "audioConsoleSoloNotice"
-            // Solo silences every other strip, which is a state a user can
-            // leave switched on by accident and then not understand.
-            visible: root.audioSettings.consoleSoloActive ?? false
-            text: qsTr("Solo active — other inputs are silenced")
-            font: Qt.font({ family: Tokens.type.fontFamily, pointSize: Tokens.type.caption })
-            Accessible.name: text
-        }
+    Tk.Notice {
+        objectName: "audioConsoleSoloNotice"
+        // Solo silences every other strip, which is a state a user can
+        // leave switched on by accident and then not understand.
+        visible: root.audioSettings.consoleSoloActive ?? false
+        variant: "warning"
+        text: qsTr("Solo active — other inputs are silenced")
+        Accessible.name: text
     }
 
     AudioConsolePresets {
-        Layout.fillWidth: true
         model: root.audioSettings
         enabledControls: (root.audioSettings.ready ?? false) && !(root.audioSettings.busy ?? false)
     }
 
-    // Input strips. Each card is fixed-width; the Flow is the row allocator.
-    Flow {
-        Layout.fillWidth: true
-        spacing: Tokens.space["2"]
+    // Input strips. Each card is fixed-width; the wrapping Flex is the row
+    // allocator.
+    Tk.Flex {
+        wrap: Tk.Flex.Wrap
+        gap: Tk.Theme.space.sm
 
         Repeater {
             // ADR-0191 applies to console cards too: a snapshot updates a
@@ -110,7 +106,7 @@ ColumnLayout {
                     root.audioSettings.consoleStrips?.[index] ?? ({
                         id: "", label: "", virtual: false, bound: false,
                         faderPosition: 0.0, sends: [], mono: false,
-                        muted: false, soloed: false
+                        pan: 0.0, muted: false, soloed: false
                     })
                 visible: modelData.id.length > 0
                 model: root.audioSettings
@@ -128,7 +124,6 @@ ColumnLayout {
     // asked for it. Loaders (not visible stacks) so closed racks cost nothing.
     Loader {
         id: stripRackLoader
-        Layout.fillWidth: true
         active: root.openStripRackId !== "" && root.stripById(root.openStripRackId) !== null
         visible: active
         sourceComponent: AudioConsoleRack {
@@ -139,7 +134,6 @@ ColumnLayout {
     }
     Loader {
         id: busRackLoader
-        Layout.fillWidth: true
         active: root.openBusRackId !== "" && root.busById(root.openBusRackId) !== null
         visible: active
         sourceComponent: AudioConsoleBusRack {
@@ -149,16 +143,12 @@ ColumnLayout {
         }
     }
 
-    Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 1
-        color: Tokens.outline.divider
-    }
+    Tk.Divider {}
 
-    // Output buses: the send destinations every strip's routing pads point at.
-    Flow {
-        Layout.fillWidth: true
-        spacing: Tokens.space["2"]
+    // Output buses: the send destinations every strip's routing lamps point at.
+    Tk.Flex {
+        wrap: Tk.Flex.Wrap
+        gap: Tk.Theme.space.sm
 
         Repeater {
             model: (root.audioSettings.consoleBuses ?? []).length

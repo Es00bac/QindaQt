@@ -2,9 +2,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
-import QindaQt.Controls 1.0
-import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // A strip's processing rack (ADR-0179): gate, compressor, equalizer, limiter,
 // in the order the graph applies them. Every control sends the WHOLE rack with
@@ -18,7 +16,7 @@ import QindaQt.Tokens 1.0
 // delegate, because each knob binds a different key of the projected
 // processing map; a Repeater over keys would lose the per-key defaults,
 // units, and ranges that are the actual contract with Audio1.
-Flow {
+Tk.Flex {
     id: rack
 
     required property var model
@@ -26,8 +24,9 @@ Flow {
     required property bool enabledControls
 
     readonly property var processing: strip.processing ?? ({})
-    Layout.fillWidth: true
-    spacing: Tokens.space["3"]
+
+    wrap: Tk.Flex.Wrap
+    gap: Tk.Theme.space.lg
     objectName: "consoleRack_" + strip.id
 
     function send(block, key, value) {
@@ -37,22 +36,23 @@ Flow {
         rack.model.setStripProcessing(rack.strip.id, next)
     }
 
-    component Block: ColumnLayout {
+    component Block: Tk.Flex {
         id: block
         required property string blockName
         required property string title
         readonly property var settings: rack.processing[blockName] ?? ({})
         readonly property bool on: settings.enabled === true
-        spacing: Tokens.space["1"]
+        direction: Tk.Flex.Column
+        gap: Tk.Theme.space.xs
 
         AudioConsolePad {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 16
+            id: blockPad
+            implicitHeight: 18
             objectName: "consoleRack_" + rack.strip.id + "_" + block.blockName
             text: block.title
             checkable: true
-            checked: block.on
             available: rack.enabledControls
+            Binding on checked { value: block.on; when: !blockPad.down }
             onToggled: rack.send(block.blockName, "enabled", checked)
             Accessible.name: qsTr("%1 for %2").arg(block.title).arg(rack.strip.label)
         }
@@ -62,9 +62,8 @@ Flow {
         id: denoiserBlock
         blockName: "denoiser"
         title: qsTr("Denoiser")
-        RowLayout {
-            Layout.topMargin: Tokens.space["1"]
-            spacing: Tokens.space["2"]
+        Tk.Flex {
+            gap: Tk.Theme.space.xs
             AudioConsoleKnob { label: qsTr("Voice threshold"); unit: " %"; from: 0; to: 100
                 value: denoiserBlock.settings.vadThreshold ?? 50
                 enabledControl: denoiserBlock.on && rack.enabledControls
@@ -76,9 +75,8 @@ Flow {
         id: gateBlock
         blockName: "gate"
         title: qsTr("Gate")
-        RowLayout {
-            Layout.topMargin: Tokens.space["1"]
-            spacing: Tokens.space["2"]
+        Tk.Flex {
+            gap: Tk.Theme.space.xs
             AudioConsoleKnob { label: qsTr("Threshold"); unit: " dB"; from: -80; to: 0
                 value: gateBlock.settings.thresholdDb ?? -40
                 enabledControl: gateBlock.on && rack.enabledControls
@@ -98,9 +96,8 @@ Flow {
         id: compressorBlock
         blockName: "compressor"
         title: qsTr("Compressor")
-        RowLayout {
-            Layout.topMargin: Tokens.space["1"]
-            spacing: Tokens.space["2"]
+        Tk.Flex {
+            gap: Tk.Theme.space.xs
             AudioConsoleKnob { label: qsTr("Threshold"); unit: " dB"; from: -80; to: 0
                 value: compressorBlock.settings.thresholdDb ?? -18
                 enabledControl: compressorBlock.on && rack.enabledControls
@@ -120,9 +117,8 @@ Flow {
         id: equalizerBlock
         blockName: "equalizer"
         title: qsTr("Equalizer")
-        RowLayout {
-            Layout.topMargin: Tokens.space["1"]
-            spacing: Tokens.space["2"]
+        Tk.Flex {
+            gap: Tk.Theme.space.xs
             AudioConsoleKnob { label: qsTr("Low"); unit: " dB"; from: -24; to: 24
                 value: equalizerBlock.settings.lowGainDb ?? 0
                 enabledControl: equalizerBlock.on && rack.enabledControls
@@ -142,9 +138,8 @@ Flow {
         id: limiterBlock
         blockName: "limiter"
         title: qsTr("Limiter")
-        RowLayout {
-            Layout.topMargin: Tokens.space["1"]
-            spacing: Tokens.space["2"]
+        Tk.Flex {
+            gap: Tk.Theme.space.xs
             AudioConsoleKnob { label: qsTr("Ceiling"); unit: " dB"; from: -20; to: 0; decimals: 1
                 value: limiterBlock.settings.ceilingDb ?? -1
                 enabledControl: limiterBlock.on && rack.enabledControls
