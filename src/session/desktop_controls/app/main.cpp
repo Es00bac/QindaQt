@@ -8,6 +8,7 @@
 #include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
 #include "qindaqt/session/desktop_controls/settings1_screensaver_preferences.h"
 #include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
+#include "qindaqt/session/desktop_controls/screensaver_catalog.h"
 #include "qindaqt/session/desktop_controls/tablet_arrival_notifier.h"
 #include "qindaqt/session/desktop_controls/tablet_mapping_policy.h"
 #include "qindaqt/session/desktop_controls/tablet_route_launcher.h"
@@ -319,14 +320,20 @@ int main(int argc, char *argv[])
         QTextStream(stderr) << "qindaqt-desktop-controls: screensaver settings client failed: "
                             << screensaverSettingsError << '\n';
     }
+    // The saver set is discovered from the installed desktop entries, not
+    // hard-coded (ADR-0226); the catalog scans, so a newly packaged saver is
+    // picked up the next time a snapshot resolves.
+    QindaQt::Session::DesktopControls::DesktopEntryScreensaverCatalog
+        screensaverCatalog;
     QindaQt::Session::DesktopControls::Settings1ScreensaverPreferences screensaverPreferences(
-        screensaverSettingsClient);
+        screensaverSettingsClient, screensaverCatalog);
 
-    // Idle screensaver (one of the five x11-misc savers), stopped on activity or
-    // lock. Configured in Settings -> Power; the locker stays the only lock
-    // authority. Declared after its client so it is destroyed first.
+    // Idle screensaver (whichever installed saver the operator chose), stopped
+    // on activity or lock. Configured in Settings -> Screen saver; the locker
+    // stays the only lock authority. Declared after its client so it is
+    // destroyed first.
     QindaQt::Session::DesktopControls::ScreensaverLauncher screensaver(
-        sessionBus, screensaverPreferences, &application);
+        sessionBus, screensaverPreferences, screensaverCatalog, &application);
     screensaver.start();
 
     return application.exec();

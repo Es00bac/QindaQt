@@ -20,7 +20,6 @@ class PowerRouteComposition final : public QObject {
   Q_PROPERTY(QObject *model READ model CONSTANT)
   Q_PROPERTY(QObject *screenLockSettings READ screenLockSettings CONSTANT)
   Q_PROPERTY(QObject *idleDisplaySettings READ idleDisplaySettings CONSTANT)
-  Q_PROPERTY(QObject *screensaverSettings READ screensaverSettings CONSTANT)
 
 public:
   explicit PowerRouteComposition(QObject *parent = nullptr);
@@ -29,7 +28,6 @@ public:
   [[nodiscard]] QObject *model() const;
   [[nodiscard]] QObject *screenLockSettings() const;
   [[nodiscard]] QObject *idleDisplaySettings() const;
-  [[nodiscard]] QObject *screensaverSettings() const;
 
 private:
   class Private;

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <qindaqt/apps/settings_power/screen_lock_settings.h>
+#include <qindaqt/apps/settings_screen_lock/screen_lock_settings.h>
 
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusPendingReply>
 
-namespace QindaQt::Apps::SettingsPower {
+namespace QindaQt::Apps::SettingsScreenLock {
 namespace {
 constexpr auto Service = "org.kde.screensaver";
 constexpr auto Path = "/ScreenSaver";
@@ -30,4 +30,4 @@ void QtScreenLockConfigureClient::requestConfigure() {
   });
 }
 
-} // namespace QindaQt::Apps::SettingsPower
+} // namespace QindaQt::Apps::SettingsScreenLock
