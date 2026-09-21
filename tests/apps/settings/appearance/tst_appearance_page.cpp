@@ -12,10 +12,12 @@
 #include <QColor>
 #include <QCoreApplication>
 #include <QImage>
+#include <QFile>
 #include <QFont>
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QTemporaryDir>
 #include <QTest>
 #include <QUrl>
 
@@ -181,6 +183,7 @@ private slots:
     void windowsDestinationPreviewsBothChromeSetsAndForwardsChoices();
     void qtToolkitCardReflectsThePlatformThemeProjection();
     void fontTypingWallpaperPreviewAndKeyboardScrollingStayUsable();
+    void wallpaperFieldFollowsExternalDraftChangesAndPreviewUsesFileUrls();
 
 private:
     static void makeReady(StubAppearanceModel &model, bool dirty)
@@ -450,6 +453,107 @@ void AppearancePageTests::fontTypingWallpaperPreviewAndKeyboardScrollingStayUsab
     subpixel->forceActiveFocus(Qt::TabFocusReason);
     QTRY_COMPARE(scene.view->activeFocusItem(), subpixel);
     QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
+}
+
+
+void AppearancePageTests::wallpaperFieldFollowsExternalDraftChangesAndPreviewUsesFileUrls()
+{
+    const QUrl bundledPreview = QUrl::fromLocalFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/wallpapers/qinda-punk.png"));
+    QTemporaryDir customDir;
+    QVERIFY(customDir.isValid());
+    // A path whose characters need percent-encoding: a bare string assigned
+    // to a url property parses '#' as a fragment start and truncates, which
+    // is exactly how the preview breaks when the page base URL is not file:.
+    const QString oddPath = customDir.filePath(
+        QStringLiteral("odd wall#paper.png"));
+    QFile oddFile(oddPath);
+    QVERIFY(oddFile.open(QIODevice::WriteOnly));
+    oddFile.write("png");
+    oddFile.close();
+
+    const auto scene = createScene([&](StubAppearanceModel &model) {
+        model.installedThemes = QVariantList{};
+        model.bundledWallpapers = QVariantList{QVariantMap{
+            {QStringLiteral("name"), QStringLiteral("Qinda Punk")},
+            {QStringLiteral("value"), QStringLiteral("qindaqt:qinda-punk")},
+            {QStringLiteral("previewUrl"), bundledPreview},
+        }};
+        model.draft = defaultDraftMap();
+        makeReady(model, false);
+    });
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+    QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
+
+    auto *field = item(scene.root, "appearanceWallpaperField");
+    auto *bundled = item(scene.root, "bundledWallpaperButton");
+    auto *none = item(scene.root, "noWallpaperButton");
+    auto *preview = item(scene.root, "appearanceWallpaperPreview");
+    QVERIFY(field != nullptr && bundled != nullptr && none != nullptr
+            && preview != nullptr);
+
+    // Typing destroys the declarative text binding; every later external
+    // draft change must still reach the field imperatively.
+    field->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(field->hasActiveFocus());
+    for (const auto key : {Qt::Key_Slash, Qt::Key_T, Qt::Key_M, Qt::Key_P})
+        QTest::keyClick(scene.view.get(), key);
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper"))
+                     .toString(),
+                 QStringLiteral("/tmp"));
+    QCOMPARE(field->property("text").toString(), QStringLiteral("/tmp"));
+
+    // Picking a bundled wallpaper afterwards is the operator-visible break:
+    // the draft moves on but the field keeps the stale typed path.
+    QVERIFY(QMetaObject::invokeMethod(bundled, "click"));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper"))
+                     .toString(),
+                 QStringLiteral("qindaqt:qinda-punk"));
+    QTRY_COMPARE(field->property("text").toString(), QString());
+
+    // Clicking a chooser button moves focus to it, exactly like a mouse
+    // click; the user clicks back into the field to keep typing.
+    field->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(field->hasActiveFocus());
+    for (const auto key : {Qt::Key_Slash, Qt::Key_A, Qt::Key_B, Qt::Key_C})
+        QTest::keyClick(scene.view.get(), key);
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper"))
+                     .toString(),
+                 QStringLiteral("/abc"));
+    QVERIFY(QMetaObject::invokeMethod(none, "click"));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper"))
+                     .toString(),
+                 QString());
+    QTRY_COMPARE(field->property("text").toString(), QString());
+
+    // A draft published from elsewhere (Revert, baseline rebase) resyncs too.
+    scene.model->draft.insert(QStringLiteral("appearance.wallpaper"),
+                              QStringLiteral("/somewhere/else.png"));
+    scene.model->publish();
+    QTRY_COMPARE(field->property("text").toString(),
+                 QStringLiteral("/somewhere/else.png"));
+
+    // Typing a qindaqt: identity by hand must not be wiped as an "external"
+    // change: the echo of the user's own keystrokes is not a resync trigger.
+    field->forceActiveFocus(Qt::OtherFocusReason);
+    QTest::keyClick(scene.view.get(), Qt::Key_A, Qt::ControlModifier);
+    for (const auto key : {Qt::Key_Q, Qt::Key_I, Qt::Key_N, Qt::Key_D,
+                           Qt::Key_A, Qt::Key_Q, Qt::Key_T, Qt::Key_Colon,
+                           Qt::Key_X})
+        QTest::keyClick(scene.view.get(), key);
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper"))
+                     .toString(),
+                 QStringLiteral("qindaqt:x"));
+    QCOMPARE(field->property("text").toString(), QStringLiteral("qindaqt:x"));
+
+    // The preview paints the model's file-URL projection verbatim, so a
+    // percent-needing path resolves identically from any document base URL.
+    scene.model->draft.insert(QStringLiteral("appearance.wallpaper"), oddPath);
+    scene.model->previewWallpaper = QUrl::fromLocalFile(oddPath);
+    scene.model->publish();
+    QTRY_COMPARE(preview->property("source").toUrl(),
+                 QUrl::fromLocalFile(oddPath));
+    QTRY_VERIFY(preview->isVisible());
 }
 
 void AppearancePageTests::actionRowWiresApplyRevertRetryClose()

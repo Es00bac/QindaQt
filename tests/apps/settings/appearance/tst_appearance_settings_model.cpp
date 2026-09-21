@@ -6,6 +6,8 @@
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 #include "qindaqt/themes/theme_loader.h"
 
+#include <QFile>
+#include <QTemporaryDir>
 #include <QtTest>
 
 using namespace QindaQt::Apps::SettingsAppearance;
@@ -161,6 +163,7 @@ private slots:
     void conflictStopsSequenceAndRequiresExplicitReapply();
     void uncertainWriteIsNeverReplayed();
     void ownerLossDuringSequenceAbortsWithoutReplay();
+    void previewWallpaperResolvesBundledAndCustomDrafts();
 
 private:
     // AGENT-GUARD: QTest macros expand `return;`, so this helper reports
@@ -467,6 +470,62 @@ void AppearanceSettingsModelTests::uncertainWriteIsNeverReplayed()
     // Only an explicit new Apply resubmits after an uncertain outcome.
     QVERIFY(model->applyDraft());
     QCOMPARE(m_transport.commits.size(), 2);
+}
+
+
+void AppearanceSettingsModelTests::previewWallpaperResolvesBundledAndCustomDrafts()
+{
+    const QUrl bundledPreview = QUrl::fromLocalFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/wallpapers/qinda-punk.png"));
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    // Spaces and '#' need percent-encoding; the projection must produce a
+    // complete file URL because QML documents may resolve strings against a
+    // non-file base URL.
+    const QString customPath = directory.filePath(
+        QStringLiteral("odd wall#paper.png"));
+    QFile customFile(customPath);
+    QVERIFY(customFile.open(QIODevice::WriteOnly));
+    customFile.write("png");
+    customFile.close();
+
+    auto *model = new AppearanceSettingsModel(
+        m_client, loadFixtureThemes(),
+        QVariantList{QVariantMap{
+            {QStringLiteral("name"), QStringLiteral("Qinda Punk")},
+            {QStringLiteral("value"), QStringLiteral("qindaqt:qinda-punk")},
+            {QStringLiteral("previewUrl"), bundledPreview}}},
+        Qt::ColorScheme::Dark, nullptr, this);
+    m_model = model;
+    QVERIFY(m_client.start());
+    QVERIFY(establishBaseline(m_transport, QStringLiteral(":1.6preview"),
+                              QStringLiteral("epoch-a"), 7,
+                              defaultAppearanceMap()));
+    QVERIFY(QTest::qWaitFor([model]() { return model->ready(); }, 5'000));
+
+    // No wallpaper chosen: honestly blank.
+    QCOMPARE(model->previewWallpaper(), QUrl{});
+
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.wallpaper"),
+                                 QStringLiteral("qindaqt:qinda-punk")));
+    QCOMPARE(model->previewWallpaper(), bundledPreview);
+
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.wallpaper"),
+                                 customPath));
+    QCOMPARE(model->previewWallpaper(), QUrl::fromLocalFile(customPath));
+
+    // Unknown identities, missing files, and relative paths never become a
+    // broken image frame.
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.wallpaper"),
+                                 QStringLiteral("qindaqt:missing")));
+    QCOMPARE(model->previewWallpaper(), QUrl{});
+    QVERIFY(model->setDraftValue(
+        QStringLiteral("appearance.wallpaper"),
+        directory.filePath(QStringLiteral("missing.png"))));
+    QCOMPARE(model->previewWallpaper(), QUrl{});
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.wallpaper"),
+                                 QStringLiteral("relative.png")));
+    QCOMPARE(model->previewWallpaper(), QUrl{});
 }
 
 void AppearanceSettingsModelTests::ownerLossDuringSequenceAbortsWithoutReplay()

@@ -367,5 +367,6 @@ nav:
       - "ADR-0222: QQ_Term is the desktop terminal": adr/0222-qq-term-is-the-desktop-terminal.md
       - "ADR-0223: one stock profile per distinct feel": adr/0223-one-stock-profile-per-distinct-feel.md
       - "ADR-0224: name the presentations a layout asks for": adr/0224-name-the-presentations-a-layout-asks-for.md
+      - "ADR-0228: bundled wallpapers resolve beyond PNG": adr/0228-bundled-wallpapers-resolve-beyond-png.md
       - "ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items": adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md
       - "ADR-0230: name and picture the game behind a launcher class": adr/0230-name-and-picture-the-game-behind-a-launcher-class.md

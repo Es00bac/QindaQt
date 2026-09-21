@@ -30,19 +30,6 @@ ColumnLayout {
         root.appearanceSettings.setDraftValue(key, value)
     }
 
-    function previewSource() {
-        if (!root.selectedWallpaper.startsWith("qindaqt:")) {
-            return root.selectedWallpaper
-        }
-        const wallpapers = root.appearanceSettings.bundledWallpapers ?? []
-        for (let index = 0; index < wallpapers.length; ++index) {
-            if (wallpapers[index].value === root.selectedWallpaper) {
-                return wallpapers[index].previewUrl
-            }
-        }
-        return ""
-    }
-
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Wallpaper")
@@ -54,8 +41,11 @@ ColumnLayout {
         objectName: "appearanceWallpaperPreview"
         Layout.fillWidth: true
         Layout.preferredHeight: 150
-        visible: root.selectedWallpaper.length > 0
-        source: root.previewSource()
+        // The model projects the draft wallpaper to a complete file URL, so
+        // the preview resolves identically from any document base URL and
+        // never shows a broken frame for an unknown file.
+        visible: (root.appearanceSettings.previewWallpaper ?? "").toString().length > 0
+        source: root.appearanceSettings.previewWallpaper ?? ""
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         Accessible.name: qsTr("Selected wallpaper preview")
@@ -132,10 +122,46 @@ ColumnLayout {
                 objectName: "appearanceWallpaperField"
                 Layout.fillWidth: true
                 enabled: root.appearanceSettings.canEdit && !root.editorBusy
-                text: root.selectedWallpaper.startsWith("qindaqt:") ? "" : root.selectedWallpaper
                 error: root.appearanceSettings.fieldErrors["appearance.wallpaper"] !== undefined
                 accessibleName: qsTr("Wallpaper image file")
-                onTextEdited: root.setDraft("appearance.wallpaper", wallpaperPath.text)
+
+                // AGENT-GUARD: Two-way field that commits per keystroke. A
+                // declarative text binding cannot express "follow the draft
+                // except while the user is the one writing it": the qindaqt:
+                // display transform clobbered the user's own typing whenever
+                // the draft diverged from the display form. Keep the last
+                // text this field committed and adopt only draft changes that
+                // did not come from these keystrokes (bundled pick, "No
+                // wallpaper", file dialog, revert, baseline rebase).
+                property string lastCommitted: ""
+
+                function displayText() {
+                    return root.selectedWallpaper.startsWith("qindaqt:") ? "" : root.selectedWallpaper
+                }
+
+                function adoptDraftText() {
+                    const next = displayText()
+                    if (text !== next && root.selectedWallpaper !== lastCommitted) {
+                        lastCommitted = next
+                        text = next
+                    }
+                }
+
+                Component.onCompleted: {
+                    lastCommitted = displayText()
+                    text = displayText()
+                }
+                onTextEdited: {
+                    lastCommitted = text
+                    root.setDraft("appearance.wallpaper", wallpaperPath.text)
+                }
+
+                Connections {
+                    target: root.appearanceSettings
+                    function onDraftChanged() {
+                        wallpaperPath.adoptDraftText()
+                    }
+                }
             }
             Button {
                 objectName: "appearanceChooseWallpaperButton"
