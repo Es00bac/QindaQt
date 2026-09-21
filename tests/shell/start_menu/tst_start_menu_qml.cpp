@@ -185,6 +185,7 @@ private Q_SLOTS:
     void buttonWidthContainsItsLabel();
     void panelOpensAgainstTheStartButtonOnEveryPanelEdge();
     void panelOpensLazilyOverACatalogueSizedProgramList();
+    void variantSelectsExactlyOneWindowsStartMenu();
 };
 
 void StartMenuQmlTests::disabledFallbackWithoutAccess()
@@ -604,6 +605,88 @@ void StartMenuQmlTests::panelOpensLazilyOverACatalogueSizedProgramList()
              qPrintable(QStringLiteral("only %1 program rows instantiated over"
                                        " a %2 px viewport")
                             .arg(instantiated).arg(list->height())));
+}
+
+// The start-menu applet reproduces more than one Windows start menu
+// (ADR-0224). `settings.variant` picks which, "luna" is the default so Bliss
+// and every existing user profile are unchanged, and exactly one panel is
+// built: a Popup creates its content item whether or not it ever opens, so
+// building both would make a Luna taskbar pay for the modern panel's search
+// field, pinned grid and program list.
+void StartMenuQmlTests::variantSelectsExactlyOneWindowsStartMenu()
+{
+    const QVariantList sections{
+        QVariantMap{{QStringLiteral("identity"), QStringLiteral("pinned")},
+                    {QStringLiteral("items"),
+                     QVariantList{programRow(QStringLiteral("editor"),
+                                             QStringLiteral("Text Editor"),
+                                             QStringLiteral("applications-other"))}}}};
+
+    const auto panelsFor = [&sections](const QVariantMap &settings,
+                                       const QString &expectedVariant) {
+        StubPrograms programs(sections);
+        StubPlaces places({});
+        StubSystemMenu systemMenu(nullptr);
+        StubControls controls(&places, &systemMenu);
+        AppletHost host;
+        QString error;
+        if (!host.create(QStringLiteral("StartMenuApplet"), &programs, &controls,
+                         settings, &error)) {
+            qWarning("%s", qPrintable(error));
+            return false;
+        }
+        if (host.item->property("variant").toString() != expectedVariant)
+            return false;
+        const bool wantsModern = expectedVariant == QLatin1String("modern");
+        auto *luna = host.child<QObject>(QStringLiteral("startMenuPopup"));
+        auto *modern = host.child<QObject>(QStringLiteral("startMenuModernPopup"));
+        // Exactly one panel exists, and it is the requested one.
+        if (wantsModern ? (luna != nullptr || modern == nullptr)
+                        : (luna == nullptr || modern != nullptr))
+            return false;
+        QObject *panel = wantsModern ? modern : luna;
+        if (!QMetaObject::invokeMethod(host.item, "openPanel"))
+            return false;
+        return panel->property("opened").toBool()
+            || QTest::qWaitFor([panel] { return panel->property("opened").toBool(); },
+                               2000);
+    };
+
+    // Absent settings, an explicit luna, and an unknown value all give Luna:
+    // an unrecognized variant must render the reference panel, never nothing.
+    QVERIFY(panelsFor({}, QStringLiteral("luna")));
+    QVERIFY(panelsFor({{QStringLiteral("variant"), QStringLiteral("luna")}},
+                      QStringLiteral("luna")));
+    QVERIFY(panelsFor({{QStringLiteral("variant"), QStringLiteral("aero")}},
+                      QStringLiteral("luna")));
+    QVERIFY(panelsFor({{QStringLiteral("variant"), QStringLiteral("modern")}},
+                      QStringLiteral("modern")));
+
+    // The modern button is a glyph-only square tile; the Luna one is a pill
+    // that carries its bold italic label.
+    StubPrograms programs(sections);
+    StubPlaces places({});
+    StubSystemMenu systemMenu(nullptr);
+    StubControls controls(&places, &systemMenu);
+    AppletHost modernHost;
+    QString error;
+    QVERIFY2(modernHost.create(
+                 QStringLiteral("StartMenuApplet"), &programs, &controls,
+                 {{QStringLiteral("variant"), QStringLiteral("modern")}}, &error),
+             qPrintable(error));
+    QTRY_VERIFY(modernHost.window->isExposed());
+    auto *label =
+        modernHost.child<QQuickItem>(QStringLiteral("startMenuButtonLabel"));
+    QVERIFY(label != nullptr);
+    QVERIFY(!label->isVisible());
+    QCOMPARE(modernHost.item->implicitWidth(), modernHost.item->implicitHeight());
+    auto *modernButton =
+        modernHost.child<QQuickItem>(QStringLiteral("startMenuButton"));
+    QVERIFY(modernButton != nullptr);
+    QAccessibleInterface *interface =
+        QAccessible::queryAccessibleInterface(modernButton);
+    QVERIFY(interface != nullptr);
+    QCOMPARE(interface->text(QAccessible::Name), QStringLiteral("Start"));
 }
 
 QTEST_MAIN(StartMenuQmlTests)

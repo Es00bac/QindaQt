@@ -16,6 +16,8 @@ Item {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool luna: false
+    // ADR-0224: the profile-selected tile shape the dispatcher assigns.
+    property string presentation: "standard"
     property string grouping: "when-crowded"
 
     objectName: "taskListApplet"

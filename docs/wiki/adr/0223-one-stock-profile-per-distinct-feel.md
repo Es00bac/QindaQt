@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-09-20
 - **Owners:** Shell presentation
+- **Amended by:** [ADR-0224](0224-name-the-presentations-a-layout-asks-for.md), which creates the three missing applets and restores the centred Windows preset
 
 ## Context
 

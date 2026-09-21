@@ -40,11 +40,17 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 28);
+    QCOMPARE(catalog.manifests().size(), 31);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
         QStringLiteral("task-list"),
+        // ADR-0224: presentations of launcher and task-list under their own
+        // names, so a profile can ask for the rail tile and the centred
+        // grouped tiles without a second implementation.
+        QStringLiteral("application-launcher"),
+        QStringLiteral("grouped-task-list"),
+        QStringLiteral("centered-task-list"),
         QStringLiteral("global-menu"),
         QStringLiteral("system-tray"),
         QStringLiteral("clock"),

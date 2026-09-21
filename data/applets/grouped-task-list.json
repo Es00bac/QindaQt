@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "grouped-task-list",
+  "name": "Grouped Task List",
+  "description": "The task list with one tile per application at all times, for a vertical rail where a per-window row would not fit.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.task-list"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-fill"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 64, "preferred": 320, "stretch": true},
+    "crossAxis": {"minimum": 40, "preferred": 64, "maximum": 144, "stretch": false}
+  },
+  "capabilities": ["windows.read", "windows.activate", "windows.manage"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "grouping": {
+        "type": "string",
+        "enum": ["never", "when-crowded", "always"],
+        "default": "always"
+      },
+      "rows": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1},
+      "presentation": {
+        "type": "string",
+        "enum": ["standard", "luna", "centered", "rail"],
+        "default": "rail"
+      }
+    }
+  }
+}

@@ -362,3 +362,4 @@ nav:
       - "ADR-0221: one owner for panel popup placement": adr/0221-one-owner-for-panel-popup-placement.md
       - "ADR-0222: QQ_Term is the desktop terminal": adr/0222-qq-term-is-the-desktop-terminal.md
       - "ADR-0223: one stock profile per distinct feel": adr/0223-one-stock-profile-per-distinct-feel.md
+      - "ADR-0224: name the presentations a layout asks for": adr/0224-name-the-presentations-a-layout-asks-for.md

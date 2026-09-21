@@ -272,6 +272,11 @@ Item {
             luna: root.luna
             grouping: String((root.applet.settings ?? ({})).grouping
                              ?? "when-crowded")
+            // ADR-0224: centered-task-list and grouped-task-list are the same
+            // implementation under their own manifest names; the tile shape
+            // arrives as this setting, defaulted by each manifest.
+            presentation: String((root.applet.settings ?? ({})).presentation
+                                 ?? "standard")
         }
     }
 

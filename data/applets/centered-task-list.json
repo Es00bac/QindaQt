@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "centered-task-list",
+  "name": "Centered Task List",
+  "description": "The task list as icon-only grouped tiles that stay centred on the panel, each carrying a running indicator instead of a title.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.task-list"
+  },
+  "placements": {
+    "zones": ["panel-center", "panel-fill"],
+    "orientations": ["horizontal"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 48, "preferred": 320, "stretch": false},
+    "crossAxis": {"minimum": 28, "preferred": 40, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["windows.read", "windows.activate", "windows.manage"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "grouping": {
+        "type": "string",
+        "enum": ["never", "when-crowded", "always"],
+        "default": "always"
+      },
+      "rows": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1},
+      "presentation": {
+        "type": "string",
+        "enum": ["standard", "luna", "centered", "rail"],
+        "default": "centered"
+      }
+    }
+  }
+}

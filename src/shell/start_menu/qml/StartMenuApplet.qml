@@ -32,6 +32,16 @@ Item {
     required property var launcherAppletAccess
     required property var desktopControlsAccess
 
+    // Which Windows start menu this instance reproduces (ADR-0224). "luna" is
+    // the worn XP panel and the default, so Bliss and every existing user
+    // profile keep exactly the dressing they have; "modern" is the Windows 11
+    // centred card. An unknown value falls back to luna rather than rendering
+    // nothing.
+    readonly property string variant:
+        String((applet !== null ? applet.settings ?? ({}) : ({})).variant
+               ?? "luna") === "modern" ? "modern" : "luna"
+    readonly property bool modern: variant === "modern"
+
     // AGENT-GUARD: Tokens.ready gates every access read, exactly like
     // LauncherApplet. Dropping it dereferences facades before the engine has
     // published QST-1 and crashes preview composition.
@@ -44,16 +54,18 @@ Item {
     // next applet painted over it (the clipped "star" label). The 56 px floor
     // matches the manifest's preferred extent; vertical panels show the icon
     // alone inside it.
-    implicitWidth: Math.max(56, Math.ceil(button.implicitContentWidth
-                                          + button.leftPadding
-                                          + button.rightPadding))
-    implicitHeight: 36
+    implicitWidth: root.modern
+        ? implicitHeight
+        : Math.max(56, Math.ceil(button.implicitContentWidth
+                                 + button.leftPadding
+                                 + button.rightPadding))
+    implicitHeight: root.modern ? 40 : 36
     opacity: available ? 1.0 : 0.5
 
     function openPanel() {
-        if (!root.available)
+        if (!root.available || panelLoader.item === null)
             return
-        popup.open()
+        panelLoader.item.open()
     }
 
     // Session truth is resolved once here and shared with the popup; both
@@ -63,19 +75,55 @@ Item {
         && desktopControlsAccess.systemMenu.sessionActionsAvailable
         ? desktopControlsAccess.systemMenu.sessionActions : null
 
-    StartMenuPopup {
-        id: popup
-        // Placement anchor and axis: PanelPopup opens the panel above the
-        // button on a bottom taskbar and beside it on a vertical panel.
-        anchorItem: root
-        vertical: root.vertical
-        launcher: root.launcherAppletAccess
-        controls: root.desktopControlsAccess
-        onLogOffRequested: {
-            popup.close()
-            logOffConfirmation.open()
+    // AGENT-GUARD: exactly one panel is built. `variant` is a stable binding,
+    // so this Loader resolves once per instance and never thrashes — and a
+    // Luna taskbar must not pay for the modern panel's search field, pinned
+    // grid and program list, which a Popup creates with its content item
+    // whether or not it ever opens. Both panels set anchorItem explicitly, so
+    // the Loader's own (zero) geometry never reaches placement.
+    Loader {
+        id: panelLoader
+
+        objectName: "startMenuPanelLoader"
+        // AGENT-GUARD: always active. The panel must exist even when a facade
+        // is missing, because the fail-closed rule is "the button renders and
+        // refuses to open" (openPanel checks `available`), not "the panel is
+        // absent" — a missing panel is indistinguishable from a broken one.
+        sourceComponent: root.modern ? modernPanel : lunaPanel
+    }
+
+    Component {
+        id: lunaPanel
+
+        StartMenuPopup {
+            // Placement anchor and axis: PanelPopup opens the panel above the
+            // button on a bottom taskbar and beside it on a vertical panel.
+            anchorItem: root
+            vertical: root.vertical
+            launcher: root.launcherAppletAccess
+            controls: root.desktopControlsAccess
+            onLogOffRequested: {
+                close()
+                logOffConfirmation.open()
+            }
+            onClosed: button.forceActiveFocus(Qt.PopupFocusReason)
         }
-        onClosed: button.forceActiveFocus(Qt.PopupFocusReason)
+    }
+
+    Component {
+        id: modernPanel
+
+        StartMenuModernPopup {
+            anchorItem: root
+            vertical: root.vertical
+            launcher: root.launcherAppletAccess
+            controls: root.desktopControlsAccess
+            onLogOffRequested: {
+                close()
+                logOffConfirmation.open()
+            }
+            onClosed: button.forceActiveFocus(Qt.PopupFocusReason)
+        }
     }
 
     // Same confirmation rule as the system menu's session actions (ADR-0070):
@@ -121,9 +169,10 @@ Item {
         Accessible.onPressAction: root.openPanel()
 
         // Luna start button padding: a short lead before the icon and a
-        // longer tail after the label; vertical panels center the icon.
-        leftPadding: root.vertical ? 4 : 8
-        rightPadding: root.vertical ? 4 : 14
+        // longer tail after the label; vertical panels center the icon. The
+        // modern button is a square tile, so it is padded evenly.
+        leftPadding: root.modern ? 4 : (root.vertical ? 4 : 8)
+        rightPadding: root.modern ? 4 : (root.vertical ? 4 : 14)
         topPadding: 0
         bottomPadding: 0
 
@@ -143,8 +192,10 @@ Item {
                     objectName: "startMenuButtonIcon"
                     anchors.verticalCenter: parent.verticalCenter
                     name: "start-here-kde"
-                    size: 20
-                    color: "#ffffff"
+                    size: root.modern ? 24 : 20
+                    // The Luna glyph is white on the green pill; the modern
+                    // tile has no coloured chrome, so it follows the theme.
+                    color: root.modern ? Tokens.fg.default : "#ffffff"
                     fallbackText: qsTr("Start")
                     Accessible.ignored: true
                 }
@@ -152,7 +203,9 @@ Item {
                 Text {
                     objectName: "startMenuButtonLabel"
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: !root.vertical
+                    // The modern start button is glyph-only, like the taskbar
+                    // it belongs to; the accessible name still says "Start".
+                    visible: !root.vertical && !root.modern
                     text: qsTr("start")
                     color: "#ffffff"
                     // The Luna start label: bold italic white over a
@@ -167,10 +220,20 @@ Item {
                 }
             }
         }
+        // AGENT-GUARD: the two dressings are exclusive. The Luna chrome keeps
+        // its gradient and scanline exactly; the modern chrome is tokenized,
+        // because Windows 11's start button has no fixed period palette — it
+        // follows the system accent and light/dark mode.
         background: Rectangle {
             objectName: "startMenuButtonChrome"
-            radius: 4
-            gradient: Gradient {
+            radius: root.modern ? Tokens.radius.m : 4
+            color: root.modern
+                ? (button.down ? Tokens.bg.highest
+                               : button.hovered ? Tokens.bg.raised : "transparent")
+                : "transparent"
+            gradient: root.modern ? null : lunaGradient
+
+            readonly property Gradient lunaGradient: Gradient {
                 GradientStop {
                     position: 0.0
                     color: button.down ? "#2f7d2c"
@@ -189,6 +252,7 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
+                visible: !root.modern
                 height: 1
                 color: "#1d5c1c"
                 Accessible.ignored: true

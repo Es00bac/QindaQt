@@ -29,6 +29,10 @@ Item {
     // Instance-level worn Luna dressing (ADR-0124), set through this applet's
     // own profile settings; every other host renders token visuals.
     property bool luna: false
+    // Profile-selected tile shape (ADR-0224): "standard", "centered" for the
+    // Windows-11 taskbar's glyph-only tiles, or "rail" for Unity-style square
+    // tiles. `dockMode` always wins over it inside the tile.
+    property string presentation: "standard"
     // Manifest `grouping`: "never" gives every window, container members
     // included, its own button (controller windowRows); other values keep one
     // button per container. Dock strips keep container rows: they reorder tasks.
@@ -418,6 +422,7 @@ Item {
                 dockTileSize: root.resolvedDockTileSize
                 reducedMotion: root.reducedMotion
                 luna: root.luna
+                presentation: root.presentation
                 // The delegate's x is strip-local because the strip fills the
                 // applet; the falloff binding re-evaluates on every pointer
                 // move and on layout changes.

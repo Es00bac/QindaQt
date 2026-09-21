@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "unity-inspired",
   "name": "Command Rail",
-  "description": "A 64-pixel left rail of big tiles that hides behind any window, and a top bar carrying the focused window's name, its menu, and the searchable HUD.",
+  "description": "A 64-pixel left rail of big square tiles that hides behind any window \u2014 the rail launcher tile on top, one grouped tile per application below it, each marking its leading edge \u2014 and a top bar carrying the focused window's name, its menu, and the searchable HUD.",
   "defaultTheme": "qinda-dusk",
   "workflow": {
     "overview": "workspace-spread",
@@ -31,9 +31,9 @@
       "id": "launcher-rail", "edge": "left", "layer": "above", "hideMode": "dodge-all",
       "alignment": "fill", "rows": 1, "thickness": 64, "length": 1.0,
       "applets": [
-        {"id": "applications", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "applications", "plugin": "application-launcher", "settings": {"zone": "start", "presentation": "rail"}},
         {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center"}},
-        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center"}},
+        {"id": "tasks", "plugin": "grouped-task-list", "settings": {"zone": "center", "presentation": "rail", "grouping": "always"}},
         {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "end"}}
       ]
     }

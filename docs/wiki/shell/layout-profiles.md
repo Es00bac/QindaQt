@@ -200,7 +200,7 @@ the Settings Customize route share this precedence contract.
 
 ## Built-in workflow families
 
-QindaQt ships **one stock profile per distinct feel** — eight of them. Each one
+QindaQt ships **one stock profile per distinct feel** — nine of them. Each one
 is a different idea about where the shell lives, not a reshuffle of the same
 bar, and each pairs with its own default theme
 ([ADR-0223](../adr/0223-one-stock-profile-per-distinct-feel.md)):
@@ -214,6 +214,7 @@ bar, and each pairs with its own default theme
 | `unity-inspired` | Command rail | 28 px top bar with the focused window's name, its menu and the HUD, plus a 64 px left rail that hides behind any window | `qinda-dusk` |
 | `xfce-inspired` | Compact and flexible | 34 px top panel with Applications and Places menus and **ungrouped** window buttons, plus a small bottom launcher dock that ducks the active window | `qinda-light` |
 | `nextstep-inspired` | Workspace dock | one 72 px column of square tiles down the **right** edge, 62 % of it, and no horizontal bar anywhere | `qinda-paper` |
+| `windows-modern` | Centred taskbar | one 48 px bottom bar whose start button and glyph-only task tiles stay centred, with the **modern** Windows start panel (search, pinned grid, All apps); widgets left, status right | `qinda-glass-light` |
 | `minimal` | Nothing until you ask | one always-hidden 32 px strip, a third of the width, holding the command palette and four glyphs: no clock, no task buttons, no workspace switcher | `qinda-glass-dark` |
 
 Panel thickness, edge, alignment, length, layer, and hide mode all differ
@@ -318,13 +319,40 @@ workspace-dock clock uses the compiled clock implementation. These
 substitutions provide the shared supported behavior; they do not claim separate
 classic-menu renderers or a tile-specific clock.
 
-Profiles never reference a plugin that has no manifest. `unity-inspired` used
-to name `application-launcher` and `grouped-task-list`, and the centered
-Windows preset named `centered-task-list`; none of the three exists, so those
+Profiles never reference a plugin that has no manifest. `unity-inspired` named
+`application-launcher` and `grouped-task-list`, and the centred Windows preset
+named `centered-task-list`; none of the three had a manifest, so those
 instances silently resolved to nothing and the layouts showed a duplicated or
-missing control. All eight stock profiles now name only manifest ids, and
-`qindaqt.applet-runtime-resolution` resolves every stock instance in its own
-placement.
+missing control. **All three now exist** (ADR-0224) as manifests over the
+existing launcher and task-list implementations — the same aliasing precedent
+as `system-tray.json` — each carrying its own name, zones, sizing and default
+tile shape. `qindaqt.applet-runtime-resolution` resolves every stock instance
+in its own placement.
+
+## Tile shapes and start-menu variants
+
+Two applets present more than one way, selected per instance from the profile:
+
+- `task-list` takes `presentation`: `standard` panel rows with titles, `luna`
+  for the Bliss dressing, `centered` for the Windows-11 taskbar's glyph-only
+  tile with an underline that widens while the task is focused, and `rail` for
+  the Unity-style square tile that marks its leading edge. `dockMode` always
+  wins over it, because a dock tile is already glyph-only and owns its own
+  magnification envelope. `centered-task-list` and `grouped-task-list` default
+  to `centered` and `rail` respectively.
+- `start-menu` takes `variant`: `luna` (the default, and what Bliss uses) is
+  the worn XP two-column panel with the green start pill; `modern` is the
+  Windows 11 centred card — a search field, a five-column pinned grid, the
+  complete program list behind an **All apps** toggle, and a session footer —
+  opened by a glyph-only square button. An unrecognised value renders Luna, so
+  a typo never produces an empty panel. Exactly one panel is built per
+  instance: a `Popup` creates its content item whether or not it ever opens,
+  so a Luna taskbar must not pay for the modern panel's grid and list.
+
+Unlike the Luna dressing, the modern panel is tokenized. Windows 11's start
+menu has no fixed period palette to reproduce — it follows the system accent
+and light/dark mode — so following QST-1 is the faithful choice as well as the
+maintainable one.
 
 Other unresolved semantic controls remain explicit capability gaps until their
 real implementations are integrated.

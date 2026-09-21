@@ -31,6 +31,16 @@ T.ToolButton {
     property int dockTileSize: 60
     property bool reducedMotion: false
     property bool luna: false
+    // Profile-selected tile shape (ADR-0224). "centered" is the Windows-11
+    // taskbar's glyph-only tile with an underline indicator; "rail" is the
+    // Unity-style square tile with a leading-edge indicator. `luna` stays a
+    // separate boolean because it is a whole dressing, not a tile shape, and
+    // `dockMode` always wins: a dock tile is already glyph-only and owns its
+    // own magnification envelope.
+    property string presentation: "standard"
+    readonly property bool centeredTile: presentation === "centered" && !dockMode
+    readonly property bool railTile: presentation === "rail" && !dockMode
+    readonly property bool glyphOnly: centeredTile || railTile
     // Dock magnification factor for this tile (1.0 = rest). The strip computes
     // it from pointer proximity; transforms never touch layout bounds.
     property real dockZoomScale: 1.0
@@ -69,8 +79,10 @@ T.ToolButton {
     // icon lifts. Do not scale the delegate itself: GridLayout would retain
     // the old bounds and clip or overlap adjacent accessible hit targets.
     implicitWidth: dockMode ? resolvedDockTileSize
-                            : (vertical ? 32 : Math.max(84, Math.min(168, rowLayout.implicitWidth + 12)))
-    implicitHeight: dockMode ? resolvedDockTileSize : 28
+                 : railTile ? 48
+                 : centeredTile ? 40
+                 : (vertical ? 32 : Math.max(84, Math.min(168, rowLayout.implicitWidth + 12)))
+    implicitHeight: dockMode ? resolvedDockTileSize : railTile ? 48 : 28
 
     // AGENT-GUARD: the controller re-checks capability, generation, and
     // pending fences on every call; this enabled binding is presentation
@@ -142,7 +154,7 @@ T.ToolButton {
         RowLayout {
             id: rowLayout
             anchors.fill: parent
-            visible: !button.dockMode
+            visible: !button.dockMode && !button.glyphOnly
             spacing: Tokens.space["2"]
 
             ShellIcons.Icon {
@@ -229,6 +241,43 @@ T.ToolButton {
             Behavior on scale {
                 NumberAnimation { duration: Tokens.motion.short }
             }
+        }
+
+        // The glyph for a tile that carries no title. Deliberately not the
+        // dock icon: that one owns the dock's magnification envelope and its
+        // bottom-anchored swell, which a flat taskbar tile must not inherit.
+        ShellIcons.Icon {
+            objectName: "taskListGlyphEntryIcon"
+            visible: button.glyphOnly
+            anchors.centerIn: parent
+            name: String(button.entry.iconName ?? "")
+            size: button.railTile ? 26 : 20
+            color: button.resolvedIconColor
+            symbolic: button.entry.kind === "container"
+            fallbackText: button.entry.applicationName
+            opacity: button.urgentAttentionLevel
+            Accessible.ignored: true
+        }
+
+        // A bar, not a dot: the Windows-11 taskbar underlines a running tile
+        // on the panel-facing edge and the Unity rail marks its leading edge.
+        // It grows while the task is active, so running and focused are two
+        // distinguishable states without relying on color alone.
+        Rectangle {
+            objectName: "taskListPresentationIndicator"
+            visible: button.glyphOnly
+            width: button.railTile ? 3 : (button.entry.active ? 18 : 6)
+            height: button.railTile ? (button.entry.active ? 18 : 6) : 3
+            radius: Math.min(width, height) / 2
+            color: button.entry.active ? Tokens.accent.default : Tokens.fg.muted
+            anchors.horizontalCenter: button.railTile
+                                      ? undefined : parent.horizontalCenter
+            anchors.bottom: button.railTile ? undefined : parent.bottom
+            anchors.bottomMargin: button.railTile ? 0 : 1
+            anchors.verticalCenter: button.railTile
+                                    ? parent.verticalCenter : undefined
+            anchors.left: button.railTile ? parent.left : undefined
+            Accessible.ignored: true
         }
 
         // Every dock item represents an existing task row, never a synthetic
