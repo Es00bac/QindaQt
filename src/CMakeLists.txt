@@ -21,6 +21,9 @@ endif()
 add_subdirectory(hybrid)
 add_subdirectory(hybrid_constraints)
 add_subdirectory(hybrid_gather)
+# Maps the task-list applet projection onto the gather planner's rectangles,
+# so it must follow both shell/task_list (above) and hybrid_gather.
+add_subdirectory(shell/gather_overview)
 add_subdirectory(hybrid_chrome)
 add_subdirectory(decoration_painter)
 add_subdirectory(hybrid_input)

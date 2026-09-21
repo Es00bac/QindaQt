@@ -4,9 +4,12 @@ Gather brings everything the session holds forward at once, in one
 deterministic arrangement, and dismisses without moving anything. It replaces
 KWin's own window grid on the top-left screen corner.
 
-**Status: the geometry is implemented and qualified; the surface is not.** What
-exists today is `src/hybrid_gather`, the pure planner, plus the release of the
-hot corner. What remains is listed under [Remaining work](#remaining-work).
+**Status: the geometry and the presentation model are implemented and
+qualified; the drawing surface is not.** What exists today is
+`src/hybrid_gather` (the pure planner), `src/shell/gather_overview` (the
+presentation model that feeds it from live session facts), and the release of
+the hot corner. What remains is listed under
+[Remaining work](#remaining-work).
 
 ## The arrangement
 
@@ -66,6 +69,60 @@ end of its lane.
 negative margin or gap, a non-positive extent, or a margin that leaves no field
 — and `diagnostic` then says which.
 
+## The presentation model
+
+`src/shell/gather_overview` answers the question the planner deliberately does
+not: *which lane does each thing belong in?* `projectGatherOverview()` is pure
+too. It takes the `TaskListAppletProjection` the shell already produces — the
+same facts the task list and dock present — plus one work area, and returns
+drawable items whose frames come straight from the planner.
+
+The classification is three rules:
+
+- a **container** row is a card, always;
+- a **window** row that is iconified is an icon chip;
+- every other window row is a grid tile.
+
+Two consequences are worth stating because both read like something more than
+they are:
+
+- **"Gather rolls every container up" is a presentation rule, not an
+  operation.** The overview is transient and moves nothing, so a container is
+  *drawn* as a card whether or not it is really rolled up, and no roll-up
+  intent is ever submitted.
+- **A container member is never a grid tile** for free: in the grouped rows a
+  container is one row, so its members are not rows at all.
+
+A merely *minimized* window is not iconified ([ADR-0203](../adr/0203-an-ordinary-window-rolls-up-to-its-icon.md)
+is specifically about rolling up to an icon), so it stays in the grid with the
+rest.
+
+The model also carries the truth a surface needs in order not to lie:
+
+- `interactive` is false when the source phase is `Degraded` — the retained
+  generation is still drawn, because it is the last thing the user actually
+  saw, but every intent is fenced, so tiles must present as inert rather than
+  let a click look like it worked.
+- `available` is false for `Loading` and `Unavailable`, and for a work area the
+  planner refuses; the counts then stay zero rather than describing a session
+  that was never arranged.
+- `windowsHidden` is how many grid tiles are not drawn — scrolled past, or in a
+  viewport too narrow for one column — which is the only honest basis for a
+  "there is more below" hint.
+- `sourceOverflowCount` passes through what the task list's own presentation
+  cap already dropped. The overview cannot show what it never received, and
+  says so instead of implying completeness.
+
+Every item carries `taskId`, the optional `windowId`, and the
+`generationRevision` it was projected from, so an activation echoes the
+generation and stale-revision arbitration can refuse an action against a
+generation the user no longer sees.
+
+Because there is no preview renderer yet, a grid tile is handed to the planner
+with no source size, which fills its cell. When previews land, the preview's
+own size goes in that field and the planner aspect-fits it — no change to this
+policy.
+
 ## The hot corner
 
 KWin's overview effect reserves the top-left screen corner by default: its
@@ -77,26 +134,31 @@ a user who reassigned that corner keeps their choice
 
 ## Remaining work
 
-The surface shows **live window previews**, which the compositor cannot yet
-produce. `WindowPreview` on `CompositorShell1` is specified and the whole
-shell-side pipeline is implemented, but the renderer behind it is not: the
-exported KWin 6.6 headers offer no supported window-texture readback, so
+Live window previews are still unavailable: `WindowPreview` on
+`CompositorShell1` is specified and the whole shell-side pipeline is
+implemented, but the renderer behind it is not — the exported KWin 6.6 headers
+offer no supported window-texture readback, so
 [ADR-0119](../adr/0119-authenticated-window-preview-channel.md) records the
-endpoint and renderer as the bounded remaining piece. That is the same blocker
-as the dock's hover thumbnails, and it gates this surface too.
+endpoint and renderer as the bounded remaining piece. It is the same gap as the
+dock's hover thumbnails.
 
-In order:
+It no longer blocks gather, though. The card-and-icon variant — application icon plus title instead of a
+thumbnail — is the route being taken, exactly because it needs none of that.
+`src/shell/gather_overview` is that variant's model, and it is built so the
+preview upgrade is additive: a tile's source size is the single field that
+changes.
 
-1. The `WindowPreview` endpoint and renderer from ADR-0119.
-2. A compositor-side surface that draws this layout, activates whatever is
-   clicked, and dismisses on activation or Escape.
-3. A `HybridShortcutAction` for it, beside the existing container shortcuts, so
+Remaining, in order:
+
+1. A surface that draws this layout, activates whatever is clicked, and
+   dismisses on activation or Escape.
+2. A `HybridShortcutAction` for it, beside the existing container shortcuts, so
    it has a keyboard trigger.
-4. A panel applet that triggers the same action, for the layouts that want a
+3. A panel applet that triggers the same action, for the layouts that want a
    button.
-
-A card-and-icon variant — application icon plus title instead of a thumbnail —
-needs none of step 1 and would let steps 2 through 4 land first.
+4. The `WindowPreview` endpoint and renderer from ADR-0119, which upgrades the
+   grid tiles from icon-and-title to live thumbnails and also lights up the
+   dock's hover previews. No longer a blocker for anything above.
 
 ## Related
 
