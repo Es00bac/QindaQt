@@ -23,6 +23,29 @@ set_tests_properties(
     PROPERTIES TIMEOUT 20 LABELS "unit;pure;shell"
 )
 
+# The controller: the overview's only mutable state, and its only authority
+# decision. Qt Core, so no display.
+qt_add_executable(
+    qindaqt_gather_overview_controller_tests tst_gather_overview_controller.cpp
+)
+target_link_libraries(
+    qindaqt_gather_overview_controller_tests
+    PRIVATE QindaQt::ShellGatherOverview Qt6::Test
+)
+set_target_properties(
+    qindaqt_gather_overview_controller_tests
+    PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_gather_overview_controller_tests)
+add_test(
+    NAME qindaqt.gather-overview-controller
+    COMMAND qindaqt_gather_overview_controller_tests
+)
+set_tests_properties(
+    qindaqt.gather-overview-controller
+    PROPERTIES TIMEOUT 30 LABELS "unit;pure;shell"
+)
+
 # The drawing surface over a stub projection. The surface QML resolves QST-1
 # roles from the Tokens singleton in the same engine, so the harness publishes
 # a real theme before creating anything (task-list applet precedent); both the
