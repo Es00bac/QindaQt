@@ -71,7 +71,25 @@ stays available from the package that actually declares the OBS dependency.
 | Item | Status |
 |---|---|
 | StatusNotifier host registration so conformant items appear ([ADR-0166](../adr/0166-announce-a-status-notifier-host.md)) | committed |
-| XEmbed to StatusNotifier proxy for Wine / Proton tray icons ([ADR-0229](../adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md)) | committed |
+| XEmbed to StatusNotifier proxy for Wine / Proton tray icons ([ADR-0229](../adr/0229-proxy-the-xembed-tray-into-status-notifier-items.md)) | committed, **not yet on a live session** — needs the next desktop revision; the startup bug below is fixed |
+
+**The proxy shipped and nothing started it (2026-09-21).** Its systemd user
+unit was `WantedBy=graphical-session.target`, and QindaQt never activates that
+target — the same reason PowerDevil and KGlobalAccel are supervised children
+rather than units. So systemd started the proxy never, `_NET_SYSTEM_TRAY_S0`
+stayed unowned on the session's XWayland display, and a Wine, Proton or Steam
+tray icon had nowhere to dock. Verified on the live session: `xprop -root
+_NET_SYSTEM_TRAY_S0` reported no such atom, and `graphical-session.target` was
+inactive.
+
+The session supervisor now owns it (`xembedTrayProxyExecutable`), and the unit
+keeps no `[Install]` section so there is exactly one automatic owner —
+ADR-0229's own policy is that two trays fighting over one selection is worse
+than one missing icon. An audit of every unit in the tree found this to be the
+only case: the portal names `graphical-session.target` too, but it is D-Bus
+activated and starts anyway, while the proxy owns an X selection rather than a
+bus name and so had no fallback.
+
 
 ## 5. Rolled-up container names
 

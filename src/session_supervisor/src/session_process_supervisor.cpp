@@ -69,6 +69,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             QStringLiteral("powerdevil"), QStringList{}))
       , m_globalShortcutDaemon(std::make_unique<OptionalSessionChild>(
             QStringLiteral("global-shortcuts"), QStringList{}))
+      , m_xembedTrayProxy(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("xembed-tray-proxy"), QStringList{}))
 {
     m_shellRestartTimer.setSingleShot(true);
     m_shellStableTimer.setSingleShot(true);
@@ -91,6 +93,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(m_powerDevil.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_globalShortcutDaemon.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_xembedTrayProxy.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -146,6 +150,7 @@ bool SessionProcessSupervisor::start(QString *error)
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
     m_globalShortcutDaemon->resetRestartCount();
+    m_xembedTrayProxy->resetRestartCount();
     m_hostProcessId = 0;
     m_shellProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -205,6 +210,13 @@ void SessionProcessSupervisor::stop() noexcept
     m_polkitAgent->stop();
     m_powerDevil->stop();
     m_globalShortcutDaemon->stop();
+    // AGENT-GUARD: the tray proxy MUST be stopped here. A survivor keeps
+    // owning `_NET_SYSTEM_TRAY_S0`, and the next session's proxy would find
+    // the selection taken and go inert by design (ADR-0229) - so logging out
+    // and back in would silently lose every Wine/Proton tray icon until the
+    // stale process died. Pinned by qindaqt.session-xembed-tray-proxy-lifetime,
+    // which caught exactly this omission.
+    m_xembedTrayProxy->stop();
     m_shellProcessId = 0;
     m_hostProcessId = 0;
     m_networkSecretAgentProcessId = 0;
@@ -220,6 +232,7 @@ void SessionProcessSupervisor::stop() noexcept
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
     m_globalShortcutDaemon->resetRestartCount();
+    m_xembedTrayProxy->resetRestartCount();
     m_stopping = false;
 }
 
@@ -290,6 +303,11 @@ qint64 SessionProcessSupervisor::powerDevilProcessId() const noexcept
 qint64 SessionProcessSupervisor::globalShortcutDaemonProcessId() const noexcept
 {
     return m_globalShortcutDaemon->processId();
+}
+
+qint64 SessionProcessSupervisor::xembedTrayProxyProcessId() const noexcept
+{
+    return m_xembedTrayProxy->processId();
 }
 
 qint64 SessionProcessSupervisor::polkitAgentProcessId() const noexcept
@@ -432,9 +450,17 @@ void SessionProcessSupervisor::startOptionalChildren()
     // idle preferences can follow its owner arrival; polkit registers prompts
     // for this session. Missing optional executables never prevent login.
     // PowerDevil owns the idle timer and inhibitors. Keep it in this process
-    // tree because QindaQt does not activate graphical-session.target.
+    // tree because QindaQt does not activate graphical-session.target. The
+    // XEmbed tray proxy is here for exactly that reason too: its own systemd
+    // unit was `WantedBy=graphical-session.target`, so nothing ever started
+    // it and Wine/Proton/Steam tray icons had no selection owner to dock
+    // with.
     m_globalShortcutDaemon->start(m_options.globalShortcutDaemonExecutable);
     m_powerDevil->start(m_options.powerDevilExecutable);
+    // The tray proxy needs the session's XWayland display, which exists once
+    // the shell has established the compositor session. It waits for the
+    // display itself, so starting it here rather than later is safe.
+    m_xembedTrayProxy->start(resolveExecutable(m_options.xembedTrayProxyExecutable));
     m_desktopControls->start(resolveExecutable(m_options.desktopControlsExecutable));
     m_polkitAgent->start(m_options.polkitAgentExecutable);
 }
@@ -517,6 +543,15 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     m_desktopControls->stop();
     m_polkitAgent->stop();
     m_powerDevil->stop();
+    // AGENT-GUARD: these two were omitted here, so an abnormal session end
+    // leaked them where an orderly stop() did not. Both hold a singleton the
+    // successor needs: the shortcut daemon owns KGlobalAccel's bus name, and
+    // the tray proxy owns `_NET_SYSTEM_TRAY_S0`. A survivor therefore makes
+    // the NEXT session quietly wrong - shortcuts dead, or every Wine/Proton
+    // tray icon missing because the new proxy found the selection taken and
+    // went inert by design (ADR-0229).
+    m_globalShortcutDaemon->stop();
+    m_xembedTrayProxy->stop();
     if (role == ChildRole::NotificationHost) {
         m_hostProcessId = 0;
     } else {
