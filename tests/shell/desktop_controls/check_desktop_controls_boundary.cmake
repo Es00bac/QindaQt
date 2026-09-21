@@ -51,12 +51,30 @@ foreach(source IN LISTS qml_sources)
     endforeach()
 endforeach()
 
-# Every outward-facing popup in the module is a separate popup window.
+# Every outward-facing popup in the module is a separate popup window. Two
+# spellings satisfy that: the literal popupType, or deriving from
+# QindaQt.Controls.PanelPopup, which owns the window guarantee together with
+# edge-aware placement for every panel surface. The PanelPopup source is
+# checked below so the delegating spelling cannot become a loophole.
 foreach(popup_source IN ITEMS ControlPopupFrame.qml QuickLaunchApplet.qml SystemMenuApplet.qml)
     file(READ "${SOURCE_ROOT}/src/shell/desktop_controls/qml/${popup_source}" contents)
-    string(FIND "${contents}" "popupType: T.Popup.Window" hit)
-    if(hit EQUAL -1)
+    string(FIND "${contents}" "popupType: T.Popup.Window" literal_hit)
+    string(FIND "${contents}" "C.PanelPopup {" delegated_hit)
+    if(literal_hit EQUAL -1 AND delegated_hit EQUAL -1)
         message(FATAL_ERROR "${popup_source} must host its popup in a separate window")
+    endif()
+endforeach()
+
+# AGENT-GUARD: ControlPopupFrame delegates placement and the window guarantee
+# to QindaQt.Controls.PanelPopup. Losing either there silently returns every
+# control popup to QtWayland's top-right positioner anchor, which is how the
+# start panel used to open in the upper-right corner of the start button.
+file(READ "${SOURCE_ROOT}/src/controls/qml/PanelPopup.qml" panel_popup)
+foreach(required IN ITEMS "popupType: T.Popup.Window" "function placementFor("
+                          "function positionerCellFor(" "parent = positionerAnchor")
+    string(FIND "${panel_popup}" "${required}" hit)
+    if(hit EQUAL -1)
+        message(FATAL_ERROR "PanelPopup.qml lacks required placement contract: ${required}")
     endif()
 endforeach()
 

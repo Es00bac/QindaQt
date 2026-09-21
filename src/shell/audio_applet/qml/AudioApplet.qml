@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls as T
+import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
@@ -133,12 +134,18 @@ Item {
         background: Item {}
     }
 
-    T.Popup {
+    C.PanelPopup {
         id: details
+
+        // AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the
+        // one owner of panel-popup placement (docs/wiki/shell/panel-popup-placement.md):
+        // it opens flush with the control's leading edge, above it on a bottom
+        // panel, beside it on a side panel, and slides to stay on the output.
+        // It also keeps the surface a real window, because a layer-shell panel
+        // rejects keyboard focus and cannot paint outside its own band.
+        anchorItem: summary
+        vertical: root.vertical
         objectName: "audioAppletPopup"
-        popupType: T.Popup.Window
-        modal: false
-        focus: true
         padding: Tokens.space["3"]
         // A piece of desk equipment, not a menu: 420 px is what a device name,
         // a full-width fader, a readout and a mute need side by side without

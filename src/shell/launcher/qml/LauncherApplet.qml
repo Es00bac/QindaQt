@@ -125,21 +125,24 @@ Item {
         background: Item {}
     }
 
-    T.Popup {
+    PanelPopup {
         id: browser
 
-        // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
-        // their surface. A separate popup window supplies both capabilities.
-        popupType: T.Popup.Window
+        // AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the
+        // one owner of panel-popup placement (docs/wiki/shell/panel-popup-placement.md):
+        // it opens flush with the control's leading edge, above it on a bottom
+        // panel, beside it on a side panel, and slides to stay on the output.
+        // It also keeps the surface a real window, because a layer-shell panel
+        // rejects keyboard focus and cannot paint outside its own band.
+        anchorItem: summary
+        vertical: root.vertical
+
         objectName: "launcherAppletPopup"
         width: 340
         height: Math.min(480, (browserContent.item
                               ? browserContent.item.implicitHeight : 0)
                              + padding * 2)
         padding: Tokens.ready ? Tokens.space["3"] : 0
-        modal: false
-        focus: true
-        closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
         onClosed: if (root.available) root.access.query = ""
 
         background: Rectangle {

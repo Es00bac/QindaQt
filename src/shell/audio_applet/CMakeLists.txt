@@ -86,3 +86,8 @@ target_compile_features(qindaqt_shell_audio_applet_runtime PUBLIC cxx_std_20)
 set_target_properties(qindaqt_shell_audio_applet_runtime
                       PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_shell_audio_applet_runtime)
+
+# The compiled module imports QindaQt.Controls for PanelPopup; that module must
+# be built before qmlcachegen runs. src/controls is processed before this
+# directory (Bluetooth applet precedent), so the target already exists here.
+add_dependencies(qindaqt_shell_audio_applet_runtime qindaqt_controls_qmlplugin)

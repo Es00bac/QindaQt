@@ -60,8 +60,8 @@ list(SORT expected_qml_paths)
 list(LENGTH expected_qml_paths expected_qml_count)
 # AGENT-CONTRACT: kept in step with check_control_source_policy.cmake and the
 # deploy-path list this test is handed; see the note there.
-if(NOT expected_qml_count EQUAL 20)
-    message(FATAL_ERROR "Expected exactly 20 generated Controls QML paths, got ${expected_qml_count}")
+if(NOT expected_qml_count EQUAL 21)
+    message(FATAL_ERROR "Expected exactly 21 generated Controls QML paths, got ${expected_qml_count}")
 endif()
 
 file(GLOB_RECURSE installed_qml_paths

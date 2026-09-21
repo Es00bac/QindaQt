@@ -17,6 +17,7 @@ qt_add_qml_module(
         src/application_icon.cpp
     QML_FILES
         qml/MaterialSurface.qml
+        qml/PanelPopup.qml
         qml/Button.qml
         qml/CheckBox.qml
         qml/ComboBox.qml

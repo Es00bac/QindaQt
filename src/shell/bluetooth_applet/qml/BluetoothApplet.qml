@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
@@ -64,17 +65,20 @@ Item {
         background: Item {}
     }
 
-    Popup {
+    C.PanelPopup {
         id: details
-        // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
-        // their surface. A separate popup window supplies both capabilities.
-        popupType: Popup.Window
+
+        // AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the
+        // one owner of panel-popup placement (docs/wiki/shell/panel-popup-placement.md):
+        // it opens flush with the control's leading edge, above it on a bottom
+        // panel, beside it on a side panel, and slides to stay on the output.
+        // It also keeps the surface a real window, because a layer-shell panel
+        // rejects keyboard focus and cannot paint outside its own band.
+        anchorItem: summary
+        vertical: root.vertical
         objectName: "bluetoothAppletPopup"
         width: 340
         padding: 12
-        modal: false
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         onOpened: {
             if (root.access !== null)

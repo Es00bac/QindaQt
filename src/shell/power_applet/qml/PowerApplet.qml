@@ -87,17 +87,20 @@ Item {
         background: Item {}
     }
 
-    Popup {
+    C.PanelPopup {
         id: details
-        // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
-        // their surface. A separate popup window supplies both capabilities.
-        popupType: Popup.Window
+
+        // AGENT-CONTRACT: placement is owned by QindaQt.Controls.PanelPopup, the
+        // one owner of panel-popup placement (docs/wiki/shell/panel-popup-placement.md):
+        // it opens flush with the control's leading edge, above it on a bottom
+        // panel, beside it on a side panel, and slides to stay on the output.
+        // It also keeps the surface a real window, because a layer-shell panel
+        // rejects keyboard focus and cannot paint outside its own band.
+        anchorItem: summary
+        vertical: root.vertical
         objectName: "powerAppletPopup"
         width: 300
         padding: 12
-        modal: false
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
             radius: root.theme.cornerRadius ?? 10

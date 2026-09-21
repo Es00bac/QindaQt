@@ -65,6 +65,10 @@ Item {
 
     StartMenuPopup {
         id: popup
+        // Placement anchor and axis: PanelPopup opens the panel above the
+        // button on a bottom taskbar and beside it on a vertical panel.
+        anchorItem: root
+        vertical: root.vertical
         launcher: root.launcherAppletAccess
         controls: root.desktopControlsAccess
         onLogOffRequested: {
