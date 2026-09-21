@@ -59,6 +59,9 @@ private Q_SLOTS:
   void removedApplicationCannotBecomeAnIneffectiveDefault();
   void hiddenDesktopEntryDoesNotMaskInstalledFallback();
   void noDisplayHandlerRemainsTheConfiguredDefault();
+  void legacySuffixFreeValueIsReadAndReportedCanonically();
+  void aSuffixFreeChoiceIsWrittenWithTheSuffix();
+  void repairingOneCategoryLeavesOtherLegacyValuesReadable();
 };
 
 void DefaultApplicationsStoreTest::missingFilesReturnEmptyPreferences() {
@@ -319,6 +322,70 @@ void DefaultApplicationsStoreTest::noDisplayHandlerRemainsTheConfiguredDefault()
                              QStringLiteral("nodisplay.desktop"), &error), qPrintable(error));
   QVERIFY(store.load(&preferences, &error));
   QCOMPARE(preferences.browser, QStringLiteral("nodisplay.desktop"));
+}
+
+void DefaultApplicationsStoreTest::legacySuffixFreeValueIsReadAndReportedCanonically() {
+  // Real files on both machines carried values with no ".desktop" suffix, and
+  // lookup used to refuse them - so the page showed "no default" for four
+  // categories while the file plainly had values. Read them, and report the
+  // canonical spelling so the catalog's name lookup still matches.
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QVERIFY(writeFile(path, "[Default Applications]\n"
+                         "text/plain=other\n"
+                         "text/html=browser.desktop;\n"));
+  MimeAppsDefaultApplicationsStore store(path, {path}, installedApplications());
+  DefaultApplicationPreferences preferences;
+  QString error;
+  QVERIFY2(store.load(&preferences, &error), qPrintable(error));
+  QCOMPARE(preferences.textEditor, QStringLiteral("other.desktop"));
+  // The correctly spelled neighbour is untouched.
+  QCOMPARE(preferences.browser, QStringLiteral("browser.desktop"));
+}
+
+void DefaultApplicationsStoreTest::aSuffixFreeChoiceIsWrittenWithTheSuffix() {
+  // Tolerating a suffix-free value on read must not let one round-trip back
+  // into the file, or the defect repairs itself into existence again.
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QVERIFY(writeFile(path, "[Default Applications]\ntext/plain=other\n"));
+  MimeAppsDefaultApplicationsStore store(path, {path}, installedApplications());
+  QString error;
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::TextEditor,
+                              QStringLiteral("viewer"), &error),
+           qPrintable(error));
+  const QString written = readFile(path);
+  QVERIFY2(written.contains(QStringLiteral("text/plain=viewer.desktop;")),
+           qPrintable(written));
+
+  // And a canonical choice stays canonical rather than doubling the suffix.
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::TextEditor,
+                              QStringLiteral("other.desktop"), &error),
+           qPrintable(error));
+  const QString again = readFile(path);
+  QVERIFY2(again.contains(QStringLiteral("text/plain=other.desktop;")),
+           qPrintable(again));
+  QVERIFY2(!again.contains(QStringLiteral(".desktop.desktop")), qPrintable(again));
+}
+
+void DefaultApplicationsStoreTest::repairingOneCategoryLeavesOtherLegacyValuesReadable() {
+  // The page repairs a category when the user chooses in it. Until they do,
+  // every other legacy value must still read - the repair is per-category and
+  // must not depend on being performed.
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QVERIFY(writeFile(path, "[Default Applications]\n"
+                         "text/plain=other\n"
+                         "image/jpeg=viewer\n"));
+  MimeAppsDefaultApplicationsStore store(path, {path}, installedApplications());
+  QString error;
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::TextEditor,
+                              QStringLiteral("browser.desktop"), &error),
+           qPrintable(error));
+  DefaultApplicationPreferences preferences;
+  QVERIFY2(store.load(&preferences, &error), qPrintable(error));
+  QCOMPARE(preferences.textEditor, QStringLiteral("browser.desktop"));
+  QCOMPARE(preferences.imageViewer, QStringLiteral("viewer.desktop"));
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsStoreTest)

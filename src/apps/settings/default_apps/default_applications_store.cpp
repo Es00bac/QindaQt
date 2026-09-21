@@ -167,11 +167,37 @@ QStringList desktopIds(const QString &value) {
   return result;
 }
 
+// AGENT-CONTRACT: this route's canonical id keeps the ".desktop" suffix - the
+// catalog says so where it builds candidate ids, and the freedesktop MIME Apps
+// specification says a value is a desktop file ID. Everything crossing this
+// boundary is normalised to that form exactly once, here.
+//
+// AGENT-GUARD: a stored value WITHOUT the suffix is read, not refused. Real
+// mimeapps.list files on both machines contain some. Found 2026-09-21:
+// `text/plain=org.qindaqt.TextEditor`, `image/gif=lximage-qt` and
+// `audio/flac=org.qindaqt.Player`, sitting beside correctly written
+// neighbours like `inode/directory=org.qindaqt.FileManager.desktop`. All three
+// applications were installed, so the only thing wrong was the missing
+// suffix - and because lookup refused them, the Settings page showed "no
+// default" for four categories while the file plainly had values, and the
+// system could not launch them either.
+//
+// Read tolerantly, normalise immediately, write strictly. Normalising on read
+// matters as much as tolerating: a suffix-free value carried further would
+// fail the catalog's `candidate.id == desktopId` match and the page would show
+// a raw id where an application name belongs.
+QString canonicalDesktopId(const QString &desktopId) {
+  const QString trimmed = desktopId.trimmed();
+  if (trimmed.isEmpty()) return {};
+  return trimmed.endsWith(QStringLiteral(".desktop"))
+      ? trimmed : trimmed + QStringLiteral(".desktop");
+}
+
 const QindaQt::ApplicationCatalog::ScannedApplication *applicationForDesktopId(
     const QindaQt::ApplicationCatalog::DirectoryScan &scan, const QString &desktopId) {
-  // The shared catalog deliberately uses suffix-free launcher identity.
-  return desktopId.endsWith(QStringLiteral(".desktop"))
-      ? scan.application(desktopId.chopped(8)) : nullptr;
+  // ApplicationCatalog ids omit the suffix, so chop it for the lookup.
+  const QString canonical = canonicalDesktopId(desktopId);
+  return canonical.isEmpty() ? nullptr : scan.application(canonical.chopped(8));
 }
 
 bool isAssociated(const QindaQt::ApplicationCatalog::ScannedApplication &app,
@@ -217,7 +243,10 @@ bool MimeAppsDefaultApplicationsStore::load(
       for (const QString &desktopId : desktopIds(file.defaults.value(mimeType))) {
         const auto *application = applicationForDesktopId(m_applications, desktopId);
         if (application && isAssociated(*application, mimeType, files)) {
-          selected = desktopId;
+          // Canonical, never the raw stored spelling: a legacy suffix-free
+          // value would otherwise reach the catalog's name lookup and render
+          // as a raw id instead of the application's name.
+          selected = canonicalDesktopId(desktopId);
           break;
         }
       }
@@ -272,9 +301,13 @@ bool MimeAppsDefaultApplicationsStore::saveCategory(
   // clobber another application's intervening choices in other categories.
   config->reparseConfiguration();
   KConfigGroup group = config->group(QString::fromLatin1(DefaultApplicationsGroup));
+  // Write strictly: whatever spelling the caller used, the file gets a real
+  // desktop file ID. This is also the repair path for the legacy suffix-free
+  // values described above - choosing anything in the page rewrites them.
+  const QString canonical = canonicalDesktopId(desktopId);
   for (const QString &mimeType : mimeTypes) {
-    if (desktopId.isEmpty()) group.deleteEntry(mimeType);
-    else group.writeEntry(mimeType, desktopId + QLatin1Char(';'));
+    if (canonical.isEmpty()) group.deleteEntry(mimeType);
+    else group.writeEntry(mimeType, canonical + QLatin1Char(';'));
   }
   if (!config->sync()) {
     if (error) *error = QStringLiteral("default-applications-sync-failed");
