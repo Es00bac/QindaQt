@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "nextstep-inspired",
   "name": "Workspace Dock",
-  "description": "A vertical application dock with workspace and utility tiles.",
-  "defaultTheme": "qinda-dark",
+  "description": "A column of square tiles down the right edge: the menu tile on top, application and window tiles in the middle, workspace and utility tiles at the foot. No horizontal bar anywhere.",
+  "defaultTheme": "qinda-paper",
   "workflow": {
     "overview": "dock-grid",
     "workspacePolicy": "static",
@@ -15,16 +15,16 @@
   "panels": [
     {
       "id": "workspace-dock", "edge": "right", "layer": "above", "hideMode": "never",
-      "alignment": "start", "rows": 1, "thickness": 72, "length": 0.72,
+      "alignment": "start", "rows": 1, "thickness": 72, "length": 0.62,
       "applets": [
-        {"id": "apps", "plugin": "application-tiles"},
-        {"id": "hosted-task-list", "plugin": "task-list"},
-        {"id": "workspaces", "plugin": "workspace-tiles"},
-        {"id": "clipboard", "plugin": "clipboard"},
-        {"id": "status-notifier", "plugin": "status-notifier"},
-        {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"},
-        {"id": "applications", "plugin": "launcher"}
+        {"id": "applications", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "apps", "plugin": "application-tiles", "settings": {"zone": "center"}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center"}},
+        {"id": "workspaces", "plugin": "workspace-tiles", "settings": {"zone": "end"}},
+        {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]
     }
   ]

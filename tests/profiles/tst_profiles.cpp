@@ -289,10 +289,11 @@ void ProfileTests::stockProfileResolvesNonemptyDesktopInventory()
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/qindaqt.json"));
     QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
 
-    // The desktop-icons instance is additive: the profile's existing
-    // panel/theme/workflow values are exactly as before this change.
+    // The QindaQt signature layout uses three edges (ADR-0223): a thin top
+    // command bar for the focused window and its menu, a left smart shelf for
+    // windows and containers, and a bottom-right instrument strip.
     QCOMPARE(result.profile.defaultTheme, QStringLiteral("qinda-dark"));
-    QCOMPARE(result.profile.panels.size(), 2);
+    QCOMPARE(result.profile.panels.size(), 3);
     QCOMPARE(result.profile.workflow.launcher, QStringLiteral("smart-shelf"));
     QCOMPARE(result.profile.workflow.menu, QStringLiteral("global"));
     QVERIFY(result.profile.workflow.globalMenu);

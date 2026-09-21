@@ -3185,14 +3185,17 @@ complete release matrix:
 | `single-wuxga` | 1920x1200 at 100% | `xfce-inspired` / `qinda-light` |
 | `single-1080p-125` | 1920x1080 at 125% (1536x864 logical) | `gnome-inspired` / `qinda-light` |
 | `single-1440p-125` | 2560x1440 at 125% (2048x1152 logical) | `unity-inspired` / `qinda-dusk` |
-| `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
-| `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |
+| `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `nextstep-inspired` / `qinda-dark` |
+| `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `qinda-bliss` / `qinda-light` |
 
 Every S3 row must report a ready normalized launcher; every declared task-list
 must be ready and unique within its panel. The validator requires the exact
 `smart-shelf` composition only for the `qindaqt` profile. Other layouts are
 qualified through their own composition, including GNOME's overview-only top
-bar and the `windows-classic` taskbar.
+bar, the NeXT-style right-edge tile column, and the Bliss taskbar. The 150%
+and dual-output rows pick a vertical dock and a bottom taskbar so the five
+rows between them cover a top bar, a top-plus-bottom pair, a left rail, a
+right-edge column, and a single bottom taskbar.
 
 Window-aware panel interaction has two additive installed qualification rows:
 

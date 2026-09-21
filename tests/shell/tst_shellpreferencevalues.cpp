@@ -9,7 +9,7 @@ namespace {
 
 QVariantMap validSnapshotValues()
 {
-    return {{QStringLiteral("panels.layoutProfile"), QStringLiteral("mate-inspired")},
+    return {{QStringLiteral("panels.layoutProfile"), QStringLiteral("xfce-inspired")},
             {QStringLiteral("appearance.theme"), QStringLiteral("qinda-light")},
             {QStringLiteral("appearance.colorScheme"), QStringLiteral("light")},
             {QStringLiteral("appearance.wallpaper"), QStringLiteral("qindaqt:jade-fold")},
@@ -45,7 +45,7 @@ void ShellPreferenceValuesTests::decodesCompleteSnapshot()
     const auto values =
         ShellPreferenceValues::fromVariantMap(validSnapshotValues(), &error);
     QVERIFY2(values.has_value(), qPrintable(error));
-    QCOMPARE(values->layoutProfileId, QStringLiteral("mate-inspired"));
+    QCOMPARE(values->layoutProfileId, QStringLiteral("xfce-inspired"));
     QCOMPARE(values->themeId, QStringLiteral("qinda-light"));
     QCOMPARE(values->colorScheme, QStringLiteral("light"));
     QCOMPARE(values->fontFamily, QStringLiteral("Noto Serif"));
@@ -125,7 +125,7 @@ void ShellPreferenceValuesTests::startupSelectionPrecedence()
     QCOMPARE(resolveStartupProfileId(QStringLiteral("gnome-inspired"), preferences),
              QStringLiteral("gnome-inspired"));
     QCOMPARE(resolveStartupProfileId({}, preferences),
-             QStringLiteral("mate-inspired"));
+             QStringLiteral("xfce-inspired"));
     QCOMPARE(resolveStartupProfileId({}, std::nullopt), QStringLiteral("qindaqt"));
 
     QCOMPARE(resolveStartupThemeId(QStringLiteral("qinda-dark"), preferences,

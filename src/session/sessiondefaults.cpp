@@ -124,6 +124,18 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     seedMissing(kwin, QStringLiteral("NoiseStrength"), 2);
     kwin.endGroup();
 
+    kwin.beginGroup(QStringLiteral("Effect-overview"));
+    // AGENT-CONTRACT: KWin's overview effect reserves the top-left screen
+    // corner by default (its BorderActivate default is ElectricTopLeft = 7,
+    // an IntList), so brushing that corner raises KWin's own window grid.
+    // QindaQt owns that gesture: the desktop's own gather action arranges
+    // iconified chips, rolled-up container cards, and remaining windows in
+    // one deterministic layout, which KWin's grid cannot express. An empty
+    // list reserves no corner at all; the effect keeps its own shortcut.
+    // Seed-missing only, so a user who reassigned the corner keeps it.
+    seedMissing(kwin, QStringLiteral("BorderActivate"), QStringList{});
+    kwin.endGroup();
+
     kwin.sync();
     if (kwin.status() != QSettings::NoError) {
         if (error) {

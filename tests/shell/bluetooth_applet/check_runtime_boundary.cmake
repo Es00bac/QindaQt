@@ -194,7 +194,7 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
         set(profile_path "${case_root}/data/profiles/qindaqt.json")
         file(READ "${profile_path}" profile_content)
         set(profile_entry
-            "        {\"id\": \"bluetooth\", \"plugin\": \"bluetooth\", \"settings\": {\"zone\": \"end\"}},\n")
+            "        {\"id\": \"bluetooth\", \"plugin\": \"bluetooth\", \"settings\": {\"zone\": \"center\"}},\n")
         string(REPLACE "${profile_entry}" "" poisoned_profile "${profile_content}")
         if(profile_content STREQUAL poisoned_profile)
             message(FATAL_ERROR "Bluetooth composition poison could not remove profile entry")

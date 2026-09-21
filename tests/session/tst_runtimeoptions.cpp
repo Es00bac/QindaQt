@@ -51,10 +51,10 @@ void RuntimeOptionsTests::explicitProfileAndThemeAreRetained()
 {
     const auto parsed = parseRuntimeOptions(
         {QStringLiteral("qindaqt-shell"), QStringLiteral("--profile"),
-         QStringLiteral("mate-inspired"), QStringLiteral("--theme"),
+         QStringLiteral("xfce-inspired"), QStringLiteral("--theme"),
          QStringLiteral("qinda-light")});
     QVERIFY2(parsed.options.has_value(), qPrintable(parsed.error));
-    QCOMPARE(parsed.options->profileId, QStringLiteral("mate-inspired"));
+    QCOMPARE(parsed.options->profileId, QStringLiteral("xfce-inspired"));
     QCOMPARE(parsed.options->themeId, QStringLiteral("qinda-light"));
 }
 

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "unity-inspired",
   "name": "Command Rail",
-  "description": "A left launcher, global menu, and searchable command HUD.",
+  "description": "A 64-pixel left rail of big tiles that hides behind any window, and a top bar carrying the focused window's name, its menu, and the searchable HUD.",
   "defaultTheme": "qinda-dusk",
   "workflow": {
     "overview": "workspace-spread",
@@ -15,26 +15,26 @@
   "panels": [
     {
       "id": "menu-bar", "edge": "top", "layer": "above", "hideMode": "never",
-      "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
+      "alignment": "fill", "rows": 1, "thickness": 28, "length": 1.0,
       "applets": [
-        {"id": "menu", "plugin": "global-menu"},
-        {"id": "hud", "plugin": "command-hud"},
-        {"id": "status", "plugin": "system-status"},
-        {"id": "clipboard", "plugin": "clipboard"},
-        {"id": "status-notifier", "plugin": "status-notifier"},
-        {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"}
+        {"id": "active-app", "plugin": "active-application", "settings": {"zone": "start"}},
+        {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
+        {"id": "hud", "plugin": "command-hud", "settings": {"zone": "center"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]
     },
     {
       "id": "launcher-rail", "edge": "left", "layer": "above", "hideMode": "dodge-all",
-      "alignment": "fill", "rows": 1, "thickness": 58, "length": 1.0,
+      "alignment": "fill", "rows": 1, "thickness": 64, "length": 1.0,
       "applets": [
-        {"id": "launcher", "plugin": "application-launcher"},
-        {"id": "hosted-task-list", "plugin": "task-list"},
-        {"id": "tasks", "plugin": "grouped-task-list"},
-        {"id": "workspaces", "plugin": "workspace-switcher"},
-        {"id": "applications", "plugin": "launcher"}
+        {"id": "applications", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center"}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center"}},
+        {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "end"}}
       ]
     }
   ]

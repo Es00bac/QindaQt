@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "xfce-inspired",
   "name": "Compact Flexible",
-  "description": "A compact configurable panel and independent launcher dock.",
-  "defaultTheme": "qinda-dusk",
+  "description": "A single compact top panel with Applications and Places menus at the left, ungrouped window buttons across the middle, and a small launcher dock at the bottom that ducks the active window.",
+  "defaultTheme": "qinda-light",
   "workflow": {
     "overview": "optional",
     "workspacePolicy": "static",
@@ -15,22 +15,24 @@
   "panels": [
     {
       "id": "main-panel", "edge": "top", "layer": "above", "hideMode": "never",
-      "alignment": "fill", "rows": 1, "thickness": 28, "length": 1.0,
+      "alignment": "fill", "rows": 1, "thickness": 34, "length": 1.0,
       "applets": [
-        {"id": "menu", "plugin": "launcher"},
-        {"id": "launchers", "plugin": "quick-launch"},
-        {"id": "tasks", "plugin": "task-list"},
-        {"id": "workspaces", "plugin": "workspace-switcher"},
-        {"id": "tray", "plugin": "status-notifier"},
-        {"id": "clipboard", "plugin": "clipboard"},
-        {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"}
+        {"id": "menu", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "places", "plugin": "places-menu", "settings": {"zone": "start"}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "grouping": "never"}},
+        {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "end"}},
+        {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]
     },
     {
-      "id": "launcher-dock", "edge": "bottom", "layer": "above", "hideMode": "always",
-      "alignment": "center", "rows": 1, "thickness": 46, "length": 0.34,
-      "applets": [{"id": "favorites", "plugin": "quick-launch"}]
+      "id": "launcher-dock", "edge": "bottom", "layer": "overlay", "hideMode": "dodge-active",
+      "alignment": "center", "rows": 1, "thickness": 44, "length": 0.28,
+      "applets": [
+        {"id": "favorites", "plugin": "quick-launch", "settings": {"zone": "center"}}
+      ]
     }
   ]
 }

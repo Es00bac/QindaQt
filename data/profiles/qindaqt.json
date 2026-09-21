@@ -2,49 +2,61 @@
   "schemaVersion": 1,
   "id": "qindaqt",
   "name": "QindaQt",
-  "description": "A calm command bar with a window-aware smart shelf.",
+  "description": "Three edges, three jobs. A thin top ledger carries only the focused window's name and its menu. A left shelf carries every window and container, vertically, where long titles actually fit. A bottom-right instrument strip carries the hardware and floats over windows instead of reserving a band.",
   "defaultTheme": "qinda-dark",
   "workflow": {
     "overview": "compact",
     "workspacePolicy": "static",
-    "launcher": "smart-shelf",
+    "launcher": "window-shelf",
     "menu": "global",
-    "taskList": "grouped",
+    "taskList": "shelf",
     "globalMenu": true
   },
   "panels": [
     {
       "id": "command-bar", "edge": "top", "layer": "above", "hideMode": "never",
-      "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
+      "alignment": "fill", "rows": 1, "thickness": 26, "length": 1.0,
       "applets": [
-        {"id": "brand", "plugin": "system-menu", "settings": {"zone": "start"}},
+        {"id": "active-app", "plugin": "active-application", "settings": {"zone": "start"}},
         {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
-        {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "center"}},
-        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
-        {"id": "bluetooth", "plugin": "bluetooth", "settings": {"zone": "end"}},
-        {"id": "power", "plugin": "power", "settings": {"zone": "end"}},
-        {"id": "audio", "plugin": "audio", "settings": {"zone": "end"}},
-        {"id": "smart-lights", "plugin": "smart-lights", "settings": {"zone": "end"}},
-        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
-        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
-        {"id": "obs", "plugin": "obs", "settings": {"zone": "end"}},
-        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]
     },
     {
-      "id": "smart-shelf", "edge": "bottom", "layer": "overlay", "hideMode": "intelligent",
-      "alignment": "center", "rows": 1, "thickness": 72, "length": 1.0,
+      "id": "smart-shelf", "edge": "left", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 52, "length": 1.0,
       "applets": [
-        {"id": "apps", "plugin": "launcher", "settings": {"zone": "center", "dockMode": true}},
-        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true}},
-        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "dockMode": true}}
+        {"id": "apps", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "start"}},
+        {"id": "hosted-task-list", "plugin": "task-list", "settings": {"zone": "center"}},
+        {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "end"}},
+        {"id": "show-desktop", "plugin": "show-desktop", "settings": {"zone": "end"}}
+      ]
+    },
+    {
+      "id": "instruments", "edge": "bottom", "layer": "overlay", "hideMode": "dodge-active",
+      "alignment": "end", "rows": 1, "thickness": 34, "length": 0.46,
+      "applets": [
+        {"id": "dashboard", "plugin": "dashboard", "settings": {"zone": "start"}},
+        {"id": "audio", "plugin": "audio", "settings": {"zone": "center"}},
+        {"id": "bluetooth", "plugin": "bluetooth", "settings": {"zone": "center"}},
+        {"id": "power", "plugin": "power", "settings": {"zone": "center"}},
+        {"id": "smart-lights", "plugin": "smart-lights", "settings": {"zone": "center"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "center"}},
+        {"id": "obs", "plugin": "obs", "settings": {"zone": "end"}},
+        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}}
       ]
     }
   ],
   "desktop": {
     "applets": [
-      {"id": "desktop-icons", "plugin": "desktop-icons", "settings": {}}
+      {
+        "id": "desktop-icons",
+        "plugin": "desktop-icons",
+        "settings": {"contextMenuStyle": "traditional"}
+      }
     ]
   }
 }

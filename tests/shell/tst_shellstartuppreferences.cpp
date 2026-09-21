@@ -74,7 +74,7 @@ void ShellStartupPreferencesTests::savedPreferencesSurviveIntoAFreshStartupRead(
         QVERIFY2(writer.start(&error), qPrintable(error));
         QTRY_VERIFY_WITH_TIMEOUT(writer.state() == ClientState::Ready, 2'000);
         const QList<QPair<QString, QVariant>> writes{
-            {QStringLiteral("panels.layoutProfile"), QStringLiteral("mate-inspired")},
+            {QStringLiteral("panels.layoutProfile"), QStringLiteral("xfce-inspired")},
             {QStringLiteral("appearance.theme"), QStringLiteral("qinda-light")},
             {QStringLiteral("appearance.colorScheme"), QStringLiteral("light")},
             {QStringLiteral("accessibility.highContrast"), true},
@@ -93,14 +93,14 @@ void ShellStartupPreferencesTests::savedPreferencesSurviveIntoAFreshStartupRead(
     // arguments observes the confirmed selection through Settings1 only.
     const auto values = readConfirmedShellPreferences(readerBus, 2'000, &error);
     QVERIFY2(values.has_value(), qPrintable(error));
-    QCOMPARE(values->layoutProfileId, QStringLiteral("mate-inspired"));
+    QCOMPARE(values->layoutProfileId, QStringLiteral("xfce-inspired"));
     QCOMPARE(values->themeId, QStringLiteral("qinda-light"));
     QVERIFY(values->accessibility.highContrast);
     QVERIFY(values->accessibility.reducedTransparency);
     QCOMPARE(values->accessibility.textScale, 1.5);
     // Schema defaults fill the untouched keys.
     QVERIFY(!values->accessibility.reducedMotion);
-    QCOMPARE(resolveStartupProfileId({}, values), QStringLiteral("mate-inspired"));
+    QCOMPARE(resolveStartupProfileId({}, values), QStringLiteral("xfce-inspired"));
     QCOMPARE(resolveStartupProfileId(QStringLiteral("unity-inspired"), values),
              QStringLiteral("unity-inspired"));
 

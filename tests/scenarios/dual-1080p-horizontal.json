@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "dual-1080p-horizontal",
   "description": "Two side-by-side 1080p outputs with the left output primary.",
-  "profile": "windows-classic",
+  "profile": "qinda-bliss",
   "theme": "qinda-light",
   "outputs": [
     {
