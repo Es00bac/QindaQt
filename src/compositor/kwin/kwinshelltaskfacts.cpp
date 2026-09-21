@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinshelltaskfacts.h"
 #include "qindaqt/compositor/foreignwindowidentity.h"
+#include "qindaqt/compositor/winelaunchpaths.h"
 
 #include "hybridtaskidentitypolicy.h"
 #include "kwinhybridsession.h"
@@ -51,6 +52,22 @@ void setError(QString *error, QString message)
         return {};
     }
     return cmdline.read(8192);
+}
+
+// Bounded read of another process's environment, used only to locate the
+// Wine prefix (WINEPREFIX) for the ADR-0230 PE-icon path. Same guard as
+// clientCommandLine: the PID is KWin's authenticated client PID, the read is
+// capped, and failure is silent.
+[[nodiscard]] QByteArray clientEnvironment(pid_t pid)
+{
+    if (pid <= 1) {
+        return {};
+    }
+    QFile environ(QStringLiteral("/proc/%1/environ").arg(static_cast<qint64>(pid)));
+    if (!environ.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return environ.read(65536);
 }
 
 struct ContainerProjection final
@@ -298,14 +315,27 @@ KWinShellTaskFactsPublisher::sample(QString *error)
         // in the shell.
         const QString resourceClass = window->resourceClass();
         QString clientExecutable;
+        QString steamName;
         if (Compositor::isOpaqueLauncherClass(resourceClass)) {
+            const QByteArray commandLine = clientCommandLine(window->pid());
             clientExecutable =
-                Compositor::executableFromCommandLine(clientCommandLine(window->pid()));
+                Compositor::executableFromCommandLine(commandLine);
+            // ADR-0230 layered on ADR-0169: a real `steam_app_<n>` title
+            // takes its human name from Steam's appmanifest (empty for
+            // `steam_app_0` and when Steam is absent), and the executable's
+            // PE icon is refreshed in the shared cache the shell's confined
+            // icon path reads. Both are bounded, memoized, and fail-silent.
+            steamName = m_wineIdentity.steamNameForClass(resourceClass);
+            if (!Compositor::windowsExecutablePathFromCommandLine(commandLine)
+                     .isEmpty()) {
+                m_wineIdentity.ensureIconForClient(
+                    commandLine, clientEnvironment(window->pid()));
+            }
         }
         const QString applicationId = Compositor::resolveApplicationId(
             window->desktopFileName(), resourceClass, clientExecutable);
         const QString applicationName = Compositor::resolveApplicationName(
-            resourceClass, clientExecutable, applicationId);
+            resourceClass, clientExecutable, applicationId, steamName);
         const bool groupedMaximized = !containerId.isEmpty()
             && m_hybrid.isContainerMaximized(containerId);
         // AGENT-CONTRACT: A container rename (ContainerAppearance::name) is a

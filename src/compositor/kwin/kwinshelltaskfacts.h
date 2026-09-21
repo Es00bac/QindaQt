@@ -2,7 +2,9 @@
 #pragma once
 
 #include "qindaqt/compositor/shelltaskfacts.h"
+#include "qindaqt/compositor/wineidentitycache.h"
 
+#include <QDir>
 #include <QHash>
 #include <QMetaObject>
 #include <QObject>
@@ -61,6 +63,11 @@ private:
     KWinHybridSession &m_hybrid;
     KWinShellPanelOwnerSource &m_panelOwner;
     ShellTaskFactsStore m_store;
+    // ADR-0230: Steam manifest names and PE-icon extraction for opaque-class
+    // windows; confined to this object's GUI thread, fail-silent.
+    Compositor::WineIdentityCache m_wineIdentity{
+        Compositor::WineIdentityCache::defaultCacheRoot(),
+        QDir::homePath()};
     QHash<KWin::Window *, QVector<QMetaObject::Connection>> m_connections;
     bool m_refreshScheduled = false;
 };
