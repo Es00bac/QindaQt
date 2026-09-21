@@ -189,56 +189,71 @@ inline QByteArray buildResourceSection(const Options &options)
     QByteArray section;
     const quint32 subdirectory = 0x80000000u;
 
-    // Layout: root, then per-group name dir, per-icon name dir, all language
-    // dirs, all data entries, then payloads. Offsets are computed as we go.
+    // AGENT-GUARD: a PE resource tree has ONE directory per level, not one per
+    // resource. RT_ICON is a single name directory holding every icon id; the
+    // root's type entry points at that one directory. Building a separate
+    // one-entry directory per icon left every icon after the first
+    // unreachable, because nothing pointed at it — which made the three
+    // selection rows silently compare against icon id 1 forever.
+    //
+    // Layout: root, the group name directory, the icon name directory, one
+    // language directory per resource, one data entry per resource, payloads.
     const int rootEntries = (options.groups.isEmpty() ? 0 : 1)
         + (options.icons.isEmpty() ? 0 : 1);
+    const qint64 groupCount = options.groups.size();
+    const qint64 iconCount = options.icons.size();
     const qint64 rootSize = 16 + qint64(rootEntries) * 8;
-    const qint64 groupDirCount = options.groups.size();
-    const qint64 iconDirCount = options.icons.size();
-    const qint64 groupDirsOffset = rootSize;
-    const qint64 iconDirsOffset = groupDirsOffset + groupDirCount * 24;
-    const qint64 langDirsOffset = iconDirsOffset + iconDirCount * 24;
-    const qint64 langDirCount = groupDirCount + iconDirCount;
-    const qint64 dataEntriesOffset = langDirsOffset + langDirCount * 24;
-    const qint64 dataEntryCount = langDirCount;
-    const qint64 payloadsOffset = dataEntriesOffset + dataEntryCount * 16;
+    const qint64 groupNameDirOffset = rootSize;
+    const qint64 groupNameDirSize = groupCount == 0 ? 0 : 16 + groupCount * 8;
+    const qint64 iconNameDirOffset = groupNameDirOffset + groupNameDirSize;
+    const qint64 iconNameDirSize = iconCount == 0 ? 0 : 16 + iconCount * 8;
+    const qint64 langDirsOffset = iconNameDirOffset + iconNameDirSize;
+    const qint64 resourceCount = groupCount + iconCount;
+    const qint64 dataEntriesOffset = langDirsOffset + resourceCount * 24;
+    const qint64 payloadsOffset = dataEntriesOffset + resourceCount * 16;
 
     QList<QPair<quint32, quint32>> root;
-    if (!options.groups.isEmpty()) {
-        root.append({14, subdirectory | quint32(groupDirsOffset)});
+    if (groupCount > 0) {
+        root.append({14, subdirectory | quint32(groupNameDirOffset)});
     }
-    if (!options.icons.isEmpty()) {
-        root.append({3, subdirectory | quint32(iconDirsOffset)});
+    if (iconCount > 0) {
+        root.append({3, subdirectory | quint32(iconNameDirOffset)});
     }
     section.append(resourceDirectory(root));
 
-    // Group name directories: one entry (the group id) pointing at its
-    // language directory.
-    for (int g = 0; g < groupDirCount; ++g) {
-        const qint64 langDir = langDirsOffset + g * 24;
-        section.append(resourceDirectory(
-            {{options.groups.at(g).id, subdirectory | quint32(langDir)}}));
+    // One name directory for RT_GROUP_ICON, every group id in it. Language
+    // directory `g` belongs to resource `g`, groups first then icons.
+    if (groupCount > 0) {
+        QList<QPair<quint32, quint32>> names;
+        for (int g = 0; g < groupCount; ++g) {
+            names.append({options.groups.at(g).id,
+                          subdirectory | quint32(langDirsOffset + g * 24)});
+        }
+        section.append(resourceDirectory(names));
     }
-    // Icon name directories likewise, after the group language directories.
-    for (int i = 0; i < iconDirCount; ++i) {
-        const qint64 langDir = langDirsOffset + (groupDirCount + i) * 24;
-        section.append(resourceDirectory(
-            {{options.icons.at(i).id, subdirectory | quint32(langDir)}}));
+    // One name directory for RT_ICON, every icon id in it.
+    if (iconCount > 0) {
+        QList<QPair<quint32, quint32>> names;
+        for (int i = 0; i < iconCount; ++i) {
+            names.append({options.icons.at(i).id,
+                          subdirectory
+                              | quint32(langDirsOffset + (groupCount + i) * 24)});
+        }
+        section.append(resourceDirectory(names));
     }
-    // Language directories: language 0 pointing at the data entry.
-    for (int g = 0; g < groupDirCount + iconDirCount; ++g) {
-        const qint64 entry = dataEntriesOffset + g * 16;
-        section.append(resourceDirectory({{0, quint32(entry)}}));
+    // Language directories: language 0 pointing at this resource's data entry.
+    for (int r = 0; r < resourceCount; ++r) {
+        section.append(
+            resourceDirectory({{0, quint32(dataEntriesOffset + r * 16)}}));
     }
-    // Data entries: payloads are laid out group-first, then icons.
+    // Data entries, then payloads, both group-first then icons.
     qint64 payloadCursor = payloadsOffset;
-    for (int g = 0; g < groupDirCount; ++g) {
+    for (int g = 0; g < groupCount; ++g) {
         section.append(dataEntry(options.resourceRva + quint32(payloadCursor),
                                  quint32(options.groups.at(g).payload.size())));
         payloadCursor += options.groups.at(g).payload.size();
     }
-    for (int i = 0; i < iconDirCount; ++i) {
+    for (int i = 0; i < iconCount; ++i) {
         section.append(dataEntry(options.resourceRva + quint32(payloadCursor),
                                  quint32(options.icons.at(i).payload.size())));
         payloadCursor += options.icons.at(i).payload.size();
@@ -259,8 +274,13 @@ inline QByteArray buildPe(const Options &options)
     const qint64 sectionRawOffset = 0x200;
     const quint32 optionalSize = 0xF0; // PE32 standard size
 
-    QByteArray image;
-    image.resize(int(sectionRawOffset));
+    // AGENT-GUARD: zero-fill explicitly. Qt 6's QByteArray::resize leaves the
+    // new bytes UNINITIALISED, and this builder relies on every field it does
+    // not write being zero -- including the two NUL bytes of the PE signature
+    // and every reserved COFF field. With a garbage heap the parser saw
+    // "PE\xc8\xff" and rejected every valid image, so all ten happy-path
+    // rows failed while all nineteen rejection rows passed.
+    QByteArray image(int(sectionRawOffset), '\0');
     // DOS header.
     if (options.mzMagic) {
         image[0] = 'M';

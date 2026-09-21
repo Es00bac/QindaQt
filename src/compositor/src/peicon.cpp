@@ -332,9 +332,12 @@ private:
     if (payload.size() < 40) {
         return {};
     }
-    const auto u16 = [&payload](qsizetype offset) {
-        return quint16(quint8(payload.at(offset)))
-            | (quint16(quint8(payload.at(offset + 1))) << 8);
+    // AGENT-GUARD: the return type is explicit. `|` and `<<` promote their
+    // operands to int, so without it the lambda yields int and every
+    // assignment to a quint16 fails the repository's -Werror=conversion build.
+    const auto u16 = [&payload](qsizetype offset) -> quint16 {
+        return static_cast<quint16>(quint16(quint8(payload.at(offset)))
+                                    | quint16(quint16(quint8(payload.at(offset + 1))) << 8));
     };
     const auto u32 = [&payload](qsizetype offset) {
         return quint32(quint8(payload.at(offset)))
@@ -380,7 +383,6 @@ private:
     // 32bpp icons commonly leave the alpha channel zeroed to mean "opaque";
     // source alpha is only trusted when at least one pixel sets it.
     bool anySourceAlpha = false;
-    bool anyMaskBit = false;
     if (bitCount == 32) {
         for (qint64 y = 0; y < height && !anySourceAlpha; ++y) {
             const qint64 rowStart = xorOffset + (height - 1 - y) * xorStride;
@@ -393,14 +395,6 @@ private:
         }
     }
     const qint64 maskOffset = xorOffset + xorStride * height;
-    for (qint64 row = 0; row < height && !anyMaskBit; ++row) {
-        for (qint64 byteIndex = 0; byteIndex < andStride; ++byteIndex) {
-            if (quint8(payload.at(maskOffset + row * andStride + byteIndex)) != 0) {
-                anyMaskBit = true;
-                break;
-            }
-        }
-    }
 
     QImage image(int(width), int(height), QImage::Format_ARGB32);
     if (image.isNull()) {
@@ -422,7 +416,14 @@ private:
                 blue = quint8(payload.at(pixel));
                 green = quint8(payload.at(pixel + 1));
                 red = quint8(payload.at(pixel + 2));
-                if (anySourceAlpha || anyMaskBit) {
+                // AGENT-GUARD: the source alpha is trusted only when some
+                // pixel actually sets it. The presence of an AND-mask bit is
+                // NOT evidence that the alpha channel is meaningful -- a
+                // 32bpp icon that leaves alpha zeroed and expresses its
+                // transparency through the mask is the common case, and
+                // trusting the zeroed channel there made every pixel
+                // transparent. The mask is applied below, independently.
+                if (anySourceAlpha) {
                     alpha = quint8(payload.at(pixel + 3));
                 }
             } else if (bitCount == 24) {

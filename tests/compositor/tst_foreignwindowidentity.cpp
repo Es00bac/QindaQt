@@ -66,9 +66,11 @@ void ForeignWindowIdentityTests::realClassesAreNeverOverridden()
     QCOMPARE(resolveApplicationId(QString(), QStringLiteral("firefox"),
                                   executableFromCommandLine(cmdline)),
              QStringLiteral("firefox"));
+    // ADR-0230 added the Steam manifest name as a fourth input; an empty
+    // one means "no manifest", which is every non-Steam window.
     QCOMPARE(resolveApplicationName(QStringLiteral("firefox"),
                                     QStringLiteral("firefox"),
-                                    QStringLiteral("firefox")),
+                                    QStringLiteral("firefox"), QString()),
              QStringLiteral("firefox"));
     // A declared desktop file name outranks everything, unchanged.
     QCOMPARE(resolveApplicationId(QStringLiteral("org.mozilla.firefox"),
@@ -90,8 +92,13 @@ void ForeignWindowIdentityTests::theLiveBattleNetCaseResolvesToItsExecutable()
                                   executable),
              QStringLiteral("Battle.net.exe"));
     QCOMPARE(resolveApplicationName(QStringLiteral("steam_app_0"), executable,
-                                    QStringLiteral("Battle.net.exe")),
+                                    QStringLiteral("Battle.net.exe"), QString()),
              QStringLiteral("Battle.net.exe"));
+    // With a manifest name the Steam key resolves to the real title.
+    QCOMPARE(resolveApplicationName(QStringLiteral("steam_app_620"), executable,
+                                    QStringLiteral("steam_app_620"),
+                                    QStringLiteral("Portal 2")),
+             QStringLiteral("Portal 2"));
 }
 
 void ForeignWindowIdentityTests::theLastWindowsExecutableWinsOverLauncherShims()
