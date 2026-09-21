@@ -17,17 +17,26 @@ the work items that move rows there.
 | Virtual strips and buses as real nodes ([ADR-0175](../adr/0175-virtual-strips-and-buses-are-nodes-the-console-owns.md)) | **done** (installed r2) |
 | Persistence across restarts and logins ([ADR-0176](../adr/0176-the-console-remembers-itself.md)) | **done** (installed r2, document written on the live session) |
 | Pan applied to the graph ([ADR-0177](../adr/0177-pan-is-balance-on-the-send.md)) | **done** (installed r2) |
-| Per-strip / per-bus explicit device pins ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | built and tested, commit pending |
+| Per-strip / per-bus explicit device pins ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | committed (14 files on main cite it); not confirmed on the live session |
 | Gate, compressor, limiter, EQ per strip ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** (installed r4) |
 | Denoiser per strip ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** (installed r6; a denoiser-only rack loads on the packaged service) |
 | Bus EQ and bus modes ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** (installed r5; stereo modes, surround upmixes not modelled) |
-| Recorder ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)) | built (bus to FLAC/WAV), build/commit pending the suite; player not built |
-| VBAN ([ADR-0185](../adr/0185-vban-is-a-document-and-two-threads.md)) | built (audio sub-protocol, document-defined streams), build/commit pending the suite |
-| Macro buttons ([ADR-0183](../adr/0183-a-macro-button-is-a-list-of-console-operations.md)) | built (file-defined; run from Settings), build/commit pending the suite |
+| Recorder ([ADR-0184](../adr/0184-the-recorder-is-a-stream-and-a-writer-thread.md)) | committed (bus to FLAC/WAV; 12 files on main); the installed `qindaqt-audio-service` carries it. Player still not built |
+| VBAN ([ADR-0185](../adr/0185-vban-is-a-document-and-two-threads.md)) | committed (audio sub-protocol, document-defined streams; 13 files on main); the installed `qindaqt-audio-service` carries it |
+| Macro buttons ([ADR-0183](../adr/0183-a-macro-button-is-a-list-of-console-operations.md)) | committed (file-defined; run from Settings; 9 files on main); the installed `qindaqt-audio-service` carries it |
 | Presets ([ADR-0182](../adr/0182-a-preset-is-the-console-under-a-name.md)) | **done** (installed r6; verified round trip on the packaged service) |
 | Settings route complete for every control above | **done** for every row above: strips, buses, matrix, meters, pins, strip and bus racks |
 | Audio applet reflects the console ([ADR-0181](../adr/0181-the-tray-rides-the-console.md)) | **done** (installed r6) |
 | Installed and running on the live session | r6 (through ADR-0182 and the active-rack fix) |
+
+**On the four rows above (2026-09-21).** They read "build/commit pending the
+suite" long after the code had landed. "Committed" is verified from the tree:
+each ADR is cited by 9-14 files on main. "Installed" is verified only where
+named: a distinctive symbol appears in the installed
+`/usr/bin/qindaqt-audio-service`. The device-pin row is deliberately left
+unconfirmed on the session rather than guessed - a first attempt to check it
+matched the substring "pin" inside "Typing" and would have claimed whatever
+the reader wanted.
 
 ## 2. OBS integration
 
@@ -104,5 +113,11 @@ bus name and so had no fallback.
 | Item | Status |
 |---|---|
 | Program behind an opaque window class reported with a real name and icon ([ADR-0169](../adr/0169-report-the-program-behind-an-opaque-window-class.md)) | committed |
-| Steam `appmanifest` names for `steam_app_<id>` windows | gap |
-| Icons extracted from the PE executable | gap |
+| Steam `appmanifest` names for `steam_app_<id>` windows ([ADR-0230](../adr/0230-name-and-picture-the-game-behind-a-launcher-class.md)) | committed |
+| Icons extracted from the PE executable ([ADR-0230](../adr/0230-name-and-picture-the-game-behind-a-launcher-class.md)) | committed |
+
+Both landed with the bounded KeyValues and PE readers described in ADR-0230 and
+are on main; they reach a machine with the `pre20260921-r1` revision. The rows
+read `gap` until 2026-09-21 because the ADR itself had never been written — the
+code cited it from nineteen files while the decision record was missing, which
+is also what made the work easy to overlook here.
