@@ -150,7 +150,9 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
 
   // ADR-0211: appended routes take the next index in merge order, so nothing
   // before them moves. streaming 12, datetime 13, windows 14, default-apps 15,
-  // about-computer 16, startup 17, screensaver 18 (ADR-0226).
+  // about-computer 16, startup 17, screensaver 18 (ADR-0226),
+  // login-screen 19 (ADR-0225). Both were appended in the same integration;
+  // screensaver registers first, so it keeps the lower index.
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("datetime"));
 
@@ -166,14 +168,23 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("startup"));
 
+  // selectNext from 17 ("startup") -> 18 ("screensaver")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("screensaver"));
 
-  // selectNext from 18 ("screensaver") wraps to 0 ("notifications")
+  // selectNext from 18 ("screensaver") -> 19 ("login-screen")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("login-screen"));
+
+  // selectNext from 19 ("login-screen") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 18 ("screensaver")
+  // selectPrevious from 0 wraps to 19 ("login-screen")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("login-screen"));
+
+  // and back down through 18 ("screensaver")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("screensaver"));
 
@@ -303,12 +314,18 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(18));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("screensaver"));
 
+  QVERIFY(controller.selectIndex(19));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("login-screen"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(19));
+  // Twenty routes now (screensaver 18, login-screen 19), so 20 is the first
+  // out-of-bounds index. This line was not in a merge conflict and would have
+  // gone on asserting that a valid index is rejected.
+  QVERIFY(!controller.selectIndex(20));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -366,7 +383,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 19);
+  QCOMPARE(list.size(), 20);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -447,6 +464,12 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
            QStringLiteral("screensaver"));
   QCOMPARE(screensaverMap.value(QStringLiteral("title")).toString(),
            QStringLiteral("Screen saver"));
+
+  const QVariantMap loginScreenMap = list.at(19).toMap();
+  QCOMPARE(loginScreenMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("login-screen"));
+  QCOMPARE(loginScreenMap.value(QStringLiteral("component")).toString(),
+           QStringLiteral("login-screen"));
 }
 
 void SettingsNavigationControllerTest::testRouteAtPositions() {
@@ -560,7 +583,14 @@ void SettingsNavigationControllerTest::testRouteAtPositions() {
   QCOMPARE(itemAt18.value(QStringLiteral("component")).toString(),
            QStringLiteral("screensaver"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(19);
+  const QVariantMap itemAt19 = controller.routeAt(19);
+  QCOMPARE(itemAt19.value(QStringLiteral("id")).toString(),
+           QStringLiteral("login-screen"));
+  QCOMPARE(itemAt19.value(QStringLiteral("component")).toString(),
+           QStringLiteral("login-screen"));
+
+  // Twenty routes, so 20 is the first out-of-bounds position.
+  const QVariantMap itemOutOfBounds = controller.routeAt(20);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

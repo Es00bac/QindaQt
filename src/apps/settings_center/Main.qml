@@ -204,6 +204,7 @@ T.ApplicationWindow {
             aboutComputerComponent: addedRouteComponents.aboutComputer
             startupComponent: addedRouteComponents.startup
             screensaverComponent: addedRouteComponents.screensaver
+            loginScreenComponent: addedRouteComponents.loginScreen
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -262,6 +263,7 @@ T.ApplicationWindow {
             aboutComputerComponent: addedRouteComponents.aboutComputer
             startupComponent: addedRouteComponents.startup
             screensaverComponent: addedRouteComponents.screensaver
+            loginScreenComponent: addedRouteComponents.loginScreen
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }

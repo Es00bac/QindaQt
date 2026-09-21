@@ -26,6 +26,7 @@ enum class SettingsRouteComponent {
   AboutComputer,
   Startup,
   Screensaver,
+  LoginScreen,
 };
 
 [[nodiscard]] QString
