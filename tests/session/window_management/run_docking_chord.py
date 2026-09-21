@@ -7,14 +7,21 @@ on KWin's virtual backend with development input enabled, runs
 docking_chord_driver.py as the session program, and judges its evidence. Exit
 0 passes, 1 fails, 77 skips (the GTK fixture or dbus-daemon is missing).
 
-AGENT-GUARD: never point this at the live desktop. Every socket, bus, config
-and runtime directory lives under --output-root.
+AGENT-GUARD: never point this at the live desktop. Every config and HOME/XDG
+root is this row's own.
+
+The private bus socket and the runtime tree beneath it are the one exception
+to "everything under --output-root": an AF_UNIX path is capped at 108 bytes,
+so they live in a pid-named directory under the session's XDG_RUNTIME_DIR
+(/tmp where there is none) and are removed when the row ends. Evidence still
+lands under --output-root. See private_bus_root.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -69,8 +76,27 @@ def evaluate(evidence: dict[str, Any], plugin_root: Path) -> list[str]:
     return failures
 
 
+def private_bus_root(output_root: Path) -> Path:
+    """A short-path home for the nested session's private bus socket.
+
+    AGENT-GUARD: an AF_UNIX path is capped at 108 bytes including the
+    terminator, and this socket's directory used to be derived from the build
+    root. Every row here then refused to start from any build tree with a
+    longish path -- twelve `compositor.shade-visibility.*` rows at once -- for
+    a reason that has nothing to do with what they test. The session's own
+    XDG_RUNTIME_DIR is where a Wayland/D-Bus socket belongs and is short by
+    construction; /tmp is the fallback for a session without one.
+
+    Evidence and captures stay under `output_root`: only the socket needs to
+    be short, and artifacts belong beside the build they came from.
+    """
+    session = os.environ.get("XDG_RUNTIME_DIR", "")
+    base = Path(session) if session and len(session) <= 64 else Path("/tmp")
+    return base / f"qindaqt-{output_root.name}-{os.getpid()}"
+
+
 def fresh_runtime_root(output_root: Path) -> Path:
-    base = output_root / "wm"
+    base = private_bus_root(output_root) / "wm"
     base.mkdir(parents=True, exist_ok=True)
     index = 0
     while (base / str(index)).exists():
@@ -135,6 +161,9 @@ def main() -> int:
                "passedVerdicts": sum(1 for v in evidence.get("verdicts", {}).values() if v is True),
                "failures": failures}
     print("QINDAQT_DOCKING_CHORD=" + json.dumps(summary, sort_keys=True))
+    # The runtime tree is outside --output-root now, so this row owns taking
+    # it away again rather than leaving one per run behind.
+    shutil.rmtree(root.parent, ignore_errors=True)
     return 1 if failures else 0
 
 
