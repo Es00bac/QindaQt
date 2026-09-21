@@ -48,6 +48,15 @@ option(QINDAQT_BUILD_VIEWER "Build the QindaTK image/PDF viewer" ON)
 # installs every component, so the two collide on /usr/bin unless one of them
 # turns this off. Leave it ON for the standalone package.
 option(QINDAQT_BUILD_SYSTEM_MONITOR "Build the System Monitor application" ON)
+# AGENT-GUARD: media-plugins/obs-qindaqt installs this libobs module from its
+# own build of src/obs. Until this option existed the bridge was gated only on
+# whether libobs happened to be findable, so a desktop package built on a host
+# with OBS installed shipped /usr/lib64/obs-plugins/obs-qindaqt.so and one
+# built without OBS did not - the same ebuild producing different file lists,
+# and a guaranteed collision with the media-plugins package. Leave it ON for
+# the standalone package and for repository builds; the desktop package turns
+# it OFF so the optional plugin stays optional and has one owner.
+option(QINDAQT_BUILD_OBS_BRIDGE "Build the OBS console bridge module" ON)
 option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
 option(QINDAQT_BUILD_PRODUCTION_SHELL
        "Build the LayerShellQt-backed production Wayland shell"
