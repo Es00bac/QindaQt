@@ -14,8 +14,8 @@ ColumnLayout {
     required property var displaySettings
     required property bool editorBusy
 
-    readonly property string currentTransform: root.displaySettings.selectedOutput.transform ?? "normal"
-    readonly property bool outputEnabled: root.displaySettings.selectedOutput.enabled ?? false
+    readonly property string currentTransform: root.displaySettings?.selectedOutput?.transform ?? "normal"
+    readonly property bool outputEnabled: root.displaySettings?.selectedOutput?.enabled ?? false
 
     readonly property var orientationPresets: [
         { label: qsTr("Standard (Landscape)"), token: "normal" },
@@ -53,7 +53,7 @@ ColumnLayout {
                     objectName: "displayOrientationButton_" + orientBtn.modelData.token
                     checkable: true
                     autoExclusive: true
-                    available: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
+                    available: (root.displaySettings?.canEdit ?? false) && !root.editorBusy && root.outputEnabled
                     text: orientBtn.modelData.label
                     checked: root.currentTransform === orientBtn.modelData.token
 
@@ -62,9 +62,9 @@ ColumnLayout {
                     Accessible.checked: checked
 
                     onClicked: {
-                        if (root.displaySettings.selectedOutputId) {
-                            root.displaySettings.setOutputTransform(
-                                root.displaySettings.selectedOutputId, orientBtn.modelData.token)
+                        if (root.displaySettings?.selectedOutputId) {
+                            root.displaySettings?.setOutputTransform(
+                                root.displaySettings?.selectedOutputId, orientBtn.modelData.token)
                         }
                     }
                 }

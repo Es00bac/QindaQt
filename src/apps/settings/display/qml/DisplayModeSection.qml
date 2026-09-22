@@ -14,9 +14,9 @@ ColumnLayout {
     required property var displaySettings
     required property bool editorBusy
 
-    readonly property var currentModes: root.displaySettings.selectedOutput.modes ?? []
-    readonly property string currentModeId: root.displaySettings.selectedOutput.modeId ?? ""
-    readonly property bool outputEnabled: root.displaySettings.selectedOutput.enabled ?? false
+    readonly property var currentModes: root.displaySettings?.selectedOutput?.modes ?? []
+    readonly property string currentModeId: root.displaySettings?.selectedOutput?.modeId ?? ""
+    readonly property bool outputEnabled: root.displaySettings?.selectedOutput?.enabled ?? false
 
     spacing: Tokens.space["3"]
 
@@ -30,8 +30,8 @@ ColumnLayout {
         Layout.fillWidth: true
         label: qsTr("Display resolution")
         description: qsTr("Active mode and refresh rate")
-        errorMessage: root.displaySettings.fieldErrors[
-                          root.displaySettings.selectedOutputId] ?? ""
+        errorMessage: root.displaySettings?.fieldErrors[
+                          root.displaySettings?.selectedOutputId] ?? ""
         editor: modeSelector
 
         T.ComboBox {
@@ -39,7 +39,7 @@ ColumnLayout {
             objectName: "displayModeComboBox"
             Layout.fillWidth: true
             implicitHeight: 36
-            enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
+            enabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy && root.outputEnabled
 
             model: root.currentModes
             textRole: "label"
@@ -62,8 +62,8 @@ ColumnLayout {
             onActivated: index => {
                 if (index >= 0 && index < root.currentModes.length) {
                     const chosenMode = root.currentModes[index];
-                    root.displaySettings.setOutputMode(
-                        root.displaySettings.selectedOutputId, chosenMode.id);
+                    root.displaySettings?.setOutputMode(
+                        root.displaySettings?.selectedOutputId, chosenMode.id);
                 }
             }
 

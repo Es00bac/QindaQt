@@ -45,48 +45,48 @@ Item {
     required property bool applicationClosePending
     signal applicationCloseResolved()
     readonly property bool customizeDeparturePending:
-        host.presentationActive && host.customizeSettings.dirty
-        && host.navigation.activeRouteComponent !== "customize"
+        host.presentationActive && host.customizeSettings?.dirty
+        && host.navigation?.activeRouteComponent !== "customize"
 
     readonly property Loader currentLoader: customizeDeparturePending
         ? customizeLoader
-        : !navigation.activeRouteAvailable
+        : !navigation?.activeRouteAvailable
         ? unavailableLoader
-        : navigation.activeRouteComponent === "notifications"
+        : navigation?.activeRouteComponent === "notifications"
           ? notificationsLoader
-          : navigation.activeRouteComponent === "appearance"
+          : navigation?.activeRouteComponent === "appearance"
             ? appearanceLoader
-            : navigation.activeRouteComponent === "display"
+            : navigation?.activeRouteComponent === "display"
               ? displayLoader
-            : navigation.activeRouteComponent === "network"
+            : navigation?.activeRouteComponent === "network"
               ? networkLoader
-            : navigation.activeRouteComponent === "customize"
+            : navigation?.activeRouteComponent === "customize"
               ? customizeLoader
-            : navigation.activeRouteComponent === "audio"
+            : navigation?.activeRouteComponent === "audio"
               ? audioLoader
-            : navigation.activeRouteComponent === "bluetooth"
+            : navigation?.activeRouteComponent === "bluetooth"
               ? bluetoothLoader
-            : navigation.activeRouteComponent === "power"
+            : navigation?.activeRouteComponent === "power"
               ? powerLoader
-            : navigation.activeRouteComponent === "clipboard"
+            : navigation?.activeRouteComponent === "clipboard"
               ? clipboardLoader
-            : navigation.activeRouteComponent === "color"
+            : navigation?.activeRouteComponent === "color"
               ? colorLoader
-            : navigation.activeRouteComponent === "accessibility"
+            : navigation?.activeRouteComponent === "accessibility"
               ? accessibilityLoader
-            : navigation.activeRouteComponent === "input"
+            : navigation?.activeRouteComponent === "input"
               ? inputLoader
-            : navigation.activeRouteComponent === "streaming"
+            : navigation?.activeRouteComponent === "streaming"
               ? streamingLoader
-            : navigation.activeRouteComponent === "datetime"
+            : navigation?.activeRouteComponent === "datetime"
               ? dateTimeLoader
-            : navigation.activeRouteComponent === "windows" ? windowsLoader
-            : navigation.activeRouteComponent === "default-apps" ? defaultApplicationsLoader
-            : navigation.activeRouteComponent === "about-computer" ? aboutComputerLoader
-            : navigation.activeRouteComponent === "startup" ? startupLoader
-            : navigation.activeRouteComponent === "screensaver" ? screensaverLoader
-            : navigation.activeRouteComponent === "login-screen" ? loginScreenLoader
-            : navigation.activeRouteComponent === "voice" ? voiceLoader
+            : navigation?.activeRouteComponent === "windows" ? windowsLoader
+            : navigation?.activeRouteComponent === "default-apps" ? defaultApplicationsLoader
+            : navigation?.activeRouteComponent === "about-computer" ? aboutComputerLoader
+            : navigation?.activeRouteComponent === "startup" ? startupLoader
+            : navigation?.activeRouteComponent === "screensaver" ? screensaverLoader
+            : navigation?.activeRouteComponent === "login-screen" ? loginScreenLoader
+            : navigation?.activeRouteComponent === "voice" ? voiceLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -116,7 +116,7 @@ Item {
     // reconstruction destroys this host. The active host must keep loading the
     // dialog until Cancel or Discard resolves that shared close decision.
     function requestApplicationClose() {
-        if (!host.presentationActive || !host.customizeSettings.dirty) {
+        if (!host.presentationActive || !host.customizeSettings?.dirty) {
             return false
         }
         if (customizeLoader.item !== null) {
@@ -131,8 +131,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "notifications"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "notifications"
         sourceComponent: host.notificationsComponent
     }
 
@@ -142,8 +142,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "appearance"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "appearance"
         sourceComponent: host.appearanceComponent
     }
 
@@ -153,8 +153,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "display"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "display"
                 && host.displayComponent !== null
         sourceComponent: host.displayComponent
     }
@@ -165,8 +165,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "network"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "network"
                 && host.networkComponent !== null
         sourceComponent: host.networkComponent
     }
@@ -176,8 +176,8 @@ Item {
         objectName: host.objectNamePrefix + "CustomizeLoader"
         anchors.fill: parent
         active: host.presentationActive
-                && ((host.navigation.activeRouteAvailable
-                     && host.navigation.activeRouteComponent === "customize")
+                && ((host.navigation?.activeRouteAvailable
+                     && host.navigation?.activeRouteComponent === "customize")
                     || host.customizeDeparturePending
                     || host.applicationClosePending)
         sourceComponent: customizeRouteComponent
@@ -205,8 +205,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "audio"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "audio"
                 && host.audioComponent !== null
         sourceComponent: host.audioComponent
     }
@@ -217,8 +217,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "bluetooth"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "bluetooth"
                 && host.bluetoothComponent !== null
         sourceComponent: host.bluetoothComponent
     }
@@ -229,8 +229,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "power"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "power"
                 && host.powerComponent !== null
         sourceComponent: host.powerComponent
     }
@@ -241,8 +241,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "clipboard"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "clipboard"
                 && host.clipboardComponent !== null
         sourceComponent: host.clipboardComponent
     }
@@ -253,8 +253,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "color"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "color"
                 && host.colorComponent !== null
         sourceComponent: host.colorComponent
     }
@@ -268,8 +268,8 @@ Item {
         // explicit unavailable notice instead of binding against null.
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "accessibility"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "accessibility"
                 && host.accessibilityComponent !== null
                 && host.accessibilitySettings !== null
         sourceComponent: host.accessibilityComponent
@@ -285,8 +285,8 @@ Item {
         // when the input authorities are unreachable (ADR-0134).
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "input"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "input"
                 && host.inputComponent !== null
         sourceComponent: host.inputComponent
     }
@@ -303,8 +303,8 @@ Item {
         // degraded truth when any of them is absent.
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "streaming"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "streaming"
                 && host.streamingComponent !== null
         sourceComponent: host.streamingComponent
     }
@@ -318,8 +318,8 @@ Item {
         // the platform clock service cannot be reached (ADR-0211).
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "datetime"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "datetime"
                 && host.dateTimeComponent !== null
         sourceComponent: host.dateTimeComponent
     }
@@ -330,8 +330,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "default-apps"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "default-apps"
                 && host.defaultApplicationsComponent !== null
         sourceComponent: host.defaultApplicationsComponent
     }
@@ -342,8 +342,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "about-computer"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "about-computer"
                 && host.aboutComputerComponent !== null
         sourceComponent: host.aboutComputerComponent
     }
@@ -354,8 +354,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "startup"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "startup"
                 && host.startupComponent !== null
         sourceComponent: host.startupComponent
     }
@@ -371,8 +371,8 @@ Item {
         // (ADR-0226).
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "screensaver"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "screensaver"
                 && host.screensaverComponent !== null
         sourceComponent: host.screensaverComponent
     }
@@ -383,8 +383,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "login-screen"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "login-screen"
                 && host.loginScreenComponent !== null
         sourceComponent: host.loginScreenComponent
     }
@@ -395,8 +395,8 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation.activeRouteAvailable
-                && host.navigation.activeRouteComponent === "voice"
+                && host.navigation?.activeRouteAvailable
+                && host.navigation?.activeRouteComponent === "voice"
                 && host.voiceComponent !== null
         sourceComponent: host.voiceComponent
     }

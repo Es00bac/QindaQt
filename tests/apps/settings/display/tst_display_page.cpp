@@ -19,6 +19,9 @@
 #include <QTest>
 #include <QUrl>
 
+#include <memory>
+#include <utility>
+
 namespace {
 
 namespace PageSupport = QindaQt::Tests::DisplayPageSupport;
@@ -46,6 +49,7 @@ private Q_SLOTS:
   void testDisabledConnectedOutputCanBeEnabled();
   void testUnavailableNoticeAndRetry();
   void testPreviewBannerAndTransactionActions();
+  void testNullModelBindsWithoutTypeErrors();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -68,6 +72,70 @@ void DisplayPageTest::initTestCase() {
   QVERIFY2(facade->publish(loaded.theme, {}, &pubError), qPrintable(pubError));
 
   m_model = std::make_unique<StubDisplayModel>();
+}
+
+namespace {
+
+// QML binding errors surface as qWarning() lines, which is exactly how they
+// reached the session log. Capture them so a test can assert their absence.
+QStringList g_capturedWarnings;
+QtMessageHandler g_previousHandler = nullptr;
+
+void captureWarnings(QtMsgType type, const QMessageLogContext &context,
+                     const QString &message) {
+  if (type == QtWarningMsg) {
+    g_capturedWarnings.append(message);
+  }
+  if (g_previousHandler != nullptr) {
+    g_previousHandler(type, context, message);
+  }
+}
+
+} // namespace
+
+// The Display route is handed `displaySettings: null` whenever the page is
+// constructed before its model is assigned, and again while the route is torn
+// down. Bindings that dereferenced through it threw, and a thrown binding does
+// not merely log -- the whole binding fails, so `candidates` evaluated empty
+// and the mirror control disabled itself. One session logged 110 of these from
+// SettingsRouteHost alone.
+void DisplayPageTest::testNullModelBindsWithoutTypeErrors() {
+  g_capturedWarnings.clear();
+  g_previousHandler = qInstallMessageHandler(captureWarnings);
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"), QVariant::fromValue<QObject *>(nullptr)},
+  });
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  if (pageObj != nullptr) {
+    if (auto *pageItem = qobject_cast<QQuickItem *>(pageObj)) {
+      PageSupport::attachPage(*m_view, *pageItem);
+      QTest::qWait(50);
+    }
+  }
+
+  qInstallMessageHandler(g_previousHandler);
+  g_previousHandler = nullptr;
+
+  QStringList typeErrors;
+  for (const QString &warning : std::as_const(g_capturedWarnings)) {
+    // Not just TypeError: replacing a throw with an undefined assignment
+    // would trade one warning for another and still leave the binding wrong.
+    if (warning.contains(QStringLiteral("TypeError"))
+        || warning.contains(QStringLiteral("Unable to assign"))) {
+      typeErrors.append(warning);
+    }
+  }
+  QVERIFY2(typeErrors.isEmpty(),
+           qPrintable(QStringLiteral("null displaySettings produced %1 binding "
+                                     "error(s):\n%2")
+                          .arg(typeErrors.size())
+                          .arg(typeErrors.join(QLatin1Char('\n')))));
+  QVERIFY(pageObj != nullptr);
 }
 
 void DisplayPageTest::testPageRenderingAndControls() {
