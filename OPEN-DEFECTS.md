@@ -14,12 +14,15 @@ that ambiguity.
 
 | | |
 | --- | --- |
-| Fixed on this branch | #1, #2, #6, #8, #11, #12, #13, half of #14 |
+| Fixed | #0, #1, #2, #6, #8, #10, #11, #12, #13, #14 (harness) |
 | Withdrawn, not a defect | #3 |
 | Decided + diagnosed, symptom unchanged | #4 (ADR-0237) |
-| Still open | #0, #5, #7, #9, #10, rest of #14, #15 |
+| Answered, no code change | #5 (it is Qt/Mesa) |
+| Half done | #15 (merged, not re-pinned) |
+| Still open | #7, #9, #14 (baselines), #16 |
 
-Branch head is `06e2370c`. **The installed package is
+Branch head is `70fcae96`, and `main` is fast-forwarded to it — locally, not
+pushed. **The installed package is
 `gui-wm/qindaqt-desktop-0.1.0_pre20260921-r10`, which pins `fcce2203`.**
 Everything marked fixed is fixed in git and *not* on the running desktop until
 a package cut and a shell restart. Nothing below was validated against a
@@ -237,9 +240,19 @@ Every rejection now names the member and the cause — eight window conditions,
 the duplicate-active check, and four output conditions, each distinct and
 carrying the identifier and offending geometry.
 
-**This does not reduce the rejection rate.** It makes the next session's log
-say which of thirteen causes produced it. See item #0: the answer on the
-running desktop appears to be condition 5, persistently.
+**This does not reduce the rejection rate by itself.** It makes the next
+session's log say which of thirteen causes produced it.
+
+**The live case is now fixed at its root** (item #0): a container stranded by a
+removed output is relocated, so condition 5 should go back to being the
+transient race the original entry assumed. That removes the argument for
+excluding off-output windows from the batch — with the root cause fixed, a
+window outside its output is once again a momentary state that the next
+snapshot corrects, which is exactly the case atomicity handles well.
+
+So ADR-0237 stands as written, and its "revisit when" is now narrower: revisit
+only if a *new* session's log shows a condition dominating after the container
+fix is live.
 
 ---
 
@@ -572,11 +585,21 @@ like part of the same noise.
 
 ---
 
-## 15. Branch not merged — OPEN
+## 15. Branch not merged — HALF DONE
 
-The r9 and r10 ebuilds pin commits on
-`fix/panel-visibility-and-hotplug-defects`, not on `main`. Merge and re-pin, or
-the overlay depends on a branch. The branch has since grown eight more commits.
+`main` is now fast-forwarded to the branch head. It was a clean fast-forward —
+`main` was a strict ancestor, no divergence, no merge commit, nothing rewritten.
+
+```console
+$ git merge --ff-only fix/panel-visibility-and-hotplug-defects
+Updating 535ee51d..70fcae96
+```
+
+**Local only — not pushed**, and the ebuilds are **not re-pinned**. Both r9 and
+r10 still pin commits on the branch, so the overlay still depends on it until
+the next package cut updates `QINDAQT_COMMIT`. That cut is the remaining half.
+
+To undo the merge: `git branch -f main 535ee51d`.
 
 ---
 
