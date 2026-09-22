@@ -170,6 +170,7 @@ private Q_SLOTS:
     void keyboardResizeComposesWithAspectPin();
     void aspectPinValidationContentRatioHelperAndForget();
     void reflowsContainersStrandedOffEveryOutput();
+    void absorbsTheRestOfAGestureWhoseBeginWasRefused();
 };
 
 // A container left entirely outside the work area when its display was
@@ -179,6 +180,51 @@ private Q_SLOTS:
 // user is left with a container whose title bar is off-screen and therefore
 // cannot be dragged back, and every visibility snapshot is rejected because a
 // managed window lies outside its own output. See OPEN-DEFECTS.md item 0.
+// Dragging a maximized container refuses Begin, but the interaction controller
+// keeps sending Update for the rest of the gesture. Re-reporting the refusal
+// once per pointer motion event put 128 lines in one session log from a
+// handful of drags, drowning the channel a real interaction failure uses.
+// See OPEN-DEFECTS.md item 10.
+void HybridContainerPlacementTest::absorbsTheRestOfAGestureWhoseBeginWasRefused()
+{
+    Fixture fixture;
+    const QString group = QStringLiteral("group");
+    QVERIFY(fixture.controller.maximize(group));
+
+    // Begin still says why, exactly once.
+    auto begin = fixture.controller.handleMove(moveIntent(HybridInput::IntentPhase::Begin));
+    QVERIFY(!begin.accepted);
+    QVERIFY(begin.message.contains(QStringLiteral("restore a maximized container")));
+    QVERIFY(fixture.controller.gestureRefused(group));
+
+    // Every subsequent motion is absorbed silently rather than re-reported.
+    for (int motion = 0; motion != 5; ++motion) {
+        const auto update = fixture.controller.handleMove(
+            moveIntent(HybridInput::IntentPhase::Update, QPointF(motion, motion)));
+        QVERIFY2(update.accepted, qPrintable(update.message));
+        QVERIFY(update.message.isEmpty());
+    }
+
+    // The end of the gesture clears the suppression.
+    const auto commit = fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Commit));
+    QVERIFY(commit.accepted);
+    QVERIFY(!fixture.controller.gestureRefused(group));
+
+    // A genuinely missing baseline, with no refused Begin before it, is still
+    // reported -- that is a real anomaly and must not be swallowed.
+    const auto orphan = fixture.controller.handleMove(
+        moveIntent(HybridInput::IntentPhase::Update, QPointF(4, 4)));
+    QVERIFY(!orphan.accepted);
+    QCOMPARE(orphan.message, QStringLiteral("container move has no active baseline"));
+
+    // A Begin that succeeds leaves no suppression behind.
+    QVERIFY(fixture.controller.restore(group));
+    QVERIFY(fixture.controller.handleMove(moveIntent(HybridInput::IntentPhase::Begin)).accepted);
+    QVERIFY(!fixture.controller.gestureRefused(group));
+    QVERIFY(fixture.controller.handleMove(moveIntent(HybridInput::IntentPhase::Cancel)).accepted);
+}
+
 void HybridContainerPlacementTest::reflowsContainersStrandedOffEveryOutput()
 {
     Fixture fixture;

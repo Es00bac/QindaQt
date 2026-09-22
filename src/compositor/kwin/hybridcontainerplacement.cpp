@@ -198,17 +198,30 @@ DirectInteractionResult HybridContainerPlacementController::handleMove(
     }
     QString error;
     if (intent.phase == HybridInput::IntentPhase::Begin) {
+        m_refusedGestures.remove(containerId);
         if (isMaximized(containerId)) {
+            m_refusedGestures.insert(containerId);
             return DirectInteractionResult::rejected(
                 QStringLiteral("restore a maximized container before moving it"));
         }
-        return beginDrag(m_moveDrags, containerId, {}, &error)
-            ? DirectInteractionResult::handled()
-            : DirectInteractionResult::rejected(std::move(error));
+        if (beginDrag(m_moveDrags, containerId, {}, &error)) {
+            return DirectInteractionResult::handled();
+        }
+        m_refusedGestures.insert(containerId);
+        return DirectInteractionResult::rejected(std::move(error));
     }
 
     auto found = m_moveDrags.find(containerId);
     if (found == m_moveDrags.end()) {
+        // This gesture's Begin was already refused and said why. The
+        // interaction controller keeps sending phases regardless, so absorb
+        // them instead of repeating the refusal once per motion event.
+        if (m_refusedGestures.contains(containerId)) {
+            if (intent.phase != HybridInput::IntentPhase::Update) {
+                m_refusedGestures.remove(containerId);
+            }
+            return DirectInteractionResult::handled();
+        }
         return DirectInteractionResult::rejected(
             QStringLiteral("container move has no active baseline"));
     }
@@ -308,7 +321,9 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
     const auto &containerId = interactionContainerId(intent);
     QString error;
     if (intent.phase == HybridInput::IntentPhase::Begin) {
+        m_refusedGestures.remove(containerId);
         if (isMaximized(containerId)) {
+            m_refusedGestures.insert(containerId);
             return DirectInteractionResult::rejected(
                 QStringLiteral("restore a maximized container before resizing it"));
         }
@@ -317,16 +332,25 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
         // frame the compositor never solved a real layout for. Move remains
         // allowed while shaded (that is the point of a movable strip).
         if (isShaded(containerId)) {
+            m_refusedGestures.insert(containerId);
             return DirectInteractionResult::rejected(
                 QStringLiteral("unroll a shaded container before resizing it"));
         }
-        return beginDrag(m_resizeDrags, containerId, intent.source.edges, &error)
-            ? DirectInteractionResult::handled()
-            : DirectInteractionResult::rejected(std::move(error));
+        if (beginDrag(m_resizeDrags, containerId, intent.source.edges, &error)) {
+            return DirectInteractionResult::handled();
+        }
+        m_refusedGestures.insert(containerId);
+        return DirectInteractionResult::rejected(std::move(error));
     }
 
     auto found = m_resizeDrags.find(containerId);
     if (found == m_resizeDrags.end()) {
+        if (m_refusedGestures.contains(containerId)) {
+            if (intent.phase != HybridInput::IntentPhase::Update) {
+                m_refusedGestures.remove(containerId);
+            }
+            return DirectInteractionResult::handled();
+        }
         return DirectInteractionResult::rejected(
             QStringLiteral("container resize has no active baseline"));
     }
@@ -584,14 +608,22 @@ void HybridContainerPlacementController::forgetContainer(
 {
     m_moveDrags.remove(containerId);
     m_resizeDrags.remove(containerId);
+    m_refusedGestures.remove(containerId);
     m_maximizeRestoreFrames.remove(containerId);
     m_aspectPins.remove(containerId);
     m_shadeStripFrames.remove(containerId);
     m_shadeRestoreSizes.remove(containerId);
 }
 
+bool HybridContainerPlacementController::gestureRefused(
+    const QString &containerId) const noexcept
+{
+    return m_refusedGestures.contains(containerId);
+}
+
 void HybridContainerPlacementController::cancelAll() noexcept
 {
+    m_refusedGestures.clear();
     m_moveDrags.clear();
     m_resizeDrags.clear();
 }
