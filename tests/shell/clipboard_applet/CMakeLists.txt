@@ -353,3 +353,18 @@ set_tests_properties(
     qindaqt.clipboard-applet-runtime-installed-package
     PROPERTIES LABELS "shell;clipboard;installed;poison" RUN_SERIAL TRUE TIMEOUT 90
 )
+
+# AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
+# platform. Without this they default to xcb and abort before their first
+# assertion on any machine with no display -- a headless runner, or a
+# developer on a VT -- which reads as a real failure and is not one. Every
+# one of them passes under offscreen. Keep this list in step with the rows
+# above; a new GUI row added without it fails the same way.
+set_tests_properties(
+    qindaqt.clipboard-applet-admission
+    qindaqt.clipboard-applet-controller
+    qindaqt.clipboard-applet-fencing
+    qindaqt.clipboard-applet-seam
+    qindaqt.clipboard-applet-snapshot-invariants
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

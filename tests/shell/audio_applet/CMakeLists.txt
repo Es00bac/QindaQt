@@ -221,3 +221,14 @@ if(TARGET qindaqt-shell)
         PROPERTIES LABELS "shell;runtime;installed;hostile" TIMEOUT 60
     )
 endif()
+
+# AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
+# platform. Without this they default to xcb and abort before their first
+# assertion on any machine with no display -- a headless runner, or a
+# developer on a VT -- which reads as a real failure and is not one. Every
+# one of them passes under offscreen. Keep this list in step with the rows
+# above; a new GUI row added without it fails the same way.
+set_tests_properties(
+    qindaqt.audio-applet-coalescing
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
