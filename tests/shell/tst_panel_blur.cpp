@@ -12,6 +12,7 @@ private slots:
   void emptyBoundsAndEmptyWindowsGiveEmptyRegions();
   void boundsAreClippedToTheWindowRect();
   void validBoundsProduceOneRect();
+  void everyPanelSharesOneManagerBinding();
 };
 
 void PanelBlurTests::emptyBoundsAndEmptyWindowsGiveEmptyRegions() {
@@ -33,6 +34,22 @@ void PanelBlurTests::validBoundsProduceOneRect() {
       PanelSurfaceBlur::regionForBounds(QRectF(4, 4, 300, 60), QSize(400, 80));
   QCOMPARE(region.rectCount(), 1);
   QCOMPARE(region.boundingRect(), QRect(4, 4, 300, 60));
+}
+
+// org_kde_kwin_blur_manager is a global. One binding per panel window meant a
+// fresh registry binding for every panel on every output-generation change,
+// because the shell republishes the whole panel set each time.
+void PanelBlurTests::everyPanelSharesOneManagerBinding() {
+  QCOMPARE(PanelSurfaceBlur::liveManagerBindings(), 0);
+  {
+    PanelSurfaceBlur first;
+    PanelSurfaceBlur second;
+    PanelSurfaceBlur third;
+    QCOMPARE(PanelSurfaceBlur::liveManagerBindings(), 1);
+  }
+  // ...and the binding goes with the last panel, rather than outliving
+  // QGuiApplication, which a plain function-static manager would do.
+  QCOMPARE(PanelSurfaceBlur::liveManagerBindings(), 0);
 }
 
 QTEST_GUILESS_MAIN(PanelBlurTests)

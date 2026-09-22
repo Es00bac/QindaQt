@@ -28,9 +28,41 @@ public:
     BlurManagerExtension()
         : QWaylandClientExtensionTemplate<BlurManagerExtension>(1)
     {
+        ++liveBindings;
         initialize();
     }
+
+    ~BlurManagerExtension() override { --liveBindings; }
+
+    static inline int liveBindings = 0;
 };
+
+namespace {
+
+// AGENT-NOTE: one registry binding for the whole process, not one per panel
+// window. org_kde_kwin_blur_manager is a global; binding it per window bound a
+// fresh copy for every panel, and the shell republishes its entire panel set
+// on every output-generation change, so the count grew with each hotplug.
+//
+// Held by weak_ptr rather than a plain function static so the manager is
+// destroyed with the last PanelSurfaceBlur instead of outliving
+// QGuiApplication -- a Wayland client extension torn down after the platform
+// integration crashes at exit.
+//
+// AGENT-CONTRACT: GUI thread only, matching PanelSurfaceBlur's own contract.
+// There is no lock here and none is needed while that holds.
+[[nodiscard]] std::shared_ptr<BlurManagerExtension> sharedBlurManager()
+{
+    static std::weak_ptr<BlurManagerExtension> existing;
+    std::shared_ptr<BlurManagerExtension> manager = existing.lock();
+    if (!manager) {
+        manager = std::make_shared<BlurManagerExtension>();
+        existing = manager;
+    }
+    return manager;
+}
+
+} // namespace
 
 struct PanelSurfaceBlur::BlurObject
 {
@@ -58,7 +90,7 @@ namespace {
 
 PanelSurfaceBlur::PanelSurfaceBlur(QObject *parent)
     : QObject(parent)
-    , m_manager(std::make_unique<BlurManagerExtension>())
+    , m_manager(sharedBlurManager())
 {
     connect(m_manager.get(), &QWaylandClientExtension::activeChanged, this,
             &PanelSurfaceBlur::pushRegion);
@@ -105,6 +137,11 @@ QRegion PanelSurfaceBlur::regionForBounds(const QRectF &bounds,
     }
     const QRect windowRect(QPoint(0, 0), windowSize);
     return QRegion(bounds.toAlignedRect()).intersected(windowRect);
+}
+
+int PanelSurfaceBlur::liveManagerBindings() noexcept
+{
+    return BlurManagerExtension::liveBindings;
 }
 
 void PanelSurfaceBlur::pushRegion()
@@ -189,6 +226,11 @@ QRegion PanelSurfaceBlur::regionForBounds(const QRectF &bounds,
     }
     return QRegion(bounds.toAlignedRect())
         .intersected(QRect(QPoint(0, 0), windowSize));
+}
+
+int PanelSurfaceBlur::liveManagerBindings() noexcept
+{
+    return 0;
 }
 
 void PanelSurfaceBlur::pushRegion()

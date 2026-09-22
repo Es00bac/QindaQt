@@ -102,6 +102,16 @@ PanelVisibilityRuntime::PanelVisibilityRuntime(
                     applySettings(settings.snapshot()->values);
                 }
             });
+    // AGENT-GUARD: without this the hide path depends on an accident. The
+    // fade-completion callback releases the visibility-hold lease, and that
+    // release happens to emit PanelInteractionStore::interactionsChanged,
+    // which the shell runtime turns into a debounced reconcile. Nothing
+    // declares that dependency, so a future change to the hold's lifetime
+    // would silently leave faded-out panels mapped at zero opacity --
+    // invisible but still taking input. Forward the producer's own signal.
+    connect(&m_private->animation,
+            &PanelVisibilityAnimationProducer::reconcileRequested, this,
+            &PanelVisibilityRuntime::reconcileRequested);
     if (!m_private->shortcut.registrationRequestAccepted()) {
         qWarning().noquote()
             << "QindaQt shell could not submit the panel reveal shortcut;"

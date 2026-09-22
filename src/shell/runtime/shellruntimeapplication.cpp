@@ -432,6 +432,12 @@ void ShellRuntimeApplication::initializePanelVisibility(
     connect(m_interactions.get(),
             &ShellOrchestration::PanelInteractionStore::interactionsChanged,
             this, &ShellRuntimeApplication::scheduleOutputReconcile);
+    // A finished hide fade must reach the reconcile explicitly; see the guard
+    // in PanelVisibilityRuntime's constructor. The reconcile is debounced, so
+    // arriving here as well as through the lease release costs nothing.
+    connect(m_panelVisibility.get(),
+            &PanelVisibilityRuntime::reconcileRequested, this,
+            &ShellRuntimeApplication::scheduleOutputReconcile);
 }
 
 void ShellRuntimeApplication::initializeDesktopControls(
