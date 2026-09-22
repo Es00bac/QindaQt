@@ -33,6 +33,9 @@ public:
     // These are the toolkit-adapter boundary and deterministic unit-test seam.
     void pointerEntered(const ShellVisibility::PanelSurfaceIdentity &identity);
     void pointerLeft(const ShellVisibility::PanelSurfaceIdentity &identity);
+    // A foreground transition invalidates containment inherited on the
+    // affected output. A fresh edge/panel Enter can acquire a new reveal.
+    void clearReveals(const QString &outputId);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

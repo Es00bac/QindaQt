@@ -17,6 +17,13 @@ bool rectanglesIntersect(const QRect &left, const QRect &right) {
          static_cast<qint64>(right.top()) <= left.bottom();
 }
 
+bool rectangleContains(const QRect &outer, const QRect &inner) {
+  return static_cast<qint64>(outer.left()) <= inner.left() &&
+         static_cast<qint64>(inner.right()) <= outer.right() &&
+         static_cast<qint64>(outer.top()) <= inner.top() &&
+         static_cast<qint64>(inner.bottom()) <= outer.bottom();
+}
+
 bool belongsToScope(const LogicalWindowSnapshot &window,
                     const DesktopScopeSnapshot &scope) {
   const bool workspaceMatches =
@@ -66,6 +73,28 @@ firstMaximizedOnOutput(const PanelVisibilitySnapshot &panel,
   return nullptr;
 }
 
+const LogicalWindowSnapshot *
+firstActiveOutputCover(const PanelVisibilitySnapshot &panel,
+                       const PanelVisibilityInventory &inventory) {
+  // KWin can retain maximized state while entering fullscreen. Its explicit
+  // fullscreen fact wins; legacy publishers without that field use coverage
+  // only for non-maximized windows, keeping ordinary maximized panels revealable.
+  for (const auto &output : inventory.outputs) {
+    if (output.id != panel.identity.outputId) {
+      continue;
+    }
+    for (const auto &window : inventory.windows) {
+      if (belongsToScope(window, inventory.scope) && window.active &&
+          (window.fullscreen || !window.maximized) &&
+          rectangleContains(window.frameGeometry, output.geometry)) {
+        return &window;
+      }
+    }
+    break;
+  }
+  return nullptr;
+}
+
 PanelVisibilityDecision visibleDecision(const PanelVisibilitySnapshot &panel,
                                         PanelVisibilityReason reason) {
   const auto reservation =
@@ -92,6 +121,11 @@ evaluatePanel(const PanelVisibilitySnapshot &panel,
   // turn an always-visible panel into a hidden one.
   if (panel.hideMode == Profiles::HideMode::Never) {
     return visibleDecision(panel, PanelVisibilityReason::NeverMode);
+  }
+  if (const auto *cover = firstActiveOutputCover(panel, inventory)) {
+    return hiddenDecision(panel,
+                          PanelVisibilityReason::ActiveWindowCoversOutput,
+                          cover);
   }
   if (interaction != nullptr && interaction->visibilityHeld) {
     return visibleDecision(panel, PanelVisibilityReason::VisibilityHeld);
