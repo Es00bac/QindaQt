@@ -27,6 +27,8 @@ private slots:
     void unavailableSnapshotFailsClosedWithReason();
     void grantsGateReadAndControlIndependently();
     void ownerReplacementClearsTruthAndPendingWithoutReplay();
+    void pickingADeviceSetsTheSystemDefault();
+    void defaultRequestIsRefusedWithoutTheCapability();
 
 };
 
@@ -366,6 +368,77 @@ void AudioAppletControllerTests::
                                    true, withEpoch(makeReadySnapshot(), kEpoch + 1));
     QCOMPARE(m_controller->phaseText(), QStringLiteral("ready"));
     QCOMPARE(m_controller->deviceRows().size(), 3);
+}
+
+
+// Regression. The applet's output picker used to choose only which device the
+// band's fader and mute addressed; it did not set the system default, and its
+// contract said it "must not appear to". It did appear to. A user connected a
+// Bluetooth speaker, picked it in this list, watched the picker show it, and
+// heard sound keep coming from the laptop with nothing anywhere saying why.
+// The live cause was a configured default naming an absent device, which the
+// applet offered no way to correct. See ADR-0238.
+void AudioAppletControllerTests::pickingADeviceSetsTheSystemDefault()
+{
+    // Two outputs, like the machine this was found on: the built-in speakers
+    // are default, a connected Bluetooth speaker is not.
+    Snapshot snapshot;
+    snapshot.schemaVersion = QindaQt::Audio::kSchemaVersion;
+    snapshot.epoch = kEpoch;
+    snapshot.revision = kRevision;
+    snapshot.availability = Availability::Ready;
+    snapshot.capabilities = Capabilities(Capability::SetVolume)
+        | Capability::SetMute | Capability::SetDefault;
+    Device builtIn = makeDevice(1, DeviceKind::Output,
+                                QStringLiteral("Built-in Speakers"), true);
+    Device bluetooth = makeDevice(2, DeviceKind::Output,
+                                  QStringLiteral("JLab GO Party"), false);
+    snapshot.defaultOutput = builtIn.handle;
+    snapshot.outputs.append(builtIn);
+    snapshot.outputs.append(bluetooth);
+    Device microphone = makeDevice(3, DeviceKind::Input,
+                                   QStringLiteral("Webcam Microphone"), true);
+    snapshot.defaultInput = microphone.handle;
+    snapshot.inputs.append(microphone);
+
+    m_client->start();
+    m_transport->changeOwner(kOwner);
+    QVERIFY(!m_transport->fetches.isEmpty());
+    m_transport->deliverSnapshot(m_transport->fetches.constLast().requestId,
+                                 true, snapshot);
+    QCOMPARE(m_controller->phaseText(), QStringLiteral("ready"));
+
+    // Picking the non-default speaker dispatches a real routing change.
+    QVERIFY(m_controller->requestDefault(2));
+    QCOMPARE(m_transport->submissions.size(), 1);
+    QCOMPARE(m_transport->submissions.constFirst().request.kind,
+             OperationKind::SetDefault);
+    QCOMPARE(m_transport->submissions.constFirst().request.primary.serial, 2ULL);
+
+    // Re-picking the device that is already default succeeds without spending
+    // a second request; the picker calls this on every activation.
+    QVERIFY(m_controller->requestDefault(1));
+    QCOMPARE(m_transport->submissions.size(), 1);
+
+    // A device that has left the graph is refused, not dispatched blindly.
+    QVERIFY(!m_controller->requestDefault(99));
+    QCOMPARE(m_transport->submissions.size(), 1);
+    QCOMPARE(m_controller->feedback(),
+             AudioAppletController::tr("That device is no longer listed."));
+}
+
+// The shared fixture publishes SetVolume|SetMute and no SetDefault, which is
+// what a service that cannot change routing reports. The applet must refuse
+// locally rather than dispatch an operation the service would reject.
+void AudioAppletControllerTests::defaultRequestIsRefusedWithoutTheCapability()
+{
+    publishReadySnapshot();
+
+    QVERIFY(!m_controller->requestDefault(1));
+    QCOMPARE(m_transport->submissions.size(), 0);
+    QCOMPARE(m_controller->feedback(),
+             AudioAppletController::tr(
+                 "This system does not allow changing the default device."));
 }
 
 QTEST_GUILESS_MAIN(AudioAppletControllerTests)
