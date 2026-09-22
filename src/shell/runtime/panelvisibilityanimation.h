@@ -17,6 +17,11 @@ class PanelInteractionStore;
 
 namespace QindaQt::Shell {
 
+// AGENT-CONTRACT: the port owns *what* is faded. Callers name a panel window
+// and a 0..1 progression; they must not set opacity on the QWindow themselves,
+// because the production port does not fade the window (the Wayland platform
+// implements no window opacity - see ADR-0236) and a caller that reset the
+// wrong property would strand a panel part-faded.
 class PanelVisibilityAnimationPort {
 public:
     virtual ~PanelVisibilityAnimationPort() = default;
@@ -24,6 +29,10 @@ public:
                          int durationMilliseconds,
                          std::function<void()> completed) = 0;
     virtual void cancel(QWindow &window) = 0;
+    // Stops any running fade and returns the surface to fully opaque. This is
+    // the only supported way to abandon a transition: cancel() alone leaves
+    // the surface at whatever partial opacity it had reached.
+    virtual void restore(QWindow &window) = 0;
 };
 
 class QtPanelVisibilityAnimation final : public QObject,
@@ -37,6 +46,7 @@ public:
                  int durationMilliseconds,
                  std::function<void()> completed) override;
     void cancel(QWindow &window) override;
+    void restore(QWindow &window) override;
 
 private:
     class Private;

@@ -112,6 +112,15 @@ The production shell now owns the following producers behind that store:
   then requests the authoritative plan again before unmapping. Reveal animates
   the already-authorized mapped surface back to full opacity.
 
+The fade moves the panel's **scene root**, not its `QWindow`: Qt's Wayland
+platform implements no window opacity, so animating the window faded nothing
+and logged once per frame (see
+[ADR-0236](../adr/0236-fade-the-scene-root-not-the-panel-window.md)).
+`PanelVisibilityAnimationPort` owns that choice. Producers name a window and a
+0..1 progression and **must not set opacity themselves**; a transition is
+abandoned through `restore()`, which stops the fade and returns the surface to
+opaque. `cancel()` alone leaves it part-transparent.
+
 The final unmap crosses an asynchronous layer-shell boundary. After the
 animation lease is released and the shell hides the window, compositor
 authority may briefly retain the old mapped/committed role while its geometry
@@ -131,8 +140,9 @@ settings keep the safe defaults: reduced motion is enabled and the leave delay
 is 250 ms. Reduced motion caps the selected theme duration at 80 ms; normal
 motion uses the theme duration, bounded to one second. A private-bus Settings1
 round trip pins that production representation. Loss or rejection of
-compositor authority cancels transitions, restores full opacity, and leaves
-policy in its existing safe-visible state. Producers never set mapping,
+compositor authority cancels transitions, restores full opacity through the
+animation port's `restore()`, and leaves policy in its existing safe-visible
+state. Producers never set mapping,
 reservation, or window inventory directly.
 
 ## Installed interaction qualification

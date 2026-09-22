@@ -7,6 +7,8 @@
 #include <QHash>
 #include <QPointer>
 #include <QPropertyAnimation>
+#include <QQuickItem>
+#include <QQuickWindow>
 #include <QSet>
 #include <QWindow>
 
@@ -48,6 +50,31 @@ QWindow *findPanelWindow(QGuiApplication &application, const Identity &identity)
     return nullptr;
 }
 
+// AGENT-NOTE: fade the scene root, not the window. Qt's Wayland platform
+// implements no window opacity - QWaylandWindow has no setOpacity override, so
+// QWindow::setOpacity() reaches QPlatformWindow's base implementation, warns
+// "This plugin does not support setting window opacity", and changes nothing.
+// The panel's pixels live in the QQuickWindow scene graph, where opacity is
+// honoured, so the content item is the target that actually fades. Verified on
+// Qt 6.11.1 against the session compositor. See ADR-0236.
+//
+// The QWindow fallback is not dead code: it is what an X11 session and the
+// non-Quick test doubles use, and both support window opacity.
+QObject *fadeTarget(QWindow &window)
+{
+    if (auto *const quick = qobject_cast<QQuickWindow *>(&window)) {
+        if (QQuickItem *const root = quick->contentItem()) {
+            return root;
+        }
+    }
+    return &window;
+}
+
+void setFadeOpacity(QWindow &window, qreal value)
+{
+    fadeTarget(window)->setProperty("opacity", value);
+}
+
 } // namespace
 
 class QtPanelVisibilityAnimation::Private final {
@@ -75,15 +102,18 @@ void QtPanelVisibilityAnimation::animate(
     std::function<void()> completed)
 {
     cancel(window);
-    window.setOpacity(from);
+    setFadeOpacity(window, from);
     if (durationMilliseconds <= 0) {
-        window.setOpacity(to);
+        setFadeOpacity(window, to);
         if (completed) {
             completed();
         }
         return;
     }
-    auto *const animation = new QPropertyAnimation(&window, "opacity", this);
+    // Both QQuickItem and QWindow expose a qreal "opacity" property, so the
+    // animation is identical either way; only the target object differs.
+    auto *const animation =
+        new QPropertyAnimation(fadeTarget(window), "opacity", this);
     animation->setStartValue(from);
     animation->setEndValue(to);
     animation->setDuration(durationMilliseconds);
@@ -110,6 +140,12 @@ void QtPanelVisibilityAnimation::cancel(QWindow &window)
         animation->stop();
         delete animation;
     }
+}
+
+void QtPanelVisibilityAnimation::restore(QWindow &window)
+{
+    cancel(window);
+    setFadeOpacity(window, 1.0);
 }
 
 class PanelVisibilityAnimationProducer::Private final {
@@ -172,8 +208,7 @@ bool PanelVisibilityAnimationProducer::synchronize(
         }
         if (!authorityAvailable) {
             if (state.window) {
-                m_private->animation.cancel(*state.window);
-                state.window->setOpacity(1.0);
+                m_private->animation.restore(*state.window);
             }
             state.hold.reset();
             state.phase = Private::Phase::Settled;
@@ -184,7 +219,7 @@ bool PanelVisibilityAnimationProducer::synchronize(
             state.mapping = surface.mapping;
             state.phase = Private::Phase::Settled;
             if (state.window) {
-                state.window->setOpacity(1.0);
+                m_private->animation.restore(*state.window);
             }
             continue;
         }
@@ -193,7 +228,7 @@ bool PanelVisibilityAnimationProducer::synchronize(
         }
         if (state.phase == Private::Phase::CommitHide) {
             if (surface.mapping == ShellSurface::PanelSurfaceMapping::Unmapped) {
-                state.window->setOpacity(1.0);
+                m_private->animation.restore(*state.window);
                 state.mapping = surface.mapping;
                 state.phase = Private::Phase::Settled;
                 continue;
@@ -244,8 +279,9 @@ bool PanelVisibilityAnimationProducer::synchronize(
     for (auto item = m_private->states.begin(); item != m_private->states.end();) {
         if (!admitted.contains(item->first)) {
             if (item->second.window) {
-                m_private->animation.cancel(*item->second.window);
-                item->second.window->setOpacity(1.0);
+                // A panel leaving the admitted set must not be dropped
+                // mid-fade: restore, or it stays part-transparent forever.
+                m_private->animation.restore(*item->second.window);
             }
             item = m_private->states.erase(item);
         } else {

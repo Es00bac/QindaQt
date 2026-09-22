@@ -88,6 +88,15 @@ public:
         ++cancels;
     }
 
+    void restore(QWindow &window) override
+    {
+        cancel(window);
+        ++restores;
+        // The production port fades the scene root, not the window, so the
+        // double records the request rather than touching window opacity.
+        restored = &window;
+    }
+
     void finish()
     {
         auto callback = std::move(completed);
@@ -102,6 +111,8 @@ public:
     int milliseconds = -1;
     int starts = 0;
     int cancels = 0;
+    int restores = 0;
+    QWindow *restored = nullptr;
 };
 
 class NullSettingsTransport final
@@ -251,10 +262,17 @@ void PanelVisibilityProducerTests::animation()
     QVERIFY(!producer.synchronize(plan(ShellSurface::PanelSurfaceMapping::Unmapped),
                                   {identity()}, true, 240));
 
-    panel.setOpacity(0.25);
+    // Losing compositor authority abandons the transition. The panel must be
+    // returned to fully opaque through the port: the production port fades the
+    // QQuickWindow scene root, because the Wayland platform implements no
+    // window opacity, so a producer that reset QWindow::opacity itself would
+    // leave the panel stranded part-faded (ADR-0236).
+    animationPort.restores = 0;
+    animationPort.restored = nullptr;
     QVERIFY(!producer.synchronize(plan(ShellSurface::PanelSurfaceMapping::Unmapped),
                                   {identity()}, false, 240));
-    QCOMPARE(panel.opacity(), 1.0);
+    QCOMPARE(animationPort.restores, 1);
+    QCOMPARE(animationPort.restored, &panel);
 }
 
 void PanelVisibilityProducerTests::reducedMotion()
