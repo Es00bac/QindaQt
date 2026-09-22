@@ -9,6 +9,7 @@
 
 #include <QHash>
 #include <QRect>
+#include <QSet>
 #include <QSize>
 #include <QString>
 #include <QStringList>
@@ -89,6 +90,10 @@ public:
     // Moves rather than resizes: the container keeps its size unless it no
     // longer fits, so a user's layout survives the display change.
     [[nodiscard]] QStringList refreshStrandedContainers();
+    // True while a gesture whose Begin this controller refused is still
+    // sending phases. Exposed so the behaviour is testable; callers have no
+    // reason to consult it.
+    [[nodiscard]] bool gestureRefused(const QString &containerId) const noexcept;
     [[nodiscard]] bool isMaximized(const QString &containerId) const noexcept;
 
     // Rolls the container up to a compact, still-visible, still-movable badge
@@ -155,6 +160,14 @@ private:
     QHash<QString, FrameDrag> m_moveDrags;
     QHash<QString, FrameDrag> m_resizeDrags;
     QHash<QString, QRect> m_maximizeRestoreFrames;
+    // AGENT-GUARD: containers whose Begin was refused (maximized, shaded).
+    // The interaction controller keeps sending Update for the rest of the
+    // gesture, and re-reporting "has no active baseline" once per pointer
+    // motion event drowned the channel a real interaction failure would use --
+    // 128 lines from a handful of refused drags in one session. Entries are
+    // added only at a refused Begin and removed at the next Begin, Commit or
+    // Cancel, so a genuinely missing baseline is still reported.
+    QSet<QString> m_refusedGestures;
     QHash<QString, double> m_aspectPins;
     QHash<QString, QRect> m_shadeStripFrames;
     // Original (pre-shade) size only; position is not tracked here because

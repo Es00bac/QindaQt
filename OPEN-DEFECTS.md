@@ -368,7 +368,7 @@ under Housekeeping.
 
 ---
 
-## 10. `Hybrid interaction failed: container move has no active baseline` — OPEN, now diagnosed
+## 10. `Hybrid interaction failed: container move has no active baseline` — FIXED (`(pending)`)
 
 **128 occurrences** in the current session log, from
 `hybridcontainerplacement.cpp:213` and `:272` (a third site at `:331` covers
@@ -394,11 +394,21 @@ Nothing is broken — the window correctly does not move, which is why it "appea
 to continue working". It is pure log noise, and it drowns the same channel that
 would carry a real interaction failure.
 
-**Fix:** decide whether a refused `Begin` should suppress the remainder of that
-gesture rather than re-reporting per motion event. That is an interaction
-contract question, not a patch: the rejection result is still the honest answer
-for each intent, so the change belongs at the point that decides a gesture is
-over, not at the log site.
+**The contract decision: a refused `Begin` suppresses the remainder of that
+gesture.** `Begin` still reports exactly why, once. The controller then records
+the container, and absorbs the following phases of that gesture rather than
+repeating itself per motion event. The record is cleared at the next `Begin`,
+`Commit` or `Cancel`.
+
+Deliberately narrow: a missing baseline with **no refused `Begin` before it** is
+still reported, because that is a real anomaly and swallowing it would trade
+this noise for a blind spot. Both the move and the resize paths are covered, and
+every refusal reason records — maximized, shaded, and a failed `beginDrag`.
+
+Covered by `compositor.hybrid-container-placement`
+(`absorbsTheRestOfAGestureWhoseBeginWasRefused`), which asserts the one-line
+refusal, five silent motions, clearing at `Commit`, the orphan case still
+reporting, and a successful `Begin` leaving no suppression behind.
 
 ---
 
