@@ -182,6 +182,7 @@ void KWinShellVisibilityPublisher::trackWindow(KWin::Window *window)
     connections.append(connect(window, &KWin::Window::frameGeometryChanged,
                                this, [changed](const KWin::RectF &) { changed(); }));
     connections.append(connect(window, &KWin::Window::maximizedChanged, this, changed));
+    connections.append(connect(window, &KWin::Window::fullScreenChanged, this, changed));
     connections.append(connect(window, &KWin::Window::minimizedChanged, this, changed));
     connections.append(connect(window, &KWin::Window::hiddenChanged, this, changed));
     connections.append(connect(window, &KWin::Window::hiddenByShowDesktopChanged,
@@ -316,6 +317,7 @@ KWinShellVisibilityPublisher::sample(QString *error) const
                 || hybridMaximized,
             .minimized = window->isMinimized(),
             .hidden = window->isHidden() || window->isHiddenByShowDesktop(),
+            .fullscreen = window->isFullScreen(),
         });
     }
     return candidate;

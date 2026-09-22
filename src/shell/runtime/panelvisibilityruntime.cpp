@@ -79,6 +79,12 @@ public:
     int themeMotionDuration = 0;
     int autoHideDelay = 250;
     bool reducedMotion = true;
+    QString activeWindowId;
+    QString activeWindowOutputId;
+    QRect activeWindowFrame;
+    bool activeWindowMaximized = false;
+    bool activeWindowFullscreenLike = false;
+    bool observedForeground = false;
 };
 
 PanelVisibilityRuntime::PanelVisibilityRuntime(
@@ -166,6 +172,74 @@ bool PanelVisibilityRuntime::synchronize(
         error->clear();
     }
     return true;
+}
+
+QStringList PanelVisibilityRuntime::observeForeground(
+    const ShellVisibility::CompositorVisibilitySnapshot &snapshot)
+{
+    QString activeId;
+    QString activeOutputId;
+    QRect activeFrame;
+    bool maximized = false;
+    bool fullscreenLike = false;
+    for (const auto &window : snapshot.windows) {
+        if (!window.active || window.minimized || window.hidden) {
+            continue;
+        }
+        activeId = window.id;
+        activeOutputId = window.outputId;
+        activeFrame = window.frameGeometry;
+        maximized = window.maximized;
+        fullscreenLike = window.fullscreen;
+        for (const auto &output : snapshot.outputs) {
+            const QRect &frame = window.frameGeometry;
+            const QRect &screen = output.geometry;
+            if (!maximized && frame.left() <= screen.left()
+                && frame.top() <= screen.top()
+                && frame.right() >= screen.right()
+                && frame.bottom() >= screen.bottom()) {
+                fullscreenLike = true;
+                break;
+            }
+        }
+        break;
+    }
+    // AGENT-GUARD: If Wayland transfers/grabs the pointer during activation
+    // without delivering Leave to the old layer surface, its reveal lease can
+    // pin the dock over the new maximized window until shell restart. An
+    // assigned output is insufficient here: spanning frames can overlap a
+    // panel on another output, and a maximized-to-fullscreen transition must
+    // invalidate a reveal even when the window ID does not change.
+    QStringList affectedOutputs;
+    if (m_private->observedForeground
+        && (activeId != m_private->activeWindowId
+            || activeOutputId != m_private->activeWindowOutputId
+            || (maximized && !m_private->activeWindowMaximized)
+            || (fullscreenLike && !m_private->activeWindowFullscreenLike))) {
+        auto addOutput = [&affectedOutputs](const QString &id) {
+            if (!id.isEmpty() && !affectedOutputs.contains(id)) {
+                affectedOutputs.append(id);
+            }
+        };
+        addOutput(m_private->activeWindowOutputId);
+        addOutput(activeOutputId);
+        for (const auto &output : snapshot.outputs) {
+            if (output.geometry.intersects(m_private->activeWindowFrame)
+                || output.geometry.intersects(activeFrame)) {
+                addOutput(output.id);
+            }
+        }
+        for (const auto &id : affectedOutputs) {
+            m_private->pointer.clearReveals(id);
+        }
+    }
+    m_private->activeWindowId = std::move(activeId);
+    m_private->activeWindowOutputId = std::move(activeOutputId);
+    m_private->activeWindowFrame = activeFrame;
+    m_private->activeWindowMaximized = maximized;
+    m_private->activeWindowFullscreenLike = fullscreenLike;
+    m_private->observedForeground = true;
+    return affectedOutputs;
 }
 
 void PanelVisibilityRuntime::applyProfile(const Profiles::LayoutProfile &profile)

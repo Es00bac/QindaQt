@@ -3,6 +3,7 @@
 
 #include "qindaqt/profiles/layout_profile.h"
 #include "qindaqt/shell_surface/panel_surface_configuration.h"
+#include "qindaqt/shell_visibility/compositor_visibility_snapshot.h"
 
 #include <QObject>
 
@@ -41,6 +42,12 @@ public:
         const ShellSurface::PanelSurfacePlan &plan,
         bool compositorAuthorityAvailable, bool *immediateReconcile,
         QString *error = nullptr);
+
+    // Clear pointer reveals inherited from another foreground window, or
+    // from the same window before it became maximized/fullscreen-like.
+    // Returns affected output IDs for diagnostics and focused tests.
+    [[nodiscard]] QStringList observeForeground(
+        const ShellVisibility::CompositorVisibilitySnapshot &snapshot);
 
     // Deterministic settings boundary. Missing/malformed first truth keeps
     // reduced motion enabled; later service loss retains the last confirmation.

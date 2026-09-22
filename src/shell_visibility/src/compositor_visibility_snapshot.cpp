@@ -224,6 +224,14 @@ Result decodeWindows(const QJsonValue &value,
       return failure(ErrorCode::InvalidField, path,
                      QStringLiteral("window fields are malformed"));
     }
+    // AGENT-CONTRACT: fullscreen is an additive schema-1 field. Missing is
+    // valid for older compositor plugins, but a present value must be exact.
+    const QJsonValue fullscreen = object.value(QStringLiteral("fullscreen"));
+    if (!fullscreen.isUndefined() && !fullscreen.isBool()) {
+      return failure(ErrorCode::InvalidField, path,
+                     QStringLiteral("window fullscreen field is malformed"));
+    }
+    window.fullscreen = fullscreen.toBool(false);
     snapshot->windows.push_back(std::move(window));
   }
   return {CompositorVisibilitySnapshot{}, {}};

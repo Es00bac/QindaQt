@@ -206,6 +206,18 @@ void PanelVisibilityPointerProducer::pointerLeft(const Identity &identity)
         });
 }
 
+void PanelVisibilityPointerProducer::clearReveals(const QString &outputId)
+{
+    for (auto item = m_private->entries.begin(); item != m_private->entries.end();) {
+        if (item->second.identity.outputId != outputId) {
+            ++item;
+            continue;
+        }
+        m_private->timer.cancel(item->second.pendingRelease);
+        item = m_private->entries.erase(item);
+    }
+}
+
 bool PanelVisibilityPointerProducer::eventFilter(QObject *watched, QEvent *event)
 {
     // AGENT-GUARD: this filter is installed on the QGuiApplication, so Qt runs
