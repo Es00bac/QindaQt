@@ -13,6 +13,31 @@ target_link_libraries(
 )
 qindaqt_enable_warnings(qindaqt_panel_visibility_producer_tests)
 
+# What the production fade moves: the scene root, not the QWindow.
+qt_add_executable(
+    qindaqt_panel_visibility_fade_tests
+    tst_panelvisibilityfade.cpp
+)
+target_link_libraries(
+    qindaqt_panel_visibility_fade_tests
+    PRIVATE
+        qindaqt_shell_panel_visibility_producers
+        QindaQt::ShellOrchestration
+        Qt6::Quick
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_panel_visibility_fade_tests)
+add_test(
+    NAME qindaqt.shell-visibility-panel-fade
+    COMMAND qindaqt_panel_visibility_fade_tests
+)
+set_tests_properties(
+    qindaqt.shell-visibility-panel-fade
+    PROPERTIES
+        LABELS "shell;visibility;producer"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
 qt_add_executable(
     qindaqt_panel_visibility_popup_bounds_tests
     tst_panelvisibilitypopupbounds.cpp

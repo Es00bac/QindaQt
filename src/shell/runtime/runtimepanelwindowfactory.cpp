@@ -47,6 +47,19 @@ QString componentErrors(const QQmlComponent &component)
     return messages.join(QLatin1Char('\n'));
 }
 
+// AGENT-NOTE: QWindow::setMask() *is* honoured on Wayland, and it is honoured
+// even when set before the window is shown - Qt replays the stored mask when
+// the platform window is created, emitting wl_surface.set_input_region on the
+// first show. Verified on Qt 6.11.1 against the session compositor with
+// WAYLAND_DEBUG=1, both orders.
+//
+// Do not "fix" this by reaching past Qt for set_input_region. The session log
+// does carry "This plugin does not support setting window masks", which looks
+// like evidence that this call is a no-op; those warnings come from another
+// Qt client in the same session (PlasmaQuick::Dialog, which masks on X11), not
+// from these panel windows. A hand-rolled input region here would duplicate
+// what QWaylandWindow already does and would fight it for the same surface
+// state.
 void applyInputBounds(QQuickWindow *window, const QVariant &value)
 {
     const QRect bounds = value.toRectF().toAlignedRect()

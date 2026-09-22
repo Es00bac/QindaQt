@@ -385,3 +385,4 @@ nav:
       - "ADR-0233: own voice input as a contract, not an implementation": adr/0233-own-voice-input-as-a-contract-not-an-implementation.md
       - "ADR-0234: Qt and the compositor measure output scale with different rulers": adr/0234-qt-and-compositor-measure-output-scale-differently.md
       - "ADR-0235: escrow panels whose output is absent instead of failing the editor": adr/0235-escrow-panels-whose-output-is-absent.md
+      - "ADR-0236: Fade the scene root, because Wayland has no window opacity": adr/0236-fade-the-scene-root-not-the-panel-window.md
