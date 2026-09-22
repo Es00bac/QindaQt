@@ -28,6 +28,7 @@ private slots:
     void expandsWildcardPanelsAcrossExactOutputs();
     void appliesWindowPolicyAndInteractionOverrides();
     void rejectsOutputDriftAtomically();
+    void hidesPanelsOnFractionallyScaledOutputs();
     void rejectsMissingDuplicateAndForgedSurfaces();
     void rejectsInvalidRuntimeInventory();
 };
@@ -100,8 +101,10 @@ void PanelVisibilityInventoryAssemblerTests::rejectsOutputDriftAtomically()
                       layoutProfile, solved, geometryDrift, {}),
                   ShellOrchestration::PanelVisibilityAssemblyErrorCode::OutputMismatch);
 
+    // 'main' is a 1.5 output, so a Qt device pixel ratio of 2.0 is agreement,
+    // not drift; see hidesPanelsOnFractionallyScaledOutputs(). 3.0 is drift.
     auto scaleDrift = compositor();
-    scaleDrift.outputs[1].scale = 2.0;
+    scaleDrift.outputs[1].scale = 3.0;
     verifyFailure(ShellOrchestration::PanelVisibilityInventoryAssembler::assemble(
                       layoutProfile, solved, scaleDrift, {}),
                   ShellOrchestration::PanelVisibilityAssemblyErrorCode::OutputMismatch);
@@ -155,6 +158,47 @@ void PanelVisibilityInventoryAssemblerTests::rejectsInvalidRuntimeInventory()
     verifyFailure(ShellOrchestration::PanelVisibilityInventoryAssembler::assemble(
                       layoutProfile, solved, invalidLineage, {}),
                   ShellOrchestration::PanelVisibilityAssemblyErrorCode::InvalidInventory);
+}
+
+// Regression: on a fractionally scaled output the solved layout carries Qt's
+// integer device pixel ratio while the compositor reports the true fractional
+// scale. Exact-equality matching rejected every such generation, so the shell
+// stayed in the safe-visible fallback and no panel could ever hide. These are
+// the real values from a 1.25-scaled 1536x864 eDP-1 panel.
+void PanelVisibilityInventoryAssemblerTests::hidesPanelsOnFractionallyScaledOutputs()
+{
+    using namespace ShellOrchestration::TestFixtures;
+    const QVector<ShellLayout::LogicalOutput> qtOutputs{
+        {QStringLiteral("eDP-1"), {0, 0, 1536, 864}, 2.0}};
+
+    auto dock = panel(QStringLiteral("dock"));
+    dock.edge = Profiles::Edge::Bottom;
+    dock.hideMode = Profiles::HideMode::Intelligent;
+    dock.thickness = 72;
+    const auto layoutProfile = profile(dock);
+    const auto solved = layout(layoutProfile, qtOutputs);
+    QVERIFY2(solved.ok(), qPrintable(solved.error.message));
+
+    auto snapshot = compositor(qtOutputs);
+    snapshot.outputs[0].scale = 1.25;
+    ShellVisibility::LogicalWindowSnapshot maximized;
+    maximized.id = QStringLiteral("window-1");
+    maximized.outputId = QStringLiteral("eDP-1");
+    maximized.frameGeometry = {0, 24, 1536, 840};
+    maximized.maximized = true;
+    maximized.workspaceIds = {snapshot.scope.workspaceId};
+    maximized.activityIds = {snapshot.scope.activityId};
+    snapshot.windows = {maximized};
+
+    const auto result = ShellOrchestration::PanelVisibilityInventoryAssembler::assemble(
+        layoutProfile, solved, snapshot, {});
+
+    QVERIFY2(result.ok(), qPrintable(result.error.message));
+    QCOMPARE(result.evaluation.decisions.size(), 1);
+    QCOMPARE(result.evaluation.decisions.at(0).visibility,
+             ShellVisibility::PanelVisibility::Hidden);
+    QCOMPARE(result.evaluation.decisions.at(0).reason,
+             ShellVisibility::PanelVisibilityReason::MaximizedWindowOnOutput);
 }
 
 QTEST_GUILESS_MAIN(PanelVisibilityInventoryAssemblerTests)

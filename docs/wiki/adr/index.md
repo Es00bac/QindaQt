@@ -236,3 +236,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0231: QindaLutris is the desktop's game library](0231-qindalutris-the-game-library.md)
 - [ADR-0232: The gather overview replaces KWin's upper-left corner](0232-the-gather-overview-replaces-the-upper-left-corner.md)
 - [ADR-0233: own voice input as a contract, not an implementation](0233-own-voice-input-as-a-contract-not-an-implementation.md)
+- [ADR-0234: Qt and the compositor measure output scale with different rulers](0234-qt-and-compositor-measure-output-scale-differently.md)

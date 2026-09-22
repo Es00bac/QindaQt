@@ -6,6 +6,7 @@
 #include <QtTest>
 
 #include <algorithm>
+#include <cmath>
 
 using namespace QindaQt;
 
@@ -14,6 +15,7 @@ class OutputInventoryMatcherTests final : public QObject {
 
 private slots:
     void acceptsOrderIndependentExactInventories();
+    void acceptsQtIntegerBufferScaleForFractionalOutputs();
     void rejectsEveryFormOfDrift();
 };
 
@@ -55,9 +57,47 @@ void OutputInventoryMatcherTests::rejectsEveryFormOfDrift()
              Code::GeometryMismatch);
 
     observed = expected;
-    observed[1].scale = 2.0;
+    // 'main' is a 1.5 output, so Qt's integer buffer scale of 2.0 is the
+    // documented agreement and must NOT be drift. 3.0 satisfies neither the
+    // same-ruler nor the integer-envelope relation.
+    observed[1].scale = 3.0;
     QCOMPARE(ShellOrchestration::OutputInventoryMatcher::match(expected, observed).code,
              Code::ScaleMismatch);
+
+    observed = expected;
+    observed[0].scale = 0.5;
+    QCOMPARE(ShellOrchestration::OutputInventoryMatcher::match(expected, observed).code,
+             Code::ScaleMismatch);
+}
+
+// Regression: the shell ran permanently in the safe-visible fallback on every
+// fractionally scaled output because QScreen::devicePixelRatio() reports the
+// compositor scale rounded up, and the matcher demanded exact equality. No
+// panel could ever hide. Both rulers must describe the same output.
+void OutputInventoryMatcherTests::acceptsQtIntegerBufferScaleForFractionalOutputs()
+{
+    const auto compositor = ShellOrchestration::TestFixtures::outputs();
+
+    for (const qreal fractional : {1.25, 1.5, 1.75, 2.5}) {
+        auto compositorInventory = compositor;
+        compositorInventory[1].scale = fractional;
+        auto qtInventory = compositor;
+        qtInventory[1].scale = std::ceil(fractional);
+        const auto result = ShellOrchestration::OutputInventoryMatcher::match(
+            compositorInventory, qtInventory);
+        QVERIFY2(result.ok(),
+                 qPrintable(QStringLiteral("scale %1 rejected: %2")
+                                .arg(fractional)
+                                .arg(result.message)));
+    }
+
+    // Integer scales still agree on the same ruler.
+    auto integerInventory = compositor;
+    integerInventory[1].scale = 2.0;
+    auto qtInventory = integerInventory;
+    QVERIFY(ShellOrchestration::OutputInventoryMatcher::match(
+                integerInventory, qtInventory)
+                .ok());
 }
 
 QTEST_GUILESS_MAIN(OutputInventoryMatcherTests)

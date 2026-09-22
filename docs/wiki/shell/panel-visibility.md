@@ -209,6 +209,17 @@ has crashed` diagnostic is a failed row, including after capture completion;
 the terminal ledger and final survivor observation remain independently strict.
 
 These rows qualify 100% 1080p and WUXGA on the private Weston/KWin path. They do
-not claim fractional scaling, multi-output behavior, GPU/OpenGL rendering,
+not claim multi-output behavior, GPU/OpenGL rendering,
 physical input, visual-baseline matching, popup placement aesthetics, or other
 profiles and themes; those remain separate matrix and release concerns.
+
+Fractional output scaling is covered by unit rows rather than these capture
+rows. Qt and the compositor measure output scale with different rulers: the
+compositor publishes the fractional wl_output logical scale, while
+`QScreen::devicePixelRatio()` is the integer buffer scale for that output, the
+compositor value rounded up. Requiring the two to be exactly equal pinned the
+shell in the safe-visible fallback on every fractionally scaled display, so no
+panel could hide. `OutputInventoryMatcher` now accepts either ruler and the
+shell keeps Qt's render scale in `outputScale` while adopting the compositor's
+logical geometry; see
+[ADR-0234](../adr/0234-qt-and-compositor-measure-output-scale-differently.md).
