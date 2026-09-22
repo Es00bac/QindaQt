@@ -28,6 +28,36 @@ Everything marked fixed is fixed in git and *not* on the running desktop until
 a package cut and a shell restart. Nothing below was validated against a
 rebuilt live shell.
 
+## Read this before installing anything
+
+**`r11` is installed and pins `8d1d8cc5`.** It carries items #1, #2, #4, #6,
+#8, #11, #12, #13 and the #14 harness work. It does **not** carry the item #0
+or item #10 fixes, which landed after it.
+
+**Item #0's fix cannot reach a running session by installing a package.**
+`refreshStrandedContainers()` is called from `KWinHybridSession`, which is
+built into `qindaqt_compositor.so` — a **KWin plugin**, not the shell.
+Installing it loads nothing until KWin restarts, and on this setup that means a
+full logout and login.
+
+And here is the part that will mislead someone if it is not written down:
+**logging out clears the current wedge by itself.** The stranded container plan
+is in-memory hybrid-session state — there is no topology file under
+`~/.config/qindaqt` or `~/.local/share/qindaqt`, and
+`kwinhybridsession.cpp` says the scene restore schema "deliberately does not
+persist". So:
+
+- **To un-wedge the session that is wedged now: log out and back in.** No
+  package needed.
+- **A package carrying `8b33ed73` stops it happening the next time a display
+  goes away.** It buys nothing for the wedge already in progress.
+- Installing that package *without* logging out changes nothing, and
+  installing it *with* a logout will look like it worked — but the logout did
+  the un-wedging. The fix proves itself only on the next display change.
+
+Do not read "installed the fix, still wedged" as the fix failing, and do not
+read "installed the fix, wedge gone" as the fix being proven.
+
 New ADRs: [0235](docs/wiki/adr/0235-escrow-panels-whose-output-is-absent.md),
 [0236](docs/wiki/adr/0236-fade-the-scene-root-not-the-panel-window.md),
 [0237](docs/wiki/adr/0237-the-visibility-snapshot-stays-atomic.md).
@@ -421,6 +451,13 @@ worth remembering: a Qt program with no platform aborts before its first line
 of real work, and the resulting core looks like a crash in whatever it was
 meant to do.
 
+**Same lesson as item #3, one layer down.** There, warnings in a shared log
+were attributed to the shell without checking which process emitted them. Here,
+cores in a shared coredump store were attributed to the desktop without
+checking which session produced them. Attribute an artefact to its producer
+before attributing a defect to code — the log, the core store and the test
+suite are all shared surfaces, and none of them names the culprit for you.
+
 **`qindaqt-settings` — lead, not a diagnosis.** The 22:37 core aborts with the
 main thread here:
 
@@ -607,9 +644,16 @@ $ git merge --ff-only fix/panel-visibility-and-hotplug-defects
 Updating 535ee51d..70fcae96
 ```
 
-**Local only — not pushed**, and the ebuilds are **not re-pinned**. Both r9 and
-r10 still pin commits on the branch, so the overlay still depends on it until
-the next package cut updates `QINDAQT_COMMIT`. That cut is the remaining half.
+**Local only — not pushed.** `origin/main` is at `9990bff1`, 30 commits
+behind local `main`; it was already behind before this fast-forward, so this
+did not create the divergence, only extend it. Pushing `main` is the
+repository owner's call, not this file's.
+
+The overlay is **not** blocked on that: `r11` pins `8d1d8cc5`, which is
+reachable from `origin/fix/panel-visibility-and-hotplug-defects`, so the
+tarball resolves. But the item's complaint stands — the overlay still pins a
+*branch* commit rather than one on `main`. The remaining half is a cut that
+pins a commit on a pushed `main`.
 
 To undo the merge: `git branch -f main 535ee51d`.
 
