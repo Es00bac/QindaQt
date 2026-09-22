@@ -141,6 +141,17 @@ void KWinHybridSession::reconcileWorkAreaGeometry()
             qWarning("QindaQt Hybrid maximize-area refresh failed: %s",
                      qPrintable(failure));
         }
+        // AGENT-GUARD: must run before the grouped reconciler below, which
+        // reasserts each container's committed target frames. Removing an
+        // output leaves any container that lived on it entirely outside every
+        // work area, and refreshMaximizedAreas() only re-fits maximized ones,
+        // so the stale plan used to survive here and be re-applied -- undoing
+        // even a manual KWin-level move of a member. The container's title bar
+        // is off-screen too, so the user cannot drag it back.
+        for (const auto &failure : m_placement->refreshStrandedContainers()) {
+            qWarning("QindaQt Hybrid stranded-container reflow failed: %s",
+                     qPrintable(failure));
+        }
     }
     // KWin constrains every ordinary client separately after a strut change.
     // Reassert the container solver's target frames only after maximized groups
