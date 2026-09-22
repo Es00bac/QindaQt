@@ -74,6 +74,11 @@ public:
     QHash<QObject *, QString> popupOutputs;
     qsizetype leaseCount = 0;
     quint64 nextGeneration = 1;
+    // Starts true so the first synchronize always discovers. Set again
+    // whenever a QObject gains a parent anywhere in the process, which is the
+    // only way a new popup can appear in a panel's tree.
+    bool discoveryDirty = true;
+    quint64 discoveryPasses = 0;
 };
 
 PanelVisibilityPopupProducer::PanelVisibilityPopupProducer(
@@ -86,8 +91,26 @@ PanelVisibilityPopupProducer::PanelVisibilityPopupProducer(
     application.installEventFilter(this);
 }
 
+quint64 PanelVisibilityPopupProducer::discoveryPasses() const noexcept
+{
+    return m_private->discoveryPasses;
+}
+
 void PanelVisibilityPopupProducer::synchronizePopupObjects()
 {
+    // AGENT-GUARD: this walks findChildren<QObject *>() over the whole object
+    // tree of every panel window, and the shell calls it on every visibility
+    // synchronize - up to three per settle, on every lease acquire/release
+    // that crosses zero. The panel tree grows over a session, so an
+    // unconditional walk made every transition more expensive the longer the
+    // shell ran. A popup can only enter a tree by being parented into it, so
+    // ChildAdded is a sound trigger; do not replace it with a timer or drop
+    // the flag without re-reading that.
+    if (!m_private->discoveryDirty) {
+        return;
+    }
+    m_private->discoveryDirty = false;
+    ++m_private->discoveryPasses;
     const auto windows = m_private->application.allWindows();
     for (QWindow *window : windows) {
         if (window == nullptr || isPanelWindow(*window) == false) {
@@ -264,6 +287,12 @@ void PanelVisibilityPopupProducer::clearSources()
 
 bool PanelVisibilityPopupProducer::eventFilter(QObject *watched, QEvent *event)
 {
+    if (event != nullptr && event->type() == QEvent::ChildAdded) {
+        // Something was parented somewhere in the process, so a panel tree may
+        // now hold a popup this producer has not seen. Only a flag here: this
+        // filter runs for every event of every object.
+        m_private->discoveryDirty = true;
+    }
     auto *const window = qobject_cast<QWindow *>(watched);
     if (window == nullptr || event == nullptr || !isShellPopup(*window)) {
         return QObject::eventFilter(watched, event);

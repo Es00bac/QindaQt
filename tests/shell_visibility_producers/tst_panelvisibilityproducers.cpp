@@ -214,6 +214,26 @@ void PanelVisibilityProducerTests::popup()
     for (const auto &item : store.snapshot()) {
         QVERIFY(!item.visibilityHeld);
     }
+
+    // Popup discovery walks the whole object tree of every panel window, and
+    // the shell calls it on every visibility synchronize. It must not repeat
+    // that walk while nothing has been parented into any tree: the panel tree
+    // grows over a session, so an unconditional walk makes every visibility
+    // transition more expensive the longer the shell runs.
+    producer.synchronizePopupObjects();
+    const quint64 afterFirst = producer.discoveryPasses();
+    QVERIFY(afterFirst > 0);
+    producer.synchronizePopupObjects();
+    producer.synchronizePopupObjects();
+    QCOMPARE(producer.discoveryPasses(), afterFirst);
+
+    // A new object parented anywhere in the process may have put a popup in a
+    // panel tree, so the next pass must discover again.
+    auto *const child = new QObject(&owner);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::ChildAdded);
+    producer.synchronizePopupObjects();
+    QCOMPARE(producer.discoveryPasses(), afterFirst + 1);
+    delete child;
 }
 
 void PanelVisibilityProducerTests::shortcut()
