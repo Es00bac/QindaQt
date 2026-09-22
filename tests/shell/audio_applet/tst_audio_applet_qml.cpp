@@ -181,6 +181,7 @@ private Q_SLOTS:
     void aPointerDragRidesTheSliderAndSendsWhereItStopped();
     void summaryIconTracksDefaultOutput_data();
     void summaryIconTracksDefaultOutput();
+    void pickingAnOutputDeviceDispatchesSetDefault();
 };
 
 void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
@@ -530,6 +531,66 @@ void AudioAppletQmlTests::summaryIconTracksDefaultOutput()
         QStringLiteral("audioAppletIcon"));
     QVERIFY(icon != nullptr);
     QVERIFY(Tests::hasResolvedProviderSource(icon, expectedName));
+}
+
+
+// Regression, and the half a controller test cannot cover: the picker used to
+// emit only its band-pick signal, so choosing a device changed which fader you
+// were holding and nothing else. Sound kept coming out of the old device. This
+// drives the real compiled ComboBox and asserts a routing operation leaves the
+// applet. See ADR-0238.
+void AudioAppletQmlTests::pickingAnOutputDeviceDispatchesSetDefault()
+{
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    client.start();
+    transport.announceOwner(kOwner);
+    transport.reply(transport.fetches.constLast(), clientSnapshot());
+    QCOMPARE(client.state(), Audio::ClientState::Ready);
+
+    AppletHarness harness;
+    QString error;
+    QVERIFY2(loadApplet(harness, &controller,
+                        {QStringLiteral("audio-volume-medium")}, &error),
+             qPrintable(error));
+    QQuickItem *root = harness.root();
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 520);
+    root->setParentItem(window.contentItem());
+    root->setPosition(QPointF(20, 20));
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    auto *picker = root->findChild<QQuickItem *>(
+        QStringLiteral("audioOutputPicker"));
+    QVERIFY2(picker != nullptr, "the output picker must exist");
+
+    // Serial 11 ("Virtual Output") is present and is not the default; serial
+    // 10 is. Find 11's index in the picker's own entry list rather than
+    // assuming an order.
+    const QVariant entriesValue = picker->property("entries");
+    const QVariantList entries = entriesValue.toList();
+    QVERIFY(!entries.isEmpty());
+    int target = -1;
+    for (int i = 0; i < entries.size(); ++i) {
+        if (entries.at(i).toMap().value(QStringLiteral("serial")).toULongLong()
+            == 11ULL) {
+            target = i;
+            break;
+        }
+    }
+    QVERIFY2(target >= 0, "the non-default output must be offered");
+
+    const qsizetype before = transport.operations.size();
+    QMetaObject::invokeMethod(picker, "activated", Q_ARG(int, target));
+
+    QTRY_COMPARE(transport.operations.size(), before + 1);
+    QCOMPARE(transport.operations.constLast().request.kind,
+             Audio::OperationKind::SetDefault);
+    QCOMPARE(transport.operations.constLast().request.primary.serial, 11ULL);
 }
 
 QTEST_MAIN(AudioAppletQmlTests)

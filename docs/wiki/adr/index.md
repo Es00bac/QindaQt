@@ -240,3 +240,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0235: escrow panels whose output is absent instead of failing the editor](0235-escrow-panels-whose-output-is-absent.md)
 - [ADR-0236: Fade the scene root, because Wayland has no window opacity](0236-fade-the-scene-root-not-the-panel-window.md)
 - [ADR-0237: The visibility snapshot stays atomic, and says what it rejected](0237-the-visibility-snapshot-stays-atomic.md)
+- [ADR-0238: the audio applet's device picker sets the system default](0238-the-output-picker-sets-the-default.md)
