@@ -33,7 +33,8 @@ void CompositorVisibilityWireRoundtripTests::producerPayloadDecodesWithoutLoss()
                                       QStringLiteral("workspace-1")},
                      .activityIds = {},
                      .active = true,
-                     .maximized = true}},
+                     .maximized = true,
+                     .fullscreen = true}},
     };
 
     QCOMPARE(store.publish(candidate),
@@ -55,6 +56,7 @@ void CompositorVisibilityWireRoundtripTests::producerPayloadDecodesWithoutLoss()
                           QStringLiteral("workspace-2")}));
     QVERIFY(decoded.snapshot->windows.constFirst().active);
     QVERIFY(decoded.snapshot->windows.constFirst().maximized);
+    QVERIFY(decoded.snapshot->windows.constFirst().fullscreen);
 }
 
 void CompositorVisibilityWireRoundtripTests::

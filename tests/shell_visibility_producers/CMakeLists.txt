@@ -81,6 +81,14 @@ add_test(
     COMMAND qindaqt_panel_visibility_producer_tests reducedMotion
 )
 add_test(
+    NAME qindaqt.shell-visibility-producer-foreground
+    COMMAND qindaqt_panel_visibility_producer_tests foregroundTransitions
+)
+add_test(
+    NAME qindaqt.shell-visibility-producer-foreground-lease
+    COMMAND qindaqt_panel_visibility_producer_tests foregroundReleasesPointerReveal
+)
+add_test(
     NAME qindaqt.shell-visibility-producer-boundary-poison
     COMMAND qindaqt_panel_visibility_producer_tests boundaryPoison
 )
@@ -97,6 +105,8 @@ add_test(
 )
 set_tests_properties(
     qindaqt.shell-visibility-producer-reduced-motion
+    qindaqt.shell-visibility-producer-foreground
+    qindaqt.shell-visibility-producer-foreground-lease
     qindaqt.shell-visibility-producer-boundary-poison
     qindaqt.shell-visibility-popup-bounds
     qindaqt.shell-visibility-settings-private-bus
@@ -108,6 +118,8 @@ set_tests_properties(
     qindaqt.shell-visibility-producer-shortcut
     qindaqt.shell-visibility-producer-animation
     qindaqt.shell-visibility-producer-reduced-motion
+    qindaqt.shell-visibility-producer-foreground
+    qindaqt.shell-visibility-producer-foreground-lease
     qindaqt.shell-visibility-producer-boundary-poison
     qindaqt.shell-visibility-popup-bounds
     qindaqt.shell-visibility-settings-private-bus

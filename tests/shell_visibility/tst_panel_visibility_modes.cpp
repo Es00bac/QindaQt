@@ -18,6 +18,8 @@ private Q_SLOTS:
   void dodgeAllUsesAnyOverlappingWindow();
   void maximizedUsesFullMaximizeOnTheAssignedOutput();
   void intelligentCombinesActiveOverlapAndMaximizedOutput();
+  void activeOutputCoverWinsOverStaleRevealAndHold();
+  void activeOutputCoverAffectsOnlyCoveredOutput();
   void reservationIntentTracksVisibilityAndPanelPolicy();
 };
 
@@ -167,6 +169,98 @@ void PanelVisibilityModesTest::
   QVERIFY(result.ok());
   QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
   QCOMPARE(result.decisions[0].reason, PanelVisibilityReason::NoConflict);
+}
+
+void PanelVisibilityModesTest::activeOutputCoverWinsOverStaleRevealAndHold() {
+  for (const auto mode : {Profiles::HideMode::Always,
+                          Profiles::HideMode::DodgeActive,
+                          Profiles::HideMode::DodgeAll,
+                          Profiles::HideMode::Maximized,
+                          Profiles::HideMode::Intelligent}) {
+    auto snapshot = inventory(mode);
+    snapshot.panels[0].surfaceGeometry = QRect(0, 1008, 1920, 72);
+    auto fullscreen = window(QStringLiteral("fullscreen"),
+                             QRect(0, 0, 1920, 1080));
+    fullscreen.active = true;
+    snapshot.windows = {fullscreen};
+    snapshot.interactions = {interaction(true, true)};
+
+    auto result = PanelVisibilityPolicy::evaluate(snapshot);
+    QVERIFY2(result.ok(), qPrintable(result.error.message));
+    QCOMPARE(result.decisions[0].visibility, PanelVisibility::Hidden);
+    QCOMPARE(result.decisions[0].reservation, PanelReservationIntent::Release);
+    QCOMPARE(result.decisions[0].reason,
+             PanelVisibilityReason::ActiveWindowCoversOutput);
+    QCOMPARE(result.decisions[0].triggerWindowId, QStringLiteral("fullscreen"));
+
+    // An ordinary maximized client still permits an intentional edge reveal.
+    snapshot.windows[0].frameGeometry = QRect(0, 32, 1920, 1048);
+    snapshot.windows[0].maximized = true;
+    result = PanelVisibilityPolicy::evaluate(snapshot);
+    QVERIFY(result.ok());
+    QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
+    QCOMPARE(result.decisions[0].reason, PanelVisibilityReason::VisibilityHeld);
+
+    // An overlay-only layout may let an ordinary maximized window occupy
+    // every output pixel. Its command strip must still be revealable.
+    snapshot.windows[0].frameGeometry = QRect(0, 0, 1920, 1080);
+    result = PanelVisibilityPolicy::evaluate(snapshot);
+    QVERIFY(result.ok());
+    QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
+    QCOMPARE(result.decisions[0].reason, PanelVisibilityReason::VisibilityHeld);
+
+    // KWin may retain maximize state while the client is fullscreen.
+    snapshot.windows[0].fullscreen = true;
+    result = PanelVisibilityPolicy::evaluate(snapshot);
+    QVERIFY(result.ok());
+    QCOMPARE(result.decisions[0].visibility, PanelVisibility::Hidden);
+    QCOMPARE(result.decisions[0].reason,
+             PanelVisibilityReason::ActiveWindowCoversOutput);
+
+    snapshot.windows[0].fullscreen = false;
+    snapshot.windows[0].active = false;
+    result = PanelVisibilityPolicy::evaluate(snapshot);
+    QVERIFY(result.ok());
+    QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
+  }
+
+  auto never = inventory(Profiles::HideMode::Never);
+  auto fullscreen = window(QStringLiteral("fullscreen"),
+                           QRect(0, 0, 1920, 1080));
+  fullscreen.active = true;
+  never.windows = {fullscreen};
+  const auto result = PanelVisibilityPolicy::evaluate(never);
+  QVERIFY(result.ok());
+  QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
+  QCOMPARE(result.decisions[0].reason, PanelVisibilityReason::NeverMode);
+}
+
+void PanelVisibilityModesTest::activeOutputCoverAffectsOnlyCoveredOutput() {
+  auto snapshot = inventory(Profiles::HideMode::Intelligent);
+  snapshot.outputs = {
+      output(QStringLiteral("left"), QRect(-1600, 0, 1600, 900)),
+      output(QStringLiteral("right"), QRect(0, 0, 1920, 1200))};
+  snapshot.panels = {
+      panel(Profiles::HideMode::Intelligent, QStringLiteral("left-dock"),
+            QStringLiteral("left"), QRect(-1600, 840, 1600, 60)),
+      panel(Profiles::HideMode::Intelligent, QStringLiteral("right-dock"),
+            QStringLiteral("right"), QRect(0, 1140, 1920, 60))};
+  auto fullscreen = window(QStringLiteral("fullscreen"),
+                           QRect(0, 0, 1920, 1200), QStringLiteral("right"));
+  fullscreen.active = true;
+  snapshot.windows = {fullscreen};
+  snapshot.interactions = {
+      interaction(true, true, QStringLiteral("left-dock"),
+                  QStringLiteral("left")),
+      interaction(true, true, QStringLiteral("right-dock"),
+                  QStringLiteral("right"))};
+
+  const auto result = PanelVisibilityPolicy::evaluate(snapshot);
+  QVERIFY2(result.ok(), qPrintable(result.error.message));
+  QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
+  QCOMPARE(result.decisions[1].visibility, PanelVisibility::Hidden);
+  QCOMPARE(result.decisions[1].reason,
+           PanelVisibilityReason::ActiveWindowCoversOutput);
 }
 
 void PanelVisibilityModesTest::

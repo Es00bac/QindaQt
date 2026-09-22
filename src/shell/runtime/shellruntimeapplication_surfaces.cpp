@@ -3,6 +3,7 @@
 
 #include "notificationoutputselector.h"
 #include "notificationwindowcontroller.h"
+#include "panelvisibilityruntime.h"
 #include "qtcompositoroutputauthority.h"
 
 #include "desktopcontrolscomposition.h"
@@ -214,6 +215,9 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
     if (!m_interactions->setIdentities(identities, &interactionError)) {
         *error = std::move(interactionError);
         return false;
+    }
+    if (visibilitySnapshot != nullptr && m_panelVisibility) {
+        (void)m_panelVisibility->observeForeground(*visibilitySnapshot);
     }
 
     ShellOrchestration::PanelRuntimeAssemblyResult runtime;

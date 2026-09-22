@@ -171,21 +171,32 @@ private slots:
     void shortcut();
     void animation();
     void reducedMotion();
+    void foregroundTransitions();
+    void foregroundReleasesPointerReveal();
     void boundaryPoison();
 };
 
 void PanelVisibilityProducerTests::pointer()
 {
     ShellOrchestration::PanelInteractionStore store;
-    QVERIFY(store.setIdentities({identity()}));
+    QVERIFY(store.setIdentities({identity(), identity("dock", "other")}));
     FakeTimer timer;
     Shell::PanelVisibilityPointerProducer producer(
         *qGuiApp, store, timer);
-    producer.setIdentities({identity()});
+    producer.setIdentities({identity(), identity("dock", "other")});
     producer.setLeaveDelayMilliseconds(375);
 
     producer.pointerEntered(identity("unknown"));
     QVERIFY(!reveal(store));
+    producer.pointerEntered(identity());
+    QVERIFY(reveal(store));
+    producer.pointerEntered(identity("dock", "other"));
+    QVERIFY(store.snapshot()[1].revealRequested);
+    producer.clearReveals(QStringLiteral("main"));
+    QVERIFY(!reveal(store));
+    QVERIFY(store.snapshot()[1].revealRequested);
+    producer.clearReveals(QStringLiteral("other"));
+    QVERIFY(!store.snapshot()[1].revealRequested);
     producer.pointerEntered(identity());
     QVERIFY(reveal(store));
     producer.pointerLeft(identity());
@@ -193,6 +204,13 @@ void PanelVisibilityProducerTests::pointer()
     QCOMPARE(timer.lastDelay, 375);
     timer.fireAll();
     QVERIFY(!reveal(store));
+
+    // Clearing a pending leave must cancel its timer and release immediately.
+    producer.pointerEntered(identity());
+    producer.pointerLeft(identity());
+    producer.clearReveals(QStringLiteral("main"));
+    QVERIFY(!reveal(store));
+    QVERIFY(timer.callbacks.empty());
 }
 
 void PanelVisibilityProducerTests::popup()
@@ -331,6 +349,101 @@ void PanelVisibilityProducerTests::reducedMotion()
                            {QStringLiteral("panels.autoHideDelayMs"), -1}});
     QVERIFY(!runtime.reducedMotion());
     QCOMPARE(runtime.animationDurationMilliseconds(), 320);
+}
+
+void PanelVisibilityProducerTests::foregroundTransitions()
+{
+    ShellOrchestration::PanelInteractionStore store;
+    NullSettingsTransport transport;
+    Services::SettingsClient::SettingsClient settings(transport, {});
+    FakeRegistrar registrar;
+    Profiles::LayoutProfile profile;
+    Shell::PanelVisibilityRuntime runtime(
+        *qGuiApp, store, settings, registrar, profile, 0);
+
+    ShellVisibility::CompositorVisibilitySnapshot snapshot;
+    snapshot.outputs = {
+        {QStringLiteral("left"), QRect(0, 0, 1920, 1080)},
+        {QStringLiteral("right"), QRect(1920, 0, 1920, 1080)}};
+    ShellVisibility::LogicalWindowSnapshot active;
+    active.id = QStringLiteral("first");
+    active.outputId = QStringLiteral("left");
+    active.frameGeometry = QRect(100, 100, 800, 600);
+    active.active = true;
+    snapshot.windows = {active};
+    QVERIFY(runtime.observeForeground(snapshot).isEmpty());
+
+    // The compositor assigns the spanning window to left, but its frame
+    // crosses right. A focus change must invalidate reveals on both outputs.
+    snapshot.windows[0].id = QStringLiteral("spanning");
+    snapshot.windows[0].frameGeometry = QRect(100, 0, 3000, 1080);
+    QCOMPARE(runtime.observeForeground(snapshot),
+             (QStringList{QStringLiteral("left"), QStringLiteral("right")}));
+    QVERIFY(runtime.observeForeground(snapshot).isEmpty());
+
+    // An overlay-only layout lets ordinary maximized clients fill the whole
+    // output. Entering fullscreen on that same client is a separate change.
+    snapshot.windows[0].frameGeometry = QRect(0, 0, 1920, 1080);
+    snapshot.windows[0].maximized = true;
+    QCOMPARE(runtime.observeForeground(snapshot),
+             (QStringList{QStringLiteral("left"), QStringLiteral("right")}));
+    snapshot.windows[0].maximized = false;
+    QCOMPARE(runtime.observeForeground(snapshot),
+             (QStringList{QStringLiteral("left")}));
+    QVERIFY(runtime.observeForeground(snapshot).isEmpty());
+
+    // Some clients keep the maximize bit in fullscreen; the explicit KWin
+    // state must independently invalidate the reveal for the same window.
+    snapshot.windows[0].maximized = true;
+    (void)runtime.observeForeground(snapshot);
+    snapshot.windows[0].fullscreen = true;
+    QCOMPARE(runtime.observeForeground(snapshot),
+             (QStringList{QStringLiteral("left")}));
+}
+
+void PanelVisibilityProducerTests::foregroundReleasesPointerReveal()
+{
+    ShellOrchestration::PanelInteractionStore store;
+    QVERIFY(store.setIdentities({identity()}));
+    NullSettingsTransport transport;
+    Services::SettingsClient::SettingsClient settings(transport, {});
+    FakeRegistrar registrar;
+    Profiles::LayoutProfile profile;
+    Profiles::PanelSpec panelSpec;
+    panelSpec.id = QStringLiteral("dock");
+    panelSpec.hideMode = Profiles::HideMode::Intelligent;
+    profile.panels.append(panelSpec);
+    Shell::PanelVisibilityRuntime runtime(
+        *qGuiApp, store, settings, registrar, profile, 0);
+    bool immediateReconcile = false;
+    QString error;
+    // Even a platform without layer-shell support sets producer identities
+    // before the edge backend attempts to create its one-pixel sensor.
+    (void)runtime.synchronize(plan(ShellSurface::PanelSurfaceMapping::Mapped),
+                              false, &immediateReconcile, &error);
+
+    QWindow panelWindow;
+    panelWindow.setObjectName(QStringLiteral("qindaqt-panel-dock@main"));
+    QEvent enter(QEvent::Enter);
+    QCoreApplication::sendEvent(&panelWindow, &enter);
+    QVERIFY(reveal(store));
+
+    ShellVisibility::CompositorVisibilitySnapshot snapshot;
+    snapshot.outputs = {{QStringLiteral("main"), QRect(0, 0, 1920, 1080)}};
+    ShellVisibility::LogicalWindowSnapshot active;
+    active.id = QStringLiteral("first");
+    active.outputId = QStringLiteral("main");
+    active.frameGeometry = QRect(100, 100, 800, 600);
+    active.active = true;
+    snapshot.windows = {active};
+    QVERIFY(runtime.observeForeground(snapshot).isEmpty());
+    QVERIFY(reveal(store));
+
+    snapshot.windows[0].id = QStringLiteral("second");
+    snapshot.windows[0].maximized = true;
+    QCOMPARE(runtime.observeForeground(snapshot),
+             (QStringList{QStringLiteral("main")}));
+    QVERIFY(!reveal(store));
 }
 
 void PanelVisibilityProducerTests::boundaryPoison()

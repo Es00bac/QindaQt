@@ -93,6 +93,7 @@ void CompositorVisibilitySnapshotTest::decodesACompleteCoherentSnapshot() {
   QCOMPARE(result.snapshot->windows[0].workspaceIds,
            QStringList{QStringLiteral("workspace-1")});
   QVERIFY(result.snapshot->windows[0].active);
+  QVERIFY(!result.snapshot->windows[0].fullscreen); // legacy schema-1 producer
   QCOMPARE(result.snapshot->scope.workspaceId, QStringLiteral("workspace-1"));
 }
 
@@ -213,6 +214,21 @@ void CompositorVisibilitySnapshotTest::
   document[QStringLiteral("windows")] = QJsonArray{candidate};
   auto result = CompositorVisibilitySnapshotDecoder::decode(encode(document));
   QCOMPARE(result.error.code, CompositorSnapshotErrorCode::InvalidField);
+
+  document = root();
+  candidate = window();
+  candidate[QStringLiteral("fullscreen")] = QStringLiteral("true");
+  document[QStringLiteral("windows")] = QJsonArray{candidate};
+  result = CompositorVisibilitySnapshotDecoder::decode(encode(document));
+  QCOMPARE(result.error.code, CompositorSnapshotErrorCode::InvalidField);
+
+  document = root();
+  candidate = window();
+  candidate[QStringLiteral("fullscreen")] = true;
+  document[QStringLiteral("windows")] = QJsonArray{candidate};
+  result = CompositorVisibilitySnapshotDecoder::decode(encode(document));
+  QVERIFY(result.ok());
+  QVERIFY(result.snapshot->windows.constFirst().fullscreen);
 
   document = root();
   candidate = window();
