@@ -6,6 +6,7 @@
 #include <QtTest>
 
 #include <algorithm>
+#include <functional>
 
 using namespace QindaQt::Compositor;
 
@@ -55,6 +56,7 @@ private Q_SLOTS:
     void enforcesConsumerWireLimits();
     void publishesUnavailableAndRecoversAtANewRevision();
     void revisionExhaustionConvergesToUnavailable();
+    void namesTheRejectedMemberAndWhy();
 };
 
 void ShellVisibilitySnapshotTest::publishesExactCanonicalWireShape()
@@ -147,6 +149,86 @@ void ShellVisibilitySnapshotTest::rejectsUnsafeAndAmbiguousGenerationsAtomically
     QVERIFY(!error.isEmpty());
     QCOMPARE(store.revision(), quint64(1));
     QCOMPARE(store.snapshotJson(), retained);
+}
+
+// A rejection voids the whole batch and pins every panel safe-visible, so the
+// message is all a reader gets. These eight causes used to share one string --
+// "a managed window is invalid or ambiguous" -- which made 8079 rejections in
+// one session indistinguishable from each other. Each must name the member and
+// say what was wrong with it, so a transient race is legible as a different
+// thing from a producer bug. See ADR-0237.
+void ShellVisibilitySnapshotTest::namesTheRejectedMemberAndWhy()
+{
+    const auto rejectionFor =
+        [](const std::function<void(ShellVisibilitySnapshotCandidate &)> &mutate) {
+            ShellVisibilitySnapshotStore store(QStringLiteral("epoch-a"));
+            auto candidate = validCandidate();
+            mutate(candidate);
+            QString error;
+            const auto result = store.publish(candidate, &error);
+            return result == ShellVisibilityPublishResult::Rejected ? error : QString();
+        };
+
+    // A window momentarily off its output: the transient case, and the one the
+    // message has to distinguish from a real producer bug.
+    const QString outside = rejectionFor([](auto &candidate) {
+        candidate.windows[1].frameGeometry = QRect(9000, 9000, 10, 10);
+    });
+    QVERIFY2(outside.contains(QStringLiteral("'window-a'")), qPrintable(outside));
+    QVERIFY2(outside.contains(QStringLiteral("outside its output")), qPrintable(outside));
+    QVERIFY2(outside.contains(QStringLiteral("'DP-1'")), qPrintable(outside));
+
+    // Active while still marked minimized: the other transient case.
+    const QString active = rejectionFor([](auto &candidate) {
+        candidate.windows[1].minimized = true;
+    });
+    QVERIFY2(active.contains(QStringLiteral("'window-a'")), qPrintable(active));
+    QVERIFY2(active.contains(QStringLiteral("active while marked minimized")),
+             qPrintable(active));
+
+    // A window naming an output this generation does not have.
+    const QString absent = rejectionFor([](auto &candidate) {
+        candidate.windows[1].outputId = QStringLiteral("HDMI-9");
+    });
+    QVERIFY2(absent.contains(QStringLiteral("'window-a'")), qPrintable(absent));
+    QVERIFY2(absent.contains(QStringLiteral("'HDMI-9'")), qPrintable(absent));
+
+    // A duplicate id: a producer bug, and it must not read like the above.
+    const QString duplicate = rejectionFor([](auto &candidate) {
+        auto copy = candidate.windows[1];
+        copy.active = false;
+        candidate.windows.append(copy);
+    });
+    QVERIFY2(duplicate.contains(QStringLiteral("'window-a'")), qPrintable(duplicate));
+    QVERIFY2(duplicate.contains(QStringLiteral("more than once")), qPrintable(duplicate));
+
+    // An inconsistent workspace scope.
+    const QString scope = rejectionFor([](auto &candidate) {
+        candidate.windows[1].onAllWorkspaces = true;
+    });
+    QVERIFY2(scope.contains(QStringLiteral("'window-a'")), qPrintable(scope));
+    QVERIFY2(scope.contains(QStringLiteral("onAllWorkspaces")), qPrintable(scope));
+
+    // Two active windows name both of them.
+    const QString twoActive = rejectionFor([](auto &candidate) {
+        candidate.windows[0].active = true;
+    });
+    QVERIFY2(twoActive.contains(QStringLiteral("'window-a'")), qPrintable(twoActive));
+    QVERIFY2(twoActive.contains(QStringLiteral("'window-b'")), qPrintable(twoActive));
+
+    // Outputs are named too, for the same reason.
+    const QString badScale = rejectionFor([](auto &candidate) {
+        candidate.outputs[1].scale = 0.0;
+    });
+    QVERIFY2(badScale.contains(QStringLiteral("'DP-1'")), qPrintable(badScale));
+    QVERIFY2(badScale.contains(QStringLiteral("scale")), qPrintable(badScale));
+
+    // Every cause must still be distinguishable from every other.
+    const QStringList all{outside, active, absent, duplicate, scope, twoActive, badScale};
+    for (const QString &message : all) {
+        QVERIFY(!message.isEmpty());
+    }
+    QCOMPARE(QSet<QString>(all.cbegin(), all.cend()).size(), all.size());
 }
 
 void ShellVisibilitySnapshotTest::advancesOnlyForChangedValidGenerations()

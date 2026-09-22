@@ -21,7 +21,14 @@ The caller must copy all of those values from one coherent compositor/shell
 generation. Identifiers, geometry, references, window scope, active-window
 cardinality, and enum values are validated before any result is emitted. One
 bad member rejects the complete batch; partial visibility publication is not a
-supported state.
+supported state. That remains deliberate — see
+[ADR-0237](../adr/0237-the-visibility-snapshot-stays-atomic.md) — and it carries
+an obligation: **every rejection names the offending member and the specific
+reason.** A shared message across causes makes a transient race (a window
+momentarily off its output, or active while still marked minimized)
+indistinguishable from a producer bug (a duplicate identifier, a malformed
+scope), and a rejection pins every panel safe-visible, so that message is all a
+reader gets.
 
 ## Hide modes
 
