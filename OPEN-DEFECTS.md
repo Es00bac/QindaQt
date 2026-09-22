@@ -1,103 +1,143 @@
 # Open defects
 
-Findings from the live multi-output session of 2026-09-21/22 that are **not
-fixed**. Ordered by how likely you are to walk into them.
-
-Four defects from that session *were* fixed and are live in
-`gui-wm/qindaqt-desktop-0.1.0_pre20260921-r10` (branch
-`fix/panel-visibility-and-hotplug-defects`): panels could never hide on a
-fractionally scaled output; an orphaned XEmbed tray proxy burned a full CPU
-core; a display hotplug deadlocked Meta+right-click customization; and a panel
-pinned to one display erased every other panel while that display was absent.
-Everything below is what remains.
+Findings from the live multi-output session of 2026-09-21/22. Ordered by how
+likely you are to walk into them.
 
 Evidence throughout is from `~/.local/share/sddm/wayland-session.log`. **That
 file is the whole session's stderr, not the shell's alone** — see item #3 for a
 defect that was filed purely because a warning from another process in that log
-was attributed to the shell.
+was attributed to the shell. Later items add evidence taken directly from the
+running compositor over D-Bus and from the Wayland wire, which does not have
+that ambiguity.
 
-**Status:** items #1, #2, #6, #11, #12 and #13 have since been fixed or
-withdrawn on this branch (`61248193`, `d1394485`, `d2557ba7`, `6e4708a5` and
-later). Item #3 is withdrawn as not-a-defect. The rest stand.
+## Status
+
+| | |
+| --- | --- |
+| Fixed on this branch | #1, #2, #6, #8, #11, #12, #13, half of #14 |
+| Withdrawn, not a defect | #3 |
+| Decided + diagnosed, symptom unchanged | #4 (ADR-0237) |
+| Still open | #0, #5, #7, #9, #10, rest of #14, #15 |
+
+Branch head is `06e2370c`. **The installed package is
+`gui-wm/qindaqt-desktop-0.1.0_pre20260921-r10`, which pins `fcce2203`.**
+Everything marked fixed is fixed in git and *not* on the running desktop until
+a package cut and a shell restart. Nothing below was validated against a
+rebuilt live shell.
+
+New ADRs: [0235](docs/wiki/adr/0235-escrow-panels-whose-output-is-absent.md),
+[0236](docs/wiki/adr/0236-fade-the-scene-root-not-the-panel-window.md),
+[0237](docs/wiki/adr/0237-the-visibility-snapshot-stays-atomic.md).
 
 ---
 
-## 1. Meta+right-click dies whenever a pinned display is absent
+## 0. The visibility snapshot is wedged right now, so auto-hide is dead
 
-**You will see:** in-place customization stops working — no panel menu, no
-applet menu, no desktop menu — after unplugging or reconfiguring the display a
-panel is pinned to. It does not come back until a layout-profile adoption
-rebuilds the editor host.
+**You will see:** no panel ever hides, on any display, for the rest of the
+session. This is the live state of the running desktop as of 2026-09-22 01:2x.
 
-This is the same root cause as the r10 fix, in a path that fix did not cover.
-`ShellRuntimeApplication::reconcileSurfaces()` now hands the solver and the
-visibility assembler a profile filtered through
-`PanelProfileOutputOccupancy::presentOutputsOnly()`, but
-`LiveCustomizationController::rebuildHost()` still passes the **unfiltered**
-adopted profile:
+This is not the transient flapping item #4 describes. The compositor is
+returning a permanently invalid snapshot:
 
-```
-src/shell/runtime/livecustomizationcontroller.cpp:147   m_host->rebuild(m_adopted, outputs);
-src/shell/runtime/livecustomizationcontroller.cpp:149   m_host = std::make_unique<LiveEditorHost>(m_adopted, outputs, ...);
+```console
+$ busctl --user call org.qindaqt.Compositor /org/qindaqt/Compositor \
+    org.qindaqt.Compositor1 ShellVisibilitySnapshot
+{"epoch":"6b22d120-...","failure":{"code":"snapshot-invalid",
+ "message":"a managed window is invalid or ambiguous"},
+ "revision":"6479","schemaVersion":1,"status":"unavailable"}
 ```
 
-`LiveEditorHost` then fails to become ready, `available()` returns false, and
-every chord entry point is gated on `available()` — so the deadlock described in
-the r10 commit reappears through a different door.
+Repeated over a minute, it never recovers. The session log holds **8250** of
+that message. With no valid snapshot the shell selects safe-visible and pins
+every panel visible.
 
-Observed:
+**Why it cannot recover.** `Outputs` reports one output at generation 46:
+
+```
+eDP-1  1920x1080 @ (0,0)  scale 1  enabled
+```
+
+`Windows` reports 14 managed windows, and two of them are nowhere near it:
+
+```
+71fffc59  1163x1016 at (1,1133)
+fcc21a4d   751x1016 at (1166,1133)
+```
+
+y=1133 is below the bottom of a 1080-tall output. Those two windows were left
+on `DP-1` when it was stacked underneath, and `DP-1` is gone. Every snapshot
+candidate therefore contains a window whose frame lies entirely outside its own
+output, which is validation condition 5, which rejects the whole batch — every
+time, forever, because nothing moves them back.
+
+**Inference, not observation:** the rejected candidate is not published, so
+condition 5 is deduced from the geometry above rather than read from a log. The
+messages landing in #4 are what would confirm it per occurrence.
+
+**This is the evidence ADR-0237 said it was waiting for**, and it points the
+opposite way from the item #4 write-up: the invalid window is not transient, it
+is *stuck*. Two candidate fixes, and they are not exclusive:
+
+1. **Exclude a window that lies outside its output** rather than voiding the
+   batch. It overlaps no panel on that output, so it cannot affect panel
+   visibility there, and excluding it is information-preserving for this
+   consumer. This is the narrow change ADR-0237 anticipated.
+2. **Relocate windows when their output disappears.** A managed window
+   stranded off every output is its own defect regardless of the snapshot, and
+   fixing it here would stop the snapshot from ever seeing condition 5 in a
+   non-transient form.
+
+**Workaround for the running session:** move those two windows onto `eDP-1`.
+Auto-hide should resume at the next snapshot.
+
+---
+
+## 1. Meta+right-click dies whenever a pinned display is absent — FIXED (`61248193`)
+
+Customization stopped entirely — no panel, applet, or desktop menu — whenever a
+panel was pinned to a display that was unplugged or being reconfigured:
 
 ```
 QindaQt shell live customization is unavailable: panel 'dock' names missing output 'eDP-1'
 ```
 
-**Raised in priority by the r10 work**: the dock is now pinned to `eDP-1`, so
-this fires whenever the built-in panel is off or being reconfigured.
+`LayoutEditingRepository` failed its initial solve, so it initialized non-ready
+and every coordinator command was refused. Both editor compositions sit on that
+repository, so this also closed the Settings Customize route.
 
-**Fix as originally proposed here was dangerous — do not use it.** Filtering
-through `PanelProfileOutputOccupancy::presentOutputsOnly()` before
-`rebuild()`/`LiveEditorHost` construction is safe for the *surface* path, where
-the filtered profile is never written back, but the editor host **persists what
-it holds**: an Apply would have written the filtered profile to the user store
-and permanently deleted every panel pinned to a display that happened to be
-absent at that moment. Silent data loss.
+**The fix originally proposed in this file was dangerous — do not use it.**
+Filtering through `PanelProfileOutputOccupancy::presentOutputsOnly()` before
+building the editor host is safe for the *surface* path, where the filtered
+profile is never written back, but the editor **persists what it holds**. An
+Apply would have written the filtered profile to the user store and permanently
+deleted every panel pinned to a display that happened to be absent. Silent data
+loss, on the ordinary path of customizing a panel with the lid shut.
 
-`work-space-7a` caught that and escrowed the absent panels instead, so they
-survive a round trip through Apply — see ADR-0235. Fixed in `61248193`.
+Fixed by escrow instead: the repository parts absent-output panels from the
+session at construction and re-attaches them at the persistence boundary, so
+they survive a round trip through Apply and return when their display does.
+Candidate validation never extends the escrow, so an *edit* naming a
+disconnected display is still refused. See
+[ADR-0235](docs/wiki/adr/0235-escrow-panels-whose-output-is-absent.md).
 
 ---
 
-## 2. The panel hide/reveal fade does nothing
+## 2. The panel hide/reveal fade does nothing — FIXED (`d1394485`)
 
-**You will see:** panels and the dock *pop* in and out instead of fading. The
-configured motion duration has no visual effect.
+Panels *popped* in and out instead of fading, and the configured motion
+duration had no visual effect. `QtPanelVisibilityAnimation::animate()` animated
+`QWindow::opacity`, which Qt's Wayland platform does not implement — 662
+warnings in one session.
 
-`QtPanelVisibilityAnimation::animate()` animates the `opacity` property of a
-`QWindow`:
+Measured against the session compositor on Qt 6.11.1: `setOpacity()` on a
+wayland `QQuickWindow` warns and changes no pixels, while setting `opacity` on
+`contentItem()` changes them as expected (white over black at 0.25 grabs as
+`#404040`). The fade now animates the scene root.
 
-```
-src/shell/runtime/panelvisibilityanimation.cpp:86
-    auto *const animation = new QPropertyAnimation(&window, "opacity", this);
-```
-
-Qt's Wayland platform does not implement window opacity, so every transition
-logs and the fade is a silent no-op:
-
-```
-This plugin does not support setting window opacity
-```
-
-224 of those in one 400-line stretch. This almost certainly never worked on this
-platform; it only became visible once panels actually started transitioning.
-
-Note the transition is still *correct* — mapping is what hides a panel, and the
-`QPropertyAnimation` still runs and still fires `finished`, so the visibility
-hold is released properly. Only the visual fade and the log noise are wrong.
-
-**Fix options:** animate something the compositor honours (a layer-surface
-margin slide, or an opacity animation on the QML root item rather than the
-window), or drop the fade and the duration setting honestly. Do not leave a
-setting that claims to do something it cannot.
+The port also gained `restore()`, because with the fade on a different object
+the producer's four `setOpacity(1.0)` resets would have stranded panels
+part-transparent. See
+[ADR-0236](docs/wiki/adr/0236-fade-the-scene-root-not-the-panel-window.md).
 
 ---
 
@@ -106,290 +146,319 @@ setting that claims to do something it cannot.
 **This entry was wrong.** `QWindow::setMask()` *is* implemented on Qt Wayland
 6.11.1 and the panel input region is set correctly.
 
-```
+```console
 $ nm -DC /usr/lib64/libQt6WaylandClient.so.6 | grep QWaylandWindow::setMask
 0000000000090900 T QtWaylandClient::QWaylandWindow::setMask(QRegion const&)
 ```
 
-`work-space-7a` additionally confirmed on the wire with `WAYLAND_DEBUG=1`
-against the live compositor that the needle rect reaches
-`wl_surface.set_input_region`, in both orders — Qt replays a mask stored before
-show at platform-window creation. The `AGENT-GUARD` comment in
-`runtimepanelwindowfactory.cpp` is accurate.
+Confirmed on the wire with `WAYLAND_DEBUG=1` against the live compositor: the
+needle rect reaches `wl_surface.set_input_region` in both orders, because Qt
+replays a mask stored before show at platform-window creation. The
+`AGENT-GUARD` in `runtimepanelwindowfactory.cpp` is accurate, and an
+`AGENT-NOTE` there now records this so it is not "fixed" again.
 
-**Where the error came from, because it can repeat:**
-`~/.local/share/sddm/wayland-session.log` is the whole *session's* stderr, not
-the shell's alone. The `does not support setting window masks` lines come from
-a different Qt client in that session (`PlasmaQuick::Dialog`, which masks on
-X11). Every warning in that file was attributed to the shell without checking
-which process emitted it.
-
-The neighbouring item #2 survives the same scrutiny, and the contrast is what
-makes the mistake legible — `QWaylandWindow` overrides `setMask` but has **no**
-`setOpacity` override, so opacity falls through to the `QPlatformWindow` base
-that warns:
-
-```
-$ nm -DC /usr/lib64/libQt6WaylandClient.so.6 | grep QWaylandWindow::setOpacity
-(no match)
-```
-
-Two near-identical warnings in one shared log, only one of them the shell's.
-Attribute a log line to a process before you attribute a defect to code.
+**Where the error came from, because it can repeat:** the session log is the
+whole *session's* stderr. The `does not support setting window masks` lines
+come from another Qt client in that session (`PlasmaQuick::Dialog`, which masks
+on X11). The neighbouring item #2 survives the same scrutiny, and the contrast
+is what makes the mistake legible — `QWaylandWindow` overrides `setMask` but
+has **no** `setOpacity` override, so of two near-identical warnings only the
+opacity one can be the shell's. Attribute a log line to a process before you
+attribute a defect to code.
 
 ---
 
-## 4. One transient window kills the whole visibility snapshot
+## 4. One transient window kills the whole visibility snapshot — DECIDED (`2b39e7e8`)
 
-**You will see:** auto-hide stopping and starting for no obvious reason. Panels
-stay visible for a while, then behave again.
+Rejection is all-or-nothing: one invalid member voids the batch, and the shell
+pins every panel visible until a clean snapshot arrives.
 
-`ShellVisibilitySnapshot` rejects the **entire** batch when any single managed
-window fails validation:
+**The decision (ADR-0237): the batch stays atomic.** The wiki states the
+contract as "One bad member rejects the complete batch; partial visibility
+publication is not a supported state", and that second clause settles it —
+dropping members silently changes what "the set of managed windows" means for
+every consumer.
 
-```
-src/compositor/src/shellvisibilitysnapshot.cpp:168
-    fail(error, QStringLiteral("a managed window is invalid or ambiguous"));
-```
+**What was actually actionable was the diagnosis.** Eight conditions shared one
+message, so a rejection said only that *something* was wrong with *some*
+window. Two of them are transient races (a frame outside its output; a window
+active while marked minimized), and five mean the producer sent something
+structurally wrong. Excluding is right for the first group and wrong for the
+second, and the log could not tell them apart across 8250 occurrences.
 
-The rejection is all-or-nothing, so a window that is momentarily off its
-assigned output, or active while still marked minimized, discards the state of
-every other window. The shell then selects safe-visible — every panel pinned
-visible — until a clean snapshot arrives.
+Every rejection now names the member and the cause — eight window conditions,
+the duplicate-active check, and four output conditions, each distinct and
+carrying the identifier and offending geometry.
 
-Observed 37 times in one pre-restart stretch, and 68 times earlier in the same
-session:
-
-```
-QindaQt shell visibility snapshot is unavailable: a managed window is invalid or ambiguous
-```
-
-The all-or-nothing contract is deliberate (documented in
-`docs/wiki/shell/panel-visibility.md`: "One bad member rejects the complete
-batch"), so changing it is an architecture decision, not a patch.
-
-**Fix:** decide whether a transiently invalid window should exclude *that
-window* from the snapshot rather than void the batch, and record the decision as
-an ADR either way. If the batch stays atomic, at minimum identify which window
-and why, because the current message names nothing.
+**This does not reduce the rejection rate.** It makes the next session's log
+say which of thirteen causes produced it. See item #0: the answer on the
+running desktop appears to be condition 5, persistently.
 
 ---
 
-## 5. The shell leaks per display-hotplug
+## 5. The shell leaks per display-hotplug — OPEN, and the evidence now conflicts
 
-**You will see:** the shell getting slower and heavier over a long session,
-especially if you plug and unplug displays. Animations degrade.
-
-Measured across roughly one hour on the pre-fix shell, while `outputGeneration`
-climbed from 9 to 15:
+The original measurement, on the pre-fix shell while `outputGeneration` climbed
+9 → 15:
 
 | | start | +28 min | +1 h |
 | --- | --- | --- | --- |
 | threads | 78 | 91 | 114 |
 | RSS | 289 MB | 420 MB | 490 MB |
-| Mesa GL contexts (`:gl0`/`:gdrv0`/`:traceq0` triples) | 20 | 24 | — |
 
-Idle CPU rose from ~4.6% to ~23% of a core over the same window. Thread growth
-comes in threes, which is one Mesa `util_queue` set per GL context, so roughly
-three contexts leak per output-generation change — consistent with every panel
-`QQuickWindow` being destroyed and recreated when the surface set is
-republished.
+**Counter-observation on the running r10 shell.** Sampled twice in one session:
 
-`0c094c0d` pruned the stale `QPointer` list in the panel window factory, which
-was a real but small part of it. **The context/thread growth itself is not
-fixed.** It is not yet established whether the leak is in QindaQt (a window or
-scene-graph resource outliving republication) or in Qt/Mesa (contexts not
-released on `QQuickWindow` destruction).
+| | at 3895 s | at 6662 s |
+| --- | --- | --- |
+| threads | 97 | **50** |
+| RSS | 504 MB | **386 MB** |
 
-**Next step:** republish the panel set N times in a controlled nested session
-and count `/proc/<pid>/task` — a tight reproducer decides Qt-vs-QindaQt quickly.
+Both went *down*, across an output-generation change that removed `DP-1`
+(gen 45 → 46). That is not what a monotonic per-hotplug leak predicts. It is
+consistent with resources scaling with the number of live panel windows — which
+halved when the second output went away — rather than accumulating.
+
+That does not clear the item: the original figures were taken while generations
+were being *added*, and both readings here are single samples. But it does mean
+the "roughly three GL contexts leak per output-generation change" reading is
+not established.
+
+**Next step is unchanged and now better motivated:** republish the panel set N
+times in a controlled nested session at a *fixed* output count and count
+`/proc/<pid>/task`. Varying the output count confounds the measurement.
 
 ---
 
-## 6. `WindowsChanged` fires ~20 Hz on an idle desktop — NOT REPRODUCIBLE on r10
+## 6. `WindowsChanged` fires ~20 Hz on an idle desktop — NOT REPRODUCIBLE (`6e4708a5`)
 
-Measured on the pre-fix shell with
-`busctl --user monitor --match "path='/org/qindaqt/Compositor'"`: **602
-`WindowsChanged` signals in 30 seconds** on an idle desktop.
+Original: **602 signals in 30 s** on an idle desktop. Re-measured the same way
+on r10: **1 in 30 s, 0 in 60 s**, with shell and KWin both at 0% of a core
+sampled from `/proc`. The original was taken while an orphaned
+`qindaqt-xembed-tray-proxy` was spinning a full core, which is the likely
+source.
 
-`work-space-7a` re-measured the same way on r10 and got **1 in 30 seconds, 0 in
-60 seconds**, with shell and KWin both at 0% of a core from `/proc`. The
-original measurement was taken while an orphaned `qindaqt-xembed-tray-proxy`
-was spinning at 100% of a core, which is the likely source.
+The underlying sloppiness was real and is fixed anyway: `ManagedWindowRegistry`
+emitted `windowsChanged` synchronously per `frameGeometryChanged` and
+`captionChanged` — one D-Bus broadcast per frame of any drag — and is now
+coalesced at the source to one emission per event-loop turn.
 
-Real underlying sloppiness confirmed and fixed anyway in `6e4708a5`:
-`ManagedWindowRegistry` emitted per `frameGeometryChanged`, so the emission is
-now coalesced at the source.
+Treat the 20 Hz figure as an artefact of the pre-fix machine state.
 
-Treat the 20 Hz figure as an artefact of the pre-fix machine state, not as a
-standing defect.
+---
 
-## 7. Display mirroring fails
+## 7. Display mirroring fails — OPEN, needs a live retry first
 
-**You will see:** configuring mirrored outputs in Settings → Display not taking
-effect, and the output generation churning as attempts roll back
-(`outputGeneration` went 15 → 38 during the attempts).
+**Not diagnosed, and do not treat it as a code defect yet.** The `Display1`
+service was **hung for the entire period of the attempts** — D-Bus introspect
+timed out while the unit read `active` — and was restarted at 23:14. Every
+mirror attempt before that was doomed regardless of configuration.
 
-**Not diagnosed.** What is known:
+What is known:
 
 - Mirroring is implemented, not missing — draft (`setOutputMirror`,
   `display_settings_draft.cpp:210`), topology validation (`UnknownMirrorSource`,
-  `MirrorSelfReference`, `MirrorCycle`), and a Display1 stage/preview/confirm
-  transaction.
-- The draft-level mirror logic does no mode or scale checking, so any rejection
-  is at the Display1 service or the compositor.
-- **The `Display1` service was hung** for the whole period of the attempts:
-  D-Bus introspect timed out against `org.qindaqt.Display1` while the process
-  was alive and its unit `active`. It was restarted at 23:14 and now answers.
-  Every mirror attempt before that was doomed regardless of the configuration.
-- The `DisplayMirrorRow.qml` null-binding `TypeError`s in the log are from hours
-  earlier, not the recent attempts, so they are not the cause.
-- Outputs: `eDP-1` 1920x1080@60 (Lenovo, scale 1.25), `DP-1` 1920x1200@59.885
-  ("Dopesplay", scale 1.25), `HDMI-A-1` 1920x1080@60 (Wacom One Pen Display 13).
+  `MirrorSelfReference`, `MirrorCycle`), and a Display1
+  stage/preview/confirm transaction.
+- The draft-level logic does no mode or scale checking, so any rejection is at
+  the Display1 service or the compositor.
+- The `DisplayMirrorRow.qml` `TypeError`s are real (item #8) and did disable
+  the mirror control, but they predate the recent attempts.
 
-**Next step:** retry now that the service answers. If it still fails, capture
-what the route reports and what Display1 returns from `Stage`/`Confirm`.
+**A mirror configuration may have partially applied.** The last *valid*
+snapshot before the current wedge (generation 45) described both outputs at
+identical geometry, with the internal panel scaled to match:
+
+```
+DP-1    1920x1200 @ (0,0)  scale 1
+eDP-1   1920x1200 @ (0,0)  scale 0.9
+```
+
+`eDP-1`'s real mode is 1920x1080, and 1080 ÷ 0.9 = 1200 — the compositor was
+scaling the internal panel to carry a 1200-tall framebuffer. That is what a
+mirror onto a taller source looks like. Whether it was ever presented to the
+user as working is unknown.
+
+**Next step:** retry now that the service answers, and capture what the route
+reports alongside what Display1 returns from `Stage`/`Confirm`.
 
 Separately: **why did the display service wedge?** A hung Display1 with a
-healthy-looking unit is its own defect, and nothing in its journal explains it.
+healthy-looking unit is its own defect and nothing in its journal explains it.
 
 ---
 
-## 8. Settings Display route binds against a null model
+## 8. Settings Display route binds against a null model — FIXED (`89bf139d`)
 
-**You will see:** display controls briefly inert or blank when the page opens.
+Filed as "cosmetic when transient at page load". It was neither. A thrown QML
+binding does not merely log — the whole binding fails, so in
+`DisplayMirrorRow` `candidates` evaluated empty and **the mirror control
+disabled itself**, which matters given item #7.
 
-Repeated `TypeError: Cannot read property '<x>' of null` from the Display and
-Appearance routes, e.g.:
-
-```
-DisplayMirrorRow.qml:32: TypeError: Cannot read property 'outputs' of null
-DisplayScaleSection.qml: TypeError: Cannot read property 'selectedOutput' of null
-SettingsRouteHost.qml:53: TypeError: Cannot read property 'activeRouteAvailable' of null  (110 occurrences)
-```
-
-`DisplayMirrorRow.qml` dereferences `root.displaySettings.selectedOutput.<field>`
-before the `?? ""` fallback can help, so a null `selectedOutput` throws and the
-whole binding fails — `candidates` evaluates empty and the mirror control
-disables itself.
-
-Cosmetic when transient at page load; it is not established whether it is ever
-persistent. `d5a6f9be` was an earlier pass at these null bindings.
+A new test builds `DisplayPage` with `displaySettings: null` and asserts no
+binding errors. It found **57 dereference sites across seven QML files**, not
+the three this file named. Optional chaining alone was not enough and the test
+proved it: a guarded chain yields `undefined`, which QML cannot assign to a
+typed `bool` or string property, so 23 sites merely traded `TypeError` for
+`Unable to assign [undefined] to bool`. Both are now asserted absent.
 
 ---
 
-## 9. `qindaqt-settings` and `xdg-desktop-portal-kde` crashes
+## 9. `qindaqt-settings` and `xdg-desktop-portal-kde` crashes — OPEN, and ongoing
 
-Not investigated. Cores present:
+Still not investigated, and **`xdg-desktop-portal-kde` is crashing now**, not
+just historically — seven SIGABRTs today between 01:13 and 01:16:
 
 ```
-2026-09-21 22:09:54  SIGABRT  /usr/libexec/xdg-desktop-portal-kde   (x3)
-2026-09-21 22:37:33  SIGABRT  /usr/bin/qindaqt-settings             (22.5 MB)
+2026-09-22 01:13:35  SIGABRT  /usr/libexec/xdg-desktop-portal-kde
+2026-09-22 01:16:33  SIGABRT  /usr/libexec/xdg-desktop-portal-kde   (x6 within one second)
 ```
+
+Six aborts inside one second is a restart loop, not six independent faults.
+The portal is what backs file pickers and screen sharing, so this is likely to
+be user-visible.
+
+`/var/lib/systemd/coredump` is now **853 MB**, up from the 752 MB recorded
+under Housekeeping.
 
 ---
 
-## 10. `Hybrid interaction failed: container move has no active baseline`
+## 10. `Hybrid interaction failed: container move has no active baseline` — OPEN
 
-Logged in long unbroken runs while dragging windows. Not investigated; the
-interaction appears to continue working.
-
----
-
-## 11. Dead signal in the visibility animation producer
-
-`PanelVisibilityAnimationProducer::reconcileRequested` is emitted but has no
-connection anywhere in the tree:
-
-```
-src/shell/runtime/panelvisibilityanimation.h:64    void reconcileRequested();
-src/shell/runtime/panelvisibilityanimation.cpp:227 Q_EMIT reconcileRequested();
-```
-
-Harmless today — the reconcile it intends actually happens because releasing the
-visibility-hold lease emits `PanelInteractionStore::interactionsChanged`, which
-schedules the debounced reconcile. But it reads as the mechanism and is not, so
-anyone reasoning about the hide path will be misled.
-
-**Fix:** delete it, or connect it and drop the accidental reliance on the lease
-release.
+**128 occurrences** in the current session log, from
+`hybridcontainerplacement.cpp:213` and `:272` (a third site at `:331` covers
+resize). Logged while dragging windows; the interaction appears to continue
+working. Still not investigated.
 
 ---
 
-## 12. Visibility reconcile cost is O(entire panel QML tree)
+## 11. Dead signal in the visibility animation producer — FIXED (`d2557ba7`)
 
-Not a live symptom yet, but it scales the wrong way. Every
-`PanelVisibilityRuntime::synchronize()` calls
-`PanelVisibilityPopupProducer::synchronizePopupObjects()`, which walks the full
-object tree of every panel window:
+`PanelVisibilityAnimationProducer::reconcileRequested` was emitted and
+connected to nothing. Connected rather than deleted: `synchronize()`'s
+`immediateReconcile` out-param covers the moment a fade *starts*, and a fade
+*ends* later with no synchronous caller to return to, so the signal was the
+right mechanism and was simply unwired.
 
-```
-src/shell/runtime/panelvisibilitypopup.cpp:96    const auto objects = window->findChildren<QObject *>();
-```
-
-`settlePanelVisibility()` runs up to three `synchronize()` passes, and it runs on
-every lease acquire/release that crosses zero. The panel tree grows over a
-session (notifications, clipboard history, task list), so the per-transition cost
-grows with uptime.
-
-Also on the hot path: `PanelVisibilityPointerProducer` installs an event filter
-on the `QGuiApplication` object, which Qt invokes for **every event of every
-object in the process**, and it does two dynamic-property lookups plus an
-`objectName()` comparison on each one
-(`src/shell/runtime/panelvisibilitypointer.cpp:38-58`).
+The reconcile did happen, but only because the fade-completion callback
+releases the visibility-hold lease and that release happens to emit
+`PanelInteractionStore::interactionsChanged`. Nothing declared that, so a later
+change to the hold's lifetime would have left faded-out panels mapped at zero
+opacity — invisible but still taking input.
 
 ---
 
-## 13. One blur manager global is bound per panel window
+## 12. Visibility reconcile cost is O(entire panel QML tree) — FIXED (`ea606d3d`)
 
-`PanelSurfaceBlur`'s constructor creates its own `BlurManagerExtension`:
+`PanelVisibilityPointerProducer`'s filter is installed on the
+`QGuiApplication`, so Qt runs it for every event of every object in the
+process. It looked the object up *before* checking the event type, spending two
+dynamic property lookups and an `objectName()` comparison on events that could
+never match. The type check now comes first.
 
-```
-src/panel_blur/src/panel_surface_blur.cpp:61    , m_manager(std::make_unique<BlurManagerExtension>())
-```
-
-`PanelSurfaceBlur` is constructed per panel window
-(`runtimepanelwindowfactory.cpp:352`), so each panel binds its own
-`org_kde_kwin_blur_manager` global instead of sharing one. Minor, but it is one
-registry binding per window per republication, on a code path that already
-republishes on every output-generation change (see #5).
-
----
-
-## 14. Pre-existing test failures
-
-Red on a clean tree — verified by stashing the session's changes and re-running,
-so they are not from this work.
-
-- `qindaqt.controls-visual-125-*` and `-150-*` — 14 rows, QtQuick Controls
-  baseline drift at fractional scale, e.g. *"baseline drift: 9 pixels, max
-  channel delta 15"*. Either the baselines need regenerating for the current Qt
-  (6.11.1) or something really did shift.
-- `desktop.virtual.stage-closure` — *"staged QML module
-  QindaQt.Shell.ClipboardApplet has no qmldir"*.
+`synchronizePopupObjects()` walked `findChildren<QObject *>()` over every panel
+window on every synchronize. It is now gated on a dirty flag set by
+`QEvent::ChildAdded` — a popup can only enter a tree by being parented into it,
+so the trigger is sound rather than a heuristic.
 
 ---
 
-## 15. Branch not merged
+## 13. One blur manager global is bound per panel window — FIXED (`d2557ba7`)
 
-Both the r9 and r10 ebuilds pin commits on
+`org_kde_kwin_blur_manager` is a Wayland global and `PanelSurfaceBlur` is
+constructed per panel window, so the shell bound one copy per panel — and
+republishes the whole panel set on every output-generation change. One binding
+now serves the process, held by `weak_ptr` so it dies with the last panel
+rather than outliving `QGuiApplication`.
+
+---
+
+## 14. Pre-existing test failures — HALF FIXED (`06e2370c`)
+
+**`desktop.virtual.stage-closure` — fixed.** Not baseline drift. The Clipboard
+and Task List staging for the `DesktopVirtual` component sat inside a block
+guarded on `QINDAQT_WESTON AND QINDAQT_WESTON_SCREENSHOOTER`. Neither module
+has anything to do with Weston, so on a machine without it the component staged
+incomplete while the closure test, which needs no Weston, ran anyway and
+failed. Removing the guard surfaced two more modules that had never been staged
+at all: `QindaQt.Shell.GatherOverview` and `QindaQt.Shell.ObsApplet`.
+
+**`qindaqt.controls-visual-125-*` / `-150-*` — still open.** 14 rows, QtQuick
+Controls baseline drift at fractional scale, e.g. *"baseline drift: 9 pixels,
+max channel delta 15"*. Deliberately untouched: regenerating baselines would
+make the rows green whether or not something really shifted under Qt 6.11.1,
+and telling those apart needs a look at the diffs, not a refresh.
+
+**Newly found and fixed, not previously listed:** `compositor.pointer-corner`,
+`compositor.chrome-appearance-palette` and `compositor.hybrid-chrome-plan-builder`
+construct a `QGuiApplication` without naming a platform, so they defaulted to
+`xcb` and aborted on a headless runner. Now pinned to `offscreen`.
+
+---
+
+## 15. Branch not merged — OPEN
+
+The r9 and r10 ebuilds pin commits on
 `fix/panel-visibility-and-hotplug-defects`, not on `main`. Merge and re-pin, or
-the overlay depends on a branch.
+the overlay depends on a branch. The branch has since grown eight more commits.
+
+---
+
+## 16. The shell and the compositor disagree about the output set — OPEN, new
+
+**You will see:** panels pinned visible even when item #0 is not in play.
+
+`OutputInventoryMatcher` refuses to evaluate a mixed generation, which is
+correct, but it is refusing constantly. Current session log:
+
+```
+   1574  safe-visible output fallback: output 'DP-1' scale differs
+    205  safe-visible output fallback: output 'eDP-1' scale differs
+    102  safe-visible output fallback: output inventory counts differ
+     17  safe-visible output fallback: output ... logical geometry differs
+```
+
+Measured directly, as an ordinary Wayland client against the session
+compositor, KWin advertises **one** output:
+
+```
+wl_output#28.mode(1, 1920, 1080, 60000)
+wl_output#28.scale(1)
+zxdg_output_v1#29.logical_size(1920, 1080)
+zxdg_output_v1#29.name("eDP-1")
+```
+
+and `QScreen` agrees: `eDP-1`, 1920x1080, `devicePixelRatio 1`. The
+compositor's own D-Bus `ShellVisibilitySnapshot` at generation 45 described
+*two* outputs, both 1920x1200, with `eDP-1` at scale 0.9. Same process, two
+descriptions.
+
+**`wl_output.scale` is 1 even under fractional scaling** —
+`wp_fractional_scale_manager_v1` is bound, so the fractional ratio never
+reaches `wl_output.scale`, and Qt's `devicePixelRatio` is that integer buffer
+scale.
+
+This matters for ADR-0234. That ADR accepts a match when
+`ceil(compositorScale) == qtScale`. For a compositor logical scale of 1.25 —
+which is what both displays were configured at — `ceil` is 2 while Qt reports
+1, so the match fails and the shell falls back. That is consistent with 1574
+rejections naming `DP-1`, and it means the r10 fractional-scale fix does not
+cover the case it was written for.
+
+**Confidence:** the wire measurement and the `wl_output.scale(1)` behaviour are
+directly observed. The 1.25 arithmetic is inference — the outputs are not
+currently at 1.25, so the failing comparison was not caught in the act.
+
+**Next step:** set an output to 1.25, read `QScreen::devicePixelRatio()` and
+the compositor's reported scale, and decide whether the two quantities should
+be compared at all rather than which rounding to use. If they should not, that
+supersedes part of ADR-0234.
 
 ---
 
 ## Unverified from the original report
 
 The original complaint was panel animation degrading to roughly 1 fps over a
-session. The largest measured drain was found and fixed — an orphaned
-`qindaqt-xembed-tray-proxy` spinning on a dead XCB descriptor at 100% of one
-core, 4.6 CPU-hours accumulated — and shell idle CPU roughly halved (~23% → ~11%
-of a core). **It was never confirmed which animation was dropping frames**, so
-whether that specific symptom is gone is still open. Items #2, #5 and #12 are the
-remaining candidates.
-
-## Housekeeping
-
-`/var/lib/systemd/coredump` held 752 MB, including two `qindaqt-shell` SIGSEGVs
-caused during this session by pinning the dock to a display while the layout
-solver still treated an absent pinned output as fatal (fixed in r10).
+session. The largest measured drain was found and fixed in r10 — an orphaned
+`qindaqt-xembed-tray-proxy` spinning on a dead XCB descriptor at 100% of a
+core. **It was never confirmed which animation was dropping frames.** Idle CPU
+on the running shell now samples at 0% of a core, so the standing drain is
+gone; items #2 and #5 remain the candidates for the animation itself.
