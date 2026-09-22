@@ -243,36 +243,50 @@ running desktop appears to be condition 5, persistently.
 
 ---
 
-## 5. The shell leaks per display-hotplug — OPEN, and the evidence now conflicts
+## 5. The shell leaks per display-hotplug — ANSWERED: it is Qt/Mesa
 
-The original measurement, on the pre-fix shell while `outputGeneration` climbed
-9 → 15:
+The open question was whether the leak is in QindaQt — a window or scene-graph
+resource outliving republication — or in Qt/Mesa. **It is Qt/Mesa.**
 
-| | start | +28 min | +1 h |
-| --- | --- | --- | --- |
-| threads | 78 | 91 | 114 |
-| RSS | 289 MB | 420 MB | 490 MB |
+`tools/diagnostics/panel_republication_leak_probe.cpp` contains **no QindaQt
+code at all**: it creates N plain `QQuickWindow`s, shows them, destroys the set,
+and repeats, with the output count held fixed — the confound that made every
+in-session measurement ambiguous. Qt 6.11.1 against the live compositor, three
+windows per generation:
 
-**Counter-observation on the running r10 shell.** Sampled twice in one session:
-
-| | at 3895 s | at 6662 s |
+| generation | threads | RSS (kB) |
 | --- | --- | --- |
-| threads | 97 | **50** |
-| RSS | 504 MB | **386 MB** |
+| baseline | 4 | 38 088 |
+| 1 | 12 | 106 120 |
+| 10 | 14 | 130 380 |
+| 20 | 16 | 146 236 |
+| 30 | 20 | 162 968 |
 
-Both went *down*, across an output-generation change that removed `DP-1`
-(gen 45 → 46). That is not what a monotonic per-hotplug leak predicts. It is
-consistent with resources scaling with the number of live panel windows — which
-halved when the second output went away — rather than accumulating.
+Monotonic, no plateau: about **one thread per 3.6 generations and ~2 MB RSS per
+generation**. Destroying a `QQuickWindow` on the Wayland platform does not
+release everything it took, and the shell inherits that once per panel per
+output-generation change — exactly the shape the original session showed
+(threads 78 → 114, RSS 289 → 490 MB, while `outputGeneration` went 9 → 15).
 
-That does not clear the item: the original figures were taken while generations
-were being *added*, and both readings here are single samples. But it does mean
-the "roughly three GL contexts leak per output-generation change" reading is
-not established.
+**A reading that looked contradictory, resolved.** A later sample of the
+running shell showed threads *falling* 97 → 50 and RSS 504 → 386 MB. That
+sample spanned an output-generation change that **removed** a display, so the
+live panel count halved. Both are true at once: resources scale with the number
+of live panels, and a residue leaks per republication. Any future measurement
+must hold the output count fixed or it sees only the first effect.
 
-**Next step is unchanged and now better motivated:** republish the panel set N
-times in a controlled nested session at a *fixed* output count and count
-`/proc/<pid>/task`. Varying the output count confounds the measurement.
+Full method and caveats:
+[panel republication leak](docs/diagnostics/2026-09-22-panel-republication-leak.md).
+
+**What is still open.** This does not prove the shell has no leak of its own —
+it shows a Qt/Mesa one underneath, big enough to account for the growth.
+Separating any QindaQt contribution needs the same probe shape run against the
+real panel factory.
+
+**Mitigation worth weighing regardless of the upstream bug:** republishing
+every panel window on every output-generation change is what multiplies this.
+Reusing panel windows whose surface configuration did not change would avoid
+most of the churn.
 
 ---
 
