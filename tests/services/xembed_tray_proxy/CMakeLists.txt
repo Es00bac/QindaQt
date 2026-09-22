@@ -38,3 +38,23 @@ set_tests_properties(
         TIMEOUT 180
         RUN_SERIAL TRUE
 )
+
+# Regression: an orphaned proxy must not outlive its X display, and must never
+# busy-loop on a dead XCB descriptor. Same private-display, private-bus
+# contract as the dock proof above.
+add_test(
+    NAME services.xembed-tray-display-loss
+    COMMAND
+        "${CMAKE_COMMAND}" -E env
+        "QINDAQT_TRAY_PROXY=$<TARGET_FILE:qindaqt-xembed-tray-proxy>"
+        "QINDAQT_TRAY_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/display-loss-run"
+        "${CMAKE_CURRENT_SOURCE_DIR}/run_tray_display_loss_proof.sh"
+)
+set_tests_properties(
+    services.xembed-tray-display-loss
+    PROPERTIES
+        LABELS "integration;tray;x11;dbus;private-bus"
+        SKIP_RETURN_CODE 77
+        TIMEOUT 180
+        RUN_SERIAL TRUE
+)
