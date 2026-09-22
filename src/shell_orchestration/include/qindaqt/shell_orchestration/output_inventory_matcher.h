@@ -31,11 +31,19 @@ struct OutputInventoryMatchResult {
 
 class OutputInventoryMatcher final {
 public:
-    // Exact equality is intentional: both inventories describe the same
-    // compositor-logical generation immediately before surface preparation.
+    // Proves both inventories describe the same compositor-logical output
+    // generation immediately before surface preparation. Identity, count, and
+    // logical geometry must agree exactly.
+    //
+    // The arguments are NOT interchangeable. `compositorInventory` carries the
+    // wl_output logical scale, which may be fractional; `qtInventory` carries
+    // QScreen::devicePixelRatio(), which Qt's Wayland platform reports as that
+    // scale rounded up to an integer buffer scale. The scale check accepts
+    // both rulers; see scalesDescribeTheSameOutput() in the implementation
+    // before tightening it.
     [[nodiscard]] static OutputInventoryMatchResult match(
-        const QVector<ShellLayout::LogicalOutput> &expected,
-        const QVector<ShellLayout::LogicalOutput> &observed);
+        const QVector<ShellLayout::LogicalOutput> &compositorInventory,
+        const QVector<ShellLayout::LogicalOutput> &qtInventory);
 };
 
 } // namespace QindaQt::ShellOrchestration

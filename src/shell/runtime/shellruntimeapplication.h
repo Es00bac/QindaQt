@@ -146,6 +146,9 @@ private:
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
                                                 QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
+    // Logs one line per distinct safe-visible cause; see
+    // m_lastVisibilityFallback.
+    void reportVisibilityFallback(const QString &reason);
     [[nodiscard]] bool settlePanelVisibility(QString *error);
     void startNotificationOutputAuthority();
     // Selected theme map with the confirmed fonts.family preference overlaid;
@@ -289,6 +292,11 @@ private:
     bool m_profileLockedByCli = false;
     QFileSystemWatcher m_profileStoreWatch;
     QTimer m_profileAdoptDebounce;
+    // AGENT-GUARD: a rejected visibility generation repeats at reconcile rate
+    // (a stuck fallback logged twice a second and wrote ~600 KB an hour to the
+    // session log). Report every distinct cause once, plus the recovery, so a
+    // persistent fault stays visible without becoming its own load.
+    QString m_lastVisibilityFallback;
 };
 
 } // namespace QindaQt::Shell

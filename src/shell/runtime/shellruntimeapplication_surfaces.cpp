@@ -23,6 +23,7 @@
 #include "qindaqt/shell_visibility_client/compositor_visibility_client.h"
 
 #include <QDebug>
+#include <QHash>
 #include <QScreen>
 
 #include <utility>
@@ -37,6 +38,32 @@ QVector<ShellLayout::LogicalOutput> logicalOutputs(
     result.reserve(snapshot.outputs.size());
     for (const auto &output : snapshot.outputs) {
         result.append({output.id, output.geometry, output.scale});
+    }
+    return result;
+}
+
+// AGENT-CONTRACT: LogicalOutput::scale becomes PanelSurfaceConfiguration::
+// outputScale, which LayerShellSurfaceBackend compares against
+// QScreen::devicePixelRatio() before it will prepare or keep a surface. The
+// compositor's wl_output scale is a different ruler and may be fractional, so
+// adopting it verbatim would make every panel fail preparation on a
+// fractionally scaled output. Adopt the compositor's authoritative logical
+// geometry - what the visibility policy actually intersects - and keep Qt's
+// render scale for the surface path.
+QVector<ShellLayout::LogicalOutput> adoptCompositorGeometry(
+    const QVector<ShellLayout::LogicalOutput> &compositorOutputs,
+    const QVector<ShellLayout::LogicalOutput> &qtOutputs)
+{
+    QHash<QString, qreal> renderScales;
+    renderScales.reserve(qtOutputs.size());
+    for (const auto &output : qtOutputs) {
+        renderScales.insert(output.id, output.scale);
+    }
+    QVector<ShellLayout::LogicalOutput> result;
+    result.reserve(compositorOutputs.size());
+    for (const auto &output : compositorOutputs) {
+        result.append({output.id, output.geometry,
+                       renderScales.value(output.id, output.scale)});
     }
     return result;
 }
@@ -107,6 +134,15 @@ void ShellRuntimeApplication::startNotificationOutputAuthority()
     }
 }
 
+void ShellRuntimeApplication::reportVisibilityFallback(const QString &reason)
+{
+    if (m_lastVisibilityFallback == reason) {
+        return;
+    }
+    m_lastVisibilityFallback = reason;
+    qWarning().noquote() << "QindaQt shell is using" << reason;
+}
+
 bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
 {
     const auto inventory = ShellSurface::QtOutputInventory::read();
@@ -131,15 +167,16 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
         const auto outputMatch = ShellOrchestration::OutputInventoryMatcher::match(
             compositorOutputs, inventory.outputs);
         if (outputMatch.ok()) {
-            selectedOutputs = compositorOutputs;
+            selectedOutputs =
+                adoptCompositorGeometry(compositorOutputs, inventory.outputs);
             visibilitySnapshot = &*m_visibilityClient->snapshot();
         } else {
             // AGENT-GUARD: Qt and compositor output generations can cross
             // during hotplug. A mixed generation is never evaluated; keeping
             // every panel visible is the fail-safe policy until they converge.
-            qWarning().noquote()
-                << "QindaQt shell is using safe-visible output fallback:"
-                << outputMatch.message;
+            reportVisibilityFallback(
+                QStringLiteral("safe-visible output fallback: %1")
+                    .arg(outputMatch.message));
         }
     }
 
@@ -180,12 +217,19 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
             ShellOrchestration::PanelVisibilityInventoryAssembler::assemble(
                 profile, layout, *visibilitySnapshot, m_interactions->snapshot());
         if (visibility.ok()) {
+            if (!m_lastVisibilityFallback.isEmpty()) {
+                qInfo().noquote()
+                    << "QindaQt shell resumed live panel visibility after:"
+                    << m_lastVisibilityFallback;
+                m_lastVisibilityFallback.clear();
+            }
             runtime = ShellOrchestration::PanelRuntimePlanAssembler::fromEvaluation(
                 basePlan, visibility.evaluation);
         } else {
-            qWarning().noquote()
-                << "QindaQt shell rejected live visibility and kept panels visible:"
-                << visibility.error.message;
+            reportVisibilityFallback(
+                QStringLiteral("rejected live visibility and kept panels"
+                               " visible: %1")
+                    .arg(visibility.error.message));
             runtime =
                 ShellOrchestration::PanelRuntimePlanAssembler::safeVisible(basePlan);
         }
