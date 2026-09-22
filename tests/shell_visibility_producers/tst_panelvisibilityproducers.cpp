@@ -257,7 +257,13 @@ void PanelVisibilityProducerTests::animation()
     QCOMPARE(animationPort.to, 0.0);
     QCOMPARE(animationPort.milliseconds, 240);
     QVERIFY(held(store));
+    // A finished hide fade must ask for a reconcile: the panel is still
+    // mapped at zero opacity until the surface plan is reevaluated, so
+    // without this it is invisible but still taking input.
+    QSignalSpy reconciles(
+        &producer, &Shell::PanelVisibilityAnimationProducer::reconcileRequested);
     animationPort.finish();
+    QCOMPARE(reconciles.count(), 1);
     QVERIFY(!held(store));
     QVERIFY(!producer.synchronize(plan(ShellSurface::PanelSurfaceMapping::Unmapped),
                                   {identity()}, true, 240));
@@ -315,6 +321,11 @@ void PanelVisibilityProducerTests::boundaryPoison()
     QCOMPARE(meta->indexOfMethod("setPanelVisible(QString,bool)"), -1);
     QCOMPARE(meta->indexOfMethod("setReservation(QString,bool)"), -1);
     QCOMPARE(meta->indexOfProperty("compositorWindowInventory"), -1);
+    // The forwarding signal for a finished hide fade. The shell runtime
+    // connects it to the debounced reconcile; without it the hide path
+    // depends on the visibility-hold lease release happening to emit
+    // PanelInteractionStore::interactionsChanged.
+    QVERIFY(meta->indexOfSignal("reconcileRequested()") >= 0);
 }
 
 int main(int argc, char **argv)

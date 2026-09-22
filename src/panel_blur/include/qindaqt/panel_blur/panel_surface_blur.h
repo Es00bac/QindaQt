@@ -46,11 +46,22 @@ public:
     [[nodiscard]] static QRegion regionForBounds(const QRectF &bounds,
                                                  const QSize &windowSize);
 
+    // Live org_kde_kwin_blur_manager registry bindings in this process. The
+    // invariant is that this never exceeds one however many panel windows
+    // exist: the manager is a global, and the shell republishes every panel
+    // window on each output-generation change, so a per-window binding grew
+    // without bound. Exposed because a registry binding has no other
+    // observable footprint. Always 0 in a build without the protocol.
+    [[nodiscard]] static int liveManagerBindings() noexcept;
+
 private:
     void pushRegion();
 
     QPointer<QQuickWindow> m_window;
-    std::unique_ptr<BlurManagerExtension> m_manager;
+    // Shared process-wide: one org_kde_kwin_blur_manager binding serves every
+    // panel window. Kept as a shared_ptr so the last panel destroys it, before
+    // QGuiApplication goes away.
+    std::shared_ptr<BlurManagerExtension> m_manager;
     struct BlurObject;
     std::unique_ptr<BlurObject> m_blur;
     QRectF m_bounds;

@@ -54,6 +54,13 @@ public:
     // without touching the producers or shortcuts.
     void applyProfile(const Profiles::LayoutProfile &profile);
 
+Q_SIGNALS:
+    // A hide fade finished, so the surface plan must be reevaluated to
+    // actually unmap the panel. synchronize()'s immediateReconcile out-param
+    // covers the moment a fade *starts*; this covers the moment one *ends*,
+    // which happens later and has no synchronous caller to return to.
+    void reconcileRequested();
+
 private:
     class Private;
     Private *m_private = nullptr;
