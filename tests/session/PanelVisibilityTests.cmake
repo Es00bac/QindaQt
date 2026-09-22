@@ -124,51 +124,11 @@ if(
     # loader closure for every nested row. Panel visibility adds only its
     # scenario-specific profile and probe dependencies here.
 
-    # BuiltinAppletContent now imports the compiled Clipboard applet module.
-    # Every private desktop row installs only DesktopVirtual, so stage that
-    # shell-linked module through its owning install helper as well.
-    qindaqt_install_clipboard_applet_runtime(DesktopVirtual)
-
-    # AGENT-NOTE: The production shell links the task-list applet library and
-    # BuiltinAppletContent hosts it (Task List T3); this staging is load-bearing
-    # for the nested DesktopVirtual stage exactly like the launcher and Global
-    # Menu above.
-    qt_query_qml_module(
-        qindaqt_shell_task_list_applet
-        QMLDIR _qindaqt_panel_visibility_task_list_qmldir
-        TYPEINFO _qindaqt_panel_visibility_task_list_typeinfo
-        QML_FILES _qindaqt_panel_visibility_task_list_qml_files
-        QML_FILES_DEPLOY_PATHS _qindaqt_panel_visibility_task_list_deploy_paths
-    )
-    install(
-        TARGETS qindaqt_shell_task_list_applet
-                qindaqt_shell_task_list_appletplugin
-        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
-            COMPONENT DesktopVirtual
-        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
-            COMPONENT DesktopVirtual
-        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
-            COMPONENT DesktopVirtual
-    )
-    install(
-        FILES
-            "${_qindaqt_panel_visibility_task_list_qmldir}"
-            "${_qindaqt_panel_visibility_task_list_typeinfo}"
-        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
-        COMPONENT DesktopVirtual
-    )
-    foreach(qml_file deploy_path IN ZIP_LISTS
-            _qindaqt_panel_visibility_task_list_qml_files
-            _qindaqt_panel_visibility_task_list_deploy_paths)
-        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
-        cmake_path(GET deploy_path FILENAME deploy_name)
-        install(
-            FILES "${qml_file}"
-            DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList/${deploy_directory}"
-            RENAME "${deploy_name}"
-            COMPONENT DesktopVirtual
-        )
-    endforeach()
+    # AGENT-NOTE: Clipboard and Task List stage through
+    # DesktopVirtualAppletModules.cmake with every other module
+    # BuiltinAppletContent imports. They were staged here, inside this
+    # Weston-guarded block, which left the DesktopVirtual component incomplete
+    # on any machine without Weston.
 
     # AGENT-NOTE: BuiltinAppletContent.qml now imports
     # QindaQt.Shell.StatusNotifier, so the module stages through the shared

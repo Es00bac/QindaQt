@@ -1,12 +1,26 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # AGENT-CONTRACT: BuiltinAppletContent.qml and AppletChip.qml import this
-# module set (Clipboard and Task List are staged by PanelVisibilityTests.cmake).
-# Keep staging data-driven so a DesktopVirtual install cannot repair one nested
-# row while leaving another row dependent on an ambient build-tree import.
+# module set. Keep staging data-driven so a DesktopVirtual install cannot
+# repair one nested row while leaving another row dependent on an ambient
+# build-tree import.
+#
+# AGENT-GUARD: every module BuiltinAppletContent imports belongs in this list
+# and nowhere else. Clipboard and Task List used to be staged by
+# PanelVisibilityTests.cmake instead, inside a block guarded on
+# `QINDAQT_WESTON AND QINDAQT_WESTON_SCREENSHOOTER`. Those two modules have
+# nothing to do with Weston, so on a machine with no Weston the DesktopVirtual
+# component silently staged without them and desktop.virtual.stage-closure
+# failed with "staged QML module QindaQt.Shell.ClipboardApplet has no qmldir" -
+# a component-completeness defect wearing the costume of a missing optional
+# dependency. Do not move staging back under a capability guard.
 set(
     _qindaqt_desktop_applet_modules
     "qindaqt_shell_audio_applet_runtime|QindaQt/Shell/AudioApplet"
+    "qindaqt_shell_clipboard_applet_runtime|QindaQt/Shell/ClipboardApplet"
+    "qindaqt_shell_task_list_applet|QindaQt/Shell/TaskList"
+    "qindaqt_shell_gather_overview_ui|QindaQt/Shell/GatherOverview"
+    "qindaqt_shell_obs_applet_runtime|QindaQt/Shell/ObsApplet"
     "qindaqt_shell_bluetooth_applet_runtime|QindaQt/Shell/BluetoothApplet"
     "qindaqt_global_menu_qml|QindaQt/Shell/GlobalMenu"
     "qindaqt_shell_launcher_qml|QindaQt/Shell/Launcher"
