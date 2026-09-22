@@ -208,14 +208,26 @@ void PanelVisibilityPointerProducer::pointerLeft(const Identity &identity)
 
 bool PanelVisibilityPointerProducer::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched != nullptr && event != nullptr) {
-        const auto identity = identityFromWindow(*watched);
-        if (identity && event->type() == QEvent::Enter) {
-            pointerEntered(*identity);
-        } else if (identity && (event->type() == QEvent::Leave
-                               || event->type() == QEvent::Hide
-                               || event->type() == QEvent::Close)) {
-            pointerLeft(*identity);
+    // AGENT-GUARD: this filter is installed on the QGuiApplication, so Qt runs
+    // it for every event delivered to every object in the process - each mouse
+    // move, timer tick and QML item event. Qualify on the event type first and
+    // only then look the object up: identityFromWindow() costs two dynamic
+    // property lookups plus an objectName() comparison, which is far too much
+    // to spend on the millions of events that can never match.
+    if (watched == nullptr || event == nullptr) {
+        return QObject::eventFilter(watched, event);
+    }
+    const QEvent::Type type = event->type();
+    const bool entering = type == QEvent::Enter;
+    const bool leaving = type == QEvent::Leave || type == QEvent::Hide
+        || type == QEvent::Close;
+    if (entering || leaving) {
+        if (const auto identity = identityFromWindow(*watched)) {
+            if (entering) {
+                pointerEntered(*identity);
+            } else {
+                pointerLeft(*identity);
+            }
         }
     }
     return QObject::eventFilter(watched, event);

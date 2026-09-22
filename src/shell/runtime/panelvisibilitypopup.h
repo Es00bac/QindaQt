@@ -43,7 +43,18 @@ public:
                                        bool visible);
     // Discovers shell-owned in-window Qt Quick popups after panel QML has
     // completed. Native popup windows continue through the event filter.
+    //
+    // Cheap to call repeatedly: the full tree walk runs only when an object
+    // has been added somewhere in the process since the last pass. Callers
+    // must keep calling it on every synchronize rather than deciding for
+    // themselves when discovery is needed.
     void synchronizePopupObjects();
+
+    // Full tree walks performed so far. A panel's object tree grows over a
+    // session (notifications, clipboard history, task list) while this runs on
+    // every visibility transition, so the skipped-pass count is the thing
+    // worth observing. Exposed for tests and diagnostics.
+    [[nodiscard]] quint64 discoveryPasses() const noexcept;
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
