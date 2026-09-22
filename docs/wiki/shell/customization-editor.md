@@ -105,6 +105,15 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
    session.
 7. Release over an off-target or rejected target cancels the whole preview;
    it never commits the last accepted provisional target.
+8. A panel pinned to an output the generation does not have is **escrowed**,
+   not rejected (see [ADR-0235](../adr/0235-escrow-panels-whose-output-is-absent.md)).
+   The repository parts it from the session at construction, so an unplugged
+   display cannot make the whole editor non-ready, and re-attaches it when the
+   session is persisted. Such a panel is absent from `panelIds()` and from the
+   panel menu while its display is away, and returns on the rebuild that
+   follows the display's return. An *edit* that names an absent output is
+   still refused: escrow is fixed at construction and candidate validation
+   never adds to it.
 
 ## Apply, revert, and persistence
 
@@ -113,7 +122,15 @@ holds the unique coordinator lease. A losing editor returns typed
 `EngineUnavailable` and writes no profile even though it can still read the
 repository's published snapshot. Apply writes the committed edited snapshot
 through the profiles-owned store and replaces the applied baseline only after
-success; a failed write changes nothing and reports `ApplyFailed`. The session
+success; a failed write changes nothing and reports `ApplyFailed`. The written
+profile is the session's profile merged with the escrowed panels
+(`LayoutEditingRepository::withEscrowedPanels()`), restored at their stored
+indices. **Every durable write of an edited profile must go through that
+merge**: the stored profile is the only record of a panel on an absent display,
+so writing the session's profile directly erases the user's panels on whichever
+displays were unplugged during the edit. The applied baseline stays the
+session's own profile, since dirty truth is compared against what the session
+can see. The session
 initializes that baseline from the coordinator-retained committed profile, not
 the possibly provisional published snapshot. If construction loses the lease
 during a foreign preview, the session fails dirty/read-only and adopts that

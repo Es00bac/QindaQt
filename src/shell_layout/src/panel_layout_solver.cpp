@@ -7,6 +7,7 @@
 #include <QSet>
 #include <QtMath>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
@@ -428,6 +429,18 @@ PanelLayoutResult PanelLayoutSolver::solve(const QVector<Profiles::PanelSpec> &p
     // module never multiplies it by output scale. The platform surface adapter
     // is responsible for the single logical-to-buffer conversion.
     return result;
+}
+
+bool PanelLayoutSolver::outputsCanHost(const Profiles::PanelSpec &panel,
+                                       const QVector<LogicalOutput> &outputs)
+{
+    if (panel.output == QStringLiteral("*")) {
+        return true;
+    }
+    return std::any_of(outputs.cbegin(), outputs.cend(),
+                       [&panel](const LogicalOutput &output) {
+                           return output.id == panel.output;
+                       });
 }
 
 } // namespace QindaQt::ShellLayout

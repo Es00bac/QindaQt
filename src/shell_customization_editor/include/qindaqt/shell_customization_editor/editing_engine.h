@@ -48,6 +48,15 @@ public:
     committedProfile() const = 0;
     [[nodiscard]] virtual QindaQt::ShellCustomization::LayoutEditingStatus status() const = 0;
     [[nodiscard]] virtual bool hasPreview() const = 0;
+    // Panels the backing repository parked because their output is absent.
+    // Defaulted empty: an engine with no repository behind it (the scripted
+    // test engine) has nothing to escrow, and an empty escrow makes the
+    // persistence merge the identity.
+    [[nodiscard]] virtual QVector<QindaQt::ShellCustomization::EscrowedPanel>
+    escrowedPanels() const
+    {
+        return {};
+    }
 };
 
 } // namespace QindaQt::ShellCustomizationEditor

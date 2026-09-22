@@ -148,6 +148,15 @@ CoordinatorEditingEngine::committedProfile() const
     return m_coordinator->committedProfile();
 }
 
+QVector<QindaQt::ShellCustomization::EscrowedPanel>
+CoordinatorEditingEngine::escrowedPanels() const
+{
+    // Read straight from the repository: escrow is fixed at construction and
+    // is not transaction state, so it needs no coordinator lease and stays
+    // readable to a losing editor that presents read-only.
+    return m_repository.escrowedPanels();
+}
+
 LayoutEditingStatus CoordinatorEditingEngine::status() const
 {
     if (!onOwnerThread() || !ensureCoordinator()) {

@@ -286,7 +286,15 @@ EditorOutcome EditorSession::applyToUserProfile()
         return EditorOutcome::failure(EditorErrorCode::EngineUnavailable,
                                       QStringLiteral("no committed layout is available for applying"));
     }
-    const ProfileStoreResult result = m_store.save(current->profile);
+    // AGENT-GUARD: persist the escrow-merged profile, never current->profile.
+    // The session deliberately does not contain panels pinned to outputs that
+    // are absent right now; saving what the session sees would delete the
+    // user's panels on every display that happened to be unplugged during the
+    // edit, and the stored profile is their only record.
+    const Profiles::LayoutProfile persisted =
+        ShellCustomization::LayoutEditingRepository::withEscrowedPanels(
+            current->profile, m_engine.escrowedPanels());
+    const ProfileStoreResult result = m_store.save(persisted);
     if (!result.ok()) {
         // Deterministic rollback: the selection and the dirty flag stay
         // unchanged, and the typed reason is surfaced verbatim.

@@ -4,6 +4,7 @@
 #include "layout_candidate_validator_p.h"
 #include "layout_editing_repository_p.h"
 #include "qindaqt/shell_customization/layout_editing_coordinator.h"
+#include "qindaqt/shell_layout/panel_layout_solver.h"
 
 #include <utility>
 
@@ -35,6 +36,24 @@ LayoutEditingRepository::LayoutEditingRepository(
         m_session->initializationError = catalogError;
         return;
     }
+
+    // AGENT-GUARD: park the panels this generation cannot host before the
+    // solve, never after. A single panel pinned to an unplugged display
+    // otherwise fails the initial solve and leaves the whole repository
+    // non-ready - which in the shell means every Meta+right-click entry point
+    // goes dead until something happens to rebuild the session, and in
+    // Settings means the Customize route will not open at all.
+    QVector<Profiles::PanelSpec> placeable;
+    placeable.reserve(initialProfile.panels.size());
+    for (qsizetype index = 0; index < initialProfile.panels.size(); ++index) {
+        const Profiles::PanelSpec &panel = initialProfile.panels.at(index);
+        if (ShellLayout::PanelLayoutSolver::outputsCanHost(panel, m_outputs)) {
+            placeable.append(panel);
+        } else {
+            m_session->escrowed.append({index, panel});
+        }
+    }
+    initialProfile.panels = std::move(placeable);
 
     CandidateValidation validation =
         LayoutCandidateValidator::validate(initialProfile, m_outputs);
@@ -88,6 +107,43 @@ LayoutEditingStatus LayoutEditingRepository::status() const noexcept
 const QVector<ShellLayout::LogicalOutput> &LayoutEditingRepository::outputs() const noexcept
 {
     return m_outputs;
+}
+
+const QVector<EscrowedPanel> &LayoutEditingRepository::escrowedPanels() const noexcept
+{
+    return m_session->escrowed;
+}
+
+Profiles::LayoutProfile LayoutEditingRepository::withEscrowedPanels(
+    const Profiles::LayoutProfile &edited, const QVector<EscrowedPanel> &escrowed)
+{
+    if (escrowed.isEmpty()) {
+        return edited;
+    }
+    Profiles::LayoutProfile result = edited;
+    result.panels.clear();
+    result.panels.reserve(edited.panels.size() + escrowed.size());
+
+    // Walk the stored indices in order, emitting each escrowed panel back at
+    // the slot it came from and the edited panels around it. An escrowed index
+    // past the end simply lands at the end, which is what a session that
+    // removed panels ahead of it should produce.
+    qsizetype editedIndex = 0;
+    qsizetype nextSlot = 0;
+    for (const EscrowedPanel &parked : escrowed) {
+        while (editedIndex < edited.panels.size() && nextSlot < parked.index) {
+            result.panels.append(edited.panels.at(editedIndex));
+            ++editedIndex;
+            ++nextSlot;
+        }
+        result.panels.append(parked.panel);
+        ++nextSlot;
+    }
+    while (editedIndex < edited.panels.size()) {
+        result.panels.append(edited.panels.at(editedIndex));
+        ++editedIndex;
+    }
+    return result;
 }
 
 std::unique_ptr<LayoutEditingCoordinator>

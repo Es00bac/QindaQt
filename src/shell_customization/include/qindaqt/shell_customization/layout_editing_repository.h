@@ -13,9 +13,27 @@
 
 namespace QindaQt::ShellCustomization {
 
+// A panel the stored profile pins to an output this generation does not have.
+//
+// The editor cannot place such a panel and must not pretend to: it has nowhere
+// to be until its display returns. It must equally never be *lost*, because
+// the stored profile is the only record that the user ever configured it.
+// Escrow is that middle state - carried, not edited, not laid out - and it is
+// re-attached at the persistence boundary so Apply writes the panel back
+// unchanged.
+struct EscrowedPanel final {
+    // The index the panel held in the stored profile. A merge restores stored
+    // order instead of appending, so a round trip through the editor does not
+    // reorder panels behind the user's back.
+    qsizetype index = 0;
+    Profiles::PanelSpec panel;
+};
+
 struct LayoutEditingSnapshot final {
     // Profiles are loader-normalized and layout contains the corresponding
-    // successful all-output solve. Neither value is exposed independently.
+    // successful solve over every panel the generation can host. Panels pinned
+    // to an absent output are not here; see EscrowedPanel. Neither value is
+    // exposed independently.
     Profiles::LayoutProfile profile;
     ShellLayout::PanelLayoutResult layout;
     quint64 revision = 0;
@@ -69,6 +87,21 @@ public:
     // The returned inventory is owned by the repository and valid until its
     // destruction. Output changes create a new editor session at this boundary.
     [[nodiscard]] const QVector<ShellLayout::LogicalOutput> &outputs() const noexcept;
+
+    // Panels held out of this session because their output is absent, in
+    // stored order. Computed once at construction and never by candidate
+    // validation, which is what keeps an *edit* that names a disconnected
+    // display refused while a *pre-existing* pin is merely parked.
+    [[nodiscard]] const QVector<EscrowedPanel> &escrowedPanels() const noexcept;
+
+    // Re-attaches escrowed panels to an edited profile at their stored
+    // indices.
+    // AGENT-CONTRACT: every write of an edited profile to durable storage must
+    // go through this. Persisting a session profile directly erases the user's
+    // panels on whichever displays happened to be absent during the edit.
+    [[nodiscard]] static Profiles::LayoutProfile withEscrowedPanels(
+        const Profiles::LayoutProfile &edited,
+        const QVector<EscrowedPanel> &escrowed);
 
     // The unique pointer is the sole move-only editing lease. A null result
     // means another coordinator still owns the session. Destroying the lease
