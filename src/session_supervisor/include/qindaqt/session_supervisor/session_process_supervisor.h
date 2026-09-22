@@ -38,6 +38,16 @@ struct SessionProcessOptions final {
     // cannot use the distribution's systemd user unit, so production owns the
     // daemon as an optional session child.
     QString globalShortcutDaemonExecutable;
+    // The input method daemon behind QT_IM_MODULE/GTK_IM_MODULE/XMODIFIERS,
+    // which sessionenvironment.cpp sets when it is installed. Those variables
+    // are a promise that something is listening: a toolkit builds its input
+    // context once, at startup, and an application that starts while the
+    // daemon is absent has no input method for its whole life and never
+    // retries. It belongs in this process tree for the same reason as the
+    // XEmbed tray proxy -- QindaQt does not activate graphical-session.target,
+    // so a systemd user unit hung off it is never started at all. Empty
+    // disables it; production resolves the executable.
+    QString inputMethodDaemonExecutable;
     // The XEmbed-to-StatusNotifier tray proxy (ADR-0229), which is what gives
     // Wine, Proton and Steam tray icons somewhere to dock. It ships a systemd
     // user unit, but that unit is `WantedBy=graphical-session.target` and
@@ -92,6 +102,7 @@ public:
     [[nodiscard]] int desktopControlsRestartCount() const noexcept;
     [[nodiscard]] qint64 powerDevilProcessId() const noexcept;
     [[nodiscard]] qint64 globalShortcutDaemonProcessId() const noexcept;
+    [[nodiscard]] qint64 inputMethodDaemonProcessId() const noexcept;
     [[nodiscard]] qint64 xembedTrayProxyProcessId() const noexcept;
     [[nodiscard]] qint64 polkitAgentProcessId() const noexcept;
     [[nodiscard]] int polkitAgentRestartCount() const noexcept;
@@ -140,6 +151,7 @@ private:
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;
     std::unique_ptr<OptionalSessionChild> m_globalShortcutDaemon;
+    std::unique_ptr<OptionalSessionChild> m_inputMethodDaemon;
     std::unique_ptr<OptionalSessionChild> m_xembedTrayProxy;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_token;

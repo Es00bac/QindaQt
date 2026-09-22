@@ -69,6 +69,10 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             QStringLiteral("powerdevil"), QStringList{}))
       , m_globalShortcutDaemon(std::make_unique<OptionalSessionChild>(
             QStringLiteral("global-shortcuts"), QStringList{}))
+      , m_inputMethodDaemon(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("input-method"),
+            QStringList{QStringLiteral("--replace"), QStringLiteral("--xim"),
+                        QStringLiteral("--panel"), QStringLiteral("disable")}))
       , m_xembedTrayProxy(std::make_unique<OptionalSessionChild>(
             QStringLiteral("xembed-tray-proxy"), QStringList{}))
 {
@@ -93,6 +97,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(m_powerDevil.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_globalShortcutDaemon.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_inputMethodDaemon.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_xembedTrayProxy.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
@@ -210,6 +216,7 @@ void SessionProcessSupervisor::stop() noexcept
     m_polkitAgent->stop();
     m_powerDevil->stop();
     m_globalShortcutDaemon->stop();
+    m_inputMethodDaemon->stop();
     // AGENT-GUARD: the tray proxy MUST be stopped here. A survivor keeps
     // owning `_NET_SYSTEM_TRAY_S0`, and the next session's proxy would find
     // the selection taken and go inert by design (ADR-0229) - so logging out
@@ -304,6 +311,12 @@ qint64 SessionProcessSupervisor::globalShortcutDaemonProcessId() const noexcept
 {
     return m_globalShortcutDaemon->processId();
 }
+
+qint64 SessionProcessSupervisor::inputMethodDaemonProcessId() const noexcept
+{
+    return m_inputMethodDaemon->processId();
+}
+
 
 qint64 SessionProcessSupervisor::xembedTrayProxyProcessId() const noexcept
 {
@@ -455,6 +468,14 @@ void SessionProcessSupervisor::startOptionalChildren()
     // unit was `WantedBy=graphical-session.target`, so nothing ever started
     // it and Wine/Proton/Steam tray icons had no selection owner to dock
     // with.
+    // AGENT-CONTRACT: the input method daemon starts before the user can open
+    // anything. A toolkit reads QT_IM_MODULE once and builds its input context
+    // at startup; an application launched while the daemon is down has no
+    // input method for its whole life, so dictation, the on-screen keyboard
+    // and complex-script input all fail in that window with nothing to
+    // report. sessionenvironment.cpp sets those variables only when this
+    // executable exists, and this is what makes them true.
+    m_inputMethodDaemon->start(m_options.inputMethodDaemonExecutable);
     m_globalShortcutDaemon->start(m_options.globalShortcutDaemonExecutable);
     m_powerDevil->start(m_options.powerDevilExecutable);
     // The tray proxy needs the session's XWayland display, which exists once
@@ -551,6 +572,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     // tray icon missing because the new proxy found the selection taken and
     // went inert by design (ADR-0229).
     m_globalShortcutDaemon->stop();
+    m_inputMethodDaemon->stop();
     m_xembedTrayProxy->stop();
     if (role == ChildRole::NotificationHost) {
         m_hostProcessId = 0;
