@@ -95,6 +95,13 @@ if(TARGET QindaQt::HybridChrome)
         QindaQt::HybridChrome QindaQt::DecorationPainter qindaqt_themes Qt6::Test)
     add_test(NAME compositor.chrome-appearance-palette
         COMMAND qindaqt_chrome_appearance_palette_tests)
+    # These construct a QGuiApplication, so they must name a platform. Without
+    # this they default to xcb and pass only where a display happens to exist,
+    # failing on a headless runner for a reason unrelated to what they assert.
+    set_tests_properties(
+        compositor.chrome-appearance-palette
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
 
     # AGENT-GUARD: inside the HybridChrome guard, like every other module that
     # links it. compositor.kwin-plugin-dependency-contract reconfigures THIS
@@ -142,7 +149,10 @@ set_target_properties(
 add_test(NAME compositor.pointer-corner COMMAND qindaqt_pointer_corner_tests)
 set_tests_properties(
     compositor.pointer-corner
-    PROPERTIES TIMEOUT 20 LABELS "unit;pure;compositor"
+    PROPERTIES
+        TIMEOUT 20
+        LABELS "unit;pure;compositor"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 endif()
 
@@ -468,6 +478,10 @@ if(TARGET qindaqt_kwin_input_adapter)
     add_test(
         NAME compositor.hybrid-chrome-plan-builder
         COMMAND qindaqt_hybrid_chrome_plan_builder_tests
+    )
+    set_tests_properties(
+        compositor.hybrid-chrome-plan-builder
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     )
 
     include("${CMAKE_CURRENT_LIST_DIR}/MemberPolicyTests.cmake")
