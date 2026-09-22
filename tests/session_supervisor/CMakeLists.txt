@@ -132,6 +132,25 @@ add_test(NAME qindaqt.session-powerdevil-lifetime
 set_tests_properties(qindaqt.session-powerdevil-lifetime PROPERTIES
     TIMEOUT 20 LABELS "session;service;dbus")
 
+# The input method daemon is a supervised optional child for the same reason
+# the XEmbed tray proxy is: QindaQt never activates graphical-session.target,
+# and the user manager outlives a logout, so a systemd user unit hung off
+# either target is simply never started on the next login.
+qt_add_executable(qindaqt_input_method_lifetime_tests
+    tst_input_method_lifetime.cpp)
+target_link_libraries(qindaqt_input_method_lifetime_tests PRIVATE
+    QindaQt::SessionSupervisorSupport Qt6::Test)
+target_compile_definitions(qindaqt_input_method_lifetime_tests PRIVATE
+    QINDAQT_SESSION_TOKEN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_token_child_helper>"
+    QINDAQT_SESSION_PLAIN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_plain_child_helper>")
+add_dependencies(qindaqt_input_method_lifetime_tests
+    qindaqt_session_token_child_helper qindaqt_session_plain_child_helper)
+qindaqt_enable_warnings(qindaqt_input_method_lifetime_tests)
+add_test(NAME qindaqt.session-input-method-lifetime
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_input_method_lifetime_tests>)
+set_tests_properties(qindaqt.session-input-method-lifetime PROPERTIES
+    TIMEOUT 20 LABELS "session;service;dbus")
+
 # The XEmbed tray proxy is a supervised optional child, not a systemd unit;
 # these rows pin that it starts, restarts once, stops with the session, and
 # stays genuinely optional when it is not installed.

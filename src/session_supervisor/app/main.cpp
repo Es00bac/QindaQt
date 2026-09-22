@@ -62,6 +62,11 @@ int main(int argc, char *argv[])
          QStringLiteral("/usr/libexec/kglobalacceld")},
         {QStringLiteral("no-global-shortcut-daemon"),
          QStringLiteral("Disable the KGlobalAccel child for a private session.")},
+        {QStringLiteral("input-method-daemon"),
+         QStringLiteral("Input method daemon executable."), QStringLiteral("path"),
+         QStringLiteral("/usr/bin/ibus-daemon")},
+        {QStringLiteral("no-input-method-daemon"),
+         QStringLiteral("Disable the input method child for a private session.")},
         {QStringLiteral("polkit-agent"),
          QStringLiteral("Optional polkit authentication agent executable; "
                         "well-known locations are used when omitted."),
@@ -106,6 +111,9 @@ int main(int argc, char *argv[])
     options.globalShortcutDaemonExecutable =
         parser.isSet(QStringLiteral("no-global-shortcut-daemon"))
         ? QString{} : parser.value(QStringLiteral("global-shortcut-daemon"));
+    options.inputMethodDaemonExecutable =
+        parser.isSet(QStringLiteral("no-input-method-daemon"))
+        ? QString{} : parser.value(QStringLiteral("input-method-daemon"));
     options.desktopControlsExecutable =
         parser.value(QStringLiteral("desktop-controls"));
     options.polkitAgentExecutable = resolvePolkitAgentExecutable(
