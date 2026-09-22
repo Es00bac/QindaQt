@@ -28,6 +28,20 @@ Everything marked fixed is fixed in git and *not* on the running desktop until
 a package cut and a shell restart. Nothing below was validated against a
 rebuilt live shell.
 
+## Suite state
+
+Full `ctest` on this branch, headless: **16 failures out of 1017**, down from
+41 out of 1016 when this pass started. Both remaining groups are recorded
+below and both are deliberate:
+
+| rows | what | item |
+| --- | --- | --- |
+| 14 | `controls-visual-125/-150-*` | #14 — a real fractional-scale border regression, not regenerated on purpose |
+| 2 | `obs-bridge-*` | no libobs in this environment |
+
+The 25 rows that aborted for want of a Qt platform are fixed, so a headless run
+now reports only things that are actually wrong.
+
 ## Read this before installing anything
 
 **`r11` is installed and pins `8d1d8cc5`.** It carries items #1, #2, #4, #6,
