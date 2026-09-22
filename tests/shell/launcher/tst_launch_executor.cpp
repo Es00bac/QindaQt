@@ -289,6 +289,9 @@ void LaunchExecutorTests::sanitizedEnvironmentDropsUnlistedVariables()
         QStringLiteral("SSH_AUTH_SOCK")};
     for (const QString &name : sessionPaths)
         base.insert(name, QStringLiteral("/fixture/") + name);
+    base.insert(QStringLiteral("QT_IM_MODULE"), QStringLiteral("ibus"));
+    base.insert(QStringLiteral("GTK_IM_MODULE"), QStringLiteral("ibus"));
+    base.insert(QStringLiteral("XMODIFIERS"), QStringLiteral("@im=ibus"));
     const QProcessEnvironment sanitized = sanitizedChildEnvironment(base);
     for (const QString &name : sessionPaths)
         QCOMPARE(sanitized.value(name), base.value(name));
@@ -297,6 +300,18 @@ void LaunchExecutorTests::sanitizedEnvironmentDropsUnlistedVariables()
     QVERIFY(!sanitized.contains(QStringLiteral("QINDAQT_APPLET_DIR")));
     QVERIFY(!sanitized.contains(QStringLiteral("LD_PRELOAD")));
     QVERIFY(!sanitized.contains(QStringLiteral("PROMPT_COMMAND")));
+
+    // AGENT-NOTE: a toolkit builds its input context once, at startup, from
+    // these three. An application launched without them can never receive
+    // input-method text, and nothing surfaces the loss: the sender's commit
+    // still succeeds against whatever context does hold focus, so dictation
+    // reports delivered while typing into nothing.
+    for (const QString &name : {QStringLiteral("QT_IM_MODULE"),
+                                QStringLiteral("GTK_IM_MODULE"),
+                                QStringLiteral("XMODIFIERS")}) {
+        QVERIFY2(sanitized.contains(name), qPrintable(name));
+        QCOMPARE(sanitized.value(name), base.value(name));
+    }
 }
 
 QTEST_GUILESS_MAIN(LaunchExecutorTests)

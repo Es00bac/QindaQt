@@ -35,6 +35,17 @@ bool isForwardedVariable(const QString &name)
     QStringLiteral("DBUS_SESSION_BUS_ADDRESS"),
     QStringLiteral("QT_QPA_PLATFORM"),
     QStringLiteral("QT_SCALE_FACTOR"),
+    // AGENT-GUARD: the input-method variables must reach every launched
+    // application. A toolkit reads them once at startup to build its input
+    // context, so an app that starts without them can never receive
+    // input-method text -- no dictation, no on-screen keyboard commit, no
+    // complex-script input -- and nothing reports the loss, because the
+    // sender's commit succeeds against whatever context does hold focus.
+    // sessionenvironment.cpp sets these for the session; stripping them here
+    // made that setting inert for exactly the processes that needed it.
+    QStringLiteral("QT_IM_MODULE"),
+    QStringLiteral("GTK_IM_MODULE"),
+    QStringLiteral("XMODIFIERS"),
   };
   return exact.contains(name) || name.startsWith(QLatin1String("LC_"));
 }
