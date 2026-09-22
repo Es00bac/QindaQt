@@ -349,22 +349,61 @@ typed `bool` or string property, so 23 sites merely traded `TypeError` for
 
 ---
 
-## 9. `qindaqt-settings` and `xdg-desktop-portal-kde` crashes — OPEN, and ongoing
+## 9. `qindaqt-settings` and `xdg-desktop-portal-kde` crashes — OPEN, now partly diagnosed
 
-Still not investigated, and **`xdg-desktop-portal-kde` is crashing now**, not
-just historically — seven SIGABRTs today between 01:13 and 01:16:
+**Correction to an earlier revision of this file:** it claimed the portal was
+"crashing now, seven SIGABRTs today". That was **self-inflicted and not a
+desktop defect**. Those aborts are in `session-5054.scope`, which is a VT
+login shell with no display, and they were triggered by running the test suite
+there. The desktop session is `session-3459.scope` (tty7). Check the scope
+before attributing a core to the desktop — the same mistake as item #3, one
+layer down.
+
+**`xdg-desktop-portal-kde` — diagnosed, and not a QindaQt defect.** The
+backtrace is unambiguous:
 
 ```
-2026-09-22 01:13:35  SIGABRT  /usr/libexec/xdg-desktop-portal-kde
-2026-09-22 01:16:33  SIGABRT  /usr/libexec/xdg-desktop-portal-kde   (x6 within one second)
+abort
+QMessageLogger::fatal(char const*, ...)
+QGuiApplicationPrivate::createPlatformIntegration()
+QGuiApplicationPrivate::createEventDispatcher()
+QCoreApplicationPrivate::init()
+QApplicationPrivate::init()
 ```
 
-Six aborts inside one second is a restart loop, not six independent faults.
-The portal is what backs file pickers and screen sharing, so this is likely to
-be user-visible.
+`qFatal` from `createPlatformIntegration()` is Qt's "no platform plugin could
+be initialized". The portal is a Qt GUI program being started somewhere with no
+usable platform. In the VT case that is simply correct behaviour. Whether the
+tty7 cores from 2026-09-21 have the same cause is **not established** — they
+need the same backtrace check, which is one `coredumpctl dump` plus `eu-stack`.
 
-`/var/lib/systemd/coredump` is now **853 MB**, up from the 752 MB recorded
-under Housekeeping.
+Note this is exactly the failure mode of the 28 test rows in item #14, which is
+worth remembering: a Qt program with no platform aborts before its first line
+of real work, and the resulting core looks like a crash in whatever it was
+meant to do.
+
+**`qindaqt-settings` — lead, not a diagnosis.** The 22:37 core aborts with the
+main thread here:
+
+```
+abort
+...
+wl_display_dispatch_queue
+<qindaqt-settings>                 <- frame in the executable itself
+QSocketNotifier::event(QEvent*)
+QApplicationPrivate::notify_helper
+```
+
+So it is not aborting in Qt's own Wayland connection but in a **private
+`wl_display` this process drives itself** through its own `QSocketNotifier`.
+The tree has exactly two such loops — `qt_wayland_output_management_port.cpp`
+and `qt_wayland_clipboard_adapter.cpp` — and the installed binary carries
+output-management protocol strings.
+
+That puts the crash in the same subsystem as the hung `Display1` in item #7 and
+the mirroring attempts. **Suggestive, not proven:** the frame is unresolved
+because the installed binary is stripped, so which of the two loops it is has
+not been established. Build with symbols and re-dump to settle it.
 
 ---
 

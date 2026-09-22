@@ -607,6 +607,35 @@ if(TARGET qindaqt_kwin_input_adapter)
         COMMAND qindaqt_hybrid_container_placement_tests
     )
 
+    # What happens to a container when the world changes underneath it: an
+    # output it lived on is removed, or a gesture it started is refused.
+    # Split by behaviour from the placement rows, sharing their fixture.
+    qt_add_executable(
+        qindaqt_hybrid_container_rescue_tests
+        tst_hybridcontainerrescue.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
+    )
+    target_include_directories(
+        qindaqt_hybrid_container_rescue_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+    )
+    target_link_libraries(
+        qindaqt_hybrid_container_rescue_tests
+        PRIVATE
+            QindaQt::Hybrid
+            QindaQt::HybridChrome
+            QindaQt::HybridConstraints
+            QindaQt::HybridInput
+            Qt6::Test
+    )
+    add_test(
+        NAME compositor.hybrid-container-rescue
+        COMMAND qindaqt_hybrid_container_rescue_tests
+    )
+
     include("${CMAKE_CURRENT_LIST_DIR}/ContainerShadeTests.cmake")
 
     qt_add_executable(
