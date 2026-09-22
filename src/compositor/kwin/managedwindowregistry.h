@@ -56,6 +56,16 @@ Q_SIGNALS:
 private:
     void addWindow(KWin::Window *window);
     void removeWindow(KWin::Window *window);
+    // Coalesces windowsChanged to at most one emission per event-loop turn.
+    //
+    // AGENT-GUARD: every invalidation must go through this, never Q_EMIT
+    // windowsChanged() directly. The signal is a "re-read the snapshot"
+    // notification, and one of its consumers turns each emission into a D-Bus
+    // broadcast; the per-window sources include frameGeometryChanged and
+    // captionChanged, which fire once per frame while a window is dragged or
+    // retitled. Emitting per source made every consumer pay for a burst that
+    // described one settled change.
+    void scheduleWindowsChanged();
     [[nodiscard]] static bool isManageable(const KWin::Window *window);
 
     QHash<QString, QPointer<KWin::Window>> m_windows;
@@ -64,6 +74,7 @@ private:
     // client, which may reset its transient moveResizeGeometry before the
     // client can acknowledge the configure.
     QHash<QString, QRectF> m_targetFrames;
+    bool m_windowsChangedPending = false;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

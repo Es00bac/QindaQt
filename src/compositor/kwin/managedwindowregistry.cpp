@@ -64,9 +64,9 @@ ManagedWindowRegistry::ManagedWindowRegistry(QObject *parent)
     // Their workspace-level changes therefore invalidate the same snapshot as
     // per-client frame/minimize/task-policy changes.
     connect(compositorWorkspace, &KWin::Workspace::windowActivated,
-            this, [this](KWin::Window *) { Q_EMIT windowsChanged(); });
+            this, [this](KWin::Window *) { scheduleWindowsChanged(); });
     connect(compositorWorkspace, &KWin::Workspace::stackingOrderChanged,
-            this, &ManagedWindowRegistry::windowsChanged);
+            this, &ManagedWindowRegistry::scheduleWindowsChanged);
     synchronize();
     // AGENT-GUARD: --exit-with-session can map its first clients while KWin is
     // still loading default plugins. Reconcile once after startup so a client
@@ -110,21 +110,22 @@ void ManagedWindowRegistry::addWindow(KWin::Window *window)
         return;
     }
     m_windows.insert(id, window);
-    connect(window, &KWin::Window::captionChanged, this, &ManagedWindowRegistry::windowsChanged);
+    connect(window, &KWin::Window::captionChanged, this,
+            &ManagedWindowRegistry::scheduleWindowsChanged);
     connect(window, &KWin::Window::frameGeometryChanged,
-            this, [this](const KWin::RectF &) { Q_EMIT windowsChanged(); });
+            this, [this](const KWin::RectF &) { scheduleWindowsChanged(); });
     connect(window, &KWin::Window::minimizedChanged,
-            this, &ManagedWindowRegistry::windowsChanged);
+            this, &ManagedWindowRegistry::scheduleWindowsChanged);
     connect(window, &KWin::Window::skipTaskbarChanged,
-            this, &ManagedWindowRegistry::windowsChanged);
+            this, &ManagedWindowRegistry::scheduleWindowsChanged);
     connect(window, &KWin::Window::skipSwitcherChanged,
-            this, &ManagedWindowRegistry::windowsChanged);
+            this, &ManagedWindowRegistry::scheduleWindowsChanged);
     connect(window, &KWin::Window::keepAboveChanged,
-            this, [this](bool) { Q_EMIT windowsChanged(); });
+            this, [this](bool) { scheduleWindowsChanged(); });
     connect(window, &KWin::Window::keepBelowChanged,
-            this, [this](bool) { Q_EMIT windowsChanged(); });
+            this, [this](bool) { scheduleWindowsChanged(); });
     Q_EMIT managedWindowAdded(id);
-    Q_EMIT windowsChanged();
+    scheduleWindowsChanged();
 }
 
 void ManagedWindowRegistry::removeWindow(KWin::Window *window)
@@ -136,7 +137,23 @@ void ManagedWindowRegistry::removeWindow(KWin::Window *window)
     const auto containerId = m_owners.take(id);
     m_targetFrames.remove(id);
     Q_EMIT managedWindowClosed(id, containerId);
-    Q_EMIT windowsChanged();
+    scheduleWindowsChanged();
+}
+
+void ManagedWindowRegistry::scheduleWindowsChanged()
+{
+    if (m_windowsChangedPending) {
+        return;
+    }
+    m_windowsChangedPending = true;
+    // Zero-delay rather than a rate limit: consumers pull the snapshot, so the
+    // only requirement is that they are told once after the burst settles,
+    // within the same turn. A dragged window produced one emission per frame
+    // and each reached the D-Bus endpoint as its own broadcast.
+    QTimer::singleShot(0, this, [this] {
+        m_windowsChangedPending = false;
+        Q_EMIT windowsChanged();
+    });
 }
 
 KWin::Window *ManagedWindowRegistry::window(const QString &windowId) const
@@ -180,7 +197,7 @@ bool ManagedWindowRegistry::setOwner(const QString &windowId,
     if (existing != containerId) {
         m_owners.insert(windowId, containerId);
         m_targetFrames.insert(windowId, window(windowId)->moveResizeGeometry());
-        Q_EMIT windowsChanged();
+        scheduleWindowsChanged();
     }
     return true;
 }
@@ -190,7 +207,7 @@ void ManagedWindowRegistry::clearOwner(const QString &windowId, const QString &c
     if (m_owners.value(windowId) == containerId) {
         m_owners.remove(windowId);
         m_targetFrames.remove(windowId);
-        Q_EMIT windowsChanged();
+        scheduleWindowsChanged();
     }
 }
 
@@ -235,7 +252,7 @@ bool ManagedWindowRegistry::transitionOwners(const QString &containerId,
         }
     }
     if (changed) {
-        Q_EMIT windowsChanged();
+        scheduleWindowsChanged();
     }
     return true;
 }
@@ -305,7 +322,7 @@ bool ManagedWindowRegistry::transitionTopologyOwners(
         }
     }
     if (changed) {
-        Q_EMIT windowsChanged();
+        scheduleWindowsChanged();
     }
     return true;
 }
