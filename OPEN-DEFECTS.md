@@ -516,11 +516,36 @@ incomplete while the closure test, which needs no Weston, ran anyway and
 failed. Removing the guard surfaced two more modules that had never been staged
 at all: `QindaQt.Shell.GatherOverview` and `QindaQt.Shell.ObsApplet`.
 
-**`qindaqt.controls-visual-125-*` / `-150-*` — still open.** 14 rows, QtQuick
-Controls baseline drift at fractional scale, e.g. *"baseline drift: 9 pixels,
-max channel delta 15"*. Deliberately untouched: regenerating baselines would
-make the rows green whether or not something really shifted under Qt 6.11.1,
-and telling those apart needs a look at the diffs, not a refresh.
+**`qindaqt.controls-visual-125-*` / `-150-*` — still open, and now it looks
+real.** 14 rows. The question was whether to regenerate the baselines or treat
+this as a genuine shift. I regenerated into a scratch copy and compared
+pixel-for-pixel rather than guessing, then restored the originals.
+
+The rows do not fail on pixel count — 8 to 56 pixels out of ~1M, far inside
+the 0.1% budget. They fail on **max channel delta**, 15 to 104 against a limit
+of 8. And the differing pixels are not scattered antialiasing:
+
+```
+150/qinda-dark-ordinary   x=568, y=205..216   old=(81,76,87)  new=(43,38,51)
+125/qinda-dark-ordinary   x=172, y=709..715   old=(48,43,55)  new=(43,38,51)
+```
+
+`(43,38,51)` is the **background colour**. Every differing pixel is a one-pixel-wide
+vertical run where a border used to be drawn and is now simply not there. The
+same run appears at the same coordinates in all seven themes, which is what a
+geometry change looks like and not what a theme or colour change looks like.
+
+**Scale 100 passes.** The drift exists only at 1.25 and 1.5, so it is
+fractional-scale-specific — the same family as
+[ADR-0234](docs/wiki/adr/0234-qt-and-compositor-measure-output-scale-differently.md)
+and item #16.
+
+So: **do not regenerate.** That would record "this border is missing" as the
+reviewed truth. What is still unknown is whether Qt 6.11.1 changed how a 1px
+border rounds at fractional scale, or whether a QindaQt control stopped drawing
+one — and that needs someone to look at the rendered images, which is the one
+thing a diff cannot settle. The regeneration/compare recipe is
+`QINDAQT_UPDATE_CONTROLS_BASELINES=1` into a copied `tests/controls/baselines`.
 
 **Newly found and fixed, not previously listed: 28 rows that only ever passed
 because a display happened to exist.** A full `ctest` run on a headless shell
