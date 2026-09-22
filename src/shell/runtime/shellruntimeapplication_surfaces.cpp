@@ -15,6 +15,7 @@
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
+#include "qindaqt/shell_orchestration/panel_profile_output_filter.h"
 #include "qindaqt/shell_orchestration/panel_runtime_plan_assembler.h"
 #include "qindaqt/shell_orchestration/panel_visibility_inventory_assembler.h"
 #include "qindaqt/shell_surface/panel_surface_configuration_planner.h"
@@ -25,6 +26,7 @@
 #include <QDebug>
 #include <QHash>
 #include <QScreen>
+#include <QSet>
 
 #include <utility>
 
@@ -180,7 +182,10 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
         }
     }
 
-    const auto layout = ShellLayout::PanelLayoutSolver::solve(profile.panels,
+    const Profiles::LayoutProfile presentProfile =
+        ShellOrchestration::PanelProfileOutputOccupancy::presentOutputsOnly(
+            profile, selectedOutputs);
+    const auto layout = ShellLayout::PanelLayoutSolver::solve(presentProfile.panels,
                                                                selectedOutputs);
     if (!layout.ok()) {
         *error = layout.error.message;
@@ -215,7 +220,8 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
     if (visibilitySnapshot != nullptr) {
         const auto visibility =
             ShellOrchestration::PanelVisibilityInventoryAssembler::assemble(
-                profile, layout, *visibilitySnapshot, m_interactions->snapshot());
+                presentProfile, layout, *visibilitySnapshot,
+                m_interactions->snapshot());
         if (visibility.ok()) {
             if (!m_lastVisibilityFallback.isEmpty()) {
                 qInfo().noquote()
