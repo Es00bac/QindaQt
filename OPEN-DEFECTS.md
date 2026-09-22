@@ -64,31 +64,67 @@ eDP-1  1920x1080 @ (0,0)  scale 1  enabled
 fcc21a4d   751x1016 at (1166,1133)
 ```
 
-y=1133 is below the bottom of a 1080-tall output. Those two windows were left
-on `DP-1` when it was stacked underneath, and `DP-1` is gone. Every snapshot
-candidate therefore contains a window whose frame lies entirely outside its own
-output, which is validation condition 5, which rejects the whole batch — every
-time, forever, because nothing moves them back.
+y=1133 is below the bottom of a 1080-tall output. Every snapshot candidate
+therefore contains a window whose frame lies entirely outside its own output,
+which is validation condition 5, which rejects the whole batch — every time,
+forever.
 
 **Inference, not observation:** the rejected candidate is not published, so
 condition 5 is deduced from the geometry above rather than read from a log. The
 messages landing in #4 are what would confirm it per occurrence.
 
+**The windows are a symptom. A *container* was stranded.** Both belong to one
+Hybrid container, whose own plan is off-screen:
+
+```
+Compositor1.Windows      71fffc59  containerId=hybrid-r133-container  (1,1133) 1163x1016
+                         fcc21a4d  containerId=hybrid-r133-container  (1166,1133) 751x1016
+Compositor1.Containers   hybrid-r133-container  authority=hybrid-process
+                         outerFrame    (0,1104) 1918x1046
+                         outerTitleBar (1,1105)
+```
+
+The other two containers are fine at (0,32). So the defect is that **nothing
+relocates container plans when an output is removed**, and the stranded members
+follow from that.
+
+**Moving the windows does not work, and this was tested rather than assumed.**
+A KWin script that relocates any window lying entirely outside the work area
+ran and KWin performed the assignment:
+
+```
+js: kwin-rescue: work area 1920x1048 at (0,32)
+js: kwin-rescue: relocating '• Untitled — QindaNote' from (1,1133) 1163x1016 -> (378,48)
+```
+
+`Compositor1.Windows` still reported (1,1133) afterwards and the snapshot stayed
+`unavailable`. This is documented behaviour, in
+[Panel visibility policy](docs/wiki/shell/panel-visibility.md): "the Hybrid
+compositor's queued reconciliation restores only owned members to their
+container-planned frames". A member cannot be rescued at the KWin level while
+its container plan still says y=1104. Anything that fixes this has to move the
+**container plan**, which is owned by `hybrid-process`.
+
 **This is the evidence ADR-0237 said it was waiting for**, and it points the
 opposite way from the item #4 write-up: the invalid window is not transient, it
-is *stuck*. Two candidate fixes, and they are not exclusive:
+is *stuck*. It also decides between the two candidate follow-ups:
 
 1. **Exclude a window that lies outside its output** rather than voiding the
-   batch. It overlaps no panel on that output, so it cannot affect panel
-   visibility there, and excluding it is information-preserving for this
-   consumer. This is the narrow change ADR-0237 anticipated.
-2. **Relocate windows when their output disappears.** A managed window
-   stranded off every output is its own defect regardless of the snapshot, and
-   fixing it here would stop the snapshot from ever seeing condition 5 in a
-   non-transient form.
+   batch. This unblocks the snapshot and restores auto-hide — but it leaves the
+   user with a container they cannot reach, because its title bar is off-screen
+   too, so it cannot be dragged back. It would also hide exactly this case from
+   the next reader. A band-aid.
+2. **Relocate container plans when their output disappears.** This is the real
+   fix: it restores the user's window *and* stops the snapshot ever seeing
+   condition 5 in a non-transient form. Container granularity, not window
+   granularity, and it belongs to whoever owns the plan.
 
-**Workaround for the running session:** move those two windows onto `eDP-1`.
-Auto-hide should resume at the next snapshot.
+Prefer 2. If 1 is taken as well, it should be for the transient case it was
+written for, not as the answer to this one.
+
+**No safe live workaround.** `ReleaseContainer` would dissolve
+`hybrid-r133-container`, after which a KWin-level move would stick — but that
+destroys a window grouping the user built, so it is their call, not a fix.
 
 ---
 
