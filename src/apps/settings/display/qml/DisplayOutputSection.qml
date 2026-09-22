@@ -34,7 +34,7 @@ ColumnLayout {
 
         Repeater {
             id: outputRepeater
-            model: root.displaySettings.outputs
+            model: root.displaySettings?.outputs
 
             delegate: DisplayOutputCard {
                 id: card
@@ -42,9 +42,9 @@ ColumnLayout {
                 required property int index
                 outputData: card.modelData
                 ordinal: card.index + 1
-                selected: root.displaySettings.selectedOutputId === card.modelData.stableId
-                canEdit: root.displaySettings.canEdit && !root.editorBusy
-                onSelectedRequested: root.displaySettings.setSelectedOutputId(card.modelData.stableId)
+                selected: root.displaySettings?.selectedOutputId === card.modelData.stableId
+                canEdit: root.displaySettings?.canEdit && !root.editorBusy
+                onSelectedRequested: root.displaySettings?.setSelectedOutputId(card.modelData.stableId)
             }
         }
     }
@@ -56,7 +56,7 @@ ColumnLayout {
     RowLayout {
         objectName: "displayPenSettingsRow"
         Layout.fillWidth: true
-        visible: root.displaySettings.selectedOutput.penDisplay ?? false
+        visible: root.displaySettings?.selectedOutput?.penDisplay ?? false
         spacing: Tokens.space["2"]
 
         Label {
@@ -78,7 +78,7 @@ ColumnLayout {
         objectName: "displayEnableFormRow"
         Layout.fillWidth: true
         label: qsTr("Enable display")
-        description: (root.displaySettings.selectedOutput.enabled ?? false)
+        description: (root.displaySettings?.selectedOutput?.enabled ?? false)
                      ? qsTr("This display is ready to configure.")
                      : qsTr("Turn on this connected display before configuring it.")
         editor: enableSwitch
@@ -87,12 +87,12 @@ ColumnLayout {
             id: enableSwitch
             objectName: "displayEnableSwitch"
             text: checked ? qsTr("Enabled") : qsTr("Disabled")
-            checked: root.displaySettings.selectedOutput.enabled ?? false
-            enabled: root.displaySettings.canEdit && !root.editorBusy
+            checked: root.displaySettings?.selectedOutput?.enabled ?? false
+            enabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy
             onToggled: {
-                if (root.displaySettings.selectedOutputId) {
-                    root.displaySettings.setOutputEnabled(
-                        root.displaySettings.selectedOutputId, checked)
+                if (root.displaySettings?.selectedOutputId) {
+                    root.displaySettings?.setOutputEnabled(
+                        root.displaySettings?.selectedOutputId, checked)
                 }
             }
         }

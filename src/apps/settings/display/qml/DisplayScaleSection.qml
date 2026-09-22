@@ -16,11 +16,11 @@ ColumnLayout {
     required property var displaySettings
     required property bool editorBusy
 
-    readonly property double currentScale: root.displaySettings.selectedOutput.scale ?? 1.0
-    readonly property bool outputEnabled: root.displaySettings.selectedOutput.enabled ?? false
-    readonly property var currentMode: Geometry.modeFor(root.displaySettings.selectedOutput)
+    readonly property double currentScale: root.displaySettings?.selectedOutput?.scale ?? 1.0
+    readonly property bool outputEnabled: root.displaySettings?.selectedOutput?.enabled ?? false
+    readonly property var currentMode: Geometry.modeFor(root.displaySettings?.selectedOutput ?? null)
     readonly property var currentLogical: Geometry.logicalSizeForScale(
-                                              root.displaySettings.selectedOutput, root.currentScale)
+                                              root.displaySettings?.selectedOutput ?? null, root.currentScale)
     readonly property double typicalScale: Geometry.typicalScaleFor(root.currentMode)
     readonly property string currentSummary: {
         const percent = Geometry.formatPercent(root.currentScale)
@@ -55,7 +55,7 @@ ColumnLayout {
     spacing: Tokens.space["3"]
 
     function presetDescription(value) {
-        const logical = Geometry.logicalSizeForScale(root.displaySettings.selectedOutput, value)
+        const logical = Geometry.logicalSizeForScale(root.displaySettings?.selectedOutput ?? null, value)
         const typical = Math.abs(value - root.typicalScale) < 0.01 ? qsTr(" Typical for this resolution.") : ""
         if (logical === null) {
             return qsTr("Scale factor %1.").arg(Geometry.formatPercent(value)) + typical
@@ -93,7 +93,8 @@ ColumnLayout {
                     checkable: true
                     autoExclusive: true
                     Layout.fillWidth: true
-                    available: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
+                    available: (root.displaySettings?.canEdit ?? false) && !root.editorBusy
+                               && root.outputEnabled
                     text: scaleBtn.modelData.label
                     checked: Math.abs(root.currentScale - scaleBtn.modelData.value) < 0.01
                     // Only the chosen preset carries the amber fill so the
@@ -106,9 +107,9 @@ ColumnLayout {
                     Accessible.checked: checked
 
                     onClicked: {
-                        if (root.displaySettings.selectedOutputId) {
-                            root.displaySettings.setOutputScale(
-                                root.displaySettings.selectedOutputId, scaleBtn.modelData.value)
+                        if (root.displaySettings?.selectedOutputId) {
+                            root.displaySettings?.setOutputScale(
+                                root.displaySettings?.selectedOutputId, scaleBtn.modelData.value)
                         }
                     }
                 }

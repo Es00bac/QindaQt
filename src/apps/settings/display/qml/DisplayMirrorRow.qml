@@ -18,18 +18,18 @@ FormRow {
     required property var displaySettings
     required property bool editorBusy
 
-    readonly property string selectedId: String(root.displaySettings.selectedOutputId ?? "")
+    readonly property string selectedId: String(root.displaySettings?.selectedOutputId ?? "")
     readonly property string mirrorSourceId:
-        String(root.displaySettings.selectedOutput.replicationSourceStableId ?? "")
-    readonly property bool outputEnabled: root.displaySettings.selectedOutput.enabled ?? false
-    readonly property bool mirrorEnabled: root.displaySettings.canEdit && !root.editorBusy
+        String(root.displaySettings?.selectedOutput?.replicationSourceStableId ?? "")
+    readonly property bool outputEnabled: root.displaySettings?.selectedOutput?.enabled ?? false
+    readonly property bool mirrorEnabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy
                                           && root.outputEnabled && root.candidates.length > 0
 
     // Every other output this one may mirror. A disabled output has no pixels
     // to copy, and an output that is itself mirroring would make the source
     // ambiguous, so both are excluded rather than offered and refused.
     readonly property var candidates: {
-        const all = root.displaySettings.outputs ?? []
+        const all = root.displaySettings?.outputs ?? []
         const result = []
         for (let index = 0; index < all.length; ++index) {
             const candidate = all[index]
@@ -51,7 +51,7 @@ FormRow {
         if (root.mirrorSourceId === "") {
             return ""
         }
-        const all = root.displaySettings.outputs ?? []
+        const all = root.displaySettings?.outputs ?? []
         let source = null
         let target = null
         for (let index = 0; index < all.length; ++index) {
@@ -101,7 +101,7 @@ FormRow {
 
             onClicked: {
                 if (root.selectedId !== "") {
-                    root.displaySettings.setOutputMirror(root.selectedId, "")
+                    root.displaySettings?.setOutputMirror(root.selectedId, "")
                 }
             }
         }
@@ -126,7 +126,7 @@ FormRow {
 
                 onClicked: {
                     if (root.selectedId !== "") {
-                        root.displaySettings.setOutputMirror(
+                        root.displaySettings?.setOutputMirror(
                             root.selectedId, mirrorBtn.modelData.stableId)
                     }
                 }

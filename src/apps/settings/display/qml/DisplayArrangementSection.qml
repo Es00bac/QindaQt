@@ -17,13 +17,13 @@ ColumnLayout {
     required property var displaySettings
     required property bool editorBusy
 
-    readonly property bool isPrimary: root.displaySettings.selectedOutput.primary ?? false
-    readonly property bool outputEnabled: root.displaySettings.selectedOutput.enabled ?? false
-    readonly property int posX: root.displaySettings.selectedOutput.positionX ?? 0
-    readonly property int posY: root.displaySettings.selectedOutput.positionY ?? 0
-    readonly property bool arrangeEnabled: root.displaySettings.canEdit && !root.editorBusy
-    readonly property string selectedLabel: String(root.displaySettings.selectedOutput.label
-                                                   ?? root.displaySettings.selectedOutput.connectorName
+    readonly property bool isPrimary: root.displaySettings?.selectedOutput?.primary ?? false
+    readonly property bool outputEnabled: root.displaySettings?.selectedOutput?.enabled ?? false
+    readonly property int posX: root.displaySettings?.selectedOutput?.positionX ?? 0
+    readonly property int posY: root.displaySettings?.selectedOutput?.positionY ?? 0
+    readonly property bool arrangeEnabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy
+    readonly property string selectedLabel: String(root.displaySettings?.selectedOutput?.label
+                                                   ?? root.displaySettings?.selectedOutput?.connectorName
                                                    ?? "")
     // Stable ids of connected-but-disabled outputs; only reassigned when the
     // set changes so their tiles survive ordinary draft edits.
@@ -37,7 +37,7 @@ ColumnLayout {
 
     function selectedRect() {
         return Geometry.findRect(arrangementCanvas.rects,
-                                 root.displaySettings.selectedOutputId)
+                                 root.displaySettings?.selectedOutputId)
     }
 
     function readoutText() {
@@ -72,11 +72,11 @@ ColumnLayout {
     // resets and reverts (draftDirty false) just refresh the cache so applied
     // truth is never "repaired" behind the user's back.
     function noticeOutputsChanged() {
-        const next = Geometry.enabledRects(root.displaySettings.outputs)
+        const next = Geometry.enabledRects(root.displaySettings?.outputs)
         const previous = root.knownRects
         root.knownRects = next
         root.refreshInactiveIds()
-        if (!root.displaySettings.draftDirty || !root.arrangeEnabled) {
+        if (!root.displaySettings?.draftDirty || !root.arrangeEnabled) {
             return
         }
         const resizedId = Geometry.resizedInPlace(previous, next)
@@ -98,17 +98,17 @@ ColumnLayout {
         root.pendingMoves = []
         root.pendingBaseline = ""
         if (!root.arrangeEnabled
-                || JSON.stringify(Geometry.enabledRects(root.displaySettings.outputs)) !== baseline) {
+                || JSON.stringify(Geometry.enabledRects(root.displaySettings?.outputs)) !== baseline) {
             return
         }
         for (let index = 0; index < moves.length; ++index) {
-            root.displaySettings.setOutputPosition(moves[index].stableId,
+            root.displaySettings?.setOutputPosition(moves[index].stableId,
                                                    moves[index].x, moves[index].y)
         }
     }
 
     function refreshInactiveIds() {
-        const list = root.displaySettings.outputs ?? []
+        const list = root.displaySettings?.outputs ?? []
         const next = []
         for (let index = 0; index < list.length; ++index) {
             if (!list[index].enabled) {
@@ -121,7 +121,7 @@ ColumnLayout {
     }
 
     Component.onCompleted: {
-        root.knownRects = Geometry.enabledRects(root.displaySettings.outputs)
+        root.knownRects = Geometry.enabledRects(root.displaySettings?.outputs)
         root.refreshInactiveIds()
     }
 
@@ -143,11 +143,11 @@ ColumnLayout {
         objectName: "displayArrangementCanvas"
         Layout.fillWidth: true
         Layout.preferredHeight: implicitHeight
-        outputs: root.displaySettings.outputs
-        selectedOutputId: root.displaySettings.selectedOutputId
+        outputs: root.displaySettings?.outputs ?? []
+        selectedOutputId: root.displaySettings?.selectedOutputId ?? ""
         canEdit: root.arrangeEnabled
-        onSelectRequested: stableId => root.displaySettings.setSelectedOutputId(stableId)
-        onMoveRequested: (stableId, x, y) => root.displaySettings.setOutputPosition(stableId, x, y)
+        onSelectRequested: stableId => root.displaySettings?.setSelectedOutputId(stableId)
+        onMoveRequested: (stableId, x, y) => root.displaySettings?.setOutputPosition(stableId, x, y)
     }
 
     Label {
@@ -190,10 +190,10 @@ ColumnLayout {
                     height: 48
                     output: arrangementCanvas.outputFor(inactiveTile.modelData)
                     ordinal: arrangementCanvas.ordinalFor(inactiveTile.modelData)
-                    selected: root.displaySettings.selectedOutputId === inactiveTile.modelData
+                    selected: root.displaySettings?.selectedOutputId === inactiveTile.modelData
                     draggable: false
                     inactive: true
-                    onSelectRequested: root.displaySettings.setSelectedOutputId(
+                    onSelectRequested: root.displaySettings?.setSelectedOutputId(
                                            inactiveTile.modelData)
                 }
             }
@@ -204,12 +204,12 @@ ColumnLayout {
         id: placementControls
         objectName: "displayPlacementControls"
         Layout.fillWidth: true
-        outputs: root.displaySettings.outputs
-        selectedOutputId: root.displaySettings.selectedOutputId
+        outputs: root.displaySettings?.outputs ?? []
+        selectedOutputId: root.displaySettings?.selectedOutputId ?? ""
         selectedEnabled: root.outputEnabled
         canEdit: root.arrangeEnabled
         onPlaceRequested: (side, referenceId) => arrangementCanvas.placeBeside(
-                              root.displaySettings.selectedOutputId, referenceId, side)
+                              root.displaySettings?.selectedOutputId, referenceId, side)
     }
 
     FormRow {
@@ -223,10 +223,10 @@ ColumnLayout {
             objectName: "displayPrimarySwitch"
             text: checked ? qsTr("Primary Display") : qsTr("Secondary Display")
             checked: root.isPrimary
-            enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled && !root.isPrimary
+            enabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy && root.outputEnabled && !root.isPrimary
             onToggled: {
-                if (checked && root.displaySettings.selectedOutputId) {
-                    root.displaySettings.setOutputPrimary(root.displaySettings.selectedOutputId)
+                if (checked && root.displaySettings?.selectedOutputId) {
+                    root.displaySettings?.setOutputPrimary(root.displaySettings?.selectedOutputId)
                 }
             }
         }
@@ -254,13 +254,13 @@ ColumnLayout {
                 id: posXField
                 objectName: "displayPosXField"
                 implicitWidth: 100
-                outputId: root.displaySettings.selectedOutputId
+                outputId: root.displaySettings?.selectedOutputId ?? ""
                 authoritativeValue: root.posX
                 coordinateName: qsTr("Position X coordinate")
-                enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
+                enabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy && root.outputEnabled
                 onValidCommitRequested: (originOutputId, value) => {
-                    if (originOutputId === root.displaySettings.selectedOutputId) {
-                        root.displaySettings.setOutputPosition(
+                    if (originOutputId === root.displaySettings?.selectedOutputId) {
+                        root.displaySettings?.setOutputPosition(
                             originOutputId, value, root.posY)
                     }
                 }
@@ -275,13 +275,13 @@ ColumnLayout {
                 id: posYField
                 objectName: "displayPosYField"
                 implicitWidth: 100
-                outputId: root.displaySettings.selectedOutputId
+                outputId: root.displaySettings?.selectedOutputId ?? ""
                 authoritativeValue: root.posY
                 coordinateName: qsTr("Position Y coordinate")
-                enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
+                enabled: (root.displaySettings?.canEdit ?? false) && !root.editorBusy && root.outputEnabled
                 onValidCommitRequested: (originOutputId, value) => {
-                    if (originOutputId === root.displaySettings.selectedOutputId) {
-                        root.displaySettings.setOutputPosition(
+                    if (originOutputId === root.displaySettings?.selectedOutputId) {
+                        root.displaySettings?.setOutputPosition(
                             originOutputId, root.posX, value)
                     }
                 }

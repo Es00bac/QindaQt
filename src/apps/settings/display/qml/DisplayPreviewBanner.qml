@@ -14,18 +14,18 @@ Rectangle {
 
     required property var displaySettings
 
-    visible: displaySettings.inTransaction
+    visible: displaySettings?.inTransaction ?? false
     implicitHeight: layout.implicitHeight + Tokens.space["4"] * 2
     radius: Tokens.radius.m
-    color: displaySettings.awaitingConfirmation ? Tokens.status.warning.background
+    color: displaySettings?.awaitingConfirmation ? Tokens.status.warning.background
                                                 : Tokens.status.info.background
     border.width: Tokens.space["1"] / 2
-    border.color: displaySettings.awaitingConfirmation ? Tokens.status.warning.foreground
+    border.color: displaySettings?.awaitingConfirmation ? Tokens.status.warning.foreground
                                                        : Tokens.status.info.foreground
 
     Accessible.role: Accessible.AlertMessage
     Accessible.name: qsTr("Display configuration preview")
-    Accessible.description: displaySettings.transactionStatusText
+    Accessible.description: displaySettings?.transactionStatusText ?? ""
 
     RowLayout {
         id: layout
@@ -39,13 +39,13 @@ Rectangle {
 
             Label {
                 Layout.fillWidth: true
-                text: displaySettings.awaitingConfirmation
+                text: displaySettings?.awaitingConfirmation
                       ? qsTr("Previewing new display settings")
                       : qsTr("Applying display configuration")
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.body
                 font.weight: Font.DemiBold
-                color: displaySettings.awaitingConfirmation
+                color: displaySettings?.awaitingConfirmation
                        ? Tokens.status.warning.foreground
                        : Tokens.status.info.foreground
                 wrapMode: Text.Wrap
@@ -53,10 +53,10 @@ Rectangle {
 
             Label {
                 Layout.fillWidth: true
-                text: displaySettings.transactionStatusText
+                text: displaySettings?.transactionStatusText ?? ""
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
-                color: displaySettings.awaitingConfirmation
+                color: displaySettings?.awaitingConfirmation
                        ? Tokens.status.warning.foreground
                        : Tokens.status.info.foreground
                 wrapMode: Text.Wrap
@@ -67,8 +67,8 @@ Rectangle {
             id: revertButton
             objectName: "displayPreviewRevertButton"
             text: qsTr("Revert")
-            available: displaySettings.inTransaction
-            onClicked: displaySettings.revertTransaction()
+            available: displaySettings?.inTransaction ?? false
+            onClicked: displaySettings?.revertTransaction()
         }
 
         Button {
@@ -76,8 +76,8 @@ Rectangle {
             objectName: "displayPreviewKeepButton"
             text: qsTr("Keep Changes")
             emphasized: true
-            available: displaySettings.awaitingConfirmation
-            onClicked: displaySettings.confirmTransaction()
+            available: displaySettings?.awaitingConfirmation ?? false
+            onClicked: displaySettings?.confirmTransaction()
         }
     }
 }

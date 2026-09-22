@@ -20,9 +20,9 @@ T.Page {
     // page only reports the request.
     signal penSettingsRequested()
 
-    readonly property bool editorBusy: displaySettings.busy
-                                     || displaySettings.loading
-    readonly property Item firstFocusTarget: root.displaySettings.unavailable
+    readonly property bool editorBusy: (displaySettings?.busy ?? false)
+                                     || (displaySettings?.loading ?? false)
+    readonly property Item firstFocusTarget: root.displaySettings?.unavailable
                                              ? unavailableNotice
                                              : outputSection.firstFocusTarget
 
@@ -84,11 +84,11 @@ T.Page {
         Label {
             objectName: "displayStatus"
             Layout.fillWidth: true
-            visible: text.length > 0 && !root.displaySettings.unavailable
-            text: root.displaySettings.statusText
+            visible: text.length > 0 && !root.displaySettings?.unavailable
+            text: root.displaySettings?.statusText ?? ""
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
-            Accessible.role: root.displaySettings.unavailable
+            Accessible.role: root.displaySettings?.unavailable
                              ? Accessible.AlertMessage : Accessible.StaticText
             Accessible.name: text
         }
@@ -97,7 +97,7 @@ T.Page {
             objectName: "displayError"
             Layout.fillWidth: true
             visible: text.length > 0
-            text: root.displaySettings.errorText
+            text: root.displaySettings?.errorText ?? ""
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
             color: Tokens.fg.default
@@ -106,7 +106,7 @@ T.Page {
         }
 
         Repeater {
-            model: root.displaySettings.warnings
+            model: root.displaySettings?.warnings
 
             delegate: Label {
                 required property var modelData
@@ -129,20 +129,20 @@ T.Page {
 
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: root.displaySettings.unavailable
+            Layout.preferredHeight: root.displaySettings?.unavailable
                                   ? unavailableNotice.implicitHeight : 0
-            visible: root.displaySettings.unavailable
+            visible: root.displaySettings?.unavailable ?? false
 
             DegradedNotice {
                 id: unavailableNotice
                 objectName: "displayUnavailableNotice"
                 anchors.top: parent.top
                 width: parent.width
-                reason: root.displaySettings.statusText.length > 0
-                        ? root.displaySettings.statusText
+                reason: root.displaySettings?.statusText.length > 0
+                        ? root.displaySettings?.statusText
                         : qsTr("Display management is temporarily unavailable.")
                 retryText: qsTr("Try again")
-                onRetryRequested: root.displaySettings.retry()
+                onRetryRequested: root.displaySettings?.retry()
             }
         }
 
@@ -151,7 +151,7 @@ T.Page {
             objectName: "displayFormViewport"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !root.displaySettings.unavailable
+            visible: !root.displaySettings?.unavailable
             clip: true
             contentHeight: formSurface.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
@@ -257,7 +257,7 @@ T.Page {
 
         RowLayout {
             Layout.fillWidth: true
-            visible: !root.displaySettings.unavailable
+            visible: !root.displaySettings?.unavailable
             spacing: Tokens.space["2"]
 
             Item { Layout.fillWidth: true }
@@ -265,21 +265,21 @@ T.Page {
             Button {
                 id: revertButton
                 objectName: "displayRevertButton"
-                visible: root.displaySettings.draftDirty
-                         && !root.displaySettings.inTransaction
-                available: root.displaySettings.canEdit
+                visible: (root.displaySettings?.draftDirty ?? false)
+                         && !(root.displaySettings?.inTransaction ?? false)
+                available: root.displaySettings?.canEdit ?? false
                 text: qsTr("Revert")
-                onClicked: root.displaySettings.cancelDraft()
+                onClicked: root.displaySettings?.cancelDraft()
             }
 
             Button {
                 id: applyButton
                 objectName: "displayApplyButton"
-                visible: !root.displaySettings.inTransaction
-                available: root.displaySettings.applyAvailable
+                visible: !root.displaySettings?.inTransaction
+                available: root.displaySettings?.applyAvailable ?? false
                 emphasized: true
                 text: qsTr("Apply")
-                onClicked: root.displaySettings.applyDraft()
+                onClicked: root.displaySettings?.applyDraft()
             }
 
         }
