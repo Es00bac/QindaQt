@@ -379,6 +379,13 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         }
         pushEffects();
     }
+    // AGENT-GUARD: every output-generation change republishes the whole panel
+    // set, so this list gains entries for the lifetime of the session while
+    // the windows behind them are destroyed. Drop the cleared guards here;
+    // nothing else prunes them, and both live-adoption loops walk this list.
+    m_liveWindows.removeIf([](const QPointer<QQuickWindow> &entry) {
+        return entry.isNull();
+    });
     m_liveWindows.append(QPointer<QQuickWindow>(window));
     return std::unique_ptr<QQuickWindow>(window);
 }
