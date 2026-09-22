@@ -74,6 +74,21 @@ public:
     // Successful refreshes preserve the independent restore frame; failures
     // remain maximized so a later work-area transition can retry them.
     [[nodiscard]] QStringList refreshMaximizedAreas();
+    // Brings back any container whose frame lies entirely outside its work
+    // area, which is what removing an output leaves behind.
+    //
+    // AGENT-GUARD: refreshMaximizedAreas() only re-fits containers that are
+    // maximized, so an ordinary container stranded by a display going away was
+    // never relocated -- and the grouped geometry reconciler then reasserts its
+    // stale plan, so moving a member at the KWin level is undone. The user is
+    // left with a container whose title bar is off-screen and therefore cannot
+    // be dragged back, and every visibility snapshot is rejected forever
+    // because a managed window lies outside its own output. Call this from the
+    // same work-area transition, before the grouped reconciler runs.
+    //
+    // Moves rather than resizes: the container keeps its size unless it no
+    // longer fits, so a user's layout survives the display change.
+    [[nodiscard]] QStringList refreshStrandedContainers();
     [[nodiscard]] bool isMaximized(const QString &containerId) const noexcept;
 
     // Rolls the container up to a compact, still-visible, still-movable badge

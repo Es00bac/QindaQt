@@ -586,6 +586,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         tst_hybridcontainerplacement.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
     )
     target_include_directories(

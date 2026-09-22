@@ -31,7 +31,7 @@ New ADRs: [0235](docs/wiki/adr/0235-escrow-panels-whose-output-is-absent.md),
 
 ---
 
-## 0. The visibility snapshot is wedged right now, so auto-hide is dead
+## 0. A container stranded by a removed output wedges the whole snapshot — FIXED (`(pending)`)
 
 **You will see:** no panel ever hides, on any display, for the rest of the
 session. This is the live state of the running desktop as of 2026-09-22 01:2x.
@@ -107,24 +107,35 @@ its container plan still says y=1104. Anything that fixes this has to move the
 
 **This is the evidence ADR-0237 said it was waiting for**, and it points the
 opposite way from the item #4 write-up: the invalid window is not transient, it
-is *stuck*. It also decides between the two candidate follow-ups:
+is *stuck*. It also decided between the two candidate fixes. Excluding an
+off-output window from the snapshot would have restored auto-hide while leaving
+the user a container they cannot reach, so the fix is the other one.
 
-1. **Exclude a window that lies outside its output** rather than voiding the
-   batch. This unblocks the snapshot and restores auto-hide — but it leaves the
-   user with a container they cannot reach, because its title bar is off-screen
-   too, so it cannot be dragged back. It would also hide exactly this case from
-   the next reader. A band-aid.
-2. **Relocate container plans when their output disappears.** This is the real
-   fix: it restores the user's window *and* stops the snapshot ever seeing
-   condition 5 in a non-transient form. Container granularity, not window
-   granularity, and it belongs to whoever owns the plan.
+**Fixed by relocating the container plan.**
+`KWinHybridSession::reconcileWorkAreaGeometry()` already ran on every work-area
+transition, but it only called `refreshMaximizedAreas()`, which re-fits
+*maximized* containers alone. An ordinary container stranded by a display going
+away was never relocated — and the grouped geometry reconciler immediately
+after it reasserts each container's committed target frames, which is precisely
+why a manual KWin-level move of a member was undone.
 
-Prefer 2. If 1 is taken as well, it should be for the transient case it was
-written for, not as the answer to this one.
+`HybridContainerPlacementController::refreshStrandedContainers()` now runs in
+the same transition, **before** the grouped reconciler, and brings back any
+container whose frame lies entirely outside its work area. It moves rather than
+resizes, so a user's layout survives the display change, and only clamps when
+the container no longer fits. A container that merely hangs off an edge is left
+alone — that is the user's own arrangement, not a stranding.
 
-**No safe live workaround.** `ReleaseContainer` would dissolve
-`hybrid-r133-container`, after which a KWin-level move would stick — but that
-destroys a window grouping the user built, so it is their call, not a fix.
+Covered by `compositor.hybrid-container-placement`
+(`reflowsContainersStrandedOffEveryOutput`), which uses the geometry measured
+off the running session: work area (0,32) 1920x1048, container at (0,1104)
+1918x1046. It also pins that a reachable container is untouched, that the pass
+is idempotent, that an oversized container is clamped, that a maximized one is
+left to `refreshMaximizedAreas()`, and that a reflow failure is reported.
+
+**Not verified live.** The wiring into `reconcileWorkAreaGeometry()` needs a
+running KWin; only the controller is unit-testable. The running session is
+still wedged until a package cut.
 
 ---
 

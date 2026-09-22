@@ -169,7 +169,71 @@ private Q_SLOTS:
     void aspectPinCancelRestoresBaselineAndUnpinRestoresFreeResize();
     void keyboardResizeComposesWithAspectPin();
     void aspectPinValidationContentRatioHelperAndForget();
+    void reflowsContainersStrandedOffEveryOutput();
 };
+
+// A container left entirely outside the work area when its display was
+// removed. Nothing relocated it: refreshMaximizedAreas() only re-fits
+// containers that are maximized, and the grouped geometry reconciler then
+// reasserts the stale plan, so a KWin-level move of a member is undone. The
+// user is left with a container whose title bar is off-screen and therefore
+// cannot be dragged back, and every visibility snapshot is rejected because a
+// managed window lies outside its own output. See OPEN-DEFECTS.md item 0.
+void HybridContainerPlacementTest::reflowsContainersStrandedOffEveryOutput()
+{
+    Fixture fixture;
+
+    // A container that is still reachable is left completely alone.
+    fixture.layout.outerFrame = QRect(100, 100, 800, 600);
+    fixture.requestedFrames.clear();
+    QVERIFY(fixture.controller.refreshStrandedContainers().isEmpty());
+    QVERIFY(fixture.requestedFrames.isEmpty());
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+
+    // The live shape, with the geometry measured off the running session:
+    // work area (0,32) 1920x1048 after DP-1 was removed, and
+    // hybrid-r133-container left at (0,1104) 1918x1046.
+    fixture.workArea = QRect(0, 32, 1920, 1048);
+    fixture.layout.outerFrame = QRect(0, 1104, 1918, 1046);
+    fixture.requestedFrames.clear();
+    QVERIFY(fixture.controller.refreshStrandedContainers().isEmpty());
+    QCOMPARE(fixture.requestedFrames.size(), 1);
+
+    // Moved, not resized: it still fits, so the user keeps their layout.
+    const QRect moved = fixture.layout.outerFrame;
+    QCOMPARE(moved.size(), QSize(1918, 1046));
+    QVERIFY2(moved.intersects(fixture.workArea), qPrintable(QStringLiteral(
+        "stranded container was not brought back: %1,%2 %3x%4")
+            .arg(moved.x()).arg(moved.y()).arg(moved.width()).arg(moved.height())));
+    QVERIFY(fixture.workArea.contains(moved));
+
+    // Idempotent: a second pass has nothing to do.
+    fixture.requestedFrames.clear();
+    QVERIFY(fixture.controller.refreshStrandedContainers().isEmpty());
+    QVERIFY(fixture.requestedFrames.isEmpty());
+
+    // A container larger than the surviving work area is clamped to it rather
+    // than left partly unreachable.
+    fixture.layout.outerFrame = QRect(4000, 4000, 3000, 2000);
+    fixture.requestedFrames.clear();
+    QVERIFY(fixture.controller.refreshStrandedContainers().isEmpty());
+    QCOMPARE(fixture.layout.outerFrame, fixture.workArea);
+
+    // A maximized container stays the business of refreshMaximizedAreas().
+    fixture.layout.outerFrame = QRect(100, 100, 800, 600);
+    QVERIFY(fixture.controller.maximize(QStringLiteral("group")));
+    fixture.layout.outerFrame = QRect(0, 1104, 1918, 1046);
+    fixture.requestedFrames.clear();
+    QVERIFY(fixture.controller.refreshStrandedContainers().isEmpty());
+    QVERIFY2(fixture.requestedFrames.isEmpty(),
+             "a maximized container must be left to refreshMaximizedAreas()");
+
+    // A reflow failure is reported, not swallowed.
+    QVERIFY(fixture.controller.restore(QStringLiteral("group")));
+    fixture.layout.outerFrame = QRect(0, 1104, 1918, 1046);
+    fixture.failNext = true;
+    QCOMPARE(fixture.controller.refreshStrandedContainers().size(), 1);
+}
 
 void HybridContainerPlacementTest::movesFromOneStableBaselineAndCancels()
 {
