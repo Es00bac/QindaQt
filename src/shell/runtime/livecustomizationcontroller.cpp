@@ -122,6 +122,17 @@ void LiveCustomizationController::outputGenerationChanged()
         const EditorOutcome outcome = m_host->notifyOutputGenerationChanged();
         Q_UNUSED(outcome);
     }
+    // AGENT-GUARD: rebuild here, do not leave the session stale for the lazy
+    // ensureHost() path. available() is false while requiresRebuild() holds,
+    // and available() is exactly what disables AppletEditHandle's chord
+    // TapHandler and PanelLiveCustomization's menu entry points - the only
+    // callers that would ever reach ensureHost(). Marking stale without
+    // rebuilding therefore deadlocks: one display hotplug killed
+    // Meta+right-click customization for the rest of the session, recovering
+    // only if a layout-profile adoption happened to rebuild the host.
+    // notifyOutputGenerationChanged() has already cancelled any open gesture,
+    // so replacing the session now is the same operation adoptProfile() does.
+    rebuildHost();
     Q_EMIT changed();
 }
 

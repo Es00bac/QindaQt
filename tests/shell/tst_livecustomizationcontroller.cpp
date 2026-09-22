@@ -203,9 +203,18 @@ void LiveCustomizationControllerTest::adoptionKeepsHistoryForOwnWritesAndRebuild
     QVERIFY(!controller.canUndo());
     QCOMPARE(controller.panelOptions(QStringLiteral("bar")).value(QStringLiteral("thickness")).toInt(), 44);
 
-    // Output hotplug stales the session; the next action rebuilds it first.
+    // Regression: an output hotplug must leave the controller offering the
+    // chord. available() is what disables AppletEditHandle's TapHandler and
+    // PanelLiveCustomization's menu entry points, and those are the only
+    // callers that would ever reach the lazy ensureHost() rebuild. Staling
+    // without rebuilding therefore deadlocked the UI - one display hotplug
+    // removed Meta+right-click customization for the rest of the session.
+    QVERIFY(controller.removeApplet(QStringLiteral("bar"), QStringLiteral("status-1")));
+    QVERIFY(controller.canUndo());
     controller.outputGenerationChanged();
-    QVERIFY(!controller.available());
+    QVERIFY(controller.available());
+    // The session really was replaced: the stale edit run's history is gone.
+    QVERIFY(!controller.canUndo());
     QVERIFY(controller.removeApplet(QStringLiteral("bar"), QStringLiteral("clock-1")));
     QVERIFY(controller.available());
 }

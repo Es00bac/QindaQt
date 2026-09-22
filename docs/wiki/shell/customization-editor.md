@@ -96,7 +96,13 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 4. Acceptance highlights are discarded after any revision change.
 5. Undo/redo are enabled only while the machine is idle.
 6. An output-generation change closes any open gesture and marks the session
-   stale until the host rebuilds it.
+   stale until the host rebuilds it. The shell's controller rebuilds
+   immediately on that signal rather than waiting for a later action: the
+   panel, applet, and desktop chords are all gated on
+   `LiveCustomizationController::available()`, which is false while the
+   session is stale, so a lazy rebuild has no caller left to trigger it and
+   one display hotplug would end in-place customization for the rest of the
+   session.
 7. Release over an off-target or rejected target cancels the whole preview;
    it never commits the last accepted provisional target.
 
