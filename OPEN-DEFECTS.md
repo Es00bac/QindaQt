@@ -138,7 +138,9 @@ left to `refreshMaximizedAreas()`, and that a reflow failure is reported.
 
 **Not verified live.** The wiring into `reconcileWorkAreaGeometry()` needs a
 running KWin; only the controller is unit-testable. The running session is
-still wedged until a package cut.
+still wedged until a package cut — the rejection counter was 8250 when this was
+first measured and **58 671** a couple of hours later, still climbing at a few
+per 25 seconds.
 
 ---
 
@@ -352,8 +354,18 @@ scaling the internal panel to carry a 1200-tall framebuffer. That is what a
 mirror onto a taller source looks like. Whether it was ever presented to the
 user as working is unknown.
 
-**Next step:** retry now that the service answers, and capture what the route
-reports alongside what Display1 returns from `Stage`/`Confirm`.
+**Verified 2026-09-22: `Display1` is healthy.** The name is owned
+(`org.qindaqt.Display1` → pid 2533077, `qindaqt-display-service.service` active
+and running) and `org.freedesktop.DBus.Introspectable.Introspect` returns valid
+XML immediately, where it previously timed out. The precondition that doomed
+every earlier attempt is gone.
+
+**Next step is a human one:** retry mirroring from Settings → Display, and
+capture what the route reports alongside what Display1 returns from
+`Stage`/`Confirm`. Nothing further can be established from here without
+reconfiguring the displays on a live session, which is not this file's call to
+make — and is especially unwise while item #0 is unfixed on that session, since
+an output-generation change is exactly what strands a container.
 
 Separately: **why did the display service wedge?** A hung Display1 with a
 healthy-looking unit is its own defect and nothing in its journal explains it.
@@ -648,10 +660,22 @@ cover the case it was written for.
 directly observed. The 1.25 arithmetic is inference — the outputs are not
 currently at 1.25, so the failing comparison was not caught in the act.
 
-**Next step:** set an output to 1.25, read `QScreen::devicePixelRatio()` and
+**Currently quiescent, which is not the same as fixed.** The session is down to
+one output at scale 1, so the matcher succeeds and the fallback has stopped —
+0 new lines in a 25-second sample against 1898 accumulated. It will return with
+the second display.
+
+**Next step:** set an output to 1.25, read `QScreen::devicePixelRatio()` beside
 the compositor's reported scale, and decide whether the two quantities should
-be compared at all rather than which rounding to use. If they should not, that
-supersedes part of ADR-0234.
+be compared *at all* rather than which rounding to use. They are a logical
+scale and a buffer scale; if they are genuinely not comparable, the matcher
+should verify identity and geometry only, and that supersedes part of
+ADR-0234.
+
+Deliberately not done from here: it needs the live displays reconfigured, and
+the compositor's `AddVirtualOutputForTest` would trigger an output-generation
+change — the exact event that strands a container while item #0 is unfixed on
+that session.
 
 ---
 
