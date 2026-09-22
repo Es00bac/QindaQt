@@ -11,8 +11,14 @@ core; a display hotplug deadlocked Meta+right-click customization; and a panel
 pinned to one display erased every other panel while that display was absent.
 Everything below is what remains.
 
-Evidence throughout is from `~/.local/share/sddm/wayland-session.log`, which is
-where the shell's stderr goes.
+Evidence throughout is from `~/.local/share/sddm/wayland-session.log`. **That
+file is the whole session's stderr, not the shell's alone** — see item #3 for a
+defect that was filed purely because a warning from another process in that log
+was attributed to the shell.
+
+**Status:** items #1, #2, #6, #11, #12 and #13 have since been fixed or
+withdrawn on this branch (`61248193`, `d1394485`, `d2557ba7`, `6e4708a5` and
+later). Item #3 is withdrawn as not-a-defect. The rest stand.
 
 ---
 
@@ -48,9 +54,16 @@ QindaQt shell live customization is unavailable: panel 'dock' names missing outp
 **Raised in priority by the r10 work**: the dock is now pinned to `eDP-1`, so
 this fires whenever the built-in panel is off or being reconfigured.
 
-**Fix:** filter through `PanelProfileOutputOccupancy::presentOutputsOnly()`
-before `rebuild()`/`LiveEditorHost` construction, exactly as `reconcileSurfaces()`
-does. Add a controller row that pins it.
+**Fix as originally proposed here was dangerous — do not use it.** Filtering
+through `PanelProfileOutputOccupancy::presentOutputsOnly()` before
+`rebuild()`/`LiveEditorHost` construction is safe for the *surface* path, where
+the filtered profile is never written back, but the editor host **persists what
+it holds**: an Apply would have written the filtered profile to the user store
+and permanently deleted every panel pinned to a display that happened to be
+absent at that moment. Silent data loss.
+
+`work-space-7a` caught that and escrowed the absent panels instead, so they
+survive a round trip through Apply — see ADR-0235. Fixed in `61248193`.
 
 ---
 
@@ -88,32 +101,41 @@ setting that claims to do something it cannot.
 
 ---
 
-## 3. The dock's input mask is a no-op, so transparent margins may eat clicks
+## 3. ~~The dock's input mask is a no-op~~ — WITHDRAWN, not a defect
 
-**You will see:** clicks near the bottom of the screen swallowed by the dock's
-invisible margins, across the full panel width, not just on the painted shelf.
-
-`applyInputBounds()` narrows the panel window's input region to the painted
-shelf plus hover allowance:
+**This entry was wrong.** `QWindow::setMask()` *is* implemented on Qt Wayland
+6.11.1 and the panel input region is set correctly.
 
 ```
-src/shell/runtime/runtimepanelwindowfactory.cpp:54    window->setMask(QRegion(bounds));
+$ nm -DC /usr/lib64/libQt6WaylandClient.so.6 | grep QWaylandWindow::setMask
+0000000000090900 T QtWaylandClient::QWaylandWindow::setMask(QRegion const&)
 ```
 
-Qt's Wayland platform does not implement it:
+`work-space-7a` additionally confirmed on the wire with `WAYLAND_DEBUG=1`
+against the live compositor that the needle rect reaches
+`wl_surface.set_input_region`, in both orders — Qt replays a mask stored before
+show at platform-window creation. The `AGENT-GUARD` comment in
+`runtimepanelwindowfactory.cpp` is accurate.
+
+**Where the error came from, because it can repeat:**
+`~/.local/share/sddm/wayland-session.log` is the whole *session's* stderr, not
+the shell's alone. The `does not support setting window masks` lines come from
+a different Qt client in that session (`PlasmaQuick::Dialog`, which masks on
+X11). Every warning in that file was attributed to the shell without checking
+which process emitted it.
+
+The neighbouring item #2 survives the same scrutiny, and the contrast is what
+makes the mistake legible — `QWaylandWindow` overrides `setMask` but has **no**
+`setOpacity` override, so opacity falls through to the `QPlatformWindow` base
+that warns:
 
 ```
-This plugin does not support setting window masks
+$ nm -DC /usr/lib64/libQt6WaylandClient.so.6 | grep QWaylandWindow::setOpacity
+(no match)
 ```
 
-There is an `AGENT-GUARD` comment immediately above that call stating the mask
-is what keeps a centered dock's transparent margins from blocking desktop input.
-That guarantee does not hold on this platform.
-
-**Fix:** set the Wayland input region directly (`wl_surface.set_input_region`,
-the same way `panel_surface_blur.cpp` reaches past Qt for
-`org_kde_kwin_blur`), or make the panel window only as wide as its painted
-shelf so there are no transparent margins to mask.
+Two near-identical warnings in one shared log, only one of them the shell's.
+Attribute a log line to a process before you attribute a defect to code.
 
 ---
 
@@ -184,27 +206,23 @@ and count `/proc/<pid>/task` — a tight reproducer decides Qt-vs-QindaQt quickl
 
 ---
 
-## 6. `WindowsChanged` fires ~20 Hz on an idle desktop
+## 6. `WindowsChanged` fires ~20 Hz on an idle desktop — NOT REPRODUCIBLE on r10
 
-**You will see:** background CPU use in the shell and compositor with nothing
-happening.
+Measured on the pre-fix shell with
+`busctl --user monitor --match "path='/org/qindaqt/Compositor'"`: **602
+`WindowsChanged` signals in 30 seconds** on an idle desktop.
 
-Measured with `busctl --user monitor --match "path='/org/qindaqt/Compositor'"`:
-**602 `WindowsChanged` signals in 30 seconds** on a desktop with no user input.
+`work-space-7a` re-measured the same way on r10 and got **1 in 30 seconds, 0 in
+60 seconds**, with shell and KWin both at 0% of a core from `/proc`. The
+original measurement was taken while an orphaned `qindaqt-xembed-tray-proxy`
+was spinning at 100% of a core, which is the likely source.
 
-```
-src/compositor/kwin/kwincontrolendpoint.cpp:112
-```
+Real underlying sloppiness confirmed and fixed anyway in `6e4708a5`:
+`ManagedWindowRegistry` emitted per `frameGeometryChanged`, so the emission is
+now coalesced at the source.
 
-The shell's visibility client coalesces invalidations, so it is not doing 20
-snapshot fetches a second — but every consumer of that signal pays, and the
-signal rate itself says something is re-notifying far more often than the
-window state actually changes.
-
-**Fix:** find what re-emits at that rate in `KWinHybridSession::handleWindowsChanged()`
-and coalesce at the source.
-
----
+Treat the 20 Hz figure as an artefact of the pre-fix machine state, not as a
+standing defect.
 
 ## 7. Display mirroring fails
 
