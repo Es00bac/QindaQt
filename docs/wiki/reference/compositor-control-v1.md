@@ -144,6 +144,7 @@ with it. A successful payload has this schema:
       "activityIds": [],
       "active": true,
       "maximized": false,
+      "fullscreen": false,
       "minimized": false,
       "hidden": false
     }
@@ -174,7 +175,11 @@ eligible transients. Desktop, dock/layer-shell, splash, tooltip, menu, popup,
 internal, deleted, and unmanaged surfaces do not. `hidden` combines KWin's
 ordinary hidden state and Show Desktop hiding; `minimized` remains separate.
 `maximized` means both native axes or QindaQt whole-container maximize, not
-quick-tiled or partially maximized.
+quick-tiled or partially maximized. Current publishers also include optional
+boolean `fullscreen`, sampled from KWin's independent fullscreen state. It is
+an additive schema-1 field: older clients ignore it, and current clients
+accept an older publisher that omits it. A present non-boolean value rejects
+the snapshot. See [ADR-0239](../adr/0239-publish-fullscreen-in-shell-visibility.md).
 
 The first valid generation has revision `"1"`; zero is never a successful
 revision. Revision advances exactly once when canonical state changes and is

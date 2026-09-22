@@ -32,6 +32,8 @@ struct ShellVisibilityWindowSnapshot final
     bool maximized = false;
     bool minimized = false;
     bool hidden = false;
+    // Additive schema-1 field; older consumers ignore it.
+    bool fullscreen = false;
 };
 
 struct ShellVisibilityScopeSnapshot final

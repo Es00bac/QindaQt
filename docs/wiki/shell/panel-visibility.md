@@ -13,7 +13,8 @@ One evaluation contains:
 - each expanded `(panelId, outputId)` surface rectangle, hide mode, and
   reservation policy;
 - application-window frame rectangles, compositor-assigned output, every
-  virtual desktop, activities, active, maximized, minimized, and hidden state;
+  virtual desktop, activities, active, maximized, fullscreen, minimized, and
+  hidden state;
 - the current workspace and activity; and
 - optional per-surface reveal and visibility-hold requests.
 
@@ -53,10 +54,20 @@ spanning window may dodge a panel on an output other than its
 compositor-assigned output; maximized policy deliberately uses the assigned
 output instead.
 
+An active window whose frame covers an entire logical output hides every panel
+on that output except one configured as `never` when KWin reports fullscreen
+or the window is not maximized. This takes priority over an old edge reveal or
+popup hold. The explicit fullscreen fact handles clients that retain their
+maximized state in fullscreen; geometry covers borderless fullscreen clients
+and older compositor publishers that omit that fact. An ordinary maximized
+window remains revealable at the edge even when an overlay-only layout lets it
+fill the output. See [ADR-0239](../adr/0239-publish-fullscreen-in-shell-visibility.md).
+
 `never` remains visible regardless of transient requests. For every other
-mode, a visibility hold has priority over an edge/shortcut reveal, and either
-request forces the surface visible. Inventory order deterministically selects
-the diagnostic trigger when several windows qualify.
+mode outside the output-covering case, a visibility hold has priority over an
+edge/shortcut reveal, and either request forces the surface visible. Inventory
+order deterministically selects the diagnostic trigger when several windows
+qualify.
 
 ## Reservation result
 
@@ -103,7 +114,11 @@ The production shell now owns the following producers behind that store:
 
 - panel-window containment and one-pixel layer-shell edge sensors acquire a
   reveal lease; pointer departure releases it after the bounded
-  `panels.autoHideDelayMs` setting;
+  `panels.autoHideDelayMs` setting. A foreground-window change, or the current
+  foreground window becoming maximized or fullscreen, clears old pointer
+  reveals on its assigned and geometrically intersected outputs before the
+  next visibility evaluation. A
+  fresh edge entry can reveal the dock again over an ordinary maximized window;
 - shell popup windows, including the notification center, and applet `Popup`
   objects, including launcher and power popups, acquire output-scoped
   visibility-hold leases through a bounded owner/lifetime registry. It admits

@@ -68,6 +68,9 @@ struct LogicalWindowSnapshot {
   bool maximized = false;
   bool minimized = false;
   bool hidden = false;
+  // Authoritative when supplied by a current compositor. Older schema-1
+  // publishers omit the field; the decoder leaves it false for compatibility.
+  bool fullscreen = false;
 
   friend bool operator==(const LogicalWindowSnapshot &,
                          const LogicalWindowSnapshot &) = default;
@@ -122,6 +125,7 @@ enum class PanelVisibilityReason {
   ActiveWindowOverlap,
   AnyWindowOverlap,
   MaximizedWindowOnOutput,
+  ActiveWindowCoversOutput,
   NoConflict,
 };
 

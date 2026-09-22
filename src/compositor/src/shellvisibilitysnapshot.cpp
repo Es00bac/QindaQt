@@ -283,7 +283,8 @@ std::optional<QJsonObject> canonicalState(
                         {QStringLiteral("active"), window.active},
                         {QStringLiteral("maximized"), window.maximized},
                         {QStringLiteral("minimized"), window.minimized},
-                        {QStringLiteral("hidden"), window.hidden}});
+                        {QStringLiteral("hidden"), window.hidden},
+                        {QStringLiteral("fullscreen"), window.fullscreen}});
     }
 
     return QJsonObject{
